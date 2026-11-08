@@ -3,19 +3,38 @@
   "name": "acme-site",
   "projectType": "application",
   "targets": {
+    "typegen": {
+      "command": "astro sync",
+      "options": {
+        "cwd": "{projectRoot}"
+      }
+    },
     "typecheck": {
-      "command": "astro sync && tsc --noEmit",
-      "options": { "cwd": "{projectRoot}" }
+      "command": "tsc --noEmit",
+      "options": {
+        "cwd": "{projectRoot}"
+      },
+      "dependsOn": ["typegen"]
     },
     "build": {
       "command": "astro build",
-      "options": { "cwd": "{projectRoot}" },
+      "options": {
+        "cwd": "{projectRoot}"
+      },
       "inputs": [
         "...",
-        { "env": "SITE_URL" },
-        { "env": "SITE_DOCS_URL" },
-        { "env": "SITE_PLAUSIBLE_DOMAIN" },
-        { "env": "SITE_PLAUSIBLE_HOST" }
+        {
+          "env": "SITE_URL"
+        },
+        {
+          "env": "SITE_DOCS_URL"
+        },
+        {
+          "env": "SITE_PLAUSIBLE_DOMAIN"
+        },
+        {
+          "env": "SITE_PLAUSIBLE_HOST"
+        }
       ],
       "outputs": ["{projectRoot}/dist"]
     },
@@ -23,7 +42,9 @@
       "command": "astro dev --port 4321",
       "options": {
         "cwd": "{projectRoot}",
-        "env": { "ASTRO_DEV_BACKGROUND": "0" }
+        "env": {
+          "ASTRO_DEV_BACKGROUND": "0"
+        }
       },
       "continuous": true
     }

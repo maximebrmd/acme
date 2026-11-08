@@ -80,7 +80,10 @@ export const inMemoryServer = (health: Effect.Effect<void>) =>
             HttpApiBuilder.layer(Api).pipe(
               Layer.provide(
                 HttpApiBuilder.group(Api, "system", (handlers) =>
-                  handlers.handleAll({ health: () => health })
+                  handlers.handleAll({
+                    health: () => health,
+                    ready: () => health,
+                  })
                 )
               ),
               Layer.provide(HttpServer.layerServices)

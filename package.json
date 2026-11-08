@@ -8,7 +8,7 @@
   "type": "module",
   "scripts": {
     "references": "bun scripts/references.ts",
-    "check": "ultracite check",
+    "check": "nx run-many -t typegen && ultracite check",
     "fix": "ultracite fix",
     "typecheck": "tsc --noEmit -p . && nx run-many -t typecheck",
     "test": "nx run-many -t test",

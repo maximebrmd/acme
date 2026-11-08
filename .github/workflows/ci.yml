@@ -50,3 +50,4 @@ jobs:
       - run: bun run test
         env:
           DATABASE_URL: postgres://acme:acme@localhost:5432/acme
+      - run: bun run build

@@ -3,23 +3,38 @@
   "name": "acme-web",
   "projectType": "application",
   "targets": {
+    "typegen": {
+      "command": "next typegen",
+      "options": {
+        "cwd": "{projectRoot}"
+      }
+    },
     "typecheck": {
-      "command": "next typegen && tsc --noEmit",
-      "options": { "cwd": "{projectRoot}" }
+      "command": "tsc --noEmit",
+      "options": {
+        "cwd": "{projectRoot}"
+      },
+      "dependsOn": ["typegen"]
     },
     "build": {
       "command": "next build",
-      "options": { "cwd": "{projectRoot}" },
+      "options": {
+        "cwd": "{projectRoot}"
+      },
       "outputs": ["{projectRoot}/.next"]
     },
     "dev": {
       "command": "next dev --port 3001",
-      "options": { "cwd": "{projectRoot}" },
+      "options": {
+        "cwd": "{projectRoot}"
+      },
       "continuous": true
     },
     "test": {
       "command": "vitest run",
-      "options": { "cwd": "{projectRoot}" }
+      "options": {
+        "cwd": "{projectRoot}"
+      }
     }
   }
 }
