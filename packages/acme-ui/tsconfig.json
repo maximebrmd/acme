@@ -1,0 +1,11 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["esnext", "dom"],
+    "jsx": "react-jsx",
+    // Only the shadcn CLI uses this, to resolve the components.json aliases to
+    // folders; the sources import each other relatively.
+    "paths": { "acme-ui/*": ["./src/*"] }
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx"]
+}
