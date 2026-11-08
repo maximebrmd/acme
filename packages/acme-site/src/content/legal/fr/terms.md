@@ -22,11 +22,11 @@ Acme vous permet de rédiger des publications, de les planifier sur les platefor
 
 ## Plateformes connectées
 
-Lorsque vous connectez un compte de réseau social, vous autorisez Acme à agir sur ce compte en votre nom, dans la limite des autorisations que vous accordez, pour publier les publications que vous planifiez et lire leurs statistiques.
+Lorsque vous connectez un compte de réseau social, vous autorisez Acme à agir sur ce compte en votre nom, dans la limite des autorisations que vous accordez, pour diffuser les publications que vous planifiez et lire leurs statistiques.
 
 Votre utilisation de chaque plateforme reste soumise à ses propres conditions. Les plateformes peuvent modifier ou restreindre l’accès à leurs services, ce qui peut changer ce qu’Acme est en mesure d’y faire.
 
-Lorsqu’une plateforme ne confirme pas si une publication a été publiée, Acme la marque comme non confirmée au lieu de réessayer, afin qu’elle ne soit pas publiée deux fois. Vérifiez sur la plateforme avant de republier une telle publication.
+Lorsqu’une plateforme ne confirme pas si une publication a bien été mise en ligne, Acme la marque comme non confirmée au lieu de réessayer, afin qu’elle ne soit pas publiée deux fois. Vérifiez sur la plateforme avant de republier une telle publication.
 
 [Responsabilités et limites applicables à la publication via des plateformes tierces.]
 

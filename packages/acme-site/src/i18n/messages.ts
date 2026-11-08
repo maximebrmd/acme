@@ -81,13 +81,13 @@ const fr: Messages = {
     language: "Langue",
     legal: "Mentions légales",
     license:
-      "Fair source sous Functional Source License (FSL-1.1-ALv2). « Acme » est un nom provisoire.",
+      "Fair source sous la Functional Source License (FSL-1.1-ALv2). « Acme » est un nom provisoire.",
   },
   home: {
     description:
       "Écrivez une publication une fois, planifiez-la sur plusieurs plateformes et suivez ses résultats. Pensé pour les équipes, auto-hébergeable et fair source.",
     fairSource: {
-      body: "Le code source est public, sous Functional Source License. Utilisez-le, modifiez-le et faites-le tourner pour tout usage sauf un service concurrent ; chaque version passe sous licence Apache 2.0 deux ans après sa sortie.",
+      body: "Le code source est public, sous la Functional Source License. Utilisez-le, modifiez-le et faites-le tourner pour tout usage sauf un service concurrent ; chaque version passe sous licence Apache 2.0 deux ans après sa sortie.",
       title: "Fair source",
     },
     features: [

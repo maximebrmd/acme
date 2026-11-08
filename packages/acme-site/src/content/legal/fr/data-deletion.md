@@ -28,7 +28,7 @@ Vous pouvez aussi révoquer l’accès d’Acme depuis les réglages de la plate
 
 [Les données supprimées avec un compte, comme le profil, les organisations dont il est le seul propriétaire, les publications, les médias, les planifications, les jetons des comptes connectés et les statistiques.]
 
-Les publications déjà publiées restent sur les plateformes où elles ont été publiées. Supprimez-les sur chaque plateforme.
+Les publications déjà mises en ligne restent sur les plateformes où elles ont été diffusées. Supprimez-les sur chaque plateforme.
 
 ## Ce qui peut être conservé
 

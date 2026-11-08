@@ -17,7 +17,7 @@
   },
   "ApiStatus": {
     "title": "État de l’API",
-    "description": "Indique si cette application joint le serveur Acme.",
+    "description": "Indique si cette application parvient à joindre le serveur Acme.",
     "status": {
       "loading": "Vérification",
       "healthy": "Opérationnelle",
