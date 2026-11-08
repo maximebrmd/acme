@@ -4,6 +4,7 @@
   "license": "FSL-1.1-ALv2",
   "type": "module",
   "imports": {
+    "#test/*": "./test/*",
     "#*": "./src/*"
   },
   "dependencies": {
