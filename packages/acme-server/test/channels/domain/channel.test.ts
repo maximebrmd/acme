@@ -28,6 +28,12 @@ const refreshable: TokenLifetime = {
   expiresAt: utc("2026-03-01T02:00:00Z"),
 };
 
+const active: ChannelStatus = { _tag: "active" };
+
+const refreshNeeded: ChannelStatus = { _tag: "refreshNeeded" };
+
+const disabled: ChannelStatus = { _tag: "disabled", refreshNeeded: false };
+
 const channelWith = (status: ChannelStatus, token: TokenLifetime): Channel =>
   new Channel({
     accountId: "4815162342",
@@ -81,17 +87,17 @@ describe(reconnectWarning, () => {
       now: "2026-05-02T00:00:00Z",
     },
   ])("tells an active channel at $now", ({ expected, now }) => {
-    const channel = channelWith("active", sixtyDays);
+    const channel = channelWith(active, sixtyDays);
 
     expect(isoOf(reconnectWarning(channel, utc(now)))).toStrictEqual(expected);
   });
 
   it.each([
-    { status: "refreshNeeded" as const, token: sixtyDays },
-    { status: "disabled" as const, token: sixtyDays },
-    { status: "active" as const, token: refreshable },
+    { status: refreshNeeded, token: sixtyDays },
+    { status: disabled, token: sixtyDays },
+    { status: active, token: refreshable },
   ])(
-    "stays quiet for a $status channel with a $token._tag token",
+    "stays quiet for a $status._tag channel with a $token._tag token",
     ({ status, token }) => {
       const channel = channelWith(status, token);
 
@@ -104,7 +110,7 @@ describe(reconnectWarning, () => {
 
 describe(isTokenExpired, () => {
   it("expires a token that cannot be renewed at its expiry", () => {
-    const channel = channelWith("active", sixtyDays);
+    const channel = channelWith(active, sixtyDays);
 
     expect(isTokenExpired(channel, utc("2026-04-29T23:59:59Z"))).toBeFalsy();
     expect(isTokenExpired(channel, utc("2026-04-30T00:00:00Z"))).toBeTruthy();
@@ -113,7 +119,7 @@ describe(isTokenExpired, () => {
   it("leaves renewing a refreshable token to the refresh", () => {
     expect(
       isTokenExpired(
-        channelWith("active", refreshable),
+        channelWith(active, refreshable),
         utc("2026-06-01T00:00:00Z")
       )
     ).toBeFalsy();
@@ -122,52 +128,92 @@ describe(isTokenExpired, () => {
 
 describe(markRefreshNeeded, () => {
   it("asks an active channel to reconnect", () => {
-    expect(markRefreshNeeded(channelWith("active", sixtyDays)).status).toBe(
-      "refreshNeeded"
-    );
+    expect(
+      markRefreshNeeded(channelWith(active, sixtyDays)).status
+    ).toStrictEqual(refreshNeeded);
   });
 
-  it("leaves a disabled channel disabled", () => {
-    expect(markRefreshNeeded(channelWith("disabled", sixtyDays)).status).toBe(
-      "disabled"
-    );
+  it("leaves a disabled channel disabled, remembering the broken token", () => {
+    expect(
+      markRefreshNeeded(channelWith(disabled, sixtyDays)).status
+    ).toStrictEqual({ _tag: "disabled", refreshNeeded: true });
   });
 });
 
 describe(reconnect, () => {
   it("makes the channel active again with its new token", () => {
     const reconnected = reconnect(
-      channelWith("refreshNeeded", sixtyDays),
+      channelWith(refreshNeeded, sixtyDays),
       refreshable
     );
 
-    expect(reconnected.status).toBe("active");
+    expect(reconnected.status).toStrictEqual(active);
     expect(reconnected.token).toStrictEqual(refreshable);
   });
 
-  it("keeps a disabled channel disabled", () => {
+  it("keeps a disabled channel disabled, with nothing left to refresh", () => {
     const reconnected = reconnect(
-      channelWith("disabled", sixtyDays),
+      channelWith({ _tag: "disabled", refreshNeeded: true }, sixtyDays),
       refreshable
     );
 
-    expect(reconnected.status).toBe("disabled");
+    expect(reconnected.status).toStrictEqual(disabled);
     expect(reconnected.token).toStrictEqual(refreshable);
   });
 });
 
+describe(disable, () => {
+  it.each([
+    { from: active, refreshNeeded: false },
+    { from: refreshNeeded, refreshNeeded: true },
+  ])(
+    "turns a $from._tag channel off, keeping whether it needs a refresh",
+    ({ from, refreshNeeded: expected }) => {
+      expect(disable(channelWith(from, refreshable)).status).toStrictEqual({
+        _tag: "disabled",
+        refreshNeeded: expected,
+      });
+    }
+  );
+});
+
 describe(enable, () => {
   it.each([
-    { expected: "active", now: "2026-04-01T00:00:00Z" },
-    { expected: "refreshNeeded", now: "2026-05-01T00:00:00Z" },
-  ])("turns a disabled channel $expected at $now", ({ expected, now }) => {
-    const enabled = enable(disable(channelWith("active", sixtyDays)), utc(now));
+    { expected: active, now: "2026-04-01T00:00:00Z" },
+    { expected: refreshNeeded, now: "2026-05-01T00:00:00Z" },
+  ])("turns a disabled channel $expected._tag at $now", ({ expected, now }) => {
+    const enabled = enable(disable(channelWith(active, sixtyDays)), utc(now));
 
-    expect(enabled.status).toBe(expected);
+    expect(enabled.status).toStrictEqual(expected);
+  });
+
+  const turnedOnAt = utc("2026-03-01T01:00:00Z");
+
+  it("asks to reconnect a channel disabled while its token was broken", () => {
+    const channel = disable(channelWith(refreshNeeded, refreshable));
+
+    expect(enable(channel, turnedOnAt).status).toStrictEqual(refreshNeeded);
+  });
+
+  it("asks to reconnect a channel whose token broke while it was disabled", () => {
+    const channel = markRefreshNeeded(
+      disable(channelWith(active, refreshable))
+    );
+
+    expect(enable(channel, turnedOnAt).status).toStrictEqual(refreshNeeded);
+  });
+
+  it("turns a channel reconnected while disabled back to active", () => {
+    const channel = reconnect(
+      markRefreshNeeded(disable(channelWith(active, refreshable))),
+      refreshable
+    );
+
+    expect(enable(channel, turnedOnAt).status).toStrictEqual(active);
   });
 
   it("leaves a channel that is not disabled as it is", () => {
-    const channel = channelWith("refreshNeeded", sixtyDays);
+    const channel = channelWith(refreshNeeded, sixtyDays);
 
     expect(enable(channel, utc("2026-04-01T00:00:00Z"))).toBe(channel);
   });
