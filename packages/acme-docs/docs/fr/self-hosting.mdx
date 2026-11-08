@@ -69,5 +69,5 @@ Placez devant le serveur un proxy inverse qui termine TLS, comme Caddy, et n’e
 
 Le serveur répond à deux sondes :
 
-- `GET /health` répond `204 No Content` dès que le serveur a démarré, quel que soit l’état de sa base de données, ce qui convient à un contrôle de santé de conteneur.
-- `GET /ready` répond `204 No Content` quand la base de données répond elle aussi, et `503 Service Unavailable` avec une erreur `DatabaseUnavailable` sinon : un répartiteur de charge peut ainsi retenir le trafic jusque-là.
+- `GET /api/health` répond `204 No Content` dès que le serveur a démarré, quel que soit l’état de sa base de données, ce qui convient à un contrôle de santé de conteneur.
+- `GET /api/ready` répond `204 No Content` quand la base de données répond elle aussi, et `503 Service Unavailable` avec une erreur `DatabaseUnavailable` sinon : un répartiteur de charge peut ainsi retenir le trafic jusque-là.

@@ -2,7 +2,7 @@ import { assert, describe, it } from "@effect/vitest";
 import { ConfigProvider, Effect } from "effect";
 import { NextRequest } from "next/server";
 
-import { forwardToApi } from "#api/forward.ts";
+import { forwardedHeader, forwardToApi } from "#api/forward.ts";
 import { serverUrl } from "#api/server-url.ts";
 
 const withEnv =
@@ -12,8 +12,11 @@ const withEnv =
       Effect.provide(ConfigProvider.layer(ConfigProvider.fromUnknown(env)))
     );
 
-const forward = (url: string, env: Record<string, string>) =>
-  forwardToApi(new NextRequest(url)).pipe(withEnv(env));
+const forward = (
+  url: string,
+  env: Record<string, string>,
+  headers: Record<string, string> = {}
+) => forwardToApi(new NextRequest(url, { headers })).pipe(withEnv(env));
 
 const rewriteOf = (response: Response) =>
   response.headers.get("x-middleware-rewrite");
@@ -28,22 +31,39 @@ describe("forwarding /api/* to the server", () => {
 
       assert.strictEqual(
         rewriteOf(response),
-        "http://api.test:3000/health?verbose=1"
+        "http://api.test:3000/api/health?verbose=1"
       );
     })
   );
 
-  // Were ACME_API_URL to point back at the app, each hop would strip one
-  // api/ and enter the proxy again.
-  it.effect("refuses a path still under /api/, so requests cannot chain", () =>
-    Effect.gen(function* nested() {
-      const response = yield* forward("http://localhost:3001/api/api/health", {
+  it.effect("marks the request it forwards", () =>
+    Effect.gen(function* marks() {
+      const response = yield* forward("http://localhost:3001/api/me", {
         ACME_API_URL: "http://api.test:3000",
       });
 
-      assert.strictEqual(response.status, 404);
-      assert.isNull(rewriteOf(response));
+      assert.strictEqual(
+        response.headers.get(`x-middleware-request-${forwardedHeader}`),
+        "1"
+      );
     })
+  );
+
+  // Were ACME_API_URL to lead back to the app under another name, the
+  // forwarded request would enter the proxy again.
+  it.effect(
+    "refuses a request it already forwarded, so requests cannot loop",
+    () =>
+      Effect.gen(function* loop() {
+        const response = yield* forward(
+          "http://127.0.0.1:3001/api/health",
+          { ACME_API_URL: "http://localhost:3001" },
+          { [forwardedHeader]: "1" }
+        );
+
+        assert.strictEqual(response.status, 508);
+        assert.isNull(rewriteOf(response));
+      })
   );
 
   it.effect("refuses to forward to the app's own origin", () =>
