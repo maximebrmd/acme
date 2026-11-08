@@ -67,8 +67,14 @@ export default defineConfig({
   },
   reference: [
     // Written by `nx run acme-contract:openapi`, which every docs target
-    // depends on, so the reference always matches the contract.
-    openapi({ spec: "../acme-contract/openapi.json" }),
+    // depends on, so the reference always matches the contract. The overlay
+    // adds the placeholder origin. Try it stays off: the origin is not a real
+    // server, and the API answers no cross-origin requests from the docs.
+    openapi({
+      overlays: ["./overlays/public.yaml"],
+      playground: false,
+      spec: "../acme-contract/openapi.json",
+    }),
   ],
   title: "Acme",
 });
