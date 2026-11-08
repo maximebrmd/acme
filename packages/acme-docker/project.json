@@ -1,0 +1,41 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "acme-docker",
+  "projectType": "application",
+  "targets": {
+    "typecheck": {
+      "command": "tsc --noEmit",
+      "options": {
+        "cwd": "{projectRoot}"
+      }
+    },
+    "test": {
+      "command": "vitest run",
+      "options": {
+        "cwd": "{projectRoot}"
+      }
+    },
+    "up": {
+      "command": "docker compose up --detach --wait",
+      "options": {
+        "cwd": "{projectRoot}"
+      }
+    },
+    "down": {
+      "command": "docker compose down",
+      "options": {
+        "cwd": "{projectRoot}"
+      }
+    },
+    "logs": {
+      "command": "docker compose logs --follow",
+      "options": {
+        "cwd": "{projectRoot}"
+      },
+      "continuous": true
+    },
+    "build-server-image": {
+      "command": "docker build --file packages/acme-docker/server.Dockerfile --tag acme-server:local ."
+    }
+  }
+}
