@@ -1,0 +1,34 @@
+# Build context for the images in packages/acme-docker, which build from the
+# repository root. Installs happen inside the image, so local dependencies,
+# caches and state stay out, and so do secrets.
+
+# Version control and CI
+.git
+.github
+
+# Dependencies, builds and caches
+**/node_modules
+**/dist
+**/build
+**/.next
+**/.astro
+**/out
+**/coverage
+**/*.tsbuildinfo
+.nx
+.cache
+.e2e
+.local
+.claude
+
+# Secrets and local data
+**/.env*
+**/*.pem
+**/*.key
+**/*.p12
+
+# Editors and logs
+.idea
+.vscode
+**/.DS_Store
+**/*.log
