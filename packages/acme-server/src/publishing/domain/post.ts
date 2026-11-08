@@ -188,20 +188,26 @@ export const markUnconfirmed = (post: Post): Transition => {
 };
 
 /**
- * The user found an unconfirmed post on the platform. The platform's id for it
- * is unknown unless the user gives it.
+ * The user found an unconfirmed post on the platform. It went live during the
+ * attempt, so it counts as published when the attempt was made, not when the
+ * user checked. The platform's id for it is unknown unless the user gives it.
  */
 export const confirmPublished = (
   post: Post,
-  platformPostId: Option.Option<PlatformPostId>,
-  now: DateTime.Utc
+  platformPostId: Option.Option<PlatformPostId>
 ): Transition => {
-  if (post.status._tag !== "unconfirmed") {
+  const { status } = post;
+
+  if (status._tag !== "unconfirmed") {
     return rejected(post, "confirmPublished");
   }
 
   return Result.succeed(
-    withStatus(post, { _tag: "published", platformPostId, publishedAt: now })
+    withStatus(post, {
+      _tag: "published",
+      platformPostId,
+      publishedAt: status.attemptedAt,
+    })
   );
 };
 

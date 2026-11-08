@@ -41,6 +41,8 @@ const PublishingSchema = Schema.TaggedStruct("publishing", {
 const PublishedSchema = Schema.TaggedStruct("published", {
   // None when the user confirmed an unconfirmed post by hand.
   platformPostId: Schema.Option(PlatformPostIdSchema),
+  // When the platform accepted the post, or for a post the user confirmed,
+  // when the attempt that published it started.
   publishedAt: Schema.DateTimeUtc,
 });
 
