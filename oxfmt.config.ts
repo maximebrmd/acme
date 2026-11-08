@@ -1,8 +1,13 @@
 import { defineConfig } from "oxfmt";
 import ultracite from "ultracite/oxfmt";
 
-// Generated files and the reference clones in .local stay as their tools wrote them.
-export const generated = ["packages/acme-contract/openapi.json", ".local/**"];
+// Generated files and the reference clones in .local stay as their tools wrote
+// them. drizzle-kit reads back the snapshots it writes next to each migration.
+export const generated = [
+  "packages/acme-contract/openapi.json",
+  "packages/acme-server/drizzle/**",
+  ".local/**",
+];
 
 export default defineConfig({
   ...ultracite,

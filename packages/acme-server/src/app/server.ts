@@ -6,6 +6,8 @@ import { HttpApiBuilder } from "effect/http-api";
 import { Otlp, OtlpSerialization } from "effect/observability";
 
 import { SystemHandlers } from "#app/system.ts";
+import { DatabaseLive } from "#shared/infrastructure/database.ts";
+import { MigrationsLive } from "#shared/infrastructure/migrations.ts";
 
 const ApiLive = HttpApiBuilder.layer(Api, {
   openapiPath: "/openapi.json",
@@ -29,7 +31,12 @@ const HttpServerLive = Layer.unwrap(
   })
 );
 
+// Each layer is built after the ones it is provided with, from the bottom up:
+// telemetry, the database pool, the migrations, then the HTTP server. The
+// server only listens once the database is up to date.
 export const ServerLive = HttpRouter.serve(ApiLive).pipe(
   Layer.provide(HttpServerLive),
+  Layer.provide(MigrationsLive),
+  Layer.provide(DatabaseLive),
   Layer.provide(ObservabilityLive)
 );

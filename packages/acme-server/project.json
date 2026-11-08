@@ -15,6 +15,16 @@
       "command": "bun --watch src/main.ts",
       "options": { "cwd": "{projectRoot}" },
       "continuous": true
+    },
+    "db:generate": {
+      "command": "drizzle-kit generate",
+      "options": { "cwd": "{projectRoot}" },
+      "cache": false
+    },
+    "db:migrate": {
+      "command": "bun src/migrate.ts",
+      "options": { "cwd": "{projectRoot}" },
+      "cache": false
     }
   }
 }

@@ -10,4 +10,10 @@ export default defineConfig({
   ignorePatterns: [...(core.ignorePatterns ?? []), ...generated],
   // Rules that read types, through tsgolint: floating promises, unsafe `any` and the like.
   options: { typeAware: true },
+  rules: {
+    // Oxlint reports any call to a function named `…Error`, so it flags the
+    // `Schema.TaggedError<Self>()(…)` factory that every error is declared
+    // with. unicorn/new-for-builtins still requires `new Error()`.
+    "unicorn/throw-new-error": "off",
+  },
 });
