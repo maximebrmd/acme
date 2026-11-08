@@ -1,0 +1,33 @@
+---
+title: Présentation de l’API
+description: L’organisation de l’API HTTP d’Acme, l’emplacement de son document OpenAPI et la référence de chaque point d’accès.
+sidebar:
+  order: 3
+---
+
+L’application web, l’outil en ligne de commande et le serveur MCP reposent sur la même API HTTP : tout ce qu’ils font, votre propre code peut le faire aussi.
+
+<Callout type="warning" title="Pas encore stable">
+  L’API change à chaque commit jusqu’à la première version. Attendez-vous à des
+  points d’accès ajoutés, renommés ou supprimés.
+</Callout>
+
+## Un seul contrat [#contract]
+
+L’API est définie une seule fois, dans le paquet `acme-contract`. Le serveur implémente cette définition, les clients en tirent leurs types, et la [référence de l’API](/reference) de cette documentation en est générée : les trois ne peuvent pas diverger.
+
+## URL de base [#base-url]
+
+Les requêtes vont à l’origine qui sert votre instance. Dans cette documentation, `https://api.example.com` représente cette origine ; remplacez-la par la vôtre.
+
+```bash
+curl -i https://api.example.com/health
+```
+
+## Document OpenAPI [#openapi]
+
+Chaque serveur publie son document OpenAPI 3.1 à `/openapi.json`, par exemple `https://api.example.com/openapi.json`. Servez-vous-en pour générer un client dans un autre langage ou pour importer l’API dans un outil HTTP.
+
+## Référence [#reference]
+
+La [référence de l’API](/reference) a une page par point d’accès, regroupée par tag, avec ses paramètres, les schémas de requête et de réponse, et des exemples de code.
