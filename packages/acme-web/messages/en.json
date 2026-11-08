@@ -1,0 +1,39 @@
+{
+  "Metadata": {
+    "title": "Acme",
+    "description": "Write posts once, schedule them across platforms and see how they perform."
+  },
+  "AppShell": {
+    "productName": "Acme"
+  },
+  "LanguageSwitcher": {
+    "label": "Language",
+    "trigger": "Language: {locale, select, en {English} fr {Français} other {{locale}}}",
+    "locale": "{locale, select, en {English} fr {Français} other {{locale}}}"
+  },
+  "HomePage": {
+    "title": "Welcome to Acme",
+    "description": "Write posts once, schedule them across platforms and see how they perform."
+  },
+  "ApiStatus": {
+    "title": "API status",
+    "description": "Whether this app can reach the Acme server.",
+    "status": {
+      "loading": "Checking",
+      "healthy": "Healthy",
+      "unreachable": "Unreachable"
+    },
+    "detail": {
+      "loading": "Asking the server for its health…",
+      "healthy": "The server answered its health check.",
+      "unreachable": "The server did not answer. Check that it is running and that ACME_API_URL points at it."
+    },
+    "retry": "Check again",
+    "retrying": "Checking…"
+  },
+  "NotFoundPage": {
+    "title": "Page not found",
+    "description": "There is nothing at this address.",
+    "home": "Back to the home page"
+  }
+}

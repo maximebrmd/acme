@@ -1,0 +1,3 @@
+/* The acme-ui theme is the only stylesheet: screens use its components and
+   Tailwind classes. */
+@import "acme-ui/styles/globals.css";

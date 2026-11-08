@@ -1,0 +1,25 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "acme-web",
+  "projectType": "application",
+  "targets": {
+    "typecheck": {
+      "command": "next typegen && tsc --noEmit",
+      "options": { "cwd": "{projectRoot}" }
+    },
+    "build": {
+      "command": "next build",
+      "options": { "cwd": "{projectRoot}" },
+      "outputs": ["{projectRoot}/.next"]
+    },
+    "dev": {
+      "command": "next dev --port 3001",
+      "options": { "cwd": "{projectRoot}" },
+      "continuous": true
+    },
+    "test": {
+      "command": "vitest run",
+      "options": { "cwd": "{projectRoot}" }
+    }
+  }
+}
