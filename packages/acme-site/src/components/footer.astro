@@ -1,0 +1,44 @@
+---
+import { getRelativeLocaleUrl } from "astro:i18n";
+
+import type { Locale } from "../i18n/locales.ts";
+import { messages } from "../i18n/messages.ts";
+import { legalDocuments } from "../legal.ts";
+import LanguageLinks from "./language-links.astro";
+
+interface Props {
+  readonly locale: Locale;
+  readonly path: string;
+}
+
+const { locale, path } = Astro.props;
+
+const t = messages(locale);
+---
+
+<footer class="border-t border-neutral-200 dark:border-neutral-800">
+  <div
+    class="mx-auto flex max-w-5xl flex-col gap-6 px-6 py-10 text-sm text-neutral-600 sm:flex-row sm:items-start sm:justify-between dark:text-neutral-400"
+  >
+    <nav aria-label={t.footer.legal}>
+      <ul class="flex flex-col gap-2">
+        {
+          legalDocuments.map((document) => (
+            <li>
+              <a
+                href={getRelativeLocaleUrl(locale, document)}
+                class="hover:text-neutral-900 hover:underline dark:hover:text-neutral-100"
+              >
+                {t.legal[document]}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
+    <div class="flex flex-col gap-4 sm:items-end">
+      <LanguageLinks label={t.footer.language} locale={locale} path={path} />
+      <p class="max-w-sm sm:text-right">{t.footer.license}</p>
+    </div>
+  </div>
+</footer>

@@ -1,0 +1,31 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "acme-site",
+  "projectType": "application",
+  "targets": {
+    "typecheck": {
+      "command": "astro sync && tsc --noEmit",
+      "options": { "cwd": "{projectRoot}" }
+    },
+    "build": {
+      "command": "astro build",
+      "options": { "cwd": "{projectRoot}" },
+      "inputs": [
+        "...",
+        { "env": "SITE_URL" },
+        { "env": "SITE_DOCS_URL" },
+        { "env": "SITE_PLAUSIBLE_DOMAIN" },
+        { "env": "SITE_PLAUSIBLE_HOST" }
+      ],
+      "outputs": ["{projectRoot}/dist"]
+    },
+    "dev": {
+      "command": "astro dev --port 4321",
+      "options": {
+        "cwd": "{projectRoot}",
+        "env": { "ASTRO_DEV_BACKGROUND": "0" }
+      },
+      "continuous": true
+    }
+  }
+}

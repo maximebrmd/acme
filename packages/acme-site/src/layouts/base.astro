@@ -1,0 +1,81 @@
+---
+import { getRelativeLocaleUrl } from "astro:i18n";
+
+import Footer from "../components/footer.astro";
+import Header from "../components/header.astro";
+import { plausible } from "../config.ts";
+import { defaultLocale, locales, pageLocale } from "../i18n/locales.ts";
+import "../styles/global.css";
+
+interface Props {
+  readonly description: string;
+  /** Keep the page out of search engines, as drafts are. */
+  readonly noindex?: boolean;
+  /** The page's path below its locale prefix: "" for the home page. */
+  readonly path: string;
+  readonly title: string;
+}
+
+const { description, noindex = false, path, title } = Astro.props;
+
+const locale = pageLocale(Astro.currentLocale);
+
+// Canonical and alternate links need absolute URLs, so they are only emitted
+// when SITE_URL gives the site its origin.
+const absolute = (code: string): string | undefined =>
+  Astro.site === undefined
+    ? undefined
+    : new URL(getRelativeLocaleUrl(code, path), Astro.site).href;
+
+const canonical = absolute(locale);
+
+const alternates = locales.map((code) => ({ code, href: absolute(code) }));
+
+const fallback = absolute(defaultLocale);
+---
+
+<!doctype html>
+<html lang={locale}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    {noindex && <meta name="robots" content="noindex" />}
+    {canonical !== undefined && <link rel="canonical" href={canonical} />}
+    {
+      alternates.map(
+        ({ code, href }) =>
+          href !== undefined && (
+            <link rel="alternate" hreflang={code} href={href} />
+          )
+      )
+    }
+    {
+      fallback !== undefined && (
+        <link rel="alternate" hreflang="x-default" href={fallback} />
+      )
+    }
+    {
+      plausible !== undefined && (
+        <script
+          is:inline
+          defer
+          data-domain={plausible.domain}
+          src={plausible.src}
+        ></script>
+      )
+    }
+  </head>
+  <body
+    class="flex min-h-dvh flex-col bg-white text-neutral-900 antialiased dark:bg-neutral-950 dark:text-neutral-100"
+  >
+    <Header locale={locale} path={path} />
+    <main class="flex-1">
+      <slot />
+    </main>
+    <Footer locale={locale} path={path} />
+  </body>
+</html>
