@@ -7,15 +7,25 @@
     "#*": "./src/*"
   },
   "dependencies": {
+    "@better-auth/api-key": "1.7.18",
+    "@better-auth/core": "1.7.18",
+    "@better-auth/drizzle-adapter": "1.7.18",
+    "@better-auth/utils": "0.5.1",
     "@effect/platform-bun": "4.1.2",
     "@effect/sql-pg": "4.1.2",
     "acme-contract": "workspace:*",
+    "better-auth": "1.7.18",
+    "better-call": "1.4.5",
     "drizzle-orm": "1.0.0-rc.5",
-    "effect": "4.1.2"
+    "effect": "4.1.2",
+    "nodemailer": "10.4.0",
+    "pg": "8.23.1"
   },
   "devDependencies": {
     "@effect/vitest": "4.1.2",
     "@types/bun": "1.4.4",
+    "@types/nodemailer": "8.0.2",
+    "@types/pg": "8.23.1",
     "drizzle-kit": "1.0.0-rc.5",
     "typescript": "7.0.2",
     "vitest": "5.1.0"
