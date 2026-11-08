@@ -7,12 +7,14 @@ import { PlatformSchema } from "./platform.ts";
 /**
  * - `active`: posts go out.
  * - `refreshNeeded`: the token no longer works, and the user must reconnect.
- * - `disabled`: turned off; nothing goes out and no reminders are sent.
+ * - `disabled`: turned off; nothing goes out and no reminders are sent. It
+ *   remembers whether the token stopped working, so turning the channel back
+ *   on asks the user to reconnect rather than posting with a dead token.
  */
-export const ChannelStatusSchema = Schema.Literals([
-  "active",
-  "refreshNeeded",
-  "disabled",
+export const ChannelStatusSchema = Schema.Union([
+  Schema.TaggedStruct("active", {}),
+  Schema.TaggedStruct("refreshNeeded", {}),
+  Schema.TaggedStruct("disabled", { refreshNeeded: Schema.Boolean }),
 ]);
 
 export type ChannelStatus = typeof ChannelStatusSchema.Type;
@@ -67,35 +69,70 @@ export const isTokenExpired = (channel: Channel, now: DateTime.Utc): boolean =>
   channel.token._tag === "nonRefreshable" &&
   DateTime.isGreaterThanOrEqualTo(now, channel.token.expiresAt);
 
-/** The token stopped working: the user must reconnect. */
-export const markRefreshNeeded = (channel: Channel): Channel =>
-  channel.status === "active"
-    ? withChange(channel, "refreshNeeded", channel.token)
-    : channel;
+/**
+ * The token stopped working: the user must reconnect. A disabled channel
+ * stays disabled and asks for it once it is turned back on.
+ */
+export const markRefreshNeeded = (channel: Channel): Channel => {
+  const { status } = channel;
+
+  if (status._tag === "active") {
+    return withChange(channel, { _tag: "refreshNeeded" }, channel.token);
+  }
+
+  if (status._tag === "disabled" && !status.refreshNeeded) {
+    return withChange(
+      channel,
+      { _tag: "disabled", refreshNeeded: true },
+      channel.token
+    );
+  }
+
+  return channel;
+};
 
 /**
  * The user connected the account again, with a new token. A disabled channel
- * keeps its new token and stays disabled.
+ * keeps its new token and stays disabled, with nothing left to refresh.
  */
 export const reconnect = (channel: Channel, token: TokenLifetime): Channel =>
   withChange(
     channel,
-    channel.status === "disabled" ? "disabled" : "active",
+    channel.status._tag === "disabled"
+      ? { _tag: "disabled", refreshNeeded: false }
+      : { _tag: "active" },
     token
   );
 
+/** Turns a channel off. It keeps whether its token needs a refresh. */
 export const disable = (channel: Channel): Channel =>
-  withChange(channel, "disabled", channel.token);
+  channel.status._tag === "disabled"
+    ? channel
+    : withChange(
+        channel,
+        {
+          _tag: "disabled",
+          refreshNeeded: channel.status._tag === "refreshNeeded",
+        },
+        channel.token
+      );
 
-/** Turns a disabled channel back on, asking to reconnect if its token ran out. */
+/**
+ * Turns a disabled channel back on, asking to reconnect if its token stopped
+ * working or ran out.
+ */
 export const enable = (channel: Channel, now: DateTime.Utc): Channel => {
-  if (channel.status !== "disabled") {
+  const { status } = channel;
+
+  if (status._tag !== "disabled") {
     return channel;
   }
 
   return withChange(
     channel,
-    isTokenExpired(channel, now) ? "refreshNeeded" : "active",
+    status.refreshNeeded || isTokenExpired(channel, now)
+      ? { _tag: "refreshNeeded" }
+      : { _tag: "active" },
     channel.token
   );
 };
@@ -136,7 +173,7 @@ export const reconnectWarning = (
 ): Option.Option<DateTime.Utc> => {
   const { status, token } = channel;
 
-  if (status !== "active" || token._tag !== "nonRefreshable") {
+  if (status._tag !== "active" || token._tag !== "nonRefreshable") {
     return Option.none();
   }
 

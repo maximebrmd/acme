@@ -156,6 +156,41 @@ describe(nextOccurrence, () => {
       "2026-06-22T08:00:00.000+02:00[Europe/Paris]"
     );
   });
+
+  // West of UTC in the evening, the UTC date is already the next day: the
+  // search starts from the zone's own date, so that evening's post is kept.
+  const eveningPosts: readonly {
+    readonly label: string;
+    readonly recurrence: Recurrence;
+  }[] = [
+    {
+      label: "daily",
+      recurrence: { _tag: "daily", time: { hour: 22, minute: 0 } },
+    },
+    {
+      label: "Monday",
+      recurrence: {
+        _tag: "weekly",
+        days: ["monday"],
+        time: { hour: 22, minute: 0 },
+      },
+    },
+  ];
+
+  it.each(eveningPosts)(
+    "keeps a $label 22:00 New York post asked for at 21:00 local",
+    ({ recurrence }) => {
+      // Monday 15 June 2026, 21:00 EDT: Tuesday 16 June in UTC.
+      const occurrence = nextOccurrence(
+        recurring(recurrence, newYork),
+        DateTime.makeUnsafe("2026-06-16T01:00:00Z")
+      );
+
+      expect(DateTime.formatIsoZoned(occurrence.local)).toBe(
+        "2026-06-15T22:00:00.000-04:00[America/New_York]"
+      );
+    }
+  );
 });
 
 describe(RecurringSchedule, () => {

@@ -40,7 +40,14 @@ export const LanguageSwitcher = () => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
-        render={<Button variant="ghost" size="sm" disabled={isPending} />}
+        render={
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={isPending}
+            focusableWhenDisabled
+          />
+        }
         aria-label={t("trigger", { locale })}
       >
         <LanguagesIcon data-icon="inline-start" aria-hidden />

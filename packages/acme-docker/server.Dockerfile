@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1.28.0
+# syntax=docker/dockerfile:1.28.0@sha256:bb22d9815c728170f72750f4e5b0d672e06176142e1d602c7e66c050100b7e5b
 
 # The production image of acme-server. Build it from the repository root:
 #
@@ -6,12 +6,13 @@
 #
 # It runs the TypeScript sources with Bun, as a user without privileges, and
 # reads PORT and plain environment variables (OTEL_EXPORTER_OTLP_ENDPOINT…),
-# so it runs on any host.
+# so it runs on any host. The frontend and base images are pinned by digest,
+# with the tag for reading, so a re-pushed tag cannot change what ships.
 
 # Dependencies: the server's production dependencies and its workspace
 # packages, and nothing the other workspaces need. Bun skips the workspaces
 # listed in bun.lock whose manifests are not copied here.
-FROM oven/bun:1.4.4-slim AS dependencies
+FROM oven/bun:1.4.4-slim@sha256:1846adf22496bd711036aae8be147e57bdebbaea2e5264e3e0b5af1db187d9a4 AS dependencies
 
 WORKDIR /app
 
@@ -23,19 +24,11 @@ RUN --mount=type=cache,target=/root/.bun/install/cache \
     bun install --frozen-lockfile --production --filter acme-server
 
 # Runtime: Bun on a distroless base, with no shell or package manager.
-FROM oven/bun:1.4.4-distroless
+FROM oven/bun:1.4.4-distroless@sha256:153a951ae40106e125898103e6e990ee0f38e6aee7f561029e26cf9fbed23470
 
 WORKDIR /app
 
 ENV NODE_ENV=production
-
-# Effect exports a signal only when its OTEL_<SIGNAL>_EXPORTER names otlp,
-# where the OpenTelemetry specification defaults to it. Default them here, so
-# setting OTEL_EXPORTER_OTLP_ENDPOINT alone turns export on; without an
-# endpoint nothing is sent. Set one to "none" to turn that signal off.
-ENV OTEL_TRACES_EXPORTER=otlp \
-    OTEL_METRICS_EXPORTER=otlp \
-    OTEL_LOGS_EXPORTER=otlp
 
 COPY --from=dependencies /app/node_modules node_modules
 COPY --from=dependencies /app/packages/acme-contract/node_modules packages/acme-contract/node_modules

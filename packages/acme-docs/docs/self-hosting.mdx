@@ -29,17 +29,44 @@ Acme's own deployment stores media on Cloudflare R2, and its development stack r
 
 ## Environment variables [#environment-variables]
 
-The server reads plain environment variables, so its images run on any host. The variables it reads today:
+The server and the web app read plain environment variables, so their images run on any host. The variables they read today follow.
 
-| Variable                      | Default | Example                      | What it does                                                                                    |
-| ----------------------------- | ------- | ---------------------------- | ----------------------------------------------------------------------------------------------- |
-| `PORT`                        | `3000`  | `8080`                       | The port the HTTP server listens on.                                                            |
-| `OTEL_EXPORTER_OTLP_ENDPOINT` | unset   | `http://otel-collector:4318` | The OpenTelemetry collector that receives logs, metrics and traces. Unset, nothing is exported. |
+### Server [#server]
 
-The other standard OpenTelemetry variables, such as `OTEL_EXPORTER_OTLP_HEADERS` and `OTEL_SERVICE_NAME`, are read as the OpenTelemetry specification defines them.
+| Variable                      | Default       | Example                                   | What it does                                                                                                                              |
+| ----------------------------- | ------------- | ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`                | none          | `postgres://acme:acme@postgres:5432/acme` | The Postgres database. Required: the server does not start without it.                                                                    |
+| `PORT`                        | `3000`        | `8080`                                    | The port the HTTP server listens on.                                                                                                      |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | unset         | `http://otel-collector:4318`              | The OTLP/HTTP endpoint of the OpenTelemetry collector that receives logs, metrics and traces. Unset, nothing is exported.                 |
+| `OTEL_SERVICE_NAME`           | `acme-server` | `acme-sandbox`                            | The service name that telemetry is reported under.                                                                                        |
+| `OTEL_TRACES_EXPORTER`        | `otlp`        | `none`                                    | `none` stops exporting traces once an endpoint is set. `OTEL_METRICS_EXPORTER` and `OTEL_LOGS_EXPORTER` do the same for metrics and logs. |
 
-The variables for the database, storage, email, billing, captcha and AI will be listed here as each adapter ships.
+At startup, the server applies the database migrations it has not applied yet, and only listens once they are done.
+
+The server exports telemetry as JSON over HTTP, so point the endpoint at the collector's OTLP/HTTP port, 4318 by default, rather than its gRPC one. It also reads these OpenTelemetry variables, and no others (`OTEL_EXPORTER_OTLP_PROTOCOL` included):
+
+- `OTEL_EXPORTER_OTLP_HEADERS`, `OTEL_EXPORTER_OTLP_COMPRESSION` and `OTEL_EXPORTER_OTLP_TIMEOUT`, and the per-signal forms of these and of the endpoint, such as `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT`;
+- `OTEL_RESOURCE_ATTRIBUTES` and `OTEL_SERVICE_VERSION`;
+- `OTEL_SDK_DISABLED`;
+- the batching settings `OTEL_BSP_*` for traces and `OTEL_BLRP_*` for logs;
+- `OTEL_METRIC_EXPORT_INTERVAL`, `OTEL_METRIC_EXPORT_TIMEOUT` and `OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE`.
+
+### Web app [#web-app]
+
+| Variable       | Default                                               | Example                   | What it does                                                                                                       |
+| -------------- | ----------------------------------------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `ACME_API_URL` | none in production, `http://localhost:3000` otherwise | `http://acme-server:3000` | Where the web app reaches the server. It forwards the browser's `/api/*` requests there and renders pages with it. |
+| `PORT`         | `3000`                                                | `8080`                    | The port the web app listens on.                                                                                   |
+
+The command-line tool reads `ACME_API_URL` too, unless `--api-url` is given.
+
+The variables for storage, email, billing, captcha and AI will be listed here as each adapter ships.
 
 ## In front of Acme [#reverse-proxy]
 
-Run a reverse proxy that terminates TLS, such as Caddy, in front of the server, and expose only the proxy. The server answers `GET /health` with `204 No Content` once it is up, which suits a container health check.
+Run a reverse proxy that terminates TLS, such as Caddy, in front of the server, and expose only the proxy.
+
+The server answers two probes:
+
+- `GET /health` answers `204 No Content` as soon as the server is up, whatever the state of its database, which suits a container health check.
+- `GET /ready` answers `204 No Content` when the database answers as well, and `503 Service Unavailable` with a `DatabaseUnavailable` error when it does not, so a load balancer can hold traffic back until then.

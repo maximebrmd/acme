@@ -39,11 +39,13 @@ const en = {
         title: "Work as a team",
       },
     ],
-    featuresTitle: "One place for every post",
+    featuresTitle: "What we are building",
     hero: {
       lead: "Acme is a social media scheduling platform for teams. Write a post once, schedule it across platforms and follow its results in one place.",
       primary: "See how it works",
       secondary: "Run it yourself",
+      status:
+        "In development: not released yet. This is what Acme is being built to do.",
       title: "Write once. Schedule everywhere. See what works.",
     },
     selfHost: {
@@ -54,7 +56,7 @@ const en = {
     title: "Acme: schedule social media posts across platforms",
     unconfirmed: {
       body: "When a platform does not confirm that a post went out, Acme marks it unconfirmed and asks you to check, instead of posting it again blindly.",
-      title: "No double posts",
+      title: "No blind reposts",
     },
   },
   legal: {
@@ -79,15 +81,15 @@ const fr: Messages = {
   },
   footer: {
     language: "Langue",
-    legal: "Mentions légales",
+    legal: "Informations juridiques",
     license:
-      "Fair source sous Functional Source License (FSL-1.1-ALv2). « Acme » est un nom provisoire.",
+      "Fair source sous la Functional Source License (FSL-1.1-ALv2). « Acme » est un nom provisoire.",
   },
   home: {
     description:
       "Écrivez une publication une fois, planifiez-la sur plusieurs plateformes et suivez ses résultats. Pensé pour les équipes, auto-hébergeable et fair source.",
     fairSource: {
-      body: "Le code source est public, sous Functional Source License. Utilisez-le, modifiez-le et faites-le tourner pour tout usage sauf un service concurrent ; chaque version passe sous licence Apache 2.0 deux ans après sa sortie.",
+      body: "Le code source est public, sous la Functional Source License. Utilisez-le, modifiez-le et faites-le tourner pour tout usage sauf un service concurrent ; chaque version passe sous licence Apache 2.0 deux ans après sa sortie.",
       title: "Fair source",
     },
     features: [
@@ -108,11 +110,13 @@ const fr: Messages = {
         title: "Travailler en équipe",
       },
     ],
-    featuresTitle: "Un seul endroit pour chaque publication",
+    featuresTitle: "Ce que nous construisons",
     hero: {
       lead: "Acme est une plateforme de planification pour les réseaux sociaux, pensée pour les équipes. Écrivez une publication une fois, planifiez-la sur plusieurs plateformes et suivez ses résultats au même endroit.",
       primary: "Voir comment ça marche",
       secondary: "L’héberger soi-même",
+      status:
+        "En cours de développement : pas encore sorti. Voici ce qu’Acme est conçu pour faire.",
       title: "Écrire une fois. Planifier partout. Voir ce qui marche.",
     },
     selfHost: {
@@ -123,7 +127,7 @@ const fr: Messages = {
     title: "Acme : planifiez vos publications sur les réseaux sociaux",
     unconfirmed: {
       body: "Quand une plateforme ne confirme pas qu’une publication est partie, Acme la marque comme non confirmée et vous demande de vérifier, au lieu de republier à l’aveugle.",
-      title: "Pas de doublons",
+      title: "Pas de republication à l’aveugle",
     },
   },
   legal: {

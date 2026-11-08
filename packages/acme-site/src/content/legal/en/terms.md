@@ -26,7 +26,7 @@ When you connect a social media account, you authorise Acme to act on that accou
 
 Your use of each platform stays subject to that platform's own terms. Platforms can change or restrict access to their services, which can change what Acme is able to do with them.
 
-When a platform does not confirm whether a post was published, Acme marks the post as unconfirmed instead of retrying it, so that it is not published twice. Check the platform before you publish such a post again.
+[Confirm once built: when a platform does not confirm whether a post was published, Acme marks the post as unconfirmed instead of retrying it, so that it is not published twice. Check the platform before you publish such a post again.]
 
 [Responsibilities and limits that apply to publishing through third-party platforms.]
 

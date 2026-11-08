@@ -72,14 +72,16 @@ const infrastructure = (context: Kernel) =>
   );
 
 // Api: HttpApiBuilder handlers for acme-contract. Use cases come from the
-// context's container, never from infrastructure.
+// context's container, never from infrastructure. Of Effect's modules, only
+// the core and HTTP: SQL, cluster, workflow and AI go through a use case.
 const api = (context: Kernel) =>
   restrict(
-    "Handlers import Effect, acme-contract, their context's container, domain and application, and the shared kernel. Infrastructure stays behind the container.",
+    "Handlers import Effect's core and HTTP modules, acme-contract, their context's container, domain and application, and the shared kernel. Reach the database, workflows or AI through a use case.",
     [
       "*",
       "!effect",
-      "!effect/**",
+      "!effect/http",
+      "!effect/http-api",
       "!acme-contract",
       "!./**",
       `!#${context}/container.ts`,
@@ -105,15 +107,35 @@ const container = (context: Kernel) =>
   ]);
 
 // Time, ids and configuration come from Effect services, so tests control them.
+const clockMessage = "Use DateTime or Clock from effect, which tests control.";
+const randomMessage = "Take ids and randomness from a port.";
+const configMessage = "Read configuration with Config from effect.";
+const runtimeMessage = "Runtime APIs belong in infrastructure.";
+
 const pureGlobals: NonNullable<Rules["no-restricted-globals"]> = [
   "error",
-  {
-    message: "Use DateTime or Clock from effect, which tests control.",
-    name: "Date",
-  },
-  { message: "Take ids and randomness from a port.", name: "crypto" },
-  { message: "Read configuration with Config from effect.", name: "process" },
-  { message: "Runtime APIs belong in infrastructure.", name: "Bun" },
+  { message: clockMessage, name: "Date" },
+  { message: clockMessage, name: "performance" },
+  { message: randomMessage, name: "crypto" },
+  { message: configMessage, name: "process" },
+  { message: runtimeMessage, name: "Bun" },
+];
+
+// The same, reached as properties: Effect's own clock bypasses (nowUnsafe
+// reads Date.now()), Math.random, and the globals through globalThis.
+const pureProperties: NonNullable<Rules["no-restricted-properties"]> = [
+  "error",
+  ...["nowUnsafe", "isPastUnsafe", "isFutureUnsafe"].map((property) => ({
+    message: "Use DateTime.now or Clock, which tests control.",
+    object: "DateTime",
+    property,
+  })),
+  { message: randomMessage, object: "Math", property: "random" },
+  { message: clockMessage, object: "globalThis", property: "Date" },
+  { message: clockMessage, object: "globalThis", property: "performance" },
+  { message: randomMessage, object: "globalThis", property: "crypto" },
+  { message: configMessage, object: "globalThis", property: "process" },
+  { message: runtimeMessage, object: "globalThis", property: "Bun" },
 ];
 
 const layerOverrides: OxlintOverride[] = (
@@ -124,6 +146,7 @@ const layerOverrides: OxlintOverride[] = (
     rules: {
       "no-restricted-globals": pureGlobals,
       "no-restricted-imports": domain(context),
+      "no-restricted-properties": pureProperties,
     },
   },
   {
@@ -131,6 +154,7 @@ const layerOverrides: OxlintOverride[] = (
     rules: {
       "no-restricted-globals": pureGlobals,
       "no-restricted-imports": application(context),
+      "no-restricted-properties": pureProperties,
     },
   },
   {

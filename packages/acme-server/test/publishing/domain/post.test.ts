@@ -242,14 +242,22 @@ describe("the outcome of publishing", () => {
 describe("confirming an unconfirmed post", () => {
   const checkedAt = utc("2026-06-15T09:00:00Z");
 
-  it("marks it published when the user found it", () => {
+  it("marks it published at the attempt when the user found it", () => {
     expect(
-      statusOf(confirmPublished(statuses.unconfirmed, Option.none(), checkedAt))
+      statusOf(confirmPublished(statuses.unconfirmed, Option.none()))
     ).toStrictEqual({
       _tag: "published",
       platformPostId: Option.none(),
-      publishedAt: checkedAt,
+      publishedAt: utc("2026-06-15T08:00:00Z"),
     });
+  });
+
+  it("keeps the platform's id when the user gives it", () => {
+    expect(
+      statusOf(
+        confirmPublished(statuses.unconfirmed, Option.some(platformPostId))
+      )
+    ).toMatchObject({ platformPostId: Option.some(platformPostId) });
   });
 
   it("marks it failed when the user did not, so it can be scheduled again", () => {
@@ -279,9 +287,9 @@ describe("confirming an unconfirmed post", () => {
     { from: statuses.published },
     { from: statuses.failed },
   ])("applies only to unconfirmed posts, not $from.status._tag", ({ from }) => {
-    expect(
-      failureOf(confirmPublished(from, Option.none(), checkedAt))
-    ).toMatchObject({ action: "confirmPublished" });
+    expect(failureOf(confirmPublished(from, Option.none()))).toMatchObject({
+      action: "confirmPublished",
+    });
     expect(failureOf(confirmNotPublished(from, checkedAt))).toMatchObject({
       action: "confirmNotPublished",
     });

@@ -10,7 +10,7 @@ Date d’entrée en vigueur : [Date]
 
 Cette politique explique comment [Nom de l’entité juridique] (« nous ») traite les données personnelles lorsque vous utilisez le service Acme hébergé à l’adresse [Domaine du service] et ce site. Elle suit les exigences de transparence du règlement général sur la protection des données (RGPD), articles 13 et 14.
 
-Elle ne couvre pas les instances auto-hébergées d’Acme. Quiconque exploite une instance auto-hébergée est responsable du traitement des données qu’elle traite et de sa propre politique de confidentialité.
+Elle ne couvre pas les instances auto-hébergées d’Acme. Quiconque exploite une instance auto-hébergée est responsable du traitement de ses données et rédige sa propre politique de confidentialité.
 
 ## Responsable du traitement
 
@@ -28,11 +28,17 @@ Ces catégories suivent le service tel qu’il est conçu. [Confirmer chacune d�
 - **Données de compte** : votre nom, votre adresse e-mail et vos informations de connexion. [Lister les méthodes de connexion proposées.]
 - **Données d’organisation** : les organisations dont vous êtes membre, votre rôle dans chacune et les invitations envoyées ou reçues.
 - **Comptes connectés** : les comptes de réseaux sociaux que vous connectez, leurs identifiants sur chaque plateforme et les jetons d’accès que les plateformes délivrent à Acme.
-- **Contenus** : les publications, médias et planifications que vous créez, et l’historique de publication de chaque publication.
+- **Contenus** : les publications, médias et planifications que vous créez, et l’historique de mise en ligne de chacune.
 - **Données de performance** : les statistiques que les plateformes communiquent pour vos publications.
 - **Données de facturation** : votre offre, l’état de votre abonnement et vos factures. Les paiements sont gérés par [Prestataire de paiement]. [Préciser quelles données de paiement nous recevons, le cas échéant.]
 - **Données techniques** : adresses IP, informations sur le navigateur et journaux produits lorsque vous utilisez le service.
 - **Communications** : les messages que vous nous envoyez et les e-mails que nous vous envoyons.
+
+[La source des données vous concernant lorsqu’une autre personne les fournit, comme l’adresse e-mail d’une invitation à une organisation (article 14, paragraphe 2, point f), du RGPD).]
+
+## Caractère obligatoire des données
+
+[Les données requises pour créer un compte ou utiliser une fonctionnalité, si cette exigence est réglementaire ou contractuelle, et les conséquences si elles ne sont pas fournies (article 13, paragraphe 2, point e), du RGPD).]
 
 ## Finalités et bases légales
 
@@ -50,9 +56,9 @@ Lorsqu’un traitement repose sur des intérêts légitimes, vous pouvez vous y 
 
 ## Données issues des plateformes connectées
 
-Lorsque vous connectez un compte de réseau social, la plateforme partage des données avec Acme dans la limite des autorisations que vous accordez. Acme les utilise pour publier les publications que vous planifiez et pour montrer leurs performances. [Décrire tout autre usage, et confirmer que chaque usage respecte les conditions pour développeurs de chaque plateforme à laquelle Acme se connecte.]
+Lorsque vous connectez un compte de réseau social, la plateforme partage des données avec Acme dans la limite des autorisations que vous accordez. Acme les utilise pour diffuser les publications que vous planifiez et pour montrer leurs performances. [Décrire tout autre usage, et confirmer que chaque usage respecte les conditions pour développeurs de chaque plateforme à laquelle Acme se connecte.]
 
-Vous pouvez déconnecter un compte dans Acme, et révoquer l’accès d’Acme depuis les réglages de la plateforme elle-même.
+[À confirmer une fois la fonctionnalité livrée : vous pouvez déconnecter un compte dans Acme.] Vous pouvez aussi révoquer l’accès d’Acme depuis les réglages de la plateforme elle-même.
 
 ## Destinataires et sous-traitants
 
@@ -109,7 +115,7 @@ Vous avez aussi le droit d’introduire une réclamation auprès d’une autorit
 
 ## Sécurité
 
-Les jetons d’accès des comptes connectés sont stockés chiffrés. [Décrire les autres mesures techniques et organisationnelles en place (article 32 du RGPD).]
+[À confirmer une fois la fonctionnalité livrée : les jetons d’accès des comptes connectés sont stockés chiffrés avec AES-256-GCM.] [Décrire les autres mesures techniques et organisationnelles en place (article 32 du RGPD).]
 
 ## Enfants
 
