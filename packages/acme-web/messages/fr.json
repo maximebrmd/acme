@@ -1,0 +1,39 @@
+{
+  "Metadata": {
+    "title": "Acme",
+    "description": "Rédigez vos publications une fois, planifiez-les sur toutes les plateformes et suivez leurs résultats."
+  },
+  "AppShell": {
+    "productName": "Acme"
+  },
+  "LanguageSwitcher": {
+    "label": "Langue",
+    "trigger": "Langue : {locale, select, en {English} fr {Français} other {{locale}}}",
+    "locale": "{locale, select, en {English} fr {Français} other {{locale}}}"
+  },
+  "HomePage": {
+    "title": "Bienvenue sur Acme",
+    "description": "Rédigez vos publications une fois, planifiez-les sur toutes les plateformes et suivez leurs résultats."
+  },
+  "ApiStatus": {
+    "title": "État de l’API",
+    "description": "Indique si cette application joint le serveur Acme.",
+    "status": {
+      "loading": "Vérification",
+      "healthy": "Opérationnelle",
+      "unreachable": "Injoignable"
+    },
+    "detail": {
+      "loading": "Interrogation du serveur sur son état…",
+      "healthy": "Le serveur a répondu à la vérification de son état.",
+      "unreachable": "Le serveur n’a pas répondu. Vérifiez qu’il tourne et qu’ACME_API_URL pointe vers lui."
+    },
+    "retry": "Vérifier à nouveau",
+    "retrying": "Vérification…"
+  },
+  "NotFoundPage": {
+    "title": "Page introuvable",
+    "description": "Il n’y a rien à cette adresse.",
+    "home": "Retour à l’accueil"
+  }
+}
