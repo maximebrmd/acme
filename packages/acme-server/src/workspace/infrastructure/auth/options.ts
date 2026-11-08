@@ -1,5 +1,6 @@
 import { apiKey } from "@better-auth/api-key";
 import { drizzleAdapter } from "@better-auth/drizzle-adapter/relations-v2";
+import type { DrizzleAdapterConfig } from "@better-auth/drizzle-adapter/relations-v2";
 import { betterAuth } from "better-auth";
 import type { User } from "better-auth";
 import { admin, organization } from "better-auth/plugins";
@@ -38,13 +39,18 @@ export interface AuthHooks {
   readonly verifyEmail: (link: AuthLink) => void;
 }
 
-export interface AuthDependencies {
+export interface AuthDatabase {
   /**
    * A promise-based Drizzle database (node-postgres), as the adapter awaits
-   * its queries, built with the generated relations: the adapter finds each
-   * table through them.
+   * its queries, built with the generated relations.
    */
-  readonly database: Parameters<typeof drizzleAdapter>[0];
+  readonly db: Parameters<typeof drizzleAdapter>[0];
+  /** The generated tables, by Better Auth model name. */
+  readonly tables: DrizzleAdapterConfig["schema"];
+}
+
+export interface AuthDependencies {
+  readonly database: AuthDatabase;
   readonly hooks: AuthHooks;
   readonly settings: AuthConfiguration;
 }
@@ -103,8 +109,9 @@ export const makeAuth = ({ database, hooks, settings }: AuthDependencies) =>
     appName: "Acme",
     basePath: authBasePath,
     baseURL: settings.publicUrl,
-    database: drizzleAdapter(database, {
+    database: drizzleAdapter(database.db, {
       provider: "pg",
+      schema: database.tables,
       schemaName: "auth",
       transaction: true,
     }),

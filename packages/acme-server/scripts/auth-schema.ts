@@ -30,7 +30,7 @@ const ignore = () => {
 // Tables depend on the plugins and the options that shape columns, never on
 // these settings, which only need to be valid.
 const auth = makeAuth({
-  database: drizzle.mock(),
+  database: { db: drizzle.mock(), tables: {} },
   hooks: {
     invitation: ignore,
     log: ignore,
