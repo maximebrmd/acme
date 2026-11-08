@@ -46,20 +46,26 @@ export const ApiStatusView = ({
           <Badge variant={badgeVariant[status]}>{t(`status.${status}`)}</Badge>
         </CardAction>
       </CardHeader>
-      <CardContent>
-        <p aria-live="polite" className="text-muted-foreground text-sm">
-          {t(`detail.${status}`)}
-        </p>
+      <CardContent aria-busy={checking}>
+        <p className="text-muted-foreground text-sm">{t(`detail.${status}`)}</p>
       </CardContent>
       <CardFooter>
+        {/* The button stays focusable while it is disabled, so a keyboard
+            user keeps their place, and the output below, a status region,
+            announces that a check started and how it ended, even when the
+            status is the same. */}
         <Button
           variant="outline"
           size="sm"
           disabled={checking || onCheck === undefined}
+          focusableWhenDisabled
           onClick={onCheck}
         >
           {checking ? t("retrying") : t("retry")}
         </Button>
+        <output className="sr-only">
+          {checking ? t("retrying") : t(`detail.${status}`)}
+        </output>
       </CardFooter>
     </Card>
   );
