@@ -44,6 +44,8 @@ COPY packages/acme-contract/package.json packages/acme-contract/
 COPY packages/acme-contract/src packages/acme-contract/src
 COPY packages/acme-server/package.json packages/acme-server/
 COPY packages/acme-server/src packages/acme-server/src
+# The migrations the server applies when it starts.
+COPY packages/acme-server/drizzle packages/acme-server/drizzle
 
 USER nonroot
 
