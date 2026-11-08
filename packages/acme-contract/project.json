@@ -1,0 +1,18 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "acme-contract",
+  "projectType": "library",
+  "targets": {
+    "typecheck": {
+      "command": "tsc --noEmit",
+      "options": { "cwd": "{projectRoot}" }
+    },
+    "openapi": {
+      "command": "bun scripts/openapi.ts",
+      "options": { "cwd": "{projectRoot}" },
+      "cache": true,
+      "inputs": ["default"],
+      "outputs": ["{projectRoot}/openapi.json"]
+    }
+  }
+}

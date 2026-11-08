@@ -1,0 +1,18 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:best-practices"],
+  "rangeStrategy": "pin",
+  "lockFileMaintenance": { "enabled": true },
+  "packageRules": [
+    {
+      "description": "Effect and its packages release together.",
+      "matchPackageNames": ["effect", "@effect/**"],
+      "groupName": "effect"
+    },
+    {
+      "description": "Lint and format tools release together.",
+      "matchPackageNames": ["ultracite", "oxlint", "oxlint-tsgolint", "oxfmt"],
+      "groupName": "lint tooling"
+    }
+  ]
+}

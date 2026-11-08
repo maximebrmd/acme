@@ -1,0 +1,20 @@
+{
+  "name": "acme-server",
+  "private": true,
+  "license": "FSL-1.1-ALv2",
+  "type": "module",
+  "imports": {
+    "#*": "./src/*"
+  },
+  "dependencies": {
+    "@effect/platform-bun": "4.1.2",
+    "acme-contract": "workspace:*",
+    "effect": "4.1.2"
+  },
+  "devDependencies": {
+    "@effect/vitest": "4.1.2",
+    "@types/bun": "1.4.4",
+    "typescript": "7.0.2",
+    "vitest": "5.1.0"
+  }
+}

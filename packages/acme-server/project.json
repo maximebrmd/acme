@@ -1,0 +1,20 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "acme-server",
+  "projectType": "application",
+  "targets": {
+    "typecheck": {
+      "command": "tsc --noEmit",
+      "options": { "cwd": "{projectRoot}" }
+    },
+    "test": {
+      "command": "vitest run",
+      "options": { "cwd": "{projectRoot}" }
+    },
+    "dev": {
+      "command": "bun --watch src/main.ts",
+      "options": { "cwd": "{projectRoot}" },
+      "continuous": true
+    }
+  }
+}

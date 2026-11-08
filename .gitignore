@@ -1,0 +1,33 @@
+# Dependencies and builds
+node_modules/
+dist/
+build/
+.next/
+.astro/
+out/
+coverage/
+*.tsbuildinfo
+next-env.d.ts
+
+# Generated from the contract: Nx rebuilds it (acme-contract:openapi)
+packages/acme-contract/openapi.json
+
+# Tool caches and local state
+.nx/
+.e2e/
+.cache/
+/.claude/
+*.log
+.idea/
+.vscode/
+.DS_Store
+*.swp
+*~
+
+# Secrets and local data
+.env*
+!.env.example
+*.pem
+*.key
+*.p12
+.local/

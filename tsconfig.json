@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["bun"]
+  },
+  "include": [
+    "*.config.ts",
+    "packages/*/oxlint.config.ts",
+    "packages/*/vitest.config.ts",
+    "scripts/**/*.ts"
+  ]
+}

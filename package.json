@@ -1,0 +1,34 @@
+{
+  "name": "acme",
+  "private": true,
+  "license": "FSL-1.1-ALv2",
+  "workspaces": [
+    "packages/*"
+  ],
+  "type": "module",
+  "scripts": {
+    "references": "bun scripts/references.ts",
+    "check": "ultracite check",
+    "fix": "ultracite fix",
+    "typecheck": "tsc --noEmit -p . && nx run-many -t typecheck",
+    "test": "nx run-many -t test",
+    "build": "nx run-many -t build",
+    "nx": "nx"
+  },
+  "devDependencies": {
+    "@types/bun": "1.4.4",
+    "@types/node": "26.6.6",
+    "effect": "4.1.2",
+    "nx": "24.0.5",
+    "oxfmt": "0.77.0",
+    "oxlint": "1.92.0",
+    "oxlint-tsgolint": "7.0.2006",
+    "typescript": "7.0.2",
+    "ultracite": "8.1.1"
+  },
+  "engines": {
+    "bun": "1.4.4",
+    "node": ">=26.13.0"
+  },
+  "packageManager": "bun@1.4.4"
+}
