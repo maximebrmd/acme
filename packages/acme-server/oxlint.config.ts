@@ -1,5 +1,6 @@
 import { defineConfig } from "oxlint";
 import type { OxlintOverride } from "oxlint";
+import drizzle from "ultracite/oxlint/drizzle";
 import vitest from "ultracite/oxlint/vitest";
 
 import root from "../../oxlint.config.ts";
@@ -150,7 +151,7 @@ const layerOverrides: OxlintOverride[] = (
 // root config and repeats the properties that extends doesn't carry over.
 export default defineConfig({
   env: root.env ?? {},
-  extends: [root, vitest],
+  extends: [root, drizzle, vitest],
   ignorePatterns: root.ignorePatterns ?? [],
   overrides: [
     {
