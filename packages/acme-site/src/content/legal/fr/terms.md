@@ -26,7 +26,7 @@ Lorsque vous connectez un compte de réseau social, vous autorisez Acme à agir 
 
 Votre utilisation de chaque plateforme reste soumise à ses propres conditions. Les plateformes peuvent modifier ou restreindre l’accès à leurs services, ce qui peut changer ce qu’Acme est en mesure d’y faire.
 
-Lorsqu’une plateforme ne confirme pas si une publication a bien été mise en ligne, Acme la marque comme non confirmée au lieu de réessayer, afin qu’elle ne soit pas publiée deux fois. Vérifiez sur la plateforme avant de republier une telle publication.
+[À confirmer une fois la fonctionnalité livrée : lorsqu’une plateforme ne confirme pas si une publication a bien été mise en ligne, Acme la marque comme non confirmée au lieu de réessayer, afin qu’elle ne soit pas diffusée deux fois. Vérifiez sur la plateforme avant de republier une telle publication.]
 
 [Responsabilités et limites applicables à la publication via des plateformes tierces.]
 

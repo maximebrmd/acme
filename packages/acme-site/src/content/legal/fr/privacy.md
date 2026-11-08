@@ -34,6 +34,12 @@ Ces catégories suivent le service tel qu’il est conçu. [Confirmer chacune d�
 - **Données techniques** : adresses IP, informations sur le navigateur et journaux produits lorsque vous utilisez le service.
 - **Communications** : les messages que vous nous envoyez et les e-mails que nous vous envoyons.
 
+[La source des données vous concernant lorsqu’une autre personne les fournit, comme l’adresse e-mail d’une invitation à une organisation (article 14, paragraphe 2, point f), du RGPD).]
+
+## Caractère obligatoire des données
+
+[Les données requises pour créer un compte ou utiliser une fonctionnalité, si cette exigence est réglementaire ou contractuelle, et les conséquences si elles ne sont pas fournies (article 13, paragraphe 2, point e), du RGPD).]
+
 ## Finalités et bases légales
 
 | Finalité                                                                  | Données                                               | Base légale (article 6, paragraphe 1, du RGPD)                 |
@@ -52,7 +58,7 @@ Lorsqu’un traitement repose sur des intérêts légitimes, vous pouvez vous y 
 
 Lorsque vous connectez un compte de réseau social, la plateforme partage des données avec Acme dans la limite des autorisations que vous accordez. Acme les utilise pour diffuser les publications que vous planifiez et pour montrer leurs performances. [Décrire tout autre usage, et confirmer que chaque usage respecte les conditions pour développeurs de chaque plateforme à laquelle Acme se connecte.]
 
-Vous pouvez déconnecter un compte dans Acme, et révoquer l’accès d’Acme depuis les réglages de la plateforme elle-même.
+[À confirmer une fois la fonctionnalité livrée : vous pouvez déconnecter un compte dans Acme.] Vous pouvez aussi révoquer l’accès d’Acme depuis les réglages de la plateforme elle-même.
 
 ## Destinataires et sous-traitants
 
@@ -109,7 +115,7 @@ Vous avez aussi le droit d’introduire une réclamation auprès d’une autorit
 
 ## Sécurité
 
-Les jetons d’accès des comptes connectés sont stockés chiffrés. [Décrire les autres mesures techniques et organisationnelles en place (article 32 du RGPD).]
+[À confirmer une fois la fonctionnalité livrée : les jetons d’accès des comptes connectés sont stockés chiffrés avec AES-256-GCM.] [Décrire les autres mesures techniques et organisationnelles en place (article 32 du RGPD).]
 
 ## Enfants
 

@@ -34,6 +34,12 @@ These categories follow the service as it is designed. [Confirm each one against
 - **Technical data**: IP addresses, browser details and logs produced when you use the service.
 - **Communications**: the messages you send us and the emails we send you.
 
+[Where data about you comes from when someone else provides it, such as the email address in an invitation to an organisation (Article 14(2)(f)).]
+
+## Whether you must provide your data
+
+[Which data is required to create an account or use a feature, whether that is a statutory or a contractual requirement, and what happens if it is not provided (Article 13(2)(e)).]
+
 ## Purposes and legal bases
 
 | Purpose                                                                 | Data                                               | Legal basis (GDPR Article 6(1))                                   |
@@ -52,7 +58,7 @@ Where processing relies on legitimate interests, you can object to it at any tim
 
 When you connect a social media account, the platform shares data with Acme within the permissions you grant. Acme uses that data to publish the posts you schedule and to show how they perform. [Describe any other use, and confirm that each use complies with the developer terms of every platform Acme connects to.]
 
-You can disconnect an account in Acme, and you can revoke Acme's access from the platform's own settings.
+[Confirm once built: you can disconnect an account in Acme.] You can also revoke Acme's access from the platform's own settings.
 
 ## Recipients and sub-processors
 
@@ -109,7 +115,7 @@ You also have the right to lodge a complaint with a supervisory authority, in pa
 
 ## Security
 
-Access tokens for connected accounts are stored encrypted. [Describe the other technical and organisational measures in place (GDPR Article 32).]
+[Confirm once built: access tokens for connected accounts are stored encrypted with AES-256-GCM.] [Describe the other technical and organisational measures in place (GDPR Article 32).]
 
 ## Children
 
