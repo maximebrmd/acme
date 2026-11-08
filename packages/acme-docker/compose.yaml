@@ -6,7 +6,7 @@
 # usual port with a leading 1) so they stay clear of other local stacks; copy
 # .env.example to .env to change any of them.
 #
-#   Postgres        127.0.0.1:15432   user, password and database "acme"
+#   Postgres        127.0.0.1:15432   DATABASE_URL=postgres://acme:acme@127.0.0.1:15432/acme
 #   S3 (SeaweedFS)  127.0.0.1:18333   bucket "acme-media", key "acme"
 #   SeaweedFS filer 127.0.0.1:18888   browse the stored files
 #   SMTP (Mailpit)  127.0.0.1:11025   any user and password
