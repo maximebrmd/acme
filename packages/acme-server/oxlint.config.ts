@@ -158,6 +158,14 @@ export default defineConfig({
       files: ["src/**", "test/**"],
       rules: { "import/no-relative-parent-imports": "error" },
     },
+    {
+      // Oxlint's throw-new-error reports every call to a function whose name
+      // ends in "Error", thrown or not, so it rejects
+      // `class NotFound extends Schema.TaggedError<NotFound>()(…)`, the way
+      // Effect defines typed errors. Errors here are yielded, never thrown.
+      files: ["src/**", "test/**"],
+      rules: { "unicorn/throw-new-error": "off" },
+    },
     ...layerOverrides,
   ],
 });
