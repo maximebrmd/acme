@@ -88,19 +88,31 @@ describe("compose.yaml", () => {
   });
 });
 
+// A tag for reading, then the digest that fixes the bytes.
+const isPinnedByDigest = (image: string): boolean =>
+  /^[^@\s]+:[^@\s]+@sha256:[\da-f]{64}$/u.test(image);
+
 describe("server.Dockerfile", () => {
   const bunVersion = read("..", "..", "..", ".bun-version").trim();
 
-  it("builds on the workspace's Bun version", () => {
-    const bases = instructions("FROM").map((from) => from.split(" ").at(0));
+  const bases = instructions("FROM").map((from) => from.split(" ").at(0) ?? "");
 
+  it("builds on the workspace's Bun version", () => {
     const prefix = `oven/bun:${bunVersion}-`;
 
     expect(bases.length).toBeGreaterThan(0);
 
-    expect(
-      bases.filter((base) => base?.startsWith(prefix) !== true)
-    ).toStrictEqual([]);
+    expect(bases.filter((base) => !base.startsWith(prefix))).toStrictEqual([]);
+  });
+
+  it("pins its base images by digest", () => {
+    expect(bases.filter((base) => !isPinnedByDigest(base))).toStrictEqual([]);
+  });
+
+  it("pins its BuildKit frontend by digest", () => {
+    const syntax = dockerfile.split("\n").at(0) ?? "";
+
+    expect(syntax.replace("# syntax=", "")).toSatisfy(isPinnedByDigest);
   });
 
   it("runs as a user without privileges", () => {
