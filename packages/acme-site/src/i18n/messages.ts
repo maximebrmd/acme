@@ -81,7 +81,7 @@ const fr: Messages = {
   },
   footer: {
     language: "Langue",
-    legal: "Mentions légales",
+    legal: "Informations juridiques",
     license:
       "Fair source sous la Functional Source License (FSL-1.1-ALv2). « Acme » est un nom provisoire.",
   },
