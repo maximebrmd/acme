@@ -29,14 +29,6 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
-# Effect exports a signal only when its OTEL_<SIGNAL>_EXPORTER names otlp,
-# where the OpenTelemetry specification defaults to it. Default them here, so
-# setting OTEL_EXPORTER_OTLP_ENDPOINT alone turns export on; without an
-# endpoint nothing is sent. Set one to "none" to turn that signal off.
-ENV OTEL_TRACES_EXPORTER=otlp \
-    OTEL_METRICS_EXPORTER=otlp \
-    OTEL_LOGS_EXPORTER=otlp
-
 COPY --from=dependencies /app/node_modules node_modules
 COPY --from=dependencies /app/packages/acme-contract/node_modules packages/acme-contract/node_modules
 COPY --from=dependencies /app/packages/acme-server/node_modules packages/acme-server/node_modules

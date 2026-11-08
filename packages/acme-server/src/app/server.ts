@@ -1,10 +1,10 @@
 import { BunHttpServer } from "@effect/platform-bun";
 import { Api } from "acme-contract";
 import { Config, Effect, Layer } from "effect";
-import { FetchHttpClient, HttpRouter } from "effect/http";
+import { HttpRouter } from "effect/http";
 import { HttpApiBuilder } from "effect/http-api";
-import { Otlp, OtlpSerialization } from "effect/observability";
 
+import { ObservabilityLive } from "#app/observability.ts";
 import { SystemHandlers } from "#app/system.ts";
 import { DatabaseLive } from "#shared/infrastructure/database.ts";
 import { MigrationsLive } from "#shared/infrastructure/migrations.ts";
@@ -12,16 +12,6 @@ import { MigrationsLive } from "#shared/infrastructure/migrations.ts";
 const ApiLive = HttpApiBuilder.layer(Api, {
   openapiPath: "/openapi.json",
 }).pipe(Layer.provide(SystemHandlers));
-
-// Exports logs, metrics and traces to the OpenTelemetry Collector named by the
-// standard OTEL_* variables (OTEL_EXPORTER_OTLP_ENDPOINT…), and does nothing
-// when they are unset, so self-hosters need no collector.
-const ObservabilityLive = Otlp.layerFromConfig({
-  resource: { serviceName: "acme-server" },
-}).pipe(
-  Layer.provide(OtlpSerialization.layerJson),
-  Layer.provide(FetchHttpClient.layer)
-);
 
 const HttpServerLive = Layer.unwrap(
   Effect.gen(function* HttpServerLive() {
