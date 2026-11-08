@@ -1,0 +1,36 @@
+---
+import { getRelativeLocaleUrl } from "astro:i18n";
+
+import { locales } from "../i18n/locales.ts";
+import type { Locale } from "../i18n/locales.ts";
+import { localeNames } from "../i18n/messages.ts";
+
+interface Props {
+  readonly label: string;
+  readonly locale: Locale;
+  /** The current page's path below its locale prefix. */
+  readonly path: string;
+}
+
+const { label, locale, path } = Astro.props;
+---
+
+<nav aria-label={label}>
+  <ul class="flex gap-3 text-sm">
+    {
+      locales.map((code) => (
+        <li>
+          <a
+            href={getRelativeLocaleUrl(code, path)}
+            hreflang={code}
+            lang={code}
+            aria-current={code === locale ? "page" : undefined}
+            class="text-neutral-600 underline-offset-4 hover:text-neutral-900 hover:underline aria-[current=page]:font-semibold aria-[current=page]:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100 dark:aria-[current=page]:text-neutral-100"
+          >
+            {localeNames[code]}
+          </a>
+        </li>
+      ))
+    }
+  </ul>
+</nav>

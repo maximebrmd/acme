@@ -1,0 +1,34 @@
+---
+title: Introduction
+description: Acme est une plateforme de planification pour les réseaux sociaux. Écrivez une publication une fois, planifiez-la sur plusieurs plateformes et suivez ses résultats, seul ou en équipe.
+sidebar:
+  order: 1
+---
+
+Acme est une plateforme de planification pour les réseaux sociaux. « Acme » est un nom provisoire.
+
+<Callout type="warning" title="En cours de développement">
+  Acme se construit en public et n’est pas encore sorti. Ces pages décrivent le
+  fonctionnement prévu et s’étofferont au fil des fonctionnalités.
+</Callout>
+
+## Ce que fait Acme [#what-it-does]
+
+- **Écrire une fois.** Rédigez une publication dans un seul éditeur, puis adaptez-la à chaque plateforme là où elle doit différer.
+- **Planifier sur plusieurs plateformes.** Choisissez les comptes et l’heure. Acme publie chaque publication à l’échéance, dans le fuseau horaire choisi, changements d’heure compris.
+- **Suivre les résultats.** Acme recueille les statistiques de chaque plateforme pour vos publications, pour voir au même endroit ce qui a fonctionné.
+- **Travailler en équipe.** Les organisations ont des membres et des rôles : plusieurs personnes peuvent rédiger, relire et planifier ensemble.
+
+Acme ne republie jamais à l’aveugle : quand une plateforme ne confirme pas qu’une publication est partie, Acme la marque comme non confirmée et vous invite à vérifier sur la plateforme avant de republier.
+
+## Auto-hébergeable [#self-hostable]
+
+Chaque service extérieur dont Acme dépend a une option par défaut auto-hébergeable. Une instance auto-hébergée n’a besoin que de Postgres et d’un stockage compatible S3 ; l’e-mail, la facturation, le captcha, l’IA et la télémétrie sont facultatifs. La page [Auto-hébergement](/self-hosting) liste les services et les réglages qu’ils lisent.
+
+## Fair source [#fair-source]
+
+Le code source est public, sous la Functional Source License (FSL-1.1-ALv2). Vous pouvez utiliser, modifier et auto-héberger Acme pour tout usage, sauf le proposer à d’autres comme produit ou service commercial concurrent, et chaque version passe aussi sous licence Apache 2.0 deux ans après sa sortie. C’est pourquoi Acme se dit « fair source » plutôt qu’open source.
+
+## Construire sur l’API [#api]
+
+Tout ce que fait l’application web passe par la même API HTTP. [La présentation de l’API](/api-overview) explique son organisation, et la [référence de l’API](/reference) liste chaque point d’accès.

@@ -1,0 +1,4 @@
+/* The site's only stylesheet: Tailwind and its typography plugin for the
+   legal documents. Pages style themselves with Tailwind classes. */
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";

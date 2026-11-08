@@ -1,0 +1,45 @@
+---
+title: Self-hosting
+description: The services a self-hosted Acme instance needs, the optional ones, and the environment variables it reads.
+sidebar:
+  order: 2
+---
+
+Acme reaches every outside service through a port with a self-hostable default, so a self-hosted instance needs only two services of its own: Postgres and an S3-compatible object store. Everything else is optional and stays off until you configure it.
+
+<Callout type="warning" title="Before the first release">
+  Acme has not been released yet, and there are no published images to run. This
+  page describes the self-hosting model the code follows. Variables that are not
+  listed below are not settled yet, and every value shown is an example.
+</Callout>
+
+## Services [#services]
+
+| Service        | Needed   | What Acme uses it for                                                                                               | Options                                                                            |
+| -------------- | -------- | ------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| Postgres       | Yes      | All data, and the durable jobs that publish posts, refresh platform tokens and pull analytics. Acme needs no Redis. | Any Postgres server                                                                |
+| Object storage | Yes      | Uploaded media                                                                                                      | Any S3-compatible API                                                              |
+| Email          | Optional | Email notifications                                                                                                 | Resend, or any SMTP server                                                         |
+| Billing        | Optional | Plans and subscriptions                                                                                             | Stripe. Without a key, billing is off and no plan limits apply.                    |
+| Captcha        | Optional | Bot protection                                                                                                      | Cloudflare Turnstile. Without a key, the captcha is off.                           |
+| AI             | Optional | AI features                                                                                                         | Any OpenAI-compatible endpoint, or an Anthropic API key                            |
+| Telemetry      | Optional | Logs, metrics and traces                                                                                            | Any OpenTelemetry (OTLP) collector. Nothing is exported unless an endpoint is set. |
+
+Acme's own deployment stores media on Cloudflare R2, and its development stack runs SeaweedFS for storage and Mailpit for email. A self-hosted instance can use any of these, or any other store and mail server that speaks the same protocols.
+
+## Environment variables [#environment-variables]
+
+The server reads plain environment variables, so its images run on any host. The variables it reads today:
+
+| Variable                      | Default | Example                      | What it does                                                                                    |
+| ----------------------------- | ------- | ---------------------------- | ----------------------------------------------------------------------------------------------- |
+| `PORT`                        | `3000`  | `8080`                       | The port the HTTP server listens on.                                                            |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | unset   | `http://otel-collector:4318` | The OpenTelemetry collector that receives logs, metrics and traces. Unset, nothing is exported. |
+
+The other standard OpenTelemetry variables, such as `OTEL_EXPORTER_OTLP_HEADERS` and `OTEL_SERVICE_NAME`, are read as the OpenTelemetry specification defines them.
+
+The variables for the database, storage, email, billing, captcha and AI will be listed here as each adapter ships.
+
+## In front of Acme [#reverse-proxy]
+
+Run a reverse proxy that terminates TLS, such as Caddy, in front of the server, and expose only the proxy. The server answers `GET /health` with `204 No Content` once it is up, which suits a container health check.

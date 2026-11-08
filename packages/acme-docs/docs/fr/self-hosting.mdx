@@ -1,0 +1,46 @@
+---
+title: Auto-hébergement
+description: Les services nécessaires à une instance Acme auto-hébergée, les services facultatifs, et les variables d’environnement qu’elle lit.
+sidebar:
+  order: 2
+---
+
+Acme accède à chaque service extérieur par un port doté d’une option par défaut auto-hébergeable : une instance auto-hébergée n’a donc besoin que de deux services à elle, Postgres et un stockage objet compatible S3. Tout le reste est facultatif et reste désactivé tant que vous ne le configurez pas.
+
+<Callout type="warning" title="Avant la première version">
+  Acme n’est pas encore sorti et aucune image n’est publiée. Cette page décrit
+  le modèle d’auto-hébergement que suit le code. Les variables absentes de la
+  liste ci-dessous ne sont pas encore fixées, et toutes les valeurs indiquées
+  sont des exemples.
+</Callout>
+
+## Services [#services]
+
+| Service        | Requis     | Usage dans Acme                                                                                                                                                          | Options                                                                                          |
+| -------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------ |
+| Postgres       | Oui        | Toutes les données, et les tâches durables qui publient les posts, renouvellent les jetons des plateformes et récupèrent les statistiques. Acme n’a pas besoin de Redis. | N’importe quel serveur Postgres                                                                  |
+| Stockage objet | Oui        | Médias téléversés                                                                                                                                                        | N’importe quelle API compatible S3                                                               |
+| E-mail         | Facultatif | Notifications par e-mail                                                                                                                                                 | Resend, ou n’importe quel serveur SMTP                                                           |
+| Facturation    | Facultatif | Offres et abonnements                                                                                                                                                    | Stripe. Sans clé, la facturation est désactivée et aucune limite d’offre ne s’applique.          |
+| Captcha        | Facultatif | Protection contre les robots                                                                                                                                             | Cloudflare Turnstile. Sans clé, le captcha est désactivé.                                        |
+| IA             | Facultatif | Fonctionnalités d’IA                                                                                                                                                     | N’importe quel point d’accès compatible OpenAI, ou une clé d’API Anthropic                       |
+| Télémétrie     | Facultatif | Journaux, métriques et traces                                                                                                                                            | N’importe quel collecteur OpenTelemetry (OTLP). Rien n’est exporté sans point d’accès configuré. |
+
+Le déploiement d’Acme stocke les médias sur Cloudflare R2, et son environnement de développement utilise SeaweedFS pour le stockage et Mailpit pour l’e-mail. Une instance auto-hébergée peut utiliser ceux-ci, ou tout autre stockage et serveur de messagerie qui parle les mêmes protocoles.
+
+## Variables d’environnement [#environment-variables]
+
+Le serveur lit de simples variables d’environnement : ses images tournent sur n’importe quel hôte. Les variables qu’il lit aujourd’hui :
+
+| Variable                      | Par défaut  | Exemple                      | Rôle                                                                                                       |
+| ----------------------------- | ----------- | ---------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| `PORT`                        | `3000`      | `8080`                       | Le port d’écoute du serveur HTTP.                                                                          |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | non définie | `http://otel-collector:4318` | Le collecteur OpenTelemetry qui reçoit les journaux, métriques et traces. Non définie, rien n’est exporté. |
+
+Les autres variables standard d’OpenTelemetry, comme `OTEL_EXPORTER_OTLP_HEADERS` et `OTEL_SERVICE_NAME`, sont lues comme le définit la spécification OpenTelemetry.
+
+Les variables de la base de données, du stockage, de l’e-mail, de la facturation, du captcha et de l’IA seront listées ici à mesure que chaque adaptateur sera livré.
+
+## Devant Acme [#reverse-proxy]
+
+Placez devant le serveur un proxy inverse qui termine TLS, comme Caddy, et n’exposez que le proxy. Le serveur répond à `GET /health` par `204 No Content` dès qu’il est prêt, ce qui convient à un contrôle de santé de conteneur.
