@@ -192,10 +192,10 @@ self-hoster needs only Postgres and an S3-compatible store:
 - billing: Stripe, off when no key is set (no plan limits);
 - captcha: Turnstile, off when no key is set;
 - AI: any OpenAI-compatible endpoint, or an Anthropic key;
-- telemetry: OTLP export of each signal only when `OTEL_EXPORTER_OTLP_ENDPOINT`
-  is set and `OTEL_<SIGNAL>_EXPORTER` (`TRACES`, `METRICS`, `LOGS`) is `otlp`.
-  The server image defaults all three to `otlp`; a server run on the host
-  needs them set.
+- telemetry: OTLP export of logs, metrics and traces only when
+  `OTEL_EXPORTER_OTLP_ENDPOINT` is set (`src/app/observability.ts` defaults
+  each `OTEL_<SIGNAL>_EXPORTER` to `otlp`; set one to `none` to turn that
+  signal off).
 
 Images read `PORT` and plain environment variables and run anywhere.
 

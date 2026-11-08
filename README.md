@@ -66,9 +66,7 @@ dev server blocks its dev resources for other hostnames, `127.0.0.1` included.
 To send the server's telemetry to the stack, and see it in Grafana:
 
 ```sh
-OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:14318 \
-  OTEL_TRACES_EXPORTER=otlp OTEL_METRICS_EXPORTER=otlp OTEL_LOGS_EXPORTER=otlp \
-  bun nx run acme-server:dev
+OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:14318 bun nx run acme-server:dev
 ```
 
 ### Database

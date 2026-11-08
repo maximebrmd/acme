@@ -12,7 +12,7 @@ export const healthTimeout = Duration.seconds(5);
 // unexpected body). The CLI renders `userMessage` and exits with 1.
 //
 // Data.TaggedError rather than Schema.TaggedError: this error is printed,
-// never encoded, and oxlint's unicorn/throw-new-error exempts only Data's.
+// never encoded, so it needs no schema.
 export class HealthCheckFailed extends Data.TaggedError("HealthCheckFailed")<{
   readonly detail: string;
   readonly reason: "unhealthy" | "unreachable";
