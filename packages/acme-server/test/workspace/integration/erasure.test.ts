@@ -428,4 +428,76 @@ layer(IntegrationLive, {
         assert.strictEqual(together.status, 204);
       })
   );
+
+  it.effect(
+    "copy out of every table no secret, and nothing of another member",
+    () =>
+      Effect.gen(function* exports() {
+        const app = yield* TestApp;
+        const sql = yield* SqlClient.SqlClient;
+        const lee = yield* signedUp("lee");
+        const kim = yield* signedUp("kim");
+        const own = yield* workspaceOf(lee, "Studio");
+        const shared = yield* workspaceOf(kim, "Agency");
+
+        yield* join(kim, shared, lee, "admin");
+        yield* fill(shared, lee);
+        yield* fill(own, lee);
+        yield* fillPerson(lee);
+        yield* seedNotice(kim.id, shared, "@kim@social.example");
+
+        const secrets = yield* sql`
+          SELECT access_token AS secret FROM channels.channels WHERE workspace_id IN (${own}, ${shared})
+          UNION ALL SELECT secret FROM channels.connect_attempts WHERE workspace_id IN (${own}, ${shared})
+          UNION ALL SELECT accounts FROM channels.connect_choices WHERE workspace_id IN (${own}, ${shared})
+          UNION ALL SELECT key FROM auth.apikey WHERE reference_id IN (${own}, ${shared})
+          UNION ALL SELECT token FROM auth.oauth_access_token WHERE user_id = ${lee.id}
+          UNION ALL SELECT token FROM auth.oauth_refresh_token WHERE user_id = ${lee.id}
+          UNION ALL SELECT token FROM auth.session WHERE user_id = ${lee.id}
+          UNION ALL SELECT password FROM auth.account WHERE user_id = ${lee.id} AND password IS NOT NULL
+          UNION ALL SELECT split_part(identifier, ':', 2) FROM auth.verification WHERE value = ${lee.id}
+          UNION ALL SELECT device_code FROM auth.device_code WHERE user_id = ${lee.id}
+          UNION ALL SELECT stripe_customer_id FROM billing.subscriptions WHERE workspace_id = ${own}
+          UNION ALL SELECT stripe_subscription_id FROM billing.subscriptions WHERE workspace_id = ${own}`.pipe(
+          Effect.flatMap(
+            Schema.decodeUnknownEffect(
+              Schema.Array(Schema.Struct({ secret: Schema.String }))
+            )
+          ),
+          Effect.orDie
+        );
+
+        assert.isAtLeast(secrets.length, 14);
+
+        const reply = yield* app.request("/api/me/export", {
+          headers: { cookie: lee.cookies },
+        });
+
+        assert.strictEqual(reply.status, 200);
+
+        const text = JSON.stringify(reply.body);
+
+        for (const { secret } of secrets) {
+          assert.notInclude(text, secret);
+        }
+
+        // Kim's address and notices are Kim's, though Lee works with Kim.
+        assert.notInclude(text, kim.email);
+        assert.notInclude(text, "@kim@social.example");
+        assert.include(text, lee.email);
+
+        for (const [person, workspaceId, name] of [
+          [lee, own, "Studio"],
+          [kim, shared, "Agency"],
+        ] as const) {
+          const deleted = yield* app.request(`/api/workspaces/${workspaceId}`, {
+            body: { name },
+            headers: { cookie: person.cookies },
+            method: "DELETE",
+          });
+
+          assert.strictEqual(deleted.status, 204);
+        }
+      })
+  );
 });
