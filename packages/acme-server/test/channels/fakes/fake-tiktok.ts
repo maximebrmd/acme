@@ -65,9 +65,13 @@ const v2Error = (code: string, status: number) =>
  * authorization page (`approve` plays the creator), exchanges them with the
  * client's key and secret in the form, refreshes with refresh tokens that
  * work once, each answer bringing the next, and revokes access tokens.
- * `failNext` makes the next answers to a route failures.
+ * `failNext` makes the next answers to a route failures. `openId` names the
+ * creator otherwise: a test that disconnects gives one of its own, since a
+ * grant is revoked only once no channel, in any workspace, connects it.
  */
-export const fakeTikTok = Effect.fnUntraced(function* fakeTikTok() {
+export const fakeTikTok = Effect.fnUntraced(function* fakeTikTok(
+  openId: string = tiktokCreator.open_id
+) {
   const codes = new Map<string, PendingCode>();
   const accessTokens = new Set<string>();
   const refreshTokens = new Set<string>();
@@ -90,7 +94,7 @@ export const fakeTikTok = Effect.fnUntraced(function* fakeTikTok() {
     return json({
       access_token: access,
       expires_in: 86_400,
-      open_id: tiktokCreator.open_id,
+      open_id: openId,
       refresh_expires_in: 15_552_000,
       refresh_token: refresh,
       scope,
@@ -142,6 +146,7 @@ export const fakeTikTok = Effect.fnUntraced(function* fakeTikTok() {
 
     for (const [field, value] of Object.entries({
       ...tiktokCreator,
+      open_id: openId,
       username,
     })) {
       if (fields.has(field) && value !== undefined) {

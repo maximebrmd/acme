@@ -53,8 +53,10 @@ const callbackOf = (back: {
 const AdaptersTest = Layer.mergeAll(ConnectAdaptersTest, RecordedNotices.layer);
 
 // TikTok, and the use case connecting its synthetic creator.
-const onTikTok = Effect.fn("test.onTikTok")(function* onTikTok() {
-  const tiktok = yield* fakeTikTok();
+const onTikTok = Effect.fn("test.onTikTok")(function* onTikTok(
+  openId?: string
+) {
+  const tiktok = yield* fakeTikTok(openId);
   const authorizer = yield* tiktokAuthorizerOn(tiktok.hosts);
   const connect = yield* connectChannelOver(authorizer);
 
@@ -370,8 +372,9 @@ layer(AdaptersTest)("connecting a TikTok account", (it) => {
     "revokes the creator's token when the channel is disconnected",
     () =>
       Effect.gen(function* revokes() {
-        const on = yield* onTikTok();
         const workspaceId = yield* freshWorkspace;
+        // A creator no other test's channel connects.
+        const on = yield* onTikTok(`-000synthetic-open-id-${workspaceId}`);
         const channel = yield* connected(on, workspaceId);
 
         yield* DisconnectChannel.use((useCase) =>
@@ -399,8 +402,8 @@ layer(AdaptersTest)("connecting a TikTok account", (it) => {
 
   it.effect("disconnects the channel when TikTok does not revoke", () =>
     Effect.gen(function* stillDisconnects() {
-      const on = yield* onTikTok();
       const workspaceId = yield* freshWorkspace;
+      const on = yield* onTikTok(`-000synthetic-open-id-${workspaceId}`);
       const channel = yield* connected(on, workspaceId);
 
       on.tiktok.failNext("POST /v2/oauth/revoke/", [
