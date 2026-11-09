@@ -51,6 +51,7 @@ const picker = async (
       accounts={accounts}
       cancel={null}
       error={null}
+      startOver={<button type="button">Start over</button>}
       isPending={false}
       onSubmit={constVoid}
       onToggle={constVoid}
@@ -116,6 +117,39 @@ describe(AccountPickerView, () => {
 
     expect(html).toContain(
       "This connection expired or was started elsewhere. Start again."
+    );
+  });
+
+  // The choice is gone: only a new sign-in brings the accounts back.
+  it("offers a new sign-in, and no more choosing, once the choice is spent", async () => {
+    const html = await picker("en", {
+      error: "invalidState",
+      selected: ["101"],
+    });
+
+    expect(html).toMatch(/type="submit"[^>]*aria-disabled="true"/u);
+    expect(html).toContain("Start over");
+    expect(html).not.toContain("Choose again");
+  });
+
+  // The server kept the choice: the member tries again, or signs in again.
+  it.each([
+    ["en", "unreachable", "Choose again, or sign in with Facebook again for a new list."],
+    ["fr", "planLimit", "Choisissez à nouveau, ou reconnectez-vous avec Facebook pour une nouvelle liste."],
+  ] as const)(
+    "lets the member try again after a failure that kept the choice (%s, %s)",
+    async (locale, error, hint) => {
+      const html = await picker(locale, { error, selected: ["101"] });
+
+      expect(html).not.toMatch(/type="submit"[^>]*aria-disabled="true"/u);
+      expect(html).toContain(hint);
+      expect(html).toContain("Start over");
+    }
+  );
+
+  it("offers no new sign-in before anything failed", async () => {
+    expect(await picker("en", { selected: ["101"] })).not.toContain(
+      "Start over"
     );
   });
 });
