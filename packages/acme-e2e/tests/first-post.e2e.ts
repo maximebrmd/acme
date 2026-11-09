@@ -1,0 +1,168 @@
+import { randomUUID } from "node:crypto";
+
+import { describe, test } from "@e2e-dev/web";
+import { credentials, expect } from "e2e";
+
+import { seedChannel } from "./support/channels.ts";
+import { emailedLink } from "./support/mailpit.ts";
+
+// One new member's first steps, in order, in one browser: each test starts
+// where the previous one left off. The module loads again for each attempt,
+// so a retry signs up under a new address.
+const run = randomUUID();
+const name = "Sam Example";
+const workspace = "Field Notes";
+const handle = "@notes@social.example";
+const text = "Our first field note, written once and scheduled from Acme.";
+
+// The calendar names each post "<time>, <status>: <text>".
+const scheduledPost = new RegExp(`, Scheduled: ${RegExp.escape(text)}$`, "u");
+
+// The member account from e2e.config.ts, under an address of this run.
+const address = () =>
+  credentials.user("member").username.replace("@", `+${run}@`);
+
+const password = () => credentials.user("member").password;
+
+// The workspace's pages live under /app/<id>; the test that creates it reads
+// the id from its links.
+let workspaceId = "";
+
+describe("a new member's first post", { serial: true }, () => {
+  test("signs up", async ({ app, screen }) => {
+    await app.open("/sign-up");
+    await screen.getByLabel("Name").fill(name);
+    await screen.getByLabel("Email").fill(address());
+    await screen.getByLabel("Password").fill(password());
+    await screen.getByRole("button", "Create my account").tap();
+
+    await expect(screen.getByText("Check your inbox")).toBeVisible();
+  });
+
+  test("confirms the address from the email", async ({ browser, screen }) => {
+    await browser.goto(
+      await emailedLink(address(), "Confirm your email for Acme")
+    );
+
+    await expect(screen.getByRole("heading", "Email confirmed")).toBeVisible();
+  });
+
+  test("signs in", async ({ app, browser, screen }) => {
+    // The confirmation link signed the member in: start a new session.
+    await browser.clearCookies();
+    await app.open("/sign-in");
+    await screen.getByLabel("Email").fill(address());
+    await screen.getByLabel("Password").fill(password());
+    // The header has a "Sign in" button too.
+    await screen.getByRole("main").getByRole("button", "Sign in").tap();
+
+    await expect(screen.getByRole("heading", `Hello, ${name}`)).toBeVisible();
+    await expect(browser).toHaveURL("/app");
+  });
+
+  test("creates a workspace", async ({ screen }) => {
+    await screen.getByLabel("Workspace name").fill(workspace);
+    await screen.getByRole("button", "Create the workspace").tap();
+
+    const links = screen.getByRole("navigation", `Posts of ${workspace}`);
+    const calendar = links.getByRole("link", "Calendar");
+
+    await expect(calendar).toBeVisible();
+
+    const href = (await calendar.getAttribute("href")) ?? "";
+
+    workspaceId =
+      /^\/app\/(?<id>[^/]+)\/calendar$/u.exec(href)?.groups?.["id"] ?? "";
+    expect(workspaceId).not.toBe("");
+  });
+
+  test("has no channel yet", async ({ browser, screen }) => {
+    await screen
+      .getByRole("navigation", `Posts of ${workspace}`)
+      .getByRole("link", "Channels")
+      .tap();
+
+    await expect(
+      screen.getByRole("heading", "Channels", { level: 1 })
+    ).toBeVisible();
+    await expect(
+      screen.getByText("No account is connected yet.")
+    ).toBeVisible();
+    await expect(browser).toHaveURL(`/app/${workspaceId}/channels`);
+  });
+
+  test("writes a post and saves it as a draft", async ({
+    app,
+    browser,
+    screen,
+  }) => {
+    await seedChannel(workspaceId, handle);
+    await app.open("/app");
+    await screen
+      .getByRole("navigation", `Posts of ${workspace}`)
+      .getByRole("link", "New post")
+      .tap();
+
+    await expect(screen.getByRole("heading", "New post")).toBeVisible();
+    await screen.getByRole("checkbox", handle).check();
+    await screen.getByRole("textbox", "Text for all channels").fill(text);
+    await screen.getByRole("button", "Save as draft").tap();
+
+    await expect(screen.getByText("Draft saved.")).toBeVisible();
+    await expect(browser).toHaveURL(
+      new RegExp(`/app/${workspaceId}/posts/[0-9a-f-]+$`, "u")
+    );
+  });
+
+  test("schedules it and finds it in the calendar", async ({
+    browser,
+    screen,
+  }) => {
+    // Late in the day, so the time is ahead whenever the test runs: a new
+    // post starts at the next full hour, which can be a minute away.
+    await screen.getByRole("textbox", "Time").fill("23:59");
+    await screen.getByRole("button", "Schedule").tap();
+
+    await expect(screen.getByRole("heading", "Calendar")).toBeVisible();
+    await expect(browser).toHaveURL(
+      new RegExp(`/app/${workspaceId}/calendar\\?date=`, "u")
+    );
+    await expect(screen.getByRole("link", scheduledPost)).toBeVisible();
+  });
+
+  test("cancels the scheduled post", async ({ screen }) => {
+    await screen.getByRole("link", scheduledPost).tap();
+    await expect(screen.getByRole("heading", "Scheduled post")).toBeVisible();
+    await screen.getByRole("button", "Cancel the post").tap();
+    await screen
+      .getByRole("dialog", "Cancel this post?")
+      .getByRole("button", "Cancel the post")
+      .tap();
+
+    await expect(screen.getByText("Post cancelled.")).toBeVisible();
+    await expect(screen.getByRole("heading", "Calendar")).toBeVisible();
+  });
+
+  test("reads the calendar in French", async ({ browser, screen }) => {
+    await screen.getByRole("button", "Language: English").tap();
+    await screen.getByRole("menuitemradio", "Français").tap();
+
+    await expect(screen.getByRole("heading", "Calendrier")).toBeVisible();
+    await expect(screen.getByRole("tab", "Semaine")).toBeVisible();
+    await expect(browser).toHaveURL(`/fr/app/${workspaceId}/calendar`);
+  });
+
+  test("signs out", async ({ app, browser, screen }) => {
+    await screen.getByRole("button", `Compte de ${name}`).tap();
+    await screen.getByRole("menuitem", "Se déconnecter").tap();
+
+    await expect(
+      screen.getByRole("heading", "Bienvenue sur Acme")
+    ).toBeVisible();
+    await expect(
+      screen.getByRole("banner").getByRole("button", "Se connecter")
+    ).toBeVisible();
+    await app.open("/fr/app");
+    await expect(browser).toHaveURL("/fr/sign-in");
+  });
+});
