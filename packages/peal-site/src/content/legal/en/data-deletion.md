@@ -1,12 +1,12 @@
 ---
 title: Data deletion
-description: How to delete your Acme account and its data, what is deleted, and what may be kept.
+description: How to delete your Peal account and its data, what is deleted, and what may be kept.
 draft: true
 ---
 
-Under the GDPR, you can ask for your personal data to be erased (Article 17); the [privacy policy](/privacy/) lists your other rights. This page explains how to delete your account and its data on the hosted Acme service at [Service domain].
+Under the GDPR, you can ask for your personal data to be erased (Article 17); the [privacy policy](/privacy/) lists your other rights. This page explains how to delete your account and its data on the hosted Peal service at [Service domain].
 
-## Delete your account in Acme
+## Delete your account in Peal
 
 [The steps in the app, for example Settings, then Account, then Delete account.]
 
@@ -16,13 +16,13 @@ Write to [Privacy contact email] from the email address of your account, so that
 
 ## Disconnect a social media account
 
-Disconnecting an account in Acme ends Acme's access to it. [Confirm what is deleted when an account is disconnected, such as its access tokens.]
+Disconnecting an account in Peal ends Peal's access to it. [Confirm what is deleted when an account is disconnected, such as its access tokens.]
 
-You can also revoke Acme's access from the platform's own settings, where it lists the apps connected to your account.
+You can also revoke Peal's access from the platform's own settings, where it lists the apps connected to your account.
 
 ## Requests from a platform
 
-[Some platforms notify the apps you remove from your account there. Describe how Acme handles such a request and how you can check its status, for example with a confirmation code.]
+[Some platforms notify the apps you remove from your account there. Describe how Peal handles such a request and how you can check its status, for example with a confirmation code.]
 
 ## What is deleted
 
@@ -36,7 +36,7 @@ Posts already published stay on the platforms they were published to. Delete the
 
 ## Self-hosted instances
 
-On a self-hosted instance of Acme, the person or organisation that runs it handles deletion requests. Contact them directly.
+On a self-hosted instance of Peal, the person or organisation that runs it handles deletion requests. Contact them directly.
 
 ## Contact
 

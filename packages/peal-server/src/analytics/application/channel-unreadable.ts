@@ -6,7 +6,7 @@ import { Schema } from "effect";
  * - `disconnected`: it left the workspace.
  * - `paused`: it is turned off, needs reconnecting, or its server reads
  *   nothing without a token it does not have; it may work again later.
- * - `unsupported`: Acme reads no counts on its platform.
+ * - `unsupported`: Peal reads no counts on its platform.
  */
 export class ChannelUnreadable extends Schema.TaggedError<ChannelUnreadable>()(
   "ChannelUnreadable",

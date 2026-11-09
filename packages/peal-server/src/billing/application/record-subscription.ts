@@ -44,7 +44,7 @@ export class RecordSubscription extends Context.Service<
       event: SubscriptionEvent
     ) => Effect.Effect<RecordedEvent, DatabaseError>;
   }
->()("acme-server/billing/application/RecordSubscription") {
+>()("peal-server/billing/application/RecordSubscription") {
   static readonly layer = Layer.effect(
     RecordSubscription,
     Effect.gen(function* RecordSubscriptionLive() {

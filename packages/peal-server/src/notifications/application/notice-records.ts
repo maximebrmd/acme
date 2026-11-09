@@ -32,4 +32,4 @@ export class NoticeRecords extends Context.Service<
       workspaceId: WorkspaceId
     ) => Effect.Effect<void, DatabaseError>;
   }
->()("acme-server/notifications/application/NoticeRecords") {}
+>()("peal-server/notifications/application/NoticeRecords") {}

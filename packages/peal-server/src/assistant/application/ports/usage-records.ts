@@ -21,4 +21,4 @@ export class UsageRecords extends Context.Service<
       workspaceId: WorkspaceId
     ) => Effect.Effect<void, DatabaseError>;
   }
->()("acme-server/assistant/application/UsageRecords") {}
+>()("peal-server/assistant/application/UsageRecords") {}

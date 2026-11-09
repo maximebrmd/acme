@@ -18,7 +18,7 @@ import type {
   UnknownChannels,
   UnknownMedia,
   WorkspaceNotFound,
-} from "acme-contract";
+} from "peal-contract";
 import { Match } from "effect";
 import type { Schema } from "effect";
 import type { HttpClientError } from "effect/http";
@@ -80,7 +80,7 @@ export const explain =
   (failure: ApiFailure): ApiRequestFailed | Refused | SignInExpired =>
     Match.valueTags(failure, {
       AlreadyMember: () => refused("That address belongs to a member already."),
-      BadRequest: () => refused("Acme could not read the request."),
+      BadRequest: () => refused("Peal could not read the request."),
       ChannelCannotPost: ({ reason }) =>
         refused(
           reason === "disabled"
@@ -89,11 +89,11 @@ export const explain =
         ),
       ChannelNotFound: () =>
         refused(
-          "The workspace has no such channel, or it is not of this platform: acme channels list shows them."
+          "The workspace has no such channel, or it is not of this platform: peal channels list shows them."
         ),
       Forbidden: () =>
         refused(
-          "Acme refused: your role in this workspace does not allow it, or your account was suspended."
+          "Peal refused: your role in this workspace does not allow it, or your account was suspended."
         ),
       HttpClientError: requestFailed(url),
       InvalidDateRange: () =>
@@ -102,7 +102,7 @@ export const explain =
         ),
       InvalidTimeZone: ({ timeZone }) =>
         refused(
-          `${timeZone} is not a time zone Acme knows: give an IANA zone, such as Europe/Paris.`
+          `${timeZone} is not a time zone Peal knows: give an IANA zone, such as Europe/Paris.`
         ),
       InvitationNotFound: () =>
         refused(
@@ -110,7 +110,7 @@ export const explain =
         ),
       PlanLimitReached: ({ allowed, limit }) =>
         refused(
-          `The workspace's plan allows ${String(allowed)} ${limits[limit]}, and has them all. A larger plan makes room: see acme billing.`
+          `The workspace's plan allows ${String(allowed)} ${limits[limit]}, and has them all. A larger plan makes room: see peal billing.`
         ),
       PlatformUnreachable: () =>
         refused(
@@ -118,7 +118,7 @@ export const explain =
         ),
       PostContentInvalid: ({ violations }) =>
         refused(
-          `Acme refused the post: ${violations.map(violationOf).join(", ")}.`
+          `Peal refused the post: ${violations.map(violationOf).join(", ")}.`
         ),
       PostNotFound: () => refused("The workspace has no such post."),
       PostStatusConflict: ({ status }) =>
@@ -135,7 +135,7 @@ export const explain =
       Unauthenticated: () => new SignInExpired({ url }),
       UnknownChannels: ({ channelIds }) =>
         refused(
-          `These channels are not the workspace's: ${channelIds.join(", ")}. acme channels list shows them.`
+          `These channels are not the workspace's: ${channelIds.join(", ")}. peal channels list shows them.`
         ),
       UnknownMedia: ({ mediaIds }) =>
         refused(

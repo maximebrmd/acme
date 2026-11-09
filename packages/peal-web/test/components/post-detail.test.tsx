@@ -4,7 +4,7 @@ import type {
   Post,
   PostTarget,
   PublicationAttempt,
-} from "acme-contract";
+} from "peal-contract";
 import { DateTime } from "effect";
 import { NextIntlClientProvider } from "next-intl";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -132,7 +132,7 @@ const renderPost = async (locale: "en" | "fr", shown: Post) =>
         attempts={[]}
         busy={null}
         canAct
-        channels={[channel("c4", "@acmeexample")]}
+        channels={[channel("c4", "@pealexample")]}
         post={shown}
         onRequest={() => {
           // Nothing is asked while rendering to markup.
@@ -176,7 +176,7 @@ describe(PostDetailView, () => {
     );
     expect(html).not.toContain("the platform refused its text");
     expect(html).toContain(
-      "Acme cannot tell whether it went out: the platform did not answer. Check Mastodon before you post it again, then say what you found."
+      "Peal cannot tell whether it went out: the platform did not answer. Check Mastodon before you post it again, then say what you found."
     );
   });
 
@@ -192,7 +192,7 @@ describe(PostDetailView, () => {
     const html = await render("en", true);
 
     expect(html).toContain(
-      "Attempt 1, Jun 15, 2026 at 8:00 AM: the platform asked Acme to wait"
+      "Attempt 1, Jun 15, 2026 at 8:00 AM: the platform asked Peal to wait"
     );
     expect(html).toContain("Tried again at 8:01 AM.");
     expect(html).toContain(
@@ -221,7 +221,7 @@ describe(PostDetailView, () => {
       "Elle n’est pas partie : son canal a été déconnecté de l’espace de travail avant son départ."
     );
     expect(html).toContain(
-      "Tentative 1, le 15 juin 2026 à 08:00 : la plateforme a demandé à Acme d’attendre"
+      "Tentative 1, le 15 juin 2026 à 08:00 : la plateforme a demandé à Peal d’attendre"
     );
     expect(html).toContain(">Republier<");
   });

@@ -1,8 +1,8 @@
-import type { Media } from "acme-contract";
+import type { Media } from "peal-contract";
 import { Effect, Option } from "effect";
 import { Atom, Reactivity } from "effect/reactivity";
 
-import { AcmeApi } from "#api/client.ts";
+import { PealApi } from "#api/client.ts";
 import { browserTransfer, Transfer } from "#media/transfer.ts";
 import { uploadApiOf } from "#media/upload-api.ts";
 import { uploadFile } from "#media/upload-file.ts";
@@ -17,7 +17,7 @@ const pageKey = (workspaceId: string, cursor: Option.Option<string>) =>
 const pages = Atom.family((key: string) => {
   const [workspaceId = "", cursor = ""] = key.split("/");
 
-  return AcmeApi.query("media", "list", {
+  return PealApi.query("media", "list", {
     params: { workspaceId },
     query: cursor === "" ? {} : { cursor },
     reactivityKeys: [mediaKey(workspaceId)],
@@ -29,13 +29,13 @@ export const mediaPage = (workspaceId: string, cursor: Option.Option<string>) =>
   pages(pageKey(workspaceId, cursor));
 
 /** Deletes media, then lists the workspace's media again. */
-export const deleteMedia = AcmeApi.mutation("media", "delete");
+export const deleteMedia = PealApi.mutation("media", "delete");
 
 /** Which posts show the media: what deleting it would do to them. */
 export const mediaUsage = Atom.family((key: string) => {
   const [workspaceId = "", mediaId = ""] = key.split("/");
 
-  return AcmeApi.query("media", "usage", {
+  return PealApi.query("media", "usage", {
     params: { mediaId, workspaceId },
     reactivityKeys: [mediaKey(workspaceId)],
   });
@@ -78,9 +78,9 @@ export interface UploadRequest {
  * workspace's media lists refresh when it ends.
  */
 export const upload = Atom.family((id: string) =>
-  AcmeApi.runtime.fn<UploadRequest>()((request, get) =>
+  PealApi.runtime.fn<UploadRequest>()((request, get) =>
     Effect.gen(function* runUpload() {
-      const client = yield* AcmeApi;
+      const client = yield* PealApi;
       const progress = uploadProgress(id);
 
       get.set(progress, starting);
@@ -126,9 +126,9 @@ export interface DescribeRequest {
  * so that describing one file never cancels saving another.
  */
 export const describeUpload = Atom.family((_id: string) =>
-  AcmeApi.runtime.fn<DescribeRequest>()(({ altText, mediaId, workspaceId }) =>
+  PealApi.runtime.fn<DescribeRequest>()(({ altText, mediaId, workspaceId }) =>
     Effect.gen(function* describe() {
-      const client = yield* AcmeApi;
+      const client = yield* PealApi;
       const trimmed = altText.trim();
 
       return yield* client.media

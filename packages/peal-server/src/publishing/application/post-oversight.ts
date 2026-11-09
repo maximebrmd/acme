@@ -84,4 +84,4 @@ export class PostOversight extends Context.Service<
       before: DateTime.Utc
     ) => Effect.Effect<number, DatabaseError>;
   }
->()("acme-server/publishing/application/PostOversight") {}
+>()("peal-server/publishing/application/PostOversight") {}

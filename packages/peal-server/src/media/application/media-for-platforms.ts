@@ -65,7 +65,7 @@ export class MediaForPlatforms extends Context.Service<
       expiresIn: Duration.Duration
     ) => Effect.Effect<string, MediaNotPublishable | MediaStorageFailed>;
   }
->()("acme-server/media/application/MediaForPlatforms") {
+>()("peal-server/media/application/MediaForPlatforms") {
   static readonly layer = Layer.effect(
     MediaForPlatforms,
     Effect.gen(function* MediaForPlatformsLive() {

@@ -1,4 +1,4 @@
-"""The release's steps on Postgres (roles/acme_release), run as written
+"""The release's steps on Postgres (roles/peal_release), run as written
 against the image postgres.Dockerfile builds on, in a container of their
 own: what they read, and how they set the password a restored database
 keeps from the server it came from."""
@@ -16,7 +16,7 @@ import pytest
 
 from conftest import INFRA, command_of, stdin_of, task
 
-DOCKERFILE = INFRA.parent / "acme-docker" / "postgres.Dockerfile"
+DOCKERFILE = INFRA.parent / "peal-docker" / "postgres.Dockerfile"
 
 IMAGE = next(
     line.split()[1] for line in DOCKERFILE.read_text().splitlines() if line.startswith("FROM ")
@@ -36,9 +36,9 @@ pytestmark = pytest.mark.skipif(not _docker_runs(), reason="Docker is not runnin
 GENERATED = f"generated-{secrets.token_hex(8)}"
 RESTORED = f"restored-{secrets.token_hex(8)}"
 
-# Stands for acme-compose in the tasks: `<it> exec -T postgres …` runs in the
+# Stands for peal-compose in the tasks: `<it> exec -T postgres …` runs in the
 # test's container.
-COMPOSE = "acme-compose"
+COMPOSE = "peal-compose"
 
 
 @dataclass(frozen=True)
@@ -57,19 +57,19 @@ def _run(command: list[str], stdin: str | None = None) -> subprocess.CompletedPr
 
 def _psql(postgres: Postgres, statement: str) -> None:
     """Runs a statement as the image's superuser, over the trusted socket."""
-    _run(["docker", "exec", postgres.container, "psql", "--username", "acme", "--dbname", "acme",
+    _run(["docker", "exec", postgres.container, "psql", "--username", "peal", "--dbname", "peal",
           "--set", "ON_ERROR_STOP=1", "--command", statement]).check_returncode()
 
 
 @pytest.fixture(scope="module")
 def postgres() -> Iterator[Postgres]:
-    project = f"acme-infra-test-{secrets.token_hex(4)}"
+    project = f"peal-infra-test-{secrets.token_hex(4)}"
     stack = Postgres(project, f"{project}_default", f"{project}-postgres-1")
     _run(["docker", "network", "create", stack.network]).check_returncode()
     try:
         _run(["docker", "run", "--detach", "--name", stack.container, "--network", stack.network,
-              "--network-alias", "postgres", "--env", "POSTGRES_USER=acme",
-              "--env", "POSTGRES_DB=acme", "--env", f"POSTGRES_PASSWORD={GENERATED}",
+              "--network-alias", "postgres", "--env", "POSTGRES_USER=peal",
+              "--env", "POSTGRES_DB=peal", "--env", f"POSTGRES_PASSWORD={GENERATED}",
               IMAGE]).check_returncode()
         # Ready once it answers over the network: while the image initialises
         # the database, its server listens on the socket alone.
@@ -89,18 +89,18 @@ def _signs_in(postgres: Postgres, password: str) -> bool:
     """Whether the server, another container on the network, signs in with
     this password, as DATABASE_URL says."""
     return _run(["docker", "run", "--rm", "--network", postgres.network, IMAGE, "psql",
-                 f"postgres://acme:{password}@postgres:5432/acme", "--command", "SELECT 1"]).returncode == 0
+                 f"postgres://peal:{password}@postgres:5432/peal", "--command", "SELECT 1"]).returncode == 0
 
 
 def _step(postgres: Postgres, name: str) -> subprocess.CompletedProcess[str]:
     """Runs a release task's command as the release would, in the test's
     stack."""
-    found = task("acme_release", name)
+    found = task("peal_release", name)
     command = command_of(
         found,
-        acme_compose_bin=COMPOSE,
-        acme_compose_project=postgres.project,
-        acme_release_built={"postgres": IMAGE},
+        peal_compose_bin=COMPOSE,
+        peal_compose_project=postgres.project,
+        peal_release_built={"postgres": IMAGE},
     )
     if command[:4] == [COMPOSE, "exec", "-T", "postgres"]:
         command = ["docker", "exec", "--interactive", postgres.container, *command[4:]]
@@ -110,9 +110,9 @@ def _step(postgres: Postgres, name: str) -> subprocess.CompletedProcess[str]:
 @pytest.fixture
 def restored(postgres: Postgres) -> Iterator[Postgres]:
     """The stack with the password of the server the database came from."""
-    _psql(postgres, f"ALTER ROLE acme PASSWORD '{RESTORED}'")
+    _psql(postgres, f"ALTER ROLE peal PASSWORD '{RESTORED}'")
     yield postgres
-    _psql(postgres, f"ALTER ROLE acme PASSWORD '{GENERATED}'")
+    _psql(postgres, f"ALTER ROLE peal PASSWORD '{GENERATED}'")
 
 
 def test_the_check_refuses_the_restored_password(restored: Postgres) -> None:
@@ -135,7 +135,7 @@ def test_setting_the_password_lets_the_server_sign_in(restored: Postgres) -> Non
 def test_setting_the_password_logs_it_nowhere(restored: Postgres) -> None:
     """Not in Postgres's log, even where it logs every statement, nor on a
     command line, where any process on the host could read it."""
-    found = task("acme_release", "Set the database password to the generated one")
+    found = task("peal_release", "Set the database password to the generated one")
     _psql(restored, "ALTER SYSTEM SET log_statement = 'all'")
     _psql(restored, "SELECT pg_reload_conf()")
     try:
@@ -146,7 +146,7 @@ def test_setting_the_password_logs_it_nowhere(restored: Postgres) -> None:
     logs = _run(["docker", "logs", restored.container])
 
     assert GENERATED not in logs.stdout + logs.stderr
-    assert all("POSTGRES_PASSWORD" not in part for part in command_of(found, acme_compose_bin=COMPOSE))
+    assert all("POSTGRES_PASSWORD" not in part for part in command_of(found, peal_compose_bin=COMPOSE))
 
 
 def test_reading_what_postgres_runs_shows_no_secret(postgres: Postgres) -> None:

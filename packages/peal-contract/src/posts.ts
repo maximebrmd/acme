@@ -107,9 +107,9 @@ export type PostOutcome = typeof PostOutcomeSchema.Type;
  * Why a post did not go out on a channel: the platform refused its text or
  * format (`contentRejected`) or a media (`mediaRejected`); its channel was
  * disconnected (`channelDisconnected`) or turned off (`channelDisabled`), or
- * one of its media deleted (`mediaRemoved`), before it went out; Acme was
+ * one of its media deleted (`mediaRemoved`), before it went out; Peal was
  * down at its time (`missed`); a member found it missing (`notPublished`);
- * the platform kept limiting Acme (`rateLimited`), a daily allowance of
+ * the platform kept limiting Peal (`rateLimited`), a daily allowance of
  * uploads stayed spent (`quotaExceeded`), the platform refused the account's
  * token (`tokenExpired`) or could not be reached (`unavailable`); or the
  * platform takes only some posts from the server's app until it approves
@@ -134,9 +134,9 @@ export const FailureReasonSchema = Schema.Literals([
 export type FailureReason = typeof FailureReasonSchema.Type;
 
 /**
- * Why Acme cannot tell whether an unconfirmed post went out: no answer came
+ * Why Peal cannot tell whether an unconfirmed post went out: no answer came
  * (`noResponse`), the answer could not be read (`unreadableResponse`), the
- * server stopped during the call (`interrupted`), or Acme's own code failed
+ * server stopped during the call (`interrupted`), or Peal's own code failed
  * during it (`adapterFailure`).
  */
 export const UnconfirmedReasonSchema = Schema.Literals([
@@ -168,7 +168,7 @@ export const PostTargetSchema = Schema.Struct({
   // How many times it was sent: 1, and one more for each repost.
   round: Schema.Int,
   status: PostTargetStatusSchema,
-  // Why Acme cannot tell whether it went out, while it is unconfirmed.
+  // Why Peal cannot tell whether it went out, while it is unconfirmed.
   unconfirmedReason: Schema.NullOr(UnconfirmedReasonSchema),
 }).annotate({ identifier: "PostTarget" });
 
@@ -245,9 +245,9 @@ export const maxDraftPageSize = 50;
 
 /**
  * How one attempt at publishing on a channel ended: `published`;
- * `unconfirmed`, when Acme could not tell; or why it did not go out, as in
+ * `unconfirmed`, when Peal could not tell; or why it did not go out, as in
  * `FailureReason`. A `rateLimited` or `unavailable` attempt is followed by
- * another unless Acme gave up.
+ * another unless Peal gave up.
  */
 export const AttemptResultSchema = Schema.Literals([
   "published",
@@ -272,7 +272,7 @@ export const PublicationAttemptSchema = Schema.Struct({
   attempt: Schema.Int,
   finishedAt: Schema.DateTimeUtc,
   result: AttemptResultSchema,
-  // When Acme tried again, if it did.
+  // When Peal tried again, if it did.
   retryAt: Schema.NullOr(Schema.DateTimeUtc),
   // The round it belongs to: 1, and one more for each repost.
   round: Schema.Int,
@@ -397,7 +397,7 @@ export class PostsApi extends HttpApiGroup.make("posts")
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Lists every attempt Acme made at publishing the post, by channel, round and attempt, with how each ended. An attempt still in progress is not listed yet. Needs post:read.",
+          "Lists every attempt Peal made at publishing the post, by channel, round and attempt, with how each ended. An attempt still in progress is not listed yet. Needs post:read.",
         summary: "List a post's attempts",
       })
     ),

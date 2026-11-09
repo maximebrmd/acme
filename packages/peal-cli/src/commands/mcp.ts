@@ -1,7 +1,7 @@
 import { Console, Duration, Effect, Option } from "effect";
 import { Command } from "effect/cli";
 
-import { AcmeApi } from "#api.ts";
+import { PealApi } from "#api.ts";
 import { display } from "#display.ts";
 
 // Configuring needs no answer from the server, so it does not wait long.
@@ -11,7 +11,7 @@ export const mcp = Command.make(
   "mcp",
   {},
   Effect.fn("mcp")(function* mcp() {
-    const { baseUrl, oauth } = yield* AcmeApi;
+    const { baseUrl, oauth } = yield* PealApi;
     const url = display(baseUrl);
 
     // The endpoint's identifier, which its public URL names: what MCP
@@ -38,14 +38,14 @@ export const mcp = Command.make(
     );
 
     const configuration = JSON.stringify(
-      { mcpServers: { acme: { type: "http", url: endpoint } } },
+      { mcpServers: { peal: { type: "http", url: endpoint } } },
       null,
       2
     );
 
     yield* Console.log(
       [
-        `Acme's MCP server for ${url}:`,
+        `Peal's MCP server for ${url}:`,
         "",
         `  URL        ${endpoint}`,
         "  Transport  Streamable HTTP",
@@ -71,6 +71,6 @@ export const mcp = Command.make(
   })
 ).pipe(
   Command.withDescription(
-    "Show how to connect an MCP client, such as an AI assistant, to this Acme server."
+    "Show how to connect an MCP client, such as an AI assistant, to this Peal server."
   )
 );

@@ -17,4 +17,4 @@ export class ChannelLocks extends Context.Service<
       effect: Effect.Effect<A, E, R>
     ) => Effect.Effect<A, DatabaseError | E, R>;
   }
->()("acme-server/channels/application/ChannelLocks") {}
+>()("peal-server/channels/application/ChannelLocks") {}

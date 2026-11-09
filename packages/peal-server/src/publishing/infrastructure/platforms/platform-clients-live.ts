@@ -62,7 +62,7 @@ export interface PlatformClientSettings {
 const uploadTimeout = Duration.minutes(10);
 
 /**
- * The platforms Acme publishes to: Mastodon, Bluesky, LinkedIn, X, Threads,
+ * The platforms Peal publishes to: Mastodon, Bluesky, LinkedIn, X, Threads,
  * Instagram, Facebook Pages, TikTok and YouTube. Every request goes through
  * the public HTTP client, so the outbound guard checks the servers users
  * chose. Needs an HttpClient, the OutboundGuard, SecureRandom and Digest

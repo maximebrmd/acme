@@ -38,7 +38,7 @@ export class Accounts extends Context.Service<
       BannedUser | DirectoryUnavailable | NotSignedIn
     >;
   }
->()("acme-server/workspace/application/Accounts") {
+>()("peal-server/workspace/application/Accounts") {
   static readonly layer = Layer.effect(
     Accounts,
     Effect.gen(function* accounts() {

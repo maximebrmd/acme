@@ -31,7 +31,7 @@ export class ChannelOversight extends Context.Service<
       limit: number
     ) => Effect.Effect<readonly Channel[], DatabaseError>;
   }
->()("acme-server/channels/application/ChannelOversight") {
+>()("peal-server/channels/application/ChannelOversight") {
   static readonly layer = Layer.effect(
     ChannelOversight,
     Effect.gen(function* ChannelOversightLive() {

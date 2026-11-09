@@ -1,8 +1,8 @@
 import { Layer } from "effect";
 import { McpProtocol, McpServer } from "effect/ai";
 
-import { AcmeToolsLive } from "#app/mcp/handlers.ts";
-import { AcmeTools } from "#app/mcp/tools.ts";
+import { PealToolsLive } from "#app/mcp/handlers.ts";
+import { PealTools } from "#app/mcp/tools.ts";
 import { McpAuthenticationLive } from "#workspace/container.ts";
 
 /** Where the MCP endpoint answers, under PUBLIC_URL. */
@@ -17,7 +17,7 @@ export const mcpPath = "/api/mcp";
  *
  * It speaks the stateless 2026-07-28 revision and, for clients that do not
  * yet, the sessionful 2025-11-25 and 2025-06-18 ones, whose sessions live in
- * this server's memory: Acme runs one server per deployment. Sessions do not
+ * this server's memory: Peal runs one server per deployment. Sessions do not
  * expire, so clients may end theirs with DELETE, as those revisions ask them
  * to, rather than leave it in memory until the server restarts; ending one
  * takes its id and a token that works, like any other request. Requests with
@@ -26,16 +26,16 @@ export const mcpPath = "/api/mcp";
 export const McpLive = McpServer.layerHttp({
   allowSessionTermination: true,
   instructions:
-    "Acme schedules social media posts for teams. These tools act in the one workspace the user picked when they connected; call whoami to see which, and what this connection may do there. Tools that change something (drafts, follow-ups on published posts, invitations) need the user to have let this client do what their role allows, and say what they change: ask the user before reposting, confirming or inviting. Scheduling and publishing are for the user, in the web app.",
-  name: "Acme",
+    "Peal schedules social media posts for teams. These tools act in the one workspace the user picked when they connected; call whoami to see which, and what this connection may do there. Tools that change something (drafts, follow-ups on published posts, invitations) need the user to have let this client do what their role allows, and say what they change: ask the user before reposting, confirming or inviting. Scheduling and publishing are for the user, in the web app.",
+  name: "Peal",
   path: mcpPath,
   protocols: [
     McpProtocol.v2026_07_28,
     McpProtocol.v2025_11_25,
     McpProtocol.v2025_06_18,
   ],
-  registrations: McpServer.toolkit(AcmeTools).pipe(
-    Layer.provide(AcmeToolsLive)
+  registrations: McpServer.toolkit(PealTools).pipe(
+    Layer.provide(PealToolsLive)
   ),
   version: "0.1.0",
 }).pipe(Layer.provide(McpAuthenticationLive));

@@ -7,9 +7,9 @@ import {
   PostContentSchema,
   TargetOptionsSchema as ContractOptionsSchema,
   youTubeTagsLength as contractTagsLength,
-} from "acme-contract";
-import type { ContentViolation as ContractViolation } from "acme-contract";
-import * as ContractText from "acme-contract/post-text";
+} from "peal-contract";
+import type { ContentViolation as ContractViolation } from "peal-contract";
+import * as ContractText from "peal-contract/post-text";
 import { Exit, Schema } from "effect";
 
 import type { ContentViolation } from "#publishing/domain/content-violation.ts";
@@ -47,7 +47,7 @@ const texts = [
   "hello",
   "👍🏽👨‍👩‍👧 é 日本語 Мир —…",
   "Read https://example.com/one and www.example.org/two. (see https://example.com).",
-  "#launch day, #été, #2026 and issue#42 with @acme_example and team@example.com",
+  "#launch day, #été, #2026 and issue#42 with @peal_example and team@example.com",
   "a".repeat(3001),
 ];
 

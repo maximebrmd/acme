@@ -1,6 +1,6 @@
 "use client";
 
-import type { Post } from "acme-contract";
+import type { Post } from "peal-contract";
 import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 

@@ -329,7 +329,7 @@ export const DrizzlePostRepository = Layer.effect(
       // A transaction's advisory lock, in the two-key form: the first key
       // names what is counted, the second the workspace and the month.
       claimMonth: (workspaceId, { from }) =>
-        client`SELECT pg_advisory_xact_lock(hashtext('acme-server/publishing/monthly-posts'), hashtext(${`${workspaceId}:${DateTime.formatIso(from)}`}))`.pipe(
+        client`SELECT pg_advisory_xact_lock(hashtext('peal-server/publishing/monthly-posts'), hashtext(${`${workspaceId}:${DateTime.formatIso(from)}`}))`.pipe(
           Effect.mapError(failed),
           Effect.asVoid,
           Effect.withSpan("PostRepository.claimMonth")

@@ -4,7 +4,7 @@ import {
   ConnectedAppSchema,
   MeSchema,
   PreparedUploadSchema,
-} from "acme-contract";
+} from "peal-contract";
 import { Effect, Layer, Option, Schema } from "effect";
 import { SqlClient } from "effect/sql";
 
@@ -440,7 +440,7 @@ layer(Layer.mergeAll(IntegrationLive, StoreLive), {
 
         assert.strictEqual(
           confirmation.Subject,
-          "Votre compte Acme est supprimé"
+          "Votre compte Peal est supprimé"
         );
       })
   );
@@ -609,7 +609,7 @@ layer(Layer.mergeAll(IntegrationLive, StoreLive), {
         assert.strictEqual(reply.status, 200);
         assert.match(
           reply.headers.get("content-disposition") ?? "",
-          /^attachment; filename="acme-data-\d{4}-\d{2}-\d{2}\.json"$/u
+          /^attachment; filename="peal-data-\d{4}-\d{2}-\d{2}\.json"$/u
         );
 
         const exported = yield* decodeExport(reply.body);

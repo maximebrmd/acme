@@ -45,7 +45,7 @@ export type Dimensions = typeof DimensionsSchema.Type;
  * platform to check them.
  */
 export class MediaFile extends Schema.Class<MediaFile>(
-  "acme-server/publishing/domain/MediaFile"
+  "peal-server/publishing/domain/MediaFile"
 )({
   byteSize: Schema.Int.check(Schema.isGreaterThan(0)),
   contentType: MediaContentTypeSchema,

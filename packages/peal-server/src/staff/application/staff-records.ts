@@ -26,4 +26,4 @@ export class StaffRecords extends Context.Service<
      */
     readonly forgetUser: (userId: UserId) => Effect.Effect<void, DatabaseError>;
   }
->()("acme-server/staff/application/StaffRecords") {}
+>()("peal-server/staff/application/StaffRecords") {}

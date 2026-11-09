@@ -14,7 +14,7 @@ import type { ConnectedAppRecord } from "./connected-app-store.ts";
 
 /**
  * The OAuth clients that act for the user, which only they see, in person or
- * from Acme's command line, and only they revoke, in person: a client could
+ * from Peal's command line, and only they revoke, in person: a client could
  * otherwise revoke the others, or itself be kept from being revoked.
  */
 export class ConnectedApps extends Context.Service<
@@ -34,7 +34,7 @@ export class ConnectedApps extends Context.Service<
       ConnectedAppNotFound | DatabaseError | SessionRequired
     >;
   }
->()("acme-server/workspace/application/ConnectedApps") {
+>()("peal-server/workspace/application/ConnectedApps") {
   static readonly layer = Layer.effect(
     ConnectedApps,
     Effect.gen(function* ConnectedAppsLive() {

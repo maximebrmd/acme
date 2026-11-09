@@ -29,4 +29,4 @@ export class PreferenceStore extends Context.Service<
       at: DateTime.Utc
     ) => Effect.Effect<NotificationPreferences, DatabaseError>;
   }
->()("acme-server/notifications/application/PreferenceStore") {}
+>()("peal-server/notifications/application/PreferenceStore") {}

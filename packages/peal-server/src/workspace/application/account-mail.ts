@@ -13,4 +13,4 @@ export class AccountMail extends Context.Service<
       readonly locale: Locale;
     }) => Effect.Effect<void>;
   }
->()("acme-server/workspace/application/AccountMail") {}
+>()("peal-server/workspace/application/AccountMail") {}

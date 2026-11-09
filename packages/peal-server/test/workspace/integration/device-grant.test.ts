@@ -1,5 +1,5 @@
 import { assert, layer } from "@effect/vitest";
-import { deviceCodeGrantType, MeSchema, OAuthApi } from "acme-contract";
+import { deviceCodeGrantType, MeSchema, OAuthApi } from "peal-contract";
 import { Context, Effect, Layer } from "effect";
 import { HttpApiClient } from "effect/http-api";
 
@@ -17,7 +17,7 @@ import type { Person } from "./harness.ts";
 // The command line's sign-in, end to end: it asks for a code, the user
 // approves it on the web app (here, its Better Auth routes), and the command
 // line polls for tokens, which then work on the HTTP API. Every OAuth call
-// goes through acme-contract's OAuthApi client, as the command line's do.
+// goes through peal-contract's OAuthApi client, as the command line's do.
 
 const apiResource = `${origin}/api`;
 
@@ -26,7 +26,7 @@ const scope = "offline_access workspace:read workspace:write";
 class OAuth extends Context.Service<
   OAuth,
   HttpApiClient.ForApi<typeof OAuthApi>
->()("acme-server/test/OAuth") {
+>()("peal-server/test/OAuth") {
   // The fetch client reads its Fetch when each request runs, so it stays in
   // the tests' context.
   static readonly layer = Layer.effect(
@@ -44,7 +44,7 @@ const startSignIn = Effect.gen(function* startSignIn() {
   const oauth = yield* OAuth;
 
   return yield* oauth.tokens.deviceAuthorization({
-    payload: { client_id: "acme-cli", resource: apiResource, scope },
+    payload: { client_id: "peal-cli", resource: apiResource, scope },
   });
 });
 
@@ -52,7 +52,7 @@ const poll = (deviceCode: string) =>
   OAuth.use((oauth) =>
     oauth.tokens.token({
       payload: {
-        client_id: "acme-cli",
+        client_id: "peal-cli",
         device_code: deviceCode,
         grant_type: deviceCodeGrantType,
       },
@@ -146,7 +146,7 @@ layer(DeviceGrantLive, { excludeTestServices: true, timeout: "180 seconds" })(
 
           assert.strictEqual(reviewed.status, 200);
           assert.deepInclude(reviewed.body, {
-            client_id: "acme-cli",
+            client_id: "peal-cli",
             resource: apiResource,
             scope,
             status: "pending",
@@ -192,7 +192,7 @@ layer(DeviceGrantLive, { excludeTestServices: true, timeout: "180 seconds" })(
           const renew = (refreshToken: string | undefined) =>
             oauth.tokens.token({
               payload: {
-                client_id: "acme-cli",
+                client_id: "peal-cli",
                 grant_type: "refresh_token",
                 refresh_token: refreshToken ?? "",
               },
@@ -209,7 +209,7 @@ layer(DeviceGrantLive, { excludeTestServices: true, timeout: "180 seconds" })(
           // Signing out revokes the refresh token.
           yield* oauth.tokens.revoke({
             payload: {
-              client_id: "acme-cli",
+              client_id: "peal-cli",
               token: renewed.refresh_token ?? "",
               token_type_hint: "refresh_token",
             },
@@ -267,7 +267,7 @@ layer(DeviceGrantLive, { excludeTestServices: true, timeout: "180 seconds" })(
           OAuth.use((oauth) =>
             oauth.tokens.deviceAuthorization({
               payload: {
-                client_id: "acme-cli",
+                client_id: "peal-cli",
                 resource: `${origin}/api/mcp`,
                 scope,
               },
@@ -316,7 +316,7 @@ layer(DeviceGrantLive, { excludeTestServices: true, timeout: "180 seconds" })(
           assert.strictEqual(apps.status, 200);
 
           const revoked = yield* app.request(
-            "/api/me/connected-apps/acme-cli",
+            "/api/me/connected-apps/peal-cli",
             { headers: bearer(token), method: "DELETE" }
           );
 
@@ -341,7 +341,7 @@ layer(DeviceGrantLive, { excludeTestServices: true, timeout: "180 seconds" })(
         // Anyone may start a sign-in as the command line, asking for less.
         const device = yield* oauth.tokens.deviceAuthorization({
           payload: {
-            client_id: "acme-cli",
+            client_id: "peal-cli",
             resource: apiResource,
             scope: "offline_access",
           },
@@ -382,7 +382,7 @@ layer(DeviceGrantLive, { excludeTestServices: true, timeout: "180 seconds" })(
           const renew = (refreshToken: string | undefined) =>
             oauth.tokens.token({
               payload: {
-                client_id: "acme-cli",
+                client_id: "peal-cli",
                 grant_type: "refresh_token",
                 refresh_token: refreshToken ?? "",
               },

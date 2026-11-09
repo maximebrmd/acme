@@ -99,7 +99,7 @@ const decodeAvatar = Schema.decodeUnknownOption(AvatarUrlSchema);
 export const avatarOf = (url: string | undefined): Option.Option<AvatarUrl> =>
   Option.fromUndefinedOr(url).pipe(Option.flatMap(decodeAvatar));
 
-/** What Facebook Login connects for one of Acme's platforms. */
+/** What Facebook Login connects for one of Peal's platforms. */
 export interface FacebookLoginProduct {
   /** The accounts of a Page that may become channels, with its token. */
   readonly accountsOf: (page: ManagedPage) => readonly {
@@ -279,7 +279,7 @@ export const facebookLogin = Effect.fn("FacebookLogin.make")(
           .filter(({ status }) => status === "granted")
           .map(({ permission }) => permission);
 
-        // Declining one of them on the dialog leaves nothing Acme can post
+        // Declining one of them on the dialog leaves nothing Peal can post
         // with: the user refused.
         if (!scopes.every((scope) => granted.includes(scope))) {
           return yield* new AuthorizationDenied();

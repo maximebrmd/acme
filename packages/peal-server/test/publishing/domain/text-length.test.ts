@@ -175,7 +175,7 @@ describe(countHashtags, () => {
 
 describe(countMentions, () => {
   it.each([
-    { count: 2, text: "Thanks @acme_example and @other.account!" },
+    { count: 2, text: "Thanks @peal_example and @other.account!" },
     // An email address mentions nobody.
     { count: 0, text: "Write to team@example.com" },
     { count: 0, text: "@ alone" },

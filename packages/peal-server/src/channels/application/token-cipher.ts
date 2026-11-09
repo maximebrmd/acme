@@ -90,4 +90,4 @@ export class TokenCipher extends Context.Service<
       context: SecretContext
     ) => Effect.Effect<Redacted.Redacted, TokenDecryptionError>;
   }
->()("acme-server/channels/application/TokenCipher") {}
+>()("peal-server/channels/application/TokenCipher") {}

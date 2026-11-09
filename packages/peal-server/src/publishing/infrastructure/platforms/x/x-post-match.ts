@@ -35,7 +35,7 @@ export const comparableText = (text: string): string =>
 export const unescapedText = (shown: string): string =>
   shown.replaceAll(entityPattern, (entity) => entities.get(entity) ?? entity);
 
-/** Whether X's text is the one Acme sent. */
+/** Whether X's text is the one Peal sent. */
 export const isSameText = (sent: string, shown: string): boolean =>
   comparableText(sent) === comparableText(unescapedText(shown));
 
@@ -56,7 +56,7 @@ export const addressesIn = (sent: string): readonly string[] =>
   );
 
 /**
- * Whether a post X lists is the one Acme sent: the same text, and links to
+ * Whether a post X lists is the one Peal sent: the same text, and links to
  * the same addresses, which X gives as it expanded its short links (the
  * media's left out).
  */

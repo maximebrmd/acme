@@ -127,7 +127,7 @@ export const PlatformAuthorizersLive = Layer.effect(
       configured.map((authorizer) => [authorizer.platform, authorizer])
     );
 
-    // Platforms Acme supports, which this server lacks the settings for.
+    // Platforms Peal supports, which this server lacks the settings for.
     const unconfigured: ReadonlySet<Platform> = new Set(
       (
         [

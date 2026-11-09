@@ -1,6 +1,6 @@
 import { describe, expect, it } from "@effect/vitest";
-import { PlanLimitReached, PostContentInvalid } from "acme-contract";
-import type { Channel, ContentViolation } from "acme-contract";
+import { PlanLimitReached, PostContentInvalid } from "peal-contract";
+import type { Channel, ContentViolation } from "peal-contract";
 import { NextIntlClientProvider } from "next-intl";
 import type { Locale } from "next-intl";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -14,7 +14,7 @@ import { loadMessages } from "#i18n/messages.ts";
 const bluesky: Channel = {
   avatarUrl: null,
   displayName: null,
-  handle: "@acme_bluesky",
+  handle: "@peal_bluesky",
   id: "00000000-0000-7000-8000-000000000001",
   platform: "bluesky",
   status: { _tag: "active" },
@@ -62,8 +62,8 @@ describe(ComposerErrors, () => {
   it("lists each violation, by channel", async () => {
     const html = await render("en");
 
-    expect(html).toContain("@acme_bluesky on Bluesky: 400 of 300 characters.");
-    expect(html).toContain("@acme_bluesky on Bluesky: 3200 of 3000 bytes.");
+    expect(html).toContain("@peal_bluesky on Bluesky: 400 of 300 characters.");
+    expect(html).toContain("@peal_bluesky on Bluesky: 3200 of 3000 bytes.");
     expect(html).toContain("A disconnected channel: there is nothing to");
     expect(html).not.toContain(gone);
   });
@@ -73,7 +73,7 @@ describe(ComposerErrors, () => {
 
     // French sets a no-break space before a colon.
     expect(html).toContain(
-      "@acme_bluesky sur Bluesky\u00A0: 3200 sur 3000 octets."
+      "@peal_bluesky sur Bluesky\u00A0: 3200 sur 3000 octets."
     );
     expect(html).toContain(
       "Un canal déconnecté\u00A0: il n’y a rien à publier."

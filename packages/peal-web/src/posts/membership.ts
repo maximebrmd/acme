@@ -1,4 +1,4 @@
-import type { Membership } from "acme-contract";
+import type { Membership } from "peal-contract";
 import { Option } from "effect";
 import type { Locale } from "next-intl";
 import { notFound } from "next/navigation";

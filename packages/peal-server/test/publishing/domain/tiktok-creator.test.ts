@@ -39,10 +39,10 @@ const privateCreator = new TikTokCreator({
   commentDisabled: true,
   duetDisabled: true,
   maxVideoDuration: Option.some(Duration.seconds(60)),
-  nickname: "Acme Example",
+  nickname: "Peal Example",
   privacyLevels: ["FOLLOWER_OF_CREATOR", "MUTUAL_FOLLOW_FRIENDS", "SELF_ONLY"],
   stitchDisabled: true,
-  username: "acme_example",
+  username: "peal_example",
 });
 
 const allowing = new TikTokOptions({

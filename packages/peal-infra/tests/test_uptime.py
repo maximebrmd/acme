@@ -41,11 +41,11 @@ def _key(group: str, name: str) -> str:
 
 
 def _config(rendered: Path) -> dict[str, Any]:
-    return yaml.safe_load((rendered / "acme-uptime" / "gatus" / "config.yaml").read_text())
+    return yaml.safe_load((rendered / "peal-uptime" / "gatus" / "config.yaml").read_text())
 
 
 def _compose(rendered: Path) -> dict[str, Any]:
-    return yaml.safe_load((rendered / "acme-uptime" / "compose.yaml").read_text())
+    return yaml.safe_load((rendered / "peal-uptime" / "compose.yaml").read_text())
 
 
 def _references(value: Any) -> set[str]:
@@ -68,7 +68,7 @@ def _provided() -> set[str]:
 def test_it_checks_the_host_names_each_environment_has(environment: str) -> None:
     """Kept by hand in two places, so the uptime server never watches a name
     an environment has dropped."""
-    hostnames = settings(environment)["acme_hostnames"]
+    hostnames = settings(environment)["peal_hostnames"]
 
     assert ENVIRONMENTS[environment]["hostnames"] == {
         surface: hostnames[surface] for surface in ("app", "site", "docs")
@@ -77,7 +77,7 @@ def test_it_checks_the_host_names_each_environment_has(environment: str) -> None
 
 @pytest.mark.parametrize("environment", ["production", "sandbox"])
 def test_environments_behind_access_send_a_service_token(environment: str) -> None:
-    assert ENVIRONMENTS[environment].get("access", False) == settings(environment)["acme_access_everything"]
+    assert ENVIRONMENTS[environment].get("access", False) == settings(environment)["peal_access_everything"]
 
 
 def test_every_check_of_every_environment_runs(rendered: Path) -> None:
@@ -126,17 +126,17 @@ def test_production_sends_its_heartbeat_to_its_endpoint(rendered: Path) -> None:
     key = _key(heartbeat["group"], heartbeat["name"])
 
     assert heartbeat["group"] == "production"
-    assert settings("production")["acme_heartbeat_url"] == (
+    assert settings("production")["peal_heartbeat_url"] == (
         f"https://{UPTIME['uptime_hostname']}/api/v1/endpoints/{key}/external?success=true"
     )
-    assert settings("sandbox")["acme_heartbeat_url"] == ""
+    assert settings("sandbox")["peal_heartbeat_url"] == ""
 
 
 def test_the_heartbeat_tolerates_a_missed_beat(rendered: Path) -> None:
     """Grafana repeats it every 5 minutes (heartbeat.yaml)."""
     (heartbeat,) = _config(rendered)["external-endpoints"]
     grafana = yaml.safe_load(
-        (INFRA.parent / "acme-docker" / "config" / "production" / "grafana" / "alerting" / "heartbeat.yaml").read_text()
+        (INFRA.parent / "peal-docker" / "config" / "production" / "grafana" / "alerting" / "heartbeat.yaml").read_text()
     )
     (rule,) = grafana["groups"][0]["rules"]
 
@@ -147,10 +147,10 @@ def test_the_heartbeat_tolerates_a_missed_beat(rendered: Path) -> None:
 
 
 def test_grafana_heartbeat_reads_the_settings_compose_passes() -> None:
-    compose = yaml.safe_load((INFRA.parent / "acme-docker" / "compose.production.yaml").read_text())
+    compose = yaml.safe_load((INFRA.parent / "peal-docker" / "compose.production.yaml").read_text())
     grafana = compose["services"]["grafana"]
 
-    assert {"ACME_HEARTBEAT_URL", "ACME_HEARTBEAT_TOKEN"} <= set(grafana["environment"])
+    assert {"PEAL_HEARTBEAT_URL", "PEAL_HEARTBEAT_TOKEN"} <= set(grafana["environment"])
     assert any(volume.endswith(":/etc/grafana/provisioning/alerting/heartbeat.yaml:ro") for volume in grafana["volumes"])
 
 
@@ -183,7 +183,7 @@ def test_gatus_runs_without_root(rendered: Path) -> None:
 
 
 def test_caddy_is_the_one_self_hosters_run(rendered: Path) -> None:
-    self_host = yaml.safe_load((INFRA.parent / "acme-docker" / "compose.self-host.yaml").read_text())
+    self_host = yaml.safe_load((INFRA.parent / "peal-docker" / "compose.self-host.yaml").read_text())
 
     assert _compose(rendered)["services"]["caddy"]["image"] == self_host["services"]["caddy"]["image"]
 
@@ -298,12 +298,12 @@ def _request(stack: Stack, url: str, *options: str) -> tuple[int, str]:
 @pytest.fixture(scope="module")
 def stack(rendered: Path, tmp_path_factory: pytest.TempPathFactory) -> Iterator[Stack]:
     compose = _compose(rendered)["services"]
-    name = f"acme-uptime-test-{secrets.token_hex(4)}"
+    name = f"peal-uptime-test-{secrets.token_hex(4)}"
     stack = Stack(name, f"{name}-gatus", f"{name}-caddy")
     # Caddy's routes as the server has them, served over plain HTTP: the
     # certificate is the server's business, and caddy validate checks it.
     edge = tmp_path_factory.mktemp("caddy")
-    shutil.copy(rendered / "acme-uptime" / "caddy" / "routes.caddy", edge / "routes.caddy")
+    shutil.copy(rendered / "peal-uptime" / "caddy" / "routes.caddy", edge / "routes.caddy")
     (edge / "Caddyfile").write_text("http://:8080 {\n\timport /etc/caddy/routes.caddy\n}\n")
     confined = ["--read-only", "--cap-drop", "ALL", "--security-opt", "no-new-privileges:true"]
     _run(["docker", "network", "create", "--internal", stack.network]).check_returncode()
@@ -311,7 +311,7 @@ def stack(rendered: Path, tmp_path_factory: pytest.TempPathFactory) -> Iterator[
         _run(["docker", "run", "--detach", "--name", stack.gatus, "--network", stack.network,
               "--network-alias", "gatus", *confined, "--user", "65534:65534",
               "--tmpfs", "/data:uid=65534,gid=65534", "--tmpfs", "/tmp",
-              "--volume", f"{rendered / 'acme-uptime' / 'gatus'}:/config:ro",
+              "--volume", f"{rendered / 'peal-uptime' / 'gatus'}:/config:ro",
               "--env", "GATUS_CONFIG_PATH=/config/config.yaml",
               *[option for item in ENVIRONMENT.items() for option in ("--env", "=".join(item))],
               compose["gatus"]["image"]]).check_returncode()
@@ -394,7 +394,7 @@ def test_caddy_takes_heartbeats_by_post_only(stack: Stack) -> None:
 def test_caddy_validates_the_configuration(rendered: Path, tmp_path: Path, public_status: bool) -> None:
     """The server's Caddyfile, with its certificate's settings, and the
     routes either way the owner decides on the status page."""
-    caddy = rendered / "acme-uptime" / "caddy"
+    caddy = rendered / "peal-uptime" / "caddy"
     shutil.copy(caddy / "Caddyfile", tmp_path / "Caddyfile")
     routes = (INFRA / "roles" / "uptime" / "templates" / "routes.caddy.j2").read_text()
     (tmp_path / "routes.caddy").write_text(render(routes, uptime_public_status=public_status))

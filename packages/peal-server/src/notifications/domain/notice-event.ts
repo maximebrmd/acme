@@ -7,7 +7,7 @@ import { PlatformSchema } from "#shared/domain/platform.ts";
 
 /** The account a notice is about, as it was when the notice was made. */
 export const NoticeChannelSchema = Schema.Struct({
-  // The name people mention the account by, such as "@acme_example".
+  // The name people mention the account by, such as "@peal_example".
   handle: Schema.NonEmptyString,
   platform: PlatformSchema,
 });

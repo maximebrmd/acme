@@ -91,7 +91,7 @@ const failedPost = (workspaceId: WorkspaceId) =>
     const request: NoticeRequest = {
       event: {
         _tag: "PostFailed",
-        channel: Option.some({ handle: "@acme_example", platform: "mastodon" }),
+        channel: Option.some({ handle: "@peal_example", platform: "mastodon" }),
         postId,
         reason: "rateLimited",
       },
@@ -135,7 +135,7 @@ layer(Test)("notices", (it) => {
         assert.lengthOf(yield* noticesOf(viola), 0);
         assert.deepStrictEqual((yield* noticesOf(ada))[0]?.event, {
           _tag: "ChannelReconnectRequired",
-          channel: { handle: "@acme_example", platform: "mastodon" },
+          channel: { handle: "@peal_example", platform: "mastodon" },
         });
 
         // Emails wait for the commit, then go out once.
@@ -149,8 +149,8 @@ layer(Test)("notices", (it) => {
         assert.deepStrictEqual(
           [...toAda, ...toChloe].map(({ subject }) => subject),
           [
-            "Reconnect @acme_example on Mastodon",
-            "Reconnectez @acme_example sur Mastodon",
+            "Reconnect @peal_example on Mastodon",
+            "Reconnectez @peal_example sur Mastodon",
           ]
         );
         assert.include(
@@ -297,7 +297,7 @@ layer(Test)("notices", (it) => {
         assert.deepStrictEqual(
           (yield* sentTo(ada.email)).map(({ subject }) => subject),
           [
-            "A post did not go out on Mastodon (@acme_example)",
+            "A post did not go out on Mastodon (@peal_example)",
             "Published on a disconnected channel",
           ]
         );
@@ -507,7 +507,7 @@ layer(Test)("notices", (it) => {
 
       assert.deepStrictEqual(
         (yield* sentTo(ada.email)).map(({ subject }) => subject),
-        ["Une publication n’est pas partie sur Mastodon (@acme_example)"]
+        ["Une publication n’est pas partie sur Mastodon (@peal_example)"]
       );
       assert.lengthOf(yield* sentTo(bea.email), 0);
       assert.lengthOf(yield* sentTo(cleo.email), 0);

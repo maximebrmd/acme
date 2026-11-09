@@ -1,18 +1,18 @@
 {
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
-  "name": "acme-docs",
+  "name": "peal-docs",
   "projectType": "application",
-  "implicitDependencies": ["acme-contract"],
+  "implicitDependencies": ["peal-contract"],
   "targets": {
     "typecheck": {
       "command": "tsc --noEmit && blume check --strict --isolated",
       "options": { "cwd": "{projectRoot}" },
-      "dependsOn": ["acme-contract:openapi"]
+      "dependsOn": ["peal-contract:openapi"]
     },
     "validate": {
       "command": "blume validate --strict",
       "options": { "cwd": "{projectRoot}" },
-      "dependsOn": ["acme-contract:openapi"],
+      "dependsOn": ["peal-contract:openapi"],
       "cache": false
     },
     "test": {
@@ -22,7 +22,7 @@
     "build": {
       "command": "blume build",
       "options": { "cwd": "{projectRoot}" },
-      "dependsOn": ["...", "acme-contract:openapi"],
+      "dependsOn": ["...", "peal-contract:openapi"],
       "inputs": [
         "...",
         { "env": "DOCS_SITE_URL" },
@@ -34,7 +34,7 @@
     "dev": {
       "command": "blume dev --port 4322",
       "options": { "cwd": "{projectRoot}" },
-      "dependsOn": ["acme-contract:openapi"],
+      "dependsOn": ["peal-contract:openapi"],
       "continuous": true
     }
   }

@@ -28,4 +28,4 @@ export class WorkspaceUsage extends Context.Service<
       workspaceId: WorkspaceId
     ) => Effect.Effect<Usage, DatabaseError>;
   }
->()("acme-server/billing/application/WorkspaceUsage") {}
+>()("peal-server/billing/application/WorkspaceUsage") {}

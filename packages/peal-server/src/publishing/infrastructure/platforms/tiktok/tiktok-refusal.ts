@@ -84,7 +84,7 @@ export const processingFailure = (
     return new PlatformUnavailable();
   }
 
-  // The creator removed Acme's access while TikTok processed the post.
+  // The creator removed Peal's access while TikTok processed the post.
   if (named === "auth_removed") {
     return new TokenExpired();
   }

@@ -1,6 +1,6 @@
 "use client";
 
-import { Alert, AlertDescription } from "acme-ui/components/alert";
+import { Alert, AlertDescription } from "peal-ui/components/alert";
 import { useTranslations } from "next-intl";
 
 import type { DeletionLookup } from "#channels/data-deletion-status.ts";
@@ -28,7 +28,7 @@ const Completed = ({
 
 /**
  * A data deletion request's status, as the person Meta sent here reads
- * it: its code, and when Acme deleted the accounts it held, in the
+ * it: its code, and when Peal deleted the accounts it held, in the
  * reader's time zone once the page runs in their browser.
  */
 export const DataDeletionStatusView = ({

@@ -10,8 +10,8 @@ import {
   ScheduleInPast,
   UnknownChannels,
   UnknownMedia,
-} from "acme-contract";
-import type { Member, PostContent, SchedulePost } from "acme-contract";
+} from "peal-contract";
+import type { Member, PostContent, SchedulePost } from "peal-contract";
 import { Effect, Layer } from "effect";
 import { HttpServer } from "effect/http";
 import { HttpApiTest } from "effect/http-api";
@@ -109,13 +109,13 @@ describe("the posts endpoints", () => {
             params,
             payload: {
               channelIds: [bluesky, mastodon],
-              content: text("Better words #launch @acme_example"),
+              content: text("Better words #launch @peal_example"),
             },
           });
 
           assert.strictEqual(
             updated.content.text,
-            "Better words #launch @acme_example"
+            "Better words #launch @peal_example"
           );
           assert.lengthOf(updated.targets, 2);
 

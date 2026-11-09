@@ -1,4 +1,4 @@
-import type { NoticeChannel, NoticeEvent } from "acme-contract";
+import type { NoticeChannel, NoticeEvent } from "peal-contract";
 import { DateTime, Match } from "effect";
 import { useTranslations } from "next-intl";
 

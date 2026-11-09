@@ -95,7 +95,7 @@ export const fakeMastodon = Effect.fnUntraced(function* fakeMastodon(
         client_id: `client-${id}`,
         client_secret: `secret-${id}`,
         id,
-        name: "Acme",
+        name: "Peal",
       });
     }
 

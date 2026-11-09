@@ -584,7 +584,7 @@ export { WorkspaceNotFound } from "./workspace-not-found.ts";
 // The one definition of the HTTP API. The server implements it; the web app,
 // the CLI and the MCP server derive their typed clients from it, and the docs
 // render its OpenAPI document.
-export class Api extends HttpApi.make("acme")
+export class Api extends HttpApi.make("peal")
   .add(SystemApi)
   .add(SessionApi)
   .add(ApiKeysApi)
@@ -607,4 +607,4 @@ export class Api extends HttpApi.make("acme")
   .add(TikTokApi)
   .add(StaffApi)
   .add(ClientErrorsApi)
-  .annotateMerge(OpenApi.annotations({ title: "Acme API" })) {}
+  .annotateMerge(OpenApi.annotations({ title: "Peal API" })) {}

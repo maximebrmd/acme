@@ -17,4 +17,4 @@ export class PostAllowance extends Context.Service<
       workspaceId: WorkspaceId
     ) => Effect.Effect<Allowance, DatabaseError>;
   }
->()("acme-server/publishing/application/PostAllowance") {}
+>()("peal-server/publishing/application/PostAllowance") {}

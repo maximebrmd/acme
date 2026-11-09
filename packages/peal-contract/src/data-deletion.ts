@@ -11,7 +11,7 @@ import { MetaAppNotConfigured } from "./meta-app-not-configured.ts";
 import { SignedRequestRefused } from "./signed-request-refused.ts";
 
 /**
- * The Meta apps whose users can ask Acme to delete their data: `facebook`,
+ * The Meta apps whose users can ask Peal to delete their data: `facebook`,
  * the main app, whose Facebook Login connects Facebook Pages and Instagram
  * accounts, and `threads`, its Threads credentials.
  */
@@ -47,7 +47,7 @@ export const DataDeletionStatusSchema = Schema.Struct({
   completedAt: Schema.DateTimeUtc,
   confirmationCode: Schema.String,
   requestedAt: Schema.DateTimeUtc,
-  // Acme deletes the data when the request comes, so a request it knows is
+  // Peal deletes the data when the request comes, so a request it knows is
   // done.
   status: Schema.Literal("completed"),
 }).annotate({ identifier: "DataDeletionStatus" });
@@ -56,7 +56,7 @@ export type DataDeletionStatus = typeof DataDeletionStatusSchema.Type;
 
 /**
  * Meta's data deletion callbacks. Meta calls them, without signing in, when
- * one of its users asks for the data Acme holds about them to be deleted;
+ * one of its users asks for the data Peal holds about them to be deleted;
  * the request's signature, made with the app's secret, is its authority.
  */
 export class DataDeletionApi extends HttpApiGroup.make("dataDeletion")

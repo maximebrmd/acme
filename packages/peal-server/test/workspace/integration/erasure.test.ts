@@ -170,7 +170,7 @@ const kept = {
     "the ids of Stripe events already recorded, so none is recorded twice",
   "channels.data_deletions":
     "the codes and counts of Meta's deletion requests, which name nobody",
-  "channels.mastodon_apps": "Acme's own app on each Mastodon instance",
+  "channels.mastodon_apps": "Peal's own app on each Mastodon instance",
   "notifications.sent_notices":
     "the keys of events already told, ids and instants only",
   "publishing.quota_usage":
@@ -316,7 +316,7 @@ const fillPerson = Effect.fn("fillPerson")(function* fillPerson(
       (${uuid7()}, 'unban', now(), 'Synthetic reason', ${person.id}, ${randomUUID()})`;
 
   // A subscription made for the user rather than a workspace, as Better
-  // Auth's Stripe plugin would without Acme's guard.
+  // Auth's Stripe plugin would without Peal's guard.
   yield* sql`INSERT INTO auth.subscription (plan, reference_id, status)
     VALUES ('pro', ${person.id}, 'incomplete')`;
 });

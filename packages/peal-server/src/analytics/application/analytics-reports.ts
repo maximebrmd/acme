@@ -73,4 +73,4 @@ export class AnalyticsReports extends Context.Service<
       top: number
     ) => Effect.Effect<ReportRows, DatabaseError>;
   }
->()("acme-server/analytics/application/AnalyticsReports") {}
+>()("peal-server/analytics/application/AnalyticsReports") {}

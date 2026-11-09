@@ -106,4 +106,4 @@ export class AccountStore extends Context.Service<
      */
     readonly deleteUser: (userId: UserId) => Effect.Effect<void, DatabaseError>;
   }
->()("acme-server/workspace/application/AccountStore") {}
+>()("peal-server/workspace/application/AccountStore") {}

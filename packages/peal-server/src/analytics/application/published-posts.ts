@@ -26,4 +26,4 @@ export class PublishedPosts extends Context.Service<
       limit: number
     ) => Effect.Effect<readonly Publication[], DatabaseError>;
   }
->()("acme-server/analytics/application/PublishedPosts") {}
+>()("peal-server/analytics/application/PublishedPosts") {}

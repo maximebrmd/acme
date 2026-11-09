@@ -1,4 +1,4 @@
-import { OAuthApi } from "acme-contract";
+import { OAuthApi } from "peal-contract";
 import { Effect, Exit, Option } from "effect";
 import { FetchHttpClient, HttpClient, HttpClientRequest } from "effect/http";
 import { HttpApiClient } from "effect/http-api";

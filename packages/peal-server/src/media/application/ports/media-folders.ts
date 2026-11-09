@@ -20,4 +20,4 @@ export class MediaFolders extends Context.Service<
       workspaceId: WorkspaceId
     ) => Effect.Effect<void, MediaStorageFailed>;
   }
->()("acme-server/media/application/MediaFolders") {}
+>()("peal-server/media/application/MediaFolders") {}

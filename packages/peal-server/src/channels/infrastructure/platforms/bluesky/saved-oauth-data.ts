@@ -10,7 +10,7 @@ import type {
 import { Option, Schema } from "effect";
 
 // What the AT Protocol OAuth client keeps between calls, as JSON: a pending
-// sign-in (its state store) and a session (its session store). Acme stores
+// sign-in (its state store) and a session (its session store). Peal stores
 // both encrypted, and parses them back here before the client sees them.
 
 const AuthMethodSchema = Schema.Union([

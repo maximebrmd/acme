@@ -1,5 +1,5 @@
 {
-  "name": "acme-web",
+  "name": "peal-web",
   "private": true,
   "license": "FSL-1.1-ALv2",
   "type": "module",
@@ -20,8 +20,8 @@
     "@tiptap/extensions": "3.33.0",
     "@tiptap/pm": "3.33.0",
     "@tiptap/react": "3.33.0",
-    "acme-contract": "workspace:*",
-    "acme-ui": "workspace:*",
+    "peal-contract": "workspace:*",
+    "peal-ui": "workspace:*",
     "better-auth": "1.7.18",
     "effect": "4.1.2",
     "lucide-react": "1.70.0",

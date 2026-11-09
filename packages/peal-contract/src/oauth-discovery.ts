@@ -13,7 +13,7 @@ export const ProtectedResourceSchema = Schema.Struct({
 
 export type ProtectedResource = typeof ProtectedResourceSchema.Type;
 
-/** RFC 8414 authorization server metadata, the fields Acme's clients read. */
+/** RFC 8414 authorization server metadata, the fields Peal's clients read. */
 export const AuthorizationServerSchema = Schema.Struct({
   device_authorization_endpoint: Schema.optional(Schema.String),
   issuer: Schema.String,

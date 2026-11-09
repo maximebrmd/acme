@@ -1,8 +1,8 @@
 "use client";
 
 import { useAtomRefresh, useAtomValue } from "@effect/atom-react";
-import { Badge } from "acme-ui/components/badge";
-import { Button } from "acme-ui/components/button";
+import { Badge } from "peal-ui/components/badge";
+import { Button } from "peal-ui/components/button";
 import {
   Card,
   CardAction,
@@ -11,7 +11,7 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "acme-ui/components/card";
+} from "peal-ui/components/card";
 import { useTranslations } from "next-intl";
 
 import { apiStatus, health } from "#api/health.ts";

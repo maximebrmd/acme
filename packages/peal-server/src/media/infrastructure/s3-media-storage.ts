@@ -59,19 +59,19 @@ import {
 //
 // Settings, from the environment. Production must name the store; elsewhere
 // it defaults to the development stack's SeaweedFS
-// (packages/acme-docker/compose.yaml), so the server runs without setup.
+// (packages/peal-docker/compose.yaml), so the server runs without setup.
 //
 // | Variable                     | Meaning                                         |
 // | ---------------------------- | ----------------------------------------------- |
-// | ACME_S3_ENDPOINT             | the S3 API's URL (required in production)       |
-// | ACME_S3_REGION               | signing region, "auto" by default (R2)          |
-// | ACME_S3_BUCKET               | the bucket (required in production)             |
-// | ACME_S3_ACCESS_KEY_ID        | access key (required in production, redacted)   |
-// | ACME_S3_SECRET_ACCESS_KEY    | secret key (required in production, redacted)   |
-// | ACME_S3_FORCE_PATH_STYLE     | "true" for bucket-in-path URLs (SeaweedFS), the |
+// | PEAL_S3_ENDPOINT             | the S3 API's URL (required in production)       |
+// | PEAL_S3_REGION               | signing region, "auto" by default (R2)          |
+// | PEAL_S3_BUCKET               | the bucket (required in production)             |
+// | PEAL_S3_ACCESS_KEY_ID        | access key (required in production, redacted)   |
+// | PEAL_S3_SECRET_ACCESS_KEY    | secret key (required in production, redacted)   |
+// | PEAL_S3_FORCE_PATH_STYLE     | "true" for bucket-in-path URLs (SeaweedFS), the |
 // |                              | default outside production                      |
-// | ACME_S3_KEY_PREFIX           | prefix for every key, such as "staging/"        |
-// | ACME_MEDIA_PUBLIC_BASE_URL   | where the bucket is served publicly, if it is   |
+// | PEAL_S3_KEY_PREFIX           | prefix for every key, such as "staging/"        |
+// | PEAL_MEDIA_PUBLIC_BASE_URL   | where the bucket is served publicly, if it is   |
 
 /** Segments of letters, digits, `.`, `-` or `_`, each ending with `/`. */
 const KeyPrefixSchema = Schema.String.check(
@@ -80,34 +80,34 @@ const KeyPrefixSchema = Schema.String.check(
 
 export const S3StorageConfig = Config.all({
   accessKeyId: requiredInProduction(
-    Config.Redacted("ACME_S3_ACCESS_KEY_ID"),
-    Redacted.make("acme")
+    Config.Redacted("PEAL_S3_ACCESS_KEY_ID"),
+    Redacted.make("peal")
   ),
   bucket: requiredInProduction(
-    Config.NonEmptyString("ACME_S3_BUCKET"),
-    "acme-media"
+    Config.NonEmptyString("PEAL_S3_BUCKET"),
+    "peal-media"
   ),
   endpoint: requiredInProduction(
-    Config.URL("ACME_S3_ENDPOINT"),
+    Config.URL("PEAL_S3_ENDPOINT"),
     new URL("http://127.0.0.1:18333")
   ),
   forcePathStyle: isProduction.pipe(
     Config.flatMap((production) =>
-      Config.Boolean("ACME_S3_FORCE_PATH_STYLE").pipe(
+      Config.Boolean("PEAL_S3_FORCE_PATH_STYLE").pipe(
         Config.withDefault(!production)
       )
     )
   ),
-  keyPrefix: Config.schema(KeyPrefixSchema, "ACME_S3_KEY_PREFIX").pipe(
+  keyPrefix: Config.schema(KeyPrefixSchema, "PEAL_S3_KEY_PREFIX").pipe(
     Config.withDefault("")
   ),
-  publicBaseUrl: Config.option(Config.URL("ACME_MEDIA_PUBLIC_BASE_URL")),
-  region: Config.NonEmptyString("ACME_S3_REGION").pipe(
+  publicBaseUrl: Config.option(Config.URL("PEAL_MEDIA_PUBLIC_BASE_URL")),
+  region: Config.NonEmptyString("PEAL_S3_REGION").pipe(
     Config.withDefault("auto")
   ),
   secretAccessKey: requiredInProduction(
-    Config.Redacted("ACME_S3_SECRET_ACCESS_KEY"),
-    Redacted.make("acme-development-secret")
+    Config.Redacted("PEAL_S3_SECRET_ACCESS_KEY"),
+    Redacted.make("peal-development-secret")
   ),
 });
 

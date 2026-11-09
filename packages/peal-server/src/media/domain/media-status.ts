@@ -39,7 +39,7 @@ export const ProbeFailureReasonSchema = Schema.Literals([
   "unreadable",
   // Reading it took longer than the probe allows.
   "timedOut",
-  // The store served more bytes than acme stores for the file's kind.
+  // The store served more bytes than peal stores for the file's kind.
   "tooLarge",
   // The probing program could not run, or printed nothing it understands.
   "toolFailed",

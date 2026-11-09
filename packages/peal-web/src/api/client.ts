@@ -1,4 +1,4 @@
-import { Api } from "acme-contract";
+import { Api } from "peal-contract";
 import { Effect, Layer } from "effect";
 import { FetchHttpClient, HttpClient, HttpClientRequest } from "effect/http";
 import { Atom, AtomHttpApi } from "effect/reactivity";
@@ -22,10 +22,10 @@ const fetchFrom = (baseUrl: string) =>
     })
   ).pipe(Layer.provide(FetchHttpClient.layer));
 
-// The typed client derived from acme-contract, with atoms for queries and
+// The typed client derived from peal-contract, with atoms for queries and
 // mutations. Components read it through @effect/atom-react.
-export class AcmeApi extends AtomHttpApi.Service<AcmeApi>()(
-  "acme-web/AcmeApi",
+export class PealApi extends AtomHttpApi.Service<PealApi>()(
+  "peal-web/PealApi",
   {
     api: Api,
     httpClient: (get) => fetchFrom(get(apiBaseUrl)),

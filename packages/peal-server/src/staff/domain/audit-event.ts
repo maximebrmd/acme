@@ -13,7 +13,7 @@ import { StaffReasonSchema } from "./staff-reason.ts";
  * given about it; the action and its time stay.
  */
 export class AuditEvent extends Schema.Class<AuditEvent>(
-  "acme-server/staff/domain/AuditEvent"
+  "peal-server/staff/domain/AuditEvent"
 )({
   action: StaffActionSchema,
   at: Schema.DateTimeUtc,

@@ -40,7 +40,7 @@ export class ApiKeys extends Context.Service<
       ApiKeyNotFound | AuthUnavailable | MissingPermission
     >;
   }
->()("acme-server/workspace/application/ApiKeys") {
+>()("peal-server/workspace/application/ApiKeys") {
   static readonly layer = Layer.effect(
     ApiKeys,
     Effect.gen(function* apiKeys() {

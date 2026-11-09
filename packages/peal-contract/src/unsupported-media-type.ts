@@ -1,12 +1,12 @@
 import { Schema } from "effect";
 
-/** The declared content type is not one Acme stores. */
+/** The declared content type is not one Peal stores. */
 export class UnsupportedMediaType extends Schema.TaggedError<UnsupportedMediaType>()(
   "UnsupportedMediaType",
   { contentType: Schema.String },
   {
     description:
-      "Acme does not store files of this content type. It takes JPEG, PNG, GIF and WebP images, and MP4 and QuickTime videos.",
+      "Peal does not store files of this content type. It takes JPEG, PNG, GIF and WebP images, and MP4 and QuickTime videos.",
     httpApiStatus: 422,
   }
 ) {}

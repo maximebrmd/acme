@@ -23,7 +23,7 @@ export const generateMetadata = async ({
 
 // The staff console, for staff in their own session only: anyone else,
 // signed in or not, gets the not-found page, as the API answers them 404.
-// Cloudflare Access guards /admin too on Acme's own servers.
+// Cloudflare Access guards /admin too on Peal's own servers.
 const StaffLayout = async ({
   children,
   params,

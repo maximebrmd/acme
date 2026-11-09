@@ -41,4 +41,4 @@ export class DataDeletions extends Context.Service<
       code: string
     ) => Effect.Effect<Option.Option<DataDeletion>, DatabaseError>;
   }
->()("acme-server/channels/application/DataDeletions") {}
+>()("peal-server/channels/application/DataDeletions") {}

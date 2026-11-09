@@ -1,8 +1,8 @@
 // What reaches an OpenTelemetry collector when the web app reports an error:
 // the log, with its attributes, and the counter Prometheus reads as
-// acme_client_errors_total, which the alert and the dashboard query.
+// peal_client_errors_total, which the alert and the dashboard query.
 import { assert, describe, it } from "@effect/vitest";
-import { Api } from "acme-contract";
+import { Api } from "peal-contract";
 import { ConfigProvider, Effect, Layer } from "effect";
 import { HttpClient, HttpClientResponse, HttpServer } from "effect/http";
 import { HttpApiTest } from "effect/http-api";
@@ -93,12 +93,12 @@ describe("an error report's telemetry", () => {
 
       assert.include(
         logs,
-        '"key":"event.name","value":{"stringValue":"acme.client_error"}'
+        '"key":"event.name","value":{"stringValue":"peal.client_error"}'
       );
       // Severity 17 and up, which Loki and the alerts read as errors.
       assert.include(logs, '"severityNumber":17');
       assert.include(logs, '"severityText":"Error"');
-      assert.include(metrics, '"name":"acme.client_errors"');
+      assert.include(metrics, '"name":"peal.client_errors"');
       assert.include(metrics, '"isMonotonic":true');
     })
   );

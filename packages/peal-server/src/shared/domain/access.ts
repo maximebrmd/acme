@@ -125,7 +125,7 @@ export type ActorSubject = typeof ActorSubjectSchema.Type;
  * every context take an Actor and check it with `can`.
  */
 export class Actor extends Schema.Class<Actor>(
-  "acme-server/shared/domain/Actor"
+  "peal-server/shared/domain/Actor"
 )({
   permissions: Schema.Array(PermissionSchema),
   subject: ActorSubjectSchema,

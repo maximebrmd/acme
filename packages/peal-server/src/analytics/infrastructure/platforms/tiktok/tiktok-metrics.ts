@@ -32,7 +32,7 @@ export interface TikTokMetricsOptions {
   readonly http: PlatformHttp;
 }
 
-/** The scope that lets Acme read the creator's videos. */
+/** The scope that lets Peal read the creator's videos. */
 export const videoListScope = "video.list";
 
 // /v2/video/query/ takes 20 video ids at most.
@@ -88,7 +88,7 @@ const failedOn = (posts: readonly PostToRead[]): Call => ({
  * call; so is a video TikTok does not return, deleted or no longer the
  * creator's. A channel whose creator did not allow `video.list` reads
  * nothing until it is reconnected. TikTok's 429 halts the read; a failure,
- * no answer, or an answer Acme cannot read marks the call's posts failed
+ * no answer, or an answer Peal cannot read marks the call's posts failed
  * and halts.
  */
 export const tiktokMetrics = Effect.fn("TikTokMetrics.make")(

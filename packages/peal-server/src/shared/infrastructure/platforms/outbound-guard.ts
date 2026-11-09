@@ -83,9 +83,9 @@ const lookupFailure = (host: string, error: Dns.DnsError) =>
 
 /**
  * Checks URLs that users chose (a Mastodon instance, a Bluesky server named
- * in a DID document) before Acme sends anything there: HTTPS on the default
+ * in a DID document) before Peal sends anything there: HTTPS on the default
  * port, to a host whose every address is public, so a request cannot reach a
- * service inside Acme's own network. Clients that use it follow no redirects.
+ * service inside Peal's own network. Clients that use it follow no redirects.
  *
  * The check resolves the name itself, so a name that changes its answer
  * between this lookup and the connection could still lead elsewhere; the
@@ -96,7 +96,7 @@ export class OutboundGuard extends Context.Service<
   {
     readonly check: (url: URL) => Effect.Effect<void, OutboundRequestRefused>;
   }
->()("acme-server/shared/infrastructure/OutboundGuard") {
+>()("peal-server/shared/infrastructure/OutboundGuard") {
   /** The guard, resolving names with the runtime's `Dns`. */
   static readonly layer = Layer.effect(
     OutboundGuard,

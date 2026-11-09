@@ -32,4 +32,4 @@ export class PlatformQuota extends Context.Service<
       spending: QuotaSpending
     ) => Effect.Effect<void, DatabaseError>;
   }
->()("acme-server/publishing/application/PlatformQuota") {}
+>()("peal-server/publishing/application/PlatformQuota") {}

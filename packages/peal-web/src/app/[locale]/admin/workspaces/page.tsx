@@ -5,7 +5,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "acme-ui/components/table";
+} from "peal-ui/components/table";
 import { DateTime } from "effect";
 import { hasLocale } from "next-intl";
 import { getTranslations } from "next-intl/server";

@@ -49,7 +49,7 @@
   ansible.builtin.copy:
     dest: /etc/apt/preferences.d/docker
     content: |
-      # Managed by Ansible (acme-infra): Docker's packages stay at these
+      # Managed by Ansible (peal-infra): Docker's packages stay at these
       # versions (docker_packages).
       {% for name, version in docker_packages | dictsort %}
 

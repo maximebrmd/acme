@@ -4,7 +4,7 @@ import { RejectionReasonSchema } from "./media-status.ts";
 
 /**
  * The stored file is not the one declared: another size, or another type.
- * Acme deleted it, and the media is rejected.
+ * Peal deleted it, and the media is rejected.
  */
 export class UploadRejected extends Schema.TaggedError<UploadRejected>()(
   "UploadRejected",

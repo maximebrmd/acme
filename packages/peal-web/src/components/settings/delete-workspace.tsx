@@ -10,10 +10,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "acme-ui/components/alert-dialog";
-import { Button } from "acme-ui/components/button";
-import { Input } from "acme-ui/components/input";
-import { Label } from "acme-ui/components/label";
+} from "peal-ui/components/alert-dialog";
+import { Button } from "peal-ui/components/button";
+import { Input } from "peal-ui/components/input";
+import { Label } from "peal-ui/components/label";
 import { Option } from "effect";
 import { useTranslations } from "next-intl";
 import { useId, useState, useTransition } from "react";

@@ -1,7 +1,7 @@
 "use client";
 
 import { useAtomSet } from "@effect/atom-react";
-import type { Channel, ChannelStatus } from "acme-contract";
+import type { Channel, ChannelStatus } from "peal-contract";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -12,10 +12,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "acme-ui/components/alert-dialog";
-import { Avatar, AvatarFallback, AvatarImage } from "acme-ui/components/avatar";
-import { Badge } from "acme-ui/components/badge";
-import { Button } from "acme-ui/components/button";
+} from "peal-ui/components/alert-dialog";
+import { Avatar, AvatarFallback, AvatarImage } from "peal-ui/components/avatar";
+import { Badge } from "peal-ui/components/badge";
+import { Button } from "peal-ui/components/button";
 import { DateTime, Option } from "effect";
 import { useTranslations } from "next-intl";
 import { useTransition } from "react";

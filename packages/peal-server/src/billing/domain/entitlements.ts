@@ -12,7 +12,7 @@ import { entitles, Subscription } from "./subscription.ts";
  * it. No plan at all on a server that does not bill, which limits nothing.
  */
 export class Entitlements extends Schema.Class<Entitlements>(
-  "acme-server/billing/domain/Entitlements"
+  "peal-server/billing/domain/Entitlements"
 )({
   plan: Schema.Option(PlanSchema),
   subscription: Schema.Option(Subscription),

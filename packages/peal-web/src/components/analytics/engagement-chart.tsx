@@ -1,14 +1,14 @@
 "use client";
 
-import type { EngagementDay } from "acme-contract";
+import type { EngagementDay } from "peal-contract";
 import {
   ChartContainer,
   ChartLegend,
   ChartLegendContent,
   ChartTooltip,
   ChartTooltipContent,
-} from "acme-ui/components/chart";
-import type { ChartConfig } from "acme-ui/components/chart";
+} from "peal-ui/components/chart";
+import type { ChartConfig } from "peal-ui/components/chart";
 import {
   Table,
   TableBody,
@@ -17,13 +17,13 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "acme-ui/components/table";
+} from "peal-ui/components/table";
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from "acme-ui/components/tabs";
+} from "peal-ui/components/tabs";
 import { useFormatter, useTranslations } from "next-intl";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 

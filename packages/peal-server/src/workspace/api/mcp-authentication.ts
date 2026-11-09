@@ -1,4 +1,4 @@
-import { CurrentMember } from "acme-contract";
+import { CurrentMember } from "peal-contract";
 import { Effect, Option, Redacted } from "effect";
 import { HttpRouter, HttpServerRequest, HttpServerResponse } from "effect/http";
 

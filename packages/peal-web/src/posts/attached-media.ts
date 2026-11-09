@@ -1,11 +1,11 @@
 "use client";
 
 import { useAtomValue } from "@effect/atom-react";
-import type { MediaAttachment } from "acme-contract";
+import type { MediaAttachment } from "peal-contract";
 import { Option } from "effect";
 import { AsyncResult, Atom } from "effect/reactivity";
 
-import { AcmeApi } from "#api/client.ts";
+import { PealApi } from "#api/client.ts";
 import { mediaKey } from "#media/atoms.ts";
 import type { AttachedMedia } from "#posts/media-fit.ts";
 
@@ -14,7 +14,7 @@ import type { AttachedMedia } from "#posts/media-fit.ts";
  * workspace's media change.
  */
 export const mediaItem = (workspaceId: string, mediaId: string) =>
-  AcmeApi.query("media", "get", {
+  PealApi.query("media", "get", {
     params: { mediaId, workspaceId },
     reactivityKeys: [mediaKey(workspaceId)],
   });

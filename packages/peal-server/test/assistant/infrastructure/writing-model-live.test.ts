@@ -47,7 +47,7 @@ const decodeChatRequest = Schema.decodeUnknownSync(
   )
 );
 
-// Inside a span of Acme's, whose context the provider must not be sent.
+// Inside a span of Peal's, whose context the provider must not be sent.
 const write = WritingModel.use((model) =>
   model.write(prompt, TextAnswerSchema)
 ).pipe(Effect.withSpan("test.write"));

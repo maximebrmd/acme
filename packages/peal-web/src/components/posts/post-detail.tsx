@@ -8,8 +8,8 @@ import type {
   PostTarget,
   PublicationAttempt,
   TargetConfirmation,
-} from "acme-contract";
-import { Alert, AlertDescription } from "acme-ui/components/alert";
+} from "peal-contract";
+import { Alert, AlertDescription } from "peal-ui/components/alert";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,9 +20,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "acme-ui/components/alert-dialog";
-import { Badge } from "acme-ui/components/badge";
-import { Button } from "acme-ui/components/button";
+} from "peal-ui/components/alert-dialog";
+import { Badge } from "peal-ui/components/badge";
+import { Button } from "peal-ui/components/button";
 import {
   Card,
   CardAction,
@@ -31,7 +31,7 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "acme-ui/components/card";
+} from "peal-ui/components/card";
 import {
   Dialog,
   DialogClose,
@@ -41,9 +41,9 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "acme-ui/components/dialog";
-import { Input } from "acme-ui/components/input";
-import { Label } from "acme-ui/components/label";
+} from "peal-ui/components/dialog";
+import { Input } from "peal-ui/components/input";
+import { Label } from "peal-ui/components/label";
 import { DateTime, Exit, Option } from "effect";
 import { AsyncResult } from "effect/reactivity";
 import { useTranslations } from "next-intl";
@@ -512,7 +512,7 @@ const refreshEvery = 5000;
 
 /**
  * The detail of a post that went out, with what members with post:schedule
- * can do about each channel: repost it, or say what they found when Acme
+ * can do about each channel: repost it, or say what they found when Peal
  * could not tell. It updates while the post is publishing.
  */
 export const PostDetail = ({

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "@effect/vitest";
-import { ClientErrorReportSchema, clientErrorLimits } from "acme-contract";
+import { ClientErrorReportSchema, clientErrorLimits } from "peal-contract";
 import { Schema } from "effect";
 
 import { pathOf, reportOf } from "#errors/report.ts";
@@ -53,7 +53,7 @@ describe(reportOf, () => {
   it("names nobody: no address, id or key it quotes", () => {
     const report = reportOf(
       new Error(
-        "No member sam@example.test in 5b0c6e64-5d0f-4a7e-9a52-3f1c2d4e5f60, key acme_synthetic_123"
+        "No member sam@example.test in 5b0c6e64-5d0f-4a7e-9a52-3f1c2d4e5f60, key peal_synthetic_123"
       ),
       {
         ...place,

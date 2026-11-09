@@ -64,7 +64,7 @@ export class Authenticate extends Context.Service<
       options: { readonly fresh: boolean }
     ) => Effect.Effect<UserPrincipal, AuthUnavailable | NotSignedIn>;
   }
->()("acme-server/workspace/application/Authenticate") {
+>()("peal-server/workspace/application/Authenticate") {
   static readonly layer = Layer.effect(
     Authenticate,
     Effect.gen(function* authenticate() {

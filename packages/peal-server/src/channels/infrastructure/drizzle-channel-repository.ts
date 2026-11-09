@@ -150,7 +150,7 @@ export const DrizzleChannelRepository = Layer.effect(
       addingTo: (workspaceId, adding) =>
         client
           .withTransaction(
-            client`SELECT pg_advisory_xact_lock(hashtext('acme-server/channels/additions'), hashtext(${workspaceId}))`.pipe(
+            client`SELECT pg_advisory_xact_lock(hashtext('peal-server/channels/additions'), hashtext(${workspaceId}))`.pipe(
               Effect.andThen(adding)
             )
           )

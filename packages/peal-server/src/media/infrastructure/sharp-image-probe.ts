@@ -40,7 +40,7 @@ const ascii = (text: string): readonly number[] => [
   ...new TextEncoder().encode(text),
 ];
 
-// How files of each image type acme takes begin: bytes at an offset.
+// How files of each image type peal takes begin: bytes at an offset.
 const signatures: readonly {
   readonly contentType: MediaContentType;
   readonly starts: readonly (readonly [number, readonly number[]])[];
@@ -61,7 +61,7 @@ const signatures: readonly {
   },
 ];
 
-/** The image type a file's first bytes announce, if acme takes it. */
+/** The image type a file's first bytes announce, if peal takes it. */
 export const sniffImageType = (
   bytes: Uint8Array
 ): Option.Option<MediaContentType> =>
@@ -73,7 +73,7 @@ export const sniffImageType = (
     )
   ).pipe(Option.map(({ contentType }) => contentType));
 
-// The formats acme takes, as sharp names them.
+// The formats peal takes, as sharp names them.
 const sharpFormats = new Map<string, MediaContentType>([
   ["gif", "image/gif"],
   ["jpeg", "image/jpeg"],

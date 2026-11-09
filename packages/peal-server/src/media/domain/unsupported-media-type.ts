@@ -1,6 +1,6 @@
 import { Schema } from "effect";
 
-/** A file whose content type acme does not store. */
+/** A file whose content type peal does not store. */
 export class UnsupportedMediaType extends Schema.TaggedError<UnsupportedMediaType>()(
   "UnsupportedMediaType",
   { contentType: Schema.String }

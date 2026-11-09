@@ -1,4 +1,4 @@
-// Writes the OpenAPI document that acme-docs renders as the API reference.
+// Writes the OpenAPI document that peal-docs renders as the API reference.
 import path from "node:path";
 
 import { OpenApi } from "effect/http-api";

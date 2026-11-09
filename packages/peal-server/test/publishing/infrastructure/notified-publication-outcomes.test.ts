@@ -235,7 +235,7 @@ describe("the notices of a post's outcomes", () => {
           const expected: NoticeRequest["event"] = {
             _tag: "PostFailed",
             channel: Option.some({
-              handle: "@acme_example",
+              handle: "@peal_example",
               platform: "bluesky",
             }),
             postId: post.id,
@@ -257,7 +257,7 @@ describe("the notices of a post's outcomes", () => {
 
           assert.deepStrictEqual(
             sent.map(({ subject }) => subject),
-            ["A post did not go out on Bluesky (@acme_example)"]
+            ["A post did not go out on Bluesky (@peal_example)"]
           );
           assert.include(
             sent[0]?.text ?? "",

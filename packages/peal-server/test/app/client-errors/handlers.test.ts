@@ -1,6 +1,6 @@
 import { assert, layer } from "@effect/vitest";
-import { Api } from "acme-contract";
-import type { ClientErrorReport } from "acme-contract";
+import { Api } from "peal-contract";
+import type { ClientErrorReport } from "peal-contract";
 import {
   Effect,
   Layer,
@@ -70,15 +70,15 @@ layer(HandlersLive)("the error reports' handler", (it) => {
       yield* client.reportClientError({ payload: report });
 
       const entry = logged.find(
-        ({ annotations }) => annotations["event.name"] === "acme.client_error"
+        ({ annotations }) => annotations["event.name"] === "peal.client_error"
       );
 
       assert.strictEqual(entry?.level, "Error");
       assert.deepStrictEqual(entry?.annotations, {
-        "acme.client_error.digest": "2154981321",
-        "acme.client_error.kind": "boundary",
-        "acme.web.release": "2026.11.0",
-        "event.name": "acme.client_error",
+        "peal.client_error.digest": "2154981321",
+        "peal.client_error.kind": "boundary",
+        "peal.web.release": "2026.11.0",
+        "event.name": "peal.client_error",
         "exception.message": "No workspace [id] for [email]",
         "http.route": "/[locale]/app/[workspaceId]/calendar",
         "url.path": "/app/:id/calendar",

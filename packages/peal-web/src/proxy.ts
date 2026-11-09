@@ -7,9 +7,9 @@ import { routing } from "#i18n/routing.ts";
 
 const handleI18nRouting = createMiddleware(routing);
 
-// /api/* and the OAuth discovery documents go to the Acme server (see
+// /api/* and the OAuth discovery documents go to the Peal server (see
 // src/api/forward.ts). The rewrite lives here rather than in next.config.ts
-// because Next resolves config rewrites at build time; here ACME_API_URL is
+// because Next resolves config rewrites at build time; here PEAL_API_URL is
 // read per request. Everything else is a page: negotiate its locale, with
 // English unprefixed and French under /fr.
 const proxy = (request: NextRequest) =>

@@ -91,9 +91,9 @@ export interface AuthDependencies {
 // PUBLIC_URL. The web app forwards /api/* to the server unchanged.
 export const authBasePath = "/api/auth";
 
-// Session cookies are named acme.session_token, or __Secure-acme.session_token
+// Session cookies are named peal.session_token, or __Secure-peal.session_token
 // over HTTPS.
-export const cookiePrefix = "acme";
+export const cookiePrefix = "peal";
 
 // Better Auth passes users as its core type; their locale is an additional
 // field it does not type.
@@ -303,7 +303,7 @@ export const makeAuth = ({ database, hooks, settings }: AuthDependencies) =>
         trustedProxies: [...settings.trustedProxies],
       },
     },
-    appName: "Acme",
+    appName: "Peal",
     basePath: authBasePath,
     baseURL: settings.publicUrl,
     database: drizzleAdapter(database.db, {
@@ -312,7 +312,7 @@ export const makeAuth = ({ database, hooks, settings }: AuthDependencies) =>
       schemaName: "auth",
       transaction: true,
     }),
-    // API keys go through Acme's own API only (/api/workspaces/:id/api-keys):
+    // API keys go through Peal's own API only (/api/workspaces/:id/api-keys):
     // their permissions are the server's to set, and staff impersonating a
     // member may not see or revoke them, which Better Auth's routes ignore.
     //
@@ -321,7 +321,7 @@ export const makeAuth = ({ database, hooks, settings }: AuthDependencies) =>
     // OAuth clients are registered by the server (the command line's) or by
     // MCP clients themselves, never by signed-in users.
     //
-    // Workspaces and accounts are deleted through Acme's API too
+    // Workspaces and accounts are deleted through Peal's API too
     // (DELETE /api/workspaces/:id and DELETE /api/me), which delete what
     // every context keeps: the admin plugin's removal of a user would leave
     // their notices, preferences and the workspaces they alone belonged to.
@@ -437,7 +437,7 @@ export const makeAuth = ({ database, hooks, settings }: AuthDependencies) =>
           // with no foreign key, and would otherwise outlive it. They go
           // first, so that a failure may leave a workspace without its keys,
           // never keys without their workspace. The route that runs this is
-          // disabled: Acme's DeleteWorkspace deletes workspaces, and asks
+          // disabled: Peal's DeleteWorkspace deletes workspaces, and asks
           // billing first.
           beforeDeleteOrganization: async (
             { organization: workspace },
@@ -485,7 +485,7 @@ export const makeAuth = ({ database, hooks, settings }: AuthDependencies) =>
       }),
       admin({ adminRoles: ["admin"], impersonationSessionDuration: oneHour }),
       apiKey({
-        defaultPrefix: "acme_",
+        defaultPrefix: "peal_",
         enableMetadata: true,
         keyExpiration: { defaultExpiresIn: null, maxExpiresIn: 365 },
         // These become the defaults of the apikey table's columns, so they
@@ -543,4 +543,4 @@ export const makeAuth = ({ database, hooks, settings }: AuthDependencies) =>
     },
   });
 
-export type AcmeAuth = ReturnType<typeof makeAuth>;
+export type PealAuth = ReturnType<typeof makeAuth>;

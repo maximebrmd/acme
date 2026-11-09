@@ -3,7 +3,7 @@ import {
   StaffActionSchema,
   StaffRefusalSchema,
   maxStaffReasonLength,
-} from "acme-contract";
+} from "peal-contract";
 
 import { StaffActionSchema as ServerActions } from "#staff/domain/staff-action.ts";
 import { maxReasonLength } from "#staff/domain/staff-reason.ts";

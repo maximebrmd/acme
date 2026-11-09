@@ -13,7 +13,7 @@ import { apiResourceOf, cliClientId } from "./oauth.ts";
 import { AuthSettings } from "./settings.ts";
 
 /**
- * Registers the command line's OAuth client, `acme-cli`, when the server
+ * Registers the command line's OAuth client, `peal-cli`, when the server
  * starts. Better Auth issues client ids at random, so the client is written
  * to its tables directly: public (no secret), signing in with the device
  * authorization grant and renewing its tokens, for the HTTP API only. It has
@@ -40,7 +40,7 @@ export const CliClientLive = Layer.effectDiscard(
         createdAt: now,
         disabled: false,
         grantTypes: [DEVICE_CODE_GRANT_TYPE, "refresh_token"],
-        name: "Acme CLI",
+        name: "Peal CLI",
         redirectUris: [],
         responseTypes: [],
         scopes: ["offline_access", "workspace:read", "workspace:write"],

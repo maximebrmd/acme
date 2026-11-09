@@ -50,4 +50,4 @@ export class PlatformCredentials extends Context.Service<
       use: (token: PublishingToken) => Effect.Effect<A, E | TokenRejected, R>
     ) => Effect.Effect<A, CredentialFailure | Exclude<E, TokenRejected>, R>;
   }
->()("acme-server/publishing/application/PlatformCredentials") {}
+>()("peal-server/publishing/application/PlatformCredentials") {}

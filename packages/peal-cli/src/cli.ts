@@ -1,7 +1,7 @@
 import { Effect } from "effect";
 import { Command } from "effect/cli";
 
-import { AcmeApi } from "#api.ts";
+import { PealApi } from "#api.ts";
 import { account } from "#commands/account.ts";
 import { analytics } from "#commands/analytics.ts";
 import { billing } from "#commands/billing.ts";
@@ -18,13 +18,13 @@ import { whoami } from "#commands/whoami.ts";
 import { CredentialStore } from "#credentials.ts";
 import manifest from "#package.json" with { type: "json" };
 import { printableConsole } from "#print.ts";
-import { acme } from "#root.ts";
+import { peal } from "#root.ts";
 
 // The command tree. Every subcommand gets the API client for the URL that
-// --api-url or ACME_API_URL names, and the saved sign-ins; the transport
+// --api-url or PEAL_API_URL names, and the saved sign-ins; the transport
 // (HttpClient) and the file system come from the caller, so main.ts uses
 // fetch and the disk, and tests an in-memory server.
-export const cli = acme.pipe(
+export const cli = peal.pipe(
   Command.withSubcommands([
     health,
     login,
@@ -40,7 +40,7 @@ export const cli = acme.pipe(
     invitations,
     account,
   ]),
-  Command.provide(({ apiUrl }) => AcmeApi.layer(apiUrl)),
+  Command.provide(({ apiUrl }) => PealApi.layer(apiUrl)),
   Command.provide(CredentialStore.layer)
 );
 

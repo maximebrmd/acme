@@ -34,7 +34,7 @@ const changes = (studio: Studio) =>
 
 const inStudio = ["--workspace", "studio"];
 
-// acme posts confirm, for the unconfirmed target of the post that finished.
+// peal posts confirm, for the unconfirmed target of the post that finished.
 const confirm = (...rest: readonly string[]) => [
   "posts",
   "confirm",
@@ -46,14 +46,14 @@ const confirm = (...rest: readonly string[]) => [
 
 describe("choosing the workspace", () => {
   it.effect(
-    "asks which one when the user belongs to several, and takes a slug, an id or ACME_WORKSPACE",
+    "asks which one when the user belongs to several, and takes a slug, an id or PEAL_WORKSPACE",
     () =>
       Effect.gen(function* chooses() {
         const session = yield* signedIn();
 
         assert.include(
           yield* session.refused(["drafts", "list"]),
-          "You belong to several workspaces: name one with --workspace or ACME_WORKSPACE (studio, shop)."
+          "You belong to several workspaces: name one with --workspace or PEAL_WORKSPACE (studio, shop)."
         );
         assert.include(
           yield* session.printed(["drafts", "list", "--workspace", "studio"]),
@@ -70,11 +70,11 @@ describe("choosing the workspace", () => {
         );
         assert.include(
           yield* session.refused(["drafts", "list", "--workspace", "attic"]),
-          "You belong to no workspace attic. acme whoami lists yours."
+          "You belong to no workspace attic. peal whoami lists yours."
         );
 
         const fromEnvironment = yield* signedIn({
-          env: { ACME_WORKSPACE: "studio" },
+          env: { PEAL_WORKSPACE: "studio" },
         });
 
         assert.include(
@@ -110,14 +110,14 @@ describe("choosing the workspace", () => {
           "--text",
           "Not mine to write",
         ]),
-        "Acme refused: your role in this workspace does not allow it"
+        "Peal refused: your role in this workspace does not allow it"
       );
       assert.deepStrictEqual(yield* changes(session.studio), []);
     }).pipe(Effect.scoped, Effect.provide(filesLayer))
   );
 });
 
-describe("acme drafts", () => {
+describe("peal drafts", () => {
   it.effect("lists drafts, newest first", () =>
     Effect.gen(function* lists() {
       const session = yield* signedIn();
@@ -325,7 +325,7 @@ describe("acme drafts", () => {
   );
 });
 
-describe("acme channels", () => {
+describe("peal channels", () => {
   it.effect("shows what a TikTok channel takes, and refuses another", () =>
     Effect.gen(function* tiktok() {
       const session = yield* signedIn();
@@ -356,7 +356,7 @@ describe("acme channels", () => {
   );
 });
 
-describe("acme posts", () => {
+describe("peal posts", () => {
   it.effect("shows how a post went on each channel, with its targets", () =>
     Effect.gen(function* shows() {
       const session = yield* signedIn();
@@ -376,7 +376,7 @@ describe("acme posts", () => {
       assert.include(shown, "(mastodon @studio@example.social)");
       assert.include(
         shown,
-        "failed: rateLimited (the platform kept limiting Acme, which stopped trying)"
+        "failed: rateLimited (the platform kept limiting Peal, which stopped trying)"
       );
       assert.include(shown, "unconfirmed: noResponse");
       assert.include(shown, quotaTargetId);
@@ -484,7 +484,7 @@ describe("acme posts", () => {
   );
 });
 
-describe("acme analytics", () => {
+describe("peal analytics", () => {
   it.effect("sums up a range of days, in a time zone", () =>
     Effect.gen(function* sums() {
       const session = yield* signedIn();
@@ -538,7 +538,7 @@ describe("acme analytics", () => {
           "--time-zone",
           "+01:00",
         ]),
-        "+01:00 is not a time zone Acme knows"
+        "+01:00 is not a time zone Peal knows"
       );
     }).pipe(Effect.scoped, Effect.provide(filesLayer))
   );
@@ -558,13 +558,13 @@ describe("acme analytics", () => {
       assert.match(shown, /Reposts\s+4/u);
       assert.include(
         yield* session.printed(["analytics", "post", draftId, ...inStudio]),
-        `Acme has read no counts of post ${draftId} yet`
+        `Peal has read no counts of post ${draftId} yet`
       );
     }).pipe(Effect.scoped, Effect.provide(filesLayer))
   );
 });
 
-describe("acme billing, members and invitations", () => {
+describe("peal billing, members and invitations", () => {
   it.effect("shows the plan, its limits and what the workspace uses", () =>
     Effect.gen(function* plan() {
       const session = yield* signedIn();
@@ -655,7 +655,7 @@ const ExportedSchema = Schema.fromJsonString(
   })
 );
 
-describe("acme account", () => {
+describe("peal account", () => {
   it.effect(
     "saves a copy of the user's data in a file only they may read, and never over another",
     () =>
@@ -767,7 +767,7 @@ describe("acme account", () => {
 
       assert.match(
         yield* session.printed(["account", "apps"]),
-        /Acme CLI\s+acme-cli\s+workspace:read workspace:write\s+any workspace\s+last used 2026-11-09T07:00:00Z/u
+        /Peal CLI\s+peal-cli\s+workspace:read workspace:write\s+any workspace\s+last used 2026-11-09T07:00:00Z/u
       );
     }).pipe(Effect.scoped, Effect.provide(filesLayer))
   );

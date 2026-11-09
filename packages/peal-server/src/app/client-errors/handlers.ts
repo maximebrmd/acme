@@ -1,12 +1,12 @@
-import { Api } from "acme-contract";
-import type { ClientErrorReport } from "acme-contract";
+import { Api } from "peal-contract";
+import type { ClientErrorReport } from "peal-contract";
 import { Effect, Metric } from "effect";
 import { HttpApiBuilder } from "effect/http-api";
 
 import { redacted } from "./redaction.ts";
 
 /** Error reports logged, by kind: uncaught, unhandledRejection, boundary, server. */
-export const clientErrors = Metric.counter("acme.client_errors", {
+export const clientErrors = Metric.counter("peal.client_errors", {
   description: "Errors the web app reported, in browsers and on its server",
   incremental: true,
 });
@@ -22,13 +22,13 @@ const annotateIf =
 const logOf = (report: ClientErrorReport) =>
   Effect.logError("The web app reported an error").pipe(
     Effect.annotateLogs({
-      "acme.client_error.kind": report.kind,
-      "acme.web.release": report.release,
-      "event.name": "acme.client_error",
+      "peal.client_error.kind": report.kind,
+      "peal.web.release": report.release,
+      "event.name": "peal.client_error",
       "exception.message": report.message,
       "url.path": report.path,
     }),
-    annotateIf("acme.client_error.digest", report.digest),
+    annotateIf("peal.client_error.digest", report.digest),
     annotateIf("exception.stacktrace", report.stack),
     annotateIf("http.route", report.route),
     annotateIf("user_agent.original", report.userAgent)

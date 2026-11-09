@@ -92,7 +92,7 @@ describe("OTLP export", () => {
     })
   );
 
-  it.live("names the service acme-server unless OTEL_SERVICE_NAME is set", () =>
+  it.live("names the service peal-server unless OTEL_SERVICE_NAME is set", () =>
     Effect.gen(function* serviceName() {
       const byDefault = yield* exportsWith({
         OTEL_EXPORTER_OTLP_ENDPOINT: endpoint,
@@ -100,12 +100,12 @@ describe("OTLP export", () => {
 
       const renamed = yield* exportsWith({
         OTEL_EXPORTER_OTLP_ENDPOINT: endpoint,
-        OTEL_SERVICE_NAME: "acme-sandbox",
+        OTEL_SERVICE_NAME: "peal-sandbox",
       });
 
-      assert.include(traceBody(byDefault), '"stringValue":"acme-server"');
-      assert.include(traceBody(renamed), '"stringValue":"acme-sandbox"');
-      assert.notInclude(traceBody(renamed), '"stringValue":"acme-server"');
+      assert.include(traceBody(byDefault), '"stringValue":"peal-server"');
+      assert.include(traceBody(renamed), '"stringValue":"peal-sandbox"');
+      assert.notInclude(traceBody(renamed), '"stringValue":"peal-server"');
     })
   );
 });

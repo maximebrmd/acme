@@ -4,7 +4,7 @@
 # 8081), served by nginx as a user without privileges. Build it from the
 # repository root:
 #
-#   bun nx run acme-docker:build-static-image
+#   bun nx run peal-docker:build-static-image
 #
 # Their settings are read at build time, so pass them as build arguments,
 # such as --build-arg SITE_URL=https://example.com. Each is optional: unset
@@ -22,17 +22,17 @@ ENV ASTRO_TELEMETRY_DISABLED=1
 
 # The docs render the API reference from the contract's openapi.json.
 COPY package.json bun.lock ./
-COPY packages/acme-contract/package.json packages/acme-contract/
-COPY packages/acme-docs/package.json packages/acme-docs/
-COPY packages/acme-site/package.json packages/acme-site/
+COPY packages/peal-contract/package.json packages/peal-contract/
+COPY packages/peal-docs/package.json packages/peal-docs/
+COPY packages/peal-site/package.json packages/peal-site/
 
 RUN --mount=type=cache,target=/root/.bun/install/cache \
-    bun install --frozen-lockfile --filter acme-contract --filter acme-docs --filter acme-site
+    bun install --frozen-lockfile --filter peal-contract --filter peal-docs --filter peal-site
 
 COPY tsconfig.base.json ./
-COPY packages/acme-contract packages/acme-contract
-COPY packages/acme-docs packages/acme-docs
-COPY packages/acme-site packages/acme-site
+COPY packages/peal-contract packages/peal-contract
+COPY packages/peal-docs packages/peal-docs
+COPY packages/peal-site packages/peal-site
 
 ARG DOCS_SITE_URL=""
 ARG DOCS_PLAUSIBLE_DOMAIN=""
@@ -42,15 +42,15 @@ ARG SITE_DOCS_URL=""
 ARG SITE_PLAUSIBLE_DOMAIN=""
 ARG SITE_PLAUSIBLE_HOST=""
 
-RUN cd packages/acme-contract && bun scripts/openapi.ts
-RUN cd packages/acme-docs && ./node_modules/.bin/blume build
-RUN cd packages/acme-site && ./node_modules/.bin/astro build
+RUN cd packages/peal-contract && bun scripts/openapi.ts
+RUN cd packages/peal-docs && ./node_modules/.bin/blume build
+RUN cd packages/peal-site && ./node_modules/.bin/astro build
 
 FROM nginxinc/nginx-unprivileged:1.31.7-alpine@sha256:b5047b9b76845eac124358373c6852377c52e4b05834a47647e955dd91cb8f1e
 
-COPY packages/acme-docker/config/static/default.conf /etc/nginx/conf.d/default.conf
-COPY --from=build /app/packages/acme-site/dist /usr/share/nginx/site
-COPY --from=build /app/packages/acme-docs/dist /usr/share/nginx/docs
+COPY packages/peal-docker/config/static/default.conf /etc/nginx/conf.d/default.conf
+COPY --from=build /app/packages/peal-site/dist /usr/share/nginx/site
+COPY --from=build /app/packages/peal-docs/dist /usr/share/nginx/docs
 
 # The base image's unprivileged nginx user.
 USER 101

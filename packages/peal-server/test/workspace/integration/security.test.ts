@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 
 import { assert, layer } from "@effect/vitest";
-import { MeSchema } from "acme-contract";
+import { MeSchema } from "peal-contract";
 import { Context, Effect, Layer, Schema } from "effect";
 
 import {
@@ -33,7 +33,7 @@ interface Fixture {
 }
 
 class Matrix extends Context.Service<Matrix, Fixture>()(
-  "acme-server/test/SecurityMatrix"
+  "peal-server/test/SecurityMatrix"
 ) {}
 
 const MatrixLive = Layer.effect(
@@ -160,7 +160,7 @@ const cases: readonly Case[] = [
   },
   {
     expected: 401,
-    headers: () => bearer("acme_not-a-key-that-was-ever-issued"),
+    headers: () => bearer("peal_not-a-key-that-was-ever-issued"),
     name: "an API key that was never issued",
     path: (fixture) => apiKeys(fixture.workspaceId),
   },
@@ -332,7 +332,7 @@ layer(MatrixLive, { excludeTestServices: true, timeout: "180 seconds" })(
           const staffCookies = yield* signIn(staff.email);
 
           // Staff ban accounts, and never remove one: removing it is its
-          // owner's to do, through Acme's API, which erases what every
+          // owner's to do, through Peal's API, which erases what every
           // context keeps.
           const removed = yield* app.request("/api/auth/admin/remove-user", {
             body: { userId: member.id },
@@ -385,7 +385,7 @@ layer(MatrixLive, { excludeTestServices: true, timeout: "180 seconds" })(
 
           assert.strictEqual(created.status, 403);
 
-          // Better Auth's own key routes are off: keys go through Acme's API.
+          // Better Auth's own key routes are off: keys go through Peal's API.
           const listed = yield* app.request(
             `/api/auth/api-key/list?organizationId=${workspaceId}`,
             { headers: { cookie } }
@@ -443,7 +443,7 @@ layer(MatrixLive, { excludeTestServices: true, timeout: "180 seconds" })(
             assert.strictEqual(changed.status, 403, route);
           }
 
-          // Nor deleting it, which goes through Acme's API.
+          // Nor deleting it, which goes through Peal's API.
           const workspaceDeleted = yield* app.request(
             `/api/workspaces/${workspaceId}`,
             { body: { name: "Shop" }, headers: { cookie }, method: "DELETE" }

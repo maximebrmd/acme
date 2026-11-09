@@ -5,7 +5,7 @@ import type { DatabaseError } from "#shared/application/database-error.ts";
 import type { UserId } from "#shared/domain/ids.ts";
 
 /**
- * Whether a user may still use Acme: an account deleted, or banned, since
+ * Whether a user may still use Peal: an account deleted, or banned, since
  * their session was cached has no inbox to read.
  */
 export class ReaderStanding extends Context.Service<
@@ -15,4 +15,4 @@ export class ReaderStanding extends Context.Service<
       userId: UserId
     ) => Effect.Effect<boolean, DatabaseError>;
   }
->()("acme-server/notifications/application/ReaderStanding") {}
+>()("peal-server/notifications/application/ReaderStanding") {}

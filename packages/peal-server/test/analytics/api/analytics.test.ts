@@ -4,8 +4,8 @@ import {
   Forbidden,
   InvalidDateRange,
   InvalidTimeZone,
-} from "acme-contract";
-import type { Member } from "acme-contract";
+} from "peal-contract";
+import type { Member } from "peal-contract";
 import { DateTime, Effect, Layer } from "effect";
 import { HttpServer } from "effect/http";
 import { HttpApiTest } from "effect/http-api";
@@ -256,9 +256,9 @@ layer(ApiTest)("the analytics endpoints", (it) => {
   );
 
   // Days the contract takes, as they are on the calendar, but past the
-  // ends of the one Acme keeps: before 1970, and the last day of 9999,
+  // ends of the one Peal keeps: before 1970, and the last day of 9999,
   // whose end is in year 10000.
-  it.effect("refuse a range off the calendar Acme keeps", () =>
+  it.effect("refuse a range off the calendar Peal keeps", () =>
     Effect.gen(function* edges() {
       const workspaceId = yield* freshWorkspace;
       const client = yield* as(workspaceId);

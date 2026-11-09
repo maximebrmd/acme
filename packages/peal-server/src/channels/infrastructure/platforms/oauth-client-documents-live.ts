@@ -55,7 +55,7 @@ export const OAuthClientDocumentsLive = Layer.effect(
         metadata: {
           application_type: "web",
           client_id: new URL(blueskyPaths.metadata, publicUrl).href,
-          client_name: "Acme",
+          client_name: "Peal",
           client_uri: publicUrl,
           dpop_bound_access_tokens: true,
           grant_types: ["authorization_code", "refresh_token"],

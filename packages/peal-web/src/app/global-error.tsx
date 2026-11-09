@@ -1,6 +1,6 @@
 "use client";
 
-import { GeistMono, GeistSans } from "acme-ui/lib/fonts";
+import { GeistMono, GeistSans } from "peal-ui/lib/fonts";
 import { NextIntlClientProvider } from "next-intl";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";

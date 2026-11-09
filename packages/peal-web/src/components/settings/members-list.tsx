@@ -11,16 +11,16 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "acme-ui/components/alert-dialog";
-import { Badge } from "acme-ui/components/badge";
-import { Button } from "acme-ui/components/button";
+} from "peal-ui/components/alert-dialog";
+import { Badge } from "peal-ui/components/badge";
+import { Button } from "peal-ui/components/button";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "acme-ui/components/select";
+} from "peal-ui/components/select";
 import { Schema } from "effect";
 import { AsyncResult } from "effect/reactivity";
 import { useTranslations } from "next-intl";

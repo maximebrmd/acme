@@ -2,7 +2,7 @@ import type { DateTime } from "effect";
 import { Option } from "effect";
 import { Atom } from "effect/reactivity";
 
-import { AcmeApi } from "#api/client.ts";
+import { PealApi } from "#api/client.ts";
 
 // The queries and mutations of the composer and the calendar. A mutation
 // passes `reactivityKeys: postsKeys`, which refreshes every posts query.
@@ -11,7 +11,7 @@ export const postsKeys = ["posts"];
 
 /** The channels connected to the workspace. */
 export const workspaceChannels = (workspaceId: string) =>
-  AcmeApi.query("channels", "list", {
+  PealApi.query("channels", "list", {
     params: { workspaceId },
     reactivityKeys: ["channels"],
   });
@@ -21,14 +21,14 @@ export const workspaceChannels = (workspaceId: string) =>
  * opens the channel's options, as TikTok's guidelines ask.
  */
 export const tiktokCreator = (workspaceId: string, channelId: string) =>
-  AcmeApi.query("tiktok", "creator", {
+  PealApi.query("tiktok", "creator", {
     params: { channelId, workspaceId },
     reactivityKeys: ["channels"],
   });
 
 /** A post of the workspace. */
 export const workspacePost = (workspaceId: string, postId: string) =>
-  AcmeApi.query("posts", "get", {
+  PealApi.query("posts", "get", {
     params: { postId, workspaceId },
     reactivityKeys: postsKeys,
   });
@@ -39,7 +39,7 @@ export const scheduledPosts = (
   from: DateTime.Utc,
   to: DateTime.Utc
 ) =>
-  AcmeApi.query("posts", "list", {
+  PealApi.query("posts", "list", {
     params: { workspaceId },
     query: { from, to },
     reactivityKeys: postsKeys,
@@ -47,7 +47,7 @@ export const scheduledPosts = (
 
 /** What a post's attempts were, refreshed with the other posts queries. */
 export const postAttempts = (workspaceId: string, postId: string) =>
-  AcmeApi.query("posts", "attempts", {
+  PealApi.query("posts", "attempts", {
     params: { postId, workspaceId },
     reactivityKeys: postsKeys,
   });
@@ -59,7 +59,7 @@ const draftPageKey = (workspaceId: string, cursor: Option.Option<string>) =>
 const draftPages = Atom.family((key: string) => {
   const [workspaceId = "", cursor = ""] = key.split("/");
 
-  return AcmeApi.query("posts", "drafts", {
+  return PealApi.query("posts", "drafts", {
     params: { workspaceId },
     query: cursor === "" ? {} : { cursor },
     reactivityKeys: postsKeys,
@@ -70,20 +70,20 @@ const draftPages = Atom.family((key: string) => {
 export const draftPage = (workspaceId: string, cursor: Option.Option<string>) =>
   draftPages(draftPageKey(workspaceId, cursor));
 
-export const createPost = AcmeApi.mutation("posts", "create");
+export const createPost = PealApi.mutation("posts", "create");
 
-export const updatePost = AcmeApi.mutation("posts", "update");
+export const updatePost = PealApi.mutation("posts", "update");
 
-export const schedulePost = AcmeApi.mutation("posts", "schedule");
+export const schedulePost = PealApi.mutation("posts", "schedule");
 
-export const reschedulePost = AcmeApi.mutation("posts", "reschedule");
+export const reschedulePost = PealApi.mutation("posts", "reschedule");
 
-export const cancelPost = AcmeApi.mutation("posts", "cancel");
+export const cancelPost = PealApi.mutation("posts", "cancel");
 
-export const unschedulePost = AcmeApi.mutation("posts", "unschedule");
+export const unschedulePost = PealApi.mutation("posts", "unschedule");
 
-export const discardPost = AcmeApi.mutation("posts", "discard");
+export const discardPost = PealApi.mutation("posts", "discard");
 
-export const repostTarget = AcmeApi.mutation("posts", "repost");
+export const repostTarget = PealApi.mutation("posts", "repost");
 
-export const confirmTarget = AcmeApi.mutation("posts", "confirm");
+export const confirmTarget = PealApi.mutation("posts", "confirm");

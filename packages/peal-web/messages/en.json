@@ -1,6 +1,6 @@
 {
   "Metadata": {
-    "title": "Acme",
+    "title": "Peal",
     "description": "Write posts once, schedule them across platforms and see how they perform."
   },
   "Analytics": {
@@ -15,8 +15,8 @@
       "loading": "Loading the analytics…",
       "loadFailed": "The analytics could not be loaded.",
       "retry": "Try again",
-      "empty": "No post went out on Mastodon or Bluesky in this range yet, the platforms Acme reads counts on so far. A post’s counts appear within the hour after it goes live.",
-      "collection": "Acme reads each post’s counts every hour for 48 hours after it goes live, then every day until it is 30 days old.",
+      "empty": "No post went out on Mastodon or Bluesky in this range yet, the platforms Peal reads counts on so far. A post’s counts appear within the hour after it goes live.",
+      "collection": "Peal reads each post’s counts every hour for 48 hours after it goes live, then every day until it is 30 days old.",
       "noImpressions": "Mastodon and Bluesky do not tell how many people saw a post, so there are no impressions; TikTok's and YouTube's are their views."
     },
     "totals": {
@@ -49,13 +49,13 @@
       "title": "How it did",
       "loading": "Loading the post’s counts…",
       "loadFailed": "The post’s counts could not be loaded.",
-      "notYet": "Acme reads counts on {counted} so far, within the hour after a post goes live.",
+      "notYet": "Peal reads counts on {counted} so far, within the hour after a post goes live.",
       "notRead": "Not read yet",
       "readAt": "Read {at}",
       "stopped": "No longer read: posts are followed for 30 days.",
       "tableCaption": "Counts of the post on {handle}, each time they were read",
       "readAtColumn": "Read",
-      "uncounted": "Counts are not available on {platforms}: Acme reads them on {counted} only, so far."
+      "uncounted": "Counts are not available on {platforms}: Peal reads them on {counted} only, so far."
     }
   },
   "Assistant": {
@@ -97,7 +97,7 @@
     }
   },
   "AppShell": {
-    "productName": "Acme"
+    "productName": "Peal"
   },
   "LanguageSwitcher": {
     "label": "Language",
@@ -114,12 +114,12 @@
     "signOutFailed": "Signing out failed. Try again."
   },
   "HomePage": {
-    "title": "Welcome to Acme",
+    "title": "Welcome to Peal",
     "description": "Write posts once, schedule them across platforms and see how they perform."
   },
   "ApiStatus": {
     "title": "API status",
-    "description": "Whether this app can reach the Acme server.",
+    "description": "Whether this app can reach the Peal server.",
     "status": {
       "loading": "Checking",
       "healthy": "Healthy",
@@ -128,7 +128,7 @@
     "detail": {
       "loading": "Asking the server for its health…",
       "healthy": "The server answered its health check.",
-      "unreachable": "The server did not answer. Check that it is running and that ACME_API_URL points at it."
+      "unreachable": "The server did not answer. Check that it is running and that PEAL_API_URL points at it."
     },
     "retry": "Check again",
     "retrying": "Checking…"
@@ -163,7 +163,7 @@
   },
   "SignInPage": {
     "title": "Sign in",
-    "description": "Welcome back to Acme.",
+    "description": "Welcome back to Peal.",
     "submit": "Sign in",
     "submitting": "Signing in…",
     "forgotPassword": "Forgot your password?",
@@ -226,7 +226,7 @@
   },
   "InvitationPage": {
     "title": "Join a workspace",
-    "description": "Someone invited you to a workspace on Acme.",
+    "description": "Someone invited you to a workspace on Peal.",
     "accept": "Accept the invitation",
     "accepting": "Joining…",
     "signedOut": "Sign in, or create an account with the address the invitation went to, then open the link again.",
@@ -257,7 +257,7 @@
     "disconnectAccount": "Disconnect {handle}",
     "disconnecting": "Disconnecting…",
     "disconnectTitle": "Disconnect {handle}?",
-    "disconnectDescription": "Acme deletes the tokens it holds for this {platform, select, bluesky {Bluesky} facebook {Facebook} instagram {Instagram} linkedin {LinkedIn} mastodon {Mastodon} pinterest {Pinterest} threads {Threads} tiktok {TikTok} x {X} youtube {YouTube} other {{platform}}} account and posts nothing more on it. You can connect it again later.",
+    "disconnectDescription": "Peal deletes the tokens it holds for this {platform, select, bluesky {Bluesky} facebook {Facebook} instagram {Instagram} linkedin {LinkedIn} mastodon {Mastodon} pinterest {Pinterest} threads {Threads} tiktok {TikTok} x {X} youtube {YouTube} other {{platform}}} account and posts nothing more on it. You can connect it again later.",
     "cancel": "Cancel",
     "disconnected": "{handle} is disconnected.",
     "connectTitle": "Connect an account",
@@ -275,10 +275,10 @@
     "connecting": "Opening…",
     "noPermission": "Ask an owner or an admin of the workspace to connect accounts.",
     "errors": {
-      "platformNotSupported": "Acme cannot connect accounts of this platform yet.",
+      "platformNotSupported": "Peal cannot connect accounts of this platform yet.",
       "notConfigured": "This server is not set up to connect accounts of this platform. Ask its administrator.",
       "invalidInstance": "This is not the address of a server. Check it, for example mastodon.social.",
-      "instanceNotAllowed": "Acme only connects to servers on the public internet, over HTTPS.",
+      "instanceNotAllowed": "Peal only connects to servers on the public internet, over HTTPS.",
       "invalidHandle": "No account was found for this handle.",
       "invalidState": "This connection expired or was started elsewhere. Start again.",
       "denied": "The connection was cancelled on the platform.",
@@ -296,28 +296,28 @@
     "loadFailed": "The platforms you can connect could not be loaded. Try again.",
     "linkedin": {
       "title": "LinkedIn",
-      "description": "Your LinkedIn profile. LinkedIn asks you to sign in again every 60 days: Acme reminds you a week before.",
+      "description": "Your LinkedIn profile. LinkedIn asks you to sign in again every 60 days: Peal reminds you a week before.",
       "connect": "Connect LinkedIn"
     },
     "x": {
       "title": "X",
-      "description": "Your X account. You sign in on X and allow Acme to post and upload media for you.",
+      "description": "Your X account. You sign in on X and allow Peal to post and upload media for you.",
       "connect": "Connect X"
     },
     "tiktok": {
       "title": "TikTok",
-      "description": "Your TikTok account. You sign in on TikTok and allow Acme to post videos and photos for you and read their counts.",
+      "description": "Your TikTok account. You sign in on TikTok and allow Peal to post videos and photos for you and read their counts.",
       "connect": "Connect TikTok"
     },
     "youtube": {
       "title": "YouTube",
-      "description": "Your YouTube channel. You sign in with Google, pick the channel if your account has several, and allow Acme to upload videos and read the channel.",
+      "description": "Your YouTube channel. You sign in with Google, pick the channel if your account has several, and allow Peal to upload videos and read the channel.",
       "connect": "Connect YouTube"
     }
   },
   "ConnectCallbackPage": {
     "title": "Connecting your account",
-    "description": "Acme is finishing the connection with the platform.",
+    "description": "Peal is finishing the connection with the platform.",
     "connecting": "Finishing the connection…",
     "failedTitle": "The account was not connected",
     "lost": "This tab does not know which workspace the connection was for. Start it again from the workspace’s channels.",
@@ -342,10 +342,10 @@
   },
   "DataDeletionPage": {
     "title": "Data deletion request",
-    "description": "Where a request to delete the data Acme holds about you stands.",
+    "description": "Where a request to delete the data Peal holds about you stands.",
     "code": "Confirmation code: {code}",
-    "done": "Done: Acme deleted the accounts it had connected through {app, select, facebook {Facebook} threads {Threads} other {{app}}}, and their tokens.",
-    "completed": "Done on {date, date, long}: Acme deleted {count, plural, =0 {no connected account, as it had none} one {# connected account} other {# connected accounts}} of yours from {app, select, facebook {Facebook} threads {Threads} other {{app}}}, with {count, plural, =0 {nothing else} one {its tokens} other {their tokens}}.",
+    "done": "Done: Peal deleted the accounts it had connected through {app, select, facebook {Facebook} threads {Threads} other {{app}}}, and their tokens.",
+    "completed": "Done on {date, date, long}: Peal deleted {count, plural, =0 {no connected account, as it had none} one {# connected account} other {# connected accounts}} of yours from {app, select, facebook {Facebook} threads {Threads} other {{app}}}, with {count, plural, =0 {nothing else} one {its tokens} other {their tokens}}.",
     "notFound": "No request has this confirmation code.",
     "unavailable": "The status could not be read. Try again later."
   },
@@ -573,30 +573,30 @@
     "noText": "No text",
     "media": "{count, plural, =0 {No image or video} one {# image or video} other {# images or videos}}",
     "channelsTitle": "On each channel",
-    "going": "Acme is sending it: this page updates as it goes.",
+    "going": "Peal is sending it: this page updates as it goes.",
     "publishedAt": "Live since {at, date, medium} at {at, time, short}.",
     "viewPost": "See it on {platform}",
     "failed": "It did not go out: {reason}",
-    "unconfirmed": "Acme cannot tell whether it went out: {reason}. Check {platform} before you post it again, then say what you found.",
-    "unconfirmedReason": "{reason, select, noResponse {the platform did not answer} unreadableResponse {its answer could not be read} interrupted {the server stopped during the call} adapterFailure {Acme failed during the call} other {{reason}}}",
+    "unconfirmed": "Peal cannot tell whether it went out: {reason}. Check {platform} before you post it again, then say what you found.",
+    "unconfirmedReason": "{reason, select, noResponse {the platform did not answer} unreadableResponse {its answer could not be read} interrupted {the server stopped during the call} adapterFailure {Peal failed during the call} other {{reason}}}",
     "cancelled": "It was cancelled before it went out.",
     "pending": "It waits for its turn.",
     "sending": "It is going out.",
     "rounds": "Sent {count, plural, one {once} other {# times}}",
     "attemptsTitle": "Attempts",
     "attempt": "{round, plural, =1 {Attempt {attempt}} other {Send {round}, attempt {attempt}}}, {at, date, medium} at {at, time, short}: {result}",
-    "result": "{result, select, published {published} unconfirmed {no answer, so it may have gone out} contentRejected {the platform refused its text or its format} channelDisconnected {the channel was disconnected} channelDisabled {the channel was turned off} mediaRemoved {an image or video was deleted} mediaRejected {the platform refused an image or video} rateLimited {the platform asked Acme to wait} tokenExpired {the account’s authorization stopped working} unavailable {the platform could not be reached} appNotAudited {the platform takes only private posts from this server’s app} quotaExceeded {the platform's daily upload allowance was used up} other {{result}}}",
+    "result": "{result, select, published {published} unconfirmed {no answer, so it may have gone out} contentRejected {the platform refused its text or its format} channelDisconnected {the channel was disconnected} channelDisabled {the channel was turned off} mediaRemoved {an image or video was deleted} mediaRejected {the platform refused an image or video} rateLimited {the platform asked Peal to wait} tokenExpired {the account’s authorization stopped working} unavailable {the platform could not be reached} appNotAudited {the platform takes only private posts from this server’s app} quotaExceeded {the platform's daily upload allowance was used up} other {{result}}}",
     "retryAt": "Tried again at {at, time, short}.",
     "noAttempts": "No attempt yet.",
     "repost": "Post again",
     "reposting": "Posting…",
     "repostTitle": "Post it again on {channel}?",
-    "repostDescription": "Acme sends it now, with new attempts.",
+    "repostDescription": "Peal sends it now, with new attempts.",
     "repostUnconfirmed": "It may be live already: check {platform} first, as posting it again could show it twice.",
     "keep": "Not now",
     "reposted": "Sent again on {channel}.",
     "checkTitle": "What did you find on {platform}?",
-    "checkDescription": "Look for the post on {channel}, then tell Acme. Either answer clears it from the posts to check.",
+    "checkDescription": "Look for the post on {channel}, then tell Peal. Either answer clears it from the posts to check.",
     "permalinkLabel": "Its address, if you have it",
     "permalinkHint": "Paste the post’s link on {platform}, starting with https://.",
     "permalinkInvalid": "Enter an address starting with https://, or leave it empty.",
@@ -650,8 +650,8 @@
       "remove": "Remove",
       "removeLabel": "Remove {name} from the list",
       "errors": {
-        "unsupportedType": "Acme does not take this type of file. Upload a JPEG, PNG, GIF or WebP image, or an MP4 or QuickTime video.",
-        "tooLarge": "This file is larger than the {limit, number} MB Acme takes for its kind.",
+        "unsupportedType": "Peal does not take this type of file. Upload a JPEG, PNG, GIF or WebP image, or an MP4 or QuickTime video.",
+        "tooLarge": "This file is larger than the {limit, number} MB Peal takes for its kind.",
         "altTextTooLong": "The description is longer than {limit, number} characters.",
         "forbidden": "You may not upload media in this workspace.",
         "signedOut": "You are signed out. Sign in, then upload the file again.",
@@ -701,7 +701,7 @@
       "deleteTitle": "Delete this {kind, select, image {image} other {video}}?",
       "deleteDescription": "Its file is deleted from storage, and it can no longer go into posts. Posts already published keep it on their platforms. This cannot be undone.",
       "usageLoading": "Checking which posts show it…",
-      "usageFailed": "Acme could not check which posts show it. Try again.",
+      "usageFailed": "Peal could not check which posts show it. Try again.",
       "inUse": "{count, plural, one {A scheduled post shows it.} other {# scheduled posts show it.}} Take {count, plural, one {it} other {them}} back to draft and remove it first, or wait until {count, plural, one {it has} other {they have}} gone out.",
       "inUsePost": "Open scheduled post {number}",
       "draftsLose": "{count, plural, one {A draft shows it, and will lose it.} other {# drafts show it, and will lose it.}}",
@@ -781,7 +781,7 @@
     "calendar": "{count, plural, one {With # image or video} other {With # images or videos}}"
   },
   "OAuth": {
-    "signedOut": "Sign in to Acme to continue.",
+    "signedOut": "Sign in to Peal to continue.",
     "signIn": "Sign in",
     "failed": "Something went wrong. Try again.",
     "unknownClient": "An application",
@@ -797,17 +797,17 @@
     },
     "device": {
       "title": "Connect the command line",
-      "description": "Enter the code your terminal shows to let the Acme command line act as you.",
+      "description": "Enter the code your terminal shows to let the Peal command line act as you.",
       "signedOut": "Sign in first, then enter the code your terminal shows.",
       "code": "Code",
       "codeHint": "Eight letters and digits, such as WDJB-MJHT.",
       "continue": "Continue",
       "checking": "Checking…",
-      "invalid": "This code is wrong, or it expired. Run acme login again for a new one.",
-      "used": "This code was already used. Run acme login again for a new one.",
+      "invalid": "This code is wrong, or it expired. Run peal login again for a new one.",
+      "used": "This code was already used. Run peal login again for a new one.",
       "reviewTitle": "Allow {client} to act as you?",
       "reviewDescription": "It will be able to:",
-      "onlyYours": "Allow it only if you started this sign-in yourself, by running acme login in your own terminal a moment ago. Someone who sent you this code would get access as you.",
+      "onlyYours": "Allow it only if you started this sign-in yourself, by running peal login in your own terminal a moment ago. Someone who sent you this code would get access as you.",
       "approve": "Allow",
       "approving": "Allowing…",
       "deny": "Deny",
@@ -823,12 +823,12 @@
       "create": "Create a workspace"
     },
     "consent": {
-      "title": "Allow {client} to use Acme?",
+      "title": "Allow {client} to use Peal?",
       "description": "Check what it asks for before you answer.",
       "workspace": "It will act as you in {workspace}, and will be able to:",
       "workspaceUnknown": "It will act as you in the workspace you picked, and will be able to:",
       "redirect": "Afterwards, you will go back to {host}.",
-      "unverified": "Acme has not checked this application. Allow it only if you trust it and started this connection yourself.",
+      "unverified": "Peal has not checked this application. Allow it only if you trust it and started this connection yourself.",
       "allow": "Allow",
       "allowing": "Allowing…",
       "deny": "Deny"
@@ -846,7 +846,7 @@
       "ChannelReconnectRequired": "{channel} in {workspace} must be reconnected: nothing is posted there until it is.",
       "ChannelReconnectSoon": "{channel} in {workspace} must be reconnected by {expiresAt, date, long}: its authorization cannot be renewed."
     },
-    "reason": "{reason, select, contentRejected {the platform refused its text or its format.} channelDisconnected {its channel was disconnected from the workspace before it went out.} channelDisabled {its channel was turned off before it went out. Disconnect the channel and connect the account again, then schedule it in a new post.} mediaRemoved {one of its images or videos was deleted from the media library before it went out.} mediaRejected {the platform refused one of its images or videos.} missed {Acme was unavailable at the scheduled time, and the post came too late to send.} notPublished {someone checked the platform and did not find it.} rateLimited {the platform kept turning requests away, and Acme stopped trying.} tokenExpired {the account’s authorization stopped working. Reconnect it, then post again.} unavailable {the platform could not be reached.} appNotAudited {the platform takes only private posts from this server’s app until it approves the app. Make the account private and the post visible to its owner only, or ask the server’s operator.} quotaExceeded {the platform's daily allowance of uploads stayed used up, for this Acme server or for the account, and Acme stopped waiting.} other {{reason}}}",
+    "reason": "{reason, select, contentRejected {the platform refused its text or its format.} channelDisconnected {its channel was disconnected from the workspace before it went out.} channelDisabled {its channel was turned off before it went out. Disconnect the channel and connect the account again, then schedule it in a new post.} mediaRemoved {one of its images or videos was deleted from the media library before it went out.} mediaRejected {the platform refused one of its images or videos.} missed {Peal was unavailable at the scheduled time, and the post came too late to send.} notPublished {someone checked the platform and did not find it.} rateLimited {the platform kept turning requests away, and Peal stopped trying.} tokenExpired {the account’s authorization stopped working. Reconnect it, then post again.} unavailable {the platform could not be reached.} appNotAudited {the platform takes only private posts from this server’s app until it approves the app. Make the account private and the post visible to its owner only, or ask the server’s operator.} quotaExceeded {the platform's daily allowance of uploads stayed used up, for this Peal server or for the account, and Peal stopped waiting.} other {{reason}}}",
     "open": "{page, select, post {Open the post} other {Open the channels}}",
     "bell": {
       "label": "{count, plural, =0 {Notifications} one {Notifications, # unread} other {Notifications, # unread}}",
@@ -873,7 +873,7 @@
     },
     "preferences": {
       "title": "Notification preferences",
-      "description": "Every notification appears in Acme. Choose which ones also reach you by email, and whether you hear about other members’ posts.",
+      "description": "Every notification appears in Peal. Choose which ones also reach you by email, and whether you hear about other members’ posts.",
       "back": "Back to the notifications",
       "legend": "Email me when",
       "postFailed": "A post did not go out",
@@ -1082,7 +1082,7 @@
     },
     "language": {
       "title": "Language",
-      "description": "The language Acme writes to you in: this app, whenever you sign in, and your emails.",
+      "description": "The language Peal writes to you in: this app, whenever you sign in, and your emails.",
       "label": "Language",
       "option": "{locale, select, en {English} fr {Français} other {{locale}}}",
       "save": "Save the language",
@@ -1116,7 +1116,7 @@
       "title": "Connected applications",
       "description": "Applications you let act for you, such as the command line and MCP clients.",
       "empty": "No application acts for you.",
-      "cli": "Acme command line",
+      "cli": "Peal command line",
       "anyWorkspace": "In whichever of your workspaces each request names",
       "workspaces": "In {names}",
       "dates": "Authorized {authorized} · {lastUsed, select, never {never used} other {last used {lastUsed}}}",
@@ -1129,7 +1129,7 @@
     },
     "export": {
       "title": "Your data",
-      "description": "A JSON file of everything Acme keeps about you: your account, sessions, memberships, invitations, connected applications, notifications and preferences, and the content of the workspaces where you are the only member. It holds no password, token or key.",
+      "description": "A JSON file of everything Peal keeps about you: your account, sessions, memberships, invitations, connected applications, notifications and preferences, and the content of the workspaces where you are the only member. It holds no password, token or key.",
       "download": "Download my data"
     },
     "delete": {
@@ -1270,7 +1270,7 @@
       "resendVerification": {
         "open": "Send the confirmation again",
         "title": "Send {name} a new confirmation link?",
-        "description": "Acme emails a new link to confirm the address, in the account's language.",
+        "description": "Peal emails a new link to confirm the address, in the account's language.",
         "confirm": "Send it",
         "pending": "Sending…",
         "done": "The confirmation is on its way to {email}."

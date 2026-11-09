@@ -44,4 +44,4 @@ export class ConnectAttempts extends Context.Service<
       now: DateTime.Utc
     ) => Effect.Effect<number, DatabaseError>;
   }
->()("acme-server/channels/application/ConnectAttempts") {}
+>()("peal-server/channels/application/ConnectAttempts") {}

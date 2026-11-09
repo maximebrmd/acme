@@ -1,16 +1,16 @@
 "use client";
 
-import type { AssistantAction, Suggestion } from "acme-contract";
-import { Alert, AlertTitle } from "acme-ui/components/alert";
-import { Badge } from "acme-ui/components/badge";
-import { Button } from "acme-ui/components/button";
+import type { AssistantAction, Suggestion } from "peal-contract";
+import { Alert, AlertTitle } from "peal-ui/components/alert";
+import { Badge } from "peal-ui/components/badge";
+import { Button } from "peal-ui/components/button";
 import {
   DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "acme-ui/components/dialog";
-import { Skeleton } from "acme-ui/components/skeleton";
+} from "peal-ui/components/dialog";
+import { Skeleton } from "peal-ui/components/skeleton";
 import { DateTime, Match } from "effect";
 import { useFormatter, useLocale, useTranslations } from "next-intl";
 

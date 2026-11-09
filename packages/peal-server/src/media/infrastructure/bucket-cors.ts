@@ -15,8 +15,8 @@ import type { S3StorageSettings } from "./s3-media-storage.ts";
 // the bucket must answer their CORS preflight. Platforms and pages read
 // media with plain GETs (<img>, <video>, server fetches), which need none.
 
-/** The id of the rule Acme manages, so other rules are left alone. */
-export const uploadRuleId = "acme-browser-uploads";
+/** The id of the rule Peal manages, so other rules are left alone. */
+export const uploadRuleId = "peal-browser-uploads";
 
 /**
  * What a browser upload sends: a PUT with the signed Content-Type and
@@ -46,14 +46,14 @@ const sameRule = (left: CORSRule, right: CORSRule): boolean =>
   listOf(left.AllowedHeaders) === listOf(right.AllowedHeaders) &&
   listOf(left.ExposeHeaders) === listOf(right.ExposeHeaders);
 
-/** A bucket's rules once Acme's is in place, and whether it changed. */
+/** A bucket's rules once Peal's is in place, and whether it changed. */
 export interface UploadRuleChange {
   readonly changed: boolean;
   readonly rules: readonly CORSRule[];
 }
 
 /**
- * The bucket's rules with Acme's in place of any earlier version of it, and
+ * The bucket's rules with Peal's in place of any earlier version of it, and
  * whether that changes anything. Rules with another id stay as they are.
  */
 export const withUploadRule = (
@@ -90,7 +90,7 @@ const failed = (operation: string) => (cause: unknown) =>
   new MediaStorageFailed({ cause, operation });
 
 /**
- * Puts Acme's upload rule on the bucket, keeping its other rules, unless the
+ * Puts Peal's upload rule on the bucket, keeping its other rules, unless the
  * bucket has it already. Only the bucket's CORS configuration changes,
  * never its objects. Answers whether it changed it, and the rules it holds.
  */

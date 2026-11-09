@@ -19,7 +19,7 @@ const isUniqueBy =
  * has instead on some of its channels.
  */
 export class PostContent extends Schema.Class<PostContent>(
-  "acme-server/publishing/domain/PostContent"
+  "peal-server/publishing/domain/PostContent"
 )({
   media: Schema.Array(MediaAttachment).check(
     Schema.isMaxLength(maxMediaPerPost),

@@ -1,6 +1,6 @@
 import { assert, layer } from "@effect/vitest";
-import { Api, Forbidden, Unauthenticated } from "acme-contract";
-import type { Member } from "acme-contract";
+import { Api, Forbidden, Unauthenticated } from "peal-contract";
+import type { Member } from "peal-contract";
 import { DateTime, Effect, Layer, Option } from "effect";
 import { HttpServer } from "effect/http";
 import { HttpApiTest } from "effect/http-api";

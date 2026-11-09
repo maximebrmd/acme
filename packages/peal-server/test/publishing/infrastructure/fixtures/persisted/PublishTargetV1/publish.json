@@ -14,7 +14,7 @@
     "_tag": "settle",
     "settlement": {
       "_tag": "published",
-      "permalink": "https://social.example/@acme/1",
+      "permalink": "https://social.example/@peal/1",
       "platformPostId": "1790000000000000001"
     }
   },

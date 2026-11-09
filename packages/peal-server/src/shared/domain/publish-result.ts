@@ -9,7 +9,7 @@ export type PlatformPostId = typeof PlatformPostIdSchema.Type;
 
 /** The platform accepted the post, which is now live. */
 export const PublishedSchema = Schema.TaggedStruct("published", {
-  // The platform made the post private although Acme asked for more people
+  // The platform made the post private although Peal asked for more people
   // to see it (YouTube, for an API project or a channel it restricts).
   keptPrivate: Schema.optionalKey(Schema.Boolean),
   // The post's public address, when the platform gives one.
@@ -36,7 +36,7 @@ export const UnconfirmedReasonSchema = Schema.Literals([
 export type UnconfirmedReason = typeof UnconfirmedReasonSchema.Type;
 
 /**
- * Whether the post went live is not known. It may be live: Acme never sends
+ * Whether the post went live is not known. It may be live: Peal never sends
  * it again on its own, and the user checks the platform.
  */
 export const UnconfirmedSchema = Schema.TaggedStruct("unconfirmed", {

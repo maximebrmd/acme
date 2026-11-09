@@ -19,4 +19,4 @@ export class PasswordCheck extends Context.Service<
       password: Redacted.Redacted
     ) => Effect.Effect<boolean, AuthUnavailable | TooManyPasswordAttempts>;
   }
->()("acme-server/workspace/application/PasswordCheck") {}
+>()("peal-server/workspace/application/PasswordCheck") {}

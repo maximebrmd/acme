@@ -51,7 +51,7 @@ export class WritingAssistant extends Context.Service<
       request: AssistantRequest
     ) => Effect.Effect<Suggestion, SuggestFailure>;
   }
->()("acme-server/assistant/application/WritingAssistant") {
+>()("peal-server/assistant/application/WritingAssistant") {
   /** The use cases, running on the ports the layer is given. */
   static readonly layer = Layer.effect(
     WritingAssistant,

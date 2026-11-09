@@ -2,9 +2,9 @@
 // it, then prints the same rule for Cloudflare R2's dashboard. Run it once
 // per bucket, from the repository root:
 //
-//   bun nx run acme-server:media-cors
+//   bun nx run peal-server:media-cors
 //
-// It reads the server's variables: ACME_S3_* for the bucket (see
+// It reads the server's variables: PEAL_S3_* for the bucket (see
 // src/media/infrastructure/s3-media-storage.ts), PUBLIC_URL and
 // TRUSTED_ORIGINS for the origins the web app runs at. Without them it
 // targets the development stack's SeaweedFS and the web app's development

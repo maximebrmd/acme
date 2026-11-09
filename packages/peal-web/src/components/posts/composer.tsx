@@ -1,6 +1,6 @@
 "use client";
 
-import { PostContentInvalid } from "acme-contract";
+import { PostContentInvalid } from "peal-contract";
 import type {
   Channel,
   MediaAttachment,
@@ -9,8 +9,8 @@ import type {
   PostContent,
   PostSchedule,
   PostStatus,
-} from "acme-contract";
-import { Badge } from "acme-ui/components/badge";
+} from "peal-contract";
+import { Badge } from "peal-ui/components/badge";
 import {
   Card,
   CardContent,
@@ -18,8 +18,8 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "acme-ui/components/card";
-import { Separator } from "acme-ui/components/separator";
+} from "peal-ui/components/card";
+import { Separator } from "peal-ui/components/separator";
 import { DateTime, Option } from "effect";
 import { useFormatter, useLocale, useTranslations } from "next-intl";
 import { useState, useTransition } from "react";

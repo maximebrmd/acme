@@ -6,7 +6,7 @@ import { InvalidTikTokSettings } from "./invalid-tiktok-settings.ts";
  * Reads `TIKTOK_MEDIA_URL_PREFIX`: the URL prefix (or `https://` and a
  * domain, with a `/`) the operator verified for the app at TikTok, under
  * which the media store serves its files publicly
- * (`ACME_MEDIA_PUBLIC_BASE_URL`). With it, TikTok pulls videos and photos
+ * (`PEAL_MEDIA_PUBLIC_BASE_URL`). With it, TikTok pulls videos and photos
  * from the store; without it, videos go up in chunks and photo posts
  * cannot go out, as TikTok takes photos from verified addresses only.
  * Unset or blank: none. Anything but an HTTPS URL stops the server.

@@ -15,7 +15,7 @@ import {
 } from "#test/staff/support.ts";
 
 const staff = {
-  session: Redacted.make("acme.session_token=synthetic-staff"),
+  session: Redacted.make("peal.session_token=synthetic-staff"),
   userId: staffId,
 };
 

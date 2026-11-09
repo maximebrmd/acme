@@ -33,4 +33,4 @@ export class AssistantUsage extends Context.Service<
       day: LocalDate
     ) => Effect.Effect<number>;
   }
->()("acme-server/assistant/application/AssistantUsage") {}
+>()("peal-server/assistant/application/AssistantUsage") {}

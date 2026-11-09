@@ -5,7 +5,7 @@ import type { LinkedInEndpoints } from "#channels/infrastructure/platforms/linke
 import { fakeHttpServer, formOf, json } from "./fake-http-server.ts";
 import type { FakeRequest, FakeResponse } from "./fake-http-server.ts";
 
-/** Acme's synthetic LinkedIn app. */
+/** Peal's synthetic LinkedIn app. */
 export const linkedinClient = {
   clientId: "77synthetic",
   clientSecret: "synthetic-linkedin-secret",

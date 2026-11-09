@@ -293,7 +293,7 @@ describe("reading counts on Mastodon", () => {
   // A status its server cannot show, every time it is asked, would
   // otherwise stay the channel's first due and halt every read.
   it.live(
-    "marks a status failed and halts when the server fails, drops or answers what Acme cannot read",
+    "marks a status failed and halts when the server fails, drops or answers what Peal cannot read",
     () =>
       Effect.gen(function* fails() {
         // More favourites than any post has, as no Mastodon server counts.
@@ -475,7 +475,7 @@ describe("reading counts on Bluesky", () => {
   );
 
   it.live(
-    "marks a call's posts failed and halts when the AppView fails, drops or answers what Acme cannot read",
+    "marks a call's posts failed and halts when the AppView fails, drops or answers what Peal cannot read",
     () =>
       Effect.gen(function* fails() {
         const known = Object.fromEntries(
@@ -668,7 +668,7 @@ describe("reading counts on a channel", () => {
     })
   );
 
-  // The platforms Acme publishes to but reads no counts on yet, which the
+  // The platforms Peal publishes to but reads no counts on yet, which the
   // web app tells members it has no counts for.
   it.live.each(platforms.filter((platform) => !isCounted(platform)))(
     "reads nothing on %s, which it has no reader for",

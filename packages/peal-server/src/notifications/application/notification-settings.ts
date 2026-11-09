@@ -27,7 +27,7 @@ export class NotificationSettings extends Context.Service<
       change: PreferencesChange
     ) => Effect.Effect<NotificationPreferences, Failure>;
   }
->()("acme-server/notifications/application/NotificationSettings") {
+>()("peal-server/notifications/application/NotificationSettings") {
   static readonly layer = Layer.effect(
     NotificationSettings,
     Effect.gen(function* NotificationSettingsLive() {

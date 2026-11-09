@@ -22,7 +22,7 @@ export class Ids extends Context.Service<
     /** A new UUIDv7, ordered after every id this service issued before. */
     readonly next: Effect.Effect<Uuid7>;
   }
->()("acme-server/shared/application/Ids") {
+>()("peal-server/shared/application/Ids") {
   /**
    * Deterministic ids for tests: `00000000-0000-7000-8000-000000000001`, then
    * `…002`, and so on, counting from each build of the layer.

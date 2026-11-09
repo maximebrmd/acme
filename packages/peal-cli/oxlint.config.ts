@@ -4,11 +4,11 @@ import vitest from "ultracite/oxlint/vitest";
 import root from "../../oxlint.config.ts";
 
 // The CLI is a client: it reaches the server over HTTP, through the client
-// derived from acme-contract, the same way a self-hoster's scripts would.
+// derived from peal-contract, the same way a self-hoster's scripts would.
 const noServer = {
-  group: ["acme-server", "acme-server/**"],
+  group: ["peal-server", "peal-server/**"],
   message:
-    "The CLI never imports acme-server. Call the API through AcmeApi, the client derived from acme-contract.",
+    "The CLI never imports peal-server. Call the API through PealApi, the client derived from peal-contract.",
 };
 
 // Only the entry point picks the runtime, so commands also run under the

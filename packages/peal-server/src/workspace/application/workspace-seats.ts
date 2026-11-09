@@ -16,7 +16,7 @@ export class WorkspaceSeats extends Context.Service<
       workspaceId: WorkspaceId
     ) => Effect.Effect<number, DirectoryUnavailable>;
   }
->()("acme-server/workspace/application/WorkspaceSeats") {
+>()("peal-server/workspace/application/WorkspaceSeats") {
   static readonly layer = Layer.effect(
     WorkspaceSeats,
     Effect.gen(function* WorkspaceSeatsLive() {

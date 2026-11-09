@@ -22,7 +22,7 @@ export class ResolveMember extends Context.Service<
       workspaceId: WorkspaceId
     ) => Effect.Effect<Actor, AccessDenied | DirectoryUnavailable>;
   }
->()("acme-server/workspace/application/ResolveMember") {
+>()("peal-server/workspace/application/ResolveMember") {
   static readonly layer = Layer.effect(
     ResolveMember,
     Effect.gen(function* resolveMember() {

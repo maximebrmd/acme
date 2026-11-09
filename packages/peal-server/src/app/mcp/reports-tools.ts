@@ -4,7 +4,7 @@ import {
   CalendarDaySchema,
   CurrentMember,
   PostAnalyticsSchema,
-} from "acme-contract";
+} from "peal-contract";
 import { Schema } from "effect";
 import { Tool, Toolkit } from "effect/ai";
 

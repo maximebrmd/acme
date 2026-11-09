@@ -1,8 +1,8 @@
 {
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
-  "name": "acme-e2e",
+  "name": "peal-e2e",
   "projectType": "application",
-  "implicitDependencies": ["acme-server", "acme-web"],
+  "implicitDependencies": ["peal-server", "peal-web"],
   "targets": {
     "typecheck": {
       "command": "tsc --noEmit",
@@ -14,7 +14,7 @@
         "cwd": "{projectRoot}",
         "env": { "E2E_TELEMETRY_DISABLED": "1" }
       },
-      "dependsOn": ["acme-web:build"]
+      "dependsOn": ["peal-web:build"]
     }
   }
 }

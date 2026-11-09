@@ -42,7 +42,7 @@ import { UnsupportedMediaType } from "./unsupported-media-type.ts";
  * returns the next asset or a typed error. Time comes in as `now`.
  */
 export class MediaAsset extends Schema.Class<MediaAsset>(
-  "acme-server/media/domain/MediaAsset"
+  "peal-server/media/domain/MediaAsset"
 )({
   altText: Schema.Option(AltTextSchema),
   byteSize: ByteSizeSchema,
@@ -60,7 +60,7 @@ export class MediaAsset extends Schema.Class<MediaAsset>(
   }
 }
 
-/** A declared file that acme accepts. */
+/** A declared file that peal accepts. */
 export interface AcceptedUpload {
   readonly byteSize: ByteSize;
   readonly contentType: MediaContentType;
@@ -68,7 +68,7 @@ export interface AcceptedUpload {
 }
 
 /**
- * Checks what a client declares before it uploads: a content type acme
+ * Checks what a client declares before it uploads: a content type peal
  * accepts, and a size within the limit for its kind.
  */
 export const acceptUpload = (

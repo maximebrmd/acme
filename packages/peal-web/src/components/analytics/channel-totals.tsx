@@ -1,6 +1,6 @@
 "use client";
 
-import type { AnalyticsSummary, Channel, MetricTotals } from "acme-contract";
+import type { AnalyticsSummary, Channel, MetricTotals } from "peal-contract";
 import {
   Table,
   TableBody,
@@ -10,7 +10,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "acme-ui/components/table";
+} from "peal-ui/components/table";
 import { useFormatter, useTranslations } from "next-intl";
 
 type Column = keyof MetricTotals;

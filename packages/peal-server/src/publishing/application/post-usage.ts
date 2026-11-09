@@ -24,7 +24,7 @@ export class PostUsage extends Context.Service<
       workspaceId: WorkspaceId
     ) => Effect.Effect<MonthlyPosts, DatabaseError>;
   }
->()("acme-server/publishing/application/PostUsage") {
+>()("peal-server/publishing/application/PostUsage") {
   static readonly layer = Layer.effect(
     PostUsage,
     Effect.gen(function* PostUsageLive() {

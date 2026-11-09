@@ -475,7 +475,7 @@ describe(PostFollowUp, () => {
 
           const confirmed = yield* followUp.confirm(editor, postId, found.id, {
             _tag: "published",
-            permalink: Option.some("https://social.example/@acme/1"),
+            permalink: Option.some("https://social.example/@peal/1"),
           });
 
           const onLost = confirmed.targets.find(({ id }) => id === found.id);
@@ -483,7 +483,7 @@ describe(PostFollowUp, () => {
           assert(onLost?.status._tag === "published");
           assert.deepStrictEqual(
             onLost.status.permalink,
-            Option.some("https://social.example/@acme/1")
+            Option.some("https://social.example/@peal/1")
           );
           // Still to check on the other channel.
           assert(confirmed.post.status._tag === "finished");

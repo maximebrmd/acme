@@ -50,7 +50,7 @@ export class DeliverNoticeEmails extends Context.Service<
     /** Gives up on the emails still pending, which are not sent. */
     readonly abandon: (key: string) => Effect.Effect<void, DatabaseError>;
   }
->()("acme-server/notifications/application/DeliverNoticeEmails") {
+>()("peal-server/notifications/application/DeliverNoticeEmails") {
   static readonly layer = Layer.effect(
     DeliverNoticeEmails,
     Effect.gen(function* DeliverNoticeEmailsLive() {

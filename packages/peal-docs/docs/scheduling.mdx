@@ -43,7 +43,7 @@ Under **Length on each channel**, each channel the post goes to shows how much r
 | TikTok    | 2,200, where most emoji count 2 (UTF-16 code units); an image or a video is required                            | One video, or 35 photos |
 | YouTube   | A description of 5,000 bytes, without `<` or `>`; a video is required                                           | 1                       |
 
-Bluesky counts what a reader sees as one character, so an emoji made of several code points counts once. YouTube counts bytes, so an accented letter counts two. TikTok takes 2,200 for a video's caption and 4,000 for a photo post's description: Acme holds both to 2,200. Facebook and Pinterest have no limit in Acme yet. Acme checks the limits when you schedule a post, not while you write a draft.
+Bluesky counts what a reader sees as one character, so an emoji made of several code points counts once. YouTube counts bytes, so an accented letter counts two. TikTok takes 2,200 for a video's caption and 4,000 for a photo post's description: Peal holds both to 2,200. Facebook and Pinterest have no limit in Peal yet. Peal checks the limits when you schedule a post, not while you write a draft.
 
 ## Platform options [#options]
 
@@ -92,10 +92,10 @@ Moving a post does not check its text or its media against its channels again.
 
 ## Ask the writing assistant [#assistant]
 
-When the Acme instance has an AI provider, the composer's **Text** section has an **Assistant** menu. It works on the text for all channels, and offers:
+When the Peal instance has an AI provider, the composer's **Text** section has an **Assistant** menu. It works on the text for all channels, and offers:
 
 - **Rewrite in a tone**: professional, friendly, casual, enthusiastic or witty, keeping the meaning, the language and about the length;
-- **Shorten to fit**: one of the platforms of the channels you picked, or, before you pick any, each platform whose limit Acme knows;
+- **Shorten to fit**: one of the platforms of the channels you picked, or, before you pick any, each platform whose limit Peal knows;
 - **Translate into**: English, French, German, Spanish, Italian, Portuguese, Dutch, Polish, Japanese or Chinese (simplified);
 - **Suggest hashtags**: up to 8 that the text does not have yet.
 
@@ -103,7 +103,7 @@ The suggestion opens in a preview, and nothing changes until you choose **Use th
 
 The assistant takes texts of up to 5,000 characters. Each workspace may send it a number of requests per day, 100 unless the instance sets another, counted from midnight UTC; the menu shows how many are left today. A request that could not reach the AI provider does not count. One that took more than 90 seconds does, as the provider may have worked on it.
 
-Your text goes to the AI provider the instance's administrator chose, and nowhere else. Acme saves neither the text you send nor the suggestion, and never writes them to its logs.
+Your text goes to the AI provider the instance's administrator chose, and nowhere else. Peal saves neither the text you send nor the suggestion, and never writes them to its logs.
 
 ## The calendar [#calendar]
 
@@ -111,35 +111,35 @@ From a workspace's card, choose **Calendar**. It shows the scheduled posts by **
 
 ## When a post comes due [#publishing]
 
-At its time, Acme sends the post to each of its channels on its own, one post at a time per account, and records how each one ended:
+At its time, Peal sends the post to each of its channels on its own, one post at a time per account, and records how each one ended:
 
 | On a channel | What happened                                                                                           |
 | ------------ | ------------------------------------------------------------------------------------------------------- |
 | Published    | The platform took the post, and gave its address when it has one.                                       |
 | Failed       | The platform refused the post, the account needs reconnecting, or the post went out too late, as below. |
-| To check     | Acme cannot tell whether the platform published it. Check the platform before posting again.            |
+| To check     | Peal cannot tell whether the platform published it. Check the platform before posting again.            |
 | Cancelled    | The post was cancelled before it went out there.                                                        |
 
 The post as a whole then reads **Published**, **Partly published**, **To check**, **Failed** or **Cancelled**. Its author, and the members who chose to hear about every post, are told how it went on each channel: see [Notifications](/notifications).
 
 ## Follow up on a post [#follow-up]
 
-Open a post that went out, from the calendar or a notification: its page shows its text, and for each channel its status, why it failed or is to check, the address of the post on the platform, and every attempt Acme made, with when it tried again. While the post is going out, the page updates on its own. Members who may schedule posts can then:
+Open a post that went out, from the calendar or a notification: its page shows its text, and for each channel its status, why it failed or is to check, the address of the post on the platform, and every attempt Peal made, with when it tried again. While the post is going out, the page updates on its own. Members who may schedule posts can then:
 
-- **Post again** on a channel where it failed or is to check: Acme sends it now, as a new send with its own attempts, and the post reads **Publishing** until it has gone. When the post is to check, look on the platform first, as it may be live already;
+- **Post again** on a channel where it failed or is to check: Peal sends it now, as a new send with its own attempts, and the post reads **Publishing** until it has gone. When the post is to check, look on the platform first, as it may be live already;
 - **Say what you found** on a channel to check: **It is live**, with the post's address if you have it, or **It is not there**, which fails it there so it can be posted again. Either answer clears it from the posts to check, and marks its notifications as read.
 
-When a platform does not answer the request that publishes the post, Acme asks again only in ways that cannot post it twice: it reads the post back on Bluesky, sends it to Mastodon again under the same key, which Mastodon answers with the post it already made, looks for it among the X account's recent posts, by its text, its links and its files, without ever sending it to X again, asks Threads and Instagram whether the post they were handed was published, looks for it among the Facebook Page's recent posts, by its text, follows the post TikTok already took by the id it gave, and asks YouTube's upload how far it got, never uploading the video twice. It tries three times, over about two and a half minutes. LinkedIn lets Acme neither read a member's posts nor send one twice safely: there, the post reads **To check** at once. If the server stops in the middle of a post, it checks the same way when it starts again. Only when none of that settles it does the post read **To check**: Acme never posts it again on its own.
+When a platform does not answer the request that publishes the post, Peal asks again only in ways that cannot post it twice: it reads the post back on Bluesky, sends it to Mastodon again under the same key, which Mastodon answers with the post it already made, looks for it among the X account's recent posts, by its text, its links and its files, without ever sending it to X again, asks Threads and Instagram whether the post they were handed was published, looks for it among the Facebook Page's recent posts, by its text, follows the post TikTok already took by the id it gave, and asks YouTube's upload how far it got, never uploading the video twice. It tries three times, over about two and a half minutes. LinkedIn lets Peal neither read a member's posts nor send one twice safely: there, the post reads **To check** at once. If the server stops in the middle of a post, it checks the same way when it starts again. Only when none of that settles it does the post read **To check**: Peal never posts it again on its own.
 
-Acme waits rather than gives up when a platform is busy:
+Peal waits rather than gives up when a platform is busy:
 
 - a platform that does not answer is tried again after 1, 5, 15, 60 and 60 minutes, then the post fails there;
-- a platform that limits how often Acme posts is tried again when it says, up to 8 times and no later than a day after the post's time;
+- a platform that limits how often Peal posts is tried again when it says, up to 8 times and no later than a day after the post's time;
 - a platform that no longer accepts the account's access fails the post there, and the channel must be [reconnected](/channels#reconnect).
 
 A post that could not start within an hour of its time, for example because the server was down, is marked missed and does not go out.
 
-An image or video is sent as the platform needs it, and some platforms process videos first: Acme waits up to 15 minutes for them, then tries again later, as for a platform that does not answer.
+An image or video is sent as the platform needs it, and some platforms process videos first: Peal waits up to 15 minutes for them, then tries again later, as for a platform that does not answer.
 
 ## Media [#media]
 

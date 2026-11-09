@@ -1,6 +1,6 @@
 ---
 title: Privacy policy
-description: How Acme processes personal data, why, on which legal bases and for how long, and the rights you have.
+description: How Peal processes personal data, why, on which legal bases and for how long, and the rights you have.
 draft: true
 ---
 
@@ -8,9 +8,9 @@ Effective date: [Date]
 
 ## About this policy
 
-This policy explains how [Legal entity name] ("we") processes personal data when you use the hosted Acme service at [Service domain] and this website. It follows the transparency requirements of the EU General Data Protection Regulation (GDPR), Articles 13 and 14.
+This policy explains how [Legal entity name] ("we") processes personal data when you use the hosted Peal service at [Service domain] and this website. It follows the transparency requirements of the EU General Data Protection Regulation (GDPR), Articles 13 and 14.
 
-It does not cover self-hosted instances of Acme. Whoever runs a self-hosted instance is the controller of the data it processes and is responsible for its own privacy notice.
+It does not cover self-hosted instances of Peal. Whoever runs a self-hosted instance is the controller of the data it processes and is responsible for its own privacy notice.
 
 ## Controller
 
@@ -27,7 +27,7 @@ These categories follow the service as it is designed. [Confirm each one against
 
 - **Account data**: your name, email address and sign-in details. [List the sign-in methods offered.]
 - **Organisation data**: the organisations you belong to, your role in each, and the invitations you send or receive.
-- **Connected accounts**: the social media accounts you connect, their identifiers on each platform, and the access tokens the platforms issue to Acme.
+- **Connected accounts**: the social media accounts you connect, their identifiers on each platform, and the access tokens the platforms issue to Peal.
 - **Content**: the posts, media and schedules you create, and the publication history of each post.
 - **Performance data**: the metrics the platforms report for your posts.
 - **Billing data**: your plan, subscription status and invoices. Payments are handled by [Payment provider]. [State which payment details, if any, we receive.]
@@ -49,7 +49,7 @@ These categories follow the service as it is designed. [Confirm each one against
 | Bill your subscription and keep accounting records                      | Billing data                                         | Performance of a contract, point (b); legal obligation, point (c)                                                                                                                         |
 | Send service emails, such as the notifications you turn on              | Account data, communications                         | Performance of a contract, point (b)                                                                                                                                                      |
 | Keep the service secure and prevent abuse                               | Technical data                                       | Legitimate interests, point (f): [Describe the interest]                                                                                                                                  |
-| Record what Acme's staff do to accounts, and answer for it              | Account identifiers, the action, its time and reason | Legitimate interests, point (f): accountability for staff's access to accounts, kept after an account or a staff member leaves, without the reason once the account it concerns is closed |
+| Record what Peal's staff do to accounts, and answer for it              | Account identifiers, the action, its time and reason | Legitimate interests, point (f): accountability for staff's access to accounts, kept after an account or a staff member leaves, without the reason once the account it concerns is closed |
 | Measure visits to this website                                          | [Data collected by the analytics tool]               | [Legitimate interests, point (f), or consent, point (a)]                                                                                                                                  |
 | [Other purposes, such as AI features]                                   | [Data]                                               | [Legal basis]                                                                                                                                                                             |
 
@@ -57,13 +57,13 @@ Where processing relies on legitimate interests, you can object to it at any tim
 
 ## Data from connected platforms
 
-When you connect a social media account, the platform shares data with Acme within the permissions you grant. Acme uses that data to publish the posts you schedule and to show how they perform. [Describe any other use, and confirm that each use complies with the developer terms of every platform Acme connects to.]
+When you connect a social media account, the platform shares data with Peal within the permissions you grant. Peal uses that data to publish the posts you schedule and to show how they perform. [Describe any other use, and confirm that each use complies with the developer terms of every platform Peal connects to.]
 
-[Confirm once built: you can disconnect an account in Acme.] You can also revoke Acme's access from the platform's own settings.
+[Confirm once built: you can disconnect an account in Peal.] You can also revoke Peal's access from the platform's own settings.
 
 ## Recipients and sub-processors
 
-Personal data is shared with the service providers that help run Acme and, where the law requires it, with public authorities. [Confirm this list, and that a data processing agreement under GDPR Article 28 is in place with each provider.]
+Personal data is shared with the service providers that help run Peal and, where the law requires it, with public authorities. [Confirm this list, and that a data processing agreement under GDPR Article 28 is in place with each provider.]
 
 | Provider   | Service           | Location  | Transfer safeguard |
 | ---------- | ----------------- | --------- | ------------------ |

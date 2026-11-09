@@ -1,4 +1,4 @@
-"""The platform release.yml builds images for (roles/acme_release): the
+"""The platform release.yml builds images for (roles/peal_release): the
 server's architecture, from its facts, unless the inventory names one."""
 
 from __future__ import annotations
@@ -9,11 +9,11 @@ from conftest import ansible_render, role_file, task
 
 
 def _platform(architecture: str, **override: str) -> str:
-    expression = task("acme_release", "Name the release")["ansible.builtin.set_fact"]["acme_release_platform"]
+    expression = task("peal_release", "Name the release")["ansible.builtin.set_fact"]["peal_release_platform"]
     return ansible_render(
         expression,
         ansible_facts={"architecture": architecture},
-        **role_file("acme_release", "defaults"),
+        **role_file("peal_release", "defaults"),
         **override,
     ).strip()
 
@@ -24,20 +24,20 @@ def test_images_are_built_for_the_server_architecture(architecture: str, platfor
 
 
 def test_the_inventory_may_name_another_platform() -> None:
-    assert _platform("x86_64", acme_image_platform="linux/arm64") == "linux/arm64"
+    assert _platform("x86_64", peal_image_platform="linux/arm64") == "linux/arm64"
 
 
 def test_each_platform_has_its_own_archive() -> None:
     """The archive is reused when it exists: one built for another
     platform must not be."""
-    expression = task("acme_release", "Name the archive")["ansible.builtin.set_fact"]["acme_release_archive"]
+    expression = task("peal_release", "Name the archive")["ansible.builtin.set_fact"]["peal_release_archive"]
     names = {
-        "acme_release_local_dir": "/tmp/release",
-        "acme_environment": "production",
-        "acme_release_missing": ["server"],
-        "acme_release_built": {"server": "acme-server:0123456789ab"},
+        "peal_release_local_dir": "/tmp/release",
+        "peal_environment": "production",
+        "peal_release_missing": ["server"],
+        "peal_release_built": {"server": "peal-server:0123456789ab"},
     }
 
-    assert ansible_render(expression, acme_release_platform="linux/amd64", **names) != ansible_render(
-        expression, acme_release_platform="linux/arm64", **names
+    assert ansible_render(expression, peal_release_platform="linux/amd64", **names) != ansible_render(
+        expression, peal_release_platform="linux/arm64", **names
     )

@@ -1,16 +1,16 @@
 "use client";
 
 import { useAtomRefresh, useAtomValue } from "@effect/atom-react";
-import { Button } from "acme-ui/components/button";
-import { Label } from "acme-ui/components/label";
+import { Button } from "peal-ui/components/button";
+import { Label } from "peal-ui/components/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "acme-ui/components/select";
-import { Skeleton } from "acme-ui/components/skeleton";
+} from "peal-ui/components/select";
+import { Skeleton } from "peal-ui/components/skeleton";
 import { Option, Schema } from "effect";
 import { AsyncResult } from "effect/reactivity";
 import { useTranslations } from "next-intl";

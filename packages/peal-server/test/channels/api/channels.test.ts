@@ -5,8 +5,8 @@ import {
   ConnectFailed,
   Forbidden,
   OAuthClientNotPublished,
-} from "acme-contract";
-import type { Member } from "acme-contract";
+} from "peal-contract";
+import type { Member } from "peal-contract";
 import { DateTime, Effect, Layer, Option } from "effect";
 import { HttpServer } from "effect/http";
 import { HttpApiTest } from "effect/http-api";
@@ -102,8 +102,8 @@ layer(UseCasesTest)("the channels endpoints", (it) => {
       assert.deepStrictEqual(listed, [
         {
           avatarUrl: `https://social.example/avatars/${expiring.id}.png`,
-          displayName: "Acme Example",
-          handle: "@acme_example",
+          displayName: "Peal Example",
+          handle: "@peal_example",
           id: expiring.id,
           platform: "mastodon",
           status: { _tag: "active" },
@@ -111,8 +111,8 @@ layer(UseCasesTest)("the channels endpoints", (it) => {
         },
         {
           avatarUrl: `https://social.example/avatars/${renewing.id}.png`,
-          displayName: "Acme Example",
-          handle: "@acme_example",
+          displayName: "Peal Example",
+          handle: "@peal_example",
           id: renewing.id,
           platform: "mastodon",
           status: { _tag: "active" },
@@ -479,13 +479,13 @@ layer(HttpServer.layerServices)("the OAuth client documents", (it) => {
       const metadata = {
         application_type: "web",
         client_id:
-          "https://acme.test/api/channels/oauth/bluesky/client-metadata.json",
-        client_name: "Acme",
-        client_uri: "https://acme.test",
+          "https://peal.test/api/channels/oauth/bluesky/client-metadata.json",
+        client_name: "Peal",
+        client_uri: "https://peal.test",
         dpop_bound_access_tokens: true,
         grant_types: ["authorization_code", "refresh_token"],
-        jwks_uri: "https://acme.test/api/channels/oauth/bluesky/jwks.json",
-        redirect_uris: ["https://acme.test/connect/bluesky/callback"],
+        jwks_uri: "https://peal.test/api/channels/oauth/bluesky/jwks.json",
+        redirect_uris: ["https://peal.test/connect/bluesky/callback"],
         response_types: ["code"],
         scope: "atproto",
         token_endpoint_auth_method: "private_key_jwt",

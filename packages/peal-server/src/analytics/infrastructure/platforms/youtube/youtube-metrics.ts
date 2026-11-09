@@ -86,7 +86,7 @@ const failedOn = (posts: readonly PostToRead[]): Call => ({
  * count as impressions, comments as replies; YouTube has no reposts nor
  * quotes. A video the answer leaves out is missing: deleted, or no longer
  * the channel's. A 401 with Google's own error refuses the token; a quota
- * refusal or a 429 halts the read; a failure, or an answer Acme cannot
+ * refusal or a 429 halts the read; a failure, or an answer Peal cannot
  * read, marks the call's posts failed and halts.
  */
 export const youtubeMetrics = Effect.fn("YouTubeMetrics.make")(

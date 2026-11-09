@@ -22,7 +22,7 @@ export interface OwnWorkspace extends WorkspaceContent, WorkspaceSummary {
   readonly apiKeys: readonly ApiKey[];
 }
 
-/** A copy of what Acme keeps about a user. */
+/** A copy of what Peal keeps about a user. */
 export interface AccountExport extends UserContent {
   readonly account: AccountRecords;
   /** The posts the user wrote in the workspaces they share. */
@@ -34,7 +34,7 @@ export interface AccountExport extends UserContent {
 
 /**
  * The right of access: a copy of everything tied to the user, for them in
- * person or through Acme's command line, which saves it in their files.
+ * person or through Peal's command line, which saves it in their files.
  * Workspaces they share hold the team's work: of those, only their
  * memberships and the posts they wrote are part of it. The workspaces where
  * they are the only member are theirs, and come whole, as deleting the
@@ -50,7 +50,7 @@ export class AccountData extends Context.Service<
       AuthUnavailable | DatabaseError | NotSignedIn | SessionRequired
     >;
   }
->()("acme-server/workspace/application/AccountData") {
+>()("peal-server/workspace/application/AccountData") {
   static readonly layer = Layer.effect(
     AccountData,
     Effect.gen(function* AccountDataLive() {

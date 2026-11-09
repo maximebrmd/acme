@@ -71,7 +71,7 @@ const imageTypes: ReadonlySet<string> = new Set([
 ]);
 
 // From the Videos API: MP4 files of 75 KB to 500 MB, read as 75,000 bytes
-// at least, so Acme never refuses one LinkedIn takes. Both limits are in the
+// at least, so Peal never refuses one LinkedIn takes. Both limits are in the
 // platform rules, which refuse a post when it is scheduled; this check
 // stays for a post scheduled before they did.
 const minVideoBytes = 75_000;

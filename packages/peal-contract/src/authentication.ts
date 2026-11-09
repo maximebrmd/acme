@@ -13,13 +13,13 @@ import { Unauthenticated } from "./unauthenticated.ts";
 export class Authentication extends HttpApiMiddleware.Service<
   Authentication,
   { provides: CurrentPrincipal }
->()("acme-contract/Authentication", {
+>()("peal-contract/Authentication", {
   error: [Unauthenticated, Forbidden],
   security: {
     bearer: HttpApiSecurity.bearer.pipe(
       HttpApiSecurity.annotate(
         OpenApi.Description,
-        "An API key of a workspace, starting with acme_."
+        "An API key of a workspace, starting with peal_."
       )
     ),
     session: sessionCookie,

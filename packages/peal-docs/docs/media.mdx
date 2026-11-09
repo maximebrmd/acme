@@ -5,7 +5,7 @@ sidebar:
   order: 4
 ---
 
-A post can show images and videos from its workspace's media library, in the order you choose, each with alt text for people who cannot see it. Acme checks them against each channel's platform when you schedule the post, and sends them with it at its time.
+A post can show images and videos from its workspace's media library, in the order you choose, each with alt text for people who cannot see it. Peal checks them against each channel's platform when you schedule the post, and sends them with it at its time.
 
 ## The media library [#library]
 
@@ -16,7 +16,7 @@ From a workspace's card, **Media library** holds the workspace's images and vide
 | Images | JPEG, PNG, GIF, WebP  | 16 MiB       |
 | Videos | MP4, QuickTime (.mov) | 1 GiB        |
 
-Acme reads each file once it is stored: an image's dimensions, a video's dimensions, duration and codec. An image whose content is not of the type it was uploaded as is refused, and deleted. Contributors and above upload; editors and above delete.
+Peal reads each file once it is stored: an image's dimensions, a video's dimensions, duration and codec. An image whose content is not of the type it was uploaded as is refused, and deleted. Contributors and above upload; editors and above delete.
 
 ## Attach media to a post [#attach]
 
@@ -36,7 +36,7 @@ Write alt text for every file. When one has none, the composer names the platfor
 
 ## What each platform accepts [#platforms]
 
-Acme publishes to Mastodon, Bluesky, LinkedIn, X, Threads, Instagram, Facebook Pages and TikTok. When you schedule a post, it checks the post's images and videos against these limits:
+Peal publishes to Mastodon, Bluesky, LinkedIn, X, Threads, Instagram, Facebook Pages and TikTok. When you schedule a post, it checks the post's images and videos against these limits:
 
 | Limit                         | Bluesky                                             | Mastodon                                                                  |
 | ----------------------------- | --------------------------------------------------- | ------------------------------------------------------------------------- |
@@ -46,7 +46,7 @@ Acme publishes to Mastodon, Bluesky, LinkedIn, X, Threads, Instagram, Facebook P
 | Images and a video together   | No                                                  | No                                                                        |
 | Alt text                      | Shown to people who need it                         | Shown to people who need it, up to 1,500 characters                       |
 
-The Mastodon limits are those of a Mastodon server as it comes. When the post goes out, Acme also reads the limits of the account's own server, the file types it takes and its largest image and video, and does not send a file the server would refuse: the post then fails on that channel.
+The Mastodon limits are those of a Mastodon server as it comes. When the post goes out, Peal also reads the limits of the account's own server, the file types it takes and its largest image and video, and does not send a file the server would refuse: the post then fails on that channel.
 
 | Limit                         | LinkedIn                                                       | X                                                          |
 | ----------------------------- | -------------------------------------------------------------- | ---------------------------------------------------------- |
@@ -56,7 +56,7 @@ The Mastodon limits are those of a Mastodon server as it comes. When the post go
 | Images and a video together   | No                                                             | No                                                         |
 | Alt text                      | On images, shown to people who need it, up to 4,086 characters | Shown to people who need it, up to 1,000 characters        |
 
-X lets some accounts post longer videos; Acme checks the length every account may post. A GIF with other files on X, and a video under 75 KB (75,000 bytes) on LinkedIn, are refused when the post is scheduled.
+X lets some accounts post longer videos; Peal checks the length every account may post. A GIF with other files on X, and a video under 75 KB (75,000 bytes) on LinkedIn, are refused when the post is scheduled.
 
 On Meta's platforms:
 
@@ -78,7 +78,7 @@ On TikTok:
 | Images and a video together   | No                                                                                                            |
 | Alt text                      | Not sent                                                                                                      |
 
-A TikTok account may post shorter videos only, as its settings on TikTok say: Acme checks its longest when you schedule the post, and again when it goes out. Acme does not read a video's frame rate: TikTok refuses one outside its range when it processes the post. Photos need a server set up to let TikTok fetch them (see [TikTok](/self-hosting#tiktok)): elsewhere, a TikTok post with photos is refused when you schedule it.
+A TikTok account may post shorter videos only, as its settings on TikTok say: Peal checks its longest when you schedule the post, and again when it goes out. Peal does not read a video's frame rate: TikTok refuses one outside its range when it processes the post. Photos need a server set up to let TikTok fetch them (see [TikTok](/self-hosting#tiktok)): elsewhere, a TikTok post with photos is refused when you schedule it.
 
 On YouTube:
 
@@ -91,7 +91,7 @@ On YouTube:
 
 A video of 3 minutes or less, square or taller than wide, becomes a Short. YouTube takes videos longer than 15 minutes only from channels Google verified; it rejects the others once uploaded, and the post fails with that reason.
 
-Acme checks only what it read from each file: a fact it could not read, such as a video's duration, is not checked, and the platform may still refuse the file.
+Peal checks only what it read from each file: a fact it could not read, such as a video's duration, is not checked, and the platform may still refuse the file.
 
 ## When you schedule [#schedule]
 
@@ -101,16 +101,16 @@ A draft may hold any ready media of its workspace: the platforms' limits wait un
 
 ## When the post goes out [#publishing]
 
-At the post's time, Acme sends each file from the library to the platform, then publishes the post:
+At the post's time, Peal sends each file from the library to the platform, then publishes the post:
 
 - **Mastodon**: each file goes to the account's server, which may process it before the post can show it.
 - **Bluesky**: images go to the server that holds the account, and a video to Bluesky's video service, which processes it.
-- **Threads**, **Instagram** and **Facebook Pages**: Acme gives Meta a link to each file in the media store, valid for two hours, and Meta fetches it. On Threads and Instagram, Meta then processes the files before the post goes out.
+- **Threads**, **Instagram** and **Facebook Pages**: Peal gives Meta a link to each file in the media store, valid for two hours, and Meta fetches it. On Threads and Instagram, Meta then processes the files before the post goes out.
 - **TikTok**: a video goes up in parts of 10 MB, read one at a time from the media store, unless the server lets TikTok fetch it from the store's public address; photos TikTok always fetches. TikTok then processes the post before it goes live.
 
-- **YouTube**: Acme uploads the video in parts of 8 MiB, picking up where YouTube stands if an upload is cut off, even after the server restarts, then waits while YouTube processes it.
+- **YouTube**: Peal uploads the video in parts of 8 MiB, picking up where YouTube stands if an upload is cut off, even after the server restarts, then waits while YouTube processes it.
 
-Acme waits up to 15 minutes for a platform to process a file. Past that, it tries the post again later, as for a platform that does not answer; a YouTube video, already uploaded, is left published while YouTube finishes.
+Peal waits up to 15 minutes for a platform to process a file. Past that, it tries the post again later, as for a platform that does not answer; a YouTube video, already uploaded, is left published while YouTube finishes.
 
 ## Delete media [#delete]
 

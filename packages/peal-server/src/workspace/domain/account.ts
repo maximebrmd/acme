@@ -17,7 +17,7 @@ export type WorkspaceMembership = typeof WorkspaceMembershipSchema.Type;
 
 /** A user's account, and every workspace they belong to. */
 export class Account extends Schema.Class<Account>(
-  "acme-server/workspace/domain/Account"
+  "peal-server/workspace/domain/Account"
 )({
   ban: Schema.Option(BanSchema),
   email: Schema.String,

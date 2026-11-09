@@ -13,7 +13,7 @@ const health = (transport: Layer.Layer<HttpClient.HttpClient>) =>
     Effect.provide(Layer.mergeAll(cliEnvironment(), transport))
   );
 
-describe("acme health", () => {
+describe("peal health", () => {
   it.effect("reports a server that answers", () =>
     Effect.gen(function* healthy() {
       yield* health(inMemoryServer(Effect.void));
@@ -22,7 +22,7 @@ describe("acme health", () => {
 
       // The test clock stands still, so the round trip takes 0 ms.
       assert.deepStrictEqual(logs, [
-        "The Acme API at http://localhost:3000 is healthy (0 ms).",
+        "The Peal API at http://localhost:3000 is healthy (0 ms).",
       ]);
       assert.deepStrictEqual(errors, []);
     })
@@ -42,7 +42,7 @@ describe("acme health", () => {
 
       assert.include(
         errors.join("\n"),
-        "The Acme API at http://localhost:3000 is not healthy (HTTP 500)."
+        "The Peal API at http://localhost:3000 is not healthy (HTTP 500)."
       );
     })
   );
@@ -64,9 +64,9 @@ describe("acme health", () => {
       assert.deepStrictEqual(logs, []);
       assert.include(
         errors.join("\n"),
-        "Cannot reach the Acme API at http://localhost:3000 (ECONNREFUSED: Unable to connect to the server)."
+        "Cannot reach the Peal API at http://localhost:3000 (ECONNREFUSED: Unable to connect to the server)."
       );
-      assert.include(errors.join("\n"), "--api-url or ACME_API_URL");
+      assert.include(errors.join("\n"), "--api-url or PEAL_API_URL");
     })
   );
 

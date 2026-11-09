@@ -58,7 +58,7 @@ export const roleGrants: Readonly<Record<Role, Grant>> = {
 
 /**
  * The roles a stored role names. Better Auth keeps a member's roles in one
- * column, separated by commas; names Acme does not know grant nothing.
+ * column, separated by commas; names Peal does not know grant nothing.
  */
 export const rolesOf = (stored: string): readonly Role[] => {
   const names = new Set(stored.split(",").map((name) => name.trim()));

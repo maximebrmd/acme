@@ -13,9 +13,9 @@ export default defineConfig({
   extends: [root, react, next, shadcn, vitest],
   ignorePatterns: root.ignorePatterns ?? [],
   jsPlugins: shadcn.jsPlugins ?? [],
-  // Screens use acme-ui's components and theme: the shadcn rules check class
+  // Screens use peal-ui's components and theme: the shadcn rules check class
   // names against them. Oxlint does not merge settings from extended configs.
   settings: {
-    shadcn: { themeImports: ["^acme-ui/"], ui: "acme-ui/components" },
+    shadcn: { themeImports: ["^peal-ui/"], ui: "peal-ui/components" },
   },
 });

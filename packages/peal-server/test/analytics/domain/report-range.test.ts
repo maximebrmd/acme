@@ -94,7 +94,7 @@ const counts = (likes: number) =>
   });
 
 describe(PostMetrics, () => {
-  it("refuses a count past what Acme keeps", () => {
+  it("refuses a count past what Peal keeps", () => {
     expect(Option.isSome(counts(maxCount))).toBeTruthy();
     expect(Option.isNone(counts(maxCount + 1))).toBeTruthy();
   });

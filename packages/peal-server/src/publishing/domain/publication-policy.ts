@@ -29,10 +29,10 @@ import type { TargetSettlement } from "./target-settlement.ts";
  * |                     | or past 24 h after the scheduled time: rateLimited |
  * |                     | or, for a daily allowance, quotaExceeded           |
  * | TokenExpired        | give up: tokenExpired, and reconnect the channel   |
- * | MediaRejected       | give up: mediaRejected, or mediaRemoved when Acme  |
+ * | MediaRejected       | give up: mediaRejected, or mediaRemoved when Peal  |
  * |                     | could not read the media (`./own-refusals.ts`)     |
  * | BadRequest          | give up: contentRejected, or channelDisconnected   |
- * |                     | and channelDisabled when Acme refused to use the   |
+ * |                     | and channelDisabled when Peal refused to use the   |
  * |                     | channel, appNotAudited when the platform refused   |
  * |                     | the server's app                                   |
  *
@@ -193,7 +193,7 @@ const badRequestReason = (code: string): RefusalReason => {
 
 /**
  * Why a target fails when an attempt is refused this way, once nothing is
- * left to try: the platform's refusal, or Acme's own when it could not use
+ * left to try: the platform's refusal, or Peal's own when it could not use
  * the channel or the media (see `./own-refusals.ts`).
  */
 export const failureReasonOf = (failure: PublishFailure): RefusalReason =>

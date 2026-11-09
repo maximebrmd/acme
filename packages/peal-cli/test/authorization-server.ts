@@ -1,10 +1,10 @@
-import { deviceCodeGrantType, OAuthApi } from "acme-contract";
-import type { DeviceAuthorization, Token } from "acme-contract";
+import { deviceCodeGrantType, OAuthApi } from "peal-contract";
+import type { DeviceAuthorization, Token } from "peal-contract";
 import { Effect, Layer, Option, Ref } from "effect";
 import { HttpApiBuilder } from "effect/http-api";
 
 // An OAuth authorization server for the command line's tests, answering
-// acme-contract's OAuthApi as Better Auth does on an Acme server whose
+// peal-contract's OAuthApi as Better Auth does on a Peal server whose
 // public URL is publicUrl. The user approves (or denies) the sign-in after
 // the command line asked for tokens `approveAfter` times.
 

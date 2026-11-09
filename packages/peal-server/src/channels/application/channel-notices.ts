@@ -20,4 +20,4 @@ export class ChannelNotices extends Context.Service<
       expiresAt: DateTime.Utc
     ) => Effect.Effect<void>;
   }
->()("acme-server/channels/application/ChannelNotices") {}
+>()("peal-server/channels/application/ChannelNotices") {}

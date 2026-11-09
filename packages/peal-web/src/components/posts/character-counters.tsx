@@ -1,7 +1,7 @@
 "use client";
 
-import type { Channel } from "acme-contract";
-import { Badge } from "acme-ui/components/badge";
+import type { Channel } from "peal-contract";
+import { Badge } from "peal-ui/components/badge";
 import { useTranslations } from "next-intl";
 
 import { MediaFitBadges } from "#components/posts/media-fit-badges.tsx";

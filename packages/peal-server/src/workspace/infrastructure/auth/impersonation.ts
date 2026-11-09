@@ -65,7 +65,7 @@ const billingReads: ReadonlySet<string> = new Set([
  * or open the billing portal. Creating, inviting, accepting, changing roles,
  * removing, deleting, granting access, changing the account and paying all
  * outlive the impersonation, as what `withheldWhileImpersonating` lists
- * does, and these routes never reach Acme's API, which applies that list.
+ * does, and these routes never reach Peal's API, which applies that list.
  */
 export const refusedWhileImpersonating = (path: string): boolean =>
   grantsAccess.has(path) ||

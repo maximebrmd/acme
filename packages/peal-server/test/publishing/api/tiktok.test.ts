@@ -5,8 +5,8 @@ import {
   ChannelNotFound,
   Forbidden,
   PlatformUnreachable,
-} from "acme-contract";
-import type { Member } from "acme-contract";
+} from "peal-contract";
+import type { Member } from "peal-contract";
 import { Duration, Effect, Layer, Option } from "effect";
 import { HttpServer } from "effect/http";
 import { HttpApiTest } from "effect/http-api";
@@ -36,14 +36,14 @@ const onTikTok = ChannelIdSchema.make("01900000-0000-7000-8000-0000000000c1");
 const onMastodon = ChannelIdSchema.make("01900000-0000-7000-8000-0000000000c2");
 
 const creator = new TikTokCreator({
-  avatarUrl: Option.some("https://p16-sign.tiktokcdn.example/avatar/acme.jpeg"),
+  avatarUrl: Option.some("https://p16-sign.tiktokcdn.example/avatar/peal.jpeg"),
   commentDisabled: false,
   duetDisabled: true,
   maxVideoDuration: Option.some(Duration.minutes(10)),
-  nickname: "Acme Example",
+  nickname: "Peal Example",
   privacyLevels: ["PUBLIC_TO_EVERYONE", "SELF_ONLY"],
   stitchDisabled: false,
-  username: "acme_example",
+  username: "peal_example",
 });
 
 // The endpoint over the workspace's two channels, and TikTok answering
@@ -110,14 +110,14 @@ describe("a TikTok channel's creator endpoint", () => {
         posting: {
           _tag: "ready",
           creator: {
-            avatarUrl: "https://p16-sign.tiktokcdn.example/avatar/acme.jpeg",
+            avatarUrl: "https://p16-sign.tiktokcdn.example/avatar/peal.jpeg",
             commentDisabled: false,
             duetDisabled: true,
             maxVideoDurationMs: 600_000,
-            nickname: "Acme Example",
+            nickname: "Peal Example",
             privacyLevels: ["PUBLIC_TO_EVERYONE", "SELF_ONLY"],
             stitchDisabled: false,
-            username: "acme_example",
+            username: "peal_example",
           },
         },
         takesPhotos: false,

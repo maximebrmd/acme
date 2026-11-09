@@ -1,11 +1,11 @@
 ---
 # Working folder on the machine running Ansible (ignored by Git).
-acme_release_local_dir: "{{ playbook_dir | dirname }}/.ansible/release"
+peal_release_local_dir: "{{ playbook_dir | dirname }}/.ansible/release"
 # Release folders kept on the server, the running one included.
-acme_release_keep: 3
+peal_release_keep: 3
 # The platform the images are built for, from the server's architecture as
-# its facts give it, unless acme_image_platform (in the inventory, or
-# `-e acme_image_platform=linux/arm64`) names one.
-acme_release_platforms:
+# its facts give it, unless peal_image_platform (in the inventory, or
+# `-e peal_image_platform=linux/arm64`) names one.
+peal_release_platforms:
   x86_64: linux/amd64
   aarch64: linux/arm64

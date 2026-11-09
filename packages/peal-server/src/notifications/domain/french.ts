@@ -2,25 +2,25 @@ import type { EmailCatalog } from "./email-catalog.ts";
 
 export const french: EmailCatalog = {
   accountDeleted: {
-    action: "Ouvrir Acme",
-    body: "Votre compte Acme a été supprimé à votre demande, avec les données qui s’y rattachent : votre profil, vos sessions, vos adhésions, vos notifications, et les espaces de travail dont vous étiez le seul membre, avec tout leur contenu.",
+    action: "Ouvrir Peal",
+    body: "Votre compte Peal a été supprimé à votre demande, avec les données qui s’y rattachent : votre profil, vos sessions, vos adhésions, vos notifications, et les espaces de travail dont vous étiez le seul membre, avec tout leur contenu.",
     ignore:
-      "Si vous n’êtes pas à l’origine de cette demande, prévenez la personne qui gère ce serveur Acme. Acme n’envoie plus d’e-mail à cette adresse.",
-    subject: "Votre compte Acme est supprimé",
+      "Si vous n’êtes pas à l’origine de cette demande, prévenez la personne qui gère ce serveur Peal. Peal n’envoie plus d’e-mail à cette adresse.",
+    subject: "Votre compte Peal est supprimé",
   },
   channel: "{platform} ({handle})",
   channelReconnectRequired: {
     action: "Reconnecter le compte",
-    body: "Acme ne peut plus publier en tant que {handle} sur {platform} dans {workspaceName} : l’autorisation du compte ne fonctionne plus. Rien n’y est publié tant que personne ne le reconnecte.",
+    body: "Peal ne peut plus publier en tant que {handle} sur {platform} dans {workspaceName} : l’autorisation du compte ne fonctionne plus. Rien n’y est publié tant que personne ne le reconnecte.",
     ignore:
-      "Vous recevez cet e-mail parce que vous gérez les canaux de {workspaceName} sur Acme. Choisissez les notifications que vous recevez par e-mail dans vos préférences de notification.",
+      "Vous recevez cet e-mail parce que vous gérez les canaux de {workspaceName} sur Peal. Choisissez les notifications que vous recevez par e-mail dans vos préférences de notification.",
     subject: "Reconnectez {handle} sur {platform}",
   },
   channelReconnectSoon: {
     action: "Reconnecter le compte",
-    body: "L’autorisation qu’Acme détient pour {handle} sur {platform}, dans {workspaceName}, prend fin le {expiresAt}, et {platform} ne permet pas à Acme de la renouveler. Reconnectez le compte d’ici là pour continuer à publier.",
+    body: "L’autorisation que Peal détient pour {handle} sur {platform}, dans {workspaceName}, prend fin le {expiresAt}, et {platform} ne permet pas à Peal de la renouveler. Reconnectez le compte d’ici là pour continuer à publier.",
     ignore:
-      "Vous recevez cet e-mail parce que vous gérez les canaux de {workspaceName} sur Acme. Choisissez les notifications que vous recevez par e-mail dans vos préférences de notification.",
+      "Vous recevez cet e-mail parce que vous gérez les canaux de {workspaceName} sur Peal. Choisissez les notifications que vous recevez par e-mail dans vos préférences de notification.",
     subject: "Reconnectez {handle} sur {platform} avant le {expiresAt}",
   },
   failureReasons: {
@@ -35,27 +35,27 @@ export const french: EmailCatalog = {
     mediaRemoved:
       "l’une de ses images ou vidéos a été supprimée de la médiathèque avant son départ.",
     missed:
-      "Acme était indisponible à l’heure prévue, et la publication est arrivée trop tard pour partir.",
+      "Peal était indisponible à l’heure prévue, et la publication est arrivée trop tard pour partir.",
     notPublished:
       "quelqu’un a vérifié sur la plateforme et ne l’a pas trouvée.",
     quotaExceeded:
-      "l’allocation quotidienne de mises en ligne de la plateforme est restée épuisée, pour ce serveur Acme ou pour le compte, et Acme a cessé d’attendre.",
+      "l’allocation quotidienne de mises en ligne de la plateforme est restée épuisée, pour ce serveur Peal ou pour le compte, et Peal a cessé d’attendre.",
     rateLimited:
-      "la plateforme a refusé les requêtes trop longtemps, et Acme a cessé d’essayer.",
+      "la plateforme a refusé les requêtes trop longtemps, et Peal a cessé d’essayer.",
     tokenExpired:
       "l’autorisation du compte ne fonctionne plus. Reconnectez-le, puis publiez à nouveau.",
     unavailable: "la plateforme était injoignable.",
   },
   invitation: {
     action: "Accepter l’invitation",
-    body: "{inviterName} vous invite à rejoindre {workspaceName} sur Acme {role}.",
+    body: "{inviterName} vous invite à rejoindre {workspaceName} sur Peal {role}.",
     ignore:
       "Si vous n’attendiez pas cette invitation, vous pouvez ignorer cet e-mail. Elle expire dans 7 jours.",
-    subject: "{inviterName} vous invite à rejoindre {workspaceName} sur Acme",
+    subject: "{inviterName} vous invite à rejoindre {workspaceName} sur Peal",
   },
   layout: {
     linkFallback: "Si le bouton ne fonctionne pas, ouvrez ce lien :",
-    signature: "L’équipe Acme",
+    signature: "L’équipe Peal",
     textLink: "{action} : {url}",
   },
   platforms: {
@@ -74,29 +74,29 @@ export const french: EmailCatalog = {
     action: "Ouvrir la publication",
     body: "Une publication de {workspaceName} n’est pas partie sur {channel} : {reason}",
     ignore:
-      "Vous recevez cet e-mail parce que vous avez écrit cette publication dans {workspaceName} sur Acme, ou y programmez des publications. Choisissez les notifications que vous recevez par e-mail dans vos préférences de notification.",
+      "Vous recevez cet e-mail parce que vous avez écrit cette publication dans {workspaceName} sur Peal, ou y programmez des publications. Choisissez les notifications que vous recevez par e-mail dans vos préférences de notification.",
     subject: "Une publication n’est pas partie sur {channel}",
   },
   postPublished: {
     action: "Voir la publication",
     body: "Une publication de {workspaceName} est en ligne sur {channel}.",
     ignore:
-      "Vous recevez cet e-mail parce que vous avez écrit cette publication dans {workspaceName} sur Acme, ou y programmez des publications. Choisissez les notifications que vous recevez par e-mail dans vos préférences de notification.",
+      "Vous recevez cet e-mail parce que vous avez écrit cette publication dans {workspaceName} sur Peal, ou y programmez des publications. Choisissez les notifications que vous recevez par e-mail dans vos préférences de notification.",
     subject: "Publié sur {channel}",
   },
   postUnconfirmed: {
     action: "Ouvrir la publication",
-    body: "Acme a envoyé une publication de {workspaceName} sur {channel} sans recevoir de réponse : elle est peut-être en ligne, peut-être pas. Vérifiez sur la plateforme avant de la republier, puis indiquez à Acme ce que vous avez trouvé.",
+    body: "Peal a envoyé une publication de {workspaceName} sur {channel} sans recevoir de réponse : elle est peut-être en ligne, peut-être pas. Vérifiez sur la plateforme avant de la republier, puis indiquez à Peal ce que vous avez trouvé.",
     ignore:
-      "Vous recevez cet e-mail parce que vous avez écrit cette publication dans {workspaceName} sur Acme, ou y programmez des publications. Choisissez les notifications que vous recevez par e-mail dans vos préférences de notification.",
+      "Vous recevez cet e-mail parce que vous avez écrit cette publication dans {workspaceName} sur Peal, ou y programmez des publications. Choisissez les notifications que vous recevez par e-mail dans vos préférences de notification.",
     subject: "Vérifiez {channel} : une publication est peut-être partie",
   },
   resetPassword: {
     action: "Choisir un nouveau mot de passe",
-    body: "Quelqu’un a demandé à réinitialiser le mot de passe de votre compte Acme. Choisissez-en un nouveau avec le lien ci-dessous.",
+    body: "Quelqu’un a demandé à réinitialiser le mot de passe de votre compte Peal. Choisissez-en un nouveau avec le lien ci-dessous.",
     ignore:
       "Si vous n’êtes pas à l’origine de cette demande, ignorez cet e-mail : votre mot de passe reste inchangé. Le lien expire dans une heure.",
-    subject: "Réinitialisez votre mot de passe Acme",
+    subject: "Réinitialisez votre mot de passe Peal",
   },
   roles: {
     admin: "en tant qu’administrateur",
@@ -108,9 +108,9 @@ export const french: EmailCatalog = {
   unknownChannel: "un canal déconnecté",
   verifyEmail: {
     action: "Confirmer mon adresse",
-    body: "Bienvenue sur Acme. Confirmez votre adresse e-mail pour terminer la création de votre compte.",
+    body: "Bienvenue sur Peal. Confirmez votre adresse e-mail pour terminer la création de votre compte.",
     ignore:
-      "Si vous n’avez pas créé de compte Acme, ignorez cet e-mail. Le lien expire dans une heure.",
-    subject: "Confirmez votre adresse e-mail pour Acme",
+      "Si vous n’avez pas créé de compte Peal, ignorez cet e-mail. Le lien expire dans une heure.",
+    subject: "Confirmez votre adresse e-mail pour Peal",
   },
 };

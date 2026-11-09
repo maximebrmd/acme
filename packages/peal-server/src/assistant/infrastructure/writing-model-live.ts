@@ -16,7 +16,7 @@ import { UnavailableWritingModelLive } from "#assistant/infrastructure/unavailab
  */
 const maxOutputTokens = 4096;
 
-// The provider is not sent Acme's trace context. Its requests time out in
+// The provider is not sent Peal's trace context. Its requests time out in
 // languageModelWritingModel, which tells a timeout from an unreachable
 // provider: the provider may have run a request that timed out.
 const transformClient = (

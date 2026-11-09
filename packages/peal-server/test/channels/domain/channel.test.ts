@@ -49,11 +49,11 @@ const channelWith = (status: ChannelStatus, token: TokenLifetime): Channel =>
   new Channel({
     accountId: "4815162342",
     avatarUrl: Option.some(
-      AvatarUrlSchema.make("https://social.example/avatars/acme.png")
+      AvatarUrlSchema.make("https://social.example/avatars/peal.png")
     ),
     createdAt: connectedAt,
-    displayName: Option.some("Acme Example"),
-    handle: "@acme_example",
+    displayName: Option.some("Peal Example"),
+    handle: "@peal_example",
     id: ChannelIdSchema.make("00000000-0000-7000-8000-000000000010"),
     platform: "mastodon",
     scopes: ["read", "write"],
@@ -67,8 +67,8 @@ const channelWith = (status: ChannelStatus, token: TokenLifetime): Channel =>
 // and one more scope.
 const renamed = (token: TokenLifetime): ConnectedAccount => ({
   avatarUrl: Option.none(),
-  displayName: Option.some("Acme Renamed"),
-  handle: "@acme_renamed",
+  displayName: Option.some("Peal Renamed"),
+  handle: "@peal_renamed",
   scopes: ["read", "write", "push"],
   token,
 });
@@ -170,7 +170,7 @@ describe(connectChannel, () => {
     );
 
     expect(channel.status).toStrictEqual(active);
-    expect(channel.handle).toBe("@acme_renamed");
+    expect(channel.handle).toBe("@peal_renamed");
     expect(channel.token).toStrictEqual(sixtyDays);
     expect(channel.createdAt).toStrictEqual(changedAt);
     expect(channel.updatedAt).toStrictEqual(changedAt);
@@ -226,8 +226,8 @@ describe(reconnect, () => {
       accountId: channel.accountId,
       avatarUrl: Option.none(),
       createdAt: connectedAt,
-      displayName: Option.some("Acme Renamed"),
-      handle: "@acme_renamed",
+      displayName: Option.some("Peal Renamed"),
+      handle: "@peal_renamed",
       scopes: ["read", "write", "push"],
     });
   });
@@ -316,16 +316,16 @@ describe("an avatar URL", () => {
   const isAvatarUrl = Schema.is(AvatarUrlSchema);
 
   it.each([
-    "https://social.example/avatars/acme.png",
+    "https://social.example/avatars/peal.png",
     "http://localhost:3001/avatar.png",
   ])("accepts %s", (url) => {
     expect(isAvatarUrl(url)).toBeTruthy();
   });
 
   it.each([
-    "ftp://social.example/avatars/acme.png",
+    "ftp://social.example/avatars/peal.png",
     "data:image/png;base64,AAAA",
-    "/avatars/acme.png",
+    "/avatars/peal.png",
     "",
   ])("refuses %j", (url) => {
     expect(isAvatarUrl(url)).toBeFalsy();

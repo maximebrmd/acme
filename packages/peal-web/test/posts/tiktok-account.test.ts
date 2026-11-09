@@ -1,5 +1,5 @@
 import { describe, expect, it } from "@effect/vitest";
-import type { TikTokAccount } from "acme-contract";
+import type { TikTokAccount } from "peal-contract";
 import { Option } from "effect";
 
 import { initialValues } from "#posts/target-options.ts";
@@ -14,14 +14,14 @@ const privateAccount: TikTokAccount = {
       commentDisabled: true,
       duetDisabled: true,
       maxVideoDurationMs: 180_000,
-      nickname: "Acme Example",
+      nickname: "Peal Example",
       privacyLevels: [
         "FOLLOWER_OF_CREATOR",
         "MUTUAL_FOLLOW_FRIENDS",
         "SELF_ONLY",
       ],
       stitchDisabled: true,
-      username: "acme_example",
+      username: "peal_example",
     },
   },
   takesPhotos: true,

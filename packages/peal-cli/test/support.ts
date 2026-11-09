@@ -9,8 +9,8 @@ import {
   OAuthClientNotPublished,
   StaffAccess,
   Unauthenticated,
-} from "acme-contract";
-import type { Me } from "acme-contract";
+} from "peal-contract";
+import type { Me } from "peal-contract";
 import {
   ConfigProvider,
   Effect,
@@ -254,10 +254,10 @@ const DataDeletionLive = HttpApiBuilder.group(Api, "dataDeletion", (handlers) =>
   })
 );
 
-// An Acme server in memory: acme-contract served by test handlers, without
+// A Peal server in memory: peal-contract served by test handlers, without
 // a socket, with an OAuth authorization server and a studio of synthetic
 // workspaces, where the user belongs to syntheticMe's unless a test brings
-// its own. The CLI never imports acme-server, so its tests answer for it.
+// its own. The CLI never imports peal-server, so its tests answer for it.
 export const inMemoryServer = (
   health: Effect.Effect<void>,
   authorization?: AuthorizationServer,

@@ -38,7 +38,7 @@ const resendAnswering = (status: number) => {
 
   const layer = resendMailer({
     apiKey: Redacted.make("re_test_key"),
-    from: "Acme <noreply@example.test>",
+    from: "Peal <noreply@example.test>",
   }).pipe(
     Layer.provide(FetchHttpClient.layer),
     Layer.provide(Layer.succeed(FetchHttpClient.Fetch, fetch))
@@ -83,7 +83,7 @@ describe("the Resend mailer", () => {
       );
 
       assert.deepStrictEqual(body, {
-        from: "Acme <noreply@example.test>",
+        from: "Peal <noreply@example.test>",
         html: message.html,
         subject: message.subject,
         text: message.text,

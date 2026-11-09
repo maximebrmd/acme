@@ -2,7 +2,7 @@ import { Schema } from "effect";
 
 import { MediaKindSchema } from "./media-format.ts";
 
-/** A file larger than acme stores for its kind. */
+/** A file larger than peal stores for its kind. */
 export class MediaTooLarge extends Schema.TaggedError<MediaTooLarge>()(
   "MediaTooLarge",
   {

@@ -12,7 +12,7 @@ import {
   StaffUserSchema,
   StaffWorkspacePageSchema,
   StaffWorkspaceSchema,
-} from "acme-contract";
+} from "peal-contract";
 import { Config, Context, Effect, Layer, Schedule, Schema } from "effect";
 import { SqlClient } from "effect/sql";
 
@@ -55,7 +55,7 @@ interface Fixture {
 }
 
 class Staffed extends Context.Service<Staffed, Fixture>()(
-  "acme-server/test/Staffed"
+  "peal-server/test/Staffed"
 ) {}
 
 const IdsSchema = Schema.Array(Schema.Struct({ id: Schema.String }));

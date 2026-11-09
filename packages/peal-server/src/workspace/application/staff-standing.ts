@@ -21,7 +21,7 @@ export class StaffStanding extends Context.Service<
       principal: UserPrincipal
     ) => Effect.Effect<UserId, DirectoryUnavailable | NotStaff>;
   }
->()("acme-server/workspace/application/StaffStanding") {
+>()("peal-server/workspace/application/StaffStanding") {
   static readonly layer = Layer.effect(
     StaffStanding,
     Effect.gen(function* StaffStandingLive() {

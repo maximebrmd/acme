@@ -4,7 +4,7 @@ import {
   Forbidden,
   InvalidDateRange,
   InvalidTimeZone,
-} from "acme-contract";
+} from "peal-contract";
 import { Effect, Option, Schema } from "effect";
 import { HttpApiBuilder } from "effect/http-api";
 

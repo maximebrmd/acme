@@ -15,7 +15,7 @@ import type { TikTokField } from "./tiktok-options.ts";
  * turned off in their settings, and the longest video they may post.
  */
 export class TikTokCreator extends Schema.Class<TikTokCreator>(
-  "acme-server/publishing/domain/TikTokCreator"
+  "peal-server/publishing/domain/TikTokCreator"
 )({
   avatarUrl: Schema.Option(Schema.String),
   commentDisabled: Schema.Boolean,
@@ -31,7 +31,7 @@ export class TikTokCreator extends Schema.Class<TikTokCreator>(
 /**
  * Why a creator cannot post now, as creator info says: the posts TikTok
  * allows them a day are spent (about 15, shared by every app), they are
- * banned from posting, or Acme's app reached its daily count of creators
+ * banned from posting, or Peal's app reached its daily count of creators
  * who post through it.
  */
 export const TikTokBlockSchema = Schema.Literals([

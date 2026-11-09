@@ -1,5 +1,5 @@
-import { Input } from "acme-ui/components/input";
-import { Label } from "acme-ui/components/label";
+import { Input } from "peal-ui/components/input";
+import { Label } from "peal-ui/components/label";
 import type { ChangeEvent } from "react";
 
 interface FormFieldProps {

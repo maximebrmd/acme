@@ -1,6 +1,6 @@
 {
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
-  "name": "acme-docker",
+  "name": "peal-docker",
   "projectType": "application",
   "targets": {
     "typecheck": {
@@ -35,16 +35,16 @@
       "continuous": true
     },
     "build-server-image": {
-      "command": "docker build --file packages/acme-docker/server.Dockerfile --tag acme-server:local ."
+      "command": "docker build --file packages/peal-docker/server.Dockerfile --tag peal-server:local ."
     },
     "build-web-image": {
-      "command": "docker build --file packages/acme-docker/web.Dockerfile --tag acme-web:local ."
+      "command": "docker build --file packages/peal-docker/web.Dockerfile --tag peal-web:local ."
     },
     "build-static-image": {
-      "command": "docker build --file packages/acme-docker/static.Dockerfile --tag acme-static:local ."
+      "command": "docker build --file packages/peal-docker/static.Dockerfile --tag peal-static:local ."
     },
     "build-postgres-image": {
-      "command": "docker build --file packages/acme-docker/postgres.Dockerfile --tag acme-postgres:local ."
+      "command": "docker build --file packages/peal-docker/postgres.Dockerfile --tag peal-postgres:local ."
     }
   }
 }

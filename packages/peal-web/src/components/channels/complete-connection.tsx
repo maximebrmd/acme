@@ -5,9 +5,9 @@ import type {
   ChoosableAccount,
   ConnectCallback,
   Platform,
-} from "acme-contract";
-import { Alert, AlertDescription, AlertTitle } from "acme-ui/components/alert";
-import { Button } from "acme-ui/components/button";
+} from "peal-contract";
+import { Alert, AlertDescription, AlertTitle } from "peal-ui/components/alert";
+import { Button } from "peal-ui/components/button";
 import { Option } from "effect";
 import { constVoid } from "effect/Function";
 import { useTranslations } from "next-intl";

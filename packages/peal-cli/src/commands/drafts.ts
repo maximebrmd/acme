@@ -2,8 +2,8 @@ import {
   maxDraftPageSize,
   PostDraftSchema,
   TargetOptionsSchema,
-} from "acme-contract";
-import type { ChannelOptions, Post, PostDraft } from "acme-contract";
+} from "peal-contract";
+import type { ChannelOptions, Post, PostDraft } from "peal-contract";
 import { Console, Effect, Option, Schema } from "effect";
 import { Argument, Command, Flag } from "effect/cli";
 
@@ -134,7 +134,7 @@ const list = Command.make(
 
     if (page.nextCursor !== null) {
       yield* Console.log(
-        `More: acme drafts list --workspace ${workspace.slug} --cursor ${page.nextCursor}`
+        `More: peal drafts list --workspace ${workspace.slug} --cursor ${page.nextCursor}`
       );
     }
   })
@@ -146,14 +146,14 @@ const save = Command.make(
     channels: Flag.String("channel").pipe(
       Flag.withMetavar("<channel-id>"),
       Flag.withDescription(
-        "A channel the post is for, as acme channels list shows its id; repeat it for several. A draft you change keeps its channels without it."
+        "A channel the post is for, as peal channels list shows its id; repeat it for several. A draft you change keeps its channels without it."
       ),
       Flag.atLeast(0)
     ),
     options: Flag.String("options").pipe(
       Flag.withMetavar("<channel-id>=<json>"),
       Flag.withDescription(
-        'What the post sets on a channel whose platform asks for more, as JSON tagged by its platform, such as 0190…=\'{"platform":"youtube","title":"Launch","madeForKids":false}\'; repeat it for several channels. A draft you change keeps the options it has on its other channels. acme channels tiktok shows what a TikTok channel takes.'
+        'What the post sets on a channel whose platform asks for more, as JSON tagged by its platform, such as 0190…=\'{"platform":"youtube","title":"Launch","madeForKids":false}\'; repeat it for several channels. A draft you change keeps the options it has on its other channels. peal channels tiktok shows what a TikTok channel takes.'
       ),
       Flag.atLeast(0)
     ),
@@ -239,7 +239,7 @@ const discard = Command.make(
   "discard",
   {
     postId: Argument.String("post-id").pipe(
-      Argument.withDescription("The draft, as acme drafts list shows its id.")
+      Argument.withDescription("The draft, as peal drafts list shows its id.")
     ),
     workspace: workspaceFlag,
   },

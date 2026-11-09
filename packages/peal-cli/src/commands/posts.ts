@@ -1,5 +1,5 @@
-import { TargetConfirmationSchema } from "acme-contract";
-import type { FailureReason, Post, PostTarget } from "acme-contract";
+import { TargetConfirmationSchema } from "peal-contract";
+import type { FailureReason, Post, PostTarget } from "peal-contract";
 import { Console, Effect, Option, Schema } from "effect";
 import { Argument, Command, Flag } from "effect/cli";
 
@@ -10,13 +10,13 @@ import { channelNames, inWorkspace, named, workspaceFlag } from "#workspace.ts";
 
 const postArgument = Argument.String("post-id").pipe(
   Argument.withDescription(
-    "The post, as the web app or acme drafts list shows its id."
+    "The post, as the web app or peal drafts list shows its id."
   )
 );
 
 const targetArgument = Argument.String("target-id").pipe(
   Argument.withDescription(
-    "The post on one of its channels, as acme posts show lists it."
+    "The post on one of its channels, as peal posts show lists it."
   )
 );
 
@@ -39,11 +39,11 @@ const failureReasons: Readonly<Record<FailureReason, string>> = {
   contentRejected: "the platform refused its text or its format",
   mediaRejected: "the platform refused one of its images or videos",
   mediaRemoved: "one of its images or videos was deleted before it went out",
-  missed: "Acme was down at its time, and it came too late to send",
+  missed: "Peal was down at its time, and it came too late to send",
   notPublished: "someone checked the platform and did not find it",
   quotaExceeded:
     "the platform's daily upload allowance stayed spent: post it again after it resets",
-  rateLimited: "the platform kept limiting Acme, which stopped trying",
+  rateLimited: "the platform kept limiting Peal, which stopped trying",
   tokenExpired: "the account's authorization stopped working: reconnect it",
   unavailable: "the platform could not be reached",
 };
@@ -247,12 +247,12 @@ const confirm = Command.make(
     yield* Console.log(
       input.verdict === "published"
         ? `Recorded that post ${input.postId} went out on ${channel}.`
-        : `Recorded that post ${input.postId} did not go out on ${channel}: acme posts repost ${input.postId} ${input.targetId} sends it again.`
+        : `Recorded that post ${input.postId} did not go out on ${channel}: peal posts repost ${input.postId} ${input.targetId} sends it again.`
     );
   })
 ).pipe(
   Command.withDescription(
-    "Say what you found on the platform for a post Acme could not confirm on one channel: published, or not-published, which fails it there so it can be sent again."
+    "Say what you found on the platform for a post Peal could not confirm on one channel: published, or not-published, which fails it there so it can be sent again."
   )
 );
 

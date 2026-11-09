@@ -1,37 +1,37 @@
 ---
 # The plain settings host.env gives compose.production.yaml, by name: the
-# inventory's, then acme_settings, which may replace them. Secrets are in
+# inventory's, then peal_settings, which may replace them. Secrets are in
 # secrets.env (generated on the server) and credentials.env (issued by
 # outside services), beside it.
-acme_runtime_host_settings: >-
+peal_runtime_host_settings: >-
   {{ {
-       'PUBLIC_URL': 'https://' ~ acme_hostnames.app,
+       'PUBLIC_URL': 'https://' ~ peal_hostnames.app,
        'AUTH_IP_HEADERS': 'cf-connecting-ip',
-       'MAIL_FROM': acme_mail_from,
-       'ACME_S3_ENDPOINT': acme_media_endpoint,
-       'ACME_S3_BUCKET': acme_media_bucket,
-       'ACME_POSTGRES_ARCHIVE_MODE': 'on',
-       'PGBACKREST_REPO1_S3_ENDPOINT': acme_backup_endpoint,
-       'PGBACKREST_REPO1_S3_BUCKET': acme_backup_bucket,
-       'PGBACKREST_REPO1_PATH': acme_backup_path,
-       'ACME_GRAFANA_URL': 'https://' ~ acme_hostnames.grafana,
-       'ACME_GRAFANA_ACCESS_TEAM': cloudflare_access_team,
-       'ACME_GRAFANA_ACCESS_AUD': cloudflare_access_aud.grafana,
-       'ACME_GRAFANA_CONTACT_POINTS': './config/production/grafana/alerting/telegram.yaml',
-       'ACME_SERVER_PORT': acme_ports.server,
-       'ACME_WEB_PORT': acme_ports.web,
-       'ACME_SITE_PORT': acme_ports.site,
-       'ACME_DOCS_PORT': acme_ports.docs,
-       'ACME_GRAFANA_PORT': acme_ports.grafana,
-       'ACME_OTLP_HTTP_PORT': acme_ports.otlp_http,
+       'MAIL_FROM': peal_mail_from,
+       'PEAL_S3_ENDPOINT': peal_media_endpoint,
+       'PEAL_S3_BUCKET': peal_media_bucket,
+       'PEAL_POSTGRES_ARCHIVE_MODE': 'on',
+       'PGBACKREST_REPO1_S3_ENDPOINT': peal_backup_endpoint,
+       'PGBACKREST_REPO1_S3_BUCKET': peal_backup_bucket,
+       'PGBACKREST_REPO1_PATH': peal_backup_path,
+       'PEAL_GRAFANA_URL': 'https://' ~ peal_hostnames.grafana,
+       'PEAL_GRAFANA_ACCESS_TEAM': cloudflare_access_team,
+       'PEAL_GRAFANA_ACCESS_AUD': cloudflare_access_aud.grafana,
+       'PEAL_GRAFANA_CONTACT_POINTS': './config/production/grafana/alerting/telegram.yaml',
+       'PEAL_SERVER_PORT': peal_ports.server,
+       'PEAL_WEB_PORT': peal_ports.web,
+       'PEAL_SITE_PORT': peal_ports.site,
+       'PEAL_DOCS_PORT': peal_ports.docs,
+       'PEAL_GRAFANA_PORT': peal_ports.grafana,
+       'PEAL_OTLP_HTTP_PORT': peal_ports.otlp_http,
      }
      | combine({
-         'ACME_GRAFANA_HEARTBEAT': './config/production/grafana/alerting/heartbeat.yaml',
-         'ACME_HEARTBEAT_URL': acme_heartbeat_url,
-       } if acme_heartbeat_url else {})
-     | combine(acme_settings) }}
+         'PEAL_GRAFANA_HEARTBEAT': './config/production/grafana/alerting/heartbeat.yaml',
+         'PEAL_HEARTBEAT_URL': peal_heartbeat_url,
+       } if peal_heartbeat_url else {})
+     | combine(peal_settings) }}
 
-# The credentials this server needs, by name: acme_required_credentials, and
+# The credentials this server needs, by name: peal_required_credentials, and
 # the heartbeat's token when Grafana sends one.
-acme_runtime_required_credentials: >-
-  {{ acme_required_credentials + (['ACME_HEARTBEAT_TOKEN'] if acme_heartbeat_url else []) }}
+peal_runtime_required_credentials: >-
+  {{ peal_required_credentials + (['PEAL_HEARTBEAT_TOKEN'] if peal_heartbeat_url else []) }}

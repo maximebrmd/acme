@@ -195,7 +195,7 @@ export class PostScheduling extends Context.Service<
       DatabaseError | InvalidPostTransition | MissingPermission | PostNotFound
     >;
   }
->()("acme-server/publishing/application/PostScheduling") {
+>()("peal-server/publishing/application/PostScheduling") {
   static readonly layer = Layer.effect(
     PostScheduling,
     Effect.gen(function* PostSchedulingLive() {

@@ -20,7 +20,7 @@ import { UploadIncomplete } from "./upload-incomplete.ts";
 import { UploadRejected } from "./upload-rejected.ts";
 import { WorkspaceAccess } from "./workspace-access.ts";
 
-/** The content types Acme stores. */
+/** The content types Peal stores. */
 export const MediaContentTypeSchema = Schema.Literals([
   "image/gif",
   "image/jpeg",

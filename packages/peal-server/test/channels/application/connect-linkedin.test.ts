@@ -99,7 +99,7 @@ layer(AdaptersTest)("connecting a LinkedIn member", (it) => {
       );
       assert.strictEqual(
         url.searchParams.get("redirect_uri"),
-        "https://acme.test/connect/linkedin/callback"
+        "https://peal.test/connect/linkedin/callback"
       );
       assert.isNull(url.searchParams.get("code_challenge"));
 

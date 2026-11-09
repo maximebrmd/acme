@@ -4,7 +4,7 @@ import type { Platform } from "#channels/domain/platform.ts";
 import { InvalidPlatformClient } from "#channels/infrastructure/invalid-platform-client.ts";
 
 /**
- * The OAuth client an operator registered for Acme on a platform: its id,
+ * The OAuth client an operator registered for Peal on a platform: its id,
  * which the platform shows in its sign-in page's address, and its secret,
  * which only the server sends.
  */

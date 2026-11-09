@@ -1,6 +1,6 @@
 import { describe, expect, it } from "@effect/vitest";
-import { optionsPlatforms, TargetOptionsSchema } from "acme-contract";
-import type { ContentViolation, Platform } from "acme-contract";
+import { optionsPlatforms, TargetOptionsSchema } from "peal-contract";
+import type { ContentViolation, Platform } from "peal-contract";
 import { Option } from "effect";
 
 import {

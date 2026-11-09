@@ -2,7 +2,7 @@ import { createServer } from "node:net";
 import type { Server, Socket } from "node:net";
 
 import { assert, layer } from "@effect/vitest";
-import { Api, DatabaseUnavailable } from "acme-contract";
+import { Api, DatabaseUnavailable } from "peal-contract";
 import { ConfigProvider, Effect, Layer, Schema } from "effect";
 import { HttpServer } from "effect/http";
 import { HttpApiTest } from "effect/http-api";
@@ -31,7 +31,7 @@ const sqlAt = (url: string) =>
   );
 
 // Nothing listens on port 1, so every connection is refused.
-const UnreachableDatabase = sqlAt("postgres://acme:acme@127.0.0.1:1/acme");
+const UnreachableDatabase = sqlAt("postgres://peal:peal@127.0.0.1:1/peal");
 
 const Address = Schema.Struct({ port: Schema.Number });
 
@@ -71,7 +71,7 @@ const SilentDatabase = Layer.unwrap(
       server.address()
     );
 
-    return sqlAt(`postgres://acme:acme@127.0.0.1:${port}/acme`);
+    return sqlAt(`postgres://peal:peal@127.0.0.1:${port}/peal`);
   })
 );
 

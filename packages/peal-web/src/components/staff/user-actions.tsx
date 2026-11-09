@@ -1,7 +1,7 @@
 "use client";
 
 import { useAtomSet } from "@effect/atom-react";
-import { Alert, AlertDescription } from "acme-ui/components/alert";
+import { Alert, AlertDescription } from "peal-ui/components/alert";
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -11,17 +11,17 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "acme-ui/components/alert-dialog";
-import { Button } from "acme-ui/components/button";
-import { Label } from "acme-ui/components/label";
+} from "peal-ui/components/alert-dialog";
+import { Button } from "peal-ui/components/button";
+import { Label } from "peal-ui/components/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "acme-ui/components/select";
-import { Textarea } from "acme-ui/components/textarea";
+} from "peal-ui/components/select";
+import { Textarea } from "peal-ui/components/textarea";
 import { DateTime, Option, Schema } from "effect";
 import { useTranslations } from "next-intl";
 import { useId, useState, useTransition } from "react";

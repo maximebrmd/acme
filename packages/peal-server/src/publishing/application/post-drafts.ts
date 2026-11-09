@@ -93,7 +93,7 @@ export class PostDrafts extends Context.Service<
       DatabaseError | InvalidPostTransition | MissingPermission | PostNotFound
     >;
   }
->()("acme-server/publishing/application/PostDrafts") {
+>()("peal-server/publishing/application/PostDrafts") {
   static readonly layer = Layer.effect(
     PostDrafts,
     Effect.gen(function* PostDraftsLive() {

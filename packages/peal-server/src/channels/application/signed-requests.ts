@@ -13,7 +13,7 @@ export interface SignedRequest {
 }
 
 /**
- * Reads the signed requests Meta sends to Acme's callbacks, checking each
+ * Reads the signed requests Meta sends to Peal's callbacks, checking each
  * against the secret of the app it came through.
  */
 export class SignedRequests extends Context.Service<
@@ -27,4 +27,4 @@ export class SignedRequests extends Context.Service<
       InvalidSignedRequest | MetaAppNotConfigured
     >;
   }
->()("acme-server/channels/application/SignedRequests") {}
+>()("peal-server/channels/application/SignedRequests") {}

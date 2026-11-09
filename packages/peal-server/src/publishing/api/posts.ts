@@ -12,7 +12,7 @@ import {
   TargetStatusConflict,
   UnknownChannels,
   UnknownMedia,
-} from "acme-contract";
+} from "peal-contract";
 import { Effect, Option } from "effect";
 import { HttpApiBuilder, HttpApiError } from "effect/http-api";
 

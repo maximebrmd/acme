@@ -3,7 +3,7 @@ import {
   AttemptResultSchema,
   FailureReasonSchema,
   UnconfirmedReasonSchema,
-} from "acme-contract";
+} from "peal-contract";
 import { Predicate } from "effect";
 
 import { loadMessages } from "#i18n/messages.ts";

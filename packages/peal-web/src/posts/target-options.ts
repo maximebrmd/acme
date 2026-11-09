@@ -1,4 +1,4 @@
-import { maxYouTubeTitleLength, TargetOptionsSchema } from "acme-contract";
+import { maxYouTubeTitleLength, TargetOptionsSchema } from "peal-contract";
 import type {
   ChannelOptions,
   ContentViolation,
@@ -6,7 +6,7 @@ import type {
   Platform,
   Post,
   TargetOptions,
-} from "acme-contract";
+} from "peal-contract";
 import { Match, Option, Schema } from "effect";
 import type { useTranslations } from "next-intl";
 

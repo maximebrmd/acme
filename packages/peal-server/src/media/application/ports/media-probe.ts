@@ -42,4 +42,4 @@ export class MediaProbe extends Context.Service<
       MediaProbeFailed | MediaStorageFailed | MediaTypeMismatch
     >;
   }
->()("acme-server/media/application/MediaProbe") {}
+>()("peal-server/media/application/MediaProbe") {}

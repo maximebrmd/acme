@@ -1,6 +1,6 @@
 "use client";
 
-import type { ContentViolation } from "acme-contract";
+import type { ContentViolation } from "peal-contract";
 import { Match, Option } from "effect";
 import { useFormatter, useTranslations } from "next-intl";
 

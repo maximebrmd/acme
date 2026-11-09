@@ -5,7 +5,7 @@ import {
   Forbidden,
   PlanLimitReached,
   PlatformUnreachable,
-} from "acme-contract";
+} from "peal-contract";
 import { Exit, Option } from "effect";
 
 import { failureOf } from "#channels/channels-api.ts";

@@ -1,11 +1,11 @@
 "use client";
 
 import { useAtomRefresh, useAtomSet, useAtomValue } from "@effect/atom-react";
-import type { Notice } from "acme-contract";
-import { Alert, AlertDescription } from "acme-ui/components/alert";
-import { Badge } from "acme-ui/components/badge";
-import { Button } from "acme-ui/components/button";
-import { Skeleton } from "acme-ui/components/skeleton";
+import type { Notice } from "peal-contract";
+import { Alert, AlertDescription } from "peal-ui/components/alert";
+import { Badge } from "peal-ui/components/badge";
+import { Button } from "peal-ui/components/button";
+import { Skeleton } from "peal-ui/components/skeleton";
 import { DateTime, Exit, Option } from "effect";
 import { AsyncResult } from "effect/reactivity";
 import { useTranslations } from "next-intl";

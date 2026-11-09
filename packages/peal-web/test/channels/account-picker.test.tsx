@@ -1,5 +1,5 @@
 import { describe, expect, it } from "@effect/vitest";
-import type { ChoosableAccount } from "acme-contract";
+import type { ChoosableAccount } from "peal-contract";
 import { constVoid } from "effect/Function";
 import { NextIntlClientProvider } from "next-intl";
 import type { ComponentProps } from "react";
@@ -215,7 +215,7 @@ describe(DataDeletionStatusView, () => {
       "Confirmation code: 0123456789abcdef0123456789abcdef"
     );
     expect(html).toContain(
-      "Done: Acme deleted the accounts it had connected through Facebook"
+      "Done: Peal deleted the accounts it had connected through Facebook"
     );
   });
 

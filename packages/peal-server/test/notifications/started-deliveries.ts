@@ -9,7 +9,7 @@ import { NoticeDelivery } from "#notifications/application/notice-delivery.ts";
 export class StartedDeliveries extends Context.Service<
   StartedDeliveries,
   { readonly keys: Effect.Effect<readonly string[]> }
->()("acme-server/test/notifications/StartedDeliveries") {
+>()("peal-server/test/notifications/StartedDeliveries") {
   static readonly layer = Layer.effectContext(
     Effect.gen(function* StartedDeliveriesLive() {
       const keys = yield* Ref.make<readonly string[]>([]);

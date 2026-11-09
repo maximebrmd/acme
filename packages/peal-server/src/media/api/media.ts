@@ -11,12 +11,12 @@ import {
   UnsupportedMediaType,
   UploadIncomplete,
   UploadRejected,
-} from "acme-contract";
+} from "peal-contract";
 import type {
   Media as MediaView,
   MediaStatus as MediaStatusView,
   UploadTarget as UploadTargetView,
-} from "acme-contract";
+} from "peal-contract";
 import { Duration, Effect, Match, Option, Schema } from "effect";
 import { HttpApiBuilder, HttpApiError } from "effect/http-api";
 

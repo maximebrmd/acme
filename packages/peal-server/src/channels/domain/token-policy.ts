@@ -30,14 +30,14 @@ export type TokenRefresh = typeof TokenRefreshSchema.Type;
  * without a refresh, which is what the refresh sweep watches.
  */
 export class TokenPolicy extends Schema.Class<TokenPolicy>(
-  "acme-server/channels/domain/TokenPolicy"
+  "peal-server/channels/domain/TokenPolicy"
 )({
   lifetime: Schema.Option(Schema.Duration),
   refresh: TokenRefreshSchema,
 }) {}
 
 /**
- * The policies of the platforms Acme knows, from what each platform documents
+ * The policies of the platforms Peal knows, from what each platform documents
  * (see the platform study). An adapter states which one it follows.
  */
 export const tokenPolicies = {

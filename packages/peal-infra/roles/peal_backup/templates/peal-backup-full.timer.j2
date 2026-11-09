@@ -1,13 +1,13 @@
-# Managed by Ansible (acme-infra). A full backup every Sunday; one missed
+# Managed by Ansible (peal-infra). A full backup every Sunday; one missed
 # while the server was down runs when it is back.
 [Unit]
-Description=Full backup of the Acme database, weekly
+Description=Full backup of the Peal database, weekly
 
 [Timer]
 OnCalendar=Sun *-*-* 02:15:00 UTC
 RandomizedDelaySec=10m
 Persistent=true
-Unit=acme-backup@full.service
+Unit=peal-backup@full.service
 
 [Install]
 WantedBy=timers.target

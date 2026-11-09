@@ -9,10 +9,10 @@ import { DatabaseError } from "#shared/application/database-error.ts";
 // overlaps the one-key locks the cluster and the migrations take. Two
 // channels whose ids hash alike only wait for each other.
 const tryLock =
-  "SELECT pg_try_advisory_lock(hashtext('acme-server/channels/tokens'), hashtext($1)) AS locked";
+  "SELECT pg_try_advisory_lock(hashtext('peal-server/channels/tokens'), hashtext($1)) AS locked";
 
 const unlock =
-  "SELECT pg_advisory_unlock(hashtext('acme-server/channels/tokens'), hashtext($1))";
+  "SELECT pg_advisory_unlock(hashtext('peal-server/channels/tokens'), hashtext($1))";
 
 const decodeLocked = Schema.decodeUnknownEffect(
   Schema.Tuple([Schema.Struct({ locked: Schema.Boolean })])

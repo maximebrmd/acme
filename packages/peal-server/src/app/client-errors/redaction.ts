@@ -1,4 +1,4 @@
-import type { ClientErrorReport } from "acme-contract";
+import type { ClientErrorReport } from "peal-contract";
 
 // What could name someone in an error's text: an email address, an id
 // (users', workspaces' and posts' are UUIDs), an API key, a token (a JWT,
@@ -13,7 +13,7 @@ const words = /\S+/gu;
 const uuids =
   /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/giu;
 
-const apiKeys = /\bacme_[\w-]+/gu;
+const apiKeys = /\bpeal_[\w-]+/gu;
 
 const jwts = /\beyJ[\w-]*\.[\w-]+\.[\w-]*/gu;
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "@effect/vitest";
-import type { Media } from "acme-contract";
+import type { Media } from "peal-contract";
 import { DateTime, Option } from "effect";
 
 import { mediaFitOn, mediaFits, showsAltText } from "#posts/media-fit.ts";

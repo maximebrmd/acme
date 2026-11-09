@@ -1,4 +1,4 @@
-import { PlatformSchema } from "acme-contract";
+import { PlatformSchema } from "peal-contract";
 import type {
   AssistantFailed,
   AssistantInputRejected,
@@ -9,8 +9,8 @@ import type {
   Suggestion,
   Unauthenticated,
   WorkspaceNotFound,
-} from "acme-contract";
-import { platformRules } from "acme-contract/post-text";
+} from "peal-contract";
+import { platformRules } from "peal-contract/post-text";
 
 /** Why a suggestion failed, as the API declares it. */
 export type AssistantFailure =

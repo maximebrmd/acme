@@ -4,7 +4,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "acme-ui/components/card";
+} from "peal-ui/components/card";
 import type { ReactNode } from "react";
 
 // A part of a console page, titled.

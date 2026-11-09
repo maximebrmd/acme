@@ -15,7 +15,7 @@ import { Option } from "effect";
 import type { PublicFetch } from "#shared/infrastructure/platforms/public-http.ts";
 
 /**
- * What Acme asks Bluesky accounts for: to create and delete posts, upload
+ * What Peal asks Bluesky accounts for: to create and delete posts, upload
  * images and videos, and check video upload limits. `atproto` is required.
  */
 export const blueskyScope = [
@@ -35,7 +35,7 @@ export const blueskyPaths = {
 } as const;
 
 /**
- * How Acme runs its Bluesky client:
+ * How Peal runs its Bluesky client:
  *
  * - `confidential`, with keys: the client publishes its metadata and keys
  *   at the public URL, which must be HTTPS without a port, and signs its
@@ -112,7 +112,7 @@ export const clientMetadataOf = (
   return {
     application_type: "web",
     client_id: new URL(blueskyPaths.metadata, publicUrl).href,
-    client_name: "Acme",
+    client_name: "Peal",
     client_uri: publicUrl,
     dpop_bound_access_tokens: true,
     grant_types: ["authorization_code", "refresh_token"],
@@ -127,7 +127,7 @@ export const clientMetadataOf = (
 
 /**
  * A client for one operation, over stores the operation seeds and reads
- * back: Acme persists pending sign-ins and sessions itself, encrypted, keyed
+ * back: Peal persists pending sign-ins and sessions itself, encrypted, keyed
  * by its own attempts and channels, so two workspaces can hold the same
  * account without sharing a session. Refreshes run under the channel's lock,
  * so the client's own lock only needs to cover this process.
@@ -143,7 +143,7 @@ export const makeBlueskyClient = (
     allowHttp: options.allowHttp,
     clientMetadata: clientMetadataOf(options),
     fetch: options.fetch,
-    // Handles resolve through DNS, and HTTPS through Acme's guarded fetch.
+    // Handles resolve through DNS, and HTTPS through Peal's guarded fetch.
     // The library's default wraps fetch in an undici dispatcher for its own
     // SSRF checks, which only Node has: on Bun, building it throws.
     handleResolver: options.handleResolver.pipe(

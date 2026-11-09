@@ -19,7 +19,7 @@ export const maxReportDays = 366;
  * day the clocks change lasts 23 or 25 hours.
  */
 export class ReportRange extends Schema.Class<ReportRange>(
-  "acme-server/analytics/domain/ReportRange"
+  "peal-server/analytics/domain/ReportRange"
 )({
   from: LocalDateSchema,
   timeZone: TimeZoneIdSchema,
@@ -40,7 +40,7 @@ const isLocalDate = Schema.is(LocalDateSchema);
 /**
  * The range, if it is one a report covers: it ends on or after the day it
  * starts, spans `maxReportDays` at most, and ends on a day followed by
- * another on the calendar Acme keeps, as its end is when that one starts.
+ * another on the calendar Peal keeps, as its end is when that one starts.
  */
 export const reportRange = (
   range: Pick<ReportRange, "from" | "timeZone" | "to">

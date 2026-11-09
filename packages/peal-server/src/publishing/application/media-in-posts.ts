@@ -75,7 +75,7 @@ export class MediaInPosts extends Context.Service<
       mediaId: MediaAssetId
     ) => Effect.Effect<MediaRelease, DatabaseError>;
   }
->()("acme-server/publishing/application/MediaInPosts") {
+>()("peal-server/publishing/application/MediaInPosts") {
   static readonly layer = Layer.effect(
     MediaInPosts,
     Effect.gen(function* MediaInPostsLive() {

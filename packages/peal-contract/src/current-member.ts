@@ -7,5 +7,5 @@ import type { Member } from "./principal.ts";
  * workspace: the caller, as a member of the workspace in the path.
  */
 export class CurrentMember extends Context.Service<CurrentMember, Member>()(
-  "acme-contract/CurrentMember"
+  "peal-contract/CurrentMember"
 ) {}

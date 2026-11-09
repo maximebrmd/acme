@@ -2,7 +2,7 @@ import { setTimeout as delay } from "node:timers/promises";
 
 import { NodeFileSystem } from "@effect/platform-node-shared";
 import { assert, describe, it } from "@effect/vitest";
-import { cliClientId } from "acme-contract";
+import { cliClientId } from "peal-contract";
 import { Effect, Fiber, FileSystem, Layer, Path, Runtime } from "effect";
 import type { HttpClient } from "effect/http";
 import { TestClock } from "effect/testing";
@@ -54,7 +54,7 @@ const setUp = Effect.fn("setUp")(function* setUp(
 
   const environment = Layer.mergeAll(
     cliEnvironment(
-      { ACME_CONFIG_DIR: path.join(directory, "acme") },
+      { PEAL_CONFIG_DIR: path.join(directory, "peal") },
       NodeFileSystem.layer
     ),
     transport
@@ -62,8 +62,8 @@ const setUp = Effect.fn("setUp")(function* setUp(
 
   return {
     authorization,
-    directory: path.join(directory, "acme"),
-    file: path.join(directory, "acme", "credentials.json"),
+    directory: path.join(directory, "peal"),
+    file: path.join(directory, "peal", "credentials.json"),
     run: (args: readonly string[]) =>
       runWith(args).pipe(Effect.provide(environment)),
   } satisfies Setup;
@@ -94,7 +94,7 @@ const signIn = Effect.fn("signIn")(function* signIn(
 
 const environmentLayer = Layer.mergeAll(NodeFileSystem.layer, Path.layer);
 
-describe("acme login", () => {
+describe("peal login", () => {
   it.effect(
     "shows a code, waits for its approval, and saves the tokens for the user alone",
     () =>
@@ -203,7 +203,7 @@ describe("acme login", () => {
   );
 });
 
-describe("acme whoami", () => {
+describe("peal whoami", () => {
   it.effect("tells to sign in first", () =>
     Effect.gen(function* signedOut() {
       const setup = yield* setUp();
@@ -213,7 +213,7 @@ describe("acme whoami", () => {
       assert.instanceOf(error, NotSignedIn);
       assert.include(
         (yield* output).errors.join("\n"),
-        "You are not signed in to http://localhost:3000. Run acme login first."
+        "You are not signed in to http://localhost:3000. Run peal login first."
       );
     }).pipe(Effect.scoped, Effect.provide(environmentLayer))
   );
@@ -245,7 +245,7 @@ describe("acme whoami", () => {
   );
 });
 
-describe("acme logout", () => {
+describe("peal logout", () => {
   it.effect("revokes the sign-in and forgets it", () =>
     Effect.gen(function* signsOut() {
       const setup = yield* setUp();
@@ -275,18 +275,18 @@ describe("acme logout", () => {
       const fs = yield* FileSystem.FileSystem;
 
       yield* signIn(setup, 1);
-      yield* setup.run(["logout", "--api-url", "https://acme.test"]);
+      yield* setup.run(["logout", "--api-url", "https://peal.test"]);
 
       assert.include(yield* fs.readFileString(setup.file), server);
       assert.include(
         (yield* output).logs.join("\n"),
-        "You are not signed in to https://acme.test."
+        "You are not signed in to https://peal.test."
       );
     }).pipe(Effect.scoped, Effect.provide(environmentLayer))
   );
 });
 
-describe("acme mcp", () => {
+describe("peal mcp", () => {
   it.effect("shows the MCP endpoint the server names", () =>
     Effect.gen(function* configures() {
       const setup = yield* setUp({ registration: true });

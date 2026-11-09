@@ -6,11 +6,11 @@ import {
   InvitationNotFound,
   PlanLimitReached,
   TooManyInvitations,
-} from "acme-contract";
+} from "peal-contract";
 import type {
   Invitation as InvitationView,
   WorkspaceMember as MemberView,
-} from "acme-contract";
+} from "peal-contract";
 import { Effect } from "effect";
 import { HttpApiBuilder, HttpApiError } from "effect/http-api";
 

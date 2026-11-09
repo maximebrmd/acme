@@ -30,7 +30,7 @@ describe(renderAuthEmail, () => {
       url,
     });
 
-    expect(email.subject).toBe("Confirm your email for Acme");
+    expect(email.subject).toBe("Confirm your email for Peal");
     expect(email.text).toContain(`Confirm my email: ${url}`);
     expect(email.html).toContain('<html lang="en">');
     expect(email.html).toContain(`href="${escapeHtml(url)}"`);
@@ -44,12 +44,12 @@ describe(renderAuthEmail, () => {
       url,
     });
 
-    expect(email.subject).toBe("Réinitialisez votre mot de passe Acme");
+    expect(email.subject).toBe("Réinitialisez votre mot de passe Peal");
     expect(email.text).toContain(`Choisir un nouveau mot de passe : ${url}`);
     expect(email.html).toContain('<html lang="fr">');
   });
 
-  it("confirms an account's deletion in its language, linking to Acme", () => {
+  it("confirms an account's deletion in its language, linking to Peal", () => {
     const inEnglish = renderAuthEmail({
       _tag: "AccountDeleted",
       locale: "en",
@@ -64,20 +64,20 @@ describe(renderAuthEmail, () => {
       url: "https://app.example.test/fr",
     });
 
-    expect(inEnglish.subject).toBe("Your Acme account is deleted");
-    expect(inEnglish.text).toContain("Open Acme: https://app.example.test");
-    expect(inFrench.subject).toBe("Votre compte Acme est supprimé");
+    expect(inEnglish.subject).toBe("Your Peal account is deleted");
+    expect(inEnglish.text).toContain("Open Peal: https://app.example.test");
+    expect(inFrench.subject).toBe("Votre compte Peal est supprimé");
     expect(inFrench.text).toContain(
-      "Ouvrir Acme\u00A0: https://app.example.test/fr"
+      "Ouvrir Peal\u00A0: https://app.example.test/fr"
     );
   });
 
   it("names the role an invitation offers, with French elision", () => {
     expect(renderAuthEmail(invitation("en", "editor")).text).toContain(
-      "on Acme as an editor."
+      "on Peal as an editor."
     );
     expect(renderAuthEmail(invitation("fr", "editor")).text).toContain(
-      "sur Acme en tant qu’éditeur."
+      "sur Peal en tant qu’éditeur."
     );
   });
 
@@ -85,7 +85,7 @@ describe(renderAuthEmail, () => {
     const email = renderAuthEmail(invitation("en", "viewer"));
 
     expect(email.subject).toBe(
-      'Ada <Admin> & Co invited you to Studio "Nord" on Acme'
+      'Ada <Admin> & Co invited you to Studio "Nord" on Peal'
     );
     expect(email.html).toContain(
       "Ada &lt;Admin&gt; &amp; Co invited you to join Studio &quot;Nord&quot;"

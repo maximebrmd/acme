@@ -1,6 +1,6 @@
 import { assert, layer } from "@effect/vitest";
-import { Api } from "acme-contract";
-import type { Member, Principal } from "acme-contract";
+import { Api } from "peal-contract";
+import type { Member, Principal } from "peal-contract";
 import {
   Context,
   DateTime,
@@ -251,16 +251,16 @@ const PortsLive = Layer.mergeAll(
           Effect.succeed([
             {
               authorizedAt: at,
-              clientId: "acme-cli",
+              clientId: "peal-cli",
               lastUsedAt: at,
-              name: "Acme CLI",
+              name: "Peal CLI",
               scopes: ["offline_access", "workspace:write"],
               uri: null,
               workspaces: [],
             },
           ]),
         revoke: (id, clientId) =>
-          clientId === "acme-cli"
+          clientId === "peal-cli"
             ? record(`revoke:${id}:${clientId}`).pipe(
                 Effect.provideService(Fakes, fakes),
                 Effect.as(true)
@@ -337,7 +337,7 @@ const apiKey: Principal = {
 // The command line, which the user signs in at their terminal.
 const oauth = user({
   oauth: {
-    clientId: "acme-cli",
+    clientId: "peal-cli",
     scopes: ["workspace:write"],
     workspaceId: null,
   },
@@ -538,7 +538,7 @@ layer(Fakes.layer)("the settings endpoints", (it) => {
 
         assert.strictEqual(
           headers["content-disposition"],
-          `attachment; filename="acme-data-${DateTime.formatIsoDate(body.exportedAt)}.json"`
+          `attachment; filename="peal-data-${DateTime.formatIsoDate(body.exportedAt)}.json"`
         );
         assert.strictEqual(body.user.email, "ana@example.test");
         assert.deepStrictEqual(
@@ -568,7 +568,7 @@ layer(Fakes.layer)("the settings endpoints", (it) => {
         );
         assert.deepStrictEqual(
           body.connectedApps.map(({ clientId }) => clientId),
-          ["acme-cli"]
+          ["peal-cli"]
         );
 
         const fromTerminal = yield* (yield* as(oauth)).account.export();
@@ -729,7 +729,7 @@ layer(Fakes.layer)("the settings endpoints", (it) => {
 
         assert.deepStrictEqual(
           listed.map(({ clientId, name }) => ({ clientId, name })),
-          [{ clientId: "acme-cli", name: "Acme CLI" }]
+          [{ clientId: "peal-cli", name: "Peal CLI" }]
         );
 
         assert.strictEqual(
@@ -740,10 +740,10 @@ layer(Fakes.layer)("the settings endpoints", (it) => {
         );
 
         yield* client.connectedApps.revoke({
-          params: { clientId: "acme-cli" },
+          params: { clientId: "peal-cli" },
         });
 
-        assert.include(yield* calls, `revoke:${userId}:acme-cli`);
+        assert.include(yield* calls, `revoke:${userId}:peal-cli`);
 
         // The command line lists them, but may not revoke the others, nor
         // itself; no other client sees them.
@@ -753,12 +753,12 @@ layer(Fakes.layer)("the settings endpoints", (it) => {
           (yield* fromTerminal.connectedApps.list()).map(
             ({ clientId }) => clientId
           ),
-          ["acme-cli"]
+          ["peal-cli"]
         );
         assert.strictEqual(
           yield* failureOf(
             fromTerminal.connectedApps.revoke({
-              params: { clientId: "acme-cli" },
+              params: { clientId: "peal-cli" },
             })
           ),
           "Forbidden"

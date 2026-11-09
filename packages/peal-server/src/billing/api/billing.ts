@@ -1,4 +1,4 @@
-import { Api, CurrentMember, Forbidden } from "acme-contract";
+import { Api, CurrentMember, Forbidden } from "peal-contract";
 import { Effect } from "effect";
 import { HttpApiBuilder } from "effect/http-api";
 

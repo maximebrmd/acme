@@ -16,7 +16,7 @@ export class ListChannels extends Context.Service<
       actor: Actor
     ) => Effect.Effect<readonly Channel[], DatabaseError | MissingPermission>;
   }
->()("acme-server/channels/application/ListChannels") {
+>()("peal-server/channels/application/ListChannels") {
   static readonly layer = Layer.effect(
     ListChannels,
     Effect.gen(function* ListChannelsLive() {

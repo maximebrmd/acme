@@ -1,5 +1,5 @@
 import { describe, expect, it } from "@effect/vitest";
-import type { Billing, PlanAllowances } from "acme-contract";
+import type { Billing, PlanAllowances } from "peal-contract";
 import { DateTime } from "effect";
 import { NextIntlClientProvider } from "next-intl";
 import type { Locale } from "next-intl";

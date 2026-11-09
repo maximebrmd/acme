@@ -20,11 +20,11 @@ export const requiredInProduction = <A>(
     )
   );
 
-// The web app's address in development (`nx run acme-web:dev`).
+// The web app's address in development (`nx run peal-web:dev`).
 const developmentPublicUrl = "http://localhost:3001";
 
 /**
- * The origin people open Acme at (PUBLIC_URL): the web app, which forwards
+ * The origin people open Peal at (PUBLIC_URL): the web app, which forwards
  * /api/* to the server. Links in emails and the platforms' redirect URIs are
  * built from it. Outside production it defaults to the development web app.
  */

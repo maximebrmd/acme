@@ -28,7 +28,7 @@ export type CalendarDay = typeof CalendarDaySchema.Type;
 const CountSchema = Schema.Int.check(Schema.isGreaterThanOrEqualTo(0));
 
 /**
- * The platforms Acme reads counts on so far: a post that went out on any
+ * The platforms Peal reads counts on so far: a post that went out on any
  * other has none. The server's list (src/analytics/domain/
  * counted-platforms.ts) is the source; a test keeps the two equal.
  */

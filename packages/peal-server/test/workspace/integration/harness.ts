@@ -84,7 +84,7 @@ export class TestApp extends Context.Service<
       }
     ) => Effect.Effect<Reply>;
   }
->()("acme-server/test/TestApp") {
+>()("peal-server/test/TestApp") {
   /** The app, reading `env` before the environment. */
   static readonly layerWith = (env: Readonly<Record<string, string>>) =>
     Layer.effect(
@@ -364,7 +364,7 @@ const ApiKeyCreatedSchema = Schema.Struct({
   key: Schema.String,
 });
 
-/** An API key the owner creates for their workspace, through Acme's API. */
+/** An API key the owner creates for their workspace, through Peal's API. */
 export const apiKeyOf = Effect.fn("apiKeyOf")(function* apiKeyOf(
   owner: Person,
   workspaceId: string,

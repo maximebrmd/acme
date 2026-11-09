@@ -1,8 +1,8 @@
-import { cliClientId } from "acme-contract";
+import { cliClientId } from "peal-contract";
 import { Console, Duration, Effect, Option, Redacted } from "effect";
 import { Command } from "effect/cli";
 
-import { AcmeApi } from "#api.ts";
+import { PealApi } from "#api.ts";
 import { CredentialStore } from "#credentials.ts";
 import { display } from "#display.ts";
 
@@ -14,7 +14,7 @@ export const logout = Command.make(
   "logout",
   {},
   Effect.fn("logout")(function* logout() {
-    const { baseUrl, oauth } = yield* AcmeApi;
+    const { baseUrl, oauth } = yield* PealApi;
     const store = yield* CredentialStore;
     const url = display(baseUrl);
 
@@ -48,6 +48,6 @@ export const logout = Command.make(
   })
 ).pipe(
   Command.withDescription(
-    "Sign out of the Acme server: revoke the saved sign-in, and forget it."
+    "Sign out of the Peal server: revoke the saved sign-in, and forget it."
   )
 );

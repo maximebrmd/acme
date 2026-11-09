@@ -20,7 +20,7 @@ const refusedHost = (refused: OutboundRequestRefused) =>
     ? new PlatformUnavailable()
     : new BadRequest({ code: "hostNotAllowed" });
 
-// Acme could not build the request: a bug, never the platform's doing.
+// Peal could not build the request: a bug, never the platform's doing.
 const unbuildable = (error: HttpClientError.HttpClientError) =>
   Effect.die(error);
 

@@ -3,7 +3,7 @@ import { Mac } from "effect/crypto";
 import { Hex } from "effect/encoding";
 
 /**
- * The Graph API version Acme calls Facebook and Instagram with. Meta keeps
+ * The Graph API version Peal calls Facebook and Instagram with. Meta keeps
  * each version about two years; this one constant moves them all.
  */
 export const graphApiVersion = "v27.0";

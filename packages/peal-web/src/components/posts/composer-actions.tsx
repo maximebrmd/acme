@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "acme-ui/components/button";
+import { Button } from "peal-ui/components/button";
 import {
   Dialog,
   DialogClose,
@@ -10,7 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "acme-ui/components/dialog";
+} from "peal-ui/components/dialog";
 import { useTranslations } from "next-intl";
 
 /** What the composer is doing. */

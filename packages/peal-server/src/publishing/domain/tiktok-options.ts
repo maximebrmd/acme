@@ -54,7 +54,7 @@ const tikTokProblems = (
  * (`is_aigc`).
  */
 export class TikTokOptions extends Schema.Class<TikTokOptions>(
-  "acme-server/publishing/domain/TikTokOptions"
+  "peal-server/publishing/domain/TikTokOptions"
 )({
   aiGenerated: Schema.optionalKey(Schema.Boolean),
   brandContent: Schema.optionalKey(Schema.Boolean),

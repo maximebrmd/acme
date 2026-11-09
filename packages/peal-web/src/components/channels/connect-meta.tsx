@@ -1,15 +1,15 @@
 "use client";
 
-import type { Platform } from "acme-contract";
-import { Alert, AlertDescription } from "acme-ui/components/alert";
-import { Button } from "acme-ui/components/button";
+import type { Platform } from "peal-contract";
+import { Alert, AlertDescription } from "peal-ui/components/alert";
+import { Button } from "peal-ui/components/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "acme-ui/components/card";
+} from "peal-ui/components/card";
 import { useTranslations } from "next-intl";
 
 import { useChannelErrorText } from "#channels/channel-error-text.ts";

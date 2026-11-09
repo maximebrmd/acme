@@ -209,7 +209,7 @@ export class ConnectChannel extends Context.Service<
       }
     ) => Effect.Effect<readonly Channel[], ChooseFailure>;
     /**
-     * The platforms this server can connect, in Acme's order: those with a
+     * The platforms this server can connect, in Peal's order: those with a
      * sign-in flow and the settings it needs. Needs channel:connect, as only
      * those who connect need them.
      */
@@ -222,7 +222,7 @@ export class ConnectChannel extends Context.Service<
      */
     readonly purgeExpired: Effect.Effect<number, DatabaseError>;
   }
->()("acme-server/channels/application/ConnectChannel") {
+>()("peal-server/channels/application/ConnectChannel") {
   static readonly layer = Layer.effect(
     ConnectChannel,
     Effect.gen(function* ConnectChannelLive() {

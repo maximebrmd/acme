@@ -1,12 +1,12 @@
-import type { Platform } from "acme-contract";
+import type { Platform } from "peal-contract";
 import {
   countHashtags,
   countLinks,
   countMentions,
   measureText,
   platformRules,
-} from "acme-contract/post-text";
-import type { TextUnit } from "acme-contract/post-text";
+} from "peal-contract/post-text";
+import type { TextUnit } from "peal-contract/post-text";
 
 // What the composer tells about the text on each channel, counted as the
 // server counts it: the contract carries the server's rules.

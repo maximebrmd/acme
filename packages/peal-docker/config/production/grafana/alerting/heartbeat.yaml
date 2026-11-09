@@ -3,8 +3,8 @@
 # When they stop, Grafana, Prometheus or the way out is down, so this
 # server's own alerts may not reach anyone either: the checker says so.
 #
-# Mount this file (ACME_GRAFANA_HEARTBEAT) only where ACME_HEARTBEAT_URL and
-# ACME_HEARTBEAT_TOKEN are set: Grafana reads them from its environment when
+# Mount this file (PEAL_GRAFANA_HEARTBEAT) only where PEAL_HEARTBEAT_URL and
+# PEAL_HEARTBEAT_TOKEN are set: Grafana reads them from its environment when
 # it starts. The token goes as a bearer token. The rule names its contact
 # point, so its notifications go there alone, never to the contact points
 # file's.
@@ -20,18 +20,18 @@ contactPoints:
         # A resolved heartbeat would look like one more beat.
         disableResolveMessage: true
         settings:
-          url: $ACME_HEARTBEAT_URL
+          url: $PEAL_HEARTBEAT_URL
           httpMethod: POST
           authorization_scheme: Bearer
-          authorization_credentials: $ACME_HEARTBEAT_TOKEN
+          authorization_credentials: $PEAL_HEARTBEAT_TOKEN
 
 groups:
   - orgId: 1
     name: heartbeat
-    folder: Acme
+    folder: Peal
     interval: 1m
     rules:
-      - uid: acme-heartbeat
+      - uid: peal-heartbeat
         title: Heartbeat
         condition: B
         for: 0s

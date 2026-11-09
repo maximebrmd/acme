@@ -40,7 +40,7 @@ export type TokenLifetime = typeof TokenLifetimeSchema.Type;
 
 /** A social account connected to a workspace. */
 export class Channel extends Schema.Class<Channel>(
-  "acme-server/channels/domain/Channel"
+  "peal-server/channels/domain/Channel"
 )({
   // The account's own id on the platform, which never changes: a workspace
   // connects each account once.
@@ -50,11 +50,11 @@ export class Channel extends Schema.Class<Channel>(
   // The account's name as the platform shows it, if it has one besides its
   // handle.
   displayName: Schema.Option(Schema.NonEmptyString),
-  // The name people mention the account by, such as "@acme_example".
+  // The name people mention the account by, such as "@peal_example".
   handle: Schema.NonEmptyString,
   id: ChannelIdSchema,
   platform: PlatformSchema,
-  // What the account allowed Acme to do, in the platform's own words.
+  // What the account allowed Peal to do, in the platform's own words.
   scopes: Schema.Array(Schema.NonEmptyString),
   status: ChannelStatusSchema,
   token: TokenLifetimeSchema,

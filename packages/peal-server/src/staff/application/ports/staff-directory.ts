@@ -106,4 +106,4 @@ export class StaffDirectory extends Context.Service<
       userIds: readonly UserId[]
     ) => Effect.Effect<readonly Person[], DatabaseError>;
   }
->()("acme-server/staff/application/StaffDirectory") {}
+>()("peal-server/staff/application/StaffDirectory") {}

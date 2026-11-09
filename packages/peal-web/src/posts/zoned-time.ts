@@ -2,7 +2,7 @@ import { DateTime, Option, Schema } from "effect";
 
 // Wall-clock dates and times in IANA zones, as the composer and the calendar
 // show them, and the instants they name. The policy for daylight saving is the
-// server's (acme-server src/shared/domain/wall-clock.ts): a time the clocks
+// server's (peal-server src/shared/domain/wall-clock.ts): a time the clocks
 // skip moves to the moment they jump, and a time they repeat takes the
 // earlier offset.
 

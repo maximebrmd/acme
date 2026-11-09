@@ -1,4 +1,4 @@
-import type { Media, NewUpload, PreparedUpload } from "acme-contract";
+import type { Media, NewUpload, PreparedUpload } from "peal-contract";
 import { Effect, Option } from "effect";
 
 import { withRetry } from "#media/retry.ts";

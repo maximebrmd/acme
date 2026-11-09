@@ -37,4 +37,4 @@ export class Subscriptions extends Context.Service<
       change: SubscriptionChange
     ) => Effect.Effect<RecordOutcome, DatabaseError>;
   }
->()("acme-server/billing/application/Subscriptions") {}
+>()("peal-server/billing/application/Subscriptions") {}

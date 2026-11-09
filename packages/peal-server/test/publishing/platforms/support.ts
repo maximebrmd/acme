@@ -77,7 +77,7 @@ export class CredentialLog extends Context.Service<
     /** How many times a refused token was renewed. */
     readonly renewals: Effect.Effect<number>;
   }
->()("acme-server/test/publishing/CredentialLog") {}
+>()("peal-server/test/publishing/CredentialLog") {}
 
 /**
  * PlatformCredentials as the channels context behaves: the first of

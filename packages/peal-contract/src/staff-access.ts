@@ -13,7 +13,7 @@ import { sessionCookie } from "./session-cookie.ts";
 export class StaffAccess extends HttpApiMiddleware.Service<
   StaffAccess,
   { provides: CurrentStaff }
->()("acme-contract/StaffAccess", {
+>()("peal-contract/StaffAccess", {
   error: HttpApiError.NotFound,
   security: { session: sessionCookie },
 }) {}

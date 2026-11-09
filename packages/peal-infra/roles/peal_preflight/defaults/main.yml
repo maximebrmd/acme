@@ -1,14 +1,14 @@
 ---
-# The settings searched for placeholders, by name: those of Acme's servers.
+# The settings searched for placeholders, by name: those of Peal's servers.
 # The uptime server's group names its own.
-acme_preflight_names:
+peal_preflight_names:
   - ansible_host
   - admin_ssh_public_keys
-  - acme_hostnames
+  - peal_hostnames
   - cloudflare_access_team
   - cloudflare_access_aud
-  - acme_mail_from
-  - acme_media_endpoint
-  - acme_backup_endpoint
-  - acme_static_build_args
-  - acme_heartbeat_url
+  - peal_mail_from
+  - peal_media_endpoint
+  - peal_backup_endpoint
+  - peal_static_build_args
+  - peal_heartbeat_url

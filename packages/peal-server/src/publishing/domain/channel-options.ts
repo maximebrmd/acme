@@ -11,7 +11,7 @@ import type { TargetOptions } from "./target-options.ts";
  * that channel keeps.
  */
 export class ChannelOptions extends Schema.Class<ChannelOptions>(
-  "acme-server/publishing/domain/ChannelOptions"
+  "peal-server/publishing/domain/ChannelOptions"
 )({
   channelId: ChannelIdSchema,
   options: TargetOptionsSchema,

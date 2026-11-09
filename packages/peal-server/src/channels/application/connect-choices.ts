@@ -43,4 +43,4 @@ export class ConnectChoices extends Context.Service<
       now: DateTime.Utc
     ) => Effect.Effect<number, DatabaseError>;
   }
->()("acme-server/channels/application/ConnectChoices") {}
+>()("peal-server/channels/application/ConnectChoices") {}

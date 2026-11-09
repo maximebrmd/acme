@@ -33,7 +33,7 @@ export type Recurrence = typeof RecurrenceSchema.Type;
  * 07:00 UTC in summer.
  */
 export class RecurringSchedule extends Schema.Class<RecurringSchedule>(
-  "acme-server/publishing/domain/RecurringSchedule"
+  "peal-server/publishing/domain/RecurringSchedule"
 )({
   recurrence: RecurrenceSchema,
   timeZone: TimeZoneIdSchema,

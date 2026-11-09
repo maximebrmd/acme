@@ -24,8 +24,8 @@ export interface DeletionReceipt {
 
 /**
  * Meta's data deletion callbacks: when one of its users asks, through
- * Facebook or Threads, for the data Acme holds about them to be deleted,
- * Meta sends a request signed with the app's secret. Acme deletes the
+ * Facebook or Threads, for the data Peal holds about them to be deleted,
+ * Meta sends a request signed with the app's secret. Peal deletes the
  * channels that user connected, in every workspace, with their tokens, and
  * the accounts their sign-in still offers a member to choose from, and
  * answers with a confirmation code whose status anyone holding it can read.
@@ -47,7 +47,7 @@ export class DeletePlatformUserData extends Context.Service<
       code: string
     ) => Effect.Effect<Option.Option<DataDeletion>, DatabaseError>;
   }
->()("acme-server/channels/application/DeletePlatformUserData") {
+>()("peal-server/channels/application/DeletePlatformUserData") {
   static readonly layer = Layer.effect(
     DeletePlatformUserData,
     Effect.gen(function* DeletePlatformUserDataLive() {

@@ -5,7 +5,7 @@ import { Schema } from "effect";
  * API key, an OAuth client acting for them, or staff impersonating them.
  * Deleting a workspace or an account, and revoking what other applications
  * may do, outlive any of those. Copying out everything an account holds,
- * and listing the applications acting for it, are also open to Acme's
+ * and listing the applications acting for it, are also open to Peal's
  * command line (`ownSessionOrCommandLine`), which the user signs in at their
  * own terminal.
  */

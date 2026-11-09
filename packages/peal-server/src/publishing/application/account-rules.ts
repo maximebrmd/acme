@@ -44,7 +44,7 @@ export class AccountRules extends Context.Service<
       target: AccountTarget
     ) => Effect.Effect<readonly ContentViolation[]>;
   }
->()("acme-server/publishing/application/AccountRules") {
+>()("peal-server/publishing/application/AccountRules") {
   /** No account sets rules of its own. */
   static readonly none = Layer.succeed(
     AccountRules,

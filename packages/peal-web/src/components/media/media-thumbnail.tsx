@@ -1,6 +1,6 @@
 "use client";
 
-import type { Media } from "acme-contract";
+import type { Media } from "peal-contract";
 import { FilmIcon, ImageIcon } from "lucide-react";
 import Image from "next/image";
 

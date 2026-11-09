@@ -82,7 +82,7 @@ const failWith = (
     provider,
     reason,
   }).pipe(
-    Effect.andThen(Effect.annotateCurrentSpan("acme.assistant.failure", kind)),
+    Effect.andThen(Effect.annotateCurrentSpan("peal.assistant.failure", kind)),
     Effect.andThen(Effect.fail(new WritingFailed({ reason })))
   );
 

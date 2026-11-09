@@ -72,4 +72,4 @@ export class WorkspacePeople extends Context.Service<
       invitationId: string
     ) => Effect.Effect<boolean, DirectoryUnavailable>;
   }
->()("acme-server/workspace/application/WorkspacePeople") {}
+>()("peal-server/workspace/application/WorkspacePeople") {}

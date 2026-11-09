@@ -5,7 +5,7 @@ import type { TikTokHosts } from "#shared/infrastructure/platforms/tiktok-api.ts
 import { fakeHttpServer, formOf, json } from "./fake-http-server.ts";
 import type { FakeRequest, FakeResponse } from "./fake-http-server.ts";
 
-/** Acme's synthetic TikTok app. */
+/** Peal's synthetic TikTok app. */
 export const tiktokClient = {
   clientKey: "awsyntheticclientkey",
   clientSecret: "synthetic-tiktok-secret",
@@ -13,10 +13,10 @@ export const tiktokClient = {
 
 /** A synthetic creator, as GET /v2/user/info/ shows them. */
 export const tiktokCreator = {
-  avatar_url: "https://p16-sign.tiktokcdn.example/avatar/acme.jpeg",
-  display_name: "Acme Example",
+  avatar_url: "https://p16-sign.tiktokcdn.example/avatar/peal.jpeg",
+  display_name: "Peal Example",
   open_id: "-000synthetic-open-id-0001",
-  username: "acme_example",
+  username: "peal_example",
 } as const;
 
 const granted = "user.info.basic,user.info.profile,video.publish,video.list";

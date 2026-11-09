@@ -30,4 +30,4 @@ export class WorkspaceRoster extends Context.Service<
       DirectoryUnavailable
     >;
   }
->()("acme-server/workspace/application/WorkspaceRoster") {}
+>()("peal-server/workspace/application/WorkspaceRoster") {}

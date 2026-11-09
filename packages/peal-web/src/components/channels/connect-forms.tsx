@@ -1,17 +1,17 @@
 "use client";
 
-import type { Platform } from "acme-contract";
-import { Alert, AlertDescription } from "acme-ui/components/alert";
-import { Button } from "acme-ui/components/button";
+import type { Platform } from "peal-contract";
+import { Alert, AlertDescription } from "peal-ui/components/alert";
+import { Button } from "peal-ui/components/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "acme-ui/components/card";
-import { Input } from "acme-ui/components/input";
-import { Label } from "acme-ui/components/label";
+} from "peal-ui/components/card";
+import { Input } from "peal-ui/components/input";
+import { Label } from "peal-ui/components/label";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 import type { ChangeEvent, SubmitEvent } from "react";

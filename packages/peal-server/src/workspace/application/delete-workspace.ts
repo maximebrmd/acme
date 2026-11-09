@@ -44,7 +44,7 @@ export class DeleteWorkspace extends Context.Service<
       | WorkspaceSubscribed
     >;
   }
->()("acme-server/workspace/application/DeleteWorkspace") {
+>()("peal-server/workspace/application/DeleteWorkspace") {
   static readonly layer = Layer.effect(
     DeleteWorkspace,
     Effect.gen(function* DeleteWorkspaceLive() {

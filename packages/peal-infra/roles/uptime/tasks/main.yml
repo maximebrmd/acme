@@ -184,7 +184,7 @@
     mode: "0755"
 
 # Compose creates what is missing and recreates a service whose image or
-# configuration changed (its acme.config label), and nothing else.
+# configuration changed (its peal.config label), and nothing else.
 - name: Start the stack
   ansible.builtin.command: "{{ uptime_compose_bin }} up --detach --wait --wait-timeout 120 --remove-orphans"
   register: uptime_up

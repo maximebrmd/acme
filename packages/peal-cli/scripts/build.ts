@@ -1,5 +1,5 @@
 // Compiles the CLI into one executable for this machine's platform,
-// dist/acme, with its sourcemap embedded so stack traces point at src/.
+// dist/peal, with its sourcemap embedded so stack traces point at src/.
 import { rm } from "node:fs/promises";
 import path from "node:path";
 
@@ -8,7 +8,7 @@ import { Glob } from "bun";
 const root = path.join(import.meta.dirname, "..");
 
 const { outputs } = await Bun.build({
-  compile: { outfile: path.join(root, "dist", "acme") },
+  compile: { outfile: path.join(root, "dist", "peal") },
   entrypoints: [path.join(root, "src", "main.ts")],
   minify: true,
   sourcemap: "linked",

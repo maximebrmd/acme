@@ -10,7 +10,7 @@ import { EncryptedTokenSchema } from "./token-cipher.ts";
  * the clear, so a request to delete that user's data finds the channel.
  */
 export class ChannelCredentials extends Schema.Class<ChannelCredentials>(
-  "acme-server/channels/application/ChannelCredentials"
+  "peal-server/channels/application/ChannelCredentials"
 )({
   accessToken: EncryptedTokenSchema,
   grantedBy: Schema.optionalKey(Schema.NonEmptyString),

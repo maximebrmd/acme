@@ -64,7 +64,7 @@ export const fakeTurnstile = fakeHttpServer((request) => {
 export class FakeTurnstile extends Context.Service<
   FakeTurnstile,
   FakeHttpServer
->()("acme-server/test/FakeTurnstile") {}
+>()("peal-server/test/FakeTurnstile") {}
 
 /** The server with Turnstile's keys, checking tokens with the fake. */
 export const appWithTurnstile = (secretKey: string) =>

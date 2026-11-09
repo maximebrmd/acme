@@ -2,7 +2,7 @@ import { Context } from "effect";
 import { Tool } from "effect/ai";
 
 /**
- * A tool that only reads, within Acme: MCP clients may call it without
+ * A tool that only reads, within Peal: MCP clients may call it without
  * asking, and as often as they like.
  */
 export const reading = Context.make(Tool.Readonly, true).pipe(
@@ -15,7 +15,7 @@ export const reading = Context.make(Tool.Readonly, true).pipe(
  * A tool that changes something, as the MCP annotations tell clients:
  * `destructive` when it removes or overwrites what was there rather than
  * only adding, `idempotent` when calling it again with the same arguments
- * changes nothing more, `openWorld` when its effect reaches outside Acme (a
+ * changes nothing more, `openWorld` when its effect reaches outside Peal (a
  * post on a platform, an email).
  */
 export const changing = (effects: {

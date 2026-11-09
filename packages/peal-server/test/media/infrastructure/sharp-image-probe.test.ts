@@ -88,7 +88,7 @@ describe(sniffImageType, () => {
     { bytes: syntheticSvg(), format: "an SVG" },
     { bytes: Uint8Array.of(0x49, 0x49, 0x2a, 0, 0, 0, 0, 0), format: "a TIFF" },
     { bytes: new Uint8Array(0), format: "an empty file" },
-  ])("takes $format for no type acme stores", ({ bytes }) => {
+  ])("takes $format for no type peal stores", ({ bytes }) => {
     expect(sniffImageType(bytes)).toStrictEqual(Option.none());
   });
 });

@@ -58,7 +58,7 @@ const giveUp = (reason: RefusalReason, code?: string): PublicationDecision => ({
 
 const published: AttemptOutcome = {
   _tag: "published",
-  permalink: "https://social.example/@acme/1",
+  permalink: "https://social.example/@peal/1",
   platformPostId: PlatformPostIdSchema.make("1"),
 };
 
@@ -251,7 +251,7 @@ describe(decide, () => {
       reason: "mediaRemoved",
     },
   ])(
-    "fails at once with $reason when Acme could not use the channel or media",
+    "fails at once with $reason when Peal could not use the channel or media",
     ({ outcome, reason }) => {
       expect(decide(outcome, first)).toStrictEqual(
         giveUp(reason, outcome.code)
@@ -324,8 +324,8 @@ describe(failureReasonOf, () => {
     expect(failureReasonOf(outcome)).toBe(reason);
   });
 
-  it("keeps a platform code that only looks like Acme's for another kind", () => {
-    // A platform's media code is never read as a channel Acme could not use.
+  it("keeps a platform code that only looks like Peal's for another kind", () => {
+    // A platform's media code is never read as a channel Peal could not use.
     expect(
       failureReasonOf(
         new MediaRejected({ code: ownRefusalCodes.channelDisconnected })

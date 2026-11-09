@@ -75,7 +75,7 @@ const creatorOf = (data: CreatorData): TikTokCreator =>
       Option.map((seconds) => Duration.seconds(seconds))
     ),
     nickname: data.creator_nickname ?? data.creator_username ?? "",
-    // Audiences Acme does not know are left out: it cannot offer them.
+    // Audiences Peal does not know are left out: it cannot offer them.
     privacyLevels: (data.privacy_level_options ?? []).flatMap((level) =>
       Option.toArray(decodePrivacyLevel(level))
     ),

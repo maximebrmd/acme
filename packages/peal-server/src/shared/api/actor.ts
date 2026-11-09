@@ -1,4 +1,4 @@
-import type { Member } from "acme-contract";
+import type { Member } from "peal-contract";
 import { Option } from "effect";
 
 import { Actor } from "#shared/domain/access.ts";

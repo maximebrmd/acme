@@ -1,6 +1,6 @@
 import { describe, expect, it } from "@effect/vitest";
-import type { Media, MediaAttachment } from "acme-contract";
-import { maxMediaPerPost } from "acme-contract/post-text";
+import type { Media, MediaAttachment } from "peal-contract";
+import { maxMediaPerPost } from "peal-contract/post-text";
 import { DateTime } from "effect";
 
 import {

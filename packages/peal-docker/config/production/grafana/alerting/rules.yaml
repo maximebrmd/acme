@@ -1,5 +1,5 @@
 # Alert rules, provisioned read-only. Notifications go where the contact point
-# file mounted beside this one says: Telegram in Acme's production
+# file mounted beside this one says: Telegram in Peal's production
 # (telegram.yaml), Grafana's default otherwise (none.yaml).
 #
 # Requests are counted from the server's spans, which Tempo's
@@ -10,11 +10,11 @@ apiVersion: 1
 
 groups:
   - orgId: 1
-    name: acme
-    folder: Acme
+    name: peal
+    folder: Peal
     interval: 1m
     rules:
-      - uid: acme-server-silent
+      - uid: peal-server-silent
         title: The server answers no requests
         condition: B
         for: 5m
@@ -22,7 +22,7 @@ groups:
         noDataState: Alerting
         execErrState: Error
         annotations:
-          summary: acme-server has reported no request for 10 minutes. Check that it runs and that its telemetry reaches the collector.
+          summary: peal-server has reported no request for 10 minutes. Check that it runs and that its telemetry reaches the collector.
         labels:
           severity: critical
         data:
@@ -34,7 +34,7 @@ groups:
             model:
               refId: A
               instant: true
-              expr: sum(rate(traces_spanmetrics_calls_total{service="acme-server", span_kind="SPAN_KIND_SERVER"}[10m]))
+              expr: sum(rate(traces_spanmetrics_calls_total{service="peal-server", span_kind="SPAN_KIND_SERVER"}[10m]))
           - refId: B
             datasourceUid: __expr__
             model:
@@ -46,14 +46,14 @@ groups:
                     type: lt
                     params: [0.01]
 
-      - uid: acme-server-failing-requests
+      - uid: peal-server-failing-requests
         title: The server fails requests
         condition: B
         for: 10m
         noDataState: OK
         execErrState: Error
         annotations:
-          summary: More than 3 requests a minute to acme-server have failed for 10 minutes.
+          summary: More than 3 requests a minute to peal-server have failed for 10 minutes.
         labels:
           severity: warning
         data:
@@ -65,7 +65,7 @@ groups:
             model:
               refId: A
               instant: true
-              expr: sum(rate(traces_spanmetrics_calls_total{service="acme-server", span_kind="SPAN_KIND_SERVER", status_code="STATUS_CODE_ERROR"}[5m]))
+              expr: sum(rate(traces_spanmetrics_calls_total{service="peal-server", span_kind="SPAN_KIND_SERVER", status_code="STATUS_CODE_ERROR"}[5m]))
           - refId: B
             datasourceUid: __expr__
             model:
@@ -77,14 +77,14 @@ groups:
                     type: gt
                     params: [0.05]
 
-      - uid: acme-server-error-logs
+      - uid: peal-server-error-logs
         title: The server logs errors
         condition: B
         for: 0s
         noDataState: OK
         execErrState: Error
         annotations:
-          summary: acme-server logged more than 5 errors in 10 minutes. Read them in Grafana's Loki explorer.
+          summary: peal-server logged more than 5 errors in 10 minutes. Read them in Grafana's Loki explorer.
         labels:
           severity: warning
         data:
@@ -99,7 +99,7 @@ groups:
               # OTLP severity numbers 17 to 24 are errors and fatal errors.
               # The web app's error reports, which the server logs at error
               # level too, have an alert of their own below.
-              expr: sum(count_over_time({service_name="acme-server"} | severity_number >= 17 | event_name != "acme.client_error" [10m]))
+              expr: sum(count_over_time({service_name="peal-server"} | severity_number >= 17 | event_name != "peal.client_error" [10m]))
           - refId: B
             datasourceUid: __expr__
             model:
@@ -111,14 +111,14 @@ groups:
                     type: gt
                     params: [5]
 
-      - uid: acme-web-error-spike
+      - uid: peal-web-error-spike
         title: The web app reports a spike of errors
         condition: B
         for: 0s
         noDataState: OK
         execErrState: Error
         annotations:
-          summary: The web app reported more than 20 errors in 10 minutes, from browsers or its own server, those dropped for coming too fast included. Read them on the Acme dashboard's browser errors panels.
+          summary: The web app reported more than 20 errors in 10 minutes, from browsers or its own server, those dropped for coming too fast included. Read them on the Peal dashboard's browser errors panels.
         labels:
           severity: warning
         data:
@@ -130,9 +130,9 @@ groups:
             model:
               refId: A
               instant: true
-              # The server counts each report it logs (acme.client_errors)
-              # and each its intake drops (acme.client_errors.dropped).
-              expr: (sum(increase(acme_client_errors_total[10m])) or vector(0)) + (sum(increase(acme_client_errors_dropped_total[10m])) or vector(0))
+              # The server counts each report it logs (peal.client_errors)
+              # and each its intake drops (peal.client_errors.dropped).
+              expr: (sum(increase(peal_client_errors_total[10m])) or vector(0)) + (sum(increase(peal_client_errors_dropped_total[10m])) or vector(0))
           - refId: B
             datasourceUid: __expr__
             model:
@@ -144,7 +144,7 @@ groups:
                     type: gt
                     params: [20]
 
-      - uid: acme-backup-stale
+      - uid: peal-backup-stale
         title: The database has no recent backup
         condition: B
         for: 0s
@@ -152,7 +152,7 @@ groups:
         noDataState: Alerting
         execErrState: Error
         annotations:
-          summary: No database backup has finished for 30 hours. Read `journalctl --unit 'acme-backup@*'` on the server.
+          summary: No database backup has finished for 30 hours. Read `journalctl --unit 'peal-backup@*'` on the server.
         labels:
           severity: critical
         data:
@@ -166,7 +166,7 @@ groups:
               instant: true
               # Seconds since the last backup finished. A backup reports once,
               # so the sample is searched for over the last 8 days.
-              expr: time() - max(max_over_time(acme_backup_last_success_timestamp_seconds[8d]))
+              expr: time() - max(max_over_time(peal_backup_last_success_timestamp_seconds[8d]))
           - refId: B
             datasourceUid: __expr__
             model:
@@ -178,7 +178,7 @@ groups:
                     type: gt
                     params: [108000]
 
-      - uid: acme-disk-almost-full
+      - uid: peal-disk-almost-full
         title: The server's disk is almost full
         condition: B
         for: 15m

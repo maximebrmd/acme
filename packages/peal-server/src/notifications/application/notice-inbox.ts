@@ -32,7 +32,7 @@ export class NoticeInbox extends Context.Service<
       reader: InboxReader
     ) => Effect.Effect<number, Failure>;
   }
->()("acme-server/notifications/application/NoticeInbox") {
+>()("peal-server/notifications/application/NoticeInbox") {
   static readonly layer = Layer.effect(
     NoticeInbox,
     Effect.gen(function* NoticeInboxLive() {

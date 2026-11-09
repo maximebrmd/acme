@@ -1,4 +1,4 @@
-import type { ChannelStatus, TikTokAccount } from "acme-contract";
+import type { ChannelStatus, TikTokAccount } from "peal-contract";
 import { Console, Effect, Match } from "effect";
 import { Argument, Command } from "effect/cli";
 
@@ -106,7 +106,7 @@ const tiktok = Command.make(
   {
     channelId: Argument.String("channel-id").pipe(
       Argument.withDescription(
-        "The TikTok channel, as acme channels list shows its id."
+        "The TikTok channel, as peal channels list shows its id."
       )
     ),
     workspace: workspaceFlag,

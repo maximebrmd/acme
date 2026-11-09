@@ -1,7 +1,7 @@
 import { Schema } from "effect";
 
 /**
- * A request Acme will not send, because a user chose where it goes:
+ * A request Peal will not send, because a user chose where it goes:
  *
  * - `notHttps`: the URL is not HTTPS on the default port.
  * - `notPublic`: the host is, or resolves to, an address that is not public
@@ -22,6 +22,6 @@ export class OutboundRequestRefused extends Schema.TaggedError<OutboundRequestRe
   }
 ) {
   override get message(): string {
-    return `Acme does not send requests to ${this.host} (${this.reason})`;
+    return `Peal does not send requests to ${this.host} (${this.reason})`;
   }
 }

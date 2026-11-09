@@ -1,7 +1,7 @@
 import { createHash, randomBytes } from "node:crypto";
 
 import { assert } from "@effect/vitest";
-import { PublicClientSchema } from "acme-contract";
+import { PublicClientSchema } from "peal-contract";
 import { Effect, Layer, Option, Schema } from "effect";
 import { McpClient, McpProtocol } from "effect/ai";
 import type { McpSchema } from "effect/ai";
@@ -182,7 +182,7 @@ export const connect = (
       onNone: () => ({}),
       onSome: (value) => ({ authorization: `Bearer ${value}` }),
     }),
-    name: "acme-test",
+    name: "peal-test",
     protocol,
     url: mcpResource,
     version: "1.0.0",

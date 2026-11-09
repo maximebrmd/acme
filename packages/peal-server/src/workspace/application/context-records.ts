@@ -83,4 +83,4 @@ export class ContextRecords extends Context.Service<
       workspaceId: WorkspaceId
     ) => Effect.Effect<void, WorkspaceFilesRemain>;
   }
->()("acme-server/workspace/application/ContextRecords") {}
+>()("peal-server/workspace/application/ContextRecords") {}

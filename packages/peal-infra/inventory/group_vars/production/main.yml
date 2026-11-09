@@ -1,12 +1,12 @@
 ---
 # Production. Every value below is a placeholder until the domain, the
 # Cloudflare account and the server exist.
-server_hostname: acme-production
-acme_environment: production
+server_hostname: peal-production
+peal_environment: production
 
 # Host names on the Cloudflare zone. Cloudflare's free certificate covers the
 # zone and its first-level subdomains only, so no name goes deeper.
-acme_hostnames:
+peal_hostnames:
   app: app.example.com
   site: example.com
   docs: docs.example.com
@@ -21,27 +21,27 @@ cloudflare_access_aud:
   admin: REPLACE-WITH-THE-ADMIN-APPLICATION-AUD
   grafana: REPLACE-WITH-THE-GRAFANA-APPLICATION-AUD
   ssh: REPLACE-WITH-THE-SSH-APPLICATION-AUD
-# Production is public; Access guards Grafana, SSH and acme_access_paths.
-acme_access_everything: false
+# Production is public; Access guards Grafana, SSH and peal_access_paths.
+peal_access_everything: false
 
-acme_mail_from: Acme <noreply@example.com>
+peal_mail_from: Peal <noreply@example.com>
 
 # Grafana posts a heartbeat to the uptime server every few minutes, which
 # alerts when it stops (group_vars/uptime: uptime_hostname, and the external
 # endpoint `grafana heartbeat` of the group `production`). Its token is the
-# credential ACME_HEARTBEAT_TOKEN, which the uptime server generates.
-acme_heartbeat_url: https://uptime.example.com/api/v1/endpoints/production_grafana-heartbeat/external?success=true
+# credential PEAL_HEARTBEAT_TOKEN, which the uptime server generates.
+peal_heartbeat_url: https://uptime.example.com/api/v1/endpoints/production_grafana-heartbeat/external?success=true
 
 # Cloudflare R2: one bucket for media, one for database backups, in the
 # account whose id names the endpoint.
-acme_media_endpoint: https://0123456789abcdef0123456789abcdef.r2.cloudflarestorage.com
-acme_media_bucket: acme-production-media
-acme_backup_endpoint: 0123456789abcdef0123456789abcdef.r2.cloudflarestorage.com
-acme_backup_bucket: acme-production-backups
-acme_backup_path: /production
+peal_media_endpoint: https://0123456789abcdef0123456789abcdef.r2.cloudflarestorage.com
+peal_media_bucket: peal-production-media
+peal_backup_endpoint: 0123456789abcdef0123456789abcdef.r2.cloudflarestorage.com
+peal_backup_bucket: peal-production-backups
+peal_backup_path: /production
 
 # Read when the static image is built.
-acme_static_build_args:
+peal_static_build_args:
   SITE_URL: https://example.com
   SITE_DOCS_URL: https://docs.example.com
   DOCS_SITE_URL: https://docs.example.com

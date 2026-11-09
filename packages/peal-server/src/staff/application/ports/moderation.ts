@@ -46,4 +46,4 @@ export class Moderation extends Context.Service<
       act: Act
     ) => Effect.Effect<readonly string[], ModerationFailed>;
   }
->()("acme-server/staff/application/Moderation") {}
+>()("peal-server/staff/application/Moderation") {}

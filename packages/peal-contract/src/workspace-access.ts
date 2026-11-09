@@ -13,6 +13,6 @@ import { WorkspaceNotFound } from "./workspace-not-found.ts";
 export class WorkspaceAccess extends HttpApiMiddleware.Service<
   WorkspaceAccess,
   { provides: CurrentMember; requires: CurrentPrincipal }
->()("acme-contract/WorkspaceAccess", {
+>()("peal-contract/WorkspaceAccess", {
   error: [Forbidden, WorkspaceNotFound],
 }) {}

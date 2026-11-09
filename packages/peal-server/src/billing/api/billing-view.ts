@@ -1,4 +1,4 @@
-import type { Billing, PlanAllowances } from "acme-contract";
+import type { Billing, PlanAllowances } from "peal-contract";
 import { Option } from "effect";
 
 import type { Overview } from "#billing/application/billing-overview.ts";

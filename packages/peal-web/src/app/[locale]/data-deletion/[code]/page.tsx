@@ -10,7 +10,7 @@ import { DataDeletionStatusView } from "#components/channels/data-deletion-statu
 import { routing } from "#i18n/routing.ts";
 
 // Where Meta sends people who asked, through Facebook or Threads, for the
-// data Acme holds about them to be deleted: the status of their request, by
+// data Peal holds about them to be deleted: the status of their request, by
 // the confirmation code Meta showed them. Nobody signs in for it.
 const DataDeletionPage = async ({
   params,

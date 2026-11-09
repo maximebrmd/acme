@@ -2,7 +2,7 @@
 # Renders the roles' templates for each server of the inventory into
 # render_dir, on this machine, so tests read what each server would get.
 # tests/conftest.py runs it; it changes nothing outside render_dir.
-- name: Render the templates of Acme's servers
+- name: Render the templates of Peal's servers
   hosts: servers
   gather_facts: false
   connection: local
@@ -10,7 +10,7 @@
     ansible_python_interpreter: "{{ ansible_playbook_python }}"
   vars_files:
     - ../roles/cloudflared/defaults/main.yml
-    - ../roles/acme_runtime/vars/main.yml
+    - ../roles/peal_runtime/vars/main.yml
   tasks:
     - name: Create the server's folder
       ansible.builtin.file:
@@ -26,7 +26,7 @@
 
     - name: Render the host settings
       ansible.builtin.template:
-        src: ../roles/acme_runtime/templates/host.env.j2
+        src: ../roles/peal_runtime/templates/host.env.j2
         dest: "{{ render_dir }}/{{ inventory_hostname }}/host.env"
         mode: "0600"
 

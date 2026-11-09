@@ -48,7 +48,7 @@ export interface PlatformClient {
 export class PlatformClients extends Context.Service<
   PlatformClients,
   {
-    /** The platform's client, if Acme publishes there. */
+    /** The platform's client, if Peal publishes there. */
     readonly for: (platform: Platform) => Option.Option<PlatformClient>;
   }
->()("acme-server/publishing/application/PlatformClients") {}
+>()("peal-server/publishing/application/PlatformClients") {}

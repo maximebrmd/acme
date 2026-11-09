@@ -1,5 +1,5 @@
 import { describe, expect, it } from "@effect/vitest";
-import type { AnalyticsSummary, Channel, PostAnalytics } from "acme-contract";
+import type { AnalyticsSummary, Channel, PostAnalytics } from "peal-contract";
 import { DateTime } from "effect";
 import { NextIntlClientProvider } from "next-intl";
 import type { ReactNode } from "react";
@@ -220,11 +220,11 @@ describe(PostMetricsView, () => {
     );
 
     expect(html).toContain(
-      "Acme relève pour l’instant les chiffres sur Mastodon, Bluesky, TikTok et YouTube, dans l’heure qui suit la parution."
+      "Peal relève pour l’instant les chiffres sur Mastodon, Bluesky, TikTok et YouTube, dans l’heure qui suit la parution."
     );
   });
 
-  it("says counts are not available on the platforms Acme reads none on", async () => {
+  it("says counts are not available on the platforms Peal reads none on", async () => {
     const linkedin: Channel = {
       ...channel,
       handle: "Alice Example",
@@ -251,16 +251,16 @@ describe(PostMetricsView, () => {
     const french = await render("fr", view);
 
     expect(english).toContain(
-      "Counts are not available on LinkedIn and X: Acme reads them on Mastodon, Bluesky, TikTok, and YouTube only, so far."
+      "Counts are not available on LinkedIn and X: Peal reads them on Mastodon, Bluesky, TikTok, and YouTube only, so far."
     );
     expect(english).not.toContain("within the hour");
     expect(french).toContain(
-      "Les chiffres ne sont pas disponibles sur LinkedIn et X : Acme ne les relève pour l’instant que sur Mastodon, Bluesky, TikTok et YouTube."
+      "Les chiffres ne sont pas disponibles sur LinkedIn et X : Peal ne les relève pour l’instant que sur Mastodon, Bluesky, TikTok et YouTube."
     );
     expect(french).not.toContain("dans l’heure");
   });
 
-  it("promises counts on TikTok and YouTube, which Acme reads", async () => {
+  it("promises counts on TikTok and YouTube, which Peal reads", async () => {
     const tiktok: Channel = {
       ...channel,
       handle: "@alice_example",
@@ -288,7 +288,7 @@ describe(PostMetricsView, () => {
     expect(html).not.toContain("Counts are not available");
   });
 
-  it("says so beside the counts of the channels Acme reads", async () => {
+  it("says so beside the counts of the channels Peal reads", async () => {
     const linkedin: Channel = {
       ...channel,
       handle: "Alice Example",

@@ -50,8 +50,8 @@ export interface MediaRules {
 }
 
 /**
- * What a platform accepts in one post, as far as Acme checks before
- * publishing. A limit left out is one Acme does not know yet: the platform
+ * What a platform accepts in one post, as far as Peal checks before
+ * publishing. A limit left out is one Peal does not know yet: the platform
  * may still refuse the post when it goes out. So is every media rule of a
  * platform without `media`.
  */
@@ -94,7 +94,7 @@ const minute = 60 * second;
 //   reference names no limit for `message`); how many photos one post
 //   attaches is not known yet.
 // - TikTok: a video's caption takes 2,200 UTF-16 code units (Direct
-//   Post's `title`). A photo post's description takes 4,000, but Acme holds
+//   Post's `title`). A photo post's description takes 4,000, but Peal holds
 //   it to the caption's 2,200, so a post's text fits whichever it becomes;
 //   up to 35 photos. TikTok publishes nothing without media.
 // - YouTube: the video's description, at most 5,000 bytes, without "<" or
@@ -104,7 +104,7 @@ const minute = 60 * second;
 // "Characters" with no other word count code points, the stricter reading.
 //
 // Their media, from the same references. Where a platform writes "MB", the
-// limit is read as mebibytes, the larger reading, so Acme never refuses a
+// limit is read as mebibytes, the larger reading, so Peal never refuses a
 // file the platform takes:
 //
 // - Bluesky: JPEG, PNG, GIF and WebP images of up to 2,000,000 bytes; one
@@ -128,12 +128,12 @@ const minute = 60 * second;
 //   QuickTime videos of 3 seconds to 15 minutes and up to 300 MB, from 1:100
 //   to 10:1; carousels mix them. Whether it shows alt text is not known yet.
 // - Facebook Pages: JPEG, PNG and GIF photos of up to 10 MB (Page Photos,
-//   which also lists BMP and TIFF, formats Acme does not take), with alt
+//   which also lists BMP and TIFF, formats Peal does not take), with alt
 //   text; one MP4 or QuickTime video, never with photos, whose limits
 //   Meta's reference does not give.
 // - TikTok (Media Transfer Guide): one MP4 or QuickTime video (WebM too,
-//   which Acme does not take) of up to 4 GB and 10 minutes, each side from
-//   360 to 4,096 pixels, at 23 to 60 frames a second (which Acme does not
+//   which Peal does not take) of up to 4 GB and 10 minutes, each side from
+//   360 to 4,096 pixels, at 23 to 60 frames a second (which Peal does not
 //   probe: TikTok checks it); or up to 35 JPEG and WebP photos of up to
 //   20 MB, at most 1080p, read as 1920 × 1080 pixels; never both. TikTok
 //   keeps no alt text. How long a creator's videos may be is theirs

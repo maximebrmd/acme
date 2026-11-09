@@ -1,4 +1,4 @@
-import type { SignedRequest } from "acme-contract";
+import type { SignedRequest } from "peal-contract";
 import { Context, Effect } from "effect";
 
 import { TransferFailed } from "#media/transfer-failed.ts";
@@ -17,7 +17,7 @@ export class Transfer extends Context.Service<
       onProgress: (sentBytes: number) => void
     ) => Effect.Effect<void, TransferFailed>;
   }
->()("acme-web/media/Transfer") {}
+>()("peal-web/media/Transfer") {}
 
 /**
  * The browser's: XMLHttpRequest, as fetch reports no upload progress. An

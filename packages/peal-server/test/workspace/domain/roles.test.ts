@@ -60,7 +60,7 @@ describe(permissionsFor, () => {
     );
   });
 
-  it("grants nothing for a role Acme does not know", () => {
+  it("grants nothing for a role Peal does not know", () => {
     expect(permissionsFor("member")).toStrictEqual([]);
   });
 });

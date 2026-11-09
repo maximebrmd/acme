@@ -23,7 +23,7 @@ export const AuthEmailSchema = Schema.Union([
     workspaceName: Schema.String,
   }),
   // Confirms, to the address it had, that an account was deleted with its
-  // data, as its owner asked. Its link opens Acme.
+  // data, as its owner asked. Its link opens Peal.
   Schema.TaggedStruct("AccountDeleted", link),
 ]);
 

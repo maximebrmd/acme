@@ -9,4 +9,4 @@ import type { Effect } from "effect";
 export class NoticeDelivery extends Context.Service<
   NoticeDelivery,
   { readonly start: (key: string) => Effect.Effect<void> }
->()("acme-server/notifications/application/NoticeDelivery") {}
+>()("peal-server/notifications/application/NoticeDelivery") {}

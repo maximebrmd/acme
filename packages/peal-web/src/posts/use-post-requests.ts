@@ -1,7 +1,7 @@
 "use client";
 
 import { useAtomSet } from "@effect/atom-react";
-import type { Post, PostDraft, PostSchedule } from "acme-contract";
+import type { Post, PostDraft, PostSchedule } from "peal-contract";
 import type { DateTime } from "effect";
 import { Exit, Option } from "effect";
 import { useState } from "react";

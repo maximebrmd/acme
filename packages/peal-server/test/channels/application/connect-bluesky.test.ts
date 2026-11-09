@@ -56,11 +56,11 @@ import {
 class FakeNetwork extends Context.Service<
   FakeNetwork,
   Effect.Success<ReturnType<typeof fakeAtproto>>
->()("acme-server/test/channels/FakeNetwork") {
+>()("peal-server/test/channels/FakeNetwork") {
   static readonly layer = Layer.effect(FakeNetwork, fakeAtproto());
 }
 
-// Acme's confidential client, with a key made for the run, against the fake.
+// Peal's confidential client, with a key made for the run, against the fake.
 const BlueskyAuthorizersTest = Layer.effect(
   PlatformAuthorizers,
   Effect.gen(function* BlueskyAuthorizersTest() {
@@ -207,7 +207,7 @@ layer(BlueskyTest)("connecting a Bluesky account", (it) => {
       assert.strictEqual(form.get("code_challenge_method"), "S256");
       assert.strictEqual(
         form.get("client_id"),
-        "https://acme.test/api/channels/oauth/bluesky/client-metadata.json"
+        "https://peal.test/api/channels/oauth/bluesky/client-metadata.json"
       );
       assert.strictEqual(
         form.get("client_assertion_type"),

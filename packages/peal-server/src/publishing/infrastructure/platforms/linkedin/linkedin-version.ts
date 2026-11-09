@@ -1,7 +1,7 @@
 import { Config, Schema } from "effect";
 
 /**
- * The version of LinkedIn's API Acme sends (`Linkedin-Version`), as
+ * The version of LinkedIn's API Peal sends (`Linkedin-Version`), as
  * `YYYYMM`. LinkedIn releases one a month and keeps each for at least a
  * year, then answers 426: a test keeps this default within ten months of
  * the day it runs, so a release never ships one about to be retired.

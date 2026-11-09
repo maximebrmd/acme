@@ -1,24 +1,24 @@
 ---
 title: Connecter un client MCP
-description: Connectez un assistant IA ou tout autre client MCP à Acme, connectez-le à un espace de travail, et voyez ce que ses outils lisent et changent.
+description: Connectez un assistant IA ou tout autre client MCP à Peal, connectez-le à un espace de travail, et voyez ce que ses outils lisent et changent.
 sidebar:
   order: 9
 ---
 
-Acme sert le Model Context Protocol (MCP) : un assistant IA, ou tout autre client MCP, peut travailler dans un espace de travail pour vous : lire ses publications, statistiques, facturation et membres, écrire des brouillons, assurer le suivi des publications parties et inviter des personnes. Le client se connecte en votre nom, dans un navigateur, et agit dans le seul espace de travail que vous choisissez, sans dépasser ce que votre rôle permet.
+Peal sert le Model Context Protocol (MCP) : un assistant IA, ou tout autre client MCP, peut travailler dans un espace de travail pour vous : lire ses publications, statistiques, facturation et membres, écrire des brouillons, assurer le suivi des publications parties et inviter des personnes. Le client se connecte en votre nom, dans un navigateur, et agit dans le seul espace de travail que vous choisissez, sans dépasser ce que votre rôle permet.
 
 ## Le point d’accès [#endpoint]
 
-Le point d’accès est `/api/mcp`, à l’adresse où vous ouvrez Acme, comme `https://acme.example.com/api/mcp`. Il parle Streamable HTTP, dans les révisions 2026-07-28, 2025-11-25 et 2025-06-18 du protocole.
+Le point d’accès est `/api/mcp`, à l’adresse où vous ouvrez Peal, comme `https://peal.example.com/api/mcp`. Il parle Streamable HTTP, dans les révisions 2026-07-28, 2025-11-25 et 2025-06-18 du protocole.
 
-`acme mcp`, depuis la [ligne de commande](/cli#mcp), affiche le point d’accès et une configuration que la plupart des clients MCP acceptent :
+`peal mcp`, depuis la [ligne de commande](/cli#mcp), affiche le point d’accès et une configuration que la plupart des clients MCP acceptent :
 
 ```json
 {
   "mcpServers": {
-    "acme": {
+    "peal": {
       "type": "http",
-      "url": "https://acme.example.com/api/mcp"
+      "url": "https://peal.example.com/api/mcp"
     }
   }
 }
@@ -28,19 +28,19 @@ Donnez au client cette adresse, ou cette configuration, comme sa documentation l
 
 ## Connecter le client [#sign-in]
 
-Acme connecte les clients MCP avec OAuth. Vous ne donnez aucune clé au client : à sa première requête, Acme lui répond qu’il lui faut un jeton, et lui indique où le demander.
+Peal connecte les clients MCP avec OAuth. Vous ne donnez aucune clé au client : à sa première requête, Peal lui répond qu’il lui faut un jeton, et lui indique où le demander.
 
-1. Le client s’enregistre auprès d’Acme, puis ouvre un navigateur sur la page de connexion d’Acme. Connectez-vous si ce n’est pas déjà fait.
+1. Le client s’enregistre auprès de Peal, puis ouvre un navigateur sur la page de connexion de Peal. Connectez-vous si ce n’est pas déjà fait.
 2. **Choisissez un espace de travail.** Le client n’agit que dans celui-là. Pour l’utiliser dans un autre, connectez-le de nouveau et choisissez l’autre.
-3. Acme montre ce que le client demande, et où il vous renvoie ensuite. Vérifiez les deux, puis choisissez **Autoriser**, ou **Refuser**. Acme ne vérifie pas qui a fait un client qui s’est enregistré lui-même, et le dit : n’en autorisez un que si vous lui faites confiance et avez lancé la connexion vous-même.
+3. Peal montre ce que le client demande, et où il vous renvoie ensuite. Vérifiez les deux, puis choisissez **Autoriser**, ou **Refuser**. Peal ne vérifie pas qui a fait un client qui s’est enregistré lui-même, et le dit : n’en autorisez un que si vous lui faites confiance et avez lancé la connexion vous-même.
 
-De retour dans le client, ses outils fonctionnent. Acme retient votre réponse pour ce client et cet espace de travail : le connecter de nouveau ne repose pas la question.
+De retour dans le client, ses outils fonctionnent. Peal retient votre réponse pour ce client et cet espace de travail : le connecter de nouveau ne repose pas la question.
 
 <Callout type="note" title="Si le client ne peut pas s’enregistrer">
   La plupart des clients MCP s’enregistrent eux-mêmes avant de se connecter, ce
-  qu’un serveur Acme n’autorise que si son administrateur l’active
+  qu’un serveur Peal n’autorise que si son administrateur l’active
   (`MCP_DYNAMIC_REGISTRATION`, voir [Auto-hébergement](/self-hosting#mcp)).
-  `acme mcp` prévient quand ce n’est pas le cas.
+  `peal mcp` prévient quand ce n’est pas le cas.
 </Callout>
 
 ## Ce que le client peut faire [#scopes]
@@ -70,17 +70,17 @@ Ces outils lisent, et ne changent rien :
 | `list_channels`      | Les [canaux](/channels) de l’espace de travail, et si chacun publie ou est à reconnecter. Jamais leurs jetons.                                                                                              |
 | `list_drafts`        | Les brouillons de l’espace de travail, du plus récent au plus ancien, une page à la fois                                                                                                                    |
 | `get_post`           | Une publication : ce qu’elle dit, quand elle part, et ce qui s’est passé sur chaque canal, avec les identifiants de ses cibles, leurs options de plateforme, et pourquoi l’une a échoué                     |
-| `get_tiktok_creator` | Les réglages d’un canal TikTok, lus sur TikTok : sous quel nom il publie, les audiences qu’une publication peut choisir, les interactions désactivées, sa vidéo la plus longue. Il lit TikTok, hors d’Acme. |
+| `get_tiktok_creator` | Les réglages d’un canal TikTok, lus sur TikTok : sous quel nom il publie, les audiences qu’une publication peut choisir, les interactions désactivées, sa vidéo la plus longue. Il lit TikTok, hors de Peal. |
 | `analytics_summary`  | Les compteurs des publications parues sur une période, dans un fuseau, comme les montrent les [Statistiques](/analytics)                                                                                    |
 | `post_analytics`     | Les compteurs d’une publication sur chaque canal où elle est partie, au fil du temps                                                                                                                        |
 | `get_billing`        | La formule de l’espace de travail, ses limites et ce que l’espace de travail utilise de chacune                                                                                                             |
 | `list_members`       | Les membres de l’espace de travail, avec leur nom, leur adresse e-mail et leur rôle, comme chaque membre les voit                                                                                           |
 | `list_invitations`   | Les invitations en attente, pour qui peut inviter ; les invitations au rôle de propriétaire, pour les propriétaires seuls                                                                                   |
-| `server_health`      | Si le serveur Acme tourne et joint sa base de données                                                                                                                                                       |
+| `server_health`      | Si le serveur Peal tourne et joint sa base de données                                                                                                                                                       |
 
-Ces outils changent quelque chose. Chacun indique au client, par les annotations d’outils de MCP, s’il détruit ou écrase (`destructiveHint`), si l’appeler de nouveau ne change rien de plus (`idempotentHint`), et si son effet sort d’Acme (`openWorldHint`), pour qu’un client puisse vous demander avant de l’appeler :
+Ces outils changent quelque chose. Chacun indique au client, par les annotations d’outils de MCP, s’il détruit ou écrase (`destructiveHint`), si l’appeler de nouveau ne change rien de plus (`idempotentHint`), et si son effet sort de Peal (`openWorldHint`), pour qu’un client puisse vous demander avant de l’appeler :
 
-| Outil               | Ce qu’il fait                                                                                                                                                                                                | Détruit ou écrase | Rappelé, ne change rien de plus | Hors d’Acme |
+| Outil               | Ce qu’il fait                                                                                                                                                                                                | Détruit ou écrase | Rappelé, ne change rien de plus | Hors de Peal |
 | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------- | ------------------------------- | ----------- |
 | `create_draft`      | Enregistre un nouveau brouillon, avec les [options des plateformes](/scheduling#options) de ses canaux YouTube et TikTok. Il ne part à aucune heure : la programmation vous revient, dans l’application web. | non               | non                             | non         |
 | `update_draft`      | Remplace le texte, les médias et les canaux d’un brouillon par ceux donnés. Ses options restent sur les canaux qu’il garde, sauf si l’appel en donne d’autres.                                               | oui               | oui                             | non         |
@@ -99,6 +99,6 @@ Aucun outil n’exporte vos données ni ne liste les applications qui agissent p
 
 ## Limites [#limits]
 
-- Une instance Acme ne sert les clients MCP que si son adresse est en HTTPS, ou sur `localhost` pour le développement. Ailleurs, le point d’accès refuse toutes les requêtes.
+- Une instance Peal ne sert les clients MCP que si son adresse est en HTTPS, ou sur `localhost` pour le développement. Ailleurs, le point d’accès refuse toutes les requêtes.
 - Le point d’accès refuse les requêtes envoyées depuis des pages web (avec un en-tête `Origin`) : connectez un client qui tourne sur votre ordinateur ou sur un serveur.
-- Les **Paramètres du compte**, dans l’application web, listent les clients que vous avez autorisés et les déconnectent ; `acme account apps` les liste depuis la [ligne de commande](/cli#account). Quitter l’espace de travail arrête tous les clients qui y agissent.
+- Les **Paramètres du compte**, dans l’application web, listent les clients que vous avez autorisés et les déconnectent ; `peal account apps` les liste depuis la [ligne de commande](/cli#account). Quitter l’espace de travail arrête tous les clients qui y agissent.

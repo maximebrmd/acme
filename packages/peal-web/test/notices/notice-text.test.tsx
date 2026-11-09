@@ -1,5 +1,5 @@
 import { describe, expect, it } from "@effect/vitest";
-import type { NoticeEvent } from "acme-contract";
+import type { NoticeEvent } from "peal-contract";
 import { DateTime } from "effect";
 import { NextIntlClientProvider } from "next-intl";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -15,7 +15,7 @@ const workspaces: ReadonlyMap<string, string> = new Map([
   [workspaceId, "Studio Nord"],
 ]);
 
-const channel = { handle: "@acme_example", platform: "mastodon" } as const;
+const channel = { handle: "@peal_example", platform: "mastodon" } as const;
 
 const Written = ({
   event,
@@ -58,10 +58,10 @@ describe(useNoticeText, () => {
     };
 
     await expect(render("en", event)).resolves.toContain(
-      `A post of Studio Nord did not go out on Mastodon (@acme_example): the platform refused one of its images or videos. | Open the post | /app/${workspaceId}/posts/${postId}`
+      `A post of Studio Nord did not go out on Mastodon (@peal_example): the platform refused one of its images or videos. | Open the post | /app/${workspaceId}/posts/${postId}`
     );
     await expect(render("fr", event)).resolves.toContain(
-      "Une publication de Studio Nord n’est pas partie sur Mastodon (@acme_example) : la plateforme a refusé l’une de ses images ou vidéos. | Ouvrir la publication"
+      "Une publication de Studio Nord n’est pas partie sur Mastodon (@peal_example) : la plateforme a refusé l’une de ses images ou vidéos. | Ouvrir la publication"
     );
   });
 
@@ -126,13 +126,13 @@ describe(useNoticeText, () => {
   it("tells a published post", async () => {
     const html = await render("en", {
       _tag: "PostPublished",
-      channel: { handle: "@acme.example", platform: "bluesky" },
+      channel: { handle: "@peal.example", platform: "bluesky" },
       permalink: null,
       postId,
     });
 
     expect(html).toContain(
-      "A post of Studio Nord is live on Bluesky (@acme.example)."
+      "A post of Studio Nord is live on Bluesky (@peal.example)."
     );
   });
 
@@ -144,10 +144,10 @@ describe(useNoticeText, () => {
     };
 
     await expect(render("en", event)).resolves.toContain(
-      `Mastodon (@acme_example) in Studio Nord must be reconnected by December 1, 2026: its authorization cannot be renewed. | Open the channels | /app/${workspaceId}/channels`
+      `Mastodon (@peal_example) in Studio Nord must be reconnected by December 1, 2026: its authorization cannot be renewed. | Open the channels | /app/${workspaceId}/channels`
     );
     await expect(render("fr", event)).resolves.toContain(
-      "Mastodon (@acme_example) dans Studio Nord doit être reconnecté avant le 1 décembre 2026 : son autorisation ne peut pas être renouvelée. | Ouvrir les canaux"
+      "Mastodon (@peal_example) dans Studio Nord doit être reconnecté avant le 1 décembre 2026 : son autorisation ne peut pas être renouvelée. | Ouvrir les canaux"
     );
   });
 
@@ -159,7 +159,7 @@ describe(useNoticeText, () => {
     );
 
     expect(html).toContain(
-      "Mastodon (@acme_example) dans un espace de travail que vous avez quitté doit être reconnecté"
+      "Mastodon (@peal_example) dans un espace de travail que vous avez quitté doit être reconnecté"
     );
   });
 });

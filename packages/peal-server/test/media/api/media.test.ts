@@ -7,8 +7,8 @@ import {
   MediaStoreUnavailable,
   UploadIncomplete,
   UploadRejected,
-} from "acme-contract";
-import type { Member, PreparedUpload } from "acme-contract";
+} from "peal-contract";
+import type { Member, PreparedUpload } from "peal-contract";
 import {
   ConfigProvider,
   DateTime,
@@ -69,7 +69,7 @@ const UnreachableStoreTest = MediaTestLive.pipe(
   Layer.provide(storageSettings),
   Layer.provide(
     ConfigProvider.layerAdd(
-      ConfigProvider.fromUnknown({ ACME_S3_ENDPOINT: "http://127.0.0.1:9" }),
+      ConfigProvider.fromUnknown({ PEAL_S3_ENDPOINT: "http://127.0.0.1:9" }),
       { asPrimary: true }
     )
   )
@@ -404,7 +404,7 @@ layer(UseCasesTest)("the media endpoints", (it) => {
   it.effect.each([
     {
       error: "UnsupportedMediaType",
-      label: "a type Acme does not store",
+      label: "a type Peal does not store",
       payload: { byteSize: 10, contentType: "image/svg+xml" },
     },
     {

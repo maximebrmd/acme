@@ -40,7 +40,7 @@ export interface BlueskyAuthorizerOptions extends Omit<
 }
 
 // What went wrong on the wire while the client worked, which its own errors
-// do not tell apart: Acme refused a request, or a server did not answer.
+// do not tell apart: Peal refused a request, or a server did not answer.
 interface WireTrouble {
   readonly refused: Option.Option<OutboundRequestRefused>;
   readonly unreachable: boolean;
@@ -119,7 +119,7 @@ const failureOf = (trouble: WireTrouble, cause: unknown): ClientFailure => {
     : { _tag: "rejected", reason: String(cause) };
 };
 
-// A server Acme may not call is the member's to fix; a lookup that failed
+// A server Peal may not call is the member's to fix; a lookup that failed
 // for now is the network's.
 const refusalFailure = (refusal: OutboundRequestRefused) =>
   Match.value(refusal.reason).pipe(
@@ -182,8 +182,8 @@ const tokensOf = (session: NodeSavedSession): IssuedTokens => ({
 /**
  * Bluesky through the AT Protocol's official OAuth client
  * (`@atproto/oauth-client-node`): PAR, PKCE, DPoP and the confidential
- * client's signed token requests are the library's. Acme gives it, for each
- * operation, stores seeded from what Acme keeps encrypted, and keeps what it
+ * client's signed token requests are the library's. Peal gives it, for each
+ * operation, stores seeded from what Peal keeps encrypted, and keeps what it
  * writes: the pending sign-in becomes the attempt's secret, the session the
  * channel's credential. Every request goes through the outbound guard, since
  * DID documents name the servers it calls.

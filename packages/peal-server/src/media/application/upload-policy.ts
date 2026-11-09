@@ -4,7 +4,7 @@ import type { UploadSizing } from "#media/domain/upload-plan.ts";
 
 const mebibyte = 1024 * 1024;
 
-/** How uploads are split, and how long the URLs acme signs stay valid. */
+/** How uploads are split, and how long the URLs peal signs stay valid. */
 export interface UploadPolicy extends UploadSizing {
   /**
    * How long a single-request upload URL can be started. Nothing revokes
@@ -43,6 +43,6 @@ export const defaultUploadPolicy: UploadPolicy = {
 
 /** The upload policy in effect. Tests provide smaller parts. */
 export const CurrentUploadPolicy = Context.Reference<UploadPolicy>(
-  "acme-server/media/application/CurrentUploadPolicy",
+  "peal-server/media/application/CurrentUploadPolicy",
   { defaultValue: () => defaultUploadPolicy }
 );

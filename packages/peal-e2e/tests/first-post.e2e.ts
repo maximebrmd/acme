@@ -16,9 +16,9 @@ const name = "Sam Example";
 const guestName = "Alex Example";
 const workspace = "Field Notes";
 const handle = "@notes@social.example";
-const text = "Our first field note, written once and scheduled from Acme.";
+const text = "Our first field note, written once and scheduled from Peal.";
 const edited = "Our first field note, taken back, edited and scheduled again.";
-const videos = "@acme_field_videos";
+const videos = "@peal_field_videos";
 const video = "A synthetic field video, described for YouTube.";
 const videoTitle = "Field notes, the video";
 
@@ -58,7 +58,7 @@ describe("a new member's first post", { serial: true }, () => {
 
   test("confirms the address from the email", async ({ browser, screen }) => {
     await browser.goto(
-      await emailedLink(address(), "Confirm your email for Acme")
+      await emailedLink(address(), "Confirm your email for Peal")
     );
 
     await expect(screen.getByRole("heading", "Email confirmed")).toBeVisible();
@@ -281,7 +281,7 @@ describe("a new member's first post", { serial: true }, () => {
 
     invitationLink = await emailedLink(
       guestAddress(),
-      `${name} invited you to ${workspace} on Acme`
+      `${name} invited you to ${workspace} on Peal`
     );
     expect(new URL(invitationLink).pathname).toMatch(
       /^\/invitations\/[0-9a-f-]+$/u
@@ -320,7 +320,7 @@ describe("a new member's first post", { serial: true }, () => {
     await screen.getByRole("menuitem", "Se déconnecter").tap();
 
     await expect(
-      screen.getByRole("heading", "Bienvenue sur Acme")
+      screen.getByRole("heading", "Bienvenue sur Peal")
     ).toBeVisible();
     await expect(
       screen.getByRole("banner").getByRole("button", "Se connecter")
@@ -360,7 +360,7 @@ describe("a new member's first post", { serial: true }, () => {
 
     // The confirmation link signs the guest in.
     await browser.goto(
-      await emailedLink(guestAddress(), "Confirm your email for Acme")
+      await emailedLink(guestAddress(), "Confirm your email for Peal")
     );
     await expect(screen.getByRole("heading", "Email confirmed")).toBeVisible();
 

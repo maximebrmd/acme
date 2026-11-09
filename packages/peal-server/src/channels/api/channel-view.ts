@@ -1,4 +1,4 @@
-import type { Channel as ChannelView } from "acme-contract";
+import type { Channel as ChannelView } from "peal-contract";
 import { Option } from "effect";
 
 import type { Channel } from "#channels/domain/channel.ts";

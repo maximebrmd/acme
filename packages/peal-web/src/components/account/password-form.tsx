@@ -1,8 +1,8 @@
 "use client";
 
-import { Button } from "acme-ui/components/button";
-import { Checkbox } from "acme-ui/components/checkbox";
-import { Label } from "acme-ui/components/label";
+import { Button } from "peal-ui/components/button";
+import { Checkbox } from "peal-ui/components/checkbox";
+import { Label } from "peal-ui/components/label";
 import { useTranslations } from "next-intl";
 import { useId, useState, useTransition } from "react";
 import type { SubmitEvent } from "react";

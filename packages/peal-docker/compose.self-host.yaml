@@ -1,9 +1,9 @@
 # For self-hosters: Caddy in front of the production stack, with a Let's
-# Encrypt certificate for ACME_DOMAIN. Copy self-host.env.example to a file
+# Encrypt certificate for PEAL_DOMAIN. Copy self-host.env.example to a file
 # of your own, fill it in, then, from this folder:
 #
-#   docker compose --project-name acme --file compose.production.yaml \
-#     --file compose.self-host.yaml --env-file acme.env up --detach --wait
+#   docker compose --project-name peal --file compose.production.yaml \
+#     --file compose.self-host.yaml --env-file peal.env up --detach --wait
 #
 # Caddy is the one service that publishes ports to the world: 80 for the
 # certificate challenge and the redirect to HTTPS, 443 for HTTPS and HTTP/3.
@@ -19,9 +19,9 @@ services:
     security_opt: [no-new-privileges:true]
     tmpfs: [/tmp:size=64m]
     environment:
-      ACME_DOMAIN: ${ACME_DOMAIN:?Set ACME_DOMAIN, the host name of PUBLIC_URL}
-      ACME_SITE_DOMAIN: ${ACME_SITE_DOMAIN:-}
-      ACME_DOCS_DOMAIN: ${ACME_DOCS_DOMAIN:-}
+      PEAL_DOMAIN: ${PEAL_DOMAIN:?Set PEAL_DOMAIN, the host name of PUBLIC_URL}
+      PEAL_SITE_DOMAIN: ${PEAL_SITE_DOMAIN:-}
+      PEAL_DOCS_DOMAIN: ${PEAL_DOCS_DOMAIN:-}
     ports:
       - 80:80
       - 443:443

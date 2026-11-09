@@ -8,6 +8,6 @@ import { TooManyClientErrors } from "./too-many-client-errors.ts";
  * and minute, and a size. It runs before the body is decoded.
  */
 export class ClientErrorIntake extends HttpApiMiddleware.Service<ClientErrorIntake>()(
-  "acme-contract/ClientErrorIntake",
+  "peal-contract/ClientErrorIntake",
   { error: [ClientErrorTooLarge, TooManyClientErrors] }
 ) {}

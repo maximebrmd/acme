@@ -5,7 +5,7 @@ sidebar:
   order: 14
 ---
 
-The staff console is for the people who run an Acme server: it finds an account or a workspace, tells how the server is doing, and lets staff act on accounts. It lives at `/admin` on your Acme address (`/fr/admin` in French), and its API under `/api/admin`.
+The staff console is for the people who run a Peal server: it finds an account or a workspace, tells how the server is doing, and lets staff act on accounts. It lives at `/admin` on your Peal address (`/fr/admin` in French), and its API under `/api/admin`.
 
 ## Make an account staff [#make-staff]
 
@@ -17,7 +17,7 @@ UPDATE auth."user" SET role = 'admin' WHERE email = 'you@example.com';
 
 To take the role back, set `role` to `NULL`, then have other staff **Sign out everywhere** the account, which also ends the sessions it opened to act as someone else. The console refuses anyone but staff in their own session, signed in or not, answering 404 as if it were not there: an API key, an application acting through OAuth, or staff while they act as someone else are refused too. A banned staff account is refused at once.
 
-Acme's own servers also put `/admin`, `/en/admin`, `/fr/admin` and `/api/admin` behind Cloudflare Access. Behind your own edge, you may restrict them to your team's addresses the same way.
+Peal's own servers also put `/admin`, `/en/admin`, `/fr/admin` and `/api/admin` behind Cloudflare Access. Behind your own edge, you may restrict them to your team's addresses the same way.
 
 ## What the console shows [#screens]
 

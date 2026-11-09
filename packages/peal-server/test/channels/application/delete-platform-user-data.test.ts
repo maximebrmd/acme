@@ -1,5 +1,5 @@
 import { assert, layer } from "@effect/vitest";
-import { Api } from "acme-contract";
+import { Api } from "peal-contract";
 import type { Redacted } from "effect";
 import { Effect, Layer, Option } from "effect";
 import { Mac, SecureRandom } from "effect/crypto";
@@ -40,7 +40,7 @@ const settings = (apps: { readonly threads: boolean }) =>
       linkedin: Option.none(),
       meta: Option.some(metaApp),
       metaHosts,
-      publicUrl: "https://acme.test",
+      publicUrl: "https://peal.test",
       threads: apps.threads ? Option.some(threadsApp) : Option.none(),
       tiktok: Option.none(),
       tiktokHosts,
@@ -59,7 +59,7 @@ const deletionsWith = (apps: { readonly threads: boolean }) =>
         Layer.succeed(
           DataDeletionLinks,
           DataDeletionLinks.of({
-            statusUrl: (code) => `https://acme.test/data-deletion/${code}`,
+            statusUrl: (code) => `https://peal.test/data-deletion/${code}`,
           })
         )
       )
@@ -168,7 +168,7 @@ layer(deletionsWith({ threads: true }))(
           assert.match(receipt.deletion.code, /^[\da-f]{32}$/u);
           assert.strictEqual(
             receipt.statusUrl,
-            `https://acme.test/data-deletion/${receipt.deletion.code}`
+            `https://peal.test/data-deletion/${receipt.deletion.code}`
           );
           assert.sameMembers(yield* channelIdsIn(first), [
             colleague.id,
@@ -334,7 +334,7 @@ layer(deletionsWith({ threads: true }))(
 
         assert.strictEqual(
           confirmation.url,
-          `https://acme.test/data-deletion/${confirmation.confirmation_code}`
+          `https://peal.test/data-deletion/${confirmation.confirmation_code}`
         );
 
         const status = yield* client.dataDeletion.status({

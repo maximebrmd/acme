@@ -1,4 +1,4 @@
-import { Button } from "acme-ui/components/button";
+import { Button } from "peal-ui/components/button";
 import { getTranslations } from "next-intl/server";
 
 import { AuthCard } from "#components/auth/auth-card.tsx";

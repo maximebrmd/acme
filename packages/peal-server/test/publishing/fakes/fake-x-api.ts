@@ -130,7 +130,7 @@ const shown = (post: FakeXPost, keys: readonly string[]) => {
 
   for (const key of keys.slice(0, 1)) {
     urls.push({
-      expanded_url: `https://x.com/acme_example/status/1/photo/1`,
+      expanded_url: `https://x.com/peal_example/status/1/photo/1`,
       media_key: key,
       url: mediaLink,
     });

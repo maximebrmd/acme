@@ -1,6 +1,6 @@
 "use client";
 
-import { Badge } from "acme-ui/components/badge";
+import { Badge } from "peal-ui/components/badge";
 import { TriangleAlertIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 

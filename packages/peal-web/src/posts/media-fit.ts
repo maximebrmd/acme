@@ -1,11 +1,11 @@
-import type { Media, MediaKind, Platform } from "acme-contract";
-import { measureText, platformRules } from "acme-contract/post-text";
-import type { FormatLimits, MediaRules } from "acme-contract/post-text";
+import type { Media, MediaKind, Platform } from "peal-contract";
+import { measureText, platformRules } from "peal-contract/post-text";
+import type { FormatLimits, MediaRules } from "peal-contract/post-text";
 import { Option } from "effect";
 
 // What each platform would refuse in the post's images and videos, checked
 // as the server checks them (src/publishing/domain/content-rules.ts in
-// acme-server) with the contract's copy of the rules, so the composer shows
+// peal-server) with the contract's copy of the rules, so the composer shows
 // it before scheduling.
 
 /** An attachment of the post, with its media once the API described it. */

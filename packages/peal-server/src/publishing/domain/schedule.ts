@@ -12,7 +12,7 @@ import type { LocalDate, LocalTime } from "#shared/domain/wall-clock.ts";
  * shifts the offset.
  */
 export class Schedule extends Schema.Class<Schedule>(
-  "acme-server/publishing/domain/Schedule"
+  "peal-server/publishing/domain/Schedule"
 )({
   at: Schema.DateTimeUtc,
   timeZone: TimeZoneIdSchema,

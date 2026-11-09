@@ -48,4 +48,4 @@ export class PlatformPublisher extends Context.Service<
       request: PublishRequest
     ) => Effect.Effect<PublishResult, PublishFailure>;
   }
->()("acme-server/publishing/application/PlatformPublisher") {}
+>()("peal-server/publishing/application/PlatformPublisher") {}

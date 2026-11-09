@@ -19,4 +19,4 @@ export class TransactionRunner extends Context.Service<
       effect: Effect.Effect<A, E, R>
     ) => Effect.Effect<A, DatabaseError | E, R>;
   }
->()("acme-server/shared/application/TransactionRunner") {}
+>()("peal-server/shared/application/TransactionRunner") {}

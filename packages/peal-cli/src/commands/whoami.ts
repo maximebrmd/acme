@@ -2,7 +2,7 @@ import { Console, Effect } from "effect";
 import { Command } from "effect/cli";
 
 import { requestFailed } from "#api-request-failed.ts";
-import { AcmeApi } from "#api.ts";
+import { PealApi } from "#api.ts";
 import { display } from "#display.ts";
 import { accessToken } from "#session.ts";
 import { SignInExpired } from "#sign-in-expired.ts";
@@ -11,7 +11,7 @@ export const whoami = Command.make(
   "whoami",
   {},
   Effect.fn("whoami")(function* whoami() {
-    const api = yield* AcmeApi;
+    const api = yield* PealApi;
     const url = display(api.baseUrl);
     const client = yield* api.signedIn(yield* accessToken);
 

@@ -1,4 +1,4 @@
-import { RoleSchema } from "acme-contract";
+import { RoleSchema } from "peal-contract";
 import { Console, DateTime, Effect } from "effect";
 import { Argument, Command, Flag } from "effect/cli";
 
@@ -74,7 +74,7 @@ const send = Command.make(
       .pipe(Effect.mapError(explain(url)));
 
     yield* Console.log(
-      `Invited ${sent.email} to ${workspace.name} as ${sent.role}: Acme emailed them a link that works until ${instant(sent.expiresAt)}. Invitation ${sent.id}.`
+      `Invited ${sent.email} to ${workspace.name} as ${sent.role}: Peal emailed them a link that works until ${instant(sent.expiresAt)}. Invitation ${sent.id}.`
     );
   })
 ).pipe(
@@ -88,7 +88,7 @@ const revoke = Command.make(
   {
     invitationId: Argument.String("invitation-id").pipe(
       Argument.withDescription(
-        "The invitation, as acme invitations list shows its id."
+        "The invitation, as peal invitations list shows its id."
       )
     ),
     workspace: workspaceFlag,

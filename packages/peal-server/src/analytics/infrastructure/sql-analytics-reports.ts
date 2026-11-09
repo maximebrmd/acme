@@ -81,7 +81,7 @@ const snapshotOf = (snapshot: SnapshotRow) =>
     }))
   );
 
-// A post on a platform Acme reads no counts on, which it stopped reading at
+// A post on a platform Peal reads no counts on, which it stopped reading at
 // its first turn: it holds no counts and never will, so reports leave it
 // out rather than show it with none.
 const unreadable: CollectionEnd = "unsupported";

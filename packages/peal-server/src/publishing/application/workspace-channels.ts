@@ -26,4 +26,4 @@ export class WorkspaceChannels extends Context.Service<
       DatabaseError | MissingPermission
     >;
   }
->()("acme-server/publishing/application/WorkspaceChannels") {}
+>()("peal-server/publishing/application/WorkspaceChannels") {}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useAtomValue } from "@effect/atom-react";
-import type { Channel, TopPost } from "acme-contract";
+import type { Channel, TopPost } from "peal-contract";
 import { DateTime, Option } from "effect";
 import { AsyncResult } from "effect/reactivity";
 import { useFormatter, useTranslations } from "next-intl";

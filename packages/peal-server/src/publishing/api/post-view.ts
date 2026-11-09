@@ -3,7 +3,7 @@ import type {
   Post as PostView,
   PublicationAttempt as AttemptView,
   PostTarget as TargetView,
-} from "acme-contract";
+} from "peal-contract";
 import { DateTime, Match, Option, Schema } from "effect";
 
 import type { PostWithTargets } from "#publishing/application/post-repository.ts";

@@ -43,7 +43,7 @@ export const xEndpoints: XEndpoints = {
 export const xCallbackPath = "/connect/x/callback";
 
 /**
- * What Acme asks an account for: to read and write posts (creating one
+ * What Peal asks an account for: to read and write posts (creating one
  * needs `tweet.read`, `tweet.write` and `users.read`), to upload media
  * (`media.write`), and `offline.access`, for a refresh token that renews
  * the two-hour access tokens without the user.
@@ -67,7 +67,7 @@ const UserSchema = Schema.Struct({
 
 const decodeAvatar = Schema.decodeUnknownOption(AvatarUrlSchema);
 
-// Errors that name Acme's client rather than the account's tokens: the
+// Errors that name Peal's client rather than the account's tokens: the
 // operator's settings are wrong, and no channel should be blamed for it.
 const clientErrors: ReadonlySet<string> = new Set([
   "invalid_client",
@@ -85,7 +85,7 @@ const refusedRefresh = (
       (code): Effect.Effect<never, PlatformUnavailable | TokenExpired> => {
         if (Option.exists(code, (name) => clientErrors.has(name))) {
           return Effect.logError(
-            "X refused Acme's client: check X_CLIENT_ID and X_CLIENT_SECRET"
+            "X refused Peal's client: check X_CLIENT_ID and X_CLIENT_SECRET"
           ).pipe(Effect.andThen(Effect.fail(new PlatformUnavailable())));
         }
 

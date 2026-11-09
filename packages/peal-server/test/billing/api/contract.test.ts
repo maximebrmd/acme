@@ -4,7 +4,7 @@ import {
   PlanLimitSchema as ContractPlanLimitSchema,
   PlanSchema as ContractPlanSchema,
   SubscriptionStatusSchema as ContractStatusSchema,
-} from "acme-contract";
+} from "peal-contract";
 
 import { plans } from "#billing/domain/plans.ts";
 import { SubscriptionStatusSchema } from "#billing/domain/subscription.ts";

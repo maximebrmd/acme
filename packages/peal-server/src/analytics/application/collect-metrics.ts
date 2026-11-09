@@ -107,7 +107,7 @@ export class CollectMetrics extends Context.Service<
       at: DateTime.Utc
     ) => Effect.Effect<CollectionReport, DatabaseError>;
   }
->()("acme-server/analytics/application/CollectMetrics") {
+>()("peal-server/analytics/application/CollectMetrics") {
   static readonly layer = Layer.effect(
     CollectMetrics,
     Effect.gen(function* CollectMetricsLive() {

@@ -51,7 +51,7 @@ export interface SweepReport {
   readonly unavailable: number;
 }
 
-// Channels refreshed at once: refreshes wait on platforms, not on Acme.
+// Channels refreshed at once: refreshes wait on platforms, not on Peal.
 const concurrency = 4;
 
 // The most channels one sweep takes; the next takes the rest.
@@ -95,7 +95,7 @@ export class RefreshChannelTokens extends Context.Service<
     /** Refreshes every channel due now, a few at a time. Never fails. */
     readonly sweep: Effect.Effect<SweepReport>;
   }
->()("acme-server/channels/application/RefreshChannelTokens") {
+>()("peal-server/channels/application/RefreshChannelTokens") {
   static readonly layer = Layer.effect(
     RefreshChannelTokens,
     Effect.gen(function* RefreshChannelTokensLive() {

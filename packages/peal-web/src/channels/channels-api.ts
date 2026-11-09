@@ -1,8 +1,8 @@
-import type { ConnectFailureReason } from "acme-contract";
+import type { ConnectFailureReason } from "peal-contract";
 import { Cause, Exit, Option } from "effect";
 import { Atom } from "effect/reactivity";
 
-import { AcmeApi } from "#api/client.ts";
+import { PealApi } from "#api/client.ts";
 
 // What refreshes a workspace's channel list once a change lands.
 const channelsKey = (workspaceId: string) => `channels:${workspaceId}`;
@@ -13,32 +13,32 @@ export const channelsChanged = (workspaceId: string) => [
 
 /** The workspace's channels, fetched through /api with the visitor's cookies. */
 export const channelsOf = Atom.family((workspaceId: string) =>
-  AcmeApi.query("channels", "list", {
+  PealApi.query("channels", "list", {
     params: { workspaceId },
     reactivityKeys: channelsChanged(workspaceId),
   })
 );
 
 /**
- * The platforms this server connects, in Acme's order, fetched with the
+ * The platforms this server connects, in Peal's order, fetched with the
  * visitor's cookies.
  */
 export const connectablePlatformsOf = Atom.family((workspaceId: string) =>
-  AcmeApi.query("channels", "platforms", { params: { workspaceId } })
+  PealApi.query("channels", "platforms", { params: { workspaceId } })
 );
 
-export const connectChannel = AcmeApi.mutation("channels", "connect");
+export const connectChannel = PealApi.mutation("channels", "connect");
 
-export const completeConnection = AcmeApi.mutation(
+export const completeConnection = PealApi.mutation(
   "channels",
   "completeConnect"
 );
 
-export const chooseAccounts = AcmeApi.mutation("channels", "chooseAccounts");
+export const chooseAccounts = PealApi.mutation("channels", "chooseAccounts");
 
-export const reconnectChannel = AcmeApi.mutation("channels", "reconnect");
+export const reconnectChannel = PealApi.mutation("channels", "reconnect");
 
-export const disconnectChannel = AcmeApi.mutation("channels", "disconnect");
+export const disconnectChannel = PealApi.mutation("channels", "disconnect");
 
 /**
  * The message explaining why a channel action failed: a ChannelsPage error,

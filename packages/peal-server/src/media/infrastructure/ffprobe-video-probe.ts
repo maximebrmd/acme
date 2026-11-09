@@ -41,7 +41,7 @@ const positive = (value: number | undefined): Option.Option<number> =>
 /**
  * The metadata of the first video stream. A rotation of a quarter turn,
  * which phones record instead of turning the pixels, swaps the displayed
- * width and height. A duration longer than acme records is left unknown.
+ * width and height. A duration longer than peal records is left unknown.
  */
 export const metadataFromFfprobe = (output: FfprobeOutput): MediaMetadata => {
   const video = output.streams?.find((stream) => stream.codec_type === "video");

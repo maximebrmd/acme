@@ -41,7 +41,7 @@ export default defineConfig({
   agents: {
     llmsTxt: {
       details:
-        "Acme is a fair-source social media scheduling platform: teams write a post once, schedule it across platforms and see how it performs. It can be self-hosted with Postgres and an S3-compatible store. The API reference lists every HTTP endpoint.",
+        "Peal is a fair-source social media scheduling platform: teams write a post once, schedule it across platforms and see how it performs. It can be self-hosted with Postgres and an S3-compatible store. The API reference lists every HTTP endpoint.",
       enabled: true,
     },
   },
@@ -66,15 +66,15 @@ export default defineConfig({
     ],
   },
   reference: [
-    // Written by `nx run acme-contract:openapi`, which every docs target
+    // Written by `nx run peal-contract:openapi`, which every docs target
     // depends on, so the reference always matches the contract. The overlay
     // adds the placeholder origin. Try it stays off: the origin is not a real
     // server, and the API answers no cross-origin requests from the docs.
     openapi({
       overlays: ["./overlays/public.yaml"],
       playground: false,
-      spec: "../acme-contract/openapi.json",
+      spec: "../peal-contract/openapi.json",
     }),
   ],
-  title: "Acme",
+  title: "Peal",
 });

@@ -19,4 +19,4 @@ export class AuditLog extends Context.Service<
       readonly targetId: Option.Option<UserId>;
     }) => Effect.Effect<Slice<AuditEvent>, DatabaseError>;
   }
->()("acme-server/staff/application/AuditLog") {}
+>()("peal-server/staff/application/AuditLog") {}

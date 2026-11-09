@@ -172,7 +172,7 @@ class CheckoutsLog extends Context.Service<
     readonly open: Ref.Ref<number>;
     readonly statuses: Ref.Ref<readonly string[]>;
   }
->()("acme-server/test/billing/CheckoutsLog") {}
+>()("peal-server/test/billing/CheckoutsLog") {}
 
 const CheckoutsInMemory = Layer.effect(
   Checkouts,

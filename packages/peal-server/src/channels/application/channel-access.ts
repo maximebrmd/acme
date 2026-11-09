@@ -45,7 +45,7 @@ export interface ChannelAccount {
   readonly channelId: ChannelId;
   readonly platform: Platform;
   /**
-   * What the account allowed Acme to do, in the platform's own words: a
+   * What the account allowed Peal to do, in the platform's own words: a
    * call that needs more is better made without the token.
    */
   readonly scopes: readonly string[];
@@ -137,7 +137,7 @@ export class ChannelAccess extends Context.Service<
       use: (token: ChannelToken) => Effect.Effect<A, E | TokenRejected, R>
     ) => Effect.Effect<A, AccessFailure | Exclude<E, TokenRejected>, R>;
   }
->()("acme-server/channels/application/ChannelAccess") {
+>()("peal-server/channels/application/ChannelAccess") {
   static readonly layer = Layer.effect(
     ChannelAccess,
     Effect.gen(function* ChannelAccessLive() {

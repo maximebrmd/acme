@@ -1,7 +1,7 @@
 "use client";
 
-import type { MediaUsage } from "acme-contract";
-import { Alert, AlertDescription } from "acme-ui/components/alert";
+import type { MediaUsage } from "peal-contract";
+import { Alert, AlertDescription } from "peal-ui/components/alert";
 import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 

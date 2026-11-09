@@ -1,5 +1,5 @@
-import { Api, ApiKeyNotFound, CurrentMember, Forbidden } from "acme-contract";
-import type { ApiKey as ApiKeyView } from "acme-contract";
+import { Api, ApiKeyNotFound, CurrentMember, Forbidden } from "peal-contract";
+import type { ApiKey as ApiKeyView } from "peal-contract";
 import { Effect, Option, Redacted } from "effect";
 import { HttpApiBuilder } from "effect/http-api";
 

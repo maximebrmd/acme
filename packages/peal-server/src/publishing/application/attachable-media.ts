@@ -23,4 +23,4 @@ export class AttachableMedia extends Context.Service<
       mediaIds: readonly MediaAssetId[]
     ) => Effect.Effect<readonly MediaFile[], DatabaseError | MissingPermission>;
   }
->()("acme-server/publishing/application/AttachableMedia") {}
+>()("peal-server/publishing/application/AttachableMedia") {}

@@ -9,7 +9,7 @@
   hosts: servers:uptime
   gather_facts: false
   roles:
-    - acme_preflight
+    - peal_preflight
   tasks:
     # Locked password: the account logs in with keys only.
     - name: Create the admin user

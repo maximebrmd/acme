@@ -18,23 +18,23 @@ describe("the assistant's settings", () => {
     Effect.gen(function* off() {
       assert.strictEqual((yield* providerFrom({}))._tag, "Off");
       assert.strictEqual(
-        (yield* providerFrom({ ACME_AI_API_KEY: "sk-ant-test-key" }))._tag,
+        (yield* providerFrom({ PEAL_AI_API_KEY: "sk-ant-test-key" }))._tag,
         "Off"
       );
       assert.strictEqual(
-        (yield* providerFrom({ ACME_AI_PROVIDER: "" }))._tag,
+        (yield* providerFrom({ PEAL_AI_PROVIDER: "" }))._tag,
         "Off"
       );
     })
   );
 
   it.effect(
-    "ask Anthropic's default model, unless ACME_AI_MODEL names one",
+    "ask Anthropic's default model, unless PEAL_AI_MODEL names one",
     () =>
       Effect.gen(function* anthropic() {
         const provider = yield* providerFrom({
-          ACME_AI_API_KEY: "sk-ant-test-key",
-          ACME_AI_PROVIDER: "anthropic",
+          PEAL_AI_API_KEY: "sk-ant-test-key",
+          PEAL_AI_PROVIDER: "anthropic",
         });
 
         assert.strictEqual(defaultAnthropicModel, "claude-opus-5-5");
@@ -54,9 +54,9 @@ describe("the assistant's settings", () => {
         );
 
         const other = yield* providerFrom({
-          ACME_AI_API_KEY: "sk-ant-test-key",
-          ACME_AI_MODEL: "claude-haiku-5-0",
-          ACME_AI_PROVIDER: "anthropic",
+          PEAL_AI_API_KEY: "sk-ant-test-key",
+          PEAL_AI_MODEL: "claude-haiku-5-0",
+          PEAL_AI_PROVIDER: "anthropic",
         });
 
         assert.strictEqual(
@@ -69,8 +69,8 @@ describe("the assistant's settings", () => {
   it.effect("keep the key redacted", () =>
     Effect.gen(function* redacted() {
       const provider = yield* providerFrom({
-        ACME_AI_API_KEY: "sk-ant-test-key",
-        ACME_AI_PROVIDER: "anthropic",
+        PEAL_AI_API_KEY: "sk-ant-test-key",
+        PEAL_AI_PROVIDER: "anthropic",
       });
 
       assert.notInclude(JSON.stringify(provider), "sk-ant-test-key");
@@ -83,14 +83,14 @@ describe("the assistant's settings", () => {
   it.effect("need a key for Anthropic", () =>
     Effect.gen(function* key() {
       const missing = yield* providerFrom({
-        ACME_AI_PROVIDER: "anthropic",
+        PEAL_AI_PROVIDER: "anthropic",
       }).pipe(Effect.flip);
 
-      assert.include(missing.message, "ACME_AI_API_KEY");
+      assert.include(missing.message, "PEAL_AI_API_KEY");
 
       yield* providerFrom({
-        ACME_AI_API_KEY: "",
-        ACME_AI_PROVIDER: "anthropic",
+        PEAL_AI_API_KEY: "",
+        PEAL_AI_PROVIDER: "anthropic",
       }).pipe(Effect.flip);
     })
   );
@@ -100,9 +100,9 @@ describe("the assistant's settings", () => {
     () =>
       Effect.gen(function* compatible() {
         const provider = yield* providerFrom({
-          ACME_AI_BASE_URL: "http://127.0.0.1:8000/v1/",
-          ACME_AI_MODEL: "synthetic-model-8b",
-          ACME_AI_PROVIDER: "openai-compatible",
+          PEAL_AI_BASE_URL: "http://127.0.0.1:8000/v1/",
+          PEAL_AI_MODEL: "synthetic-model-8b",
+          PEAL_AI_PROVIDER: "openai-compatible",
         });
 
         assert.deepStrictEqual(
@@ -121,10 +121,10 @@ describe("the assistant's settings", () => {
         );
 
         const keyed = yield* providerFrom({
-          ACME_AI_API_KEY: "sk-test-key",
-          ACME_AI_BASE_URL: "https://models.example.test/v1",
-          ACME_AI_MODEL: "synthetic-model-8b",
-          ACME_AI_PROVIDER: "openai-compatible",
+          PEAL_AI_API_KEY: "sk-test-key",
+          PEAL_AI_BASE_URL: "https://models.example.test/v1",
+          PEAL_AI_MODEL: "synthetic-model-8b",
+          PEAL_AI_PROVIDER: "openai-compatible",
         });
 
         assert.isTrue(
@@ -135,18 +135,18 @@ describe("the assistant's settings", () => {
 
   it.effect.each([
     {
-      env: { ACME_AI_MODEL: "synthetic-model-8b" },
-      missing: "ACME_AI_BASE_URL",
+      env: { PEAL_AI_MODEL: "synthetic-model-8b" },
+      missing: "PEAL_AI_BASE_URL",
     },
     {
-      env: { ACME_AI_BASE_URL: "http://127.0.0.1:8000/v1" },
-      missing: "ACME_AI_MODEL",
+      env: { PEAL_AI_BASE_URL: "http://127.0.0.1:8000/v1" },
+      missing: "PEAL_AI_MODEL",
     },
   ])("need $missing for an OpenAI-compatible endpoint", ({ env, missing }) =>
     Effect.gen(function* required() {
       const failure = yield* providerFrom({
         ...env,
-        ACME_AI_PROVIDER: "openai-compatible",
+        PEAL_AI_PROVIDER: "openai-compatible",
       }).pipe(Effect.flip);
 
       assert.include(failure.message, missing);
@@ -156,10 +156,10 @@ describe("the assistant's settings", () => {
   it.effect("refuse a provider they do not know", () =>
     Effect.gen(function* unknown() {
       const failure = yield* providerFrom({
-        ACME_AI_PROVIDER: "elsewhere",
+        PEAL_AI_PROVIDER: "elsewhere",
       }).pipe(Effect.flip);
 
-      assert.include(failure.message, "ACME_AI_PROVIDER");
+      assert.include(failure.message, "PEAL_AI_PROVIDER");
     })
   );
 
@@ -167,18 +167,18 @@ describe("the assistant's settings", () => {
     Effect.gen(function* daily() {
       assert.strictEqual(yield* dailyRequestsFrom({}), 100);
       assert.strictEqual(
-        yield* dailyRequestsFrom({ ACME_AI_DAILY_REQUESTS: "25" }),
+        yield* dailyRequestsFrom({ PEAL_AI_DAILY_REQUESTS: "25" }),
         25
       );
       assert.strictEqual(
-        yield* dailyRequestsFrom({ ACME_AI_DAILY_REQUESTS: "0" }),
+        yield* dailyRequestsFrom({ PEAL_AI_DAILY_REQUESTS: "0" }),
         0
       );
 
-      yield* dailyRequestsFrom({ ACME_AI_DAILY_REQUESTS: "-1" }).pipe(
+      yield* dailyRequestsFrom({ PEAL_AI_DAILY_REQUESTS: "-1" }).pipe(
         Effect.flip
       );
-      yield* dailyRequestsFrom({ ACME_AI_DAILY_REQUESTS: "1.5" }).pipe(
+      yield* dailyRequestsFrom({ PEAL_AI_DAILY_REQUESTS: "1.5" }).pipe(
         Effect.flip
       );
     })

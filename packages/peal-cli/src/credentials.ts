@@ -78,25 +78,25 @@ const failed =
     new CredentialStoreFailed({ detail: failure.message, file: at });
 
 /**
- * Where the sign-ins are saved: ACME_CONFIG_DIR, or an `acme` folder in the
+ * Where the sign-ins are saved: PEAL_CONFIG_DIR, or a `peal` folder in the
  * user's configuration directory (XDG_CONFIG_HOME, APPDATA on Windows, then
  * ~/.config).
  */
 const directoryConfig = (path: Path.Path) =>
-  Config.String("ACME_CONFIG_DIR").pipe(
+  Config.String("PEAL_CONFIG_DIR").pipe(
     Config.orElse(() =>
       Config.String("XDG_CONFIG_HOME").pipe(
-        Config.map((directory) => path.join(directory, "acme"))
+        Config.map((directory) => path.join(directory, "peal"))
       )
     ),
     Config.orElse(() =>
       Config.String("APPDATA").pipe(
-        Config.map((directory) => path.join(directory, "acme"))
+        Config.map((directory) => path.join(directory, "peal"))
       )
     ),
     Config.orElse(() =>
       Config.String("HOME").pipe(
-        Config.map((home) => path.join(home, ".config", "acme"))
+        Config.map((home) => path.join(home, ".config", "peal"))
       )
     )
   );
@@ -123,7 +123,7 @@ export class CredentialStore extends Context.Service<
       credentials: Credentials
     ) => Effect.Effect<void, CredentialStoreFailed>;
   }
->()("acme-cli/CredentialStore") {
+>()("peal-cli/CredentialStore") {
   static readonly layer = Layer.effect(
     CredentialStore,
     Effect.gen(function* credentialStore() {
@@ -135,7 +135,7 @@ export class CredentialStore extends Context.Service<
         Effect.mapError(
           () =>
             new CredentialStoreFailed({
-              detail: "no configuration directory: set ACME_CONFIG_DIR or HOME",
+              detail: "no configuration directory: set PEAL_CONFIG_DIR or HOME",
               file: "credentials.json",
             })
         )

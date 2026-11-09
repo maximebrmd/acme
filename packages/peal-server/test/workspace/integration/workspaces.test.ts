@@ -1,5 +1,5 @@
 import { assert, layer } from "@effect/vitest";
-import { MeSchema, PermissionSchema } from "acme-contract";
+import { MeSchema, PermissionSchema } from "peal-contract";
 import { DateTime, Duration, Effect, Schema } from "effect";
 import { SqlClient } from "effect/sql";
 
@@ -113,7 +113,7 @@ layer(IntegrationLive, { excludeTestServices: true, timeout: "180 seconds" })(
 
           assert.strictEqual(
             french.Subject,
-            "camille vous invite à rejoindre Agence sur Acme"
+            "camille vous invite à rejoindre Agence sur Peal"
           );
           assert.match(linkIn(french).pathname, /^\/fr\/invitations\//u);
 
@@ -137,9 +137,9 @@ layer(IntegrationLive, { excludeTestServices: true, timeout: "180 seconds" })(
           // The guest's account is in English.
           assert.strictEqual(
             message.Subject,
-            "camille invited you to Agence on Acme"
+            "camille invited you to Agence on Peal"
           );
-          assert.include(message.Text, "on Acme as a viewer.");
+          assert.include(message.Text, "on Peal as a viewer.");
           assert.strictEqual(linkIn(message).pathname, `/invitations/${id}`);
 
           const cookies = yield* signIn(guest.email);
@@ -284,7 +284,7 @@ layer(IntegrationLive, { excludeTestServices: true, timeout: "180 seconds" })(
 
         const { apiKey, key } = yield* bodyOf(CreatedSchema, created);
 
-        assert.match(key, /^acme_/u);
+        assert.match(key, /^peal_/u);
         assert.strictEqual(apiKey.name, "deploy");
         assert.deepStrictEqual(apiKey.permissions, [
           "apiKey:read",

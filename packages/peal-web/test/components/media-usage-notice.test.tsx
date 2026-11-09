@@ -1,5 +1,5 @@
 import { describe, expect, it } from "@effect/vitest";
-import type { MediaUsage } from "acme-contract";
+import type { MediaUsage } from "peal-contract";
 import { NextIntlClientProvider } from "next-intl";
 import { renderToStaticMarkup } from "react-dom/server";
 

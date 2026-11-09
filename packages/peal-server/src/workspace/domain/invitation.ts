@@ -7,7 +7,7 @@ import type { Role } from "./roles.ts";
 
 /** An invitation to join a workspace, still waiting for an answer. */
 export class Invitation extends Schema.Class<Invitation>(
-  "acme-server/workspace/domain/Invitation"
+  "peal-server/workspace/domain/Invitation"
 )({
   createdAt: Schema.DateTimeUtc,
   email: Schema.String,

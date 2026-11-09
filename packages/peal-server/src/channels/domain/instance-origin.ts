@@ -5,7 +5,7 @@ import { InvalidInstance } from "./invalid-instance.ts";
 /**
  * The origin of a server an account lives on, such as
  * "https://mastodon.social": scheme, host and port, in the canonical form URL
- * writes them. Whether Acme may call it is the outbound policy's decision.
+ * writes them. Whether Peal may call it is the outbound policy's decision.
  */
 export const InstanceOriginSchema = Schema.NonEmptyString.pipe(
   Schema.brand("InstanceOrigin")

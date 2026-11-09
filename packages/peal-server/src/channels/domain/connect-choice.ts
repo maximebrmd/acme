@@ -17,7 +17,7 @@ import type { Platform } from "./platform.ts";
  * user who signed in, so a request to delete that user's data finds it.
  */
 export class ConnectChoice extends Schema.Class<ConnectChoice>(
-  "acme-server/channels/domain/ConnectChoice"
+  "peal-server/channels/domain/ConnectChoice"
 )({
   createdAt: Schema.DateTimeUtc,
   expiresAt: Schema.DateTimeUtc,

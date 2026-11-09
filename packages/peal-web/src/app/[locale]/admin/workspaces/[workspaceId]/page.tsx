@@ -1,5 +1,5 @@
-import { Badge } from "acme-ui/components/badge";
-import { Button } from "acme-ui/components/button";
+import { Badge } from "peal-ui/components/badge";
+import { Button } from "peal-ui/components/button";
 import {
   Table,
   TableBody,
@@ -7,7 +7,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "acme-ui/components/table";
+} from "peal-ui/components/table";
 import { DateTime } from "effect";
 import { hasLocale } from "next-intl";
 import { getTranslations } from "next-intl/server";

@@ -1,7 +1,7 @@
 import { Option, Schema } from "effect";
 
 /**
- * The most a count can be: 2,147,483,647, what Acme keeps each count in.
+ * The most a count can be: 2,147,483,647, what Peal keeps each count in.
  * No post comes near it, so a server that says more (a Mastodon server is
  * anyone's choice) is not believed.
  */
@@ -13,14 +13,14 @@ export const CountSchema = Schema.Int.check(
 );
 
 /**
- * A post's counts on its platform at one moment, in Acme's words: likes are
+ * A post's counts on its platform at one moment, in Peal's words: likes are
  * Mastodon's favourites and Bluesky's likes, reposts Mastodon's boosts and
  * Bluesky's reposts. Quotes are there only where the platform counts them
  * (Bluesky, and Mastodon from 4.5), impressions only where it tells them:
  * none otherwise, which is not zero.
  */
 export class PostMetrics extends Schema.Class<PostMetrics>(
-  "acme-server/analytics/domain/PostMetrics"
+  "peal-server/analytics/domain/PostMetrics"
 )({
   impressions: Schema.OptionFromNullOr(CountSchema),
   likes: CountSchema,

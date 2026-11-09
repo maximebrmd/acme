@@ -1,11 +1,11 @@
 import { WorkspaceScopeSchema } from "#workspace/domain/oauth-grant.ts";
 
 /**
- * The command line's OAuth client. Every Acme server has it, under the id
+ * The command line's OAuth client. Every Peal server has it, under the id
  * the contract gives it: a public client (it keeps no secret) that signs in
  * with the device authorization grant and renews its tokens.
  */
-export { cliClientId } from "acme-contract";
+export { cliClientId } from "peal-contract";
 
 /** The access token claim naming the workspace a token is bound to. */
 export const workspaceClaim = "workspace_id";

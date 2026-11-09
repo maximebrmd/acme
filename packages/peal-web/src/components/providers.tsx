@@ -1,8 +1,8 @@
 "use client";
 
 import { RegistryProvider } from "@effect/atom-react";
-import { Toaster } from "acme-ui/components/sonner";
-import { TooltipProvider } from "acme-ui/components/tooltip";
+import { Toaster } from "peal-ui/components/sonner";
+import { TooltipProvider } from "peal-ui/components/tooltip";
 import type { ReactNode } from "react";
 
 // Client context for every page: an atom registry per visitor (also during

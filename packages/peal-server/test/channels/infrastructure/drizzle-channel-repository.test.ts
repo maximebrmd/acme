@@ -57,7 +57,7 @@ layer(RepositoryTest)("the Drizzle channel repository", (it) => {
         {
           avatarUrl: Option.none(),
           displayName: Option.none(),
-          handle: "@acme_renamed",
+          handle: "@peal_renamed",
           scopes: [],
           token: refreshable,
         },

@@ -10,7 +10,7 @@ import { InboxAccessDenied } from "./inbox-access-denied.ts";
  * impersonating them, or an OAuth client acting for them.
  */
 export class InboxReader extends Schema.Class<InboxReader>(
-  "acme-server/notifications/domain/InboxReader"
+  "peal-server/notifications/domain/InboxReader"
 )({
   impersonated: Schema.Boolean,
   // The client acting for the user, if one is: the scopes the user agreed

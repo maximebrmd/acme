@@ -1,4 +1,4 @@
-import { ConnectCallbackSchema, PlatformSchema } from "acme-contract";
+import { ConnectCallbackSchema, PlatformSchema } from "peal-contract";
 import { Option, Schema } from "effect";
 import { getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
@@ -12,7 +12,7 @@ const decodeCallback = Schema.decodeUnknownOption(ConnectCallbackSchema);
 
 // Where a platform sends the browser back after the member signs in there,
 // with the state, and a code or an error, in the address: the redirect URI
-// Acme registers is this page, for every workspace.
+// Peal registers is this page, for every workspace.
 const ConnectCallbackPage = async ({
   params,
   searchParams,

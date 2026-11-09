@@ -7,14 +7,14 @@ import {
   UnconfirmedReasonSchema,
   UserNotFound,
   WorkspaceNotFound,
-} from "acme-contract";
+} from "peal-contract";
 import type {
   StaffAuditEvent,
   StaffChannel,
   StaffUser,
   StaffUserSummary,
   StaffWorkspace,
-} from "acme-contract";
+} from "peal-contract";
 import { Effect, Option, Redacted, Schema } from "effect";
 import {
   Cookies,

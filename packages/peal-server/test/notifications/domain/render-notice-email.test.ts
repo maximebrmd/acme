@@ -36,7 +36,7 @@ describe(renderNoticeEmail, () => {
 
     expect(email.subject).toBe("Reconnect @alice@social.example on Mastodon");
     expect(email.text).toContain(
-      "Acme can no longer post as @alice@social.example on Mastodon in Studio Nord"
+      "Peal can no longer post as @alice@social.example on Mastodon in Studio Nord"
     );
     expect(email.text).toContain(`Reconnect the account: ${url}`);
     expect(email.html).toContain(`href="${url}"`);
@@ -101,7 +101,7 @@ describe(renderNoticeEmail, () => {
     );
   });
 
-  // Nothing in Acme turns a channel back on, and reconnecting leaves it off:
+  // Nothing in Peal turns a channel back on, and reconnecting leaves it off:
   // a new channel for the account is what members can make.
   it("says what members can do with a channel turned off", () => {
     const event: NoticeEvent = {

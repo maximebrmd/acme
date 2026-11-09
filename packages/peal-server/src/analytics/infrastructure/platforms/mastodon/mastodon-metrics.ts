@@ -76,7 +76,7 @@ const remainingOf = (response: HttpClientResponse.HttpClientResponse) =>
 
 // What reading one status came to: a reading to go on from, or a reason
 // to stop. A server that slows the read down leaves the status due; one
-// that fails on it, or answers what Acme cannot read, makes it wait for
+// that fails on it, or answers what Peal cannot read, makes it wait for
 // its next turn, so a status the server cannot show holds nothing back.
 type Step =
   | { readonly _tag: "read"; readonly reading: PostReading }
@@ -100,7 +100,7 @@ const failedOn = (post: PostToRead): Step => ({
  * renewed: the channel needs reconnecting; a 401 or 403 without one, from
  * something on the way, is a failure. A server that answers 429 or has few
  * requests left halts the read; one that fails on a status, does not
- * answer, or answers what Acme cannot read, marks it failed and halts.
+ * answer, or answers what Peal cannot read, marks it failed and halts.
  */
 export const mastodonMetrics = Effect.fn("MastodonMetrics.make")(
   function* mastodonMetrics(options: MastodonMetricsOptions) {
@@ -186,7 +186,7 @@ export const mastodonMetrics = Effect.fn("MastodonMetrics.make")(
         return { remaining, step: halt };
       }
 
-      // Failing, or answering what Acme does not know.
+      // Failing, or answering what Peal does not know.
       return { remaining, step: failedOn(post) };
     });
 

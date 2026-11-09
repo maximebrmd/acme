@@ -11,7 +11,7 @@ describe("the mail settings", () => {
     Effect.gen(function* development() {
       const { from, transport } = yield* settingsFrom({});
 
-      assert.strictEqual(from, "Acme <noreply@acme.localhost>");
+      assert.strictEqual(from, "Peal <noreply@peal.localhost>");
       assert.strictEqual(transport._tag, "Smtp");
       assert.strictEqual(
         transport._tag === "Smtp" ? Redacted.value(transport.url) : "",
@@ -23,7 +23,7 @@ describe("the mail settings", () => {
   it.effect("prefer Resend when it has a key", () =>
     Effect.gen(function* resend() {
       const { transport } = yield* settingsFrom({
-        MAIL_FROM: "Acme <noreply@example.test>",
+        MAIL_FROM: "Peal <noreply@example.test>",
         NODE_ENV: "production",
         RESEND_API_KEY: "re_test_key",
         SMTP_URL: "smtp://mail.example.test:587",

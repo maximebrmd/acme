@@ -14,10 +14,10 @@
   "menuColor": "default",
   "menuAccent": "subtle",
   "aliases": {
-    "components": "acme-ui/components",
-    "utils": "acme-ui/lib/utils",
-    "hooks": "acme-ui/hooks",
-    "lib": "acme-ui/lib",
-    "ui": "acme-ui/components"
+    "components": "peal-ui/components",
+    "utils": "peal-ui/lib/utils",
+    "hooks": "peal-ui/hooks",
+    "lib": "peal-ui/lib",
+    "ui": "peal-ui/components"
   }
 }

@@ -3,7 +3,7 @@ import type {
   CalendarDay,
   PostMetrics as MetricsView,
   TargetMetrics,
-} from "acme-contract";
+} from "peal-contract";
 import { Option, Schema } from "effect";
 
 import type { AnalyticsSummary } from "#analytics/application/analytics-queries.ts";
@@ -29,7 +29,7 @@ export const dayView = ({ day, month, year }: LocalDate): CalendarDay =>
 
 /**
  * The day a request names. The contract checked it is on the calendar. One
- * before 1970 is not a date Acme keeps, and no post went out then: no range
+ * before 1970 is not a date Peal keeps, and no post went out then: no range
  * has it.
  */
 export const dateFrom = (day: CalendarDay) => {

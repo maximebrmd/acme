@@ -16,4 +16,4 @@ export class ChannelHealth extends Context.Service<
       channelId: ChannelId
     ) => Effect.Effect<void, DatabaseError>;
   }
->()("acme-server/publishing/application/ChannelHealth") {}
+>()("peal-server/publishing/application/ChannelHealth") {}

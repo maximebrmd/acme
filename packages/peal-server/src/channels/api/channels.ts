@@ -7,12 +7,12 @@ import {
   OAuthClientNotPublished,
   PlanLimitReached,
   PlatformUnreachable,
-} from "acme-contract";
+} from "peal-contract";
 import type {
   ConnectCallback,
   ConnectFailureReason,
   ConnectOutcome as ConnectOutcomeView,
-} from "acme-contract";
+} from "peal-contract";
 import { Effect, Match, Option } from "effect";
 import { HttpApiBuilder } from "effect/http-api";
 
@@ -67,7 +67,7 @@ const beginFailure = (failure: BeginRefusal) =>
     MissingPermission: forbidden,
     MissingTokenKey: () =>
       Effect.logError(
-        "A channel was not connected: ACME_TOKEN_KEYS is not set"
+        "A channel was not connected: PEAL_TOKEN_KEYS is not set"
       ).pipe(Effect.andThen(refused("notConfigured"))),
     PlatformNotConnectable: ({ reason }) =>
       refused(
@@ -251,7 +251,7 @@ export const ChannelsHandlers = HttpApiBuilder.group(
 
 const notPublished = () => Effect.fail(new OAuthClientNotPublished());
 
-/** The documents that identify Acme's OAuth clients, served to anyone. */
+/** The documents that identify Peal's OAuth clients, served to anyone. */
 export const ChannelOAuthHandlers = HttpApiBuilder.group(
   Api,
   "channelOAuth",

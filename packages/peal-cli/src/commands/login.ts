@@ -1,11 +1,11 @@
-import { cliClientId, deviceCodeGrantType } from "acme-contract";
-import type { DeviceAuthorization, OAuthError, Token } from "acme-contract";
+import { cliClientId, deviceCodeGrantType } from "peal-contract";
+import type { DeviceAuthorization, OAuthError, Token } from "peal-contract";
 import { Console, DateTime, Duration, Effect, Result } from "effect";
 import { Command } from "effect/cli";
 
 import { requestFailed } from "#api-request-failed.ts";
 import type { ApiRequestFailed } from "#api-request-failed.ts";
-import { AcmeApi } from "#api.ts";
+import { PealApi } from "#api.ts";
 import { CredentialStore } from "#credentials.ts";
 import { display } from "#display.ts";
 import { credentialsOf, isOAuthError } from "#session.ts";
@@ -42,7 +42,7 @@ export const login = Command.make(
   "login",
   {},
   Effect.fn("login")(function* login() {
-    const { baseUrl, oauth } = yield* AcmeApi;
+    const { baseUrl, oauth } = yield* PealApi;
     const store = yield* CredentialStore;
     const url = display(baseUrl);
     const failed = requestFailed(url);
@@ -175,6 +175,6 @@ export const login = Command.make(
   })
 ).pipe(
   Command.withDescription(
-    "Sign in to the Acme server: approve a code in the browser, and the command line saves its sign-in for the other commands."
+    "Sign in to the Peal server: approve a code in the browser, and the command line saves its sign-in for the other commands."
   )
 );

@@ -8,8 +8,8 @@ import type { SqlClient } from "effect/sql";
 
 /** Taken by an erasure, until its transaction ends. */
 export const shareTrackingLock = (sql: SqlClient.SqlClient) =>
-  sql`SELECT pg_advisory_xact_lock_shared(hashtext('acme-server/analytics/tracking'), 0)`;
+  sql`SELECT pg_advisory_xact_lock_shared(hashtext('peal-server/analytics/tracking'), 0)`;
 
 /** Taken by following posts, until its transaction ends. */
 export const holdTrackingLock = (sql: SqlClient.SqlClient) =>
-  sql`SELECT pg_advisory_xact_lock(hashtext('acme-server/analytics/tracking'), 0)`;
+  sql`SELECT pg_advisory_xact_lock(hashtext('peal-server/analytics/tracking'), 0)`;

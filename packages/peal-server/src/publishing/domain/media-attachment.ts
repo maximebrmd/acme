@@ -13,7 +13,7 @@ export const maxAltTextLength = 5000;
  * wrote none.
  */
 export class MediaAttachment extends Schema.Class<MediaAttachment>(
-  "acme-server/publishing/domain/MediaAttachment"
+  "peal-server/publishing/domain/MediaAttachment"
 )({
   altText: Schema.String.check(
     Schema.isMaxLength(maxAltTextLength),

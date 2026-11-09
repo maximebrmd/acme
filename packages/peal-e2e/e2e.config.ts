@@ -1,9 +1,9 @@
 import { web } from "@e2e-dev/web";
 import type { E2EConfig } from "e2e";
 
-// The run serves Acme itself (scripts/serve.ts): the server and the web app's
+// The run serves Peal itself (scripts/serve.ts): the server and the web app's
 // production build, each on a free port, against the services below. They
-// default to the development stack (`bun nx run acme-docker:up`); CI names
+// default to the development stack (`bun nx run peal-docker:up`); CI names
 // its own. The database is the one DATABASE_URL names, which the run writes
 // to, as the server's tests do.
 const databaseUrl = process.env["DATABASE_URL"] ?? "";
@@ -23,7 +23,7 @@ const url = "http://127.0.0.1:0";
 
 // Synthetic values, which sign and encrypt nothing outside these runs. The
 // token key is 32 bytes, for AES-256-GCM.
-const authSecret = "acme-e2e-synthetic-auth-secret-0f6b2d9e4a1c7e3b";
+const authSecret = "peal-e2e-synthetic-auth-secret-0f6b2d9e4a1c7e3b";
 const tokenKeys = "e2e:YWNtZS1lMmUtc3ludGhldGljLXRva2VuLWtleS0wMDE=";
 
 export default {
@@ -41,21 +41,21 @@ export default {
         command: {
           args: ["scripts/serve.ts", "{port}"],
           env: {
-            ACME_S3_ACCESS_KEY_ID: setting("ACME_S3_ACCESS_KEY_ID", "acme"),
-            ACME_S3_BUCKET: setting("ACME_S3_BUCKET", "acme-media"),
-            ACME_S3_ENDPOINT: setting(
-              "ACME_S3_ENDPOINT",
+            PEAL_S3_ACCESS_KEY_ID: setting("PEAL_S3_ACCESS_KEY_ID", "peal"),
+            PEAL_S3_BUCKET: setting("PEAL_S3_BUCKET", "peal-media"),
+            PEAL_S3_ENDPOINT: setting(
+              "PEAL_S3_ENDPOINT",
               "http://127.0.0.1:18333"
             ),
-            ACME_S3_KEY_PREFIX: setting("ACME_S3_KEY_PREFIX", "e2e/"),
-            ACME_S3_SECRET_ACCESS_KEY: setting(
-              "ACME_S3_SECRET_ACCESS_KEY",
-              "acme-development-secret"
+            PEAL_S3_KEY_PREFIX: setting("PEAL_S3_KEY_PREFIX", "e2e/"),
+            PEAL_S3_SECRET_ACCESS_KEY: setting(
+              "PEAL_S3_SECRET_ACCESS_KEY",
+              "peal-development-secret"
             ),
-            ACME_TOKEN_KEYS: tokenKeys,
+            PEAL_TOKEN_KEYS: tokenKeys,
             BETTER_AUTH_SECRET: authSecret,
             DATABASE_URL: databaseUrl,
-            MAIL_FROM: "Acme <noreply@acme.test>",
+            MAIL_FROM: "Peal <noreply@peal.test>",
             PUBLIC_URL: "http://127.0.0.1:{port}",
             SMTP_URL: setting("SMTP_URL", "smtp://127.0.0.1:11025"),
           },

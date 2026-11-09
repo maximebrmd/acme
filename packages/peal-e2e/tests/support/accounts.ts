@@ -25,7 +25,7 @@ export const confirmedAccount = async (
     throw new Error(`Signing up answered ${created.status}`);
   }
 
-  const link = await emailedLink(account.email, "Confirm your email for Acme");
+  const link = await emailedLink(account.email, "Confirm your email for Peal");
 
   await fetch(link, { redirect: "manual" });
 };

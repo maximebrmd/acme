@@ -5,9 +5,9 @@ sidebar:
   order: 6
 ---
 
-Once a post goes live, Acme reads its counts back from the platform for a month: likes, reposts and replies, and quotes where the platform counts them. Open a workspace from **Workspaces**, then **Analytics**, to see them. Every member may, whatever their role.
+Once a post goes live, Peal reads its counts back from the platform for a month: likes, reposts and replies, and quotes where the platform counts them. Open a workspace from **Workspaces**, then **Analytics**, to see them. Every member may, whatever their role.
 
-## What Acme counts [#counts]
+## What Peal counts [#counts]
 
 | Count       | Mastodon               | Bluesky   | TikTok    | YouTube        |
 | ----------- | ---------------------- | --------- | --------- | -------------- |
@@ -17,20 +17,20 @@ Once a post goes live, Acme reads its counts back from the platform for a month:
 | Quotes      | From Mastodon 4.5 only | Quotes    | Not given | Not given      |
 | Impressions | Not given              | Not given | Views     | Views          |
 
-Mastodon and Bluesky do not tell how many people saw a post, so Acme shows no impressions for them; on TikTok and YouTube, impressions are the post's views. A count a platform does not give is shown as missing, never as zero. **Engagement** is likes, reposts, replies and quotes together.
+Mastodon and Bluesky do not tell how many people saw a post, so Peal shows no impressions for them; on TikTok and YouTube, impressions are the post's views. A count a platform does not give is shown as missing, never as zero. **Engagement** is likes, reposts, replies and quotes together.
 
 ## When counts are read [#schedule]
 
-Acme reads a post's counts every hour for 48 hours after it goes live, when they move most, then every day until the post is 30 days old, then stops. The first reading comes within the hour after the post goes live.
+Peal reads a post's counts every hour for 48 hours after it goes live, when they move most, then every day until the post is 30 days old, then stops. The first reading comes within the hour after the post goes live.
 
-Readings take turns with the channel's publishing: Acme makes one call at a time per account, so a reading never races a post going out. When a platform asks Acme to slow down, or keeps few requests for the account, Acme stops reading that channel and goes on at the next hour. A post the platform no longer shows, deleted or not public, waits for its next turn; so does one the platform fails to show, and Acme goes on with the channel's other posts at the next hour; a channel that is turned off or needs reconnecting is passed over until it works again, and a disconnected channel's posts are no longer read.
+Readings take turns with the channel's publishing: Peal makes one call at a time per account, so a reading never races a post going out. When a platform asks Peal to slow down, or keeps few requests for the account, Peal stops reading that channel and goes on at the next hour. A post the platform no longer shows, deleted or not public, waits for its next turn; so does one the platform fails to show, and Peal goes on with the channel's other posts at the next hour; a channel that is turned off or needs reconnecting is passed over until it works again, and a disconnected channel's posts are no longer read.
 
-- **Mastodon**: Acme reads each post on the account's server, with the account's access when the account allowed Acme to read its posts. Accounts connected before Acme asked for that are read without it, which shows public and unlisted posts; [reconnect](/channels#reconnect) one to read its followers-only posts too.
-- **Bluesky**: Acme reads posts from Bluesky's public service, 25 at a time, without the account's session: a post's counts are public on Bluesky.
-- **TikTok**: Acme reads the account's public posts, 20 at a time, with the account's access, when the account allowed Acme to read its videos: their likes, shares as reposts, comments as replies, and views. TikTok gives no id for a post only its owner sees, so those are never read.
-- **YouTube**: Acme reads the channel's videos with its access, 50 at a time, so private and unlisted videos are read too. A count the channel hides, such as its likes, reads as 0.
+- **Mastodon**: Peal reads each post on the account's server, with the account's access when the account allowed Peal to read its posts. Accounts connected before Peal asked for that are read without it, which shows public and unlisted posts; [reconnect](/channels#reconnect) one to read its followers-only posts too.
+- **Bluesky**: Peal reads posts from Bluesky's public service, 25 at a time, without the account's session: a post's counts are public on Bluesky.
+- **TikTok**: Peal reads the account's public posts, 20 at a time, with the account's access, when the account allowed Peal to read its videos: their likes, shares as reposts, comments as replies, and views. TikTok gives no id for a post only its owner sees, so those are never read.
+- **YouTube**: Peal reads the channel's videos with its access, 50 at a time, so private and unlisted videos are read too. A count the channel hides, such as its likes, reads as 0.
 
-Acme reads no counts on LinkedIn, X, Threads, Instagram or Facebook Pages yet. It finds so at a post's first turn, stops there, and leaves the post out of **Analytics**, rather than show it with no counts.
+Peal reads no counts on LinkedIn, X, Threads, Instagram or Facebook Pages yet. It finds so at a post's first turn, stops there, and leaves the post out of **Analytics**, rather than show it with no counts.
 
 ## The analytics page [#page]
 
@@ -38,11 +38,11 @@ Pick the last 7, 30 or 90 days. Days run in your browser's time zone, or in UTC 
 
 - **Totals**: how many posts went out, counting each channel a post went out on, and their latest counts, in all and by channel.
 - **Engagement over time**: what those posts gained each day, as a chart. Choose **Table** for the same figures as a table, which is also what screen readers read.
-- **Top posts**: the five posts with the most engagement, each with a link to it in Acme and on the platform.
+- **Top posts**: the five posts with the most engagement, each with a link to it in Peal and on the platform.
 
 ## A post's counts [#post]
 
-A post's page shows how it did on each channel it went out on: its latest counts, when they were read, and a chart of each reading, with the same figures as a table. A post that went out less than an hour ago says when its counts come, and one that went out on a platform Acme reads no counts on says they are not available there.
+A post's page shows how it did on each channel it went out on: its latest counts, when they were read, and a chart of each reading, with the same figures as a table. A post that went out less than an hour ago says when its counts come, and one that went out on a platform Peal reads no counts on says they are not available there.
 
 ## Through the API [#api]
 

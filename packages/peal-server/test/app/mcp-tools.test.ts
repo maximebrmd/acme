@@ -3,8 +3,8 @@ import {
   InvitationSchema,
   PostSchema,
   WorkspaceMemberSchema,
-} from "acme-contract";
-import type { TargetOptions } from "acme-contract";
+} from "peal-contract";
+import type { TargetOptions } from "peal-contract";
 import { Context, Effect, Layer, Option, Schema } from "effect";
 import { McpClient } from "effect/ai";
 import type { McpSchema } from "effect/ai";
@@ -47,7 +47,7 @@ interface Fixture {
 }
 
 class ToolsFixture extends Context.Service<ToolsFixture, Fixture>()(
-  "acme-server/test/ToolsFixture"
+  "peal-server/test/ToolsFixture"
 ) {}
 
 const ToolsFixtureLive = Layer.effect(

@@ -1,12 +1,12 @@
 "use client";
 
 import { useAtomValue } from "@effect/atom-react";
-import type { Media, MediaAttachment, Platform } from "acme-contract";
-import { maxAltTextLength, maxMediaPerPost } from "acme-contract/post-text";
-import { Button } from "acme-ui/components/button";
-import { Label } from "acme-ui/components/label";
-import { Skeleton } from "acme-ui/components/skeleton";
-import { Textarea } from "acme-ui/components/textarea";
+import type { Media, MediaAttachment, Platform } from "peal-contract";
+import { maxAltTextLength, maxMediaPerPost } from "peal-contract/post-text";
+import { Button } from "peal-ui/components/button";
+import { Label } from "peal-ui/components/label";
+import { Skeleton } from "peal-ui/components/skeleton";
+import { Textarea } from "peal-ui/components/textarea";
 import { Array as Arr, Option } from "effect";
 import { AsyncResult } from "effect/reactivity";
 import {

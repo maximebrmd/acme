@@ -1,4 +1,4 @@
-import { Api, DatabaseUnavailable } from "acme-contract";
+import { Api, DatabaseUnavailable } from "peal-contract";
 import { Effect } from "effect";
 import { HttpApiBuilder } from "effect/http-api";
 

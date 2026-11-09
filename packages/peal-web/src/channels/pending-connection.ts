@@ -1,12 +1,12 @@
-import { PlatformSchema } from "acme-contract";
-import type { Platform } from "acme-contract";
+import { PlatformSchema } from "peal-contract";
+import type { Platform } from "peal-contract";
 import { Option, Schema } from "effect";
 
 // The platform sends the browser back to one callback page for every
 // workspace, so the tab remembers, between leaving for the platform and
 // coming back, which workspace the connection is for. The server checks
 // that the connection is this member's in this workspace either way.
-const storageKey = "acme.channels.pending-connection";
+const storageKey = "peal.channels.pending-connection";
 
 const PendingSchema = Schema.Struct({
   platform: PlatformSchema,

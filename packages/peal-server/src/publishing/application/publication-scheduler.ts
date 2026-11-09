@@ -51,4 +51,4 @@ export class PublicationScheduler extends Context.Service<
      */
     readonly cancel: (executionId: ExecutionId) => Effect.Effect<void>;
   }
->()("acme-server/publishing/application/PublicationScheduler") {}
+>()("peal-server/publishing/application/PublicationScheduler") {}

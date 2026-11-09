@@ -100,7 +100,7 @@ const recordRetry = {
   times: 3,
 };
 
-// How long TikTok takes media from Acme's store: their URLs last this
+// How long TikTok takes media from Peal's store: their URLs last this
 // long, past TikTok's one-hour download.
 const pullUrlLifetime = Duration.hours(2);
 
@@ -378,7 +378,7 @@ const optionsOf = (
  * 3. Polls the post's status until TikTok publishes it
  *    (PUBLISH_COMPLETE) or fails it, whose `fail_reason` is the refusal.
  *
- * TikTok keeps no idempotency key, and nothing finds a post by what Acme
+ * TikTok keeps no idempotency key, and nothing finds a post by what Peal
  * sent, so every step that can make the post live is journaled first
  * (PublicationProgress), and the `publish_id` as soon as TikTok gives it. A
  * resumed run polls the journaled `publish_id`; one whose PULL_FROM_URL
@@ -994,7 +994,7 @@ export const tiktokClient = Effect.fn("TikTokClient.make")(
                   awaitPublished(post, publishId, kind, username, "interrupted")
                 )
               ),
-            // Its answer was lost: TikTok finds no post by what Acme sent.
+            // Its answer was lost: TikTok finds no post by what Peal sent.
             pulling: () => Effect.succeed(interrupted),
             // Its last chunk never went: nothing goes live.
             uploading: () => publish(post),

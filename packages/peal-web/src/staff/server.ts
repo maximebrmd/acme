@@ -1,4 +1,4 @@
-import { Api } from "acme-contract";
+import { Api } from "peal-contract";
 import { Effect, Option } from "effect";
 import { FetchHttpClient, HttpClient, HttpClientRequest } from "effect/http";
 import { HttpApiClient } from "effect/http-api";
@@ -32,7 +32,7 @@ const missing: ReadonlySet<string> = new Set([
 
 /**
  * For the console's Server Components: what a staff endpoint answers, read
- * with the visitor's cookies from the server at ACME_API_URL. Anyone but
+ * with the visitor's cookies from the server at PEAL_API_URL. Anyone but
  * staff, and anything the API does not find, gets the not-found page; any
  * other failure goes to the error page.
  */

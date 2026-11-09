@@ -1,5 +1,5 @@
-# Caddy in front of a self-hosted Acme (compose.self-host.yaml). It gets and
-# renews a certificate for ACME_DOMAIN from Let's Encrypt, which needs the
+# Caddy in front of a self-hosted Peal (compose.self-host.yaml). It gets and
+# renews a certificate for PEAL_DOMAIN from Let's Encrypt, which needs the
 # domain's DNS pointing at this host and ports 80 and 443 open to the world.
 #
 # The server answers /api/* (the HTTP API, sign-in and the MCP endpoint) and
@@ -7,7 +7,7 @@
 # answers everything else. Caddy replaces any X-Forwarded-For the client
 # sent with the address it sees, so set AUTH_IP_HEADERS=x-forwarded-for.
 
-{$ACME_DOMAIN} {
+{$PEAL_DOMAIN} {
 	encode zstd gzip
 
 	# The web app sets the security headers, HSTS included.
@@ -41,12 +41,12 @@
 # `--profile static`, set the domains in compose.self-host.yaml's caddy
 # service, and uncomment.
 #
-# {$ACME_SITE_DOMAIN} {
+# {$PEAL_SITE_DOMAIN} {
 # 	encode zstd gzip
 # 	reverse_proxy static:8080
 # }
 #
-# {$ACME_DOCS_DOMAIN} {
+# {$PEAL_DOCS_DOMAIN} {
 # 	encode zstd gzip
 # 	reverse_proxy static:8081
 # }

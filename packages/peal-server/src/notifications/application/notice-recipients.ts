@@ -34,4 +34,4 @@ export class NoticeRecipients extends Context.Service<
       RecipientsUnavailable
     >;
   }
->()("acme-server/notifications/application/NoticeRecipients") {}
+>()("peal-server/notifications/application/NoticeRecipients") {}

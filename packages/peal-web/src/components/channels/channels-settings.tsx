@@ -1,16 +1,16 @@
 "use client";
 
 import { useAtomRefresh, useAtomValue } from "@effect/atom-react";
-import type { Channel } from "acme-contract";
-import { Alert, AlertDescription } from "acme-ui/components/alert";
-import { Button } from "acme-ui/components/button";
+import type { Channel } from "peal-contract";
+import { Alert, AlertDescription } from "peal-ui/components/alert";
+import { Button } from "peal-ui/components/button";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-} from "acme-ui/components/card";
-import { Skeleton } from "acme-ui/components/skeleton";
+} from "peal-ui/components/card";
+import { Skeleton } from "peal-ui/components/skeleton";
 import { constVoid } from "effect/Function";
 import { AsyncResult } from "effect/reactivity";
 import { useTranslations } from "next-intl";

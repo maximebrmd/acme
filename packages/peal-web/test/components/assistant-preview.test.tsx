@@ -4,9 +4,9 @@ import {
   AssistantInputRejected,
   AssistantQuotaExceeded,
   AssistantUnavailable,
-} from "acme-contract";
-import type { AssistantAction } from "acme-contract";
-import { Dialog } from "acme-ui/components/dialog";
+} from "peal-contract";
+import type { AssistantAction } from "peal-contract";
+import { Dialog } from "peal-ui/components/dialog";
 import { DateTime } from "effect";
 import { NextIntlClientProvider } from "next-intl";
 import type { Locale } from "next-intl";

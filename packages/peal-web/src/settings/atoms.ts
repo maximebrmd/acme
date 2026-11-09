@@ -1,7 +1,7 @@
 import { Schema } from "effect";
 import { Atom } from "effect/reactivity";
 
-import { AcmeApi } from "#api/client.ts";
+import { PealApi } from "#api/client.ts";
 import { authClient } from "#auth/client.ts";
 
 import { authCall } from "./auth-call.ts";
@@ -93,25 +93,25 @@ const apiKeysKey = (workspaceId: string) => [`api-keys:${workspaceId}`];
 export const apiKeysChanged = apiKeysKey;
 
 export const workspaceApiKeys = Atom.family((workspaceId: string) =>
-  AcmeApi.query("apiKeys", "list", {
+  PealApi.query("apiKeys", "list", {
     params: { workspaceId },
     reactivityKeys: apiKeysKey(workspaceId),
   })
 );
 
-export const createApiKey = AcmeApi.mutation("apiKeys", "create");
+export const createApiKey = PealApi.mutation("apiKeys", "create");
 
-export const revokeApiKey = AcmeApi.mutation("apiKeys", "revoke");
+export const revokeApiKey = PealApi.mutation("apiKeys", "revoke");
 
 /** What refreshes the connected applications once one is revoked. */
 export const connectedAppsChanged = ["connected-apps"];
 
-export const connectedApps = AcmeApi.query("connectedApps", "list", {
+export const connectedApps = PealApi.query("connectedApps", "list", {
   reactivityKeys: connectedAppsChanged,
 });
 
-export const revokeConnectedApp = AcmeApi.mutation("connectedApps", "revoke");
+export const revokeConnectedApp = PealApi.mutation("connectedApps", "revoke");
 
-export const deleteWorkspace = AcmeApi.mutation("workspaces", "delete");
+export const deleteWorkspace = PealApi.mutation("workspaces", "delete");
 
-export const deleteAccount = AcmeApi.mutation("account", "delete");
+export const deleteAccount = PealApi.mutation("account", "delete");

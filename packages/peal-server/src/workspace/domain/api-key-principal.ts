@@ -8,7 +8,7 @@ import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
  * and carries the permissions it was given.
  */
 export class ApiKeyPrincipal extends Schema.TaggedClass<ApiKeyPrincipal>(
-  "acme-server/workspace/domain/ApiKeyPrincipal"
+  "peal-server/workspace/domain/ApiKeyPrincipal"
 )("ApiKeyPrincipal", {
   apiKeyId: Schema.NonEmptyString,
   permissions: Schema.Array(PermissionSchema),

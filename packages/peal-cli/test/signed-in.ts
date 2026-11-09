@@ -50,7 +50,7 @@ export const signedIn = Effect.fn("signedIn")(function* signedIn(
   const environment = Layer.mergeAll(
     cliEnvironment(
       {
-        ACME_CONFIG_DIR: path.join(directory, "acme"),
+        PEAL_CONFIG_DIR: path.join(directory, "peal"),
         TZ: "Europe/Paris",
         ...options.env,
       },

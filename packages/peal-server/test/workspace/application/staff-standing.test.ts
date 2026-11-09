@@ -56,7 +56,7 @@ describe(StaffStanding, () => {
       const oauth = new UserPrincipal({
         impersonatedBy: Option.none(),
         oauth: Option.some({
-          clientId: "acme-cli",
+          clientId: "peal-cli",
           scopes: ["workspace:write"],
           workspaceId: Option.none(),
         }),

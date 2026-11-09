@@ -1,24 +1,24 @@
 ---
 title: Connect an MCP client
-description: Connect an AI assistant or any other MCP client to Acme, sign it in to one workspace, and see what its tools read and change.
+description: Connect an AI assistant or any other MCP client to Peal, sign it in to one workspace, and see what its tools read and change.
 sidebar:
   order: 9
 ---
 
-Acme serves the Model Context Protocol (MCP), so an AI assistant, or any other MCP client, can work in a workspace for you: read its posts, analytics, billing and members, write drafts, follow up on posts that went out, and invite people. The client signs in as you, in a browser, and acts in the one workspace you pick, with no more than your role allows.
+Peal serves the Model Context Protocol (MCP), so an AI assistant, or any other MCP client, can work in a workspace for you: read its posts, analytics, billing and members, write drafts, follow up on posts that went out, and invite people. The client signs in as you, in a browser, and acts in the one workspace you pick, with no more than your role allows.
 
 ## The endpoint [#endpoint]
 
-The endpoint is `/api/mcp` at the address you open Acme at, such as `https://acme.example.com/api/mcp`. It speaks Streamable HTTP, in the protocol revisions 2026-07-28, 2025-11-25 and 2025-06-18.
+The endpoint is `/api/mcp` at the address you open Peal at, such as `https://peal.example.com/api/mcp`. It speaks Streamable HTTP, in the protocol revisions 2026-07-28, 2025-11-25 and 2025-06-18.
 
-`acme mcp`, from the [command line](/cli#mcp), prints the endpoint and a configuration most MCP clients take:
+`peal mcp`, from the [command line](/cli#mcp), prints the endpoint and a configuration most MCP clients take:
 
 ```json
 {
   "mcpServers": {
-    "acme": {
+    "peal": {
       "type": "http",
-      "url": "https://acme.example.com/api/mcp"
+      "url": "https://peal.example.com/api/mcp"
     }
   }
 }
@@ -28,18 +28,18 @@ Give the client this address, or this configuration, as its documentation says f
 
 ## Sign the client in [#sign-in]
 
-Acme signs MCP clients in with OAuth. You give the client no key: on its first request, Acme answers that it needs a token, and tells it where to ask for one.
+Peal signs MCP clients in with OAuth. You give the client no key: on its first request, Peal answers that it needs a token, and tells it where to ask for one.
 
-1. The client registers itself with Acme, then opens a browser on Acme's sign-in page. Sign in if you are not signed in yet.
+1. The client registers itself with Peal, then opens a browser on Peal's sign-in page. Sign in if you are not signed in yet.
 2. **Pick a workspace.** The client acts in that one workspace only. To use it in another, connect it again and pick the other one.
-3. Acme shows what the client asks for, and where it sends you back afterwards. Check both, then choose **Allow**, or **Deny**. Acme does not check who made a client that registered itself, and says so: allow one only if you trust it and started the connection yourself.
+3. Peal shows what the client asks for, and where it sends you back afterwards. Check both, then choose **Allow**, or **Deny**. Peal does not check who made a client that registered itself, and says so: allow one only if you trust it and started the connection yourself.
 
-Back in the client, its tools work. Acme remembers your answer for that client and workspace, so connecting it again skips the question.
+Back in the client, its tools work. Peal remembers your answer for that client and workspace, so connecting it again skips the question.
 
 <Callout type="note" title="If the client cannot register">
-  Most MCP clients register themselves before they sign in, which an Acme server
+  Most MCP clients register themselves before they sign in, which a Peal server
   allows only when its administrator turns it on (`MCP_DYNAMIC_REGISTRATION`,
-  see [Self-hosting](/self-hosting#mcp)). `acme mcp` warns when it is off.
+  see [Self-hosting](/self-hosting#mcp)). `peal mcp` warns when it is off.
 </Callout>
 
 ## What the client may do [#scopes]
@@ -69,17 +69,17 @@ These tools read, and change nothing:
 | `list_channels`      | The workspace's [channels](/channels), with whether each one posts or must be reconnected. Never their tokens.                                                                   |
 | `list_drafts`        | The workspace's drafts, newest first, a page at a time                                                                                                                           |
 | `get_post`           | A post: what it says, when it goes out, and how it went on each channel, with the ids of its targets, their platform options, and why one failed                                 |
-| `get_tiktok_creator` | A TikTok channel's settings, fresh from TikTok: who it posts as, the audiences a post may choose, the interactions turned off, its longest video. It reads TikTok, outside Acme. |
+| `get_tiktok_creator` | A TikTok channel's settings, fresh from TikTok: who it posts as, the audiences a post may choose, the interactions turned off, its longest video. It reads TikTok, outside Peal. |
 | `analytics_summary`  | The counts of the posts published over a range of days, in a time zone, as [Analytics](/analytics) shows them                                                                    |
 | `post_analytics`     | A post's counts on each channel it went out on, over time                                                                                                                        |
 | `get_billing`        | The workspace's plan, its limits and how much of each the workspace uses                                                                                                         |
 | `list_members`       | The workspace's members, with their name, email address and role, as every member sees them                                                                                      |
 | `list_invitations`   | The pending invitations, for those who may invite; invitations to the owner role for owners only                                                                                 |
-| `server_health`      | Whether the Acme server is up and reaches its database                                                                                                                           |
+| `server_health`      | Whether the Peal server is up and reaches its database                                                                                                                           |
 
-These tools change something. Each one tells the client, through MCP's tool annotations, whether it destroys or overwrites (`destructiveHint`), whether calling it again changes nothing more (`idempotentHint`), and whether its effect reaches outside Acme (`openWorldHint`), so a client can ask you before it calls one:
+These tools change something. Each one tells the client, through MCP's tool annotations, whether it destroys or overwrites (`destructiveHint`), whether calling it again changes nothing more (`idempotentHint`), and whether its effect reaches outside Peal (`openWorldHint`), so a client can ask you before it calls one:
 
-| Tool                | What it does                                                                                                                                                               | Destroys or overwrites | Again changes nothing | Outside Acme |
+| Tool                | What it does                                                                                                                                                               | Destroys or overwrites | Again changes nothing | Outside Peal |
 | ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- | --------------------- | ------------ |
 | `create_draft`      | Saves a new draft, with the [platform options](/scheduling#options) of its YouTube and TikTok channels. It goes out at no time: scheduling stays with you, in the web app. | no                     | no                    | no           |
 | `update_draft`      | Replaces a draft's text, media and channels with those given. Its options stay on the channels it keeps unless the call gives others.                                      | yes                    | yes                   | no           |
@@ -98,6 +98,6 @@ No tool exports your data or lists the applications that act for you. An MCP cli
 
 ## Limits [#limits]
 
-- An Acme instance serves MCP clients only when its address is HTTPS, or `localhost` for development. Elsewhere, the endpoint refuses every request.
+- A Peal instance serves MCP clients only when its address is HTTPS, or `localhost` for development. Elsewhere, the endpoint refuses every request.
 - The endpoint refuses requests sent from web pages (with an `Origin` header): connect a client that runs on your computer or on a server.
-- **Account settings**, in the web app, list the clients you allowed and disconnect them; `acme account apps` lists them from the [command line](/cli#account). Leaving the workspace stops every client that acts in it.
+- **Account settings**, in the web app, list the clients you allowed and disconnect them; `peal account apps` lists them from the [command line](/cli#account). Leaving the workspace stops every client that acts in it.

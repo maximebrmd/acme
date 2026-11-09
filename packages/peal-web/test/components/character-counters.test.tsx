@@ -1,5 +1,5 @@
 import { describe, expect, it } from "@effect/vitest";
-import type { Channel } from "acme-contract";
+import type { Channel } from "peal-contract";
 import { NextIntlClientProvider } from "next-intl";
 import type { Locale } from "next-intl";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -11,7 +11,7 @@ import { fitOn } from "#posts/character-count.ts";
 const channel = (platform: Channel["platform"]): Channel => ({
   avatarUrl: null,
   displayName: null,
-  handle: `@acme_${platform}`,
+  handle: `@peal_${platform}`,
   id: `channel-${platform}`,
   platform,
   status: { _tag: "active" },
@@ -59,7 +59,7 @@ describe(CharacterCounters, () => {
     const html = await render("fr", "Bonjour");
 
     expect(html).toContain("7 sur 280 caractères");
-    expect(html).toContain("@acme_x sur X");
+    expect(html).toContain("@peal_x sur X");
     expect(html).toContain("1 canal refuserait la publication en l’état.");
   });
 

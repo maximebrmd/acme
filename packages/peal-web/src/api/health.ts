@@ -1,10 +1,10 @@
 import { AsyncResult } from "effect/reactivity";
 
-import { AcmeApi } from "#api/client.ts";
+import { PealApi } from "#api/client.ts";
 
 // The server's health check. The serialization key lets the server render the
 // result and the browser hydrate it.
-export const health = AcmeApi.query("system", "health", {
+export const health = PealApi.query("system", "health", {
   serializationKey: "health",
 });
 

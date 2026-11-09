@@ -1,4 +1,4 @@
-import type { Channel } from "acme-contract";
+import type { Channel } from "peal-contract";
 import { Console, DateTime, Effect, Layer, Predicate } from "effect";
 
 const { isString } = Predicate;

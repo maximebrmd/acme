@@ -10,7 +10,7 @@ import {
   UploadIncomplete,
   UploadRejected,
   WorkspaceNotFound,
-} from "acme-contract";
+} from "peal-contract";
 
 import { failureOf } from "#media/upload-api.ts";
 import { UploadFailed } from "#media/upload-failed.ts";

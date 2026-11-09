@@ -139,7 +139,7 @@ export class StaffConsole extends Context.Service<
       readonly targetId: Option.Option<UserId>;
     }) => Effect.Effect<Page<AuditEntry>, DatabaseError>;
   }
->()("acme-server/staff/application/StaffConsole") {
+>()("peal-server/staff/application/StaffConsole") {
   static readonly layer = Layer.effect(
     StaffConsole,
     Effect.gen(function* StaffConsoleLive() {

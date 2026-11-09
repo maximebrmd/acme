@@ -19,7 +19,7 @@ import type { SqlError } from "effect/sql";
 
 /** How long finished cluster rows are kept: 30 days unless configured. */
 export const clusterRetentionAge = Config.Duration(
-  "ACME_CLUSTER_RETENTION"
+  "PEAL_CLUSTER_RETENTION"
 ).pipe(Config.withDefault(Duration.days(30)));
 
 // Rows deleted per statement, so one run never holds long locks.

@@ -1,6 +1,6 @@
 {
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
-  "name": "acme-ui",
+  "name": "peal-ui",
   "projectType": "library",
   "targets": {
     "typecheck": {

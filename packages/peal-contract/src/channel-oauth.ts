@@ -4,7 +4,7 @@ import { HttpApiEndpoint, HttpApiGroup, OpenApi } from "effect/http-api";
 import { OAuthClientNotPublished } from "./oauth-client-not-published.ts";
 
 /**
- * Acme's Bluesky OAuth client, as the AT Protocol asks a confidential client
+ * Peal's Bluesky OAuth client, as the AT Protocol asks a confidential client
  * to publish it: its `client_id` is this document's own URL, and
  * authorization servers fetch it to learn the redirect URI, the scopes and
  * where the client's public keys are.
@@ -47,7 +47,7 @@ export const JwksSchema = Schema.Struct({
 export type Jwks = typeof JwksSchema.Type;
 
 /**
- * Documents the platforms fetch to identify Acme as an OAuth client. Public,
+ * Documents the platforms fetch to identify Peal as an OAuth client. Public,
  * like any client metadata: they hold no secret.
  */
 export class ChannelOAuthApi extends HttpApiGroup.make("channelOAuth")
@@ -59,7 +59,7 @@ export class ChannelOAuthApi extends HttpApiGroup.make("channelOAuth")
     ).annotateMerge(
       OpenApi.annotations({
         description:
-          "Acme's Bluesky OAuth client metadata, which Bluesky's authorization servers fetch at the client id. Answers 404 on a server without Bluesky client keys.",
+          "Peal's Bluesky OAuth client metadata, which Bluesky's authorization servers fetch at the client id. Answers 404 on a server without Bluesky client keys.",
         summary: "Get the Bluesky client metadata",
       })
     ),
@@ -69,7 +69,7 @@ export class ChannelOAuthApi extends HttpApiGroup.make("channelOAuth")
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "The public keys of Acme's Bluesky OAuth client, which signs its token requests with the matching private keys. Answers 404 on a server without Bluesky client keys.",
+          "The public keys of Peal's Bluesky OAuth client, which signs its token requests with the matching private keys. Answers 404 on a server without Bluesky client keys.",
         summary: "Get the Bluesky client keys",
       })
     )

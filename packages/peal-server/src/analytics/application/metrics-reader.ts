@@ -8,7 +8,7 @@ import { PlatformPostIdSchema } from "#shared/domain/publish-result.ts";
 
 import { ChannelUnreadable } from "./channel-unreadable.ts";
 
-/** A post to read: Acme's id for it on the channel, and the platform's. */
+/** A post to read: Peal's id for it on the channel, and the platform's. */
 export const PostToReadSchema = Schema.Struct({
   platformPostId: PlatformPostIdSchema,
   targetId: PostTargetIdSchema,
@@ -27,7 +27,7 @@ export type MetricsRequest = typeof MetricsRequestSchema.Type;
 /**
  * What reading one post found: its counts, that the platform no longer
  * shows it, deleted or not public, or that reading it failed: the server
- * erred, did not answer, or answered what Acme cannot read. A post whose
+ * erred, did not answer, or answered what Peal cannot read. A post whose
  * read failed waits for its next turn like a missing one, so a post its
  * server cannot show never holds back the channel's others.
  */
@@ -75,4 +75,4 @@ export class MetricsReader extends Context.Service<
       request: MetricsRequest
     ) => Effect.Effect<MetricsBatch, MetricsReadFailure>;
   }
->()("acme-server/analytics/application/MetricsReader") {}
+>()("peal-server/analytics/application/MetricsReader") {}

@@ -38,7 +38,7 @@ export const linkedinEndpoints: LinkedInEndpoints = {
 export const linkedinCallbackPath = "/connect/linkedin/callback";
 
 /**
- * What Acme asks a member for: OpenID Connect's `openid` and `profile`, to
+ * What Peal asks a member for: OpenID Connect's `openid` and `profile`, to
  * read who signed in (the "Sign In with LinkedIn using OpenID Connect"
  * product), and `w_member_social`, to post as them ("Share on LinkedIn").
  * Both products are self-serve, with no review.
@@ -170,7 +170,7 @@ export const linkedinAuthorizer = Effect.fn("LinkedInAuthorizer.make")(
               )
             ),
             // Only partners of LinkedIn's marketing program get refresh
-            // tokens; Acme renews none, so it keeps none.
+            // tokens; Peal renews none, so it keeps none.
             refreshToken: Option.none(),
             renewable: false,
             scopes: scopesOf(token, linkedinScopes),

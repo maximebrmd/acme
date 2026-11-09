@@ -6,7 +6,7 @@ import { PostTextSchema } from "./post-text.ts";
 
 /** The text a post has on one of its channels instead of its own. */
 export class TextOverride extends Schema.Class<TextOverride>(
-  "acme-server/publishing/domain/TextOverride"
+  "peal-server/publishing/domain/TextOverride"
 )({
   channelId: ChannelIdSchema,
   text: PostTextSchema.check(Schema.isNonEmpty()),

@@ -5,7 +5,7 @@ sidebar:
   order: 4
 ---
 
-Une publication peut montrer des images et des vidéos de la médiathèque de son espace de travail, dans l’ordre que vous choisissez, chacune avec un texte alternatif pour les personnes qui ne peuvent pas la voir. Acme les vérifie auprès de la plateforme de chaque canal quand vous programmez la publication, et les envoie avec elle à son heure.
+Une publication peut montrer des images et des vidéos de la médiathèque de son espace de travail, dans l’ordre que vous choisissez, chacune avec un texte alternatif pour les personnes qui ne peuvent pas la voir. Peal les vérifie auprès de la plateforme de chaque canal quand vous programmez la publication, et les envoie avec elle à son heure.
 
 ## La médiathèque [#library]
 
@@ -16,7 +16,7 @@ Sur la carte d’un espace de travail, **Médiathèque** regroupe les images et 
 | Images | JPEG, PNG, GIF, WebP  | 16 Mio                |
 | Vidéos | MP4, QuickTime (.mov) | 1 Gio                 |
 
-Acme lit chaque fichier une fois stocké : les dimensions d’une image, les dimensions, la durée et le codec d’une vidéo. Une image dont le contenu n’est pas du type sous lequel elle a été importée est refusée, et supprimée. Les contributeurs et au-delà importent ; les éditeurs et au-delà suppriment.
+Peal lit chaque fichier une fois stocké : les dimensions d’une image, les dimensions, la durée et le codec d’une vidéo. Une image dont le contenu n’est pas du type sous lequel elle a été importée est refusée, et supprimée. Les contributeurs et au-delà importent ; les éditeurs et au-delà suppriment.
 
 ## Ajouter des médias à une publication [#attach]
 
@@ -36,7 +36,7 @@ Chaque image ou vidéo d’une publication a son propre texte alternatif, qui pa
 
 ## Ce que chaque plateforme accepte [#platforms]
 
-Acme publie sur Mastodon, Bluesky, LinkedIn, X, Threads, Instagram, les Pages Facebook et TikTok. Quand vous programmez une publication, il vérifie ses images et vidéos selon ces limites :
+Peal publie sur Mastodon, Bluesky, LinkedIn, X, Threads, Instagram, les Pages Facebook et TikTok. Quand vous programmez une publication, il vérifie ses images et vidéos selon ces limites :
 
 | Limite                           | Bluesky                                                  | Mastodon                                                                  |
 | -------------------------------- | -------------------------------------------------------- | ------------------------------------------------------------------------- |
@@ -46,7 +46,7 @@ Acme publie sur Mastodon, Bluesky, LinkedIn, X, Threads, Instagram, les Pages Fa
 | Images et vidéo ensemble         | Non                                                      | Non                                                                       |
 | Texte alternatif                 | Montré aux personnes qui en ont besoin                   | Montré aux personnes qui en ont besoin, jusqu’à 1 500 caractères          |
 
-Les limites de Mastodon sont celles d’un serveur Mastodon tel qu’il est livré. Quand la publication part, Acme lit aussi les limites du serveur du compte, les types de fichiers qu’il accepte et sa plus grande image et vidéo, et n’envoie pas un fichier que le serveur refuserait : la publication échoue alors sur ce canal.
+Les limites de Mastodon sont celles d’un serveur Mastodon tel qu’il est livré. Quand la publication part, Peal lit aussi les limites du serveur du compte, les types de fichiers qu’il accepte et sa plus grande image et vidéo, et n’envoie pas un fichier que le serveur refuserait : la publication échoue alors sur ce canal.
 
 | Limite                           | LinkedIn                                                                         | X                                                                |
 | -------------------------------- | -------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
@@ -56,7 +56,7 @@ Les limites de Mastodon sont celles d’un serveur Mastodon tel qu’il est livr
 | Images et vidéo ensemble         | Non                                                                              | Non                                                              |
 | Texte alternatif                 | Sur les images, montré aux personnes qui en ont besoin, jusqu’à 4 086 caractères | Montré aux personnes qui en ont besoin, jusqu’à 1 000 caractères |
 
-X laisse certains comptes publier des vidéos plus longues ; Acme vérifie la durée que tout compte peut publier. Un GIF avec d’autres fichiers sur X, et une vidéo de moins de 75 Ko (75 000 octets) sur LinkedIn, sont refusés quand la publication est programmée.
+X laisse certains comptes publier des vidéos plus longues ; Peal vérifie la durée que tout compte peut publier. Un GIF avec d’autres fichiers sur X, et une vidéo de moins de 75 Ko (75 000 octets) sur LinkedIn, sont refusés quand la publication est programmée.
 
 Sur les plateformes de Meta :
 
@@ -78,7 +78,7 @@ Sur TikTok :
 | Images et vidéo ensemble         | Non                                                                                                             |
 | Texte alternatif                 | Non envoyé                                                                                                      |
 
-Un compte TikTok peut n’avoir droit qu’à des vidéos plus courtes, comme le disent ses réglages sur TikTok : Acme vérifie sa durée maximale quand vous programmez la publication, et de nouveau quand elle part. Acme ne lit pas la cadence d’une vidéo : TikTok refuse une vidéo hors de sa plage quand il traite la publication. Les photos demandent un serveur configuré pour que TikTok puisse aller les chercher (voyez [TikTok](/self-hosting#tiktok)) : ailleurs, une publication TikTok avec des photos est refusée quand vous la programmez.
+Un compte TikTok peut n’avoir droit qu’à des vidéos plus courtes, comme le disent ses réglages sur TikTok : Peal vérifie sa durée maximale quand vous programmez la publication, et de nouveau quand elle part. Peal ne lit pas la cadence d’une vidéo : TikTok refuse une vidéo hors de sa plage quand il traite la publication. Les photos demandent un serveur configuré pour que TikTok puisse aller les chercher (voyez [TikTok](/self-hosting#tiktok)) : ailleurs, une publication TikTok avec des photos est refusée quand vous la programmez.
 
 Sur YouTube :
 
@@ -91,7 +91,7 @@ Sur YouTube :
 
 Une vidéo de 3 minutes ou moins, carrée ou plus haute que large, devient un Short. YouTube n’accepte de vidéos de plus de 15 minutes que des chaînes que Google a vérifiées ; il refuse les autres une fois envoyées, et la publication échoue avec cette raison.
 
-Acme ne vérifie que ce qu’il a lu de chaque fichier : un fait qu’il n’a pas pu lire, comme la durée d’une vidéo, n’est pas vérifié, et la plateforme peut encore refuser le fichier.
+Peal ne vérifie que ce qu’il a lu de chaque fichier : un fait qu’il n’a pas pu lire, comme la durée d’une vidéo, n’est pas vérifié, et la plateforme peut encore refuser le fichier.
 
 ## Quand vous programmez [#schedule]
 
@@ -101,16 +101,16 @@ Un brouillon peut contenir n’importe quel média prêt de son espace de travai
 
 ## Quand la publication part [#publishing]
 
-À l’heure de la publication, Acme envoie chaque fichier de la médiathèque à la plateforme, puis publie :
+À l’heure de la publication, Peal envoie chaque fichier de la médiathèque à la plateforme, puis publie :
 
 - **Mastodon** : chaque fichier va au serveur du compte, qui peut le traiter avant que la publication puisse le montrer.
 - **Bluesky** : les images vont au serveur qui héberge le compte, et une vidéo au service vidéo de Bluesky, qui la traite.
-- **Threads**, **Instagram** et **Pages Facebook** : Acme donne à Meta un lien vers chaque fichier du stockage des médias, valable deux heures, et Meta va le chercher. Sur Threads et Instagram, Meta traite ensuite les fichiers avant que la publication parte.
+- **Threads**, **Instagram** et **Pages Facebook** : Peal donne à Meta un lien vers chaque fichier du stockage des médias, valable deux heures, et Meta va le chercher. Sur Threads et Instagram, Meta traite ensuite les fichiers avant que la publication parte.
 - **TikTok** : une vidéo part en morceaux de 10 Mo, lus un à la fois dans le stockage des médias, sauf si le serveur laisse TikTok aller la chercher à l’adresse publique du stockage ; TikTok va toujours chercher les photos. TikTok traite ensuite la publication avant sa mise en ligne.
 
-- **YouTube** : Acme envoie la vidéo par parties de 8 Mio, en reprenant là où en est YouTube si un envoi est coupé, même après un redémarrage du serveur, puis attend que YouTube la traite.
+- **YouTube** : Peal envoie la vidéo par parties de 8 Mio, en reprenant là où en est YouTube si un envoi est coupé, même après un redémarrage du serveur, puis attend que YouTube la traite.
 
-Acme attend jusqu’à 15 minutes qu’une plateforme traite un fichier. Au-delà, il réessaie la publication plus tard, comme pour une plateforme qui ne répond pas ; une vidéo YouTube, déjà envoyée, reste publiée pendant que YouTube termine.
+Peal attend jusqu’à 15 minutes qu’une plateforme traite un fichier. Au-delà, il réessaie la publication plus tard, comme pour une plateforme qui ne répond pas ; une vidéo YouTube, déjà envoyée, reste publiée pendant que YouTube termine.
 
 ## Supprimer un média [#delete]
 

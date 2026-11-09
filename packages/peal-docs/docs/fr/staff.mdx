@@ -5,7 +5,7 @@ sidebar:
   order: 14
 ---
 
-La console de l’équipe est destinée à celles et ceux qui font tourner un serveur Acme : elle trouve un compte ou un espace de travail, dit comment va le serveur, et permet à l’équipe d’agir sur les comptes. Elle se trouve à `/admin` sur votre adresse Acme (`/fr/admin` en français), et son API sous `/api/admin`.
+La console de l’équipe est destinée à celles et ceux qui font tourner un serveur Peal : elle trouve un compte ou un espace de travail, dit comment va le serveur, et permet à l’équipe d’agir sur les comptes. Elle se trouve à `/admin` sur votre adresse Peal (`/fr/admin` en français), et son API sous `/api/admin`.
 
 ## Donner le rôle d’équipe [#make-staff]
 
@@ -17,7 +17,7 @@ UPDATE auth."user" SET role = 'admin' WHERE email = 'vous@example.com';
 
 Pour retirer ce rôle, mettez `role` à `NULL`, puis demandez à une autre personne de l’équipe de **Déconnecter partout** ce compte, ce qui met fin aussi aux sessions qu’il a ouvertes pour agir à la place de quelqu’un. La console refuse toute personne qui n’est pas de l’équipe dans sa propre session, connectée ou non, en répondant 404 comme si elle n’existait pas : une clé d’API, une application qui agit par OAuth, ou l’équipe pendant qu’elle agit à la place de quelqu’un sont refusées aussi. Un compte d’équipe banni est refusé aussitôt.
 
-Les serveurs d’Acme placent aussi `/admin`, `/en/admin`, `/fr/admin` et `/api/admin` derrière Cloudflare Access. Derrière votre propre frontal, vous pouvez de même les réserver aux adresses de votre équipe.
+Les serveurs de Peal placent aussi `/admin`, `/en/admin`, `/fr/admin` et `/api/admin` derrière Cloudflare Access. Derrière votre propre frontal, vous pouvez de même les réserver aux adresses de votre équipe.
 
 ## Ce que montre la console [#screens]
 

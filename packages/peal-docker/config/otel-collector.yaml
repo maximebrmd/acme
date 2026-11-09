@@ -1,4 +1,4 @@
-# Receives OTLP from acme-server and the other apps, then sends traces to
+# Receives OTLP from peal-server and the other apps, then sends traces to
 # Tempo, logs to Loki and metrics to Prometheus.
 
 extensions:

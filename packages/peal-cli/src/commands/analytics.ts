@@ -1,5 +1,5 @@
-import { CalendarDaySchema, countedPlatforms } from "acme-contract";
-import type { AnalyticsSummary, MetricTotals } from "acme-contract";
+import { CalendarDaySchema, countedPlatforms } from "peal-contract";
+import type { AnalyticsSummary, MetricTotals } from "peal-contract";
 import { Config, Console, DateTime, Effect, Option } from "effect";
 import { Argument, Command, Flag } from "effect/cli";
 
@@ -109,7 +109,7 @@ const summary = Command.make(
         onNone: () =>
           Effect.fail(
             new Refused({
-              reason: `${input.timeZone} is not a time zone Acme knows: give an IANA zone, such as Europe/Paris.`,
+              reason: `${input.timeZone} is not a time zone Peal knows: give an IANA zone, such as Europe/Paris.`,
             })
           ),
         onSome: Effect.succeed,
@@ -150,7 +150,7 @@ const post = Command.make(
   {
     postId: Argument.String("post-id").pipe(
       Argument.withDescription(
-        "The post, as acme drafts list or the web app shows its id."
+        "The post, as peal drafts list or the web app shows its id."
       )
     ),
     workspace: workspaceFlag,
@@ -164,7 +164,7 @@ const post = Command.make(
 
     if (found.targets.length === 0) {
       yield* Console.log(
-        `Acme has read no counts of post ${postId} yet: it reads them once a post went live, on ${countedPlatforms.join(", ")}.`
+        `Peal has read no counts of post ${postId} yet: it reads them once a post went live, on ${countedPlatforms.join(", ")}.`
       );
 
       return;
@@ -201,7 +201,7 @@ const post = Command.make(
   })
 ).pipe(
   Command.withDescription(
-    "Show a post's counts on each channel it went live on, as Acme read them last."
+    "Show a post's counts on each channel it went live on, as Peal read them last."
   )
 );
 

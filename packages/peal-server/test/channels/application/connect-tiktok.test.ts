@@ -134,7 +134,7 @@ const statusOf = (channel: Channel) =>
   );
 
 layer(AdaptersTest)("connecting a TikTok account", (it) => {
-  it.effect("sends the creator to Login Kit's page with Acme's scopes", () =>
+  it.effect("sends the creator to Login Kit's page with Peal's scopes", () =>
     Effect.gen(function* starts() {
       const on = yield* onTikTok();
       const workspaceId = yield* freshWorkspace;
@@ -159,7 +159,7 @@ layer(AdaptersTest)("connecting a TikTok account", (it) => {
       assert.strictEqual(url.searchParams.get("disable_auto_auth"), "1");
       assert.strictEqual(
         url.searchParams.get("redirect_uri"),
-        "https://acme.test/connect/tiktok/callback"
+        "https://peal.test/connect/tiktok/callback"
       );
       assert.match(url.searchParams.get("state") ?? "", /^[\w-]{43}$/u);
       // TikTok's web flow takes no PKCE.
@@ -176,8 +176,8 @@ layer(AdaptersTest)("connecting a TikTok account", (it) => {
 
       assert.strictEqual(channel.platform, "tiktok");
       assert.strictEqual(channel.accountId, tiktokCreator.open_id);
-      assert.strictEqual(channel.handle, "@acme_example");
-      assert.deepStrictEqual(channel.displayName, Option.some("Acme Example"));
+      assert.strictEqual(channel.handle, "@peal_example");
+      assert.deepStrictEqual(channel.displayName, Option.some("Peal Example"));
       assert.deepStrictEqual(
         channel.avatarUrl.pipe(Option.map(String)),
         Option.some(tiktokCreator.avatar_url)
@@ -220,7 +220,7 @@ layer(AdaptersTest)("connecting a TikTok account", (it) => {
 
       const channel = yield* connected(on, workspaceId);
 
-      assert.strictEqual(channel.handle, "Acme Example");
+      assert.strictEqual(channel.handle, "Peal Example");
       assert.deepStrictEqual(channel.scopes, [
         "user.info.basic",
         "video.publish",
@@ -342,7 +342,7 @@ layer(AdaptersTest)("connecting a TikTok account", (it) => {
   );
 
   it.effect(
-    "leaves the channel alone when TikTok is down or refuses Acme's client",
+    "leaves the channel alone when TikTok is down or refuses Peal's client",
     () =>
       Effect.gen(function* unavailable() {
         const on = yield* onTikTok();

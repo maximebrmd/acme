@@ -6,4 +6,4 @@ import type { Principal } from "./principal.ts";
 export class CurrentPrincipal extends Context.Service<
   CurrentPrincipal,
   Principal
->()("acme-contract/CurrentPrincipal") {}
+>()("peal-contract/CurrentPrincipal") {}

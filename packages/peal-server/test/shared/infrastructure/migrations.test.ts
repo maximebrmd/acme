@@ -28,7 +28,7 @@ const probeMigrations = {
 // A folder for one test's migrations, removed when the test ends.
 const temporaryFolder = Effect.acquireRelease(
   Effect.promise(
-    async () => await mkdtemp(path.join(os.tmpdir(), "acme-migrations-"))
+    async () => await mkdtemp(path.join(os.tmpdir(), "peal-migrations-"))
   ),
   (folder) =>
     Effect.promise(async () => {

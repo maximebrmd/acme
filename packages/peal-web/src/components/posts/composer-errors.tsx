@@ -1,7 +1,7 @@
 "use client";
 
-import type { Channel, ContentViolation, Platform } from "acme-contract";
-import { Alert, AlertDescription, AlertTitle } from "acme-ui/components/alert";
+import type { Channel, ContentViolation, Platform } from "peal-contract";
+import { Alert, AlertDescription, AlertTitle } from "peal-ui/components/alert";
 import { Match, Option } from "effect";
 import { useTranslations } from "next-intl";
 

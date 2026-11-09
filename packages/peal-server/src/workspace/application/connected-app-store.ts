@@ -40,4 +40,4 @@ export class ConnectedAppStore extends Context.Service<
       now: DateTime.Utc
     ) => Effect.Effect<boolean, DatabaseError>;
   }
->()("acme-server/workspace/application/ConnectedAppStore") {}
+>()("peal-server/workspace/application/ConnectedAppStore") {}

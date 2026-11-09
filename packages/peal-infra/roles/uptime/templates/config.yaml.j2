@@ -1,4 +1,4 @@
-# Managed by Ansible (acme-infra): Gatus's configuration, generated from the
+# Managed by Ansible (peal-infra): Gatus's configuration, generated from the
 # inventory (uptime_environments, and the uptime role's defaults). It holds
 # no secret: Gatus replaces each ${NAME} with the value its environment gives
 # (credentials.env and secrets.env), and reads $$ as a single $.
@@ -13,10 +13,10 @@ web:
   port: 8080
 
 ui:
-  title: Acme uptime
-  header: Acme uptime
-  dashboard-heading: Acme uptime
-  dashboard-subheading: Acme's public endpoints, checked from outside
+  title: Peal uptime
+  header: Peal uptime
+  dashboard-heading: Peal uptime
+  dashboard-subheading: Peal's public endpoints, checked from outside
   default-sort-by: group
 
 alerting:
@@ -101,7 +101,7 @@ endpoints:
 
 {% set heartbeats = uptime_environments | selectattr('heartbeat', 'defined') | selectattr('heartbeat') | list %}
 # Grafana's heartbeats: each environment's Grafana posts one every few minutes
-# (acme_heartbeat_url), with the token generated here, so silence means its
+# (peal_heartbeat_url), with the token generated here, so silence means its
 # own alerts may not reach anyone either.
 external-endpoints:{{ ' []' if not heartbeats else '' }}
 {% for environment in heartbeats %}

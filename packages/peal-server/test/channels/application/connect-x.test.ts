@@ -144,7 +144,7 @@ layer(AdaptersTest)("connecting an X account", (it) => {
       );
       assert.strictEqual(
         url.searchParams.get("redirect_uri"),
-        "https://acme.test/connect/x/callback"
+        "https://peal.test/connect/x/callback"
       );
 
       const now = yield* DateTime.now;
@@ -159,8 +159,8 @@ layer(AdaptersTest)("connecting an X account", (it) => {
 
       assert.strictEqual(channel.platform, "x");
       assert.strictEqual(channel.accountId, xAccount.id);
-      assert.strictEqual(channel.handle, "@acme_example");
-      assert.deepStrictEqual(channel.displayName, Option.some("Acme Example"));
+      assert.strictEqual(channel.handle, "@peal_example");
+      assert.deepStrictEqual(channel.displayName, Option.some("Peal Example"));
       assert.deepStrictEqual(
         channel.avatarUrl.pipe(Option.map(String)),
         Option.some(xAccount.profile_image_url)
@@ -318,7 +318,7 @@ layer(AdaptersTest)("connecting an X account", (it) => {
   );
 
   it.effect(
-    "leaves the channel alone when X is down or refuses Acme's client",
+    "leaves the channel alone when X is down or refuses Peal's client",
     () =>
       Effect.gen(function* unavailable() {
         const on = yield* onX();

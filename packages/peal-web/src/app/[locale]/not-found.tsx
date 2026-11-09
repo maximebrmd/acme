@@ -1,4 +1,4 @@
-import { Button } from "acme-ui/components/button";
+import { Button } from "peal-ui/components/button";
 import { useTranslations } from "next-intl";
 
 import { Link } from "#i18n/navigation.ts";

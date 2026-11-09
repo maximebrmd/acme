@@ -54,4 +54,4 @@ export class WorkspacePostStore extends Context.Service<
       userId: UserId
     ) => Effect.Effect<void, DatabaseError>;
   }
->()("acme-server/publishing/application/WorkspacePostStore") {}
+>()("peal-server/publishing/application/WorkspacePostStore") {}

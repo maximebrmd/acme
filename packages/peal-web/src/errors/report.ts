@@ -1,5 +1,5 @@
-import { clientErrorLimits } from "acme-contract";
-import type { ClientErrorKind, ClientErrorReport } from "acme-contract";
+import { clientErrorLimits } from "peal-contract";
+import type { ClientErrorKind, ClientErrorReport } from "peal-contract";
 import { Option, Schema } from "effect";
 
 // What could name someone in an error's text, which the server replaces
@@ -15,7 +15,7 @@ const words = /\S+/gu;
 const uuids =
   /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/giu;
 
-const apiKeys = /\bacme_[\w-]+/gu;
+const apiKeys = /\bpeal_[\w-]+/gu;
 
 const jwts = /\beyJ[\w-]*\.[\w-]+\.[\w-]*/gu;
 

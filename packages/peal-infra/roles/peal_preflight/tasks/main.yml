@@ -1,20 +1,20 @@
 ---
 # The inventory ships with placeholders (example.com, 203.0.113.0/24,
 # REPLACE…), so nothing can be applied by mistake: every playbook stops here
-# until they are replaced in the settings acme_preflight_names lists.
+# until they are replaced in the settings peal_preflight_names lists.
 - name: Refuse an inventory that still holds placeholders
   ansible.builtin.assert:
-    that: acme_preflight_placeholders | length == 0
+    that: peal_preflight_placeholders | length == 0
     fail_msg: >-
-      Replace the placeholder values of {{ acme_preflight_placeholders | join(', ') }}
+      Replace the placeholder values of {{ peal_preflight_placeholders | join(', ') }}
       in the inventory before running this playbook on {{ inventory_hostname }}.
     quiet: true
   vars:
-    acme_preflight_pattern: (REPLACE|example\.com|example-team|203\.0\.113\.|0123456789abcdef0123456789abcdef)
-    acme_preflight_settings: >-
-      {{ dict(acme_preflight_names
-              | zip(query('ansible.builtin.vars', *acme_preflight_names, default='') | map('to_json'))) }}
-    acme_preflight_placeholders: >-
-      {{ acme_preflight_settings | dict2items
-         | selectattr('value', 'search', acme_preflight_pattern)
+    peal_preflight_pattern: (REPLACE|example\.com|example-team|203\.0\.113\.|0123456789abcdef0123456789abcdef)
+    peal_preflight_settings: >-
+      {{ dict(peal_preflight_names
+              | zip(query('ansible.builtin.vars', *peal_preflight_names, default='') | map('to_json'))) }}
+    peal_preflight_placeholders: >-
+      {{ peal_preflight_settings | dict2items
+         | selectattr('value', 'search', peal_preflight_pattern)
          | map(attribute='key') | list }}

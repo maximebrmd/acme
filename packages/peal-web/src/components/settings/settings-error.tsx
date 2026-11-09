@@ -1,6 +1,6 @@
 "use client";
 
-import { Alert, AlertDescription } from "acme-ui/components/alert";
+import { Alert, AlertDescription } from "peal-ui/components/alert";
 import { useTranslations } from "next-intl";
 
 import type { SettingsErrorKey } from "#settings/errors.ts";

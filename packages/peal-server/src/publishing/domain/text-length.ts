@@ -153,7 +153,7 @@ const mentions = /(?<![\p{L}\p{N}_@])@[\p{L}\p{N}_.]*[\p{L}\p{N}_]/gu;
 export const countHashtags = (text: string): number =>
   [...text.matchAll(hashtags)].length;
 
-/** How many accounts the text mentions, such as "@acme_example". */
+/** How many accounts the text mentions, such as "@peal_example". */
 export const countMentions = (text: string): number =>
   [...text.matchAll(mentions)].length;
 

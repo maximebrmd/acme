@@ -1,8 +1,8 @@
 "use client";
 
-import { Alert, AlertDescription } from "acme-ui/components/alert";
-import { Badge } from "acme-ui/components/badge";
-import { Button } from "acme-ui/components/button";
+import { Alert, AlertDescription } from "peal-ui/components/alert";
+import { Badge } from "peal-ui/components/badge";
+import { Button } from "peal-ui/components/button";
 import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 

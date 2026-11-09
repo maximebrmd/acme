@@ -1,5 +1,5 @@
 ---
-# The servers' baseline and Acme's runtime. Run after bootstrap.yml, as the
+# The servers' baseline and Peal's runtime. Run after bootstrap.yml, as the
 # admin user, and again whenever this folder changes; a second run reports
 # no change:
 #   ansible-playbook playbooks/site.yml --limit production --check --diff
@@ -10,11 +10,11 @@
   hosts: servers
   become: true
   roles:
-    - acme_preflight
+    - peal_preflight
     - system
     - ssh
     - docker
     - cloudflared
     - firewall
-    - acme_runtime
-    - acme_backup
+    - peal_runtime
+    - peal_backup

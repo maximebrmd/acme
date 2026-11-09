@@ -5,8 +5,8 @@ import {
   PostNotFound,
   PostStatusConflict,
   TargetStatusConflict,
-} from "acme-contract";
-import type { Member, Permission, PostContent } from "acme-contract";
+} from "peal-contract";
+import type { Member, Permission, PostContent } from "peal-contract";
 import { Effect, Layer } from "effect";
 import { HttpServer } from "effect/http";
 import { HttpApiTest } from "effect/http-api";
@@ -375,7 +375,7 @@ describe("the outcome endpoints", () => {
             params: { ...params, targetId: onLost.id },
             payload: {
               _tag: "published",
-              permalink: "https://bsky.example/profile/acme/post/1",
+              permalink: "https://bsky.example/profile/peal/post/1",
             },
           });
 
@@ -384,7 +384,7 @@ describe("the outcome endpoints", () => {
             confirmed.targets
               .filter(({ id }) => id === onLost.id)
               .map(({ permalink, status }) => [status, permalink]),
-            [["published", "https://bsky.example/profile/acme/post/1"]]
+            [["published", "https://bsky.example/profile/peal/post/1"]]
           );
 
           assert.deepStrictEqual(

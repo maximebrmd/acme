@@ -10,8 +10,8 @@ export const MediaKindSchema = Schema.Literals(["image", "video"]);
 export type MediaKind = typeof MediaKindSchema.Type;
 
 /**
- * The content types acme accepts, as browsers and S3 name them. Each is
- * accepted by at least two of the platforms acme publishes to, so a file
+ * The content types peal accepts, as browsers and S3 name them. Each is
+ * accepted by at least two of the platforms peal publishes to, so a file
  * stored here can go out somewhere without being converted first:
  *
  * - JPEG and PNG: every platform (Instagram takes JPEG only).
@@ -51,7 +51,7 @@ export const mediaFormats = {
 } as const satisfies Readonly<Record<MediaContentType, MediaFormat>>;
 
 /**
- * The largest file acme stores, per kind. Each is the largest limit any
+ * The largest file peal stores, per kind. Each is the largest limit any
  * target platform documents, so nothing a platform could take is refused:
  *
  * - Images, 16 MiB: Mastodon's documented example limit, above X's 15 MB
@@ -59,7 +59,7 @@ export const mediaFormats = {
  *   2,000,000 bytes.
  * - Videos, 1 GiB: Threads takes up to 1 GB, LinkedIn 500 MB, Bluesky
  *   300,000,000 bytes and Instagram reels 300 MB. X allows up to 8 GB for
- *   videos of up to 20 minutes, which acme does not take yet.
+ *   videos of up to 20 minutes, which peal does not take yet.
  *
  * The limit of each platform, and of each Mastodon instance, is checked
  * when a post is scheduled.
@@ -77,13 +77,13 @@ export type ByteSize = typeof ByteSizeSchema.Type;
 const isMediaContentType = Schema.is(MediaContentTypeSchema);
 
 /**
- * A content type as acme compares and stores it: lowercase, without
+ * A content type as peal compares and stores it: lowercase, without
  * parameters such as `; charset=…`.
  */
 export const normalizeContentType = (contentType: string): string =>
   (contentType.split(";").at(0) ?? "").trim().toLowerCase();
 
-/** The accepted content type a client named, if acme accepts it. */
+/** The accepted content type a client named, if peal accepts it. */
 export const parseContentType = (
   contentType: string
 ): Option.Option<MediaContentType> =>

@@ -81,4 +81,4 @@ export class NoticeStore extends Context.Service<
       at: DateTime.Utc
     ) => Effect.Effect<void, DatabaseError>;
   }
->()("acme-server/notifications/application/NoticeStore") {}
+>()("peal-server/notifications/application/NoticeStore") {}

@@ -173,7 +173,7 @@ layer(AdaptersTest)("connecting a YouTube channel", (it) => {
             client_id: googleClient.clientId,
             code_challenge_method: "S256",
             prompt: "select_account consent",
-            redirect_uri: "https://acme.test/connect/youtube/callback",
+            redirect_uri: "https://peal.test/connect/youtube/callback",
             response_type: "code",
             scope:
               "https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube.readonly",
@@ -197,10 +197,10 @@ layer(AdaptersTest)("connecting a YouTube channel", (it) => {
 
         assert.strictEqual(channel.platform, "youtube");
         assert.strictEqual(channel.accountId, youtubeChannel.id);
-        assert.strictEqual(channel.handle, "@acmeexample");
+        assert.strictEqual(channel.handle, "@pealexample");
         assert.deepStrictEqual(
           channel.displayName,
-          Option.some("Acme Example")
+          Option.some("Peal Example")
         );
         assert.deepStrictEqual(
           channel.avatarUrl.pipe(Option.map(String)),
@@ -246,7 +246,7 @@ layer(AdaptersTest)("connecting a YouTube channel", (it) => {
 
       const channel = yield* connected(on, workspaceId);
 
-      assert.strictEqual(channel.handle, "Acme Example Clips");
+      assert.strictEqual(channel.handle, "Peal Example Clips");
       assert.deepStrictEqual(channel.avatarUrl, Option.none());
     }).pipe(Effect.scoped)
   );
@@ -387,7 +387,7 @@ layer(AdaptersTest)("connecting a YouTube channel", (it) => {
   );
 
   it.effect(
-    "leaves the channel alone when Google is down or refuses Acme's client",
+    "leaves the channel alone when Google is down or refuses Peal's client",
     () =>
       Effect.gen(function* unavailable() {
         const on = yield* onGoogle();

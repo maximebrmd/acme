@@ -1,6 +1,6 @@
 {
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
-  "name": "acme-web",
+  "name": "peal-web",
   "projectType": "application",
   "targets": {
     "typegen": {

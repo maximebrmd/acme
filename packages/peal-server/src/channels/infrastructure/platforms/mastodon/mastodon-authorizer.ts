@@ -29,7 +29,7 @@ const profileScopes = "profile read:statuses write:statuses write:media";
 
 const legacyScopes = "read:accounts read:statuses write:statuses write:media";
 
-// An app grants only the scopes it was registered with: one Acme registered
+// An app grants only the scopes it was registered with: one Peal registered
 // before it read statuses is replaced by a new registration.
 const readsStatuses = (app: MastodonApp) =>
   app.scopes.split(" ").includes("read:statuses");
@@ -59,7 +59,7 @@ const AccountSchema = Schema.Struct({
 
 const decodeAvatar = Schema.decodeUnknownOption(AvatarUrlSchema);
 
-// A Mastodon account's id is unique on its server only, so Acme names an
+// A Mastodon account's id is unique on its server only, so Peal names an
 // account `<id>@<host>`, which is also how its server is found again.
 const accountIdOf = (id: string, instance: URL) => `${id}@${instance.host}`;
 
@@ -76,7 +76,7 @@ type Failure =
   | InvalidInstance
   | PlatformUnavailable;
 
-// Refused by the outbound guard: the user's typo, a server Acme may not
+// Refused by the outbound guard: the user's typo, a server Peal may not
 // call, or a lookup that may pass later.
 const refusal = (refused: OutboundRequestRefused): Failure =>
   Match.value(refused.reason).pipe(
@@ -134,7 +134,7 @@ const sent = <A>(
 const encoder = new TextEncoder();
 
 /**
- * Mastodon, on whichever instance the account lives: Acme registers an app
+ * Mastodon, on whichever instance the account lives: Peal registers an app
  * there the first time (POST /api/v1/apps) and reuses it, then signs in with
  * OAuth 2's authorization code and PKCE (S256). Tokens never expire, so there
  * is nothing to refresh: a revoked token asks the user to reconnect.
@@ -189,7 +189,7 @@ export const mastodonAuthorizer = Effect.fn("MastodonAuthorizer.make")(
         ).pipe(
           // One redirect URI, as a string: instances before 4.3 drop a list.
           HttpClientRequest.bodyJsonUnsafe({
-            client_name: "Acme",
+            client_name: "Peal",
             redirect_uris: redirectUri,
             scopes,
             website: options.publicUrl,

@@ -1,4 +1,4 @@
-import { Button } from "acme-ui/components/button";
+import { Button } from "peal-ui/components/button";
 import {
   Table,
   TableBody,
@@ -6,7 +6,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "acme-ui/components/table";
+} from "peal-ui/components/table";
 import { DateTime, Effect } from "effect";
 import { hasLocale } from "next-intl";
 import { getTranslations } from "next-intl/server";

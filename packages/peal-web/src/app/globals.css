@@ -1,3 +1,3 @@
-/* The acme-ui theme is the only stylesheet: screens use its components and
+/* The peal-ui theme is the only stylesheet: screens use its components and
    Tailwind classes. */
-@import "acme-ui/styles/globals.css";
+@import "peal-ui/styles/globals.css";

@@ -27,7 +27,7 @@ const decodeErrorBody = Schema.decodeUnknownOption(
 
 type ErrorBody = typeof GraphErrorSchema.Type | typeof OAuthErrorSchema.Type;
 
-/** What Meta's error said, as far as Acme reads it. */
+/** What Meta's error said, as far as Peal reads it. */
 interface GraphError {
   readonly code: Option.Option<number>;
   readonly subcode: Option.Option<number>;

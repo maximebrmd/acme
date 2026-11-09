@@ -1,13 +1,13 @@
-# Managed by Ansible (acme-infra). A differential backup, of what changed
+# Managed by Ansible (peal-infra). A differential backup, of what changed
 # since the last full one, every other day.
 [Unit]
-Description=Differential backup of the Acme database, daily
+Description=Differential backup of the Peal database, daily
 
 [Timer]
 OnCalendar=Mon..Sat *-*-* 02:15:00 UTC
 RandomizedDelaySec=10m
 Persistent=true
-Unit=acme-backup@diff.service
+Unit=peal-backup@diff.service
 
 [Install]
 WantedBy=timers.target

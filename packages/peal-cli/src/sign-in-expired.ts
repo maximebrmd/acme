@@ -7,6 +7,6 @@ export class SignInExpired extends Data.TaggedError("SignInExpired")<{
   readonly url: string;
 }> {
   override get [CliError.userMessage]() {
-    return `Your sign-in to ${this.url} no longer works. Run acme login again.`;
+    return `Your sign-in to ${this.url} no longer works. Run peal login again.`;
   }
 }

@@ -41,7 +41,7 @@ const securityHeaders = [
 const config: NextConfig = {
   // How long, in milliseconds, a request that src/proxy.ts forwards may take
   // before Next answers 500 instead: 30 seconds unless set. The writing
-  // assistant waits up to 90 seconds for its language model (acme-server's
+  // assistant waits up to 90 seconds for its language model (peal-server's
   // src/assistant/infrastructure/language-model-writing-model.ts), so this
   // waits longer.
   experimental: { proxyTimeout: 120_000 },
@@ -54,11 +54,11 @@ const config: NextConfig = {
   outputFileTracingRoot: path.join(import.meta.dirname, "../.."),
   // No X-Powered-By header.
   poweredByHeader: false,
-  // acme-contract and acme-ui ship TypeScript sources, which Next compiles
+  // peal-contract and peal-ui ship TypeScript sources, which Next compiles
   // with the app.
-  transpilePackages: ["acme-contract", "acme-ui"],
+  transpilePackages: ["peal-contract", "peal-ui"],
 };
 
 // Loads the request configuration in src/i18n/request.ts. /api/* is forwarded
-// to the server by src/proxy.ts, which reads ACME_API_URL at request time.
+// to the server by src/proxy.ts, which reads PEAL_API_URL at request time.
 export default createNextIntlPlugin()(config);

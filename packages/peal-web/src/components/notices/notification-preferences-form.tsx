@@ -4,12 +4,12 @@ import { useAtomRefresh, useAtomSet, useAtomValue } from "@effect/atom-react";
 import type {
   NotificationPreferences,
   NotificationPreferencesChange,
-} from "acme-contract";
-import { Alert, AlertDescription } from "acme-ui/components/alert";
-import { Button } from "acme-ui/components/button";
-import { Checkbox } from "acme-ui/components/checkbox";
-import { Label } from "acme-ui/components/label";
-import { Skeleton } from "acme-ui/components/skeleton";
+} from "peal-contract";
+import { Alert, AlertDescription } from "peal-ui/components/alert";
+import { Button } from "peal-ui/components/button";
+import { Checkbox } from "peal-ui/components/checkbox";
+import { Label } from "peal-ui/components/label";
+import { Skeleton } from "peal-ui/components/skeleton";
 import { Exit } from "effect";
 import { AsyncResult } from "effect/reactivity";
 import { useTranslations } from "next-intl";

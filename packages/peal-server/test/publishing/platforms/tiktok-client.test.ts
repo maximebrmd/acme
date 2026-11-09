@@ -170,7 +170,7 @@ describe("publishing on TikTok", () => {
 
       assert.deepStrictEqual(result, {
         _tag: "published",
-        permalink: `https://www.tiktok.com/@acme_example/video/${tiktokPostId}`,
+        permalink: `https://www.tiktok.com/@peal_example/video/${tiktokPostId}`,
         platformPostId: PlatformPostIdSchema.make(tiktokPostId),
       });
 
@@ -358,7 +358,7 @@ describe("publishing on TikTok", () => {
 
       assert.deepStrictEqual(result, {
         _tag: "published",
-        permalink: `https://www.tiktok.com/@acme_example/photo/${tiktokPostId}`,
+        permalink: `https://www.tiktok.com/@peal_example/photo/${tiktokPostId}`,
         platformPostId: PlatformPostIdSchema.make(tiktokPostId),
       });
       assert.deepStrictEqual(bodyOf(tiktok, "/v2/post/publish/content/init/"), {
@@ -727,7 +727,7 @@ describe("resuming a TikTok post", () => {
 
       assert.deepStrictEqual(resumed, {
         _tag: "published",
-        permalink: `https://www.tiktok.com/@acme_example/video/${tiktokPostId}`,
+        permalink: `https://www.tiktok.com/@peal_example/video/${tiktokPostId}`,
         platformPostId: PlatformPostIdSchema.make(tiktokPostId),
       });
       assert.lengthOf(tiktok.posts(), 1);

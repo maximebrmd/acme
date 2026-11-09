@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "acme-ui/components/button";
+import { Button } from "peal-ui/components/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -8,7 +8,7 @@ import {
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
-} from "acme-ui/components/dropdown-menu";
+} from "peal-ui/components/dropdown-menu";
 import { Schema } from "effect";
 import { LanguagesIcon } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";

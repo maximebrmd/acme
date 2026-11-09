@@ -1,6 +1,6 @@
 ---
 title: API overview
-description: How the Acme HTTP API is organised, how to authenticate to it, where its OpenAPI document lives, and where to find the reference for every endpoint.
+description: How the Peal HTTP API is organised, how to authenticate to it, where its OpenAPI document lives, and where to find the reference for every endpoint.
 sidebar:
   order: 10
 ---
@@ -14,11 +14,11 @@ The web app, the command line and the MCP endpoint are built on the same HTTP AP
 
 ## One contract [#contract]
 
-The API is defined once, in the `acme-contract` package. The server implements that definition, the clients derive their types from it, and the [API reference](/reference) in these docs is generated from it, so the three cannot drift apart.
+The API is defined once, in the `peal-contract` package. The server implements that definition, the clients derive their types from it, and the [API reference](/reference) in these docs is generated from it, so the three cannot drift apart.
 
 ## Base URL [#base-url]
 
-Requests go to the address you open Acme at, and every endpoint's path starts with `/api`: the web app forwards `/api/*` to the server. In these docs, `https://api.example.com` stands for that address; replace it with your own.
+Requests go to the address you open Peal at, and every endpoint's path starts with `/api`: the web app forwards `/api/*` to the server. In these docs, `https://api.example.com` stands for that address; replace it with your own.
 
 ```bash
 curl -i https://api.example.com/api/health
@@ -26,9 +26,9 @@ curl -i https://api.example.com/api/health
 
 ## Authentication [#authentication]
 
-Apart from the health checks and the documents platforms read about Acme, every endpoint needs one of these:
+Apart from the health checks and the documents platforms read about Peal, every endpoint needs one of these:
 
-- **An API key**, for scripts and integrations: send it as `Authorization: Bearer acme_…`. A key belongs to one workspace and holds some of the permissions of the member who created it, never more. Members who may manage keys (owners and admins) create one with `POST /api/workspaces/{workspaceId}/api-keys` while signed in, and see the key only in that answer. A key may send 600 requests a minute.
+- **An API key**, for scripts and integrations: send it as `Authorization: Bearer peal_…`. A key belongs to one workspace and holds some of the permissions of the member who created it, never more. Members who may manage keys (owners and admins) create one with `POST /api/workspaces/{workspaceId}/api-keys` while signed in, and see the key only in that answer. A key may send 600 requests a minute.
 - **An OAuth access token**, which the [command line](/cli) and [MCP clients](/mcp) obtain when you sign them in, sent the same way. It acts as you, limited to what you agreed to.
 - **The session cookie** of the web app, for the web app itself. A request that changes something with it must come from the web app's own origin.
 

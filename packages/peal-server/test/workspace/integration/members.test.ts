@@ -1,5 +1,5 @@
 import { assert, layer } from "@effect/vitest";
-import { InvitationSchema, WorkspaceMemberSchema } from "acme-contract";
+import { InvitationSchema, WorkspaceMemberSchema } from "peal-contract";
 import { Config, Effect, Layer, Schema } from "effect";
 
 import {
@@ -15,7 +15,7 @@ import {
 } from "./harness.ts";
 import type { Person } from "./harness.ts";
 
-// A workspace's members and invitations through Acme's API, which the
+// A workspace's members and invitations through Peal's API, which the
 // command line and MCP clients use: who sees them, who invites, and how an
 // invitation goes out, is replaced and is revoked.
 
@@ -151,7 +151,7 @@ layer(IntegrationLive, { excludeTestServices: true, timeout: "180 seconds" })(
 
           assert.strictEqual(
             message.Subject,
-            "host vous invite à rejoindre Atelier sur Acme"
+            "host vous invite à rejoindre Atelier sur Peal"
           );
           assert.strictEqual(
             linkIn(message).pathname,

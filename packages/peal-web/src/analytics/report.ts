@@ -3,7 +3,7 @@ import type {
   CalendarDay,
   MetricsSnapshot,
   PostMetrics,
-} from "acme-contract";
+} from "peal-contract";
 import { DateTime, Option, Schema } from "effect";
 
 import { addDays, dateKey, wallClockOf, zoneOf } from "#posts/zoned-time.ts";

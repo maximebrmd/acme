@@ -28,4 +28,4 @@ export class MediaRecords extends Context.Service<
       workspaceId: WorkspaceId
     ) => Effect.Effect<void, MediaStorageFailed>;
   }
->()("acme-server/media/application/MediaRecords") {}
+>()("peal-server/media/application/MediaRecords") {}

@@ -1,11 +1,11 @@
 import { Config, Option, Redacted, Schema } from "effect";
 
-/** The model the assistant asks on Anthropic's API, unless ACME_AI_MODEL names another. */
+/** The model the assistant asks on Anthropic's API, unless PEAL_AI_MODEL names another. */
 export const defaultAnthropicModel = "claude-opus-5-5";
 
 /**
  * How many requests a workspace may send the assistant each UTC day, unless
- * ACME_AI_DAILY_REQUESTS says otherwise.
+ * PEAL_AI_DAILY_REQUESTS says otherwise.
  */
 export const defaultDailyRequests = 100;
 
@@ -35,10 +35,10 @@ const urlConfig = (name: string) =>
 const anthropic = Config.all({
   apiKey: Config.schema(
     Schema.Redacted(Schema.NonEmptyString),
-    "ACME_AI_API_KEY"
+    "PEAL_AI_API_KEY"
   ),
-  baseUrl: Config.option(urlConfig("ACME_AI_BASE_URL")),
-  model: Config.NonEmptyString("ACME_AI_MODEL").pipe(
+  baseUrl: Config.option(urlConfig("PEAL_AI_BASE_URL")),
+  model: Config.NonEmptyString("PEAL_AI_MODEL").pipe(
     Config.withDefault(defaultAnthropicModel)
   ),
 }).pipe(
@@ -51,11 +51,11 @@ const anthropic = Config.all({
 // A self-hosted endpoint names its own models, and is reached at its own
 // address: both must be given, so drafts never go to a host nobody named.
 const openAiCompatible = Config.all({
-  apiKey: Config.option(Config.Redacted("ACME_AI_API_KEY")).pipe(
+  apiKey: Config.option(Config.Redacted("PEAL_AI_API_KEY")).pipe(
     Config.map(Option.filter((key) => Redacted.value(key) !== ""))
   ),
-  baseUrl: urlConfig("ACME_AI_BASE_URL"),
-  model: Config.NonEmptyString("ACME_AI_MODEL"),
+  baseUrl: urlConfig("PEAL_AI_BASE_URL"),
+  model: Config.NonEmptyString("PEAL_AI_MODEL"),
 }).pipe(
   Config.map((settings): AssistantProvider => ({
     _tag: "OpenAiCompatible",
@@ -74,30 +74,30 @@ const providers = {
 /**
  * The assistant's language model, read from the environment:
  *
- * - `ACME_AI_PROVIDER`: `anthropic` or `openai-compatible`. Unset or empty,
+ * - `PEAL_AI_PROVIDER`: `anthropic` or `openai-compatible`. Unset or empty,
  *   the assistant is off: its endpoints answer AssistantUnavailable and the
  *   web app hides it.
- * - `ACME_AI_API_KEY`: the provider's key, required for Anthropic and
+ * - `PEAL_AI_API_KEY`: the provider's key, required for Anthropic and
  *   optional for an OpenAI-compatible endpoint.
- * - `ACME_AI_MODEL`: the model; `claude-opus-5-5` by default on Anthropic,
+ * - `PEAL_AI_MODEL`: the model; `claude-opus-5-5` by default on Anthropic,
  *   required for an OpenAI-compatible endpoint.
- * - `ACME_AI_BASE_URL`: the API's base URL, such as
+ * - `PEAL_AI_BASE_URL`: the API's base URL, such as
  *   `http://127.0.0.1:8000/v1`; required for an OpenAI-compatible endpoint,
  *   and for Anthropic only behind a proxy.
  */
 export const assistantProviderConfig = Config.Literals(
   ["", "anthropic", "openai-compatible"],
-  "ACME_AI_PROVIDER"
+  "PEAL_AI_PROVIDER"
 ).pipe(
   Config.withDefault(""),
   Config.flatMap((name) => providers[name])
 );
 
 /**
- * `ACME_AI_DAILY_REQUESTS`: how many requests each workspace may send the
+ * `PEAL_AI_DAILY_REQUESTS`: how many requests each workspace may send the
  * assistant per UTC day, 100 unless set. 0 lets none through.
  */
 export const dailyRequestsConfig = Config.schema(
   Schema.Int.check(Schema.isGreaterThanOrEqualTo(0)),
-  "ACME_AI_DAILY_REQUESTS"
+  "PEAL_AI_DAILY_REQUESTS"
 ).pipe(Config.withDefault(defaultDailyRequests));

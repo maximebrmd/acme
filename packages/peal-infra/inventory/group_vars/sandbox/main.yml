@@ -2,12 +2,12 @@
 # The sandbox: pre-production, with its own database, buckets and platform
 # redirect URIs, behind Cloudflare Access throughout. Every value below is a
 # placeholder until the domain, the Cloudflare account and the server exist.
-server_hostname: acme-sandbox
-acme_environment: sandbox
+server_hostname: peal-sandbox
+peal_environment: sandbox
 
 # First-level subdomains only: Cloudflare's free certificate covers no
 # deeper name, such as app.sandbox.example.com.
-acme_hostnames:
+peal_hostnames:
   app: sandbox.example.com
   site: site-sandbox.example.com
   docs: docs-sandbox.example.com
@@ -20,17 +20,17 @@ cloudflare_access_aud:
   sandbox: REPLACE-WITH-THE-SANDBOX-APPLICATION-AUD
   grafana: REPLACE-WITH-THE-SANDBOX-GRAFANA-APPLICATION-AUD
   ssh: REPLACE-WITH-THE-SANDBOX-SSH-APPLICATION-AUD
-acme_access_everything: true
+peal_access_everything: true
 
-acme_mail_from: Acme Sandbox <noreply@example.com>
+peal_mail_from: Peal Sandbox <noreply@example.com>
 
-acme_media_endpoint: https://0123456789abcdef0123456789abcdef.r2.cloudflarestorage.com
-acme_media_bucket: acme-sandbox-media
-acme_backup_endpoint: 0123456789abcdef0123456789abcdef.r2.cloudflarestorage.com
-acme_backup_bucket: acme-sandbox-backups
-acme_backup_path: /sandbox
+peal_media_endpoint: https://0123456789abcdef0123456789abcdef.r2.cloudflarestorage.com
+peal_media_bucket: peal-sandbox-media
+peal_backup_endpoint: 0123456789abcdef0123456789abcdef.r2.cloudflarestorage.com
+peal_backup_bucket: peal-sandbox-backups
+peal_backup_path: /sandbox
 
-acme_static_build_args:
+peal_static_build_args:
   SITE_URL: https://site-sandbox.example.com
   SITE_DOCS_URL: https://docs-sandbox.example.com
   DOCS_SITE_URL: https://docs-sandbox.example.com

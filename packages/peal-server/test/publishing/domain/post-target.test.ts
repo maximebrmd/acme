@@ -122,13 +122,13 @@ describe(settleTarget, () => {
     {
       expected: {
         _tag: "published",
-        permalink: Option.some("https://social.example/@acme/1"),
+        permalink: Option.some("https://social.example/@peal/1"),
         platformPostId: Option.some(platformPostId),
         publishedAt: now,
       },
       settlement: {
         _tag: "published",
-        permalink: "https://social.example/@acme/1",
+        permalink: "https://social.example/@peal/1",
         platformPostId,
       },
     },
@@ -266,11 +266,11 @@ describe("confirming an unconfirmed target", () => {
         confirmPublished(
           statuses.unconfirmed,
           Option.none(),
-          Option.some("https://social.example/@acme/1")
+          Option.some("https://social.example/@peal/1")
         )
       )
     ).toMatchObject({
-      permalink: Option.some("https://social.example/@acme/1"),
+      permalink: Option.some("https://social.example/@peal/1"),
     });
   });
 

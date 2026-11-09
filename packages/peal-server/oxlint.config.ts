@@ -81,18 +81,18 @@ const infrastructure = (context: Kernel) =>
     ]
   );
 
-// Api: HttpApiBuilder handlers for acme-contract. Use cases come from the
+// Api: HttpApiBuilder handlers for peal-contract. Use cases come from the
 // context's container, never from infrastructure. Of Effect's modules, only
 // the core and HTTP: SQL, cluster, workflow and AI go through a use case.
 const api = (context: Kernel) =>
   restrict(
-    "Handlers import Effect's core and HTTP modules, acme-contract, their context's container, domain and application, and the shared kernel. Reach the database, workflows or AI through a use case.",
+    "Handlers import Effect's core and HTTP modules, peal-contract, their context's container, domain and application, and the shared kernel. Reach the database, workflows or AI through a use case.",
     [
       "*",
       "!effect",
       "!effect/http",
       "!effect/http-api",
-      "!acme-contract",
+      "!peal-contract",
       "!./**",
       `!#${context}/container.ts`,
       `!#${context}/domain/**`,

@@ -120,4 +120,4 @@ export class AccountDirectory extends Context.Service<
       DirectoryUnavailable
     >;
   }
->()("acme-server/workspace/application/AccountDirectory") {}
+>()("peal-server/workspace/application/AccountDirectory") {}

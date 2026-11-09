@@ -7,7 +7,7 @@ import type { XEndpoints } from "#channels/infrastructure/platforms/x/x-authoriz
 import { fakeHttpServer, formOf, json } from "./fake-http-server.ts";
 import type { FakeRequest, FakeResponse } from "./fake-http-server.ts";
 
-/** Acme's synthetic X app. */
+/** Peal's synthetic X app. */
 export const xClient = {
   clientId: "c3ludGhldGljLWNsaWVudA",
   clientSecret: "synthetic-x-secret",
@@ -16,10 +16,10 @@ export const xClient = {
 /** A synthetic account, as GET /2/users/me shows it. */
 export const xAccount = {
   id: "1460000000000000001",
-  name: "Acme Example",
+  name: "Peal Example",
   profile_image_url:
-    "https://pbs.twimg.example/profile_images/1/acme_normal.jpg",
-  username: "acme_example",
+    "https://pbs.twimg.example/profile_images/1/peal_normal.jpg",
+  username: "peal_example",
 } as const;
 
 const scopes = "tweet.read tweet.write users.read media.write offline.access";

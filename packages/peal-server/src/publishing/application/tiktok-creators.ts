@@ -37,4 +37,4 @@ export class TikTokCreators extends Context.Service<
      */
     readonly takesPhotos: boolean;
   }
->()("acme-server/publishing/application/TikTokCreators") {}
+>()("peal-server/publishing/application/TikTokCreators") {}

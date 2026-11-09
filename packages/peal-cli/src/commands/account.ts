@@ -1,5 +1,5 @@
-import { AccountExportSchema } from "acme-contract";
-import type { ConnectedApp } from "acme-contract";
+import { AccountExportSchema } from "peal-contract";
+import type { ConnectedApp } from "peal-contract";
 import {
   Console,
   DateTime,
@@ -59,7 +59,7 @@ const exportData = Command.make(
       Flag.withAlias("o"),
       Flag.withMetavar("<file>"),
       Flag.withDescription(
-        "Where to save the copy. Defaults to the name the server gives it, such as acme-data-2026-11-09.json, in the current folder."
+        "Where to save the copy. Defaults to the name the server gives it, such as peal-data-2026-11-09.json, in the current folder."
       ),
       Flag.optional
     ),
@@ -134,7 +134,7 @@ const exportData = Command.make(
       path.resolve(
         Option.getOrElse(
           serverFileName(headers["content-disposition"]),
-          () => `acme-data-${DateTime.formatIsoDateUtc(body.exportedAt)}.json`
+          () => `peal-data-${DateTime.formatIsoDateUtc(body.exportedAt)}.json`
         )
       )
     );
@@ -163,7 +163,7 @@ const exportData = Command.make(
   })
 ).pipe(
   Command.withDescription(
-    "Save a copy of everything Acme keeps about you, as JSON, in a file only you may read."
+    "Save a copy of everything Peal keeps about you, as JSON, in a file only you may read."
   )
 );
 

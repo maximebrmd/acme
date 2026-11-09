@@ -1,7 +1,7 @@
 "use client";
 
 import { useAtomSet } from "@effect/atom-react";
-import { Alert, AlertDescription, AlertTitle } from "acme-ui/components/alert";
+import { Alert, AlertDescription, AlertTitle } from "peal-ui/components/alert";
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -11,8 +11,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "acme-ui/components/alert-dialog";
-import { Button } from "acme-ui/components/button";
+} from "peal-ui/components/alert-dialog";
+import { Button } from "peal-ui/components/button";
 import { Cause, Exit, Option } from "effect";
 import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";

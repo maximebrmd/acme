@@ -105,4 +105,4 @@ export class PublicationJournal extends Context.Service<
       postId: PostId
     ) => Effect.Effect<readonly RecordedAttempt[], DatabaseError>;
   }
->()("acme-server/publishing/application/PublicationJournal") {}
+>()("peal-server/publishing/application/PublicationJournal") {}

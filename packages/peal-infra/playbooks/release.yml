@@ -1,11 +1,11 @@
 ---
-# Deploy a version of Acme, one server at a time. Run after site.yml:
+# Deploy a version of Peal, one server at a time. Run after site.yml:
 #   ansible-playbook playbooks/release.yml --limit sandbox
-#   ansible-playbook playbooks/release.yml --limit production -e acme_version=<ref>
-- name: Release Acme
+#   ansible-playbook playbooks/release.yml --limit production -e peal_version=<ref>
+- name: Release Peal
   hosts: servers
   become: true
   serial: 1
   roles:
-    - acme_preflight
-    - acme_release
+    - peal_preflight
+    - peal_release

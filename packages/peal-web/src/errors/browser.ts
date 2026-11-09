@@ -1,4 +1,4 @@
-import type { ClientErrorKind, ClientErrorReport } from "acme-contract";
+import type { ClientErrorKind, ClientErrorReport } from "peal-contract";
 
 import { releaseMeta } from "./release-meta.ts";
 import { reportOf } from "./report.ts";

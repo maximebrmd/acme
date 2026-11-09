@@ -59,8 +59,8 @@ export interface Moderated {
 
 /** The cookies the in-memory moderation answers an impersonation with. */
 export const cookiesOfImpersonation = [
-  "acme.session_token=synthetic-impersonation; Path=/; HttpOnly; SameSite=Lax",
-  "acme.admin_session=synthetic-staff-session; Path=/; HttpOnly; SameSite=Lax",
+  "peal.session_token=synthetic-impersonation; Path=/; HttpOnly; SameSite=Lax",
+  "peal.admin_session=synthetic-staff-session; Path=/; HttpOnly; SameSite=Lax",
 ];
 
 /** What the in-memory ports kept, for tests to read. */
@@ -70,7 +70,7 @@ export class StaffMemory extends Context.Service<
     readonly events: Ref.Ref<readonly AuditEvent[]>;
     readonly moderated: Ref.Ref<readonly Moderated[]>;
   }
->()("acme-server/test/staff/StaffMemory") {}
+>()("peal-server/test/staff/StaffMemory") {}
 
 const sameTarget = (event: AuditEvent, targetId: Option.Option<UserId>) =>
   Option.match(targetId, {

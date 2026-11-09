@@ -198,7 +198,7 @@ const ExportedWorkspaceSchema = Schema.Struct({
 });
 
 /**
- * Everything Acme keeps about the user: their account, how they sign in,
+ * Everything Peal keeps about the user: their account, how they sign in,
  * their sessions, workspaces, invitations, connected applications, notices
  * and preferences, what staff did to their account, the posts they wrote in the workspaces they share, and
  * the content of the workspaces where they are the only member, which
@@ -240,7 +240,7 @@ export type DeleteAccount = typeof DeleteAccountSchema.Type;
 /**
  * The signed-in user's rights over their own data: a copy of it, and the
  * account's deletion. Only the user may ask, signed in with their own
- * session, or, for the copy, through Acme's command line (the `acme-cli`
+ * session, or, for the copy, through Peal's command line (the `peal-cli`
  * client, whose tokens are bound to no workspace): API keys, other OAuth
  * clients, MCP clients among them, and staff impersonating the user get 403.
  */
@@ -254,7 +254,7 @@ export class AccountApi extends HttpApiGroup.make("account")
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Answers with a JSON copy of everything Acme keeps about the user, as a file to save: their account, how they sign in, their sessions, memberships, invitations, connected applications, notices and preferences, the posts they wrote in the workspaces they share, and the channels, posts, media details, analytics, API keys, assistant usage and billing state (plan and subscription status) of the workspaces where they are the only member. It holds no secret: no password, token, key or card. Open to the user in their own session and to Acme's command line, never to another OAuth client: an MCP client would hand all of it to an AI model.",
+          "Answers with a JSON copy of everything Peal keeps about the user, as a file to save: their account, how they sign in, their sessions, memberships, invitations, connected applications, notices and preferences, the posts they wrote in the workspaces they share, and the channels, posts, media details, analytics, API keys, assistant usage and billing state (plan and subscription status) of the workspaces where they are the only member. It holds no secret: no password, token, key or card. Open to the user in their own session and to Peal's command line, never to another OAuth client: an MCP client would hand all of it to an AI model.",
         summary: "Export my data",
       })
     ),

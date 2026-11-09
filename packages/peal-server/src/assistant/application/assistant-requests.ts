@@ -21,7 +21,7 @@ export class AssistantRequests extends Context.Service<
   {
     readonly today: (workspaceId: WorkspaceId) => Effect.Effect<RequestsToday>;
   }
->()("acme-server/assistant/application/AssistantRequests") {
+>()("peal-server/assistant/application/AssistantRequests") {
   static readonly layer = Layer.effect(
     AssistantRequests,
     Effect.gen(function* AssistantRequestsLive() {

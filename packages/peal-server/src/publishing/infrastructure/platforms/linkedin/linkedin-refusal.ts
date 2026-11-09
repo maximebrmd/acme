@@ -14,7 +14,7 @@ import { retryAfterOf } from "#shared/infrastructure/platforms/retry-after.ts";
 /**
  * LinkedIn's error body: `code` names the error on the versioned API, and
  * `message` describes it, which may quote the post, so it is only searched
- * for the few errors that change what Acme does, never kept.
+ * for the few errors that change what Peal does, never kept.
  */
 export const LinkedInErrorSchema = Schema.Struct({
   code: Schema.optionalKey(Schema.String),
@@ -113,7 +113,7 @@ const refusal = (
     return new PlatformUnavailable();
   }
 
-  // The API version Acme sends was retired: LINKEDIN_API_VERSION must move.
+  // The API version Peal sends was retired: LINKEDIN_API_VERSION must move.
   if (status === 426) {
     return rejected(call, "apiVersionRetired");
   }

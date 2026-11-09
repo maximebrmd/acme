@@ -1,6 +1,6 @@
 "use client";
 
-import type { AnalyticsSummary, Channel, MetricTotals } from "acme-contract";
+import type { AnalyticsSummary, Channel, MetricTotals } from "peal-contract";
 import { useFormatter, useTranslations } from "next-intl";
 
 import { isEmpty, shownKeys } from "#analytics/report.ts";

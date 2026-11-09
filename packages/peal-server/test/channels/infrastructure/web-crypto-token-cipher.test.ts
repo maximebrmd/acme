@@ -35,7 +35,7 @@ const cipherWith = (keys: Record<string, string>) =>
     Layer.provide(ConfigProvider.layer(ConfigProvider.fromUnknown(keys)))
   );
 
-const keyring = (keys: string) => cipherWith({ ACME_TOKEN_KEYS: keys });
+const keyring = (keys: string) => cipherWith({ PEAL_TOKEN_KEYS: keys });
 
 const encryptWith = (keys: string) =>
   TokenCipher.use((cipher) => cipher.encrypt(token, channel)).pipe(
@@ -228,7 +228,7 @@ describe("the token keyring", () => {
     { keys: `key one:${firstKey}`, label: "a key id with a space" },
   ])("fails at startup on $label", ({ keys }) =>
     Effect.gen(function* malformedKeyring() {
-      const error = yield* startup({ ACME_TOKEN_KEYS: keys });
+      const error = yield* startup({ PEAL_TOKEN_KEYS: keys });
 
       assert.strictEqual(error._tag, "InvalidTokenKeyring");
       // The reason names entries and key ids, never key material.
@@ -253,9 +253,9 @@ describe("a server without token keys", () => {
     ).pipe(Effect.provide(cipherWith(keys)));
 
   it.effect.each([
-    { keys: {}, label: "ACME_TOKEN_KEYS unset" },
-    { keys: { ACME_TOKEN_KEYS: "" }, label: "ACME_TOKEN_KEYS empty" },
-    { keys: { ACME_TOKEN_KEYS: "  " }, label: "ACME_TOKEN_KEYS blank" },
+    { keys: {}, label: "PEAL_TOKEN_KEYS unset" },
+    { keys: { PEAL_TOKEN_KEYS: "" }, label: "PEAL_TOKEN_KEYS empty" },
+    { keys: { PEAL_TOKEN_KEYS: "  " }, label: "PEAL_TOKEN_KEYS blank" },
   ])("starts with $label, and stores no token until keys are set", ({ keys }) =>
     Effect.gen(function* withoutKeys() {
       const { decrypted, encrypted } = yield* unset(keys);

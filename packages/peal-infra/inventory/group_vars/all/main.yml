@@ -10,7 +10,7 @@
 # opens no inbound port.
 ansible_user: "{{ admin_user }}"
 ansible_ssh_common_args: >-
-  {{ ('-o ProxyCommand="cloudflared access ssh --hostname ' ~ acme_hostnames.ssh ~ '"')
+  {{ ('-o ProxyCommand="cloudflared access ssh --hostname ' ~ peal_hostnames.ssh ~ '"')
      if ssh_via_tunnel | bool else '' }}
 
 # Key-only admin account with passwordless sudo. Root cannot log in over SSH.
@@ -33,14 +33,14 @@ cloudflared_deb_sha256:
   amd64: 70b1a1e0f46033ffc8d90b406e554044ba6cbf2e4360295ef1163aed31e09393
   arm64: d9407eb6e70ac31f54978a6b408a0320b51b664a6d0b498248692d7ac56bf836
 
-acme_root: /srv/acme
-acme_compose_project: acme
-# Docker Compose on the release that runs (acme_runtime writes it).
-acme_compose_bin: /usr/local/bin/acme-compose
+peal_root: /srv/peal
+peal_compose_project: peal
+# Docker Compose on the release that runs (peal_runtime writes it).
+peal_compose_bin: /usr/local/bin/peal-compose
 # Compose profiles the stack runs with: the marketing site and the docs.
-acme_compose_profiles: [static]
+peal_compose_profiles: [static]
 # Loopback ports the tunnel reaches (compose.production.yaml).
-acme_ports:
+peal_ports:
   server: 3000
   web: 3001
   site: 4321
@@ -50,33 +50,33 @@ acme_ports:
 
 # What release.yml deploys: a branch, tag or commit of this repository, built
 # on the machine running Ansible for each server's architecture, which its
-# facts give (linux/amd64 or linux/arm64). Set acme_image_platform to build
+# facts give (linux/amd64 or linux/arm64). Set peal_image_platform to build
 # for another.
-acme_version: main
-acme_release_repo_url: https://github.com/maximebrmd/acme.git
+peal_version: main
+peal_release_repo_url: https://github.com/peal-social/peal.git
 
 # Credentials the server needs from outside services, by name. The values
 # stay in the vault or on the server; the playbooks only check that each is
 # set. Either RESEND_API_KEY or SMTP_URL sends email.
-acme_required_credentials:
-  - ACME_S3_ACCESS_KEY_ID
-  - ACME_S3_SECRET_ACCESS_KEY
+peal_required_credentials:
+  - PEAL_S3_ACCESS_KEY_ID
+  - PEAL_S3_SECRET_ACCESS_KEY
   - PGBACKREST_REPO1_S3_KEY
   - PGBACKREST_REPO1_S3_KEY_SECRET
   - PGBACKREST_REPO1_CIPHER_PASS
   - TELEGRAM_BOT_TOKEN
   - TELEGRAM_CHAT_ID
-acme_mail_credentials: [RESEND_API_KEY, SMTP_URL]
+peal_mail_credentials: [RESEND_API_KEY, SMTP_URL]
 
 # The uptime server's address that Grafana sends its heartbeat to, every few
 # minutes, so the uptime server says when this server's alerting goes silent
 # (README.md, "Uptime"). Empty: no heartbeat.
-acme_heartbeat_url: ""
+peal_heartbeat_url: ""
 
 # More plain settings for the server, as NAME: value (the docs' environment
-# variables page lists them), such as ACME_AI_PROVIDER: anthropic. Secrets go
+# variables page lists them), such as PEAL_AI_PROVIDER: anthropic. Secrets go
 # in the credentials instead.
-acme_settings: {}
+peal_settings: {}
 
 # Paths of the app's host name that Cloudflare Access guards in production:
 # Better Auth's admin endpoints and the staff console's API on the server,
@@ -85,7 +85,7 @@ acme_settings: {}
 # regular expression cloudflared matches against the path,
 # once it has resolved dot segments, backslashes and repeated slashes
 # (tests/test_cloudflared.py), in any letter case.
-acme_access_paths:
+peal_access_paths:
   - path: (?i)^/+api/+auth/+admin(/|$)
     to: server
   - path: (?i)^/+api/+admin(/|$)
@@ -98,7 +98,7 @@ acme_access_paths:
 # and keys under /api/channels/oauth/, Stripe posts its events to the
 # webhook, and Meta its data deletion requests. Each request to the last two
 # is signed, and the server checks the signature.
-acme_access_bypass_paths:
+peal_access_bypass_paths:
   - path: ^/+api/+channels/+oauth/
     to: server
   - path: ^/+api/+auth/+stripe/+webhook/*$

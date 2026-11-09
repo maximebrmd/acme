@@ -1,15 +1,15 @@
-import { Api, OAuthApi } from "acme-contract";
+import { Api, OAuthApi } from "peal-contract";
 import { Context, Effect, Layer } from "effect";
 import type { Redacted } from "effect";
 import { HttpClient, HttpClientRequest } from "effect/http";
 import { HttpApiClient } from "effect/http-api";
 
-// The typed clients derived from acme-contract, bound to the server the
+// The typed clients derived from peal-contract, bound to the server the
 // command line points at: the HTTP API, and the OAuth endpoints its sign-in
 // uses. Commands take them from here, so tests swap the transport (the
 // HttpClient) and keep everything else.
-export class AcmeApi extends Context.Service<
-  AcmeApi,
+export class PealApi extends Context.Service<
+  PealApi,
   {
     readonly baseUrl: URL;
     readonly client: HttpApiClient.ForApi<typeof Api>;
@@ -19,14 +19,14 @@ export class AcmeApi extends Context.Service<
       accessToken: Redacted.Redacted
     ) => Effect.Effect<HttpApiClient.ForApi<typeof Api>>;
   }
->()("acme-cli/AcmeApi") {
+>()("peal-cli/PealApi") {
   static readonly layer = (baseUrl: URL) =>
     Layer.effect(
-      AcmeApi,
-      Effect.gen(function* acmeApi() {
+      PealApi,
+      Effect.gen(function* pealApi() {
         const httpClient = yield* HttpClient.HttpClient;
 
-        return AcmeApi.of({
+        return PealApi.of({
           baseUrl,
           client: yield* HttpApiClient.makeWith(Api, { baseUrl, httpClient }),
           oauth: yield* HttpApiClient.makeWith(OAuthApi, {

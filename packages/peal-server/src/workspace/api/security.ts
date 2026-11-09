@@ -9,8 +9,8 @@ import {
   Unauthenticated,
   WorkspaceAccess,
   WorkspaceNotFound,
-} from "acme-contract";
-import type { Member } from "acme-contract";
+} from "peal-contract";
+import type { Member } from "peal-contract";
 import { Effect, Layer, Option, Redacted, Schema } from "effect";
 import { HttpRouter, HttpServerRequest } from "effect/http";
 import { HttpApiError } from "effect/http-api";
@@ -25,7 +25,7 @@ import type { Principal } from "#workspace/domain/principal.ts";
 import { memberOf, principalOf, toContractPrincipal } from "./principal.ts";
 
 // Reads change nothing; any other method needs a trusted origin when it
-// comes with cookies, which a browser sends to Acme from any site.
+// comes with cookies, which a browser sends to Peal from any site.
 const safeMethods: ReadonlySet<string> = new Set(["GET", "HEAD", "OPTIONS"]);
 
 const decodeWorkspaceId = Schema.decodeUnknownOption(WorkspaceIdSchema);

@@ -14,8 +14,8 @@ export class ApiRequestFailed extends Data.TaggedError("ApiRequestFailed")<{
 }> {
   override get [CliError.userMessage]() {
     return [
-      `The Acme API at ${this.url} did not answer as expected (${this.detail}).`,
-      "  Check that the server is running, or point --api-url or ACME_API_URL at it.",
+      `The Peal API at ${this.url} did not answer as expected (${this.detail}).`,
+      "  Check that the server is running, or point --api-url or PEAL_API_URL at it.",
     ].join("\n");
   }
 }

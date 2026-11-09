@@ -1,4 +1,4 @@
-import type { StaffAuditEvent } from "acme-contract";
+import type { StaffAuditEvent } from "peal-contract";
 import {
   Table,
   TableBody,
@@ -6,7 +6,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "acme-ui/components/table";
+} from "peal-ui/components/table";
 import { DateTime } from "effect";
 import { getTranslations } from "next-intl/server";
 

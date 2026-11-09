@@ -2,7 +2,7 @@ import { Console, Data, Duration, Effect, Option, Schema } from "effect";
 import { CliError, Command } from "effect/cli";
 import type { HttpClientError } from "effect/http";
 
-import { AcmeApi } from "#api.ts";
+import { PealApi } from "#api.ts";
 import { display } from "#display.ts";
 
 // A health check that hangs is as useless as one that fails.
@@ -22,10 +22,10 @@ export class HealthCheckFailed extends Data.TaggedError("HealthCheckFailed")<{
   override get [CliError.userMessage]() {
     return this.reason === "unreachable"
       ? [
-          `Cannot reach the Acme API at ${this.url} (${this.detail}).`,
-          "  Check that the server is running, or point --api-url or ACME_API_URL at it.",
+          `Cannot reach the Peal API at ${this.url} (${this.detail}).`,
+          "  Check that the server is running, or point --api-url or PEAL_API_URL at it.",
         ].join("\n")
-      : `The Acme API at ${this.url} is not healthy (${this.detail}).`;
+      : `The Peal API at ${this.url} is not healthy (${this.detail}).`;
   }
 }
 
@@ -45,7 +45,7 @@ export const health = Command.make(
   "health",
   {},
   Effect.fn("health")(function* health() {
-    const { baseUrl, client } = yield* AcmeApi;
+    const { baseUrl, client } = yield* PealApi;
     const url = display(baseUrl);
 
     const fail = (reason: "unhealthy" | "unreachable", detail: string) =>
@@ -72,11 +72,11 @@ export const health = Command.make(
     const milliseconds = Math.round(Duration.toMillis(elapsed));
 
     yield* Console.log(
-      `The Acme API at ${url} is healthy (${String(milliseconds)} ms).`
+      `The Peal API at ${url} is healthy (${String(milliseconds)} ms).`
     );
   })
 ).pipe(
   Command.withDescription(
-    "Check that the Acme API answers. Exits with 1 when it is unreachable or unhealthy."
+    "Check that the Peal API answers. Exits with 1 when it is unreachable or unhealthy."
   )
 );

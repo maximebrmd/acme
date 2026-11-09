@@ -1,16 +1,16 @@
 "use client";
 
 import { useAtomRefresh, useAtomSet, useAtomValue } from "@effect/atom-react";
-import { AssistantToneSchema, TranslationLanguageSchema } from "acme-contract";
+import { AssistantToneSchema, TranslationLanguageSchema } from "peal-contract";
 import type {
   AssistantAction,
   AssistantStatus,
   Permission,
   Platform,
   Suggestion,
-} from "acme-contract";
-import { Button } from "acme-ui/components/button";
-import { Dialog, DialogContent } from "acme-ui/components/dialog";
+} from "peal-contract";
+import { Button } from "peal-ui/components/button";
+import { Dialog, DialogContent } from "peal-ui/components/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,7 +22,7 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
-} from "acme-ui/components/dropdown-menu";
+} from "peal-ui/components/dropdown-menu";
 import { Exit, Option } from "effect";
 import { AsyncResult } from "effect/reactivity";
 import { SparklesIcon } from "lucide-react";

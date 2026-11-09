@@ -17,11 +17,11 @@ import yaml
 
 from conftest import INFRA
 
-ENVIRONMENTS = ["acme-production", "acme-sandbox"]
+ENVIRONMENTS = ["peal-production", "peal-sandbox"]
 
 
 def _settings(environment: str) -> dict[str, Any]:
-    group = environment.removeprefix("acme-")
+    group = environment.removeprefix("peal-")
     folder = INFRA / "inventory" / "group_vars"
     return {
         **yaml.safe_load((folder / "all" / "main.yml").read_text()),
@@ -119,9 +119,9 @@ ADMIN_PATHS = [
 
 @pytest.mark.parametrize("path", [s for p in ADMIN_PATHS for s in _spellings(p)])
 def test_production_admin_needs_access(rendered: Path, path: str) -> None:
-    settings = _settings("acme-production")
-    rules = _rules(rendered, "acme-production")
-    rule = rules[_match(rules, settings["acme_hostnames"]["app"], path)]
+    settings = _settings("peal-production")
+    rules = _rules(rendered, "peal-production")
+    rule = rules[_match(rules, settings["peal_hostnames"]["app"], path)]
 
     assert _guarded(rule, settings["cloudflare_access_aud"]["admin"]), rule
 
@@ -132,7 +132,7 @@ def test_production_admin_needs_access(rendered: Path, path: str) -> None:
 def test_team_hosts_need_access(rendered: Path, environment: str, surface: str, path: str) -> None:
     settings = _settings(environment)
     rules = _rules(rendered, environment)
-    rule = rules[_match(rules, settings["acme_hostnames"][surface], path)]
+    rule = rules[_match(rules, settings["peal_hostnames"][surface], path)]
 
     assert _guarded(rule, settings["cloudflare_access_aud"][surface]), rule
 
@@ -147,11 +147,11 @@ SANDBOX_OPEN = [
 
 @pytest.mark.parametrize("path", SANDBOX_OPEN)
 def test_sandbox_lets_outside_services_call(rendered: Path, path: str) -> None:
-    settings = _settings("acme-sandbox")
-    rules = _rules(rendered, "acme-sandbox")
-    rule = rules[_match(rules, settings["acme_hostnames"]["app"], path)]
+    settings = _settings("peal-sandbox")
+    rules = _rules(rendered, "peal-sandbox")
+    rule = rules[_match(rules, settings["peal_hostnames"]["app"], path)]
 
-    assert rule["service"] == f"http://127.0.0.1:{settings['acme_ports']['server']}", rule
+    assert rule["service"] == f"http://127.0.0.1:{settings['peal_ports']['server']}", rule
     assert _audience(rule) == [], rule
 
 
@@ -170,9 +170,9 @@ SANDBOX_GUARDED = [
 @pytest.mark.parametrize("path", SANDBOX_GUARDED)
 @pytest.mark.parametrize("surface", ["app", "site", "docs"])
 def test_sandbox_needs_access_elsewhere(rendered: Path, surface: str, path: str) -> None:
-    settings = _settings("acme-sandbox")
-    rules = _rules(rendered, "acme-sandbox")
-    rule = rules[_match(rules, settings["acme_hostnames"][surface], path)]
+    settings = _settings("peal-sandbox")
+    rules = _rules(rendered, "peal-sandbox")
+    rule = rules[_match(rules, settings["peal_hostnames"][surface], path)]
 
     assert _guarded(rule, settings["cloudflare_access_aud"]["sandbox"]), rule
 
@@ -181,7 +181,7 @@ def test_cloudflared_canonicalises_paths() -> None:
     """The rules above hold because cloudflared resolves a path before it
     matches it, since 2026.10.0 (VULN-141859); older releases match the path
     as sent, and /api/x/../auth/admin would skip the admin rule."""
-    version = _settings("acme-production")["cloudflared_version"]
+    version = _settings("peal-production")["cloudflared_version"]
 
     assert tuple(int(part) for part in str(version).split(".")) >= (2026, 10, 0)
 
@@ -198,7 +198,7 @@ def test_matching_agrees_with_cloudflared(rendered: Path, environment: str) -> N
     config = rendered / environment / "cloudflared.yml"
     requests = [
         (host, path)
-        for host in settings["acme_hostnames"].values()
+        for host in settings["peal_hostnames"].values()
         for path in [*SANDBOX_GUARDED, *SANDBOX_OPEN]
     ]
 

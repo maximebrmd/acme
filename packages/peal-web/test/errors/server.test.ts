@@ -12,7 +12,7 @@ describe(serverReportOf, () => {
       error,
       {
         headers: {
-          cookie: "acme.session_token=synthetic",
+          cookie: "peal.session_token=synthetic",
           "user-agent": "Mozilla/5.0 (Synthetic)",
         },
         method: "GET",

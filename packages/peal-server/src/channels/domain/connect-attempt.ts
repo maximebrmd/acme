@@ -29,13 +29,13 @@ export const starterOf = (subject: ActorSubject): string =>
     : `apiKey:${subject.apiKeyId}`;
 
 /**
- * A member's sign-in on a platform, between leaving Acme and coming back.
+ * A member's sign-in on a platform, between leaving Peal and coming back.
  * `state` names it in the platform's callback; it is bound to the workspace
  * and the member who started it, so a callback from anyone else, or for
  * another workspace, cannot complete it.
  */
 export class ConnectAttempt extends Schema.Class<ConnectAttempt>(
-  "acme-server/channels/domain/ConnectAttempt"
+  "peal-server/channels/domain/ConnectAttempt"
 )({
   // The channel it reconnects; none when it connects a new account.
   channelId: Schema.Option(ChannelIdSchema),

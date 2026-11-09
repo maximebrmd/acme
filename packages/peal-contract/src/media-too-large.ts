@@ -1,6 +1,6 @@
 import { Schema } from "effect";
 
-/** The declared file is larger than Acme stores for its kind. */
+/** The declared file is larger tha Peal stores for its kind. */
 export class MediaTooLarge extends Schema.TaggedError<MediaTooLarge>()(
   "MediaTooLarge",
   {
@@ -10,7 +10,7 @@ export class MediaTooLarge extends Schema.TaggedError<MediaTooLarge>()(
   },
   {
     description:
-      "The file is larger than Acme stores for its kind: 16 MiB for an image, 1 GiB for a video.",
+      "The file is larger tha Peal stores for its kind: 16 MiB for an image, 1 GiB for a video.",
     httpApiStatus: 422,
   }
 ) {}

@@ -53,4 +53,4 @@ export class MediaForPublishing extends Context.Service<
       expiresIn: Duration.Duration
     ) => Effect.Effect<string, MediaFailure>;
   }
->()("acme-server/publishing/application/MediaForPublishing") {}
+>()("peal-server/publishing/application/MediaForPublishing") {}

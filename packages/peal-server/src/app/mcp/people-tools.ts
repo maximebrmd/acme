@@ -3,7 +3,7 @@ import {
   InvitationSchema,
   NewInvitationSchema,
   WorkspaceMemberSchema,
-} from "acme-contract";
+} from "peal-contract";
 import { Schema } from "effect";
 import { Tool, Toolkit } from "effect/ai";
 
@@ -33,7 +33,7 @@ export const ListInvitations = Tool.make("list_invitations", {
 export const InviteMember = Tool.make("invite_member", {
   dependencies: [CurrentMember],
   description:
-    "Invites someone to the workspace by email, with a role: Acme emails them a link that works for 7 days, which lets them join with that role. A pending invitation to the same address is revoked and replaced, and its link stops working. Only owners invite owners; on a server that bills, the plan must have room for one more member. Invite only someone the user named.",
+    "Invites someone to the workspace by email, with a role: Peal emails them a link that works for 7 days, which lets them join with that role. A pending invitation to the same address is revoked and replaced, and its link stops working. Only owners invite owners; on a server that bills, the plan must have room for one more member. Invite only someone the user named.",
   failure: ToolRefused,
   parameters: NewInvitationSchema,
   success: InvitationSchema,

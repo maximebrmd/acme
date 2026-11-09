@@ -3,7 +3,7 @@ import {
   DataDeletionNotFound,
   MetaAppNotConfigured,
   SignedRequestRefused,
-} from "acme-contract";
+} from "peal-contract";
 import { Effect, Option } from "effect";
 import { HttpApiBuilder } from "effect/http-api";
 

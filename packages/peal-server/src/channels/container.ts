@@ -27,7 +27,7 @@ import { SqlChannelLocks } from "#channels/infrastructure/sql-channel-locks.ts";
 import { TokenCipherLive } from "#channels/infrastructure/web-crypto-token-cipher.ts";
 import { OutboundGuard } from "#shared/infrastructure/platforms/outbound-guard.ts";
 
-// The platforms' sign-in flows, the documents that identify Acme's
+// The platforms' sign-in flows, the documents that identify Peal's
 // clients, and the check of Meta's signed requests, from the settings read
 // at startup. Requests to servers a user chose go through the outbound
 // guard, which needs Dns.
@@ -47,7 +47,7 @@ const PlatformsLive = Layer.mergeAll(
   )
 );
 
-// The adapters behind the context's ports. The cipher reads ACME_TOKEN_KEYS
+// The adapters behind the context's ports. The cipher reads PEAL_TOKEN_KEYS
 // when the server starts: it may be unset, as on a server that connects no
 // channel, but a malformed keyring stops the server there, as do malformed
 // Bluesky client keys or Meta app settings.

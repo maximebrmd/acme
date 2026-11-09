@@ -32,7 +32,7 @@ export class WorkspaceContacts extends Context.Service<
       DirectoryUnavailable
     >;
   }
->()("acme-server/workspace/application/WorkspaceContacts") {
+>()("peal-server/workspace/application/WorkspaceContacts") {
   static readonly layer = Layer.effect(
     WorkspaceContacts,
     Effect.gen(function* WorkspaceContactsLive() {

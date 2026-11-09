@@ -69,7 +69,7 @@ describe(SendAuthEmail, () => {
       assert.strictEqual(sent?.to, "ada@example.test");
       assert.strictEqual(
         sent?.subject,
-        "Confirmez votre adresse e-mail pour Acme"
+        "Confirmez votre adresse e-mail pour Peal"
       );
     })
   );

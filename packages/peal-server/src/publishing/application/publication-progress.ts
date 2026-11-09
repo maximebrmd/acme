@@ -45,4 +45,4 @@ export class PublicationProgress extends Context.Service<
       idempotencyKey: string
     ) => Effect.Effect<CallProgress, DatabaseError>;
   }
->()("acme-server/publishing/application/PublicationProgress") {}
+>()("peal-server/publishing/application/PublicationProgress") {}

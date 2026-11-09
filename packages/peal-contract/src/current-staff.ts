@@ -10,5 +10,5 @@ export interface Staff {
  * the staff member who sends the request.
  */
 export class CurrentStaff extends Context.Service<CurrentStaff, Staff>()(
-  "acme-contract/CurrentStaff"
+  "peal-contract/CurrentStaff"
 ) {}

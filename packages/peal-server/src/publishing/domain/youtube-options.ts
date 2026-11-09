@@ -108,7 +108,7 @@ const youTubeProblems = (
  * true, and the video holds no altered or synthetic content.
  */
 export class YouTubeOptions extends Schema.Class<YouTubeOptions>(
-  "acme-server/publishing/domain/YouTubeOptions"
+  "peal-server/publishing/domain/YouTubeOptions"
 )({
   // A number YouTube's videoCategories list gives, such as "22".
   categoryId: Schema.optionalKey(PostTextSchema),

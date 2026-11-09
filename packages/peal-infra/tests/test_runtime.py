@@ -1,4 +1,4 @@
-"""What acme_runtime writes for Compose (host.env) and what it requires of
+"""What peal_runtime writes for Compose (host.env) and what it requires of
 the credentials, as Ansible renders them for each server."""
 
 from __future__ import annotations
@@ -20,7 +20,7 @@ LINE = re.compile(r"[A-Za-z_][A-Za-z0-9_]*='[^'\r\n]*'")
 
 
 def _host_env(rendered: Path, environment: str) -> dict[str, str]:
-    lines = (rendered / f"acme-{environment}" / "host.env").read_text().splitlines()
+    lines = (rendered / f"peal-{environment}" / "host.env").read_text().splitlines()
     settings_lines = [line for line in lines if line and not line.startswith("#")]
     assert all(LINE.fullmatch(line) for line in settings_lines), settings_lines
     return {name: value.strip("'") for name, value in (line.split("=", 1) for line in settings_lines)}
@@ -30,28 +30,28 @@ def _host_env(rendered: Path, environment: str) -> dict[str, str]:
 def test_host_env_holds_one_setting_a_line(rendered: Path, environment: str) -> None:
     host_env = _host_env(rendered, environment)
 
-    assert host_env["PUBLIC_URL"] == f"https://{settings(environment)['acme_hostnames']['app']}"
+    assert host_env["PUBLIC_URL"] == f"https://{settings(environment)['peal_hostnames']['app']}"
 
 
 def test_production_sends_its_heartbeat(rendered: Path) -> None:
     host_env = _host_env(rendered, "production")
 
-    assert host_env["ACME_GRAFANA_HEARTBEAT"] == "./config/production/grafana/alerting/heartbeat.yaml"
-    assert host_env["ACME_HEARTBEAT_URL"] == settings("production")["acme_heartbeat_url"]
-    assert (INFRA.parent / "acme-docker" / host_env["ACME_GRAFANA_HEARTBEAT"]).is_file()
+    assert host_env["PEAL_GRAFANA_HEARTBEAT"] == "./config/production/grafana/alerting/heartbeat.yaml"
+    assert host_env["PEAL_HEARTBEAT_URL"] == settings("production")["peal_heartbeat_url"]
+    assert (INFRA.parent / "peal-docker" / host_env["PEAL_GRAFANA_HEARTBEAT"]).is_file()
 
 
 def test_the_sandbox_sends_none(rendered: Path) -> None:
     host_env = _host_env(rendered, "sandbox")
 
-    assert "ACME_GRAFANA_HEARTBEAT" not in host_env
-    assert "ACME_HEARTBEAT_URL" not in host_env
+    assert "PEAL_GRAFANA_HEARTBEAT" not in host_env
+    assert "PEAL_HEARTBEAT_URL" not in host_env
 
 
 def _misread(host_settings: dict[str, Any]) -> list[str]:
-    """The settings acme_runtime refuses to write, by name."""
-    found = task("acme_runtime", "Refuse host settings Compose would misread")
-    return ansible_render(found["vars"]["acme_runtime_misread"], acme_runtime_host_settings=host_settings)
+    """The settings peal_runtime refuses to write, by name."""
+    found = task("peal_runtime", "Refuse host settings Compose would misread")
+    return ansible_render(found["vars"]["peal_runtime_misread"], peal_runtime_host_settings=host_settings)
 
 
 @pytest.mark.parametrize(
@@ -59,7 +59,7 @@ def _misread(host_settings: dict[str, Any]) -> list[str]:
     ["it's", "two\nlines", "carriage\rreturn", ["a", "list"], {"a": "map"}, None],
 )
 def test_host_settings_refuse_what_compose_would_misread(value: Any) -> None:
-    assert _misread({"PUBLIC_URL": "https://app.example.com", "ACME_AI_PROVIDER": value}) == ["ACME_AI_PROVIDER"]
+    assert _misread({"PUBLIC_URL": "https://app.example.com", "PEAL_AI_PROVIDER": value}) == ["PEAL_AI_PROVIDER"]
 
 
 @pytest.mark.parametrize("name", ["1ST", "WITH SPACE", "WITH-DASH", "A=B", "", "TRAILING\n", "TWO\nLINES"])
@@ -67,55 +67,55 @@ def test_host_settings_refuse_names_compose_would_misread(name: str) -> None:
     assert _misread({name: "value"}) == [name]
 
 
-@pytest.mark.parametrize("value", ["Acme <noreply@example.com>", "https://a.example.com/x?y=1&z=$HOME", 3000, True, ""])
+@pytest.mark.parametrize("value", ["Peal <noreply@example.com>", "https://a.example.com/x?y=1&z=$HOME", 3000, True, ""])
 def test_host_settings_take_strings_and_numbers(value: Any) -> None:
-    assert _misread({"ACME_SETTING": value}) == []
+    assert _misread({"PEAL_SETTING": value}) == []
 
 
 def test_host_env_writes_booleans_as_the_server_reads_them() -> None:
     """The server's Config.Boolean takes true and false, not True and
     False."""
-    template = (INFRA / "roles" / "acme_runtime" / "templates" / "host.env.j2").read_text()
-    host_env = ansible_render(template, acme_runtime_host_settings={"ON": True, "OFF": False})
+    template = (INFRA / "roles" / "peal_runtime" / "templates" / "host.env.j2").read_text()
+    host_env = ansible_render(template, peal_runtime_host_settings={"ON": True, "OFF": False})
 
     assert "ON='true'\n" in host_env
     assert "OFF='false'\n" in host_env
 
 
 def _required(environment: str) -> list[str]:
-    expression = role_file("acme_runtime", "vars")["acme_runtime_required_credentials"]
+    expression = role_file("peal_runtime", "vars")["peal_runtime_required_credentials"]
     return ansible_render(expression, **settings(environment))
 
 
 def test_production_requires_the_heartbeat_token() -> None:
-    assert "ACME_HEARTBEAT_TOKEN" in _required("production")
+    assert "PEAL_HEARTBEAT_TOKEN" in _required("production")
 
 
 def test_the_sandbox_does_not() -> None:
-    assert "ACME_HEARTBEAT_TOKEN" not in _required("sandbox")
+    assert "PEAL_HEARTBEAT_TOKEN" not in _required("sandbox")
 
 
 def _unset(tmp_path: Path, credentials: str) -> list[str]:
     """Runs the role's check of a credentials.env written by hand, as root
     would on the server, and returns the names it reports unset."""
     (tmp_path / "credentials.env").write_text(credentials)
-    found = task("acme_runtime", "Find the credentials not set on the server")
+    found = task("peal_runtime", "Find the credentials not set on the server")
     script = render(
         found["ansible.builtin.shell"],
-        acme_root=str(tmp_path),
-        acme_runtime_required_credentials=["ACME_S3_ACCESS_KEY_ID", "TELEGRAM_BOT_TOKEN"],
-        acme_mail_credentials=["RESEND_API_KEY", "SMTP_URL"],
+        peal_root=str(tmp_path),
+        peal_runtime_required_credentials=["PEAL_S3_ACCESS_KEY_ID", "TELEGRAM_BOT_TOKEN"],
+        peal_mail_credentials=["RESEND_API_KEY", "SMTP_URL"],
     )
     return subprocess.run(["sh", "-c", script], check=True, capture_output=True, text=True).stdout.splitlines()
 
 
 def test_credentials_written_by_hand_are_set_with_a_value(tmp_path: Path) -> None:
-    assert _unset(tmp_path, "ACME_S3_ACCESS_KEY_ID='synthetic'\nTELEGRAM_BOT_TOKEN=synthetic\nSMTP_URL=\"smtp://mail\"\n") == []
+    assert _unset(tmp_path, "PEAL_S3_ACCESS_KEY_ID='synthetic'\nTELEGRAM_BOT_TOKEN=synthetic\nSMTP_URL=\"smtp://mail\"\n") == []
 
 
 @pytest.mark.parametrize("empty", ["", "''", '""'])
 def test_an_empty_credential_written_by_hand_is_unset(tmp_path: Path, empty: str) -> None:
     """As in the vault, where an empty value counts as unset."""
-    credentials = f"ACME_S3_ACCESS_KEY_ID={empty}\nTELEGRAM_BOT_TOKEN='synthetic'\nRESEND_API_KEY={empty}\n"
+    credentials = f"PEAL_S3_ACCESS_KEY_ID={empty}\nTELEGRAM_BOT_TOKEN='synthetic'\nRESEND_API_KEY={empty}\n"
 
-    assert _unset(tmp_path, credentials) == ["ACME_S3_ACCESS_KEY_ID", "RESEND_API_KEY or SMTP_URL"]
+    assert _unset(tmp_path, credentials) == ["PEAL_S3_ACCESS_KEY_ID", "RESEND_API_KEY or SMTP_URL"]

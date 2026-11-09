@@ -1,6 +1,6 @@
 /* The design system: shadcn/ui's Nova style on a neutral base, for Tailwind
    CSS v4. An app imports this once from its global stylesheet and puts the
-   GeistSans and GeistMono `variable` class names from "acme-ui/lib/fonts" on
+   GeistSans and GeistMono `variable` class names from "peal-ui/lib/fonts" on
    <html>. */
 @import "tailwindcss";
 @import "tw-animate-css";

@@ -1,10 +1,10 @@
 "use client";
 
 import { useAtomRefresh, useAtomValue } from "@effect/atom-react";
-import type { Media } from "acme-contract";
-import { Alert, AlertDescription } from "acme-ui/components/alert";
-import { Badge } from "acme-ui/components/badge";
-import { Button } from "acme-ui/components/button";
+import type { Media } from "peal-contract";
+import { Alert, AlertDescription } from "peal-ui/components/alert";
+import { Badge } from "peal-ui/components/badge";
+import { Button } from "peal-ui/components/button";
 import {
   Dialog,
   DialogContent,
@@ -13,8 +13,8 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "acme-ui/components/dialog";
-import { Skeleton } from "acme-ui/components/skeleton";
+} from "peal-ui/components/dialog";
+import { Skeleton } from "peal-ui/components/skeleton";
 import { DateTime, Option } from "effect";
 import { AsyncResult } from "effect/reactivity";
 import { CheckIcon, LibraryIcon } from "lucide-react";

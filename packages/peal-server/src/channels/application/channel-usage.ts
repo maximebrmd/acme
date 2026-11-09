@@ -16,7 +16,7 @@ export class ChannelUsage extends Context.Service<
       workspaceId: WorkspaceId
     ) => Effect.Effect<number, DatabaseError>;
   }
->()("acme-server/channels/application/ChannelUsage") {
+>()("peal-server/channels/application/ChannelUsage") {
   static readonly layer = Layer.effect(
     ChannelUsage,
     Effect.gen(function* ChannelUsageLive() {

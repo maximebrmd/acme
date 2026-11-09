@@ -1,4 +1,4 @@
-import { Api } from "acme-contract";
+import { Api } from "peal-contract";
 import { Effect, Option } from "effect";
 import { HttpApiBuilder } from "effect/http-api";
 

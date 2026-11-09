@@ -1,8 +1,8 @@
-import type { Membership } from "acme-contract";
+import type { Membership } from "peal-contract";
 import { Config, Effect, Option } from "effect";
 import { Flag } from "effect/cli";
 
-import { AcmeApi } from "#api.ts";
+import { PealApi } from "#api.ts";
 import { display } from "#display.ts";
 import { explain } from "#explain.ts";
 import { channelName } from "#print.ts";
@@ -10,14 +10,14 @@ import { Refused } from "#refused.ts";
 import { accessToken } from "#session.ts";
 import { SignInExpired } from "#sign-in-expired.ts";
 
-/** The workspace a command acts in: a flag, then ACME_WORKSPACE. */
+/** The workspace a command acts in: a flag, then PEAL_WORKSPACE. */
 export const workspaceFlag = Flag.String("workspace").pipe(
   Flag.withAlias("w"),
   Flag.withDescription(
-    "The workspace to act in, by its slug or id. Defaults to ACME_WORKSPACE, then to your only workspace."
+    "The workspace to act in, by its slug or id. Defaults to PEAL_WORKSPACE, then to your only workspace."
   ),
   Flag.withMetavar("<slug>"),
-  Flag.withFallbackConfig(Config.String("ACME_WORKSPACE")),
+  Flag.withFallbackConfig(Config.String("PEAL_WORKSPACE")),
   Flag.optional
 );
 
@@ -26,7 +26,7 @@ export const workspaceFlag = Flag.String("workspace").pipe(
  * line points at.
  */
 export const signedIn = Effect.gen(function* signedIn() {
-  const api = yield* AcmeApi;
+  const api = yield* PealApi;
   const url = display(api.baseUrl);
 
   return { client: yield* api.signedIn(yield* accessToken), url };
@@ -49,7 +49,7 @@ const pick = (
           reason:
             only === undefined
               ? "You do not belong to any workspace yet."
-              : `You belong to several workspaces: name one with --workspace or ACME_WORKSPACE (${workspaces.map(({ slug }) => slug).join(", ")}).`,
+              : `You belong to several workspaces: name one with --workspace or PEAL_WORKSPACE (${workspaces.map(({ slug }) => slug).join(", ")}).`,
         })
       );
     },
@@ -62,7 +62,7 @@ const pick = (
           onNone: () =>
             Effect.fail(
               new Refused({
-                reason: `You belong to no workspace ${wanted}. acme whoami lists yours.`,
+                reason: `You belong to no workspace ${wanted}. peal whoami lists yours.`,
               })
             ),
           onSome: Effect.succeed,

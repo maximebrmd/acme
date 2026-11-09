@@ -13,4 +13,4 @@ export class AssistantAllowance extends Context.Service<
   {
     readonly dailyRequests: (workspaceId: WorkspaceId) => Effect.Effect<number>;
   }
->()("acme-server/assistant/application/AssistantAllowance") {}
+>()("peal-server/assistant/application/AssistantAllowance") {}

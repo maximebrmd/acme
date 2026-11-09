@@ -8,7 +8,7 @@ import { Subscription } from "./subscription.ts";
  * an older event from a newer one.
  */
 export class SubscriptionChange extends Schema.Class<SubscriptionChange>(
-  "acme-server/billing/domain/SubscriptionChange"
+  "peal-server/billing/domain/SubscriptionChange"
 )({
   eventId: Schema.NonEmptyString,
   occurredAt: Schema.DateTimeUtc,

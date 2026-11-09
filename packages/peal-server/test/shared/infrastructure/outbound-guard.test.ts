@@ -131,7 +131,7 @@ layer(ClientTest)("the public HTTP client", (it) => {
 // guard lets through: what they do with the answers a host sends back.
 const OpenClientTest = Layer.mergeAll(OpenOutboundGuard, FetchHttpClient.layer);
 
-// More than any platform answer Acme reads: a megabyte and a half.
+// More than any platform answer Peal reads: a megabyte and a half.
 const oversized = "x".repeat(1_572_864);
 
 layer(OpenClientTest)("answers from a host a user chose", (it) => {
@@ -204,7 +204,7 @@ layer(OpenClientTest)("answers from a host a user chose", (it) => {
     }).pipe(Effect.scoped)
   );
 
-  it.effect("tell the host nothing of Acme's traces", () =>
+  it.effect("tell the host nothing of Peal's traces", () =>
     Effect.gen(function* noTraceContext() {
       const local = yield* fakeHttpServer(() => ({ status: 204 }));
       const client = yield* publicHttpClient;

@@ -1,5 +1,5 @@
 import { assert, layer } from "@effect/vitest";
-import { Api } from "acme-contract";
+import { Api } from "peal-contract";
 import { Effect, Layer } from "effect";
 import { Cookies, HttpServer } from "effect/http";
 import { HttpApiTest } from "effect/http-api";
@@ -149,8 +149,8 @@ layer(handlersWith(staffSecurityTest(staffId)))(
 
         assert.strictEqual(response.status, 204);
         assert.deepInclude(Cookies.toRecord(response.cookies), {
-          "acme.admin_session": "synthetic-staff-session",
-          "acme.session_token": "synthetic-impersonation",
+          "peal.admin_session": "synthetic-staff-session",
+          "peal.session_token": "synthetic-impersonation",
         });
       })
     );

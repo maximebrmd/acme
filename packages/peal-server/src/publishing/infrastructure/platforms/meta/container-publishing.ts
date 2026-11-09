@@ -92,7 +92,7 @@ export interface ListedPost {
   readonly timestamp: Option.Option<DateTime.Utc>;
 }
 
-// Meta's clock and Acme's may differ by a little.
+// Meta's clock and Peal's may differ by a little.
 const clockSlack = Duration.minutes(1);
 
 /**

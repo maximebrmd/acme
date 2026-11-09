@@ -22,7 +22,7 @@ export const platformsSignedInWith = (app: MetaAppKind): readonly Platform[] =>
  * the user, when it came, and how many channels went.
  */
 export class DataDeletion extends Schema.Class<DataDeletion>(
-  "acme-server/channels/domain/DataDeletion"
+  "peal-server/channels/domain/DataDeletion"
 )({
   app: MetaAppKindSchema,
   channelsDeleted: Schema.Int.check(Schema.isGreaterThanOrEqualTo(0)),

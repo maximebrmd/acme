@@ -56,7 +56,7 @@ describe("the SMTP mailer", () => {
       ).pipe(
         Effect.provide(
           smtpMailer({
-            from: "Acme <noreply@example.test>",
+            from: "Peal <noreply@example.test>",
             url: Redacted.make(url),
           })
         )
@@ -76,7 +76,7 @@ describe("the SMTP mailer", () => {
       assert.strictEqual(found?.Subject, "Bonjour");
       assert.deepStrictEqual(found?.From, {
         Address: "noreply@example.test",
-        Name: "Acme",
+        Name: "Peal",
       });
 
       const message = yield* getJson(

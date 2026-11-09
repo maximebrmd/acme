@@ -6,18 +6,18 @@ import type {
   ContentViolation,
   TikTokAccount,
   TikTokCreator,
-} from "acme-contract";
-import { Checkbox } from "acme-ui/components/checkbox";
-import { Input } from "acme-ui/components/input";
-import { Label } from "acme-ui/components/label";
+} from "peal-contract";
+import { Checkbox } from "peal-ui/components/checkbox";
+import { Input } from "peal-ui/components/input";
+import { Label } from "peal-ui/components/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "acme-ui/components/select";
-import { Separator } from "acme-ui/components/separator";
+} from "peal-ui/components/select";
+import { Separator } from "peal-ui/components/separator";
 import { Cause, Match, Option, Schema } from "effect";
 import { AsyncResult } from "effect/reactivity";
 import { useTranslations } from "next-intl";

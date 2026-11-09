@@ -6,7 +6,7 @@ import { Config, Context, Layer } from "effect";
 // PgClient and Effect's generic SqlClient. Connections open on first use, so
 // the layer builds while the database is down and queries fail instead.
 export const SqlLive = PgClient.layerConfig({
-  applicationName: Config.succeed("acme-server"),
+  applicationName: Config.succeed("peal-server"),
   url: Config.Redacted("DATABASE_URL"),
 });
 
@@ -16,7 +16,7 @@ export const SqlLive = PgClient.layerConfig({
 export class Drizzle extends Context.Service<
   Drizzle,
   PgDrizzle.EffectPgDatabase
->()("acme-server/shared/infrastructure/Drizzle") {
+>()("peal-server/shared/infrastructure/Drizzle") {
   static readonly layer = Layer.effect(Drizzle, PgDrizzle.makeWithDefaults());
 }
 

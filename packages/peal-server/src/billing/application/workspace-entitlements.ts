@@ -22,7 +22,7 @@ export class WorkspaceEntitlements extends Context.Service<
       workspaceId: WorkspaceId
     ) => Effect.Effect<Entitlements, DatabaseError>;
   }
->()("acme-server/billing/application/WorkspaceEntitlements") {
+>()("peal-server/billing/application/WorkspaceEntitlements") {
   static readonly layer = Layer.effect(
     WorkspaceEntitlements,
     Effect.gen(function* WorkspaceEntitlementsLive() {

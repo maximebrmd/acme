@@ -4,7 +4,7 @@ import { SqlClient } from "effect/sql";
 
 import { IntegrationLive, signedUp, TestApp } from "./harness.ts";
 
-const sessionCookie = "acme.session_token=";
+const sessionCookie = "peal.session_token=";
 
 const ExpirySchema = Schema.Array(Schema.Struct({ daysLeft: Schema.Number }));
 
@@ -12,7 +12,7 @@ layer(IntegrationLive, { excludeTestServices: true, timeout: "180 seconds" })(
   "sessions",
   (it) => {
     // The web app's account menu asks Better Auth for the session, as the
-    // API's own reads never extend it, so that someone who keeps using Acme
+    // API's own reads never extend it, so that someone who keeps using Peal
     // stays signed in.
     it.effect(
       "are extended when the browser asks Better Auth for them, not by GET /api/me",

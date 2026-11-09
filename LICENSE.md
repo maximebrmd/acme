@@ -6,7 +6,7 @@ FSL-1.1-ALv2
 
 ## Notice
 
-Copyright 2026 Acme
+Copyright 2026 Peal
 
 ## Terms and Conditions
 

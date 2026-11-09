@@ -64,7 +64,7 @@ export class MediaAssets extends Context.Service<
       assetId: MediaAssetId
     ) => Effect.Effect<void>;
   }
->()("acme-server/media/application/MediaAssets") {}
+>()("peal-server/media/application/MediaAssets") {}
 
 /** The workspace's asset, or `MediaAssetNotFound`. */
 export const getAsset = (

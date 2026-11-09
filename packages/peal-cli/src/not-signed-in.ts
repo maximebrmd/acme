@@ -6,6 +6,6 @@ export class NotSignedIn extends Data.TaggedError("NotSignedIn")<{
   readonly url: string;
 }> {
   override get [CliError.userMessage]() {
-    return `You are not signed in to ${this.url}. Run acme login first.`;
+    return `You are not signed in to ${this.url}. Run peal login first.`;
   }
 }

@@ -1,7 +1,7 @@
 # The production stack: Postgres with pgBackRest, the server, the web app, the
 # static site and docs, and the telemetry stack (the OpenTelemetry Collector,
-# Loki, Tempo, Prometheus and Grafana with its alerts). acme-infra runs it on
-# Acme's servers behind a Cloudflare Tunnel; self-hosters add Caddy in front
+# Loki, Tempo, Prometheus and Grafana with its alerts). peal-infra runs it on
+# Peal's servers behind a Cloudflare Tunnel; self-hosters add Caddy in front
 # with compose.self-host.yaml.
 #
 # Every published port listens on 127.0.0.1 only: the tunnel or Caddy is the
@@ -19,7 +19,7 @@
 # missing; the others are passed through by name, so one that is unset stays
 # unset in the container rather than empty. The images are built from the
 # repository (`docker compose build`, or the release playbook) and tagged
-# ACME_VERSION (ACME_POSTGRES_VERSION for Postgres), `local` unless set.
+# PEAL_VERSION (PEAL_POSTGRES_VERSION for Postgres), `local` unless set.
 
 x-service: &service
   restart: unless-stopped
@@ -45,21 +45,21 @@ x-healthcheck: &healthcheck
   start_interval: 1s
 
 services:
-  # Postgres with pgBackRest. ACME_POSTGRES_ARCHIVE_MODE=on archives the
+  # Postgres with pgBackRest. PEAL_POSTGRES_ARCHIVE_MODE=on archives the
   # write-ahead log to the bucket the PGBACKREST_REPO1_* settings name;
-  # backups run from the host (acme-infra's acme_backup role). Its image has
+  # backups run from the host (peal-infra's peal_backup role). Its image has
   # a tag of its own, which changes only with postgres.Dockerfile, so a
   # release restarts Postgres only when its image changes.
   postgres:
     <<: *service
-    image: acme-postgres:${ACME_POSTGRES_VERSION:-local}
+    image: peal-postgres:${PEAL_POSTGRES_VERSION:-local}
     build:
       context: ../..
-      dockerfile: packages/acme-docker/postgres.Dockerfile
+      dockerfile: packages/peal-docker/postgres.Dockerfile
     command:
       - postgres
       - -c
-      - archive_mode=${ACME_POSTGRES_ARCHIVE_MODE:-off}
+      - archive_mode=${PEAL_POSTGRES_ARCHIVE_MODE:-off}
       - -c
       - archive_command=pgbackrest archive-push %p
       # A write-ahead log segment is archived at least every 5 minutes, which
@@ -67,15 +67,15 @@ services:
       - -c
       - archive_timeout=300
     environment:
-      POSTGRES_USER: acme
-      POSTGRES_DB: acme
+      POSTGRES_USER: peal
+      POSTGRES_DB: peal
       # Part of DATABASE_URL below: keep it URL-safe (openssl rand -hex 32).
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
-      PGBACKREST_STANZA: acme
+      PGBACKREST_STANZA: peal
       PGBACKREST_PG1_PATH: /var/lib/postgresql/18/docker
-      PGBACKREST_PG1_USER: acme
+      PGBACKREST_PG1_USER: peal
       PGBACKREST_REPO1_TYPE: ${PGBACKREST_REPO1_TYPE:-s3}
-      PGBACKREST_REPO1_PATH: ${PGBACKREST_REPO1_PATH:-/acme}
+      PGBACKREST_REPO1_PATH: ${PGBACKREST_REPO1_PATH:-/peal}
       PGBACKREST_REPO1_S3_ENDPOINT:
       PGBACKREST_REPO1_S3_BUCKET:
       PGBACKREST_REPO1_S3_REGION: ${PGBACKREST_REPO1_S3_REGION:-auto}
@@ -107,33 +107,33 @@ services:
       <<: *healthcheck
       # Over TCP: while the image initialises a new database, it runs a
       # temporary server on the Unix socket alone, which then shuts down.
-      test: [CMD, pg_isready, --host=127.0.0.1, --username=acme, --dbname=acme]
+      test: [CMD, pg_isready, --host=127.0.0.1, --username=peal, --dbname=peal]
 
   # Applies pending migrations before it listens, so starting a new release
   # migrates the database.
   server:
     <<: *service
-    image: acme-server:${ACME_VERSION:-local}
+    image: peal-server:${PEAL_VERSION:-local}
     build:
       context: ../..
-      dockerfile: packages/acme-docker/server.Dockerfile
+      dockerfile: packages/peal-docker/server.Dockerfile
     environment:
-      DATABASE_URL: postgres://acme:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}@postgres:5432/acme
-      PUBLIC_URL: ${PUBLIC_URL:?Set PUBLIC_URL, the address people open Acme at}
+      DATABASE_URL: postgres://peal:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}@postgres:5432/peal
+      PUBLIC_URL: ${PUBLIC_URL:?Set PUBLIC_URL, the address people open Peal at}
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?Set BETTER_AUTH_SECRET}
       # cf-connecting-ip behind Cloudflare, x-forwarded-for behind Caddy.
       AUTH_IP_HEADERS: ${AUTH_IP_HEADERS:?Set AUTH_IP_HEADERS}
       MAIL_FROM: ${MAIL_FROM:?Set MAIL_FROM}
-      ACME_S3_ENDPOINT: ${ACME_S3_ENDPOINT:?Set ACME_S3_ENDPOINT}
-      ACME_S3_BUCKET: ${ACME_S3_BUCKET:?Set ACME_S3_BUCKET}
-      ACME_S3_ACCESS_KEY_ID: ${ACME_S3_ACCESS_KEY_ID:?Set ACME_S3_ACCESS_KEY_ID}
-      ACME_S3_SECRET_ACCESS_KEY: ${ACME_S3_SECRET_ACCESS_KEY:?Set ACME_S3_SECRET_ACCESS_KEY}
+      PEAL_S3_ENDPOINT: ${PEAL_S3_ENDPOINT:?Set PEAL_S3_ENDPOINT}
+      PEAL_S3_BUCKET: ${PEAL_S3_BUCKET:?Set PEAL_S3_BUCKET}
+      PEAL_S3_ACCESS_KEY_ID: ${PEAL_S3_ACCESS_KEY_ID:?Set PEAL_S3_ACCESS_KEY_ID}
+      PEAL_S3_SECRET_ACCESS_KEY: ${PEAL_S3_SECRET_ACCESS_KEY:?Set PEAL_S3_SECRET_ACCESS_KEY}
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
-      OTEL_SERVICE_VERSION: ${ACME_VERSION:-local}
+      OTEL_SERVICE_VERSION: ${PEAL_VERSION:-local}
       # Optional: the docs' environment variables page says what each does.
       # The container sees no other variable, so each setting the server
       # reads is named here (test/compose.test.ts checks it against the docs).
-      ACME_TOKEN_KEYS:
+      PEAL_TOKEN_KEYS:
       BLUESKY_CLIENT_KEYS:
       LINKEDIN_CLIENT_ID:
       LINKEDIN_CLIENT_SECRET:
@@ -157,17 +157,17 @@ services:
       AUTH_DB_POOL_MAX:
       BETTER_AUTH_SECRETS:
       MCP_DYNAMIC_REGISTRATION:
-      ACME_S3_REGION:
-      ACME_S3_FORCE_PATH_STYLE:
-      ACME_S3_KEY_PREFIX:
-      ACME_MEDIA_PUBLIC_BASE_URL:
+      PEAL_S3_REGION:
+      PEAL_S3_FORCE_PATH_STYLE:
+      PEAL_S3_KEY_PREFIX:
+      PEAL_MEDIA_PUBLIC_BASE_URL:
       TIKTOK_MEDIA_URL_PREFIX:
-      ACME_FFPROBE_PATH:
-      ACME_AI_PROVIDER:
-      ACME_AI_API_KEY:
-      ACME_AI_MODEL:
-      ACME_AI_BASE_URL:
-      ACME_AI_DAILY_REQUESTS:
+      PEAL_FFPROBE_PATH:
+      PEAL_AI_PROVIDER:
+      PEAL_AI_API_KEY:
+      PEAL_AI_MODEL:
+      PEAL_AI_BASE_URL:
+      PEAL_AI_DAILY_REQUESTS:
       STRIPE_SECRET_KEY:
       STRIPE_WEBHOOK_SECRET:
       STRIPE_PRICE_PRO:
@@ -181,9 +181,9 @@ services:
       OTEL_TRACES_EXPORTER:
       OTEL_METRICS_EXPORTER:
       OTEL_LOGS_EXPORTER:
-      ACME_CLUSTER_RETENTION:
+      PEAL_CLUSTER_RETENTION:
     ports:
-      - 127.0.0.1:${ACME_SERVER_PORT:-3000}:3000
+      - 127.0.0.1:${PEAL_SERVER_PORT:-3000}:3000
     depends_on:
       postgres:
         condition: service_healthy
@@ -200,23 +200,23 @@ services:
 
   web:
     <<: *service
-    image: acme-web:${ACME_VERSION:-local}
+    image: peal-web:${PEAL_VERSION:-local}
     build:
       context: ../..
-      dockerfile: packages/acme-docker/web.Dockerfile
+      dockerfile: packages/peal-docker/web.Dockerfile
     # Node runs as PID 2 under an init, so it stops on SIGTERM.
     init: true
     # Next's cache of optimised images and fetches, rebuilt after a restart.
-    tmpfs: [/tmp:size=64m, /app/packages/acme-web/.next/cache:size=256m]
+    tmpfs: [/tmp:size=64m, /app/packages/peal-web/.next/cache:size=256m]
     environment:
-      ACME_API_URL: http://server:3000
+      PEAL_API_URL: http://server:3000
       # Named in the web app's error reports.
-      ACME_RELEASE: ${ACME_VERSION:-local}
+      PEAL_RELEASE: ${PEAL_VERSION:-local}
       # Longer than the edge keeps idle connections (90 s for the tunnel, 2
       # minutes for Caddy), so it never reuses one Node has closed.
       KEEP_ALIVE_TIMEOUT: "125000"
     ports:
-      - 127.0.0.1:${ACME_WEB_PORT:-3001}:3001
+      - 127.0.0.1:${PEAL_WEB_PORT:-3001}:3001
     depends_on:
       server:
         condition: service_healthy
@@ -232,10 +232,10 @@ services:
   static:
     <<: *service
     profiles: [static]
-    image: acme-static:${ACME_VERSION:-local}
+    image: peal-static:${PEAL_VERSION:-local}
     build:
       context: ../..
-      dockerfile: packages/acme-docker/static.Dockerfile
+      dockerfile: packages/peal-docker/static.Dockerfile
       args:
         SITE_URL: ${SITE_URL:-}
         SITE_DOCS_URL: ${SITE_DOCS_URL:-}
@@ -245,8 +245,8 @@ services:
         DOCS_PLAUSIBLE_DOMAIN: ${DOCS_PLAUSIBLE_DOMAIN:-}
         DOCS_PLAUSIBLE_HOST: ${DOCS_PLAUSIBLE_HOST:-}
     ports:
-      - 127.0.0.1:${ACME_SITE_PORT:-4321}:8080
-      - 127.0.0.1:${ACME_DOCS_PORT:-4322}:8081
+      - 127.0.0.1:${PEAL_SITE_PORT:-4321}:8080
+      - 127.0.0.1:${PEAL_DOCS_PORT:-4322}:8081
     healthcheck:
       <<: *healthcheck
       test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1:8080/, http://127.0.0.1:8081/]
@@ -264,7 +264,7 @@ services:
         source: busybox:1.38.0-musl@sha256:80e38f9a1b39188b8bdb28879178edb322a4402b081a9aedda1924609decd6f6
         target: /busybox
     ports:
-      - 127.0.0.1:${ACME_OTLP_HTTP_PORT:-14318}:4318
+      - 127.0.0.1:${PEAL_OTLP_HTTP_PORT:-14318}:4318
     depends_on:
       loki:
         condition: service_healthy
@@ -316,24 +316,24 @@ services:
       <<: *healthcheck
       test: [CMD, promtool, check, ready]
 
-  # Signed in through Cloudflare Access when ACME_GRAFANA_ACCESS_TEAM is set:
+  # Signed in through Cloudflare Access when PEAL_GRAFANA_ACCESS_TEAM is set:
   # Grafana checks the token Access adds to each request, and signs its
   # email in as an editor. Otherwise, the admin account and its password.
   grafana:
     <<: *service
     image: grafana/grafana:13.3.0@sha256:488984b716c0862639f91a698adbe2862677a5a07bad42da5f03f3030883b205
     environment:
-      GF_SERVER_ROOT_URL: ${ACME_GRAFANA_URL:-http://localhost:13000}
+      GF_SERVER_ROOT_URL: ${PEAL_GRAFANA_URL:-http://localhost:13000}
       GF_SECURITY_ADMIN_USER: admin
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?Set GRAFANA_ADMIN_PASSWORD}
       GF_AUTH_ANONYMOUS_ENABLED: "false"
       GF_USERS_ALLOW_SIGN_UP: "false"
-      GF_AUTH_JWT_ENABLED: ${ACME_GRAFANA_ACCESS_TEAM:+true}
+      GF_AUTH_JWT_ENABLED: ${PEAL_GRAFANA_ACCESS_TEAM:+true}
       GF_AUTH_JWT_HEADER_NAME: Cf-Access-Jwt-Assertion
       GF_AUTH_JWT_EMAIL_CLAIM: email
       GF_AUTH_JWT_USERNAME_CLAIM: email
-      GF_AUTH_JWT_JWK_SET_URL: https://${ACME_GRAFANA_ACCESS_TEAM:-}.cloudflareaccess.com/cdn-cgi/access/certs
-      GF_AUTH_JWT_EXPECT_CLAIMS: '{"aud": "${ACME_GRAFANA_ACCESS_AUD:-}", "iss": "https://${ACME_GRAFANA_ACCESS_TEAM:-}.cloudflareaccess.com"}'
+      GF_AUTH_JWT_JWK_SET_URL: https://${PEAL_GRAFANA_ACCESS_TEAM:-}.cloudflareaccess.com/cdn-cgi/access/certs
+      GF_AUTH_JWT_EXPECT_CLAIMS: '{"aud": "${PEAL_GRAFANA_ACCESS_AUD:-}", "iss": "https://${PEAL_GRAFANA_ACCESS_TEAM:-}.cloudflareaccess.com"}'
       GF_AUTH_JWT_CACHE_TTL: 60m
       GF_AUTH_JWT_AUTO_SIGN_UP: "true"
       GF_AUTH_JWT_ROLE_ATTRIBUTE_PATH: "'Editor'"
@@ -349,18 +349,18 @@ services:
       TELEGRAM_BOT_TOKEN:
       TELEGRAM_CHAT_ID:
       # Read by the heartbeat, when it is mounted.
-      ACME_HEARTBEAT_URL:
-      ACME_HEARTBEAT_TOKEN:
+      PEAL_HEARTBEAT_URL:
+      PEAL_HEARTBEAT_TOKEN:
     volumes:
       - ./config/grafana/datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml:ro
       - ./config/production/grafana/alerting/rules.yaml:/etc/grafana/provisioning/alerting/rules.yaml:ro
       - ./config/production/grafana/dashboards.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml:ro
       - ./config/production/grafana/dashboards:/etc/grafana/dashboards:ro
-      - ${ACME_GRAFANA_CONTACT_POINTS:-./config/production/grafana/alerting/none.yaml}:/etc/grafana/provisioning/alerting/contact-points.yaml:ro
-      - ${ACME_GRAFANA_HEARTBEAT:-./config/production/grafana/alerting/none.yaml}:/etc/grafana/provisioning/alerting/heartbeat.yaml:ro
+      - ${PEAL_GRAFANA_CONTACT_POINTS:-./config/production/grafana/alerting/none.yaml}:/etc/grafana/provisioning/alerting/contact-points.yaml:ro
+      - ${PEAL_GRAFANA_HEARTBEAT:-./config/production/grafana/alerting/none.yaml}:/etc/grafana/provisioning/alerting/heartbeat.yaml:ro
       - grafana:/var/lib/grafana
     ports:
-      - 127.0.0.1:${ACME_GRAFANA_PORT:-13000}:3000
+      - 127.0.0.1:${PEAL_GRAFANA_PORT:-13000}:3000
     depends_on:
       loki:
         condition: service_healthy

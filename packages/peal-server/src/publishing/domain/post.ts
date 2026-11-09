@@ -47,7 +47,7 @@ import { Schedule } from "./schedule.ts";
  * returns the next post or a typed error. Time comes in as `now`.
  */
 export class Post extends Schema.Class<Post>(
-  "acme-server/publishing/domain/Post"
+  "peal-server/publishing/domain/Post"
 )({
   authorId: Schema.Option(UserIdSchema),
   content: PostContent,

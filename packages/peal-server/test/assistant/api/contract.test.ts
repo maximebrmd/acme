@@ -1,5 +1,5 @@
 import { describe, expect, it } from "@effect/vitest";
-import { AssistantToneSchema, TranslationLanguageSchema } from "acme-contract";
+import { AssistantToneSchema, TranslationLanguageSchema } from "peal-contract";
 
 import { ToneSchema } from "#assistant/domain/tone.ts";
 import { TranslationLanguageSchema as DomainLanguageSchema } from "#assistant/domain/translation-language.ts";

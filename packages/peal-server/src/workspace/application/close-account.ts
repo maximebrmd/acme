@@ -54,7 +54,7 @@ export class CloseAccount extends Context.Service<
       | WorkspaceSubscribed
     >;
   }
->()("acme-server/workspace/application/CloseAccount") {
+>()("peal-server/workspace/application/CloseAccount") {
   static readonly layer = Layer.effect(
     CloseAccount,
     Effect.gen(function* CloseAccountLive() {

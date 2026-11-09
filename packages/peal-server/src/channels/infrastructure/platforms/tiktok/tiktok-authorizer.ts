@@ -26,7 +26,7 @@ import type { TikTokHosts } from "#shared/infrastructure/platforms/tiktok-api.ts
 export const tiktokCallbackPath = "/connect/tiktok/callback";
 
 /**
- * What Acme asks a creator for: who they are (`user.info.basic`, which
+ * What Peal asks a creator for: who they are (`user.info.basic`, which
  * every Login Kit app has, and `user.info.profile` for their username), to
  * post on their account (`video.publish`, the Content Posting API's direct
  * post, photos included), and to read their videos (`video.list`, the
@@ -70,14 +70,14 @@ const decodeAvatar = Schema.decodeUnknownOption(AvatarUrlSchema);
 
 const decodeOAuthError = Schema.decodeUnknownOption(OAuthErrorSchema);
 
-// Errors that name Acme's client rather than the creator's tokens: the
+// Errors that name Peal's client rather than the creator's tokens: the
 // operator's settings are wrong, and no channel should be blamed for it.
 const clientErrors: ReadonlySet<string> = new Set([
   "invalid_client",
   "unauthorized_client",
 ]);
 
-// The user fields Acme reads, as GET /v2/user/info/ takes them.
+// The user fields Peal reads, as GET /v2/user/info/ takes them.
 const userFields = "open_id,avatar_url,display_name,username";
 
 const nonBlank = (text: string | undefined) =>
@@ -156,7 +156,7 @@ const refusedRefresh = (
 ): Effect.Effect<never, PlatformUnavailable | TokenExpired> => {
   if (Option.exists(error, (name) => clientErrors.has(name))) {
     return Effect.logError(
-      "TikTok refused Acme's client: check TIKTOK_CLIENT_KEY and TIKTOK_CLIENT_SECRET"
+      "TikTok refused Peal's client: check TIKTOK_CLIENT_KEY and TIKTOK_CLIENT_SECRET"
     ).pipe(Effect.andThen(Effect.fail(new PlatformUnavailable())));
   }
 
@@ -185,7 +185,7 @@ const refusedRefresh = (
  * before anything uses it. Refresh tokens end 180 days after the creator
  * signed in, when the channel asks to be reconnected.
  *
- * Disconnecting revokes the access token, which removes Acme from the
+ * Disconnecting revokes the access token, which removes Peal from the
  * creator's connected apps.
  */
 export const tiktokAuthorizer = Effect.fn("TikTokAuthorizer.make")(

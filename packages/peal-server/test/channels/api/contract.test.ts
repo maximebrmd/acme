@@ -1,5 +1,5 @@
 import { describe, expect, it } from "@effect/vitest";
-import { Api } from "acme-contract";
+import { Api } from "peal-contract";
 import { OpenApi } from "effect/http-api";
 
 // What the API reference tells clients each endpoint may answer.

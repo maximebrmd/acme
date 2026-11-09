@@ -63,7 +63,7 @@ export const makeAuthDatabase = Effect.fn("makeAuthDatabase")(
       Effect.sync(
         () =>
           new Pool({
-            application_name: "acme-server/better-auth",
+            application_name: "peal-server/better-auth",
             connectionString: Redacted.value(url),
             max: poolSize,
           })

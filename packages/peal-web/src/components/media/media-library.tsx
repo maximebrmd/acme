@@ -1,8 +1,8 @@
 "use client";
 
 import { useAtomRefresh, useAtomSet, useAtomValue } from "@effect/atom-react";
-import type { Media, MediaStatus } from "acme-contract";
-import { Alert, AlertDescription } from "acme-ui/components/alert";
+import type { Media, MediaStatus } from "peal-contract";
+import { Alert, AlertDescription } from "peal-ui/components/alert";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,10 +13,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "acme-ui/components/alert-dialog";
-import { Badge } from "acme-ui/components/badge";
-import { Button } from "acme-ui/components/button";
-import { Skeleton } from "acme-ui/components/skeleton";
+} from "peal-ui/components/alert-dialog";
+import { Badge } from "peal-ui/components/badge";
+import { Button } from "peal-ui/components/button";
+import { Skeleton } from "peal-ui/components/skeleton";
 import { DateTime, Exit, Option } from "effect";
 import { AsyncResult } from "effect/reactivity";
 import { Trash2Icon } from "lucide-react";

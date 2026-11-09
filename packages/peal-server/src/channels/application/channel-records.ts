@@ -32,4 +32,4 @@ export class ChannelRecords extends Context.Service<
      */
     readonly eraseUser: (userId: UserId) => Effect.Effect<void, DatabaseError>;
   }
->()("acme-server/channels/application/ChannelRecords") {}
+>()("peal-server/channels/application/ChannelRecords") {}

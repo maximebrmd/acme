@@ -39,7 +39,7 @@ const workspaceId = WorkspaceIdSchema.make(
 );
 
 const channel: NoticeChannel = {
-  handle: "@acme_example",
+  handle: "@peal_example",
   platform: "mastodon",
 };
 

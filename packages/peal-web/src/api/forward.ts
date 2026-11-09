@@ -21,12 +21,12 @@ export const servedByApi = (pathname: string): boolean =>
     (document) => pathname === document || pathname.startsWith(`${document}/`)
   );
 
-// Marks a request this proxy forwarded. Were ACME_API_URL to lead back to
+// Marks a request this proxy forwarded. Were PEAL_API_URL to lead back to
 // this app, under any name, the forwarded request would come through again
 // carrying it, and is refused instead of going round.
-export const forwardedHeader = "x-acme-forwarded";
+export const forwardedHeader = "x-peal-forwarded";
 
-// Rewrites /api/* and the OAuth discovery documents to the Acme server, path
+// Rewrites /api/* and the OAuth discovery documents to the Peal server, path
 // unchanged, so the browser stays same-origin and the API needs no CORS. The
 // server answers under /api itself: the HTTP API, Better Auth, whose emailed
 // links point there, and the MCP endpoint. A server URL with this app's own

@@ -154,7 +154,7 @@ export class MediaLibrary extends Context.Service<
       MediaAssetNotFound | MediaInUse | MediaStorageFailed | MissingPermission
     >;
   }
->()("acme-server/media/application/MediaLibrary") {
+>()("peal-server/media/application/MediaLibrary") {
   /** The use cases, running on the ports the layer is given. */
   static readonly layer = Layer.effect(
     MediaLibrary,

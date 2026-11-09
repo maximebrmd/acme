@@ -1,9 +1,9 @@
-import { cliClientId, OAuthErrorSchema } from "acme-contract";
-import type { Token } from "acme-contract";
+import { cliClientId, OAuthErrorSchema } from "peal-contract";
+import type { Token } from "peal-contract";
 import { DateTime, Duration, Effect, Option, Redacted, Schema } from "effect";
 
 import { requestFailed } from "#api-request-failed.ts";
-import { AcmeApi } from "#api.ts";
+import { PealApi } from "#api.ts";
 import { CredentialStore } from "#credentials.ts";
 import type { Credentials } from "#credentials.ts";
 import { display } from "#display.ts";
@@ -36,7 +36,7 @@ const renewalMargin = Duration.seconds(30);
  * tokens are rotated, so each renews the sign-in once.
  */
 export const accessToken = Effect.gen(function* accessToken() {
-  const { baseUrl, oauth } = yield* AcmeApi;
+  const { baseUrl, oauth } = yield* PealApi;
   const store = yield* CredentialStore;
   const url = display(baseUrl);
 

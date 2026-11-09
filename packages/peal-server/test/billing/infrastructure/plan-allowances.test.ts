@@ -77,7 +77,7 @@ describe("the plan allowances", () => {
 
         const configured = yield* readAll.pipe(
           Effect.provide(
-            allowancesWith(UnmeteredTest, { ACME_AI_DAILY_REQUESTS: "7" })
+            allowancesWith(UnmeteredTest, { PEAL_AI_DAILY_REQUESTS: "7" })
           )
         );
 

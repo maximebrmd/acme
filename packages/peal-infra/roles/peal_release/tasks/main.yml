@@ -7,18 +7,18 @@
 # listens.
 - name: Require the runtime that site.yml sets up
   ansible.builtin.stat:
-    path: "{{ acme_compose_bin }}"
-  register: acme_release_runtime
+    path: "{{ peal_compose_bin }}"
+  register: peal_release_runtime
 
 - name: Stop unless site.yml has run
   ansible.builtin.assert:
-    that: acme_release_runtime.stat.exists
+    that: peal_release_runtime.stat.exists
     fail_msg: Run site.yml on {{ inventory_hostname }} before releasing.
     quiet: true
 
 - name: Create the local release folder
   ansible.builtin.file:
-    path: "{{ acme_release_local_dir }}"
+    path: "{{ peal_release_local_dir }}"
     state: directory
     mode: "0700"
   delegate_to: localhost
@@ -26,43 +26,43 @@
 
 - name: Check the release out
   ansible.builtin.git:
-    repo: "{{ acme_release_repo_url }}"
-    dest: "{{ acme_release_local_dir }}/checkout"
-    version: "{{ acme_version }}"
+    repo: "{{ peal_release_repo_url }}"
+    dest: "{{ peal_release_local_dir }}/checkout"
+    version: "{{ peal_version }}"
     force: true
   delegate_to: localhost
   become: false
-  register: acme_release_checkout
+  register: peal_release_checkout
 
 # Postgres's image is named after its Dockerfile, so it changes, and
 # Postgres restarts, only when that file does.
 - name: Read the Postgres image's Dockerfile
   ansible.builtin.stat:
-    path: "{{ acme_release_local_dir }}/checkout/packages/acme-docker/postgres.Dockerfile"
+    path: "{{ peal_release_local_dir }}/checkout/packages/peal-docker/postgres.Dockerfile"
     checksum_algorithm: sha256
   delegate_to: localhost
   become: false
-  register: acme_release_postgres_dockerfile
+  register: peal_release_postgres_dockerfile
 
 # Read here, from the server's facts, rather than in the builds below, which
 # run on the machine running Ansible.
 - name: Name the release
   ansible.builtin.set_fact:
-    acme_release_platform: >-
-      {{ acme_image_platform
-         | default(acme_release_platforms[ansible_facts.architecture]
+    peal_release_platform: >-
+      {{ peal_image_platform
+         | default(peal_release_platforms[ansible_facts.architecture]
                    | default('linux/' ~ ansible_facts.architecture)) }}
-    acme_release_tag: "{{ acme_release_checkout.after[:12] }}"
-    acme_release_postgres_tag: "{{ acme_release_postgres_dockerfile.stat.checksum[:12] }}"
-    acme_release_dir: "{{ acme_root }}/releases/{{ acme_release_checkout.after[:12] }}"
+    peal_release_tag: "{{ peal_release_checkout.after[:12] }}"
+    peal_release_postgres_tag: "{{ peal_release_postgres_dockerfile.stat.checksum[:12] }}"
+    peal_release_dir: "{{ peal_root }}/releases/{{ peal_release_checkout.after[:12] }}"
 
 - name: Name the release's images
   ansible.builtin.set_fact:
-    acme_release_built:
-      postgres: acme-postgres:{{ acme_release_postgres_tag }}
-      server: acme-server:{{ acme_release_tag }}
-      web: acme-web:{{ acme_release_tag }}
-      static: acme-static:{{ acme_release_tag }}
+    peal_release_built:
+      postgres: peal-postgres:{{ peal_release_postgres_tag }}
+      server: peal-server:{{ peal_release_tag }}
+      web: peal-web:{{ peal_release_tag }}
+      static: peal-static:{{ peal_release_tag }}
 
 # Its id only: an image's full description is long, and the release needs
 # nothing else from it.
@@ -75,10 +75,10 @@
       - --format
       - "{% raw %}{{.Id}}{% endraw %}"
       - "{{ item.value }}"
-  loop: "{{ acme_release_built | dict2items }}"
+  loop: "{{ peal_release_built | dict2items }}"
   loop_control:
     label: "{{ item.value }}"
-  register: acme_release_present
+  register: peal_release_present
   changed_when: false
   failed_when: false
 
@@ -87,8 +87,8 @@
 # would recreate the container, Postgres's included, for nothing.
 - name: Name the images to upload
   ansible.builtin.set_fact:
-    acme_release_missing: >-
-      {{ acme_release_present.results | rejectattr('rc', 'equalto', 0)
+    peal_release_missing: >-
+      {{ peal_release_present.results | rejectattr('rc', 'equalto', 0)
          | map(attribute='item.key') | list }}
 
 # Built and saved once per set of images, platform and environment: `creates`
@@ -96,20 +96,20 @@
 # again.
 - name: Name the archive
   ansible.builtin.set_fact:
-    acme_release_archive: >-
-      {{ acme_release_local_dir }}/images-{{ acme_environment }}-{{
-         ((acme_release_missing | map('extract', acme_release_built) | list + [acme_release_platform])
+    peal_release_archive: >-
+      {{ peal_release_local_dir }}/images-{{ peal_environment }}-{{
+         ((peal_release_missing | map('extract', peal_release_built) | list + [peal_release_platform])
           | join(' ') | hash('sha256'))[:12] }}.tar.gz
 
 - name: Look for the release's archive
   ansible.builtin.stat:
-    path: "{{ acme_release_archive }}"
+    path: "{{ peal_release_archive }}"
   delegate_to: localhost
   become: false
-  register: acme_release_local_archive
+  register: peal_release_local_archive
 
 - name: Build and upload the images
-  when: acme_release_missing | length > 0
+  when: peal_release_missing | length > 0
   block:
     - name: Build the images
       ansible.builtin.command:
@@ -118,19 +118,19 @@
           - buildx
           - build
           - --platform
-          - "{{ acme_release_platform }}"
+          - "{{ peal_release_platform }}"
           - --file
-          - packages/acme-docker/{{ item }}.Dockerfile
+          - packages/peal-docker/{{ item }}.Dockerfile
           - --tag
-          - "{{ acme_release_built[item] }}"
+          - "{{ peal_release_built[item] }}"
           - --load
           - .
-        chdir: "{{ acme_release_local_dir }}/checkout"
-      loop: "{{ acme_release_missing | difference(['static']) }}"
+        chdir: "{{ peal_release_local_dir }}/checkout"
+      loop: "{{ peal_release_missing | difference(['static']) }}"
       delegate_to: localhost
       become: false
       changed_when: true
-      when: not acme_release_local_archive.stat.exists
+      when: not peal_release_local_archive.stat.exists
 
     # The site and the docs read their settings at build time, so each
     # environment builds its own; docker takes each --build-arg's value from
@@ -138,50 +138,50 @@
     - name: Build the static image
       ansible.builtin.command:
         argv: >-
-          {{ ['docker', 'buildx', 'build', '--platform', acme_release_platform,
-              '--file', 'packages/acme-docker/static.Dockerfile',
-              '--tag', acme_release_built.static, '--load']
-             + (['--build-arg'] | product(acme_static_build_args.keys()) | flatten)
+          {{ ['docker', 'buildx', 'build', '--platform', peal_release_platform,
+              '--file', 'packages/peal-docker/static.Dockerfile',
+              '--tag', peal_release_built.static, '--load']
+             + (['--build-arg'] | product(peal_static_build_args.keys()) | flatten)
              + ['.'] }}
-        chdir: "{{ acme_release_local_dir }}/checkout"
-      environment: "{{ acme_static_build_args }}"
+        chdir: "{{ peal_release_local_dir }}/checkout"
+      environment: "{{ peal_static_build_args }}"
       delegate_to: localhost
       become: false
       changed_when: true
-      when: not acme_release_local_archive.stat.exists and 'static' in acme_release_missing
+      when: not peal_release_local_archive.stat.exists and 'static' in peal_release_missing
 
     - name: Save the images
       ansible.builtin.shell: |
         set -euo pipefail
-        docker save {{ acme_release_missing | map('extract', acme_release_built) | join(' ') }} \
-          | gzip -1 > {{ acme_release_archive }}.part
-        mv {{ acme_release_archive }}.part {{ acme_release_archive }}
+        docker save {{ peal_release_missing | map('extract', peal_release_built) | join(' ') }} \
+          | gzip -1 > {{ peal_release_archive }}.part
+        mv {{ peal_release_archive }}.part {{ peal_release_archive }}
       args:
         executable: /bin/bash
-        creates: "{{ acme_release_archive }}"
+        creates: "{{ peal_release_archive }}"
       delegate_to: localhost
       become: false
 
     - name: Upload the images
       ansible.builtin.copy:
-        src: "{{ acme_release_archive }}"
-        dest: "{{ acme_root }}/images/{{ acme_release_tag }}.tar.gz"
+        src: "{{ peal_release_archive }}"
+        dest: "{{ peal_root }}/images/{{ peal_release_tag }}.tar.gz"
         owner: root
         group: root
         mode: "0600"
 
     - name: Load the images
-      ansible.builtin.command: docker load --input {{ acme_root }}/images/{{ acme_release_tag }}.tar.gz
+      ansible.builtin.command: docker load --input {{ peal_root }}/images/{{ peal_release_tag }}.tar.gz
       changed_when: true
 
     - name: Remove the uploaded archive
       ansible.builtin.file:
-        path: "{{ acme_root }}/images/{{ acme_release_tag }}.tar.gz"
+        path: "{{ peal_root }}/images/{{ peal_release_tag }}.tar.gz"
         state: absent
 
 - name: Create the release folder
   ansible.builtin.file:
-    path: "{{ acme_release_dir }}"
+    path: "{{ peal_release_dir }}"
     state: directory
     owner: root
     group: root
@@ -191,27 +191,27 @@
 # containers' own users read them.
 - name: Upload the stack's files
   ansible.builtin.copy:
-    src: "{{ acme_release_local_dir }}/checkout/packages/acme-docker/"
-    dest: "{{ acme_release_dir }}/"
+    src: "{{ peal_release_local_dir }}/checkout/packages/peal-docker/"
+    dest: "{{ peal_release_dir }}/"
     owner: root
     group: root
     mode: u=rwX,g=rX,o=rX
 
 - name: Name the release that runs
   ansible.builtin.copy:
-    dest: "{{ acme_root }}/release.env"
+    dest: "{{ peal_root }}/release.env"
     content: |
-      # Managed by Ansible (acme-infra): the images compose.production.yaml runs.
-      ACME_VERSION={{ acme_release_tag }}
-      ACME_POSTGRES_VERSION={{ acme_release_postgres_tag }}
+      # Managed by Ansible (peal-infra): the images compose.production.yaml runs.
+      PEAL_VERSION={{ peal_release_tag }}
+      PEAL_POSTGRES_VERSION={{ peal_release_postgres_tag }}
     owner: root
     group: root
     mode: "0640"
 
 - name: Point current at the release
   ansible.builtin.file:
-    src: "{{ acme_release_dir }}"
-    dest: "{{ acme_root }}/current"
+    src: "{{ peal_release_dir }}"
+    dest: "{{ peal_root }}/current"
     state: link
 
 # The Bluesky client's private key, generated once on the server by the
@@ -220,15 +220,15 @@
 - name: Create the Bluesky client key
   ansible.builtin.shell: |
     set -eu
-    if grep -q '^BLUESKY_CLIENT_KEYS=' {{ acme_root }}/secrets.env; then
+    if grep -q '^BLUESKY_CLIENT_KEYS=' {{ peal_root }}/secrets.env; then
       exit 0
     fi
-    key="$(docker run --rm --network none acme-server:{{ acme_release_tag }} packages/acme-server/scripts/bluesky-key.ts)"
+    key="$(docker run --rm --network none peal-server:{{ peal_release_tag }} packages/peal-server/scripts/bluesky-key.ts)"
     umask 077
-    printf 'BLUESKY_CLIENT_KEYS=%s\n' "$key" >> {{ acme_root }}/secrets.env
+    printf 'BLUESKY_CLIENT_KEYS=%s\n' "$key" >> {{ peal_root }}/secrets.env
     echo created
-  register: acme_release_bluesky_key
-  changed_when: acme_release_bluesky_key.stdout == 'created'
+  register: peal_release_bluesky_key
+  changed_when: peal_release_bluesky_key.stdout == 'created'
 
 # Compose recreates Postgres when its image or its settings changed: the old
 # server then stops first, with 75 seconds to finish its platform calls, so
@@ -245,8 +245,8 @@
       - inspect
       - --format
       - '{% raw %}{{.Image}} {{index .Config.Labels "com.docker.compose.config-hash"}}{% endraw %}'
-      - "{{ acme_compose_project }}-postgres-1"
-  register: acme_release_running_postgres
+      - "{{ peal_compose_project }}-postgres-1"
+  register: peal_release_running_postgres
   changed_when: false
   failed_when: false
 
@@ -258,29 +258,29 @@
       - inspect
       - --format
       - "{% raw %}{{.Id}}{% endraw %}"
-      - "{{ acme_release_built.postgres }}"
-  register: acme_release_postgres_image
+      - "{{ peal_release_built.postgres }}"
+  register: peal_release_postgres_image
   changed_when: false
 
 - name: Read the settings Postgres is to run with
   ansible.builtin.command:
-    argv: ["{{ acme_compose_bin }}", config, --hash, postgres]
-  register: acme_release_postgres_settings
+    argv: ["{{ peal_compose_bin }}", config, --hash, postgres]
+  register: peal_release_postgres_settings
   changed_when: false
 
 - name: Stop the old server before Postgres restarts
-  ansible.builtin.command: "{{ acme_compose_bin }} stop server"
-  register: acme_release_stop
-  changed_when: acme_release_stop.stderr is search('Stopped')
+  ansible.builtin.command: "{{ peal_compose_bin }} stop server"
+  register: peal_release_stop
+  changed_when: peal_release_stop.stderr is search('Stopped')
   when: >-
-    acme_release_running_postgres.rc != 0
-    or acme_release_running_postgres.stdout.split()
-       != [acme_release_postgres_image.stdout, acme_release_postgres_settings.stdout.split() | last]
+    peal_release_running_postgres.rc != 0
+    or peal_release_running_postgres.stdout.split()
+       != [peal_release_postgres_image.stdout, peal_release_postgres_settings.stdout.split() | last]
 
 - name: Start Postgres
-  ansible.builtin.command: "{{ acme_compose_bin }} up --no-build --detach --wait --wait-timeout 300 postgres"
-  register: acme_release_postgres
-  changed_when: acme_release_postgres.stderr is search('(Started|Recreated)')
+  ansible.builtin.command: "{{ peal_compose_bin }} up --no-build --detach --wait --wait-timeout 300 postgres"
+  register: peal_release_postgres
+  changed_when: peal_release_postgres.stderr is search('(Started|Recreated)')
 
 # A database restored onto a new server keeps the password of the one it
 # came from. The check signs in over the network, by the service's name, as
@@ -290,14 +290,14 @@
 - name: Check the database password
   ansible.builtin.command:
     argv:
-      - "{{ acme_compose_bin }}"
+      - "{{ peal_compose_bin }}"
       - exec
       - -T
       - postgres
       - sh
       - -c
-      - PGPASSWORD="$POSTGRES_PASSWORD" psql --host postgres --username acme --dbname acme --no-psqlrc --quiet --command 'SELECT 1'
-  register: acme_release_password
+      - PGPASSWORD="$POSTGRES_PASSWORD" psql --host postgres --username peal --dbname peal --no-psqlrc --quiet --command 'SELECT 1'
+  register: peal_release_password
   changed_when: false
   failed_when: false
 
@@ -306,15 +306,15 @@
 - name: Set the database password to the generated one
   ansible.builtin.command:
     argv:
-      - "{{ acme_compose_bin }}"
+      - "{{ peal_compose_bin }}"
       - exec
       - -T
       - postgres
       - psql
       - --username
-      - acme
+      - peal
       - --dbname
-      - acme
+      - peal
       - --no-psqlrc
       - --quiet
       - --set
@@ -322,31 +322,31 @@
     stdin: |
       \getenv password POSTGRES_PASSWORD
       SET log_statement = 'none';
-      ALTER ROLE acme PASSWORD :'password';
-  when: acme_release_password.rc != 0
+      ALTER ROLE peal PASSWORD :'password';
+  when: peal_release_password.rc != 0
   changed_when: true
 
 # The new server migrates the database before it listens: --wait returns
 # once it is healthy.
 - name: Start the server, which migrates the database
-  ansible.builtin.command: "{{ acme_compose_bin }} up --no-build --detach --wait --wait-timeout 600 server"
-  register: acme_release_server
-  changed_when: acme_release_server.stderr is search('(Started|Recreated)')
+  ansible.builtin.command: "{{ peal_compose_bin }} up --no-build --detach --wait --wait-timeout 600 server"
+  register: peal_release_server
+  changed_when: peal_release_server.stderr is search('(Started|Recreated)')
 
 - name: Start the rest of the stack
-  ansible.builtin.command: "{{ acme_compose_bin }} up --no-build --detach --wait --wait-timeout 600 --remove-orphans"
-  register: acme_release_stack
-  changed_when: acme_release_stack.stderr is search('(Started|Recreated|Removed)')
+  ansible.builtin.command: "{{ peal_compose_bin }} up --no-build --detach --wait --wait-timeout 600 --remove-orphans"
+  register: peal_release_stack
+  changed_when: peal_release_stack.stderr is search('(Started|Recreated|Removed)')
 
 - name: Check the server and the web app on the server
   ansible.builtin.uri:
     url: http://127.0.0.1:{{ item.port }}{{ item.path }}
     status_code: [200, 204]
   loop:
-    - { port: "{{ acme_ports.server }}", path: /api/ready }
-    - { port: "{{ acme_ports.web }}", path: /sign-in }
-  register: acme_release_local
-  until: acme_release_local.status in [200, 204]
+    - { port: "{{ peal_ports.server }}", path: /api/ready }
+    - { port: "{{ peal_ports.web }}", path: /sign-in }
+  register: peal_release_local
+  until: peal_release_local.status in [200, 204]
   retries: 10
   delay: 3
 
@@ -354,29 +354,29 @@
 # page of the sandbox, so only production is checked this way.
 - name: Check the app through the tunnel
   ansible.builtin.uri:
-    url: https://{{ acme_hostnames.app }}/api/health
+    url: https://{{ peal_hostnames.app }}/api/health
     status_code: 204
   delegate_to: localhost
   become: false
-  register: acme_release_public
-  until: acme_release_public.status == 204
+  register: peal_release_public
+  until: peal_release_public.status == 204
   retries: 10
   delay: 3
-  when: not acme_access_everything
+  when: not peal_access_everything
 
 - name: List the releases
   ansible.builtin.find:
-    paths: "{{ acme_root }}/releases"
+    paths: "{{ peal_root }}/releases"
     file_type: directory
-  register: acme_release_dirs
+  register: peal_release_dirs
 
 - name: Remove older releases
   ansible.builtin.file:
     path: "{{ item.path }}"
     state: absent
   loop: >-
-    {{ (acme_release_dirs.files | sort(attribute='mtime', reverse=true))[acme_release_keep:]
-       | rejectattr('path', 'equalto', acme_release_dir) | list }}
+    {{ (peal_release_dirs.files | sort(attribute='mtime', reverse=true))[peal_release_keep:]
+       | rejectattr('path', 'equalto', peal_release_dir) | list }}
   loop_control:
     label: "{{ item.path | basename }}"
 
@@ -387,22 +387,22 @@
 - name: Remove images unused for a week
   ansible.builtin.command: docker image prune --all --force --filter until=168h
   tags: [prune]
-  register: acme_release_prune
-  changed_when: acme_release_prune.stdout is not search('Total reclaimed space:\s+0B')
+  register: peal_release_prune
+  changed_when: peal_release_prune.stdout is not search('Total reclaimed space:\s+0B')
 
 - name: List the local archives
   ansible.builtin.find:
-    paths: "{{ acme_release_local_dir }}"
-    patterns: images-{{ acme_environment }}-*.tar.gz
+    paths: "{{ peal_release_local_dir }}"
+    patterns: images-{{ peal_environment }}-*.tar.gz
   delegate_to: localhost
   become: false
-  register: acme_release_archives
+  register: peal_release_archives
 
 - name: Remove older local archives
   ansible.builtin.file:
     path: "{{ item.path }}"
     state: absent
-  loop: "{{ acme_release_archives.files | rejectattr('path', 'equalto', acme_release_archive) | list }}"
+  loop: "{{ peal_release_archives.files | rejectattr('path', 'equalto', peal_release_archive) | list }}"
   loop_control:
     label: "{{ item.path | basename }}"
   delegate_to: localhost

@@ -1,6 +1,6 @@
 import { assert, layer } from "@effect/vitest";
-import { Api, Forbidden, Unauthenticated } from "acme-contract";
-import type { Member, Principal } from "acme-contract";
+import { Api, Forbidden, Unauthenticated } from "peal-contract";
+import type { Member, Principal } from "peal-contract";
 import { Effect, Layer, Option } from "effect";
 import { HttpServer } from "effect/http";
 import { HttpApiError, HttpApiTest } from "effect/http-api";
@@ -87,7 +87,7 @@ const memberWithNotices = Effect.gen(function* memberWithNotices() {
   yield* notify.notify({
     event: {
       _tag: "PostFailed",
-      channel: Option.some({ handle: "@acme_example", platform: "mastodon" }),
+      channel: Option.some({ handle: "@peal_example", platform: "mastodon" }),
       postId: failed,
       reason: "mediaRejected",
     },
@@ -137,7 +137,7 @@ layer(NoticesTest)("the notices endpoints", (it) => {
           {
             event: {
               _tag: "PostFailed",
-              channel: { handle: "@acme_example", platform: "mastodon" },
+              channel: { handle: "@peal_example", platform: "mastodon" },
               postId: failed,
               reason: "mediaRejected",
             },

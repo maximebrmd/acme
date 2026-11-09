@@ -6,7 +6,7 @@ import { WorkspaceEntitlements } from "#billing/application/workspace-entitlemen
 
 /**
  * Each workspace's daily allowance: its plan's, on a server that bills;
- * otherwise the same for every workspace, from ACME_AI_DAILY_REQUESTS. A
+ * otherwise the same for every workspace, from PEAL_AI_DAILY_REQUESTS. A
  * database failure reading the plan is a defect, as the quota's own are.
  */
 export const PlanAssistantAllowanceLive = Layer.effect(

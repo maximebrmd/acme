@@ -1,14 +1,14 @@
 "use client";
 
-import { Button } from "acme-ui/components/button";
-import { Label } from "acme-ui/components/label";
+import { Button } from "peal-ui/components/button";
+import { Label } from "peal-ui/components/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "acme-ui/components/select";
+} from "peal-ui/components/select";
 import { Schema } from "effect";
 import { useLocale, useTranslations } from "next-intl";
 import type { Locale } from "next-intl";
@@ -26,7 +26,7 @@ import type { SettingsErrorKey } from "#settings/errors.ts";
 const isLocale = Schema.is(Schema.Literals(routing.locales));
 
 /**
- * The language Acme writes to the user in: their emails, and the app, which
+ * The language Peal writes to the user in: their emails, and the app, which
  * opens in it as soon as it is saved, and whenever they sign in.
  */
 export const LanguageForm = ({ saved }: { readonly saved: Locale }) => {

@@ -1,11 +1,11 @@
 ---
 title: Notifications
-description: Ce qu’Acme vous dit des publications et des canaux, qui est prévenu de quoi, la cloche et la page des notifications, et quelles notifications arrivent aussi par e-mail.
+description: Ce que Peal vous dit des publications et des canaux, qui est prévenu de quoi, la cloche et la page des notifications, et quelles notifications arrivent aussi par e-mail.
 sidebar:
   order: 5
 ---
 
-Acme prévient les membres concernés quand il arrive quelque chose à une publication ou à un canal. Chaque notification s’affiche dans Acme, sous la cloche de l’en-tête, et certaines arrivent aussi par e-mail.
+Peal prévient les membres concernés quand il arrive quelque chose à une publication ou à un canal. Chaque notification s’affiche dans Peal, sous la cloche de l’en-tête, et certaines arrivent aussi par e-mail.
 
 ## Ce dont vous êtes prévenu [#events]
 
@@ -13,8 +13,8 @@ Acme prévient les membres concernés quand il arrive quelque chose à une publi
 | ------------------------------------- | ------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------ |
 | Une publication est partie            | La publication est en ligne sur l’un de ses canaux.                                                          | L’auteur de la publication, et les membres qui suivent toutes les publications, ci-dessous |
 | Une publication n’est pas partie      | La publication a échoué sur l’un de ses canaux, pour la raison ci-dessous.                                   | Les mêmes                                                                                  |
-| Une publication est peut-être partie  | Acme n’a pas pu savoir si un canal l’a publiée. Vérifiez sur la plateforme avant de la republier.            | Les mêmes                                                                                  |
-| Un canal doit être reconnecté         | La plateforme n’accepte plus l’accès d’Acme : rien ne part sur le canal tant que personne ne l’a reconnecté. | Les membres qui peuvent connecter des canaux : propriétaires et administrateurs            |
+| Une publication est peut-être partie  | Peal n’a pas pu savoir si un canal l’a publiée. Vérifiez sur la plateforme avant de la republier.            | Les mêmes                                                                                  |
+| Un canal doit être reconnecté         | La plateforme n’accepte plus l’accès de Peal : rien ne part sur le canal tant que personne ne l’a reconnecté. | Les membres qui peuvent connecter des canaux : propriétaires et administrateurs            |
 | Un canal doit être reconnecté bientôt | L’accès du canal ne peut pas être renouvelé, et prend fin à la date qu’indique la notification.              | Les mêmes                                                                                  |
 
 Les notifications d’une publication vont à son auteur, le membre qui l’a créée, quel que soit son rôle, et aux membres qui peuvent programmer des publications (propriétaires, administrateurs et éditeurs) et ont choisi d’être prévenus pour toutes les publications dans leurs [préférences](#email). Une publication créée avec une clé d’API n’a pas d’auteur : ses notifications vont à tous les membres qui peuvent programmer des publications. Un membre qui a quitté l’espace de travail n’en est plus prévenu, et les notifications de ses publications vont à tous les membres qui peuvent programmer des publications, comme pour une publication sans auteur.
@@ -30,12 +30,12 @@ Pourquoi une publication n’est pas partie :
 | Son canal a été désactivé avant son départ                                                    | [Déconnectez](/channels#disconnect) le canal et [connectez](/channels) à nouveau le compte, puis programmez-en une nouvelle.                                                                                                              |
 | L’une de ses images ou vidéos a été supprimée de la médiathèque                               | Programmez-en une nouvelle, avec des médias de la médiathèque.                                                                                                                                                                            |
 | La plateforme a refusé l’une de ses images ou vidéos                                          | Vérifiez les médias selon [ce que la plateforme accepte](/media#platforms).                                                                                                                                                               |
-| Acme était indisponible à l’heure prévue, et la publication est arrivée trop tard pour partir | Le serveur était arrêté après l’heure de la publication. [Republiez-la](/scheduling#follow-up), ou programmez-en une nouvelle.                                                                                                            |
+| Peal était indisponible à l’heure prévue, et la publication est arrivée trop tard pour partir | Le serveur était arrêté après l’heure de la publication. [Republiez-la](/scheduling#follow-up), ou programmez-en une nouvelle.                                                                                                            |
 | Quelqu’un a vérifié sur la plateforme et ne l’a pas trouvée                                   | [Republiez-la](/scheduling#follow-up).                                                                                                                                                                                                    |
-| La plateforme a refusé les requêtes trop longtemps, et Acme a cessé d’essayer                 | La plateforme a limité le rythme des publications d’Acme. [Republiez-la](/scheduling#follow-up) plus tard.                                                                                                                                |
-| L’allocation quotidienne de mises en ligne de la plateforme est restée épuisée                | Les mises en ligne quotidiennes de YouTube, pour le serveur Acme ou pour la chaîne, étaient épuisées, et le sont restées un jour après l’heure de la publication. [Republiez-la](/scheduling#follow-up) après minuit, heure du Pacifique. |
+| La plateforme a refusé les requêtes trop longtemps, et Peal a cessé d’essayer                 | La plateforme a limité le rythme des publications de Peal. [Republiez-la](/scheduling#follow-up) plus tard.                                                                                                                                |
+| L’allocation quotidienne de mises en ligne de la plateforme est restée épuisée                | Les mises en ligne quotidiennes de YouTube, pour le serveur Peal ou pour la chaîne, étaient épuisées, et le sont restées un jour après l’heure de la publication. [Republiez-la](/scheduling#follow-up) après minuit, heure du Pacifique. |
 | L’autorisation du compte ne fonctionne plus                                                   | [Reconnectez](/channels#reconnect) le canal, puis [republiez-la](/scheduling#follow-up).                                                                                                                                                  |
-| La plateforme était injoignable                                                               | Acme a essayé pendant plus de deux heures. [Republiez-la](/scheduling#follow-up) quand la plateforme répond.                                                                                                                              |
+| La plateforme était injoignable                                                               | Peal a essayé pendant plus de deux heures. [Republiez-la](/scheduling#follow-up) quand la plateforme répond.                                                                                                                              |
 | La plateforme n’accepte que des publications privées de l’application de ce serveur           | TikTok n’a pas encore audité l’application du serveur : rendez le compte privé et la publication visible par **Moi uniquement**, ou contactez l’opérateur du serveur. Voyez [TikTok](/channels#tiktok).                                   |
 
 ## La cloche et la page des notifications [#inbox]
@@ -57,7 +57,7 @@ Depuis **Notifications**, choisissez **Préférences d’e-mail** pour choisir q
 | Un canal doit être reconnecté, maintenant ou bientôt                          | Activé                        |
 | Une publication est partie                                                    | Désactivé                     |
 
-Les e-mails sont écrits dans votre langue. Quand le serveur de messagerie refuse un e-mail pour le moment, Acme réessaie pendant environ cinq heures. Un e-mail en attente d’envoi est abandonné si vous quittez l’espace de travail, ou désactivez cet e-mail, entre-temps.
+Les e-mails sont écrits dans votre langue. Quand le serveur de messagerie refuse un e-mail pour le moment, Peal réessaie pendant environ cinq heures. Un e-mail en attente d’envoi est abandonné si vous quittez l’espace de travail, ou désactivez cet e-mail, entre-temps.
 
 ## Depuis l’API [#api]
 

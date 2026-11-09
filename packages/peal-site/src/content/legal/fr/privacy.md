@@ -1,6 +1,6 @@
 ---
 title: Politique de confidentialité
-description: Comment Acme traite les données personnelles, pourquoi, sur quelles bases légales et pendant combien de temps, et les droits dont vous disposez.
+description: Comment Peal traite les données personnelles, pourquoi, sur quelles bases légales et pendant combien de temps, et les droits dont vous disposez.
 draft: true
 ---
 
@@ -8,9 +8,9 @@ Date d’entrée en vigueur : [Date]
 
 ## À propos de cette politique
 
-Cette politique explique comment [Nom de l’entité juridique] (« nous ») traite les données personnelles lorsque vous utilisez le service Acme hébergé à l’adresse [Domaine du service] et ce site. Elle suit les exigences de transparence du règlement général sur la protection des données (RGPD), articles 13 et 14.
+Cette politique explique comment [Nom de l’entité juridique] (« nous ») traite les données personnelles lorsque vous utilisez le service Peal hébergé à l’adresse [Domaine du service] et ce site. Elle suit les exigences de transparence du règlement général sur la protection des données (RGPD), articles 13 et 14.
 
-Elle ne couvre pas les instances auto-hébergées d’Acme. Quiconque exploite une instance auto-hébergée est responsable du traitement de ses données et rédige sa propre politique de confidentialité.
+Elle ne couvre pas les instances auto-hébergées de Peal. Quiconque exploite une instance auto-hébergée est responsable du traitement de ses données et rédige sa propre politique de confidentialité.
 
 ## Responsable du traitement
 
@@ -27,7 +27,7 @@ Ces catégories suivent le service tel qu’il est conçu. [Confirmer chacune d�
 
 - **Données de compte** : votre nom, votre adresse e-mail et vos informations de connexion. [Lister les méthodes de connexion proposées.]
 - **Données d’organisation** : les organisations dont vous êtes membre, votre rôle dans chacune et les invitations envoyées ou reçues.
-- **Comptes connectés** : les comptes de réseaux sociaux que vous connectez, leurs identifiants sur chaque plateforme et les jetons d’accès que les plateformes délivrent à Acme.
+- **Comptes connectés** : les comptes de réseaux sociaux que vous connectez, leurs identifiants sur chaque plateforme et les jetons d’accès que les plateformes délivrent à Peal.
 - **Contenus** : les publications, médias et planifications que vous créez, et l’historique de mise en ligne de chacune.
 - **Données de performance** : les statistiques que les plateformes communiquent pour vos publications.
 - **Données de facturation** : votre offre, l’état de votre abonnement et vos factures. Les paiements sont gérés par [Prestataire de paiement]. [Préciser quelles données de paiement nous recevons, le cas échéant.]
@@ -49,7 +49,7 @@ Ces catégories suivent le service tel qu’il est conçu. [Confirmer chacune d�
 | Facturer votre abonnement et tenir la comptabilité                        | Données de facturation                                     | Exécution d’un contrat, point b) ; obligation légale, point c)                                                                                                                                          |
 | Envoyer les e-mails du service, comme les notifications que vous activez  | Données de compte, communications                          | Exécution d’un contrat, point b)                                                                                                                                                                        |
 | Assurer la sécurité du service et prévenir les abus                       | Données techniques                                         | Intérêts légitimes, point f) : [Décrire l’intérêt]                                                                                                                                                      |
-| Consigner ce que l’équipe d’Acme fait aux comptes, et en répondre         | Identifiants des comptes, l’action, son heure et son motif | Intérêts légitimes, point f) : rendre compte de l’accès de l’équipe aux comptes, conservé après le départ d’un compte ou d’un membre de l’équipe, sans le motif une fois fermé le compte qu’il concerne |
+| Consigner ce que l’équipe de Peal fait aux comptes, et en répondre         | Identifiants des comptes, l’action, son heure et son motif | Intérêts légitimes, point f) : rendre compte de l’accès de l’équipe aux comptes, conservé après le départ d’un compte ou d’un membre de l’équipe, sans le motif une fois fermé le compte qu’il concerne |
 | Mesurer la fréquentation de ce site                                       | [Données collectées par l’outil de mesure d’audience]      | [Intérêts légitimes, point f), ou consentement, point a)]                                                                                                                                               |
 | [Autres finalités, comme les fonctionnalités d’IA]                        | [Données]                                                  | [Base légale]                                                                                                                                                                                           |
 
@@ -57,13 +57,13 @@ Lorsqu’un traitement repose sur des intérêts légitimes, vous pouvez vous y 
 
 ## Données issues des plateformes connectées
 
-Lorsque vous connectez un compte de réseau social, la plateforme partage des données avec Acme dans la limite des autorisations que vous accordez. Acme les utilise pour diffuser les publications que vous planifiez et pour montrer leurs performances. [Décrire tout autre usage, et confirmer que chaque usage respecte les conditions pour développeurs de chaque plateforme à laquelle Acme se connecte.]
+Lorsque vous connectez un compte de réseau social, la plateforme partage des données avec Peal dans la limite des autorisations que vous accordez. Peal les utilise pour diffuser les publications que vous planifiez et pour montrer leurs performances. [Décrire tout autre usage, et confirmer que chaque usage respecte les conditions pour développeurs de chaque plateforme à laquelle Peal se connecte.]
 
-[À confirmer une fois la fonctionnalité livrée : vous pouvez déconnecter un compte dans Acme.] Vous pouvez aussi révoquer l’accès d’Acme depuis les réglages de la plateforme elle-même.
+[À confirmer une fois la fonctionnalité livrée : vous pouvez déconnecter un compte dans Peal.] Vous pouvez aussi révoquer l’accès de Peal depuis les réglages de la plateforme elle-même.
 
 ## Destinataires et sous-traitants
 
-Les données personnelles sont partagées avec les prestataires qui aident à faire fonctionner Acme et, lorsque la loi l’exige, avec les autorités publiques. [Confirmer cette liste, et qu’un accord de traitement des données au sens de l’article 28 du RGPD est en place avec chaque prestataire.]
+Les données personnelles sont partagées avec les prestataires qui aident à faire fonctionner Peal et, lorsque la loi l’exige, avec les autorités publiques. [Confirmer cette liste, et qu’un accord de traitement des données au sens de l’article 28 du RGPD est en place avec chaque prestataire.]
 
 | Prestataire   | Service                      | Localisation | Garantie de transfert |
 | ------------- | ---------------------------- | ------------ | --------------------- |

@@ -1,10 +1,10 @@
 "use client";
 
-import type { Channel } from "acme-contract";
-import { Avatar, AvatarFallback, AvatarImage } from "acme-ui/components/avatar";
-import { Badge } from "acme-ui/components/badge";
-import { Checkbox } from "acme-ui/components/checkbox";
-import { Label } from "acme-ui/components/label";
+import type { Channel } from "peal-contract";
+import { Avatar, AvatarFallback, AvatarImage } from "peal-ui/components/avatar";
+import { Badge } from "peal-ui/components/badge";
+import { Checkbox } from "peal-ui/components/checkbox";
+import { Label } from "peal-ui/components/label";
 import { useTranslations } from "next-intl";
 
 interface ChannelPickerProps {

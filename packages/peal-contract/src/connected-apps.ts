@@ -37,7 +37,7 @@ export type ConnectedApp = typeof ConnectedAppSchema.Type;
 
 /**
  * The applications that act for the signed-in user. Only the user sees them,
- * signed in with their own session or through Acme's command line, and
+ * signed in with their own session or through Peal's command line, and
  * only the user, in their own session, revokes them: API keys, other OAuth
  * clients and staff impersonating the user get 403.
  */
@@ -49,7 +49,7 @@ export class ConnectedAppsApi extends HttpApiGroup.make("connectedApps")
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Lists the applications the user agreed to let act for them, and those still signed in with a refresh token, most recently authorized first. Open to the user in their own session and to Acme's command line.",
+          "Lists the applications the user agreed to let act for them, and those still signed in with a refresh token, most recently authorized first. Open to the user in their own session and to Peal's command line.",
         summary: "List connected applications",
       })
     ),

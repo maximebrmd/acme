@@ -89,7 +89,7 @@ export class FakePlatform extends Context.Service<
       behaviours: readonly FakeBehaviour[]
     ) => Effect.Effect<void>;
   }
->()("acme-server/publishing/infrastructure/FakePlatform") {
+>()("peal-server/publishing/infrastructure/FakePlatform") {
   static readonly layer = Layer.effect(
     FakePlatform,
     Effect.gen(function* FakePlatformLive() {

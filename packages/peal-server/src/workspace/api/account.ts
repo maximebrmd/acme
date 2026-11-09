@@ -11,8 +11,8 @@ import {
   Unauthenticated,
   WorkspaceBusy,
   WorkspaceSubscribed,
-} from "acme-contract";
-import type { AccountExport as AccountExportView } from "acme-contract";
+} from "peal-contract";
+import type { AccountExport as AccountExportView } from "peal-contract";
 import { DateTime, Effect, Option, Redacted, Schema } from "effect";
 import { HttpApiBuilder, HttpApiSchema } from "effect/http-api";
 
@@ -117,9 +117,9 @@ const viewOf = Effect.fn("AccountExport.view")(function* viewOf(
   return view;
 });
 
-// acme-data-2026-11-09.json: the day it was made, in UTC.
+// peal-data-2026-11-09.json: the day it was made, in UTC.
 const fileNameOf = (exportedAt: DateTime.Utc): string =>
-  `acme-data-${DateTime.formatIsoDate(exportedAt)}.json`;
+  `peal-data-${DateTime.formatIsoDate(exportedAt)}.json`;
 
 export const AccountHandlers = HttpApiBuilder.group(
   Api,

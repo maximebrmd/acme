@@ -12,14 +12,14 @@ import { makeFfprobeVideoProbe } from "./ffprobe-video-probe.ts";
 import { loadSharp, makeSharpImageProbe } from "./sharp-image-probe.ts";
 
 /**
- * Images through sharp, videos through ffprobe. ACME_FFPROBE_PATH names the
+ * Images through sharp, videos through ffprobe. PEAL_FFPROBE_PATH names the
  * ffprobe program, "ffprobe" on the PATH by default. A kind whose tool is
  * missing is skipped, so the server runs without either.
  */
 export const MediaProbeLive = Layer.effect(
   MediaProbe,
   Effect.gen(function* MediaProbeLive() {
-    const program = yield* Config.NonEmptyString("ACME_FFPROBE_PATH").pipe(
+    const program = yield* Config.NonEmptyString("PEAL_FFPROBE_PATH").pipe(
       Config.withDefault("ffprobe")
     );
 

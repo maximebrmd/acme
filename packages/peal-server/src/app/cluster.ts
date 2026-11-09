@@ -14,7 +14,7 @@ import { Digest } from "effect/crypto";
 const runnerPort = 34_431;
 
 const runnerAddress = Config.String("HOSTNAME").pipe(
-  Config.withDefault("acme-server"),
+  Config.withDefault("peal-server"),
   Config.map((host) => RunnerAddress.make(host, runnerPort))
 );
 

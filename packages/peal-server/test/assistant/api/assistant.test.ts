@@ -6,8 +6,8 @@ import {
   AssistantQuotaExceeded,
   AssistantUnavailable,
   Forbidden,
-} from "acme-contract";
-import type { Member, SuggestionRequest } from "acme-contract";
+} from "peal-contract";
+import type { Member, SuggestionRequest } from "peal-contract";
 import { DateTime, Effect, Layer } from "effect";
 import { HttpServer } from "effect/http";
 import { HttpApiTest } from "effect/http-api";

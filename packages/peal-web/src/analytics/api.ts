@@ -1,6 +1,6 @@
-import type { CalendarDay } from "acme-contract";
+import type { CalendarDay } from "peal-contract";
 
-import { AcmeApi } from "#api/client.ts";
+import { PealApi } from "#api/client.ts";
 
 // The analytics queries. Counts change only when the server reads them,
 // every hour at most, so nothing here polls.
@@ -16,7 +16,7 @@ export interface SummaryRange {
 
 /** The workspace's posts published over the range, summed up. */
 export const analyticsSummary = (workspaceId: string, range: SummaryRange) =>
-  AcmeApi.query("analytics", "summary", {
+  PealApi.query("analytics", "summary", {
     params: { workspaceId },
     query: range,
     reactivityKeys: analyticsKeys,
@@ -24,7 +24,7 @@ export const analyticsSummary = (workspaceId: string, range: SummaryRange) =>
 
 /** A post's counts on each of its channels, over time. */
 export const postAnalytics = (workspaceId: string, postId: string) =>
-  AcmeApi.query("analytics", "post", {
+  PealApi.query("analytics", "post", {
     params: { postId, workspaceId },
     reactivityKeys: analyticsKeys,
   });

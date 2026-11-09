@@ -18,7 +18,7 @@ export const ownSession = (
     : Result.fail(new SessionRequired());
 
 /**
- * The user, when the principal is them in person or Acme's command line
+ * The user, when the principal is them in person or Peal's command line
  * acting for them, to read what their account holds: a copy of their data,
  * the applications that act for them. They signed the command line in
  * themselves, at their terminal, and it saves what it reads in their files

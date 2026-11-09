@@ -8,7 +8,7 @@ import { Schema } from "effect";
  *   the token keyring or the Bluesky client keys.
  * - `invalidInstance`: the instance is not the address of a server.
  * - `instanceNotAllowed`: the instance is not reachable over HTTPS on a
- *   public address, so Acme refuses to call it.
+ *   public address, so Peal refuses to call it.
  * - `invalidHandle`: the handle or DID names no account.
  * - `invalidState`: the connection is unknown, expired, already completed,
  *   or was started by someone else: start again.
@@ -16,7 +16,7 @@ import { Schema } from "effect";
  * - `authorizationFailed`: the platform refused to hand over the account.
  * - `accountMismatch`: reconnecting signed in to a different account than the
  *   channel's.
- * - `noAccounts`: the sign-in reached no account Acme can post to, such as a
+ * - `noAccounts`: the sign-in reached no account Peal can post to, such as a
  *   Facebook user who manages no Page, or whose Pages have no Instagram
  *   professional account linked to them.
  */

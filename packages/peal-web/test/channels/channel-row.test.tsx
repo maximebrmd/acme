@@ -1,6 +1,6 @@
 import { RegistryProvider } from "@effect/atom-react";
 import { describe, expect, it } from "@effect/vitest";
-import type { Channel } from "acme-contract";
+import type { Channel } from "peal-contract";
 import { DateTime } from "effect";
 import { NextIntlClientProvider } from "next-intl";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -10,8 +10,8 @@ import { loadMessages } from "#i18n/messages.ts";
 
 const channel: Channel = {
   avatarUrl: null,
-  displayName: "Acme Example",
-  handle: "@acme_example@social.example",
+  displayName: "Peal Example",
+  handle: "@peal_example@social.example",
   id: "00000000-0000-7000-8000-000000000001",
   platform: "mastodon",
   status: { _tag: "refreshNeeded" },
@@ -44,7 +44,7 @@ describe(ChannelRow, () => {
     const html = await render("en");
 
     expect(html).toContain("Reconnect needed");
-    expect(html).toContain("Mastodon · @acme_example@social.example");
+    expect(html).toContain("Mastodon · @peal_example@social.example");
     expect(html).toContain(">Reconnect<");
     expect(html).toContain(">Disconnect<");
   });
@@ -53,16 +53,16 @@ describe(ChannelRow, () => {
     const [english, french] = await Promise.all([render("en"), render("fr")]);
 
     expect(english).toContain(
-      'aria-label="Reconnect @acme_example@social.example"'
+      'aria-label="Reconnect @peal_example@social.example"'
     );
     expect(english).toContain(
-      'aria-label="Disconnect @acme_example@social.example"'
+      'aria-label="Disconnect @peal_example@social.example"'
     );
     expect(french).toContain(
-      'aria-label="Reconnecter @acme_example@social.example"'
+      'aria-label="Reconnecter @peal_example@social.example"'
     );
     expect(french).toContain(
-      'aria-label="Déconnecter @acme_example@social.example"'
+      'aria-label="Déconnecter @peal_example@social.example"'
     );
   });
 

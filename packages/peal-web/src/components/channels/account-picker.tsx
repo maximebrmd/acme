@@ -1,8 +1,8 @@
 "use client";
 
 import { useAtomSet } from "@effect/atom-react";
-import type { ChoosableAccount, Platform } from "acme-contract";
-import { Button } from "acme-ui/components/button";
+import type { ChoosableAccount, Platform } from "peal-contract";
+import { Button } from "peal-ui/components/button";
 import { Option } from "effect";
 import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";

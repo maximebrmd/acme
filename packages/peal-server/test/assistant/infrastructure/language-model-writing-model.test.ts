@@ -105,7 +105,7 @@ describe("the WritingModel on a language model", () => {
         spans.some(
           (span) =>
             span.startsWith("WritingModel.write") &&
-            span.includes("acme.assistant.failure")
+            span.includes("peal.assistant.failure")
         )
       );
 

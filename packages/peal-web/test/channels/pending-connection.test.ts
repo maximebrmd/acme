@@ -26,7 +26,7 @@ describe("the connection a tab started", () => {
 
   it("reads as none when the tab stored something else", () => {
     globalThis.sessionStorage.setItem(
-      "acme.channels.pending-connection",
+      "peal.channels.pending-connection",
       "{not json"
     );
 

@@ -1,10 +1,10 @@
 "use client";
 
 import { useAtomRefresh, useAtomValue } from "@effect/atom-react";
-import { countedPlatforms } from "acme-contract";
-import type { Channel, Platform, Post, PostAnalytics } from "acme-contract";
-import { Button } from "acme-ui/components/button";
-import { Skeleton } from "acme-ui/components/skeleton";
+import { countedPlatforms } from "peal-contract";
+import type { Channel, Platform, Post, PostAnalytics } from "peal-contract";
+import { Button } from "peal-ui/components/button";
+import { Skeleton } from "peal-ui/components/skeleton";
 import { DateTime } from "effect";
 import { AsyncResult } from "effect/reactivity";
 import { useFormatter, useTranslations } from "next-intl";
@@ -28,7 +28,7 @@ const isCounted = (platform: Platform) =>
 /**
  * What a post's channels counted: each one's latest counts, when they were
  * read, and how they went over time. Before the first read, says when the
- * counts come, and for the platforms Acme reads no counts on, that it has
+ * counts come, and for the platforms Peal reads no counts on, that it has
  * none.
  */
 export const PostMetricsView = ({
@@ -54,7 +54,7 @@ export const PostMetricsView = ({
     ),
   ];
 
-  // The platforms Acme reads counts on, as the reader's language lists them.
+  // The platforms Peal reads counts on, as the reader's language lists them.
   const counted = format.list(
     countedPlatforms.map((platform) => tPosts("platform", { platform })),
     { type: "conjunction" }
@@ -74,7 +74,7 @@ export const PostMetricsView = ({
     );
 
   if (analytics.targets.length === 0) {
-    // Counts may still come from a channel Acme reads, or one since
+    // Counts may still come from a channel Peal reads, or one since
     // disconnected, which it can no longer tell.
     const mayCome = platformsOf.some(
       (platform) => platform === undefined || isCounted(platform)

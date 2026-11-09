@@ -21,7 +21,7 @@ export class ProgressLog extends Context.Service<
       idempotencyKey: string
     ) => Effect.Effect<readonly (typeof Schema.Json.Type)[]>;
   }
->()("acme-server/test/publishing/ProgressLog") {}
+>()("peal-server/test/publishing/ProgressLog") {}
 
 export const progressInMemory = Layer.effectContext(
   Effect.gen(function* building() {

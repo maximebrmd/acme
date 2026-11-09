@@ -58,4 +58,4 @@ export class AccountModeration extends Context.Service<
       request: ModerationRequest
     ) => Effect.Effect<readonly string[], AuthUnavailable>;
   }
->()("acme-server/workspace/application/AccountModeration") {}
+>()("peal-server/workspace/application/AccountModeration") {}

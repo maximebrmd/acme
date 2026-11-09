@@ -44,7 +44,7 @@ export const ChannelSchema = Schema.Struct({
   platform: PlatformSchema,
   status: ChannelStatusSchema,
   // When the account's token stops working, for a token the platform does
-  // not let Acme renew: the user must reconnect the account before then.
+  // not let Peal renew: the user must reconnect the account before then.
   // Null when the token renews itself or never expires.
   tokenExpiresAt: Schema.NullOr(Schema.DateTimeUtc),
 }).annotate({ identifier: "Channel" });
@@ -57,7 +57,7 @@ export type Channel = typeof ChannelSchema.Type;
  * (or DID, or its server's address) so the sign-in page knows it.
  */
 export const ConnectChannelSchema = Schema.Struct({
-  // A Bluesky handle such as "acme.bsky.social", a DID, or a server URL.
+  // A Bluesky handle such as "peal.bsky.social", a DID, or a server URL.
   handle: Schema.optionalKey(Schema.String.check(Schema.isMaxLength(256))),
   // A Mastodon instance, as "mastodon.social" or "https://mastodon.social".
   instance: Schema.optionalKey(Schema.String.check(Schema.isMaxLength(256))),
@@ -76,7 +76,7 @@ export const AuthorizationSchema = Schema.Struct({
 export type Authorization = typeof AuthorizationSchema.Type;
 
 /**
- * The platforms this server can connect accounts of: those Acme has a
+ * The platforms this server can connect accounts of: those Peal has a
  * sign-in flow for, and whose settings the server has, such as an app
  * registered on LinkedIn, X or Meta, or a Google OAuth client. Clients offer only these.
  */
@@ -175,7 +175,7 @@ export class ChannelsApi extends HttpApiGroup.make("channels")
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Lists the platforms this server can connect accounts of, in Acme's order. A platform that needs a setting the server lacks, such as an app registered on LinkedIn, X or Meta or a Google OAuth client, is left out. Needs channel:connect.",
+          "Lists the platforms this server can connect accounts of, in Peal's order. A platform that needs a setting the server lacks, such as an app registered on LinkedIn, X or Meta or a Google OAuth client, is left out. Needs channel:connect.",
         summary: "List connectable platforms",
       })
     ),
@@ -233,7 +233,7 @@ export class ChannelsApi extends HttpApiGroup.make("channels")
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Disconnects a channel from the workspace: the channel and the tokens Acme holds for it are deleted, and nothing more is posted on it. Needs channel:disconnect.",
+          "Disconnects a channel from the workspace: the channel and the tokens Peal holds for it are deleted, and nothing more is posted on it. Needs channel:disconnect.",
         summary: "Disconnect a channel",
       })
     )

@@ -1,4 +1,4 @@
-import { CurrentMember } from "acme-contract";
+import { CurrentMember } from "peal-contract";
 import { Effect } from "effect";
 
 import { PeopleTools } from "#app/mcp/people-tools.ts";
@@ -11,7 +11,7 @@ import { WorkspaceMembers } from "#workspace/application/workspace-members.ts";
 // workspace the user belongs to; the user left it meanwhile.
 const gone = () =>
   refuse(
-    "You no longer belong to the workspace this connection acts in. Connect to Acme again and pick another."
+    "You no longer belong to the workspace this connection acts in. Connect to Peal again and pick another."
   );
 
 /** What the people tools do, through the workspace context's use cases. */

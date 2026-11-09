@@ -4,10 +4,10 @@
 # after 5 minutes, and these timers take a full backup each Sunday and a
 # differential one the other days, keeping four full ones. Each task writes a
 # file or states a unit, so a second run changes nothing.
-- name: Install acme-backup
+- name: Install peal-backup
   ansible.builtin.template:
-    src: acme-backup.j2
-    dest: /usr/local/sbin/acme-backup
+    src: peal-backup.j2
+    dest: /usr/local/sbin/peal-backup
     owner: root
     group: root
     mode: "0750"
@@ -17,8 +17,8 @@
 - name: Look for the backup timers
   ansible.builtin.stat:
     path: /etc/systemd/system/{{ item }}
-  loop: [acme-backup-full.timer, acme-backup-diff.timer]
-  register: acme_backup_timers
+  loop: [peal-backup-full.timer, peal-backup-diff.timer]
+  register: peal_backup_timers
 
 - name: Write the backup service and timers
   ansible.builtin.template:
@@ -26,9 +26,9 @@
     dest: /etc/systemd/system/{{ item }}
     mode: "0644"
   loop:
-    - acme-backup@.service
-    - acme-backup-full.timer
-    - acme-backup-diff.timer
+    - peal-backup@.service
+    - peal-backup-full.timer
+    - peal-backup-diff.timer
   notify: Reload systemd
 
 - name: Apply changed units now
@@ -39,7 +39,7 @@
     name: "{{ item.item }}"
     state: started
     enabled: true
-  loop: "{{ acme_backup_timers.results }}"
+  loop: "{{ peal_backup_timers.results }}"
   loop_control:
     label: "{{ item.item }}"
   when: not ansible_check_mode or item.stat.exists

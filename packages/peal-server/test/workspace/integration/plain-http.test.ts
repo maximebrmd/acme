@@ -1,5 +1,5 @@
 import { assert, layer } from "@effect/vitest";
-import { deviceCodeGrantType, MeSchema, OAuthApi } from "acme-contract";
+import { deviceCodeGrantType, MeSchema, OAuthApi } from "peal-contract";
 import { Effect, Layer, Schema } from "effect";
 import { HttpApiClient } from "effect/http-api";
 
@@ -62,7 +62,7 @@ layer(PlainHttpLive, { excludeTestServices: true, timeout: "120 seconds" })(
 
         const device = yield* oauth.tokens.deviceAuthorization({
           payload: {
-            client_id: "acme-cli",
+            client_id: "peal-cli",
             resource,
             scope: "offline_access workspace:read workspace:write",
           },
@@ -81,7 +81,7 @@ layer(PlainHttpLive, { excludeTestServices: true, timeout: "120 seconds" })(
 
         const tokens = yield* oauth.tokens.token({
           payload: {
-            client_id: "acme-cli",
+            client_id: "peal-cli",
             device_code: device.device_code,
             grant_type: deviceCodeGrantType,
           },
@@ -106,7 +106,7 @@ layer(PlainHttpLive, { excludeTestServices: true, timeout: "120 seconds" })(
         const forMcp = yield* oauth.tokens
           .deviceAuthorization({
             payload: {
-              client_id: "acme-cli",
+              client_id: "peal-cli",
               resource: `${publicUrl}/api/mcp`,
               scope: "workspace:read",
             },

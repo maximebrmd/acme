@@ -1,8 +1,8 @@
 "use client";
 
 import { useAtomRefresh, useAtomSet, useAtomValue } from "@effect/atom-react";
-import { cliClientId } from "acme-contract";
-import type { ConnectedApp } from "acme-contract";
+import { cliClientId } from "peal-contract";
+import type { ConnectedApp } from "peal-contract";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,8 +13,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "acme-ui/components/alert-dialog";
-import { Button } from "acme-ui/components/button";
+} from "peal-ui/components/alert-dialog";
+import { Button } from "peal-ui/components/button";
 import { DateTime, Option } from "effect";
 import { AsyncResult } from "effect/reactivity";
 import { useFormatter, useTranslations } from "next-intl";

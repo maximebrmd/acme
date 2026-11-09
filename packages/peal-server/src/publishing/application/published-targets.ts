@@ -45,4 +45,4 @@ export class PublishedTargets extends Context.Service<
       limit: number
     ) => Effect.Effect<readonly PublishedTarget[], DatabaseError>;
   }
->()("acme-server/publishing/application/PublishedTargets") {}
+>()("peal-server/publishing/application/PublishedTargets") {}

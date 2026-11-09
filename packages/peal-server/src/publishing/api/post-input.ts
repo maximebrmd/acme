@@ -3,11 +3,11 @@ import {
   PostNotFound,
   UnknownChannels,
   UnknownMedia,
-} from "acme-contract";
+} from "peal-contract";
 import type {
   ChannelOptions as OptionsInput,
   PostContent as ContentInput,
-} from "acme-contract";
+} from "peal-contract";
 import type { DateTime } from "effect";
 import { Array as Arr, Effect, Option, Schema } from "effect";
 

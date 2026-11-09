@@ -14,7 +14,7 @@ export class TestMailer extends Context.Service<
     readonly sent: Effect.Effect<readonly EmailMessage[]>;
     readonly setMode: (mode: MailerMode) => Effect.Effect<void>;
   }
->()("acme-server/test/notifications/TestMailer") {
+>()("peal-server/test/notifications/TestMailer") {
   static readonly layer = Layer.effectContext(
     Effect.gen(function* TestMailerLive() {
       const sent = yield* Ref.make<readonly EmailMessage[]>([]);

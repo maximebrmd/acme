@@ -1,5 +1,5 @@
 import { describe, expect, it } from "@effect/vitest";
-import type { NoticeEvent } from "acme-contract";
+import type { NoticeEvent } from "peal-contract";
 import { DateTime } from "effect";
 import { NextIntlClientProvider, useTranslations } from "next-intl";
 import type { ReactNode } from "react";
@@ -26,7 +26,7 @@ const ReconnectBy = () => {
 
   const event: NoticeEvent = {
     _tag: "ChannelReconnectSoon",
-    channel: { handle: "@acme_example", platform: "mastodon" },
+    channel: { handle: "@peal_example", platform: "mastodon" },
     expiresAt: lateEvening,
   };
 

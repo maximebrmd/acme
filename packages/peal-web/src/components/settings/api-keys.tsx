@@ -1,8 +1,8 @@
 "use client";
 
 import { useAtomRefresh, useAtomSet, useAtomValue } from "@effect/atom-react";
-import type { ApiKey, NewApiKey, Permission } from "acme-contract";
-import { Alert, AlertDescription, AlertTitle } from "acme-ui/components/alert";
+import type { ApiKey, NewApiKey, Permission } from "peal-contract";
+import { Alert, AlertDescription, AlertTitle } from "peal-ui/components/alert";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,18 +13,18 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "acme-ui/components/alert-dialog";
-import { Button } from "acme-ui/components/button";
-import { Checkbox } from "acme-ui/components/checkbox";
-import { Input } from "acme-ui/components/input";
-import { Label } from "acme-ui/components/label";
+} from "peal-ui/components/alert-dialog";
+import { Button } from "peal-ui/components/button";
+import { Checkbox } from "peal-ui/components/checkbox";
+import { Input } from "peal-ui/components/input";
+import { Label } from "peal-ui/components/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "acme-ui/components/select";
+} from "peal-ui/components/select";
 import { DateTime, Exit, Option, Schema } from "effect";
 import { AsyncResult } from "effect/reactivity";
 import { useFormatter, useTranslations } from "next-intl";

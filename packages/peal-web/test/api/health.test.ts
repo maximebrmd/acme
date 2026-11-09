@@ -10,7 +10,7 @@ import { prefetchEffect } from "#api/prefetch.ts";
 
 const Address = Schema.Struct({ port: Schema.Number });
 
-// A stand-in for the Acme server that answers the health check, on a free
+// A stand-in for the Peal server that answers the health check, on a free
 // port.
 const fakeApi = Effect.acquireRelease(
   Effect.callback<Server>((resume) => {
@@ -53,7 +53,7 @@ const hydratedStatus = (state: Iterable<Hydration.DehydratedAtom>) => {
 const prefetchFrom = (url: string) =>
   prefetchEffect([health]).pipe(
     Effect.provide(
-      ConfigProvider.layer(ConfigProvider.fromUnknown({ ACME_API_URL: url }))
+      ConfigProvider.layer(ConfigProvider.fromUnknown({ PEAL_API_URL: url }))
     )
   );
 

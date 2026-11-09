@@ -1,4 +1,4 @@
-import { GeistMono, GeistSans } from "acme-ui/lib/fonts";
+import { GeistMono, GeistSans } from "peal-ui/lib/fonts";
 import { Effect } from "effect";
 import type { Metadata } from "next";
 import { hasLocale, NextIntlClientProvider } from "next-intl";

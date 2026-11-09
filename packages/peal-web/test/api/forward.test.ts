@@ -26,7 +26,7 @@ describe("forwarding /api/* to the server", () => {
     Effect.gen(function* rewrites() {
       const response = yield* forward(
         "http://localhost:3001/api/health?verbose=1",
-        { ACME_API_URL: "http://api.test:3000/" }
+        { PEAL_API_URL: "http://api.test:3000/" }
       );
 
       assert.strictEqual(
@@ -39,7 +39,7 @@ describe("forwarding /api/* to the server", () => {
   it.effect("marks the request it forwards", () =>
     Effect.gen(function* marks() {
       const response = yield* forward("http://localhost:3001/api/me", {
-        ACME_API_URL: "http://api.test:3000",
+        PEAL_API_URL: "http://api.test:3000",
       });
 
       assert.strictEqual(
@@ -49,7 +49,7 @@ describe("forwarding /api/* to the server", () => {
     })
   );
 
-  // Were ACME_API_URL to lead back to the app under another name, the
+  // Were PEAL_API_URL to lead back to the app under another name, the
   // forwarded request would enter the proxy again.
   it.effect(
     "refuses a request it already forwarded, so requests cannot loop",
@@ -57,7 +57,7 @@ describe("forwarding /api/* to the server", () => {
       Effect.gen(function* loop() {
         const response = yield* forward(
           "http://127.0.0.1:3001/api/health",
-          { ACME_API_URL: "http://localhost:3001" },
+          { PEAL_API_URL: "http://localhost:3001" },
           { [forwardedHeader]: "1" }
         );
 
@@ -69,7 +69,7 @@ describe("forwarding /api/* to the server", () => {
   it.effect("refuses to forward to the app's own origin", () =>
     Effect.gen(function* ownOrigin() {
       const response = yield* forward("http://localhost:3001/api/health", {
-        ACME_API_URL: "http://localhost:3001",
+        PEAL_API_URL: "http://localhost:3001",
       });
 
       assert.strictEqual(response.status, 502);
@@ -104,7 +104,7 @@ describe("what the server answers", () => {
     Effect.gen(function* discovery() {
       const response = yield* forward(
         "http://localhost:3001/.well-known/oauth-protected-resource/api/mcp",
-        { ACME_API_URL: "http://api.test:3000" }
+        { PEAL_API_URL: "http://api.test:3000" }
       );
 
       assert.strictEqual(
@@ -132,20 +132,20 @@ describe("the server URL", () => {
         Effect.flip
       );
 
-      assert.include(String(missing), "ACME_API_URL");
+      assert.include(String(missing), "PEAL_API_URL");
     })
   );
 
-  it.effect("is read from ACME_API_URL in production", () =>
+  it.effect("is read from PEAL_API_URL in production", () =>
     Effect.gen(function* configured() {
       assert.strictEqual(
         yield* serverUrl.pipe(
           withEnv({
-            ACME_API_URL: "http://acme-server:8080",
+            PEAL_API_URL: "http://peal-server:8080",
             NODE_ENV: "production",
           })
         ),
-        "http://acme-server:8080"
+        "http://peal-server:8080"
       );
     })
   );

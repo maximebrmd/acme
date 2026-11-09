@@ -7,7 +7,7 @@ import type { DirectoryUnavailable } from "./directory-unavailable.ts";
 import { MemberDirectory } from "./member-directory.ts";
 
 /**
- * Whether a user may use Acme now: their account exists and staff have not
+ * Whether a user may use Peal now: their account exists and staff have not
  * banned them. A session can outlive both in the cookie cache, so endpoints
  * that act for a user outside any workspace ask this, as WorkspaceAccess
  * asks it inside one.
@@ -19,7 +19,7 @@ export class AccountStanding extends Context.Service<
       userId: UserId
     ) => Effect.Effect<boolean, DirectoryUnavailable>;
   }
->()("acme-server/workspace/application/AccountStanding") {
+>()("peal-server/workspace/application/AccountStanding") {
   static readonly layer = Layer.effect(
     AccountStanding,
     Effect.gen(function* AccountStandingLive() {

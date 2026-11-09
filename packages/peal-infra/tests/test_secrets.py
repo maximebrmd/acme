@@ -1,4 +1,4 @@
-"""The secrets acme_runtime generates on the server (secrets.env)."""
+"""The secrets peal_runtime generates on the server (secrets.env)."""
 
 from __future__ import annotations
 
@@ -13,8 +13,8 @@ from conftest import render, task
 
 def _generate(root: Path) -> dict[str, str]:
     """Runs the role's generation, as root would on the server, in root."""
-    found = task("acme_runtime", "Generate the secrets")
-    script = render(found["ansible.builtin.shell"], acme_root=str(root))
+    found = task("peal_runtime", "Generate the secrets")
+    script = render(found["ansible.builtin.shell"], peal_root=str(root))
     subprocess.run(["sh", "-c", script], check=True)
     secrets = root / "secrets.env"
 
@@ -27,7 +27,7 @@ def test_every_secret_is_set(tmp_path: Path) -> None:
     secrets = _generate(tmp_path)
 
     assert sorted(secrets) == [
-        "ACME_TOKEN_KEYS",
+        "PEAL_TOKEN_KEYS",
         "BETTER_AUTH_SECRET",
         "GRAFANA_ADMIN_PASSWORD",
         "POSTGRES_PASSWORD",
@@ -37,7 +37,7 @@ def test_every_secret_is_set(tmp_path: Path) -> None:
 
 
 def test_the_token_key_is_one_the_server_reads(tmp_path: Path) -> None:
-    key_id, key = _generate(tmp_path)["ACME_TOKEN_KEYS"].split(":", 1)
+    key_id, key = _generate(tmp_path)["PEAL_TOKEN_KEYS"].split(":", 1)
 
     # web-crypto-token-cipher.ts: keyIdPattern, and an AES-256 key.
     assert re.fullmatch(r"[\w-]{1,64}", key_id)
@@ -54,6 +54,6 @@ def test_each_server_names_its_token_key_apart(tmp_path: Path) -> None:
     for server in servers:
         server.mkdir()
 
-    key_ids = {_generate(server)["ACME_TOKEN_KEYS"].split(":")[0] for server in servers}
+    key_ids = {_generate(server)["PEAL_TOKEN_KEYS"].split(":")[0] for server in servers}
 
     assert len(key_ids) == len(servers)

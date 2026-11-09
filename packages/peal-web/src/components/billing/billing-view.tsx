@@ -6,11 +6,11 @@ import type {
   PaidPlan,
   PlanAllowances,
   PlanLimit,
-} from "acme-contract";
-import { PaidPlanSchema } from "acme-contract";
-import { Alert, AlertDescription, AlertTitle } from "acme-ui/components/alert";
-import { Badge } from "acme-ui/components/badge";
-import { Button } from "acme-ui/components/button";
+} from "peal-contract";
+import { PaidPlanSchema } from "peal-contract";
+import { Alert, AlertDescription, AlertTitle } from "peal-ui/components/alert";
+import { Badge } from "peal-ui/components/badge";
+import { Button } from "peal-ui/components/button";
 import {
   Card,
   CardAction,
@@ -19,12 +19,12 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "acme-ui/components/card";
+} from "peal-ui/components/card";
 import {
   Progress,
   ProgressLabel,
   ProgressValue,
-} from "acme-ui/components/progress";
+} from "peal-ui/components/progress";
 import { DateTime, Schema } from "effect";
 import { useFormatter, useTranslations } from "next-intl";
 

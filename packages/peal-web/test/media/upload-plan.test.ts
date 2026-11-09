@@ -1,5 +1,5 @@
 import { describe, expect, it } from "@effect/vitest";
-import type { SignedRequest, UploadPart, UploadTarget } from "acme-contract";
+import type { SignedRequest, UploadPart, UploadTarget } from "peal-contract";
 import { DateTime, Option } from "effect";
 
 import { progressOf, slicesOf } from "#media/upload-plan.ts";

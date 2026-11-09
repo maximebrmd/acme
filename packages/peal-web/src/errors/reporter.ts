@@ -1,4 +1,4 @@
-import type { ClientErrorReport } from "acme-contract";
+import type { ClientErrorReport } from "peal-contract";
 
 /** How many reports a page sends at most, however many errors it meets. */
 export const maxReportsPerPage = 10;

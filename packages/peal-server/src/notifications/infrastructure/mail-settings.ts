@@ -2,7 +2,7 @@ import { Config, Option, Redacted } from "effect";
 
 import { requiredInProduction } from "#shared/infrastructure/environment.ts";
 
-/** How email leaves Acme: Resend's API, or an SMTP server. */
+/** How email leaves Peal: Resend's API, or an SMTP server. */
 export type MailTransport =
   | { readonly _tag: "Resend"; readonly apiKey: Redacted.Redacted }
   | { readonly _tag: "Smtp"; readonly url: Redacted.Redacted };
@@ -38,7 +38,7 @@ const transport = Config.option(Config.Redacted("RESEND_API_KEY")).pipe(
 export const mailSettingsConfig = Config.all({
   from: requiredInProduction(
     Config.NonEmptyString("MAIL_FROM"),
-    "Acme <noreply@acme.localhost>"
+    "Peal <noreply@peal.localhost>"
   ),
   transport,
 });

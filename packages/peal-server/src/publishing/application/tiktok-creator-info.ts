@@ -39,7 +39,7 @@ export class TikTokCreatorInfo extends Context.Service<
       CreatorFailure | DatabaseError | MissingPermission | UnknownChannels
     >;
   }
->()("acme-server/publishing/application/TikTokCreatorInfo") {
+>()("peal-server/publishing/application/TikTokCreatorInfo") {
   static readonly layer = Layer.effect(
     TikTokCreatorInfo,
     Effect.gen(function* TikTokCreatorInfoLive() {

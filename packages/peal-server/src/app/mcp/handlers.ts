@@ -1,4 +1,4 @@
-import { CurrentMember } from "acme-contract";
+import { CurrentMember } from "peal-contract";
 import { Array, Effect, Layer, Option } from "effect";
 
 import { PeopleToolsLive } from "#app/mcp/people-handlers.ts";
@@ -17,7 +17,7 @@ const refuse = (message: string) => () =>
   Effect.fail(new ToolRefused({ message }));
 
 const BasicToolsLive = BasicTools.toLayer(
-  Effect.gen(function* acmeTools() {
+  Effect.gen(function* pealTools() {
     const accounts = yield* Accounts;
     const listChannels = yield* ListChannels;
     const pingDatabase = yield* makeDatabasePing;
@@ -37,7 +37,7 @@ const BasicToolsLive = BasicTools.toLayer(
           BannedUser: refuse("This account has been suspended."),
           DirectoryUnavailable: Effect.die,
           NotSignedIn: refuse(
-            "This account no longer exists. Connect to Acme again."
+            "This account no longer exists. Connect to Peal again."
           ),
         })
       );
@@ -96,7 +96,7 @@ const BasicToolsLive = BasicTools.toLayer(
           if (Option.isNone(connected)) {
             return yield* new ToolRefused({
               message:
-                "You no longer belong to the workspace this connection acts in. Connect to Acme again and pick another.",
+                "You no longer belong to the workspace this connection acts in. Connect to Peal again and pick another.",
             });
           }
 
@@ -122,7 +122,7 @@ const BasicToolsLive = BasicTools.toLayer(
  * What the tools do, through the use cases of each context, as the member
  * that the MCP endpoint's authentication provides (CurrentMember).
  */
-export const AcmeToolsLive = Layer.mergeAll(
+export const PealToolsLive = Layer.mergeAll(
   BasicToolsLive,
   PostToolsLive,
   ReportToolsLive,

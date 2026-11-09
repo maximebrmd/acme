@@ -17,18 +17,18 @@ import { MigrationsLive } from "#shared/infrastructure/migrations.ts";
 import { IdsLive } from "#shared/infrastructure/secure-random-ids.ts";
 import { TransactionRunnerLive } from "#shared/infrastructure/transaction-runner-live.ts";
 
-// The development stack's SeaweedFS (packages/acme-docker/compose.yaml),
+// The development stack's SeaweedFS (packages/peal-docker/compose.yaml),
 // which CI starts too. The environment wins over these defaults, so another
 // store can be named with the same variables the server reads. Every key
 // goes under tests/media/, apart from what the server and other suites write.
 export const storageSettings = ConfigProvider.layerAdd(
   ConfigProvider.fromUnknown({
-    ACME_S3_ACCESS_KEY_ID: "acme",
-    ACME_S3_BUCKET: "acme-media",
-    ACME_S3_ENDPOINT: "http://127.0.0.1:18333",
-    ACME_S3_FORCE_PATH_STYLE: "true",
-    ACME_S3_KEY_PREFIX: "tests/media/",
-    ACME_S3_SECRET_ACCESS_KEY: "acme-development-secret",
+    PEAL_S3_ACCESS_KEY_ID: "peal",
+    PEAL_S3_BUCKET: "peal-media",
+    PEAL_S3_ENDPOINT: "http://127.0.0.1:18333",
+    PEAL_S3_FORCE_PATH_STYLE: "true",
+    PEAL_S3_KEY_PREFIX: "tests/media/",
+    PEAL_S3_SECRET_ACCESS_KEY: "peal-development-secret",
   })
 );
 
@@ -71,7 +71,7 @@ export const damagedPng = (size: number): Uint8Array<ArrayBuffer> =>
     (byte, index) => pngSignature[index] ?? byte
   );
 
-/** An SVG of 4000×3000, which image decoders read but acme does not take. */
+/** An SVG of 4000×3000, which image decoders read but peal does not take. */
 export const syntheticSvg = (): Uint8Array<ArrayBuffer> =>
   new TextEncoder().encode(
     '<svg xmlns="http://www.w3.org/2000/svg" width="4000" height="3000"/>'
@@ -135,7 +135,7 @@ export const hasFfmpeg =
 // A one-second 320×240 test pattern, encoded with FFmpeg's own MPEG-4 encoder,
 // which every build has.
 export const syntheticVideo = (): Uint8Array<ArrayBuffer> => {
-  const folder = mkdtempSync(path.join(os.tmpdir(), "acme-probe-"));
+  const folder = mkdtempSync(path.join(os.tmpdir(), "peal-probe-"));
   const file = path.join(folder, "pattern.mp4");
 
   try {

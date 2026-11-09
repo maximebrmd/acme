@@ -16,7 +16,7 @@ import { TokenCipher } from "./token-cipher.ts";
 
 const decodeChannelId = Schema.decodeUnknownOption(ChannelIdSchema);
 
-// The longest a disconnect waits on the platform to forget Acme's grant.
+// The longest a disconnect waits on the platform to forget Peal's grant.
 const revokeTimeout = Duration.seconds(10);
 
 /**
@@ -42,7 +42,7 @@ export class DisconnectChannel extends Context.Service<
       ChannelNotFound | DatabaseError | MissingPermission
     >;
   }
->()("acme-server/channels/application/DisconnectChannel") {
+>()("peal-server/channels/application/DisconnectChannel") {
   static readonly layer = Layer.effect(
     DisconnectChannel,
     Effect.gen(function* DisconnectChannelLive() {

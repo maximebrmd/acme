@@ -23,9 +23,9 @@ export interface FakeCreator {
 
 export const publicCreator: FakeCreator = {
   comment_disabled: false,
-  creator_avatar_url: "https://p16-sign.tiktokcdn.example/avatar/acme.jpeg",
-  creator_nickname: "Acme Example",
-  creator_username: "acme_example",
+  creator_avatar_url: "https://p16-sign.tiktokcdn.example/avatar/peal.jpeg",
+  creator_nickname: "Peal Example",
+  creator_username: "peal_example",
   duet_disabled: false,
   max_video_post_duration_sec: 600,
   privacy_level_options: [

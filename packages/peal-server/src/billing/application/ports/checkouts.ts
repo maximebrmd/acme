@@ -40,4 +40,4 @@ export class Checkouts extends Context.Service<
       workspaceId: WorkspaceId
     ) => Effect.Effect<readonly string[], DatabaseError | StripeUnreachable>;
   }
->()("acme-server/billing/application/Checkouts") {}
+>()("peal-server/billing/application/Checkouts") {}

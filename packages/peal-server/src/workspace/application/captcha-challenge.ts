@@ -9,4 +9,4 @@ import type { Option } from "effect";
 export class CaptchaChallenge extends Context.Service<
   CaptchaChallenge,
   { readonly turnstileSiteKey: Option.Option<string> }
->()("acme-server/workspace/application/CaptchaChallenge") {}
+>()("peal-server/workspace/application/CaptchaChallenge") {}

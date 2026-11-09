@@ -10,15 +10,15 @@ Un canal est un compte social connecté à un espace de travail : un compte Mast
 Ouvrez un espace de travail depuis **Espaces de travail**, puis **Canaux**. Chaque membre voit les canaux de l’espace de travail ; seuls les propriétaires et les administrateurs les connectent, les reconnectent et les déconnectent.
 
 <Callout type="note" title="Neuf plateformes pour l’instant">
-  Acme connecte les comptes Mastodon, Bluesky, LinkedIn, X, Threads, Instagram
+  Peal connecte les comptes Mastodon, Bluesky, LinkedIn, X, Threads, Instagram
   et TikTok, les Pages Facebook et les chaînes YouTube. L’autre plateforme qu’il
   connaît, Pinterest, ne peut pas encore être connectée. **Canaux** ne propose
-  que les plateformes pour lesquelles le serveur Acme est configuré.
+  que les plateformes pour lesquelles le serveur Peal est configuré.
 </Callout>
 
 ## Connecter un compte [#connect]
 
-Vous vous connectez sur la plateforme, acceptez ce qu’Acme demande, et la plateforme vous renvoie vers Acme, qui termine la connexion. Terminez-la dans l’onglet du navigateur où vous l’avez commencée, dans les 15 minutes.
+Vous vous connectez sur la plateforme, acceptez ce que Peal demande, et la plateforme vous renvoie vers Peal, qui termine la connexion. Terminez-la dans l’onglet du navigateur où vous l’avez commencée, dans les 15 minutes.
 
 Connecter un compte que l’espace de travail a déjà reconnecte son canal au lieu d’en ajouter un second. Plusieurs espaces de travail peuvent connecter le même compte.
 
@@ -26,33 +26,33 @@ Connecter un compte que l’espace de travail a déjà reconnecte son canal au l
 
 Sous **Mastodon**, indiquez le serveur du compte, comme `mastodon.social`, ou l’adresse du compte lui-même, comme `@vous@mastodon.social`, puis choisissez **Connecter Mastodon**.
 
-Acme fonctionne avec n’importe quel serveur Mastodon accessible sur Internet en HTTPS. La première fois que quelqu’un connecte un compte d’un serveur, Acme s’y enregistre comme application. Il demande à lire le profil du compte, à publier des messages et des médias, et à relire les publications du compte, pour leurs chiffres dans les [statistiques](/analytics). Un compte connecté avant qu’Acme demande à relire ses publications continue de publier comme avant ; reconnectez-le pour l’accorder aussi.
+Peal fonctionne avec n’importe quel serveur Mastodon accessible sur Internet en HTTPS. La première fois que quelqu’un connecte un compte d’un serveur, Peal s’y enregistre comme application. Il demande à lire le profil du compte, à publier des messages et des médias, et à relire les publications du compte, pour leurs chiffres dans les [statistiques](/analytics). Un compte connecté avant que Peal demande à relire ses publications continue de publier comme avant ; reconnectez-le pour l’accorder aussi.
 
 ### Bluesky [#bluesky]
 
 Sous **Bluesky**, indiquez votre identifiant, comme `vous.bsky.social`, pour aller directement sur la page de connexion de votre serveur, ou laissez-le vide pour choisir le compte sur Bluesky. Choisissez ensuite **Connecter Bluesky**.
 
-Le serveur Acme doit être configuré pour Bluesky : sur une instance auto-hébergée, voyez [Bluesky](/self-hosting#bluesky). D’ici là, **Canaux** ne le propose pas.
+Le serveur Peal doit être configuré pour Bluesky : sur une instance auto-hébergée, voyez [Bluesky](/self-hosting#bluesky). D’ici là, **Canaux** ne le propose pas.
 
 ### LinkedIn [#linkedin]
 
-Sous **LinkedIn**, choisissez **Connecter LinkedIn**, connectez-vous sur LinkedIn et autorisez Acme. Acme connecte votre propre profil LinkedIn, et publie en votre nom ; les pages d’entreprise ne peuvent pas encore être connectées. Il demande à LinkedIn votre nom et votre photo, et à publier.
+Sous **LinkedIn**, choisissez **Connecter LinkedIn**, connectez-vous sur LinkedIn et autorisez Peal. Peal connecte votre propre profil LinkedIn, et publie en votre nom ; les pages d’entreprise ne peuvent pas encore être connectées. Il demande à LinkedIn votre nom et votre photo, et à publier.
 
-LinkedIn laisse Acme publier pendant 60 jours, puis vous demande de vous reconnecter : le canal affiche la date, et les propriétaires et administrateurs de l’espace de travail en sont prévenus une semaine avant. Reconnectez-le d’ici là : si vous êtes connecté à LinkedIn, il ne redemande rien.
+LinkedIn laisse Peal publier pendant 60 jours, puis vous demande de vous reconnecter : le canal affiche la date, et les propriétaires et administrateurs de l’espace de travail en sont prévenus une semaine avant. Reconnectez-le d’ici là : si vous êtes connecté à LinkedIn, il ne redemande rien.
 
-Le serveur Acme doit être configuré pour LinkedIn : sur une instance auto-hébergée, voyez [LinkedIn](/self-hosting#linkedin). D’ici là, **Canaux** ne le propose pas.
+Le serveur Peal doit être configuré pour LinkedIn : sur une instance auto-hébergée, voyez [LinkedIn](/self-hosting#linkedin). D’ici là, **Canaux** ne le propose pas.
 
 ### X [#x]
 
-Sous **X**, choisissez **Connecter X**, connectez-vous sur X et autorisez Acme. Il demande à lire et écrire des publications, à envoyer des médias, et à rester connecté, pour renouveler son accès sans vous.
+Sous **X**, choisissez **Connecter X**, connectez-vous sur X et autorisez Peal. Il demande à lire et écrire des publications, à envoyer des médias, et à rester connecté, pour renouveler son accès sans vous.
 
-Le serveur Acme doit être configuré pour X : sur une instance auto-hébergée, voyez [X](/self-hosting#x). D’ici là, **Canaux** ne le propose pas.
+Le serveur Peal doit être configuré pour X : sur une instance auto-hébergée, voyez [X](/self-hosting#x). D’ici là, **Canaux** ne le propose pas.
 
 ### TikTok [#tiktok]
 
-Sous **TikTok**, choisissez **Connecter TikTok**, connectez-vous sur TikTok et autorisez Acme. Il demande votre profil et votre nom d’utilisateur, à publier des vidéos et des photos sur votre compte, et à lire vos vidéos, pour leurs chiffres dans les [statistiques](/analytics). Vous pouvez refuser ce dernier point sur la page de TikTok : le canal publie alors sans statistiques.
+Sous **TikTok**, choisissez **Connecter TikTok**, connectez-vous sur TikTok et autorisez Peal. Il demande votre profil et votre nom d’utilisateur, à publier des vidéos et des photos sur votre compte, et à lire vos vidéos, pour leurs chiffres dans les [statistiques](/analytics). Vous pouvez refuser ce dernier point sur la page de TikTok : le canal publie alors sans statistiques.
 
-Le serveur Acme doit être configuré pour TikTok : sur une instance auto-hébergée, voyez [TikTok](/self-hosting#tiktok). D’ici là, **Canaux** ne le propose pas.
+Le serveur Peal doit être configuré pour TikTok : sur une instance auto-hébergée, voyez [TikTok](/self-hosting#tiktok). D’ici là, **Canaux** ne le propose pas.
 
 <Callout
   type="warning"
@@ -68,21 +68,21 @@ Le serveur Acme doit être configuré pour TikTok : sur une instance auto-héber
 
 ### Pages Facebook [#facebook]
 
-Sous **Pages Facebook**, choisissez **Connecter des Pages Facebook**, connectez-vous avec Facebook, et autorisez Acme à lister vos Pages et à y publier. De retour dans Acme, cochez les Pages où l’espace de travail publie, puis **Connecter** : chacune devient un canal. Une connexion qui n’atteint qu’une Page la connecte aussitôt. Seules les Pages où vous pouvez créer du contenu sont listées, et celles que l’espace de travail a déjà sont signalées : en choisir une la reconnecte. Choisissez dans les 15 minutes. Quand la connexion échoue avant qu’une Page soit connectée, Acme dit pourquoi, et vous pouvez choisir à nouveau, ou **Se reconnecter avec Facebook** pour une nouvelle liste ; une fois le choix expiré ou fait, seule une nouvelle connexion ramène les Pages.
+Sous **Pages Facebook**, choisissez **Connecter des Pages Facebook**, connectez-vous avec Facebook, et autorisez Peal à lister vos Pages et à y publier. De retour dans Peal, cochez les Pages où l’espace de travail publie, puis **Connecter** : chacune devient un canal. Une connexion qui n’atteint qu’une Page la connecte aussitôt. Seules les Pages où vous pouvez créer du contenu sont listées, et celles que l’espace de travail a déjà sont signalées : en choisir une la reconnecte. Choisissez dans les 15 minutes. Quand la connexion échoue avant qu’une Page soit connectée, Peal dit pourquoi, et vous pouvez choisir à nouveau, ou **Se reconnecter avec Facebook** pour une nouvelle liste ; une fois le choix expiré ou fait, seule une nouvelle connexion ramène les Pages.
 
 ### Instagram [#instagram]
 
-Acme publie sur les comptes professionnels Instagram, entreprise ou créateur, liés à une Page Facebook. Sous **Instagram**, choisissez **Connecter Instagram** et connectez-vous avec Facebook, comme pour les Pages, puis cochez les comptes Instagram liés à vos Pages. Un compte publie avec l’accès de sa Page : il reste connecté tant que vous gérez la Page.
+Peal publie sur les comptes professionnels Instagram, entreprise ou créateur, liés à une Page Facebook. Sous **Instagram**, choisissez **Connecter Instagram** et connectez-vous avec Facebook, comme pour les Pages, puis cochez les comptes Instagram liés à vos Pages. Un compte publie avec l’accès de sa Page : il reste connecté tant que vous gérez la Page.
 
 ### Threads [#threads]
 
-Sous **Threads**, choisissez **Connecter Threads**, connectez-vous avec votre compte Threads, et autorisez Acme à lire votre profil et à publier.
+Sous **Threads**, choisissez **Connecter Threads**, connectez-vous avec votre compte Threads, et autorisez Peal à lire votre profil et à publier.
 
 ### YouTube [#youtube]
 
-Sous **YouTube**, choisissez **Connecter YouTube**, connectez-vous avec Google, et choisissez la chaîne : un compte Google qui gère plusieurs chaînes, celles de ses comptes de marque comprises, les liste dans le sélecteur de comptes de Google, et chaque connexion est une chaîne. Autorisez Acme à mettre en ligne des vidéos et à voir votre compte YouTube : il lit le nom et l’image de la chaîne, le traitement de ses vidéos et leurs chiffres, et ne modifie rien d’autre. Décochez l’un des deux, et la connexion est refusée. Un compte Google sans chaîne ne connecte rien : créez d’abord la chaîne sur YouTube.
+Sous **YouTube**, choisissez **Connecter YouTube**, connectez-vous avec Google, et choisissez la chaîne : un compte Google qui gère plusieurs chaînes, celles de ses comptes de marque comprises, les liste dans le sélecteur de comptes de Google, et chaque connexion est une chaîne. Autorisez Peal à mettre en ligne des vidéos et à voir votre compte YouTube : il lit le nom et l’image de la chaîne, le traitement de ses vidéos et leurs chiffres, et ne modifie rien d’autre. Décochez l’un des deux, et la connexion est refusée. Un compte Google sans chaîne ne connecte rien : créez d’abord la chaîne sur YouTube.
 
-Le serveur Acme doit être configuré pour YouTube : sur une instance auto-hébergée, voyez [YouTube](/self-hosting#youtube). D’ici là, **Canaux** ne le propose pas.
+Le serveur Peal doit être configuré pour YouTube : sur une instance auto-hébergée, voyez [YouTube](/self-hosting#youtube). D’ici là, **Canaux** ne le propose pas.
 
 ## États [#statuses]
 
@@ -90,30 +90,30 @@ Chaque canal affiche l’un de ces états :
 
 | État          | Ce qu’il signifie                                                                                                                                                              |
 | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Connecté      | Acme peut publier sur le compte.                                                                                                                                               |
-| À reconnecter | La plateforme n’accepte plus l’accès d’Acme. Rien ne part sur le canal tant que vous ne l’avez pas reconnecté.                                                                 |
+| Connecté      | Peal peut publier sur le compte.                                                                                                                                               |
+| À reconnecter | La plateforme n’accepte plus l’accès de Peal. Rien ne part sur le canal tant que vous ne l’avez pas reconnecté.                                                                 |
 | Désactivé     | Rien ne part sur le canal, et le reconnecter le laisse désactivé. Pour publier de nouveau sur le compte, [déconnectez](#disconnect) le canal et connectez à nouveau le compte. |
 
 Un canal dont l’accès ne peut pas être renouvelé affiche aussi la date avant laquelle le reconnecter, et les propriétaires et administrateurs de son espace de travail en sont prévenus avant cette date.
 
 ## Garder les canaux connectés [#keep-connected]
 
-Acme renouvelle de lui-même l’accès de chaque compte avant qu’il n’expire : il rafraîchit une session Bluesky un mois avant qu’elle ne tombe, l’accès à X, qui dure deux heures, avant sa fin, l’accès à Threads, qui dure 60 jours, une semaine avant, l’accès à TikTok, qui dure un jour ou moins, une demi-heure avant sa fin, et l’accès à YouTube, qui dure une heure, toutes les heures. TikTok laisse Acme le renouveler pendant 180 jours après la connexion du compte : le canal demande ensuite à être reconnecté. Google met fin à l’accès à YouTube quand le titulaire retire Acme de son compte Google, ou six mois après le dernier usage d’Acme ; sur un serveur auto-hébergé dont le projet Google est en test, sept jours après la connexion de la chaîne. L’accès à Mastodon, et l’accès de Page avec lequel publient les Pages Facebook et les comptes Instagram, n’expirent pas tant que personne ne les révoque ; Facebook retire aussi l’accès d’une Page quand la personne qui l’a connectée change de mot de passe ou perd son rôle sur la Page. L’accès à LinkedIn ne peut pas être renouvelé : reconnectez le canal tous les 60 jours, comme ci-dessus.
+Peal renouvelle de lui-même l’accès de chaque compte avant qu’il n’expire : il rafraîchit une session Bluesky un mois avant qu’elle ne tombe, l’accès à X, qui dure deux heures, avant sa fin, l’accès à Threads, qui dure 60 jours, une semaine avant, l’accès à TikTok, qui dure un jour ou moins, une demi-heure avant sa fin, et l’accès à YouTube, qui dure une heure, toutes les heures. TikTok laisse Peal le renouveler pendant 180 jours après la connexion du compte : le canal demande ensuite à être reconnecté. Google met fin à l’accès à YouTube quand le titulaire retire Peal de son compte Google, ou six mois après le dernier usage de Peal ; sur un serveur auto-hébergé dont le projet Google est en test, sept jours après la connexion de la chaîne. L’accès à Mastodon, et l’accès de Page avec lequel publient les Pages Facebook et les comptes Instagram, n’expirent pas tant que personne ne les révoque ; Facebook retire aussi l’accès d’une Page quand la personne qui l’a connectée change de mot de passe ou perd son rôle sur la Page. L’accès à LinkedIn ne peut pas être renouvelé : reconnectez le canal tous les 60 jours, comme ci-dessus.
 
-Quand une plateforme refuse l’accès d’Acme pendant qu’il publie, Acme renouvelle l’accès quand la plateforme le permet, et réessaie une fois. Quand la plateforme refuse encore, ou que l’accès ne peut pas être renouvelé, par exemple parce que le titulaire du compte l’a révoqué, le canal passe à **À reconnecter**, et les propriétaires et administrateurs de l’espace de travail en sont prévenus une fois, sous la cloche et par e-mail, sauf s’ils ont désactivé cet e-mail (voir [Notifications](/notifications)). Quand une plateforme ne répond pas, Acme réessaie plus tard et laisse le canal tel quel.
+Quand une plateforme refuse l’accès de Peal pendant qu’il publie, Peal renouvelle l’accès quand la plateforme le permet, et réessaie une fois. Quand la plateforme refuse encore, ou que l’accès ne peut pas être renouvelé, par exemple parce que le titulaire du compte l’a révoqué, le canal passe à **À reconnecter**, et les propriétaires et administrateurs de l’espace de travail en sont prévenus une fois, sous la cloche et par e-mail, sauf s’ils ont désactivé cet e-mail (voir [Notifications](/notifications)). Quand une plateforme ne répond pas, Peal réessaie plus tard et laisse le canal tel quel.
 
-## Ce qu’Acme publie [#posting]
+## Ce que Peal publie [#posting]
 
-À l’heure d’une publication, Acme la publie au nom du compte du canal, avec son texte sur ce canal et ses images et vidéos, chacune avec son texte alternatif quand elle en a un. [Images et vidéos](/media#platforms) liste ce que chaque plateforme accepte.
+À l’heure d’une publication, Peal la publie au nom du compte du canal, avec son texte sur ce canal et ses images et vidéos, chacune avec son texte alternatif quand elle en a un. [Images et vidéos](/media#platforms) liste ce que chaque plateforme accepte.
 
-- **Mastodon** : Acme publie sur le serveur du compte, avec la visibilité par défaut du compte. Le serveur transforme lui-même mentions, hashtags et liens en liens, et peut traiter une vidéo avant que la publication puisse la montrer.
-- **Bluesky** : Acme publie sur le serveur qui héberge le compte. Les liens et les hashtags deviennent des liens ; les mentions restent du texte brut pour l’instant. Les vidéos passent par le service vidéo de Bluesky, qui les traite avant que la publication parte.
-- **LinkedIn** : Acme publie publiquement, au nom du membre. Les hashtags deviennent des hashtags LinkedIn ; les mentions restent du texte brut. LinkedIn traite une vidéo avant que la publication parte.
-- **X** : Acme publie au nom du compte. X transforme lui-même mentions, hashtags et liens en liens, et traite une vidéo avant que la publication parte.
-- **Threads** et **Instagram** : Meta va chercher chaque image et chaque vidéo dans le stockage des médias, la traite, puis Acme publie : plusieurs fichiers forment un carrousel. Une vidéo Instagram part en reel. Acme vérifie la limite quotidienne de publication du compte avant de commencer.
-- **Pages Facebook** : Acme publie le texte sur la Page, une photo avec, plusieurs photos en une publication, ou une vidéo, que Facebook va chercher dans le stockage des médias.
-- **TikTok** : Acme publie une vidéo, avec le texte de la publication comme légende, ou jusqu’à 35 photos, avec le texte comme description, comme vous l’avez choisi dans les [options TikTok](/scheduling#options) de la publication. Juste avant, il relit les réglages du compte sur TikTok, et la publication échoue s’ils ne la permettent plus. Une vidéo part en morceaux depuis le stockage des médias, sauf si TikTok peut aller la chercher lui-même (voyez [TikTok](/self-hosting#tiktok)) ; TikTok va toujours chercher les photos. TikTok traite ensuite la publication, qu’Acme suit jusqu’à sa mise en ligne : une publication que d’autres voient affiche un lien une fois validée par la modération de TikTok, une publication que vous seul voyez n’en a pas. TikTok autorise environ 15 publications par jour et par compte, toutes applications confondues.
-- **YouTube** : Acme met en ligne la vidéo de la publication sur la chaîne, avec le texte de la publication comme description et le titre, la visibilité, la réponse « conçue pour les enfants », les tags et la catégorie de ses [options](/scheduling#options), puis attend que YouTube la traite. Une vidéo que YouTube ne parvient pas à traiter ou refuse, comme doublon ou pour sa durée, échoue avec la raison de YouTube. Quand YouTube garde privée une vidéo que vous vouliez publique ou non répertoriée, la page de la publication le dit : changez sa visibilité dans YouTube Studio. Un serveur Acme met en ligne un nombre limité de vidéos par jour, sur toutes ses chaînes : au-delà, une vidéo attend minuit, heure du Pacifique, quand les quotas de YouTube repartent, et la page de la publication montre l’attente.
+- **Mastodon** : Peal publie sur le serveur du compte, avec la visibilité par défaut du compte. Le serveur transforme lui-même mentions, hashtags et liens en liens, et peut traiter une vidéo avant que la publication puisse la montrer.
+- **Bluesky** : Peal publie sur le serveur qui héberge le compte. Les liens et les hashtags deviennent des liens ; les mentions restent du texte brut pour l’instant. Les vidéos passent par le service vidéo de Bluesky, qui les traite avant que la publication parte.
+- **LinkedIn** : Peal publie publiquement, au nom du membre. Les hashtags deviennent des hashtags LinkedIn ; les mentions restent du texte brut. LinkedIn traite une vidéo avant que la publication parte.
+- **X** : Peal publie au nom du compte. X transforme lui-même mentions, hashtags et liens en liens, et traite une vidéo avant que la publication parte.
+- **Threads** et **Instagram** : Meta va chercher chaque image et chaque vidéo dans le stockage des médias, la traite, puis Peal publie : plusieurs fichiers forment un carrousel. Une vidéo Instagram part en reel. Peal vérifie la limite quotidienne de publication du compte avant de commencer.
+- **Pages Facebook** : Peal publie le texte sur la Page, une photo avec, plusieurs photos en une publication, ou une vidéo, que Facebook va chercher dans le stockage des médias.
+- **TikTok** : Peal publie une vidéo, avec le texte de la publication comme légende, ou jusqu’à 35 photos, avec le texte comme description, comme vous l’avez choisi dans les [options TikTok](/scheduling#options) de la publication. Juste avant, il relit les réglages du compte sur TikTok, et la publication échoue s’ils ne la permettent plus. Une vidéo part en morceaux depuis le stockage des médias, sauf si TikTok peut aller la chercher lui-même (voyez [TikTok](/self-hosting#tiktok)) ; TikTok va toujours chercher les photos. TikTok traite ensuite la publication, que Peal suit jusqu’à sa mise en ligne : une publication que d’autres voient affiche un lien une fois validée par la modération de TikTok, une publication que vous seul voyez n’en a pas. TikTok autorise environ 15 publications par jour et par compte, toutes applications confondues.
+- **YouTube** : Peal met en ligne la vidéo de la publication sur la chaîne, avec le texte de la publication comme description et le titre, la visibilité, la réponse « conçue pour les enfants », les tags et la catégorie de ses [options](/scheduling#options), puis attend que YouTube la traite. Une vidéo que YouTube ne parvient pas à traiter ou refuse, comme doublon ou pour sa durée, échoue avec la raison de YouTube. Quand YouTube garde privée une vidéo que vous vouliez publique ou non répertoriée, la page de la publication le dit : changez sa visibilité dans YouTube Studio. Un serveur Peal met en ligne un nombre limité de vidéos par jour, sur toutes ses chaînes : au-delà, une vidéo attend minuit, heure du Pacifique, quand les quotas de YouTube repartent, et la page de la publication montre l’attente.
 
 ## Reconnecter [#reconnect]
 
@@ -121,9 +121,9 @@ Choisissez **Reconnecter** à côté du canal, puis connectez-vous sur la platef
 
 ## Déconnecter [#disconnect]
 
-Choisissez **Déconnecter** à côté du canal et confirmez. Acme supprime les jetons qu’il détient pour le compte et n’y publie plus rien. Vous pourrez le connecter de nouveau plus tard.
+Choisissez **Déconnecter** à côté du canal et confirmez. Peal supprime les jetons qu’il détient pour le compte et n’y publie plus rien. Vous pourrez le connecter de nouveau plus tard.
 
-La déconnexion ne prévient pas la plateforme, sauf TikTok et YouTube : à moins qu’un autre espace de travail connecte encore le même compte, Acme y révoque son accès et quitte les applications connectées du compte. Pour retirer l’accès d’Acme sur les autres plateformes, révoquez-le dans les réglages du compte sur la plateforme.
+La déconnexion ne prévient pas la plateforme, sauf TikTok et YouTube : à moins qu’un autre espace de travail connecte encore le même compte, Peal y révoque son accès et quitte les applications connectées du compte. Pour retirer l’accès de Peal sur les autres plateformes, révoquez-le dans les réglages du compte sur la plateforme.
 
 ## Quand la connexion échoue [#errors]
 
@@ -131,7 +131,7 @@ La déconnexion ne prévient pas la plateforme, sauf TikTok et YouTube : à moin
 | ----------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
 | Ce serveur n’est pas configuré pour connecter des comptes de cette plateforme | Demandez à l’administrateur de l’instance : il manque au serveur un réglage que la plateforme exige.                                 |
 | Ce n’est pas l’adresse d’un serveur                                           | Vérifiez l’adresse du serveur Mastodon, par exemple `mastodon.social`.                                                               |
-| Acme ne se connecte qu’à des serveurs publics, en HTTPS                       | Le serveur est privé, ou ne répond pas en HTTPS.                                                                                     |
+| Peal ne se connecte qu’à des serveurs publics, en HTTPS                       | Le serveur est privé, ou ne répond pas en HTTPS.                                                                                     |
 | Aucun compte ne correspond à cet identifiant                                  | Vérifiez l’identifiant Bluesky.                                                                                                      |
 | Cette connexion a expiré ou a été lancée ailleurs                             | Recommencez depuis les canaux de l’espace de travail, dans cet onglet.                                                               |
 | La connexion a été annulée sur la plateforme                                  | Vous, ou la plateforme, avez refusé. Recommencez si vous vouliez connecter le compte.                                                |

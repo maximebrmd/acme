@@ -202,8 +202,8 @@ export const makeAccessTokens = Effect.gen(function* makeAccessTokens() {
       });
 
       // A token that grants no workspace scope was agreed to for nothing in
-      // Acme (its user's identity, say), so its client gets nothing from
-      // Acme's tools or API either, the user's email and workspaces
+      // Peal (its user's identity, say), so its client gets nothing from
+      // Peal's tools or API either, the user's email and workspaces
       // included.
       const workspaceScoped = decodeScope(payload).pipe(
         Option.exists(({ scope }) =>

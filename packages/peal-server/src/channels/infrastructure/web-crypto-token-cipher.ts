@@ -20,7 +20,7 @@ import { InvalidTokenKeyring } from "./invalid-token-keyring.ts";
 
 // AES-256-GCM on Web Crypto, through Effect's Aead.
 //
-// ACME_TOKEN_KEYS lists "keyId:base64key" entries separated by commas, each
+// PEAL_TOKEN_KEYS lists "keyId:base64key" entries separated by commas, each
 // key 32 random bytes in standard base64 (`openssl rand -base64 32`). The
 // first key encrypts; every listed key decrypts. To rotate, put a new key
 // first and keep the old ones until every token has been re-encrypted.
@@ -136,8 +136,8 @@ const parseKeyring = Effect.fnUntraced(function* parseKeyring(
 
 const emptyKeyring: Keyring = { current: Option.none(), keys: new Map() };
 
-// ACME_TOKEN_KEYS, unless it is unset or blank, as `KEY=` in an env file.
-const keyringConfig = Config.option(Config.Redacted("ACME_TOKEN_KEYS")).pipe(
+// PEAL_TOKEN_KEYS, unless it is unset or blank, as `KEY=` in an env file.
+const keyringConfig = Config.option(Config.Redacted("PEAL_TOKEN_KEYS")).pipe(
   Config.map(Option.filter((value) => Redacted.value(value).trim() !== ""))
 );
 
@@ -174,7 +174,7 @@ const encoder = new TextEncoder();
 const decoder = new TextDecoder("utf-8");
 
 /**
- * Reads the keyring from ACME_TOKEN_KEYS, if it is set, and fails at startup
+ * Reads the keyring from PEAL_TOKEN_KEYS, if it is set, and fails at startup
  * if it is malformed.
  */
 export const TokenCipherLive = Layer.effect(

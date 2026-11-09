@@ -1,6 +1,6 @@
 "use client";
 
-import type { PostMetrics } from "acme-contract";
+import type { PostMetrics } from "peal-contract";
 import { useFormatter, useTranslations } from "next-intl";
 
 type Metric = keyof PostMetrics;

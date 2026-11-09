@@ -12,7 +12,7 @@ const noRedirects: globalThis.RequestInit = { redirect: "manual" };
 
 // The most an answer may carry. Platforms answer with small JSON documents
 // (an account, OAuth metadata, a DID document): a host sending more is
-// trying to fill Acme's memory.
+// trying to fill Peal's memory.
 const maxResponseBytes = 1_048_576;
 
 // Statuses whose answers have no body, which a Response cannot be given.
@@ -101,7 +101,7 @@ export const publicHttpClientWith = (options: {
  * OutboundGuard before it is sent, redirects are answered as they come
  * rather than followed (a redirect could lead past the guard), answers are
  * cut off past a megabyte, requests time out, and the host is not sent
- * Acme's trace context. Built on the fetch HttpClient, whose fetch it bounds.
+ * Peal's trace context. Built on the fetch HttpClient, whose fetch it bounds.
  */
 export const publicHttpClient = publicHttpClientWith({
   timeout: requestTimeout,

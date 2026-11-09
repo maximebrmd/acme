@@ -34,7 +34,7 @@ import type { OAuthClient } from "./oauth-client.ts";
 export interface ChannelPlatformSettings {
   /** None when this server cannot connect Bluesky accounts. */
   readonly bluesky: Option.Option<BlueskyAuthorizerOptions>;
-  /** Acme's LinkedIn app, if the operator registered one. */
+  /** Peal's LinkedIn app, if the operator registered one. */
   readonly linkedin: Option.Option<OAuthClient>;
   /**
    * Meta's main app, whose Facebook Login connects Facebook Pages and
@@ -47,20 +47,20 @@ export interface ChannelPlatformSettings {
   readonly publicUrl: string;
   /** The app's Threads credentials; none when this server has none. */
   readonly threads: Option.Option<MetaApp>;
-  /** Acme's TikTok app (its client key and secret), if the operator has one. */
+  /** Peal's TikTok app (its client key and secret), if the operator has one. */
   readonly tiktok: Option.Option<OAuthClient>;
   /** Where TikTok's API and sign-in page are. */
   readonly tiktokHosts: TikTokHosts;
-  /** Acme's X app, if the operator registered one. */
+  /** Peal's X app, if the operator registered one. */
   readonly x: Option.Option<OAuthClient>;
-  /** Acme's Google OAuth client, for YouTube, if the operator made one. */
+  /** Peal's Google OAuth client, for YouTube, if the operator made one. */
   readonly youtube: Option.Option<OAuthClient>;
 }
 
 export class ChannelPlatforms extends Context.Service<
   ChannelPlatforms,
   ChannelPlatformSettings
->()("acme-server/channels/infrastructure/ChannelPlatforms") {}
+>()("peal-server/channels/infrastructure/ChannelPlatforms") {}
 
 // The AT Protocol's public services, which a self-hosted server uses too.
 const blueskyDefaults = {
@@ -158,7 +158,7 @@ const blueskyModeOf = Effect.fnUntraced(function* blueskyModeOf(settings: {
  *
  * - `PUBLIC_URL`: the web app's origin.
  * - `BLUESKY_CLIENT_KEYS`: comma-separated `keyId:base64url(private JWK)`
- *   ES256 keys, from `bun nx run acme-server:bluesky-key`. With them, Acme
+ *   ES256 keys, from `bun nx run peal-server:bluesky-key`. With them, Peal
  *   runs a confidential Bluesky client, which needs PUBLIC_URL on HTTPS.
  *   Without them, a server on localhost runs the development client, and any
  *   other server cannot connect Bluesky.

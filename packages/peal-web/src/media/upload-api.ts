@@ -8,15 +8,15 @@ import {
   UploadIncomplete,
   UploadRejected,
   WorkspaceNotFound,
-} from "acme-contract";
+} from "peal-contract";
 import { Effect } from "effect";
 
-import type { AcmeApi } from "#api/client.ts";
+import type { PealApi } from "#api/client.ts";
 import { UploadFailed } from "#media/upload-failed.ts";
 import type { UploadFailureReason } from "#media/upload-failed.ts";
 import type { UploadApi } from "#media/upload-file.ts";
 
-type Client = (typeof AcmeApi)["Service"];
+type Client = (typeof PealApi)["Service"];
 
 // What the endpoints an upload calls can fail with: their errors, and the
 // transport's and decoding's.

@@ -52,18 +52,18 @@ export const youtubeCallbackPath = "/connect/youtube/callback";
 const scope = (name: string) => `https://www.googleapis.com/auth/${name}`;
 
 /**
- * What Acme asks a Google account for, the narrowest scopes that do it:
+ * What Peal asks a Google account for, the narrowest scopes that do it:
  * `youtube.upload`, to upload videos (videos.insert), and
  * `youtube.readonly`, to read the channel it signed in as (channels.list),
  * its videos' processing and their statistics (videos.list), private ones
- * included. Neither lets Acme change or delete anything else.
+ * included. Neither lets Peal change or delete anything else.
  */
 export const youtubeScopes: readonly string[] = [
   scope("youtube.upload"),
   scope("youtube.readonly"),
 ];
 
-// What each permission Acme needs is granted by, as Google names the
+// What each permission Peal needs is granted by, as Google names the
 // scopes: its own, or a broader one the account granted instead.
 const neededScopes: readonly (readonly string[])[] = [
   [scope("youtube.upload"), scope("youtube"), scope("youtube.force-ssl")],
@@ -92,7 +92,7 @@ type YouTubeChannel = typeof ChannelSchema.Type;
 
 const decodeAvatar = Schema.decodeUnknownOption(AvatarUrlSchema);
 
-// Errors that name Acme's client rather than the account's tokens: the
+// Errors that name Peal's client rather than the account's tokens: the
 // operator's settings are wrong, and no channel should be blamed for it.
 const clientErrors: ReadonlySet<string> = new Set([
   "invalid_client",
@@ -111,7 +111,7 @@ const refusedRefresh = (
       (code): Effect.Effect<never, PlatformUnavailable | TokenExpired> => {
         if (Option.exists(code, (name) => clientErrors.has(name))) {
           return Effect.logError(
-            "Google refused Acme's client: check YOUTUBE_CLIENT_ID and YOUTUBE_CLIENT_SECRET"
+            "Google refused Peal's client: check YOUTUBE_CLIENT_ID and YOUTUBE_CLIENT_SECRET"
           ).pipe(Effect.andThen(Effect.fail(new PlatformUnavailable())));
         }
 
@@ -165,7 +165,7 @@ const accountOf = (
  * one at every sign-in, with the account chooser first: an owner of brand
  * accounts picks the channel there, and the token is that channel's.
  * Granular consent lets the owner untick a scope: a sign-in that withheld
- * one Acme needs is refused.
+ * one Peal needs is refused.
  *
  * Access tokens last an hour. Refresh tokens do not rotate: a refresh
  * answers an access token, and a new refresh token only rarely, which then

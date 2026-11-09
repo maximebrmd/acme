@@ -7,7 +7,7 @@ import {
   PostSchema,
   TargetConfirmationSchema,
   TikTokAccountSchema,
-} from "acme-contract";
+} from "peal-contract";
 import { Context, Schema } from "effect";
 import { Tool, Toolkit } from "effect/ai";
 
@@ -54,7 +54,7 @@ export const ListDrafts = Tool.make("list_drafts", {
 export const GetPost = Tool.make("get_post", {
   dependencies: [CurrentMember],
   description:
-    "Answers with a post of the workspace: what it says, when it goes out, and how it went on each channel (its `targets`, whose ids repost_target and confirm_target take, each with its platform `options`, and `keptPrivate` when YouTube kept the video private although it was asked otherwise). A failed target says why in `failureReason`: the platform refused its text or format (contentRejected) or a media (mediaRejected); its channel was disconnected (channelDisconnected) or turned off (channelDisabled), or a media deleted (mediaRemoved); Acme was down at its time (missed); the user found it missing (notPublished); the platform kept limiting Acme (rateLimited), its daily upload allowance stayed spent (quotaExceeded, YouTube's), it refused the account's token (tokenExpired) or could not be reached (unavailable); or the platform takes only private posts from this server's app until it audits it (appNotAudited, TikTok's: the account must be private and the post visible to its owner only).",
+    "Answers with a post of the workspace: what it says, when it goes out, and how it went on each channel (its `targets`, whose ids repost_target and confirm_target take, each with its platform `options`, and `keptPrivate` when YouTube kept the video private although it was asked otherwise). A failed target says why in `failureReason`: the platform refused its text or format (contentRejected) or a media (mediaRejected); its channel was disconnected (channelDisconnected) or turned off (channelDisabled), or a media deleted (mediaRemoved); Peal was down at its time (missed); the user found it missing (notPublished); the platform kept limiting Peal (rateLimited), its daily upload allowance stayed spent (quotaExceeded, YouTube's), it refused the account's token (tokenExpired) or could not be reached (unavailable); or the platform takes only private posts from this server's app until it audits it (appNotAudited, TikTok's: the account must be private and the post visible to its owner only).",
   failure: ToolRefused,
   parameters: Schema.Struct({ postId }),
   success: PostSchema,
@@ -139,7 +139,7 @@ export const RepostTarget = Tool.make("repost_target", {
 export const ConfirmTarget = Tool.make("confirm_target", {
   dependencies: [CurrentMember],
   description:
-    "Records what the user found on the platform for a post Acme could not confirm on one channel, replacing its unconfirmed status: `published`, with its address if the user has it, or `notPublished`, which marks it failed there so it can be reposted. Record only what the user saw, never a guess. Its notifications are marked read.",
+    "Records what the user found on the platform for a post Peal could not confirm on one channel, replacing its unconfirmed status: `published`, with its address if the user has it, or `notPublished`, which marks it failed there so it can be reposted. Record only what the user saw, never a guess. Its notifications are marked read.",
   failure: ToolRefused,
   parameters: Schema.Struct({
     confirmation: TargetConfirmationSchema,
@@ -165,7 +165,7 @@ export const GetTikTokCreator = Tool.make("get_tiktok_creator", {
   }),
   success: TikTokAccountSchema,
 })
-  // It reads TikTok, outside Acme.
+  // It reads TikTok, outside Peal.
   .annotateMerge(reading.pipe(Context.add(Tool.OpenWorld, true)))
   .annotate(Tool.Title, "Read a TikTok creator");
 

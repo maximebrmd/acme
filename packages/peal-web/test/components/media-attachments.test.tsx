@@ -1,8 +1,8 @@
 import { RegistryProvider } from "@effect/atom-react";
 import { describe, expect, it } from "@effect/vitest";
-import { PostContentInvalid } from "acme-contract";
-import type { Channel, Media, Platform } from "acme-contract";
-import { maxMediaPerPost } from "acme-contract/post-text";
+import { PostContentInvalid } from "peal-contract";
+import type { Channel, Media, Platform } from "peal-contract";
+import { maxMediaPerPost } from "peal-contract/post-text";
 import { DateTime, Option } from "effect";
 import { AsyncResult } from "effect/reactivity";
 import { NextIntlClientProvider } from "next-intl";
@@ -60,7 +60,7 @@ const attached: readonly AttachedMedia[] = [
 const channel = (platform: Platform): Channel => ({
   avatarUrl: null,
   displayName: null,
-  handle: `@acme_${platform}`,
+  handle: `@peal_${platform}`,
   id: `channel-${platform}`,
   platform,
   status: { _tag: "active" },
@@ -313,13 +313,13 @@ describe("the media violations the API reports", () => {
     );
 
     expect(html).toContain(
-      "@acme_x on X: video 2 lasts 150 sec, at most 140 sec."
+      "@peal_x on X: video 2 lasts 150 sec, at most 140 sec."
     );
     expect(html).toContain(
-      "@acme_x on X: an image or a video weighs 5.7 MB, at most 5 MB."
+      "@peal_x on X: an image or a video weighs 5.7 MB, at most 5 MB."
     );
     expect(html).toContain(
-      "@acme_x on X: images and a video cannot go out together."
+      "@peal_x on X: images and a video cannot go out together."
     );
   });
 
@@ -346,13 +346,13 @@ describe("the media violations the API reports", () => {
     );
 
     await expect(render("en", view)).resolves.toContain(
-      "@acme_linkedin on LinkedIn: video 2 weighs 40 kB, at least 73.2 kB."
+      "@peal_linkedin on LinkedIn: video 2 weighs 40 kB, at least 73.2 kB."
     );
     // French puts no-break spaces before a colon and a unit.
     const french = await render("fr", view);
 
     expect(french.replaceAll(/\s/gu, " ")).toContain(
-      "@acme_linkedin sur LinkedIn : la vidéo 2 pèse 40 ko, 73,2 ko au moins."
+      "@peal_linkedin sur LinkedIn : la vidéo 2 pèse 40 ko, 73,2 ko au moins."
     );
   });
 });

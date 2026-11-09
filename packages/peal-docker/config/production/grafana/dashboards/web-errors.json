@@ -1,8 +1,8 @@
 {
-  "uid": "acme-web-errors",
+  "uid": "peal-web-errors",
   "title": "Web app errors",
   "description": "Errors the web app reports to POST /api/client-errors, from browsers and from its own server, which the server logs and counts.",
-  "tags": ["acme"],
+  "tags": ["peal"],
   "timezone": "utc",
   "schemaVersion": 41,
   "version": 1,
@@ -58,7 +58,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum by (kind) (increase(acme_client_errors_total[5m]))",
+          "expr": "sum by (kind) (increase(peal_client_errors_total[5m]))",
           "legendFormat": "{{kind}}"
         }
       ]
@@ -101,7 +101,7 @@
             "type": "prometheus",
             "uid": "prometheus"
           },
-          "expr": "sum by (reason) (increase(acme_client_errors_dropped_total[5m]))",
+          "expr": "sum by (reason) (increase(peal_client_errors_dropped_total[5m]))",
           "legendFormat": "{{reason}}"
         }
       ]
@@ -134,7 +134,7 @@
             "type": "loki",
             "uid": "loki"
           },
-          "expr": "{service_name=\"acme-server\"} | event_name=\"acme.client_error\""
+          "expr": "{service_name=\"peal-server\"} | event_name=\"peal.client_error\""
         }
       ]
     }

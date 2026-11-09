@@ -35,7 +35,7 @@ import {
 } from "#test/channels/support.ts";
 
 /** The web app's origin the tests run under. */
-export const testPublicUrl = "https://acme.test";
+export const testPublicUrl = "https://peal.test";
 
 /**
  * The channel a completed connection made, for platforms whose sign-in

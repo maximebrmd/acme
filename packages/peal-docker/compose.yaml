@@ -1,4 +1,4 @@
-# The development stack: `bun nx run acme-docker:up` starts it and waits until
+# The development stack: `bun nx run peal-docker:up` starts it and waits until
 # every service is healthy.
 #
 # Every port is published on 127.0.0.1 only, and every credential is a
@@ -6,8 +6,8 @@
 # usual port with a leading 1) so they stay clear of other local stacks; copy
 # .env.example to .env to change any of them.
 #
-#   Postgres        127.0.0.1:15432   DATABASE_URL=postgres://acme:acme@127.0.0.1:15432/acme
-#   S3 (SeaweedFS)  127.0.0.1:18333   bucket "acme-media", key "acme"
+#   Postgres        127.0.0.1:15432   DATABASE_URL=postgres://peal:peal@127.0.0.1:15432/peal
+#   S3 (SeaweedFS)  127.0.0.1:18333   bucket "peal-media", key "peal"
 #   SeaweedFS filer 127.0.0.1:18888   browse the stored files
 #   SMTP (Mailpit)  127.0.0.1:11025   any user and password
 #   Mailpit UI      127.0.0.1:18025
@@ -19,7 +19,7 @@
 #   Loki            127.0.0.1:13100
 #   Tempo           127.0.0.1:13200
 
-name: acme
+name: peal
 
 # Health checks probe often while a service starts, so `up --wait` returns as
 # soon as everything is ready, then settle to every 10 seconds.
@@ -34,11 +34,11 @@ services:
   postgres:
     image: postgres:18.6-alpine
     environment:
-      POSTGRES_USER: ${ACME_POSTGRES_USER:-acme}
-      POSTGRES_PASSWORD: ${ACME_POSTGRES_PASSWORD:-acme}
-      POSTGRES_DB: ${ACME_POSTGRES_DB:-acme}
+      POSTGRES_USER: ${PEAL_POSTGRES_USER:-peal}
+      POSTGRES_PASSWORD: ${PEAL_POSTGRES_PASSWORD:-peal}
+      POSTGRES_DB: ${PEAL_POSTGRES_DB:-peal}
     ports:
-      - 127.0.0.1:${ACME_POSTGRES_PORT:-15432}:5432
+      - 127.0.0.1:${PEAL_POSTGRES_PORT:-15432}:5432
     volumes:
       # Postgres 18 images keep PGDATA in a versioned folder below this one.
       - postgres:/var/lib/postgresql
@@ -47,8 +47,8 @@ services:
       test:
         - CMD
         - pg_isready
-        - --username=${ACME_POSTGRES_USER:-acme}
-        - --dbname=${ACME_POSTGRES_DB:-acme}
+        - --username=${PEAL_POSTGRES_USER:-peal}
+        - --dbname=${PEAL_POSTGRES_DB:-peal}
 
   # Master, volume server, filer and S3 gateway in one process. The access key
   # pair below becomes an admin identity, and the media bucket is created at
@@ -58,17 +58,17 @@ services:
     command:
       - mini
       - -dir=/data
-      - -bucket=${ACME_S3_BUCKET:-acme-media}
+      - -bucket=${PEAL_S3_BUCKET:-peal-media}
       - -webdav=false
       - -admin.ui=false
       - -s3.port.iceberg=0
       - -s3.port.lance=0
     environment:
-      AWS_ACCESS_KEY_ID: ${ACME_S3_ACCESS_KEY_ID:-acme}
-      AWS_SECRET_ACCESS_KEY: ${ACME_S3_SECRET_ACCESS_KEY:-acme-development-secret}
+      AWS_ACCESS_KEY_ID: ${PEAL_S3_ACCESS_KEY_ID:-peal}
+      AWS_SECRET_ACCESS_KEY: ${PEAL_S3_SECRET_ACCESS_KEY:-peal-development-secret}
     ports:
-      - 127.0.0.1:${ACME_S3_PORT:-18333}:8333
-      - 127.0.0.1:${ACME_SEAWEEDFS_FILER_PORT:-18888}:8888
+      - 127.0.0.1:${PEAL_S3_PORT:-18333}:8333
+      - 127.0.0.1:${PEAL_SEAWEEDFS_FILER_PORT:-18888}:8888
     volumes:
       - seaweedfs:/data
     healthcheck:
@@ -78,7 +78,7 @@ services:
         - CMD-SHELL
         - >-
           curl --fail --silent --output /dev/null http://127.0.0.1:8333/healthz &&
-          curl --fail --silent --output /dev/null http://127.0.0.1:8888/buckets/${ACME_S3_BUCKET:-acme-media}/
+          curl --fail --silent --output /dev/null http://127.0.0.1:8888/buckets/${PEAL_S3_BUCKET:-peal-media}/
 
   mailpit:
     image: axllent/mailpit:v1.33.1
@@ -90,8 +90,8 @@ services:
       # about 10 s under Docker Desktop and stalls the email tests.
       MP_SMTP_DISABLE_RDNS: "true"
     ports:
-      - 127.0.0.1:${ACME_SMTP_PORT:-11025}:1025
-      - 127.0.0.1:${ACME_MAILPIT_PORT:-18025}:8025
+      - 127.0.0.1:${PEAL_SMTP_PORT:-11025}:1025
+      - 127.0.0.1:${PEAL_MAILPIT_PORT:-18025}:8025
     volumes:
       - mailpit:/data
     healthcheck:
@@ -104,7 +104,7 @@ services:
   stripe-mock:
     image: stripe/stripe-mock:v0.206.0
     ports:
-      - 127.0.0.1:${ACME_STRIPE_MOCK_PORT:-12111}:12111
+      - 127.0.0.1:${PEAL_STRIPE_MOCK_PORT:-12111}:12111
     healthcheck:
       <<: *healthcheck
       test: [CMD, nc, -z, 127.0.0.1, "12111"]
@@ -119,8 +119,8 @@ services:
         source: busybox:1.38.0-musl
         target: /busybox
     ports:
-      - 127.0.0.1:${ACME_OTLP_GRPC_PORT:-14317}:4317
-      - 127.0.0.1:${ACME_OTLP_HTTP_PORT:-14318}:4318
+      - 127.0.0.1:${PEAL_OTLP_GRPC_PORT:-14317}:4317
+      - 127.0.0.1:${PEAL_OTLP_HTTP_PORT:-14318}:4318
     depends_on:
       loki:
         condition: service_healthy
@@ -139,7 +139,7 @@ services:
       - ./config/loki.yaml:/etc/loki/config.yaml:ro
       - loki:/loki
     ports:
-      - 127.0.0.1:${ACME_LOKI_PORT:-13100}:3100
+      - 127.0.0.1:${PEAL_LOKI_PORT:-13100}:3100
     healthcheck:
       <<: *healthcheck
       test: [CMD, /usr/bin/loki, -health]
@@ -151,7 +151,7 @@ services:
       - ./config/tempo.yaml:/etc/tempo/config.yaml:ro
       - tempo:/var/tempo
     ports:
-      - 127.0.0.1:${ACME_TEMPO_PORT:-13200}:3200
+      - 127.0.0.1:${PEAL_TEMPO_PORT:-13200}:3200
     healthcheck:
       <<: *healthcheck
       test: [CMD, /tempo, -health]
@@ -167,7 +167,7 @@ services:
       - ./config/prometheus.yaml:/etc/prometheus/prometheus.yaml:ro
       - prometheus:/prometheus
     ports:
-      - 127.0.0.1:${ACME_PROMETHEUS_PORT:-19090}:9090
+      - 127.0.0.1:${PEAL_PROMETHEUS_PORT:-19090}:9090
     healthcheck:
       <<: *healthcheck
       test: [CMD, promtool, check, ready]
@@ -189,7 +189,7 @@ services:
       - ./config/grafana/datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml:ro
       - grafana:/var/lib/grafana
     ports:
-      - 127.0.0.1:${ACME_GRAFANA_PORT:-13000}:3000
+      - 127.0.0.1:${PEAL_GRAFANA_PORT:-13000}:3000
     depends_on:
       loki:
         condition: service_healthy

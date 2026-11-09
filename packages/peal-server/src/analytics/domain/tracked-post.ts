@@ -17,7 +17,7 @@ import { PostMetrics } from "./post-metrics.ts";
  *
  * - `window`: it is 30 days old, and its counts move no more.
  * - `disconnected`: its channel left the workspace.
- * - `unsupported`: Acme cannot read counts on its platform.
+ * - `unsupported`: Peal cannot read counts on its platform.
  */
 export const CollectionEndSchema = Schema.Literals([
   "window",
@@ -44,7 +44,7 @@ export type Collection = typeof CollectionSchema.Type;
  * live, the counts read last, and when it is read next.
  */
 export class TrackedPost extends Schema.Class<TrackedPost>(
-  "acme-server/analytics/domain/TrackedPost"
+  "peal-server/analytics/domain/TrackedPost"
 )({
   channelId: ChannelIdSchema,
   collection: CollectionSchema,

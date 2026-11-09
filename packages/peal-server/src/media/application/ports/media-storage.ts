@@ -10,7 +10,7 @@ import type { StorageKey } from "#media/domain/storage-key.ts";
 import type { PartNumber, PlannedPart } from "#media/domain/upload-plan.ts";
 
 /**
- * A request the client sends straight to the store, signed by acme so it
+ * A request the client sends straight to the store, signed by peal so it
  * needs no credentials. The store checks the signed headers, so the client
  * sends them exactly as given, and the body must have the planned size.
  * A single upload only creates the file: sent again once the file is
@@ -114,4 +114,4 @@ export class MediaStorage extends Context.Service<
       key: StorageKey
     ) => Effect.Effect<void, MediaStorageFailed>;
   }
->()("acme-server/media/application/MediaStorage") {}
+>()("peal-server/media/application/MediaStorage") {}

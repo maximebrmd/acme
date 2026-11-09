@@ -84,7 +84,7 @@ describe(ownSession, () => {
     const throughClient = new UserPrincipal({
       impersonatedBy: Option.none(),
       oauth: Option.some({
-        clientId: "acme-cli",
+        clientId: "peal-cli",
         scopes: ["workspace:write"],
         workspaceId: Option.none(),
       }),
@@ -124,7 +124,7 @@ describe(ownSessionOrCommandLine, () => {
     expect(
       ownSessionOrCommandLine(
         through({
-          clientId: "acme-cli",
+          clientId: "peal-cli",
           scopes: ["offline_access", "workspace:read"],
           workspaceId: Option.none(),
         })
@@ -140,12 +140,12 @@ describe(ownSessionOrCommandLine, () => {
         workspaceId: Option.none(),
       }),
       through({
-        clientId: "acme-cli",
+        clientId: "peal-cli",
         scopes: ["workspace:write"],
         workspaceId: Option.some(studio),
       }),
       through({
-        clientId: "acme-cli",
+        clientId: "peal-cli",
         scopes: ["openid"],
         workspaceId: Option.none(),
       }),

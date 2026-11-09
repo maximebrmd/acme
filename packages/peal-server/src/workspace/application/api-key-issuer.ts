@@ -38,4 +38,4 @@ export class ApiKeyIssuer extends Context.Service<
       apiKeyId: string
     ) => Effect.Effect<boolean, AuthUnavailable>;
   }
->()("acme-server/workspace/application/ApiKeyIssuer") {}
+>()("peal-server/workspace/application/ApiKeyIssuer") {}

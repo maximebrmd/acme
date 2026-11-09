@@ -37,7 +37,7 @@ import type { TargetSettlement } from "./target-settlement.ts";
  * content, they change only while it is a draft.
  */
 export class PostTarget extends Schema.Class<PostTarget>(
-  "acme-server/publishing/domain/PostTarget"
+  "peal-server/publishing/domain/PostTarget"
 )({
   channelId: ChannelIdSchema,
   id: PostTargetIdSchema,

@@ -81,4 +81,4 @@ export class WorkspaceHealth extends Context.Service<
       limit: number
     ) => Effect.Effect<readonly PostTrouble[], DatabaseError>;
   }
->()("acme-server/staff/application/WorkspaceHealth") {}
+>()("peal-server/staff/application/WorkspaceHealth") {}

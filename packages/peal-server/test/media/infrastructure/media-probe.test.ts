@@ -37,7 +37,7 @@ const sidewaysJpeg = Effect.promise(
     )
 );
 
-// A 4×3 TIFF, a format sharp reads and acme does not take.
+// A 4×3 TIFF, a format sharp reads and peal does not take.
 const tiff = Effect.promise(
   async () =>
     new Uint8Array(
@@ -82,7 +82,7 @@ const probeWith = (ffprobePath: string) =>
   Layer.mergeAll(MediaProbeLive, S3MediaStorageLive, IdsLive).pipe(
     Layer.provide(
       ConfigProvider.layerAdd(
-        ConfigProvider.fromUnknown({ ACME_FFPROBE_PATH: ffprobePath })
+        ConfigProvider.fromUnknown({ PEAL_FFPROBE_PATH: ffprobePath })
       )
     ),
     Layer.provide(storageSettings)

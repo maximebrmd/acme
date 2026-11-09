@@ -11,7 +11,7 @@ export class SignInFailed extends Data.TaggedError("SignInFailed")<{
   override get [CliError.userMessage]() {
     const messages: Readonly<Record<typeof this.reason, string>> = {
       denied: `The sign-in to ${this.url} was denied.`,
-      expired: `The code expired before the sign-in to ${this.url} was approved. Run acme login again.`,
+      expired: `The code expired before the sign-in to ${this.url} was approved. Run peal login again.`,
       refused: `${this.url} refused the sign-in (${this.detail}).`,
     };
 

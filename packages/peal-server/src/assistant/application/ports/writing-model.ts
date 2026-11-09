@@ -23,4 +23,4 @@ export class WritingModel extends Context.Service<
       answer: Schema.Codec<A, I>
     ) => Effect.Effect<A, AssistantUnavailable | WritingFailed>;
   }
->()("acme-server/assistant/application/WritingModel") {}
+>()("peal-server/assistant/application/WritingModel") {}

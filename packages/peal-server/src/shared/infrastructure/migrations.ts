@@ -8,7 +8,7 @@ import { SqlClient } from "effect/sql";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 
 // Where drizzle-kit writes the migrations it generates from the schema files
-// (see drizzle.config.ts): packages/acme-server/drizzle.
+// (see drizzle.config.ts): packages/peal-server/drizzle.
 export const migrationsFolder = path.join(
   import.meta.dirname,
   "..",
@@ -29,7 +29,7 @@ export const migrate = Effect.fn("Database.migrate")(function* migrate(
 
   yield* sql.withTransaction(
     Effect.gen(function* migrateLocked() {
-      yield* sql`SELECT pg_advisory_xact_lock(hashtext('acme-server/migrations'))`;
+      yield* sql`SELECT pg_advisory_xact_lock(hashtext('peal-server/migrations'))`;
       yield* migrateDrizzle(db, config);
     })
   );

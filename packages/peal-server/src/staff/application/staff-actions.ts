@@ -55,7 +55,7 @@ export class StaffActions extends Context.Service<
       action: Action
     ) => Effect.Effect<readonly string[], Failure>;
   }
->()("acme-server/staff/application/StaffActions") {
+>()("peal-server/staff/application/StaffActions") {
   static readonly layer = Layer.effect(
     StaffActions,
     Effect.gen(function* StaffActionsLive() {

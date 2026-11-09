@@ -1,7 +1,7 @@
 "use client";
 
-import { Alert, AlertDescription } from "acme-ui/components/alert";
-import { Button } from "acme-ui/components/button";
+import { Alert, AlertDescription } from "peal-ui/components/alert";
+import { Button } from "peal-ui/components/button";
 import { Option, Schema } from "effect";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState, useTransition } from "react";

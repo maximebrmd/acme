@@ -12,7 +12,7 @@ import {
   Unauthenticated,
   WorkspaceAccess,
   WorkspaceNotFound,
-} from "acme-contract";
+} from "peal-contract";
 import type {
   AccountExport,
   Billing,
@@ -25,12 +25,12 @@ import type {
   PostDraft,
   PostTarget,
   TikTokAccount,
-} from "acme-contract";
+} from "peal-contract";
 import { DateTime, Effect, Layer, Option, Ref } from "effect";
 import { HttpRouter } from "effect/http";
 import { HttpApiBuilder, HttpApiSchema } from "effect/http-api";
 
-// A synthetic Acme instance's data, in memory, for the commands that act in
+// A synthetic Peal instance's data, in memory, for the commands that act in
 // a workspace: two workspaces, their channels, posts, members and
 // invitations, and the account's own data. Handlers check the member's
 // permissions as the server does, and record the changes they make.
@@ -263,9 +263,9 @@ const billing: Billing = {
 
 const cli: ConnectedApp = {
   authorizedAt: at("2026-10-01T08:00:00Z"),
-  clientId: "acme-cli",
+  clientId: "peal-cli",
   lastUsedAt: at("2026-11-09T07:00:00Z"),
-  name: "Acme CLI",
+  name: "Peal CLI",
   scopes: ["offline_access", "workspace:read", "workspace:write"],
   uri: null,
   workspaces: [],
@@ -782,7 +782,7 @@ export const studioGroupsLive = (studio: Studio) =>
             return HttpApiSchema.withHeaders({
               body: exported(now),
               headers: {
-                "content-disposition": `attachment; filename="acme-data-${DateTime.formatIsoDateUtc(now)}.json"`,
+                "content-disposition": `attachment; filename="peal-data-${DateTime.formatIsoDateUtc(now)}.json"`,
               },
             });
           }),

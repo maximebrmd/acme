@@ -32,7 +32,7 @@ export interface MetricsReaderSettings {
 }
 
 /**
- * The platforms Acme reads counts on (`countedPlatforms`), each channel
+ * The platforms Peal reads counts on (`countedPlatforms`), each channel
  * found through the channels context (ChannelAccess), which says who it
  * posts as, what it allowed, and whether it still works. Every request
  * goes through the public HTTP client, so the outbound guard checks the

@@ -28,9 +28,9 @@ const fakeApi = Effect.acquireRelease(
     const server = createServer((request, response) => {
       const signedIn =
         request.url === "/api/me" &&
-        request.headers.cookie === "acme.session_token=valid";
+        request.headers.cookie === "peal.session_token=valid";
 
-      const broken = request.headers.cookie === "acme.session_token=broken";
+      const broken = request.headers.cookie === "peal.session_token=broken";
 
       response.setHeader("content-type", "application/json");
 
@@ -65,7 +65,7 @@ const portOf = (server: Server) =>
 const at = (port: number) =>
   Effect.provide(
     ConfigProvider.layer(
-      ConfigProvider.fromUnknown({ ACME_API_URL: `http://127.0.0.1:${port}` })
+      ConfigProvider.fromUnknown({ PEAL_API_URL: `http://127.0.0.1:${port}` })
     )
   );
 
@@ -86,7 +86,7 @@ const closedPort = Effect.scoped(
 describe("the current user", () => {
   it.live("comes from GET /api/me with the visitor's cookies", () =>
     Effect.gen(function* signedIn() {
-      const user = yield* userWith("acme.session_token=valid");
+      const user = yield* userWith("peal.session_token=valid");
 
       assert.deepStrictEqual(
         user.pipe(
@@ -99,13 +99,13 @@ describe("the current user", () => {
 
   it.live("is none without a session", () =>
     Effect.gen(function* signedOut() {
-      assert.isTrue(Option.isNone(yield* userWith("acme.session_token=gone")));
+      assert.isTrue(Option.isNone(yield* userWith("peal.session_token=gone")));
     })
   );
 
   it.live("fails when the server does", () =>
     Effect.gen(function* fails() {
-      const exit = yield* userWith("acme.session_token=broken").pipe(
+      const exit = yield* userWith("peal.session_token=broken").pipe(
         Effect.exit
       );
 
@@ -116,7 +116,7 @@ describe("the current user", () => {
   // The header shows on every page, which an API outage must not take down.
   it.live("is none for the header when the server fails", () =>
     Effect.gen(function* broken() {
-      const user = yield* orSignedOut(userWith("acme.session_token=broken"));
+      const user = yield* orSignedOut(userWith("peal.session_token=broken"));
 
       assert.isTrue(Option.isNone(user));
     })
@@ -127,7 +127,7 @@ describe("the current user", () => {
       const port = yield* closedPort;
 
       const user = yield* orSignedOut(
-        currentUserEffect("acme.session_token=valid").pipe(at(port))
+        currentUserEffect("peal.session_token=valid").pipe(at(port))
       );
 
       assert.isTrue(Option.isNone(user));

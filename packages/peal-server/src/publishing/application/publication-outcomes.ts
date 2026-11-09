@@ -26,4 +26,4 @@ export class PublicationOutcomes extends Context.Service<
       target: PostTarget
     ) => Effect.Effect<void, DatabaseError>;
   }
->()("acme-server/publishing/application/PublicationOutcomes") {}
+>()("peal-server/publishing/application/PublicationOutcomes") {}

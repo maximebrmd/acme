@@ -25,7 +25,7 @@ const failure = (args: readonly string[]) =>
     Effect.provide(Layer.mergeAll(cliEnvironment(), recordRequests().transport))
   );
 
-// Runs `acme health` and returns the URLs it requested.
+// Runs `peal health` and returns the URLs it requested.
 const healthUrls = (args: readonly string[], env?: Record<string, string>) =>
   Effect.gen(function* requestedUrls() {
     const { transport, urls } = recordRequests();
@@ -51,13 +51,13 @@ const offline = (args: readonly string[]) =>
     return yield* output;
   });
 
-describe("acme", () => {
+describe("peal", () => {
   it.effect("prints its version", () =>
     Effect.gen(function* printsVersion() {
       const { logs } = yield* offline(["--version"]);
 
       assert.match(version, /^\d+\.\d+\.\d+$/u);
-      assert.deepStrictEqual(logs, [`acme v${version}`]);
+      assert.deepStrictEqual(logs, [`peal v${version}`]);
     })
   );
 
@@ -65,11 +65,11 @@ describe("acme", () => {
     Effect.gen(function* printsHelp() {
       const help = (yield* offline(["--help"])).logs.join("\n");
 
-      assert.include(help, "acme <subcommand> [flags]");
+      assert.include(help, "peal <subcommand> [flags]");
       assert.include(help, "--api-url <url>");
-      assert.match(help, /health\s+Check that the Acme API answers/u);
-      assert.match(help, /login\s+Sign in to the Acme server/u);
-      assert.match(help, /logout\s+Sign out of the Acme server/u);
+      assert.match(help, /health\s+Check that the Peal API answers/u);
+      assert.match(help, /login\s+Sign in to the Peal server/u);
+      assert.match(help, /logout\s+Sign out of the Peal server/u);
       assert.match(help, /whoami\s+Show who the command line is signed in as/u);
       assert.match(help, /mcp\s+Show how to connect an MCP client/u);
 
@@ -114,19 +114,19 @@ describe("the API URL", () => {
     })
   );
 
-  it.effect("comes from ACME_API_URL when no flag is given", () =>
+  it.effect("comes from PEAL_API_URL when no flag is given", () =>
     Effect.gen(function* environmentUrl() {
       const urls = yield* healthUrls(["health"], {
-        ACME_API_URL: "https://api.acme.test",
+        PEAL_API_URL: "https://api.peal.test",
       });
 
-      assert.deepStrictEqual(urls, ["https://api.acme.test/api/health"]);
+      assert.deepStrictEqual(urls, ["https://api.peal.test/api/health"]);
     })
   );
 
   it.effect("comes from --api-url first, after or before the subcommand", () =>
     Effect.gen(function* flagUrl() {
-      const env = { ACME_API_URL: "https://api.acme.test" };
+      const env = { PEAL_API_URL: "https://api.peal.test" };
 
       const after = yield* healthUrls(
         ["health", "--api-url", "http://127.0.0.1:4000"],
@@ -148,10 +148,10 @@ describe("the API URL", () => {
       const urls = yield* healthUrls([
         "health",
         "--api-url",
-        "https://acme.test/acme/",
+        "https://peal.test/peal/",
       ]);
 
-      assert.deepStrictEqual(urls, ["https://acme.test/acme/api/health"]);
+      assert.deepStrictEqual(urls, ["https://peal.test/peal/api/health"]);
     })
   );
 

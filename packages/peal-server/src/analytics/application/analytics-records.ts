@@ -25,4 +25,4 @@ export class AnalyticsRecords extends Context.Service<
       workspaceId: WorkspaceId
     ) => Effect.Effect<void, DatabaseError>;
   }
->()("acme-server/analytics/application/AnalyticsRecords") {}
+>()("peal-server/analytics/application/AnalyticsRecords") {}

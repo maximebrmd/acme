@@ -7,4 +7,4 @@ import { Context } from "effect";
 export class BillingMode extends Context.Service<
   BillingMode,
   { readonly enabled: boolean }
->()("acme-server/billing/application/BillingMode") {}
+>()("peal-server/billing/application/BillingMode") {}

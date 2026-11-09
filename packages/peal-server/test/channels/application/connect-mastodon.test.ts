@@ -84,7 +84,7 @@ layer(MastodonConnectTest)("connecting a Mastodon account", (it) => {
       );
       assert.strictEqual(
         url.searchParams.get("redirect_uri"),
-        "https://acme.test/connect/mastodon/callback"
+        "https://peal.test/connect/mastodon/callback"
       );
 
       const channel = yield* connect
@@ -184,7 +184,7 @@ layer(MastodonConnectTest)("connecting a Mastodon account", (it) => {
     }).pipe(Effect.scoped)
   );
 
-  it.effect("registers Acme's app once per instance", () =>
+  it.effect("registers Peal's app once per instance", () =>
     Effect.gen(function* registersOnce() {
       const instance = yield* fakeMastodon();
       const workspaceId = yield* freshWorkspace;
@@ -215,7 +215,7 @@ layer(MastodonConnectTest)("connecting a Mastodon account", (it) => {
 
       yield* start;
 
-      // As an app Acme registered before it asked to read statuses.
+      // As an app Peal registered before it asked to read statuses.
       yield* sql`UPDATE channels.mastodon_apps SET scopes = 'profile write:statuses write:media' WHERE instance = ${instance.url}`;
 
       const authorizationUrl = yield* start;

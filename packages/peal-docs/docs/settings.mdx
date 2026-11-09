@@ -29,34 +29,34 @@ Under **Invitations**, enter an email address and a role, then **Send the invita
 
 ### API keys [#api-keys]
 
-Under **API keys**, give a new key a name, how long it works (30, 90 or 365 days, or until revoked) and what it may do, out of the permissions your role gives you. The key appears once, right after: copy it then, as Acme keeps only a hash of it. [The API overview](/api-overview#authentication) tells how to send it. **Revoke** stops a key at once. Staff acting as a member cannot see or handle keys.
+Under **API keys**, give a new key a name, how long it works (30, 90 or 365 days, or until revoked) and what it may do, out of the permissions your role gives you. The key appears once, right after: copy it then, as Peal keeps only a hash of it. [The API overview](/api-overview#authentication) tells how to send it. **Revoke** stops a key at once. Staff acting as a member cannot see or handle keys.
 
 ### Delete a workspace [#delete-workspace]
 
-On **General**, owners choose **Delete this workspace…**, then type the workspace's name to confirm. Everything in it goes, for good: its channels and their authorizations, its posts, scheduled or not, and their analytics, its media library and the files in it, its notifications, its writing assistant usage, what Acme recorded of its subscriptions, its members and invitations, and its API keys, which stop working at once. Nothing more is posted from it. Stripe keeps the invoices it issued.
+On **General**, owners choose **Delete this workspace…**, then type the workspace's name to confirm. Everything in it goes, for good: its channels and their authorizations, its posts, scheduled or not, and their analytics, its media library and the files in it, its notifications, its writing assistant usage, what Peal recorded of its subscriptions, its members and invitations, and its API keys, which stop working at once. Nothing more is posted from it. Stripe keeps the invoices it issued.
 
-While one of the workspace's posts is going out, deleting it waits: try again a few minutes later. While the workspace has a subscription Stripe may still bill, active, unpaid or paused, it cannot be deleted: cancel the subscription from its **Billing** page first, and delete the workspace once the subscription has ended. That includes a subscription whose checkout has just completed, before Stripe has told Acme about it. A checkout of the workspace still open, in another tab say, is closed at Stripe as the workspace goes, so it cannot be paid afterwards; when Stripe cannot be reached for that, nothing is deleted: try again a few minutes later.
+While one of the workspace's posts is going out, deleting it waits: try again a few minutes later. While the workspace has a subscription Stripe may still bill, active, unpaid or paused, it cannot be deleted: cancel the subscription from its **Billing** page first, and delete the workspace once the subscription has ended. That includes a subscription whose checkout has just completed, before Stripe has told Peal about it. A checkout of the workspace still open, in another tab say, is closed at Stripe as the workspace goes, so it cannot be paid afterwards; when Stripe cannot be reached for that, nothing is deleted: try again a few minutes later.
 
 ## Your account [#account]
 
 Choose **Account settings** in the account menu.
 
 - **Name**: the name other members see, and that your invitations sign with.
-- **Language**: English or French. Acme writes your emails in it, switches the app to it as soon as you save, and opens in it whenever you sign in.
+- **Language**: English or French. Peal writes your emails in it, switches the app to it as soon as you save, and opens in it whenever you sign in.
 - **Password**: your current password confirms it is you. Changing it signs your other sessions out, unless you untick that.
 - **Sessions**: the browsers and devices signed in to your account, with when they signed in and were last active. Sign one out, or every session but the one you use.
 - **Connected applications**: the [command line](/cli) and the [MCP clients](/mcp) you let act for you, with what they may do and in which workspaces. **Revoke** one, and it can no longer renew its access: the access it already holds ends within 15 minutes.
 
 ### Download your data [#export]
 
-**Download my data** saves a JSON file of everything Acme keeps about you:
+**Download my data** saves a JSON file of everything Peal keeps about you:
 
 - your account, how you sign in, and your sessions, with their browser and address (not those staff opened to act as you, which are theirs);
 - your memberships, and the invitations you sent or received;
 - your connected applications, your notifications and your email preferences, including whether you hear about every post;
 - what the server's staff did to your account (a ban, a confirmation sent again, acting as you…), when, and the reason they gave, but not who did it;
 - the posts you wrote in the workspaces you share, with where they went, the options each platform got, and whether YouTube kept a video private;
-- the workspaces where you are the only member, with their channels, posts, analytics (each post's counts, as Acme read them), media details, API keys, writing assistant usage and billing: their plan, and how each of their subscriptions stands.
+- the workspaces where you are the only member, with their channels, posts, analytics (each post's counts, as Peal read them), media details, API keys, writing assistant usage and billing: their plan, and how each of their subscriptions stands.
 
 The rest of a workspace you share belongs to its team: the file holds your membership of it and the posts you wrote there, not the others' posts, its channels, its media or its analytics. It holds no password, token, key or card, nor the media files themselves: download those from the workspace's media library. Payment details and invoices stay with Stripe, in the billing portal.
 
@@ -64,7 +64,7 @@ The rest of a workspace you share belongs to its team: the file holds your membe
 
 **Delete my account…** asks for your password, then deletes the account for good. The workspaces where you are the only member go with everything in them, as [deleting a workspace](#delete-workspace) does; you leave the others, where the posts you wrote stay, without your name, as do the channels you connected, which belong to the workspace. Connections you had started and not finished, your sessions, notifications, preferences, invitations and connected applications go too, and a confirmation goes to your address, in your language. As when signing in, after three passwords tried within 10 seconds, wait a few seconds before trying another.
 
-While you are the only owner of a workspace that other members use, the account cannot be deleted: Acme lists those workspaces. Make another member an owner of each, or delete them, first. Nor can it be while a workspace it would delete has a subscription Stripe may still bill: cancel the subscription first.
+While you are the only owner of a workspace that other members use, the account cannot be deleted: Peal lists those workspaces. Make another member an owner of each, or delete them, first. Nor can it be while a workspace it would delete has a subscription Stripe may still bill: cancel the subscription first.
 
 ## Through the API [#api]
 
@@ -76,7 +76,7 @@ While you are the only owner of a workspace that other members use, the account 
 | `GET /api/me/connected-apps`             | Lists your connected applications                |
 | `DELETE /api/me/connected-apps/{client}` | Revokes one                                      |
 
-They answer only you, signed in to the web app with your own session: API keys, OAuth tokens and staff acting as you get 403. Your data and the list of your connected applications also answer the [command line](/cli#account) (`acme account`), which you sign in at your own terminal; never an MCP client or another OAuth client.
+They answer only you, signed in to the web app with your own session: API keys, OAuth tokens and staff acting as you get 403. Your data and the list of your connected applications also answer the [command line](/cli#account) (`peal account`), which you sign in at your own terminal; never an MCP client or another OAuth client.
 
 | Endpoint                                                        | What it does                                                      |
 | --------------------------------------------------------------- | ----------------------------------------------------------------- |

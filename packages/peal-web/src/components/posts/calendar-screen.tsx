@@ -3,16 +3,16 @@
 import { DragDropProvider, useDraggable, useDroppable } from "@dnd-kit/react";
 import type { DragDropEventHandlers } from "@dnd-kit/react";
 import { useAtomRefresh, useAtomSet, useAtomValue } from "@effect/atom-react";
-import type { Permission, Post } from "acme-contract";
-import { Button } from "acme-ui/components/button";
-import { Skeleton } from "acme-ui/components/skeleton";
+import type { Permission, Post } from "peal-contract";
+import { Button } from "peal-ui/components/button";
+import { Skeleton } from "peal-ui/components/skeleton";
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from "acme-ui/components/tabs";
-import { cn } from "acme-ui/lib/utils";
+} from "peal-ui/components/tabs";
+import { cn } from "peal-ui/lib/utils";
 import { DateTime, Exit, Option, Schema } from "effect";
 import { AsyncResult } from "effect/reactivity";
 import {

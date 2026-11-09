@@ -54,7 +54,7 @@ export class BillingRecords extends Context.Service<
       DatabaseError | StripeUnreachable | WorkspaceStillBilled
     >;
   }
->()("acme-server/billing/application/BillingRecords") {
+>()("peal-server/billing/application/BillingRecords") {
   static readonly layer = Layer.effect(
     BillingRecords,
     Effect.gen(function* BillingRecordsLive() {

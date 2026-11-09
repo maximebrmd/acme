@@ -1,5 +1,5 @@
-import type { Media, MediaAttachment } from "acme-contract";
-import { maxMediaPerPost } from "acme-contract/post-text";
+import type { Media, MediaAttachment } from "peal-contract";
+import { maxMediaPerPost } from "peal-contract/post-text";
 import { Array as Arr } from "effect";
 
 // The images and videos a post shows, in order, as the composer edits them.

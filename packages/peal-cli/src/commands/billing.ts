@@ -1,4 +1,4 @@
-import type { Billing, PeriodUsage } from "acme-contract";
+import type { Billing, PeriodUsage } from "peal-contract";
 import { Console, Effect } from "effect";
 import { Command } from "effect/cli";
 

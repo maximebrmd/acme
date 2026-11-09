@@ -10,7 +10,7 @@ import type {
   UnknownChannels,
   UnknownMedia,
   WorkspaceNotFound,
-} from "acme-contract";
+} from "peal-contract";
 
 /** Why a request of the composer failed, as the API declares it. */
 export type ComposerFailure =

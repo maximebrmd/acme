@@ -1,5 +1,5 @@
-import { Api } from "acme-contract";
-import type { MetaApp } from "acme-contract";
+import { Api } from "peal-contract";
+import type { MetaApp } from "peal-contract";
 import { DateTime, Effect } from "effect";
 import { FetchHttpClient } from "effect/http";
 import { HttpApiClient } from "effect/http-api";
@@ -30,7 +30,7 @@ const unavailable: DeletionLookup = { _tag: "unavailable" };
 /**
  * The request with this confirmation code, from GET
  * /api/data-deletion/requests/:code. Nobody signs in for it: Meta links
- * the user here. Server code reaches the server at ACME_API_URL.
+ * the user here. Server code reaches the server at PEAL_API_URL.
  */
 export const lookUpDeletion = Effect.fn("lookUpDeletion")(
   function* lookUpDeletion(code: string) {

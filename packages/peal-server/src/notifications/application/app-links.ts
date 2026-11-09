@@ -12,4 +12,4 @@ export class AppLinks extends Context.Service<
      */
     readonly url: (path: string, locale: Locale) => string;
   }
->()("acme-server/notifications/application/AppLinks") {}
+>()("peal-server/notifications/application/AppLinks") {}

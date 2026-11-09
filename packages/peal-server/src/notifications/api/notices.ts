@@ -3,14 +3,14 @@ import {
   CurrentPrincipal,
   defaultNoticePageSize,
   Forbidden,
-} from "acme-contract";
+} from "peal-contract";
 import type {
   Notice as NoticeView,
   NoticeChannel as NoticeChannelView,
   NoticeEvent as NoticeEventView,
   NotificationPreferences as PreferencesView,
   Principal,
-} from "acme-contract";
+} from "peal-contract";
 import { Effect, Match, Option, Schema } from "effect";
 import { HttpApiBuilder, HttpApiError } from "effect/http-api";
 

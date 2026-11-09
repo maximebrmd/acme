@@ -19,4 +19,4 @@ export class MemberDirectory extends Context.Service<
       workspaceId: WorkspaceId
     ) => Effect.Effect<Option.Option<Membership>, DirectoryUnavailable>;
   }
->()("acme-server/workspace/application/MemberDirectory") {}
+>()("peal-server/workspace/application/MemberDirectory") {}

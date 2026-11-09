@@ -1,7 +1,7 @@
 import { Schema } from "effect";
 
 /**
- * The media store could not be reached, or refused a request acme expected
+ * The media store could not be reached, or refused a request peal expected
  * it to take: credentials, bucket or network. The operation names the
  * request.
  */

@@ -12,7 +12,7 @@ const en = {
     language: "Language",
     legal: "Legal",
     license:
-      "Fair source under the Functional Source License (FSL-1.1-ALv2). “Acme” is a working name.",
+      "Fair source under the Functional Source License (FSL-1.1-ALv2). “Peal” is a working name.",
   },
   home: {
     description:
@@ -41,11 +41,11 @@ const en = {
     ],
     featuresTitle: "What we are building",
     hero: {
-      lead: "Acme is a social media scheduling platform for teams. Write a post once, schedule it across platforms and follow its results in one place.",
+      lead: "Peal is a social media scheduling platform for teams. Write a post once, schedule it across platforms and follow its results in one place.",
       primary: "See how it works",
       secondary: "Run it yourself",
       status:
-        "In development: not released yet. This is what Acme is being built to do.",
+        "In development: not released yet. This is what Peal is being built to do.",
       title: "Write once. Schedule everywhere. See what works.",
     },
     selfHost: {
@@ -53,9 +53,9 @@ const en = {
       docs: "Read the self-hosting guide",
       title: "Run it yourself",
     },
-    title: "Acme: schedule social media posts across platforms",
+    title: "Peal: schedule social media posts across platforms",
     unconfirmed: {
-      body: "When a platform does not confirm that a post went out, Acme marks it unconfirmed and asks you to check, instead of posting it again blindly.",
+      body: "When a platform does not confirm that a post went out, Peal marks it unconfirmed and asks you to check, instead of posting it again blindly.",
       title: "No blind reposts",
     },
   },
@@ -65,9 +65,9 @@ const en = {
     terms: "Terms of service",
   },
   nav: {
-    brand: "Acme",
+    brand: "Peal",
     docs: "Docs",
-    home: "Acme home page",
+    home: "Peal home page",
     main: "Main",
   },
 };
@@ -83,7 +83,7 @@ const fr: Messages = {
     language: "Langue",
     legal: "Informations juridiques",
     license:
-      "Fair source sous la Functional Source License (FSL-1.1-ALv2). « Acme » est un nom provisoire.",
+      "Fair source sous la Functional Source License (FSL-1.1-ALv2). « Peal » est un nom provisoire.",
   },
   home: {
     description:
@@ -112,11 +112,11 @@ const fr: Messages = {
     ],
     featuresTitle: "Ce que nous construisons",
     hero: {
-      lead: "Acme est une plateforme de planification pour les réseaux sociaux, pensée pour les équipes. Écrivez une publication une fois, planifiez-la sur plusieurs plateformes et suivez ses résultats au même endroit.",
+      lead: "Peal est une plateforme de planification pour les réseaux sociaux, pensée pour les équipes. Écrivez une publication une fois, planifiez-la sur plusieurs plateformes et suivez ses résultats au même endroit.",
       primary: "Voir comment ça marche",
       secondary: "L’héberger soi-même",
       status:
-        "En cours de développement : pas encore sorti. Voici ce qu’Acme est conçu pour faire.",
+        "En cours de développement : pas encore sorti. Voici ce que Peal est conçu pour faire.",
       title: "Écrire une fois. Planifier partout. Voir ce qui marche.",
     },
     selfHost: {
@@ -124,9 +124,9 @@ const fr: Messages = {
       docs: "Lire le guide d’auto-hébergement",
       title: "L’héberger soi-même",
     },
-    title: "Acme : planifiez vos publications sur les réseaux sociaux",
+    title: "Peal : planifiez vos publications sur les réseaux sociaux",
     unconfirmed: {
-      body: "Quand une plateforme ne confirme pas qu’une publication est partie, Acme la marque comme non confirmée et vous demande de vérifier, au lieu de republier à l’aveugle.",
+      body: "Quand une plateforme ne confirme pas qu’une publication est partie, Peal la marque comme non confirmée et vous demande de vérifier, au lieu de republier à l’aveugle.",
       title: "Pas de republication à l’aveugle",
     },
   },
@@ -136,9 +136,9 @@ const fr: Messages = {
     terms: "Conditions d’utilisation",
   },
   nav: {
-    brand: "Acme",
+    brand: "Peal",
     docs: "Documentation",
-    home: "Accueil d’Acme",
+    home: "Accueil de Peal",
     main: "Principal",
   },
 };

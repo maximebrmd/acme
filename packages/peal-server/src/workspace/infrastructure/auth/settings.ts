@@ -15,11 +15,11 @@ import {
 } from "#shared/infrastructure/environment.ts";
 import { stripeSettingsConfig } from "#shared/infrastructure/stripe-settings.ts";
 
-// Used only outside production, so `bun nx run acme-server:dev` signs people
+// Used only outside production, so `bun nx run peal-server:dev` signs people
 // in without any setup. Production refuses to start without its own secret:
 // whoever knows the secret can forge session cookies.
 const developmentSecret = Redacted.make(
-  "acme-development-secret-9f3c1e7a4b2d8f6e0a5c3b1d7e9f2a4c"
+  "peal-development-secret-9f3c1e7a4b2d8f6e0a5c3b1d7e9f2a4c"
 );
 
 // A comma-separated list, without the spaces around its entries or empty ones.
@@ -114,7 +114,7 @@ export const authSettingsConfig = Config.all({
     Config.withDefault(false)
   ),
   // The headers that carry the client's address, which sign-in rate limits
-  // count by. Name only headers the edge in front of Acme sets, replacing any
+  // count by. Name only headers the edge in front of Peal sets, replacing any
   // value the client sent: cf-connecting-ip behind Cloudflare, or
   // x-forwarded-for behind a proxy that overwrites it, as Caddy does by
   // default. Production has no default: the web app passes x-forwarded-for
@@ -125,7 +125,7 @@ export const authSettingsConfig = Config.all({
     ["x-forwarded-for"]
   ).pipe(Config.map(trimmed)),
   production: isProduction,
-  // The origin people open Acme at. Better Auth lives under /api/auth there,
+  // The origin people open Peal at. Better Auth lives under /api/auth there,
   // and writes the links in its emails from it.
   publicUrl: publicUrlConfig,
   requireEmailVerification: Config.Boolean(
@@ -156,7 +156,7 @@ export type AuthConfiguration = Config.Success<typeof authSettingsConfig>;
 export class AuthSettings extends Context.Service<
   AuthSettings,
   AuthConfiguration
->()("acme-server/workspace/infrastructure/AuthSettings") {
+>()("peal-server/workspace/infrastructure/AuthSettings") {
   static readonly layer = Layer.effect(
     AuthSettings,
     Effect.gen(function* authSettings() {

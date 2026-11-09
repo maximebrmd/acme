@@ -37,7 +37,7 @@ type Warned = "expired" | "reconnectRequired" | "reconnectSoon" | "none";
 export class WarnChannelsNeedingReconnect extends Context.Service<
   WarnChannelsNeedingReconnect,
   { readonly run: Effect.Effect<WarningReport> }
->()("acme-server/channels/application/WarnChannelsNeedingReconnect") {
+>()("peal-server/channels/application/WarnChannelsNeedingReconnect") {
   static readonly layer = Layer.effect(
     WarnChannelsNeedingReconnect,
     Effect.gen(function* WarnChannelsNeedingReconnectLive() {

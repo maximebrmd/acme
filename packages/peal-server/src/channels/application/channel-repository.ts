@@ -103,4 +103,4 @@ export class ChannelRepository extends Context.Service<
       channelId: ChannelId
     ) => Effect.Effect<boolean, DatabaseError>;
   }
->()("acme-server/channels/application/ChannelRepository") {}
+>()("peal-server/channels/application/ChannelRepository") {}

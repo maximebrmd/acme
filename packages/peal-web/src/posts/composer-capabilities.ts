@@ -1,4 +1,4 @@
-import type { Permission, Post } from "acme-contract";
+import type { Permission, Post } from "peal-contract";
 
 /** The post as the composer has it, and who looks at it. */
 export interface ComposerSubject {

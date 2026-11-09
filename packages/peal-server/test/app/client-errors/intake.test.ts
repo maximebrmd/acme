@@ -1,7 +1,7 @@
 // The error report endpoint's limits, through the whole server: what it
 // reads, how much, and how often from one address.
 import { assert, layer } from "@effect/vitest";
-import { maxClientErrorBytes } from "acme-contract";
+import { maxClientErrorBytes } from "peal-contract";
 import { Effect } from "effect";
 
 import { reportsPerMinute } from "#app/client-errors/intake.ts";

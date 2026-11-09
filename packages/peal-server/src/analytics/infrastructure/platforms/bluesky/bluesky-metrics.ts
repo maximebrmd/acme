@@ -46,7 +46,7 @@ const metricsOf = (view: typeof PostViewSchema.Type) =>
 
 // What one call came to: readings to go on from, or a reason to stop. An
 // AppView that slows the read down leaves the posts due; one that fails on
-// them, or answers what Acme cannot read, makes them wait for their next
+// them, or answers what Peal cannot read, makes them wait for their next
 // turn, so posts it cannot show hold nothing back.
 type Call =
   | { readonly _tag: "read"; readonly readings: readonly PostReading[] }
@@ -67,7 +67,7 @@ const failedOn = (posts: readonly PostToRead[]): Call => ({
  * scope stays what posting needs. A post the AppView does not return is
  * missing: deleted, or hidden by moderation; so are all of a request the
  * AppView refuses (400). An AppView that answers 429 halts the read; one
- * that fails, does not answer, or answers what Acme cannot read, marks the
+ * that fails, does not answer, or answers what Peal cannot read, marks the
  * call's posts failed and halts.
  */
 export const blueskyMetrics = (options: BlueskyMetricsOptions) => {

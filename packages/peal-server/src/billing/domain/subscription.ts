@@ -23,7 +23,7 @@ export type SubscriptionStatus = typeof SubscriptionStatusSchema.Type;
  * cancelled, a new one active.
  */
 export class Subscription extends Schema.Class<Subscription>(
-  "acme-server/billing/domain/Subscription"
+  "peal-server/billing/domain/Subscription"
 )({
   // Whether it ends when the period it was paid for does.
   cancelAtPeriodEnd: Schema.Boolean,
@@ -54,7 +54,7 @@ export const billsAt = (status: SubscriptionStatus): boolean =>
   status !== "incomplete_expired";
 
 /**
- * Whether Stripe may still bill it (`billsAt`). Acme refuses to delete a
+ * Whether Stripe may still bill it (`billsAt`). Peal refuses to delete a
  * workspace with one.
  */
 export const stillBills = ({ status }: Subscription): boolean =>

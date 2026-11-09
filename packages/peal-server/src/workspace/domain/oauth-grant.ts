@@ -34,13 +34,13 @@ export const OAuthGrantSchema = Schema.Struct({
 export type OAuthGrant = typeof OAuthGrantSchema.Type;
 
 /**
- * The command line's OAuth client, which every Acme server registers under
+ * The command line's OAuth client, which every Peal server registers under
  * this id (the contract's `cliClientId`, kept equal by a test).
  */
-export const commandLineClientId = "acme-cli";
+export const commandLineClientId = "peal-cli";
 
 /**
- * Whether a grant is Acme's own command line's: the user signed it in at
+ * Whether a grant is Peal's own command line's: the user signed it in at
  * their terminal, through the device grant, and its tokens are bound to no
  * workspace.
  */

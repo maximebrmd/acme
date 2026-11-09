@@ -4,7 +4,7 @@ import type {
   NewUpload,
   SignedRequest,
   UploadTarget,
-} from "acme-contract";
+} from "peal-contract";
 import { DateTime, Effect, Fiber, Latch, Ref } from "effect";
 import { TestClock } from "effect/testing";
 

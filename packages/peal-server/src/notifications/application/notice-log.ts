@@ -21,4 +21,4 @@ export class NoticeLog extends Context.Service<
     /** Whether an event with the key was notified, and committed. */
     readonly isClaimed: (key: string) => Effect.Effect<boolean, DatabaseError>;
   }
->()("acme-server/notifications/application/NoticeLog") {}
+>()("peal-server/notifications/application/NoticeLog") {}

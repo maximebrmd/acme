@@ -1,10 +1,10 @@
-# The Ansible toolchain for the servers that run Acme, managed with uv:
+# The Ansible toolchain for the servers that run Peal, managed with uv:
 # `uv sync --locked` installs it in .venv, with the test suite's own
 # packages (the dev group).
 [project]
-name = "acme-infra"
+name = "peal-infra"
 version = "0.0.0"
-description = "Ansible for the servers that run Acme."
+description = "Ansible for the servers that run Peal."
 license = "FSL-1.1-ALv2"
 requires-python = ">=3.14"
 dependencies = ["ansible-core==2.22.0", "ansible-lint==26.11.0"]

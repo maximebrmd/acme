@@ -5,7 +5,7 @@ import {
   CurrentMember,
   Forbidden,
   PlatformUnreachable,
-} from "acme-contract";
+} from "peal-contract";
 import { Effect, Match } from "effect";
 import { HttpApiBuilder } from "effect/http-api";
 

@@ -1,12 +1,12 @@
-# Managed by Ansible (acme-infra). One backup of the Acme database: %i is
+# Managed by Ansible (peal-infra). One backup of the Peal database: %i is
 # full, diff or incr.
 [Unit]
-Description=Back the Acme database up (%i)
+Description=Back the Peal database up (%i)
 Requires=docker.service
 After=docker.service
 
 [Service]
 Type=oneshot
-ExecStart=/usr/local/sbin/acme-backup %i
+ExecStart=/usr/local/sbin/peal-backup %i
 Nice=10
 IOSchedulingClass=idle

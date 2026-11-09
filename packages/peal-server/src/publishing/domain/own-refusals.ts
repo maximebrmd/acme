@@ -1,5 +1,5 @@
 /**
- * The codes of the refusals Acme makes itself, before any platform is
+ * The codes of the refusals Peal makes itself, before any platform is
  * called: the post's channel or one of its media can no longer be used.
  * They are stored in the publication journal, so never change one. The
  * publication policy tells them apart from the platforms' own codes.
@@ -28,7 +28,7 @@ export const platformRefusalCodes = {
 /**
  * The codes of a RateLimited that waits for a daily allowance to reset,
  * kept in the journal too: the platform's quota for this server's API
- * project, as Acme counts it or the platform answers (`quotaExceeded`), or
+ * project, as Peal counts it or the platform answers (`quotaExceeded`), or
  * the account's own daily uploads (`uploadLimitExceeded`), both YouTube's.
  * A target that waited past them fails as quotaExceeded, not rateLimited.
  */

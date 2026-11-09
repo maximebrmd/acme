@@ -45,7 +45,7 @@ export class PostRecords extends Context.Service<
       userId: UserId
     ) => Effect.Effect<void, DatabaseError>;
   }
->()("acme-server/publishing/application/PostRecords") {
+>()("peal-server/publishing/application/PostRecords") {
   static readonly layer = Layer.effect(
     PostRecords,
     Effect.gen(function* PostRecordsLive() {

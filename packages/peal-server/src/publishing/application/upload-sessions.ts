@@ -52,4 +52,4 @@ export class UploadSessions extends Context.Service<
       videoId: string
     ) => Effect.Effect<void, DatabaseError>;
   }
->()("acme-server/publishing/application/UploadSessions") {}
+>()("peal-server/publishing/application/UploadSessions") {}

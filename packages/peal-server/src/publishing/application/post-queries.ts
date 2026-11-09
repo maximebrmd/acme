@@ -82,7 +82,7 @@ export class PostQueries extends Context.Service<
       DatabaseError | MissingPermission | PostNotFound
     >;
   }
->()("acme-server/publishing/application/PostQueries") {
+>()("peal-server/publishing/application/PostQueries") {
   static readonly layer = Layer.effect(
     PostQueries,
     Effect.gen(function* PostQueriesLive() {

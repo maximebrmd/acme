@@ -1,19 +1,19 @@
 "use client";
 
 import { RegistryContext, useAtomSet, useAtomValue } from "@effect/atom-react";
-import { MediaContentTypeSchema } from "acme-contract";
-import type { Media } from "acme-contract";
-import { Button } from "acme-ui/components/button";
+import { MediaContentTypeSchema } from "peal-contract";
+import type { Media } from "peal-contract";
+import { Button } from "peal-ui/components/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "acme-ui/components/card";
-import { Label } from "acme-ui/components/label";
-import { Progress } from "acme-ui/components/progress";
-import { Textarea } from "acme-ui/components/textarea";
+} from "peal-ui/components/card";
+import { Label } from "peal-ui/components/label";
+import { Progress } from "peal-ui/components/progress";
+import { Textarea } from "peal-ui/components/textarea";
 import { Cause, Exit, Option } from "effect";
 import { AsyncResult, Atom } from "effect/reactivity";
 import { UploadIcon } from "lucide-react";

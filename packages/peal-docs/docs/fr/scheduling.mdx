@@ -43,7 +43,7 @@ Sous **Longueur sur chaque canal**, chaque canal où part la publication montre 
 | TikTok     | 2 200, où la plupart des emoji comptent 2 (unités de code UTF-16) ; une image ou une vidéo est obligatoire   | Une vidéo, ou 35 photos |
 | YouTube    | Une description de 5 000 octets, sans `<` ni `>` ; une vidéo est obligatoire                                 | 1                       |
 
-Bluesky compte ce qu’un lecteur voit comme un seul caractère : un emoji fait de plusieurs points de code compte une fois. YouTube compte des octets : une lettre accentuée en compte deux. TikTok accepte 2 200 pour la légende d’une vidéo et 4 000 pour la description d’une publication de photos : Acme limite les deux à 2 200. Facebook et Pinterest n’ont pas encore de limite dans Acme. Acme vérifie les limites quand vous programmez une publication, pas pendant que vous rédigez un brouillon.
+Bluesky compte ce qu’un lecteur voit comme un seul caractère : un emoji fait de plusieurs points de code compte une fois. YouTube compte des octets : une lettre accentuée en compte deux. TikTok accepte 2 200 pour la légende d’une vidéo et 4 000 pour la description d’une publication de photos : Peal limite les deux à 2 200. Facebook et Pinterest n’ont pas encore de limite dans Peal. Peal vérifie les limites quand vous programmez une publication, pas pendant que vous rédigez un brouillon.
 
 ## Options des plateformes [#options]
 
@@ -92,10 +92,10 @@ Déplacer une publication ne revérifie ni son texte ni ses médias auprès de s
 
 ## Demander de l’aide à l’assistant de rédaction [#assistant]
 
-Quand l’instance Acme dispose d’un fournisseur d’IA, la section **Texte** de l’éditeur propose un menu **Assistant**. Il travaille sur le texte pour tous les canaux, et propose :
+Quand l’instance Peal dispose d’un fournisseur d’IA, la section **Texte** de l’éditeur propose un menu **Assistant**. Il travaille sur le texte pour tous les canaux, et propose :
 
 - **Réécrire sur un ton** : professionnel, chaleureux, décontracté, enthousiaste ou spirituel, en gardant le sens, la langue et à peu près la longueur ;
-- **Raccourcir pour** : l’une des plateformes des canaux choisis ou, tant qu’aucun ne l’est, chaque plateforme dont Acme connaît la limite ;
+- **Raccourcir pour** : l’une des plateformes des canaux choisis ou, tant qu’aucun ne l’est, chaque plateforme dont Peal connaît la limite ;
 - **Traduire en** : anglais, français, allemand, espagnol, italien, portugais, néerlandais, polonais, japonais ou chinois (simplifié) ;
 - **Suggérer des hashtags** : jusqu’à 8, que le texte n’a pas encore.
 
@@ -103,7 +103,7 @@ La suggestion s’ouvre dans un aperçu, et rien ne change tant que vous ne choi
 
 L’assistant accepte des textes de 5 000 caractères au plus. Chaque espace de travail peut lui envoyer un certain nombre de demandes par jour, 100 sauf si l’instance en fixe un autre, comptées depuis minuit UTC ; le menu indique combien il en reste aujourd’hui. Une demande qui n’a pas pu joindre le fournisseur d’IA ne compte pas. Une demande restée plus de 90 secondes sans réponse compte, car le fournisseur a pu la traiter.
 
-Votre texte part chez le fournisseur d’IA qu’a choisi l’administrateur de l’instance, et nulle part ailleurs. Acme n’enregistre ni le texte envoyé ni la suggestion, et ne les écrit jamais dans ses journaux.
+Votre texte part chez le fournisseur d’IA qu’a choisi l’administrateur de l’instance, et nulle part ailleurs. Peal n’enregistre ni le texte envoyé ni la suggestion, et ne les écrit jamais dans ses journaux.
 
 ## Le calendrier [#calendar]
 
@@ -111,35 +111,35 @@ Sur la carte d’un espace de travail, choisissez **Calendrier**. Il montre les 
 
 ## À l’heure de la publication [#publishing]
 
-À l’heure prévue, Acme envoie la publication à chacun de ses canaux séparément, une publication à la fois par compte, et note comment chacun s’est terminé :
+À l’heure prévue, Peal envoie la publication à chacun de ses canaux séparément, une publication à la fois par compte, et note comment chacun s’est terminé :
 
 | Sur un canal | Ce qui s’est passé                                                                                                            |
 | ------------ | ----------------------------------------------------------------------------------------------------------------------------- |
 | Publié       | La plateforme a pris la publication, et a donné son adresse quand elle en a une.                                              |
 | Échec        | La plateforme a refusé la publication, le compte est à reconnecter, ou la publication est partie trop tard, comme ci-dessous. |
-| À vérifier   | Acme ne peut pas savoir si la plateforme l’a publiée. Vérifiez sur la plateforme avant de republier.                          |
+| À vérifier   | Peal ne peut pas savoir si la plateforme l’a publiée. Vérifiez sur la plateforme avant de republier.                          |
 | Annulé       | La publication a été annulée avant de partir sur ce canal.                                                                    |
 
 La publication dans son ensemble indique alors **Publié**, **Publié en partie**, **À vérifier**, **Échec** ou **Annulé**. Son auteur, et les membres qui ont choisi d’être prévenus pour toutes les publications, apprennent comment elle s’est passée sur chaque canal : voyez [Notifications](/notifications).
 
 ## Suivre une publication [#follow-up]
 
-Ouvrez une publication partie, depuis le calendrier ou une notification : sa page montre son texte et, pour chaque canal, son état, pourquoi elle a échoué ou est à vérifier, l’adresse de la publication sur la plateforme, et chaque tentative d’Acme, avec l’heure du nouvel essai. Pendant l’envoi, la page se met à jour d’elle-même. Les membres qui peuvent programmer des publications peuvent alors :
+Ouvrez une publication partie, depuis le calendrier ou une notification : sa page montre son texte et, pour chaque canal, son état, pourquoi elle a échoué ou est à vérifier, l’adresse de la publication sur la plateforme, et chaque tentative de Peal, avec l’heure du nouvel essai. Pendant l’envoi, la page se met à jour d’elle-même. Les membres qui peuvent programmer des publications peuvent alors :
 
-- **Republier** sur un canal où elle a échoué ou est à vérifier : Acme l’envoie maintenant, en un nouvel envoi avec ses propres tentatives, et la publication indique **En cours de publication** jusqu’à son départ. Quand elle est à vérifier, regardez d’abord sur la plateforme, car elle est peut-être déjà en ligne ;
+- **Republier** sur un canal où elle a échoué ou est à vérifier : Peal l’envoie maintenant, en un nouvel envoi avec ses propres tentatives, et la publication indique **En cours de publication** jusqu’à son départ. Quand elle est à vérifier, regardez d’abord sur la plateforme, car elle est peut-être déjà en ligne ;
 - **Indiquer ce que vous avez trouvé** sur un canal à vérifier : **Elle est en ligne**, avec l’adresse de la publication si vous l’avez, ou **Elle n’y est pas**, qui la fait échouer sur ce canal pour qu’elle puisse être republiée. Les deux réponses la retirent des publications à vérifier, et marquent ses notifications comme lues.
 
-Quand une plateforme ne répond pas à la requête qui publie, Acme ne redemande que de façons qui ne peuvent pas publier deux fois : il relit la publication sur Bluesky, la renvoie à Mastodon sous la même clé, ce à quoi Mastodon répond avec la publication qu’il a déjà faite, la cherche parmi les publications récentes du compte X, par son texte, ses liens et ses fichiers, sans jamais la renvoyer à X, demande à Threads et à Instagram si la publication qui leur a été remise a été publiée, la cherche parmi les publications récentes de la Page Facebook, par son texte, suit la publication que TikTok a déjà prise par l’identifiant qu’il a donné, et demande à la mise en ligne YouTube où elle en est, sans jamais envoyer la vidéo deux fois. Il essaie trois fois, sur environ deux minutes et demie. LinkedIn ne laisse Acme ni lire les publications d’un membre ni en envoyer une deux fois sans risque : la publication y indique **À vérifier** tout de suite. Si le serveur s’arrête au milieu d’une publication, il vérifie de la même façon à son redémarrage. Ce n’est que si rien de cela ne tranche que la publication indique **À vérifier** : Acme ne la republie jamais de lui-même.
+Quand une plateforme ne répond pas à la requête qui publie, Peal ne redemande que de façons qui ne peuvent pas publier deux fois : il relit la publication sur Bluesky, la renvoie à Mastodon sous la même clé, ce à quoi Mastodon répond avec la publication qu’il a déjà faite, la cherche parmi les publications récentes du compte X, par son texte, ses liens et ses fichiers, sans jamais la renvoyer à X, demande à Threads et à Instagram si la publication qui leur a été remise a été publiée, la cherche parmi les publications récentes de la Page Facebook, par son texte, suit la publication que TikTok a déjà prise par l’identifiant qu’il a donné, et demande à la mise en ligne YouTube où elle en est, sans jamais envoyer la vidéo deux fois. Il essaie trois fois, sur environ deux minutes et demie. LinkedIn ne laisse Peal ni lire les publications d’un membre ni en envoyer une deux fois sans risque : la publication y indique **À vérifier** tout de suite. Si le serveur s’arrête au milieu d’une publication, il vérifie de la même façon à son redémarrage. Ce n’est que si rien de cela ne tranche que la publication indique **À vérifier** : Peal ne la republie jamais de lui-même.
 
-Acme patiente plutôt que d’abandonner quand une plateforme est occupée :
+Peal patiente plutôt que d’abandonner quand une plateforme est occupée :
 
 - une plateforme qui ne répond pas est relancée après 1, 5, 15, 60 et 60 minutes, puis la publication y échoue ;
-- une plateforme qui limite le rythme des publications d’Acme est relancée au moment qu’elle indique, jusqu’à 8 fois et au plus tard un jour après l’heure de la publication ;
+- une plateforme qui limite le rythme des publications de Peal est relancée au moment qu’elle indique, jusqu’à 8 fois et au plus tard un jour après l’heure de la publication ;
 - une plateforme qui n’accepte plus l’accès du compte fait échouer la publication chez elle, et le canal est à [reconnecter](/channels#reconnect).
 
 Une publication qui n’a pas pu partir dans l’heure qui suit son heure prévue, par exemple parce que le serveur était arrêté, est marquée manquée et ne part pas.
 
-Chaque image ou vidéo est envoyée comme la plateforme le demande, et certaines plateformes traitent d’abord les vidéos : Acme les attend jusqu’à 15 minutes, puis réessaie plus tard, comme pour une plateforme qui ne répond pas.
+Chaque image ou vidéo est envoyée comme la plateforme le demande, et certaines plateformes traitent d’abord les vidéos : Peal les attend jusqu’à 15 minutes, puis réessaie plus tard, comme pour une plateforme qui ne répond pas.
 
 ## Médias [#media]
 

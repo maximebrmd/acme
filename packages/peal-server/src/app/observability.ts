@@ -12,7 +12,7 @@ const otelDefaults = ConfigProvider.layerAdd(
     env: {
       OTEL_LOGS_EXPORTER: "otlp",
       OTEL_METRICS_EXPORTER: "otlp",
-      OTEL_SERVICE_NAME: "acme-server",
+      OTEL_SERVICE_NAME: "peal-server",
       OTEL_TRACES_EXPORTER: "otlp",
     },
   })

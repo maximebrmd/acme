@@ -1,5 +1,5 @@
 {
-  "name": "acme-docker",
+  "name": "peal-docker",
   "private": true,
   "license": "FSL-1.1-ALv2",
   "type": "module",

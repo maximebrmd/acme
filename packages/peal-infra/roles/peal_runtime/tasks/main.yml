@@ -1,12 +1,12 @@
 ---
-# In check mode on a new server, the files that go in acme_root wait for the
+# In check mode on a new server, the files that go in peal_root wait for the
 # folder: the tasks that write them skip until it exists.
-- name: Look for the Acme folder
+- name: Look for the Peal folder
   ansible.builtin.stat:
-    path: "{{ acme_root }}"
-  register: acme_runtime_root
+    path: "{{ peal_root }}"
+  register: peal_runtime_root
 
-- name: Create the Acme folders
+- name: Create the Peal folders
   ansible.builtin.file:
     path: "{{ item }}"
     state: directory
@@ -14,9 +14,9 @@
     group: root
     mode: "0750"
   loop:
-    - "{{ acme_root }}"
-    - "{{ acme_root }}/releases"
-    - "{{ acme_root }}/images"
+    - "{{ peal_root }}"
+    - "{{ peal_root }}/releases"
+    - "{{ peal_root }}/images"
 
 # Generated once on the server and never copied anywhere else: `creates`
 # skips the task once the file exists. The token key id carries the date and
@@ -30,45 +30,45 @@
     {
       printf 'POSTGRES_PASSWORD=%s\n' "$(openssl rand -hex 32)"
       printf 'BETTER_AUTH_SECRET=%s\n' "$(openssl rand -base64 32)"
-      printf 'ACME_TOKEN_KEYS=k%s-%s:%s\n' "$(date -u +%Y%m%d)" "$(openssl rand -hex 4)" "$(openssl rand -base64 32)"
+      printf 'PEAL_TOKEN_KEYS=k%s-%s:%s\n' "$(date -u +%Y%m%d)" "$(openssl rand -hex 4)" "$(openssl rand -base64 32)"
       printf 'GRAFANA_ADMIN_PASSWORD=%s\n' "$(openssl rand -hex 24)"
-    } > {{ acme_root }}/secrets.env.new
-    mv {{ acme_root }}/secrets.env.new {{ acme_root }}/secrets.env
+    } > {{ peal_root }}/secrets.env.new
+    mv {{ peal_root }}/secrets.env.new {{ peal_root }}/secrets.env
   args:
-    creates: "{{ acme_root }}/secrets.env"
+    creates: "{{ peal_root }}/secrets.env"
 
 # Credentials that outside services issued: from the vault when it holds
 # them, otherwise written on the server by hand (README.md).
 - name: Refuse credentials Compose would misread
   ansible.builtin.assert:
-    that: acme_credentials.values() | map('string') | select('search', "['\r\n]") | list | length == 0
+    that: peal_credentials.values() | map('string') | select('search', "['\r\n]") | list | length == 0
     fail_msg: A credential holds a single quote or a line break, which credentials.env cannot.
     quiet: true
-  when: acme_credentials is defined
+  when: peal_credentials is defined
 
 - name: Write the credentials from the vault
   ansible.builtin.template:
     src: credentials.env.j2
-    dest: "{{ acme_root }}/credentials.env"
+    dest: "{{ peal_root }}/credentials.env"
     owner: root
     group: root
     mode: "0600"
   when: >-
-    acme_credentials is defined
-    and (not ansible_check_mode or acme_runtime_root.stat.exists)
+    peal_credentials is defined
+    and (not ansible_check_mode or peal_runtime_root.stat.exists)
   no_log: true
 
 - name: Check for the credentials
   ansible.builtin.stat:
-    path: "{{ acme_root }}/credentials.env"
-  register: acme_runtime_credentials
+    path: "{{ peal_root }}/credentials.env"
+  register: peal_runtime_credentials
 
 - name: Require the credentials file
   ansible.builtin.assert:
-    that: acme_credentials is defined or acme_runtime_credentials.stat.exists
+    that: peal_credentials is defined or peal_runtime_credentials.stat.exists
     fail_msg: >-
-      Put the credentials in the vault (acme_credentials), or write
-      {{ acme_root }}/credentials.env on the server (README.md, "Credentials").
+      Put the credentials in the vault (peal_credentials), or write
+      {{ peal_root }}/credentials.env on the server (README.md, "Credentials").
     quiet: true
 
 # Names only: the values never leave the file. Read-only, so it runs in check
@@ -78,30 +78,30 @@
   ansible.builtin.shell: |
     set -eu
     value="=['\"]?[^'\"[:space:]]"
-    for name in {{ acme_runtime_required_credentials | join(' ') }}; do
-      grep -Eq "^${name}${value}" {{ acme_root }}/credentials.env || echo "$name"
+    for name in {{ peal_runtime_required_credentials | join(' ') }}; do
+      grep -Eq "^${name}${value}" {{ peal_root }}/credentials.env || echo "$name"
     done
-    grep -Eq "^({{ acme_mail_credentials | join('|') }})${value}" {{ acme_root }}/credentials.env ||
-      echo '{{ acme_mail_credentials | join(' or ') }}'
-  register: acme_runtime_unset
+    grep -Eq "^({{ peal_mail_credentials | join('|') }})${value}" {{ peal_root }}/credentials.env ||
+      echo '{{ peal_mail_credentials | join(' or ') }}'
+  register: peal_runtime_unset
   changed_when: false
   check_mode: false
-  when: acme_credentials is not defined
+  when: peal_credentials is not defined
 
 - name: Require every credential
   ansible.builtin.assert:
-    that: acme_runtime_missing | length == 0
-    fail_msg: "Set {{ acme_runtime_missing | join(', ') }} in the credentials."
+    that: peal_runtime_missing | length == 0
+    fail_msg: "Set {{ peal_runtime_missing | join(', ') }} in the credentials."
     quiet: true
   vars:
-    acme_runtime_missing: >-
-      {{ (acme_runtime_required_credentials | difference(acme_runtime_vault_set)
-          + ([] if acme_runtime_vault_set | intersect(acme_mail_credentials) else [acme_mail_credentials | join(' or ')]))
-         if acme_credentials is defined else acme_runtime_unset.stdout_lines }}
+    peal_runtime_missing: >-
+      {{ (peal_runtime_required_credentials | difference(peal_runtime_vault_set)
+          + ([] if peal_runtime_vault_set | intersect(peal_mail_credentials) else [peal_mail_credentials | join(' or ')]))
+         if peal_credentials is defined else peal_runtime_unset.stdout_lines }}
     # The names the vault gives a value to, as the check on the server reads
     # them.
-    acme_runtime_vault_set: >-
-      {{ acme_credentials | default({}) | dict2items
+    peal_runtime_vault_set: >-
+      {{ peal_credentials | default({}) | dict2items
          | rejectattr('value', 'equalto', '') | rejectattr('value', 'none')
          | map(attribute='key') | list }}
 
@@ -110,36 +110,36 @@
 # read as more settings, or lost.
 - name: Refuse host settings Compose would misread
   ansible.builtin.assert:
-    that: acme_runtime_misread | length == 0
+    that: peal_runtime_misread | length == 0
     fail_msg: >-
-      Change {{ acme_runtime_misread | join(', ') }}: host.env takes names of
+      Change {{ peal_runtime_misread | join(', ') }}: host.env takes names of
       letters, digits and underscores, and values that are a string or a
       number without a single quote or a line break.
     quiet: true
   vars:
-    acme_runtime_misread: >-
-      {{ (acme_runtime_host_settings | dict2items
+    peal_runtime_misread: >-
+      {{ (peal_runtime_host_settings | dict2items
           | rejectattr('key', 'match', '^[A-Za-z_][A-Za-z0-9_]*\Z') | map(attribute='key') | list)
-         + (acme_runtime_host_settings | dict2items
+         + (peal_runtime_host_settings | dict2items
             | rejectattr('value', 'string') | rejectattr('value', 'number') | map(attribute='key') | list)
-         + (acme_runtime_host_settings | dict2items | selectattr('value', 'string')
+         + (peal_runtime_host_settings | dict2items | selectattr('value', 'string')
             | selectattr('value', 'search', "['\r\n]") | map(attribute='key') | list) }}
 
 - name: Write the host settings for Compose
   ansible.builtin.template:
     src: host.env.j2
-    dest: "{{ acme_root }}/host.env"
+    dest: "{{ peal_root }}/host.env"
     owner: root
     group: root
     mode: "0640"
-  when: not ansible_check_mode or acme_runtime_root.stat.exists
+  when: not ansible_check_mode or peal_runtime_root.stat.exists
 
-# `sudo acme-compose ps`, `logs server`, `exec postgres psql --username acme`:
+# `sudo peal-compose ps`, `logs server`, `exec postgres psql --username peal`:
 # Compose on the release that runs, with its settings.
-- name: Install acme-compose
+- name: Install peal-compose
   ansible.builtin.template:
-    src: acme-compose.j2
-    dest: "{{ acme_compose_bin }}"
+    src: peal-compose.j2
+    dest: "{{ peal_compose_bin }}"
     owner: root
     group: root
     mode: "0755"

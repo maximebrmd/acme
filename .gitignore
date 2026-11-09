@@ -9,8 +9,8 @@ coverage/
 *.tsbuildinfo
 next-env.d.ts
 
-# Generated from the contract: Nx rebuilds it (acme-contract:openapi)
-packages/acme-contract/openapi.json
+# Generated from the contract: Nx rebuilds it (peal-contract:openapi)
+packages/peal-contract/openapi.json
 
 # Tool caches and local state
 .nx/

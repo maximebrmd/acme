@@ -60,11 +60,11 @@ const withoutApps = {
 const channelsWith = (keys: string) =>
   channelsWithSettings({
     ...withoutApps,
-    ACME_TOKEN_KEYS: keys,
+    PEAL_TOKEN_KEYS: keys,
     BLUESKY_CLIENT_KEYS: "",
   });
 
-// A Bluesky client key, as `bun nx run acme-server:bluesky-key` prints it.
+// A Bluesky client key, as `bun nx run peal-server:bluesky-key` prints it.
 const blueskyKeyEntry = Effect.promise(async () => {
   const key = await JoseKey.generate(["ES256"], "client-1");
 
@@ -259,7 +259,7 @@ layer(DatabaseTest)("the channels context's Bluesky settings", (it) => {
         Effect.provide(
           channelsWithSettings({
             BLUESKY_CLIENT_KEYS: entry,
-            PUBLIC_URL: "https://acme.example",
+            PUBLIC_URL: "https://peal.example",
           })
         )
       );
@@ -268,10 +268,10 @@ layer(DatabaseTest)("the channels context's Bluesky settings", (it) => {
 
       assert.strictEqual(
         published.metadata.client_id,
-        "https://acme.example/api/channels/oauth/bluesky/client-metadata.json"
+        "https://peal.example/api/channels/oauth/bluesky/client-metadata.json"
       );
       assert.deepStrictEqual(published.metadata.redirect_uris, [
-        "https://acme.example/connect/bluesky/callback",
+        "https://peal.example/connect/bluesky/callback",
       ]);
       assert.deepStrictEqual(
         published.jwks.keys.map(({ kid, kty }) => ({ kid, kty })),
@@ -287,14 +287,14 @@ layer(DatabaseTest)("the channels context's Bluesky settings", (it) => {
       const entry = yield* blueskyKeyEntry;
 
       for (const settings of [
-        { BLUESKY_CLIENT_KEYS: entry, PUBLIC_URL: "http://acme.example" },
+        { BLUESKY_CLIENT_KEYS: entry, PUBLIC_URL: "http://peal.example" },
         {
           BLUESKY_CLIENT_KEYS: "client-1:not-a-key",
-          PUBLIC_URL: "https://acme.example",
+          PUBLIC_URL: "https://peal.example",
         },
         {
           BLUESKY_CLIENT_KEYS: "no separator",
-          PUBLIC_URL: "https://acme.example",
+          PUBLIC_URL: "https://peal.example",
         },
       ]) {
         const failure = yield* Layer.build(channelsWithSettings(settings)).pipe(

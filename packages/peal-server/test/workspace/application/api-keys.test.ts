@@ -42,13 +42,13 @@ const inMemoryIssuer = Effect.gen(function* makeIssuer() {
             id: `key-${String((yield* Ref.get(keys)).length + 1)}`,
             name: request.name,
             permissions: request.permissions,
-            start: Option.some("acme_x"),
+            start: Option.some("peal_x"),
             workspaceId: request.workspaceId,
           });
 
           yield* Ref.update(keys, (all) => [...all, apiKey]);
 
-          return { apiKey, key: Redacted.make("acme_secret") };
+          return { apiKey, key: Redacted.make("peal_secret") };
         }),
       list: () => Ref.get(keys),
       revoke: (_workspace, apiKeyId) =>

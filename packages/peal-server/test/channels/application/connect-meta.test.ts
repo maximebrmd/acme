@@ -64,7 +64,7 @@ import {
 class FakeMeta extends Context.Service<
   FakeMeta,
   Effect.Success<ReturnType<typeof fakeMeta>>
->()("acme-server/test/channels/FakeMeta") {
+>()("peal-server/test/channels/FakeMeta") {
   static readonly layer = Layer.effect(FakeMeta, fakeMeta({ pageSize: 2 }));
 }
 
@@ -205,7 +205,7 @@ layer(MetaConnectTest)("connecting Meta accounts", (it) => {
         );
         assert.strictEqual(
           url.searchParams.get("redirect_uri"),
-          "https://acme.test/connect/facebook/callback"
+          "https://peal.test/connect/facebook/callback"
         );
         assert.strictEqual(url.searchParams.get("response_type"), "code");
       })
@@ -532,7 +532,7 @@ layer(MetaConnectTest)("connecting Meta accounts", (it) => {
       );
       assert.strictEqual(
         url.searchParams.get("redirect_uri"),
-        "https://acme.test/connect/threads/callback"
+        "https://peal.test/connect/threads/callback"
       );
 
       const channel = yield* connect

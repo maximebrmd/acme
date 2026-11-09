@@ -1,4 +1,4 @@
-# Build context for the images in packages/acme-docker, which build from the
+# Build context for the images in packages/peal-docker, which build from the
 # repository root. Installs happen inside the image, so local dependencies,
 # caches and state stay out, and so do secrets.
 

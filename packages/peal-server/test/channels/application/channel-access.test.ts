@@ -548,7 +548,7 @@ layer(FileTest)("ChannelAccess", (it) => {
         const { record, seen } = yield* recording();
 
         // The member reconnects the channel while the renewed token is
-        // being refused, as when they had revoked Acme on the platform.
+        // being refused, as when they had revoked Peal on the platform.
         const reconnected = replaceToken(channel, "reconnected-access");
 
         const failure = yield* ChannelAccess.use((access) =>

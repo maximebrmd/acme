@@ -3,8 +3,8 @@ import {
   CurrentPrincipal,
   Forbidden,
   Unauthenticated,
-} from "acme-contract";
-import type { Me } from "acme-contract";
+} from "peal-contract";
+import type { Me } from "peal-contract";
 import { Effect, Option } from "effect";
 import { HttpApiBuilder } from "effect/http-api";
 

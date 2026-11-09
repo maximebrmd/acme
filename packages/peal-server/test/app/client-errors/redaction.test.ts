@@ -25,7 +25,7 @@ describe("what the server keeps of an error report", () => {
   it("replaces the addresses, ids and keys a message quotes", () => {
     expect(
       redactText(
-        "No member sam+test@example.test in 5b0c6e64-5d0f-4a7e-9a52-3f1c2d4e5f60 with acme_synthetic-key-123"
+        "No member sam+test@example.test in 5b0c6e64-5d0f-4a7e-9a52-3f1c2d4e5f60 with peal_synthetic-key-123"
       )
     ).toBe("No member [email] in [id] with [key]");
   });
@@ -93,7 +93,7 @@ describe("what the server keeps of an error report", () => {
       release: "5b0c6e64-5d0f-4a7e-9a52-3f1c2d4e5f60",
       route: "/[locale]/app/sam@example.test",
       stack: null,
-      userAgent: "Mozilla/5.0 (acme_synthetic-key-123)",
+      userAgent: "Mozilla/5.0 (peal_synthetic-key-123)",
     });
 
     expect(report).toMatchObject({

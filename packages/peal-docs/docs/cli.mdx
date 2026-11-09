@@ -1,11 +1,11 @@
 ---
 title: Command line
-description: Build the acme command line, sign in with acme login, then work in a workspace from a terminal (drafts, posts, analytics, billing, members and invitations) and copy out your own data.
+description: Build the peal command line, sign in with peal login, then work in a workspace from a terminal (drafts, posts, analytics, billing, members and invitations) and copy out your own data.
 sidebar:
   order: 8
 ---
 
-`acme` works with an Acme instance from a terminal. It signs in as you, in a browser, and then acts with your role in each of your workspaces: it writes and discards drafts, follows up on posts that went out, reads analytics, billing, members and invitations, invites people, and saves a copy of your data. Scheduling, connecting channels and changing roles stay in the web app.
+`peal` works with a Peal instance from a terminal. It signs in as you, in a browser, and then acts with your role in each of your workspaces: it writes and discards drafts, follows up on posts that went out, reads analytics, billing, members and invitations, invites people, and saves a copy of your data. Scheduling, connecting channels and changing roles stay in the web app.
 
 ## Get it [#install]
 
@@ -13,150 +13,150 @@ There are no released builds yet. Build it from a clone of the repository, with 
 
 ```sh
 bun install --frozen-lockfile
-bun nx run acme-cli:build
-packages/acme-cli/dist/acme --help
+bun nx run peal-cli:build
+packages/peal-cli/dist/peal --help
 ```
 
-`packages/acme-cli/dist/acme` is one file with Bun inside: copy it anywhere on your `PATH`.
+`packages/peal-cli/dist/peal` is one file with Bun inside: copy it anywhere on your `PATH`.
 
 ## Choose the instance [#instance]
 
-Point `acme` at the address you open Acme at, such as `https://acme.example.com`, with `--api-url` or `ACME_API_URL`. The flag wins; without either, `acme` uses `http://localhost:3000`, a server running from source.
+Point `peal` at the address you open Peal at, such as `https://peal.example.com`, with `--api-url` or `PEAL_API_URL`. The flag wins; without either, `peal` uses `http://localhost:3000`, a server running from source.
 
 ```sh
-export ACME_API_URL=https://acme.example.com
-acme health
+export PEAL_API_URL=https://peal.example.com
+peal health
 ```
 
-`acme health` says whether the instance answers. It exits with 0 when it does, and with 1 when it is unreachable (after 5 seconds) or answers with an error, so scripts can wait on it.
+`peal health` says whether the instance answers. It exits with 0 when it does, and with 1 when it is unreachable (after 5 seconds) or answers with an error, so scripts can wait on it.
 
 ## Sign in [#login]
 
 ```sh
-acme login
+peal login
 ```
 
-`acme login` prints an address and a code of eight letters and digits:
+`peal login` prints an address and a code of eight letters and digits:
 
 ```text
-To sign in to https://acme.example.com, open https://acme.example.com/device in a browser and enter the code WDJB-MJHT.
-Or open https://acme.example.com/device?user_code=WDJBMJHT, where the code is filled in.
+To sign in to https://peal.example.com, open https://peal.example.com/device in a browser and enter the code WDJB-MJHT.
+Or open https://peal.example.com/device?user_code=WDJBMJHT, where the code is filled in.
 Waiting for you to approve the sign-in (the code works for 10m)…
 ```
 
-1. Open the address. Sign in to Acme there if you are not signed in yet.
+1. Open the address. Sign in to Peal there if you are not signed in yet.
 2. Check that the code matches the one in your terminal, then choose **Allow**. Approve only a code you asked for yourself: whoever started the sign-in gets your access.
-3. Back in the terminal, `acme login` says where it saved the sign-in.
+3. Back in the terminal, `peal login` says where it saved the sign-in.
 
-The code works for 10 minutes. **Deny** refuses the sign-in, and `acme login` stops.
+The code works for 10 minutes. **Deny** refuses the sign-in, and `peal login` stops.
 
-`acme` asks to do what your role allows in your workspaces, and to stay signed in. It saves the sign-in for that instance in `credentials.json`, which only you may read, in the first of these folders that is set:
+`peal` asks to do what your role allows in your workspaces, and to stay signed in. It saves the sign-in for that instance in `credentials.json`, which only you may read, in the first of these folders that is set:
 
-- `ACME_CONFIG_DIR`;
-- `$XDG_CONFIG_HOME/acme`;
-- `%APPDATA%\acme`, on Windows;
-- `~/.config/acme`.
+- `PEAL_CONFIG_DIR`;
+- `$XDG_CONFIG_HOME/peal`;
+- `%APPDATA%\peal`, on Windows;
+- `~/.config/peal`.
 
-Each instance has its own sign-in, keyed by its address, so you can be signed in to several. `acme` renews its access on its own; it never prints its tokens.
+Each instance has its own sign-in, keyed by its address, so you can be signed in to several. `peal` renews its access on its own; it never prints its tokens.
 
 ## Who am I [#whoami]
 
 ```sh
-acme whoami
+peal whoami
 ```
 
 ```text
-Signed in to https://acme.example.com as Sam Example <sam@example.com>.
+Signed in to https://peal.example.com as Sam Example <sam@example.com>.
 Workspaces:
   Studio (owner)
   Clients (editor)
 ```
 
-When the sign-in no longer works, because it was revoked or your account was banned, `acme whoami` says so and asks you to run `acme login` again. Before you sign in at all, it answers that you are not signed in.
+When the sign-in no longer works, because it was revoked or your account was banned, `peal whoami` says so and asks you to run `peal login` again. Before you sign in at all, it answers that you are not signed in.
 
 ## Sign out [#logout]
 
 ```sh
-acme logout
+peal logout
 ```
 
-`acme logout` tells the instance to revoke the sign-in, then forgets it, even when the instance does not answer within 5 seconds.
+`peal logout` tells the instance to revoke the sign-in, then forgets it, even when the instance does not answer within 5 seconds.
 
 ## Connect an MCP client [#mcp]
 
 ```sh
-acme mcp
+peal mcp
 ```
 
-`acme mcp` prints the instance's MCP endpoint and a configuration most MCP clients take, and warns when the instance does not let MCP clients register themselves. [Connect an MCP client](/mcp) explains the rest.
+`peal mcp` prints the instance's MCP endpoint and a configuration most MCP clients take, and warns when the instance does not let MCP clients register themselves. [Connect an MCP client](/mcp) explains the rest.
 
 ## Choose the workspace [#workspace]
 
-Every command below acts in one workspace. Name it with `--workspace` (or `-w`), by its slug or its id, or set `ACME_WORKSPACE` once for the commands that follow. If you belong to one workspace only, `acme` takes it; if you belong to several and name none, it lists their slugs and stops.
+Every command below acts in one workspace. Name it with `--workspace` (or `-w`), by its slug or its id, or set `PEAL_WORKSPACE` once for the commands that follow. If you belong to one workspace only, `peal` takes it; if you belong to several and name none, it lists their slugs and stops.
 
 ```sh
-export ACME_WORKSPACE=studio
-acme drafts list
-acme drafts list --workspace clients
+export PEAL_WORKSPACE=studio
+peal drafts list
+peal drafts list --workspace clients
 ```
 
-Each command does what your role allows there, as the web app does: a viewer reads, an editor writes and follows up, an owner or an admin invites. When the instance refuses, `acme` says why (your role, the post's status, the plan) and exits with 1.
+Each command does what your role allows there, as the web app does: a viewer reads, an editor writes and follows up, an owner or an admin invites. When the instance refuses, `peal` says why (your role, the post's status, the plan) and exits with 1.
 
 ## Channels [#channels]
 
 ```sh
-acme channels list
-acme channels tiktok <channel-id>
+peal channels list
+peal channels tiktok <channel-id>
 ```
 
-`acme channels list` lists the workspace's channels with their ids, which drafts take, and whether each one posts or must be reconnected. Connecting a channel is for the web app.
+`peal channels list` lists the workspace's channels with their ids, which drafts take, and whether each one posts or must be reconnected. Connecting a channel is for the web app.
 
-`acme channels tiktok` reads a TikTok channel's settings from TikTok, as TikTok asks before a post: who it posts as, the audiences a post may choose (its `privacyLevel`, with no default), the interactions the account turned off, which stay off, and its longest video, or why it cannot post today. Posting to TikTok means agreeing to its Music Usage Confirmation, and to its Branded Content Policy for branded content.
+`peal channels tiktok` reads a TikTok channel's settings from TikTok, as TikTok asks before a post: who it posts as, the audiences a post may choose (its `privacyLevel`, with no default), the interactions the account turned off, which stay off, and its longest video, or why it cannot post today. Posting to TikTok means agreeing to its Music Usage Confirmation, and to its Branded Content Policy for branded content.
 
 ## Drafts [#drafts]
 
 ```sh
-acme drafts list                  # newest first; --limit and --cursor page through them
-acme drafts save --text "Spring catalogue is out" --channel <channel-id> --channel <channel-id>
-acme drafts save --post <post-id> --text "Spring catalogue is out today"
-acme drafts save --post <post-id> --options '<channel-id>={"platform":"youtube","title":"Spring catalogue","madeForKids":false}'
-acme drafts discard <post-id>
+peal drafts list                  # newest first; --limit and --cursor page through them
+peal drafts save --text "Spring catalogue is out" --channel <channel-id> --channel <channel-id>
+peal drafts save --post <post-id> --text "Spring catalogue is out today"
+peal drafts save --post <post-id> --options '<channel-id>={"platform":"youtube","title":"Spring catalogue","madeForKids":false}'
+peal drafts discard <post-id>
 ```
 
-- `acme drafts save` without `--post` writes a new draft, for the channels `--channel` names (none yet is fine). With `--post`, it changes that draft: the text, when `--text` is given, and the channels, when any `--channel` is. What you leave out stays as it was, its media and its [platform options](/scheduling#options) on the channels it keeps included.
-- `--options <channel-id>=<json>` sets a channel's platform options, as JSON with its `platform`: for YouTube, `title` and `madeForKids` (both needed to schedule), `privacy`, `tags`, `categoryId`, `notifySubscribers`, `containsSyntheticMedia`; for TikTok, `privacyLevel` (needed, one `acme channels tiktok` lists), `disableComment`, `disableDuet`, `disableStitch`, `commercialContent`, `brandOrganic`, `brandContent`, `aiGenerated`. Repeat it for several channels; it replaces that channel's options whole.
+- `peal drafts save` without `--post` writes a new draft, for the channels `--channel` names (none yet is fine). With `--post`, it changes that draft: the text, when `--text` is given, and the channels, when any `--channel` is. What you leave out stays as it was, its media and its [platform options](/scheduling#options) on the channels it keeps included.
+- `--options <channel-id>=<json>` sets a channel's platform options, as JSON with its `platform`: for YouTube, `title` and `madeForKids` (both needed to schedule), `privacy`, `tags`, `categoryId`, `notifySubscribers`, `containsSyntheticMedia`; for TikTok, `privacyLevel` (needed, one `peal channels tiktok` lists), `disableComment`, `disableDuet`, `disableStitch`, `commercialContent`, `brandOrganic`, `brandContent`, `aiGenerated`. Repeat it for several channels; it replaces that channel's options whole.
 - A draft goes out at no time. Its text is checked against each platform's limits when it is scheduled, in the web app.
-- `acme drafts discard` deletes a draft for good. A post that is scheduled or went out is not a draft: unschedule or cancel it instead.
+- `peal drafts discard` deletes a draft for good. A post that is scheduled or went out is not a draft: unschedule or cancel it instead.
 
 ## Posts [#posts]
 
 ```sh
-acme posts show <post-id>
-acme posts unschedule <post-id>
-acme posts repost <post-id> <target-id>
-acme posts confirm <post-id> <target-id> published --permalink https://mastodon.example/@studio/1
-acme posts confirm <post-id> <target-id> not-published
+peal posts show <post-id>
+peal posts unschedule <post-id>
+peal posts repost <post-id> <target-id>
+peal posts confirm <post-id> <target-id> published --permalink https://mastodon.example/@studio/1
+peal posts confirm <post-id> <target-id> not-published
 ```
 
-- `acme posts show` prints the post's status and time, then one line per channel, starting with its target id, with how it went there: failed and why, unconfirmed and why, or published at its address (and kept private, when YouTube kept a public or unlisted video private), then the post's options on each channel that has some.
-- `acme posts unschedule` takes a scheduled post back to draft, so it goes out at no time until it is scheduled again. A post already publishing cannot be unscheduled.
-- `acme posts repost` sends the post again, now, on one channel where it failed or is unconfirmed. When it is unconfirmed, check the platform first: it may be live already.
-- `acme posts confirm` records what you found on the platform for a post Acme could not confirm: `published`, with its address if you have it, or `not-published`, which fails it there so `acme posts repost` can send it again. See [Scheduling](/scheduling) for how posts end.
+- `peal posts show` prints the post's status and time, then one line per channel, starting with its target id, with how it went there: failed and why, unconfirmed and why, or published at its address (and kept private, when YouTube kept a public or unlisted video private), then the post's options on each channel that has some.
+- `peal posts unschedule` takes a scheduled post back to draft, so it goes out at no time until it is scheduled again. A post already publishing cannot be unscheduled.
+- `peal posts repost` sends the post again, now, on one channel where it failed or is unconfirmed. When it is unconfirmed, check the platform first: it may be live already.
+- `peal posts confirm` records what you found on the platform for a post Peal could not confirm: `published`, with its address if you have it, or `not-published`, which fails it there so `peal posts repost` can send it again. See [Scheduling](/scheduling) for how posts end.
 
 ## Analytics [#analytics]
 
 ```sh
-acme analytics summary                                     # the last 30 days, today included
-acme analytics summary --from 2026-10-01 --to 2026-10-31 --time-zone Europe/Paris
-acme analytics post <post-id>
+peal analytics summary                                     # the last 30 days, today included
+peal analytics summary --from 2026-10-01 --to 2026-10-31 --time-zone Europe/Paris
+peal analytics post <post-id>
 ```
 
-`acme analytics summary` adds up the counts of the posts published over a range of days: in all, by channel, and the posts people did the most with. Days run in `--time-zone`, an IANA zone such as `Europe/Paris`; without it, in `TZ`, then in your computer's zone. `acme analytics post` prints a post's latest counts on each channel it went out on. A dash stands for a count the platform does not give. See [Analytics](/analytics).
+`peal analytics summary` adds up the counts of the posts published over a range of days: in all, by channel, and the posts people did the most with. Days run in `--time-zone`, an IANA zone such as `Europe/Paris`; without it, in `TZ`, then in your computer's zone. `peal analytics post` prints a post's latest counts on each channel it went out on. A dash stands for a count the platform does not give. See [Analytics](/analytics).
 
 ## Billing [#billing]
 
 ```sh
-acme billing
+peal billing
 ```
 
 Prints the workspace's plan and subscription, and, for each limit (channels, members, posts going out this month, assistant requests today), how much is used of what the plan allows. It changes nothing: owners and admins change the plan on the workspace's **Billing** page. On an instance that does not bill, nothing is limited.
@@ -164,27 +164,27 @@ Prints the workspace's plan and subscription, and, for each limit (channels, mem
 ## Members and invitations [#members]
 
 ```sh
-acme members list
-acme invitations list
-acme invitations send sam@example.com --role editor
-acme invitations revoke <invitation-id>
+peal members list
+peal invitations list
+peal invitations send sam@example.com --role editor
+peal invitations revoke <invitation-id>
 ```
 
 - Every member sees the members. Owners and admins see the pending invitations, expired ones included, and send and revoke them.
-- `acme invitations send` emails the address a link that works for 7 days, with the role `--role` gives (`viewer` unless you say otherwise). Only owners invite owners. A pending invitation to the same address is replaced, and its link stops working. On an instance that bills, the plan must have room for one more member, pending invitations included.
-- `acme invitations revoke` stops an invitation's link at once.
+- `peal invitations send` emails the address a link that works for 7 days, with the role `--role` gives (`viewer` unless you say otherwise). Only owners invite owners. A pending invitation to the same address is replaced, and its link stops working. On an instance that bills, the plan must have room for one more member, pending invitations included.
+- `peal invitations revoke` stops an invitation's link at once.
 - Changing a member's role, or removing someone, is for the workspace's **Settings**.
 
 ## Your data [#account]
 
 ```sh
-acme account export                       # acme-data-2026-11-09.json, in this folder
-acme account export --output ~/acme-data.json
-acme account apps
+peal account export                       # peal-data-2026-11-09.json, in this folder
+peal account export --output ~/peal-data.json
+peal account apps
 ```
 
-- `acme account export` saves a copy of everything Acme keeps about you, as on the account settings page: your account, sessions, workspaces, invitations, connected applications, notices, preferences, the posts you wrote, and the content of the workspaces where you are the only member. It holds no password, token, key or card. The file is yours alone to read (mode 600), and `acme` never writes over a file unless you add `--force`.
-- `acme account apps` lists the applications that act for you, this command line and MCP clients among them, with what they may do and where. Revoke one from **Account settings**, in the web app: no application revokes another.
+- `peal account export` saves a copy of everything Peal keeps about you, as on the account settings page: your account, sessions, workspaces, invitations, connected applications, notices, preferences, the posts you wrote, and the content of the workspaces where you are the only member. It holds no password, token, key or card. The file is yours alone to read (mode 600), and `peal` never writes over a file unless you add `--force`.
+- `peal account apps` lists the applications that act for you, this command line and MCP clients among them, with what they may do and where. Revoke one from **Account settings**, in the web app: no application revokes another.
 - Deleting your account is for **Account settings** too.
 
 <Callout type="note" title="Why MCP clients cannot do this">
@@ -193,19 +193,19 @@ acme account apps
   to your own disk. No MCP tool hands them out: an MCP client passes what its
   tools answer to an AI model, and your export holds your sessions' addresses
   and everything you wrote. The instance refuses them to every OAuth client but
-  `acme`.
+  `peal`.
 </Callout>
 
 ## Settings [#settings]
 
 | Variable          | What it does                                                                           |
 | ----------------- | -------------------------------------------------------------------------------------- |
-| `ACME_API_URL`    | The instance's address, unless `--api-url` is given. Default: `http://localhost:3000`. |
-| `ACME_WORKSPACE`  | The workspace commands act in, by slug or id, unless `--workspace` is given.           |
-| `TZ`              | The zone `acme analytics summary` runs days in, unless `--time-zone` is given.         |
-| `ACME_CONFIG_DIR` | The folder `credentials.json` is saved in.                                             |
-| `XDG_CONFIG_HOME` | Without `ACME_CONFIG_DIR`, the sign-in goes in its `acme` folder.                      |
-| `APPDATA`         | Without either, on Windows, the sign-in goes in its `acme` folder.                     |
-| `HOME`            | Otherwise, the sign-in goes in `~/.config/acme`.                                       |
+| `PEAL_API_URL`    | The instance's address, unless `--api-url` is given. Default: `http://localhost:3000`. |
+| `PEAL_WORKSPACE`  | The workspace commands act in, by slug or id, unless `--workspace` is given.           |
+| `TZ`              | The zone `peal analytics summary` runs days in, unless `--time-zone` is given.         |
+| `PEAL_CONFIG_DIR` | The folder `credentials.json` is saved in.                                             |
+| `XDG_CONFIG_HOME` | Without `PEAL_CONFIG_DIR`, the sign-in goes in its `peal` folder.                      |
+| `APPDATA`         | Without either, on Windows, the sign-in goes in its `peal` folder.                     |
+| `HOME`            | Otherwise, the sign-in goes in `~/.config/peal`.                                       |
 
-`acme --help` lists the commands, and `acme <command> --help` describes one.
+`peal --help` lists the commands, and `peal <command> --help` describes one.

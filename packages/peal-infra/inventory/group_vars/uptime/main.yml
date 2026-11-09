@@ -4,7 +4,7 @@
 # Telegram, and hears production's Grafana's heartbeat. It shares nothing
 # with them: no secret, no tunnel, no private network. Every value below is a
 # placeholder until the server and its DNS name exist.
-server_hostname: acme-uptime
+server_hostname: peal-uptime
 
 # No tunnel: SSH listens on port 22, key-only and rate limited, and the admin
 # user may forward one local port, to Gatus's dashboard on 127.0.0.1:
@@ -18,8 +18,8 @@ ssh_permit_open: ["127.0.0.1:{{ uptime_gatus_port }}"]
 # watches them through theirs.
 unattended_reboot_time: "04:30"
 
-# The settings acme_preflight searches for placeholders.
-acme_preflight_names:
+# The settings peal_preflight searches for placeholders.
+peal_preflight_names:
   - ansible_host
   - admin_ssh_public_keys
   - uptime_hostname
@@ -44,7 +44,7 @@ uptime_environments:
       app: app.example.com
       site: example.com
       docs: docs.example.com
-    # Its Grafana sends a heartbeat (acme_heartbeat_url), with the token
+    # Its Grafana sends a heartbeat (peal_heartbeat_url), with the token
     # PRODUCTION_HEARTBEAT_TOKEN generated here.
     heartbeat: true
   - name: sandbox

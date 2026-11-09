@@ -17,7 +17,7 @@ export interface TestMember {
 /**
  * The workspaces' members, as tests set them, with NoticeRecipients reading
  * them (every test workspace is called "Studio Nord") and ReaderStanding
- * (every user may use Acme until the test bans them).
+ * (every user may use Peal until the test bans them).
  */
 export class TestDirectory extends Context.Service<
   TestDirectory,
@@ -28,7 +28,7 @@ export class TestDirectory extends Context.Service<
       members: readonly TestMember[]
     ) => Effect.Effect<void>;
   }
->()("acme-server/test/notifications/TestDirectory") {
+>()("peal-server/test/notifications/TestDirectory") {
   static readonly layer = Layer.effectContext(
     Effect.gen(function* TestDirectoryLive() {
       const members = yield* Ref.make<

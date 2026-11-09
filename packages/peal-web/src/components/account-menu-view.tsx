@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "acme-ui/components/button";
+import { Button } from "peal-ui/components/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,7 +9,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "acme-ui/components/dropdown-menu";
+} from "peal-ui/components/dropdown-menu";
 import { CircleUserIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useTransition } from "react";

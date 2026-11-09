@@ -361,7 +361,7 @@ describe("publishing on X", () => {
         const result = yield* client.publish(
           yield* post({
             media: [attached(image)],
-            text: "Read https://acme.example/launch & share",
+            text: "Read https://peal.example/launch & share",
           })
         );
 
@@ -409,14 +409,14 @@ describe("publishing on X", () => {
         const { client, x } = yield* onX();
 
         yield* client.publish(
-          yield* post({ text: "New article: https://acme.example/one" })
+          yield* post({ text: "New article: https://peal.example/one" })
         );
 
         x.script("POST /2/tweets", [dropped]);
 
         // The same words, another link: X made nothing of it.
         const result = yield* client.publish(
-          yield* post({ text: "New article: https://acme.example/two." })
+          yield* post({ text: "New article: https://peal.example/two." })
         );
 
         assert.deepStrictEqual(result, {
@@ -462,7 +462,7 @@ describe("publishing on X", () => {
 
       const result = yield* client.publish(
         yield* post({
-          text: "Read (https://Acme.example) and https://acme.example/two.",
+          text: "Read (https://Peal.example) and https://peal.example/two.",
         })
       );
 

@@ -39,4 +39,4 @@ export class SystemHealth extends Context.Service<
       limit: number
     ) => Effect.Effect<readonly ChannelHealth[], DatabaseError>;
   }
->()("acme-server/staff/application/SystemHealth") {}
+>()("peal-server/staff/application/SystemHealth") {}

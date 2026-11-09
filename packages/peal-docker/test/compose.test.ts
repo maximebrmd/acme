@@ -64,7 +64,7 @@ const documentedServerSettings = (() => {
   const page = read(
     "..",
     "..",
-    "acme-docs",
+    "peal-docs",
     "docs",
     "environment-variables.mdx"
   );
@@ -134,18 +134,18 @@ describe("compose.production.yaml", () => {
     expect(production.length).toBeGreaterThan(0);
   });
 
-  // Acme's own images are built from this repository, and tagged with the
-  // release (acme-infra) or `local`; Postgres's changes only with its image.
+  // Peal's own images are built from this repository, and tagged with the
+  // release (peal-infra) or `local`; Postgres's changes only with its image.
   it.each(production)(
     "%s builds its image here or pins it by digest",
     (name, service) => {
       const version =
-        name === "postgres" ? "ACME_POSTGRES_VERSION" : "ACME_VERSION";
+        name === "postgres" ? "PEAL_POSTGRES_VERSION" : "PEAL_VERSION";
 
       expect(
         service.build === undefined
           ? isPinnedByDigest(service.image)
-          : service.image === `acme-${name}:\${${version}:-local}`
+          : service.image === `peal-${name}:\${${version}:-local}`
       ).toBeTruthy();
     }
   );
@@ -368,7 +368,7 @@ describe("web.Dockerfile", () => {
   it("copies Next's static files beside the server", () => {
     expect(
       instructionsOf(read("..", "web.Dockerfile"))("COPY").some((copy) =>
-        copy.endsWith(" packages/acme-web/.next/static")
+        copy.endsWith(" packages/peal-web/.next/static")
       )
     ).toBeTruthy();
   });

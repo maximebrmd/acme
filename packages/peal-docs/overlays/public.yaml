@@ -1,9 +1,9 @@
 # Changes the docs make to the contract's OpenAPI document before rendering
 # it. Each instance serves its own /openapi.json at its own origin, so the
-# placeholder origin lives here rather than in acme-contract.
+# placeholder origin lives here rather than in peal-contract.
 overlay: 1.1.0
 info:
-  title: Acme docs
+  title: Peal docs
   version: 1.0.0
 actions:
   # The origin that the API overview says stands for an instance's own, so

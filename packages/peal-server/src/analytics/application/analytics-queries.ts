@@ -104,7 +104,7 @@ export class AnalyticsQueries extends Context.Service<
       DatabaseError | InvalidReportRange | MissingPermission
     >;
   }
->()("acme-server/analytics/application/AnalyticsQueries") {
+>()("peal-server/analytics/application/AnalyticsQueries") {
   static readonly layer = Layer.effect(
     AnalyticsQueries,
     Effect.gen(function* AnalyticsQueriesLive() {

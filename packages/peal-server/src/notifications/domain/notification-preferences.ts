@@ -9,7 +9,7 @@ import type { EmailKind, NoticeEvent } from "./notice-event.ts";
  * they receive reaches the app, whatever the email choices say.
  */
 export class NotificationPreferences extends Schema.Class<NotificationPreferences>(
-  "acme-server/notifications/domain/NotificationPreferences"
+  "peal-server/notifications/domain/NotificationPreferences"
 )({
   email: Schema.Struct({
     channelReconnect: Schema.Boolean,

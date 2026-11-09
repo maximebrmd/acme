@@ -2,7 +2,7 @@ import { assert, layer } from "@effect/vitest";
 import {
   AuthorizationServerSchema,
   ProtectedResourceSchema,
-} from "acme-contract";
+} from "peal-contract";
 import { Context, Effect, Layer, Option, Schema } from "effect";
 import { McpClient, McpProtocol } from "effect/ai";
 
@@ -47,7 +47,7 @@ interface Fixture {
 }
 
 class McpFixture extends Context.Service<McpFixture, Fixture>()(
-  "acme-server/test/McpFixture"
+  "peal-server/test/McpFixture"
 ) {}
 
 const McpFixtureLive = Layer.effect(
@@ -368,7 +368,7 @@ layer(McpFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           method: "initialize",
           params: {
             capabilities: {},
-            clientInfo: { name: "acme-test", version: "1.0.0" },
+            clientInfo: { name: "peal-test", version: "1.0.0" },
             protocolVersion: "2025-11-25",
           },
         });

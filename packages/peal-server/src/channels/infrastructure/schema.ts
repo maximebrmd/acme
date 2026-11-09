@@ -186,7 +186,7 @@ export const dataDeletions = channelsSchema.table(
 );
 
 /**
- * Acme's app on each Mastodon instance, registered with the instance the
+ * Peal's app on each Mastodon instance, registered with the instance the
  * first time someone connects an account there, for one redirect URI. A
  * server whose public URL changes registers again.
  *

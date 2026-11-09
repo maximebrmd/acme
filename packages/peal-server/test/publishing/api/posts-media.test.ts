@@ -1,6 +1,6 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Api, PostContentInvalid, UnknownMedia } from "acme-contract";
-import type { PostContent, SchedulePost } from "acme-contract";
+import { Api, PostContentInvalid, UnknownMedia } from "peal-contract";
+import type { PostContent, SchedulePost } from "peal-contract";
 import { Duration, Effect, Layer } from "effect";
 import { HttpServer } from "effect/http";
 import { HttpApiTest } from "effect/http-api";

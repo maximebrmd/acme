@@ -3,7 +3,7 @@ import {
   ClientErrorTooLarge,
   maxClientErrorBytes,
   TooManyClientErrors,
-} from "acme-contract";
+} from "peal-contract";
 import {
   ByteSize,
   Config,
@@ -26,7 +26,7 @@ export const reportsPerMinute = 30;
  * flood shows here even while the reports themselves are refused.
  */
 export const droppedClientErrors = Metric.counter(
-  "acme.client_errors.dropped",
+  "peal.client_errors.dropped",
   {
     description: "Error reports from the web app that the server dropped",
     incremental: true,

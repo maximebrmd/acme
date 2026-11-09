@@ -6,10 +6,10 @@ import { serverUrl } from "#api/server-url.ts";
 import { reportOf } from "./report.ts";
 
 /**
- * The web app's release: ACME_RELEASE, which the production stack sets to
+ * The web app's release: PEAL_RELEASE, which the production stack sets to
  * the release's tag, read at request time.
  */
-export const releaseConfig = Config.String("ACME_RELEASE").pipe(
+export const releaseConfig = Config.String("PEAL_RELEASE").pipe(
   Config.withDefault("unknown")
 );
 
@@ -35,7 +35,7 @@ export const serverReportOf = (
   });
 
 /**
- * Sends the server's error to the Acme server, at ACME_API_URL, within
+ * Sends the server's error to the Peal server, at PEAL_API_URL, within
  * five seconds; a report that fails to go is dropped, as Next logs the
  * error itself.
  */

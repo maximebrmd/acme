@@ -1,5 +1,5 @@
 import { describe, expect, it } from "@effect/vitest";
-import type { Permission, Post, PostStatus } from "acme-contract";
+import type { Permission, Post, PostStatus } from "peal-contract";
 
 import { capabilitiesOf } from "#posts/composer-capabilities.ts";
 

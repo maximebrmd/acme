@@ -52,4 +52,4 @@ export class TrackedPosts extends Context.Service<
       post: TrackedPost
     ) => Effect.Effect<void, DatabaseError>;
   }
->()("acme-server/analytics/application/TrackedPosts") {}
+>()("peal-server/analytics/application/TrackedPosts") {}

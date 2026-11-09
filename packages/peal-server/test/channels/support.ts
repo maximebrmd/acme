@@ -1,4 +1,4 @@
-import type { Member } from "acme-contract";
+import type { Member } from "peal-contract";
 import {
   ConfigProvider,
   Context,
@@ -82,8 +82,8 @@ export const freshChannel = Effect.fn("freshChannel")(function* freshChannel(
       avatarUrl: Option.some(
         AvatarUrlSchema.make(`https://social.example/avatars/${id}.png`)
       ),
-      displayName: Option.some("Acme Example"),
-      handle: "@acme_example",
+      displayName: Option.some("Peal Example"),
+      handle: "@peal_example",
       id,
       platform: options.platform ?? "mastodon",
       scopes: ["read", "write"],
@@ -142,11 +142,11 @@ export const memberOf = (
   workspaceId,
 });
 
-/** The cipher, with the synthetic keyring as ACME_TOKEN_KEYS. */
+/** The cipher, with the synthetic keyring as PEAL_TOKEN_KEYS. */
 export const TokenCipherTest = TokenCipherLive.pipe(
   Layer.provide(
     ConfigProvider.layer(
-      ConfigProvider.fromUnknown({ ACME_TOKEN_KEYS: syntheticKeyring })
+      ConfigProvider.fromUnknown({ PEAL_TOKEN_KEYS: syntheticKeyring })
     )
   )
 );
@@ -175,7 +175,7 @@ export class RecordedNotices extends Context.Service<
       workspaceId: WorkspaceId
     ) => Effect.Effect<readonly RecordedNotice[]>;
   }
->()("acme-server/test/channels/RecordedNotices") {
+>()("peal-server/test/channels/RecordedNotices") {
   static readonly layer = Layer.effectContext(
     Effect.gen(function* RecordedNoticesLive() {
       const sent = yield* Ref.make<

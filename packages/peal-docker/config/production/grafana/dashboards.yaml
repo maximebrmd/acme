@@ -4,9 +4,9 @@
 apiVersion: 1
 
 providers:
-  - name: acme
+  - name: peal
     orgId: 1
-    folder: Acme
+    folder: Peal
     type: file
     disableDeletion: true
     allowUiUpdates: false

@@ -13,7 +13,7 @@ import { BetterAuth } from "./better-auth.ts";
 import { apiResourceOf, mcpResourceOf, workspaceClaim } from "./oauth.ts";
 import { AuthSettings, trustedOriginsOf } from "./settings.ts";
 
-// What Acme reads of Better Auth's answers. A session or key that does not
+// What Peal reads of Better Auth's answers. A session or key that does not
 // match is treated as none.
 const SessionSchema = Schema.Struct({
   session: Schema.Struct({
@@ -34,7 +34,7 @@ const VerifiedKeySchema = Schema.Struct({
   valid: Schema.Literal(true),
 });
 
-// What Acme reads of an OAuth access token: the user (`sub`), the client
+// What Peal reads of an OAuth access token: the user (`sub`), the client
 // (`azp`), the scopes the user agreed to, and the workspace a token issued
 // after the workspace picker is bound to.
 const tokenClaims = {

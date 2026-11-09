@@ -61,7 +61,7 @@ import {
 // address stays the same from run to run. Tests leave no job waiting behind,
 // as a dev server on the same database would run it.
 
-const runner = RunnerAddress.make("acme-server-test", 34_431);
+const runner = RunnerAddress.make("peal-server-test", 34_431);
 
 const Cluster = clusterLayer({
   entityMessagePollInterval: Duration.millis(100),

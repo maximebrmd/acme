@@ -20,7 +20,7 @@ const retries = 3;
 export class SendAuthEmail extends Context.Service<
   SendAuthEmail,
   { readonly send: (email: AuthEmail) => Effect.Effect<void> }
->()("acme-server/notifications/application/SendAuthEmail") {
+>()("peal-server/notifications/application/SendAuthEmail") {
   static readonly layer = Layer.effect(
     SendAuthEmail,
     Effect.gen(function* sendAuthEmail() {

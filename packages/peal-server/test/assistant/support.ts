@@ -59,7 +59,7 @@ export class FakeModel extends Context.Service<
     /** The prompts the model was sent, oldest first. */
     readonly prompts: Effect.Effect<readonly Prompt.Prompt[]>;
   }
->()("acme-server/test/assistant/FakeModel") {}
+>()("peal-server/test/assistant/FakeModel") {}
 
 const partsOf = (
   reply: Reply

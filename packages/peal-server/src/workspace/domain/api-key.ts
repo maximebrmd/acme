@@ -10,7 +10,7 @@ import { MissingPermission } from "#shared/domain/missing-permission.ts";
  * when it is created, and stored only hashed.
  */
 export class ApiKey extends Schema.Class<ApiKey>(
-  "acme-server/workspace/domain/ApiKey"
+  "peal-server/workspace/domain/ApiKey"
 )({
   createdAt: Schema.DateTimeUtc,
   expiresAt: Schema.Option(Schema.DateTimeUtc),

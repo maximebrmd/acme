@@ -1,7 +1,7 @@
 import { Option, Schema } from "effect";
 import { useTranslations } from "next-intl";
 
-// The catalogue key that describes each scope Acme's authorization server
+// The catalogue key that describes each scope Peal's authorization server
 // knows.
 const scopeKeys = {
   email: "email",

@@ -78,7 +78,7 @@ export class PostFollowUp extends Context.Service<
       confirmation: Confirmation
     ) => Effect.Effect<PostWithTargets, Failure>;
   }
->()("acme-server/publishing/application/PostFollowUp") {
+>()("peal-server/publishing/application/PostFollowUp") {
   static readonly layer = Layer.effect(
     PostFollowUp,
     Effect.gen(function* PostFollowUpLive() {

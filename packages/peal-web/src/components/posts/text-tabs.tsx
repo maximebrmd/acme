@@ -1,13 +1,13 @@
 "use client";
 
-import type { Channel } from "acme-contract";
-import { Button } from "acme-ui/components/button";
+import type { Channel } from "peal-contract";
+import { Button } from "peal-ui/components/button";
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from "acme-ui/components/tabs";
+} from "peal-ui/components/tabs";
 import { useTranslations } from "next-intl";
 import { useState } from "react";
 

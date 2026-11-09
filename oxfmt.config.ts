@@ -4,9 +4,9 @@ import ultracite from "ultracite/oxfmt";
 // Generated files and the reference clones in .local stay as their tools wrote
 // them. drizzle-kit reads back the snapshots it writes next to each migration.
 export const generated = [
-  "packages/acme-contract/openapi.json",
-  "packages/acme-server/drizzle/**",
-  "packages/acme-server/src/*/infrastructure/*.generated.ts",
+  "packages/peal-contract/openapi.json",
+  "packages/peal-server/drizzle/**",
+  "packages/peal-server/src/*/infrastructure/*.generated.ts",
   ".local/**",
 ];
 

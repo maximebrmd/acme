@@ -276,7 +276,7 @@ export const WorkspacePeopleLive = Layer.effect(
 
       const { inviter, locale, sent, workspaceName } = yield* client
         .withTransaction(
-          client`SELECT pg_advisory_xact_lock(hashtext('acme-server/workspace/invitations'), hashtext(${request.workspaceId}))`.pipe(
+          client`SELECT pg_advisory_xact_lock(hashtext('peal-server/workspace/invitations'), hashtext(${request.workspaceId}))`.pipe(
             failed,
             Effect.andThen(write(request, email))
           )

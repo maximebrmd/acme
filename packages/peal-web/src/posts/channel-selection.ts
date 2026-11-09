@@ -1,4 +1,4 @@
-import type { Channel, Post } from "acme-contract";
+import type { Channel, Post } from "peal-contract";
 
 /**
  * The channels a post goes to that are still connected to the workspace, in

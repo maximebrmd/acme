@@ -1,42 +1,42 @@
-# Acme
+# Peal
 
-Acme is a social media scheduling platform: teams write posts once, schedule
-them across platforms, and see how they perform. "Acme" is a working name. The
+Peal is a social media scheduling platform: teams write posts once, schedule
+them across platforms, and see how they perform. "Peal" is a working name. The
 source is public under the Functional Source License (FSL-1.1-ALv2, in
 [`LICENSE.md`](LICENSE.md)): anyone may self-host it, and each release becomes
 Apache-2.0 two years after it ships. Call it "fair source", not open source.
 
 Nx projects live directly under `packages/`:
 
-- `acme-contract`: the HTTP API definition (`Api`: Effect `HttpApi` groups,
+- `peal-contract`: the HTTP API definition (`Api`: Effect `HttpApi` groups,
   Schemas and the `Authentication` and `WorkspaceAccess` middlewares),
-  `OAuthApi` for the Better Auth endpoints Acme's clients call, and
-  `acme-contract/post-text`, the text rules clients count with. The server
+  `OAuthApi` for the Better Auth endpoints Peal's clients call, and
+  `peal-contract/post-text`, the text rules clients count with. The server
   implements `Api`; the web app and the CLI derive typed clients from it, and
-  the MCP tools reuse its schemas. `nx run acme-contract:openapi` writes
+  the MCP tools reuse its schemas. `nx run peal-contract:openapi` writes
   `openapi.json` for the docs.
-- `acme-server`: the Effect server on Bun: the bounded contexts below, Better
+- `peal-server`: the Effect server on Bun: the bounded contexts below, Better
   Auth, the MCP endpoint, and the cluster that runs durable jobs and crons.
-- `acme-ui`: the design system, shipped as sources that apps compile: shadcn/ui
+- `peal-ui`: the design system, shipped as sources that apps compile: shadcn/ui
   on Base UI (Nova style, lucide icons), the Tailwind CSS v4 theme and the
   Geist fonts.
-- `acme-web`: the Next.js App Router app, with next-intl, `@effect/atom-react`,
+- `peal-web`: the Next.js App Router app, with next-intl, `@effect/atom-react`,
   Better Auth's client and Tiptap.
-- `acme-cli`: the `acme` command line, `effect/cli` on Bun, a client of the API
+- `peal-cli`: the `peal` command line, `effect/cli` on Bun, a client of the API
   that signs in with OAuth.
-- `acme-docker`: the development compose stack, the production images (the
+- `peal-docker`: the development compose stack, the production images (the
   server's, with sharp's C++ runtime and a static ffprobe; the web app's;
   the site and docs on nginx; Postgres with pgBackRest), the production stack
   (`compose.production.yaml`) and Caddy in front of it for self-hosters
   (`compose.self-host.yaml`).
-- `acme-docs`: the documentation site (Blume), with the API reference rendered
+- `peal-docs`: the documentation site (Blume), with the API reference rendered
   from the contract's `openapi.json`.
-- `acme-site`: the static marketing site (Astro), with the legal pages that
+- `peal-site`: the static marketing site (Astro), with the legal pages that
   platforms ask for during app review.
-- `acme-e2e`: end-to-end browser tests with the e2e runner (`e2e`,
+- `peal-e2e`: end-to-end browser tests with the e2e runner (`e2e`,
   `@e2e-dev/web`). Each run starts the server and the web app's production
   build itself (`scripts/serve.ts`).
-- `acme-infra`: Ansible for Acme's servers, production and the sandbox, and
+- `peal-infra`: Ansible for Peal's servers, production and the sandbox, and
   their releases. Python, managed with uv.
 
 Work from the repository root unless a command names another directory.
@@ -51,7 +51,7 @@ Work from the repository root unless a command names another directory.
   suppressions; `bun run fix` applies what it can. `bun run test` needs the
   development stack's Postgres, Mailpit and SeaweedFS (see
   [Development stack](#development-stack)). It does not run the end-to-end
-  tests: run `nx run acme-e2e:e2e` too when a change touches the pages they
+  tests: run `nx run peal-e2e:e2e` too when a change touches the pages they
   visit (see [End-to-end tests](#end-to-end-tests)).
 - Linters and formatters are as strict as they go: Ultracite's oxlint presets
   (core and anti-slop everywhere, plus the preset for each package's framework)
@@ -80,12 +80,12 @@ Work from the repository root unless a command names another directory.
 - `bun build --compile` leaves a `.<hash>.bun-build` copy of Bun (about 90 MB)
   in the working directory when Bun is read-only, as Homebrew installs it.
   Compile through a script that deletes it, like
-  `packages/acme-cli/scripts/build.ts`.
+  `packages/peal-cli/scripts/build.ts`.
 - Pin every dependency to the exact latest release, and commit `bun.lock` with
-  dependency changes, `packages/acme-infra/uv.lock` with Python ones.
+  dependency changes, `packages/peal-infra/uv.lock` with Python ones.
 - `bun run test` also runs ansible-lint (production profile),
   `ansible-playbook --syntax-check` and the pytest suite in `tests/` on
-  `packages/acme-infra`, through uv (`nx run acme-infra:test`). Its release
+  `packages/peal-infra`, through uv (`nx run peal-infra:test`). Its release
   and uptime tests run images in Docker (Postgres's base image, Gatus, Caddy,
   BusyBox), and skip without Docker.
 - Define Nx target defaults in [`nx.json`](nx.json) and package targets in
@@ -100,46 +100,46 @@ one's source, at the version this workspace installs, into
 `.local/references/<name>` (ignored by Git, Nx and the linters). Read the code,
 tests and docs there before using an API, and rerun the command after an
 upgrade. Effect also ships agent docs in `.local/references/effect/ai-docs`,
-and Next.js ships its docs in `packages/acme-web/node_modules/next/dist/docs`.
+and Next.js ships its docs in `packages/peal-web/node_modules/next/dist/docs`.
 
 ## Development stack
 
 - Start Postgres, the S3 store (SeaweedFS), Mailpit and the telemetry stack
-  with `bun nx run acme-docker:up`, which waits until every service is healthy.
-  Stop it with `bun nx run acme-docker:down` (`-- --volumes` also deletes the
+  with `bun nx run peal-docker:up`, which waits until every service is healthy.
+  Stop it with `bun nx run peal-docker:down` (`-- --volumes` also deletes the
   data). The README lists the ports.
 - Outside production, the server defaults every outside service to this stack:
-  `ACME_S3_*` to SeaweedFS, `SMTP_URL` to Mailpit, `PUBLIC_URL` to
+  `PEAL_S3_*` to SeaweedFS, `SMTP_URL` to Mailpit, `PUBLIC_URL` to
   `http://localhost:3001`. Only `DATABASE_URL` has no default.
 - Browsers upload media straight to the bucket: run
-  `bun nx run acme-server:media-cors` once per bucket. It puts the upload CORS
-  rule on the bucket `ACME_S3_*` names, for `PUBLIC_URL` and
+  `bun nx run peal-server:media-cors` once per bucket. It puts the upload CORS
+  rule on the bucket `PEAL_S3_*` names, for `PUBLIC_URL` and
   `TRUSTED_ORIGINS`, keeps the bucket's other rules, and changes nothing when
   run again.
 - Server tests run against the Postgres that `DATABASE_URL` names, and write to
   it. With the stack up, use
-  `DATABASE_URL=postgres://acme:acme@127.0.0.1:15432/acme`. They read the
+  `DATABASE_URL=postgres://peal:peal@127.0.0.1:15432/peal`. They read the
   emails they send from the stack's Mailpit (`SMTP_URL` and `MAILPIT_URL`
   override it), store media in its SeaweedFS under `tests/media/`
-  (`ACME_S3_*` override it), and call its stripe-mock (`STRIPE_MOCK_URL`
+  (`PEAL_S3_*` override it), and call its stripe-mock (`STRIPE_MOCK_URL`
   overrides it). CI runs its own Postgres, Mailpit and stripe-mock, pinned
   by digest, and starts SeaweedFS from `compose.yaml`.
 - Tests that share a database with a running dev server share its jobs: leave
   no post scheduled or job waiting when a test ends, or the dev server runs
-  it. Give each run its own database or `ACME_S3_KEY_PREFIX` when several run
+  it. Give each run its own database or `PEAL_S3_KEY_PREFIX` when several run
   at once.
 - To run a second stack beside another, set `COMPOSE_PROJECT_NAME` and the
-  `ACME_*_PORT` overrides listed in `packages/acme-docker/.env.example`.
-- In `packages/acme-docker/compose.yaml`, pin every image (image mounts
+  `PEAL_*_PORT` overrides listed in `packages/peal-docker/.env.example`.
+- In `packages/peal-docker/compose.yaml`, pin every image (image mounts
   included) to an exact version, publish ports on 127.0.0.1 only, give every
   service a health check, and use synthetic credentials.
-  `packages/acme-docker/test/compose.test.ts` enforces these rules, and checks
+  `packages/peal-docker/test/compose.test.ts` enforces these rules, and checks
   that the server image uses the Bun in `.bun-version`, runs as nonroot, ships
   ffprobe, and pins every image it builds on or copies from by digest.
 - `compose.production.yaml` follows the same rules, pins every image it pulls
   by digest at the version `compose.yaml` runs, gives every service
   `restart: unless-stopped` and the server `stop_grace_period: 75s`, and tags
-  the images it builds `${ACME_VERSION:-local}` (`ACME_POSTGRES_VERSION` for
+  the images it builds `${PEAL_VERSION:-local}` (`PEAL_POSTGRES_VERSION` for
   Postgres). It passes optional settings through by name (`NAME:` with no
   value), so one that is unset stays unset rather than empty, which the
   server would read as set, and names every server setting the docs'
@@ -155,7 +155,7 @@ and Next.js ships its docs in `packages/acme-web/node_modules/next/dist/docs`.
 ## Server architecture
 
 The server follows DDD and Clean Architecture. Each bounded context in
-`packages/acme-server/src/` has four layers, plus a `container.ts` that wires
+`packages/peal-server/src/` has four layers, plus a `container.ts` that wires
 them:
 
 | Context         | Holds                                                                       |
@@ -177,7 +177,7 @@ them:
   Imports its context's domain and the shared kernel.
 - `infrastructure`: adapters behind the ports: Drizzle repositories, Better
   Auth, platform clients, workflows, crons and activities, storage, mail.
-- `api`: `HttpApiBuilder` handlers for `acme-contract` groups. They get use
+- `api`: `HttpApiBuilder` handlers for `peal-contract` groups. They get use
   cases from the context's `container.ts`, never from infrastructure.
 
 `src/app/` is the composition root (`server.ts`, `cluster.ts`, `crons.ts`, the
@@ -187,7 +187,7 @@ the HTTP server and the workers; `AppLive` is the routes with their services
 and no socket, for tests.
 
 - Folders import each other through `#<context>/<layer>/…` (package.json
-  `imports`); `../` imports are refused. `packages/acme-server/oxlint.config.ts`
+  `imports`); `../` imports are refused. `packages/peal-server/oxlint.config.ts`
   enforces the layer rules. Never loosen a rule to make an import pass; move
   the code. A new context goes into that file's `contexts` list.
 - Contexts talk through ports: an adapter in one context may call another
@@ -237,13 +237,13 @@ and no socket, for tests.
 
 - Every route the server answers starts with `/api`, apart from `/openapi.json`
   and the OAuth discovery documents under `/.well-known/oauth-*`. The web app
-  forwards `/api/*` and `/.well-known/oauth-*` unchanged, so Acme has one
+  forwards `/api/*` and `/.well-known/oauth-*` unchanged, so Peal has one
   public origin; `/openapi.json` is reachable on the server only.
 - `GET /api/health` is liveness: keep it free of the database.
   `GET /api/ready` is readiness: `SELECT 1` within 2 seconds, otherwise
   `DatabaseUnavailable` (503).
 - `Authentication` tries a bearer token (an OAuth access token issued for
-  `PUBLIC_URL/api`, or a workspace API key starting with `acme_`), then the
+  `PUBLIC_URL/api`, or a workspace API key starting with `peal_`), then the
   session cookie, and provides `CurrentPrincipal`. A cookie request that
   changes something needs an `Origin` of `PUBLIC_URL` or `TRUSTED_ORIGINS`,
   and reads the session fresh from the database.
@@ -262,8 +262,8 @@ and no socket, for tests.
   deleting a workspace answer only the person in their own session:
   `ownSession` (`workspace/domain/own-session.ts`) refuses OAuth tokens and
   staff impersonating them too. The export and the list of connected
-  applications also answer Acme's command line (`ownSessionOrCommandLine`:
-  the `acme-cli` client, its token bound to no workspace), which saves them
+  applications also answer Peal's command line (`ownSessionOrCommandLine`:
+  the `peal-cli` client, its token bound to no workspace), which saves them
   in the user's files; no MCP tool hands them out, as an MCP client passes
   what it reads to an AI model.
 - Handlers turn `CurrentMember` into an `Actor` with `actorOf`
@@ -286,14 +286,14 @@ and no socket, for tests.
   reads the body with a 16 KiB limit before it is decoded; the handler
   replaces addresses, ids, keys, tokens and the queries of the links they
   quote, drops control characters, logs at error level with OpenTelemetry's
-  attribute names (`event.name` `acme.client_error`) and counts in
-  `acme.client_errors`. Never log more of a report than its schema holds.
+  attribute names (`event.name` `peal.client_error`) and counts in
+  `peal.client_errors`. Never log more of a report than its schema holds.
 - Handler tests through `HttpApiTest.groups` provide `securityTest(member)`,
   `anonymousSecurityTest` or `staffSecurityTest(userId)` from
   `#workspace/api/security.ts`: `HttpApiTest` serves every group, so each
   provides every middleware (nobody is staff in the first two, and the
   error report intake lets everything through). The CLI's in-memory test
-  server (`packages/acme-cli/test/support.ts`) serves every contract group:
+  server (`packages/peal-cli/test/support.ts`) serves every contract group:
   add new endpoints there too.
 
 ### Accounts and access (workspace)
@@ -346,7 +346,7 @@ and no socket, for tests.
   that changes a workspace or the account (name, language, password,
   sessions), grants an OAuth client access or approves a device code
   (`impersonation.ts`).
-- Workspaces and accounts are deleted through Acme's API only
+- Workspaces and accounts are deleted through Peal's API only
   (`DeleteWorkspace`, `CloseAccount`): Better Auth's `/organization/delete`
   and the admin plugin's `/admin/remove-user` are disabled and its
   `/delete-user` stays off, as they would leave the other contexts' data.
@@ -404,7 +404,7 @@ and no socket, for tests.
   password three times within 10 seconds per account at most, as Better
   Auth's own routes do.
 - Better Auth is also the OAuth authorization server for the CLI (device
-  grant, the `acme-cli` public client registered at startup) and MCP clients
+  grant, the `peal-cli` public client registered at startup) and MCP clients
   (authorization code with PKCE, and dynamic registration when
   `MCP_DYNAMIC_REGISTRATION=true`). Access tokens are JWTs that last 15
   minutes and are checked locally; refresh tokens rotate, and one sent again
@@ -418,7 +418,7 @@ and no socket, for tests.
   endpoint refuses every request, and startup logs a warning.
 - Better Auth's tables live in the Postgres schema `auth`, in
   `src/workspace/infrastructure/auth-schema.generated.ts`, which
-  `nx run acme-server:auth-schema` writes from the real options. Rerun it after
+  `nx run peal-server:auth-schema` writes from the real options. Rerun it after
   changing those options or upgrading Better Auth, then `db:generate`.
   `auth-schema-check`, a dependency of the server's tests, fails when the file
   is stale.
@@ -426,7 +426,7 @@ and no socket, for tests.
 ### Channels
 
 - Channel tokens are encrypted with AES-256-GCM through `Aead`: a keyring read
-  with `Config.Redacted("ACME_TOKEN_KEYS")` (comma-separated `keyId:base64key`
+  with `Config.Redacted("PEAL_TOKEN_KEYS")` (comma-separated `keyId:base64key`
   entries; the first encrypts, all decrypt), a random IV per value, stored as
   `<keyId>.<iv>.<ciphertext>`, and the channel id as additional authenticated
   data. `encryptSecret` and `decryptSecret` bind other secrets to
@@ -509,7 +509,7 @@ and no socket, for tests.
   off past 1 MiB, 20-second timeout, no trace context. Tests swap the
   `OutboundGuard` for an open one only to reach loopback fakes.
 - The AT Protocol OAuth client runs on Bun only with the handle resolver built
-  on Acme's guarded fetch; its default one needs Node's undici.
+  on Peal's guarded fetch; its default one needs Node's undici.
 - Refresh a channel's tokens only inside `ChannelLocks.withLock` (Postgres
   advisory locks). A process holds at most four at once, each on a pool
   connection, so never nest `withLock`. Bluesky and X refresh tokens work
@@ -564,7 +564,7 @@ and no socket, for tests.
   repost's rate-limit deadline counts from the repost. `confirm` records
   what a member found for an unconfirmed target and revises the outcome.
   Both call `PublicationOutcomes.resolved`.
-- Refusals Acme makes itself, before any platform call (a channel
+- Refusals Peal makes itself, before any platform call (a channel
   disconnected or turned off, media deleted), carry the codes of
   `#publishing/domain/own-refusals.ts`; the policy maps them to their own
   failure reasons (`failureReasonOf`). Add a reason to the domain, the
@@ -669,7 +669,7 @@ and no socket, for tests.
 - A post's text and media are checked against each platform with
   `#publishing/domain/text-length.ts`, `content-rules.ts` and
   `platform-rules.ts` when it is scheduled, never while it is a draft.
-  `acme-contract/post-text` is the clients' copy, kept equal by
+  `peal-contract/post-text` is the clients' copy, kept equal by
   `test/publishing/api/contract.test.ts`: change both together. Compare video
   durations in whole milliseconds, as the media API shows them.
 - A post's target carries options only its channel's platform knows
@@ -681,7 +681,7 @@ and no socket, for tests.
   draft holds them unfinished, a `platform: Schema.tag(...)`, and a
   `problems()` method listing what the platform would refuse (`missing`,
   `tooLong`, `invalid`, by field). Adding a platform's options is adding its
-  class to that union, its copy to `acme-contract/src/target-options.ts`
+  class to that union, its copy to `peal-contract/src/target-options.ts`
   (kept equal by `test/publishing/api/contract.test.ts`), its fields to the
   web app's `#posts/target-options.ts`, and their strings to the
   `Posts.Options` catalogues. Drafts refuse only options of another platform
@@ -717,7 +717,7 @@ and no socket, for tests.
   QuickTime videos up to 1 GiB (`media/domain/media-format.ts`). Publishing
   checks per-platform limits when a post is scheduled.
 - Storage keys are `media/<workspace id>/<asset id>.<ext>` under
-  `ACME_S3_KEY_PREFIX`, and never change. Keep presigned URLs out of logs and
+  `PEAL_S3_KEY_PREFIX`, and never change. Keep presigned URLs out of logs and
   errors.
 - The S3 adapter uses the AWS SDK v3 (Bun's client cannot presign parts).
   Keep its checksums at `WHEN_REQUIRED`: the default puts an empty-body CRC32
@@ -783,7 +783,7 @@ and no socket, for tests.
   `WritingModel` port: Anthropic (`@effect/ai-anthropic`) or any
   OpenAI-compatible endpoint that serves `/chat/completions`
   (`@effect/ai-openai-compat`: `@effect/ai-openai` calls `/responses`
-  only), as `ACME_AI_PROVIDER` says. It calls the provider directly, not
+  only), as `PEAL_AI_PROVIDER` says. It calls the provider directly, not
   through the outbound guard: the operator, not a member, names it. Unset,
   `UnavailableWritingModelLive` turns it off, and the status answers
   `available: false`.
@@ -805,7 +805,7 @@ and no socket, for tests.
   actor's workspace only.
 - The quota is per workspace and UTC day: `AssistantAllowance` gives the
   limit (the workspace plan's on a server that bills, otherwise
-  `ACME_AI_DAILY_REQUESTS`, 100), and `AssistantUsage.claim` counts a request in one conditional
+  `PEAL_AI_DAILY_REQUESTS`, 100), and `AssistantUsage.claim` counts a request in one conditional
   upsert before the call, so requests sent together never pass it. Give a
   request back only when the provider never ran it (`unreachable`); a
   timeout, a refusal or an unusable answer counts.
@@ -822,7 +822,7 @@ and no socket, for tests.
 - Billing is on when `STRIPE_SECRET_KEY` is set
   (`#shared/infrastructure/stripe-settings.ts`, read by the billing context
   and by Better Auth). Off, every workspace is `unmetered`: no plan, no
-  limit, and the assistant keeps `ACME_AI_DAILY_REQUESTS`. Keep it so: a
+  limit, and the assistant keeps `PEAL_AI_DAILY_REQUESTS`. Keep it so: a
   self-hosted server limits nothing.
 - Plans are `billing/domain/plans.ts`; their ids (`#shared/domain/plan.ts`),
   the limits' names (`plan-limit.ts`), `PlanLimitReached` and
@@ -859,7 +859,7 @@ and no socket, for tests.
   when `STRIPE_AUTOMATIC_TAX` is on. A workspace Stripe may still bill
   (`billsAt`: any status but cancelled or incomplete, unpaid and paused
   included, in `billing.subscriptions` or the plugin's `auth.subscription`)
-  is not deleted: Acme's own deletions ask `BillingRecords` first (see
+  is not deleted: Peal's own deletions ask `BillingRecords` first (see
   Accounts and access), which also expires its open checkouts. Better
   Auth's `/organization/delete` is disabled, so its hook refuses nothing.
 - Never call Stripe in tests: checkout and the portal run against
@@ -946,16 +946,16 @@ and no socket, for tests.
   Tools answer with the views the API handlers answer
   (`#<context>/api/*-view.ts`). Each area has its toolkit (`posts-tools.ts`,
   `reports-tools.ts`, `people-tools.ts`) and its handlers beside it, merged
-  into `AcmeTools`. Annotate every tool with `reading`, or
+  into `PealTools`. Annotate every tool with `reading`, or
   `changing({ destructive, idempotent, openWorld })` from `annotations.ts`,
   and say in its description what it changes. Refusals are `ToolRefused`,
   with a message the user can act on (`refusals.ts`). The account's own
   data (its export, its applications) has no tool.
 - What the web app's composer sends, the CLI and the tools send too: a
-  draft's per-channel `options` (`create_draft`, `update_draft`, `acme
+  draft's per-channel `options` (`create_draft`, `update_draft`, `peal
   drafts save --options`), and TikTok's creator before a TikTok post
-  (`get_tiktok_creator`, `acme channels tiktok`). The API's update replaces
-  a draft's options; `update_draft` and `acme drafts save` keep those of the
+  (`get_tiktok_creator`, `peal channels tiktok`). The API's update replaces
+  a draft's options; `update_draft` and `peal drafts save` keep those of the
   channels it keeps unless told otherwise, so a rewrite never drops them.
   Every failure reason has its words in the CLI (`posts.ts`
   `failureReasons`, typed by the contract) and in `get_post`'s
@@ -975,11 +975,11 @@ and no socket, for tests.
   Auth's, in `auth`). Effect creates its `cluster_*` tables in `public`; drizzle-kit
   never manages them.
 - Declare a context's tables in `src/<context>/infrastructure/schema.ts`, then
-  run `nx run acme-server:db:generate`, which writes a migration folder under
-  `packages/acme-server/drizzle/`. Commit the folder as drizzle-kit wrote it;
+  run `nx run peal-server:db:generate`, which writes a migration folder under
+  `packages/peal-server/drizzle/`. Commit the folder as drizzle-kit wrote it;
   never edit a migration that has shipped.
 - The server applies pending migrations before it listens, under an advisory
-  lock, so servers starting together take turns. `nx run acme-server:db:migrate`
+  lock, so servers starting together take turns. `nx run peal-server:db:migrate`
   applies them without starting the server.
 
 ## Self-hosting
@@ -993,7 +993,7 @@ self-hoster needs only Postgres and an S3-compatible store:
 - billing: Stripe, off when no key is set (no plan limits);
 - captcha: Turnstile, off when no key is set;
 - AI: an Anthropic key, or any OpenAI-compatible endpoint that serves
-  `/chat/completions`; the writing assistant is off until `ACME_AI_PROVIDER`
+  `/chat/completions`; the writing assistant is off until `PEAL_AI_PROVIDER`
   is set;
 - telemetry: OTLP export of logs, metrics and traces only when
   `OTEL_EXPORTER_OTLP_ENDPOINT` is set (`src/app/observability.ts` defaults
@@ -1011,17 +1011,17 @@ self-hoster needs only Postgres and an S3-compatible store:
 
 ## Web front
 
-- Build screens from `acme-ui` components and Tailwind classes; add no other
+- Build screens from `peal-ui` components and Tailwind classes; add no other
   stylesheet.
 - Add a shadcn component by running `bunx shadcn add <name>` in
-  `packages/acme-ui`, which reads its `components.json`. Point the component's
+  `packages/peal-ui`, which reads its `components.json`. Point the component's
   `cn` import (the CLI writes `"cn"`) at `../lib/utils` and its sibling imports
   at `./`, rewrite function components as arrow functions, take every
   user-facing string (labels such as a dialog's close button) as a prop, then
   run `bun run fix`.
 - Use theme tokens (`text-muted-foreground`, not `text-gray-500`) and
   component variants and sizes rather than restyling a component; the
-  `@shadcn/lint` rules check pages against acme-ui. Dark mode follows the
+  `@shadcn/lint` rules check pages against peal-ui. Dark mode follows the
   operating system (`prefers-color-scheme`).
 - Pages live under `src/app/[locale]/`: the auth pages (`sign-up`, `sign-in`,
   `verify-email`, `forgot-password`, `reset-password`, `invitations/[id]`),
@@ -1049,11 +1049,11 @@ self-hoster needs only Postgres and an S3-compatible store:
   Build reports with `reportOf` (`#errors/report.ts`), which cuts each field
   to the contract's limits and keeps no query, id or address; browsers send
   them without cookies, each error once, ten a page at most. The release
-  comes from `ACME_RELEASE`, through the locale layout's `acme-release`
+  comes from `PEAL_RELEASE`, through the locale layout's `peal-release`
   meta tag.
-- Pages fetch through the client derived from `acme-contract`, with
-  `@effect/atom-react`: query atoms come from `AcmeApi` in `src/api/client.ts`.
-  Browsers call `/api`; server code calls `ACME_API_URL`.
+- Pages fetch through the client derived from `peal-contract`, with
+  `@effect/atom-react`: query atoms come from `PealApi` in `src/api/client.ts`.
+  Browsers call `/api`; server code calls `PEAL_API_URL`.
 - Server Components read the signed-in user with `currentUser()` from
   `#auth/session.ts` (GET /api/me with the request's cookies, once per
   request); the header uses `currentUserOrNone()`, so pages stay up when the
@@ -1080,7 +1080,7 @@ self-hoster needs only Postgres and an S3-compatible store:
   active workspace, go through `workspaceClient`. Better Auth error codes map
   to `Auth.errors` in the catalogues.
 - Keep the OAuth pages' views (`WorkspacePickerView`) apart from their state,
-  so tests render each state: acme-web has no DOM test environment. A view
+  so tests render each state: peal-web has no DOM test environment. A view
   under test imports nothing from `#i18n/navigation.ts`, which needs Next to
   run: take links as props or children (`DraftItemView`,
   `MediaUsageNotice`).
@@ -1116,7 +1116,7 @@ self-hoster needs only Postgres and an S3-compatible store:
   nothing would be refused. Keep `MediaUploader` mounted while the post is
   editable and pass `disabled` while it is busy: unmounting it cancels the
   uploads in flight.
-- Charts use acme-ui's `chart` (recharts) and come with the same figures as
+- Charts use peal-ui's `chart` (recharts) and come with the same figures as
   a table, behind **Chart** and **Table** tabs; the chart itself is
   `aria-hidden`. Write calendar days, such as a summary's, in UTC
   (`#analytics/report.ts` `dayDate`), and instants in the reader's zone.
@@ -1136,7 +1136,7 @@ self-hoster needs only Postgres and an S3-compatible store:
   the widget only with one, sends its token as `x-captcha-response`, and
   resets it after every call, since a token works once.
 - `src/proxy.ts` rewrites `/api/*` and `/.well-known/oauth-*` to
-  `ACME_API_URL`, read per request. Keep it there, not in `next.config.ts`:
+  `PEAL_API_URL`, read per request. Keep it there, not in `next.config.ts`:
   Next resolves config rewrites at build time and writes the URL into the
   build.
 - `next dev` serves its scripts only to `localhost`: open the app at
@@ -1150,21 +1150,21 @@ self-hoster needs only Postgres and an S3-compatible store:
   building sentences in code.
 - English has no prefix (`/`) and French is under `/fr`. Navigate with the
   helpers in `src/i18n/navigation.ts`, not `next/link`.
-- Folders in `acme-web` import each other through `#…` (package.json
+- Folders in `peal-web` import each other through `#…` (package.json
   `imports`); `#messages/*` points at the catalogues.
 
 ## Command line
 
-- `acme-cli` reaches the server only over HTTP, through `AcmeApi`
-  (`src/api.ts`), the client derived from `acme-contract`, and `OAuthApi` for
-  Better Auth's endpoints. Its oxlint config refuses `acme-server` imports,
+- `peal-cli` reaches the server only over HTTP, through `PealApi`
+  (`src/api.ts`), the client derived from `peal-contract`, and `OAuthApi` for
+  Better Auth's endpoints. Its oxlint config refuses `peal-server` imports,
   and `@effect/platform-bun` outside `src/main.ts`.
-- The API URL comes from `--api-url`, then `ACME_API_URL`, then
+- The API URL comes from `--api-url`, then `PEAL_API_URL`, then
   `http://localhost:3000`.
-- `acme login` signs in with the device grant; `whoami`, `logout`, `mcp` and
+- `peal login` signs in with the device grant; `whoami`, `logout`, `mcp` and
   `health` are the other commands, with `channels`, `drafts`, `posts`,
   `analytics`, `billing`, `members` and `invitations`, which act in the
-  workspace `--workspace`, then `ACME_WORKSPACE`, names by slug or id
+  workspace `--workspace`, then `PEAL_WORKSPACE`, names by slug or id
   (`inWorkspace`, `src/workspace.ts`; a user's only workspace otherwise),
   and `account`, which exports the user's data to a file only they may read
   and lists their connected applications (an exclusive create, never
@@ -1188,17 +1188,17 @@ self-hoster needs only Postgres and an S3-compatible store:
 ## End-to-end tests
 
 - Run them with the development stack up and a database of their own:
-  `DATABASE_URL=postgres://acme:acme@127.0.0.1:15432/acme_e2e bun nx run acme-e2e:e2e`.
+  `DATABASE_URL=postgres://peal:peal@127.0.0.1:15432/peal_e2e bun nx run peal-e2e:e2e`.
   The target builds the web app first and is never cached. Like the
   server's tests, a run writes to the database `DATABASE_URL` names; Mailpit,
   SMTP and SeaweedFS (under `e2e/`) default to the stack, and `MAILPIT_URL`,
-  `SMTP_URL` and `ACME_S3_*` override them.
+  `SMTP_URL` and `PEAL_S3_*` override them.
 - `scripts/serve.ts` starts the server and `next start` on free ports, with
   the synthetic secrets in `e2e.config.ts`, and stops both when either exits.
   It passes `next start` no `--hostname`: bound to 127.0.0.1, every page
   redirects to itself.
 - Install Chromium with `e2e-web install chromium`, from
-  `packages/acme-e2e/node_modules/.bin`; CI adds `--with-deps` for the
+  `packages/peal-e2e/node_modules/.bin`; CI adds `--with-deps` for the
   system libraries it needs.
 - Write steps with exact locators (`screen`, `expect`) only, so tests need no
   model and run in CI. Find elements by role and label, and scope to `main`,
@@ -1215,55 +1215,55 @@ self-hoster needs only Postgres and an S3-compatible store:
   post a test schedules, through the UI.
 - CI's `e2e` job runs after `verify`, with its own Postgres and Mailpit and
   SeaweedFS from `compose.yaml`. After a failure, read the report, traces and
-  screenshots under `packages/acme-e2e/.e2e/` (CI uploads it for 7 days), and
+  screenshots under `packages/peal-e2e/.e2e/` (CI uploads it for 7 days), and
   the server's and the web app's output in `.e2e/logs/app.log`.
 
 ## Docs and marketing site
 
-- Docs pages live in `packages/acme-docs/docs/`: English at the root, French in
+- Docs pages live in `packages/peal-docs/docs/`: English at the root, French in
   `docs/fr/` under the same file names. Pin each heading's anchor with `[#id]`
   so links work in both languages, and order pages with `sidebar.order`.
-- Every docs target depends on `acme-contract:openapi`, so the reference
-  matches the contract. `nx run acme-docs:test` runs `blume validate --strict`.
+- Every docs target depends on `peal-contract:openapi`, so the reference
+  matches the contract. `nx run peal-docs:test` runs `blume validate --strict`.
 - Do not run `blume build` or `blume check` while `blume dev` runs in the same
   package: they share the generated runtime in `.blume/` (typecheck uses
   `--isolated` for that reason). Leave Blume's own TypeScript 6 alone.
-- Site strings live in `packages/acme-site/src/i18n/messages.ts`, legal
+- Site strings live in `packages/peal-site/src/i18n/messages.ts`, legal
   documents in `src/content/legal/<locale>/<document>.md`. Keep a legal
   document `draft: true` (banner and noindex) until legal review approves it,
   and never replace a [bracketed placeholder] with a guess.
 - TypeScript 7 does not read `.astro` files, and `astro check` refuses it: keep
   page logic in typed `.ts` modules and `.astro` files thin. Name files in
   kebab-case.
-- `nx run acme-docs:build` and `nx run acme-site:build` write each package's
+- `nx run peal-docs:build` and `nx run peal-site:build` write each package's
   `dist/`, cached. Their settings are optional, and unset or empty turns the
   feature off: docs `DOCS_SITE_URL`, `DOCS_PLAUSIBLE_DOMAIN`,
   `DOCS_PLAUSIBLE_HOST`; site `SITE_URL`, `SITE_DOCS_URL`,
   `SITE_PLAUSIBLE_DOMAIN`, `SITE_PLAUSIBLE_HOST`. Nx hashes them from the
   process environment only, not `.env` files: export them, or build with
   `--skip-nx-cache`.
-- Run the site with `nx run acme-site:dev`: it sets `ASTRO_DEV_BACKGROUND=0`,
+- Run the site with `nx run peal-site:dev`: it sets `ASTRO_DEV_BACKGROUND=0`,
   because Astro otherwise detaches `astro dev` when an agent runs it.
 
 ## Environments
 
-- `dev`: local, with the compose stack from `acme-docker`.
+- `dev`: local, with the compose stack from `peal-docker`.
 - `sandbox`: pre-production, with its own database, R2 bucket, Stripe sandbox
   and platform redirect URIs.
 - `production`.
 
 ## Infrastructure
 
-- Production runs on a Hetzner server managed with Ansible from `acme-infra`,
+- Production runs on a Hetzner server managed with Ansible from `peal-infra`,
   reachable only through a Cloudflare Tunnel: no inbound ports, SSH included.
   Cloudflare Zero Trust Access guards Grafana, the admin (`/api/auth/admin`,
   the staff console's `/api/admin`, `/admin`, `/en/admin` and `/fr/admin`) and the
   sandbox, and cloudflared checks the Access token on those routes too. Caddy fronts the
   stack for self-hosters.
-- Change the servers only through the playbooks in `packages/acme-infra`; SSH
-  is for reading (`sudo acme-compose ps`). Run `site.yml` with `--check
+- Change the servers only through the playbooks in `packages/peal-infra`; SSH
+  is for reading (`sudo peal-compose ps`). Run `site.yml` with `--check
   --diff` before applying it, and keep every task idempotent: a second run
-  reports no change. The inventory holds placeholders that `acme_preflight`
+  reports no change. The inventory holds placeholders that `peal_preflight`
   refuses; nothing has been applied yet.
 - Keep check mode working on a new server: a task that needs what an earlier
   one would make (a folder, a package, a unit) skips in check mode when that
@@ -1276,7 +1276,7 @@ self-hoster needs only Postgres and an S3-compatible store:
   and Grafana; alerts go to a Telegram bot. Grafana's alert rules
   (`config/production/grafana/alerting/rules.yaml`) and dashboards
   (`config/production/grafana/dashboards/`) are provisioned from
-  `acme-docker`; the web app's error reports have an alert and a dashboard
+  `peal-docker`; the web app's error reports have an alert and a dashboard
   of their own, and the server's error-log alert leaves them out. The
   heartbeat rule (`alerting/heartbeat.yaml`) is apart: it always fires, to
   its own contact point, never to Telegram.
@@ -1286,7 +1286,7 @@ self-hoster needs only Postgres and an S3-compatible store:
   Telegram bot of its own; Caddy is its only public entry, for the heartbeat
   production's Grafana posts every few minutes. It shares no secret, tunnel
   or network with them: it generates the heartbeat token, which production
-  holds as a credential (`ACME_HEARTBEAT_TOKEN`). Keep `uptime_environments`
+  holds as a credential (`PEAL_HEARTBEAT_TOKEN`). Keep `uptime_environments`
   equal to each environment's host names; Gatus's dashboard stays on
   127.0.0.1, and a public status page is the owner's decision.
 - Secrets are generated on the server and stay there. Do not copy them, print

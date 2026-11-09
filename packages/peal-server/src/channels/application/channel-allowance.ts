@@ -16,4 +16,4 @@ export class ChannelAllowance extends Context.Service<
       workspaceId: WorkspaceId
     ) => Effect.Effect<Allowance, DatabaseError>;
   }
->()("acme-server/channels/application/ChannelAllowance") {}
+>()("peal-server/channels/application/ChannelAllowance") {}

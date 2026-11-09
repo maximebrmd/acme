@@ -11,7 +11,7 @@ import type { ReaderStanding } from "./reader-standing.ts";
 
 /**
  * Finds the user whose notices and preferences a reader acts on: if the
- * reader may, and the user may still use Acme.
+ * reader may, and the user may still use Peal.
  */
 export const inboxOwner = (standing: ReaderStanding["Service"]) =>
   Effect.fn("Notifications.inboxOwner")(function* findOwner(

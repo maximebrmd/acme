@@ -1,5 +1,5 @@
 import { describe, expect, it } from "@effect/vitest";
-import { StaffActionRefused, UserNotFound } from "acme-contract";
+import { StaffActionRefused, UserNotFound } from "peal-contract";
 import { Exit } from "effect";
 import { HttpApiError } from "effect/http-api";
 

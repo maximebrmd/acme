@@ -1,6 +1,6 @@
 import { Schema } from "effect";
 
-// Every entity id Acme issues is a UUIDv7 in canonical lowercase form: unique
+// Every entity id Peal issues is a UUIDv7 in canonical lowercase form: unique
 // without coordination, and ordered by creation time so primary keys stay
 // index-friendly. Ids come from the `Ids` port, never from `crypto` directly.
 export const Uuid7Schema = Schema.String.check(

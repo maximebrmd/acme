@@ -1,5 +1,5 @@
 import { describe, expect, it } from "@effect/vitest";
-import type { ClientErrorReport } from "acme-contract";
+import type { ClientErrorReport } from "peal-contract";
 
 import { makeReporter, maxReportsPerPage } from "#errors/reporter.ts";
 

@@ -11,7 +11,7 @@ import type {
   JsonValue,
 } from "./fake-http-server.ts";
 
-/** Acme's synthetic Google OAuth client. */
+/** Peal's synthetic Google OAuth client. */
 export const googleClient = {
   clientId: "1234-synthetic.apps.googleusercontent.example",
   clientSecret: "synthetic-google-secret",
@@ -25,18 +25,18 @@ const readonly = "https://www.googleapis.com/auth/youtube.readonly";
 export const youtubeChannel = {
   id: "UCsyntheticChannel000001",
   snippet: {
-    customUrl: "@acmeexample",
+    customUrl: "@pealexample",
     thumbnails: {
       default: { url: "https://yt3.ggpht.example/synthetic-avatar=s88" },
     },
-    title: "Acme Example",
+    title: "Peal Example",
   },
 } as const;
 
 /** A second synthetic channel, for a sign-in that reaches two. */
 export const otherYouTubeChannel = {
   id: "UCsyntheticChannel000002",
-  snippet: { title: "Acme Example Clips" },
+  snippet: { title: "Peal Example Clips" },
 } as const;
 
 interface PendingCode {

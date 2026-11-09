@@ -16,4 +16,4 @@ export class PlatformLimits extends Context.Service<
       platform: Platform
     ) => Effect.Effect<readonly TextLimit[]>;
   }
->()("acme-server/assistant/application/PlatformLimits") {}
+>()("peal-server/assistant/application/PlatformLimits") {}

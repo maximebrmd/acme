@@ -65,7 +65,7 @@ export class Notify extends Context.Service<
      */
     readonly resolve: (key: string) => Effect.Effect<void, DatabaseError>;
   }
->()("acme-server/notifications/application/Notify") {
+>()("peal-server/notifications/application/Notify") {
   static readonly layer = Layer.effect(
     Notify,
     Effect.gen(function* NotifyLive() {

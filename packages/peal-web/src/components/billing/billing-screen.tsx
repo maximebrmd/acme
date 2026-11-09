@@ -1,10 +1,10 @@
 "use client";
 
 import { useAtomRefresh, useAtomValue } from "@effect/atom-react";
-import type { PaidPlan } from "acme-contract";
-import { Alert, AlertDescription } from "acme-ui/components/alert";
-import { Button } from "acme-ui/components/button";
-import { Skeleton } from "acme-ui/components/skeleton";
+import type { PaidPlan } from "peal-contract";
+import { Alert, AlertDescription } from "peal-ui/components/alert";
+import { Button } from "peal-ui/components/button";
+import { Skeleton } from "peal-ui/components/skeleton";
 import { Option, Schema } from "effect";
 import { AsyncResult } from "effect/reactivity";
 import { useLocale, useTranslations } from "next-intl";

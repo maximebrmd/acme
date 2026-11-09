@@ -1,12 +1,12 @@
 import { describe, expect, it } from "@effect/vitest";
-import type { Channel, Post } from "acme-contract";
+import type { Channel, Post } from "peal-contract";
 
 import { connectedTargets } from "#posts/channel-selection.ts";
 
 const channel = (id: string): Channel => ({
   avatarUrl: null,
   displayName: null,
-  handle: `@acme_${id}`,
+  handle: `@peal_${id}`,
   id,
   platform: "mastodon",
   status: { _tag: "active" },

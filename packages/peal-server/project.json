@@ -1,6 +1,6 @@
 {
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
-  "name": "acme-server",
+  "name": "peal-server",
   "projectType": "application",
   "targets": {
     "typecheck": {

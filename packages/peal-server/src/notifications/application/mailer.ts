@@ -17,7 +17,7 @@ export interface EmailMessage {
 }
 
 /**
- * Sends email from Acme's address: through Resend's API, or any SMTP server
+ * Sends email from Peal's address: through Resend's API, or any SMTP server
  * (Mailpit in development).
  */
 export class Mailer extends Context.Service<
@@ -27,4 +27,4 @@ export class Mailer extends Context.Service<
       message: EmailMessage
     ) => Effect.Effect<void, MailDeliveryFailed>;
   }
->()("acme-server/notifications/application/Mailer") {}
+>()("peal-server/notifications/application/Mailer") {}

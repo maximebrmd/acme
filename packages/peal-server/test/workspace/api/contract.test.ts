@@ -9,7 +9,7 @@ import {
   RejectionReasonSchema,
   RoleSchema,
   WorkspaceAccess,
-} from "acme-contract";
+} from "peal-contract";
 import { HttpApi } from "effect/http-api";
 
 import { PlatformSchema as DomainPlatformSchema } from "#channels/domain/platform.ts";

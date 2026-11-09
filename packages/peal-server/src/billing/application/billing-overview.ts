@@ -40,7 +40,7 @@ export class BillingOverview extends Context.Service<
       actor: Actor
     ) => Effect.Effect<Overview, DatabaseError | MissingPermission>;
   }
->()("acme-server/billing/application/BillingOverview") {
+>()("peal-server/billing/application/BillingOverview") {
   static readonly layer = Layer.effect(
     BillingOverview,
     Effect.gen(function* BillingOverviewLive() {

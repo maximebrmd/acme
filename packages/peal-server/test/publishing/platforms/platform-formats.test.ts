@@ -86,7 +86,7 @@ describe("X's text, as it shows it back", () => {
   it("matches the text sent despite its short links and entities", () => {
     expect(
       isSameText(
-        "Read https://acme.example/launch & share <3",
+        "Read https://peal.example/launch & share <3",
         "Read https://t.co/aBcDeF1234 &amp; share &lt;3 https://t.co/MeDiA56789"
       )
     ).toBeTruthy();
@@ -97,17 +97,17 @@ describe("X's text, as it shows it back", () => {
   });
 
   it("takes a post for the one sent only when it links to the same places", () => {
-    const sent = "Read (https://Acme.example) and www.acme.example/two.";
+    const sent = "Read (https://Peal.example) and www.peal.example/two.";
 
     expect(
       isSamePost(sent, {
-        linksTo: ["https://acme.example/", "http://www.acme.example/two"],
+        linksTo: ["https://peal.example/", "http://www.peal.example/two"],
         text: "Read (https://t.co/a) and https://t.co/b.",
       })
     ).toBeTruthy();
     expect(
       isSamePost(sent, {
-        linksTo: ["https://acme.example/", "http://www.acme.example/one"],
+        linksTo: ["https://peal.example/", "http://www.peal.example/one"],
         text: "Read (https://t.co/a) and https://t.co/b.",
       })
     ).toBeFalsy();

@@ -54,7 +54,7 @@ const WithoutFfprobeTest = LibraryTest.pipe(
   Layer.provide(
     ConfigProvider.layerAdd(
       ConfigProvider.fromUnknown({
-        ACME_FFPROBE_PATH: "/nonexistent/acme-test/ffprobe",
+        PEAL_FFPROBE_PATH: "/nonexistent/peal-test/ffprobe",
       })
     )
   )

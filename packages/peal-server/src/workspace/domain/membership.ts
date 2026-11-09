@@ -25,7 +25,7 @@ export type Membership = typeof MembershipSchema.Type;
 /**
  * What staff impersonating a member may not do in the member's name: publish,
  * connect accounts, change billing, handle API keys or delete the workspace,
- * which all outlive the impersonation or reach outside Acme.
+ * which all outlive the impersonation or reach outside Peal.
  */
 export const withheldWhileImpersonating: ReadonlySet<Permission> = new Set([
   "apiKey:create",

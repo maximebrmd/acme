@@ -2,9 +2,9 @@
 
 # The production Postgres: the official image with pgBackRest, which archives
 # the write-ahead log and takes backups to an S3-compatible bucket (Cloudflare
-# R2 in Acme's production). Build it from the repository root:
+# R2 in Peal's production). Build it from the repository root:
 #
-#   bun nx run acme-docker:build-postgres-image
+#   bun nx run peal-docker:build-postgres-image
 #
 # pgBackRest is configured by PGBACKREST_* variables (compose.production.yaml)
 # and runs as the postgres user, from Postgres's archive_command and from

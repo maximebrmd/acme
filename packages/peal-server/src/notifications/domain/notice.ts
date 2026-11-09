@@ -11,7 +11,7 @@ import { NoticeIdSchema } from "./notice-id.ts";
  * own, so each reads theirs in their own time.
  */
 export class Notice extends Schema.Class<Notice>(
-  "acme-server/notifications/domain/Notice"
+  "peal-server/notifications/domain/Notice"
 )({
   createdAt: Schema.DateTimeUtc,
   event: NoticeEventSchema,

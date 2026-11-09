@@ -1,6 +1,6 @@
 ---
 title: Terms of service
-description: The terms that govern the use of the hosted Acme service.
+description: The terms that govern the use of the hosted Peal service.
 draft: true
 ---
 
@@ -8,13 +8,13 @@ Effective date: [Date]
 
 ## About these terms
 
-These terms govern the use of the hosted Acme service at [Service domain], provided by [Legal entity name] ("we"), [Registered address], [Company registration number]. [State how the terms are accepted, for example when an account is created.]
+These terms govern the use of the hosted Peal service at [Service domain], provided by [Legal entity name] ("we"), [Registered address], [Company registration number]. [State how the terms are accepted, for example when an account is created.]
 
-They do not cover the Acme source code. The source code is licensed separately under the Functional Source License, Version 1.1, ALv2 Future License (FSL-1.1-ALv2), which governs self-hosting, modifying and redistributing it.
+They do not cover the Peal source code. The source code is licensed separately under the Functional Source License, Version 1.1, ALv2 Future License (FSL-1.1-ALv2), which governs self-hosting, modifying and redistributing it.
 
 ## The service
 
-Acme lets you write posts, schedule them on the social media platforms you connect, and see how they perform. [Describe the plans and features offered, or link to where they are described.]
+Peal lets you write posts, schedule them on the social media platforms you connect, and see how they perform. [Describe the plans and features offered, or link to where they are described.]
 
 ## Accounts and organisations
 
@@ -22,17 +22,17 @@ Acme lets you write posts, schedule them on the social media platforms you conne
 
 ## Connected platforms
 
-When you connect a social media account, you authorise Acme to act on that account on your behalf, within the permissions you grant, to publish the posts you schedule and to read their metrics.
+When you connect a social media account, you authorise Peal to act on that account on your behalf, within the permissions you grant, to publish the posts you schedule and to read their metrics.
 
-Your use of each platform stays subject to that platform's own terms. Platforms can change or restrict access to their services, which can change what Acme is able to do with them.
+Your use of each platform stays subject to that platform's own terms. Platforms can change or restrict access to their services, which can change what Peal is able to do with them.
 
-[Confirm once built: when a platform does not confirm whether a post was published, Acme marks the post as unconfirmed instead of retrying it, so that it is not published twice. Check the platform before you publish such a post again.]
+[Confirm once built: when a platform does not confirm whether a post was published, Peal marks the post as unconfirmed instead of retrying it, so that it is not published twice. Check the platform before you publish such a post again.]
 
 [Responsibilities and limits that apply to publishing through third-party platforms.]
 
 ## Your content
 
-[Who owns the content you add to Acme, the licence you grant us so that we can store it and publish it where you ask, and your responsibility for what you publish.]
+[Who owns the content you add to Peal, the licence you grant us so that we can store it and publish it where you ask, and your responsibility for what you publish.]
 
 ## Acceptable use
 
@@ -56,7 +56,7 @@ Your use of each platform stays subject to that platform's own terms. Platforms 
 
 ## Personal data
 
-The [privacy policy](/privacy/) explains how we process personal data. [The data processing agreement that applies when an organisation processes personal data of others through Acme (GDPR Article 28).]
+The [privacy policy](/privacy/) explains how we process personal data. [The data processing agreement that applies when an organisation processes personal data of others through Peal (GDPR Article 28).]
 
 ## Governing law and disputes
 

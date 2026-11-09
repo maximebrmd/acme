@@ -10,10 +10,10 @@ const settingsFrom = (values: Readonly<Record<string, string>>) =>
   S3StorageConfig.parse(ConfigProvider.fromUnknown(values));
 
 const required = {
-  ACME_S3_ACCESS_KEY_ID: "synthetic-key",
-  ACME_S3_BUCKET: "media",
-  ACME_S3_ENDPOINT: "https://storage.example.test",
-  ACME_S3_SECRET_ACCESS_KEY: "synthetic-secret",
+  PEAL_S3_ACCESS_KEY_ID: "synthetic-key",
+  PEAL_S3_BUCKET: "media",
+  PEAL_S3_ENDPOINT: "https://storage.example.test",
+  PEAL_S3_SECRET_ACCESS_KEY: "synthetic-secret",
   NODE_ENV: "production",
 };
 
@@ -30,10 +30,10 @@ describe("the S3 store's settings", () => {
   );
 
   it.effect.each([
-    "ACME_S3_ACCESS_KEY_ID",
-    "ACME_S3_BUCKET",
-    "ACME_S3_ENDPOINT",
-    "ACME_S3_SECRET_ACCESS_KEY",
+    "PEAL_S3_ACCESS_KEY_ID",
+    "PEAL_S3_BUCKET",
+    "PEAL_S3_ENDPOINT",
+    "PEAL_S3_SECRET_ACCESS_KEY",
   ] as const)("need %s in production", (name) =>
     Effect.gen(function* missing() {
       const { [name]: _missing, ...others } = required;
@@ -48,8 +48,8 @@ describe("the S3 store's settings", () => {
       const settings = yield* settingsFrom({});
 
       assert.strictEqual(settings.endpoint.href, "http://127.0.0.1:18333/");
-      assert.strictEqual(settings.bucket, "acme-media");
-      assert.strictEqual(Redacted.value(settings.accessKeyId), "acme");
+      assert.strictEqual(settings.bucket, "peal-media");
+      assert.strictEqual(Redacted.value(settings.accessKeyId), "peal");
       assert.isTrue(settings.forcePathStyle);
     })
   );
@@ -57,7 +57,7 @@ describe("the S3 store's settings", () => {
   it.effect("refuse a key prefix that does not end with a slash", () =>
     Effect.gen(function* prefix() {
       const error = yield* Effect.flip(
-        settingsFrom({ ...required, ACME_S3_KEY_PREFIX: "staging" })
+        settingsFrom({ ...required, PEAL_S3_KEY_PREFIX: "staging" })
       );
 
       assert.strictEqual(error._tag, "ConfigError");
@@ -67,7 +67,7 @@ describe("the S3 store's settings", () => {
   it.effect("refuse a public base URL that is not a URL", () =>
     Effect.gen(function* publicBase() {
       const error = yield* Effect.flip(
-        settingsFrom({ ...required, ACME_MEDIA_PUBLIC_BASE_URL: "media" })
+        settingsFrom({ ...required, PEAL_MEDIA_PUBLIC_BASE_URL: "media" })
       );
 
       assert.strictEqual(error._tag, "ConfigError");
@@ -88,8 +88,8 @@ describe(publicObjectUrl, () => {
   );
 
   it("keeps a base path", () => {
-    expect(publicObjectUrl(new URL("https://cdn.example.test/acme"), key)).toBe(
-      "https://cdn.example.test/acme/staging/media/w/a.png"
+    expect(publicObjectUrl(new URL("https://cdn.example.test/peal"), key)).toBe(
+      "https://cdn.example.test/peal/staging/media/w/a.png"
     );
   });
 

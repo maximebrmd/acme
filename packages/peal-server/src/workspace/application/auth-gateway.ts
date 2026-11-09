@@ -62,4 +62,4 @@ export class AuthGateway extends Context.Service<
       options: { readonly fresh: boolean }
     ) => Effect.Effect<Option.Option<UserPrincipal>, AuthUnavailable>;
   }
->()("acme-server/workspace/application/AuthGateway") {}
+>()("peal-server/workspace/application/AuthGateway") {}

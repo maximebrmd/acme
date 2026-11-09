@@ -4,4 +4,4 @@ import { Context } from "effect";
 export class DataDeletionLinks extends Context.Service<
   DataDeletionLinks,
   { readonly statusUrl: (code: string) => string }
->()("acme-server/channels/application/DataDeletionLinks") {}
+>()("peal-server/channels/application/DataDeletionLinks") {}

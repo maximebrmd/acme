@@ -135,4 +135,4 @@ export class PostRepository extends Context.Service<
       except: Option.Option<PostId>
     ) => Effect.Effect<number, DatabaseError>;
   }
->()("acme-server/publishing/application/PostRepository") {}
+>()("peal-server/publishing/application/PostRepository") {}

@@ -34,4 +34,4 @@ export class MediaUsage extends Context.Service<
       assetId: MediaAssetId
     ) => Effect.Effect<readonly PostId[], MediaInUse>;
   }
->()("acme-server/media/application/MediaUsage") {}
+>()("peal-server/media/application/MediaUsage") {}

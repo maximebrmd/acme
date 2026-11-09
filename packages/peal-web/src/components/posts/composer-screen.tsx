@@ -1,9 +1,9 @@
 "use client";
 
 import { useAtomRefresh, useAtomValue } from "@effect/atom-react";
-import type { Channel, Permission } from "acme-contract";
-import { Button } from "acme-ui/components/button";
-import { Skeleton } from "acme-ui/components/skeleton";
+import type { Channel, Permission } from "peal-contract";
+import { Button } from "peal-ui/components/button";
+import { Skeleton } from "peal-ui/components/skeleton";
 import { AsyncResult } from "effect/reactivity";
 import { useTranslations } from "next-intl";
 

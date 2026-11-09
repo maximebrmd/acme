@@ -14,7 +14,7 @@ import type { PlatformAnswer, PlatformRequest } from "./platform-server.ts";
 /** The synthetic member the channel posts as: their OpenID subject. */
 export const linkedinMemberId = "aB3dE5fG7h";
 
-/** The API version the fake serves, as Acme pins it. */
+/** The API version the fake serves, as Peal pins it. */
 export const linkedinTestVersion = "202610";
 
 /** A post LinkedIn published. */

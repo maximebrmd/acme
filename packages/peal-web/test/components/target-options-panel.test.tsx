@@ -1,6 +1,6 @@
 import { describe, expect, it } from "@effect/vitest";
-import { PostContentInvalid } from "acme-contract";
-import type { Channel, ContentViolation, TikTokCreator } from "acme-contract";
+import { PostContentInvalid } from "peal-contract";
+import type { Channel, ContentViolation, TikTokCreator } from "peal-contract";
 import { NextIntlClientProvider } from "next-intl";
 import type { Locale } from "next-intl";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -33,19 +33,19 @@ const channel = (
 const youtube = channel(
   "00000000-0000-7000-8000-000000000001",
   "youtube",
-  "@acme_videos"
+  "@peal_videos"
 );
 
 const tiktok = channel(
   "00000000-0000-7000-8000-000000000002",
   "tiktok",
-  "@acme_clips"
+  "@peal_clips"
 );
 
 const mastodon = channel(
   "00000000-0000-7000-8000-000000000003",
   "mastodon",
-  "@acme@social.example"
+  "@peal@social.example"
 );
 
 const violations: readonly ContentViolation[] = [
@@ -96,11 +96,11 @@ describe(TargetOptionsPanel, () => {
   it("shows the fields of each channel whose platform takes options", async () => {
     const html = await render("en");
 
-    expect(html).toContain("@acme_videos on YouTube: options");
+    expect(html).toContain("@peal_videos on YouTube: options");
     expect(html).toContain("Title (required)");
     expect(html).toContain("Made for kids (required)");
     expect(html).toContain("Who can view this post (required)");
-    expect(html).not.toContain("@acme@social.example");
+    expect(html).not.toContain("@peal@social.example");
   });
 
   it("starts TikTok's interactions off, and its disclosure untold", async () => {
@@ -139,7 +139,7 @@ describe(TargetOptionsPanel, () => {
   it("speaks the reader's language", async () => {
     const html = await render("fr");
 
-    expect(html).toContain("@acme_videos sur YouTube : options");
+    expect(html).toContain("@peal_videos sur YouTube : options");
     expect(html).toContain("Titre (obligatoire)");
     expect(html).toContain("Obligatoire pour programmer.");
     expect(html).toContain("Autoriser les commentaires");
@@ -180,10 +180,10 @@ const creator: TikTokCreator = {
   commentDisabled: true,
   duetDisabled: false,
   maxVideoDurationMs: 600_000,
-  nickname: "Acme Clips",
+  nickname: "Peal Clips",
   privacyLevels: ["PUBLIC_TO_EVERYONE", "SELF_ONLY"],
   stitchDisabled: false,
-  username: "acme_clips",
+  username: "peal_clips",
 };
 
 const loadedWith = (shown: TikTokCreator): TikTokAccountState => ({
@@ -197,7 +197,7 @@ describe(TikTokOptionsFields, () => {
   it("names who posts, greys out what they turned off, and asks consent", async () => {
     const html = await renderTikTok("en", loaded);
 
-    expect(html).toContain("Posting as Acme Clips (@acme_clips).");
+    expect(html).toContain("Posting as Peal Clips (@peal_clips).");
     expect(html).toContain("Turned off in the account’s TikTok settings.");
     expect(html).toMatch(
       /By posting, you agree to TikTok’s <a [^>]+>Music Usage Confirmation<\/a>\./u
@@ -248,7 +248,7 @@ describe(TikTokOptionsFields, () => {
       loadedWith({ ...creator, username: "" })
     );
 
-    expect(html).toContain("Posting as Acme Clips.");
+    expect(html).toContain("Posting as Peal Clips.");
     expect(html).not.toContain("(@)");
   });
 
@@ -275,7 +275,7 @@ describe(TikTokOptionsFields, () => {
   it("speaks the reader's language", async () => {
     const html = await renderTikTok("fr", loaded);
 
-    expect(html).toContain("Publication en tant que Acme Clips (@acme_clips).");
+    expect(html).toContain("Publication en tant que Peal Clips (@peal_clips).");
     expect(html).toMatch(
       /En publiant, vous acceptez la <a [^>]+>Confirmation d’utilisation de la musique<\/a> de TikTok\./u
     );
@@ -308,16 +308,16 @@ describe("the composer's errors about options", () => {
     );
 
     expect(html).toContain(
-      "@acme_videos on YouTube: Made for kids is required."
+      "@peal_videos on YouTube: Made for kids is required."
     );
     expect(html).toContain(
-      "@acme_videos on YouTube: Title, 120 of 100 characters."
+      "@peal_videos on YouTube: Title, 120 of 100 characters."
     );
     expect(html).toContain(
-      "@acme_clips on TikTok: Branded content cannot be visible to you only"
+      "@peal_clips on TikTok: Branded content cannot be visible to you only"
     );
     expect(html).toContain(
-      "@acme@social.example on Mastodon: these options are for TikTok."
+      "@peal@social.example on Mastodon: these options are for TikTok."
     );
   });
 });

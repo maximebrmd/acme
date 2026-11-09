@@ -103,7 +103,7 @@ export class WorkspaceMembers extends Context.Service<
       | UserRequired
     >;
   }
->()("acme-server/workspace/application/WorkspaceMembers") {
+>()("peal-server/workspace/application/WorkspaceMembers") {
   static readonly layer = Layer.effect(
     WorkspaceMembers,
     Effect.gen(function* WorkspaceMembersLive() {

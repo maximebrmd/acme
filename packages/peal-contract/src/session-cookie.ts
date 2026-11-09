@@ -1,10 +1,10 @@
 import { HttpApiSecurity, OpenApi } from "effect/http-api";
 
-// Over HTTPS the cookie is __Secure-acme.session_token; the server reads the
+// Over HTTPS the cookie is __Secure-peal.session_token; the server reads the
 // Cookie header itself, so plain HTTP in development works too.
 export const sessionCookie = HttpApiSecurity.apiKey({
   in: "cookie",
-  key: "__Secure-acme.session_token",
+  key: "__Secure-peal.session_token",
 }).pipe(
   HttpApiSecurity.annotate(
     OpenApi.Description,

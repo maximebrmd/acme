@@ -10,7 +10,7 @@ import { OAuthGrantSchema } from "./oauth-grant.ts";
  * act under their name, and `impersonatedBy` keeps who really acts.
  */
 export class UserPrincipal extends Schema.TaggedClass<UserPrincipal>(
-  "acme-server/workspace/domain/UserPrincipal"
+  "peal-server/workspace/domain/UserPrincipal"
 )("UserPrincipal", {
   impersonatedBy: Schema.Option(UserIdSchema),
   oauth: Schema.Option(OAuthGrantSchema).pipe(

@@ -74,7 +74,7 @@ const FailedSchema = Schema.TaggedStruct("failed", {
 });
 
 // The attempt ended without an answer, after the request may have reached
-// the platform: the post may be live. Acme never retries it on its own; the
+// the platform: the post may be live. Peal never retries it on its own; the
 // user checks the platform and confirms either outcome.
 const UnconfirmedSchema = Schema.TaggedStruct("unconfirmed", {
   attemptedAt: Schema.DateTimeUtc,

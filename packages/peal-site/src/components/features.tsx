@@ -1,5 +1,5 @@
 // Rendered to static HTML at build time: the page passes no client directive,
-// so no JavaScript ships for it. acme-ui's React components will render the
+// so no JavaScript ships for it. peal-ui's React components will render the
 // same way once the site moves onto them.
 
 export interface Feature {

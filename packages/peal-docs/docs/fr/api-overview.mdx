@@ -1,6 +1,6 @@
 ---
 title: Présentation de l’API
-description: L’organisation de l’API HTTP d’Acme, comment s’y authentifier, l’emplacement de son document OpenAPI et la référence de chaque point d’accès.
+description: L’organisation de l’API HTTP de Peal, comment s’y authentifier, l’emplacement de son document OpenAPI et la référence de chaque point d’accès.
 sidebar:
   order: 10
 ---
@@ -14,11 +14,11 @@ L’application web, la ligne de commande et le point d’accès MCP reposent su
 
 ## Un seul contrat [#contract]
 
-L’API est définie une seule fois, dans le paquet `acme-contract`. Le serveur implémente cette définition, les clients en tirent leurs types, et la [référence de l’API](/reference) de cette documentation en est générée : les trois ne peuvent pas diverger.
+L’API est définie une seule fois, dans le paquet `peal-contract`. Le serveur implémente cette définition, les clients en tirent leurs types, et la [référence de l’API](/reference) de cette documentation en est générée : les trois ne peuvent pas diverger.
 
 ## URL de base [#base-url]
 
-Les requêtes vont à l’adresse où vous ouvrez Acme, et le chemin de chaque point d’accès commence par `/api` : l’application web transmet `/api/*` au serveur. Dans cette documentation, `https://api.example.com` représente cette adresse ; remplacez-la par la vôtre.
+Les requêtes vont à l’adresse où vous ouvrez Peal, et le chemin de chaque point d’accès commence par `/api` : l’application web transmet `/api/*` au serveur. Dans cette documentation, `https://api.example.com` représente cette adresse ; remplacez-la par la vôtre.
 
 ```bash
 curl -i https://api.example.com/api/health
@@ -26,9 +26,9 @@ curl -i https://api.example.com/api/health
 
 ## Authentification [#authentication]
 
-En dehors des sondes de santé et des documents que les plateformes lisent sur Acme, chaque point d’accès demande l’un de ces moyens :
+En dehors des sondes de santé et des documents que les plateformes lisent sur Peal, chaque point d’accès demande l’un de ces moyens :
 
-- **Une clé d’API**, pour les scripts et les intégrations : envoyez-la en `Authorization: Bearer acme_…`. Une clé appartient à un espace de travail et porte une partie des permissions du membre qui l’a créée, jamais plus. Les membres qui peuvent gérer les clés (propriétaires et administrateurs) en créent une avec `POST /api/workspaces/{workspaceId}/api-keys` une fois connectés, et ne voient la clé que dans cette réponse. Une clé peut envoyer 600 requêtes par minute.
+- **Une clé d’API**, pour les scripts et les intégrations : envoyez-la en `Authorization: Bearer peal_…`. Une clé appartient à un espace de travail et porte une partie des permissions du membre qui l’a créée, jamais plus. Les membres qui peuvent gérer les clés (propriétaires et administrateurs) en créent une avec `POST /api/workspaces/{workspaceId}/api-keys` une fois connectés, et ne voient la clé que dans cette réponse. Une clé peut envoyer 600 requêtes par minute.
 - **Un jeton d’accès OAuth**, que la [ligne de commande](/cli) et les [clients MCP](/mcp) obtiennent quand vous les connectez, envoyé de la même façon. Il agit en votre nom, dans la limite de ce que vous avez accepté.
 - **Le cookie de session** de l’application web, pour l’application web elle-même. Une requête qui change quelque chose avec lui doit venir de l’origine même de l’application web.
 

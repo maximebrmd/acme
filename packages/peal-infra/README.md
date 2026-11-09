@@ -1,13 +1,13 @@
 # Infrastructure
 
-Ansible for the servers Acme runs on, production and the sandbox, each a
+Ansible for the servers Peal runs on, production and the sandbox, each a
 Hetzner Cloud server reachable only through a Cloudflare Tunnel, and for the
 uptime server that watches them from outside. Nothing here has been applied
 yet: the inventory holds placeholders (`example.com`, `203.0.113.0/24`,
 `REPLACE…`), and every playbook refuses to run until they are replaced.
 
 Self-hosters do not need this folder: Caddy and Compose are enough (the docs'
-self-hosting page, and [`acme-docker`](../acme-docker)).
+self-hosting page, and [`peal-docker`](../peal-docker)).
 
 ## How it fits together
 
@@ -16,7 +16,7 @@ self-hosting page, and [`acme-docker`](../acme-docker)).
 | Server    | Ubuntu LTS on Hetzner Cloud, security updates daily, the `ops` account with an SSH key                                     |
 | Edge      | `cloudflared` on the host dials out to Cloudflare; no inbound port is open, SSH included                                   |
 | Access    | Cloudflare Zero Trust Access guards Grafana, SSH, the admin and the whole sandbox                                          |
-| Stack     | [`compose.production.yaml`](../acme-docker/compose.production.yaml) as the Compose project `acme`, every port on 127.0.0.1 |
+| Stack     | [`compose.production.yaml`](../peal-docker/compose.production.yaml) as the Compose project `peal`, every port on 127.0.0.1 |
 | Telemetry | The OpenTelemetry Collector, Loki, Tempo, Prometheus and Grafana, in the stack                                             |
 | Alerts    | Grafana's alert rules, sent to a Telegram chat                                                                             |
 | Backups   | pgBackRest archives the write-ahead log and backs Postgres up to Cloudflare R2                                             |
@@ -59,15 +59,15 @@ assistant answers within 90, so the tunnel needs no timeout of its own.
 
 | Role             | What it does                                                                                         |
 | ---------------- | ---------------------------------------------------------------------------------------------------- |
-| `acme_preflight` | Stops every playbook while the inventory holds placeholders                                          |
+| `peal_preflight` | Stops every playbook while the inventory holds placeholders                                          |
 | `system`         | Host name, UTC, updates, unattended upgrades with reboots at 03:30 UTC, swap, journal size           |
 | `ssh`            | The `ops` account, its keys (exclusive) and key-only SSH for it alone, without port forwarding       |
 | `docker`         | Docker Engine and Compose from Docker's repository, at exact versions, with rotated logs             |
 | `cloudflared`    | cloudflared from its GitHub release (checked by digest), the tunnel's routes and its systemd service |
 | `firewall`       | ufw: every incoming connection refused; port 22 open only while bootstrapping                        |
-| `acme_runtime`   | `/srv/acme`, the secrets generated there, the credentials, the host settings and `acme-compose`      |
-| `acme_backup`    | `acme-backup` and its timers: a full backup on Sundays, a differential one the other days            |
-| `acme_release`   | Builds, uploads and starts one commit of Acme (`release.yml`)                                        |
+| `peal_runtime`   | `/srv/peal`, the secrets generated there, the credentials, the host settings and `peal-compose`      |
+| `peal_backup`    | `peal-backup` and its timers: a full backup on Sundays, a differential one the other days            |
+| `peal_release`   | Builds, uploads and starts one commit of Peal (`release.yml`)                                        |
 | `uptime`         | Gatus and Caddy on the uptime server, their configuration from the inventory (`uptime.yml`)          |
 
 ### Playbooks
@@ -76,7 +76,7 @@ assistant answers within 90, so the tunnel needs no timeout of its own.
 | --------------- | ------------------------------------------------------------------------------- |
 | `bootstrap.yml` | Once on a new server, as root: it creates `ops`                                 |
 | `site.yml`      | Any time; it converges the server to this folder                                |
-| `release.yml`   | To deploy `main`, or another branch, tag or commit with `-e acme_version=<ref>` |
+| `release.yml`   | To deploy `main`, or another branch, tag or commit with `-e peal_version=<ref>` |
 | `uptime.yml`    | Any time, on the uptime server alone; it converges it to this folder            |
 
 Run each with `--limit production` or `--limit sandbox` (`--limit uptime` for
@@ -87,22 +87,22 @@ Run each with `--limit production` or `--limit sandbox` (`--limit uptime` for
 
 | Path                          | What it holds                                                                                                                              |
 | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `/srv/acme/secrets.env`       | The database password, `BETTER_AUTH_SECRET`, `ACME_TOKEN_KEYS`, Grafana's admin password and the Bluesky client keys, generated there once |
-| `/srv/acme/credentials.env`   | What outside services issued: R2 keys, the email key, the backup passphrase, Telegram's                                                    |
-| `/srv/acme/host.env`          | Plain settings, written by Ansible                                                                                                         |
-| `/srv/acme/release.env`       | The image tags that run                                                                                                                    |
-| `/srv/acme/releases/<commit>` | Each release's Compose file and configuration, the last three kept                                                                         |
-| `/srv/acme/current`           | Link to the release that runs                                                                                                              |
+| `/srv/peal/secrets.env`       | The database password, `BETTER_AUTH_SECRET`, `PEAL_TOKEN_KEYS`, Grafana's admin password and the Bluesky client keys, generated there once |
+| `/srv/peal/credentials.env`   | What outside services issued: R2 keys, the email key, the backup passphrase, Telegram's                                                    |
+| `/srv/peal/host.env`          | Plain settings, written by Ansible                                                                                                         |
+| `/srv/peal/release.env`       | The image tags that run                                                                                                                    |
+| `/srv/peal/releases/<commit>` | Each release's Compose file and configuration, the last three kept                                                                         |
+| `/srv/peal/current`           | Link to the release that runs                                                                                                              |
 | `/etc/cloudflared/`           | The tunnel's routes and its token                                                                                                          |
 
-`acme-compose` runs Docker Compose on the release that runs, with those
+`peal-compose` runs Docker Compose on the release that runs, with those
 files. SSH is for reading:
 
 ```sh
-ssh ops@ssh.example.com sudo acme-compose ps
-ssh ops@ssh.example.com sudo acme-compose logs --tail 50 server
-ssh ops@ssh.example.com systemctl list-timers 'acme-*'
-ssh ops@ssh.example.com sudo acme-compose exec --user postgres postgres pgbackrest info
+ssh ops@ssh.example.com sudo peal-compose ps
+ssh ops@ssh.example.com sudo peal-compose logs --tail 50 server
+ssh ops@ssh.example.com systemctl list-timers 'peal-*'
+ssh ops@ssh.example.com sudo peal-compose exec --user postgres postgres pgbackrest info
 ```
 
 Your `~/.ssh/config` sends those through the tunnel:
@@ -118,7 +118,7 @@ Host ssh.example.com ssh-sandbox.example.com
 You need [uv](https://docs.astral.sh/uv/), `cloudflared` (`brew install
 cloudflared`), Git, and Docker with Buildx, which builds the images for the
 servers' architecture: each server's own, from its facts (`linux/amd64` on
-x86 servers, `linux/arm64` on Arm ones), unless `acme_image_platform` names
+x86 servers, `linux/arm64` on Arm ones), unless `peal_image_platform` names
 another in the inventory or with `-e`. Docker Desktop and OrbStack emulate
 `linux/amd64` on Apple silicon. From this folder:
 
@@ -133,7 +133,7 @@ that needs what an earlier one would make, such as Docker's configuration
 before Docker is installed, skips when that one reports a change, and the
 next run shows it. It reads the server's package lists, which refresh daily.
 
-`bun nx run acme-infra:test` runs ansible-lint with the production profile,
+`bun nx run peal-infra:test` runs ansible-lint with the production profile,
 `ansible-playbook --syntax-check` on every playbook, and the tests in
 [`tests/`](tests) (`uv run pytest`), which read what Ansible renders for each
 server:
@@ -177,15 +177,15 @@ the owner's approval.
 
    ```sh
    cloudflared tunnel login                              # once, a certificate for your account
-   cloudflared tunnel create acme-production
-   cloudflared tunnel route dns acme-production app.example.com   # and each other name
-   cloudflared tunnel token acme-production              # the token for the vault
+   cloudflared tunnel create peal-production
+   cloudflared tunnel route dns peal-production app.example.com   # and each other name
+   cloudflared tunnel token peal-production              # the token for the vault
    ```
 
 4. **R2**: a media bucket and a backup bucket per environment, an API token
    with Object Read & Write on each bucket alone, and on the media bucket a
    lifecycle rule that aborts incomplete multipart uploads after a day. Put
-   the upload CORS rule on it with `bun nx run acme-server:media-cors`, from
+   the upload CORS rule on it with `bun nx run peal-server:media-cors`, from
    your machine, with a token that may change the bucket's settings.
 5. **Telegram**: a bot from @BotFather, and the id of the chat it writes to.
 6. **Email**: a Resend key for a verified domain, or an SMTP server.
@@ -204,7 +204,7 @@ services issue reaches it in one of two ways:
   `NAME='value'` lines, over SSH:
 
   ```sh
-  ssh -t ops@ssh.example.com 'sudo install -m 600 /dev/null /srv/acme/credentials.env && sudoedit /srv/acme/credentials.env'
+  ssh -t ops@ssh.example.com 'sudo install -m 600 /dev/null /srv/peal/credentials.env && sudoedit /srv/peal/credentials.env'
   ssh -t ops@ssh.example.com 'sudo install -o root -g cloudflared -m 440 /dev/stdin /etc/cloudflared/token'
   ```
 
@@ -224,21 +224,21 @@ password manager: the backups cannot be read without it.
 5. `uv run ansible-playbook playbooks/site.yml --limit production`: Ansible
    now connects through the tunnel, and port 22 closes.
 6. `uv run ansible-playbook playbooks/release.yml --limit production`.
-7. Take the first backup, `ssh ops@ssh.example.com sudo systemctl start acme-backup@full`,
+7. Take the first backup, `ssh ops@ssh.example.com sudo systemctl start peal-backup@full`,
    and send a test alert from Grafana (Alerting › Contact points › Telegram ›
    Test).
 8. For production, once the uptime server runs: give it its heartbeat token
-   ([The heartbeat](#the-heartbeat)). Until then, set `acme_heartbeat_url` to
+   ([The heartbeat](#the-heartbeat)). Until then, set `peal_heartbeat_url` to
    `""` in `group_vars/production/main.yml`: while it names the uptime
-   server, `site.yml` requires the credential `ACME_HEARTBEAT_TOKEN`.
+   server, `site.yml` requires the credential `PEAL_HEARTBEAT_TOKEN`.
 
 If the tunnel ever stops carrying SSH, use the Hetzner console.
 
 ## Releases
 
 `release.yml` checks the commit out from GitHub on the machine running
-Ansible, builds there the images of the four (`acme-server`, `acme-web`,
-`acme-static` with the environment's site and docs URLs, and `acme-postgres`,
+Ansible, builds there the images of the four (`peal-server`, `peal-web`,
+`peal-static` with the environment's site and docs URLs, and `peal-postgres`,
 named after its Dockerfile) that the server does not have yet, and uploads
 them over SSH. An image the server has is never uploaded again, so Postgres's
 changes, and Postgres restarts, only when its Dockerfile does. The servers
@@ -267,7 +267,7 @@ not started with.
 ## Backups
 
 Postgres archives each write-ahead log segment to the backup bucket as soon as
-it fills, or after 5 minutes. `acme-backup` takes a full backup on Sundays and
+it fills, or after 5 minutes. `peal-backup` takes a full backup on Sundays and
 a differential one the other days, at 02:15 UTC, and pgBackRest keeps four
 full backups with what they need: point-in-time recovery over the last three
 weeks at least, four just before a Sunday's backup expires the oldest, with
@@ -305,7 +305,7 @@ Docker, each pinned by digest, as the Compose project `uptime` in
 
 Gatus's configuration is generated from the inventory: `uptime_environments`
 in `group_vars/uptime/main.yml` lists each environment's public host names
-(kept equal to its `acme_hostnames` by `tests/test_uptime.py`), and the
+(kept equal to its `peal_hostnames` by `tests/test_uptime.py`), and the
 role's defaults the checks, every minute unless said otherwise:
 
 | Check                    | Passes when                                                           |
@@ -361,29 +361,29 @@ resource. Then:
 
 Production's Grafana has a rule that always fires, whose notifications go to
 the uptime server instead of Telegram, every 5 minutes or so
-(`acme-docker/config/production/grafana/alerting/heartbeat.yaml`). When they
+(`peal-docker/config/production/grafana/alerting/heartbeat.yaml`). When they
 stop, Grafana, Prometheus, or the way out is down, so production's own
 alerts may not reach anyone either, and the uptime server says so after 15
-minutes. Grafana posts them to `acme_heartbeat_url`, a Gatus external
+minutes. Grafana posts them to `peal_heartbeat_url`, a Gatus external
 endpoint, with a bearer token that Gatus takes for that endpoint alone.
 
 The token follows the credential rules. The uptime server generates it, once,
 in `/srv/uptime/secrets.env` (`PRODUCTION_HEARTBEAT_TOKEN`), and keeps it
 there; for production it is a credential an outside service issued,
-`ACME_HEARTBEAT_TOKEN`, which `site.yml` checks by name only. Nothing else
+`PEAL_HEARTBEAT_TOKEN`, which `site.yml` checks by name only. Nothing else
 passes between the two servers. Carry it from one to the other through your
 own machine:
 
 - into production's vault: read it with
   `ssh ops@uptime.example.com sudo grep PRODUCTION_HEARTBEAT_TOKEN /srv/uptime/secrets.env`,
   and put the value in `group_vars/production/vault.yml` as
-  `ACME_HEARTBEAT_TOKEN`;
+  `PEAL_HEARTBEAT_TOKEN`;
 - or on production's server, without showing it: once
-  `/srv/acme/credentials.env` lacks the line,
+  `/srv/peal/credentials.env` lacks the line,
 
   ```sh
-  ssh ops@uptime.example.com sudo sed -n "s/^PRODUCTION_HEARTBEAT_TOKEN=/ACME_HEARTBEAT_TOKEN=/p" /srv/uptime/secrets.env \
-    | ssh ops@ssh.example.com 'sudo tee -a /srv/acme/credentials.env > /dev/null'
+  ssh ops@uptime.example.com sudo sed -n "s/^PRODUCTION_HEARTBEAT_TOKEN=/PEAL_HEARTBEAT_TOKEN=/p" /srv/uptime/secrets.env \
+    | ssh ops@ssh.example.com 'sudo tee -a /srv/peal/credentials.env > /dev/null'
   ```
 
 Then run `site.yml` on production, which writes the heartbeat's settings to

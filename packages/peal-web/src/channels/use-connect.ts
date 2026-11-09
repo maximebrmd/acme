@@ -1,7 +1,7 @@
 "use client";
 
 import { useAtomSet } from "@effect/atom-react";
-import type { Platform } from "acme-contract";
+import type { Platform } from "peal-contract";
 import { Option } from "effect";
 import { useState, useTransition } from "react";
 

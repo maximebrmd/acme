@@ -64,7 +64,7 @@ export interface IssuedTokens {
   /** When the credential expires, if the platform said. */
   readonly expiresAt: Option.Option<DateTime.Utc>;
   readonly refreshToken: Option.Option<Redacted.Redacted>;
-  /** Whether Acme can renew the credential without the user. */
+  /** Whether Peal can renew the credential without the user. */
   readonly renewable: boolean;
   /** What the account allowed, in the platform's words. */
   readonly scopes: readonly string[];
@@ -90,7 +90,7 @@ export interface AuthorizedAccount {
 /**
  * Several accounts a sign-in reached, for the member to choose from: the
  * Facebook Pages a user manages, or the Instagram accounts linked to them.
- * None at all when the user manages nothing Acme can post to.
+ * None at all when the user manages nothing Peal can post to.
  */
 export interface AccountChoice {
   readonly _tag: "choice";
@@ -178,9 +178,9 @@ export class PlatformAuthorizers extends Context.Service<
     /** The platform's authorizer, if this server can connect it. */
     readonly for: (platform: Platform) => Option.Option<PlatformAuthorizer>;
     /**
-     * Platforms Acme supports but this server cannot connect for want of a
+     * Platforms Peal supports but this server cannot connect for want of a
      * setting, as Bluesky without client keys in production.
      */
     readonly unconfigured: ReadonlySet<Platform>;
   }
->()("acme-server/channels/application/PlatformAuthorizers") {}
+>()("peal-server/channels/application/PlatformAuthorizers") {}

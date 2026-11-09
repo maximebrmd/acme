@@ -117,7 +117,7 @@ layer(TestApp.layer, { excludeTestServices: true, timeout: "180 seconds" })(
           const signedIn = yield* signIn(email, password);
 
           assert.strictEqual(signedIn.status, 200);
-          assert.include(cookiesOf(signedIn), "acme.session_token=");
+          assert.include(cookiesOf(signedIn), "peal.session_token=");
         })
     );
 
@@ -162,7 +162,7 @@ layer(TestApp.layer, { excludeTestServices: true, timeout: "180 seconds" })(
         assert.strictEqual(out.status, 200);
         assert.include(
           out.headers.getSetCookie().join("\n"),
-          "acme.session_token=; Max-Age=0"
+          "peal.session_token=; Max-Age=0"
         );
 
         // The session is gone. Cookies kept from before still carry a copy
@@ -196,7 +196,7 @@ layer(TestApp.layer, { excludeTestServices: true, timeout: "180 seconds" })(
 
         assert.strictEqual(requested.status, 200);
 
-        const message = yield* emailTo(email, /^Reset your Acme password/u);
+        const message = yield* emailTo(email, /^Reset your Peal password/u);
         const link = linkIn(message);
 
         // The link checks the token, then hands it to the web app's page.

@@ -6,7 +6,7 @@ import {
   AssistantUnavailable,
   CurrentMember,
   Forbidden,
-} from "acme-contract";
+} from "peal-contract";
 import { Effect } from "effect";
 import { HttpApiBuilder } from "effect/http-api";
 

@@ -1,4 +1,4 @@
-import type { SignedRequest, UploadTarget } from "acme-contract";
+import type { SignedRequest, UploadTarget } from "peal-contract";
 import { Option } from "effect";
 
 /** One request of an upload, and the bytes of the file it sends. */

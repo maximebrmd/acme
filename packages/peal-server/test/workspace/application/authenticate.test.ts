@@ -25,7 +25,7 @@ const gateway = Effect.gen(function* makeGateway() {
           session: (cookies) =>
             counted.pipe(
               Effect.as(
-                Redacted.value(cookies).includes("acme.session_token=valid")
+                Redacted.value(cookies).includes("peal.session_token=valid")
                   ? Option.some(
                       new UserPrincipal({
                         impersonatedBy: Option.none(),
@@ -49,7 +49,7 @@ describe(Authenticate, () => {
       const { layer } = yield* gateway;
 
       const principal = yield* Authenticate.use((authenticate) =>
-        authenticate.session(Redacted.make("acme.session_token=valid"), {
+        authenticate.session(Redacted.make("peal.session_token=valid"), {
           fresh: false,
         })
       ).pipe(Effect.provide(layer));
@@ -84,7 +84,7 @@ describe(Authenticate, () => {
       const { layer } = yield* gateway;
 
       const failure = yield* Authenticate.use((authenticate) =>
-        authenticate.apiKey(Redacted.make("acme_unknown"))
+        authenticate.apiKey(Redacted.make("peal_unknown"))
       ).pipe(Effect.provide(layer), Effect.flip);
 
       assert.strictEqual(failure._tag, "NotSignedIn");

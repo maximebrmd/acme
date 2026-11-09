@@ -1,4 +1,4 @@
-// Serves Acme for the end-to-end tests: the server on a free port, and the
+// Serves Peal for the end-to-end tests: the server on a free port, and the
 // web app's production build on the port given as the first argument, with
 // /api pointed at that server. The e2e runner starts this script with the
 // server's environment (see e2e.config.ts) and stops it when the run ends.
@@ -43,9 +43,9 @@ const serverPort = await freePort();
 
 // The server gets every variable the runner passed (DATABASE_URL, PUBLIC_URL
 // and the rest); the web app gets PATH, HOME and where the server is. Bun
-// runs this script, and runs the server as `nx run acme-server:dev` does.
+// runs this script, and runs the server as `nx run peal-server:dev` does.
 const server = spawn(process.execPath, ["src/main.ts"], {
-  cwd: path.join(packages, "acme-server"),
+  cwd: path.join(packages, "peal-server"),
   env: { ...process.env, PORT: String(serverPort) },
   stdio: "inherit",
 });
@@ -55,12 +55,12 @@ const server = spawn(process.execPath, ["src/main.ts"], {
 // bound to 127.0.0.1, Next rewrites each page to localhost, as an external
 // URL, and the page redirects to itself.
 const web = spawn(
-  path.join(packages, "acme-web", "node_modules", ".bin", "next"),
+  path.join(packages, "peal-web", "node_modules", ".bin", "next"),
   ["start", "--port", String(webPort)],
   {
-    cwd: path.join(packages, "acme-web"),
+    cwd: path.join(packages, "peal-web"),
     env: {
-      ACME_API_URL: `http://127.0.0.1:${serverPort}`,
+      PEAL_API_URL: `http://127.0.0.1:${serverPort}`,
       HOME: process.env["HOME"] ?? "",
       NEXT_TELEMETRY_DISABLED: "1",
       PATH: process.env["PATH"] ?? "",

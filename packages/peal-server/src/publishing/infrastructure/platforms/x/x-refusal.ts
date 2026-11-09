@@ -15,7 +15,7 @@ import { retryAfterOf } from "#shared/infrastructure/platforms/retry-after.ts";
  * X's error body: a problem (`type`, `title`, `detail`), or the older list of
  * `errors`. `type` names the problem under `https://api.x.com/2/problems/`;
  * `detail` and messages may quote the post, so they are only searched for
- * the few errors that change what Acme does, never kept.
+ * the few errors that change what Peal does, never kept.
  */
 export const XProblemSchema = Schema.Struct({
   detail: Schema.optionalKey(Schema.String),

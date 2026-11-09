@@ -3,7 +3,7 @@ import { Schema } from "effect";
 import { PlatformSchema } from "#channels/domain/platform.ts";
 
 /**
- * This server cannot connect accounts of the platform: Acme has no sign-in
+ * This server cannot connect accounts of the platform: Peal has no sign-in
  * flow for it yet (`notSupported`), or the server lacks the settings it needs
  * (`notConfigured`), such as the token keyring or a platform's client keys.
  */

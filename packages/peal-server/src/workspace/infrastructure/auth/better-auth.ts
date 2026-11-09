@@ -9,15 +9,15 @@ import { AuthStartFailed } from "./auth-start-failed.ts";
 import { makeAuthDatabase } from "./database.ts";
 import { servesMcp } from "./oauth.ts";
 import { makeAuth } from "./options.ts";
-import type { AcmeAuth, AuthHooks, AuthLogLevel } from "./options.ts";
+import type { PealAuth, AuthHooks, AuthLogLevel } from "./options.ts";
 import { AuthSettings } from "./settings.ts";
 
 /**
  * The Better Auth instance. Only workspace infrastructure uses it: its
  * routes, and the adapters behind the workspace ports.
  */
-export class BetterAuth extends Context.Service<BetterAuth, AcmeAuth>()(
-  "acme-server/workspace/infrastructure/BetterAuth"
+export class BetterAuth extends Context.Service<BetterAuth, PealAuth>()(
+  "peal-server/workspace/infrastructure/BetterAuth"
 ) {}
 
 const severities: Readonly<Record<AuthLogLevel, LogLevel.Severity>> = {
@@ -95,7 +95,7 @@ export const BetterAuthLive = Layer.effect(
 
     if (!servesMcp(settings.publicUrl)) {
       yield* Effect.logWarning(
-        "PUBLIC_URL is plain HTTP on another host than this one, so MCP clients cannot sign in and the MCP endpoint refuses every request. Serve Acme over HTTPS to use it."
+        "PUBLIC_URL is plain HTTP on another host than this one, so MCP clients cannot sign in and the MCP endpoint refuses every request. Serve Peal over HTTPS to use it."
       );
     }
 

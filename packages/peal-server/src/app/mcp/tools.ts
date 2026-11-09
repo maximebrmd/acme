@@ -1,4 +1,4 @@
-import { ChannelSchema, CurrentMember, PermissionSchema } from "acme-contract";
+import { ChannelSchema, CurrentMember, PermissionSchema } from "peal-contract";
 import { Schema } from "effect";
 import { Tool, Toolkit } from "effect/ai";
 
@@ -71,7 +71,7 @@ export const ListChannels = Tool.make("list_channels", {
 
 export const ServerHealth = Tool.make("server_health", {
   description:
-    "Tells whether the Acme server is up and can reach its database. When the database is down, other tools fail until it is back.",
+    "Tells whether the Peal server is up and can reach its database. When the database is down, other tools fail until it is back.",
   success: Schema.Struct({
     database: Schema.Literals(["up", "down"]),
     server: Schema.Literal("up"),
@@ -94,7 +94,7 @@ export const BasicTools = Toolkit.make(
  * all to an AI model. The command line, which saves it in the user's files,
  * reads it instead.
  */
-export const AcmeTools = Toolkit.merge(
+export const PealTools = Toolkit.merge(
   BasicTools,
   PostTools,
   ReportTools,

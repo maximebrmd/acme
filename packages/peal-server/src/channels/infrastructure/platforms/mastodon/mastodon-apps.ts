@@ -12,7 +12,7 @@ import { mastodonApps } from "#channels/infrastructure/schema.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 
-/** Acme's app on one instance, for one redirect URI. */
+/** Peal's app on one instance, for one redirect URI. */
 export interface MastodonApp {
   readonly clientId: string;
   readonly clientSecret: Redacted.Redacted;
@@ -26,7 +26,7 @@ const decodeSecret = Schema.decodeUnknownEffect(EncryptedTokenSchema);
 const failed = (cause: unknown) => new DatabaseError({ cause });
 
 /**
- * The apps Acme registered on Mastodon instances: registered once per
+ * The apps Peal registered on Mastodon instances: registered once per
  * instance and redirect URI, then reused by every workspace. Instances no
  * longer delete unused apps (since 4.3), so they are kept for good.
  */
@@ -46,14 +46,14 @@ export class MastodonApps extends Context.Service<
     ) => Effect.Effect<MastodonApp, DatabaseError | MissingTokenKey>;
     /**
      * Keeps a newly registered app in place of the one registered before,
-     * whose scopes no longer cover what Acme asks for. A sign-in begun with
+     * whose scopes no longer cover what Peal asks for. A sign-in begun with
      * the old app a moment before cannot complete, and is started again.
      */
     readonly replace: (
       app: MastodonApp
     ) => Effect.Effect<MastodonApp, DatabaseError | MissingTokenKey>;
   }
->()("acme-server/channels/infrastructure/MastodonApps") {
+>()("peal-server/channels/infrastructure/MastodonApps") {
   static readonly layer = Layer.effect(
     MastodonApps,
     Effect.gen(function* MastodonAppsLive() {

@@ -1,5 +1,5 @@
-import { Api } from "acme-contract";
-import type { Me } from "acme-contract";
+import { Api } from "peal-contract";
+import type { Me } from "peal-contract";
 import { Effect, Exit, Option } from "effect";
 import { FetchHttpClient, HttpClient, HttpClientRequest } from "effect/http";
 import { HttpApiClient } from "effect/http-api";
@@ -12,7 +12,7 @@ const signedOut = () => Effect.succeed(Option.none<Me>());
 
 /**
  * The signed-in user, from GET /api/me with the visitor's cookies, or none.
- * Server code reaches the server at ACME_API_URL, not through the proxy.
+ * Server code reaches the server at PEAL_API_URL, not through the proxy.
  */
 export const currentUserEffect = Effect.fn("currentUser")(function* currentUser(
   cookie: string
