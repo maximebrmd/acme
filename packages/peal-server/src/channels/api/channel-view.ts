@@ -9,6 +9,7 @@ import type { Channel } from "#channels/domain/channel.ts";
  */
 export const toChannelView = (channel: Channel): ChannelView => ({
   avatarUrl: Option.getOrNull(channel.avatarUrl),
+  connection: Option.getOrNull(channel.connection),
   displayName: Option.getOrNull(channel.displayName),
   handle: channel.handle,
   id: channel.id,

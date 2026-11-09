@@ -244,6 +244,7 @@
     "empty": "Aucun compte n’est encore connecté.",
     "listTitle": "Comptes connectés",
     "platform": "{platform, select, bluesky {Bluesky} facebook {Facebook} instagram {Instagram} linkedin {LinkedIn} mastodon {Mastodon} pinterest {Pinterest} threads {Threads} tiktok {TikTok} x {X} youtube {YouTube} other {{platform}}}",
+    "platformVia": "{platform, select, instagram {Instagram} other {{platform}}} ({connection, select, instagramLogin {connexion Instagram} facebookLogin {via une Page Facebook} other {{connection}}})",
     "status": {
       "active": "Connecté",
       "refreshNeeded": "À reconnecter",
@@ -288,7 +289,7 @@
       "forbidden": "Vous ne pouvez pas faire cela dans cet espace de travail.",
       "notFound": "Ce canal n’est plus connecté.",
       "unknown": "Une erreur est survenue. Réessayez.",
-      "noAccounts": "La connexion n’a atteint aucun compte à connecter : sur Facebook et Instagram, vous ne gérez aucune Page, ou aucun compte professionnel Instagram n’est lié à vos Pages ; sur YouTube, le compte Google choisi n’a pas de chaîne."
+      "noAccounts": "La connexion n’a atteint aucun compte à connecter : sur Facebook, et sur Instagram via une Page Facebook, vous ne gérez aucune Page, ou aucun compte professionnel Instagram n’est lié à vos Pages (connectez-le plutôt avec Instagram) ; sur YouTube, le compte Google choisi n’a pas de chaîne."
     }
   },
   "PlatformConnect": {
@@ -340,12 +341,18 @@
     "retry": "Choisissez à nouveau, ou reconnectez-vous avec Facebook pour une nouvelle liste.",
     "startOver": "Se reconnecter avec Facebook"
   },
+  "InstagramChannels": {
+    "title": "Instagram",
+    "description": "{connection, select, instagramLogin {Connectez-vous à votre compte professionnel (Entreprise ou Créateur) sur Instagram : aucune Page Facebook n’est nécessaire. Peal renouvelle son accès tous les 60 jours, sans vous.} facebookLogin {Ou, pour les comptes gérés depuis une Page Facebook : connectez-vous avec Facebook, puis choisissez les comptes liés à vos Pages.} other {Connectez-vous sur Instagram.}}",
+    "connect": "{connection, select, instagramLogin {Se connecter avec Instagram} facebookLogin {Passer par une Page Facebook} other {Connecter Instagram}}",
+    "connecting": "Ouverture…"
+  },
   "DataDeletionPage": {
     "title": "Demande de suppression des données",
     "description": "Où en est une demande de suppression des données que Peal détient sur vous.",
     "code": "Code de confirmation : {code}",
-    "done": "Terminé : Peal a supprimé les comptes connectés via {app, select, facebook {Facebook} threads {Threads} other {{app}}}, et leurs jetons.",
-    "completed": "Terminé le {date, date, long} : Peal a supprimé {count, plural, =0 {aucun compte connecté, faute d’en avoir} one {# compte connecté} other {# comptes connectés}} venant de {app, select, facebook {Facebook} threads {Threads} other {{app}}}, avec {count, plural, =0 {rien d’autre} one {ses jetons} other {leurs jetons}}.",
+    "done": "Terminé : Peal a supprimé les comptes connectés via {app, select, facebook {Facebook} instagram {Instagram} threads {Threads} other {{app}}}, et leurs jetons.",
+    "completed": "Terminé le {date, date, long} : Peal a supprimé {count, plural, =0 {aucun compte connecté, faute d’en avoir} one {# compte connecté} other {# comptes connectés}} venant de {app, select, facebook {Facebook} instagram {Instagram} threads {Threads} other {{app}}}, avec {count, plural, =0 {rien d’autre} one {ses jetons} other {leurs jetons}}.",
     "notFound": "Aucune demande n’a ce code de confirmation.",
     "unavailable": "L’état de la demande n’a pas pu être lu. Réessayez plus tard."
   },

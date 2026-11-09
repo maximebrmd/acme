@@ -5,6 +5,7 @@ import { connectedTargets } from "#posts/channel-selection.ts";
 
 const channel = (id: string): Channel => ({
   avatarUrl: null,
+  connection: null,
   displayName: null,
   handle: `@peal_${id}`,
   id,

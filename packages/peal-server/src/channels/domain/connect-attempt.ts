@@ -4,6 +4,8 @@ import { DateTime, Duration, Result, Schema } from "effect";
 import type { Actor, ActorSubject } from "#shared/domain/access.ts";
 import { ChannelIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import type { ChannelId, UserId } from "#shared/domain/ids.ts";
+import { InstagramConnectionSchema } from "#shared/domain/instagram-connection.ts";
+import type { InstagramConnection } from "#shared/domain/instagram-connection.ts";
 
 import { InvalidConnectState } from "./invalid-connect-state.ts";
 import { PlatformSchema } from "./platform.ts";
@@ -39,6 +41,8 @@ export class ConnectAttempt extends Schema.Class<ConnectAttempt>(
 )({
   // The channel it reconnects; none when it connects a new account.
   channelId: Schema.Option(ChannelIdSchema),
+  // The way in an Instagram sign-in takes; none on other platforms.
+  connection: Schema.Option(InstagramConnectionSchema),
   createdAt: Schema.DateTimeUtc,
   expiresAt: Schema.DateTimeUtc,
   // The server the account lives on, for platforms with many (Mastodon).
@@ -54,6 +58,7 @@ export const startAttempt = (
   attempt: {
     readonly actor: Actor;
     readonly channelId: Option.Option<ChannelId>;
+    readonly connection: Option.Option<InstagramConnection>;
     readonly instance: Option.Option<string>;
     readonly platform: Platform;
     readonly state: string;
@@ -62,6 +67,7 @@ export const startAttempt = (
 ): ConnectAttempt =>
   new ConnectAttempt({
     channelId: attempt.channelId,
+    connection: attempt.connection,
     createdAt: now,
     expiresAt: DateTime.addDuration(now, connectAttemptLifetime),
     instance: attempt.instance,

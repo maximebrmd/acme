@@ -3,8 +3,9 @@ import { Mac } from "effect/crypto";
 import { Hex } from "effect/encoding";
 
 /**
- * The Graph API version Peal calls Facebook and Instagram with. Meta keeps
- * each version about two years; this one constant moves them all.
+ * The Graph API version Peal calls Facebook and Instagram with, on both of
+ * Instagram's hosts. Meta keeps each version about two years; this one
+ * constant moves them all.
  */
 export const graphApiVersion = "v27.0";
 
@@ -18,8 +19,20 @@ export const threadsApiVersion = "v1.0";
 export interface MetaHosts {
   /** Facebook Login's dialog, on the website. */
   readonly facebookDialog: URL;
-  /** The Graph API, for Facebook Pages and Instagram. */
+  /**
+   * The Graph API, for Facebook Pages and the Instagram accounts reached
+   * through Facebook Login.
+   */
   readonly facebookGraph: URL;
+  /** Instagram's API host, which exchanges an Instagram Login's code. */
+  readonly instagramApi: URL;
+  /** Business Login for Instagram's sign-in page. */
+  readonly instagramAuthorize: URL;
+  /**
+   * The Instagram API with Instagram Login: its tokens, and the accounts
+   * connected through it.
+   */
+  readonly instagramGraph: URL;
   /** The Threads sign-in page. */
   readonly threadsAuthorize: URL;
   /** The Threads API. */
@@ -29,6 +42,9 @@ export interface MetaHosts {
 export const metaHosts: MetaHosts = {
   facebookDialog: new URL("https://www.facebook.com"),
   facebookGraph: new URL("https://graph.facebook.com"),
+  instagramApi: new URL("https://api.instagram.com"),
+  instagramAuthorize: new URL("https://www.instagram.com"),
+  instagramGraph: new URL("https://graph.instagram.com"),
   threadsAuthorize: new URL("https://threads.com"),
   threadsGraph: new URL("https://graph.threads.com"),
 };
@@ -36,6 +52,13 @@ export const metaHosts: MetaHosts = {
 /** A path of the Graph API at its version, such as `/me/accounts`. */
 export const graphUrl = (hosts: MetaHosts, path: string): URL =>
   new URL(`/${graphApiVersion}${path}`, hosts.facebookGraph);
+
+/**
+ * A path of the Instagram API with Instagram Login at the Graph version,
+ * such as `/me`.
+ */
+export const instagramUrl = (hosts: MetaHosts, path: string): URL =>
+  new URL(`/${graphApiVersion}${path}`, hosts.instagramGraph);
 
 /** A path of the Threads API at its version, such as `/me/threads`. */
 export const threadsUrl = (hosts: MetaHosts, path: string): URL =>

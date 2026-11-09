@@ -25,6 +25,7 @@ const channelId = ChannelIdSchema.make("01900000-0000-7000-8000-0000000000c1");
 const account: ChannelAccount = {
   accountId: "-000synthetic-open-id-0001",
   channelId,
+  connection: Option.none(),
   platform: "tiktok",
   scopes: ["user.info.basic", "video.publish", "video.list"],
 };

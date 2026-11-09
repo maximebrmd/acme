@@ -29,6 +29,8 @@ import {
   WorkspaceIdSchema,
 } from "#shared/domain/ids.ts";
 import type { ChannelId, WorkspaceId } from "#shared/domain/ids.ts";
+import { connectionOf } from "#shared/domain/instagram-connection.ts";
+import type { InstagramConnection } from "#shared/domain/instagram-connection.ts";
 import { DatabaseLive } from "#shared/infrastructure/database.ts";
 import { MigrationsLive } from "#shared/infrastructure/migrations.ts";
 import { OutboundGuard } from "#shared/infrastructure/platforms/outbound-guard.ts";
@@ -69,12 +71,14 @@ export const freshWorkspace: Effect.Effect<WorkspaceId, never, Ids> = Ids.use(
 export const freshChannel = Effect.fn("freshChannel")(function* freshChannel(
   workspaceId: WorkspaceId,
   options: {
-    readonly accountId?: string;
+    readonly accountId?: string | undefined;
+    readonly connection?: InstagramConnection | undefined;
     readonly platform?: Platform;
     readonly token?: TokenLifetime;
   } = {}
 ) {
   const id = yield* newId(ChannelIdSchema);
+  const platform = options.platform ?? "mastodon";
 
   return connectChannel(
     {
@@ -82,10 +86,15 @@ export const freshChannel = Effect.fn("freshChannel")(function* freshChannel(
       avatarUrl: Option.some(
         AvatarUrlSchema.make(`https://social.example/avatars/${id}.png`)
       ),
+      // An Instagram account comes through Facebook Login unless said.
+      connection: connectionOf(
+        platform,
+        Option.fromUndefinedOr(options.connection)
+      ),
       displayName: Option.some("Peal Example"),
       handle: "@peal_example",
       id,
-      platform: options.platform ?? "mastodon",
+      platform,
       scopes: ["read", "write"],
       token: options.token ?? nonRefreshable,
       workspaceId,

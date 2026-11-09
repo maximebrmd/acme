@@ -21,6 +21,7 @@ const channelWith = (token: TokenLifetime) =>
     {
       accountId: "account-1",
       avatarUrl: Option.none(),
+      connection: Option.none(),
       displayName: Option.none(),
       handle: "@peal_example",
       id: ChannelIdSchema.make("00000000-0000-7000-8000-000000000001"),

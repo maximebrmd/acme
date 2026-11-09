@@ -32,8 +32,13 @@ const instant = (name: string) => timestamp(name, { withTimezone: true });
  *   names, so a rotation can find the rows an older key encrypted.
  * - `granted_by` is the platform user the tokens rest on, when that is not
  *   the account itself: the Facebook user who connected a Page, or the
- *   Instagram account linked to one. Meta's data deletion requests name
- *   that user.
+ *   Instagram account linked to one, or, through Instagram Login, the
+ *   app-scoped id of the professional account's user. Meta's data deletion
+ *   and deauthorization requests name that user.
+ * - `connection` is how an Instagram channel reaches its account
+ *   (`instagramLogin` or `facebookLogin`); null on other platforms, and on
+ *   Instagram channels connected before Instagram Login, which came through
+ *   Facebook Login. The repository reads null so.
  * - The platform is not checked here, so adding one needs no migration: the
  *   repository decodes every row with the domain's schema.
  */
@@ -43,6 +48,7 @@ export const channels = channelsSchema.table(
     accessToken: text("access_token").notNull(),
     accountId: text("account_id").notNull(),
     avatarUrl: text("avatar_url"),
+    connection: text("connection"),
     createdAt: instant("created_at").notNull(),
     displayName: text("display_name"),
     grantedBy: text("granted_by"),
@@ -109,11 +115,13 @@ export const channels = channelsSchema.table(
  * - `secret` is what completing needs (a PKCE verifier, or the OAuth client's
  *   own pending state), encrypted by the TokenCipher for `connect:<state>`.
  * - `channel_id` is the channel being reconnected, if any.
+ * - `connection` is the way in an Instagram sign-in takes, as on `channels`.
  */
 export const connectAttempts = channelsSchema.table(
   "connect_attempts",
   {
     channelId: uuid("channel_id"),
+    connection: text("connection"),
     createdAt: instant("created_at").notNull(),
     expiresAt: instant("expires_at").notNull(),
     instance: text("instance"),
@@ -139,11 +147,13 @@ export const connectAttempts = channelsSchema.table(
  * - `granted_by` is the platform user those tokens rest on, as on
  *   `channels`: the Facebook user who signed in. Meta's data deletion
  *   requests name that user.
+ * - `connection` is the way in the sign-in took, as on `channels`.
  */
 export const connectChoices = channelsSchema.table(
   "connect_choices",
   {
     accounts: text("accounts").notNull(),
+    connection: text("connection"),
     createdAt: instant("created_at").notNull(),
     expiresAt: instant("expires_at").notNull(),
     grantedBy: text("granted_by"),
@@ -164,7 +174,7 @@ export const connectChoices = channelsSchema.table(
 /**
  * The data deletion requests Meta sent on behalf of its users, so the status
  * page Meta links to can answer. Nothing names the user: only the app the
- * request came through (`facebook` or `threads`), when it came and was done,
+ * request came through (`facebook`, `instagram` or `threads`), when it came and was done,
  * and how many channels it deleted. `code` is the confirmation code Meta
  * shows the user.
  *

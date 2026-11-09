@@ -2,6 +2,8 @@ import { DateTime, Duration, Option, Schema } from "effect";
 
 import { ChannelIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import type { ChannelId, WorkspaceId } from "#shared/domain/ids.ts";
+import { InstagramConnectionSchema } from "#shared/domain/instagram-connection.ts";
+import type { InstagramConnection } from "#shared/domain/instagram-connection.ts";
 
 import { AvatarUrlSchema } from "./avatar-url.ts";
 import type { AvatarUrl } from "./avatar-url.ts";
@@ -46,6 +48,9 @@ export class Channel extends Schema.Class<Channel>(
   // connects each account once.
   accountId: Schema.NonEmptyString,
   avatarUrl: Schema.Option(AvatarUrlSchema),
+  // How an Instagram channel reaches its account (Instagram Login, or
+  // Facebook Login through a Page); none on other platforms.
+  connection: Schema.Option(InstagramConnectionSchema),
   createdAt: Schema.DateTimeUtc,
   // The account's name as the platform shows it, if it has one besides its
   // handle.
@@ -68,6 +73,12 @@ export class Channel extends Schema.Class<Channel>(
  */
 export interface ConnectedAccount {
   readonly avatarUrl: Option.Option<AvatarUrl>;
+  /**
+   * The way in the account was connected through, for Instagram: connecting
+   * an account the workspace has through the other way moves its channel
+   * there.
+   */
+  readonly connection: Option.Option<InstagramConnection>;
   readonly displayName: Option.Option<string>;
   readonly handle: string;
   readonly scopes: readonly string[];
@@ -90,6 +101,7 @@ export const connectChannel = (
   new Channel({
     accountId: channel.accountId,
     avatarUrl: channel.avatarUrl,
+    connection: channel.connection,
     createdAt: now,
     displayName: channel.displayName,
     handle: channel.handle,
@@ -113,6 +125,7 @@ const withChange = (
   new Channel({
     accountId: channel.accountId,
     avatarUrl: account.avatarUrl,
+    connection: account.connection,
     createdAt: channel.createdAt,
     displayName: account.displayName,
     handle: account.handle,
@@ -185,6 +198,7 @@ export const renewToken = (
 ): Channel =>
   withChange(channel, channel.status, now, {
     avatarUrl: channel.avatarUrl,
+    connection: channel.connection,
     displayName: channel.displayName,
     handle: channel.handle,
     scopes: renewed.scopes,

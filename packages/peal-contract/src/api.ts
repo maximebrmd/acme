@@ -377,9 +377,9 @@ export type { Permission } from "./permission.ts";
 
 export { PlanLimitReached } from "./plan-limit-reached.ts";
 
-export { PlatformSchema } from "./platform.ts";
+export { InstagramConnectionSchema, PlatformSchema } from "./platform.ts";
 
-export type { Platform } from "./platform.ts";
+export type { InstagramConnection, Platform } from "./platform.ts";
 
 export {
   ContentViolationSchema,

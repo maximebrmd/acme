@@ -22,6 +22,7 @@ const channel = (
   handle: string
 ): Channel => ({
   avatarUrl: null,
+  connection: null,
   displayName: null,
   handle,
   id,

@@ -16,6 +16,7 @@ import {
   publicUrlConfig,
 } from "#shared/infrastructure/environment.ts";
 import {
+  instagramAppConfig,
   metaAppConfig,
   threadsAppConfig,
 } from "#shared/infrastructure/platforms/meta-apps.ts";
@@ -34,6 +35,11 @@ import type { OAuthClient } from "./oauth-client.ts";
 export interface ChannelPlatformSettings {
   /** None when this server cannot connect Bluesky accounts. */
   readonly bluesky: Option.Option<BlueskyAuthorizerOptions>;
+  /**
+   * The app's Instagram credentials, for Business Login for Instagram;
+   * none when this server connects Instagram through Facebook Login only.
+   */
+  readonly instagram: Option.Option<MetaApp>;
   /** Peal's LinkedIn app, if the operator registered one. */
   readonly linkedin: Option.Option<OAuthClient>;
   /**
@@ -170,6 +176,9 @@ const blueskyModeOf = Effect.fnUntraced(function* blueskyModeOf(settings: {
  *   Instagram professional accounts.
  * - `THREADS_APP_ID` and `THREADS_APP_SECRET`: the same app's Threads
  *   credentials, for Threads accounts.
+ * - `INSTAGRAM_APP_ID` and `INSTAGRAM_APP_SECRET`: the same app's Instagram
+ *   credentials, for Instagram professional accounts through Instagram
+ *   Login, which needs no Facebook Page.
  * - `TIKTOK_CLIENT_KEY` and `TIKTOK_CLIENT_SECRET`: the app the operator
  *   registered on TikTok for Developers, with Login Kit and the Content
  *   Posting API. Without them, TikTok is not offered; one alone stops the
@@ -194,6 +203,7 @@ export const channelPlatformsConfig = Effect.gen(function* settings() {
   const x = yield* oauthClientConfig("x", "X");
   const meta = yield* metaAppConfig;
   const threads = yield* threadsAppConfig;
+  const instagram = yield* instagramAppConfig;
   const tiktok = yield* oauthClientConfig("tiktok", "TIKTOK", "CLIENT_KEY");
   const youtube = yield* oauthClientConfig("youtube", "YOUTUBE");
 
@@ -205,6 +215,7 @@ export const channelPlatformsConfig = Effect.gen(function* settings() {
         publicUrl,
       }))
     ),
+    instagram,
     linkedin,
     meta,
     metaHosts,

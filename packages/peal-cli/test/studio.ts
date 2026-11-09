@@ -99,9 +99,12 @@ export const tiktokId = "0190f3a0-0000-7000-8000-00000000c003";
 
 export const youtubeId = "0190f3a0-0000-7000-8000-00000000c004";
 
+export const instagramId = "0190f3a0-0000-7000-8000-00000000c005";
+
 const channels: readonly Channel[] = [
   {
     avatarUrl: null,
+    connection: null,
     displayName: "Studio",
     handle: "@studio@example.social",
     id: mastodonId,
@@ -111,6 +114,7 @@ const channels: readonly Channel[] = [
   },
   {
     avatarUrl: null,
+    connection: null,
     displayName: null,
     handle: "studio.example.test",
     id: blueskyId,
@@ -120,6 +124,7 @@ const channels: readonly Channel[] = [
   },
   {
     avatarUrl: null,
+    connection: null,
     displayName: "Studio",
     handle: "@studio_example",
     id: tiktokId,
@@ -129,10 +134,21 @@ const channels: readonly Channel[] = [
   },
   {
     avatarUrl: null,
+    connection: null,
     displayName: "Studio videos",
     handle: "Studio videos",
     id: youtubeId,
     platform: "youtube",
+    status: { _tag: "active" },
+    tokenExpiresAt: null,
+  },
+  {
+    avatarUrl: null,
+    connection: "instagramLogin",
+    displayName: "Studio",
+    handle: "@studio_example",
+    id: instagramId,
+    platform: "instagram",
     status: { _tag: "active" },
     tokenExpiresAt: null,
   },

@@ -90,6 +90,18 @@ export const tokenPolicies = {
     lifetime: Option.none(),
     refresh: { _tag: "none" },
   }),
+  // Through Instagram Login, a long-lived Instagram user token lasts 60
+  // days and is renewed with itself once at least a day old; one nobody
+  // renewed in 60 days cannot be renewed again. The sweep renews it a week
+  // ahead, as Threads'.
+  instagramLogin: new TokenPolicy({
+    lifetime: Option.some(Duration.days(60)),
+    refresh: {
+      _tag: "refreshToken",
+      rotates: false,
+      sweep: { _tag: "beforeExpiry", ahead: Duration.days(7) },
+    },
+  }),
   // Self-serve apps get no refresh token: members reconnect every 60 days.
   linkedin: new TokenPolicy({
     lifetime: Option.some(Duration.days(60)),

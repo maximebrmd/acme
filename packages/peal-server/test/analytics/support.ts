@@ -1,4 +1,5 @@
-import { DateTime, Effect, Layer, Option } from "effect";
+import { DateTime, Effect, Layer, Option, Redacted } from "effect";
+import { Mac, SecureRandom } from "effect/crypto";
 import { FetchHttpClient } from "effect/http";
 import { SqlClient } from "effect/sql";
 
@@ -19,6 +20,7 @@ import {
 } from "#shared/domain/ids.ts";
 import type { ChannelId, WorkspaceId } from "#shared/domain/ids.ts";
 import { PlatformPostIdSchema } from "#shared/domain/publish-result.ts";
+import type { MetaHosts } from "#shared/infrastructure/platforms/meta-graph.ts";
 import { OpenOutboundGuard } from "#test/channels/support.ts";
 
 // Stand-ins for what analytics reads from other contexts and platforms,
@@ -66,25 +68,52 @@ export const newChannelId = newId(ChannelIdSchema);
 /**
  * The platforms' readers over plain HTTP, against fakes: Mastodon servers
  * at the host the account names, Bluesky's AppView at `appView`, TikTok's
- * API at `tiktokApi`, the YouTube Data API at `youtubeApi`.
+ * API at `tiktokApi`, the YouTube Data API at `youtubeApi`, and both of
+ * Meta's Graph hosts at `metaGraph`, whose Facebook Login calls are proved
+ * with `metaAppSecret`.
  */
 export const readersWith = ({
   appView = "http://127.0.0.1:9",
+  metaAppSecret = "meta-app-secret-synthetic",
+  metaGraph = "http://127.0.0.1:9",
   tiktokApi = "http://127.0.0.1:9",
   youtubeApi = "http://127.0.0.1:9",
 }: {
   readonly appView?: string | undefined;
+  readonly metaAppSecret?: string | undefined;
+  readonly metaGraph?: string | undefined;
   readonly tiktokApi?: string | undefined;
   readonly youtubeApi?: string | undefined;
-} = {}) =>
-  platformMetricsReaderWith({
+} = {}) => {
+  const graph = new URL(metaGraph);
+
+  const metaHosts: MetaHosts = {
+    facebookDialog: graph,
+    facebookGraph: graph,
+    instagramApi: graph,
+    instagramAuthorize: graph,
+    instagramGraph: graph,
+    threadsAuthorize: graph,
+    threadsGraph: graph,
+  };
+
+  return platformMetricsReaderWith({
     blueskyAppView: new URL(appView),
     mastodonScheme: "http:",
+    metaAppSecret: Option.some(Redacted.make(metaAppSecret)),
+    metaHosts,
     tiktokApi: new URL(tiktokApi),
     youtubeApi: new URL(youtubeApi),
   }).pipe(
-    Layer.provide(Layer.mergeAll(FetchHttpClient.layer, OpenOutboundGuard))
+    Layer.provide(
+      Layer.mergeAll(
+        FetchHttpClient.layer,
+        OpenOutboundGuard,
+        Mac.layerWebCrypto.pipe(Layer.provide(SecureRandom.layerWebCrypto))
+      )
+    )
   );
+};
 
 /** A reading of a seeded post: when, and what it counted. */
 export interface SeededReading {

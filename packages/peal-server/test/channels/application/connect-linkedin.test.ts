@@ -56,6 +56,7 @@ const startAndApprove = Effect.fn("test.startAndApprove")(
     workspaceId: WorkspaceId
   ) {
     const url = yield* on.connect.start(manager(workspaceId), "linkedin", {
+      connection: Option.none(),
       handle: Option.none(),
       instance: Option.none(),
     });
@@ -82,7 +83,11 @@ layer(AdaptersTest)("connecting a LinkedIn member", (it) => {
       const authorizationUrl = yield* on.connect.start(
         manager(workspaceId),
         "linkedin",
-        { handle: Option.none(), instance: Option.none() }
+        {
+          connection: Option.none(),
+          handle: Option.none(),
+          instance: Option.none(),
+        }
       );
 
       const url = new URL(authorizationUrl);
@@ -209,6 +214,7 @@ layer(AdaptersTest)("connecting a LinkedIn member", (it) => {
       const workspaceId = yield* freshWorkspace;
 
       const url = yield* on.connect.start(manager(workspaceId), "linkedin", {
+        connection: Option.none(),
         handle: Option.none(),
         instance: Option.none(),
       });
@@ -231,6 +237,7 @@ layer(AdaptersTest)("connecting a LinkedIn member", (it) => {
       const workspaceId = yield* freshWorkspace;
 
       const start = on.connect.start(manager(workspaceId), "linkedin", {
+        connection: Option.none(),
         handle: Option.none(),
         instance: Option.none(),
       });

@@ -49,6 +49,7 @@ const channelOn = (id: ChannelId, platform: Platform) =>
     {
       accountId: `account-${platform}`,
       avatarUrl: Option.none(),
+      connection: Option.none(),
       displayName: Option.none(),
       handle: "@peal_example",
       id,

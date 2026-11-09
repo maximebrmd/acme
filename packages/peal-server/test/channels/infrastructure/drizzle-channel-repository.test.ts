@@ -56,6 +56,7 @@ layer(RepositoryTest)("the Drizzle channel repository", (it) => {
         disabledBroken,
         {
           avatarUrl: Option.none(),
+          connection: Option.none(),
           displayName: Option.none(),
           handle: "@peal_renamed",
           scopes: [],
@@ -68,6 +69,7 @@ layer(RepositoryTest)("the Drizzle channel repository", (it) => {
         reconnected,
         {
           avatarUrl: channel.avatarUrl,
+          connection: channel.connection,
           displayName: channel.displayName,
           handle: channel.handle,
           scopes: ["read"],

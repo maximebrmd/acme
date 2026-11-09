@@ -121,6 +121,7 @@ const connected = Effect.fn("connected")(function* connected(
     manager(workspaceId),
     "bluesky",
     {
+      connection: Option.none(),
       handle: Option.some("@bob.test"),
       instance: Option.none(),
     }
@@ -374,6 +375,7 @@ layer(BlueskyTest)("connecting a Bluesky account", (it) => {
 
       const failure = yield* ConnectChannel.use((connect) =>
         connect.start(manager(workspaceId), "bluesky", {
+          connection: Option.none(),
           handle: Option.some("@bob.test"),
           instance: Option.none(),
         })

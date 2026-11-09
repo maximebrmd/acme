@@ -10,6 +10,7 @@ import { loadMessages } from "#i18n/messages.ts";
 
 const channel: Channel = {
   avatarUrl: null,
+  connection: null,
   displayName: "Peal Example",
   handle: "@peal_example@social.example",
   id: "00000000-0000-7000-8000-000000000001",
@@ -38,6 +39,17 @@ const render = async (
     </NextIntlClientProvider>
   );
 };
+
+// An Instagram channel through the way in given, in English.
+const instagram = async (connection: "facebookLogin" | "instagramLogin") =>
+  await render("en", {
+    channel: {
+      ...channel,
+      connection,
+      handle: "@studio_example",
+      platform: "instagram",
+    },
+  });
 
 describe(ChannelRow, () => {
   it("says the channel needs reconnecting, and offers to", async () => {
@@ -87,5 +99,14 @@ describe(ChannelRow, () => {
 
     expect(html).not.toContain(">Reconnect<");
     expect(html).not.toContain(">Disconnect<");
+  });
+
+  it("says which way in an Instagram channel came through", async () => {
+    await expect(instagram("instagramLogin")).resolves.toContain(
+      "Instagram (Instagram Login) · @studio_example"
+    );
+    await expect(instagram("facebookLogin")).resolves.toContain(
+      "Instagram (through a Facebook Page) · @studio_example"
+    );
   });
 });

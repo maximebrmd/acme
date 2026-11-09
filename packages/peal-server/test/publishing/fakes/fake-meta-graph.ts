@@ -50,6 +50,12 @@ export interface FakeMetaGraphOptions {
   /** Posts published today, against a quota of `quotaTotal`. */
   readonly quotaUsage?: number;
   readonly quotaTotal?: number;
+  /**
+   * Plays `graph.instagram.com`, as the Instagram API with Instagram Login
+   * serves it: its tokens are the Instagram app's, which the main app's
+   * proof does not sign, so a call carrying one is refused.
+   */
+  readonly instagramLogin?: boolean;
 }
 
 type Params = Readonly<Record<string, string>>;
@@ -319,8 +325,12 @@ export const fakeMetaGraph = Effect.fnUntraced(function* fakeMetaGraph(
       return metaError(190);
     }
 
-    // Facebook and Instagram calls carry the proof of their token.
-    if (request.path.startsWith("/v27.0/") && proof !== proofOf(token)) {
+    // Facebook and Instagram calls carry the proof of their token; calls
+    // with an Instagram Login token carry none.
+    const expected =
+      options.instagramLogin === true ? undefined : proofOf(token);
+
+    if (request.path.startsWith("/v27.0/") && proof !== expected) {
       return metaError(100);
     }
 

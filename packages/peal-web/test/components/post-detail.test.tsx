@@ -16,6 +16,7 @@ const utc = (iso: string) => DateTime.makeUnsafe(iso);
 
 const channel = (id: string, handle: string): Channel => ({
   avatarUrl: null,
+  connection: null,
   displayName: null,
   handle,
   id,

@@ -20,6 +20,7 @@ import { tokenLifetimeOf } from "#channels/domain/token-policy.ts";
 import type { TokenPolicy } from "#channels/domain/token-policy.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import type { ChannelId } from "#shared/domain/ids.ts";
+import type { InstagramConnection } from "#shared/domain/instagram-connection.ts";
 import { PlatformUnavailable } from "#shared/domain/platform-unavailable.ts";
 import { TokenExpired } from "#shared/domain/token-expired.ts";
 import { isTokenRejected } from "#shared/domain/token-rejected.ts";
@@ -43,6 +44,11 @@ export interface ChannelAccount {
   /** The account's id on the platform, as the channel stores it. */
   readonly accountId: string;
   readonly channelId: ChannelId;
+  /**
+   * How an Instagram channel reaches its account, which decides the host
+   * its calls go to; none on other platforms.
+   */
+  readonly connection: Option.Option<InstagramConnection>;
   readonly platform: Platform;
   /**
    * What the account allowed Peal to do, in the platform's own words: a
@@ -105,6 +111,7 @@ const tokenOf = (channel: Channel, tokens: StoredTokens): ChannelToken => ({
   accessToken: tokens.accessToken,
   accountId: channel.accountId,
   channelId: channel.id,
+  connection: channel.connection,
   platform: channel.platform,
   scopes: channel.scopes,
 });
@@ -314,7 +321,10 @@ export class ChannelAccess extends Context.Service<
             return renewal;
           }
 
-          const authorizer = authorizers.for(channel.platform);
+          const authorizer = authorizers.for(
+            channel.platform,
+            channel.connection
+          );
 
           // No authorizer: this server cannot renew the platform's tokens.
           if (Option.isNone(authorizer)) {
@@ -466,6 +476,7 @@ export class ChannelAccess extends Context.Service<
         const found: ChannelAccount = {
           accountId: channel.accountId,
           channelId: channel.id,
+          connection: channel.connection,
           platform: channel.platform,
           scopes: channel.scopes,
         };

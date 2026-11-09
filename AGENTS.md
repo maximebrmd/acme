@@ -529,7 +529,9 @@ and no socket, for tests.
   when the server has a client for it, LinkedIn and X when the operator set
   their app (`<PLATFORM>_CLIENT_ID` and `_CLIENT_SECRET`, read by
   `oauthClientConfig`; one half alone stops the server), Facebook Pages and
-  Instagram with `META_APP_ID`/`META_APP_SECRET`, Threads with
+  Instagram through a Page with `META_APP_ID`/`META_APP_SECRET`, Instagram
+  through Instagram Login with `INSTAGRAM_APP_ID`/`INSTAGRAM_APP_SECRET`,
+  Threads with
   `THREADS_APP_ID`/`THREADS_APP_SECRET`, TikTok with
   `TIKTOK_CLIENT_KEY`/`TIKTOK_CLIENT_SECRET` (`oauthClientConfig`'s
   `idSuffix`), YouTube with `YOUTUBE_CLIENT_ID` and `_CLIENT_SECRET` (a
@@ -539,12 +541,13 @@ and no socket, for tests.
   reconnect warnings follow: LinkedIn's tokens are not renewed and expire
   after 60 days, X's last two hours and rotate on refresh, as TikTok's do
   (`expires_in` decides; refresh tokens end 180 days after sign-in),
-  Google's last an hour and do not rotate. A refreshable policy's `sweep`
-  renews tokens `beforeExpiry` (`ahead` of it) or keeps them alive
-  (`keepAlive`: only once `unused` that long past their expiry, the access
-  being renewed when a call needs it, through `ChannelAccess`). X's keep
-  alive after 30 days, rather than rotating every two hours: its refresh
-  tokens have no stated lifetime.
+  Google's last an hour and do not rotate, Threads' and Instagram Login's
+  (`instagramLogin`) last 60 days and renew themselves a week ahead. A
+  refreshable policy's `sweep` renews tokens `beforeExpiry` (`ahead` of it)
+  or keeps them alive (`keepAlive`: only once `unused` that long past their
+  expiry, the access being renewed when a call needs it, through
+  `ChannelAccess`). X's keep alive after 30 days, rather than rotating every
+  two hours: its refresh tokens have no stated lifetime.
 - TikTok's Login Kit for Web takes no PKCE (TikTok asks it of desktop and
   mobile apps only): the state, bound to member and workspace, guards the
   callback, and a token answer naming an `error` is a refusal whatever its
@@ -568,8 +571,31 @@ and no socket, for tests.
   for `choose`, which puts a choice back when it fails before connecting
   any account. `IssuedTokens.grantedBy` keeps the Facebook user a Page token
   rests on, in `channels.granted_by`. Threads has its own OAuth: a 60-day
-  long-lived token that renews itself. Every Graph call carries
-  `appsecret_proof` (`#shared/infrastructure/platforms/meta-graph.ts`).
+  long-lived token that renews itself. Every Graph call through Facebook
+  Login carries `appsecret_proof`
+  (`#shared/infrastructure/platforms/meta-graph.ts`).
+- Instagram has two ways in, one platform with a connection kind
+  (`InstagramConnectionSchema` in `#shared/domain/instagram-connection.ts`,
+  copied by the contract): `instagramLogin`, the default, and
+  `facebookLogin`, through a Page. Channels, attempts and choices keep it
+  (`connection`, null on other platforms; an Instagram row without one
+  came through Facebook Login, `storedConnection`), and it picks the
+  authorizer (`PlatformAuthorizers.for(platform, connection)`; for a new
+  account without one, the first of `instagramConnections`, Instagram
+  Login when configured), the token policy, the refresh, the publishing
+  host and the insights scope. Everything else (text and media rules,
+  options, analytics' list) is the platform's, so a channel can move
+  between the two: connecting an account the workspace has through the
+  other way reconnects its channel there. Instagram Login
+  (`meta/instagram-login-authorizer.ts`, Business Login for Instagram:
+  `www.instagram.com/oauth/authorize` with `force_reauth`, the code on
+  `api.instagram.com`, then `ig_exchange_token` and `ig_refresh_token` on
+  `graph.instagram.com`) needs `instagram_business_basic` and
+  `instagram_business_content_publish` and asks for
+  `instagram_business_manage_insights`, which a member may decline; its
+  account id is `/me`'s `user_id`, and its `grantedBy` the app-scoped `id`,
+  read again before each refresh so the renewed token keeps it. Its calls
+  carry no `appsecret_proof`: the token is the Instagram app's.
 - YouTube connects through Google's OAuth 2.0 web server flow
   (`infrastructure/platforms/youtube/youtube-authorizer.ts`): PKCE, offline
   access, `prompt=select_account consent`, and the scopes `youtube.upload`
@@ -585,7 +611,15 @@ and no socket, for tests.
   only the code, counts and the SHA-256 of the signed request
   (`data_deletions`), and answer the status page
   `PUBLIC_URL/data-deletion/<code>`. The same signed request sent again
-  answers its first receipt and deletes nothing more.
+  answers its first receipt and deletes nothing more. Each app (`facebook`,
+  `instagram`, `threads`) answers for the channels it signs in
+  (`channelsSignedInWith`): an Instagram Login channel only to `instagram`,
+  which may name it by its grant or its account id. Their deauthorization
+  callbacks (`POST /api/data-deletion/:app/deauthorize`,
+  `DeauthorizePlatformUser`) mark those channels `refreshNeeded` under
+  their locks and tell their workspaces; a channel changed after the
+  request's `issued_at` is left alone, so a replay marks nothing reconnected
+  since.
 - `ConnectChannel` stores each attempt under the SHA-256 of its state, bound
   to the member, the workspace and the platform, for 15 minutes, completed
   once. One channel per platform account per workspace: connecting an account
@@ -720,7 +754,8 @@ and no socket, for tests.
   send the member's token to LinkedIn's hosts only.
 - Meta's adapters hand Meta public media URLs (`MediaForPublishing.publicUrl`,
   two hours), check the daily publishing quota before Threads and Instagram
-  containers, and read Graph refusals with
+  containers (Instagram's on the host its channel's connection names, from
+  `PublishingAccount.connection`, the same container flow on both), and read Graph refusals with
   `#shared/infrastructure/platforms/graph-refusal.ts`, whose rate limits wait
   as long as `X-Business-Use-Case-Usage` says.
 - Derive whatever an adapter sends from the request's `idempotencyKey` and
@@ -1009,7 +1044,16 @@ and no socket, for tests.
   ids a call, with the channel's token when its scopes include
   `video.list`; a post known by its `publish_id` (not digits) is missing
   without a call.
-- Platforms without a reader (LinkedIn, X and Meta's so far) answer
+- Instagram reads each post's media insights (`views`, `likes`,
+  `comments`, `shares`), one call a post, on the connection's host, when the
+  channel's scopes include its insights permission
+  (`instagram_business_manage_insights`, or `instagram_manage_insights`
+  through a Page), `paused` otherwise. Code 100 is missing; a rate limit
+  halts; any other refusal, the token's included, fails the post and
+  halts, so analytics never marks a channel to reconnect for insights it
+  may not read.
+- Platforms without a reader (LinkedIn, X, Threads and Facebook Pages so
+  far) answer
   `ChannelUnreadable` `unsupported`: their posts end at their first turn,
   with no warning, and the reports leave them out. The platforms with one
   are `countedPlatforms` (`analytics/domain/counted-platforms.ts`), which

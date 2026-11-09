@@ -93,6 +93,7 @@ CREATE TABLE "channels"."channels" (
 	"access_token" text NOT NULL,
 	"account_id" text NOT NULL,
 	"avatar_url" text,
+	"connection" text,
 	"created_at" timestamp with time zone NOT NULL,
 	"display_name" text,
 	"granted_by" text,
@@ -118,6 +119,7 @@ CREATE TABLE "channels"."channels" (
 --> statement-breakpoint
 CREATE TABLE "channels"."connect_attempts" (
 	"channel_id" uuid,
+	"connection" text,
 	"created_at" timestamp with time zone NOT NULL,
 	"expires_at" timestamp with time zone NOT NULL,
 	"instance" text,
@@ -130,6 +132,7 @@ CREATE TABLE "channels"."connect_attempts" (
 --> statement-breakpoint
 CREATE TABLE "channels"."connect_choices" (
 	"accounts" text NOT NULL,
+	"connection" text,
 	"created_at" timestamp with time zone NOT NULL,
 	"expires_at" timestamp with time zone NOT NULL,
 	"granted_by" text,

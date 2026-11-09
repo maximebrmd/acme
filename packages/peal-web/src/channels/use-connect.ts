@@ -2,7 +2,7 @@
 
 import { useAtomSet } from "@effect/atom-react";
 import { Option } from "effect";
-import type { Platform } from "peal-contract";
+import type { InstagramConnection, Platform } from "peal-contract";
 import { useState, useTransition } from "react";
 
 import { connectChannel, failureOf } from "#channels/channels-api.ts";
@@ -19,6 +19,7 @@ export const useConnect = (workspaceId: string, platform: Platform) => {
   const [isPending, startTransition] = useTransition();
 
   const start = (payload: {
+    readonly connection?: InstagramConnection;
     readonly handle?: string;
     readonly instance?: string;
   }) => {

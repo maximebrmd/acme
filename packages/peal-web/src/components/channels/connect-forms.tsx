@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import type { Platform } from "peal-contract";
+import type { InstagramConnection, Platform } from "peal-contract";
 import { Alert, AlertDescription } from "peal-ui/components/alert";
 import { Button } from "peal-ui/components/button";
 import {
@@ -19,6 +19,7 @@ import type { ChangeEvent, SubmitEvent } from "react";
 import { useChannelErrorText } from "#channels/channel-error-text.ts";
 import type { ChannelErrorKey } from "#channels/channels-api.ts";
 import { useConnect } from "#channels/use-connect.ts";
+import { ConnectInstagram } from "#components/channels/connect-instagram.tsx";
 import {
   ConnectMeta,
   metaPlatforms,
@@ -223,16 +224,42 @@ const ConnectWithMeta = ({
   );
 };
 
+const ConnectWithInstagram = ({
+  connections,
+  workspaceId,
+}: {
+  readonly connections: readonly InstagramConnection[];
+  readonly workspaceId: string;
+}) => {
+  const { error, isPending, start } = useConnect(workspaceId, "instagram");
+
+  const handleConnect = (connection: InstagramConnection) => {
+    start({ connection });
+  };
+
+  return (
+    <ConnectInstagram
+      connections={connections}
+      error={error}
+      isPending={isPending}
+      onConnect={handleConnect}
+    />
+  );
+};
+
 /**
  * Where a member starts connecting an account, for each platform this
  * server connects: a form for Mastodon and Bluesky, which ask for a server
- * or a handle, a button for LinkedIn, X, TikTok and YouTube, and Meta's sign-in for Threads,
- * Instagram and Facebook Pages.
+ * or a handle, a button for LinkedIn, X, TikTok and YouTube, one for each
+ * of Instagram's ways in the server has, and Meta's sign-in for Threads
+ * and Facebook Pages.
  */
 export const ConnectForms = ({
+  instagramConnections,
   platforms,
   workspaceId,
 }: {
+  readonly instagramConnections: readonly InstagramConnection[];
   readonly platforms: readonly Platform[];
   readonly workspaceId: string;
 }) => {
@@ -257,8 +284,14 @@ export const ConnectForms = ({
             ]
           : []
       )}
+      {offered.has("instagram") && instagramConnections.length > 0 ? (
+        <ConnectWithInstagram
+          connections={instagramConnections}
+          workspaceId={workspaceId}
+        />
+      ) : null}
       {metaPlatforms.flatMap((platform) =>
-        offered.has(platform)
+        offered.has(platform) && platform !== "instagram"
           ? [
               <ConnectWithMeta
                 key={platform}

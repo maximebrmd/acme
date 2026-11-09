@@ -70,7 +70,11 @@ layer(MastodonConnectTest)("connecting a Mastodon account", (it) => {
       const authorizationUrl = yield* connect.start(
         manager(workspaceId),
         "mastodon",
-        { handle: Option.none(), instance: Option.some(instance.url) }
+        {
+          connection: Option.none(),
+          handle: Option.none(),
+          instance: Option.some(instance.url),
+        }
       );
 
       const url = new URL(authorizationUrl);
@@ -127,7 +131,11 @@ layer(MastodonConnectTest)("connecting a Mastodon account", (it) => {
       const authorizationUrl = yield* connect.start(
         manager(workspaceId),
         "mastodon",
-        { handle: Option.none(), instance: Option.some(instance.url) }
+        {
+          connection: Option.none(),
+          handle: Option.none(),
+          instance: Option.some(instance.url),
+        }
       );
 
       // The attempt keeps only the state's hash, and its verifier sealed.
@@ -192,6 +200,7 @@ layer(MastodonConnectTest)("connecting a Mastodon account", (it) => {
 
       for (const actor of [manager(workspaceId), colleague(workspaceId)]) {
         yield* connect.start(actor, "mastodon", {
+          connection: Option.none(),
           handle: Option.none(),
           instance: Option.some(instance.url),
         });
@@ -209,6 +218,7 @@ layer(MastodonConnectTest)("connecting a Mastodon account", (it) => {
       const sql = yield* SqlClient.SqlClient;
 
       const start = connect.start(manager(workspaceId), "mastodon", {
+        connection: Option.none(),
         handle: Option.none(),
         instance: Option.some(instance.url),
       });
@@ -245,6 +255,7 @@ layer(MastodonConnectTest)("connecting a Mastodon account", (it) => {
 
       const authorizationUrl = yield* ConnectChannel.use((connect) =>
         connect.start(manager(workspaceId), "mastodon", {
+          connection: Option.none(),
           handle: Option.none(),
           instance: Option.some(instance.url),
         })
@@ -265,6 +276,7 @@ layer(MastodonConnectTest)("connecting a Mastodon account", (it) => {
       const member = manager(workspaceId);
 
       const authorizationUrl = yield* connect.start(member, "mastodon", {
+        connection: Option.none(),
         handle: Option.none(),
         instance: Option.some(instance.url),
       });
@@ -312,7 +324,11 @@ layer(MastodonConnectTest)("connecting a Mastodon account", (it) => {
       const authorizationUrl = yield* connect.start(
         manager(workspaceId),
         "mastodon",
-        { handle: Option.none(), instance: Option.some(instance.url) }
+        {
+          connection: Option.none(),
+          handle: Option.none(),
+          instance: Option.some(instance.url),
+        }
       );
 
       yield* TestClock.adjust("16 minutes");
@@ -338,7 +354,11 @@ layer(MastodonConnectTest)("connecting a Mastodon account", (it) => {
       const authorizationUrl = yield* connect.start(
         manager(workspaceId),
         "mastodon",
-        { handle: Option.none(), instance: Option.some(instance.url) }
+        {
+          connection: Option.none(),
+          handle: Option.none(),
+          instance: Option.some(instance.url),
+        }
       );
 
       const failure = yield* Effect.flip(
@@ -363,7 +383,11 @@ layer(MastodonConnectTest)("connecting a Mastodon account", (it) => {
         const authorizationUrl = yield* connect.start(
           manager(workspaceId),
           "mastodon",
-          { handle: Option.none(), instance: Option.some(instance.url) }
+          {
+            connection: Option.none(),
+            handle: Option.none(),
+            instance: Option.some(instance.url),
+          }
         );
 
         return yield* connect
@@ -400,6 +424,7 @@ layer(MastodonConnectTest)("connecting a Mastodon account", (it) => {
 
       const failure = yield* ConnectChannel.use((connect) =>
         connect.start(actorIn(workspaceId, ["channel:read"]), "mastodon", {
+          connection: Option.none(),
           handle: Option.none(),
           instance: Option.some("mastodon.example"),
         })
@@ -415,6 +440,7 @@ layer(MastodonConnectTest)("connecting a Mastodon account", (it) => {
 
       const failure = yield* ConnectChannel.use((connect) =>
         connect.start(manager(workspaceId), "linkedin", {
+          connection: Option.none(),
           handle: Option.none(),
           instance: Option.none(),
         })

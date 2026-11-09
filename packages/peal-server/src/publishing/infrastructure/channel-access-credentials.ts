@@ -60,7 +60,11 @@ export const ChannelAccessCredentials = Layer.effect(
     return PlatformCredentials.of({
       account: (channelId) =>
         access.account(channelId).pipe(
-          Effect.map(({ accountId, platform }) => ({ accountId, platform })),
+          Effect.map(({ accountId, connection, platform }) => ({
+            accountId,
+            connection,
+            platform,
+          })),
           Effect.catchTags({
             ChannelUnusable: unusable,
             DatabaseError: databaseDown,
@@ -71,8 +75,10 @@ export const ChannelAccessCredentials = Layer.effect(
         use: (token: PublishingToken) => Effect.Effect<A, E | TokenRejected, R>
       ): Effect.Effect<A, CredentialFailure | Exclude<E, TokenRejected>, R> =>
         access
-          .withToken(channelId, ({ accessToken, accountId, platform }) =>
-            use({ accessToken, accountId, platform })
+          .withToken(
+            channelId,
+            ({ accessToken, accountId, connection, platform }) =>
+              use({ accessToken, accountId, connection, platform })
           )
           .pipe(Effect.catch(credentialFailure<Exclude<E, TokenRejected>>)),
     });

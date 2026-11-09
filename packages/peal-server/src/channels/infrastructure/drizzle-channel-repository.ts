@@ -21,6 +21,8 @@ import type { ChannelId, WorkspaceId } from "#shared/domain/ids.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 
 import { channels } from "./schema.ts";
+import { userChannels } from "./signed-in-rows.ts";
+import { storedConnection } from "./stored-connection.ts";
 
 type Row = typeof channels.$inferSelect;
 
@@ -47,6 +49,7 @@ const toChannel = (row: Row) =>
   decodeChannel({
     accountId: row.accountId,
     avatarUrl: Option.fromNullOr(row.avatarUrl),
+    connection: storedConnection(row.platform, row.connection),
     createdAt: DateTime.fromDateUnsafe(row.createdAt),
     displayName: Option.fromNullOr(row.displayName),
     handle: row.handle,
@@ -83,6 +86,7 @@ const channelColumns = (channel: Channel) => {
   return {
     accountId: channel.accountId,
     avatarUrl: Option.getOrNull(channel.avatarUrl),
+    connection: Option.getOrNull(channel.connection),
     createdAt: date(channel.createdAt),
     displayName: Option.getOrNull(channel.displayName),
     handle: channel.handle,
@@ -303,6 +307,16 @@ export const DrizzleChannelRepository = Layer.effect(
           .pipe(
             Effect.mapError(failed),
             Effect.map((rows) => rows.length > 0)
+          ),
+      restingOn: ({ signedIn, userId }) =>
+        db
+          .select()
+          .from(channels)
+          .where(userChannels(signedIn, userId))
+          .orderBy(asc(channels.id))
+          .pipe(
+            Effect.mapError(failed),
+            Effect.flatMap(Effect.forEach(toChannel))
           ),
       update: (channel, credentials) =>
         db

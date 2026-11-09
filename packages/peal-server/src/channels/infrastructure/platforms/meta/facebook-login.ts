@@ -13,6 +13,7 @@ import { AvatarUrlSchema } from "#channels/domain/avatar-url.ts";
 import type { AvatarUrl } from "#channels/domain/avatar-url.ts";
 import type { Platform } from "#channels/domain/platform.ts";
 import type { TokenPolicy } from "#channels/domain/token-policy.ts";
+import type { InstagramConnection } from "#shared/domain/instagram-connection.ts";
 import { TokenExpired } from "#shared/domain/token-expired.ts";
 import type { MetaApp } from "#shared/infrastructure/platforms/meta-apps.ts";
 import {
@@ -108,6 +109,13 @@ export interface FacebookLoginProduct {
     readonly displayName: Option.Option<string>;
     readonly handle: string;
   }[];
+  /** The way in it is, for Instagram. */
+  readonly connection?: InstagramConnection;
+  /**
+   * Permissions asked for that the user may decline and still connect:
+   * Instagram's insights, which only analytics reads.
+   */
+  readonly optionalScopes?: readonly string[];
   readonly platform: Platform;
   readonly policy: TokenPolicy;
   /** The permissions to ask for, all of which posting needs. */
@@ -159,7 +167,7 @@ export const facebookLogin = Effect.fn("FacebookLogin.make")(
           client_id: app.appId,
           redirect_uri: redirectUri,
           response_type: "code",
-          scope: scopes.join(","),
+          scope: [...scopes, ...(product.optionalScopes ?? [])].join(","),
           state,
         }).toString();
 
@@ -329,6 +337,9 @@ export const facebookLogin = Effect.fn("FacebookLogin.make")(
       refresh: () => Effect.fail(new TokenExpired()),
     };
 
-    return authorizer;
+    // Instagram's way in, which its channels keep.
+    return product.connection === undefined
+      ? authorizer
+      : { ...authorizer, connection: product.connection };
   }
 );

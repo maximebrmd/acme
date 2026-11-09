@@ -62,7 +62,7 @@ export const ListWorkspaces = Tool.make("list_workspaces", {
 export const ListChannels = Tool.make("list_channels", {
   dependencies: [CurrentMember],
   description:
-    "Lists the social accounts (channels) connected to the workspace, oldest first, with whether each one posts or needs to be reconnected. Their tokens are never shown.",
+    "Lists the social accounts (channels) connected to the workspace, oldest first, with whether each one posts or needs to be reconnected, and for Instagram its `connection`: `instagramLogin` (the professional account itself) or `facebookLogin` (through a Facebook Page). Their tokens are never shown. Accounts are connected in the web app, where the member signs in on the platform.",
   failure: ToolRefused,
   success: Schema.Struct({ channels: Schema.Array(ChannelSchema) }),
 })
