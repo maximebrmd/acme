@@ -35,6 +35,8 @@ cloudflared_deb_sha256:
 
 acme_root: /srv/acme
 acme_compose_project: acme
+# Docker Compose on the release that runs (acme_runtime writes it).
+acme_compose_bin: /usr/local/bin/acme-compose
 # Compose profiles the stack runs with: the marketing site and the docs.
 acme_compose_profiles: [static]
 # Loopback ports the tunnel reaches (compose.production.yaml).

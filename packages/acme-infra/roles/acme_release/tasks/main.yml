@@ -2,11 +2,12 @@
 # The server holds no repository or registry credentials. The machine running
 # Ansible checks the commit out from GitHub, builds the images for the
 # server's architecture, and uploads them over SSH with the release's Compose
-# file, so only pushed commits can be released. Starting the new server
-# applies its migrations before it listens.
+# file, so only pushed commits can be released. The server never builds
+# (--no-build). Starting the new server applies its migrations before it
+# listens.
 - name: Require the runtime that site.yml sets up
   ansible.builtin.stat:
-    path: /usr/local/bin/acme-compose
+    path: "{{ acme_compose_bin }}"
   register: acme_release_runtime
 
 - name: Stop unless site.yml has run
@@ -119,7 +120,7 @@
     - name: Save the images
       ansible.builtin.shell: |
         set -euo pipefail
-        docker save --platform {{ acme_image_platform }} {{ acme_release_built.values() | join(' ') }} \
+        docker save {{ acme_release_built.values() | join(' ') }} \
           | gzip -1 > {{ acme_release_archive }}.part
         mv {{ acme_release_archive }}.part {{ acme_release_archive }}
       args:
@@ -207,7 +208,7 @@
   failed_when: false
 
 - name: Stop the old server before Postgres restarts
-  ansible.builtin.command: acme-compose stop server
+  ansible.builtin.command: "{{ acme_compose_bin }} stop server"
   register: acme_release_stop
   changed_when: acme_release_stop.stderr is search('Stopped')
   when: >-
@@ -215,7 +216,7 @@
     or (acme_release_running_postgres.stdout | from_json)[0].Config.Image != acme_release_built.postgres
 
 - name: Start Postgres
-  ansible.builtin.command: acme-compose up --detach --wait --wait-timeout 300 postgres
+  ansible.builtin.command: "{{ acme_compose_bin }} up --no-build --detach --wait --wait-timeout 300 postgres"
   register: acme_release_postgres
   changed_when: acme_release_postgres.stderr is search('(Started|Recreated)')
 
@@ -224,7 +225,7 @@
 - name: Check the database password
   ansible.builtin.command:
     argv:
-      - acme-compose
+      - "{{ acme_compose_bin }}"
       - exec
       - -T
       - postgres
@@ -238,7 +239,7 @@
 - name: Set the database password to the generated one
   ansible.builtin.command:
     argv:
-      - acme-compose
+      - "{{ acme_compose_bin }}"
       - exec
       - -T
       - postgres
@@ -251,12 +252,12 @@
 # The new server migrates the database before it listens: --wait returns
 # once it is healthy.
 - name: Start the server, which migrates the database
-  ansible.builtin.command: acme-compose up --detach --wait --wait-timeout 600 server
+  ansible.builtin.command: "{{ acme_compose_bin }} up --no-build --detach --wait --wait-timeout 600 server"
   register: acme_release_server
   changed_when: acme_release_server.stderr is search('(Started|Recreated)')
 
 - name: Start the rest of the stack
-  ansible.builtin.command: acme-compose up --detach --wait --wait-timeout 600 --remove-orphans
+  ansible.builtin.command: "{{ acme_compose_bin }} up --no-build --detach --wait --wait-timeout 600 --remove-orphans"
   register: acme_release_stack
   changed_when: acme_release_stack.stderr is search('(Started|Recreated|Removed)')
 
@@ -306,6 +307,7 @@
 # needs no upload.
 - name: Remove images unused for a week
   ansible.builtin.command: docker image prune --all --force --filter until=168h
+  tags: [prune]
   register: acme_release_prune
   changed_when: acme_release_prune.stdout is not search('Total reclaimed space:\s+0B')
 

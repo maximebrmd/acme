@@ -9,7 +9,7 @@ set -eu
 type="${1:?usage: acme-backup full|diff|incr}"
 
 pgbackrest() {
-  /usr/local/bin/acme-compose exec -T --user postgres postgres pgbackrest "$@"
+  {{ acme_compose_bin }} exec -T --user postgres postgres pgbackrest "$@"
 }
 
 # Creates the stanza the first time; afterwards, checks that it still matches

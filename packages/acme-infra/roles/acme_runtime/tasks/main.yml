@@ -100,7 +100,7 @@
 - name: Install acme-compose
   ansible.builtin.template:
     src: acme-compose.j2
-    dest: /usr/local/bin/acme-compose
+    dest: "{{ acme_compose_bin }}"
     owner: root
     group: root
     mode: "0755"
