@@ -15,3 +15,7 @@ export const postingMonthOf = (instant: DateTime.Utc): PostingMonth => {
 
   return { from, to: DateTime.add(from, { months: 1 }) };
 };
+
+/** Whether two instants go out in the same calendar month (UTC). */
+export const sameMonth = (left: DateTime.Utc, right: DateTime.Utc): boolean =>
+  DateTime.Equivalence(postingMonthOf(left).from, postingMonthOf(right).from);

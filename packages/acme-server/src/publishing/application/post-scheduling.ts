@@ -12,7 +12,7 @@ import {
   schedulePost,
 } from "#publishing/domain/post.ts";
 import type { Post } from "#publishing/domain/post.ts";
-import { postingMonthOf } from "#publishing/domain/posting-month.ts";
+import { postingMonthOf, sameMonth } from "#publishing/domain/posting-month.ts";
 import type { ScheduleInPast } from "#publishing/domain/schedule-in-past.ts";
 import type { Schedule } from "#publishing/domain/schedule.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
@@ -94,8 +94,8 @@ const mayPublish = (actor: Actor) =>
  * A post is scheduled only on channels of its workspace, with ready media of
  * the workspace, and with content their platforms take, its media included
  * (`#publishing/domain/content-rules.ts`). Its month (UTC) must have room
- * for it in the workspace's plan (`PostAllowance`): a post moved within its
- * month takes no more room.
+ * for it in the workspace's plan (`PostAllowance`): a scheduled post moved
+ * within its month takes no more room.
  *
  * A post is only found in the workspace that owns it: another workspace's
  * post is PostNotFound, whatever its id.
@@ -246,7 +246,19 @@ export class PostScheduling extends Context.Service<
           schedulePost(current.post, at, yield* DateTime.now)
         );
 
-        yield* roomInMonth(moved);
+        // A scheduled post moved within its month takes no more room, even
+        // in a month already past a smaller plan's allowance.
+        const staysInMonth =
+          current.post.status._tag === "scheduled" &&
+          sameMonth(
+            current.post.status.schedule.at,
+            (yield* scheduleOf(moved)).at
+          );
+
+        if (!staysInMonth) {
+          yield* roomInMonth(moved);
+        }
+
         yield* applied(yield* posts.update(moved, current.post));
         yield* stopJob(current);
         yield* startJob(moved);
