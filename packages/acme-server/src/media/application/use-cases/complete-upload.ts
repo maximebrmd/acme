@@ -47,14 +47,32 @@ const joinParts = Effect.fn("Media.joinParts")(function* joinParts(
 });
 
 /**
+ * The answer for an asset past pending: the asset once its file was taken,
+ * or why the file was refused.
+ */
+const settled = (
+  asset: MediaAsset
+): Effect.Effect<MediaAsset, UploadRejected> => {
+  const { status } = asset;
+
+  return status._tag === "rejected"
+    ? Effect.fail(
+        new UploadRejected({ assetId: asset.id, reason: status.reason })
+      )
+    : Effect.succeed(asset);
+};
+
+/**
  * Checks that the declared file reached the store, with the declared size
  * and content type, and marks the asset uploaded. For a multipart upload it
  * joins the parts first.
  *
- * It can be called again: an asset already uploaded is returned as it is,
- * and an upload whose parts were joined before the asset was saved is
- * found by its stored file. A file that does not match is deleted and the
- * asset rejected; a missing one leaves the asset pending.
+ * It can be called again, also while another call runs: an asset already
+ * uploaded is returned as it is, a rejected one gets the same rejection,
+ * and an upload whose parts were joined before the asset was saved is found
+ * by its stored file. When two calls overlap, the first to save wins and
+ * the other returns its result. A file that does not match is deleted and
+ * the asset rejected; a missing one leaves the asset pending.
  */
 export const completeUpload = Effect.fn("Media.completeUpload")(
   function* completeUpload({ assetId, workspaceId }: CompleteUploadRequest) {
@@ -62,12 +80,8 @@ export const completeUpload = Effect.fn("Media.completeUpload")(
     const { status } = asset;
     const now = yield* DateTime.now;
 
-    if (status._tag === "uploaded" || status._tag === "ready") {
-      return asset;
-    }
-
     if (status._tag !== "pending") {
-      return yield* Effect.fromResult(markUploaded(asset, now));
+      return yield* settled(asset);
     }
 
     const storage = yield* MediaStorage;
@@ -97,15 +111,12 @@ export const completeUpload = Effect.fn("Media.completeUpload")(
       // The file goes first: if saving fails, the asset is still pending and
       // completing it again finds no file.
       yield* storage.remove(asset.storageKey);
-      yield* assets.update(rejected);
 
-      return yield* new UploadRejected({ assetId, reason: mismatch.value });
+      return yield* settled(yield* assets.update(rejected, "pending"));
     }
 
     const uploaded = yield* Effect.fromResult(markUploaded(asset, now));
 
-    yield* assets.update(uploaded);
-
-    return uploaded;
+    return yield* settled(yield* assets.update(uploaded, "pending"));
   }
 );

@@ -91,11 +91,35 @@ layer(RepositoryTest)("the Drizzle media assets", (it) => {
         changed(asset, { _tag: "rejected", reason: "typeMismatch" }),
       ];
 
-      for (const version of versions) {
-        yield* assets.update(version);
+      let from = asset.status._tag;
 
+      for (const version of versions) {
+        assert.deepStrictEqual(yield* assets.update(version, from), version);
         assert.deepStrictEqual(yield* found(), Option.some(version));
+
+        from = version.status._tag;
       }
+    })
+  );
+
+  it.effect("keeps a change saved since the asset was read", () =>
+    Effect.gen(function* staleWrite() {
+      const assets = yield* MediaAssets;
+      const asset = yield* freshAsset;
+      const ready = changed(asset, { _tag: "ready" }, probed);
+
+      yield* assets.insert(asset);
+      yield* assets.update(changed(asset, { _tag: "uploaded" }), "pending");
+      yield* assets.update(ready, "uploaded");
+
+      // A call that read the asset while it was pending saves too late.
+      const stale = changed(asset, { _tag: "uploaded" });
+
+      assert.deepStrictEqual(yield* assets.update(stale, "pending"), ready);
+      assert.deepStrictEqual(
+        yield* assets.findById(asset.workspaceId, asset.id),
+        Option.some(ready)
+      );
     })
   );
 
@@ -130,7 +154,7 @@ layer(RepositoryTest)("the Drizzle media assets", (it) => {
       yield* assets.remove(asset.workspaceId, asset.id);
 
       const error = yield* Effect.flip(
-        assets.update(changed(asset, { _tag: "uploaded" }))
+        assets.update(changed(asset, { _tag: "uploaded" }), "pending")
       );
 
       assert.strictEqual(error._tag, "MediaAssetNotFound");

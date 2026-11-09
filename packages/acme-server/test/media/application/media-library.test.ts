@@ -1,5 +1,13 @@
 import { assert, layer } from "@effect/vitest";
-import { DateTime, Duration, Effect, Layer, Option } from "effect";
+import {
+  DateTime,
+  Duration,
+  Effect,
+  Fiber,
+  Latch,
+  Layer,
+  Option,
+} from "effect";
 import sharp from "sharp";
 
 import { MediaAssets } from "#media/application/ports/media-assets.ts";
@@ -8,6 +16,7 @@ import {
   CurrentUploadPolicy,
   defaultUploadPolicy,
 } from "#media/application/upload-policy.ts";
+import { completeUpload } from "#media/application/use-cases/complete-upload.ts";
 import type { PreparedUpload } from "#media/application/use-cases/create-upload.ts";
 import { MediaLibrary, MediaLive } from "#media/container.ts";
 import { MediaMetadata } from "#media/domain/media-metadata.ts";
@@ -75,6 +84,18 @@ const complete = (prepared: PreparedUpload) =>
 const recorded = (prepared: PreparedUpload) =>
   MediaAssets.use((assets) =>
     assets.findById(prepared.asset.workspaceId, prepared.asset.id)
+  );
+
+const whitePng = (width: number, height: number) =>
+  Effect.promise(
+    async () =>
+      new Uint8Array(
+        await sharp({
+          create: { background: "#ffffff", channels: 3, height, width },
+        })
+          .png()
+          .toBuffer()
+      )
   );
 
 const storedObject = (prepared: PreparedUpload) =>
@@ -228,6 +249,97 @@ layer(LibraryTest)("the media library", (it) => {
     })
   );
 
+  it.effect("completes parts the store joined before the asset was saved", () =>
+    Effect.gen(function* joinedNotSaved() {
+      const workspaceId = yield* freshWorkspace;
+      const storage = yield* MediaStorage;
+      const body = syntheticBytes(mebibytes(6));
+
+      const prepared = yield* prepare(
+        workspaceId,
+        "video/mp4",
+        body.length
+      ).pipe(Effect.provideService(CurrentUploadPolicy, smallParts));
+
+      const parts = yield* multipartParts(prepared);
+      const { status } = prepared.asset;
+
+      const uploadId =
+        status._tag === "pending" && status.upload._tag === "multipart"
+          ? status.upload.uploadId
+          : yield* Effect.die("expected a multipart upload");
+
+      for (const part of parts) {
+        const start = (part.partNumber - 1) * mebibytes(5);
+
+        yield* sendSigned(
+          part.request,
+          body.slice(start, start + part.byteSize)
+        );
+      }
+
+      // An earlier call joined the parts, then failed before saving.
+      const upload = { key: prepared.asset.storageKey, uploadId };
+
+      yield* storage.completeMultipartUpload(
+        upload,
+        yield* storage.listUploadedParts(upload)
+      );
+
+      const uploaded = yield* complete(prepared);
+
+      assert.deepStrictEqual(uploaded.status, { _tag: "uploaded" });
+      assert.deepStrictEqual(yield* recorded(prepared), Option.some(uploaded));
+    })
+  );
+
+  it.effect("keeps what a later call saved when an earlier one finishes", () =>
+    Effect.gen(function* overlapping() {
+      const workspaceId = yield* freshWorkspace;
+      const storage = yield* MediaStorage;
+      const library = yield* MediaLibrary;
+      const body = yield* whitePng(16, 9);
+      const prepared = yield* prepare(workspaceId, "image/png", body.length);
+      const target = { assetId: prepared.asset.id, workspaceId };
+
+      yield* sendSigned(yield* singleRequest(prepared), body);
+
+      // The first call reads the asset, then waits on a slow store.
+      const reached = yield* Latch.make();
+      const resume = yield* Latch.make();
+
+      const slowStorage = MediaStorage.of({
+        ...storage,
+        head: (key) =>
+          reached.open.pipe(
+            Effect.andThen(resume.await),
+            Effect.andThen(storage.head(key))
+          ),
+      });
+
+      const slow = yield* completeUpload(target).pipe(
+        Effect.provideService(MediaStorage, slowStorage),
+        Effect.forkChild
+      );
+
+      yield* reached.await;
+
+      // Meanwhile a retry completes it, and the probe marks it ready.
+      yield* library.completeUpload(target);
+
+      const { asset: ready } = yield* library.probeMedia(target);
+
+      yield* resume.open;
+
+      assert.deepStrictEqual(yield* Fiber.join(slow), ready);
+      assert.deepStrictEqual(yield* recorded(prepared), Option.some(ready));
+      assert.deepStrictEqual(
+        ready.metadata.dimensions,
+        Option.some({ height: 9, width: 16 })
+      );
+    })
+  );
+
   it.effect("leaves an upload pending until the file arrives", () =>
     Effect.gen(function* notYet() {
       const workspaceId = yield* freshWorkspace;
@@ -276,9 +388,10 @@ layer(LibraryTest)("the media library", (it) => {
         );
         assert.deepStrictEqual(yield* storedObject(prepared), Option.none());
 
+        // A retry, after the first answer was lost, gets the same one.
         const again = yield* Effect.flip(complete(prepared));
 
-        assert.strictEqual(again._tag, "InvalidMediaTransition");
+        assert.include(again, { _tag: "UploadRejected", reason });
       })
   );
 
@@ -365,22 +478,7 @@ layer(LibraryTest)("the media library", (it) => {
     Effect.gen(function* probes() {
       const workspaceId = yield* freshWorkspace;
 
-      const body = yield* Effect.promise(
-        async () =>
-          new Uint8Array(
-            await sharp({
-              create: {
-                background: "#ffffff",
-                channels: 3,
-                height: 9,
-                width: 16,
-              },
-            })
-              .png()
-              .toBuffer()
-          )
-      );
-
+      const body = yield* whitePng(16, 9);
       const prepared = yield* prepare(workspaceId, "image/png", body.length);
       const library = yield* MediaLibrary;
       const target = { assetId: prepared.asset.id, workspaceId };

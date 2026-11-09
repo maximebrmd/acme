@@ -5,6 +5,7 @@ import { MediaAssetNotFound } from "#media/application/media-asset-not-found.ts"
 import { MediaAssets } from "#media/application/ports/media-assets.ts";
 import type { MediaAssetId } from "#media/domain/media-asset-id.ts";
 import { MediaAsset } from "#media/domain/media-asset.ts";
+import type { MediaStatusName } from "#media/domain/media-status.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 
@@ -108,23 +109,25 @@ export const DrizzleMediaAssetsLive = Layer.effect(
   Effect.gen(function* DrizzleMediaAssetsLive() {
     const db = yield* Drizzle;
 
+    const findById = Effect.fn("MediaAssets.findById")(function* findById(
+      workspaceId: WorkspaceId,
+      assetId: MediaAssetId
+    ) {
+      const rows = yield* db
+        .select()
+        .from(mediaAssets)
+        .where(byId(workspaceId, assetId))
+        .pipe(Effect.orDie);
+
+      const [row] = rows;
+
+      return row === undefined
+        ? Option.none()
+        : Option.some(yield* fromRow(row));
+    });
+
     return MediaAssets.of({
-      findById: Effect.fn("MediaAssets.findById")(function* findById(
-        workspaceId: WorkspaceId,
-        assetId: MediaAssetId
-      ) {
-        const rows = yield* db
-          .select()
-          .from(mediaAssets)
-          .where(byId(workspaceId, assetId))
-          .pipe(Effect.orDie);
-
-        const [row] = rows;
-
-        return row === undefined
-          ? Option.none()
-          : Option.some(yield* fromRow(row));
-      }),
+      findById,
       insert: Effect.fn("MediaAssets.insert")(function* insert(
         asset: MediaAsset
       ) {
@@ -140,18 +143,29 @@ export const DrizzleMediaAssetsLive = Layer.effect(
           .pipe(Effect.orDie);
       }),
       update: Effect.fn("MediaAssets.update")(function* update(
-        asset: MediaAsset
+        asset: MediaAsset,
+        from: MediaStatusName
       ) {
+        // Statuses only move forward, so a row still in `from` has not been
+        // changed since the caller read it.
         const updated = yield* db
           .update(mediaAssets)
           .set(toRow(asset))
-          .where(byId(asset.workspaceId, asset.id))
+          .where(
+            and(byId(asset.workspaceId, asset.id), eq(mediaAssets.status, from))
+          )
           .returning({ id: mediaAssets.id })
           .pipe(Effect.orDie);
 
-        if (updated.length === 0) {
-          yield* new MediaAssetNotFound({ assetId: asset.id });
+        if (updated.length > 0) {
+          return asset;
         }
+
+        const current = yield* findById(asset.workspaceId, asset.id);
+
+        return Option.isSome(current)
+          ? current.value
+          : yield* new MediaAssetNotFound({ assetId: asset.id });
       }),
     });
   })

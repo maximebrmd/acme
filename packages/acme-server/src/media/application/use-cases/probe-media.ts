@@ -33,7 +33,8 @@ export type ProbedMedia = typeof ProbedMediaSchema.Type;
 /**
  * Probes an uploaded file and marks the asset ready with what the probe
  * found. Without a probe for its kind, the asset is ready with nothing
- * known, and the outcome says the probe was skipped.
+ * known, and the outcome says the probe was skipped. When another call
+ * marked the asset ready first, that version is kept and returned.
  */
 export const probeMedia = Effect.fn("Media.probeMedia")(function* probeMedia({
   assetId,
@@ -64,9 +65,19 @@ export const probeMedia = Effect.fn("Media.probeMedia")(function* probeMedia({
     markReady(asset, metadata, yield* DateTime.now)
   );
 
-  yield* MediaAssets.use((assets) => assets.update(ready));
+  const saved = yield* MediaAssets.use((assets) =>
+    assets.update(ready, "uploaded")
+  );
 
-  const probed: ProbedMedia = { asset: ready, outcome };
+  if (saved.status._tag !== "ready") {
+    return yield* new InvalidMediaTransition({
+      action: "markReady",
+      assetId,
+      from: saved.status._tag,
+    });
+  }
+
+  const probed: ProbedMedia = { asset: saved, outcome };
 
   return probed;
 });
