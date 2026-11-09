@@ -1,10 +1,10 @@
 # Infrastructure
 
 Ansible for the servers Acme runs on, production and the sandbox, each a
-Hetzner Cloud server reachable only through a Cloudflare Tunnel. Nothing here
-has been applied yet: the inventory holds placeholders (`example.com`,
-`203.0.113.0/24`, `REPLACE…`), and every playbook refuses to run until they
-are replaced.
+Hetzner Cloud server reachable only through a Cloudflare Tunnel, and for the
+uptime server that watches them from outside. Nothing here has been applied
+yet: the inventory holds placeholders (`example.com`, `203.0.113.0/24`,
+`REPLACE…`), and every playbook refuses to run until they are replaced.
 
 Self-hosters do not need this folder: Caddy and Compose are enough (the docs'
 self-hosting page, and [`acme-docker`](../acme-docker)).
@@ -20,7 +20,7 @@ self-hosting page, and [`acme-docker`](../acme-docker)).
 | Telemetry | The OpenTelemetry Collector, Loki, Tempo, Prometheus and Grafana, in the stack                                             |
 | Alerts    | Grafana's alert rules, sent to a Telegram chat                                                                             |
 | Backups   | pgBackRest archives the write-ahead log and backs Postgres up to Cloudflare R2                                             |
-| Uptime    | Checked from a separate server, not set up here                                                                            |
+| Uptime    | Gatus on a server of its own checks the public endpoints and hears Grafana's heartbeat ([Uptime](#uptime))                 |
 
 The tunnel's routes, for production (`roles/cloudflared/templates/config.yml.j2`):
 
@@ -61,13 +61,14 @@ assistant answers within 90, so the tunnel needs no timeout of its own.
 | ---------------- | ---------------------------------------------------------------------------------------------------- |
 | `acme_preflight` | Stops every playbook while the inventory holds placeholders                                          |
 | `system`         | Host name, UTC, updates, unattended upgrades with reboots at 03:30 UTC, swap, journal size           |
-| `ssh`            | The `ops` account, its keys (exclusive) and key-only SSH for it alone                                |
-| `docker`         | Docker Engine and Compose from Docker's repository, with rotated logs                                |
+| `ssh`            | The `ops` account, its keys (exclusive) and key-only SSH for it alone, without port forwarding       |
+| `docker`         | Docker Engine and Compose from Docker's repository, at exact versions, with rotated logs             |
 | `cloudflared`    | cloudflared from its GitHub release (checked by digest), the tunnel's routes and its systemd service |
 | `firewall`       | ufw: every incoming connection refused; port 22 open only while bootstrapping                        |
 | `acme_runtime`   | `/srv/acme`, the secrets generated there, the credentials, the host settings and `acme-compose`      |
 | `acme_backup`    | `acme-backup` and its timers: a full backup on Sundays, a differential one the other days            |
 | `acme_release`   | Builds, uploads and starts one commit of Acme (`release.yml`)                                        |
+| `uptime`         | Gatus and Caddy on the uptime server, their configuration from the inventory (`uptime.yml`)          |
 
 ### Playbooks
 
@@ -76,8 +77,10 @@ assistant answers within 90, so the tunnel needs no timeout of its own.
 | `bootstrap.yml` | Once on a new server, as root: it creates `ops`                                 |
 | `site.yml`      | Any time; it converges the server to this folder                                |
 | `release.yml`   | To deploy `main`, or another branch, tag or commit with `-e acme_version=<ref>` |
+| `uptime.yml`    | Any time, on the uptime server alone; it converges it to this folder            |
 
-Run each with `--limit production` or `--limit sandbox`, and `site.yml` with
+Run each with `--limit production` or `--limit sandbox` (`--limit uptime` for
+`bootstrap.yml` on the uptime server), and `site.yml` and `uptime.yml` with
 `--check --diff` first. `release.yml` has no dry run.
 
 ### On the server
@@ -114,9 +117,10 @@ Host ssh.example.com ssh-sandbox.example.com
 
 You need [uv](https://docs.astral.sh/uv/), `cloudflared` (`brew install
 cloudflared`), Git, and Docker with Buildx, which builds the images for the
-servers' architecture (`linux/amd64` unless `acme_image_platform` says
-otherwise; Docker Desktop and OrbStack emulate it on Apple silicon). From this
-folder:
+servers' architecture: each server's own, from its facts (`linux/amd64` on
+x86 servers, `linux/arm64` on Arm ones), unless `acme_image_platform` names
+another in the inventory or with `-e`. Docker Desktop and OrbStack emulate
+`linux/amd64` on Apple silicon. From this folder:
 
 ```sh
 uv sync --locked
@@ -124,17 +128,27 @@ uv run ansible-galaxy collection install --requirements-file requirements.yml
 uv run ansible-playbook playbooks/site.yml --limit sandbox --check --diff
 ```
 
-Check mode reads a server `site.yml` has configured. On a new one it stops
-at the first thing an earlier task would have made (the swap file, Docker's
-service): apply `site.yml` there as [A new server](#a-new-server) says, and
-check every run after.
+Check mode works on a new server too, once `bootstrap.yml` has run: a task
+that needs what an earlier one would make, such as Docker's configuration
+before Docker is installed, skips when that one reports a change, and the
+next run shows it. It reads the server's package lists, which refresh daily.
 
 `bun nx run acme-infra:test` runs ansible-lint with the production profile,
 `ansible-playbook --syntax-check` on every playbook, and the tests in
-[`tests/`](tests) (`uv run pytest`): the tunnel's routes as Ansible renders
-them for each server, the secrets the server generates, and the release's
-steps on Postgres, run against its image in Docker (skipped when Docker is not
-running). `bun run test` includes it.
+[`tests/`](tests) (`uv run pytest`), which read what Ansible renders for each
+server:
+
+- the tunnel's routes, and what host.env may hold;
+- the secrets the server generates, and the swap file's creation;
+- Docker Engine's pins, and the platform images are built for;
+- the release's steps on Postgres, run against its image;
+- the uptime server: its checks against each environment's host names, then
+  Gatus and Caddy run with the configuration Ansible renders, on a network
+  that reaches nothing outside, to show that Gatus loads it and takes a
+  heartbeat with its token only, and that Caddy shows the world nothing else.
+
+The tests that need Docker skip when it is not running. `bun run test`
+includes them.
 
 ### Before the first run
 
@@ -211,6 +225,8 @@ password manager: the backups cannot be read without it.
 7. Take the first backup, `ssh ops@ssh.example.com sudo systemctl start acme-backup@full`,
    and send a test alert from Grafana (Alerting › Contact points › Telegram ›
    Test).
+8. For production, once the uptime server runs: give it its heartbeat token
+   ([The heartbeat](#the-heartbeat)).
 
 If the tunnel ever stops carrying SSH, use the Hetzner console.
 
@@ -270,6 +286,146 @@ says what that costs.
 [`runbooks/restore-database.md`](runbooks/restore-database.md) restores the
 database, to its latest state or to a time.
 
+## Uptime
+
+A separate Hetzner server watches production and the sandbox from outside,
+as people reach them, with [Gatus](https://github.com/TwiN/gatus): if
+Cloudflare, the tunnel or a server is down, its alerts still go out. It is
+not linked to them: no tunnel, no private network, and no secret of theirs.
+`uptime.yml` sets it up with the same roles (`ops`, key-only SSH, ufw,
+unattended upgrades, Docker), then the `uptime` role runs Gatus and Caddy in
+Docker, each pinned by digest, as the Compose project `uptime` in
+`/srv/uptime`.
+
+### What it checks
+
+Gatus's configuration is generated from the inventory: `uptime_environments`
+in `group_vars/uptime/main.yml` lists each environment's public host names
+(kept equal to its `acme_hostnames` by `tests/test_uptime.py`), and the
+role's defaults the checks, every minute unless said otherwise:
+
+| Check                    | Passes when                                                           |
+| ------------------------ | --------------------------------------------------------------------- |
+| The site (`/`)           | 200 within 1 second                                                   |
+| The docs (`/`)           | 200 within 1 second                                                   |
+| The web app (`/sign-in`) | 200 within 2 seconds                                                  |
+| The API (`/api/ready`)   | 204 within 1 second: the server answers, and its database too         |
+| Each host's certificate  | Valid for 14 more days, the uptime server's own included (hourly)     |
+| Each host's DNS          | An A record through Quad9 (`9.9.9.9`), outside Cloudflare (5 minutes) |
+| Each Grafana heartbeat   | One in the last 15 minutes ([The heartbeat](#the-heartbeat))          |
+
+A redirect fails a check, so a page that sends people to Cloudflare Access's
+sign-in never passes for the page. The sandbox is behind Access throughout:
+its checks carry a Cloudflare Access service token, which the sandbox's
+Access application lets in with a Service Auth policy. Telegram hears of a
+page or the API after 3 failures in a row, and that it is back after 2
+successes; of a certificate, a host name or a heartbeat at once.
+
+### Set it up
+
+The server costs money, so it needs the owner's approval, like any paid
+resource. Then:
+
+1. Create it in the Hetzner console, with your SSH key for root and a
+   Hetzner firewall that lets in port 443 from anywhere and port 22 from the
+   addresses you work from, and put its address in `inventory/hosts.yml`.
+   Give it a name, `uptime_hostname`, with A and AAAA records that Cloudflare
+   does not proxy, so it answers even when Cloudflare does not.
+2. Make its credentials, which are its own:
+   - a Telegram bot from @BotFather, and the chat it writes to, which may be
+     the one production's alerts go to;
+   - a Cloudflare Access service token (Zero Trust › Access › Service
+     credentials), and a Service Auth policy for it on the sandbox's Access
+     application.
+
+   Put them in `inventory/group_vars/uptime/vault.yml`, from
+   `inventory/vault.uptime.example.yml` and encrypted like the others, or
+   write them on the server, as `NAME='value'` lines, after step 3:
+
+   ```sh
+   ssh -t ops@uptime.example.com 'sudo install -m 600 /dev/null /srv/uptime/credentials.env && sudoedit /srv/uptime/credentials.env'
+   ```
+
+3. `uv run ansible-playbook playbooks/bootstrap.yml --limit uptime -e ansible_user=root`
+4. `uv run ansible-playbook playbooks/uptime.yml --check --diff`, then without
+   `--check`. Caddy gets a Let's Encrypt certificate for `uptime_hostname`
+   through the TLS-ALPN challenge, on port 443 alone.
+5. Give production its heartbeat token, below.
+
+### The heartbeat
+
+Production's Grafana has a rule that always fires, whose notifications go to
+the uptime server instead of Telegram, every 5 minutes or so
+(`acme-docker/config/production/grafana/alerting/heartbeat.yaml`). When they
+stop, Grafana, Prometheus, or the way out is down, so production's own
+alerts may not reach anyone either, and the uptime server says so after 15
+minutes. Grafana posts them to `acme_heartbeat_url`, a Gatus external
+endpoint, with a bearer token that Gatus takes for that endpoint alone.
+
+The token follows the credential rules. The uptime server generates it, once,
+in `/srv/uptime/secrets.env` (`PRODUCTION_HEARTBEAT_TOKEN`), and keeps it
+there; for production it is a credential an outside service issued,
+`ACME_HEARTBEAT_TOKEN`, which `site.yml` checks by name only. Nothing else
+passes between the two servers. Carry it from one to the other through your
+own machine:
+
+- into production's vault: read it with
+  `ssh ops@uptime.example.com sudo grep PRODUCTION_HEARTBEAT_TOKEN /srv/uptime/secrets.env`,
+  and put the value in `group_vars/production/vault.yml` as
+  `ACME_HEARTBEAT_TOKEN`;
+- or on production's server: add `ACME_HEARTBEAT_TOKEN='<value>'` to
+  `/srv/acme/credentials.env` with `sudoedit`, as for the other credentials.
+
+Then run `site.yml` on production, which writes the heartbeat's settings to
+`host.env`, and `release.yml`, which restarts Grafana with them. To change
+the token, delete its line on the uptime server, run `uptime.yml`, which
+makes another, and give production the new one.
+
+### The dashboard
+
+Gatus's dashboard listens on the uptime server's 127.0.0.1 only. SSH lets
+`ops` forward a local port to it, and to nothing else:
+
+```sh
+ssh -N -L 8080:127.0.0.1:8080 ops@uptime.example.com   # then open http://localhost:8080
+```
+
+To the world, Caddy answers the heartbeats' path and nothing else:
+`/api/v1/endpoints/<group>_<name>/external`, by POST, and 404 to the rest.
+
+A public status page is the owner's decision, and is off. Turned on with
+`uptime_public_status: true` in `group_vars/uptime/main.yml`, Caddy also
+serves the dashboard and Gatus's read-only API at `https://<uptime_hostname>/`:
+anyone could then see what is checked, every host name included, and when it
+failed. A name such as `status.example.com` would suit it better, as
+`uptime_hostname`.
+
+### On the uptime server
+
+| Path                          | What it holds                                                                    |
+| ----------------------------- | -------------------------------------------------------------------------------- |
+| `/srv/uptime/compose.yaml`    | The stack: Gatus on 127.0.0.1:8080, Caddy on port 443                            |
+| `/srv/uptime/gatus/`          | Gatus's configuration, which holds no secret: Gatus reads them from its settings |
+| `/srv/uptime/caddy/`          | Caddy's configuration                                                            |
+| `/srv/uptime/data/`           | Gatus's history, a SQLite database the `gatus` user owns                         |
+| `/srv/uptime/secrets.env`     | The heartbeat tokens, generated there                                            |
+| `/srv/uptime/credentials.env` | What outside services issued: the Telegram bot and the Access service token      |
+
+`uptime-compose` runs Docker Compose on the stack: `sudo uptime-compose ps`,
+`sudo uptime-compose logs --tail 50 gatus`.
+
+## Docker Engine
+
+Docker Engine, Compose, containerd and Buildx are installed at the exact
+versions `docker_packages` names (`roles/docker/defaults/main.yml`), and an
+apt pin holds them there, so neither the daily security updates nor the
+system role's upgrade moves them. To bump them, list the versions Docker
+publishes for the servers' Ubuntu release, as the comment there shows, put
+the new ones in `docker_packages`, read Docker Engine's release notes, then
+run `site.yml` with `--check --diff` and apply it on the sandbox, then
+production, then the uptime server. The engine restarts, and the containers
+with it unless the bump is a patch release, so release in a quiet hour.
+
 ## Idempotency
 
 A second run of `site.yml` reports no change:
@@ -281,10 +437,16 @@ A second run of `site.yml` reports no change:
   they replace the live files; `sshd -t` runs again on the whole
   configuration and reports no change.
 - The swap file is created only when `/swapfile` is missing, and the secrets
-  only when `secrets.env` is (`creates`).
+  only when `secrets.env` is (`creates`). The swap file is made under another
+  name and renamed once it is a swap area, so a run cut short leaves none
+  half made.
 - cloudflared's package is downloaded only when its digest differs, and
   installed only when that version is not.
 - The credentials check reads names, never values, and changes nothing.
+- On the uptime server, a heartbeat token is generated only when
+  `secrets.env` lacks it, and Compose recreates a container only when its
+  image or its configuration changed, which a label holding its digest
+  tells.
 - Handlers restart sshd, journald, Docker or cloudflared only after a change;
   cloudflared's restart is scheduled a few seconds out, and Ansible waits for
   its connection, which may run through the tunnel.
