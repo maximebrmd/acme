@@ -1,4 +1,12 @@
-import { Context, DateTime, Effect, Layer, Option, Schedule } from "effect";
+import {
+  Context,
+  DateTime,
+  Duration,
+  Effect,
+  Layer,
+  Option,
+  Schedule,
+} from "effect";
 
 import { markRefreshNeeded, renewToken } from "#channels/domain/channel.ts";
 import type { Channel } from "#channels/domain/channel.ts";
@@ -10,13 +18,17 @@ import {
 } from "#channels/domain/token-policy.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import type { ChannelId } from "#shared/domain/ids.ts";
+import { PlatformUnavailable } from "#shared/domain/platform-unavailable.ts";
 
 import { ChannelLocks } from "./channel-locks.ts";
 import { ChannelNotices } from "./channel-notices.ts";
 import { ChannelRepository } from "./channel-repository.ts";
 import { decryptTokens, encryptTokens } from "./channel-tokens.ts";
 import { PlatformAuthorizers } from "./platform-authorizer.ts";
-import type { PlatformAuthorizer } from "./platform-authorizer.ts";
+import type {
+  PlatformAuthorizer,
+  StoredTokens,
+} from "./platform-authorizer.ts";
 import { TokenCipher } from "./token-cipher.ts";
 
 /** What refreshing one channel came to. */
@@ -50,6 +62,10 @@ const sweepLimit = 200;
 const saveRetry = Schedule.exponential("200 millis");
 
 const saveRetries = 3;
+
+// The longest a refresh may wait on the platform: past what an answer takes,
+// headers and body, short of how long another refresh waits for the lock.
+const renewalTimeout = Duration.seconds(45);
 
 interface Locked {
   readonly outcome: RefreshOutcome;
@@ -105,37 +121,24 @@ export class RefreshChannelTokens extends Context.Service<
         }
       );
 
-      const refreshLocked = Effect.fn("RefreshChannelTokens.refreshLocked")(
-        function* refreshLocked(
+      // Asks the platform for new tokens and saves them. A rotating refresh
+      // token stops working once the platform has it, so from then on the
+      // refresh runs to its save: a sweep stopped meanwhile (a shutdown)
+      // waits for it rather than lose the session. The platform call keeps
+      // its own timeout.
+      const renewAndSave = Effect.fn("RefreshChannelTokens.renewAndSave")(
+        function* renewAndSave(
           channel: Channel,
+          tokens: StoredTokens,
           authorizer: PlatformAuthorizer
         ) {
-          const stored = yield* channels.credentials(channel.id);
-
-          if (Option.isNone(stored)) {
-            return done("skipped");
-          }
-
-          // A token this server cannot decrypt cannot be used either: its key
-          // left the keyring. Only reconnecting gives the channel a token again.
-          const tokens = yield* decryptTokens(stored.value, channel.id).pipe(
-            tokenServices,
-            Effect.tapError((failure) =>
-              Effect.logError(
-                "A channel's token could not be decrypted",
-                failure
-              )
-            ),
-            Effect.option
+          const renewed = yield* authorizer.refresh(channel, tokens).pipe(
+            Effect.timeoutOrElse({
+              duration: renewalTimeout,
+              orElse: () => Effect.fail(new PlatformUnavailable()),
+            }),
+            Effect.result
           );
-
-          if (Option.isNone(tokens)) {
-            return yield* markForReconnect(channel);
-          }
-
-          const renewed = yield* authorizer
-            .refresh(channel, tokens.value)
-            .pipe(Effect.result);
 
           if (renewed._tag === "Failure") {
             return renewed.failure._tag === "TokenExpired"
@@ -165,6 +168,39 @@ export class RefreshChannelTokens extends Context.Service<
             .pipe(Effect.retry({ schedule: saveRetry, times: saveRetries }));
 
           return done("refreshed");
+        },
+        Effect.uninterruptible
+      );
+
+      const refreshLocked = Effect.fn("RefreshChannelTokens.refreshLocked")(
+        function* refreshLocked(
+          channel: Channel,
+          authorizer: PlatformAuthorizer
+        ) {
+          const stored = yield* channels.credentials(channel.id);
+
+          if (Option.isNone(stored)) {
+            return done("skipped");
+          }
+
+          // A token this server cannot decrypt cannot be used either: its key
+          // left the keyring. Only reconnecting gives the channel a token again.
+          const tokens = yield* decryptTokens(stored.value, channel.id).pipe(
+            tokenServices,
+            Effect.tapError((failure) =>
+              Effect.logError(
+                "A channel's token could not be decrypted",
+                failure
+              )
+            ),
+            Effect.option
+          );
+
+          if (Option.isNone(tokens)) {
+            return yield* markForReconnect(channel);
+          }
+
+          return yield* renewAndSave(channel, tokens.value, authorizer);
         }
       );
 

@@ -1,6 +1,7 @@
 import { assert, layer } from "@effect/vitest";
 import {
   DateTime,
+  Deferred,
   Duration,
   Effect,
   Fiber,
@@ -294,6 +295,56 @@ layer(FileTest)("refreshing channel tokens", (it) => {
         "offline.access",
       ]);
     })
+  );
+
+  it.effect(
+    "saves the rotated tokens even when the sweep stops while the platform answers",
+    () =>
+      Effect.gen(function* stopped() {
+        const workspaceId = yield* freshWorkspace;
+        const now = yield* DateTime.now;
+        const asked = yield* Deferred.make<true>();
+        const answer = yield* Deferred.make<true>();
+        const platform = yield* scripted("x");
+
+        // The platform spends the refresh token when asked, and answers a
+        // little later.
+        const authorizer: PlatformAuthorizer = {
+          ...platform.authorizer,
+          refresh: (channel, tokens) =>
+            Deferred.succeed(asked, true).pipe(
+              Effect.andThen(Deferred.await(answer)),
+              Effect.andThen(platform.authorizer.refresh(channel, tokens))
+            ),
+        };
+
+        const channel = yield* stored(workspaceId, {
+          token: {
+            _tag: "refreshable",
+            expiresAt: expiringIn(now, "5 minutes"),
+          },
+        });
+
+        const refreshing = yield* RefreshChannelTokens.use((refresh) =>
+          refresh.refresh(channel.id)
+        ).pipe(
+          Effect.provide(refresherFor(workspaceId, authorizer)),
+          Effect.forkChild
+        );
+
+        yield* Deferred.await(asked);
+
+        // The server shuts down before the platform answers.
+        const stopping = yield* Fiber.interrupt(refreshing).pipe(
+          Effect.forkChild
+        );
+
+        yield* Deferred.succeed(answer, true);
+        yield* Fiber.join(stopping);
+
+        assert.strictEqual(yield* accessTokenOf(channel), "rotated-access-1");
+        assert.strictEqual((yield* reread(channel)).status._tag, "active");
+      })
   );
 
   it.effect("marks a refused channel for reconnecting, and tells once", () =>
