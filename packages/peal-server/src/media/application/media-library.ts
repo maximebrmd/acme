@@ -75,6 +75,7 @@ type CompleteFailure =
   | MediaAssetNotFound
   | MediaStorageFailed
   | MissingPermission
+  | PlanLimitReached
   | UploadIncomplete
   | UploadRejected;
 

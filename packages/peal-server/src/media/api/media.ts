@@ -100,6 +100,7 @@ export const MediaHandlers = HttpApiBuilder.group(
               MediaAssetNotFound: notFound,
               MediaStorageFailed: storeUnavailable,
               MissingPermission: forbidden,
+              PlanLimitReached: limitReached,
               UploadIncomplete: () => Effect.fail(new UploadIncomplete()),
               UploadRejected: ({ reason }) =>
                 Effect.fail(new UploadRejected({ reason })),

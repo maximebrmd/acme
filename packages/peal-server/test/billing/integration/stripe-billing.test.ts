@@ -170,6 +170,10 @@ const recordedEvents = Effect.fn("recordedEvents")(function* recordedEvents(
 
 const ErrorSchema = Schema.Struct({ code: Schema.String });
 
+// The statuses of replies to requests sent together, smallest first.
+const statusesOf = (replies: readonly { readonly status: number }[]) =>
+  replies.map(({ status }) => status).toSorted((left, right) => left - right);
+
 // The way out of a limit the sign-in service's refusals carry.
 const upgradeFields = {
   billingUrl: Schema.String,
@@ -1318,5 +1322,117 @@ layer(BillingIntegration, {
         used: 0,
       });
     })
+  );
+  // Requests sent together count in turn: none passes a limit because
+  // another had not written yet.
+  it.effect(
+    "lets one of two invitations sent together take the last seat",
+    () =>
+      Effect.gen(function* invitedTogether() {
+        const app = yield* TestApp;
+        const owner = yield* signedUp("invited-together");
+        const workspaceId = yield* workspaceOf(owner, "Together");
+
+        const invite = (email: string) =>
+          app.request("/api/auth/organization/invite-member", {
+            body: { email, organizationId: workspaceId, role: "editor" },
+            headers: { cookie: owner.cookies },
+          });
+
+        // The free plan has two members: the owner, and one invited.
+        const replies = yield* Effect.all(
+          [invite(newEmail("one")), invite(newEmail("two"))],
+          { concurrency: "unbounded" }
+        );
+
+        assert.deepStrictEqual(statusesOf(replies), [200, 402]);
+      })
+  );
+
+  it.effect(
+    "lets one of two invitations accepted together take the last seat",
+    () =>
+      Effect.gen(function* acceptedTogether() {
+        const app = yield* TestApp;
+        const delivery = newDelivery();
+
+        const { owner, workspaceId } = yield* billedWorkspace(
+          "accepted-together",
+          delivery.customerId
+        );
+
+        // On a paid plan, which has room for both invitations.
+        assert.strictEqual(
+          yield* deliver(payloadOf("customer.subscription.updated", delivery)),
+          200
+        );
+
+        const guests = [
+          yield* signedUp("guest-one"),
+          yield* signedUp("guest-two"),
+        ];
+
+        const invitations = yield* Effect.all(
+          guests.map((guest) =>
+            app
+              .request("/api/auth/organization/invite-member", {
+                body: {
+                  email: guest.email,
+                  organizationId: workspaceId,
+                  role: "editor",
+                },
+                headers: { cookie: owner.cookies },
+              })
+              .pipe(
+                Effect.flatMap((reply) =>
+                  bodyOf(Schema.Struct({ id: Schema.String }), reply)
+                )
+              )
+          )
+        );
+
+        // Back on the free plan, which has one seat left.
+        assert.strictEqual(
+          yield* deliver(payloadOf("customer.subscription.deleted", delivery)),
+          200
+        );
+
+        const replies = yield* Effect.all(
+          guests.map((guest, index) =>
+            app.request("/api/auth/organization/accept-invitation", {
+              body: { invitationId: invitations[index]?.id },
+              headers: { cookie: guest.cookies },
+            })
+          ),
+          { concurrency: "unbounded" }
+        );
+
+        assert.deepStrictEqual(statusesOf(replies), [200, 402]);
+        assert.strictEqual(
+          (yield* billingOf(owner, workspaceId)).usage.members,
+          2
+        );
+      })
+  );
+
+  it.effect(
+    "lets one of two workspaces created together be the account's free one",
+    () =>
+      Effect.gen(function* createdTogether() {
+        const app = yield* TestApp;
+        const owner = yield* signedUp("created-together");
+
+        const create = (name: string) =>
+          app.request("/api/auth/organization/create", {
+            body: { name, slug: `${name}-${randomUUID()}` },
+            headers: { cookie: owner.cookies },
+          });
+
+        const replies = yield* Effect.all([create("first"), create("second")], {
+          concurrency: "unbounded",
+        });
+
+        assert.deepStrictEqual(statusesOf(replies), [200, 402]);
+      })
   );
 });
