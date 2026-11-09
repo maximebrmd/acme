@@ -17,6 +17,8 @@
 **/*.tsbuildinfo
 .nx
 .cache
+**/.venv
+**/.ansible
 .e2e
 .local
 .claude

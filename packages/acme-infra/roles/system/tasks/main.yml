@@ -1,0 +1,95 @@
+---
+- name: Set the host name
+  ansible.builtin.hostname:
+    name: "{{ server_hostname }}"
+
+- name: Resolve the host name locally
+  ansible.builtin.lineinfile:
+    path: /etc/hosts
+    regexp: '^127\.0\.1\.1\s'
+    line: "127.0.1.1 {{ server_hostname }}"
+
+- name: Use UTC
+  community.general.timezone:
+    name: Etc/UTC
+
+# A second run within the hour reads the cached lists and upgrades nothing.
+- name: Upgrade installed packages
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
+    upgrade: safe
+
+- name: Install base packages
+  ansible.builtin.apt:
+    name: [unattended-upgrades, ufw, ca-certificates, curl]
+    state: present
+
+# Security updates install daily. A kernel update needs a reboot, which
+# happens at a fixed early-morning time instead of never. Docker restarts the
+# stack after it (restart: unless-stopped).
+- name: Configure unattended upgrades
+  ansible.builtin.template:
+    src: 52unattended-upgrades-local.j2
+    dest: /etc/apt/apt.conf.d/52unattended-upgrades-local
+    mode: "0644"
+
+- name: Enable the daily apt timers
+  ansible.builtin.copy:
+    dest: /etc/apt/apt.conf.d/20auto-upgrades
+    content: |
+      APT::Periodic::Update-Package-Lists "1";
+      APT::Periodic::Unattended-Upgrade "1";
+      APT::Periodic::AutocleanInterval "7";
+    mode: "0644"
+
+# Swap absorbs a memory spike, such as a large video read whole before it is
+# published, instead of the kernel killing a process. Created once: the stat
+# skips the block on later runs.
+- name: Check for the swap file
+  ansible.builtin.stat:
+    path: /swapfile
+  register: system_swapfile
+
+- name: Create the swap file
+  when: not system_swapfile.stat.exists
+  block:
+    - name: Allocate the swap file
+      ansible.builtin.command: fallocate -l {{ swap_size_mb }}M /swapfile
+      changed_when: true
+
+    - name: Restrict the swap file
+      ansible.builtin.file:
+        path: /swapfile
+        mode: "0600"
+
+    - name: Format the swap file
+      ansible.builtin.command: mkswap /swapfile
+      changed_when: true
+
+    - name: Turn the swap on
+      ansible.builtin.command: swapon /swapfile
+      changed_when: true
+
+- name: Mount the swap at boot
+  ansible.posix.mount:
+    src: /swapfile
+    path: none
+    fstype: swap
+    opts: sw
+    state: present
+
+- name: Prefer RAM over swap
+  ansible.posix.sysctl:
+    name: vm.swappiness
+    value: "10"
+    sysctl_file: /etc/sysctl.d/60-swap.conf
+
+- name: Cap the journal size
+  ansible.builtin.copy:
+    dest: /etc/systemd/journald.conf.d/50-size.conf
+    content: |
+      [Journal]
+      SystemMaxUse=500M
+    mode: "0644"
+  notify: Restart journald

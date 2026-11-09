@@ -1,0 +1,32 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "acme-infra",
+  "projectType": "application",
+  "targets": {
+    "collections": {
+      "command": "uv run --locked ansible-galaxy collection install --requirements-file requirements.yml",
+      "options": { "cwd": "{projectRoot}" },
+      "cache": true,
+      "inputs": ["{projectRoot}/requirements.yml", "{projectRoot}/uv.lock"],
+      "outputs": ["{projectRoot}/.ansible/collections"]
+    },
+    "lint": {
+      "command": "uv run --locked ansible-lint",
+      "options": { "cwd": "{projectRoot}" },
+      "dependsOn": ["collections"],
+      "cache": true,
+      "inputs": ["default"]
+    },
+    "syntax-check": {
+      "command": "uv run --locked ansible-playbook --syntax-check playbooks/*.yml",
+      "options": { "cwd": "{projectRoot}" },
+      "dependsOn": ["collections"],
+      "cache": true,
+      "inputs": ["default"]
+    },
+    "test": {
+      "executor": "nx:noop",
+      "dependsOn": ["lint", "syntax-check"]
+    }
+  }
+}

@@ -1,0 +1,330 @@
+---
+# The server holds no repository or registry credentials. The machine running
+# Ansible checks the commit out from GitHub, builds the images for the
+# server's architecture, and uploads them over SSH with the release's Compose
+# file, so only pushed commits can be released. The server never builds
+# (--no-build). Starting the new server applies its migrations before it
+# listens.
+- name: Require the runtime that site.yml sets up
+  ansible.builtin.stat:
+    path: "{{ acme_compose_bin }}"
+  register: acme_release_runtime
+
+- name: Stop unless site.yml has run
+  ansible.builtin.assert:
+    that: acme_release_runtime.stat.exists
+    fail_msg: Run site.yml on {{ inventory_hostname }} before releasing.
+    quiet: true
+
+- name: Create the local release folder
+  ansible.builtin.file:
+    path: "{{ acme_release_local_dir }}"
+    state: directory
+    mode: "0700"
+  delegate_to: localhost
+  become: false
+
+- name: Check the release out
+  ansible.builtin.git:
+    repo: "{{ acme_release_repo_url }}"
+    dest: "{{ acme_release_local_dir }}/checkout"
+    version: "{{ acme_version }}"
+    force: true
+  delegate_to: localhost
+  become: false
+  register: acme_release_checkout
+
+# Postgres's image is named after its Dockerfile, so it changes, and
+# Postgres restarts, only when that file does.
+- name: Read the Postgres image's Dockerfile
+  ansible.builtin.stat:
+    path: "{{ acme_release_local_dir }}/checkout/packages/acme-docker/postgres.Dockerfile"
+    checksum_algorithm: sha256
+  delegate_to: localhost
+  become: false
+  register: acme_release_postgres_dockerfile
+
+- name: Name the release
+  ansible.builtin.set_fact:
+    acme_release_tag: "{{ acme_release_checkout.after[:12] }}"
+    acme_release_postgres_tag: "{{ acme_release_postgres_dockerfile.stat.checksum[:12] }}"
+    acme_release_dir: "{{ acme_root }}/releases/{{ acme_release_checkout.after[:12] }}"
+    acme_release_archive: "{{ acme_release_local_dir }}/images-{{ acme_environment }}-{{ acme_release_checkout.after[:12] }}.tar.gz"
+
+- name: Name the release's images
+  ansible.builtin.set_fact:
+    acme_release_built:
+      postgres: acme-postgres:{{ acme_release_postgres_tag }}
+      server: acme-server:{{ acme_release_tag }}
+      web: acme-web:{{ acme_release_tag }}
+      static: acme-static:{{ acme_release_tag }}
+
+- name: Check for the images on the server
+  ansible.builtin.command:
+    argv: "{{ ['docker', 'image', 'inspect'] + acme_release_built.values() | list }}"
+  register: acme_release_present
+  changed_when: false
+  failed_when: false
+
+# Built and saved once per commit and environment: `creates` skips the build
+# when the archive is there, such as when a release is run again.
+- name: Look for the release's archive
+  ansible.builtin.stat:
+    path: "{{ acme_release_archive }}"
+  delegate_to: localhost
+  become: false
+  register: acme_release_local_archive
+
+- name: Build and upload the images
+  when: acme_release_present.rc != 0
+  block:
+    - name: Build the images
+      ansible.builtin.command:
+        argv:
+          - docker
+          - buildx
+          - build
+          - --platform
+          - "{{ acme_image_platform }}"
+          - --file
+          - packages/acme-docker/{{ item }}.Dockerfile
+          - --tag
+          - "{{ acme_release_built[item] }}"
+          - --load
+          - .
+        chdir: "{{ acme_release_local_dir }}/checkout"
+      loop: [postgres, server, web]
+      delegate_to: localhost
+      become: false
+      changed_when: true
+      when: not acme_release_local_archive.stat.exists
+
+    # The site and the docs read their settings at build time, so each
+    # environment builds its own; docker takes each --build-arg's value from
+    # the environment.
+    - name: Build the static image
+      ansible.builtin.command:
+        argv: >-
+          {{ ['docker', 'buildx', 'build', '--platform', acme_image_platform,
+              '--file', 'packages/acme-docker/static.Dockerfile',
+              '--tag', acme_release_built.static, '--load']
+             + (['--build-arg'] | product(acme_static_build_args.keys()) | flatten)
+             + ['.'] }}
+        chdir: "{{ acme_release_local_dir }}/checkout"
+      environment: "{{ acme_static_build_args }}"
+      delegate_to: localhost
+      become: false
+      changed_when: true
+      when: not acme_release_local_archive.stat.exists
+
+    - name: Save the images
+      ansible.builtin.shell: |
+        set -euo pipefail
+        docker save {{ acme_release_built.values() | join(' ') }} \
+          | gzip -1 > {{ acme_release_archive }}.part
+        mv {{ acme_release_archive }}.part {{ acme_release_archive }}
+      args:
+        executable: /bin/bash
+        creates: "{{ acme_release_archive }}"
+      delegate_to: localhost
+      become: false
+
+    - name: Upload the images
+      ansible.builtin.copy:
+        src: "{{ acme_release_archive }}"
+        dest: "{{ acme_root }}/images/{{ acme_release_tag }}.tar.gz"
+        owner: root
+        group: root
+        mode: "0600"
+
+    - name: Load the images
+      ansible.builtin.command: docker load --input {{ acme_root }}/images/{{ acme_release_tag }}.tar.gz
+      changed_when: true
+
+    - name: Remove the uploaded archive
+      ansible.builtin.file:
+        path: "{{ acme_root }}/images/{{ acme_release_tag }}.tar.gz"
+        state: absent
+
+- name: Create the release folder
+  ansible.builtin.file:
+    path: "{{ acme_release_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+# The Compose file and the configuration it mounts, which hold no secret: the
+# containers' own users read them.
+- name: Upload the stack's files
+  ansible.builtin.copy:
+    src: "{{ acme_release_local_dir }}/checkout/packages/acme-docker/"
+    dest: "{{ acme_release_dir }}/"
+    owner: root
+    group: root
+    mode: u=rwX,g=rX,o=rX
+
+- name: Name the release that runs
+  ansible.builtin.copy:
+    dest: "{{ acme_root }}/release.env"
+    content: |
+      # Managed by Ansible (acme-infra): the images compose.production.yaml runs.
+      ACME_VERSION={{ acme_release_tag }}
+      ACME_POSTGRES_VERSION={{ acme_release_postgres_tag }}
+    owner: root
+    group: root
+    mode: "0640"
+
+- name: Point current at the release
+  ansible.builtin.file:
+    src: "{{ acme_release_dir }}"
+    dest: "{{ acme_root }}/current"
+    state: link
+
+# The Bluesky client's private key, generated once on the server by the
+# release's own image, which reaches no network for it. The key goes from the
+# command's output straight into secrets.env, never into Ansible's.
+- name: Create the Bluesky client key
+  ansible.builtin.shell: |
+    set -eu
+    if grep -q '^BLUESKY_CLIENT_KEYS=' {{ acme_root }}/secrets.env; then
+      exit 0
+    fi
+    key="$(docker run --rm --network none acme-server:{{ acme_release_tag }} packages/acme-server/scripts/bluesky-key.ts)"
+    umask 077
+    printf 'BLUESKY_CLIENT_KEYS=%s\n' "$key" >> {{ acme_root }}/secrets.env
+    echo created
+  register: acme_release_bluesky_key
+  changed_when: acme_release_bluesky_key.stdout == 'created'
+
+# When Postgres's image changes, the old server stops first, with 75 seconds
+# to finish its platform calls, so it never runs against a Postgres that
+# restarts. Pages stay up meanwhile. Otherwise Postgres keeps running, and
+# Compose replaces the server below only if its image changed.
+- name: Read what Postgres runs
+  ansible.builtin.command: docker inspect {{ acme_compose_project }}-postgres-1
+  register: acme_release_running_postgres
+  changed_when: false
+  failed_when: false
+
+- name: Stop the old server before Postgres restarts
+  ansible.builtin.command: "{{ acme_compose_bin }} stop server"
+  register: acme_release_stop
+  changed_when: acme_release_stop.stderr is search('Stopped')
+  when: >-
+    acme_release_running_postgres.rc != 0
+    or (acme_release_running_postgres.stdout | from_json)[0].Config.Image != acme_release_built.postgres
+
+- name: Start Postgres
+  ansible.builtin.command: "{{ acme_compose_bin }} up --no-build --detach --wait --wait-timeout 300 postgres"
+  register: acme_release_postgres
+  changed_when: acme_release_postgres.stderr is search('(Started|Recreated)')
+
+# A database restored onto a new server keeps the password of the one it
+# came from. Read-only unless the generated password is refused.
+- name: Check the database password
+  ansible.builtin.command:
+    argv:
+      - "{{ acme_compose_bin }}"
+      - exec
+      - -T
+      - postgres
+      - sh
+      - -c
+      - PGPASSWORD="$POSTGRES_PASSWORD" psql --host 127.0.0.1 --username acme --dbname acme --no-psqlrc --quiet --command 'SELECT 1'
+  register: acme_release_password
+  changed_when: false
+  failed_when: false
+
+- name: Set the database password to the generated one
+  ansible.builtin.command:
+    argv:
+      - "{{ acme_compose_bin }}"
+      - exec
+      - -T
+      - postgres
+      - sh
+      - -c
+      - psql --username acme --dbname acme --no-psqlrc --quiet --set ON_ERROR_STOP=1 --command "ALTER ROLE acme PASSWORD '$POSTGRES_PASSWORD'"
+  when: acme_release_password.rc != 0
+  changed_when: true
+
+# The new server migrates the database before it listens: --wait returns
+# once it is healthy.
+- name: Start the server, which migrates the database
+  ansible.builtin.command: "{{ acme_compose_bin }} up --no-build --detach --wait --wait-timeout 600 server"
+  register: acme_release_server
+  changed_when: acme_release_server.stderr is search('(Started|Recreated)')
+
+- name: Start the rest of the stack
+  ansible.builtin.command: "{{ acme_compose_bin }} up --no-build --detach --wait --wait-timeout 600 --remove-orphans"
+  register: acme_release_stack
+  changed_when: acme_release_stack.stderr is search('(Started|Recreated|Removed)')
+
+- name: Check the server and the web app on the server
+  ansible.builtin.uri:
+    url: http://127.0.0.1:{{ item.port }}{{ item.path }}
+    status_code: [200, 204]
+  loop:
+    - { port: "{{ acme_ports.server }}", path: /api/ready }
+    - { port: "{{ acme_ports.web }}", path: /sign-in }
+  register: acme_release_local
+  until: acme_release_local.status in [200, 204]
+  retries: 10
+  delay: 3
+
+# From the machine running Ansible, through Cloudflare. Access guards every
+# page of the sandbox, so only production is checked this way.
+- name: Check the app through the tunnel
+  ansible.builtin.uri:
+    url: https://{{ acme_hostnames.app }}/api/health
+    status_code: 204
+  delegate_to: localhost
+  become: false
+  register: acme_release_public
+  until: acme_release_public.status == 204
+  retries: 10
+  delay: 3
+  when: not acme_access_everything
+
+- name: List the releases
+  ansible.builtin.find:
+    paths: "{{ acme_root }}/releases"
+    file_type: directory
+  register: acme_release_dirs
+
+- name: Remove older releases
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: absent
+  loop: >-
+    {{ (acme_release_dirs.files | sort(attribute='mtime', reverse=true))[acme_release_keep:]
+       | rejectattr('path', 'equalto', acme_release_dir) | list }}
+  loop_control:
+    label: "{{ item.path | basename }}"
+
+# The images of the last week's releases stay, so releasing one of them again
+# needs no upload.
+- name: Remove images unused for a week
+  ansible.builtin.command: docker image prune --all --force --filter until=168h
+  tags: [prune]
+  register: acme_release_prune
+  changed_when: acme_release_prune.stdout is not search('Total reclaimed space:\s+0B')
+
+- name: List the local archives
+  ansible.builtin.find:
+    paths: "{{ acme_release_local_dir }}"
+    patterns: images-{{ acme_environment }}-*.tar.gz
+  delegate_to: localhost
+  become: false
+  register: acme_release_archives
+
+- name: Remove older local archives
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: absent
+  loop: "{{ acme_release_archives.files | rejectattr('path', 'equalto', acme_release_archive) | list }}"
+  loop_control:
+    label: "{{ item.path | basename }}"
+  delegate_to: localhost
+  become: false

@@ -1,0 +1,42 @@
+#!/bin/sh
+# Managed by Ansible (acme-infra). Backs the database up to the bucket with
+# pgBackRest, in the Postgres container: `acme-backup full`, `diff` or `incr`.
+# The timers run it; run it by hand with `sudo systemctl start
+# acme-backup@full`. Once the backup is stored, it tells the collector when,
+# which Grafana's alert on stale backups reads.
+set -eu
+
+type="${1:?usage: acme-backup full|diff|incr}"
+
+pgbackrest() {
+  {{ acme_compose_bin }} exec -T --user postgres postgres pgbackrest "$@"
+}
+
+# Creates the stanza the first time; afterwards, checks that it still matches
+# the database.
+pgbackrest stanza-create
+pgbackrest backup --type="$type"
+
+finished="$(date +%s)"
+metrics="$(cat <<JSON
+{"resourceMetrics": [{
+  "resource": {"attributes": [{"key": "service.name", "value": {"stringValue": "acme-backup"}}]},
+  "scopeMetrics": [{"scope": {"name": "acme-backup"}, "metrics": [{
+    "name": "acme_backup_last_success_timestamp",
+    "unit": "s",
+    "description": "When the last database backup finished",
+    "gauge": {"dataPoints": [{
+      "timeUnixNano": "${finished}000000000",
+      "asInt": "${finished}",
+      "attributes": [{"key": "type", "value": {"stringValue": "${type}"}}]
+    }]}
+  }]}]
+}]}
+JSON
+)"
+
+if ! curl --fail --silent --show-error --max-time 10 \
+  --header 'Content-Type: application/json' --data "$metrics" \
+  http://127.0.0.1:{{ acme_ports.otlp_http }}/v1/metrics > /dev/null; then
+  echo "acme-backup: the backup is stored, but the collector did not record it" >&2
+fi

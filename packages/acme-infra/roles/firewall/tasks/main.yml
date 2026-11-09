@@ -1,0 +1,27 @@
+---
+# ufw refuses every incoming connection. Behind the Cloudflare Tunnel nothing
+# needs to come in: cloudflared dials out to Cloudflare, and SSH arrives
+# through it. Only while a server is bootstrapped (ssh_via_tunnel: false) is
+# port 22 open, rate limited. Containers publish on 127.0.0.1 only, so
+# Docker's own rules, which ufw does not see, open nothing either.
+#
+# Each task states a rule or a policy, which ufw reports unchanged when it
+# already holds.
+- name: Open SSH while bootstrapping, and close it after
+  community.general.ufw:
+    rule: limit
+    port: "22"
+    proto: tcp
+    comment: SSH until the tunnel serves it
+    delete: "{{ ssh_via_tunnel | bool }}"
+
+- name: Allow outgoing traffic
+  community.general.ufw:
+    policy: allow
+    direction: outgoing
+
+- name: Deny incoming traffic and turn ufw on
+  community.general.ufw:
+    state: enabled
+    policy: deny
+    direction: incoming

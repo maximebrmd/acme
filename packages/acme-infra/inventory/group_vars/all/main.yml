@@ -1,0 +1,88 @@
+---
+# Settings both environments share. Each environment's own are in
+# group_vars/<environment>/main.yml, and the credentials that outside
+# services issue in group_vars/<environment>/vault.yml, encrypted with
+# ansible-vault and ignored by Git (vault.example.yml lists them), or on the
+# server itself (README.md).
+
+# Every playbook logs in as the admin user. Once the tunnel serves SSH, it
+# goes through cloudflared on the machine running Ansible, and the server
+# opens no inbound port.
+ansible_user: "{{ admin_user }}"
+ansible_ssh_common_args: >-
+  {{ ('-o ProxyCommand="cloudflared access ssh --hostname ' ~ acme_hostnames.ssh ~ '"')
+     if ssh_via_tunnel | bool else '' }}
+
+# Key-only admin account with passwordless sudo. Root cannot log in over SSH.
+admin_user: ops
+# Exclusive: removing a key here revokes it on the server.
+admin_ssh_public_keys:
+  - ssh-ed25519 REPLACE-WITH-AN-ADMIN-PUBLIC-KEY ops@example.com
+
+# false only while bootstrapping a server, before the tunnel serves SSH:
+# port 22 is then open, rate limited, and Ansible connects to ansible_host.
+ssh_via_tunnel: true
+
+swap_size_mb: 2048
+# Security updates install daily; a kernel update reboots at this time (UTC).
+unattended_reboot_time: "03:30"
+
+# cloudflared, from its GitHub release, checked against these digests.
+cloudflared_version: 2026.10.7
+cloudflared_deb_sha256:
+  amd64: 70b1a1e0f46033ffc8d90b406e554044ba6cbf2e4360295ef1163aed31e09393
+  arm64: d9407eb6e70ac31f54978a6b408a0320b51b664a6d0b498248692d7ac56bf836
+
+acme_root: /srv/acme
+acme_compose_project: acme
+# Docker Compose on the release that runs (acme_runtime writes it).
+acme_compose_bin: /usr/local/bin/acme-compose
+# Compose profiles the stack runs with: the marketing site and the docs.
+acme_compose_profiles: [static]
+# Loopback ports the tunnel reaches (compose.production.yaml).
+acme_ports:
+  server: 3000
+  web: 3001
+  site: 4321
+  docs: 4322
+  grafana: 13000
+  otlp_http: 14318
+
+# What release.yml deploys: a branch, tag or commit of this repository, built
+# on the machine running Ansible for the servers' architecture.
+acme_version: main
+acme_release_repo_url: https://github.com/maximebrmd/acme.git
+acme_image_platform: linux/amd64
+
+# Credentials the server needs from outside services, by name. The values
+# stay in the vault or on the server; the playbooks only check that each is
+# set. Either RESEND_API_KEY or SMTP_URL sends email.
+acme_required_credentials:
+  - ACME_S3_ACCESS_KEY_ID
+  - ACME_S3_SECRET_ACCESS_KEY
+  - PGBACKREST_REPO1_S3_KEY
+  - PGBACKREST_REPO1_S3_KEY_SECRET
+  - PGBACKREST_REPO1_CIPHER_PASS
+  - TELEGRAM_BOT_TOKEN
+  - TELEGRAM_CHAT_ID
+acme_mail_credentials: [RESEND_API_KEY, SMTP_URL]
+
+# More plain settings for the server, as NAME: value (the docs' environment
+# variables page lists them), such as ACME_AI_PROVIDER: anthropic. Secrets go
+# in the credentials instead.
+acme_settings: {}
+
+# Paths of the app's host name that Cloudflare Access guards in production:
+# Better Auth's admin endpoints on the server, and the admin pages on the web
+# app. Each is a regular expression cloudflared matches against the path.
+acme_access_paths:
+  - path: ^/+api/+auth/+admin(/|$)
+    to: server
+  - path: ^/+(fr/+)?admin(/|$)
+    to: web
+# On an environment behind Access throughout (the sandbox), the paths that
+# outside services fetch, which stay open: Bluesky reads the client metadata
+# and keys under /api/channels/oauth/. Add platforms' webhooks here.
+acme_access_bypass_paths:
+  - path: ^/+api/+channels/+oauth/
+    to: server

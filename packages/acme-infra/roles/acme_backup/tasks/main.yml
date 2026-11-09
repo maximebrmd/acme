@@ -1,0 +1,36 @@
+---
+# pgBackRest runs in the Postgres container (postgres.Dockerfile): Postgres
+# archives each write-ahead log segment to the backup bucket as it fills, or
+# after 5 minutes, and these timers take a full backup each Sunday and a
+# differential one the other days, keeping four weeks. Each task writes a
+# file or states a unit, so a second run changes nothing.
+- name: Install acme-backup
+  ansible.builtin.template:
+    src: acme-backup.j2
+    dest: /usr/local/sbin/acme-backup
+    owner: root
+    group: root
+    mode: "0750"
+
+- name: Write the backup service and timers
+  ansible.builtin.template:
+    src: "{{ item }}.j2"
+    dest: /etc/systemd/system/{{ item }}
+    mode: "0644"
+  loop:
+    - acme-backup@.service
+    - acme-backup-full.timer
+    - acme-backup-diff.timer
+  notify: Reload systemd
+
+- name: Apply changed units now
+  ansible.builtin.meta: flush_handlers
+
+- name: Start the backup timers at boot
+  ansible.builtin.systemd_service:
+    name: "{{ item }}"
+    state: started
+    enabled: true
+  loop:
+    - acme-backup-full.timer
+    - acme-backup-diff.timer

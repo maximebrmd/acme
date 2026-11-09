@@ -1,0 +1,106 @@
+---
+- name: Create the Acme folders
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0750"
+  loop:
+    - "{{ acme_root }}"
+    - "{{ acme_root }}/releases"
+    - "{{ acme_root }}/images"
+
+# Generated once on the server and never copied anywhere else: `creates`
+# skips the task once the file exists. The token key id carries the date, so
+# a server rebuilt from a backup never reads tokens with a new key under an
+# old key's name.
+- name: Generate the secrets
+  ansible.builtin.shell: |
+    set -eu
+    umask 077
+    {
+      printf 'POSTGRES_PASSWORD=%s\n' "$(openssl rand -hex 32)"
+      printf 'BETTER_AUTH_SECRET=%s\n' "$(openssl rand -base64 32)"
+      printf 'ACME_TOKEN_KEYS=k%s:%s\n' "$(date -u +%Y%m%d)" "$(openssl rand -base64 32)"
+      printf 'GRAFANA_ADMIN_PASSWORD=%s\n' "$(openssl rand -hex 24)"
+    } > {{ acme_root }}/secrets.env.new
+    mv {{ acme_root }}/secrets.env.new {{ acme_root }}/secrets.env
+  args:
+    creates: "{{ acme_root }}/secrets.env"
+
+# Credentials that outside services issued: from the vault when it holds
+# them, otherwise written on the server by hand (README.md).
+- name: Refuse credentials Compose would misread
+  ansible.builtin.assert:
+    that: acme_credentials.values() | map('string') | select('search', "['\n]") | list | length == 0
+    fail_msg: A credential holds a single quote or a line break, which credentials.env cannot.
+    quiet: true
+  when: acme_credentials is defined
+
+- name: Write the credentials from the vault
+  ansible.builtin.template:
+    src: credentials.env.j2
+    dest: "{{ acme_root }}/credentials.env"
+    owner: root
+    group: root
+    mode: "0600"
+  when: acme_credentials is defined
+  no_log: true
+
+- name: Check for the credentials
+  ansible.builtin.stat:
+    path: "{{ acme_root }}/credentials.env"
+  register: acme_runtime_credentials
+
+- name: Require the credentials file
+  ansible.builtin.assert:
+    that: acme_credentials is defined or acme_runtime_credentials.stat.exists
+    fail_msg: >-
+      Put the credentials in the vault (acme_credentials), or write
+      {{ acme_root }}/credentials.env on the server (README.md, "Credentials").
+    quiet: true
+
+# Names only: the values never leave the file. Read-only, so it runs in check
+# mode too.
+- name: Find the credentials not set on the server
+  ansible.builtin.shell: |
+    set -eu
+    for name in {{ acme_required_credentials | join(' ') }}; do
+      grep -Eq "^${name}=.+" {{ acme_root }}/credentials.env || echo "$name"
+    done
+    grep -Eq '^({{ acme_mail_credentials | join('|') }})=.+' {{ acme_root }}/credentials.env ||
+      echo '{{ acme_mail_credentials | join(' or ') }}'
+  register: acme_runtime_unset
+  changed_when: false
+  check_mode: false
+  when: acme_credentials is not defined
+
+- name: Require every credential
+  ansible.builtin.assert:
+    that: acme_runtime_missing | length == 0
+    fail_msg: "Set {{ acme_runtime_missing | join(', ') }} in the credentials."
+    quiet: true
+  vars:
+    acme_runtime_missing: >-
+      {{ (acme_required_credentials | difference(acme_credentials.keys())
+          + ([] if acme_credentials.keys() | intersect(acme_mail_credentials) else [acme_mail_credentials | join(' or ')]))
+         if acme_credentials is defined else acme_runtime_unset.stdout_lines }}
+
+- name: Write the host settings for Compose
+  ansible.builtin.template:
+    src: host.env.j2
+    dest: "{{ acme_root }}/host.env"
+    owner: root
+    group: root
+    mode: "0640"
+
+# `sudo acme-compose ps`, `logs server`, `exec postgres psql --username acme`:
+# Compose on the release that runs, with its settings.
+- name: Install acme-compose
+  ansible.builtin.template:
+    src: acme-compose.j2
+    dest: "{{ acme_compose_bin }}"
+    owner: root
+    group: root
+    mode: "0755"

@@ -1,0 +1,5 @@
+// Managed by Ansible (acme-infra). Overrides 50unattended-upgrades.
+Unattended-Upgrade::Remove-Unused-Kernel-Packages "true";
+Unattended-Upgrade::Remove-Unused-Dependencies "true";
+Unattended-Upgrade::Automatic-Reboot "true";
+Unattended-Upgrade::Automatic-Reboot-Time "{{ unattended_reboot_time }}";

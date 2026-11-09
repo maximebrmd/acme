@@ -14,6 +14,8 @@ packages/acme-contract/openapi.json
 
 # Tool caches and local state
 .nx/
+.venv/
+.ansible/
 .e2e/
 .cache/
 /.claude/
@@ -27,6 +29,7 @@ packages/acme-contract/openapi.json
 # Secrets and local data
 .env*
 !.env.example
+vault.yml
 *.pem
 *.key
 *.p12

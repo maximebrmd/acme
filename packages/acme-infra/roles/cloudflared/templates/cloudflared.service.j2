@@ -1,0 +1,28 @@
+# Managed by Ansible (acme-infra).
+[Unit]
+Description=Cloudflare Tunnel for Acme
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=notify
+TimeoutStartSec=30
+User=cloudflared
+Group=cloudflared
+ExecStart=/usr/bin/cloudflared --no-autoupdate tunnel --config {{ cloudflared_config_dir }}/config.yml run --token-file {{ cloudflared_config_dir }}/token
+Restart=on-failure
+RestartSec=5s
+NoNewPrivileges=true
+CapabilityBoundingSet=
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+
+[Install]
+WantedBy=multi-user.target

@@ -24,8 +24,11 @@ Nx projects live directly under `packages/`:
   Better Auth's client and Tiptap.
 - `acme-cli`: the `acme` command line, `effect/cli` on Bun, a client of the API
   that signs in with OAuth.
-- `acme-docker`: the development compose stack and the server's production
-  image (with sharp's C++ runtime and a static ffprobe).
+- `acme-docker`: the development compose stack, the production images (the
+  server's, with sharp's C++ runtime and a static ffprobe; the web app's;
+  the site and docs on nginx; Postgres with pgBackRest), the production stack
+  (`compose.production.yaml`) and Caddy in front of it for self-hosters
+  (`compose.self-host.yaml`).
 - `acme-docs`: the documentation site (Blume), with the API reference rendered
   from the contract's `openapi.json`.
 - `acme-site`: the static marketing site (Astro), with the legal pages that
@@ -34,7 +37,8 @@ Nx projects live directly under `packages/`:
   `@e2e-dev/web`). Each run starts the server and the web app's production
   build itself (`scripts/serve.ts`).
 
-Planned: `acme-infra` (Ansible).
+- `acme-infra`: Ansible for Acme's servers, production and the sandbox, and
+  their releases. Python, managed with uv.
 
 Work from the repository root unless a command names another directory.
 
@@ -79,7 +83,10 @@ Work from the repository root unless a command names another directory.
   Compile through a script that deletes it, like
   `packages/acme-cli/scripts/build.ts`.
 - Pin every dependency to the exact latest release, and commit `bun.lock` with
-  dependency changes.
+  dependency changes, `packages/acme-infra/uv.lock` with Python ones.
+- `bun run test` also runs ansible-lint (production profile) and
+  `ansible-playbook --syntax-check` on `packages/acme-infra`, through uv
+  (`nx run acme-infra:test`).
 - Define Nx target defaults in [`nx.json`](nx.json) and package targets in
   `project.json`. Declare build dependencies and cache outputs there. Keep
   tests uncached.
@@ -127,6 +134,15 @@ and Next.js ships its docs in `packages/acme-web/node_modules/next/dist/docs`.
   `packages/acme-docker/test/compose.test.ts` enforces these rules, and checks
   that the server image uses the Bun in `.bun-version`, runs as nonroot, ships
   ffprobe, and pins every image it builds on or copies from by digest.
+- `compose.production.yaml` follows the same rules, pins every image it pulls
+  by digest at the version `compose.yaml` runs, gives every service
+  `restart: unless-stopped` and the server `stop_grace_period: 75s`, and tags
+  the images it builds `${ACME_VERSION:-local}` (`ACME_POSTGRES_VERSION` for
+  Postgres). It passes optional settings through by name (`NAME:` with no
+  value), so one that is unset stays unset rather than empty, which the
+  server would read as set. The same test covers it, the web, static and
+  Postgres images (CI's Node, the workspace's Bun, digests, nonroot) and
+  `compose.self-host.yaml`, where Caddy alone publishes ports to the world.
 - Keep `MP_SMTP_DISABLE_RDNS` on Mailpit, in compose and CI: its reverse DNS
   lookup otherwise stalls each SMTP greeting for about 10 seconds, and the
   email tests time out.
@@ -563,6 +579,9 @@ self-hoster needs only Postgres and an S3-compatible store:
 Billing and captcha are not built yet.
 
 - Images read `PORT` and plain environment variables and run anywhere.
+- Self-hosters run `compose.production.yaml` with `compose.self-host.yaml`:
+  Caddy (`self-host/Caddyfile`) terminates TLS, routes as below and waits 150
+  seconds for an answer. `self-host.env.example` lists what to set.
 - Route `/api/*` and `/.well-known/oauth-*` to the server, or let the web app
   forward them, and everything else to the web app.
 - Document every setting a package reads in the docs' environment variables
@@ -738,13 +757,29 @@ Billing and captcha are not built yet.
 ## Infrastructure
 
 - Production runs on a Hetzner server managed with Ansible from `acme-infra`,
-  reachable only through a Cloudflare Tunnel: no inbound ports. Cloudflare Zero
-  Trust Access guards Grafana, the admin and the sandbox. Caddy fronts the
+  reachable only through a Cloudflare Tunnel: no inbound ports, SSH included.
+  Cloudflare Zero Trust Access guards Grafana, the admin and the sandbox, and
+  cloudflared checks the Access token on those routes too. Caddy fronts the
   stack for self-hosters.
+- Change the servers only through the playbooks in `packages/acme-infra`; SSH
+  is for reading (`sudo acme-compose ps`). Run `site.yml` with `--check
+  --diff` before applying it, and keep every task idempotent: a second run
+  reports no change. The inventory holds placeholders that `acme_preflight`
+  refuses; nothing has been applied yet.
+- Containers publish ports on 127.0.0.1 only, and the tunnel reaches them
+  there; Docker's own rules would otherwise bypass ufw.
 - Telemetry goes through an OpenTelemetry Collector to Loki, Tempo, Prometheus
   and Grafana; alerts go to a Telegram bot. A separate server checks uptime.
 - Secrets are generated on the server and stay there. Do not copy them, print
-  them, or give the server's credentials to other systems, GitHub included.
+  them, or give the server's credentials to other systems, GitHub included:
+  `release.yml` builds the images on the machine running Ansible and uploads
+  them. Credentials outside services issue come from a Git-ignored vault or
+  are written on the server, and Ansible checks them by name only.
+- Postgres archives its write-ahead log and is backed up to R2 with
+  pgBackRest; the backup passphrase is the one secret kept outside the server
+  too. `runbooks/restore-database.md` restores it. The server migrates when it
+  starts, so write migrations that the previous release can still run
+  against, and roll back by releasing the previous commit.
 - Changing a server's size or adding any paid resource needs the owner's
   explicit approval.
 

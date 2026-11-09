@@ -1,0 +1,12 @@
+# Managed by Ansible (acme-infra). One backup of the Acme database: %i is
+# full, diff or incr.
+[Unit]
+Description=Back the Acme database up (%i)
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/acme-backup %i
+Nice=10
+IOSchedulingClass=idle

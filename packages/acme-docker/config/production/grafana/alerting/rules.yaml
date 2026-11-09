@@ -1,0 +1,175 @@
+# Alert rules, provisioned read-only. Notifications go where the contact point
+# file mounted beside this one says: Telegram in Acme's production
+# (telegram.yaml), Grafana's default otherwise (none.yaml).
+#
+# Requests are counted from the server's spans, which Tempo's
+# metrics-generator turns into traces_spanmetrics_* series; the container
+# health checks alone keep them above zero while the server runs.
+
+apiVersion: 1
+
+groups:
+  - orgId: 1
+    name: acme
+    folder: Acme
+    interval: 1m
+    rules:
+      - uid: acme-server-silent
+        title: The server answers no requests
+        condition: B
+        for: 5m
+        # No series at all means the server, the collector or Tempo is down.
+        noDataState: Alerting
+        execErrState: Error
+        annotations:
+          summary: acme-server has reported no request for 10 minutes. Check that it runs and that its telemetry reaches the collector.
+        labels:
+          severity: critical
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 600
+              to: 0
+            model:
+              refId: A
+              instant: true
+              expr: sum(rate(traces_spanmetrics_calls_total{service="acme-server", span_kind="SPAN_KIND_SERVER"}[10m]))
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator:
+                    type: lt
+                    params: [0.01]
+
+      - uid: acme-server-failing-requests
+        title: The server fails requests
+        condition: B
+        for: 10m
+        noDataState: OK
+        execErrState: Error
+        annotations:
+          summary: More than 3 requests a minute to acme-server have failed for 10 minutes.
+        labels:
+          severity: warning
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 300
+              to: 0
+            model:
+              refId: A
+              instant: true
+              expr: sum(rate(traces_spanmetrics_calls_total{service="acme-server", span_kind="SPAN_KIND_SERVER", status_code="STATUS_CODE_ERROR"}[5m]))
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [0.05]
+
+      - uid: acme-server-error-logs
+        title: The server logs errors
+        condition: B
+        for: 0s
+        noDataState: OK
+        execErrState: Error
+        annotations:
+          summary: acme-server logged more than 5 errors in 10 minutes. Read them in Grafana's Loki explorer.
+        labels:
+          severity: warning
+        data:
+          - refId: A
+            datasourceUid: loki
+            relativeTimeRange:
+              from: 600
+              to: 0
+            model:
+              refId: A
+              queryType: instant
+              # OTLP severity numbers 17 to 24 are errors and fatal errors.
+              expr: sum(count_over_time({service_name="acme-server"} | severity_number >= 17 [10m]))
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [5]
+
+      - uid: acme-backup-stale
+        title: The database has no recent backup
+        condition: B
+        for: 0s
+        # No backup has reported in 8 days, or ever.
+        noDataState: Alerting
+        execErrState: Error
+        annotations:
+          summary: No database backup has finished for 30 hours. Read `journalctl --unit 'acme-backup@*'` on the server.
+        labels:
+          severity: critical
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 600
+              to: 0
+            model:
+              refId: A
+              instant: true
+              # Seconds since the last backup finished. A backup reports once,
+              # so the sample is searched for over the last 8 days.
+              expr: time() - max(max_over_time(acme_backup_last_success_timestamp_seconds[8d]))
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [108000]
+
+      - uid: acme-disk-almost-full
+        title: The server's disk is almost full
+        condition: B
+        for: 15m
+        noDataState: NoData
+        execErrState: Error
+        annotations:
+          summary: The root filesystem is more than 85% full. A stuck WAL archive grows until it fills the disk.
+        labels:
+          severity: critical
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 600
+              to: 0
+            model:
+              refId: A
+              instant: true
+              expr: 1 - sum(system_filesystem_usage_bytes{mountpoint="/", state="free"}) / sum(system_filesystem_usage_bytes{mountpoint="/"})
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [0.85]

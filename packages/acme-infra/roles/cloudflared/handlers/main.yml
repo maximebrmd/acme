@@ -1,0 +1,14 @@
+---
+# Ansible's own SSH session may run through the tunnel, and a restart cuts
+# it: the restart is scheduled a few seconds out, so this task returns first,
+# then Ansible waits for its connection to come back.
+- name: Schedule a restart of cloudflared
+  ansible.builtin.command: systemd-run --on-active=3 /usr/bin/systemctl restart cloudflared.service
+  changed_when: true
+  listen: Restart cloudflared
+
+- name: Wait for the connection to come back
+  ansible.builtin.wait_for_connection:
+    delay: 10
+    timeout: 120
+  listen: Restart cloudflared
