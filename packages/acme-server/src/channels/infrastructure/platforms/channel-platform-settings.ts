@@ -53,6 +53,8 @@ export interface ChannelPlatformSettings {
   readonly tiktokHosts: TikTokHosts;
   /** Acme's X app, if the operator registered one. */
   readonly x: Option.Option<OAuthClient>;
+  /** Acme's Google OAuth client, for YouTube, if the operator made one. */
+  readonly youtube: Option.Option<OAuthClient>;
 }
 
 export class ChannelPlatforms extends Context.Service<
@@ -172,6 +174,10 @@ const blueskyModeOf = Effect.fnUntraced(function* blueskyModeOf(settings: {
  *   registered on TikTok for Developers, with Login Kit and the Content
  *   Posting API. Without them, TikTok is not offered; one alone stops the
  *   server.
+ * - `YOUTUBE_CLIENT_ID` and `YOUTUBE_CLIENT_SECRET`: the OAuth client the
+ *   operator made in a Google Cloud project with the YouTube Data API on,
+ *   for YouTube channels. Like LinkedIn's and X's, one half alone stops the
+ *   server.
  */
 export const channelPlatformsConfig = Effect.gen(function* settings() {
   const publicUrl = yield* publicUrlConfig;
@@ -189,6 +195,7 @@ export const channelPlatformsConfig = Effect.gen(function* settings() {
   const meta = yield* metaAppConfig;
   const threads = yield* threadsAppConfig;
   const tiktok = yield* oauthClientConfig("tiktok", "TIKTOK", "CLIENT_KEY");
+  const youtube = yield* oauthClientConfig("youtube", "YOUTUBE");
 
   const platforms: ChannelPlatformSettings = {
     bluesky: mode.pipe(
@@ -206,6 +213,7 @@ export const channelPlatformsConfig = Effect.gen(function* settings() {
     tiktok,
     tiktokHosts,
     x,
+    youtube,
   };
 
   return platforms;

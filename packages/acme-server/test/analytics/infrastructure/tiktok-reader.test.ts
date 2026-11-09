@@ -111,7 +111,7 @@ const reading = (
     return { batch, handed: yield* AccessLog.use((log) => log.handed) };
   }).pipe(
     Effect.provide(
-      readersWith(undefined, url).pipe(
+      readersWith({ tiktokApi: url }).pipe(
         Layer.provideMerge(channelAccessOf(owner, tokens))
       )
     )

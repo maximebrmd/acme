@@ -262,12 +262,12 @@ describe("options on a post's channels", () => {
   });
 
   it("are needed to schedule on YouTube and TikTok, after the text rules", () => {
-    const photo = MediaAssetIdSchema.make(
+    const videoId = MediaAssetIdSchema.make(
       "00000000-0000-7000-8000-00000000a001"
     );
 
-    const content = contentOf("A synthetic video", { media: [photo] });
-    const files = [mediaFile(photo)];
+    const content = contentOf("A synthetic video", { media: [videoId] });
+    const files = [mediaFile(videoId, { contentType: "video/mp4" })];
 
     expect(
       violationsOf(

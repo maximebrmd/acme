@@ -53,6 +53,8 @@ const withoutApps = {
   TIKTOK_CLIENT_SECRET: "",
   X_CLIENT_ID: "",
   X_CLIENT_SECRET: "",
+  YOUTUBE_CLIENT_ID: "",
+  YOUTUBE_CLIENT_SECRET: "",
 };
 
 const channelsWith = (keys: string) =>
@@ -167,6 +169,7 @@ layer(channelsWith(""))("the channels context on a local server", (it) => {
           "threads",
           "tiktok",
           "x",
+          "youtube",
         ]);
         assert.isTrue(Option.isNone(documents.bluesky));
       })
@@ -174,9 +177,11 @@ layer(channelsWith(""))("the channels context on a local server", (it) => {
 });
 
 layer(DatabaseTest)(
-  "the channels context's LinkedIn, X and TikTok settings",
+  "the channels context's LinkedIn, X, TikTok and YouTube settings",
   (it) => {
-    it.effect("connect LinkedIn, X and TikTok once their apps are set", () =>
+    it.effect(
+      "connect LinkedIn, X, TikTok and YouTube once their apps are set",
+      () =>
       Effect.gen(function* configured() {
         const authorizers = yield* PlatformAuthorizers.pipe(
           Effect.provide(
@@ -188,6 +193,8 @@ layer(DatabaseTest)(
               TIKTOK_CLIENT_SECRET: "synthetic-tiktok-secret",
               X_CLIENT_ID: "c3ludGhldGlj",
               X_CLIENT_SECRET: "synthetic-x-secret",
+              YOUTUBE_CLIENT_ID: "synthetic.apps.googleusercontent.example",
+              YOUTUBE_CLIENT_SECRET: "synthetic-google-secret",
             })
           )
         );
@@ -204,9 +211,14 @@ layer(DatabaseTest)(
           Option.getOrThrow(authorizers.for("tiktok")).platform,
           "tiktok"
         );
+        assert.strictEqual(
+          Option.getOrThrow(authorizers.for("youtube")).platform,
+          "youtube"
+        );
         assert.isFalse(authorizers.unconfigured.has("linkedin"));
         assert.isFalse(authorizers.unconfigured.has("x"));
         assert.isFalse(authorizers.unconfigured.has("tiktok"));
+        assert.isFalse(authorizers.unconfigured.has("youtube"));
       }).pipe(Effect.scoped)
     );
 
@@ -216,6 +228,13 @@ layer(DatabaseTest)(
           ["linkedin", { ...withoutApps, LINKEDIN_CLIENT_ID: "77synthetic" }],
           ["x", { ...withoutApps, X_CLIENT_SECRET: "synthetic-x-secret" }],
           ["tiktok", { ...withoutApps, TIKTOK_CLIENT_KEY: "awsynthetic" }],
+          [
+            "youtube",
+            {
+              ...withoutApps,
+              YOUTUBE_CLIENT_SECRET: "synthetic-google-secret",
+            },
+          ],
         ] as const) {
           const failure = yield* Layer.build(
             channelsWithSettings({ ...settings, BLUESKY_CLIENT_KEYS: "" })

@@ -2,7 +2,7 @@
   "type": "base",
   "version": "9",
   "dialect": "postgres",
-  "id": "6f403978-85b1-462f-b921-5f14781030b1",
+  "id": "d10a13f6-2076-4db3-933a-2a7bbdb919cb",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
@@ -446,6 +446,44 @@
         "n|type|publishing.publication_calls",
         "n|rel|publishing.publication_calls_pkey",
         "n|rel|publishing.publication_calls_target_round_attempt"
+      ],
+      "reads": [
+        "n|sch|publishing"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "publishing",
+        "quota_usage"
+      ],
+      "writes": [
+        "s|tbl|publishing.quota_usage",
+        "n|tbl|publishing.quota_usage",
+        "e|tbl|publishing.quota_usage",
+        "n|rel|publishing.quota_usage",
+        "n|type|publishing.quota_usage",
+        "n|rel|publishing.quota_usage_pkey"
+      ],
+      "reads": [
+        "n|sch|publishing"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "publishing",
+        "upload_sessions"
+      ],
+      "writes": [
+        "s|tbl|publishing.upload_sessions",
+        "n|tbl|publishing.upload_sessions",
+        "e|tbl|publishing.upload_sessions",
+        "n|rel|publishing.upload_sessions",
+        "n|type|publishing.upload_sessions",
+        "n|rel|publishing.upload_sessions_pkey"
       ],
       "reads": [
         "n|sch|publishing"
@@ -1785,6 +1823,29 @@
       "statementType": "create_fk",
       "statementTarget": [
         "table",
+        "publishing",
+        "upload_sessions"
+      ],
+      "writes": [
+        "s|fk|publishing.upload_sessions.upload_sessions_72ct0kRYe5re_fkey",
+        "n|fk|publishing.upload_sessions.upload_sessions_72ct0kRYe5re_fkey",
+        "e|fk|publishing.upload_sessions.upload_sessions_72ct0kRYe5re_fkey",
+        "n|con|publishing.upload_sessions.upload_sessions_72ct0kRYe5re_fkey"
+      ],
+      "reads": [
+        "n|tbl|publishing.upload_sessions",
+        "n|sch|publishing",
+        "n|tbl|publishing.publication_calls",
+        "n|sch|publishing",
+        "n|col|publishing.upload_sessions.idempotency_key",
+        "n|col|publishing.publication_calls.idempotency_key",
+        "e|uniqueness|publishing.publication_calls.idempotency_key"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
         "auth",
         "account"
       ],
@@ -2334,6 +2395,18 @@
     {
       "schema": "publishing",
       "name": "publication_calls",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "publishing",
+      "name": "quota_usage",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "publishing",
+      "name": "upload_sessions",
       "isRlsEnabled": false,
       "entityType": "tables"
     },
@@ -4105,6 +4178,19 @@
     {
       "schema": "publishing",
       "table": "post_targets",
+      "name": "kept_private",
+      "type": "boolean",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "false",
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "post_targets",
       "name": "options",
       "type": "jsonb",
       "typeSchema": null,
@@ -4629,6 +4715,123 @@
       "type": "uuid",
       "typeSchema": null,
       "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "quota_usage",
+      "name": "bucket",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "quota_usage",
+      "name": "day",
+      "type": "date",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "quota_usage",
+      "name": "units",
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "upload_sessions",
+      "name": "byte_size",
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "upload_sessions",
+      "name": "final_part_sent",
+      "type": "boolean",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "false",
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "upload_sessions",
+      "name": "idempotency_key",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "upload_sessions",
+      "name": "opened_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "upload_sessions",
+      "name": "session_url",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "upload_sessions",
+      "name": "video_id",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
       "dimensions": 0,
       "default": null,
       "generated": null,
@@ -8582,6 +8785,23 @@
       "entityType": "fks"
     },
     {
+      "schema": "publishing",
+      "table": "upload_sessions",
+      "name": "upload_sessions_72ct0kRYe5re_fkey",
+      "nameExplicit": false,
+      "columns": [
+        "idempotency_key"
+      ],
+      "schemaTo": "publishing",
+      "tableTo": "publication_calls",
+      "columnsTo": [
+        "idempotency_key"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "entityType": "fks"
+    },
+    {
       "schema": "auth",
       "table": "account",
       "name": "account_user_id_user_id_fkey",
@@ -8933,6 +9153,17 @@
       "entityType": "pks"
     },
     {
+      "schema": "publishing",
+      "table": "quota_usage",
+      "name": "quota_usage_pkey",
+      "columns": [
+        "bucket",
+        "day"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
       "schema": "analytics",
       "table": "tracked_posts",
       "name": "tracked_posts_pkey",
@@ -9066,6 +9297,16 @@
       "schema": "publishing",
       "table": "publication_calls",
       "name": "publication_calls_pkey",
+      "columns": [
+        "idempotency_key"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "publishing",
+      "table": "upload_sessions",
+      "name": "upload_sessions_pkey",
       "columns": [
         "idempotency_key"
       ],
@@ -9504,6 +9745,13 @@
       "table": "media_assets",
       "name": "media_assets_dimensions",
       "value": "(\"width\" IS NULL) = (\"height\" IS NULL)",
+      "entityType": "checks"
+    },
+    {
+      "schema": "publishing",
+      "table": "quota_usage",
+      "name": "quota_usage_units",
+      "value": "\"units\" >= 0",
       "entityType": "checks"
     }
   ]

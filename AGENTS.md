@@ -382,18 +382,22 @@ and no socket, for tests.
   Instagram with `META_APP_ID`/`META_APP_SECRET`, Threads with
   `THREADS_APP_ID`/`THREADS_APP_SECRET`, TikTok with
   `TIKTOK_CLIENT_KEY`/`TIKTOK_CLIENT_SECRET` (`oauthClientConfig`'s
-  `idSuffix`). A platform without its settings is
-  in `unconfigured`. Each declares its `TokenPolicy`, data in
+  `idSuffix`), YouTube with `YOUTUBE_CLIENT_ID` and `_CLIENT_SECRET` (a
+  Google OAuth client). A platform without its settings is in
+  `unconfigured`. Each declares its `TokenPolicy`, data in
   `channels/domain/token-policy.ts`, which the refresh sweep and the
   reconnect warnings follow: LinkedIn's tokens are not renewed and expire
   after 60 days, X's last two hours and rotate on refresh, as TikTok's do
-  (`expires_in` decides; refresh tokens end 180 days after sign-in).
+  (`expires_in` decides; refresh tokens end 180 days after sign-in),
+  Google's last an hour and do not rotate.
 - TikTok's Login Kit for Web takes no PKCE (TikTok asks it of desktop and
   mobile apps only): the state, bound to member and workspace, guards the
   callback, and a token answer naming an `error` is a refusal whatever its
-  status. A `PlatformAuthorizer` may have `revoke`, which
-  `DisconnectChannel` calls once the channel is deleted, logging any
-  failure: TikTok's guidelines ask for it.
+  status. A `PlatformAuthorizer` may have `revoke` (TikTok's guidelines ask
+  for it; Google takes it), which `DisconnectChannel` calls once the
+  channel is deleted and no other channel, in any workspace, connects the
+  same account (`ChannelRepository.accountInUse`), waiting 10 seconds at
+  most and logging any failure.
 - `GET …/channels/platforms` (`ConnectChannel.connectable`, channel:connect)
   lists the platforms the server has an authorizer for, every platform's
   through the one registry; the web app's connect forms offer only those.
@@ -410,6 +414,14 @@ and no socket, for tests.
   rests on, in `channels.granted_by`. Threads has its own OAuth: a 60-day
   long-lived token that renews itself. Every Graph call carries
   `appsecret_proof` (`#shared/infrastructure/platforms/meta-graph.ts`).
+- YouTube connects through Google's OAuth 2.0 web server flow
+  (`infrastructure/platforms/youtube/youtube-authorizer.ts`): PKCE, offline
+  access, `prompt=select_account consent`, and the scopes `youtube.upload`
+  and `youtube.readonly` only; a sign-in that withheld one is
+  `AuthorizationDenied`. The token is the channel's the owner picked on
+  Google's chooser (brand accounts too), so `complete` answers the channels
+  `channels.list?mine=true` lists as an `AccountChoice`: one connects at
+  once, none is `NoAccountsToConnect`.
 - Meta's data deletion callbacks (`POST /api/data-deletion/:app`, no sign-in)
   check the `signed_request` HMAC with the app's secret (`SignedRequests`),
   delete the channels the user granted or owns in every workspace, record
@@ -497,8 +509,8 @@ and no socket, for tests.
   publish runs inside the gate: uploads, processing waits, token renewal,
   the post and its confirmation.
 - Platform adapters live in `publishing/infrastructure/platforms/<platform>/`
-  (Mastodon, Bluesky, LinkedIn and X, Threads, Instagram and Facebook
-  Pages in `meta/`, and TikTok), beside `ChannelGate`, and implement the steps of
+  (Mastodon, Bluesky, LinkedIn, X, TikTok and YouTube, and Threads,
+  Instagram and Facebook Pages in `meta/`), beside `ChannelGate`, and implement the steps of
   `publishing/application/publication-steps.ts`, which `sequenced` runs:
   `prepare` uploads the media (safe to repeat: media alone shows nowhere),
   `poll` waits while the platform processes it (15 minutes at most),
@@ -513,6 +525,25 @@ and no socket, for tests.
   attempt's idempotency key within the window the platform keeps it
   (Mastodon: 50 minutes of its hour); or `none`, unconfirmed at once
   (LinkedIn members' posts cannot be read back).
+- YouTube's adapter (`platforms/youtube/`) uploads with the resumable
+  protocol, in parts of a multiple of 256 KiB from the media stream
+  (`fromByte` skips what YouTube already has). It journals the session URL
+  (`UploadSessions`, `publishing.upload_sessions`, keyed by the call's
+  idempotency key and cascading with it) and commits it before any byte,
+  marks `final_part_sent` before the part holding the last byte, and
+  records the video id once made, clearing the URL. Its `lookUp` reads that
+  journal and asks the session (`bytes */size`): 308 or no row is `absent`
+  (the commit then resumes from the `Range`), 200/201 `found`, an expired
+  session `absent` only while no last part left, and a journal it cannot
+  read, or a status YouTube refused for the moment (a rate limit),
+  `unknown`. After the upload only YouTube's `failed`/`rejected` refuse the
+  post: nothing that could make a retry upload twice. Each upload first spends a unit of the server-wide
+  ledger (`PlatformQuota`, `publishing.quota_usage`, by Pacific day,
+  `YOUTUBE_DAILY_UPLOADS`); past it, or on `quotaExceeded` and
+  `uploadLimitExceeded`, it fails as `RateLimited` with that code
+  (`dailyLimitCodes`) until Pacific midnight, which the policy ends as
+  `quotaExceeded`. A video YouTube made private against the options is
+  `Published.keptPrivate`, kept on the target and shown on its page.
 - Large uploads go in parts read one at a time from the media stream
   (`inParts` in `platforms/byte-parts.ts`): LinkedIn's video parts, X's
   4 MiB appends. LinkedIn calls name `Linkedin-Version`
@@ -800,7 +831,10 @@ and no socket, for tests.
   a 401 or 403 with Mastodon's JSON error refuses the token: a proxy's page
   must not mark the channel to reconnect, which stops its publishing.
   Bluesky reads the public AppView's `getPosts` without the session, whose
-  scope stays what posting needs.
+  scope stays what posting needs. YouTube reads `videos.list` statistics,
+  50 ids a call, with the channel's token (`youtube.readonly`): views are
+  impressions, comments replies, reposts 0; only a 401 with Google's JSON
+  error refuses the token, and a 403 (quota) or 429 halts the read.
 - A halted read leaves the rest due for the next run; a missing post, one a
   read `failed` on (so one the server cannot show never stays first due),
   or a channel off or to reconnect, waits for its next turn; a disconnected

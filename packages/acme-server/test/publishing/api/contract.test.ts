@@ -79,6 +79,12 @@ const violations: Record<ContractViolation["_tag"], ContentViolation> = {
     width: 3000,
   },
   empty: { _tag: "empty", channelId, platform: "x" },
+  forbiddenCharacters: {
+    _tag: "forbiddenCharacters",
+    channelId,
+    characters: ["<", ">"],
+    platform: "youtube",
+  },
   mediaRequired: { _tag: "mediaRequired", channelId, platform: "instagram" },
   mediaTooLarge: {
     _tag: "mediaTooLarge",
@@ -209,6 +215,7 @@ const contractTags: Record<ContentViolation["_tag"], true> = {
   altTextTooLong: true,
   aspectRatioUnsupported: true,
   empty: true,
+  forbiddenCharacters: true,
   mediaRequired: true,
   mediaTooLarge: true,
   mediaTypeUnsupported: true,

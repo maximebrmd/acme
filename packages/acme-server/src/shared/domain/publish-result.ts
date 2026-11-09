@@ -9,6 +9,9 @@ export type PlatformPostId = typeof PlatformPostIdSchema.Type;
 
 /** The platform accepted the post, which is now live. */
 export const PublishedSchema = Schema.TaggedStruct("published", {
+  // The platform made the post private although Acme asked for more people
+  // to see it (YouTube, for an API project or a channel it restricts).
+  keptPrivate: Schema.optionalKey(Schema.Boolean),
   // The post's public address, when the platform gives one.
   permalink: Schema.optionalKey(Schema.String),
   platformPostId: PlatformPostIdSchema,

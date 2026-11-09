@@ -25,9 +25,11 @@ const revokeTimeout = Duration.seconds(10);
  * workspace, including one that is not a channel id at all, is
  * ChannelNotFound.
  *
- * Once it is gone, a platform that asks to be told (TikTok) is asked to
- * revoke the tokens it had. That is the platform's business only: a
- * failure is logged, and the channel stays disconnected.
+ * Once it is gone, a platform that takes it (TikTok, Google) is asked to
+ * revoke the tokens, unless another channel, in any workspace, still
+ * connects the same account: they share its grant. Revoking is a courtesy
+ * to the account's owner: it waits 10 seconds at most, a failure is logged,
+ * and the channel stays disconnected.
  */
 export class DisconnectChannel extends Context.Service<
   DisconnectChannel,
@@ -48,45 +50,30 @@ export class DisconnectChannel extends Context.Service<
       const authorizers = yield* PlatformAuthorizers;
       const cipher = yield* TokenCipher;
 
-      // Asks the platform to revoke the removed channel's grant, if it
-      // takes such a request; never fails.
-      const revoke = (
+      // Revokes what the removed channel held, if its platform takes it and
+      // no other channel shares the grant.
+      const revoke = Effect.fn("DisconnectChannel.revoke")(function* revoke(
         channel: Channel,
-        stored: Option.Option<ChannelCredentials>
-      ) => {
+        credentials: ChannelCredentials
+      ) {
         const revoking = authorizers
           .for(channel.platform)
-          .pipe(
-            Option.flatMap(({ revoke: revokeOn }) =>
-              Option.fromUndefinedOr(revokeOn)
-            )
-          );
+          .pipe(Option.flatMapNullishOr((authorizer) => authorizer.revoke));
 
-        if (Option.isNone(revoking) || Option.isNone(stored)) {
-          return Effect.void;
+        if (Option.isNone(revoking)) {
+          return;
         }
 
-        return decryptTokens(stored.value, channel.id).pipe(
-          Effect.provideService(TokenCipher, cipher),
-          Effect.flatMap(revoking.value),
-          Effect.timeout(revokeTimeout),
-          Effect.tapError((failure) =>
-            Effect.logWarning(
-              "The platform was not told a disconnected channel's tokens are revoked",
-              failure
-            ).pipe(
-              Effect.annotateLogs({
-                channelId: channel.id,
-                platform: channel.platform,
-              })
-            )
-          ),
-          Effect.ignore,
-          Effect.withSpan("DisconnectChannel.revoke", {
-            attributes: { platform: channel.platform },
-          })
+        if (yield* channels.accountInUse(channel.platform, channel.accountId)) {
+          return;
+        }
+
+        const tokens = yield* decryptTokens(credentials, channel.id).pipe(
+          Effect.provideService(TokenCipher, cipher)
         );
-      };
+
+        yield* revoking.value(tokens);
+      });
 
       const disconnect = Effect.fn("DisconnectChannel.disconnect")(
         function* disconnect(actor: Actor, channelId: string) {
@@ -94,23 +81,35 @@ export class DisconnectChannel extends Context.Service<
 
           const id = decodeChannelId(channelId);
 
-          const found = Option.isSome(id)
+          const channel = Option.isSome(id)
             ? yield* channels.findById(actor.workspaceId, id.value)
             : Option.none<Channel>();
 
-          if (Option.isNone(found)) {
-            return yield* new ChannelNotFound({ channelId });
+          const credentials = Option.isSome(channel)
+            ? yield* channels.credentials(channel.value.id)
+            : Option.none<ChannelCredentials>();
+
+          const removed = Option.isSome(channel)
+            ? yield* channels.remove(actor.workspaceId, channel.value.id)
+            : false;
+
+          if (!removed || Option.isNone(channel)) {
+            yield* new ChannelNotFound({ channelId });
+          } else if (Option.isSome(credentials)) {
+            yield* revoke(channel.value, credentials.value).pipe(
+              Effect.timeout(revokeTimeout),
+              Effect.catch((error) =>
+                Effect.logWarning(
+                  "The platform did not revoke a disconnected channel's tokens",
+                  error
+                )
+              ),
+              Effect.annotateLogs({
+                channelId: channel.value.id,
+                platform: channel.value.platform,
+              })
+            );
           }
-
-          const channel = found.value;
-          const stored = yield* channels.credentials(channel.id);
-          const removed = yield* channels.remove(actor.workspaceId, channel.id);
-
-          if (!removed) {
-            return yield* new ChannelNotFound({ channelId });
-          }
-
-          return yield* revoke(channel, stored);
         }
       );
 

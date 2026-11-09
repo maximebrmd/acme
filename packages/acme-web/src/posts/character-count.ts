@@ -24,6 +24,11 @@ export interface TextCount {
 export type ChannelProblem =
   | { readonly _tag: "empty" }
   | { readonly _tag: "mediaRequired" }
+  // Characters the platform refuses (YouTube: "<" and ">"), in its order.
+  | {
+      readonly _tag: "forbiddenCharacters";
+      readonly characters: readonly string[];
+    }
   | {
       readonly _tag:
         | "tooManyHashtags"
@@ -77,11 +82,18 @@ export const fitOn = (
   const mediaRequired: readonly ChannelProblem[] =
     rules.mediaRequired && media === 0 ? [{ _tag: "mediaRequired" }] : [];
 
+  const forbidden = (rules.forbiddenCharacters ?? []).filter((character) =>
+    text.includes(character)
+  );
+
   return {
     counts,
     platform,
     problems: [
       ...empty,
+      ...(forbidden.length > 0
+        ? [{ _tag: "forbiddenCharacters" as const, characters: forbidden }]
+        : []),
       ...tooMany("tooManyMedia", media, rules.maxMedia),
       ...mediaRequired,
       ...tooMany("tooManyHashtags", countHashtags(text), rules.maxHashtags),

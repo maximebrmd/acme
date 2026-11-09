@@ -24,6 +24,8 @@ import { threadsClient } from "./meta/threads-client.ts";
 import { tiktokClient } from "./tiktok/tiktok-client.ts";
 import { tiktokMediaUrlConfig } from "./tiktok/tiktok-settings.ts";
 import { xClient } from "./x/x-client.ts";
+import { youtubeClient } from "./youtube/youtube-client.ts";
+import { youtubeDailyUploadsConfig } from "./youtube/youtube-settings.ts";
 
 /** Where the platforms are, and how long their steps wait. */
 export interface PlatformClientSettings {
@@ -50,6 +52,10 @@ export interface PlatformClientSettings {
   readonly videoService: URL;
   /** X's API, which takes media uploads too. */
   readonly xApi: URL;
+  /** The YouTube Data API, uploads included. */
+  readonly youtubeApi: URL;
+  /** The units of YouTube's Video Uploads bucket the server spends a day. */
+  readonly youtubeDailyUploads: number;
 }
 
 // An upload of a large video on a slow line.
@@ -57,12 +63,14 @@ const uploadTimeout = Duration.minutes(10);
 
 /**
  * The platforms Acme publishes to: Mastodon, Bluesky, LinkedIn, X, Threads,
- * Instagram, Facebook Pages and TikTok. Every request goes through the
- * public HTTP client, so the outbound guard checks the servers users chose.
- * Needs an HttpClient, the OutboundGuard, SecureRandom and Digest (for DPoP
- * proofs), Mac (for Meta's proofs), PlatformCredentials, MediaForPublishing
- * and PublicationProgress (for TikTok's steps). Reads LINKEDIN_API_VERSION
- * when it is built.
+ * Instagram, Facebook Pages, TikTok and YouTube. Every request goes through
+ * the public HTTP client, so the outbound guard checks the servers users
+ * chose. Needs an HttpClient, the OutboundGuard, SecureRandom and Digest
+ * (for DPoP proofs), Mac (for Meta's proofs), PlatformCredentials,
+ * MediaForPublishing, PublicationProgress (for TikTok's steps), and
+ * UploadSessions and PlatformQuota (YouTube's uploads are journaled and
+ * counted against the day's quota). Reads LINKEDIN_API_VERSION when it is
+ * built.
  */
 export const platformClientsWith = (settings: PlatformClientSettings) =>
   Layer.effect(
@@ -116,6 +124,13 @@ export const platformClientsWith = (settings: PlatformClientSettings) =>
           uploads,
           ...timing,
         }),
+        yield* youtubeClient({
+          api,
+          apiUrl: settings.youtubeApi,
+          dailyUploads: settings.youtubeDailyUploads,
+          uploads,
+          ...timing,
+        }),
       ];
 
       const byPlatform: ReadonlyMap<Platform, PlatformClient> = new Map(
@@ -138,6 +153,7 @@ export const PlatformClientsLive = Layer.unwrap(
   Effect.gen(function* PlatformClientsLive() {
     const meta = yield* metaAppConfig;
     const tiktokPullFrom = yield* tiktokMediaUrlConfig;
+    const youtubeDailyUploads = yield* youtubeDailyUploadsConfig;
 
     return platformClientsWith({
       linkedinApi: new URL("https://api.linkedin.com"),
@@ -148,6 +164,8 @@ export const PlatformClientsLive = Layer.unwrap(
       tiktokPullFrom,
       videoService: new URL("https://video.bsky.app"),
       xApi: new URL("https://api.x.com"),
+      youtubeApi: new URL("https://www.googleapis.com"),
+      youtubeDailyUploads,
     });
   })
 );

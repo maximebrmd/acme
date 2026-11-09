@@ -7,6 +7,8 @@ import { FetchHttpClient } from "effect/http";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
 import { RoutedPlatformPublisher } from "#publishing/application/routed-platform-publisher.ts";
 import { DrizzlePublicationProgress } from "#publishing/infrastructure/drizzle-publication-progress.ts";
+import { DrizzlePlatformQuota } from "#publishing/infrastructure/drizzle-platform-quota.ts";
+import { DrizzleUploadSessions } from "#publishing/infrastructure/drizzle-upload-sessions.ts";
 import { platformClientsWith } from "#publishing/infrastructure/platforms/platform-clients-live.ts";
 import { OpenOutboundGuard } from "#test/channels/support.ts";
 import {
@@ -59,6 +61,8 @@ const platformsOn = (instanceUrl: string) =>
         timing: testTiming,
         videoService: new URL(instanceUrl),
         xApi: new URL(instanceUrl),
+        youtubeApi: new URL(instanceUrl),
+        youtubeDailyUploads: 100,
       })
     ),
     Layer.provideMerge(
@@ -68,7 +72,9 @@ const platformsOn = (instanceUrl: string) =>
           ["token-1"]
         ),
         mediaOf([]),
-        DrizzlePublicationProgress
+      DrizzlePublicationProgress,
+      DrizzleUploadSessions,
+      DrizzlePlatformQuota
       )
     ),
     Layer.provide(

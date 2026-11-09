@@ -18,10 +18,13 @@ import { mastodonAuthorizer } from "#channels/infrastructure/platforms/mastodon/
 import { tiktokAuthorizer } from "#channels/infrastructure/platforms/tiktok/tiktok-authorizer.ts";
 import { xAuthorizer } from "#channels/infrastructure/platforms/x/x-authorizer.ts";
 import type { XEndpoints } from "#channels/infrastructure/platforms/x/x-authorizer.ts";
+import { youtubeAuthorizer } from "#channels/infrastructure/platforms/youtube/youtube-authorizer.ts";
+import type { YouTubeEndpoints } from "#channels/infrastructure/platforms/youtube/youtube-authorizer.ts";
 import { SqlChannelLocks } from "#channels/infrastructure/sql-channel-locks.ts";
 import { publicHttpClient } from "#shared/infrastructure/platforms/public-http.ts";
 import type { TikTokHosts } from "#shared/infrastructure/platforms/tiktok-api.ts";
 import { UnmeteredTest } from "#test/billing/support.ts";
+import { googleClient } from "#test/channels/fakes/fake-google.ts";
 import { linkedinClient } from "#test/channels/fakes/fake-linkedin.ts";
 import { tiktokClient } from "#test/channels/fakes/fake-tiktok.ts";
 import { xClient } from "#test/channels/fakes/fake-x.ts";
@@ -147,6 +150,23 @@ export const xAuthorizerOn = (endpoints: XEndpoints) =>
         client: {
           clientId: xClient.clientId,
           clientSecret: Redacted.make(xClient.clientSecret),
+        },
+        endpoints,
+        http,
+        publicUrl: testPublicUrl,
+      })
+    ),
+    Effect.provide(AuthorizerServicesTest)
+  );
+
+/** The YouTube authorizer with the synthetic Google client, on the fake. */
+export const youtubeAuthorizerOn = (endpoints: YouTubeEndpoints) =>
+  publicHttpClient.pipe(
+    Effect.flatMap((http) =>
+      youtubeAuthorizer({
+        client: {
+          clientId: googleClient.clientId,
+          clientSecret: Redacted.make(googleClient.clientSecret),
         },
         endpoints,
         http,

@@ -59,3 +59,24 @@ export const inParts =
         }
       )
     );
+
+/**
+ * The bytes of `stream` from byte `offset` on, as a resumed upload sends
+ * them: the bytes before it are read and dropped, never held.
+ */
+export const fromByte =
+  (offset: number) =>
+  <E, R>(
+    stream: Stream.Stream<Uint8Array, E, R>
+  ): Stream.Stream<Uint8Array, E, R> =>
+    offset <= 0
+      ? stream
+      : stream.pipe(
+          Stream.mapAccum(
+            () => offset,
+            (left: number, chunk: Uint8Array) =>
+              left >= chunk.length
+                ? ([left - chunk.length, []] as const)
+                : ([0, [left === 0 ? chunk : chunk.subarray(left)]] as const)
+          )
+        );

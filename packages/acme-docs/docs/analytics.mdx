@@ -1,6 +1,6 @@
 ---
 title: Analytics
-description: See how your posts did on Mastodon, Bluesky and TikTok, by channel and day, which posts did best, and each post's counts over time.
+description: See how your posts did on Mastodon, Bluesky, TikTok and YouTube, by channel and day, which posts did best, and each post's counts over time.
 sidebar:
   order: 6
 ---
@@ -9,15 +9,15 @@ Once a post goes live, Acme reads its counts back from the platform for a month:
 
 ## What Acme counts [#counts]
 
-| Count       | Mastodon               | Bluesky   |
-| ----------- | ---------------------- | --------- |
-| Likes       | Favourites             | Likes     |
-| Reposts     | Boosts                 | Reposts   |
-| Replies     | Replies                | Replies   |
-| Quotes      | From Mastodon 4.5 only | Quotes    |
-| Impressions | Not given              | Not given |
+| Count       | Mastodon               | Bluesky   | TikTok    | YouTube        |
+| ----------- | ---------------------- | --------- | --------- | -------------- |
+| Likes       | Favourites             | Likes     | Likes     | Likes          |
+| Reposts     | Boosts                 | Reposts   | Shares    | None, always 0 |
+| Replies     | Replies                | Replies   | Comments  | Comments       |
+| Quotes      | From Mastodon 4.5 only | Quotes    | Not given | Not given      |
+| Impressions | Not given              | Not given | Views     | Views          |
 
-Neither platform tells how many people saw a post, so Acme shows no impressions for them. A count a platform does not give is shown as missing, never as zero. **Engagement** is likes, reposts, replies and quotes together.
+Mastodon and Bluesky do not tell how many people saw a post, so Acme shows no impressions for them; on TikTok and YouTube, impressions are the post's views. A count a platform does not give is shown as missing, never as zero. **Engagement** is likes, reposts, replies and quotes together.
 
 ## When counts are read [#schedule]
 
@@ -28,6 +28,7 @@ Readings take turns with the channel's publishing: Acme makes one call at a time
 - **Mastodon**: Acme reads each post on the account's server, with the account's access when the account allowed Acme to read its posts. Accounts connected before Acme asked for that are read without it, which shows public and unlisted posts; [reconnect](/channels#reconnect) one to read its followers-only posts too.
 - **Bluesky**: Acme reads posts from Bluesky's public service, 25 at a time, without the account's session: a post's counts are public on Bluesky.
 - **TikTok**: Acme reads the account's public posts, 20 at a time, with the account's access, when the account allowed Acme to read its videos: their likes, shares as reposts, comments as replies, and views. TikTok gives no id for a post only its owner sees, so those are never read.
+- **YouTube**: Acme reads the channel's videos with its access, 50 at a time, so private and unlisted videos are read too. A count the channel hides, such as its likes, reads as 0.
 
 Acme reads no counts on LinkedIn, X, Threads, Instagram or Facebook Pages yet. It finds so at a post's first turn, stops there, and leaves the post out of **Analytics**, rather than show it with no counts.
 

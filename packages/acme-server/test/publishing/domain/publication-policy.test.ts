@@ -1,7 +1,10 @@
 import { describe, expect, it } from "@effect/vitest";
 import { DateTime, Duration } from "effect";
 
-import { ownRefusalCodes } from "#publishing/domain/own-refusals.ts";
+import {
+  dailyLimitCodes,
+  ownRefusalCodes,
+} from "#publishing/domain/own-refusals.ts";
 import {
   decide,
   defaultPublicationPolicy,
@@ -187,6 +190,24 @@ describe(decide, () => {
         )
       ).toStrictEqual(giveUp("rateLimited"));
     });
+  });
+
+  it("waits for a daily allowance, then fails as quotaExceeded with its code", () => {
+    const spent = new RateLimited({
+      code: dailyLimitCodes.projectQuota,
+      retryAfter: Duration.hours(14),
+    });
+
+    expect(decide(spent, first)).toStrictEqual(retry(Duration.hours(6)));
+    expect(
+      decide(spent, after({ rateLimited: 3 }, Duration.hours(23)))
+    ).toStrictEqual(giveUp("quotaExceeded", "quotaExceeded"));
+    expect(
+      failureReasonOf(new RateLimited({ code: dailyLimitCodes.accountUploads }))
+    ).toBe("quotaExceeded");
+    expect(failureReasonOf(new RateLimited({ code: "other" }))).toBe(
+      "rateLimited"
+    );
   });
 
   it.each([0, 2])(

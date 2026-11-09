@@ -205,6 +205,23 @@ Meta fetches the images and videos it publishes from links to the media store, v
 
 While the app is in development mode, only people with a role on it can connect their accounts: add yourself, and Threads testers, under App roles. Serving other people needs Meta's App Review of each permission. Instagram accounts must be professional ones linked to a Facebook Page.
 
+### YouTube [#youtube]
+
+A server connects YouTube channels once you make an OAuth client for it in a Google Cloud project:
+
+1. In the Google Cloud console, create a project, and turn on the **YouTube Data API v3** under APIs and services.
+2. Under **Google Auth Platform**, set up the consent screen for **External** users, and add the scopes `https://www.googleapis.com/auth/youtube.upload` and `https://www.googleapis.com/auth/youtube.readonly`.
+3. Under **Clients**, create a **Web application** client, with `PUBLIC_URL/connect/youtube/callback` as an authorized redirect URI, such as `https://acme.example.com/connect/youtube/callback`.
+4. Put the client id in `YOUTUBE_CLIENT_ID` and its secret in `YOUTUBE_CLIENT_SECRET`.
+
+One of the two settings without the other stops the server at startup; without both, **Channels** does not offer YouTube. Members sign in with Google and pick the channel, a brand account's included, on Google's account chooser: one connection is one channel. Acme asks to upload videos and to read the channel and its videos, nothing more, and renews its access every hour. Disconnecting a channel revokes that access at Google, unless another workspace still connects the same channel.
+
+While the project's consent screen is in **Testing**, only the test users you list can sign in, and Google ends their access seven days after they connect: their channels must then be reconnected, and Acme tells the workspace. Publish the consent screen, and have Google verify the app for its scopes, to serve anyone for good.
+
+The server calls `oauth2.googleapis.com` and `www.googleapis.com`, and uploads each video there in parts of 8 MiB, holding one at a time; an upload cut off, even by a restart, resumes where YouTube stands. Uploads draw on the project's **Video Uploads** quota, 100 a day unless Google grants more, which resets at midnight Pacific Time: Acme counts them for the whole server, and an upload past `YOUTUBE_DAILY_UPLOADS`, or one YouTube refuses for its quota or the channel's daily limit, waits for the next day. Processing polls and analytics draw on the project's other quota, 10,000 units a day.
+
+Until November 2026, Google kept the videos of API projects it had not audited private. It no longer does, but a channel's settings or Google's restrictions can still keep a video private: Acme compares what YouTube answers with the visibility the member chose, and says so on the post's page.
+
 ## Writing assistant [#ai]
 
 The composer's writing assistant rewrites a post in a tone, shortens it to fit a platform, translates it, or suggests hashtags. It is off until `ACME_AI_PROVIDER` names a provider: until then, the web app hides it, and its endpoints answer `AssistantUnavailable`.

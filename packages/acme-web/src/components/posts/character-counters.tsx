@@ -10,10 +10,15 @@ import type { ChannelFit, ChannelProblem } from "#posts/character-count.ts";
 import { mediaFits } from "#posts/media-fit.ts";
 import type { MediaFit } from "#posts/media-fit.ts";
 
-const countsOf = (problem: ChannelProblem) =>
-  problem._tag === "empty" || problem._tag === "mediaRequired"
-    ? { count: 0, maximum: 0 }
-    : { count: problem.count, maximum: problem.maximum };
+const countsOf = (problem: ChannelProblem) => {
+  if (problem._tag === "forbiddenCharacters") {
+    return { characters: problem.characters.join(" "), count: 0, maximum: 0 };
+  }
+
+  return problem._tag === "empty" || problem._tag === "mediaRequired"
+    ? { characters: "", count: 0, maximum: 0 }
+    : { characters: "", count: problem.count, maximum: problem.maximum };
+};
 
 interface CharacterCountersProps {
   readonly fits: readonly {

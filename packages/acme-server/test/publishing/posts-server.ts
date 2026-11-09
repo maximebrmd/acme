@@ -1,4 +1,4 @@
-import { Effect, Layer } from "effect";
+import { Duration, Effect, Layer, Option } from "effect";
 import type { Scope } from "effect";
 import { MessageStorage } from "effect/cluster";
 
@@ -32,9 +32,14 @@ import {
 // from Postgres, through the real adapter, and a fake platform publishes
 // them. Ids are random, so tests never meet each other's rows.
 
-/** The one media asset posts may show here. */
+/** The image posts may show here. */
 export const attachableImage: MediaAssetId = MediaAssetIdSchema.make(
   "00000000-0000-7000-8000-00000000a001"
+);
+
+/** The video posts may show here, for platforms that take videos only. */
+export const attachableVideo: MediaAssetId = MediaAssetIdSchema.make(
+  "00000000-0000-7000-8000-00000000a0f1"
 );
 
 /**
@@ -59,7 +64,13 @@ export const postsServerWith = <E, R>(
   );
 
 export const PostsServerTest = postsServerWith(
-  attachableMedia([mediaFile(attachableImage)])
+  attachableMedia([
+    mediaFile(attachableImage),
+    mediaFile(attachableVideo, {
+      contentType: "video/mp4",
+      duration: Option.some(Duration.seconds(30)),
+    }),
+  ])
 );
 
 /** Runs `test` on a fresh server at virtual time `start`. */

@@ -93,19 +93,23 @@ const toStored = (row: PostRow) =>
     }),
   }).pipe(Effect.orDie);
 
-const targetStatusOf = (row: TargetRow) => ({
-  _tag: row.status,
-  attemptedAt: utc(row.startedAt),
-  cancelRequested: row.cancelRequested,
-  cancelledAt: utc(row.finishedAt),
-  code: Option.fromNullOr(row.failureCode),
-  failedAt: utc(row.finishedAt),
-  permalink: Option.fromNullOr(row.permalink),
-  platformPostId: Option.fromNullOr(row.platformPostId),
-  publishedAt: utc(row.finishedAt),
-  reason: row.failureReason ?? row.unconfirmedReason ?? undefined,
-  startedAt: utc(row.startedAt),
-});
+const targetStatusOf = (row: TargetRow) => {
+  const status = {
+    _tag: row.status,
+    attemptedAt: utc(row.startedAt),
+    cancelRequested: row.cancelRequested,
+    cancelledAt: utc(row.finishedAt),
+    code: Option.fromNullOr(row.failureCode),
+    failedAt: utc(row.finishedAt),
+    permalink: Option.fromNullOr(row.permalink),
+    platformPostId: Option.fromNullOr(row.platformPostId),
+    publishedAt: utc(row.finishedAt),
+    reason: row.failureReason ?? row.unconfirmedReason ?? undefined,
+    startedAt: utc(row.startedAt),
+  };
+
+  return row.keptPrivate ? { ...status, keptPrivate: true } : status;
+};
 
 const toTarget = (row: TargetRow) =>
   decodeTarget({
@@ -183,6 +187,7 @@ const targetColumns = (status: PostTargetStatus) => {
     failureCode: null,
     failureReason: null,
     finishedAt: null,
+    keptPrivate: false,
     permalink: null,
     platformPostId: null,
     startedAt: null,
@@ -202,9 +207,10 @@ const targetColumns = (status: PostTargetStatus) => {
       finishedAt: date(failedAt),
     }),
     pending: () => cleared,
-    published: ({ permalink, platformPostId, publishedAt }) => ({
+    published: ({ keptPrivate, permalink, platformPostId, publishedAt }) => ({
       ...cleared,
       finishedAt: date(publishedAt),
+      keptPrivate: keptPrivate === true,
       permalink: Option.getOrNull(permalink),
       platformPostId: Option.getOrNull(platformPostId),
     }),

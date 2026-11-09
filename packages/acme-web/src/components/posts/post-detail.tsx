@@ -9,6 +9,7 @@ import type {
   PublicationAttempt,
   TargetConfirmation,
 } from "acme-contract";
+import { Alert, AlertDescription } from "acme-ui/components/alert";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -333,6 +334,11 @@ export const TargetView = ({
         </CardHeader>
         <CardContent>
           <div className="flex flex-col gap-2">
+            {target.keptPrivate === true ? (
+              <Alert>
+                <AlertDescription>{t("keptPrivate")}</AlertDescription>
+              </Alert>
+            ) : null}
             {target.round > 1 ? (
               <p className="text-muted-foreground text-sm">
                 {t("rounds", { count: target.round })}

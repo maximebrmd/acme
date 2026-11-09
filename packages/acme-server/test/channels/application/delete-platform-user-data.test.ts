@@ -45,6 +45,7 @@ const settings = (apps: { readonly threads: boolean }) =>
       tiktok: Option.none(),
       tiktokHosts,
       x: Option.none(),
+      youtube: Option.none(),
     })
   );
 

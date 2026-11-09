@@ -55,6 +55,8 @@ export interface MediaRules {
  * platform without `media`.
  */
 export interface PlatformRules {
+  /** Characters the platform refuses anywhere in the text (YouTube: < and >). */
+  readonly forbiddenCharacters?: readonly string[];
   readonly maxHashtags?: number;
   /** Different links, counted by `countLinks`. */
   readonly maxLinks?: number;
@@ -94,7 +96,9 @@ const minute = 60 * second;
 //   Post's `title`). A photo post's description takes 4,000, but Acme holds
 //   it to the caption's 2,200, so a post's text fits whichever it becomes;
 //   up to 35 photos. TikTok publishes nothing without media.
-// - YouTube and Pinterest: no limit known yet.
+// - YouTube: the video's description, at most 5,000 bytes, without "<" or
+//   ">"; no post without its one video.
+// - Pinterest: no limit known yet.
 //
 // "Characters" with no other word count code points, the stricter reading.
 //
@@ -133,7 +137,11 @@ const minute = 60 * second;
 //   keeps no alt text. How long a creator's videos may be is theirs
 //   (`max_video_post_duration_sec`), checked against TikTok when the post
 //   is scheduled.
-// - YouTube and Pinterest: no media rule known yet.
+// - YouTube: one video, MP4 or QuickTime, of up to 256 GB and 12 hours,
+//   alone (channels Google has not verified take 15 minutes at most, which
+//   only YouTube knows). A video of 3 minutes or less that is square or
+//   taller than wide becomes a Short.
+// - Pinterest: no media rule known yet.
 const blueskyImage: FormatLimits = { maxByteSize: 2_000_000 };
 
 const mastodonImage: FormatLimits = {
@@ -168,6 +176,11 @@ const threadsVideo: FormatLimits = {
 };
 
 const facebookImage: FormatLimits = { maxByteSize: 10 * mebibyte };
+
+const youtubeVideo: FormatLimits = {
+  maxByteSize: 256 * 1024 * mebibyte,
+  maxDurationMs: 12 * 60 * minute,
+};
 
 const instagramVideo: FormatLimits = {
   aspectRatio: { maximum: 10, minimum: 0.01 },
@@ -336,5 +349,16 @@ export const platformRules: Readonly<Record<Platform, PlatformRules>> = {
     mediaRequired: false,
     textLimits: [{ maximum: 280, unit: "weighted" }],
   },
-  youtube: { mediaRequired: false, textLimits: [] },
+  youtube: {
+    forbiddenCharacters: ["<", ">"],
+    maxMedia: 1,
+    media: {
+      formats: { "video/mp4": youtubeVideo, "video/quicktime": youtubeVideo },
+      maxVideos: 1,
+      mixesKinds: false,
+      showsAltText: false,
+    },
+    mediaRequired: true,
+    textLimits: [{ maximum: 5000, unit: "utf8Bytes" }],
+  },
 };

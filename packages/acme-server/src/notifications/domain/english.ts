@@ -37,6 +37,8 @@ export const english: EmailCatalog = {
     missed:
       "Acme was unavailable at the scheduled time, and the post came too late to send.",
     notPublished: "someone checked the platform and did not find it.",
+    quotaExceeded:
+      "the platform's daily allowance of uploads stayed used up, for this Acme server or for the account, and Acme stopped waiting.",
     rateLimited:
       "the platform kept turning requests away, and Acme stopped trying.",
     tokenExpired:

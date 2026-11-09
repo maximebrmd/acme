@@ -179,8 +179,21 @@ export const violationsOn = (
     }
   );
 
+  const forbidden = (rules.forbiddenCharacters ?? []).filter((character) =>
+    text.includes(character)
+  );
+
   return [
     ...tooLong,
+    ...(forbidden.length > 0
+      ? [
+          {
+            _tag: "forbiddenCharacters" as const,
+            ...channel,
+            characters: forbidden,
+          },
+        ]
+      : []),
     ...atMost("tooManyMedia", channel, media, rules.maxMedia),
     ...(rules.mediaRequired && media === 0
       ? [{ _tag: "mediaRequired" as const, ...channel }]

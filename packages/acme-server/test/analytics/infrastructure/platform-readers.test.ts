@@ -7,6 +7,7 @@ import type {
   MetricsReadFailure,
   PostToRead,
 } from "#analytics/application/metrics-reader.ts";
+import { PostMetrics } from "#analytics/domain/post-metrics.ts";
 import type { ChannelAccount } from "#channels/application/channel-access.ts";
 import { ChannelUnusable } from "#channels/application/channel-unusable.ts";
 import { ChannelIdSchema, PostTargetIdSchema } from "#shared/domain/ids.ts";
@@ -24,6 +25,7 @@ import {
   empty,
   headerOf,
   json,
+  platformServer,
 } from "#test/publishing/fakes/platform-server.ts";
 
 const channelId = ChannelIdSchema.make("01900000-0000-7000-8000-0000000000c1");
@@ -44,6 +46,7 @@ const reading = (
   options: {
     readonly appView?: string;
     readonly tokens?: readonly string[];
+    readonly youtubeApi?: string;
   } = {}
 ) =>
   Effect.gen(function* read() {
@@ -54,7 +57,10 @@ const reading = (
     return { batch, handed: yield* AccessLog.use((log) => log.handed) };
   }).pipe(
     Effect.provide(
-      readersWith(options.appView).pipe(
+      readersWith({
+        appView: options.appView,
+        youtubeApi: options.youtubeApi,
+      }).pipe(
         Layer.provideMerge(channelAccessOf(account, options.tokens ?? []))
       )
     )
@@ -507,6 +513,130 @@ describe("reading counts on Bluesky", () => {
           );
         }
       }).pipe(Effect.scoped)
+  );
+});
+
+// A video's statistics, as videos.list writes them: counts as strings.
+const statistics = (id: string, index: number) => ({
+  id,
+  statistics:
+    index === 0
+      ? { commentCount: "4", likeCount: "12", viewCount: "1500" }
+      : { viewCount: String(index) },
+});
+
+describe("reading counts on YouTube", () => {
+  const account: ChannelAccount = {
+    accountId: "UCsyntheticChannel000001",
+    channelId,
+    platform: "youtube",
+    scopes: [
+      "https://www.googleapis.com/auth/youtube.upload",
+      "https://www.googleapis.com/auth/youtube.readonly",
+    ],
+  };
+
+  it.live("reads videos.list with the channel's token, 50 ids to a call", () =>
+    Effect.gen(function* videos() {
+      const server = yield* platformServer((request) => {
+        const ids = (request.query.get("id") ?? "").split(",");
+
+        return headerOf(request, "authorization") === "Bearer token-1"
+          ? json({
+              items: ids
+                .filter((id) => id !== "synthGone")
+                .map((id) => statistics(id, Number(id.slice(9)))),
+            })
+          : json({ error: { code: 401 } }, 401);
+      });
+
+      const ids = Array.from(
+        { length: 54 },
+        (_, index) => `synthVid_${String(index).padStart(2, "0")}`
+      );
+
+      const posts = postsToRead(...ids, "synthGone");
+
+      const { batch, handed } = yield* reading(posts, account, {
+        tokens: ["token-1"],
+        youtubeApi: server.url,
+      });
+
+      const success = batch._tag === "Success" ? batch.success : undefined;
+
+      assert.strictEqual(success?.halted, false);
+      assert.deepStrictEqual(success?.readings[0], {
+        _tag: "counted",
+        metrics: new PostMetrics({
+          impressions: Option.some(1500),
+          likes: 12,
+          quotes: Option.none(),
+          replies: 4,
+          reposts: 0,
+        }),
+        targetId: posts[0]?.targetId ?? PostTargetIdSchema.make(""),
+      });
+      assert.deepStrictEqual(success?.readings.at(-1), {
+        _tag: "missing",
+        targetId: posts.at(-1)?.targetId ?? PostTargetIdSchema.make(""),
+      });
+      assert.deepStrictEqual(
+        server
+          .requests()
+          .map((request) => (request.query.get("id") ?? "").split(",").length),
+        [50, 5]
+      );
+      assert.strictEqual(server.requests()[0]?.query.get("part"), "statistics");
+      // videos.list does not take maxResults with id.
+      assert.isFalse(server.requests()[0]?.query.has("maxResults"));
+      assert.deepStrictEqual(handed, ["token-1"]);
+    })
+  );
+
+  it.live("halts on a quota refusal, and renews a token Google refused", () =>
+    Effect.gen(function* refusals() {
+      let calls = 0;
+
+      const server = yield* platformServer((request) => {
+        calls += 1;
+
+        if (calls === 1) {
+          return json(
+            { error: { code: 403, errors: [{ reason: "quotaExceeded" }] } },
+            403
+          );
+        }
+
+        return headerOf(request, "authorization") === "Bearer token-2"
+          ? json({ items: [statistics("synthVid_00", 0)] })
+          : json({ error: { code: 401 } }, 401);
+      });
+
+      const posts = postsToRead("synthVid_00");
+
+      const limited = yield* reading(posts, account, {
+        tokens: ["token-1"],
+        youtubeApi: server.url,
+      });
+
+      assert.deepStrictEqual(
+        limited.batch._tag === "Success" ? limited.batch.success : undefined,
+        { halted: true, readings: [] }
+      );
+
+      const renewed = yield* reading(posts, account, {
+        tokens: ["token-1", "token-2"],
+        youtubeApi: server.url,
+      });
+
+      assert.strictEqual(
+        renewed.batch._tag === "Success"
+          ? renewed.batch.success.readings[0]?._tag
+          : undefined,
+        "counted"
+      );
+      assert.deepStrictEqual(renewed.handed, ["token-1", "token-2"]);
+    })
   );
 });
 

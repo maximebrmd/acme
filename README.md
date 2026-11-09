@@ -10,18 +10,21 @@ two years after it ships.
 It is not released yet. Today you can:
 
 - create an account and workspaces, and connect Mastodon, Bluesky, LinkedIn,
-  X, Threads, Instagram and TikTok accounts and Facebook Pages to them;
+  X, Threads, Instagram and TikTok accounts, Facebook Pages and YouTube
+  channels to them;
 - upload images and videos to a workspace's media library;
 - write a post, with its own text on some channels and images or videos
   with alt text, keep it with the workspace's drafts or discard it, then
   schedule it, move it on a calendar, take it back to draft or cancel it;
-- have it published on those channels at its time, with its media, then
+- have it published on those channels at its time, with its media (a
+  video uploaded to YouTube with the title and settings it asks for), then
   follow each channel's attempts, post it again where it failed, and say
   whether one Acme could not confirm went out;
 - hear how your posts ended, or every post if you choose, and which
   channels need reconnecting, under a bell in the app and by email;
-- see how posts did on Mastodon, Bluesky and TikTok: their likes, reposts, replies
-  and quotes, read back every hour for two days then daily for a month, by
+- see how posts did on Mastodon, Bluesky, TikTok and YouTube: their likes,
+  reposts, replies and quotes, and a YouTube video's views, read back every
+  hour for two days then daily for a month, by
   channel and day, and on each post's page;
 - ask a writing assistant to rewrite, shorten or translate a post, or to
   suggest hashtags, when the server has an AI provider;
@@ -36,7 +39,7 @@ It is not released yet. Today you can:
 - sign in from the command line, and let MCP clients read a workspace.
 
 Analytics on LinkedIn, X and Meta's platforms, and the other platforms Acme
-knows (YouTube, Pinterest), are still to come.
+knows (Pinterest), are still to come.
 
 ## Set up
 
@@ -184,6 +187,12 @@ be read, and their channels must be reconnected.
   private accounts, visible to their owner only. Videos go up in chunks;
   photos need `TIKTOK_MEDIA_URL_PREFIX`, a public store address verified
   for the app.
+- **YouTube** needs an OAuth client of the web application type in a Google
+  Cloud project with the YouTube Data API v3 on, whose redirect is
+  `PUBLIC_URL/connect/youtube/callback`, in `YOUTUBE_CLIENT_ID` and
+  `YOUTUBE_CLIENT_SECRET`; Google takes `http://localhost:3001` there. While
+  the project's consent screen is in testing, only its test users sign in,
+  and Google ends their access after 7 days: reconnect then.
 
 The server refreshes tokens due for it every 10 minutes and, daily at 08:00
 UTC, tells a workspace's owners and admins about accounts that must be
@@ -339,6 +348,7 @@ In development, these are the ones you may want:
 | `META_APP_ID`                 | unset: no Facebook nor Instagram | Meta's app, with `META_APP_SECRET`                             |
 | `THREADS_APP_ID`              | unset: no Threads                | The app's Threads id, with `THREADS_APP_SECRET`                |
 | `TIKTOK_CLIENT_KEY`           | unset: TikTok is not offered     | The TikTok app's client key, with `TIKTOK_CLIENT_SECRET`       |
+| `YOUTUBE_CLIENT_ID`           | unset: YouTube is not offered    | The Google OAuth client's id, with `YOUTUBE_CLIENT_SECRET`     |
 | `ACME_AI_PROVIDER`            | unset: no writing assistant      | `anthropic` or `openai-compatible`                             |
 | `ACME_AI_API_KEY`             | unset                            | The provider's key: required for Anthropic                     |
 | `ACME_AI_BASE_URL`            | Anthropic's API                  | The API's base URL: required for an OpenAI-compatible server   |

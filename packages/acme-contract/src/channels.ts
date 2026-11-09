@@ -78,7 +78,7 @@ export type Authorization = typeof AuthorizationSchema.Type;
 /**
  * The platforms this server can connect accounts of: those Acme has a
  * sign-in flow for, and whose settings the server has, such as an app
- * registered on LinkedIn, X or Meta. Clients offer only these.
+ * registered on LinkedIn, X or Meta, or a Google OAuth client. Clients offer only these.
  */
 export const ConnectablePlatformsSchema = Schema.Struct({
   platforms: Schema.Array(PlatformSchema),
@@ -173,7 +173,7 @@ export class ChannelsApi extends HttpApiGroup.make("channels")
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Lists the platforms this server can connect accounts of, in Acme's order. A platform that needs a setting the server lacks, such as an app registered on LinkedIn, X or Meta, is left out. Needs channel:connect.",
+          "Lists the platforms this server can connect accounts of, in Acme's order. A platform that needs a setting the server lacks, such as an app registered on LinkedIn, X or Meta or a Google OAuth client, is left out. Needs channel:connect.",
         summary: "List connectable platforms",
       })
     ),

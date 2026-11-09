@@ -38,6 +38,8 @@ export const french: EmailCatalog = {
       "Acme était indisponible à l’heure prévue, et la publication est arrivée trop tard pour partir.",
     notPublished:
       "quelqu’un a vérifié sur la plateforme et ne l’a pas trouvée.",
+    quotaExceeded:
+      "l’allocation quotidienne de mises en ligne de la plateforme est restée épuisée, pour ce serveur Acme ou pour le compte, et Acme a cessé d’attendre.",
     rateLimited:
       "la plateforme a refusé les requêtes trop longtemps, et Acme a cessé d’essayer.",
     tokenExpired:

@@ -159,9 +159,12 @@ export interface PlatformAuthorizer {
     tokens: StoredTokens
   ) => Effect.Effect<IssuedTokens, RefreshFailure>;
   /**
-   * Tells the platform to forget Acme's grant once a channel is
-   * disconnected, for platforms that ask for it (TikTok). Disconnecting
-   * never waits on it: a failure is logged, and the channel goes anyway.
+   * Tells the platform the tokens are no longer wanted, once the channel is
+   * disconnected and no other channel uses the account, for platforms that
+   * take it (TikTok, Google). Disconnecting never waits on it: a failure is
+   * logged, and the channel goes anyway. A token the platform no longer
+   * knows is revoked already. Platforms without it keep the grant until the
+   * user removes it.
    */
   readonly revoke?: (
     tokens: StoredTokens

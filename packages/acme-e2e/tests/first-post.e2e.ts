@@ -5,6 +5,7 @@ import { credentials, expect } from "e2e";
 
 import { seedChannel } from "./support/channels.ts";
 import { emailedLink } from "./support/mailpit.ts";
+import { seedVideo } from "./support/media.ts";
 
 // One new member's first steps, in order, in one browser: each test starts
 // where the previous one left off, ending with a second member Sam invites,
@@ -205,11 +206,20 @@ describe("a new member's first post", { serial: true }, () => {
     screen,
   }) => {
     await seedChannel(workspaceId, videos, "youtube");
+    await seedVideo(workspaceId, video);
     await app.open(`/app/${workspaceId}/posts/new`);
 
     await expect(screen.getByRole("heading", "New post")).toBeVisible();
     await screen.getByRole("checkbox", videos).check();
     await screen.getByRole("textbox", "Text for all channels").fill(video);
+
+    // YouTube takes a video, and nothing else.
+    await screen.getByRole("button", "Choose from the library").tap();
+
+    const picker = screen.getByRole("dialog", "Choose images and videos");
+
+    await picker.getByRole("button", /^Video added on/u).tap();
+    await picker.getByRole("button", "Attach 1 item").tap();
     await screen.getByRole("textbox", "Time").fill("23:59");
     await screen.getByRole("button", "Schedule").tap();
 

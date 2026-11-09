@@ -33,6 +33,8 @@ const facebook = channel("5", "facebook");
 
 const threads = channel("6", "threads");
 
+const youtube = channel("7", "youtube");
+
 // Different links, one per path.
 const links = (count: number) =>
   Array.from(
@@ -172,6 +174,33 @@ describe(violationsOn, () => {
     expect(
       violationsOn(contentOf("A caption", { media: media(1) }), instagram)
     ).toStrictEqual([]);
+  });
+
+  it("keeps a YouTube description within 5,000 bytes, without < or >", () => {
+    const video = { media: media(1) };
+
+    expect(
+      violationsOn(contentOf("é".repeat(2500), video), youtube)
+    ).toStrictEqual([]);
+    expect(
+      violationsOn(contentOf("é".repeat(2501), video), youtube)
+    ).toStrictEqual([
+      {
+        _tag: "textTooLong",
+        ...youtube,
+        length: 5002,
+        maximum: 5000,
+        unit: "utf8Bytes",
+      },
+    ]);
+    expect(
+      violationsOn(contentOf("Size > 2 <b>", video), youtube)
+    ).toStrictEqual([
+      { _tag: "forbiddenCharacters", ...youtube, characters: ["<", ">"] },
+    ]);
+    expect(violationsOn(contentOf("No video"), youtube)).toStrictEqual([
+      { _tag: "mediaRequired", ...youtube },
+    ]);
   });
 
   it("caps the media a platform shows", () => {

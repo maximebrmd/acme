@@ -3,8 +3,13 @@ import { DateTime, Duration, Match, Schema } from "effect";
 import { PublishFailureSchema } from "#shared/domain/publish-failure.ts";
 import type { PublishFailure } from "#shared/domain/publish-failure.ts";
 import { PublishResultSchema } from "#shared/domain/publish-result.ts";
+import type { RateLimited } from "#shared/domain/rate-limited.ts";
 
-import { ownRefusalCodes, platformRefusalCodes } from "./own-refusals.ts";
+import {
+  isDailyLimit,
+  ownRefusalCodes,
+  platformRefusalCodes,
+} from "./own-refusals.ts";
 import type { FailureReason } from "./post-target-status.ts";
 import { TargetSettlementSchema } from "./target-settlement.ts";
 import type { TargetSettlement } from "./target-settlement.ts";
@@ -22,6 +27,7 @@ import type { TargetSettlement } from "./target-settlement.ts";
  * | RateLimited         | retry after the platform's delay (1 min if none),  |
  * |                     | kept between 1 s and 6 h; give up after 8 attempts |
  * |                     | or past 24 h after the scheduled time: rateLimited |
+ * |                     | or, for a daily allowance, quotaExceeded           |
  * | TokenExpired        | give up: tokenExpired, and reconnect the channel   |
  * | MediaRejected       | give up: mediaRejected, or mediaRemoved when Acme  |
  * |                     | could not read the media (`./own-refusals.ts`)     |
@@ -146,7 +152,7 @@ const afterUnavailable = (
 };
 
 const afterRateLimit = (
-  retryAfter: Duration.Duration | undefined,
+  { code, retryAfter }: RateLimited,
   context: AttemptContext,
   policy: PublicationPolicy
 ): PublicationDecision => {
@@ -161,7 +167,7 @@ const afterRateLimit = (
 
   return context.earlier.rateLimited + 1 >= limits.maxAttempts ||
     Duration.isGreaterThan(retryAt, limits.deadline)
-    ? giveUp("rateLimited")
+    ? giveUp(isDailyLimit(code) ? "quotaExceeded" : "rateLimited", code)
     : retry(delay);
 };
 
@@ -196,7 +202,8 @@ export const failureReasonOf = (failure: PublishFailure): RefusalReason =>
     MediaRejected: ({ code }): RefusalReason =>
       code === ownRefusalCodes.mediaRemoved ? "mediaRemoved" : "mediaRejected",
     PlatformUnavailable: (): RefusalReason => "unavailable",
-    RateLimited: (): RefusalReason => "rateLimited",
+    RateLimited: ({ code }): RefusalReason =>
+      isDailyLimit(code) ? "quotaExceeded" : "rateLimited",
     TokenExpired: (): RefusalReason => "tokenExpired",
   });
 
@@ -210,8 +217,7 @@ export const decide = (
     BadRequest: (refusal) => giveUp(failureReasonOf(refusal), refusal.code),
     MediaRejected: (refusal) => giveUp(failureReasonOf(refusal), refusal.code),
     PlatformUnavailable: () => afterUnavailable(context, policy),
-    RateLimited: ({ retryAfter }) =>
-      afterRateLimit(retryAfter, context, policy),
+    RateLimited: (refusal) => afterRateLimit(refusal, context, policy),
     TokenExpired: () => giveUp("tokenExpired"),
     published: (published) => settle(published),
     unconfirmed: ({ reason }) =>

@@ -219,6 +219,8 @@ export interface MediaRules {
  * without `media` has no media rule the API knows.
  */
 export interface PlatformRules {
+  /** Characters the platform refuses anywhere in the text (YouTube: < and >). */
+  readonly forbiddenCharacters?: readonly string[];
   readonly maxHashtags?: number;
   /** Different links, counted by `countLinks`. */
   readonly maxLinks?: number;
@@ -271,6 +273,11 @@ const threadsVideo: FormatLimits = {
 };
 
 const facebookImage: FormatLimits = { maxByteSize: 10 * mebibyte };
+
+const youtubeVideo: FormatLimits = {
+  maxByteSize: 256 * 1024 * mebibyte,
+  maxDurationMs: 12 * 60 * minute,
+};
 
 const instagramVideo: FormatLimits = {
   aspectRatio: { maximum: 10, minimum: 0.01 },
@@ -439,5 +446,18 @@ export const platformRules: Readonly<Record<Platform, PlatformRules>> = {
     mediaRequired: false,
     textLimits: [{ maximum: 280, unit: "weighted" }],
   },
-  youtube: { mediaRequired: false, textLimits: [] },
+  // One video alone; one of 3 minutes or less, square or taller than wide,
+  // becomes a Short.
+  youtube: {
+    forbiddenCharacters: ["<", ">"],
+    maxMedia: 1,
+    media: {
+      formats: { "video/mp4": youtubeVideo, "video/quicktime": youtubeVideo },
+      maxVideos: 1,
+      mixesKinds: false,
+      showsAltText: false,
+    },
+    mediaRequired: true,
+    textLimits: [{ maximum: 5000, unit: "utf8Bytes" }],
+  },
 };

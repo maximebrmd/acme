@@ -113,6 +113,17 @@ export const tokenPolicies = {
       rotates: true,
     },
   }),
+  // Google's access tokens last an hour; its refresh tokens do not rotate,
+  // and work until revoked, left unused six months, or, for a Google
+  // project in testing, seven days after the sign-in.
+  youtube: new TokenPolicy({
+    lifetime: Option.some(Duration.hours(1)),
+    refresh: {
+      _tag: "refreshToken",
+      ahead: Duration.minutes(15),
+      rotates: false,
+    },
+  }),
 } as const;
 
 /** What a platform said about a token it just issued. */

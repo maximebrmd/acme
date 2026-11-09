@@ -80,6 +80,17 @@ Sur TikTok :
 
 Un compte TikTok peut n’avoir droit qu’à des vidéos plus courtes, comme le disent ses réglages sur TikTok : Acme vérifie sa durée maximale quand vous programmez la publication, et de nouveau quand elle part. Acme ne lit pas la cadence d’une vidéo : TikTok refuse une vidéo hors de sa plage quand il traite la publication. Les photos demandent un serveur configuré pour que TikTok puisse aller les chercher (voyez [TikTok](/self-hosting#tiktok)) : ailleurs, une publication TikTok avec des photos est refusée quand vous la programmez.
 
+Sur YouTube :
+
+| Limite                           | YouTube                                           |
+| -------------------------------- | ------------------------------------------------- |
+| Images et vidéos par publication | Une vidéo, obligatoire                            |
+| Images                           | Non acceptées                                     |
+| Vidéos                           | MP4 ou QuickTime, jusqu’à 256 Gio et 12 heures    |
+| Texte alternatif                 | Pas envoyé : le texte de la publication la décrit |
+
+Une vidéo de 3 minutes ou moins, carrée ou plus haute que large, devient un Short. YouTube n’accepte de vidéos de plus de 15 minutes que des chaînes que Google a vérifiées ; il refuse les autres une fois envoyées, et la publication échoue avec cette raison.
+
 Acme ne vérifie que ce qu’il a lu de chaque fichier : un fait qu’il n’a pas pu lire, comme la durée d’une vidéo, n’est pas vérifié, et la plateforme peut encore refuser le fichier.
 
 ## Quand vous programmez [#schedule]
@@ -97,7 +108,9 @@ Un brouillon peut contenir n’importe quel média prêt de son espace de travai
 - **Threads**, **Instagram** et **Pages Facebook** : Acme donne à Meta un lien vers chaque fichier du stockage des médias, valable deux heures, et Meta va le chercher. Sur Threads et Instagram, Meta traite ensuite les fichiers avant que la publication parte.
 - **TikTok** : une vidéo part en morceaux de 10 Mo, lus un à la fois dans le stockage des médias, sauf si le serveur laisse TikTok aller la chercher à l’adresse publique du stockage ; TikTok va toujours chercher les photos. TikTok traite ensuite la publication avant sa mise en ligne.
 
-Acme attend jusqu’à 15 minutes qu’une plateforme traite un fichier. Au-delà, il réessaie la publication plus tard, comme pour une plateforme qui ne répond pas.
+- **YouTube** : Acme envoie la vidéo par parties de 8 Mio, en reprenant là où en est YouTube si un envoi est coupé, même après un redémarrage du serveur, puis attend que YouTube la traite.
+
+Acme attend jusqu’à 15 minutes qu’une plateforme traite un fichier. Au-delà, il réessaie la publication plus tard, comme pour une plateforme qui ne répond pas ; une vidéo YouTube, déjà envoyée, reste publiée pendant que YouTube termine.
 
 ## Supprimer un média [#delete]
 
