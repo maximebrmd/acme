@@ -1,11 +1,11 @@
 ---
 title: Connecter un client MCP
-description: Connectez un assistant IA ou tout autre client MCP à Acme, connectez-le à un espace de travail, et voyez ce que ses outils peuvent lire.
+description: Connectez un assistant IA ou tout autre client MCP à Acme, connectez-le à un espace de travail, et voyez ce que ses outils lisent et changent.
 sidebar:
   order: 9
 ---
 
-Acme sert le Model Context Protocol (MCP) : un assistant IA, ou tout autre client MCP, peut lire un espace de travail pour vous. Le client se connecte en votre nom, dans un navigateur, et agit dans le seul espace de travail que vous choisissez.
+Acme sert le Model Context Protocol (MCP) : un assistant IA, ou tout autre client MCP, peut travailler dans un espace de travail pour vous : lire ses publications, statistiques, facturation et membres, écrire des brouillons, assurer le suivi des publications parties et inviter des personnes. Le client se connecte en votre nom, dans un navigateur, et agit dans le seul espace de travail que vous choisissez, sans dépasser ce que votre rôle permet.
 
 ## Le point d’accès [#endpoint]
 
@@ -59,17 +59,45 @@ Un client qui n’a aucune des deux permissions sur l’espace de travail ne peu
 
 ## Outils [#tools]
 
-Chaque outil lit, et ne change rien :
+Chaque outil agit en votre nom, dans l’espace de travail où le client s’est connecté, avec les mêmes vérifications que l’application web : votre rôle décide de ce qu’il peut faire, et un client que vous avez autorisé à lire seulement se voit refuser tout changement, avec un message qui le dit. Pour le laisser changer des choses, connectez-le à nouveau et autorisez-le à faire ce que votre rôle permet.
 
-| Outil             | Ce qu’il répond                                                                                                |
-| ----------------- | -------------------------------------------------------------------------------------------------------------- |
-| `whoami`          | Vous, et l’espace de travail où agit le client, avec votre rôle et ce que le client peut y faire               |
-| `list_workspaces` | Vos espaces de travail et votre rôle dans chacun, en marquant celui où agit le client                          |
-| `list_channels`   | Les [canaux](/channels) de l’espace de travail, et si chacun publie ou est à reconnecter. Jamais leurs jetons. |
-| `server_health`   | Si le serveur Acme tourne et joint sa base de données                                                          |
+Ces outils lisent, et ne changent rien :
+
+| Outil               | Ce qu’il répond                                                                                                                |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `whoami`            | Vous, et l’espace de travail où agit le client, avec votre rôle et ce que le client peut y faire                               |
+| `list_workspaces`   | Vos espaces de travail et votre rôle dans chacun, en marquant celui où agit le client                                          |
+| `list_channels`     | Les [canaux](/channels) de l’espace de travail, et si chacun publie ou est à reconnecter. Jamais leurs jetons.                 |
+| `list_drafts`       | Les brouillons de l’espace de travail, du plus récent au plus ancien, une page à la fois                                       |
+| `get_post`          | Une publication : ce qu’elle dit, quand elle part, et ce qui s’est passé sur chaque canal, avec les identifiants de ses cibles |
+| `analytics_summary` | Les compteurs des publications parues sur une période, dans un fuseau, comme les montrent les [Statistiques](/analytics)       |
+| `post_analytics`    | Les compteurs d’une publication sur chaque canal où elle est partie, au fil du temps                                           |
+| `get_billing`       | La formule de l’espace de travail, ses limites et ce que l’espace de travail utilise de chacune                                |
+| `list_members`      | Les membres de l’espace de travail, avec leur nom, leur adresse e-mail et leur rôle, comme chaque membre les voit              |
+| `list_invitations`  | Les invitations en attente, pour qui peut inviter ; les invitations au rôle de propriétaire, pour les propriétaires seuls      |
+| `server_health`     | Si le serveur Acme tourne et joint sa base de données                                                                          |
+
+Ces outils changent quelque chose. Chacun indique au client, par les annotations d’outils de MCP, s’il détruit ou écrase (`destructiveHint`), si l’appeler de nouveau ne change rien de plus (`idempotentHint`), et si son effet sort d’Acme (`openWorldHint`), pour qu’un client puisse vous demander avant de l’appeler :
+
+| Outil               | Ce qu’il fait                                                                                                                            | Détruit ou écrase | Rappelé, ne change rien de plus | Hors d’Acme |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- | ----------------- | ------------------------------- | ----------- |
+| `create_draft`      | Enregistre un nouveau brouillon. Il ne part à aucune heure : la programmation vous revient, dans l’application web.                      | non               | non                             | non         |
+| `update_draft`      | Remplace le texte, les médias et les canaux d’un brouillon par ceux donnés.                                                              | oui               | oui                             | non         |
+| `discard_draft`     | Supprime un brouillon pour de bon.                                                                                                       | oui               | oui                             | non         |
+| `unschedule_post`   | Ramène une publication programmée à l’état de brouillon : elle perd son heure.                                                           | oui               | oui                             | non         |
+| `repost_target`     | Publie de nouveau une publication, maintenant, sur un canal où elle a échoué ou n’est pas confirmée.                                     | non               | non                             | oui         |
+| `confirm_target`    | Enregistre ce que vous avez trouvé sur la plateforme pour une publication non confirmée : publiée, ou non publiée, qui l’y met en échec. | oui               | oui                             | non         |
+| `invite_member`     | Envoie à quelqu’un une invitation à l’espace de travail, avec un rôle. Une invitation en attente à la même adresse est remplacée.        | oui               | non                             | oui         |
+| `revoke_invitation` | Révoque une invitation en attente : son lien ne fonctionne plus.                                                                         | oui               | oui                             | non         |
+
+Les annotations sont des indications qu’un client peut vous montrer ; les vérifications de droits sont celles du serveur.
+
+### Ce qu’aucun outil ne donne [#account-data]
+
+Aucun outil n’exporte vos données ni ne liste les applications qui agissent pour vous. Un client MCP transmet tout ce que ses outils répondent à un modèle d’IA, et votre export contient les adresses de vos sessions, vos invitations et tout ce que vous avez écrit : l’instance refuse les deux à tout client OAuth autre que la [ligne de commande](/cli#account), que vous connectez depuis votre propre terminal et qui les enregistre dans vos propres fichiers. Les paramètres du compte, dans l’application web, les montrent aussi.
 
 ## Limites [#limits]
 
 - Une instance Acme ne sert les clients MCP que si son adresse est en HTTPS, ou sur `localhost` pour le développement. Ailleurs, le point d’accès refuse toutes les requêtes.
 - Le point d’accès refuse les requêtes envoyées depuis des pages web (avec un en-tête `Origin`) : connectez un client qui tourne sur votre ordinateur ou sur un serveur.
-- Il n’y a pas encore de page pour lister les clients que vous avez autorisés, ni pour en déconnecter un. Quitter l’espace de travail arrête tous les clients qui y agissent.
+- Les **Paramètres du compte**, dans l’application web, listent les clients que vous avez autorisés et les déconnectent ; `acme account apps` les liste depuis la [ligne de commande](/cli#account). Quitter l’espace de travail arrête tous les clients qui y agissent.

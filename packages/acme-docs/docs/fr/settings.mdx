@@ -75,4 +75,13 @@ Tant que vous êtes le seul propriétaire d’un espace de travail que d’autre
 | `GET /api/me/connected-apps`             | Liste vos applications connectées                                    |
 | `DELETE /api/me/connected-apps/{client}` | En révoque une                                                       |
 
-Ils ne répondent qu’à vous, connecté à l’application web avec votre propre session : les clés d’API, les jetons OAuth et l’équipe qui agit à votre place reçoivent 403. Renommer un espace de travail, ses membres et ses invitations passent par les routes du service de connexion sous `/api/auth/organization/`, et les clés d’API par `/api/workspaces/{workspaceId}/api-keys`.
+Ils ne répondent qu’à vous, connecté à l’application web avec votre propre session : les clés d’API, les jetons OAuth et l’équipe qui agit à votre place reçoivent 403. Vos données et la liste de vos applications connectées répondent aussi à la [ligne de commande](/cli#account) (`acme account`), que vous connectez depuis votre propre terminal ; jamais à un client MCP ni à un autre client OAuth.
+
+| Point d’accès                                                   | Ce qu’il fait                                                    |
+| --------------------------------------------------------------- | ---------------------------------------------------------------- |
+| `GET /api/workspaces/{workspaceId}/members`                     | Liste les membres, à chaque membre                               |
+| `GET /api/workspaces/{workspaceId}/invitations`                 | Liste les invitations en attente, à qui peut inviter             |
+| `POST /api/workspaces/{workspaceId}/invitations`                | Invite un `email` avec un `role`, comme **Envoyer l’invitation** |
+| `DELETE /api/workspaces/{workspaceId}/invitations/{invitation}` | Révoque une invitation en attente                                |
+
+Ils répondent aux membres en personne, par l’application web, la ligne de commande ou un client MCP autorisé, jamais à une clé d’API ni à l’équipe qui agit à votre place. Renommer un espace de travail, changer le rôle d’un membre et retirer un membre passent par les routes du service de connexion sous `/api/auth/organization/`, et les clés d’API par `/api/workspaces/{workspaceId}/api-keys`.

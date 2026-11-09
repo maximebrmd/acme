@@ -143,6 +143,8 @@ La bibliothèque qui exécute les tâches d’Acme lit aussi ses propres réglag
 | Variable          | Par défaut              | Rôle                                                                                        |
 | ----------------- | ----------------------- | ------------------------------------------------------------------------------------------- |
 | `ACME_API_URL`    | `http://localhost:3000` | L’adresse de l’instance, comme `https://acme.example.com`, sauf si `--api-url` est indiqué. |
+| `ACME_WORKSPACE`  | non définie             | L’espace de travail des commandes, par slug ou identifiant, sauf avec `--workspace`.        |
+| `TZ`              | fuseau du système       | Le fuseau IANA des jours d’`acme analytics summary`, sauf avec `--time-zone`.               |
 | `ACME_CONFIG_DIR` | non définie             | Le dossier où sont enregistrées les connexions, dans `credentials.json`.                    |
 | `XDG_CONFIG_HOME` | non définie             | Sans `ACME_CONFIG_DIR`, les connexions vont dans son dossier `acme`.                        |
 | `APPDATA`         | définie par Windows     | Sans l’une ni l’autre, les connexions vont dans son dossier `acme`.                         |

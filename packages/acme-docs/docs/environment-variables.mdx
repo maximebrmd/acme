@@ -143,6 +143,8 @@ The library that runs Acme's jobs also reads its own settings from the environme
 | Variable          | Default                 | What it does                                                                                  |
 | ----------------- | ----------------------- | --------------------------------------------------------------------------------------------- |
 | `ACME_API_URL`    | `http://localhost:3000` | The address of the instance, such as `https://acme.example.com`, unless `--api-url` is given. |
+| `ACME_WORKSPACE`  | unset                   | The workspace commands act in, by slug or id, unless `--workspace` is given.                  |
+| `TZ`              | this computer's zone    | The IANA zone `acme analytics summary` runs days in, unless `--time-zone` is given.           |
 | `ACME_CONFIG_DIR` | unset                   | The folder the sign-ins are saved in, in `credentials.json`.                                  |
 | `XDG_CONFIG_HOME` | unset                   | Without `ACME_CONFIG_DIR`, the sign-ins go in its `acme` folder.                              |
 | `APPDATA`         | Windows sets it         | Without either, the sign-ins go in its `acme` folder.                                         |

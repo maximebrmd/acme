@@ -1,11 +1,11 @@
 ---
 title: Ligne de commande
-description: Construisez la ligne de commande acme, pointez-la vers votre instance, connectez-vous avec acme login, et vérifiez qui vous êtes avec acme whoami.
+description: Construisez la ligne de commande acme, connectez-vous avec acme login, puis travaillez dans un espace de travail depuis un terminal (brouillons, publications, statistiques, facturation, membres et invitations) et copiez vos propres données.
 sidebar:
   order: 8
 ---
 
-`acme` travaille avec une instance Acme depuis un terminal. Il se connecte en votre nom, dans un navigateur, puis agit avec votre rôle dans chacun de vos espaces de travail. Ses messages sont en anglais.
+`acme` travaille avec une instance Acme depuis un terminal. Il se connecte en votre nom, dans un navigateur, puis agit avec votre rôle dans chacun de vos espaces de travail : il écrit et supprime des brouillons, assure le suivi des publications parties, lit les statistiques, la facturation, les membres et les invitations, invite des personnes et enregistre une copie de vos données. Programmer, connecter des canaux et changer des rôles se font dans l’application web. Ses messages sont en anglais.
 
 ## L’obtenir [#install]
 
@@ -90,14 +90,117 @@ acme mcp
 
 `acme mcp` affiche le point d’accès MCP de l’instance et une configuration que la plupart des clients MCP acceptent, et prévient quand l’instance ne laisse pas les clients MCP s’enregistrer eux-mêmes. [Connecter un client MCP](/mcp) explique la suite.
 
+## Choisir l’espace de travail [#workspace]
+
+Chaque commande ci-dessous agit dans un espace de travail. Nommez-le avec `--workspace` (ou `-w`), par son identifiant court (slug) ou son identifiant, ou définissez `ACME_WORKSPACE` une fois pour les commandes qui suivent. Si vous n’appartenez qu’à un espace de travail, `acme` le prend ; si vous appartenez à plusieurs sans en nommer aucun, il liste leurs slugs et s’arrête.
+
+```sh
+export ACME_WORKSPACE=studio
+acme drafts list
+acme drafts list --workspace clients
+```
+
+Chaque commande fait ce que votre rôle y permet, comme l’application web : un lecteur lit, un éditeur écrit et assure le suivi, un propriétaire ou un administrateur invite. Quand l’instance refuse, `acme` dit pourquoi (votre rôle, le statut de la publication, la formule) et se termine avec le code 1.
+
+## Canaux [#channels]
+
+```sh
+acme channels list
+```
+
+Liste les canaux de l’espace de travail avec leurs identifiants, que les brouillons prennent, et si chacun publie ou est à reconnecter. Connecter un canal se fait dans l’application web.
+
+## Brouillons [#drafts]
+
+```sh
+acme drafts list                  # du plus récent au plus ancien ; --limit et --cursor les parcourent
+acme drafts save --text "Le catalogue de printemps est sorti" --channel <channel-id> --channel <channel-id>
+acme drafts save --post <post-id> --text "Le catalogue de printemps sort aujourd’hui"
+acme drafts discard <post-id>
+```
+
+- `acme drafts save` sans `--post` écrit un nouveau brouillon, pour les canaux que nomme `--channel` (aucun pour l’instant convient). Avec `--post`, il modifie ce brouillon : le texte, quand `--text` est donné, et les canaux, quand un `--channel` l’est. Ce que vous laissez de côté reste tel quel, médias compris.
+- Un brouillon ne part à aucune heure. Son texte est vérifié contre les limites de chaque plateforme quand il est programmé, dans l’application web.
+- `acme drafts discard` supprime un brouillon pour de bon. Une publication programmée ou partie n’est pas un brouillon : déprogrammez-la ou annulez-la plutôt.
+
+## Publications [#posts]
+
+```sh
+acme posts show <post-id>
+acme posts unschedule <post-id>
+acme posts repost <post-id> <target-id>
+acme posts confirm <post-id> <target-id> published --permalink https://mastodon.example/@studio/1
+acme posts confirm <post-id> <target-id> not-published
+```
+
+- `acme posts show` affiche le statut et l’heure de la publication, puis une ligne par canal, qui commence par l’identifiant de sa cible, avec ce qui s’y est passé : échouée et pourquoi, non confirmée et pourquoi, ou publiée à son adresse.
+- `acme posts unschedule` ramène une publication programmée à l’état de brouillon : elle ne part à aucune heure tant qu’elle n’est pas reprogrammée. Une publication déjà en cours de publication ne peut pas être déprogrammée.
+- `acme posts repost` renvoie la publication, maintenant, sur un canal où elle a échoué ou n’est pas confirmée. Quand elle n’est pas confirmée, vérifiez d’abord sur la plateforme : elle est peut-être déjà en ligne.
+- `acme posts confirm` enregistre ce que vous avez trouvé sur la plateforme pour une publication qu’Acme n’a pas pu confirmer : `published`, avec son adresse si vous l’avez, ou `not-published`, qui la marque en échec sur ce canal pour que `acme posts repost` puisse la renvoyer. [Programmer des publications](/scheduling) explique comment finissent les publications.
+
+## Statistiques [#analytics]
+
+```sh
+acme analytics summary                                     # les 30 derniers jours, aujourd’hui compris
+acme analytics summary --from 2026-10-01 --to 2026-10-31 --time-zone Europe/Paris
+acme analytics post <post-id>
+```
+
+`acme analytics summary` additionne les compteurs des publications parues sur une période : au total, par canal, et les publications qui ont le plus fait réagir. Les jours suivent `--time-zone`, un fuseau IANA comme `Europe/Paris` ; sans lui, `TZ`, puis le fuseau de votre ordinateur. `acme analytics post` affiche les derniers compteurs d’une publication sur chaque canal où elle est partie. Un tiret remplace un compteur que la plateforme ne donne pas. Voir [Statistiques](/analytics).
+
+## Facturation [#billing]
+
+```sh
+acme billing
+```
+
+Affiche la formule et l’abonnement de l’espace de travail, et, pour chaque limite (canaux, membres, publications qui partent ce mois-ci, demandes à l’assistant aujourd’hui), ce qui est utilisé de ce que la formule permet. Il ne change rien : les propriétaires et administrateurs changent de formule sur la page **Facturation** de l’espace de travail. Sur une instance qui ne facture pas, rien n’est limité.
+
+## Membres et invitations [#members]
+
+```sh
+acme members list
+acme invitations list
+acme invitations send sam@example.com --role editor
+acme invitations revoke <invitation-id>
+```
+
+- Chaque membre voit les membres. Les propriétaires et administrateurs voient les invitations en attente, expirées comprises, les envoient et les révoquent.
+- `acme invitations send` envoie à l’adresse un lien valable 7 jours, avec le rôle que donne `--role` (`viewer` sauf indication contraire). Seuls les propriétaires invitent des propriétaires. Une invitation en attente à la même adresse est remplacée, et son lien ne fonctionne plus. Sur une instance qui facture, la formule doit avoir de la place pour un membre de plus, invitations en attente comprises.
+- `acme invitations revoke` arrête aussitôt le lien d’une invitation.
+- Changer le rôle d’un membre, ou retirer quelqu’un, se fait dans les **Paramètres** de l’espace de travail.
+
+## Vos données [#account]
+
+```sh
+acme account export                       # acme-data-2026-11-09.json, dans ce dossier
+acme account export --output ~/acme-data.json
+acme account apps
+```
+
+- `acme account export` enregistre une copie de tout ce qu’Acme garde sur vous, comme la page des paramètres du compte : votre compte, vos sessions, espaces de travail, invitations, applications connectées, notifications, préférences, les publications que vous avez écrites, et le contenu des espaces de travail dont vous êtes le seul membre. Elle ne contient ni mot de passe, ni jeton, ni clé, ni carte. Vous seul pouvez lire le fichier (mode 600), et `acme` n’écrase jamais un fichier sauf si vous ajoutez `--force`.
+- `acme account apps` liste les applications qui agissent pour vous, dont cette ligne de commande et les clients MCP, avec ce qu’elles peuvent faire et où. Révoquez-en une depuis les **Paramètres du compte**, dans l’application web : aucune application n’en révoque une autre.
+- Supprimer votre compte se fait aussi dans les **Paramètres du compte**.
+
+<Callout type="note" title="Pourquoi les clients MCP ne le peuvent pas">
+  Votre export et vos applications connectées vous sont ouverts dans
+  l’application web et dans cette ligne de commande, que vous connectez depuis
+  votre propre terminal et qui écrit sur votre propre disque. Aucun outil MCP ne
+  les donne : un client MCP transmet ce que ses outils répondent à un modèle
+  d’IA, et votre export contient les adresses de vos sessions et tout ce que
+  vous avez écrit. L’instance les refuse à tout client OAuth autre qu’`acme`.
+</Callout>
+
 ## Réglages [#settings]
 
-| Variable          | Rôle                                                                                            |
-| ----------------- | ----------------------------------------------------------------------------------------------- |
-| `ACME_API_URL`    | L’adresse de l’instance, sauf si `--api-url` est indiqué. Par défaut : `http://localhost:3000`. |
-| `ACME_CONFIG_DIR` | Le dossier où est enregistré `credentials.json`.                                                |
-| `XDG_CONFIG_HOME` | Sans `ACME_CONFIG_DIR`, la connexion va dans son dossier `acme`.                                |
-| `APPDATA`         | Sans l’une ni l’autre, sous Windows, la connexion va dans son dossier `acme`.                   |
-| `HOME`            | Sinon, la connexion va dans `~/.config/acme`.                                                   |
+| Variable          | Rôle                                                                                                       |
+| ----------------- | ---------------------------------------------------------------------------------------------------------- |
+| `ACME_API_URL`    | L’adresse de l’instance, sauf si `--api-url` est indiqué. Par défaut : `http://localhost:3000`.            |
+| `ACME_WORKSPACE`  | L’espace de travail où agissent les commandes, par slug ou identifiant, sauf si `--workspace` est indiqué. |
+| `TZ`              | Le fuseau des jours d’`acme analytics summary`, sauf si `--time-zone` est indiqué.                         |
+| `ACME_CONFIG_DIR` | Le dossier où est enregistré `credentials.json`.                                                           |
+| `XDG_CONFIG_HOME` | Sans `ACME_CONFIG_DIR`, la connexion va dans son dossier `acme`.                                           |
+| `APPDATA`         | Sans l’une ni l’autre, sous Windows, la connexion va dans son dossier `acme`.                              |
+| `HOME`            | Sinon, la connexion va dans `~/.config/acme`.                                                              |
 
 `acme --help` liste les commandes, et `acme <commande> --help` en décrit une.

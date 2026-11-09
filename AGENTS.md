@@ -259,7 +259,11 @@ and no socket, for tests.
   the account itself (its export, its deletion, connected applications) and
   deleting a workspace answer only the person in their own session:
   `ownSession` (`workspace/domain/own-session.ts`) refuses OAuth tokens and
-  staff impersonating them too.
+  staff impersonating them too. The export and the list of connected
+  applications also answer Acme's command line (`ownSessionOrCommandLine`:
+  the `acme-cli` client, its token bound to no workspace), which saves them
+  in the user's files; no MCP tool hands them out, as an MCP client passes
+  what it reads to an AI model.
 - Handlers turn `CurrentMember` into an `Actor` with `actorOf`
   (`#shared/api/actor.ts`). Use cases that act for someone take that `Actor`
   and check it with `authorize`: permissions are `resource:action`
@@ -291,6 +295,18 @@ and no socket, for tests.
   editor, contributor, viewer) and their grants are in
   `workspace/domain/roles.ts`, translated for Better Auth in
   `access-control.ts`. A member holds exactly one role.
+- `MembersApi` and `InvitationsApi` (`WorkspaceMembers`, over the
+  `WorkspacePeople` port) list a workspace's members to every member in
+  person, never an API key, and its pending invitations to those with
+  invitation:create (owner invitations to owners only, as an invitation's
+  id opens its link), and invite and revoke for a member in person, never
+  staff impersonating them. `WorkspacePeopleLive` writes an invitation
+  itself, under the workspace's advisory lock, following Better Auth's
+  `/organization/invite-member` (one role, owners for owners, never to a
+  member, replacing a pending one to the address, the pending limit and the
+  plan's room) and sharing its constants and link (`invitationLifetime`,
+  `pendingInvitationLimit`, `invitationUrl` in `options.ts`): change both
+  together. The web app still invites through Better Auth's route.
 - API keys belong to workspaces, never carry more than their creator holds,
   and are created only through `POST /api/workspaces/:workspaceId/api-keys`:
   Better Auth's own key routes are disabled.
@@ -779,6 +795,15 @@ and no socket, for tests.
   `McpAuthenticationLive` (`#workspace/api/mcp-authentication.ts`) provides
   the member from the request's OAuth token: 401 with an RFC 9728 challenge
   without a working token, 403 without a workspace scope or membership.
+- The use cases' permission checks refuse a client the user let read only.
+  Tools answer with the views the API handlers answer
+  (`#<context>/api/*-view.ts`). Each area has its toolkit (`posts-tools.ts`,
+  `reports-tools.ts`, `people-tools.ts`) and its handlers beside it, merged
+  into `AcmeTools`. Annotate every tool with `reading`, or
+  `changing({ destructive, idempotent, openWorld })` from `annotations.ts`,
+  and say in its description what it changes. Refusals are `ToolRefused`,
+  with a message the user can act on (`refusals.ts`). The account's own
+  data (its export, its applications) has no tool.
 
 ### Database
 
@@ -954,15 +979,25 @@ self-hoster needs only Postgres and an S3-compatible store:
 - The API URL comes from `--api-url`, then `ACME_API_URL`, then
   `http://localhost:3000`.
 - `acme login` signs in with the device grant; `whoami`, `logout`, `mcp` and
-  `health` are the other commands. Commands that act as the user take a token
-  from `accessToken` (`src/session.ts`), which renews it with the refresh
-  token. `CredentialStore` (`src/credentials.ts`) saves sign-ins by API URL in
+  `health` are the other commands, with `channels`, `drafts`, `posts`,
+  `analytics`, `billing`, `members` and `invitations`, which act in the
+  workspace `--workspace`, then `ACME_WORKSPACE`, names by slug or id
+  (`inWorkspace`, `src/workspace.ts`; a user's only workspace otherwise),
+  and `account`, which exports the user's data to a file only they may read
+  and lists their connected applications. Turn a request's failure into
+  what the user reads with `explain` (`src/explain.ts`). Positional
+  arguments are read in the order of their config's keys, which the linters
+  sort: name the keys so the order reads right. Commands that act as the
+  user take a token from `accessToken` (`src/session.ts`), which renews it
+  with the refresh token. `CredentialStore` (`src/credentials.ts`) saves sign-ins by API URL in
   `credentials.json` (0600, in a 0700 folder). Keep tokens `Redacted`, and
   never print one.
 - Test commands with `runWith` from `src/cli.ts` against the in-memory server
   in `test/support.ts` (the contract served by test handlers) and the
   authorization server in `test/authorization-server.ts`, never against a
-  running server.
+  running server. The workspace groups answer from the synthetic studio in
+  `test/studio.ts`, which checks the member's permissions and records each
+  change; `signedIn` (`test/signed-in.ts`) signs the command line in to it.
 
 ## End-to-end tests
 
