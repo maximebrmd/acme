@@ -172,12 +172,15 @@
 
     <profiles>
         <profile>
-            <id>sign-artifacts</id>
+            <id>release</id>
             <build>
                 <plugins>
                     <plugin>
                         <artifactId>maven-gpg-plugin</artifactId>
-                        <version>3.0.1</version>
+                        <version>3.2.8</version>
+                        <configuration>
+                            <signer>bc</signer>
+                        </configuration>
                         <executions>
                             <execution>
                                 <id>sign-artifacts</id>
@@ -187,6 +190,17 @@
                                 </goals>
                             </execution>
                         </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.sonatype.central</groupId>
+                        <artifactId>central-publishing-maven-plugin</artifactId>
+                        <version>0.12.0</version>
+                        <extensions>true</extensions>
+                        <configuration>
+                            <publishingServerId>central</publishingServerId>
+                            <autoPublish>true</autoPublish>
+                            <waitUntil>published</waitUntil>
+                        </configuration>
                     </plugin>
                 </plugins>
             </build>

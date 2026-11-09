@@ -79,6 +79,29 @@ const dotnet = async (_language: Language, folder: string): Promise<void> => {
   ]);
 };
 
+/**
+ * Maven Central takes signed artifacts through its portal: the profile that
+ * signs them, now `release`, signs with BouncyCastle (no gpg binary; the key
+ * and its passphrase come from MAVEN_GPG_KEY and MAVEN_GPG_PASSPHRASE) and
+ * uploads them with Sonatype's plugin, to the server `central`.
+ */
+const java = async (_language: Language, folder: string): Promise<void> => {
+  await replaceIn(path.join(folder, "pom.xml"), [
+    [
+      "<id>sign-artifacts</id>\n            <build>",
+      "<id>release</id>\n            <build>",
+    ],
+    [
+      "<artifactId>maven-gpg-plugin</artifactId>\n                        <version>3.0.1</version>",
+      "<artifactId>maven-gpg-plugin</artifactId>\n                        <version>3.2.8</version>\n                        <configuration>\n                            <signer>bc</signer>\n                        </configuration>",
+    ],
+    [
+      "                    </plugin>\n                </plugins>\n            </build>\n        </profile>",
+      "                    </plugin>\n                    <plugin>\n                        <groupId>org.sonatype.central</groupId>\n                        <artifactId>central-publishing-maven-plugin</artifactId>\n                        <version>0.12.0</version>\n                        <extensions>true</extensions>\n                        <configuration>\n                            <publishingServerId>central</publishingServerId>\n                            <autoPublish>true</autoPublish>\n                            <waitUntil>published</waitUntil>\n                        </configuration>\n                    </plugin>\n                </plugins>\n            </build>\n        </profile>",
+    ],
+  ]);
+};
+
 const rust = async (_language: Language, folder: string): Promise<void> => {
   await replaceIn(path.join(folder, "Cargo.toml"), [
     [
@@ -97,7 +120,7 @@ type Finisher = (language: Language, folder: string) => Promise<void>;
 const finishers = {
   dotnet,
   go: undefined,
-  java: undefined,
+  java,
   node,
   php: undefined,
   python,

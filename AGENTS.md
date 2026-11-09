@@ -1239,6 +1239,19 @@ self-hoster needs only Postgres and an S3-compatible store:
   `github.com/peal-social/peal/packages/peal-sdk/go`; as Go names each model's
   constructor `New<Model>`, its SDK calls a schema `New<X>` next to `<X>`
   `Create<X>Request`.
+- Each SDK is released alone, by a tag `sdk-<language>-v<version>` on a
+  commit whose `scripts/languages.ts` gives that version
+  (`scripts/release.ts` refuses another). `sdk-release.yml` builds it from
+  that commit and publishes it in the `sdk-release` environment: trusted
+  publishing (OIDC) for npm, PyPI, RubyGems, NuGet and crates.io, no token
+  stored; Maven Central's portal token and signing key from secrets (the
+  `release` profile, which `finish.ts` adds to the pom: BouncyCastle signing
+  and Sonatype's plugin); a tag `packages/peal-sdk/go/v<version>` for Go; a
+  tag `v<version>` on `peal-social/peal-php` for Packagist. That repository
+  is a read-only copy of `packages/peal-sdk/php` (`git subtree split`), which
+  `sdk-php-mirror.yml` updates from `main` with the deploy key in
+  `PHP_MIRROR_DEPLOY_KEY` (`.github/scripts/push-php-mirror.sh`); never
+  commit to it.
 - The SDKs are Apache-2.0 (`packages/peal-sdk/LICENSE`, copied into each
   language's folder: Go would otherwise take the repository's FSL), and every
   manifest says so. What they call is public API: renaming or removing an

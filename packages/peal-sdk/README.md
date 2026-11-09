@@ -58,6 +58,41 @@ generator's options, and regenerate. The files a folder's
 `.openapi-generator-ignore` names are ours, and the generator leaves them
 alone.
 
+## Releasing
+
+Each SDK is released on its own, from a tag:
+
+1. Bump the language's version in `scripts/languages.ts`, run
+   `bun run sdk:generate`, and merge the change.
+2. Tag that commit `sdk-<language>-v<version>` and push the tag:
+   `git tag sdk-python-v0.2.0 && git push origin sdk-python-v0.2.0`.
+
+The `SDK release` workflow (`.github/workflows/sdk-release.yml`) refuses a
+tag whose version differs from `scripts/languages.ts`, builds the SDK from the
+tagged commit, and publishes it in the `sdk-release` environment:
+
+| Registry      | How it signs in                                                                                                                                       |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| npm           | Trusted publishing, with a provenance statement                                                                                                       |
+| PyPI          | Trusted publishing                                                                                                                                    |
+| RubyGems      | Trusted publishing                                                                                                                                    |
+| NuGet         | Trusted publishing, through the policy of the account that owns the `peal-social` organization                                                        |
+| crates.io     | Trusted publishing                                                                                                                                    |
+| Maven Central | The portal's token and the signing key, in the secrets `MAVEN_CENTRAL_USERNAME`, `MAVEN_CENTRAL_PASSWORD`, `MAVEN_GPG_KEY` and `MAVEN_GPG_PASSPHRASE` |
+| Go            | The tag `packages/peal-sdk/go/v<version>`, which the workflow pushes                                                                                  |
+| Packagist     | The tag `v<version>` of the mirror below                                                                                                              |
+
+Each registry's trusted publisher names the repository `peal-social/peal`,
+the workflow `sdk-release.yml` and the environment `sdk-release`. npm and
+crates.io take one only for a package that exists: their first release is
+published by hand.
+
+Packagist reads a package from the root of a repository, so the PHP SDK also
+lives in [`peal-social/peal-php`](https://github.com/peal-social/peal-php), a
+read-only copy of [`php`](php): `sdk-php-mirror.yml` updates it whenever
+`main` changes the folder, with the deploy key in the secret
+`PHP_MIRROR_DEPLOY_KEY`.
+
 ## License
 
 The SDKs are licensed under the [Apache License 2.0](LICENSE), unlike the rest
