@@ -45,10 +45,12 @@ const channelsWithSettings = (settings: Record<string, string>) =>
     Layer.provideMerge(DatabaseTest)
   );
 
-// No app on LinkedIn or X, whatever the environment says.
+// No app on LinkedIn, X or TikTok, whatever the environment says.
 const withoutApps = {
   LINKEDIN_CLIENT_ID: "",
   LINKEDIN_CLIENT_SECRET: "",
+  TIKTOK_CLIENT_KEY: "",
+  TIKTOK_CLIENT_SECRET: "",
   X_CLIENT_ID: "",
   X_CLIENT_SECRET: "",
 };
@@ -163,6 +165,7 @@ layer(channelsWith(""))("the channels context on a local server", (it) => {
           "instagram",
           "linkedin",
           "threads",
+          "tiktok",
           "x",
         ]);
         assert.isTrue(Option.isNone(documents.bluesky));
@@ -170,49 +173,63 @@ layer(channelsWith(""))("the channels context on a local server", (it) => {
   );
 });
 
-layer(DatabaseTest)("the channels context's LinkedIn and X settings", (it) => {
-  it.effect("connect LinkedIn and X once their apps are set", () =>
-    Effect.gen(function* configured() {
-      const authorizers = yield* PlatformAuthorizers.pipe(
-        Effect.provide(
-          channelsWithSettings({
-            BLUESKY_CLIENT_KEYS: "",
-            LINKEDIN_CLIENT_ID: "77synthetic",
-            LINKEDIN_CLIENT_SECRET: "synthetic-linkedin-secret",
-            X_CLIENT_ID: "c3ludGhldGlj",
-            X_CLIENT_SECRET: "synthetic-x-secret",
-          })
-        )
-      );
+layer(DatabaseTest)(
+  "the channels context's LinkedIn, X and TikTok settings",
+  (it) => {
+    it.effect("connect LinkedIn, X and TikTok once their apps are set", () =>
+      Effect.gen(function* configured() {
+        const authorizers = yield* PlatformAuthorizers.pipe(
+          Effect.provide(
+            channelsWithSettings({
+              BLUESKY_CLIENT_KEYS: "",
+              LINKEDIN_CLIENT_ID: "77synthetic",
+              LINKEDIN_CLIENT_SECRET: "synthetic-linkedin-secret",
+              TIKTOK_CLIENT_KEY: "awsynthetic",
+              TIKTOK_CLIENT_SECRET: "synthetic-tiktok-secret",
+              X_CLIENT_ID: "c3ludGhldGlj",
+              X_CLIENT_SECRET: "synthetic-x-secret",
+            })
+          )
+        );
 
-      assert.strictEqual(
-        Option.getOrThrow(authorizers.for("linkedin")).platform,
-        "linkedin"
-      );
-      assert.strictEqual(Option.getOrThrow(authorizers.for("x")).platform, "x");
-      assert.isFalse(authorizers.unconfigured.has("linkedin"));
-      assert.isFalse(authorizers.unconfigured.has("x"));
-    }).pipe(Effect.scoped)
-  );
+        assert.strictEqual(
+          Option.getOrThrow(authorizers.for("linkedin")).platform,
+          "linkedin"
+        );
+        assert.strictEqual(
+          Option.getOrThrow(authorizers.for("x")).platform,
+          "x"
+        );
+        assert.strictEqual(
+          Option.getOrThrow(authorizers.for("tiktok")).platform,
+          "tiktok"
+        );
+        assert.isFalse(authorizers.unconfigured.has("linkedin"));
+        assert.isFalse(authorizers.unconfigured.has("x"));
+        assert.isFalse(authorizers.unconfigured.has("tiktok"));
+      }).pipe(Effect.scoped)
+    );
 
-  it.effect("refuse to start with half of an app", () =>
-    Effect.gen(function* refuses() {
-      for (const [platform, settings] of [
-        ["linkedin", { ...withoutApps, LINKEDIN_CLIENT_ID: "77synthetic" }],
-        ["x", { ...withoutApps, X_CLIENT_SECRET: "synthetic-x-secret" }],
-      ] as const) {
-        const failure = yield* Layer.build(
-          channelsWithSettings({ ...settings, BLUESKY_CLIENT_KEYS: "" })
-        ).pipe(Effect.scoped, Effect.flip);
+    it.effect("refuse to start with half of an app", () =>
+      Effect.gen(function* refuses() {
+        for (const [platform, settings] of [
+          ["linkedin", { ...withoutApps, LINKEDIN_CLIENT_ID: "77synthetic" }],
+          ["x", { ...withoutApps, X_CLIENT_SECRET: "synthetic-x-secret" }],
+          ["tiktok", { ...withoutApps, TIKTOK_CLIENT_KEY: "awsynthetic" }],
+        ] as const) {
+          const failure = yield* Layer.build(
+            channelsWithSettings({ ...settings, BLUESKY_CLIENT_KEYS: "" })
+          ).pipe(Effect.scoped, Effect.flip);
 
-        assert.strictEqual(failure._tag, "InvalidPlatformClient");
-        assert(failure._tag === "InvalidPlatformClient");
-        assert.strictEqual(failure.platform, platform);
-        assert.notInclude(failure.message, "synthetic");
-      }
-    })
-  );
-});
+          assert.strictEqual(failure._tag, "InvalidPlatformClient");
+          assert(failure._tag === "InvalidPlatformClient");
+          assert.strictEqual(failure.platform, platform);
+          assert.notInclude(failure.message, "synthetic");
+        }
+      })
+    );
+  }
+);
 
 layer(DatabaseTest)("the channels context's Bluesky settings", (it) => {
   it.effect("publish a confidential client for keys on an HTTPS server", () =>

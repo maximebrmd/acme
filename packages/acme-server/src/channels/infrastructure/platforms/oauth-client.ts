@@ -24,14 +24,19 @@ const nonBlankSecret = Config.map(
 );
 
 /**
- * Reads a platform's client from `<prefix>_CLIENT_ID` and
+ * Reads a platform's client from `<prefix>_CLIENT_ID` (or the name the
+ * platform gives its id, as TikTok's `CLIENT_KEY`) and
  * `<prefix>_CLIENT_SECRET`, the secret as Config.Redacted. Both unset or
  * blank: none, and the platform is not offered. One without the other stops
  * the server at startup.
  */
-export const oauthClientConfig = (platform: Platform, prefix: string) =>
+export const oauthClientConfig = (
+  platform: Platform,
+  prefix: string,
+  idSuffix = "CLIENT_ID"
+) =>
   Effect.gen(function* readClient() {
-    const idName = `${prefix}_CLIENT_ID`;
+    const idName = `${prefix}_${idSuffix}`;
     const secretName = `${prefix}_CLIENT_SECRET`;
 
     const clientId = yield* Config.option(Config.String(idName)).pipe(nonBlank);
