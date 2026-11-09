@@ -94,6 +94,9 @@ export const PlainTextEditor = ({
     "aria-describedby": describedBy,
     "aria-labelledby": labelledBy,
     "aria-multiline": "true",
+    // The placeholder drawn over the editor is hidden from screen readers,
+    // which read this instead.
+    "aria-placeholder": placeholder,
     "aria-readonly": readOnly ? "true" : "false",
     class:
       "min-h-32 w-full rounded-lg border border-input bg-transparent px-2.5 py-2 text-base whitespace-pre-wrap outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 md:text-sm dark:bg-input/30",

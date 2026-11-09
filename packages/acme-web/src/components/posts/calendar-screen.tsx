@@ -13,7 +13,7 @@ import {
   TabsTrigger,
 } from "acme-ui/components/tabs";
 import { cn } from "acme-ui/lib/utils";
-import { DateTime, Exit, Option } from "effect";
+import { DateTime, Exit, Option, Schema } from "effect";
 import { AsyncResult } from "effect/reactivity";
 import {
   ChevronLeftIcon,
@@ -43,7 +43,11 @@ import {
 } from "#posts/zoned-time.ts";
 import type { CalendarDate } from "#posts/zoned-time.ts";
 
-type View = "month" | "week";
+const ViewSchema = Schema.Literals(["week", "month"]);
+
+type View = typeof ViewSchema.Type;
+
+const decodeView = Schema.decodeUnknownOption(ViewSchema);
 
 const hours = Array.from({ length: 24 }, (_, hour) => hour);
 
@@ -386,9 +390,6 @@ interface CalendarViewProps {
   readonly workspaceId: string;
 }
 
-const isView = (value: unknown): value is View =>
-  value === "week" || value === "month";
-
 const CalendarView = ({
   initialDate,
   permissions,
@@ -571,8 +572,10 @@ const CalendarView = ({
       <Tabs
         value={view}
         onValueChange={(value) => {
-          if (isView(value)) {
-            setView(value);
+          const picked = decodeView(value);
+
+          if (Option.isSome(picked)) {
+            setView(picked.value);
           }
         }}
       >
