@@ -8,7 +8,8 @@ import {
   publicFetch,
   publicHttpClient,
 } from "#shared/infrastructure/platforms/public-http.ts";
-import { fakeHttpServer } from "#test/channels/fakes/fake-http-server.ts";
+import { fakeHttpServer, json } from "#test/channels/fakes/fake-http-server.ts";
+import { OpenOutboundGuard } from "#test/channels/support.ts";
 
 // Names as a resolver would answer them: public servers, and names that lead
 // inside, as an attacker would set up.
@@ -122,6 +123,98 @@ layer(ClientTest)("the public HTTP client", (it) => {
 
       assert.isTrue(Option.isSome(cause));
       assert.lengthOf(local.requests(), 0);
+    }).pipe(Effect.scoped)
+  );
+});
+
+// The same client and fetch against a fake on loopback, which only an open
+// guard lets through: what they do with the answers a host sends back.
+const OpenClientTest = Layer.mergeAll(OpenOutboundGuard, FetchHttpClient.layer);
+
+// More than any platform answer Acme reads: a megabyte and a half.
+const oversized = "x".repeat(1_572_864);
+
+layer(OpenClientTest)("answers from a host a user chose", (it) => {
+  it.effect("are not followed when they redirect", () =>
+    Effect.gen(function* noRedirects() {
+      const local = yield* fakeHttpServer((request, origin) =>
+        request.path === "/start"
+          ? { headers: { location: `${origin}/inside` }, status: 302 }
+          : { status: 200 }
+      );
+
+      const client = yield* publicHttpClient;
+      const fetch = yield* publicFetch;
+
+      const answered = yield* client.get(`${local.url}/start`);
+
+      const fetched = yield* Effect.promise(
+        async () => await fetch(`${local.url}/start`, { redirect: "follow" })
+      );
+
+      assert.strictEqual(answered.status, 302);
+      assert.strictEqual(fetched.status, 302);
+      assert.deepStrictEqual(
+        local.requests().map(({ path }) => path),
+        ["/start", "/start"]
+      );
+    }).pipe(Effect.scoped)
+  );
+
+  it.effect("are cut off past what a platform sends", () =>
+    Effect.gen(function* tooLarge() {
+      const local = yield* fakeHttpServer(() => json(oversized));
+      const client = yield* publicHttpClient;
+      const fetch = yield* publicFetch;
+
+      const read = yield* client.get(`${local.url}/large`).pipe(
+        Effect.flatMap((response) => response.text),
+        Effect.result
+      );
+
+      const fetched = yield* Effect.tryPromise(async () => {
+        const response = await fetch(`${local.url}/large`);
+
+        return await response.text();
+      }).pipe(Effect.result);
+
+      assert.isTrue(Result.isFailure(read));
+      assert.isTrue(Result.isFailure(fetched));
+    }).pipe(Effect.scoped)
+  );
+
+  it.effect("are read whole when they are of a platform's size", () =>
+    Effect.gen(function* small() {
+      const local = yield* fakeHttpServer(() => json({ ok: true }));
+      const client = yield* publicHttpClient;
+      const fetch = yield* publicFetch;
+
+      const read = yield* client
+        .get(`${local.url}/small`)
+        .pipe(Effect.flatMap((response) => response.text));
+
+      const fetched = yield* Effect.promise(async () => {
+        const response = await fetch(`${local.url}/small`);
+
+        return await response.text();
+      });
+
+      assert.strictEqual(read, '{"ok":true}');
+      assert.strictEqual(fetched, '{"ok":true}');
+    }).pipe(Effect.scoped)
+  );
+
+  it.effect("tell the host nothing of Acme's traces", () =>
+    Effect.gen(function* noTraceContext() {
+      const local = yield* fakeHttpServer(() => ({ status: 204 }));
+      const client = yield* publicHttpClient;
+
+      yield* client.get(`${local.url}/traced`);
+
+      const [received] = local.requests();
+
+      assert.isUndefined(received?.headers["traceparent"]);
+      assert.isUndefined(received?.headers["b3"]);
     }).pipe(Effect.scoped)
   );
 });
