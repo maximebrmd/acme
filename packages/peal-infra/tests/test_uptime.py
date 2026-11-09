@@ -305,13 +305,19 @@ def stack(rendered: Path, tmp_path_factory: pytest.TempPathFactory) -> Iterator[
     edge = tmp_path_factory.mktemp("caddy")
     shutil.copy(rendered / "peal-uptime" / "caddy" / "routes.caddy", edge / "routes.caddy")
     (edge / "Caddyfile").write_text("http://:8080 {\n\timport /etc/caddy/routes.caddy\n}\n")
+    # Gatus runs as nobody, and Linux keeps pytest's folders to their owner,
+    # so it reads a copy anyone may read; on the server, its group reads them.
+    config = tmp_path_factory.mktemp("gatus")
+    shutil.copytree(rendered / "peal-uptime" / "gatus", config, dirs_exist_ok=True)
+    for path in [config, *config.rglob("*")]:
+        path.chmod(0o755 if path.is_dir() else 0o644)
     confined = ["--read-only", "--cap-drop", "ALL", "--security-opt", "no-new-privileges:true"]
     _run(["docker", "network", "create", "--internal", stack.network]).check_returncode()
     try:
         _run(["docker", "run", "--detach", "--name", stack.gatus, "--network", stack.network,
               "--network-alias", "gatus", *confined, "--user", "65534:65534",
               "--tmpfs", "/data:uid=65534,gid=65534", "--tmpfs", "/tmp",
-              "--volume", f"{rendered / 'peal-uptime' / 'gatus'}:/config:ro",
+              "--volume", f"{config}:/config:ro",
               "--env", "GATUS_CONFIG_PATH=/config/config.yaml",
               *[option for item in ENVIRONMENT.items() for option in ("--env", "=".join(item))],
               compose["gatus"]["image"]]).check_returncode()
