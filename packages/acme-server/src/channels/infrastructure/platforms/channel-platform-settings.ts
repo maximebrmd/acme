@@ -47,6 +47,8 @@ export interface ChannelPlatformSettings {
   readonly threads: Option.Option<MetaApp>;
   /** Acme's X app, if the operator registered one. */
   readonly x: Option.Option<OAuthClient>;
+  /** Acme's Google OAuth client, for YouTube, if the operator made one. */
+  readonly youtube: Option.Option<OAuthClient>;
 }
 
 export class ChannelPlatforms extends Context.Service<
@@ -162,6 +164,10 @@ const blueskyModeOf = Effect.fnUntraced(function* blueskyModeOf(settings: {
  *   Instagram professional accounts.
  * - `THREADS_APP_ID` and `THREADS_APP_SECRET`: the same app's Threads
  *   credentials, for Threads accounts.
+ * - `YOUTUBE_CLIENT_ID` and `YOUTUBE_CLIENT_SECRET`: the OAuth client the
+ *   operator made in a Google Cloud project with the YouTube Data API on,
+ *   for YouTube channels. Like LinkedIn's and X's, one half alone stops the
+ *   server.
  */
 export const channelPlatformsConfig = Effect.gen(function* settings() {
   const publicUrl = yield* publicUrlConfig;
@@ -178,6 +184,7 @@ export const channelPlatformsConfig = Effect.gen(function* settings() {
   const x = yield* oauthClientConfig("x", "X");
   const meta = yield* metaAppConfig;
   const threads = yield* threadsAppConfig;
+  const youtube = yield* oauthClientConfig("youtube", "YOUTUBE");
 
   const platforms: ChannelPlatformSettings = {
     bluesky: mode.pipe(
@@ -193,6 +200,7 @@ export const channelPlatformsConfig = Effect.gen(function* settings() {
     publicUrl,
     threads,
     x,
+    youtube,
   };
 
   return platforms;

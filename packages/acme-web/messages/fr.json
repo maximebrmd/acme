@@ -287,7 +287,7 @@
       "forbidden": "Vous ne pouvez pas faire cela dans cet espace de travail.",
       "notFound": "Ce canal n’est plus connecté.",
       "unknown": "Une erreur est survenue. Réessayez.",
-      "noAccounts": "La connexion n’a atteint aucun compte à connecter : vous ne gérez aucune Page Facebook, ou aucun compte professionnel Instagram n’est lié à vos Pages."
+      "noAccounts": "La connexion n’a atteint aucun compte à connecter : sur Facebook et Instagram, vous ne gérez aucune Page, ou aucun compte professionnel Instagram n’est lié à vos Pages ; sur YouTube, le compte Google choisi n’a pas de chaîne."
     }
   },
   "PlatformConnect": {
@@ -302,6 +302,11 @@
       "title": "X",
       "description": "Votre compte X. Vous vous connectez sur X et autorisez Acme à publier et à envoyer des médias pour vous.",
       "connect": "Connecter X"
+    },
+    "youtube": {
+      "title": "YouTube",
+      "description": "Votre chaîne YouTube. Vous vous connectez avec Google, choisissez la chaîne si votre compte en a plusieurs, et autorisez Acme à mettre en ligne des vidéos et à lire la chaîne.",
+      "connect": "Connecter YouTube"
     }
   },
   "ConnectCallbackPage": {

@@ -193,6 +193,19 @@ Meta va chercher les images et vidéos qu’il publie par des liens vers le stoc
 
 Tant que l’application est en mode développement, seules les personnes qui y ont un rôle peuvent connecter leurs comptes : ajoutez-vous, ainsi que les testeurs Threads, sous Rôles de l’application. Servir d’autres personnes demande l’examen par Meta de chaque autorisation. Les comptes Instagram doivent être des comptes professionnels liés à une Page Facebook.
 
+### YouTube [#youtube]
+
+Un serveur connecte des chaînes YouTube une fois que vous lui avez créé un client OAuth dans un projet Google Cloud :
+
+1. Dans la console Google Cloud, créez un projet, et activez la **YouTube Data API v3** sous API et services.
+2. Sous **Google Auth Platform**, configurez l’écran de consentement pour des utilisateurs **Externes**, et ajoutez les champs d’application `https://www.googleapis.com/auth/youtube.upload` et `https://www.googleapis.com/auth/youtube.readonly`.
+3. Sous **Clients**, créez un client **Application Web**, avec `PUBLIC_URL/connect/youtube/callback` comme URI de redirection autorisée, comme `https://acme.example.com/connect/youtube/callback`.
+4. Mettez l’identifiant client dans `YOUTUBE_CLIENT_ID` et son secret dans `YOUTUBE_CLIENT_SECRET`.
+
+L’un des deux réglages sans l’autre arrête le serveur au démarrage ; sans les deux, **Canaux** ne propose pas YouTube. Les membres se connectent avec Google et choisissent la chaîne, celle d’un compte de marque comprise, dans le sélecteur de comptes de Google : une connexion est une chaîne. Acme demande à mettre en ligne des vidéos et à lire la chaîne et ses vidéos, rien de plus, et renouvelle son accès toutes les heures. Déconnecter une chaîne révoque cet accès chez Google, sauf si un autre espace de travail connecte encore la même chaîne.
+
+Tant que l’écran de consentement du projet est en **Test**, seuls les utilisateurs test que vous listez peuvent se connecter, et Google met fin à leur accès sept jours après la connexion : leurs chaînes doivent alors être reconnectées, et Acme prévient l’espace de travail. Publiez l’écran de consentement, et faites vérifier l’application par Google pour ses champs d’application, pour servir tout le monde durablement.
+
 ## Assistant de rédaction [#ai]
 
 L’assistant de rédaction de l’éditeur réécrit une publication sur un ton, la raccourcit pour une plateforme, la traduit ou suggère des hashtags. Il est désactivé tant que `ACME_AI_PROVIDER` ne nomme pas de fournisseur : d’ici là, l’application web le masque, et ses points d’accès répondent `AssistantUnavailable`.

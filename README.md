@@ -10,7 +10,8 @@ two years after it ships.
 It is not released yet. Today you can:
 
 - create an account and workspaces, and connect Mastodon, Bluesky, LinkedIn,
-  X, Threads and Instagram accounts and Facebook Pages to them;
+  X, Threads and Instagram accounts, Facebook Pages and YouTube channels to
+  them;
 - upload images and videos to a workspace's media library;
 - write a post, with its own text on some channels and images or videos
   with alt text, keep it with the workspace's drafts or discard it, then
@@ -176,6 +177,12 @@ be read, and their channels must be reconnected.
   reached, to tick. Meta fetches the media it publishes from the store, which
   it cannot reach on this machine: text posts work, media needs a public
   store.
+- **YouTube** needs an OAuth client of the web application type in a Google
+  Cloud project with the YouTube Data API v3 on, whose redirect is
+  `PUBLIC_URL/connect/youtube/callback`, in `YOUTUBE_CLIENT_ID` and
+  `YOUTUBE_CLIENT_SECRET`; Google takes `http://localhost:3001` there. While
+  the project's consent screen is in testing, only its test users sign in,
+  and Google ends their access after 7 days: reconnect then.
 
 The server refreshes tokens due for it every 10 minutes and, daily at 08:00
 UTC, tells a workspace's owners and admins about accounts that must be
@@ -330,6 +337,7 @@ In development, these are the ones you may want:
 | `X_CLIENT_ID`                 | unset: X is not offered          | The X app's OAuth 2.0 client id, with `X_CLIENT_SECRET`        |
 | `META_APP_ID`                 | unset: no Facebook nor Instagram | Meta's app, with `META_APP_SECRET`                             |
 | `THREADS_APP_ID`              | unset: no Threads                | The app's Threads id, with `THREADS_APP_SECRET`                |
+| `YOUTUBE_CLIENT_ID`           | unset: YouTube is not offered    | The Google OAuth client's id, with `YOUTUBE_CLIENT_SECRET`     |
 | `ACME_AI_PROVIDER`            | unset: no writing assistant      | `anthropic` or `openai-compatible`                             |
 | `ACME_AI_API_KEY`             | unset                            | The provider's key: required for Anthropic                     |
 | `ACME_AI_BASE_URL`            | Anthropic's API                  | The API's base URL: required for an OpenAI-compatible server   |

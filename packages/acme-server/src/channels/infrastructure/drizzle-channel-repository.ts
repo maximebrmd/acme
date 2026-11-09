@@ -130,6 +130,21 @@ export const DrizzleChannelRepository = Layer.effect(
     const client = yield* SqlClient.SqlClient;
 
     return ChannelRepository.of({
+      accountInUse: (platform, accountId) =>
+        db
+          .select({ id: channels.id })
+          .from(channels)
+          .where(
+            and(
+              eq(channels.platform, platform),
+              eq(channels.accountId, accountId)
+            )
+          )
+          .limit(1)
+          .pipe(
+            Effect.mapError(failed),
+            Effect.map((rows) => rows.length > 0)
+          ),
       // A transaction's advisory lock, in the two-key form: the first key
       // names what it guards, the second the workspace.
       addingTo: (workspaceId, adding) =>

@@ -1,13 +1,18 @@
 import { Context, Effect, Layer, Option, Schema } from "effect";
 
+import type { Channel } from "#channels/domain/channel.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import type { Actor } from "#shared/domain/access.ts";
 import { authorize } from "#shared/domain/authorize.ts";
 import { ChannelIdSchema } from "#shared/domain/ids.ts";
 import type { MissingPermission } from "#shared/domain/missing-permission.ts";
 
+import type { ChannelCredentials } from "./channel-credentials.ts";
 import { ChannelNotFound } from "./channel-not-found.ts";
 import { ChannelRepository } from "./channel-repository.ts";
+import { decryptTokens } from "./channel-tokens.ts";
+import { PlatformAuthorizers } from "./platform-authorizer.ts";
+import { TokenCipher } from "./token-cipher.ts";
 
 const decodeChannelId = Schema.decodeUnknownOption(ChannelIdSchema);
 
@@ -16,6 +21,11 @@ const decodeChannelId = Schema.decodeUnknownOption(ChannelIdSchema);
  * are deleted. Needs channel:disconnect. An id that names no channel of the
  * workspace, including one that is not a channel id at all, is
  * ChannelNotFound.
+ *
+ * On a platform that takes it (Google), the tokens are then revoked, unless
+ * another channel, in any workspace, still connects the same account: they
+ * share its grant. Revoking is a courtesy to the account's owner: a failure
+ * is logged, and the channel stays disconnected.
  */
 export class DisconnectChannel extends Context.Service<
   DisconnectChannel,
@@ -33,6 +43,33 @@ export class DisconnectChannel extends Context.Service<
     DisconnectChannel,
     Effect.gen(function* DisconnectChannelLive() {
       const channels = yield* ChannelRepository;
+      const authorizers = yield* PlatformAuthorizers;
+      const cipher = yield* TokenCipher;
+
+      // Revokes what the removed channel held, if its platform takes it and
+      // no other channel shares the grant.
+      const revoke = Effect.fn("DisconnectChannel.revoke")(function* revoke(
+        channel: Channel,
+        credentials: ChannelCredentials
+      ) {
+        const revoking = authorizers
+          .for(channel.platform)
+          .pipe(Option.flatMapNullishOr((authorizer) => authorizer.revoke));
+
+        if (Option.isNone(revoking)) {
+          return;
+        }
+
+        if (yield* channels.accountInUse(channel.platform, channel.accountId)) {
+          return;
+        }
+
+        const tokens = yield* decryptTokens(credentials, channel.id).pipe(
+          Effect.provideService(TokenCipher, cipher)
+        );
+
+        yield* revoking.value(tokens);
+      });
 
       const disconnect = Effect.fn("DisconnectChannel.disconnect")(
         function* disconnect(actor: Actor, channelId: string) {
@@ -40,12 +77,33 @@ export class DisconnectChannel extends Context.Service<
 
           const id = decodeChannelId(channelId);
 
-          const removed = Option.isSome(id)
-            ? yield* channels.remove(actor.workspaceId, id.value)
+          const channel = Option.isSome(id)
+            ? yield* channels.findById(actor.workspaceId, id.value)
+            : Option.none<Channel>();
+
+          const credentials = Option.isSome(channel)
+            ? yield* channels.credentials(channel.value.id)
+            : Option.none<ChannelCredentials>();
+
+          const removed = Option.isSome(channel)
+            ? yield* channels.remove(actor.workspaceId, channel.value.id)
             : false;
 
-          if (!removed) {
+          if (!removed || Option.isNone(channel)) {
             yield* new ChannelNotFound({ channelId });
+          } else if (Option.isSome(credentials)) {
+            yield* revoke(channel.value, credentials.value).pipe(
+              Effect.catch((error) =>
+                Effect.logWarning(
+                  "The platform did not revoke a disconnected channel's tokens",
+                  error
+                )
+              ),
+              Effect.annotateLogs({
+                channelId: channel.value.id,
+                platform: channel.value.platform,
+              })
+            );
           }
         }
       );

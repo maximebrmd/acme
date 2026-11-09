@@ -21,12 +21,16 @@ import { facebookAuthorizer } from "./meta/facebook-authorizer.ts";
 import { instagramAuthorizer } from "./meta/instagram-authorizer.ts";
 import { threadsAuthorizer } from "./meta/threads-authorizer.ts";
 import { xAuthorizer, xEndpoints } from "./x/x-authorizer.ts";
+import {
+  youtubeAuthorizer,
+  youtubeEndpoints,
+} from "./youtube/youtube-authorizer.ts";
 
 /**
  * Every platform this server connects, from its settings: Mastodon always,
  * Bluesky when it has a client to run, LinkedIn and X when the operator
  * registered an app there, Facebook Pages and Instagram with Meta's app,
- * Threads with its credentials. Needs an HttpClient, the outbound guard, the
+ * Threads with its credentials, YouTube with a Google OAuth client. Needs an HttpClient, the outbound guard, the
  * database, the TokenCipher, SecureRandom, Digest and Mac.
  */
 export const PlatformAuthorizersLive = Layer.effect(
@@ -67,6 +71,17 @@ export const PlatformAuthorizersLive = Layer.effect(
         )
       : Option.none<PlatformAuthorizer>();
 
+    const youtube = Option.isSome(settings.youtube)
+      ? Option.some(
+          yield* youtubeAuthorizer({
+            client: settings.youtube.value,
+            endpoints: youtubeEndpoints,
+            http,
+            publicUrl: settings.publicUrl,
+          })
+        )
+      : Option.none<PlatformAuthorizer>();
+
     const metaOptions = (app: MetaApp) => ({
       app,
       hosts: settings.metaHosts,
@@ -92,6 +107,7 @@ export const PlatformAuthorizersLive = Layer.effect(
       ...Option.toArray(x),
       ...meta,
       ...threads,
+      ...Option.toArray(youtube),
     ];
 
     const byPlatform: ReadonlyMap<Platform, PlatformAuthorizer> = new Map(
@@ -108,6 +124,7 @@ export const PlatformAuthorizersLive = Layer.effect(
           "facebook",
           "instagram",
           "threads",
+          "youtube",
         ] as const
       ).filter((platform) => !byPlatform.has(platform))
     );

@@ -51,6 +51,8 @@ const withoutApps = {
   LINKEDIN_CLIENT_SECRET: "",
   X_CLIENT_ID: "",
   X_CLIENT_SECRET: "",
+  YOUTUBE_CLIENT_ID: "",
+  YOUTUBE_CLIENT_SECRET: "",
 };
 
 const channelsWith = (keys: string) =>
@@ -164,55 +166,76 @@ layer(channelsWith(""))("the channels context on a local server", (it) => {
           "linkedin",
           "threads",
           "x",
+          "youtube",
         ]);
         assert.isTrue(Option.isNone(documents.bluesky));
       })
   );
 });
 
-layer(DatabaseTest)("the channels context's LinkedIn and X settings", (it) => {
-  it.effect("connect LinkedIn and X once their apps are set", () =>
-    Effect.gen(function* configured() {
-      const authorizers = yield* PlatformAuthorizers.pipe(
-        Effect.provide(
-          channelsWithSettings({
-            BLUESKY_CLIENT_KEYS: "",
-            LINKEDIN_CLIENT_ID: "77synthetic",
-            LINKEDIN_CLIENT_SECRET: "synthetic-linkedin-secret",
-            X_CLIENT_ID: "c3ludGhldGlj",
-            X_CLIENT_SECRET: "synthetic-x-secret",
-          })
-        )
-      );
+layer(DatabaseTest)(
+  "the channels context's LinkedIn, X and YouTube settings",
+  (it) => {
+    it.effect("connect LinkedIn, X and YouTube once their apps are set", () =>
+      Effect.gen(function* configured() {
+        const authorizers = yield* PlatformAuthorizers.pipe(
+          Effect.provide(
+            channelsWithSettings({
+              BLUESKY_CLIENT_KEYS: "",
+              LINKEDIN_CLIENT_ID: "77synthetic",
+              LINKEDIN_CLIENT_SECRET: "synthetic-linkedin-secret",
+              X_CLIENT_ID: "c3ludGhldGlj",
+              X_CLIENT_SECRET: "synthetic-x-secret",
+              YOUTUBE_CLIENT_ID: "synthetic.apps.googleusercontent.example",
+              YOUTUBE_CLIENT_SECRET: "synthetic-google-secret",
+            })
+          )
+        );
 
-      assert.strictEqual(
-        Option.getOrThrow(authorizers.for("linkedin")).platform,
-        "linkedin"
-      );
-      assert.strictEqual(Option.getOrThrow(authorizers.for("x")).platform, "x");
-      assert.isFalse(authorizers.unconfigured.has("linkedin"));
-      assert.isFalse(authorizers.unconfigured.has("x"));
-    }).pipe(Effect.scoped)
-  );
+        assert.strictEqual(
+          Option.getOrThrow(authorizers.for("linkedin")).platform,
+          "linkedin"
+        );
+        assert.strictEqual(
+          Option.getOrThrow(authorizers.for("x")).platform,
+          "x"
+        );
+        assert.strictEqual(
+          Option.getOrThrow(authorizers.for("youtube")).platform,
+          "youtube"
+        );
+        assert.isFalse(authorizers.unconfigured.has("linkedin"));
+        assert.isFalse(authorizers.unconfigured.has("x"));
+        assert.isFalse(authorizers.unconfigured.has("youtube"));
+      }).pipe(Effect.scoped)
+    );
 
-  it.effect("refuse to start with half of an app", () =>
-    Effect.gen(function* refuses() {
-      for (const [platform, settings] of [
-        ["linkedin", { ...withoutApps, LINKEDIN_CLIENT_ID: "77synthetic" }],
-        ["x", { ...withoutApps, X_CLIENT_SECRET: "synthetic-x-secret" }],
-      ] as const) {
-        const failure = yield* Layer.build(
-          channelsWithSettings({ ...settings, BLUESKY_CLIENT_KEYS: "" })
-        ).pipe(Effect.scoped, Effect.flip);
+    it.effect("refuse to start with half of an app", () =>
+      Effect.gen(function* refuses() {
+        for (const [platform, settings] of [
+          ["linkedin", { ...withoutApps, LINKEDIN_CLIENT_ID: "77synthetic" }],
+          ["x", { ...withoutApps, X_CLIENT_SECRET: "synthetic-x-secret" }],
+          [
+            "youtube",
+            {
+              ...withoutApps,
+              YOUTUBE_CLIENT_SECRET: "synthetic-google-secret",
+            },
+          ],
+        ] as const) {
+          const failure = yield* Layer.build(
+            channelsWithSettings({ ...settings, BLUESKY_CLIENT_KEYS: "" })
+          ).pipe(Effect.scoped, Effect.flip);
 
-        assert.strictEqual(failure._tag, "InvalidPlatformClient");
-        assert(failure._tag === "InvalidPlatformClient");
-        assert.strictEqual(failure.platform, platform);
-        assert.notInclude(failure.message, "synthetic");
-      }
-    })
-  );
-});
+          assert.strictEqual(failure._tag, "InvalidPlatformClient");
+          assert(failure._tag === "InvalidPlatformClient");
+          assert.strictEqual(failure.platform, platform);
+          assert.notInclude(failure.message, "synthetic");
+        }
+      })
+    );
+  }
+);
 
 layer(DatabaseTest)("the channels context's Bluesky settings", (it) => {
   it.effect("publish a confidential client for keys on an HTTPS server", () =>

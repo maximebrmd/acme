@@ -380,11 +380,13 @@ and no socket, for tests.
   their app (`<PLATFORM>_CLIENT_ID` and `_CLIENT_SECRET`, read by
   `oauthClientConfig`; one half alone stops the server), Facebook Pages and
   Instagram with `META_APP_ID`/`META_APP_SECRET`, Threads with
-  `THREADS_APP_ID`/`THREADS_APP_SECRET`. A platform without its settings is
-  in `unconfigured`. Each declares its `TokenPolicy`, data in
+  `THREADS_APP_ID`/`THREADS_APP_SECRET`, YouTube with `YOUTUBE_CLIENT_ID` and
+  `_CLIENT_SECRET` (a Google OAuth client). A platform without its settings
+  is in `unconfigured`. Each declares its `TokenPolicy`, data in
   `channels/domain/token-policy.ts`, which the refresh sweep and the
   reconnect warnings follow: LinkedIn's tokens are not renewed and expire
-  after 60 days, X's last two hours and rotate on refresh.
+  after 60 days, X's last two hours and rotate on refresh, Google's last an
+  hour and do not rotate.
 - `GET …/channels/platforms` (`ConnectChannel.connectable`, channel:connect)
   lists the platforms the server has an authorizer for, every platform's
   through the one registry; the web app's connect forms offer only those.
@@ -401,6 +403,17 @@ and no socket, for tests.
   rests on, in `channels.granted_by`. Threads has its own OAuth: a 60-day
   long-lived token that renews itself. Every Graph call carries
   `appsecret_proof` (`#shared/infrastructure/platforms/meta-graph.ts`).
+- YouTube connects through Google's OAuth 2.0 web server flow
+  (`infrastructure/platforms/youtube/youtube-authorizer.ts`): PKCE, offline
+  access, `prompt=select_account consent`, and the scopes `youtube.upload`
+  and `youtube.readonly` only; a sign-in that withheld one is
+  `AuthorizationDenied`. The token is the channel's the owner picked on
+  Google's chooser (brand accounts too), so `complete` answers the channels
+  `channels.list?mine=true` lists as an `AccountChoice`: one connects at
+  once, none is `NoAccountsToConnect`. An authorizer may `revoke`:
+  `DisconnectChannel` revokes a removed channel's tokens (Google's) once no
+  workspace connects its account any more (`ChannelRepository.accountInUse`),
+  logging a failure.
 - Meta's data deletion callbacks (`POST /api/data-deletion/:app`, no sign-in)
   check the `signed_request` HMAC with the app's secret (`SignedRequests`),
   delete the channels the user granted or owns in every workspace, record

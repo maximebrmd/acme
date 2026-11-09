@@ -287,7 +287,7 @@
       "forbidden": "You may not do this in this workspace.",
       "notFound": "This channel is no longer connected.",
       "unknown": "Something went wrong. Try again.",
-      "noAccounts": "The sign-in reached no account to connect: you manage no Facebook Page, or no Instagram professional account is linked to your Pages."
+      "noAccounts": "The sign-in reached no account to connect: on Facebook and Instagram, you manage no Page, or no Instagram professional account is linked to your Pages; on YouTube, the Google account you chose has no channel."
     }
   },
   "PlatformConnect": {
@@ -302,6 +302,11 @@
       "title": "X",
       "description": "Your X account. You sign in on X and allow Acme to post and upload media for you.",
       "connect": "Connect X"
+    },
+    "youtube": {
+      "title": "YouTube",
+      "description": "Your YouTube channel. You sign in with Google, pick the channel if your account has several, and allow Acme to upload videos and read the channel.",
+      "connect": "Connect YouTube"
     }
   },
   "ConnectCallbackPage": {

@@ -4,20 +4,25 @@ import { Effect, Layer, Option } from "effect";
 import { ChannelRepository } from "#channels/application/channel-repository.ts";
 import { DisconnectChannel } from "#channels/application/disconnect-channel.ts";
 import { ListChannels } from "#channels/application/list-channels.ts";
+import { PlatformAuthorizers } from "#channels/application/platform-authorizer.ts";
 import { DrizzleChannelRepository } from "#channels/infrastructure/drizzle-channel-repository.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
+import { authorizersOf } from "#test/channels/connect-support.ts";
 import {
   actorIn,
   DatabaseTest,
   freshChannel,
   freshWorkspace,
   syntheticCredentials,
+  TokenCipherTest,
 } from "#test/channels/support.ts";
 
 const UseCasesTest = Layer.mergeAll(
   ListChannels.layer,
   DisconnectChannel.layer
 ).pipe(
+  Layer.provide(Layer.succeed(PlatformAuthorizers, authorizersOf())),
+  Layer.provide(TokenCipherTest),
   Layer.provideMerge(DrizzleChannelRepository),
   Layer.provideMerge(DatabaseTest)
 );

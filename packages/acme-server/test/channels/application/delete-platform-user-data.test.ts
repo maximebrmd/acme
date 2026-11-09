@@ -42,6 +42,7 @@ const settings = (apps: { readonly threads: boolean }) =>
       publicUrl: "https://acme.test",
       threads: apps.threads ? Option.some(threadsApp) : Option.none(),
       x: Option.none(),
+      youtube: Option.none(),
     })
   );
 

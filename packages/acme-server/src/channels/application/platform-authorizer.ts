@@ -158,6 +158,15 @@ export interface PlatformAuthorizer {
     channel: Channel,
     tokens: StoredTokens
   ) => Effect.Effect<IssuedTokens, RefreshFailure>;
+  /**
+   * Tells the platform the tokens are no longer wanted, once the channel is
+   * disconnected and no other channel uses the account, for platforms that
+   * take it (Google). A token the platform no longer knows is revoked
+   * already. Platforms without it keep the grant until the user removes it.
+   */
+  readonly revoke?: (
+    tokens: StoredTokens
+  ) => Effect.Effect<void, PlatformUnavailable>;
 }
 
 /** The authorizers this server has, by platform. */
