@@ -42,6 +42,7 @@ const auth = makeAuth({
     log: ignore,
     memberAllowance: async () => await Promise.resolve(Option.none()),
     resetPassword: ignore,
+    subscribed: async () => await Promise.resolve(false),
     subscriptionChanged: nothing,
     verifyEmail: ignore,
   },

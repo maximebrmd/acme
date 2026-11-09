@@ -26,6 +26,7 @@ import { RoleSchema } from "#workspace/domain/roles.ts";
 import { accessControl, roles } from "./access-control.ts";
 import {
   checkMemberRoom,
+  refuseDeletingSubscribed,
   refusePersonalSubscriptions,
   stripeBilling,
   turnstile,
@@ -396,11 +397,14 @@ export const makeAuth = ({ database, hooks, settings }: AuthDependencies) =>
           // A workspace's API keys go with it: they refer to it by id alone,
           // with no foreign key, and would otherwise outlive it. They go
           // first, so that a failure may leave a workspace without its keys,
-          // never keys without their workspace.
+          // never keys without their workspace; a workspace a subscription
+          // pays for is refused before.
           beforeDeleteOrganization: async (
             { organization: workspace },
             ctx
           ) => {
+            await refuseDeletingSubscribed(hooks, workspace.id);
+
             const { adapter } = (ctx ?? getCurrentAuthEndpointContext())
               .context;
 

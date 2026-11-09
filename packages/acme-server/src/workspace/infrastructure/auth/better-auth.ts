@@ -1,4 +1,4 @@
-import { Context, Effect, FiberSet, Layer } from "effect";
+import { Context, Effect, FiberSet, Layer, Option } from "effect";
 import type { LogLevel } from "effect";
 
 import { RecordSubscription } from "#billing/application/record-subscription.ts";
@@ -74,6 +74,12 @@ export const BetterAuthLive = Layer.effect(
       resetPassword: (link) => {
         run(emails.send({ _tag: "ResetPassword", ...link }));
       },
+      subscribed: async (workspaceId) =>
+        await runPromise(
+          entitlements
+            .of(workspaceId)
+            .pipe(Effect.map(({ subscription }) => Option.isSome(subscription)))
+        ),
       // Awaited: the webhook answers an error until the event is recorded,
       // so Stripe sends it again.
       subscriptionChanged: async (event) => {

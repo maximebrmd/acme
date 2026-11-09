@@ -14,6 +14,7 @@ import { Stripe } from "stripe";
 
 import { SqlLive } from "#shared/infrastructure/database.ts";
 import {
+  apiKeyOf,
   bodyOf,
   newEmail,
   signedUp,
@@ -333,6 +334,45 @@ layer(BillingIntegration, {
       assert.strictEqual(ended.plan, "free");
       assert.isNull(ended.subscription);
     })
+  );
+
+  it.effect(
+    "keeps a workspace a subscription pays for, with its API keys",
+    () =>
+      Effect.gen(function* deleting() {
+        const app = yield* TestApp;
+        const delivery = newDelivery();
+
+        const { owner, workspaceId } = yield* billedWorkspace(
+          "deleting",
+          delivery.customerId
+        );
+
+        yield* apiKeyOf(owner, workspaceId, ["post:read"]);
+
+        assert.strictEqual(
+          yield* deliver(payloadOf("customer.subscription.created", delivery)),
+          200
+        );
+
+        const refused = yield* app.request("/api/auth/organization/delete", {
+          body: { organizationId: workspaceId },
+          headers: { cookie: owner.cookies },
+        });
+
+        assert.strictEqual(refused.status, 400);
+        assert.strictEqual(
+          (yield* bodyOf(ErrorSchema, refused)).code,
+          "ORGANIZATION_HAS_ACTIVE_SUBSCRIPTION"
+        );
+
+        const keys = yield* app.request(
+          `/api/workspaces/${workspaceId}/api-keys`,
+          { headers: { cookie: owner.cookies } }
+        );
+
+        assert.lengthOf(yield* bodyOf(Schema.Array(Schema.Unknown), keys), 1);
+      })
   );
 
   it.effect("refuses an event signed with another secret", () =>
