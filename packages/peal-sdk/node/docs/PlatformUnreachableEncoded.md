@@ -11,7 +11,7 @@ Name | Type
 ## Example
 
 ```typescript
-import type { PlatformUnreachableEncoded } from 'peal'
+import type { PlatformUnreachableEncoded } from 'peal-sdk'
 
 // TODO: Update the object below with actual values
 const example = {

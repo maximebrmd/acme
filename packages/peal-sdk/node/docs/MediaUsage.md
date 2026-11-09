@@ -12,7 +12,7 @@ Name | Type
 ## Example
 
 ```typescript
-import type { MediaUsage } from 'peal'
+import type { MediaUsage } from 'peal-sdk'
 
 // TODO: Update the object below with actual values
 const example = {

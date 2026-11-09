@@ -12,7 +12,7 @@ Name | Type
 ## Example
 
 ```typescript
-import type { UnknownChannelsEncoded } from 'peal'
+import type { UnknownChannelsEncoded } from 'peal-sdk'
 
 // TODO: Update the object below with actual values
 const example = {

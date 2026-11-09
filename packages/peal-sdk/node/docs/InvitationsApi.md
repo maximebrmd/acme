@@ -24,11 +24,11 @@ Invites someone to the workspace with a role: Peal emails them a link that works
 import {
   Configuration,
   InvitationsApi,
-} from 'peal';
-import type { InvitationsCreateRequest } from 'peal';
+} from 'peal-sdk';
+import type { InvitationsCreateRequest } from 'peal-sdk';
 
 async function example() {
-  console.log("🚀 Testing peal SDK...");
+  console.log("🚀 Testing peal-sdk SDK...");
   const config = new Configuration({ 
     // Configure HTTP bearer authorization: bearer
     accessToken: "YOUR BEARER TOKEN",
@@ -104,11 +104,11 @@ Lists the workspace\&#39;s pending invitations, oldest first, expired ones inclu
 import {
   Configuration,
   InvitationsApi,
-} from 'peal';
-import type { InvitationsListRequest } from 'peal';
+} from 'peal-sdk';
+import type { InvitationsListRequest } from 'peal-sdk';
 
 async function example() {
-  console.log("🚀 Testing peal SDK...");
+  console.log("🚀 Testing peal-sdk SDK...");
   const config = new Configuration({ 
     // Configure HTTP bearer authorization: bearer
     accessToken: "YOUR BEARER TOKEN",
@@ -178,11 +178,11 @@ Revokes a pending invitation of the workspace: its link stops working at once. N
 import {
   Configuration,
   InvitationsApi,
-} from 'peal';
-import type { InvitationsRevokeRequest } from 'peal';
+} from 'peal-sdk';
+import type { InvitationsRevokeRequest } from 'peal-sdk';
 
 async function example() {
-  console.log("🚀 Testing peal SDK...");
+  console.log("🚀 Testing peal-sdk SDK...");
   const config = new Configuration({ 
     // Configure HTTP bearer authorization: bearer
     accessToken: "YOUR BEARER TOKEN",

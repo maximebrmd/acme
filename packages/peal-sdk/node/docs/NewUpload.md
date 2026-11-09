@@ -13,7 +13,7 @@ Name | Type
 ## Example
 
 ```typescript
-import type { NewUpload } from 'peal'
+import type { NewUpload } from 'peal-sdk'
 
 // TODO: Update the object below with actual values
 const example = {

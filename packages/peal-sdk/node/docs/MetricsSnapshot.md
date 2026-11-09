@@ -12,7 +12,7 @@ Name | Type
 ## Example
 
 ```typescript
-import type { MetricsSnapshot } from 'peal'
+import type { MetricsSnapshot } from 'peal-sdk'
 
 // TODO: Update the object below with actual values
 const example = {

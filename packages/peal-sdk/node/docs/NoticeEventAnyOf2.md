@@ -13,7 +13,7 @@ Name | Type
 ## Example
 
 ```typescript
-import type { NoticeEventAnyOf2 } from 'peal'
+import type { NoticeEventAnyOf2 } from 'peal-sdk'
 
 // TODO: Update the object below with actual values
 const example = {

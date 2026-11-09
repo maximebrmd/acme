@@ -22,11 +22,11 @@ Reads a TikTok channel\&#39;s creator from TikTok: their nickname, the audiences
 import {
   Configuration,
   TiktokApi,
-} from 'peal';
-import type { TiktokCreatorRequest } from 'peal';
+} from 'peal-sdk';
+import type { TiktokCreatorRequest } from 'peal-sdk';
 
 async function example() {
-  console.log("🚀 Testing peal SDK...");
+  console.log("🚀 Testing peal-sdk SDK...");
   const config = new Configuration({ 
     // Configure HTTP bearer authorization: bearer
     accessToken: "YOUR BEARER TOKEN",

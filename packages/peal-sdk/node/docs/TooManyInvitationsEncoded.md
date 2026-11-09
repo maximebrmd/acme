@@ -11,7 +11,7 @@ Name | Type
 ## Example
 
 ```typescript
-import type { TooManyInvitationsEncoded } from 'peal'
+import type { TooManyInvitationsEncoded } from 'peal-sdk'
 
 // TODO: Update the object below with actual values
 const example = {

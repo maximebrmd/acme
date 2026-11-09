@@ -16,7 +16,7 @@ Name | Type
 ## Example
 
 ```typescript
-import type { ContentViolationAnyOf8 } from 'peal'
+import type { ContentViolationAnyOf8 } from 'peal-sdk'
 
 // TODO: Update the object below with actual values
 const example = {

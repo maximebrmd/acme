@@ -16,7 +16,7 @@ Name | Type
 ## Example
 
 ```typescript
-import type { ApiKey } from 'peal'
+import type { ApiKey } from 'peal-sdk'
 
 // TODO: Update the object below with actual values
 const example = {

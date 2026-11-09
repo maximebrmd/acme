@@ -11,7 +11,7 @@ Name | Type
 ## Example
 
 ```typescript
-import type { ApiKeysRevoke404Response } from 'peal'
+import type { ApiKeysRevoke404Response } from 'peal-sdk'
 
 // TODO: Update the object below with actual values
 const example = {

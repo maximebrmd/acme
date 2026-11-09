@@ -34,11 +34,11 @@ Lists every attempt Peal made at publishing the post, by channel, round and atte
 import {
   Configuration,
   PostsApi,
-} from 'peal';
-import type { PostsAttemptsRequest } from 'peal';
+} from 'peal-sdk';
+import type { PostsAttemptsRequest } from 'peal-sdk';
 
 async function example() {
-  console.log("🚀 Testing peal SDK...");
+  console.log("🚀 Testing peal-sdk SDK...");
   const config = new Configuration({ 
     // Configure HTTP bearer authorization: bearer
     accessToken: "YOUR BEARER TOKEN",
@@ -111,11 +111,11 @@ Cancels a draft or a scheduled post. A post already publishing finishes with wha
 import {
   Configuration,
   PostsApi,
-} from 'peal';
-import type { PostsCancelRequest } from 'peal';
+} from 'peal-sdk';
+import type { PostsCancelRequest } from 'peal-sdk';
 
 async function example() {
-  console.log("🚀 Testing peal SDK...");
+  console.log("🚀 Testing peal-sdk SDK...");
   const config = new Configuration({ 
     // Configure HTTP bearer authorization: bearer
     accessToken: "YOUR BEARER TOKEN",
@@ -189,11 +189,11 @@ Says what you found on the platform for a post unconfirmed on one channel: &#x60
 import {
   Configuration,
   PostsApi,
-} from 'peal';
-import type { PostsConfirmRequest } from 'peal';
+} from 'peal-sdk';
+import type { PostsConfirmRequest } from 'peal-sdk';
 
 async function example() {
-  console.log("🚀 Testing peal SDK...");
+  console.log("🚀 Testing peal-sdk SDK...");
   const config = new Configuration({ 
     // Configure HTTP bearer authorization: bearer
     accessToken: "YOUR BEARER TOKEN",
@@ -273,11 +273,11 @@ Creates a draft for some of the workspace\&#39;s channels, possibly none yet, wi
 import {
   Configuration,
   PostsApi,
-} from 'peal';
-import type { PostsCreateRequest } from 'peal';
+} from 'peal-sdk';
+import type { PostsCreateRequest } from 'peal-sdk';
 
 async function example() {
-  console.log("🚀 Testing peal SDK...");
+  console.log("🚀 Testing peal-sdk SDK...");
   const config = new Configuration({ 
     // Configure HTTP bearer authorization: bearer
     accessToken: "YOUR BEARER TOKEN",
@@ -351,11 +351,11 @@ Deletes a draft. A post scheduled or sent is a conflict: cancel it instead. Need
 import {
   Configuration,
   PostsApi,
-} from 'peal';
-import type { PostsDiscardRequest } from 'peal';
+} from 'peal-sdk';
+import type { PostsDiscardRequest } from 'peal-sdk';
 
 async function example() {
-  console.log("🚀 Testing peal SDK...");
+  console.log("🚀 Testing peal-sdk SDK...");
   const config = new Configuration({ 
     // Configure HTTP bearer authorization: bearer
     accessToken: "YOUR BEARER TOKEN",
@@ -429,11 +429,11 @@ Lists the workspace\&#39;s drafts, newest first, 20 a page unless &#x60;limit&#x
 import {
   Configuration,
   PostsApi,
-} from 'peal';
-import type { PostsDraftsRequest } from 'peal';
+} from 'peal-sdk';
+import type { PostsDraftsRequest } from 'peal-sdk';
 
 async function example() {
-  console.log("🚀 Testing peal SDK...");
+  console.log("🚀 Testing peal-sdk SDK...");
   const config = new Configuration({ 
     // Configure HTTP bearer authorization: bearer
     accessToken: "YOUR BEARER TOKEN",
@@ -510,11 +510,11 @@ Answers with a post of the workspace. Needs post:read.
 import {
   Configuration,
   PostsApi,
-} from 'peal';
-import type { PostsGetRequest } from 'peal';
+} from 'peal-sdk';
+import type { PostsGetRequest } from 'peal-sdk';
 
 async function example() {
-  console.log("🚀 Testing peal SDK...");
+  console.log("🚀 Testing peal-sdk SDK...");
   const config = new Configuration({ 
     // Configure HTTP bearer authorization: bearer
     accessToken: "YOUR BEARER TOKEN",
@@ -587,11 +587,11 @@ Lists the posts scheduled from &#x60;from&#x60; (included) to &#x60;to&#x60; (ex
 import {
   Configuration,
   PostsApi,
-} from 'peal';
-import type { PostsListRequest } from 'peal';
+} from 'peal-sdk';
+import type { PostsListRequest } from 'peal-sdk';
 
 async function example() {
-  console.log("🚀 Testing peal SDK...");
+  console.log("🚀 Testing peal-sdk SDK...");
   const config = new Configuration({ 
     // Configure HTTP bearer authorization: bearer
     accessToken: "YOUR BEARER TOKEN",
@@ -668,11 +668,11 @@ Sends the post again, now, on one channel where it failed or is unconfirmed: a n
 import {
   Configuration,
   PostsApi,
-} from 'peal';
-import type { PostsRepostRequest } from 'peal';
+} from 'peal-sdk';
+import type { PostsRepostRequest } from 'peal-sdk';
 
 async function example() {
-  console.log("🚀 Testing peal SDK...");
+  console.log("🚀 Testing peal-sdk SDK...");
   const config = new Configuration({ 
     // Configure HTTP bearer authorization: bearer
     accessToken: "YOUR BEARER TOKEN",
@@ -749,11 +749,11 @@ Moves a scheduled post to another instant, or schedules a draft on the channels 
 import {
   Configuration,
   PostsApi,
-} from 'peal';
-import type { PostsRescheduleRequest } from 'peal';
+} from 'peal-sdk';
+import type { PostsRescheduleRequest } from 'peal-sdk';
 
 async function example() {
-  console.log("🚀 Testing peal SDK...");
+  console.log("🚀 Testing peal-sdk SDK...");
   const config = new Configuration({ 
     // Configure HTTP bearer authorization: bearer
     accessToken: "YOUR BEARER TOKEN",
@@ -832,11 +832,11 @@ Schedules a draft on some of the workspace\&#39;s channels at an instant, kept w
 import {
   Configuration,
   PostsApi,
-} from 'peal';
-import type { PostsScheduleRequest } from 'peal';
+} from 'peal-sdk';
+import type { PostsScheduleRequest } from 'peal-sdk';
 
 async function example() {
-  console.log("🚀 Testing peal SDK...");
+  console.log("🚀 Testing peal-sdk SDK...");
   const config = new Configuration({ 
     // Configure HTTP bearer authorization: bearer
     accessToken: "YOUR BEARER TOKEN",
@@ -915,11 +915,11 @@ Takes a scheduled post back to draft, so its text and media can change: it goes 
 import {
   Configuration,
   PostsApi,
-} from 'peal';
-import type { PostsUnscheduleRequest } from 'peal';
+} from 'peal-sdk';
+import type { PostsUnscheduleRequest } from 'peal-sdk';
 
 async function example() {
-  console.log("🚀 Testing peal SDK...");
+  console.log("🚀 Testing peal-sdk SDK...");
   const config = new Configuration({ 
     // Configure HTTP bearer authorization: bearer
     accessToken: "YOUR BEARER TOKEN",
@@ -993,11 +993,11 @@ Replaces a draft\&#39;s content, channels and options: options left out are remo
 import {
   Configuration,
   PostsApi,
-} from 'peal';
-import type { PostsUpdateRequest } from 'peal';
+} from 'peal-sdk';
+import type { PostsUpdateRequest } from 'peal-sdk';
 
 async function example() {
-  console.log("🚀 Testing peal SDK...");
+  console.log("🚀 Testing peal-sdk SDK...");
   const config = new Configuration({ 
     // Configure HTTP bearer authorization: bearer
     accessToken: "YOUR BEARER TOKEN",

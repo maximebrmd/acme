@@ -1,4 +1,4 @@
-# peal@0.1.0
+# peal-sdk@0.1.0
 
 A TypeScript SDK client for the app.peal.social API.
 
@@ -7,7 +7,7 @@ A TypeScript SDK client for the app.peal.social API.
 First, install the SDK from npm.
 
 ```bash
-npm install peal --save
+npm install peal-sdk --save
 ```
 
 Next, try it out.
@@ -17,11 +17,11 @@ Next, try it out.
 import {
   Configuration,
   AnalyticsApi,
-} from 'peal';
-import type { AnalyticsPostRequest } from 'peal';
+} from 'peal-sdk';
+import type { AnalyticsPostRequest } from 'peal-sdk';
 
 async function example() {
-  console.log("🚀 Testing peal SDK...");
+  console.log("🚀 Testing peal-sdk SDK...");
   const config = new Configuration({ 
     // Configure HTTP bearer authorization: bearer
     accessToken: "YOUR BEARER TOKEN",

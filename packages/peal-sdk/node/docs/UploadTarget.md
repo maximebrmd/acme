@@ -15,7 +15,7 @@ Name | Type
 ## Example
 
 ```typescript
-import type { UploadTarget } from 'peal'
+import type { UploadTarget } from 'peal-sdk'
 
 // TODO: Update the object below with actual values
 const example = {

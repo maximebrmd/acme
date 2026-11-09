@@ -11,7 +11,7 @@ Name | Type
 ## Example
 
 ```typescript
-import type { Platform } from 'peal'
+import type { Platform } from 'peal-sdk'
 
 // TODO: Update the object below with actual values
 const example = {

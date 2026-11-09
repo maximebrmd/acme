@@ -22,11 +22,11 @@ Answers with the signed-in user and every workspace they belong to, with their r
 import {
   Configuration,
   SessionApi,
-} from 'peal';
-import type { SessionMeRequest } from 'peal';
+} from 'peal-sdk';
+import type { SessionMeRequest } from 'peal-sdk';
 
 async function example() {
-  console.log("🚀 Testing peal SDK...");
+  console.log("🚀 Testing peal-sdk SDK...");
   const config = new Configuration({ 
     // Configure HTTP bearer authorization: bearer
     accessToken: "YOUR BEARER TOKEN",

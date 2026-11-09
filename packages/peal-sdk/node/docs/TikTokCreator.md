@@ -18,7 +18,7 @@ Name | Type
 ## Example
 
 ```typescript
-import type { TikTokCreator } from 'peal'
+import type { TikTokCreator } from 'peal-sdk'
 
 // TODO: Update the object below with actual values
 const example = {

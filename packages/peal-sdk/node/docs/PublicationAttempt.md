@@ -17,7 +17,7 @@ Name | Type
 ## Example
 
 ```typescript
-import type { PublicationAttempt } from 'peal'
+import type { PublicationAttempt } from 'peal-sdk'
 
 // TODO: Update the object below with actual values
 const example = {

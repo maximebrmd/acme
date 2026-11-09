@@ -11,7 +11,7 @@ Name | Type
 ## Example
 
 ```typescript
-import type { UploadIncompleteEncoded } from 'peal'
+import type { UploadIncompleteEncoded } from 'peal-sdk'
 
 // TODO: Update the object below with actual values
 const example = {

@@ -17,7 +17,7 @@ Name | Type
 ## Example
 
 ```typescript
-import type { TopPost } from 'peal'
+import type { TopPost } from 'peal-sdk'
 
 // TODO: Update the object below with actual values
 const example = {

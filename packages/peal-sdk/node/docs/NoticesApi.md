@@ -25,11 +25,11 @@ Lists the user\&#39;s notices, newest first, 20 a page unless &#x60;limit&#x60; 
 import {
   Configuration,
   NoticesApi,
-} from 'peal';
-import type { NoticesListRequest } from 'peal';
+} from 'peal-sdk';
+import type { NoticesListRequest } from 'peal-sdk';
 
 async function example() {
-  console.log("🚀 Testing peal SDK...");
+  console.log("🚀 Testing peal-sdk SDK...");
   const config = new Configuration({ 
     // Configure HTTP bearer authorization: bearer
     accessToken: "YOUR BEARER TOKEN",
@@ -102,11 +102,11 @@ Marks every notice of the user read.
 import {
   Configuration,
   NoticesApi,
-} from 'peal';
-import type { NoticesMarkAllReadRequest } from 'peal';
+} from 'peal-sdk';
+import type { NoticesMarkAllReadRequest } from 'peal-sdk';
 
 async function example() {
-  console.log("🚀 Testing peal SDK...");
+  console.log("🚀 Testing peal-sdk SDK...");
   const config = new Configuration({ 
     // Configure HTTP bearer authorization: bearer
     accessToken: "YOUR BEARER TOKEN",
@@ -167,11 +167,11 @@ Marks up to 100 of the user\&#39;s notices read, and answers with how many stay 
 import {
   Configuration,
   NoticesApi,
-} from 'peal';
-import type { NoticesMarkReadRequest } from 'peal';
+} from 'peal-sdk';
+import type { NoticesMarkReadRequest } from 'peal-sdk';
 
 async function example() {
-  console.log("🚀 Testing peal SDK...");
+  console.log("🚀 Testing peal-sdk SDK...");
   const config = new Configuration({ 
     // Configure HTTP bearer authorization: bearer
     accessToken: "YOUR BEARER TOKEN",
@@ -240,11 +240,11 @@ Counts the user\&#39;s unread notices.
 import {
   Configuration,
   NoticesApi,
-} from 'peal';
-import type { NoticesUnreadRequest } from 'peal';
+} from 'peal-sdk';
+import type { NoticesUnreadRequest } from 'peal-sdk';
 
 async function example() {
-  console.log("🚀 Testing peal SDK...");
+  console.log("🚀 Testing peal-sdk SDK...");
   const config = new Configuration({ 
     // Configure HTTP bearer authorization: bearer
     accessToken: "YOUR BEARER TOKEN",

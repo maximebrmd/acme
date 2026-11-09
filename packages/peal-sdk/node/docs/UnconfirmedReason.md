@@ -10,7 +10,7 @@ Name | Type
 ## Example
 
 ```typescript
-import type { UnconfirmedReason } from 'peal'
+import type { UnconfirmedReason } from 'peal-sdk'
 
 // TODO: Update the object below with actual values
 const example = {

@@ -19,7 +19,7 @@ Name | Type
 ## Example
 
 ```typescript
-import type { YouTubeOptions } from 'peal'
+import type { YouTubeOptions } from 'peal-sdk'
 
 // TODO: Update the object below with actual values
 const example = {

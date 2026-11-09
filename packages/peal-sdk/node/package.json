@@ -1,5 +1,5 @@
 {
-  "name": "peal",
+  "name": "peal-sdk",
   "version": "0.1.0",
   "description": "TypeScript and JavaScript client for the Peal API: schedule social media posts across platforms.",
   "keywords": [
