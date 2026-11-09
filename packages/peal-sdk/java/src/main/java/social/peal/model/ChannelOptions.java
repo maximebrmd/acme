@@ -13,41 +13,56 @@
 
 package social.peal.model;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.StringJoiner;
 import java.util.Objects;
-import java.util.Map;
-import java.util.HashMap;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.fasterxml.jackson.annotation.JsonValue;
+import com.google.gson.TypeAdapter;
+import com.google.gson.annotations.JsonAdapter;
+import com.google.gson.annotations.SerializedName;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 import java.util.Arrays;
 import social.peal.model.TargetOptions;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonNull;
+import com.google.gson.JsonParseException;
+import com.google.gson.TypeAdapterFactory;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.TypeAdapter;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 
-import social.peal.ApiClient;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import social.peal.JSON;
+
 /**
  * ChannelOptions
  */
-@JsonPropertyOrder({
-  ChannelOptions.JSON_PROPERTY_CHANNEL_ID,
-  ChannelOptions.JSON_PROPERTY_OPTIONS
-})
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.27.0")
 public class ChannelOptions {
-  public static final String JSON_PROPERTY_CHANNEL_ID = "channelId";
+  public static final String SERIALIZED_NAME_CHANNEL_ID = "channelId";
+  @SerializedName(SERIALIZED_NAME_CHANNEL_ID)
   @javax.annotation.Nonnull
   private String channelId;
 
-  public static final String JSON_PROPERTY_OPTIONS = "options";
+  public static final String SERIALIZED_NAME_OPTIONS = "options";
+  @SerializedName(SERIALIZED_NAME_OPTIONS)
   @javax.annotation.Nonnull
   private TargetOptions options;
 
-  public ChannelOptions() { 
+  public ChannelOptions() {
   }
 
   public ChannelOptions channelId(@javax.annotation.Nonnull String channelId) {
@@ -60,15 +75,10 @@ public class ChannelOptions {
    * @return channelId
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_CHANNEL_ID, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public String getChannelId() {
     return channelId;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_CHANNEL_ID, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setChannelId(@javax.annotation.Nonnull String channelId) {
     this.channelId = channelId;
   }
@@ -84,23 +94,16 @@ public class ChannelOptions {
    * @return options
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_OPTIONS, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public TargetOptions getOptions() {
     return options;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_OPTIONS, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setOptions(@javax.annotation.Nonnull TargetOptions options) {
     this.options = options;
   }
 
 
-  /**
-   * Return true if this ChannelOptions object is equal to o.
-   */
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -137,49 +140,100 @@ public class ChannelOptions {
     return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
 
-  /**
-   * Convert the instance into URL query string.
-   *
-   * @return URL query string
-   */
-  public String toUrlQueryString() {
-    return toUrlQueryString(null);
+
+  public static HashSet<String> openapiFields;
+  public static HashSet<String> openapiRequiredFields;
+
+  static {
+    // a set of all properties/fields (JSON key names)
+    openapiFields = new HashSet<String>(Arrays.asList("channelId", "options"));
+
+    // a set of required properties/fields (JSON key names)
+    openapiRequiredFields = new HashSet<String>(Arrays.asList("channelId", "options"));
   }
 
   /**
-   * Convert the instance into URL query string.
+   * Validates the JSON Element and throws an exception if issues found
    *
-   * @param prefix prefix of the query string
-   * @return URL query string
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to ChannelOptions
    */
-  public String toUrlQueryString(String prefix) {
-    String suffix = "";
-    String containerSuffix = "";
-    String containerPrefix = "";
-    if (prefix == null) {
-      // style=form, explode=true, e.g. /pet?name=cat&type=manx
-      prefix = "";
-    } else {
-      // deepObject style e.g. /pet?id[name]=cat&id[type]=manx
-      prefix = prefix + "[";
-      suffix = "]";
-      containerSuffix = "]";
-      containerPrefix = "[";
+  public static void validateJsonElement(JsonElement jsonElement) throws IOException {
+      if (jsonElement == null) {
+        if (!ChannelOptions.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The required field(s) %s in ChannelOptions is not found in the empty JSON string", ChannelOptions.openapiRequiredFields.toString()));
+        }
+      }
+
+      Set<Map.Entry<String, JsonElement>> entries = jsonElement.getAsJsonObject().entrySet();
+      // check to see if the JSON string contains additional fields
+      for (Map.Entry<String, JsonElement> entry : entries) {
+        if (!ChannelOptions.openapiFields.contains(entry.getKey())) {
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The field `%s` in the JSON string is not defined in the `ChannelOptions` properties. JSON: %s", entry.getKey(), jsonElement.toString()));
+        }
+      }
+
+      // check to make sure all required properties/fields are present in the JSON string
+      for (String requiredField : ChannelOptions.openapiRequiredFields) {
+        if (jsonElement.getAsJsonObject().get(requiredField) == null) {
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The required field `%s` is not found in the JSON string: %s", requiredField, jsonElement.toString()));
+        }
+      }
+        JsonObject jsonObj = jsonElement.getAsJsonObject();
+      if (!jsonObj.get("channelId").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `channelId` to be a primitive type in the JSON string but got `%s`", jsonObj.get("channelId").toString()));
+      }
+      // validate the required field `options`
+      TargetOptions.validateJsonElement(jsonObj.get("options"));
+  }
+
+  public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
+       if (!ChannelOptions.class.isAssignableFrom(type.getRawType())) {
+         return null; // this class only serializes 'ChannelOptions' and its subtypes
+       }
+       final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
+       final TypeAdapter<ChannelOptions> thisAdapter
+                        = gson.getDelegateAdapter(this, TypeToken.get(ChannelOptions.class));
+
+       return (TypeAdapter<T>) new TypeAdapter<ChannelOptions>() {
+           @Override
+           public void write(JsonWriter out, ChannelOptions value) throws IOException {
+             JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
+             elementAdapter.write(out, obj);
+           }
+
+           @Override
+           public ChannelOptions read(JsonReader in) throws IOException {
+             JsonElement jsonElement = elementAdapter.read(in);
+             validateJsonElement(jsonElement);
+             return thisAdapter.fromJsonTree(jsonElement);
+           }
+
+       }.nullSafe();
     }
+  }
 
-    StringJoiner joiner = new StringJoiner("&");
+  /**
+   * Create an instance of ChannelOptions given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of ChannelOptions
+   * @throws IOException if the JSON string is invalid with respect to ChannelOptions
+   */
+  public static ChannelOptions fromJson(String jsonString) throws IOException {
+    return JSON.getGson().fromJson(jsonString, ChannelOptions.class);
+  }
 
-    // add `channelId` to the URL query string
-    if (getChannelId() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%schannelId%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getChannelId()))));
-    }
-
-    // add `options` to the URL query string
-    if (getOptions() != null) {
-      joiner.add(getOptions().toUrlQueryString(prefix + "options" + suffix));
-    }
-
-    return joiner.toString();
+  /**
+   * Convert an instance of ChannelOptions to an JSON string
+   *
+   * @return JSON string
+   */
+  public String toJson() {
+    return JSON.getGson().toJson(this);
   }
 }
 

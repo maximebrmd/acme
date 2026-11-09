@@ -13,110 +13,128 @@
 
 package social.peal.model;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.StringJoiner;
 import java.util.Objects;
-import java.util.Map;
-import java.util.HashMap;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.fasterxml.jackson.annotation.JsonValue;
+import com.google.gson.TypeAdapter;
+import com.google.gson.annotations.JsonAdapter;
+import com.google.gson.annotations.SerializedName;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 import java.util.Arrays;
 import social.peal.model.TargetConfirmationAnyOf;
 import social.peal.model.TargetConfirmationAnyOf1;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+
 
 
 import java.io.IOException;
+import java.lang.reflect.Type;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
-import social.peal.ApiClient;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonParseException;
+import com.google.gson.TypeAdapter;
+import com.google.gson.TypeAdapterFactory;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.annotations.JsonAdapter;
+import com.google.gson.annotations.SerializedName;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonParseException;
+
 import social.peal.JSON;
 
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.27.0")
-@JsonDeserialize(using=TargetConfirmation.TargetConfirmationDeserializer.class)
-@JsonSerialize(using = TargetConfirmation.TargetConfirmationSerializer.class)
 public class TargetConfirmation extends AbstractOpenApiSchema {
     private static final Logger log = Logger.getLogger(TargetConfirmation.class.getName());
 
-    public static class TargetConfirmationSerializer extends StdSerializer<TargetConfirmation> {
-        public TargetConfirmationSerializer(Class<TargetConfirmation> t) {
-            super(t);
-        }
-
-        public TargetConfirmationSerializer() {
-            this(null);
-        }
-
+    public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
+        @SuppressWarnings("unchecked")
         @Override
-        public void serialize(TargetConfirmation value, JsonGenerator jgen, SerializerProvider provider) throws IOException, JsonProcessingException {
-            jgen.writeObject(value.getActualInstance());
-        }
-    }
-
-    public static class TargetConfirmationDeserializer extends StdDeserializer<TargetConfirmation> {
-        public TargetConfirmationDeserializer() {
-            this(TargetConfirmation.class);
-        }
-
-        public TargetConfirmationDeserializer(Class<?> vc) {
-            super(vc);
-        }
-
-        @Override
-        public TargetConfirmation deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException, JsonProcessingException {
-            JsonNode tree = ctxt.readTree(jp);
-
-            Object deserialized = null;
-            // deserialize TargetConfirmationAnyOf
-            try {
-                deserialized = tree.traverse(jp.getCodec()).readValueAs(TargetConfirmationAnyOf.class);
-                TargetConfirmation ret = new TargetConfirmation();
-                ret.setActualInstance(deserialized);
-                return ret;
-            } catch (Exception e) {
-                // deserialization failed, continue, log to help debugging
-                log.log(Level.FINER, "Input data does not match 'TargetConfirmation'", e);
+        public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
+            if (!TargetConfirmation.class.isAssignableFrom(type.getRawType())) {
+                return null; // this class only serializes 'TargetConfirmation' and its subtypes
             }
+            final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
+            final TypeAdapter<TargetConfirmationAnyOf> adapterTargetConfirmationAnyOf = gson.getDelegateAdapter(this, TypeToken.get(TargetConfirmationAnyOf.class));
+            final TypeAdapter<TargetConfirmationAnyOf1> adapterTargetConfirmationAnyOf1 = gson.getDelegateAdapter(this, TypeToken.get(TargetConfirmationAnyOf1.class));
 
-            // deserialize TargetConfirmationAnyOf1
-            try {
-                deserialized = tree.traverse(jp.getCodec()).readValueAs(TargetConfirmationAnyOf1.class);
-                TargetConfirmation ret = new TargetConfirmation();
-                ret.setActualInstance(deserialized);
-                return ret;
-            } catch (Exception e) {
-                // deserialization failed, continue, log to help debugging
-                log.log(Level.FINER, "Input data does not match 'TargetConfirmation'", e);
-            }
+            return (TypeAdapter<T>) new TypeAdapter<TargetConfirmation>() {
+                @Override
+                public void write(JsonWriter out, TargetConfirmation value) throws IOException {
+                    if (value == null || value.getActualInstance() == null) {
+                        elementAdapter.write(out, null);
+                        return;
+                    }
 
-            throw new IOException("Failed deserialization for TargetConfirmation: no match found");
-        }
+                    // check if the actual instance is of the type `TargetConfirmationAnyOf`
+                    if (value.getActualInstance() instanceof TargetConfirmationAnyOf) {
+                        JsonElement element = adapterTargetConfirmationAnyOf.toJsonTree((TargetConfirmationAnyOf)value.getActualInstance());
+                        elementAdapter.write(out, element);
+                        return;
+                    }
+                    // check if the actual instance is of the type `TargetConfirmationAnyOf1`
+                    if (value.getActualInstance() instanceof TargetConfirmationAnyOf1) {
+                        JsonElement element = adapterTargetConfirmationAnyOf1.toJsonTree((TargetConfirmationAnyOf1)value.getActualInstance());
+                        elementAdapter.write(out, element);
+                        return;
+                    }
+                    throw new IOException("Failed to serialize as the type doesn't match anyOf schemas: TargetConfirmationAnyOf, TargetConfirmationAnyOf1");
+                }
 
-        /**
-         * Handle deserialization of the 'null' value.
-         */
-        @Override
-        public TargetConfirmation getNullValue(DeserializationContext ctxt) throws JsonMappingException {
-            throw new JsonMappingException(ctxt.getParser(), "TargetConfirmation cannot be null");
+                @Override
+                public TargetConfirmation read(JsonReader in) throws IOException {
+                    Object deserialized = null;
+                    JsonElement jsonElement = elementAdapter.read(in);
+
+                    ArrayList<String> errorMessages = new ArrayList<>();
+                    TypeAdapter actualAdapter = elementAdapter;
+
+                    // deserialize TargetConfirmationAnyOf
+                    try {
+                        // validate the JSON object to see if any exception is thrown
+                        TargetConfirmationAnyOf.validateJsonElement(jsonElement);
+                        actualAdapter = adapterTargetConfirmationAnyOf;
+                        TargetConfirmation ret = new TargetConfirmation();
+                        ret.setActualInstance(actualAdapter.fromJsonTree(jsonElement));
+                        return ret;
+                    } catch (Exception e) {
+                        // deserialization failed, continue
+                        errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for TargetConfirmationAnyOf failed with `%s`.", e.getMessage()));
+                        log.log(Level.FINER, "Input data does not match schema 'TargetConfirmationAnyOf'", e);
+                    }
+                    // deserialize TargetConfirmationAnyOf1
+                    try {
+                        // validate the JSON object to see if any exception is thrown
+                        TargetConfirmationAnyOf1.validateJsonElement(jsonElement);
+                        actualAdapter = adapterTargetConfirmationAnyOf1;
+                        TargetConfirmation ret = new TargetConfirmation();
+                        ret.setActualInstance(actualAdapter.fromJsonTree(jsonElement));
+                        return ret;
+                    } catch (Exception e) {
+                        // deserialization failed, continue
+                        errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for TargetConfirmationAnyOf1 failed with `%s`.", e.getMessage()));
+                        log.log(Level.FINER, "Input data does not match schema 'TargetConfirmationAnyOf1'", e);
+                    }
+
+                    throw new IOException(String.format(java.util.Locale.ROOT, "Failed deserialization for TargetConfirmation: no class matches result, expected at least 1. Detailed failure message for anyOf schemas: %s. JSON: %s", errorMessages, jsonElement.toString()));
+                }
+            }.nullSafe();
         }
     }
 
@@ -127,20 +145,14 @@ public class TargetConfirmation extends AbstractOpenApiSchema {
         super("anyOf", Boolean.FALSE);
     }
 
-    public TargetConfirmation(TargetConfirmationAnyOf o) {
-        this();
-        setActualInstance(o);
-    }
-
-    public TargetConfirmation(TargetConfirmationAnyOf1 o) {
-        this();
+    public TargetConfirmation(Object o) {
+        super("anyOf", Boolean.FALSE);
         setActualInstance(o);
     }
 
     static {
         schemas.put("TargetConfirmationAnyOf", TargetConfirmationAnyOf.class);
         schemas.put("TargetConfirmationAnyOf1", TargetConfirmationAnyOf1.class);
-        JSON.registerDescendants(TargetConfirmation.class, Collections.unmodifiableMap(schemas));
     }
 
     @Override
@@ -154,16 +166,15 @@ public class TargetConfirmation extends AbstractOpenApiSchema {
      * TargetConfirmationAnyOf, TargetConfirmationAnyOf1
      *
      * It could be an instance of the 'anyOf' schemas.
-     * The anyOf child schemas may themselves be a composed schema (allOf, anyOf, anyOf).
      */
     @Override
     public void setActualInstance(Object instance) {
-        if (JSON.isInstanceOf(TargetConfirmationAnyOf.class, instance, new HashSet<Class<?>>())) {
+        if (instance instanceof TargetConfirmationAnyOf) {
             super.setActualInstance(instance);
             return;
         }
 
-        if (JSON.isInstanceOf(TargetConfirmationAnyOf1.class, instance, new HashSet<Class<?>>())) {
+        if (instance instanceof TargetConfirmationAnyOf1) {
             super.setActualInstance(instance);
             return;
         }
@@ -177,6 +188,7 @@ public class TargetConfirmation extends AbstractOpenApiSchema {
      *
      * @return The actual instance (TargetConfirmationAnyOf, TargetConfirmationAnyOf1)
      */
+    @SuppressWarnings("unchecked")
     @Override
     public Object getActualInstance() {
         return super.getActualInstance();
@@ -204,42 +216,52 @@ public class TargetConfirmation extends AbstractOpenApiSchema {
         return (TargetConfirmationAnyOf1)super.getActualInstance();
     }
 
-
-
-  /**
-   * Convert the instance into URL query string.
-   *
-   * @return URL query string
-   */
-  public String toUrlQueryString() {
-    return toUrlQueryString(null);
-  }
-
-  /**
-   * Convert the instance into URL query string.
-   *
-   * @param prefix prefix of the query string
-   * @return URL query string
-   */
-  public String toUrlQueryString(String prefix) {
-    String suffix = "";
-    String containerSuffix = "";
-    String containerPrefix = "";
-    if (prefix == null) {
-      // style=form, explode=true, e.g. /pet?name=cat&type=manx
-      prefix = "";
-    } else {
-      // deepObject style e.g. /pet?id[name]=cat&id[type]=manx
-      prefix = prefix + "[";
-      suffix = "]";
-      containerSuffix = "]";
-      containerPrefix = "[";
+    /**
+     * Validates the JSON Element and throws an exception if issues found
+     *
+     * @param jsonElement JSON Element
+     * @throws IOException if the JSON Element is invalid with respect to TargetConfirmation
+     */
+    public static void validateJsonElement(JsonElement jsonElement) throws IOException {
+        // validate anyOf schemas one by one
+        ArrayList<String> errorMessages = new ArrayList<>();
+        // validate the json string with TargetConfirmationAnyOf
+        try {
+            TargetConfirmationAnyOf.validateJsonElement(jsonElement);
+            return;
+        } catch (Exception e) {
+            errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for TargetConfirmationAnyOf failed with `%s`.", e.getMessage()));
+            // continue to the next one
+        }
+        // validate the json string with TargetConfirmationAnyOf1
+        try {
+            TargetConfirmationAnyOf1.validateJsonElement(jsonElement);
+            return;
+        } catch (Exception e) {
+            errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for TargetConfirmationAnyOf1 failed with `%s`.", e.getMessage()));
+            // continue to the next one
+        }
+        throw new IOException(String.format(java.util.Locale.ROOT, "The JSON string is invalid for TargetConfirmation with anyOf schemas: TargetConfirmationAnyOf, TargetConfirmationAnyOf1. no class match the result, expected at least 1. Detailed failure message for anyOf schemas: %s. JSON: %s", errorMessages, jsonElement.toString()));
     }
 
-    StringJoiner joiner = new StringJoiner("&");
+    /**
+     * Create an instance of TargetConfirmation given an JSON string
+     *
+     * @param jsonString JSON string
+     * @return An instance of TargetConfirmation
+     * @throws IOException if the JSON string is invalid with respect to TargetConfirmation
+     */
+    public static TargetConfirmation fromJson(String jsonString) throws IOException {
+        return JSON.getGson().fromJson(jsonString, TargetConfirmation.class);
+    }
 
-    return null;
-  }
-
+    /**
+     * Convert an instance of TargetConfirmation to an JSON string
+     *
+     * @return JSON string
+     */
+    public String toJson() {
+        return JSON.getGson().toJson(this);
+    }
 }
 

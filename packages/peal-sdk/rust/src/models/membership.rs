@@ -18,7 +18,7 @@ pub struct Membership {
     #[serde(rename = "name")]
     pub name: String,
     #[serde(rename = "permissions")]
-    pub permissions: Vec<Permissions>,
+    pub permissions: Vec<models::Permission>,
     #[serde(rename = "role")]
     pub role: String,
     #[serde(rename = "slug")]
@@ -26,7 +26,7 @@ pub struct Membership {
 }
 
 impl Membership {
-    pub fn new(id: String, name: String, permissions: Vec<Permissions>, role: String, slug: String) -> Membership {
+    pub fn new(id: String, name: String, permissions: Vec<models::Permission>, role: String, slug: String) -> Membership {
         Membership {
             id,
             name,
@@ -34,72 +34,6 @@ impl Membership {
             role,
             slug,
         }
-    }
-}
-/// 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize)]
-pub enum Permissions {
-    #[serde(rename = "analytics:read")]
-    AnalyticsColonRead,
-    #[serde(rename = "apiKey:create")]
-    ApiKeyColonCreate,
-    #[serde(rename = "apiKey:read")]
-    ApiKeyColonRead,
-    #[serde(rename = "apiKey:update")]
-    ApiKeyColonUpdate,
-    #[serde(rename = "apiKey:delete")]
-    ApiKeyColonDelete,
-    #[serde(rename = "assistant:use")]
-    AssistantColonUse,
-    #[serde(rename = "billing:read")]
-    BillingColonRead,
-    #[serde(rename = "billing:manage")]
-    BillingColonManage,
-    #[serde(rename = "channel:read")]
-    ChannelColonRead,
-    #[serde(rename = "channel:connect")]
-    ChannelColonConnect,
-    #[serde(rename = "channel:disconnect")]
-    ChannelColonDisconnect,
-    #[serde(rename = "invitation:create")]
-    InvitationColonCreate,
-    #[serde(rename = "invitation:cancel")]
-    InvitationColonCancel,
-    #[serde(rename = "media:read")]
-    MediaColonRead,
-    #[serde(rename = "media:upload")]
-    MediaColonUpload,
-    #[serde(rename = "media:delete")]
-    MediaColonDelete,
-    #[serde(rename = "member:create")]
-    MemberColonCreate,
-    #[serde(rename = "member:update")]
-    MemberColonUpdate,
-    #[serde(rename = "member:delete")]
-    MemberColonDelete,
-    #[serde(rename = "organization:update")]
-    OrganizationColonUpdate,
-    #[serde(rename = "organization:delete")]
-    OrganizationColonDelete,
-    #[serde(rename = "post:read")]
-    PostColonRead,
-    #[serde(rename = "post:create")]
-    PostColonCreate,
-    #[serde(rename = "post:update")]
-    PostColonUpdate,
-    #[serde(rename = "post:delete")]
-    PostColonDelete,
-    #[serde(rename = "post:schedule")]
-    PostColonSchedule,
-    #[serde(rename = "post:approve")]
-    PostColonApprove,
-    #[serde(rename = "post:publish")]
-    PostColonPublish,
-}
-
-impl Default for Permissions {
-    fn default() -> Permissions {
-        Self::AnalyticsColonRead
     }
 }
 

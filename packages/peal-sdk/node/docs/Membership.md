@@ -8,7 +8,7 @@ Name | Type
 ------------ | -------------
 `id` | string
 `name` | string
-`permissions` | Array&lt;string&gt;
+`permissions` | [Array&lt;Permission&gt;](Permission.md)
 `role` | string
 `slug` | string
 

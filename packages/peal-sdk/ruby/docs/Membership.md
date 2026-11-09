@@ -6,7 +6,7 @@
 | ---- | ---- | ----------- | ----- |
 | **id** | **String** |  |  |
 | **name** | **String** |  |  |
-| **permissions** | **Array&lt;String&gt;** |  |  |
+| **permissions** | [**Array&lt;Permission&gt;**](Permission.md) |  |  |
 | **role** | **String** |  |  |
 | **slug** | **String** |  |  |
 

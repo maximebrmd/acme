@@ -42,7 +42,9 @@ export const runInContainer = async (run: ContainerRun): Promise<void> => {
     ...run.environment,
   }).flatMap(([name, value]) => ["--env", `${name}=${value}`]);
 
-  const command = $`docker run --rm --user ${callingUser()} --volume ${sdkRoot}:/sdk --volume ${cacheRoot}:/cache --workdir ${run.workdir} ${environment} ${run.image} ${run.arguments}`;
+  // host.docker.internal is this machine, where scripts/test.ts serves the
+  // smoke tests' stand-in API; Linux needs the name added.
+  const command = $`docker run --rm --user ${callingUser()} --add-host host.docker.internal:host-gateway --volume ${sdkRoot}:/sdk --volume ${cacheRoot}:/cache --workdir ${run.workdir} ${environment} ${run.image} ${run.arguments}`;
 
   if (run.quiet !== true) {
     await command;

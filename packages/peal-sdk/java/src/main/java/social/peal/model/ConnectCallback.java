@@ -13,50 +13,65 @@
 
 package social.peal.model;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.StringJoiner;
 import java.util.Objects;
-import java.util.Map;
-import java.util.HashMap;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.fasterxml.jackson.annotation.JsonValue;
+import com.google.gson.TypeAdapter;
+import com.google.gson.annotations.JsonAdapter;
+import com.google.gson.annotations.SerializedName;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 import java.util.Arrays;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonNull;
+import com.google.gson.JsonParseException;
+import com.google.gson.TypeAdapterFactory;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.TypeAdapter;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 
-import social.peal.ApiClient;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import social.peal.JSON;
+
 /**
  * ConnectCallback
  */
-@JsonPropertyOrder({
-  ConnectCallback.JSON_PROPERTY_CODE,
-  ConnectCallback.JSON_PROPERTY_ERROR,
-  ConnectCallback.JSON_PROPERTY_ISS,
-  ConnectCallback.JSON_PROPERTY_STATE
-})
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.27.0")
 public class ConnectCallback {
-  public static final String JSON_PROPERTY_CODE = "code";
+  public static final String SERIALIZED_NAME_CODE = "code";
+  @SerializedName(SERIALIZED_NAME_CODE)
   @javax.annotation.Nullable
   private String code;
 
-  public static final String JSON_PROPERTY_ERROR = "error";
+  public static final String SERIALIZED_NAME_ERROR = "error";
+  @SerializedName(SERIALIZED_NAME_ERROR)
   @javax.annotation.Nullable
   private String error;
 
-  public static final String JSON_PROPERTY_ISS = "iss";
+  public static final String SERIALIZED_NAME_ISS = "iss";
+  @SerializedName(SERIALIZED_NAME_ISS)
   @javax.annotation.Nullable
   private String iss;
 
-  public static final String JSON_PROPERTY_STATE = "state";
+  public static final String SERIALIZED_NAME_STATE = "state";
+  @SerializedName(SERIALIZED_NAME_STATE)
   @javax.annotation.Nonnull
   private String state;
 
-  public ConnectCallback() { 
+  public ConnectCallback() {
   }
 
   public ConnectCallback code(@javax.annotation.Nullable String code) {
@@ -69,15 +84,10 @@ public class ConnectCallback {
    * @return code
    */
   @javax.annotation.Nullable
-  @JsonProperty(value = JSON_PROPERTY_CODE, required = false)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public String getCode() {
     return code;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_CODE, required = false)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setCode(@javax.annotation.Nullable String code) {
     this.code = code;
   }
@@ -93,15 +103,10 @@ public class ConnectCallback {
    * @return error
    */
   @javax.annotation.Nullable
-  @JsonProperty(value = JSON_PROPERTY_ERROR, required = false)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public String getError() {
     return error;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_ERROR, required = false)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setError(@javax.annotation.Nullable String error) {
     this.error = error;
   }
@@ -117,15 +122,10 @@ public class ConnectCallback {
    * @return iss
    */
   @javax.annotation.Nullable
-  @JsonProperty(value = JSON_PROPERTY_ISS, required = false)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public String getIss() {
     return iss;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_ISS, required = false)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setIss(@javax.annotation.Nullable String iss) {
     this.iss = iss;
   }
@@ -141,23 +141,16 @@ public class ConnectCallback {
    * @return state
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_STATE, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public String getState() {
     return state;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_STATE, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setState(@javax.annotation.Nonnull String state) {
     this.state = state;
   }
 
 
-  /**
-   * Return true if this ConnectCallback object is equal to o.
-   */
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -198,59 +191,107 @@ public class ConnectCallback {
     return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
 
-  /**
-   * Convert the instance into URL query string.
-   *
-   * @return URL query string
-   */
-  public String toUrlQueryString() {
-    return toUrlQueryString(null);
+
+  public static HashSet<String> openapiFields;
+  public static HashSet<String> openapiRequiredFields;
+
+  static {
+    // a set of all properties/fields (JSON key names)
+    openapiFields = new HashSet<String>(Arrays.asList("code", "error", "iss", "state"));
+
+    // a set of required properties/fields (JSON key names)
+    openapiRequiredFields = new HashSet<String>(Arrays.asList("state"));
   }
 
   /**
-   * Convert the instance into URL query string.
+   * Validates the JSON Element and throws an exception if issues found
    *
-   * @param prefix prefix of the query string
-   * @return URL query string
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to ConnectCallback
    */
-  public String toUrlQueryString(String prefix) {
-    String suffix = "";
-    String containerSuffix = "";
-    String containerPrefix = "";
-    if (prefix == null) {
-      // style=form, explode=true, e.g. /pet?name=cat&type=manx
-      prefix = "";
-    } else {
-      // deepObject style e.g. /pet?id[name]=cat&id[type]=manx
-      prefix = prefix + "[";
-      suffix = "]";
-      containerSuffix = "]";
-      containerPrefix = "[";
+  public static void validateJsonElement(JsonElement jsonElement) throws IOException {
+      if (jsonElement == null) {
+        if (!ConnectCallback.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The required field(s) %s in ConnectCallback is not found in the empty JSON string", ConnectCallback.openapiRequiredFields.toString()));
+        }
+      }
+
+      Set<Map.Entry<String, JsonElement>> entries = jsonElement.getAsJsonObject().entrySet();
+      // check to see if the JSON string contains additional fields
+      for (Map.Entry<String, JsonElement> entry : entries) {
+        if (!ConnectCallback.openapiFields.contains(entry.getKey())) {
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The field `%s` in the JSON string is not defined in the `ConnectCallback` properties. JSON: %s", entry.getKey(), jsonElement.toString()));
+        }
+      }
+
+      // check to make sure all required properties/fields are present in the JSON string
+      for (String requiredField : ConnectCallback.openapiRequiredFields) {
+        if (jsonElement.getAsJsonObject().get(requiredField) == null) {
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The required field `%s` is not found in the JSON string: %s", requiredField, jsonElement.toString()));
+        }
+      }
+        JsonObject jsonObj = jsonElement.getAsJsonObject();
+      if ((jsonObj.get("code") != null && !jsonObj.get("code").isJsonNull()) && !jsonObj.get("code").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `code` to be a primitive type in the JSON string but got `%s`", jsonObj.get("code").toString()));
+      }
+      if ((jsonObj.get("error") != null && !jsonObj.get("error").isJsonNull()) && !jsonObj.get("error").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `error` to be a primitive type in the JSON string but got `%s`", jsonObj.get("error").toString()));
+      }
+      if ((jsonObj.get("iss") != null && !jsonObj.get("iss").isJsonNull()) && !jsonObj.get("iss").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `iss` to be a primitive type in the JSON string but got `%s`", jsonObj.get("iss").toString()));
+      }
+      if (!jsonObj.get("state").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `state` to be a primitive type in the JSON string but got `%s`", jsonObj.get("state").toString()));
+      }
+  }
+
+  public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
+       if (!ConnectCallback.class.isAssignableFrom(type.getRawType())) {
+         return null; // this class only serializes 'ConnectCallback' and its subtypes
+       }
+       final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
+       final TypeAdapter<ConnectCallback> thisAdapter
+                        = gson.getDelegateAdapter(this, TypeToken.get(ConnectCallback.class));
+
+       return (TypeAdapter<T>) new TypeAdapter<ConnectCallback>() {
+           @Override
+           public void write(JsonWriter out, ConnectCallback value) throws IOException {
+             JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
+             elementAdapter.write(out, obj);
+           }
+
+           @Override
+           public ConnectCallback read(JsonReader in) throws IOException {
+             JsonElement jsonElement = elementAdapter.read(in);
+             validateJsonElement(jsonElement);
+             return thisAdapter.fromJsonTree(jsonElement);
+           }
+
+       }.nullSafe();
     }
+  }
 
-    StringJoiner joiner = new StringJoiner("&");
+  /**
+   * Create an instance of ConnectCallback given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of ConnectCallback
+   * @throws IOException if the JSON string is invalid with respect to ConnectCallback
+   */
+  public static ConnectCallback fromJson(String jsonString) throws IOException {
+    return JSON.getGson().fromJson(jsonString, ConnectCallback.class);
+  }
 
-    // add `code` to the URL query string
-    if (getCode() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%scode%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getCode()))));
-    }
-
-    // add `error` to the URL query string
-    if (getError() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%serror%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getError()))));
-    }
-
-    // add `iss` to the URL query string
-    if (getIss() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%siss%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getIss()))));
-    }
-
-    // add `state` to the URL query string
-    if (getState() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%sstate%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getState()))));
-    }
-
-    return joiner.toString();
+  /**
+   * Convert an instance of ConnectCallback to an JSON string
+   *
+   * @return JSON string
+   */
+  public String toJson() {
+    return JSON.getGson().toJson(this);
   }
 }
 

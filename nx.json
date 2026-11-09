@@ -45,6 +45,10 @@
     "sdk:build": {
       "cache": true,
       "inputs": ["default"]
+    },
+    "sdk:test": {
+      "dependsOn": ["sdk:build"],
+      "cache": false
     }
   },
   "analytics": true

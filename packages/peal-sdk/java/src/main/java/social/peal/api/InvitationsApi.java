@@ -10,13 +10,22 @@
  * Do not edit the class manually.
  */
 
+
 package social.peal.api;
 
+import social.peal.ApiCallback;
 import social.peal.ApiClient;
 import social.peal.ApiException;
 import social.peal.ApiResponse;
 import social.peal.Configuration;
 import social.peal.Pair;
+import social.peal.ProgressRequestBody;
+import social.peal.ProgressResponseBody;
+
+import com.google.gson.reflect.TypeToken;
+
+import java.io.IOException;
+
 
 import social.peal.model.EffectHttpApiErrorBadRequestEncoded;
 import social.peal.model.ForbiddenEncoded;
@@ -28,509 +37,492 @@ import social.peal.model.PlanLimitReachedEncoded;
 import social.peal.model.UnauthenticatedEncoded;
 import social.peal.model.WorkspaceNotFoundEncoded;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import java.io.InputStream;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.net.http.HttpRequest;
-import java.nio.channels.Channels;
-import java.nio.channels.Pipe;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.time.Duration;
-
+import java.lang.reflect.Type;
 import java.util.ArrayList;
-import java.util.StringJoiner;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.function.Consumer;
 
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.27.0")
 public class InvitationsApi {
-  /**
-   * Utility class for extending HttpRequest.Builder functionality.
-   */
-  private static class HttpRequestBuilderExtensions {
+    private ApiClient localVarApiClient;
+    private int localHostIndex;
+    private String localCustomBaseUrl;
+
+    public InvitationsApi() {
+        this(Configuration.getDefaultApiClient());
+    }
+
+    public InvitationsApi(ApiClient apiClient) {
+        this.localVarApiClient = apiClient;
+    }
+
+    public ApiClient getApiClient() {
+        return localVarApiClient;
+    }
+
+    public void setApiClient(ApiClient apiClient) {
+        this.localVarApiClient = apiClient;
+    }
+
+    public int getHostIndex() {
+        return localHostIndex;
+    }
+
+    public void setHostIndex(int hostIndex) {
+        this.localHostIndex = hostIndex;
+    }
+
+    public String getCustomBaseUrl() {
+        return localCustomBaseUrl;
+    }
+
+    public void setCustomBaseUrl(String customBaseUrl) {
+        this.localCustomBaseUrl = customBaseUrl;
+    }
+
     /**
-     * Adds additional headers to the provided HttpRequest.Builder. Useful for adding method/endpoint specific headers.
-     *
-     * @param builder the HttpRequest.Builder to which headers will be added
-     * @param headers a map of header names and values to add; may be null
-     * @return the same HttpRequest.Builder instance with the additional headers set
+     * Build call for invitationsCreate
+     * @param workspaceId  (required)
+     * @param newInvitation  (required)
+     * @param _callback Callback for upload/download progress
+     * @return Call to execute
+     * @throws ApiException If fail to serialize the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 201 </td><td> Invitation </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> BadRequest </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 402 </td><td> The workspace&#39;s plan allows no more of &#x60;limit&#x60;: it has &#x60;allowed&#x60; already. A larger plan, or removing some, makes room. Nothing was changed. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 409 </td><td> The address belongs to a member of the workspace already: nobody was invited. | The workspace has 100 invitations pending, the most it may: revoke some before inviting anyone else. </td><td>  -  </td></tr>
+     </table>
      */
-    static HttpRequest.Builder withAdditionalHeaders(HttpRequest.Builder builder, Map<String, String> headers) {
-        if (headers != null) {
-            for (Map.Entry<String, String> entry : headers.entrySet()) {
-                builder.header(entry.getKey(), entry.getValue());
-            }
-        }
-        return builder;
-    }
-  }
-  private final HttpClient memberVarHttpClient;
-  private final ObjectMapper memberVarObjectMapper;
-  private final String memberVarBaseUri;
-  private final Consumer<HttpRequest.Builder> memberVarInterceptor;
-  private final Duration memberVarReadTimeout;
-  private final Consumer<HttpResponse<InputStream>> memberVarResponseInterceptor;
-  private final Consumer<HttpResponse<InputStream>> memberVarAsyncResponseInterceptor;
+    public okhttp3.Call invitationsCreateCall(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull NewInvitation newInvitation, final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
 
-  public InvitationsApi() {
-    this(Configuration.getDefaultApiClient());
-  }
-
-  public InvitationsApi(ApiClient apiClient) {
-    memberVarHttpClient = apiClient.getHttpClient();
-    memberVarObjectMapper = apiClient.getObjectMapper();
-    memberVarBaseUri = apiClient.getBaseUri();
-    memberVarInterceptor = apiClient.getRequestInterceptor();
-    memberVarReadTimeout = apiClient.getReadTimeout();
-    memberVarResponseInterceptor = apiClient.getResponseInterceptor();
-    memberVarAsyncResponseInterceptor = apiClient.getAsyncResponseInterceptor();
-  }
-
-
-  protected ApiException getApiException(String operationId, HttpResponse<InputStream> response) throws IOException {
-    InputStream responseBody = ApiClient.getResponseBody(response);
-    String body = null;
-    try {
-      body = responseBody == null ? null : new String(responseBody.readAllBytes());
-    } finally {
-      if (responseBody != null) {
-        responseBody.close();
-      }
-    }
-    String message = formatExceptionMessage(operationId, response.statusCode(), body);
-    return new ApiException(response.statusCode(), message, response.headers(), body);
-  }
-
-  private String formatExceptionMessage(String operationId, int statusCode, String body) {
-    if (body == null || body.isEmpty()) {
-      body = "[no body]";
-    }
-    return operationId + " call failed with: " + statusCode + " - " + body;
-  }
-
-  /**
-   * Download file from the given response.
-   *
-   * @param response Response
-   * @return File
-   * @throws ApiException If fail to read file content from response and write to disk
-   */
-  public File downloadFileFromResponse(HttpResponse<InputStream> response, InputStream responseBody) throws ApiException {
-    if (responseBody == null) {
-      throw new ApiException(new IOException("Response body is empty"));
-    }
-    try {
-      File file = prepareDownloadFile(response);
-      java.nio.file.Files.copy(responseBody, file.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-      return file;
-    } catch (IOException e) {
-      throw new ApiException(e);
-    }
-  }
-
-  /**
-   * <p>Prepare the file for download from the response.</p>
-   *
-   * @param response a {@link java.net.http.HttpResponse} object.
-   * @return a {@link java.io.File} object.
-   * @throws java.io.IOException if any.
-   */
-  private File prepareDownloadFile(HttpResponse<InputStream> response) throws IOException {
-    String filename = null;
-    java.util.Optional<String> contentDisposition = response.headers().firstValue("Content-Disposition");
-    if (contentDisposition.isPresent() && !"".equals(contentDisposition.get())) {
-      // Get filename from the Content-Disposition header.
-      java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("filename=['\"]?([^'\"\\s]+)['\"]?");
-      java.util.regex.Matcher matcher = pattern.matcher(contentDisposition.get());
-      if (matcher.find())
-        filename = matcher.group(1);
-    }
-    File file = null;
-    if (filename != null) {
-      java.nio.file.Path tempDir = java.nio.file.Files.createTempDirectory("swagger-gen-native");
-      java.nio.file.Path filePath = java.nio.file.Files.createFile(tempDir.resolve(filename));
-      file = filePath.toFile();
-      tempDir.toFile().deleteOnExit();   // best effort cleanup
-      file.deleteOnExit(); // best effort cleanup
-    } else {
-      file = java.nio.file.Files.createTempFile("download-", "").toFile();
-      file.deleteOnExit(); // best effort cleanup
-    }
-    return file;
-  }
-
-  /**
-   * Invite someone
-   * Invites someone to the workspace with a role: Peal emails them a link that works for 7 days, in their language when they have an account, in the inviter&#39;s otherwise. A pending invitation to the same address is revoked, and its link stops working. Only owners invite owners. On a server that bills, the members and the other pending invitations must leave room in the workspace&#39;s plan (PlanLimitReached). Needs invitation:create, and a member in person: not an API key, nor staff impersonating one.
-   * @param workspaceId  (required)
-   * @param newInvitation  (required)
-   * @return Invitation
-   * @throws ApiException if fails to make API call
-   */
-  public Invitation invitationsCreate(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull NewInvitation newInvitation) throws ApiException {
-    return invitationsCreate(workspaceId, newInvitation, null);
-  }
-
-  /**
-   * Invite someone
-   * Invites someone to the workspace with a role: Peal emails them a link that works for 7 days, in their language when they have an account, in the inviter&#39;s otherwise. A pending invitation to the same address is revoked, and its link stops working. Only owners invite owners. On a server that bills, the members and the other pending invitations must leave room in the workspace&#39;s plan (PlanLimitReached). Needs invitation:create, and a member in person: not an API key, nor staff impersonating one.
-   * @param workspaceId  (required)
-   * @param newInvitation  (required)
-   * @param headers Optional headers to include in the request
-   * @return Invitation
-   * @throws ApiException if fails to make API call
-   */
-  public Invitation invitationsCreate(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull NewInvitation newInvitation, Map<String, String> headers) throws ApiException {
-    ApiResponse<Invitation> localVarResponse = invitationsCreateWithHttpInfo(workspaceId, newInvitation, headers);
-    return localVarResponse.getData();
-  }
-
-  /**
-   * Invite someone
-   * Invites someone to the workspace with a role: Peal emails them a link that works for 7 days, in their language when they have an account, in the inviter&#39;s otherwise. A pending invitation to the same address is revoked, and its link stops working. Only owners invite owners. On a server that bills, the members and the other pending invitations must leave room in the workspace&#39;s plan (PlanLimitReached). Needs invitation:create, and a member in person: not an API key, nor staff impersonating one.
-   * @param workspaceId  (required)
-   * @param newInvitation  (required)
-   * @return ApiResponse&lt;Invitation&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<Invitation> invitationsCreateWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull NewInvitation newInvitation) throws ApiException {
-    return invitationsCreateWithHttpInfo(workspaceId, newInvitation, null);
-  }
-
-  /**
-   * Invite someone
-   * Invites someone to the workspace with a role: Peal emails them a link that works for 7 days, in their language when they have an account, in the inviter&#39;s otherwise. A pending invitation to the same address is revoked, and its link stops working. Only owners invite owners. On a server that bills, the members and the other pending invitations must leave room in the workspace&#39;s plan (PlanLimitReached). Needs invitation:create, and a member in person: not an API key, nor staff impersonating one.
-   * @param workspaceId  (required)
-   * @param newInvitation  (required)
-   * @param headers Optional headers to include in the request
-   * @return ApiResponse&lt;Invitation&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<Invitation> invitationsCreateWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull NewInvitation newInvitation, Map<String, String> headers) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = invitationsCreateRequestBuilder(workspaceId, newInvitation, headers);
-    try {
-      HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
-          localVarRequestBuilder.build(),
-          HttpResponse.BodyHandlers.ofInputStream());
-      if (memberVarResponseInterceptor != null) {
-        memberVarResponseInterceptor.accept(localVarResponse);
-      }
-      InputStream localVarResponseBody = null;
-      try {
-        if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("invitationsCreate", localVarResponse);
-        }
-        localVarResponseBody = ApiClient.getResponseBody(localVarResponse);
-        if (localVarResponseBody == null) {
-          return new ApiResponse<Invitation>(
-              localVarResponse.statusCode(),
-              localVarResponse.headers().map(),
-              null
-          );
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
         }
 
-        
-        
-        String responseBody = new String(localVarResponseBody.readAllBytes());
-        Invitation responseValue = responseBody.isBlank()? null: memberVarObjectMapper.readValue(responseBody, new TypeReference<Invitation>() {});
-        
+        Object localVarPostBody = newInvitation;
 
-        return new ApiResponse<Invitation>(
-            localVarResponse.statusCode(),
-            localVarResponse.headers().map(),
-            responseValue
-        );
-      } finally {
-        if (localVarResponseBody != null) {
-          localVarResponseBody.close();
-        }
-      }
-    } catch (IOException e) {
-      throw new ApiException(e);
-    }
-    catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new ApiException(e);
-    }
-  }
+        // create path and map variables
+        String localVarPath = "/api/workspaces/{workspaceId}/invitations"
+            .replace("{" + "workspaceId" + "}", localVarApiClient.escapeString(workspaceId.toString()));
 
-  private HttpRequest.Builder invitationsCreateRequestBuilder(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull NewInvitation newInvitation, Map<String, String> headers) throws ApiException {
-    // verify the required parameter 'workspaceId' is set
-    if (workspaceId == null) {
-      throw new ApiException(400, "Missing the required parameter 'workspaceId' when calling invitationsCreate");
-    }
-    // verify the required parameter 'newInvitation' is set
-    if (newInvitation == null) {
-      throw new ApiException(400, "Missing the required parameter 'newInvitation' when calling invitationsCreate");
-    }
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
 
-    HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
-
-    String localVarPath = "/api/workspaces/{workspaceId}/invitations"
-        .replace("{workspaceId}", ApiClient.urlEncode(workspaceId.toString()));
-
-    localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
-
-    localVarRequestBuilder.header("Content-Type", "application/json");
-    localVarRequestBuilder.header("Accept", "application/json");
-
-    try {
-      byte[] localVarPostBody = memberVarObjectMapper.writeValueAsBytes(newInvitation);
-      localVarRequestBuilder.method("POST", HttpRequest.BodyPublishers.ofByteArray(localVarPostBody));
-    } catch (IOException e) {
-      throw new ApiException(e);
-    }
-    if (memberVarReadTimeout != null) {
-      localVarRequestBuilder.timeout(memberVarReadTimeout);
-    }
-    // Add custom headers if provided
-    localVarRequestBuilder = HttpRequestBuilderExtensions.withAdditionalHeaders(localVarRequestBuilder, headers);
-    if (memberVarInterceptor != null) {
-      memberVarInterceptor.accept(localVarRequestBuilder);
-    }
-    return localVarRequestBuilder;
-  }
-
-  /**
-   * List invitations
-   * Lists the workspace&#39;s pending invitations, oldest first, expired ones included. Needs invitation:create, as an invitation&#39;s id opens its link, and a member rather than an API key; invitations to the owner role are listed to owners only.
-   * @param workspaceId  (required)
-   * @return List&lt;Invitation&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public List<Invitation> invitationsList(@javax.annotation.Nonnull String workspaceId) throws ApiException {
-    return invitationsList(workspaceId, null);
-  }
-
-  /**
-   * List invitations
-   * Lists the workspace&#39;s pending invitations, oldest first, expired ones included. Needs invitation:create, as an invitation&#39;s id opens its link, and a member rather than an API key; invitations to the owner role are listed to owners only.
-   * @param workspaceId  (required)
-   * @param headers Optional headers to include in the request
-   * @return List&lt;Invitation&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public List<Invitation> invitationsList(@javax.annotation.Nonnull String workspaceId, Map<String, String> headers) throws ApiException {
-    ApiResponse<List<Invitation>> localVarResponse = invitationsListWithHttpInfo(workspaceId, headers);
-    return localVarResponse.getData();
-  }
-
-  /**
-   * List invitations
-   * Lists the workspace&#39;s pending invitations, oldest first, expired ones included. Needs invitation:create, as an invitation&#39;s id opens its link, and a member rather than an API key; invitations to the owner role are listed to owners only.
-   * @param workspaceId  (required)
-   * @return ApiResponse&lt;List&lt;Invitation&gt;&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<List<Invitation>> invitationsListWithHttpInfo(@javax.annotation.Nonnull String workspaceId) throws ApiException {
-    return invitationsListWithHttpInfo(workspaceId, null);
-  }
-
-  /**
-   * List invitations
-   * Lists the workspace&#39;s pending invitations, oldest first, expired ones included. Needs invitation:create, as an invitation&#39;s id opens its link, and a member rather than an API key; invitations to the owner role are listed to owners only.
-   * @param workspaceId  (required)
-   * @param headers Optional headers to include in the request
-   * @return ApiResponse&lt;List&lt;Invitation&gt;&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<List<Invitation>> invitationsListWithHttpInfo(@javax.annotation.Nonnull String workspaceId, Map<String, String> headers) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = invitationsListRequestBuilder(workspaceId, headers);
-    try {
-      HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
-          localVarRequestBuilder.build(),
-          HttpResponse.BodyHandlers.ofInputStream());
-      if (memberVarResponseInterceptor != null) {
-        memberVarResponseInterceptor.accept(localVarResponse);
-      }
-      InputStream localVarResponseBody = null;
-      try {
-        if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("invitationsList", localVarResponse);
-        }
-        localVarResponseBody = ApiClient.getResponseBody(localVarResponse);
-        if (localVarResponseBody == null) {
-          return new ApiResponse<List<Invitation>>(
-              localVarResponse.statusCode(),
-              localVarResponse.headers().map(),
-              null
-          );
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
         }
 
-        
-        
-        String responseBody = new String(localVarResponseBody.readAllBytes());
-        List<Invitation> responseValue = responseBody.isBlank()? null: memberVarObjectMapper.readValue(responseBody, new TypeReference<List<Invitation>>() {});
-        
-
-        return new ApiResponse<List<Invitation>>(
-            localVarResponse.statusCode(),
-            localVarResponse.headers().map(),
-            responseValue
-        );
-      } finally {
-        if (localVarResponseBody != null) {
-          localVarResponseBody.close();
+        final String[] localVarContentTypes = {
+            "application/json"
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
         }
-      }
-    } catch (IOException e) {
-      throw new ApiException(e);
-    }
-    catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new ApiException(e);
-    }
-  }
 
-  private HttpRequest.Builder invitationsListRequestBuilder(@javax.annotation.Nonnull String workspaceId, Map<String, String> headers) throws ApiException {
-    // verify the required parameter 'workspaceId' is set
-    if (workspaceId == null) {
-      throw new ApiException(400, "Missing the required parameter 'workspaceId' when calling invitationsList");
+        String[] localVarAuthNames = new String[] { "bearer" };
+        return localVarApiClient.buildCall(basePath, localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
-    HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
-
-    String localVarPath = "/api/workspaces/{workspaceId}/invitations"
-        .replace("{workspaceId}", ApiClient.urlEncode(workspaceId.toString()));
-
-    localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
-
-    localVarRequestBuilder.header("Accept", "application/json");
-
-    localVarRequestBuilder.method("GET", HttpRequest.BodyPublishers.noBody());
-    if (memberVarReadTimeout != null) {
-      localVarRequestBuilder.timeout(memberVarReadTimeout);
-    }
-    // Add custom headers if provided
-    localVarRequestBuilder = HttpRequestBuilderExtensions.withAdditionalHeaders(localVarRequestBuilder, headers);
-    if (memberVarInterceptor != null) {
-      memberVarInterceptor.accept(localVarRequestBuilder);
-    }
-    return localVarRequestBuilder;
-  }
-
-  /**
-   * Revoke an invitation
-   * Revokes a pending invitation of the workspace: its link stops working at once. Needs invitation:cancel, and a member in person: not an API key, nor staff impersonating one.
-   * @param workspaceId  (required)
-   * @param invitationId  (required)
-   * @throws ApiException if fails to make API call
-   */
-  public void invitationsRevoke(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String invitationId) throws ApiException {
-    invitationsRevoke(workspaceId, invitationId, null);
-  }
-
-  /**
-   * Revoke an invitation
-   * Revokes a pending invitation of the workspace: its link stops working at once. Needs invitation:cancel, and a member in person: not an API key, nor staff impersonating one.
-   * @param workspaceId  (required)
-   * @param invitationId  (required)
-   * @param headers Optional headers to include in the request
-   * @throws ApiException if fails to make API call
-   */
-  public void invitationsRevoke(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String invitationId, Map<String, String> headers) throws ApiException {
-    invitationsRevokeWithHttpInfo(workspaceId, invitationId, headers);
-  }
-
-  /**
-   * Revoke an invitation
-   * Revokes a pending invitation of the workspace: its link stops working at once. Needs invitation:cancel, and a member in person: not an API key, nor staff impersonating one.
-   * @param workspaceId  (required)
-   * @param invitationId  (required)
-   * @return ApiResponse&lt;Void&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<Void> invitationsRevokeWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String invitationId) throws ApiException {
-    return invitationsRevokeWithHttpInfo(workspaceId, invitationId, null);
-  }
-
-  /**
-   * Revoke an invitation
-   * Revokes a pending invitation of the workspace: its link stops working at once. Needs invitation:cancel, and a member in person: not an API key, nor staff impersonating one.
-   * @param workspaceId  (required)
-   * @param invitationId  (required)
-   * @param headers Optional headers to include in the request
-   * @return ApiResponse&lt;Void&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<Void> invitationsRevokeWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String invitationId, Map<String, String> headers) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = invitationsRevokeRequestBuilder(workspaceId, invitationId, headers);
-    try {
-      HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
-          localVarRequestBuilder.build(),
-          HttpResponse.BodyHandlers.ofInputStream());
-      if (memberVarResponseInterceptor != null) {
-        memberVarResponseInterceptor.accept(localVarResponse);
-      }
-      InputStream localVarResponseBody = null;
-      try {
-        if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("invitationsRevoke", localVarResponse);
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call invitationsCreateValidateBeforeCall(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull NewInvitation newInvitation, final ApiCallback _callback) throws ApiException {
+        // verify the required parameter 'workspaceId' is set
+        if (workspaceId == null) {
+            throw new ApiException("Missing the required parameter 'workspaceId' when calling invitationsCreate(Async)");
         }
-        localVarResponseBody = ApiClient.getResponseBody(localVarResponse);
-        if (localVarResponseBody != null) {
-          localVarResponseBody.readAllBytes();
+
+        // verify the required parameter 'newInvitation' is set
+        if (newInvitation == null) {
+            throw new ApiException("Missing the required parameter 'newInvitation' when calling invitationsCreate(Async)");
         }
-        return new ApiResponse<>(
-            localVarResponse.statusCode(),
-            localVarResponse.headers().map(),
-            null
-        );
-      } finally {
-        if (localVarResponseBody != null) {
-          localVarResponseBody.close();
+
+        return invitationsCreateCall(workspaceId, newInvitation, _callback);
+
+    }
+
+    /**
+     * Invite someone
+     * Invites someone to the workspace with a role: Peal emails them a link that works for 7 days, in their language when they have an account, in the inviter&#39;s otherwise. A pending invitation to the same address is revoked, and its link stops working. Only owners invite owners. On a server that bills, the members and the other pending invitations must leave room in the workspace&#39;s plan (PlanLimitReached). Needs invitation:create, and a member in person: not an API key, nor staff impersonating one.
+     * @param workspaceId  (required)
+     * @param newInvitation  (required)
+     * @return Invitation
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 201 </td><td> Invitation </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> BadRequest </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 402 </td><td> The workspace&#39;s plan allows no more of &#x60;limit&#x60;: it has &#x60;allowed&#x60; already. A larger plan, or removing some, makes room. Nothing was changed. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 409 </td><td> The address belongs to a member of the workspace already: nobody was invited. | The workspace has 100 invitations pending, the most it may: revoke some before inviting anyone else. </td><td>  -  </td></tr>
+     </table>
+     */
+    public Invitation invitationsCreate(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull NewInvitation newInvitation) throws ApiException {
+        ApiResponse<Invitation> localVarResp = invitationsCreateWithHttpInfo(workspaceId, newInvitation);
+        return localVarResp.getData();
+    }
+
+    /**
+     * Invite someone
+     * Invites someone to the workspace with a role: Peal emails them a link that works for 7 days, in their language when they have an account, in the inviter&#39;s otherwise. A pending invitation to the same address is revoked, and its link stops working. Only owners invite owners. On a server that bills, the members and the other pending invitations must leave room in the workspace&#39;s plan (PlanLimitReached). Needs invitation:create, and a member in person: not an API key, nor staff impersonating one.
+     * @param workspaceId  (required)
+     * @param newInvitation  (required)
+     * @return ApiResponse&lt;Invitation&gt;
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 201 </td><td> Invitation </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> BadRequest </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 402 </td><td> The workspace&#39;s plan allows no more of &#x60;limit&#x60;: it has &#x60;allowed&#x60; already. A larger plan, or removing some, makes room. Nothing was changed. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 409 </td><td> The address belongs to a member of the workspace already: nobody was invited. | The workspace has 100 invitations pending, the most it may: revoke some before inviting anyone else. </td><td>  -  </td></tr>
+     </table>
+     */
+    public ApiResponse<Invitation> invitationsCreateWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull NewInvitation newInvitation) throws ApiException {
+        okhttp3.Call localVarCall = invitationsCreateValidateBeforeCall(workspaceId, newInvitation, null);
+        Type localVarReturnType = new TypeToken<Invitation>(){}.getType();
+        return localVarApiClient.execute(localVarCall, localVarReturnType);
+    }
+
+    /**
+     * Invite someone (asynchronously)
+     * Invites someone to the workspace with a role: Peal emails them a link that works for 7 days, in their language when they have an account, in the inviter&#39;s otherwise. A pending invitation to the same address is revoked, and its link stops working. Only owners invite owners. On a server that bills, the members and the other pending invitations must leave room in the workspace&#39;s plan (PlanLimitReached). Needs invitation:create, and a member in person: not an API key, nor staff impersonating one.
+     * @param workspaceId  (required)
+     * @param newInvitation  (required)
+     * @param _callback The callback to be executed when the API call finishes
+     * @return The request call
+     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 201 </td><td> Invitation </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> BadRequest </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 402 </td><td> The workspace&#39;s plan allows no more of &#x60;limit&#x60;: it has &#x60;allowed&#x60; already. A larger plan, or removing some, makes room. Nothing was changed. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 409 </td><td> The address belongs to a member of the workspace already: nobody was invited. | The workspace has 100 invitations pending, the most it may: revoke some before inviting anyone else. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call invitationsCreateAsync(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull NewInvitation newInvitation, final ApiCallback<Invitation> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = invitationsCreateValidateBeforeCall(workspaceId, newInvitation, _callback);
+        Type localVarReturnType = new TypeToken<Invitation>(){}.getType();
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
+        return localVarCall;
+    }
+    /**
+     * Build call for invitationsList
+     * @param workspaceId  (required)
+     * @param _callback Callback for upload/download progress
+     * @return Call to execute
+     * @throws ApiException If fail to serialize the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Success </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call invitationsListCall(@javax.annotation.Nonnull String workspaceId, final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
+
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
         }
-      }
-    } catch (IOException e) {
-      throw new ApiException(e);
+
+        Object localVarPostBody = null;
+
+        // create path and map variables
+        String localVarPath = "/api/workspaces/{workspaceId}/invitations"
+            .replace("{" + "workspaceId" + "}", localVarApiClient.escapeString(workspaceId.toString()));
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
+        }
+
+        String[] localVarAuthNames = new String[] { "bearer" };
+        return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
-    catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new ApiException(e);
-    }
-  }
 
-  private HttpRequest.Builder invitationsRevokeRequestBuilder(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String invitationId, Map<String, String> headers) throws ApiException {
-    // verify the required parameter 'workspaceId' is set
-    if (workspaceId == null) {
-      throw new ApiException(400, "Missing the required parameter 'workspaceId' when calling invitationsRevoke");
-    }
-    // verify the required parameter 'invitationId' is set
-    if (invitationId == null) {
-      throw new ApiException(400, "Missing the required parameter 'invitationId' when calling invitationsRevoke");
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call invitationsListValidateBeforeCall(@javax.annotation.Nonnull String workspaceId, final ApiCallback _callback) throws ApiException {
+        // verify the required parameter 'workspaceId' is set
+        if (workspaceId == null) {
+            throw new ApiException("Missing the required parameter 'workspaceId' when calling invitationsList(Async)");
+        }
+
+        return invitationsListCall(workspaceId, _callback);
+
     }
 
-    HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
-
-    String localVarPath = "/api/workspaces/{workspaceId}/invitations/{invitationId}"
-        .replace("{workspaceId}", ApiClient.urlEncode(workspaceId.toString()))
-        .replace("{invitationId}", ApiClient.urlEncode(invitationId.toString()));
-
-    localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
-
-    localVarRequestBuilder.header("Accept", "application/json");
-
-    localVarRequestBuilder.method("DELETE", HttpRequest.BodyPublishers.noBody());
-    if (memberVarReadTimeout != null) {
-      localVarRequestBuilder.timeout(memberVarReadTimeout);
+    /**
+     * List invitations
+     * Lists the workspace&#39;s pending invitations, oldest first, expired ones included. Needs invitation:create, as an invitation&#39;s id opens its link, and a member rather than an API key; invitations to the owner role are listed to owners only.
+     * @param workspaceId  (required)
+     * @return List&lt;Invitation&gt;
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Success </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+     </table>
+     */
+    public List<Invitation> invitationsList(@javax.annotation.Nonnull String workspaceId) throws ApiException {
+        ApiResponse<List<Invitation>> localVarResp = invitationsListWithHttpInfo(workspaceId);
+        return localVarResp.getData();
     }
-    // Add custom headers if provided
-    localVarRequestBuilder = HttpRequestBuilderExtensions.withAdditionalHeaders(localVarRequestBuilder, headers);
-    if (memberVarInterceptor != null) {
-      memberVarInterceptor.accept(localVarRequestBuilder);
-    }
-    return localVarRequestBuilder;
-  }
 
+    /**
+     * List invitations
+     * Lists the workspace&#39;s pending invitations, oldest first, expired ones included. Needs invitation:create, as an invitation&#39;s id opens its link, and a member rather than an API key; invitations to the owner role are listed to owners only.
+     * @param workspaceId  (required)
+     * @return ApiResponse&lt;List&lt;Invitation&gt;&gt;
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Success </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+     </table>
+     */
+    public ApiResponse<List<Invitation>> invitationsListWithHttpInfo(@javax.annotation.Nonnull String workspaceId) throws ApiException {
+        okhttp3.Call localVarCall = invitationsListValidateBeforeCall(workspaceId, null);
+        Type localVarReturnType = new TypeToken<List<Invitation>>(){}.getType();
+        return localVarApiClient.execute(localVarCall, localVarReturnType);
+    }
+
+    /**
+     * List invitations (asynchronously)
+     * Lists the workspace&#39;s pending invitations, oldest first, expired ones included. Needs invitation:create, as an invitation&#39;s id opens its link, and a member rather than an API key; invitations to the owner role are listed to owners only.
+     * @param workspaceId  (required)
+     * @param _callback The callback to be executed when the API call finishes
+     * @return The request call
+     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Success </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call invitationsListAsync(@javax.annotation.Nonnull String workspaceId, final ApiCallback<List<Invitation>> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = invitationsListValidateBeforeCall(workspaceId, _callback);
+        Type localVarReturnType = new TypeToken<List<Invitation>>(){}.getType();
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
+        return localVarCall;
+    }
+    /**
+     * Build call for invitationsRevoke
+     * @param workspaceId  (required)
+     * @param invitationId  (required)
+     * @param _callback Callback for upload/download progress
+     * @return Call to execute
+     * @throws ApiException If fail to serialize the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 204 </td><td> &lt;No Content&gt; </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no pending invitation with this id: it was accepted, declined or revoked, or never existed. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call invitationsRevokeCall(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String invitationId, final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
+
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
+        }
+
+        Object localVarPostBody = null;
+
+        // create path and map variables
+        String localVarPath = "/api/workspaces/{workspaceId}/invitations/{invitationId}"
+            .replace("{" + "workspaceId" + "}", localVarApiClient.escapeString(workspaceId.toString()))
+            .replace("{" + "invitationId" + "}", localVarApiClient.escapeString(invitationId.toString()));
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
+        }
+
+        String[] localVarAuthNames = new String[] { "bearer" };
+        return localVarApiClient.buildCall(basePath, localVarPath, "DELETE", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call invitationsRevokeValidateBeforeCall(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String invitationId, final ApiCallback _callback) throws ApiException {
+        // verify the required parameter 'workspaceId' is set
+        if (workspaceId == null) {
+            throw new ApiException("Missing the required parameter 'workspaceId' when calling invitationsRevoke(Async)");
+        }
+
+        // verify the required parameter 'invitationId' is set
+        if (invitationId == null) {
+            throw new ApiException("Missing the required parameter 'invitationId' when calling invitationsRevoke(Async)");
+        }
+
+        return invitationsRevokeCall(workspaceId, invitationId, _callback);
+
+    }
+
+    /**
+     * Revoke an invitation
+     * Revokes a pending invitation of the workspace: its link stops working at once. Needs invitation:cancel, and a member in person: not an API key, nor staff impersonating one.
+     * @param workspaceId  (required)
+     * @param invitationId  (required)
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 204 </td><td> &lt;No Content&gt; </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no pending invitation with this id: it was accepted, declined or revoked, or never existed. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+     </table>
+     */
+    public void invitationsRevoke(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String invitationId) throws ApiException {
+        invitationsRevokeWithHttpInfo(workspaceId, invitationId);
+    }
+
+    /**
+     * Revoke an invitation
+     * Revokes a pending invitation of the workspace: its link stops working at once. Needs invitation:cancel, and a member in person: not an API key, nor staff impersonating one.
+     * @param workspaceId  (required)
+     * @param invitationId  (required)
+     * @return ApiResponse&lt;Void&gt;
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 204 </td><td> &lt;No Content&gt; </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no pending invitation with this id: it was accepted, declined or revoked, or never existed. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+     </table>
+     */
+    public ApiResponse<Void> invitationsRevokeWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String invitationId) throws ApiException {
+        okhttp3.Call localVarCall = invitationsRevokeValidateBeforeCall(workspaceId, invitationId, null);
+        return localVarApiClient.execute(localVarCall);
+    }
+
+    /**
+     * Revoke an invitation (asynchronously)
+     * Revokes a pending invitation of the workspace: its link stops working at once. Needs invitation:cancel, and a member in person: not an API key, nor staff impersonating one.
+     * @param workspaceId  (required)
+     * @param invitationId  (required)
+     * @param _callback The callback to be executed when the API call finishes
+     * @return The request call
+     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 204 </td><td> &lt;No Content&gt; </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no pending invitation with this id: it was accepted, declined or revoked, or never existed. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call invitationsRevokeAsync(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String invitationId, final ApiCallback<Void> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = invitationsRevokeValidateBeforeCall(workspaceId, invitationId, _callback);
+        localVarApiClient.executeAsync(localVarCall, _callback);
+        return localVarCall;
+    }
 }

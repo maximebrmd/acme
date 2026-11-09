@@ -1,5 +1,4 @@
 .gitignore
-README.md
 docs/apis/AnalyticsApi.md
 docs/apis/ApiKeysApi.md
 docs/apis/AssistantApi.md
@@ -141,6 +140,7 @@ docs/models/NotificationPreferencesChangeEmail.md
 docs/models/NotificationPreferencesEmail.md
 docs/models/PaidPlan.md
 docs/models/PeriodUsage.md
+docs/models/Permission.md
 docs/models/Plan.md
 docs/models/PlanAllowances.md
 docs/models/PlanLimit.md
@@ -380,6 +380,7 @@ src/Peal/Model/NotificationPreferencesChangeEmail.cs
 src/Peal/Model/NotificationPreferencesEmail.cs
 src/Peal/Model/PaidPlan.cs
 src/Peal/Model/PeriodUsage.cs
+src/Peal/Model/Permission.cs
 src/Peal/Model/Plan.cs
 src/Peal/Model/PlanAllowances.cs
 src/Peal/Model/PlanLimit.cs

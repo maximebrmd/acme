@@ -13,55 +13,70 @@
 
 package social.peal.model;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.StringJoiner;
 import java.util.Objects;
-import java.util.Map;
-import java.util.HashMap;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.fasterxml.jackson.annotation.JsonValue;
+import com.google.gson.TypeAdapter;
+import com.google.gson.annotations.JsonAdapter;
+import com.google.gson.annotations.SerializedName;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 import java.util.Arrays;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonNull;
+import com.google.gson.JsonParseException;
+import com.google.gson.TypeAdapterFactory;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.TypeAdapter;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 
-import social.peal.ApiClient;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import social.peal.JSON;
+
 /**
  * AssistantStatus
  */
-@JsonPropertyOrder({
-  AssistantStatus.JSON_PROPERTY_AVAILABLE,
-  AssistantStatus.JSON_PROPERTY_DAILY_LIMIT,
-  AssistantStatus.JSON_PROPERTY_MAX_TEXT_LENGTH,
-  AssistantStatus.JSON_PROPERTY_REMAINING,
-  AssistantStatus.JSON_PROPERTY_RESETS_AT
-})
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.27.0")
 public class AssistantStatus {
-  public static final String JSON_PROPERTY_AVAILABLE = "available";
+  public static final String SERIALIZED_NAME_AVAILABLE = "available";
+  @SerializedName(SERIALIZED_NAME_AVAILABLE)
   @javax.annotation.Nonnull
   private Boolean available;
 
-  public static final String JSON_PROPERTY_DAILY_LIMIT = "dailyLimit";
+  public static final String SERIALIZED_NAME_DAILY_LIMIT = "dailyLimit";
+  @SerializedName(SERIALIZED_NAME_DAILY_LIMIT)
   @javax.annotation.Nonnull
   private Integer dailyLimit;
 
-  public static final String JSON_PROPERTY_MAX_TEXT_LENGTH = "maxTextLength";
+  public static final String SERIALIZED_NAME_MAX_TEXT_LENGTH = "maxTextLength";
+  @SerializedName(SERIALIZED_NAME_MAX_TEXT_LENGTH)
   @javax.annotation.Nonnull
   private Integer maxTextLength;
 
-  public static final String JSON_PROPERTY_REMAINING = "remaining";
+  public static final String SERIALIZED_NAME_REMAINING = "remaining";
+  @SerializedName(SERIALIZED_NAME_REMAINING)
   @javax.annotation.Nonnull
   private Integer remaining;
 
-  public static final String JSON_PROPERTY_RESETS_AT = "resetsAt";
+  public static final String SERIALIZED_NAME_RESETS_AT = "resetsAt";
+  @SerializedName(SERIALIZED_NAME_RESETS_AT)
   @javax.annotation.Nonnull
   private String resetsAt;
 
-  public AssistantStatus() { 
+  public AssistantStatus() {
   }
 
   public AssistantStatus available(@javax.annotation.Nonnull Boolean available) {
@@ -74,15 +89,10 @@ public class AssistantStatus {
    * @return available
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_AVAILABLE, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public Boolean getAvailable() {
     return available;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_AVAILABLE, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setAvailable(@javax.annotation.Nonnull Boolean available) {
     this.available = available;
   }
@@ -100,15 +110,10 @@ public class AssistantStatus {
    * @return dailyLimit
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_DAILY_LIMIT, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public Integer getDailyLimit() {
     return dailyLimit;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_DAILY_LIMIT, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setDailyLimit(@javax.annotation.Nonnull Integer dailyLimit) {
     this.dailyLimit = dailyLimit;
   }
@@ -126,15 +131,10 @@ public class AssistantStatus {
    * @return maxTextLength
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_MAX_TEXT_LENGTH, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public Integer getMaxTextLength() {
     return maxTextLength;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_MAX_TEXT_LENGTH, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setMaxTextLength(@javax.annotation.Nonnull Integer maxTextLength) {
     this.maxTextLength = maxTextLength;
   }
@@ -152,15 +152,10 @@ public class AssistantStatus {
    * @return remaining
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_REMAINING, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public Integer getRemaining() {
     return remaining;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_REMAINING, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setRemaining(@javax.annotation.Nonnull Integer remaining) {
     this.remaining = remaining;
   }
@@ -176,23 +171,16 @@ public class AssistantStatus {
    * @return resetsAt
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_RESETS_AT, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public String getResetsAt() {
     return resetsAt;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_RESETS_AT, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setResetsAt(@javax.annotation.Nonnull String resetsAt) {
     this.resetsAt = resetsAt;
   }
 
 
-  /**
-   * Return true if this AssistantStatus object is equal to o.
-   */
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -235,64 +223,98 @@ public class AssistantStatus {
     return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
 
-  /**
-   * Convert the instance into URL query string.
-   *
-   * @return URL query string
-   */
-  public String toUrlQueryString() {
-    return toUrlQueryString(null);
+
+  public static HashSet<String> openapiFields;
+  public static HashSet<String> openapiRequiredFields;
+
+  static {
+    // a set of all properties/fields (JSON key names)
+    openapiFields = new HashSet<String>(Arrays.asList("available", "dailyLimit", "maxTextLength", "remaining", "resetsAt"));
+
+    // a set of required properties/fields (JSON key names)
+    openapiRequiredFields = new HashSet<String>(Arrays.asList("available", "dailyLimit", "maxTextLength", "remaining", "resetsAt"));
   }
 
   /**
-   * Convert the instance into URL query string.
+   * Validates the JSON Element and throws an exception if issues found
    *
-   * @param prefix prefix of the query string
-   * @return URL query string
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to AssistantStatus
    */
-  public String toUrlQueryString(String prefix) {
-    String suffix = "";
-    String containerSuffix = "";
-    String containerPrefix = "";
-    if (prefix == null) {
-      // style=form, explode=true, e.g. /pet?name=cat&type=manx
-      prefix = "";
-    } else {
-      // deepObject style e.g. /pet?id[name]=cat&id[type]=manx
-      prefix = prefix + "[";
-      suffix = "]";
-      containerSuffix = "]";
-      containerPrefix = "[";
+  public static void validateJsonElement(JsonElement jsonElement) throws IOException {
+      if (jsonElement == null) {
+        if (!AssistantStatus.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The required field(s) %s in AssistantStatus is not found in the empty JSON string", AssistantStatus.openapiRequiredFields.toString()));
+        }
+      }
+
+      Set<Map.Entry<String, JsonElement>> entries = jsonElement.getAsJsonObject().entrySet();
+      // check to see if the JSON string contains additional fields
+      for (Map.Entry<String, JsonElement> entry : entries) {
+        if (!AssistantStatus.openapiFields.contains(entry.getKey())) {
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The field `%s` in the JSON string is not defined in the `AssistantStatus` properties. JSON: %s", entry.getKey(), jsonElement.toString()));
+        }
+      }
+
+      // check to make sure all required properties/fields are present in the JSON string
+      for (String requiredField : AssistantStatus.openapiRequiredFields) {
+        if (jsonElement.getAsJsonObject().get(requiredField) == null) {
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The required field `%s` is not found in the JSON string: %s", requiredField, jsonElement.toString()));
+        }
+      }
+        JsonObject jsonObj = jsonElement.getAsJsonObject();
+      if (!jsonObj.get("resetsAt").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `resetsAt` to be a primitive type in the JSON string but got `%s`", jsonObj.get("resetsAt").toString()));
+      }
+  }
+
+  public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
+       if (!AssistantStatus.class.isAssignableFrom(type.getRawType())) {
+         return null; // this class only serializes 'AssistantStatus' and its subtypes
+       }
+       final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
+       final TypeAdapter<AssistantStatus> thisAdapter
+                        = gson.getDelegateAdapter(this, TypeToken.get(AssistantStatus.class));
+
+       return (TypeAdapter<T>) new TypeAdapter<AssistantStatus>() {
+           @Override
+           public void write(JsonWriter out, AssistantStatus value) throws IOException {
+             JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
+             elementAdapter.write(out, obj);
+           }
+
+           @Override
+           public AssistantStatus read(JsonReader in) throws IOException {
+             JsonElement jsonElement = elementAdapter.read(in);
+             validateJsonElement(jsonElement);
+             return thisAdapter.fromJsonTree(jsonElement);
+           }
+
+       }.nullSafe();
     }
+  }
 
-    StringJoiner joiner = new StringJoiner("&");
+  /**
+   * Create an instance of AssistantStatus given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of AssistantStatus
+   * @throws IOException if the JSON string is invalid with respect to AssistantStatus
+   */
+  public static AssistantStatus fromJson(String jsonString) throws IOException {
+    return JSON.getGson().fromJson(jsonString, AssistantStatus.class);
+  }
 
-    // add `available` to the URL query string
-    if (getAvailable() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%savailable%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getAvailable()))));
-    }
-
-    // add `dailyLimit` to the URL query string
-    if (getDailyLimit() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%sdailyLimit%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getDailyLimit()))));
-    }
-
-    // add `maxTextLength` to the URL query string
-    if (getMaxTextLength() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%smaxTextLength%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getMaxTextLength()))));
-    }
-
-    // add `remaining` to the URL query string
-    if (getRemaining() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%sremaining%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getRemaining()))));
-    }
-
-    // add `resetsAt` to the URL query string
-    if (getResetsAt() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%sresetsAt%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getResetsAt()))));
-    }
-
-    return joiner.toString();
+  /**
+   * Convert an instance of AssistantStatus to an JSON string
+   *
+   * @return JSON string
+   */
+  public String toJson() {
+    return JSON.getGson().toJson(this);
   }
 }
 

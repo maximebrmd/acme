@@ -13,55 +13,70 @@
 
 package social.peal.model;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.StringJoiner;
 import java.util.Objects;
-import java.util.Map;
-import java.util.HashMap;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.fasterxml.jackson.annotation.JsonValue;
+import com.google.gson.TypeAdapter;
+import com.google.gson.annotations.JsonAdapter;
+import com.google.gson.annotations.SerializedName;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 import java.util.Arrays;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonNull;
+import com.google.gson.JsonParseException;
+import com.google.gson.TypeAdapterFactory;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.TypeAdapter;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 
-import social.peal.ApiClient;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import social.peal.JSON;
+
 /**
  * ChoosableAccount
  */
-@JsonPropertyOrder({
-  ChoosableAccount.JSON_PROPERTY_ACCOUNT_ID,
-  ChoosableAccount.JSON_PROPERTY_AVATAR_URL,
-  ChoosableAccount.JSON_PROPERTY_CONNECTED,
-  ChoosableAccount.JSON_PROPERTY_DISPLAY_NAME,
-  ChoosableAccount.JSON_PROPERTY_HANDLE
-})
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.27.0")
 public class ChoosableAccount {
-  public static final String JSON_PROPERTY_ACCOUNT_ID = "accountId";
+  public static final String SERIALIZED_NAME_ACCOUNT_ID = "accountId";
+  @SerializedName(SERIALIZED_NAME_ACCOUNT_ID)
   @javax.annotation.Nonnull
   private String accountId;
 
-  public static final String JSON_PROPERTY_AVATAR_URL = "avatarUrl";
+  public static final String SERIALIZED_NAME_AVATAR_URL = "avatarUrl";
+  @SerializedName(SERIALIZED_NAME_AVATAR_URL)
   @javax.annotation.Nullable
   private String avatarUrl;
 
-  public static final String JSON_PROPERTY_CONNECTED = "connected";
+  public static final String SERIALIZED_NAME_CONNECTED = "connected";
+  @SerializedName(SERIALIZED_NAME_CONNECTED)
   @javax.annotation.Nonnull
   private Boolean connected;
 
-  public static final String JSON_PROPERTY_DISPLAY_NAME = "displayName";
+  public static final String SERIALIZED_NAME_DISPLAY_NAME = "displayName";
+  @SerializedName(SERIALIZED_NAME_DISPLAY_NAME)
   @javax.annotation.Nullable
   private String displayName;
 
-  public static final String JSON_PROPERTY_HANDLE = "handle";
+  public static final String SERIALIZED_NAME_HANDLE = "handle";
+  @SerializedName(SERIALIZED_NAME_HANDLE)
   @javax.annotation.Nonnull
   private String handle;
 
-  public ChoosableAccount() { 
+  public ChoosableAccount() {
   }
 
   public ChoosableAccount accountId(@javax.annotation.Nonnull String accountId) {
@@ -74,15 +89,10 @@ public class ChoosableAccount {
    * @return accountId
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_ACCOUNT_ID, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public String getAccountId() {
     return accountId;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_ACCOUNT_ID, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setAccountId(@javax.annotation.Nonnull String accountId) {
     this.accountId = accountId;
   }
@@ -98,15 +108,10 @@ public class ChoosableAccount {
    * @return avatarUrl
    */
   @javax.annotation.Nullable
-  @JsonProperty(value = JSON_PROPERTY_AVATAR_URL, required = false)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public String getAvatarUrl() {
     return avatarUrl;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_AVATAR_URL, required = false)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setAvatarUrl(@javax.annotation.Nullable String avatarUrl) {
     this.avatarUrl = avatarUrl;
   }
@@ -122,15 +127,10 @@ public class ChoosableAccount {
    * @return connected
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_CONNECTED, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public Boolean getConnected() {
     return connected;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_CONNECTED, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setConnected(@javax.annotation.Nonnull Boolean connected) {
     this.connected = connected;
   }
@@ -146,15 +146,10 @@ public class ChoosableAccount {
    * @return displayName
    */
   @javax.annotation.Nullable
-  @JsonProperty(value = JSON_PROPERTY_DISPLAY_NAME, required = false)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public String getDisplayName() {
     return displayName;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_DISPLAY_NAME, required = false)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setDisplayName(@javax.annotation.Nullable String displayName) {
     this.displayName = displayName;
   }
@@ -170,23 +165,16 @@ public class ChoosableAccount {
    * @return handle
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_HANDLE, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public String getHandle() {
     return handle;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_HANDLE, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setHandle(@javax.annotation.Nonnull String handle) {
     this.handle = handle;
   }
 
 
-  /**
-   * Return true if this ChoosableAccount object is equal to o.
-   */
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -229,64 +217,107 @@ public class ChoosableAccount {
     return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
 
-  /**
-   * Convert the instance into URL query string.
-   *
-   * @return URL query string
-   */
-  public String toUrlQueryString() {
-    return toUrlQueryString(null);
+
+  public static HashSet<String> openapiFields;
+  public static HashSet<String> openapiRequiredFields;
+
+  static {
+    // a set of all properties/fields (JSON key names)
+    openapiFields = new HashSet<String>(Arrays.asList("accountId", "avatarUrl", "connected", "displayName", "handle"));
+
+    // a set of required properties/fields (JSON key names)
+    openapiRequiredFields = new HashSet<String>(Arrays.asList("accountId", "avatarUrl", "connected", "displayName", "handle"));
   }
 
   /**
-   * Convert the instance into URL query string.
+   * Validates the JSON Element and throws an exception if issues found
    *
-   * @param prefix prefix of the query string
-   * @return URL query string
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to ChoosableAccount
    */
-  public String toUrlQueryString(String prefix) {
-    String suffix = "";
-    String containerSuffix = "";
-    String containerPrefix = "";
-    if (prefix == null) {
-      // style=form, explode=true, e.g. /pet?name=cat&type=manx
-      prefix = "";
-    } else {
-      // deepObject style e.g. /pet?id[name]=cat&id[type]=manx
-      prefix = prefix + "[";
-      suffix = "]";
-      containerSuffix = "]";
-      containerPrefix = "[";
+  public static void validateJsonElement(JsonElement jsonElement) throws IOException {
+      if (jsonElement == null) {
+        if (!ChoosableAccount.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The required field(s) %s in ChoosableAccount is not found in the empty JSON string", ChoosableAccount.openapiRequiredFields.toString()));
+        }
+      }
+
+      Set<Map.Entry<String, JsonElement>> entries = jsonElement.getAsJsonObject().entrySet();
+      // check to see if the JSON string contains additional fields
+      for (Map.Entry<String, JsonElement> entry : entries) {
+        if (!ChoosableAccount.openapiFields.contains(entry.getKey())) {
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The field `%s` in the JSON string is not defined in the `ChoosableAccount` properties. JSON: %s", entry.getKey(), jsonElement.toString()));
+        }
+      }
+
+      // check to make sure all required properties/fields are present in the JSON string
+      for (String requiredField : ChoosableAccount.openapiRequiredFields) {
+        if (jsonElement.getAsJsonObject().get(requiredField) == null) {
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The required field `%s` is not found in the JSON string: %s", requiredField, jsonElement.toString()));
+        }
+      }
+        JsonObject jsonObj = jsonElement.getAsJsonObject();
+      if (!jsonObj.get("accountId").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `accountId` to be a primitive type in the JSON string but got `%s`", jsonObj.get("accountId").toString()));
+      }
+      if ((jsonObj.get("avatarUrl") != null && !jsonObj.get("avatarUrl").isJsonNull()) && !jsonObj.get("avatarUrl").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `avatarUrl` to be a primitive type in the JSON string but got `%s`", jsonObj.get("avatarUrl").toString()));
+      }
+      if ((jsonObj.get("displayName") != null && !jsonObj.get("displayName").isJsonNull()) && !jsonObj.get("displayName").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `displayName` to be a primitive type in the JSON string but got `%s`", jsonObj.get("displayName").toString()));
+      }
+      if (!jsonObj.get("handle").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `handle` to be a primitive type in the JSON string but got `%s`", jsonObj.get("handle").toString()));
+      }
+  }
+
+  public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
+       if (!ChoosableAccount.class.isAssignableFrom(type.getRawType())) {
+         return null; // this class only serializes 'ChoosableAccount' and its subtypes
+       }
+       final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
+       final TypeAdapter<ChoosableAccount> thisAdapter
+                        = gson.getDelegateAdapter(this, TypeToken.get(ChoosableAccount.class));
+
+       return (TypeAdapter<T>) new TypeAdapter<ChoosableAccount>() {
+           @Override
+           public void write(JsonWriter out, ChoosableAccount value) throws IOException {
+             JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
+             elementAdapter.write(out, obj);
+           }
+
+           @Override
+           public ChoosableAccount read(JsonReader in) throws IOException {
+             JsonElement jsonElement = elementAdapter.read(in);
+             validateJsonElement(jsonElement);
+             return thisAdapter.fromJsonTree(jsonElement);
+           }
+
+       }.nullSafe();
     }
+  }
 
-    StringJoiner joiner = new StringJoiner("&");
+  /**
+   * Create an instance of ChoosableAccount given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of ChoosableAccount
+   * @throws IOException if the JSON string is invalid with respect to ChoosableAccount
+   */
+  public static ChoosableAccount fromJson(String jsonString) throws IOException {
+    return JSON.getGson().fromJson(jsonString, ChoosableAccount.class);
+  }
 
-    // add `accountId` to the URL query string
-    if (getAccountId() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%saccountId%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getAccountId()))));
-    }
-
-    // add `avatarUrl` to the URL query string
-    if (getAvatarUrl() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%savatarUrl%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getAvatarUrl()))));
-    }
-
-    // add `connected` to the URL query string
-    if (getConnected() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%sconnected%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getConnected()))));
-    }
-
-    // add `displayName` to the URL query string
-    if (getDisplayName() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%sdisplayName%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getDisplayName()))));
-    }
-
-    // add `handle` to the URL query string
-    if (getHandle() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%shandle%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getHandle()))));
-    }
-
-    return joiner.toString();
+  /**
+   * Convert an instance of ChoosableAccount to an JSON string
+   *
+   * @return JSON string
+   */
+  public String toJson() {
+    return JSON.getGson().toJson(this);
   }
 }
 

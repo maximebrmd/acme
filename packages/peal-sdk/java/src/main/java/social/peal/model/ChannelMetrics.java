@@ -13,65 +13,80 @@
 
 package social.peal.model;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.StringJoiner;
 import java.util.Objects;
-import java.util.Map;
-import java.util.HashMap;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.fasterxml.jackson.annotation.JsonValue;
+import com.google.gson.TypeAdapter;
+import com.google.gson.annotations.JsonAdapter;
+import com.google.gson.annotations.SerializedName;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 import java.util.Arrays;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonNull;
+import com.google.gson.JsonParseException;
+import com.google.gson.TypeAdapterFactory;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.TypeAdapter;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 
-import social.peal.ApiClient;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import social.peal.JSON;
+
 /**
  * ChannelMetrics
  */
-@JsonPropertyOrder({
-  ChannelMetrics.JSON_PROPERTY_IMPRESSIONS,
-  ChannelMetrics.JSON_PROPERTY_LIKES,
-  ChannelMetrics.JSON_PROPERTY_POSTS,
-  ChannelMetrics.JSON_PROPERTY_QUOTES,
-  ChannelMetrics.JSON_PROPERTY_REPLIES,
-  ChannelMetrics.JSON_PROPERTY_REPOSTS,
-  ChannelMetrics.JSON_PROPERTY_CHANNEL_ID
-})
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.27.0")
 public class ChannelMetrics {
-  public static final String JSON_PROPERTY_IMPRESSIONS = "impressions";
+  public static final String SERIALIZED_NAME_IMPRESSIONS = "impressions";
+  @SerializedName(SERIALIZED_NAME_IMPRESSIONS)
   @javax.annotation.Nullable
   private Integer impressions;
 
-  public static final String JSON_PROPERTY_LIKES = "likes";
+  public static final String SERIALIZED_NAME_LIKES = "likes";
+  @SerializedName(SERIALIZED_NAME_LIKES)
   @javax.annotation.Nonnull
   private Integer likes;
 
-  public static final String JSON_PROPERTY_POSTS = "posts";
+  public static final String SERIALIZED_NAME_POSTS = "posts";
+  @SerializedName(SERIALIZED_NAME_POSTS)
   @javax.annotation.Nonnull
   private Integer posts;
 
-  public static final String JSON_PROPERTY_QUOTES = "quotes";
+  public static final String SERIALIZED_NAME_QUOTES = "quotes";
+  @SerializedName(SERIALIZED_NAME_QUOTES)
   @javax.annotation.Nullable
   private Integer quotes;
 
-  public static final String JSON_PROPERTY_REPLIES = "replies";
+  public static final String SERIALIZED_NAME_REPLIES = "replies";
+  @SerializedName(SERIALIZED_NAME_REPLIES)
   @javax.annotation.Nonnull
   private Integer replies;
 
-  public static final String JSON_PROPERTY_REPOSTS = "reposts";
+  public static final String SERIALIZED_NAME_REPOSTS = "reposts";
+  @SerializedName(SERIALIZED_NAME_REPOSTS)
   @javax.annotation.Nonnull
   private Integer reposts;
 
-  public static final String JSON_PROPERTY_CHANNEL_ID = "channelId";
+  public static final String SERIALIZED_NAME_CHANNEL_ID = "channelId";
+  @SerializedName(SERIALIZED_NAME_CHANNEL_ID)
   @javax.annotation.Nonnull
   private String channelId;
 
-  public ChannelMetrics() { 
+  public ChannelMetrics() {
   }
 
   public ChannelMetrics impressions(@javax.annotation.Nullable Integer impressions) {
@@ -86,15 +101,10 @@ public class ChannelMetrics {
    * @return impressions
    */
   @javax.annotation.Nullable
-  @JsonProperty(value = JSON_PROPERTY_IMPRESSIONS, required = false)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public Integer getImpressions() {
     return impressions;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_IMPRESSIONS, required = false)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setImpressions(@javax.annotation.Nullable Integer impressions) {
     this.impressions = impressions;
   }
@@ -112,15 +122,10 @@ public class ChannelMetrics {
    * @return likes
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_LIKES, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public Integer getLikes() {
     return likes;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_LIKES, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setLikes(@javax.annotation.Nonnull Integer likes) {
     this.likes = likes;
   }
@@ -138,15 +143,10 @@ public class ChannelMetrics {
    * @return posts
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_POSTS, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public Integer getPosts() {
     return posts;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_POSTS, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setPosts(@javax.annotation.Nonnull Integer posts) {
     this.posts = posts;
   }
@@ -164,15 +164,10 @@ public class ChannelMetrics {
    * @return quotes
    */
   @javax.annotation.Nullable
-  @JsonProperty(value = JSON_PROPERTY_QUOTES, required = false)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public Integer getQuotes() {
     return quotes;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_QUOTES, required = false)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setQuotes(@javax.annotation.Nullable Integer quotes) {
     this.quotes = quotes;
   }
@@ -190,15 +185,10 @@ public class ChannelMetrics {
    * @return replies
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_REPLIES, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public Integer getReplies() {
     return replies;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_REPLIES, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setReplies(@javax.annotation.Nonnull Integer replies) {
     this.replies = replies;
   }
@@ -216,15 +206,10 @@ public class ChannelMetrics {
    * @return reposts
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_REPOSTS, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public Integer getReposts() {
     return reposts;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_REPOSTS, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setReposts(@javax.annotation.Nonnull Integer reposts) {
     this.reposts = reposts;
   }
@@ -240,23 +225,16 @@ public class ChannelMetrics {
    * @return channelId
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_CHANNEL_ID, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public String getChannelId() {
     return channelId;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_CHANNEL_ID, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setChannelId(@javax.annotation.Nonnull String channelId) {
     this.channelId = channelId;
   }
 
 
-  /**
-   * Return true if this ChannelMetrics object is equal to o.
-   */
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -303,74 +281,98 @@ public class ChannelMetrics {
     return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
 
-  /**
-   * Convert the instance into URL query string.
-   *
-   * @return URL query string
-   */
-  public String toUrlQueryString() {
-    return toUrlQueryString(null);
+
+  public static HashSet<String> openapiFields;
+  public static HashSet<String> openapiRequiredFields;
+
+  static {
+    // a set of all properties/fields (JSON key names)
+    openapiFields = new HashSet<String>(Arrays.asList("impressions", "likes", "posts", "quotes", "replies", "reposts", "channelId"));
+
+    // a set of required properties/fields (JSON key names)
+    openapiRequiredFields = new HashSet<String>(Arrays.asList("impressions", "likes", "posts", "quotes", "replies", "reposts", "channelId"));
   }
 
   /**
-   * Convert the instance into URL query string.
+   * Validates the JSON Element and throws an exception if issues found
    *
-   * @param prefix prefix of the query string
-   * @return URL query string
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to ChannelMetrics
    */
-  public String toUrlQueryString(String prefix) {
-    String suffix = "";
-    String containerSuffix = "";
-    String containerPrefix = "";
-    if (prefix == null) {
-      // style=form, explode=true, e.g. /pet?name=cat&type=manx
-      prefix = "";
-    } else {
-      // deepObject style e.g. /pet?id[name]=cat&id[type]=manx
-      prefix = prefix + "[";
-      suffix = "]";
-      containerSuffix = "]";
-      containerPrefix = "[";
+  public static void validateJsonElement(JsonElement jsonElement) throws IOException {
+      if (jsonElement == null) {
+        if (!ChannelMetrics.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The required field(s) %s in ChannelMetrics is not found in the empty JSON string", ChannelMetrics.openapiRequiredFields.toString()));
+        }
+      }
+
+      Set<Map.Entry<String, JsonElement>> entries = jsonElement.getAsJsonObject().entrySet();
+      // check to see if the JSON string contains additional fields
+      for (Map.Entry<String, JsonElement> entry : entries) {
+        if (!ChannelMetrics.openapiFields.contains(entry.getKey())) {
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The field `%s` in the JSON string is not defined in the `ChannelMetrics` properties. JSON: %s", entry.getKey(), jsonElement.toString()));
+        }
+      }
+
+      // check to make sure all required properties/fields are present in the JSON string
+      for (String requiredField : ChannelMetrics.openapiRequiredFields) {
+        if (jsonElement.getAsJsonObject().get(requiredField) == null) {
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The required field `%s` is not found in the JSON string: %s", requiredField, jsonElement.toString()));
+        }
+      }
+        JsonObject jsonObj = jsonElement.getAsJsonObject();
+      if (!jsonObj.get("channelId").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `channelId` to be a primitive type in the JSON string but got `%s`", jsonObj.get("channelId").toString()));
+      }
+  }
+
+  public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
+       if (!ChannelMetrics.class.isAssignableFrom(type.getRawType())) {
+         return null; // this class only serializes 'ChannelMetrics' and its subtypes
+       }
+       final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
+       final TypeAdapter<ChannelMetrics> thisAdapter
+                        = gson.getDelegateAdapter(this, TypeToken.get(ChannelMetrics.class));
+
+       return (TypeAdapter<T>) new TypeAdapter<ChannelMetrics>() {
+           @Override
+           public void write(JsonWriter out, ChannelMetrics value) throws IOException {
+             JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
+             elementAdapter.write(out, obj);
+           }
+
+           @Override
+           public ChannelMetrics read(JsonReader in) throws IOException {
+             JsonElement jsonElement = elementAdapter.read(in);
+             validateJsonElement(jsonElement);
+             return thisAdapter.fromJsonTree(jsonElement);
+           }
+
+       }.nullSafe();
     }
+  }
 
-    StringJoiner joiner = new StringJoiner("&");
+  /**
+   * Create an instance of ChannelMetrics given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of ChannelMetrics
+   * @throws IOException if the JSON string is invalid with respect to ChannelMetrics
+   */
+  public static ChannelMetrics fromJson(String jsonString) throws IOException {
+    return JSON.getGson().fromJson(jsonString, ChannelMetrics.class);
+  }
 
-    // add `impressions` to the URL query string
-    if (getImpressions() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%simpressions%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getImpressions()))));
-    }
-
-    // add `likes` to the URL query string
-    if (getLikes() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%slikes%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getLikes()))));
-    }
-
-    // add `posts` to the URL query string
-    if (getPosts() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%sposts%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getPosts()))));
-    }
-
-    // add `quotes` to the URL query string
-    if (getQuotes() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%squotes%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getQuotes()))));
-    }
-
-    // add `replies` to the URL query string
-    if (getReplies() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%sreplies%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getReplies()))));
-    }
-
-    // add `reposts` to the URL query string
-    if (getReposts() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%sreposts%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getReposts()))));
-    }
-
-    // add `channelId` to the URL query string
-    if (getChannelId() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%schannelId%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getChannelId()))));
-    }
-
-    return joiner.toString();
+  /**
+   * Convert an instance of ChannelMetrics to an JSON string
+   *
+   * @return JSON string
+   */
+  public String toJson() {
+    return JSON.getGson().toJson(this);
   }
 }
 

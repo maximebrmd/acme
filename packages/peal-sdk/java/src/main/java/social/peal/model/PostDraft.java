@@ -13,49 +13,64 @@
 
 package social.peal.model;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.StringJoiner;
 import java.util.Objects;
-import java.util.Map;
-import java.util.HashMap;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.fasterxml.jackson.annotation.JsonValue;
+import com.google.gson.TypeAdapter;
+import com.google.gson.annotations.JsonAdapter;
+import com.google.gson.annotations.SerializedName;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import social.peal.model.ChannelOptions;
 import social.peal.model.PostContent;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonNull;
+import com.google.gson.JsonParseException;
+import com.google.gson.TypeAdapterFactory;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.TypeAdapter;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 
-import social.peal.ApiClient;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import social.peal.JSON;
+
 /**
  * PostDraft
  */
-@JsonPropertyOrder({
-  PostDraft.JSON_PROPERTY_CHANNEL_IDS,
-  PostDraft.JSON_PROPERTY_CONTENT,
-  PostDraft.JSON_PROPERTY_OPTIONS
-})
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.27.0")
 public class PostDraft {
-  public static final String JSON_PROPERTY_CHANNEL_IDS = "channelIds";
+  public static final String SERIALIZED_NAME_CHANNEL_IDS = "channelIds";
+  @SerializedName(SERIALIZED_NAME_CHANNEL_IDS)
   @javax.annotation.Nonnull
   private List<String> channelIds = new ArrayList<>();
 
-  public static final String JSON_PROPERTY_CONTENT = "content";
+  public static final String SERIALIZED_NAME_CONTENT = "content";
+  @SerializedName(SERIALIZED_NAME_CONTENT)
   @javax.annotation.Nonnull
   private PostContent content;
 
-  public static final String JSON_PROPERTY_OPTIONS = "options";
+  public static final String SERIALIZED_NAME_OPTIONS = "options";
+  @SerializedName(SERIALIZED_NAME_OPTIONS)
   @javax.annotation.Nullable
   private List<ChannelOptions> options = new ArrayList<>();
 
-  public PostDraft() { 
+  public PostDraft() {
   }
 
   public PostDraft channelIds(@javax.annotation.Nonnull List<String> channelIds) {
@@ -76,15 +91,10 @@ public class PostDraft {
    * @return channelIds
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_CHANNEL_IDS, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public List<String> getChannelIds() {
     return channelIds;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_CHANNEL_IDS, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setChannelIds(@javax.annotation.Nonnull List<String> channelIds) {
     this.channelIds = channelIds;
   }
@@ -100,15 +110,10 @@ public class PostDraft {
    * @return content
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_CONTENT, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public PostContent getContent() {
     return content;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_CONTENT, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setContent(@javax.annotation.Nonnull PostContent content) {
     this.content = content;
   }
@@ -132,23 +137,16 @@ public class PostDraft {
    * @return options
    */
   @javax.annotation.Nullable
-  @JsonProperty(value = JSON_PROPERTY_OPTIONS, required = false)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public List<ChannelOptions> getOptions() {
     return options;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_OPTIONS, required = false)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setOptions(@javax.annotation.Nullable List<ChannelOptions> options) {
     this.options = options;
   }
 
 
-  /**
-   * Return true if this PostDraft object is equal to o.
-   */
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -187,63 +185,117 @@ public class PostDraft {
     return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
 
-  /**
-   * Convert the instance into URL query string.
-   *
-   * @return URL query string
-   */
-  public String toUrlQueryString() {
-    return toUrlQueryString(null);
+
+  public static HashSet<String> openapiFields;
+  public static HashSet<String> openapiRequiredFields;
+
+  static {
+    // a set of all properties/fields (JSON key names)
+    openapiFields = new HashSet<String>(Arrays.asList("channelIds", "content", "options"));
+
+    // a set of required properties/fields (JSON key names)
+    openapiRequiredFields = new HashSet<String>(Arrays.asList("channelIds", "content"));
   }
 
   /**
-   * Convert the instance into URL query string.
+   * Validates the JSON Element and throws an exception if issues found
    *
-   * @param prefix prefix of the query string
-   * @return URL query string
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to PostDraft
    */
-  public String toUrlQueryString(String prefix) {
-    String suffix = "";
-    String containerSuffix = "";
-    String containerPrefix = "";
-    if (prefix == null) {
-      // style=form, explode=true, e.g. /pet?name=cat&type=manx
-      prefix = "";
-    } else {
-      // deepObject style e.g. /pet?id[name]=cat&id[type]=manx
-      prefix = prefix + "[";
-      suffix = "]";
-      containerSuffix = "]";
-      containerPrefix = "[";
-    }
-
-    StringJoiner joiner = new StringJoiner("&");
-
-    // add `channelIds` to the URL query string
-    if (getChannelIds() != null) {
-      for (int i = 0; i < getChannelIds().size(); i++) {
-        joiner.add(String.format(java.util.Locale.ROOT, "%schannelIds%s%s=%s", prefix, suffix,
-            "".equals(suffix) ? "" : String.format(java.util.Locale.ROOT, "%s%d%s", containerPrefix, i, containerSuffix),
-            ApiClient.urlEncode(ApiClient.valueToString(getChannelIds().get(i)))));
-      }
-    }
-
-    // add `content` to the URL query string
-    if (getContent() != null) {
-      joiner.add(getContent().toUrlQueryString(prefix + "content" + suffix));
-    }
-
-    // add `options` to the URL query string
-    if (getOptions() != null) {
-      for (int i = 0; i < getOptions().size(); i++) {
-        if (getOptions().get(i) != null) {
-          joiner.add(getOptions().get(i).toUrlQueryString(String.format(java.util.Locale.ROOT, "%soptions%s%s", prefix, suffix,
-          "".equals(suffix) ? "" : String.format(java.util.Locale.ROOT, "%s%d%s", containerPrefix, i, containerSuffix))));
+  public static void validateJsonElement(JsonElement jsonElement) throws IOException {
+      if (jsonElement == null) {
+        if (!PostDraft.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The required field(s) %s in PostDraft is not found in the empty JSON string", PostDraft.openapiRequiredFields.toString()));
         }
       }
-    }
 
-    return joiner.toString();
+      Set<Map.Entry<String, JsonElement>> entries = jsonElement.getAsJsonObject().entrySet();
+      // check to see if the JSON string contains additional fields
+      for (Map.Entry<String, JsonElement> entry : entries) {
+        if (!PostDraft.openapiFields.contains(entry.getKey())) {
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The field `%s` in the JSON string is not defined in the `PostDraft` properties. JSON: %s", entry.getKey(), jsonElement.toString()));
+        }
+      }
+
+      // check to make sure all required properties/fields are present in the JSON string
+      for (String requiredField : PostDraft.openapiRequiredFields) {
+        if (jsonElement.getAsJsonObject().get(requiredField) == null) {
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The required field `%s` is not found in the JSON string: %s", requiredField, jsonElement.toString()));
+        }
+      }
+        JsonObject jsonObj = jsonElement.getAsJsonObject();
+      // ensure the required json array is present
+      if (jsonObj.get("channelIds") == null) {
+        throw new IllegalArgumentException("Expected the field `linkedContent` to be an array in the JSON string but got `null`");
+      } else if (!jsonObj.get("channelIds").isJsonArray()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `channelIds` to be an array in the JSON string but got `%s`", jsonObj.get("channelIds").toString()));
+      }
+      // validate the required field `content`
+      PostContent.validateJsonElement(jsonObj.get("content"));
+      if (jsonObj.get("options") != null && !jsonObj.get("options").isJsonNull()) {
+        JsonArray jsonArrayoptions = jsonObj.getAsJsonArray("options");
+        if (jsonArrayoptions != null) {
+          // ensure the json data is an array
+          if (!jsonObj.get("options").isJsonArray()) {
+            throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `options` to be an array in the JSON string but got `%s`", jsonObj.get("options").toString()));
+          }
+
+          // validate the optional field `options` (array)
+          for (int i = 0; i < jsonArrayoptions.size(); i++) {
+            ChannelOptions.validateJsonElement(jsonArrayoptions.get(i));
+          };
+        }
+      }
+  }
+
+  public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
+       if (!PostDraft.class.isAssignableFrom(type.getRawType())) {
+         return null; // this class only serializes 'PostDraft' and its subtypes
+       }
+       final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
+       final TypeAdapter<PostDraft> thisAdapter
+                        = gson.getDelegateAdapter(this, TypeToken.get(PostDraft.class));
+
+       return (TypeAdapter<T>) new TypeAdapter<PostDraft>() {
+           @Override
+           public void write(JsonWriter out, PostDraft value) throws IOException {
+             JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
+             elementAdapter.write(out, obj);
+           }
+
+           @Override
+           public PostDraft read(JsonReader in) throws IOException {
+             JsonElement jsonElement = elementAdapter.read(in);
+             validateJsonElement(jsonElement);
+             return thisAdapter.fromJsonTree(jsonElement);
+           }
+
+       }.nullSafe();
+    }
+  }
+
+  /**
+   * Create an instance of PostDraft given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of PostDraft
+   * @throws IOException if the JSON string is invalid with respect to PostDraft
+   */
+  public static PostDraft fromJson(String jsonString) throws IOException {
+    return JSON.getGson().fromJson(jsonString, PostDraft.class);
+  }
+
+  /**
+   * Convert an instance of PostDraft to an JSON string
+   *
+   * @return JSON string
+   */
+  public String toJson() {
+    return JSON.getGson().toJson(this);
   }
 }
 

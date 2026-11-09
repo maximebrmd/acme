@@ -2,19 +2,19 @@
 
 Clients for the [Peal API](https://peal.social) in eight languages, generated
 from the contract (`packages/peal-contract`) by
-[openapi-generator](https://openapi-generator.tech). They are not published
-yet.
+[openapi-generator](https://openapi-generator.tech), and published to each
+language's registry.
 
-| Language              | Folder             | Registry      | Install                                                   |
-| --------------------- | ------------------ | ------------- | --------------------------------------------------------- |
-| TypeScript/JavaScript | [`node`](node)     | npm           | `npm install peal-sdk`                                    |
-| Python                | [`python`](python) | PyPI          | `pip install peal-sdk` (imported as `peal`)               |
-| Go                    | [`go`](go)         | Go modules    | `go get github.com/peal-social/peal/packages/peal-sdk/go` |
-| Ruby                  | [`ruby`](ruby)     | RubyGems      | `gem install peal`                                        |
-| Java                  | [`java`](java)     | Maven Central | `social.peal:peal`                                        |
-| PHP                   | [`php`](php)       | Packagist     | `composer require peal-social/peal`                       |
-| .NET                  | [`dotnet`](dotnet) | NuGet         | `dotnet add package Peal`                                 |
-| Rust                  | [`rust`](rust)     | crates.io     | `cargo add peal-sdk`                                      |
+| Language              | Folder             | Registry                                                                          | Install                                                   |
+| --------------------- | ------------------ | --------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| TypeScript/JavaScript | [`node`](node)     | [npm](https://www.npmjs.com/package/peal-sdk)                                     | `npm install peal-sdk`                                    |
+| Python                | [`python`](python) | [PyPI](https://pypi.org/project/peal-sdk/)                                        | `pip install peal-sdk` (imported as `peal`)               |
+| Go                    | [`go`](go)         | [Go modules](https://pkg.go.dev/github.com/peal-social/peal/packages/peal-sdk/go) | `go get github.com/peal-social/peal/packages/peal-sdk/go` |
+| Ruby                  | [`ruby`](ruby)     | [RubyGems](https://rubygems.org/gems/peal)                                        | `gem install peal`                                        |
+| Java                  | [`java`](java)     | [Maven Central](https://central.sonatype.com/artifact/social.peal/peal)           | `social.peal:peal`                                        |
+| PHP                   | [`php`](php)       | [Packagist](https://packagist.org/packages/peal-social/peal)                      | `composer require peal-social/peal`                       |
+| .NET                  | [`dotnet`](dotnet) | [NuGet](https://www.nuget.org/packages/Peal)                                      | `dotnet add package Peal`                                 |
+| Rust                  | [`rust`](rust)     | [crates.io](https://crates.io/crates/peal-sdk)                                    | `cargo add peal-sdk`                                      |
 
 Each folder's README lists its operations and models.
 
@@ -40,8 +40,8 @@ them at your own server's address when you self-host.
    contact and server the packages carry.
 2. Each `peal-sdk-<language>:sdk:generate` (`scripts/generate.ts`) deletes the
    files its previous run wrote, runs openapi-generator in Docker, copies
-   `LICENSE` in and fills what the generator leaves out of the package's
-   manifest (`scripts/finish.ts`).
+   `LICENSE` and `NOTICE` in, which every package carries, and fills what the
+   generator leaves out of the package's manifest (`scripts/finish.ts`).
 
 `scripts/languages.ts` holds each language's generator options, version and
 build, and pins every image by digest. Bump a language's version there to
@@ -52,6 +52,13 @@ loads it: TypeScript with the workspace's compiler, Python with uv, the others
 in their language's image, as you, with their downloads cached in
 `.cache/sdk`. `bun run sdk:check` regenerates every SDK and fails when the
 result differs from the repository, as CI does.
+
+`bun run sdk:test` runs each SDK's smoke test after its build: `scripts/test.ts`
+serves a stand-in API on this machine (containers reach it as
+`host.docker.internal`), and the test calls the health check, then the
+signed-in user with the bearer token `peal_test`, as the SDK's users would.
+It passes when the answer decodes as expected (its nulls and enum included)
+and the stand-in saw both calls with that token.
 
 Never edit a generated file: change the contract, the scripts or the
 generator's options, and regenerate. The files a folder's
@@ -95,6 +102,7 @@ read-only copy of [`php`](php): `sdk-php-mirror.yml` updates it whenever
 
 ## License
 
-The SDKs are licensed under the [Apache License 2.0](LICENSE), unlike the rest
+The SDKs are licensed under the [Apache License 2.0](LICENSE), with the
+[NOTICE](NOTICE) every package carries, unlike the rest
 of this repository, which is under the Functional Source License: use them in
 any project, commercial or not.

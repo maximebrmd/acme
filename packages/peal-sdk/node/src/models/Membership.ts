@@ -13,6 +13,14 @@
  */
 
 import { mapValues } from '../runtime.js';
+import type { Permission } from './Permission.js';
+import {
+    PermissionFromJSON,
+    PermissionFromJSONTyped,
+    PermissionToJSON,
+    PermissionToJSONTyped,
+} from './Permission.js';
+
 /**
  * 
  * @export
@@ -30,7 +38,7 @@ export interface Membership {
     /**
      * 
      */
-    permissions: Array<MembershipPermissionsEnum>;
+    permissions: Array<Permission>;
     /**
      * 
      */
@@ -40,43 +48,6 @@ export interface Membership {
      */
     slug: string;
 }
-
-
-/**
- * @export
- */
-export const MembershipPermissionsEnum = {
-    AnalyticsRead: 'analytics:read',
-    ApiKeyCreate: 'apiKey:create',
-    ApiKeyRead: 'apiKey:read',
-    ApiKeyUpdate: 'apiKey:update',
-    ApiKeyDelete: 'apiKey:delete',
-    AssistantUse: 'assistant:use',
-    BillingRead: 'billing:read',
-    BillingManage: 'billing:manage',
-    ChannelRead: 'channel:read',
-    ChannelConnect: 'channel:connect',
-    ChannelDisconnect: 'channel:disconnect',
-    InvitationCreate: 'invitation:create',
-    InvitationCancel: 'invitation:cancel',
-    MediaRead: 'media:read',
-    MediaUpload: 'media:upload',
-    MediaDelete: 'media:delete',
-    MemberCreate: 'member:create',
-    MemberUpdate: 'member:update',
-    MemberDelete: 'member:delete',
-    OrganizationUpdate: 'organization:update',
-    OrganizationDelete: 'organization:delete',
-    PostRead: 'post:read',
-    PostCreate: 'post:create',
-    PostUpdate: 'post:update',
-    PostDelete: 'post:delete',
-    PostSchedule: 'post:schedule',
-    PostApprove: 'post:approve',
-    PostPublish: 'post:publish',
-} as const;
-export type MembershipPermissionsEnum = typeof MembershipPermissionsEnum[keyof typeof MembershipPermissionsEnum];
-
 
 /**
  * Check if a given object implements the Membership interface.
@@ -102,7 +73,7 @@ export function MembershipFromJSONTyped(json: any, ignoreDiscriminator: boolean)
         
         'id': json['id'],
         'name': json['name'],
-        'permissions': json['permissions'],
+        'permissions': ((json['permissions'] as Array<any>).map(PermissionFromJSON)),
         'role': json['role'],
         'slug': json['slug'],
     };
@@ -121,7 +92,7 @@ export function MembershipToJSONTyped(value?: Membership | null, ignoreDiscrimin
         
         'id': value['id'],
         'name': value['name'],
-        'permissions': value['permissions'],
+        'permissions': ((value['permissions'] as Array<any>).map(PermissionToJSON)),
         'role': value['role'],
         'slug': value['slug'],
     };

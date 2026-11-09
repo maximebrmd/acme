@@ -5,7 +5,7 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **Name** | **string** |  | 
-**Permissions** | **List&lt;NewApiKey.PermissionsEnum&gt;** |  | 
+**Permissions** | [**List&lt;Permission&gt;**](Permission.md) |  | 
 **ExpiresInDays** | **int** |  | [optional] 
 
 [[Back to Model list]](../../README.md#documentation-for-models) [[Back to API list]](../../README.md#documentation-for-api-endpoints) [[Back to README]](../../README.md)

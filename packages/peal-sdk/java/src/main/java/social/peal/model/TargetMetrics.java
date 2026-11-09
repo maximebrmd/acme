@@ -13,74 +13,89 @@
 
 package social.peal.model;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.StringJoiner;
 import java.util.Objects;
-import java.util.Map;
-import java.util.HashMap;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.fasterxml.jackson.annotation.JsonValue;
+import com.google.gson.TypeAdapter;
+import com.google.gson.annotations.JsonAdapter;
+import com.google.gson.annotations.SerializedName;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import social.peal.model.MetricsSnapshot;
 import social.peal.model.PostMetrics;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonNull;
+import com.google.gson.JsonParseException;
+import com.google.gson.TypeAdapterFactory;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.TypeAdapter;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 
-import social.peal.ApiClient;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import social.peal.JSON;
+
 /**
  * TargetMetrics
  */
-@JsonPropertyOrder({
-  TargetMetrics.JSON_PROPERTY_CHANNEL_ID,
-  TargetMetrics.JSON_PROPERTY_COLLECTING,
-  TargetMetrics.JSON_PROPERTY_LAST_COLLECTED_AT,
-  TargetMetrics.JSON_PROPERTY_LATEST,
-  TargetMetrics.JSON_PROPERTY_PERMALINK,
-  TargetMetrics.JSON_PROPERTY_PUBLISHED_AT,
-  TargetMetrics.JSON_PROPERTY_SNAPSHOTS,
-  TargetMetrics.JSON_PROPERTY_TARGET_ID
-})
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.27.0")
 public class TargetMetrics {
-  public static final String JSON_PROPERTY_CHANNEL_ID = "channelId";
+  public static final String SERIALIZED_NAME_CHANNEL_ID = "channelId";
+  @SerializedName(SERIALIZED_NAME_CHANNEL_ID)
   @javax.annotation.Nonnull
   private String channelId;
 
-  public static final String JSON_PROPERTY_COLLECTING = "collecting";
+  public static final String SERIALIZED_NAME_COLLECTING = "collecting";
+  @SerializedName(SERIALIZED_NAME_COLLECTING)
   @javax.annotation.Nonnull
   private Boolean collecting;
 
-  public static final String JSON_PROPERTY_LAST_COLLECTED_AT = "lastCollectedAt";
+  public static final String SERIALIZED_NAME_LAST_COLLECTED_AT = "lastCollectedAt";
+  @SerializedName(SERIALIZED_NAME_LAST_COLLECTED_AT)
   @javax.annotation.Nullable
   private String lastCollectedAt;
 
-  public static final String JSON_PROPERTY_LATEST = "latest";
+  public static final String SERIALIZED_NAME_LATEST = "latest";
+  @SerializedName(SERIALIZED_NAME_LATEST)
   @javax.annotation.Nullable
   private PostMetrics latest;
 
-  public static final String JSON_PROPERTY_PERMALINK = "permalink";
+  public static final String SERIALIZED_NAME_PERMALINK = "permalink";
+  @SerializedName(SERIALIZED_NAME_PERMALINK)
   @javax.annotation.Nullable
   private String permalink;
 
-  public static final String JSON_PROPERTY_PUBLISHED_AT = "publishedAt";
+  public static final String SERIALIZED_NAME_PUBLISHED_AT = "publishedAt";
+  @SerializedName(SERIALIZED_NAME_PUBLISHED_AT)
   @javax.annotation.Nonnull
   private String publishedAt;
 
-  public static final String JSON_PROPERTY_SNAPSHOTS = "snapshots";
+  public static final String SERIALIZED_NAME_SNAPSHOTS = "snapshots";
+  @SerializedName(SERIALIZED_NAME_SNAPSHOTS)
   @javax.annotation.Nonnull
   private List<MetricsSnapshot> snapshots = new ArrayList<>();
 
-  public static final String JSON_PROPERTY_TARGET_ID = "targetId";
+  public static final String SERIALIZED_NAME_TARGET_ID = "targetId";
+  @SerializedName(SERIALIZED_NAME_TARGET_ID)
   @javax.annotation.Nonnull
   private String targetId;
 
-  public TargetMetrics() { 
+  public TargetMetrics() {
   }
 
   public TargetMetrics channelId(@javax.annotation.Nonnull String channelId) {
@@ -93,15 +108,10 @@ public class TargetMetrics {
    * @return channelId
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_CHANNEL_ID, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public String getChannelId() {
     return channelId;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_CHANNEL_ID, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setChannelId(@javax.annotation.Nonnull String channelId) {
     this.channelId = channelId;
   }
@@ -117,15 +127,10 @@ public class TargetMetrics {
    * @return collecting
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_COLLECTING, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public Boolean getCollecting() {
     return collecting;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_COLLECTING, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setCollecting(@javax.annotation.Nonnull Boolean collecting) {
     this.collecting = collecting;
   }
@@ -141,15 +146,10 @@ public class TargetMetrics {
    * @return lastCollectedAt
    */
   @javax.annotation.Nullable
-  @JsonProperty(value = JSON_PROPERTY_LAST_COLLECTED_AT, required = false)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public String getLastCollectedAt() {
     return lastCollectedAt;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_LAST_COLLECTED_AT, required = false)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setLastCollectedAt(@javax.annotation.Nullable String lastCollectedAt) {
     this.lastCollectedAt = lastCollectedAt;
   }
@@ -165,15 +165,10 @@ public class TargetMetrics {
    * @return latest
    */
   @javax.annotation.Nullable
-  @JsonProperty(value = JSON_PROPERTY_LATEST, required = false)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public PostMetrics getLatest() {
     return latest;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_LATEST, required = false)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setLatest(@javax.annotation.Nullable PostMetrics latest) {
     this.latest = latest;
   }
@@ -189,15 +184,10 @@ public class TargetMetrics {
    * @return permalink
    */
   @javax.annotation.Nullable
-  @JsonProperty(value = JSON_PROPERTY_PERMALINK, required = false)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public String getPermalink() {
     return permalink;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_PERMALINK, required = false)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setPermalink(@javax.annotation.Nullable String permalink) {
     this.permalink = permalink;
   }
@@ -213,15 +203,10 @@ public class TargetMetrics {
    * @return publishedAt
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_PUBLISHED_AT, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public String getPublishedAt() {
     return publishedAt;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_PUBLISHED_AT, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setPublishedAt(@javax.annotation.Nonnull String publishedAt) {
     this.publishedAt = publishedAt;
   }
@@ -245,15 +230,10 @@ public class TargetMetrics {
    * @return snapshots
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_SNAPSHOTS, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public List<MetricsSnapshot> getSnapshots() {
     return snapshots;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_SNAPSHOTS, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setSnapshots(@javax.annotation.Nonnull List<MetricsSnapshot> snapshots) {
     this.snapshots = snapshots;
   }
@@ -269,23 +249,16 @@ public class TargetMetrics {
    * @return targetId
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_TARGET_ID, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public String getTargetId() {
     return targetId;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_TARGET_ID, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setTargetId(@javax.annotation.Nonnull String targetId) {
     this.targetId = targetId;
   }
 
 
-  /**
-   * Return true if this TargetMetrics object is equal to o.
-   */
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -334,84 +307,124 @@ public class TargetMetrics {
     return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
 
-  /**
-   * Convert the instance into URL query string.
-   *
-   * @return URL query string
-   */
-  public String toUrlQueryString() {
-    return toUrlQueryString(null);
+
+  public static HashSet<String> openapiFields;
+  public static HashSet<String> openapiRequiredFields;
+
+  static {
+    // a set of all properties/fields (JSON key names)
+    openapiFields = new HashSet<String>(Arrays.asList("channelId", "collecting", "lastCollectedAt", "latest", "permalink", "publishedAt", "snapshots", "targetId"));
+
+    // a set of required properties/fields (JSON key names)
+    openapiRequiredFields = new HashSet<String>(Arrays.asList("channelId", "collecting", "lastCollectedAt", "latest", "permalink", "publishedAt", "snapshots", "targetId"));
   }
 
   /**
-   * Convert the instance into URL query string.
+   * Validates the JSON Element and throws an exception if issues found
    *
-   * @param prefix prefix of the query string
-   * @return URL query string
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to TargetMetrics
    */
-  public String toUrlQueryString(String prefix) {
-    String suffix = "";
-    String containerSuffix = "";
-    String containerPrefix = "";
-    if (prefix == null) {
-      // style=form, explode=true, e.g. /pet?name=cat&type=manx
-      prefix = "";
-    } else {
-      // deepObject style e.g. /pet?id[name]=cat&id[type]=manx
-      prefix = prefix + "[";
-      suffix = "]";
-      containerSuffix = "]";
-      containerPrefix = "[";
-    }
-
-    StringJoiner joiner = new StringJoiner("&");
-
-    // add `channelId` to the URL query string
-    if (getChannelId() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%schannelId%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getChannelId()))));
-    }
-
-    // add `collecting` to the URL query string
-    if (getCollecting() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%scollecting%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getCollecting()))));
-    }
-
-    // add `lastCollectedAt` to the URL query string
-    if (getLastCollectedAt() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%slastCollectedAt%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getLastCollectedAt()))));
-    }
-
-    // add `latest` to the URL query string
-    if (getLatest() != null) {
-      joiner.add(getLatest().toUrlQueryString(prefix + "latest" + suffix));
-    }
-
-    // add `permalink` to the URL query string
-    if (getPermalink() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%spermalink%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getPermalink()))));
-    }
-
-    // add `publishedAt` to the URL query string
-    if (getPublishedAt() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%spublishedAt%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getPublishedAt()))));
-    }
-
-    // add `snapshots` to the URL query string
-    if (getSnapshots() != null) {
-      for (int i = 0; i < getSnapshots().size(); i++) {
-        if (getSnapshots().get(i) != null) {
-          joiner.add(getSnapshots().get(i).toUrlQueryString(String.format(java.util.Locale.ROOT, "%ssnapshots%s%s", prefix, suffix,
-          "".equals(suffix) ? "" : String.format(java.util.Locale.ROOT, "%s%d%s", containerPrefix, i, containerSuffix))));
+  public static void validateJsonElement(JsonElement jsonElement) throws IOException {
+      if (jsonElement == null) {
+        if (!TargetMetrics.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The required field(s) %s in TargetMetrics is not found in the empty JSON string", TargetMetrics.openapiRequiredFields.toString()));
         }
       }
-    }
 
-    // add `targetId` to the URL query string
-    if (getTargetId() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%stargetId%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getTargetId()))));
-    }
+      Set<Map.Entry<String, JsonElement>> entries = jsonElement.getAsJsonObject().entrySet();
+      // check to see if the JSON string contains additional fields
+      for (Map.Entry<String, JsonElement> entry : entries) {
+        if (!TargetMetrics.openapiFields.contains(entry.getKey())) {
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The field `%s` in the JSON string is not defined in the `TargetMetrics` properties. JSON: %s", entry.getKey(), jsonElement.toString()));
+        }
+      }
 
-    return joiner.toString();
+      // check to make sure all required properties/fields are present in the JSON string
+      for (String requiredField : TargetMetrics.openapiRequiredFields) {
+        if (jsonElement.getAsJsonObject().get(requiredField) == null) {
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The required field `%s` is not found in the JSON string: %s", requiredField, jsonElement.toString()));
+        }
+      }
+        JsonObject jsonObj = jsonElement.getAsJsonObject();
+      if (!jsonObj.get("channelId").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `channelId` to be a primitive type in the JSON string but got `%s`", jsonObj.get("channelId").toString()));
+      }
+      if ((jsonObj.get("lastCollectedAt") != null && !jsonObj.get("lastCollectedAt").isJsonNull()) && !jsonObj.get("lastCollectedAt").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `lastCollectedAt` to be a primitive type in the JSON string but got `%s`", jsonObj.get("lastCollectedAt").toString()));
+      }
+      if (jsonObj.get("latest") != null && !jsonObj.get("latest").isJsonNull()) {
+      // validate the required field `latest`
+      PostMetrics.validateJsonElement(jsonObj.get("latest"));
+      }
+      if ((jsonObj.get("permalink") != null && !jsonObj.get("permalink").isJsonNull()) && !jsonObj.get("permalink").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `permalink` to be a primitive type in the JSON string but got `%s`", jsonObj.get("permalink").toString()));
+      }
+      if (!jsonObj.get("publishedAt").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `publishedAt` to be a primitive type in the JSON string but got `%s`", jsonObj.get("publishedAt").toString()));
+      }
+      if (jsonObj.get("snapshots") != null) {
+        if (!jsonObj.get("snapshots").isJsonArray()) {
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `snapshots` to be an array in the JSON string but got `%s`", jsonObj.get("snapshots").toString()));
+        }
+        JsonArray jsonArraysnapshots = jsonObj.getAsJsonArray("snapshots");
+        // validate the required field `snapshots` (array)
+        for (int i = 0; i < jsonArraysnapshots.size(); i++) {
+          MetricsSnapshot.validateJsonElement(jsonArraysnapshots.get(i));
+        }
+      }
+      if (!jsonObj.get("targetId").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `targetId` to be a primitive type in the JSON string but got `%s`", jsonObj.get("targetId").toString()));
+      }
+  }
+
+  public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
+       if (!TargetMetrics.class.isAssignableFrom(type.getRawType())) {
+         return null; // this class only serializes 'TargetMetrics' and its subtypes
+       }
+       final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
+       final TypeAdapter<TargetMetrics> thisAdapter
+                        = gson.getDelegateAdapter(this, TypeToken.get(TargetMetrics.class));
+
+       return (TypeAdapter<T>) new TypeAdapter<TargetMetrics>() {
+           @Override
+           public void write(JsonWriter out, TargetMetrics value) throws IOException {
+             JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
+             elementAdapter.write(out, obj);
+           }
+
+           @Override
+           public TargetMetrics read(JsonReader in) throws IOException {
+             JsonElement jsonElement = elementAdapter.read(in);
+             validateJsonElement(jsonElement);
+             return thisAdapter.fromJsonTree(jsonElement);
+           }
+
+       }.nullSafe();
+    }
+  }
+
+  /**
+   * Create an instance of TargetMetrics given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of TargetMetrics
+   * @throws IOException if the JSON string is invalid with respect to TargetMetrics
+   */
+  public static TargetMetrics fromJson(String jsonString) throws IOException {
+    return JSON.getGson().fromJson(jsonString, TargetMetrics.class);
+  }
+
+  /**
+   * Convert an instance of TargetMetrics to an JSON string
+   *
+   * @return JSON string
+   */
+  public String toJson() {
+    return JSON.getGson().toJson(this);
   }
 }
 

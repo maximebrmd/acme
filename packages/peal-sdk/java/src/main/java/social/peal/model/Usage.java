@@ -13,51 +13,66 @@
 
 package social.peal.model;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.StringJoiner;
 import java.util.Objects;
-import java.util.Map;
-import java.util.HashMap;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.fasterxml.jackson.annotation.JsonValue;
+import com.google.gson.TypeAdapter;
+import com.google.gson.annotations.JsonAdapter;
+import com.google.gson.annotations.SerializedName;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 import java.util.Arrays;
 import social.peal.model.PeriodUsage;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonNull;
+import com.google.gson.JsonParseException;
+import com.google.gson.TypeAdapterFactory;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.TypeAdapter;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 
-import social.peal.ApiClient;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import social.peal.JSON;
+
 /**
  * Usage
  */
-@JsonPropertyOrder({
-  Usage.JSON_PROPERTY_ASSISTANT_REQUESTS,
-  Usage.JSON_PROPERTY_CHANNELS,
-  Usage.JSON_PROPERTY_MEMBERS,
-  Usage.JSON_PROPERTY_SCHEDULED_POSTS
-})
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.27.0")
 public class Usage {
-  public static final String JSON_PROPERTY_ASSISTANT_REQUESTS = "assistantRequests";
+  public static final String SERIALIZED_NAME_ASSISTANT_REQUESTS = "assistantRequests";
+  @SerializedName(SERIALIZED_NAME_ASSISTANT_REQUESTS)
   @javax.annotation.Nonnull
   private PeriodUsage assistantRequests;
 
-  public static final String JSON_PROPERTY_CHANNELS = "channels";
+  public static final String SERIALIZED_NAME_CHANNELS = "channels";
+  @SerializedName(SERIALIZED_NAME_CHANNELS)
   @javax.annotation.Nonnull
   private Integer channels;
 
-  public static final String JSON_PROPERTY_MEMBERS = "members";
+  public static final String SERIALIZED_NAME_MEMBERS = "members";
+  @SerializedName(SERIALIZED_NAME_MEMBERS)
   @javax.annotation.Nonnull
   private Integer members;
 
-  public static final String JSON_PROPERTY_SCHEDULED_POSTS = "scheduledPosts";
+  public static final String SERIALIZED_NAME_SCHEDULED_POSTS = "scheduledPosts";
+  @SerializedName(SERIALIZED_NAME_SCHEDULED_POSTS)
   @javax.annotation.Nonnull
   private PeriodUsage scheduledPosts;
 
-  public Usage() { 
+  public Usage() {
   }
 
   public Usage assistantRequests(@javax.annotation.Nonnull PeriodUsage assistantRequests) {
@@ -70,15 +85,10 @@ public class Usage {
    * @return assistantRequests
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_ASSISTANT_REQUESTS, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public PeriodUsage getAssistantRequests() {
     return assistantRequests;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_ASSISTANT_REQUESTS, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setAssistantRequests(@javax.annotation.Nonnull PeriodUsage assistantRequests) {
     this.assistantRequests = assistantRequests;
   }
@@ -96,15 +106,10 @@ public class Usage {
    * @return channels
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_CHANNELS, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public Integer getChannels() {
     return channels;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_CHANNELS, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setChannels(@javax.annotation.Nonnull Integer channels) {
     this.channels = channels;
   }
@@ -122,15 +127,10 @@ public class Usage {
    * @return members
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_MEMBERS, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public Integer getMembers() {
     return members;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_MEMBERS, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setMembers(@javax.annotation.Nonnull Integer members) {
     this.members = members;
   }
@@ -146,23 +146,16 @@ public class Usage {
    * @return scheduledPosts
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_SCHEDULED_POSTS, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public PeriodUsage getScheduledPosts() {
     return scheduledPosts;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_SCHEDULED_POSTS, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setScheduledPosts(@javax.annotation.Nonnull PeriodUsage scheduledPosts) {
     this.scheduledPosts = scheduledPosts;
   }
 
 
-  /**
-   * Return true if this Usage object is equal to o.
-   */
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -203,59 +196,99 @@ public class Usage {
     return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
 
-  /**
-   * Convert the instance into URL query string.
-   *
-   * @return URL query string
-   */
-  public String toUrlQueryString() {
-    return toUrlQueryString(null);
+
+  public static HashSet<String> openapiFields;
+  public static HashSet<String> openapiRequiredFields;
+
+  static {
+    // a set of all properties/fields (JSON key names)
+    openapiFields = new HashSet<String>(Arrays.asList("assistantRequests", "channels", "members", "scheduledPosts"));
+
+    // a set of required properties/fields (JSON key names)
+    openapiRequiredFields = new HashSet<String>(Arrays.asList("assistantRequests", "channels", "members", "scheduledPosts"));
   }
 
   /**
-   * Convert the instance into URL query string.
+   * Validates the JSON Element and throws an exception if issues found
    *
-   * @param prefix prefix of the query string
-   * @return URL query string
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to Usage
    */
-  public String toUrlQueryString(String prefix) {
-    String suffix = "";
-    String containerSuffix = "";
-    String containerPrefix = "";
-    if (prefix == null) {
-      // style=form, explode=true, e.g. /pet?name=cat&type=manx
-      prefix = "";
-    } else {
-      // deepObject style e.g. /pet?id[name]=cat&id[type]=manx
-      prefix = prefix + "[";
-      suffix = "]";
-      containerSuffix = "]";
-      containerPrefix = "[";
+  public static void validateJsonElement(JsonElement jsonElement) throws IOException {
+      if (jsonElement == null) {
+        if (!Usage.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The required field(s) %s in Usage is not found in the empty JSON string", Usage.openapiRequiredFields.toString()));
+        }
+      }
+
+      Set<Map.Entry<String, JsonElement>> entries = jsonElement.getAsJsonObject().entrySet();
+      // check to see if the JSON string contains additional fields
+      for (Map.Entry<String, JsonElement> entry : entries) {
+        if (!Usage.openapiFields.contains(entry.getKey())) {
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The field `%s` in the JSON string is not defined in the `Usage` properties. JSON: %s", entry.getKey(), jsonElement.toString()));
+        }
+      }
+
+      // check to make sure all required properties/fields are present in the JSON string
+      for (String requiredField : Usage.openapiRequiredFields) {
+        if (jsonElement.getAsJsonObject().get(requiredField) == null) {
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The required field `%s` is not found in the JSON string: %s", requiredField, jsonElement.toString()));
+        }
+      }
+        JsonObject jsonObj = jsonElement.getAsJsonObject();
+      // validate the required field `assistantRequests`
+      PeriodUsage.validateJsonElement(jsonObj.get("assistantRequests"));
+      // validate the required field `scheduledPosts`
+      PeriodUsage.validateJsonElement(jsonObj.get("scheduledPosts"));
+  }
+
+  public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
+       if (!Usage.class.isAssignableFrom(type.getRawType())) {
+         return null; // this class only serializes 'Usage' and its subtypes
+       }
+       final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
+       final TypeAdapter<Usage> thisAdapter
+                        = gson.getDelegateAdapter(this, TypeToken.get(Usage.class));
+
+       return (TypeAdapter<T>) new TypeAdapter<Usage>() {
+           @Override
+           public void write(JsonWriter out, Usage value) throws IOException {
+             JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
+             elementAdapter.write(out, obj);
+           }
+
+           @Override
+           public Usage read(JsonReader in) throws IOException {
+             JsonElement jsonElement = elementAdapter.read(in);
+             validateJsonElement(jsonElement);
+             return thisAdapter.fromJsonTree(jsonElement);
+           }
+
+       }.nullSafe();
     }
+  }
 
-    StringJoiner joiner = new StringJoiner("&");
+  /**
+   * Create an instance of Usage given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of Usage
+   * @throws IOException if the JSON string is invalid with respect to Usage
+   */
+  public static Usage fromJson(String jsonString) throws IOException {
+    return JSON.getGson().fromJson(jsonString, Usage.class);
+  }
 
-    // add `assistantRequests` to the URL query string
-    if (getAssistantRequests() != null) {
-      joiner.add(getAssistantRequests().toUrlQueryString(prefix + "assistantRequests" + suffix));
-    }
-
-    // add `channels` to the URL query string
-    if (getChannels() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%schannels%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getChannels()))));
-    }
-
-    // add `members` to the URL query string
-    if (getMembers() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%smembers%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getMembers()))));
-    }
-
-    // add `scheduledPosts` to the URL query string
-    if (getScheduledPosts() != null) {
-      joiner.add(getScheduledPosts().toUrlQueryString(prefix + "scheduledPosts" + suffix));
-    }
-
-    return joiner.toString();
+  /**
+   * Convert an instance of Usage to an JSON string
+   *
+   * @return JSON string
+   */
+  public String toJson() {
+    return JSON.getGson().toJson(this);
   }
 }
 

@@ -25,28 +25,6 @@ module Peal
 
     attr_accessor :slug
 
-    class EnumAttributeValidator
-      attr_reader :datatype
-      attr_reader :allowable_values
-
-      def initialize(datatype, allowable_values)
-        @allowable_values = allowable_values.map do |value|
-          case datatype.to_s
-          when /Integer/i
-            value.to_i
-          when /Float/i
-            value.to_f
-          else
-            value
-          end
-        end
-      end
-
-      def valid?(value)
-        !value || allowable_values.include?(value)
-      end
-    end
-
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map
       {
@@ -73,7 +51,7 @@ module Peal
       {
         :'id' => :'String',
         :'name' => :'String',
-        :'permissions' => :'Array<String>',
+        :'permissions' => :'Array<Permission>',
         :'role' => :'String',
         :'slug' => :'String'
       }
@@ -202,6 +180,16 @@ module Peal
       end
 
       @name = name
+    end
+
+    # Custom attribute writer method with validation
+    # @param [Object] permissions Value to be assigned
+    def permissions=(permissions)
+      if permissions.nil?
+        fail ArgumentError, 'permissions cannot be nil'
+      end
+
+      @permissions = permissions
     end
 
     # Custom attribute writer method with validation

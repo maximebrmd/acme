@@ -13,55 +13,70 @@
 
 package social.peal.model;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.StringJoiner;
 import java.util.Objects;
-import java.util.Map;
-import java.util.HashMap;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.fasterxml.jackson.annotation.JsonValue;
+import com.google.gson.TypeAdapter;
+import com.google.gson.annotations.JsonAdapter;
+import com.google.gson.annotations.SerializedName;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 import java.util.Arrays;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonNull;
+import com.google.gson.JsonParseException;
+import com.google.gson.TypeAdapterFactory;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.TypeAdapter;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 
-import social.peal.ApiClient;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import social.peal.JSON;
+
 /**
  * WorkspaceMember
  */
-@JsonPropertyOrder({
-  WorkspaceMember.JSON_PROPERTY_EMAIL,
-  WorkspaceMember.JSON_PROPERTY_JOINED_AT,
-  WorkspaceMember.JSON_PROPERTY_NAME,
-  WorkspaceMember.JSON_PROPERTY_ROLE,
-  WorkspaceMember.JSON_PROPERTY_USER_ID
-})
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.27.0")
 public class WorkspaceMember {
-  public static final String JSON_PROPERTY_EMAIL = "email";
+  public static final String SERIALIZED_NAME_EMAIL = "email";
+  @SerializedName(SERIALIZED_NAME_EMAIL)
   @javax.annotation.Nonnull
   private String email;
 
-  public static final String JSON_PROPERTY_JOINED_AT = "joinedAt";
+  public static final String SERIALIZED_NAME_JOINED_AT = "joinedAt";
+  @SerializedName(SERIALIZED_NAME_JOINED_AT)
   @javax.annotation.Nonnull
   private String joinedAt;
 
-  public static final String JSON_PROPERTY_NAME = "name";
+  public static final String SERIALIZED_NAME_NAME = "name";
+  @SerializedName(SERIALIZED_NAME_NAME)
   @javax.annotation.Nonnull
   private String name;
 
-  public static final String JSON_PROPERTY_ROLE = "role";
+  public static final String SERIALIZED_NAME_ROLE = "role";
+  @SerializedName(SERIALIZED_NAME_ROLE)
   @javax.annotation.Nonnull
   private String role;
 
-  public static final String JSON_PROPERTY_USER_ID = "userId";
+  public static final String SERIALIZED_NAME_USER_ID = "userId";
+  @SerializedName(SERIALIZED_NAME_USER_ID)
   @javax.annotation.Nonnull
   private String userId;
 
-  public WorkspaceMember() { 
+  public WorkspaceMember() {
   }
 
   public WorkspaceMember email(@javax.annotation.Nonnull String email) {
@@ -74,15 +89,10 @@ public class WorkspaceMember {
    * @return email
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_EMAIL, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public String getEmail() {
     return email;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_EMAIL, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setEmail(@javax.annotation.Nonnull String email) {
     this.email = email;
   }
@@ -98,15 +108,10 @@ public class WorkspaceMember {
    * @return joinedAt
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_JOINED_AT, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public String getJoinedAt() {
     return joinedAt;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_JOINED_AT, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setJoinedAt(@javax.annotation.Nonnull String joinedAt) {
     this.joinedAt = joinedAt;
   }
@@ -122,15 +127,10 @@ public class WorkspaceMember {
    * @return name
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_NAME, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public String getName() {
     return name;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_NAME, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setName(@javax.annotation.Nonnull String name) {
     this.name = name;
   }
@@ -146,15 +146,10 @@ public class WorkspaceMember {
    * @return role
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_ROLE, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public String getRole() {
     return role;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_ROLE, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setRole(@javax.annotation.Nonnull String role) {
     this.role = role;
   }
@@ -170,23 +165,16 @@ public class WorkspaceMember {
    * @return userId
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_USER_ID, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public String getUserId() {
     return userId;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_USER_ID, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setUserId(@javax.annotation.Nonnull String userId) {
     this.userId = userId;
   }
 
 
-  /**
-   * Return true if this WorkspaceMember object is equal to o.
-   */
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -229,64 +217,110 @@ public class WorkspaceMember {
     return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
 
-  /**
-   * Convert the instance into URL query string.
-   *
-   * @return URL query string
-   */
-  public String toUrlQueryString() {
-    return toUrlQueryString(null);
+
+  public static HashSet<String> openapiFields;
+  public static HashSet<String> openapiRequiredFields;
+
+  static {
+    // a set of all properties/fields (JSON key names)
+    openapiFields = new HashSet<String>(Arrays.asList("email", "joinedAt", "name", "role", "userId"));
+
+    // a set of required properties/fields (JSON key names)
+    openapiRequiredFields = new HashSet<String>(Arrays.asList("email", "joinedAt", "name", "role", "userId"));
   }
 
   /**
-   * Convert the instance into URL query string.
+   * Validates the JSON Element and throws an exception if issues found
    *
-   * @param prefix prefix of the query string
-   * @return URL query string
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to WorkspaceMember
    */
-  public String toUrlQueryString(String prefix) {
-    String suffix = "";
-    String containerSuffix = "";
-    String containerPrefix = "";
-    if (prefix == null) {
-      // style=form, explode=true, e.g. /pet?name=cat&type=manx
-      prefix = "";
-    } else {
-      // deepObject style e.g. /pet?id[name]=cat&id[type]=manx
-      prefix = prefix + "[";
-      suffix = "]";
-      containerSuffix = "]";
-      containerPrefix = "[";
+  public static void validateJsonElement(JsonElement jsonElement) throws IOException {
+      if (jsonElement == null) {
+        if (!WorkspaceMember.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The required field(s) %s in WorkspaceMember is not found in the empty JSON string", WorkspaceMember.openapiRequiredFields.toString()));
+        }
+      }
+
+      Set<Map.Entry<String, JsonElement>> entries = jsonElement.getAsJsonObject().entrySet();
+      // check to see if the JSON string contains additional fields
+      for (Map.Entry<String, JsonElement> entry : entries) {
+        if (!WorkspaceMember.openapiFields.contains(entry.getKey())) {
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The field `%s` in the JSON string is not defined in the `WorkspaceMember` properties. JSON: %s", entry.getKey(), jsonElement.toString()));
+        }
+      }
+
+      // check to make sure all required properties/fields are present in the JSON string
+      for (String requiredField : WorkspaceMember.openapiRequiredFields) {
+        if (jsonElement.getAsJsonObject().get(requiredField) == null) {
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The required field `%s` is not found in the JSON string: %s", requiredField, jsonElement.toString()));
+        }
+      }
+        JsonObject jsonObj = jsonElement.getAsJsonObject();
+      if (!jsonObj.get("email").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `email` to be a primitive type in the JSON string but got `%s`", jsonObj.get("email").toString()));
+      }
+      if (!jsonObj.get("joinedAt").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `joinedAt` to be a primitive type in the JSON string but got `%s`", jsonObj.get("joinedAt").toString()));
+      }
+      if (!jsonObj.get("name").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `name` to be a primitive type in the JSON string but got `%s`", jsonObj.get("name").toString()));
+      }
+      if (!jsonObj.get("role").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `role` to be a primitive type in the JSON string but got `%s`", jsonObj.get("role").toString()));
+      }
+      if (!jsonObj.get("userId").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `userId` to be a primitive type in the JSON string but got `%s`", jsonObj.get("userId").toString()));
+      }
+  }
+
+  public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
+       if (!WorkspaceMember.class.isAssignableFrom(type.getRawType())) {
+         return null; // this class only serializes 'WorkspaceMember' and its subtypes
+       }
+       final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
+       final TypeAdapter<WorkspaceMember> thisAdapter
+                        = gson.getDelegateAdapter(this, TypeToken.get(WorkspaceMember.class));
+
+       return (TypeAdapter<T>) new TypeAdapter<WorkspaceMember>() {
+           @Override
+           public void write(JsonWriter out, WorkspaceMember value) throws IOException {
+             JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
+             elementAdapter.write(out, obj);
+           }
+
+           @Override
+           public WorkspaceMember read(JsonReader in) throws IOException {
+             JsonElement jsonElement = elementAdapter.read(in);
+             validateJsonElement(jsonElement);
+             return thisAdapter.fromJsonTree(jsonElement);
+           }
+
+       }.nullSafe();
     }
+  }
 
-    StringJoiner joiner = new StringJoiner("&");
+  /**
+   * Create an instance of WorkspaceMember given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of WorkspaceMember
+   * @throws IOException if the JSON string is invalid with respect to WorkspaceMember
+   */
+  public static WorkspaceMember fromJson(String jsonString) throws IOException {
+    return JSON.getGson().fromJson(jsonString, WorkspaceMember.class);
+  }
 
-    // add `email` to the URL query string
-    if (getEmail() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%semail%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getEmail()))));
-    }
-
-    // add `joinedAt` to the URL query string
-    if (getJoinedAt() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%sjoinedAt%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getJoinedAt()))));
-    }
-
-    // add `name` to the URL query string
-    if (getName() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%sname%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getName()))));
-    }
-
-    // add `role` to the URL query string
-    if (getRole() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%srole%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getRole()))));
-    }
-
-    // add `userId` to the URL query string
-    if (getUserId() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%suserId%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getUserId()))));
-    }
-
-    return joiner.toString();
+  /**
+   * Convert an instance of WorkspaceMember to an JSON string
+   *
+   * @return JSON string
+   */
+  public String toJson() {
+    return JSON.getGson().toJson(this);
   }
 }
 

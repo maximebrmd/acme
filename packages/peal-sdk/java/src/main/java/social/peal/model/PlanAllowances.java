@@ -13,50 +13,65 @@
 
 package social.peal.model;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.StringJoiner;
 import java.util.Objects;
-import java.util.Map;
-import java.util.HashMap;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.fasterxml.jackson.annotation.JsonValue;
+import com.google.gson.TypeAdapter;
+import com.google.gson.annotations.JsonAdapter;
+import com.google.gson.annotations.SerializedName;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 import java.util.Arrays;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonNull;
+import com.google.gson.JsonParseException;
+import com.google.gson.TypeAdapterFactory;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.TypeAdapter;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 
-import social.peal.ApiClient;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import social.peal.JSON;
+
 /**
  * PlanAllowances
  */
-@JsonPropertyOrder({
-  PlanAllowances.JSON_PROPERTY_ASSISTANT_REQUESTS,
-  PlanAllowances.JSON_PROPERTY_CHANNELS,
-  PlanAllowances.JSON_PROPERTY_MEMBERS,
-  PlanAllowances.JSON_PROPERTY_SCHEDULED_POSTS
-})
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.27.0")
 public class PlanAllowances {
-  public static final String JSON_PROPERTY_ASSISTANT_REQUESTS = "assistantRequests";
+  public static final String SERIALIZED_NAME_ASSISTANT_REQUESTS = "assistantRequests";
+  @SerializedName(SERIALIZED_NAME_ASSISTANT_REQUESTS)
   @javax.annotation.Nullable
   private Integer assistantRequests;
 
-  public static final String JSON_PROPERTY_CHANNELS = "channels";
+  public static final String SERIALIZED_NAME_CHANNELS = "channels";
+  @SerializedName(SERIALIZED_NAME_CHANNELS)
   @javax.annotation.Nullable
   private Integer channels;
 
-  public static final String JSON_PROPERTY_MEMBERS = "members";
+  public static final String SERIALIZED_NAME_MEMBERS = "members";
+  @SerializedName(SERIALIZED_NAME_MEMBERS)
   @javax.annotation.Nullable
   private Integer members;
 
-  public static final String JSON_PROPERTY_SCHEDULED_POSTS = "scheduledPosts";
+  public static final String SERIALIZED_NAME_SCHEDULED_POSTS = "scheduledPosts";
+  @SerializedName(SERIALIZED_NAME_SCHEDULED_POSTS)
   @javax.annotation.Nullable
   private Integer scheduledPosts;
 
-  public PlanAllowances() { 
+  public PlanAllowances() {
   }
 
   public PlanAllowances assistantRequests(@javax.annotation.Nullable Integer assistantRequests) {
@@ -71,15 +86,10 @@ public class PlanAllowances {
    * @return assistantRequests
    */
   @javax.annotation.Nullable
-  @JsonProperty(value = JSON_PROPERTY_ASSISTANT_REQUESTS, required = false)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public Integer getAssistantRequests() {
     return assistantRequests;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_ASSISTANT_REQUESTS, required = false)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setAssistantRequests(@javax.annotation.Nullable Integer assistantRequests) {
     this.assistantRequests = assistantRequests;
   }
@@ -97,15 +107,10 @@ public class PlanAllowances {
    * @return channels
    */
   @javax.annotation.Nullable
-  @JsonProperty(value = JSON_PROPERTY_CHANNELS, required = false)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public Integer getChannels() {
     return channels;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_CHANNELS, required = false)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setChannels(@javax.annotation.Nullable Integer channels) {
     this.channels = channels;
   }
@@ -123,15 +128,10 @@ public class PlanAllowances {
    * @return members
    */
   @javax.annotation.Nullable
-  @JsonProperty(value = JSON_PROPERTY_MEMBERS, required = false)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public Integer getMembers() {
     return members;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_MEMBERS, required = false)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setMembers(@javax.annotation.Nullable Integer members) {
     this.members = members;
   }
@@ -149,23 +149,16 @@ public class PlanAllowances {
    * @return scheduledPosts
    */
   @javax.annotation.Nullable
-  @JsonProperty(value = JSON_PROPERTY_SCHEDULED_POSTS, required = false)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public Integer getScheduledPosts() {
     return scheduledPosts;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_SCHEDULED_POSTS, required = false)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setScheduledPosts(@javax.annotation.Nullable Integer scheduledPosts) {
     this.scheduledPosts = scheduledPosts;
   }
 
 
-  /**
-   * Return true if this PlanAllowances object is equal to o.
-   */
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -206,59 +199,95 @@ public class PlanAllowances {
     return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
 
-  /**
-   * Convert the instance into URL query string.
-   *
-   * @return URL query string
-   */
-  public String toUrlQueryString() {
-    return toUrlQueryString(null);
+
+  public static HashSet<String> openapiFields;
+  public static HashSet<String> openapiRequiredFields;
+
+  static {
+    // a set of all properties/fields (JSON key names)
+    openapiFields = new HashSet<String>(Arrays.asList("assistantRequests", "channels", "members", "scheduledPosts"));
+
+    // a set of required properties/fields (JSON key names)
+    openapiRequiredFields = new HashSet<String>(Arrays.asList("assistantRequests", "channels", "members", "scheduledPosts"));
   }
 
   /**
-   * Convert the instance into URL query string.
+   * Validates the JSON Element and throws an exception if issues found
    *
-   * @param prefix prefix of the query string
-   * @return URL query string
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to PlanAllowances
    */
-  public String toUrlQueryString(String prefix) {
-    String suffix = "";
-    String containerSuffix = "";
-    String containerPrefix = "";
-    if (prefix == null) {
-      // style=form, explode=true, e.g. /pet?name=cat&type=manx
-      prefix = "";
-    } else {
-      // deepObject style e.g. /pet?id[name]=cat&id[type]=manx
-      prefix = prefix + "[";
-      suffix = "]";
-      containerSuffix = "]";
-      containerPrefix = "[";
+  public static void validateJsonElement(JsonElement jsonElement) throws IOException {
+      if (jsonElement == null) {
+        if (!PlanAllowances.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The required field(s) %s in PlanAllowances is not found in the empty JSON string", PlanAllowances.openapiRequiredFields.toString()));
+        }
+      }
+
+      Set<Map.Entry<String, JsonElement>> entries = jsonElement.getAsJsonObject().entrySet();
+      // check to see if the JSON string contains additional fields
+      for (Map.Entry<String, JsonElement> entry : entries) {
+        if (!PlanAllowances.openapiFields.contains(entry.getKey())) {
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The field `%s` in the JSON string is not defined in the `PlanAllowances` properties. JSON: %s", entry.getKey(), jsonElement.toString()));
+        }
+      }
+
+      // check to make sure all required properties/fields are present in the JSON string
+      for (String requiredField : PlanAllowances.openapiRequiredFields) {
+        if (jsonElement.getAsJsonObject().get(requiredField) == null) {
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The required field `%s` is not found in the JSON string: %s", requiredField, jsonElement.toString()));
+        }
+      }
+        JsonObject jsonObj = jsonElement.getAsJsonObject();
+  }
+
+  public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
+       if (!PlanAllowances.class.isAssignableFrom(type.getRawType())) {
+         return null; // this class only serializes 'PlanAllowances' and its subtypes
+       }
+       final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
+       final TypeAdapter<PlanAllowances> thisAdapter
+                        = gson.getDelegateAdapter(this, TypeToken.get(PlanAllowances.class));
+
+       return (TypeAdapter<T>) new TypeAdapter<PlanAllowances>() {
+           @Override
+           public void write(JsonWriter out, PlanAllowances value) throws IOException {
+             JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
+             elementAdapter.write(out, obj);
+           }
+
+           @Override
+           public PlanAllowances read(JsonReader in) throws IOException {
+             JsonElement jsonElement = elementAdapter.read(in);
+             validateJsonElement(jsonElement);
+             return thisAdapter.fromJsonTree(jsonElement);
+           }
+
+       }.nullSafe();
     }
+  }
 
-    StringJoiner joiner = new StringJoiner("&");
+  /**
+   * Create an instance of PlanAllowances given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of PlanAllowances
+   * @throws IOException if the JSON string is invalid with respect to PlanAllowances
+   */
+  public static PlanAllowances fromJson(String jsonString) throws IOException {
+    return JSON.getGson().fromJson(jsonString, PlanAllowances.class);
+  }
 
-    // add `assistantRequests` to the URL query string
-    if (getAssistantRequests() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%sassistantRequests%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getAssistantRequests()))));
-    }
-
-    // add `channels` to the URL query string
-    if (getChannels() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%schannels%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getChannels()))));
-    }
-
-    // add `members` to the URL query string
-    if (getMembers() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%smembers%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getMembers()))));
-    }
-
-    // add `scheduledPosts` to the URL query string
-    if (getScheduledPosts() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%sscheduledPosts%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getScheduledPosts()))));
-    }
-
-    return joiner.toString();
+  /**
+   * Convert an instance of PlanAllowances to an JSON string
+   *
+   * @return JSON string
+   */
+  public String toJson() {
+    return JSON.getGson().toJson(this);
   }
 }
 

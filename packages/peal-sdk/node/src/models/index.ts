@@ -127,6 +127,7 @@ export * from './NotificationPreferencesChangeEmail.js';
 export * from './NotificationPreferencesEmail.js';
 export * from './PaidPlan.js';
 export * from './PeriodUsage.js';
+export * from './Permission.js';
 export * from './Plan.js';
 export * from './PlanAllowances.js';
 export * from './PlanLimit.js';

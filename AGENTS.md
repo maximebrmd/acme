@@ -1335,6 +1335,20 @@ self-hoster needs only Postgres and an S3-compatible store:
   `sdk-php-mirror.yml` updates from `main` with the deploy key in
   `PHP_MIRROR_DEPLOY_KEY` (`.github/scripts/push-php-mirror.sh`); never
   commit to it.
+- `sdk:test` (after `sdk:build`, uncached) runs each SDK's smoke test, a file
+  of ours in its folder (`test/smoke.mjs`, `tests/smoke_test.py`,
+  `smoke_test.go`, `smoke.rb`, `src/test/java/…/SmokeTest.java`, `smoke.php`,
+  `smoke/`, `examples/smoke.rs`), against the stand-in API `scripts/test.ts`
+  serves: the health check, then `GET /api/me` with the bearer token
+  `peal_test`, whose answer holds nulls and an enum. Keep every test calling
+  both, and checking what it decodes; the run fails when the stand-in did not
+  see both calls. Containers reach it as `host.docker.internal`.
+- What each package ships is chosen, not found: npm's `files`, Ruby's
+  gemspec (`lib/`, the README, the license: `finish.ts`), Rust's `exclude`,
+  PHP's `.gitattributes` (`export-ignore`, for Composer's downloads), the
+  .NET project alone with its README (ours: the generator's says nothing).
+  Java uses OkHttp with Gson, the generator's default: its `native` library
+  has no authentication, though its docs show `HttpBearerAuth`.
 - The SDKs are Apache-2.0 (`packages/peal-sdk/LICENSE`, copied into each
   language's folder: Go would otherwise take the repository's FSL), and every
   manifest says so. What they call is public API: renaming or removing an

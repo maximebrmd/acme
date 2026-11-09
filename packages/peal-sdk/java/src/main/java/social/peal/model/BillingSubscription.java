@@ -13,52 +13,67 @@
 
 package social.peal.model;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.StringJoiner;
 import java.util.Objects;
-import java.util.Map;
-import java.util.HashMap;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.fasterxml.jackson.annotation.JsonValue;
+import com.google.gson.TypeAdapter;
+import com.google.gson.annotations.JsonAdapter;
+import com.google.gson.annotations.SerializedName;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 import java.util.Arrays;
 import social.peal.model.PaidPlan;
 import social.peal.model.SubscriptionStatus;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonNull;
+import com.google.gson.JsonParseException;
+import com.google.gson.TypeAdapterFactory;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.TypeAdapter;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 
-import social.peal.ApiClient;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import social.peal.JSON;
+
 /**
  * BillingSubscription
  */
-@JsonPropertyOrder({
-  BillingSubscription.JSON_PROPERTY_CANCEL_AT_PERIOD_END,
-  BillingSubscription.JSON_PROPERTY_CURRENT_PERIOD_END,
-  BillingSubscription.JSON_PROPERTY_PLAN,
-  BillingSubscription.JSON_PROPERTY_STATUS
-})
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.27.0")
 public class BillingSubscription {
-  public static final String JSON_PROPERTY_CANCEL_AT_PERIOD_END = "cancelAtPeriodEnd";
+  public static final String SERIALIZED_NAME_CANCEL_AT_PERIOD_END = "cancelAtPeriodEnd";
+  @SerializedName(SERIALIZED_NAME_CANCEL_AT_PERIOD_END)
   @javax.annotation.Nonnull
   private Boolean cancelAtPeriodEnd;
 
-  public static final String JSON_PROPERTY_CURRENT_PERIOD_END = "currentPeriodEnd";
+  public static final String SERIALIZED_NAME_CURRENT_PERIOD_END = "currentPeriodEnd";
+  @SerializedName(SERIALIZED_NAME_CURRENT_PERIOD_END)
   @javax.annotation.Nullable
   private String currentPeriodEnd;
 
-  public static final String JSON_PROPERTY_PLAN = "plan";
+  public static final String SERIALIZED_NAME_PLAN = "plan";
+  @SerializedName(SERIALIZED_NAME_PLAN)
   @javax.annotation.Nonnull
   private PaidPlan plan;
 
-  public static final String JSON_PROPERTY_STATUS = "status";
+  public static final String SERIALIZED_NAME_STATUS = "status";
+  @SerializedName(SERIALIZED_NAME_STATUS)
   @javax.annotation.Nonnull
   private SubscriptionStatus status;
 
-  public BillingSubscription() { 
+  public BillingSubscription() {
   }
 
   public BillingSubscription cancelAtPeriodEnd(@javax.annotation.Nonnull Boolean cancelAtPeriodEnd) {
@@ -71,15 +86,10 @@ public class BillingSubscription {
    * @return cancelAtPeriodEnd
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_CANCEL_AT_PERIOD_END, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public Boolean getCancelAtPeriodEnd() {
     return cancelAtPeriodEnd;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_CANCEL_AT_PERIOD_END, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setCancelAtPeriodEnd(@javax.annotation.Nonnull Boolean cancelAtPeriodEnd) {
     this.cancelAtPeriodEnd = cancelAtPeriodEnd;
   }
@@ -95,15 +105,10 @@ public class BillingSubscription {
    * @return currentPeriodEnd
    */
   @javax.annotation.Nullable
-  @JsonProperty(value = JSON_PROPERTY_CURRENT_PERIOD_END, required = false)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public String getCurrentPeriodEnd() {
     return currentPeriodEnd;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_CURRENT_PERIOD_END, required = false)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setCurrentPeriodEnd(@javax.annotation.Nullable String currentPeriodEnd) {
     this.currentPeriodEnd = currentPeriodEnd;
   }
@@ -119,15 +124,10 @@ public class BillingSubscription {
    * @return plan
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_PLAN, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public PaidPlan getPlan() {
     return plan;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_PLAN, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setPlan(@javax.annotation.Nonnull PaidPlan plan) {
     this.plan = plan;
   }
@@ -143,23 +143,16 @@ public class BillingSubscription {
    * @return status
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_STATUS, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public SubscriptionStatus getStatus() {
     return status;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_STATUS, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setStatus(@javax.annotation.Nonnull SubscriptionStatus status) {
     this.status = status;
   }
 
 
-  /**
-   * Return true if this BillingSubscription object is equal to o.
-   */
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -200,59 +193,102 @@ public class BillingSubscription {
     return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
 
-  /**
-   * Convert the instance into URL query string.
-   *
-   * @return URL query string
-   */
-  public String toUrlQueryString() {
-    return toUrlQueryString(null);
+
+  public static HashSet<String> openapiFields;
+  public static HashSet<String> openapiRequiredFields;
+
+  static {
+    // a set of all properties/fields (JSON key names)
+    openapiFields = new HashSet<String>(Arrays.asList("cancelAtPeriodEnd", "currentPeriodEnd", "plan", "status"));
+
+    // a set of required properties/fields (JSON key names)
+    openapiRequiredFields = new HashSet<String>(Arrays.asList("cancelAtPeriodEnd", "currentPeriodEnd", "plan", "status"));
   }
 
   /**
-   * Convert the instance into URL query string.
+   * Validates the JSON Element and throws an exception if issues found
    *
-   * @param prefix prefix of the query string
-   * @return URL query string
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to BillingSubscription
    */
-  public String toUrlQueryString(String prefix) {
-    String suffix = "";
-    String containerSuffix = "";
-    String containerPrefix = "";
-    if (prefix == null) {
-      // style=form, explode=true, e.g. /pet?name=cat&type=manx
-      prefix = "";
-    } else {
-      // deepObject style e.g. /pet?id[name]=cat&id[type]=manx
-      prefix = prefix + "[";
-      suffix = "]";
-      containerSuffix = "]";
-      containerPrefix = "[";
+  public static void validateJsonElement(JsonElement jsonElement) throws IOException {
+      if (jsonElement == null) {
+        if (!BillingSubscription.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The required field(s) %s in BillingSubscription is not found in the empty JSON string", BillingSubscription.openapiRequiredFields.toString()));
+        }
+      }
+
+      Set<Map.Entry<String, JsonElement>> entries = jsonElement.getAsJsonObject().entrySet();
+      // check to see if the JSON string contains additional fields
+      for (Map.Entry<String, JsonElement> entry : entries) {
+        if (!BillingSubscription.openapiFields.contains(entry.getKey())) {
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The field `%s` in the JSON string is not defined in the `BillingSubscription` properties. JSON: %s", entry.getKey(), jsonElement.toString()));
+        }
+      }
+
+      // check to make sure all required properties/fields are present in the JSON string
+      for (String requiredField : BillingSubscription.openapiRequiredFields) {
+        if (jsonElement.getAsJsonObject().get(requiredField) == null) {
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The required field `%s` is not found in the JSON string: %s", requiredField, jsonElement.toString()));
+        }
+      }
+        JsonObject jsonObj = jsonElement.getAsJsonObject();
+      if ((jsonObj.get("currentPeriodEnd") != null && !jsonObj.get("currentPeriodEnd").isJsonNull()) && !jsonObj.get("currentPeriodEnd").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `currentPeriodEnd` to be a primitive type in the JSON string but got `%s`", jsonObj.get("currentPeriodEnd").toString()));
+      }
+      // validate the required field `plan`
+      PaidPlan.validateJsonElement(jsonObj.get("plan"));
+      // validate the required field `status`
+      SubscriptionStatus.validateJsonElement(jsonObj.get("status"));
+  }
+
+  public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
+       if (!BillingSubscription.class.isAssignableFrom(type.getRawType())) {
+         return null; // this class only serializes 'BillingSubscription' and its subtypes
+       }
+       final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
+       final TypeAdapter<BillingSubscription> thisAdapter
+                        = gson.getDelegateAdapter(this, TypeToken.get(BillingSubscription.class));
+
+       return (TypeAdapter<T>) new TypeAdapter<BillingSubscription>() {
+           @Override
+           public void write(JsonWriter out, BillingSubscription value) throws IOException {
+             JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
+             elementAdapter.write(out, obj);
+           }
+
+           @Override
+           public BillingSubscription read(JsonReader in) throws IOException {
+             JsonElement jsonElement = elementAdapter.read(in);
+             validateJsonElement(jsonElement);
+             return thisAdapter.fromJsonTree(jsonElement);
+           }
+
+       }.nullSafe();
     }
+  }
 
-    StringJoiner joiner = new StringJoiner("&");
+  /**
+   * Create an instance of BillingSubscription given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of BillingSubscription
+   * @throws IOException if the JSON string is invalid with respect to BillingSubscription
+   */
+  public static BillingSubscription fromJson(String jsonString) throws IOException {
+    return JSON.getGson().fromJson(jsonString, BillingSubscription.class);
+  }
 
-    // add `cancelAtPeriodEnd` to the URL query string
-    if (getCancelAtPeriodEnd() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%scancelAtPeriodEnd%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getCancelAtPeriodEnd()))));
-    }
-
-    // add `currentPeriodEnd` to the URL query string
-    if (getCurrentPeriodEnd() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%scurrentPeriodEnd%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getCurrentPeriodEnd()))));
-    }
-
-    // add `plan` to the URL query string
-    if (getPlan() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%splan%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getPlan()))));
-    }
-
-    // add `status` to the URL query string
-    if (getStatus() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%sstatus%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getStatus()))));
-    }
-
-    return joiner.toString();
+  /**
+   * Convert an instance of BillingSubscription to an JSON string
+   *
+   * @return JSON string
+   */
+  public String toJson() {
+    return JSON.getGson().toJson(this);
   }
 }
 

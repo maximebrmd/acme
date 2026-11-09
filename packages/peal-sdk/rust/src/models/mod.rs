@@ -252,6 +252,8 @@ pub mod paid_plan;
 pub use self::paid_plan::PaidPlan;
 pub mod period_usage;
 pub use self::period_usage::PeriodUsage;
+pub mod permission;
+pub use self::permission::Permission;
 pub mod plan;
 pub use self::plan::Plan;
 pub mod plan_allowances;

@@ -6,13 +6,13 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **ExpiresInDays** | Pointer to **int32** |  | [optional] 
 **Name** | **string** |  | 
-**Permissions** | **[]string** |  | 
+**Permissions** | [**[]Permission**](Permission.md) |  | 
 
 ## Methods
 
 ### NewCreateApiKeyRequest
 
-`func NewCreateApiKeyRequest(name string, permissions []string, ) *CreateApiKeyRequest`
+`func NewCreateApiKeyRequest(name string, permissions []Permission, ) *CreateApiKeyRequest`
 
 NewCreateApiKeyRequest instantiates a new CreateApiKeyRequest object
 This constructor will assign default values to properties that have it defined,
@@ -74,20 +74,20 @@ SetName sets Name field to given value.
 
 ### GetPermissions
 
-`func (o *CreateApiKeyRequest) GetPermissions() []string`
+`func (o *CreateApiKeyRequest) GetPermissions() []Permission`
 
 GetPermissions returns the Permissions field if non-nil, zero value otherwise.
 
 ### GetPermissionsOk
 
-`func (o *CreateApiKeyRequest) GetPermissionsOk() (*[]string, bool)`
+`func (o *CreateApiKeyRequest) GetPermissionsOk() (*[]Permission, bool)`
 
 GetPermissionsOk returns a tuple with the Permissions field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
 ### SetPermissions
 
-`func (o *CreateApiKeyRequest) SetPermissions(v []string)`
+`func (o *CreateApiKeyRequest) SetPermissions(v []Permission)`
 
 SetPermissions sets Permissions field to given value.
 

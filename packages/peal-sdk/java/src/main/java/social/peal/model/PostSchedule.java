@@ -13,40 +13,55 @@
 
 package social.peal.model;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.StringJoiner;
 import java.util.Objects;
-import java.util.Map;
-import java.util.HashMap;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.fasterxml.jackson.annotation.JsonValue;
+import com.google.gson.TypeAdapter;
+import com.google.gson.annotations.JsonAdapter;
+import com.google.gson.annotations.SerializedName;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 import java.util.Arrays;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonNull;
+import com.google.gson.JsonParseException;
+import com.google.gson.TypeAdapterFactory;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.TypeAdapter;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 
-import social.peal.ApiClient;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import social.peal.JSON;
+
 /**
  * PostSchedule
  */
-@JsonPropertyOrder({
-  PostSchedule.JSON_PROPERTY_AT,
-  PostSchedule.JSON_PROPERTY_TIME_ZONE
-})
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.27.0")
 public class PostSchedule {
-  public static final String JSON_PROPERTY_AT = "at";
+  public static final String SERIALIZED_NAME_AT = "at";
+  @SerializedName(SERIALIZED_NAME_AT)
   @javax.annotation.Nonnull
   private String at;
 
-  public static final String JSON_PROPERTY_TIME_ZONE = "timeZone";
+  public static final String SERIALIZED_NAME_TIME_ZONE = "timeZone";
+  @SerializedName(SERIALIZED_NAME_TIME_ZONE)
   @javax.annotation.Nonnull
   private String timeZone;
 
-  public PostSchedule() { 
+  public PostSchedule() {
   }
 
   public PostSchedule at(@javax.annotation.Nonnull String at) {
@@ -59,15 +74,10 @@ public class PostSchedule {
    * @return at
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_AT, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public String getAt() {
     return at;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_AT, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setAt(@javax.annotation.Nonnull String at) {
     this.at = at;
   }
@@ -83,23 +93,16 @@ public class PostSchedule {
    * @return timeZone
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_TIME_ZONE, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public String getTimeZone() {
     return timeZone;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_TIME_ZONE, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setTimeZone(@javax.annotation.Nonnull String timeZone) {
     this.timeZone = timeZone;
   }
 
 
-  /**
-   * Return true if this PostSchedule object is equal to o.
-   */
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -136,49 +139,101 @@ public class PostSchedule {
     return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
 
-  /**
-   * Convert the instance into URL query string.
-   *
-   * @return URL query string
-   */
-  public String toUrlQueryString() {
-    return toUrlQueryString(null);
+
+  public static HashSet<String> openapiFields;
+  public static HashSet<String> openapiRequiredFields;
+
+  static {
+    // a set of all properties/fields (JSON key names)
+    openapiFields = new HashSet<String>(Arrays.asList("at", "timeZone"));
+
+    // a set of required properties/fields (JSON key names)
+    openapiRequiredFields = new HashSet<String>(Arrays.asList("at", "timeZone"));
   }
 
   /**
-   * Convert the instance into URL query string.
+   * Validates the JSON Element and throws an exception if issues found
    *
-   * @param prefix prefix of the query string
-   * @return URL query string
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to PostSchedule
    */
-  public String toUrlQueryString(String prefix) {
-    String suffix = "";
-    String containerSuffix = "";
-    String containerPrefix = "";
-    if (prefix == null) {
-      // style=form, explode=true, e.g. /pet?name=cat&type=manx
-      prefix = "";
-    } else {
-      // deepObject style e.g. /pet?id[name]=cat&id[type]=manx
-      prefix = prefix + "[";
-      suffix = "]";
-      containerSuffix = "]";
-      containerPrefix = "[";
+  public static void validateJsonElement(JsonElement jsonElement) throws IOException {
+      if (jsonElement == null) {
+        if (!PostSchedule.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The required field(s) %s in PostSchedule is not found in the empty JSON string", PostSchedule.openapiRequiredFields.toString()));
+        }
+      }
+
+      Set<Map.Entry<String, JsonElement>> entries = jsonElement.getAsJsonObject().entrySet();
+      // check to see if the JSON string contains additional fields
+      for (Map.Entry<String, JsonElement> entry : entries) {
+        if (!PostSchedule.openapiFields.contains(entry.getKey())) {
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The field `%s` in the JSON string is not defined in the `PostSchedule` properties. JSON: %s", entry.getKey(), jsonElement.toString()));
+        }
+      }
+
+      // check to make sure all required properties/fields are present in the JSON string
+      for (String requiredField : PostSchedule.openapiRequiredFields) {
+        if (jsonElement.getAsJsonObject().get(requiredField) == null) {
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The required field `%s` is not found in the JSON string: %s", requiredField, jsonElement.toString()));
+        }
+      }
+        JsonObject jsonObj = jsonElement.getAsJsonObject();
+      if (!jsonObj.get("at").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `at` to be a primitive type in the JSON string but got `%s`", jsonObj.get("at").toString()));
+      }
+      if (!jsonObj.get("timeZone").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `timeZone` to be a primitive type in the JSON string but got `%s`", jsonObj.get("timeZone").toString()));
+      }
+  }
+
+  public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
+       if (!PostSchedule.class.isAssignableFrom(type.getRawType())) {
+         return null; // this class only serializes 'PostSchedule' and its subtypes
+       }
+       final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
+       final TypeAdapter<PostSchedule> thisAdapter
+                        = gson.getDelegateAdapter(this, TypeToken.get(PostSchedule.class));
+
+       return (TypeAdapter<T>) new TypeAdapter<PostSchedule>() {
+           @Override
+           public void write(JsonWriter out, PostSchedule value) throws IOException {
+             JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
+             elementAdapter.write(out, obj);
+           }
+
+           @Override
+           public PostSchedule read(JsonReader in) throws IOException {
+             JsonElement jsonElement = elementAdapter.read(in);
+             validateJsonElement(jsonElement);
+             return thisAdapter.fromJsonTree(jsonElement);
+           }
+
+       }.nullSafe();
     }
+  }
 
-    StringJoiner joiner = new StringJoiner("&");
+  /**
+   * Create an instance of PostSchedule given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of PostSchedule
+   * @throws IOException if the JSON string is invalid with respect to PostSchedule
+   */
+  public static PostSchedule fromJson(String jsonString) throws IOException {
+    return JSON.getGson().fromJson(jsonString, PostSchedule.class);
+  }
 
-    // add `at` to the URL query string
-    if (getAt() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%sat%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getAt()))));
-    }
-
-    // add `timeZone` to the URL query string
-    if (getTimeZone() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%stimeZone%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getTimeZone()))));
-    }
-
-    return joiner.toString();
+  /**
+   * Convert an instance of PostSchedule to an JSON string
+   *
+   * @return JSON string
+   */
+  public String toJson() {
+    return JSON.getGson().toJson(this);
   }
 }
 

@@ -13,67 +13,82 @@
 
 package social.peal.model;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.StringJoiner;
 import java.util.Objects;
-import java.util.Map;
-import java.util.HashMap;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.fasterxml.jackson.annotation.JsonValue;
+import com.google.gson.TypeAdapter;
+import com.google.gson.annotations.JsonAdapter;
+import com.google.gson.annotations.SerializedName;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 import java.util.Arrays;
 import social.peal.model.ChannelStatus;
 import social.peal.model.Platform;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonNull;
+import com.google.gson.JsonParseException;
+import com.google.gson.TypeAdapterFactory;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.TypeAdapter;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 
-import social.peal.ApiClient;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import social.peal.JSON;
+
 /**
  * Channel
  */
-@JsonPropertyOrder({
-  Channel.JSON_PROPERTY_AVATAR_URL,
-  Channel.JSON_PROPERTY_DISPLAY_NAME,
-  Channel.JSON_PROPERTY_HANDLE,
-  Channel.JSON_PROPERTY_ID,
-  Channel.JSON_PROPERTY_PLATFORM,
-  Channel.JSON_PROPERTY_STATUS,
-  Channel.JSON_PROPERTY_TOKEN_EXPIRES_AT
-})
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.27.0")
 public class Channel {
-  public static final String JSON_PROPERTY_AVATAR_URL = "avatarUrl";
+  public static final String SERIALIZED_NAME_AVATAR_URL = "avatarUrl";
+  @SerializedName(SERIALIZED_NAME_AVATAR_URL)
   @javax.annotation.Nullable
   private String avatarUrl;
 
-  public static final String JSON_PROPERTY_DISPLAY_NAME = "displayName";
+  public static final String SERIALIZED_NAME_DISPLAY_NAME = "displayName";
+  @SerializedName(SERIALIZED_NAME_DISPLAY_NAME)
   @javax.annotation.Nullable
   private String displayName;
 
-  public static final String JSON_PROPERTY_HANDLE = "handle";
+  public static final String SERIALIZED_NAME_HANDLE = "handle";
+  @SerializedName(SERIALIZED_NAME_HANDLE)
   @javax.annotation.Nonnull
   private String handle;
 
-  public static final String JSON_PROPERTY_ID = "id";
+  public static final String SERIALIZED_NAME_ID = "id";
+  @SerializedName(SERIALIZED_NAME_ID)
   @javax.annotation.Nonnull
   private String id;
 
-  public static final String JSON_PROPERTY_PLATFORM = "platform";
+  public static final String SERIALIZED_NAME_PLATFORM = "platform";
+  @SerializedName(SERIALIZED_NAME_PLATFORM)
   @javax.annotation.Nonnull
   private Platform platform;
 
-  public static final String JSON_PROPERTY_STATUS = "status";
+  public static final String SERIALIZED_NAME_STATUS = "status";
+  @SerializedName(SERIALIZED_NAME_STATUS)
   @javax.annotation.Nonnull
   private ChannelStatus status;
 
-  public static final String JSON_PROPERTY_TOKEN_EXPIRES_AT = "tokenExpiresAt";
+  public static final String SERIALIZED_NAME_TOKEN_EXPIRES_AT = "tokenExpiresAt";
+  @SerializedName(SERIALIZED_NAME_TOKEN_EXPIRES_AT)
   @javax.annotation.Nullable
   private String tokenExpiresAt;
 
-  public Channel() { 
+  public Channel() {
   }
 
   public Channel avatarUrl(@javax.annotation.Nullable String avatarUrl) {
@@ -86,15 +101,10 @@ public class Channel {
    * @return avatarUrl
    */
   @javax.annotation.Nullable
-  @JsonProperty(value = JSON_PROPERTY_AVATAR_URL, required = false)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public String getAvatarUrl() {
     return avatarUrl;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_AVATAR_URL, required = false)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setAvatarUrl(@javax.annotation.Nullable String avatarUrl) {
     this.avatarUrl = avatarUrl;
   }
@@ -110,15 +120,10 @@ public class Channel {
    * @return displayName
    */
   @javax.annotation.Nullable
-  @JsonProperty(value = JSON_PROPERTY_DISPLAY_NAME, required = false)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public String getDisplayName() {
     return displayName;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_DISPLAY_NAME, required = false)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setDisplayName(@javax.annotation.Nullable String displayName) {
     this.displayName = displayName;
   }
@@ -134,15 +139,10 @@ public class Channel {
    * @return handle
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_HANDLE, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public String getHandle() {
     return handle;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_HANDLE, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setHandle(@javax.annotation.Nonnull String handle) {
     this.handle = handle;
   }
@@ -158,15 +158,10 @@ public class Channel {
    * @return id
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_ID, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public String getId() {
     return id;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_ID, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setId(@javax.annotation.Nonnull String id) {
     this.id = id;
   }
@@ -182,15 +177,10 @@ public class Channel {
    * @return platform
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_PLATFORM, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public Platform getPlatform() {
     return platform;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_PLATFORM, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setPlatform(@javax.annotation.Nonnull Platform platform) {
     this.platform = platform;
   }
@@ -206,15 +196,10 @@ public class Channel {
    * @return status
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_STATUS, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public ChannelStatus getStatus() {
     return status;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_STATUS, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setStatus(@javax.annotation.Nonnull ChannelStatus status) {
     this.status = status;
   }
@@ -230,23 +215,16 @@ public class Channel {
    * @return tokenExpiresAt
    */
   @javax.annotation.Nullable
-  @JsonProperty(value = JSON_PROPERTY_TOKEN_EXPIRES_AT, required = false)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public String getTokenExpiresAt() {
     return tokenExpiresAt;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_TOKEN_EXPIRES_AT, required = false)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setTokenExpiresAt(@javax.annotation.Nullable String tokenExpiresAt) {
     this.tokenExpiresAt = tokenExpiresAt;
   }
 
 
-  /**
-   * Return true if this Channel object is equal to o.
-   */
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -293,74 +271,114 @@ public class Channel {
     return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
 
-  /**
-   * Convert the instance into URL query string.
-   *
-   * @return URL query string
-   */
-  public String toUrlQueryString() {
-    return toUrlQueryString(null);
+
+  public static HashSet<String> openapiFields;
+  public static HashSet<String> openapiRequiredFields;
+
+  static {
+    // a set of all properties/fields (JSON key names)
+    openapiFields = new HashSet<String>(Arrays.asList("avatarUrl", "displayName", "handle", "id", "platform", "status", "tokenExpiresAt"));
+
+    // a set of required properties/fields (JSON key names)
+    openapiRequiredFields = new HashSet<String>(Arrays.asList("avatarUrl", "displayName", "handle", "id", "platform", "status", "tokenExpiresAt"));
   }
 
   /**
-   * Convert the instance into URL query string.
+   * Validates the JSON Element and throws an exception if issues found
    *
-   * @param prefix prefix of the query string
-   * @return URL query string
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to Channel
    */
-  public String toUrlQueryString(String prefix) {
-    String suffix = "";
-    String containerSuffix = "";
-    String containerPrefix = "";
-    if (prefix == null) {
-      // style=form, explode=true, e.g. /pet?name=cat&type=manx
-      prefix = "";
-    } else {
-      // deepObject style e.g. /pet?id[name]=cat&id[type]=manx
-      prefix = prefix + "[";
-      suffix = "]";
-      containerSuffix = "]";
-      containerPrefix = "[";
+  public static void validateJsonElement(JsonElement jsonElement) throws IOException {
+      if (jsonElement == null) {
+        if (!Channel.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The required field(s) %s in Channel is not found in the empty JSON string", Channel.openapiRequiredFields.toString()));
+        }
+      }
+
+      Set<Map.Entry<String, JsonElement>> entries = jsonElement.getAsJsonObject().entrySet();
+      // check to see if the JSON string contains additional fields
+      for (Map.Entry<String, JsonElement> entry : entries) {
+        if (!Channel.openapiFields.contains(entry.getKey())) {
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The field `%s` in the JSON string is not defined in the `Channel` properties. JSON: %s", entry.getKey(), jsonElement.toString()));
+        }
+      }
+
+      // check to make sure all required properties/fields are present in the JSON string
+      for (String requiredField : Channel.openapiRequiredFields) {
+        if (jsonElement.getAsJsonObject().get(requiredField) == null) {
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The required field `%s` is not found in the JSON string: %s", requiredField, jsonElement.toString()));
+        }
+      }
+        JsonObject jsonObj = jsonElement.getAsJsonObject();
+      if ((jsonObj.get("avatarUrl") != null && !jsonObj.get("avatarUrl").isJsonNull()) && !jsonObj.get("avatarUrl").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `avatarUrl` to be a primitive type in the JSON string but got `%s`", jsonObj.get("avatarUrl").toString()));
+      }
+      if ((jsonObj.get("displayName") != null && !jsonObj.get("displayName").isJsonNull()) && !jsonObj.get("displayName").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `displayName` to be a primitive type in the JSON string but got `%s`", jsonObj.get("displayName").toString()));
+      }
+      if (!jsonObj.get("handle").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `handle` to be a primitive type in the JSON string but got `%s`", jsonObj.get("handle").toString()));
+      }
+      if (!jsonObj.get("id").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `id` to be a primitive type in the JSON string but got `%s`", jsonObj.get("id").toString()));
+      }
+      // validate the required field `platform`
+      Platform.validateJsonElement(jsonObj.get("platform"));
+      // validate the required field `status`
+      ChannelStatus.validateJsonElement(jsonObj.get("status"));
+      if ((jsonObj.get("tokenExpiresAt") != null && !jsonObj.get("tokenExpiresAt").isJsonNull()) && !jsonObj.get("tokenExpiresAt").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `tokenExpiresAt` to be a primitive type in the JSON string but got `%s`", jsonObj.get("tokenExpiresAt").toString()));
+      }
+  }
+
+  public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
+       if (!Channel.class.isAssignableFrom(type.getRawType())) {
+         return null; // this class only serializes 'Channel' and its subtypes
+       }
+       final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
+       final TypeAdapter<Channel> thisAdapter
+                        = gson.getDelegateAdapter(this, TypeToken.get(Channel.class));
+
+       return (TypeAdapter<T>) new TypeAdapter<Channel>() {
+           @Override
+           public void write(JsonWriter out, Channel value) throws IOException {
+             JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
+             elementAdapter.write(out, obj);
+           }
+
+           @Override
+           public Channel read(JsonReader in) throws IOException {
+             JsonElement jsonElement = elementAdapter.read(in);
+             validateJsonElement(jsonElement);
+             return thisAdapter.fromJsonTree(jsonElement);
+           }
+
+       }.nullSafe();
     }
+  }
 
-    StringJoiner joiner = new StringJoiner("&");
+  /**
+   * Create an instance of Channel given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of Channel
+   * @throws IOException if the JSON string is invalid with respect to Channel
+   */
+  public static Channel fromJson(String jsonString) throws IOException {
+    return JSON.getGson().fromJson(jsonString, Channel.class);
+  }
 
-    // add `avatarUrl` to the URL query string
-    if (getAvatarUrl() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%savatarUrl%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getAvatarUrl()))));
-    }
-
-    // add `displayName` to the URL query string
-    if (getDisplayName() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%sdisplayName%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getDisplayName()))));
-    }
-
-    // add `handle` to the URL query string
-    if (getHandle() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%shandle%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getHandle()))));
-    }
-
-    // add `id` to the URL query string
-    if (getId() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%sid%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getId()))));
-    }
-
-    // add `platform` to the URL query string
-    if (getPlatform() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%splatform%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getPlatform()))));
-    }
-
-    // add `status` to the URL query string
-    if (getStatus() != null) {
-      joiner.add(getStatus().toUrlQueryString(prefix + "status" + suffix));
-    }
-
-    // add `tokenExpiresAt` to the URL query string
-    if (getTokenExpiresAt() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%stokenExpiresAt%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getTokenExpiresAt()))));
-    }
-
-    return joiner.toString();
+  /**
+   * Convert an instance of Channel to an JSON string
+   *
+   * @return JSON string
+   */
+  public String toJson() {
+    return JSON.getGson().toJson(this);
   }
 }
 

@@ -6,7 +6,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **id** | **string** |  |
 **name** | **string** |  |
-**permissions** | **string[]** |  |
+**permissions** | [**\Peal\Model\Permission[]**](Permission.md) |  |
 **role** | **string** |  |
 **slug** | **string** |  |
 

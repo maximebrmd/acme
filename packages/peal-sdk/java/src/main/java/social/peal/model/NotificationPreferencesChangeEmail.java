@@ -13,50 +13,65 @@
 
 package social.peal.model;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.StringJoiner;
 import java.util.Objects;
-import java.util.Map;
-import java.util.HashMap;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.fasterxml.jackson.annotation.JsonValue;
+import com.google.gson.TypeAdapter;
+import com.google.gson.annotations.JsonAdapter;
+import com.google.gson.annotations.SerializedName;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 import java.util.Arrays;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonNull;
+import com.google.gson.JsonParseException;
+import com.google.gson.TypeAdapterFactory;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.TypeAdapter;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 
-import social.peal.ApiClient;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import social.peal.JSON;
+
 /**
  * NotificationPreferencesChangeEmail
  */
-@JsonPropertyOrder({
-  NotificationPreferencesChangeEmail.JSON_PROPERTY_CHANNEL_RECONNECT,
-  NotificationPreferencesChangeEmail.JSON_PROPERTY_POST_FAILED,
-  NotificationPreferencesChangeEmail.JSON_PROPERTY_POST_PUBLISHED,
-  NotificationPreferencesChangeEmail.JSON_PROPERTY_POST_UNCONFIRMED
-})
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.27.0")
 public class NotificationPreferencesChangeEmail {
-  public static final String JSON_PROPERTY_CHANNEL_RECONNECT = "channelReconnect";
+  public static final String SERIALIZED_NAME_CHANNEL_RECONNECT = "channelReconnect";
+  @SerializedName(SERIALIZED_NAME_CHANNEL_RECONNECT)
   @javax.annotation.Nullable
   private Boolean channelReconnect;
 
-  public static final String JSON_PROPERTY_POST_FAILED = "postFailed";
+  public static final String SERIALIZED_NAME_POST_FAILED = "postFailed";
+  @SerializedName(SERIALIZED_NAME_POST_FAILED)
   @javax.annotation.Nullable
   private Boolean postFailed;
 
-  public static final String JSON_PROPERTY_POST_PUBLISHED = "postPublished";
+  public static final String SERIALIZED_NAME_POST_PUBLISHED = "postPublished";
+  @SerializedName(SERIALIZED_NAME_POST_PUBLISHED)
   @javax.annotation.Nullable
   private Boolean postPublished;
 
-  public static final String JSON_PROPERTY_POST_UNCONFIRMED = "postUnconfirmed";
+  public static final String SERIALIZED_NAME_POST_UNCONFIRMED = "postUnconfirmed";
+  @SerializedName(SERIALIZED_NAME_POST_UNCONFIRMED)
   @javax.annotation.Nullable
   private Boolean postUnconfirmed;
 
-  public NotificationPreferencesChangeEmail() { 
+  public NotificationPreferencesChangeEmail() {
   }
 
   public NotificationPreferencesChangeEmail channelReconnect(@javax.annotation.Nullable Boolean channelReconnect) {
@@ -69,15 +84,10 @@ public class NotificationPreferencesChangeEmail {
    * @return channelReconnect
    */
   @javax.annotation.Nullable
-  @JsonProperty(value = JSON_PROPERTY_CHANNEL_RECONNECT, required = false)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public Boolean getChannelReconnect() {
     return channelReconnect;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_CHANNEL_RECONNECT, required = false)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setChannelReconnect(@javax.annotation.Nullable Boolean channelReconnect) {
     this.channelReconnect = channelReconnect;
   }
@@ -93,15 +103,10 @@ public class NotificationPreferencesChangeEmail {
    * @return postFailed
    */
   @javax.annotation.Nullable
-  @JsonProperty(value = JSON_PROPERTY_POST_FAILED, required = false)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public Boolean getPostFailed() {
     return postFailed;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_POST_FAILED, required = false)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setPostFailed(@javax.annotation.Nullable Boolean postFailed) {
     this.postFailed = postFailed;
   }
@@ -117,15 +122,10 @@ public class NotificationPreferencesChangeEmail {
    * @return postPublished
    */
   @javax.annotation.Nullable
-  @JsonProperty(value = JSON_PROPERTY_POST_PUBLISHED, required = false)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public Boolean getPostPublished() {
     return postPublished;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_POST_PUBLISHED, required = false)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setPostPublished(@javax.annotation.Nullable Boolean postPublished) {
     this.postPublished = postPublished;
   }
@@ -141,23 +141,16 @@ public class NotificationPreferencesChangeEmail {
    * @return postUnconfirmed
    */
   @javax.annotation.Nullable
-  @JsonProperty(value = JSON_PROPERTY_POST_UNCONFIRMED, required = false)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public Boolean getPostUnconfirmed() {
     return postUnconfirmed;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_POST_UNCONFIRMED, required = false)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setPostUnconfirmed(@javax.annotation.Nullable Boolean postUnconfirmed) {
     this.postUnconfirmed = postUnconfirmed;
   }
 
 
-  /**
-   * Return true if this NotificationPreferencesChange_email object is equal to o.
-   */
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -198,59 +191,88 @@ public class NotificationPreferencesChangeEmail {
     return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
 
-  /**
-   * Convert the instance into URL query string.
-   *
-   * @return URL query string
-   */
-  public String toUrlQueryString() {
-    return toUrlQueryString(null);
+
+  public static HashSet<String> openapiFields;
+  public static HashSet<String> openapiRequiredFields;
+
+  static {
+    // a set of all properties/fields (JSON key names)
+    openapiFields = new HashSet<String>(Arrays.asList("channelReconnect", "postFailed", "postPublished", "postUnconfirmed"));
+
+    // a set of required properties/fields (JSON key names)
+    openapiRequiredFields = new HashSet<String>(0);
   }
 
   /**
-   * Convert the instance into URL query string.
+   * Validates the JSON Element and throws an exception if issues found
    *
-   * @param prefix prefix of the query string
-   * @return URL query string
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to NotificationPreferencesChangeEmail
    */
-  public String toUrlQueryString(String prefix) {
-    String suffix = "";
-    String containerSuffix = "";
-    String containerPrefix = "";
-    if (prefix == null) {
-      // style=form, explode=true, e.g. /pet?name=cat&type=manx
-      prefix = "";
-    } else {
-      // deepObject style e.g. /pet?id[name]=cat&id[type]=manx
-      prefix = prefix + "[";
-      suffix = "]";
-      containerSuffix = "]";
-      containerPrefix = "[";
+  public static void validateJsonElement(JsonElement jsonElement) throws IOException {
+      if (jsonElement == null) {
+        if (!NotificationPreferencesChangeEmail.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The required field(s) %s in NotificationPreferencesChangeEmail is not found in the empty JSON string", NotificationPreferencesChangeEmail.openapiRequiredFields.toString()));
+        }
+      }
+
+      Set<Map.Entry<String, JsonElement>> entries = jsonElement.getAsJsonObject().entrySet();
+      // check to see if the JSON string contains additional fields
+      for (Map.Entry<String, JsonElement> entry : entries) {
+        if (!NotificationPreferencesChangeEmail.openapiFields.contains(entry.getKey())) {
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The field `%s` in the JSON string is not defined in the `NotificationPreferencesChangeEmail` properties. JSON: %s", entry.getKey(), jsonElement.toString()));
+        }
+      }
+        JsonObject jsonObj = jsonElement.getAsJsonObject();
+  }
+
+  public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
+       if (!NotificationPreferencesChangeEmail.class.isAssignableFrom(type.getRawType())) {
+         return null; // this class only serializes 'NotificationPreferencesChangeEmail' and its subtypes
+       }
+       final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
+       final TypeAdapter<NotificationPreferencesChangeEmail> thisAdapter
+                        = gson.getDelegateAdapter(this, TypeToken.get(NotificationPreferencesChangeEmail.class));
+
+       return (TypeAdapter<T>) new TypeAdapter<NotificationPreferencesChangeEmail>() {
+           @Override
+           public void write(JsonWriter out, NotificationPreferencesChangeEmail value) throws IOException {
+             JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
+             elementAdapter.write(out, obj);
+           }
+
+           @Override
+           public NotificationPreferencesChangeEmail read(JsonReader in) throws IOException {
+             JsonElement jsonElement = elementAdapter.read(in);
+             validateJsonElement(jsonElement);
+             return thisAdapter.fromJsonTree(jsonElement);
+           }
+
+       }.nullSafe();
     }
+  }
 
-    StringJoiner joiner = new StringJoiner("&");
+  /**
+   * Create an instance of NotificationPreferencesChangeEmail given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of NotificationPreferencesChangeEmail
+   * @throws IOException if the JSON string is invalid with respect to NotificationPreferencesChangeEmail
+   */
+  public static NotificationPreferencesChangeEmail fromJson(String jsonString) throws IOException {
+    return JSON.getGson().fromJson(jsonString, NotificationPreferencesChangeEmail.class);
+  }
 
-    // add `channelReconnect` to the URL query string
-    if (getChannelReconnect() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%schannelReconnect%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getChannelReconnect()))));
-    }
-
-    // add `postFailed` to the URL query string
-    if (getPostFailed() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%spostFailed%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getPostFailed()))));
-    }
-
-    // add `postPublished` to the URL query string
-    if (getPostPublished() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%spostPublished%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getPostPublished()))));
-    }
-
-    // add `postUnconfirmed` to the URL query string
-    if (getPostUnconfirmed() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%spostUnconfirmed%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getPostUnconfirmed()))));
-    }
-
-    return joiner.toString();
+  /**
+   * Convert an instance of NotificationPreferencesChangeEmail to an JSON string
+   *
+   * @return JSON string
+   */
+  public String toJson() {
+    return JSON.getGson().toJson(this);
   }
 }
 

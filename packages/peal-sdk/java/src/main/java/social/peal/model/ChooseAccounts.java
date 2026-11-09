@@ -13,42 +13,57 @@
 
 package social.peal.model;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.StringJoiner;
 import java.util.Objects;
-import java.util.Map;
-import java.util.HashMap;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.fasterxml.jackson.annotation.JsonValue;
+import com.google.gson.TypeAdapter;
+import com.google.gson.annotations.JsonAdapter;
+import com.google.gson.annotations.SerializedName;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonNull;
+import com.google.gson.JsonParseException;
+import com.google.gson.TypeAdapterFactory;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.TypeAdapter;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 
-import social.peal.ApiClient;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import social.peal.JSON;
+
 /**
  * ChooseAccounts
  */
-@JsonPropertyOrder({
-  ChooseAccounts.JSON_PROPERTY_ACCOUNT_IDS,
-  ChooseAccounts.JSON_PROPERTY_SELECTION
-})
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.27.0")
 public class ChooseAccounts {
-  public static final String JSON_PROPERTY_ACCOUNT_IDS = "accountIds";
+  public static final String SERIALIZED_NAME_ACCOUNT_IDS = "accountIds";
+  @SerializedName(SERIALIZED_NAME_ACCOUNT_IDS)
   @javax.annotation.Nonnull
   private List<String> accountIds = new ArrayList<>();
 
-  public static final String JSON_PROPERTY_SELECTION = "selection";
+  public static final String SERIALIZED_NAME_SELECTION = "selection";
+  @SerializedName(SERIALIZED_NAME_SELECTION)
   @javax.annotation.Nonnull
   private String selection;
 
-  public ChooseAccounts() { 
+  public ChooseAccounts() {
   }
 
   public ChooseAccounts accountIds(@javax.annotation.Nonnull List<String> accountIds) {
@@ -69,15 +84,10 @@ public class ChooseAccounts {
    * @return accountIds
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_ACCOUNT_IDS, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public List<String> getAccountIds() {
     return accountIds;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_ACCOUNT_IDS, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setAccountIds(@javax.annotation.Nonnull List<String> accountIds) {
     this.accountIds = accountIds;
   }
@@ -93,23 +103,16 @@ public class ChooseAccounts {
    * @return selection
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_SELECTION, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public String getSelection() {
     return selection;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_SELECTION, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setSelection(@javax.annotation.Nonnull String selection) {
     this.selection = selection;
   }
 
 
-  /**
-   * Return true if this ChooseAccounts object is equal to o.
-   */
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -146,53 +149,104 @@ public class ChooseAccounts {
     return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
 
-  /**
-   * Convert the instance into URL query string.
-   *
-   * @return URL query string
-   */
-  public String toUrlQueryString() {
-    return toUrlQueryString(null);
+
+  public static HashSet<String> openapiFields;
+  public static HashSet<String> openapiRequiredFields;
+
+  static {
+    // a set of all properties/fields (JSON key names)
+    openapiFields = new HashSet<String>(Arrays.asList("accountIds", "selection"));
+
+    // a set of required properties/fields (JSON key names)
+    openapiRequiredFields = new HashSet<String>(Arrays.asList("accountIds", "selection"));
   }
 
   /**
-   * Convert the instance into URL query string.
+   * Validates the JSON Element and throws an exception if issues found
    *
-   * @param prefix prefix of the query string
-   * @return URL query string
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to ChooseAccounts
    */
-  public String toUrlQueryString(String prefix) {
-    String suffix = "";
-    String containerSuffix = "";
-    String containerPrefix = "";
-    if (prefix == null) {
-      // style=form, explode=true, e.g. /pet?name=cat&type=manx
-      prefix = "";
-    } else {
-      // deepObject style e.g. /pet?id[name]=cat&id[type]=manx
-      prefix = prefix + "[";
-      suffix = "]";
-      containerSuffix = "]";
-      containerPrefix = "[";
-    }
-
-    StringJoiner joiner = new StringJoiner("&");
-
-    // add `accountIds` to the URL query string
-    if (getAccountIds() != null) {
-      for (int i = 0; i < getAccountIds().size(); i++) {
-        joiner.add(String.format(java.util.Locale.ROOT, "%saccountIds%s%s=%s", prefix, suffix,
-            "".equals(suffix) ? "" : String.format(java.util.Locale.ROOT, "%s%d%s", containerPrefix, i, containerSuffix),
-            ApiClient.urlEncode(ApiClient.valueToString(getAccountIds().get(i)))));
+  public static void validateJsonElement(JsonElement jsonElement) throws IOException {
+      if (jsonElement == null) {
+        if (!ChooseAccounts.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The required field(s) %s in ChooseAccounts is not found in the empty JSON string", ChooseAccounts.openapiRequiredFields.toString()));
+        }
       }
-    }
 
-    // add `selection` to the URL query string
-    if (getSelection() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%sselection%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getSelection()))));
-    }
+      Set<Map.Entry<String, JsonElement>> entries = jsonElement.getAsJsonObject().entrySet();
+      // check to see if the JSON string contains additional fields
+      for (Map.Entry<String, JsonElement> entry : entries) {
+        if (!ChooseAccounts.openapiFields.contains(entry.getKey())) {
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The field `%s` in the JSON string is not defined in the `ChooseAccounts` properties. JSON: %s", entry.getKey(), jsonElement.toString()));
+        }
+      }
 
-    return joiner.toString();
+      // check to make sure all required properties/fields are present in the JSON string
+      for (String requiredField : ChooseAccounts.openapiRequiredFields) {
+        if (jsonElement.getAsJsonObject().get(requiredField) == null) {
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The required field `%s` is not found in the JSON string: %s", requiredField, jsonElement.toString()));
+        }
+      }
+        JsonObject jsonObj = jsonElement.getAsJsonObject();
+      // ensure the required json array is present
+      if (jsonObj.get("accountIds") == null) {
+        throw new IllegalArgumentException("Expected the field `linkedContent` to be an array in the JSON string but got `null`");
+      } else if (!jsonObj.get("accountIds").isJsonArray()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `accountIds` to be an array in the JSON string but got `%s`", jsonObj.get("accountIds").toString()));
+      }
+      if (!jsonObj.get("selection").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `selection` to be a primitive type in the JSON string but got `%s`", jsonObj.get("selection").toString()));
+      }
+  }
+
+  public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
+       if (!ChooseAccounts.class.isAssignableFrom(type.getRawType())) {
+         return null; // this class only serializes 'ChooseAccounts' and its subtypes
+       }
+       final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
+       final TypeAdapter<ChooseAccounts> thisAdapter
+                        = gson.getDelegateAdapter(this, TypeToken.get(ChooseAccounts.class));
+
+       return (TypeAdapter<T>) new TypeAdapter<ChooseAccounts>() {
+           @Override
+           public void write(JsonWriter out, ChooseAccounts value) throws IOException {
+             JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
+             elementAdapter.write(out, obj);
+           }
+
+           @Override
+           public ChooseAccounts read(JsonReader in) throws IOException {
+             JsonElement jsonElement = elementAdapter.read(in);
+             validateJsonElement(jsonElement);
+             return thisAdapter.fromJsonTree(jsonElement);
+           }
+
+       }.nullSafe();
+    }
+  }
+
+  /**
+   * Create an instance of ChooseAccounts given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of ChooseAccounts
+   * @throws IOException if the JSON string is invalid with respect to ChooseAccounts
+   */
+  public static ChooseAccounts fromJson(String jsonString) throws IOException {
+    return JSON.getGson().fromJson(jsonString, ChooseAccounts.class);
+  }
+
+  /**
+   * Convert an instance of ChooseAccounts to an JSON string
+   *
+   * @return JSON string
+   */
+  public String toJson() {
+    return JSON.getGson().toJson(this);
   }
 }
 

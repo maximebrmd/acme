@@ -153,6 +153,7 @@ docs/NotificationPreferencesChangeEmail.md
 docs/NotificationPreferencesEmail.md
 docs/PaidPlan.md
 docs/PeriodUsage.md
+docs/Permission.md
 docs/Plan.md
 docs/PlanAllowances.md
 docs/PlanLimit.md
@@ -359,6 +360,7 @@ model_notification_preferences_change_email.go
 model_notification_preferences_email.go
 model_paid_plan.go
 model_period_usage.go
+model_permission.go
 model_plan.go
 model_plan_allowances.go
 model_plan_limit.go

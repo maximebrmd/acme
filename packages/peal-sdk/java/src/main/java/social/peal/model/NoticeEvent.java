@@ -13,17 +13,13 @@
 
 package social.peal.model;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.StringJoiner;
 import java.util.Objects;
-import java.util.Map;
-import java.util.HashMap;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.fasterxml.jackson.annotation.JsonValue;
+import com.google.gson.TypeAdapter;
+import com.google.gson.annotations.JsonAdapter;
+import com.google.gson.annotations.SerializedName;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 import java.util.Arrays;
 import social.peal.model.FailureReason;
 import social.peal.model.NoticeChannel;
@@ -32,129 +28,178 @@ import social.peal.model.NoticeEventAnyOf1;
 import social.peal.model.NoticeEventAnyOf2;
 import social.peal.model.NoticeEventAnyOf3;
 import social.peal.model.NoticeEventAnyOf4;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+
 
 
 import java.io.IOException;
+import java.lang.reflect.Type;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
-import social.peal.ApiClient;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonParseException;
+import com.google.gson.TypeAdapter;
+import com.google.gson.TypeAdapterFactory;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.annotations.JsonAdapter;
+import com.google.gson.annotations.SerializedName;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonParseException;
+
 import social.peal.JSON;
 
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.27.0")
-@JsonDeserialize(using=NoticeEvent.NoticeEventDeserializer.class)
-@JsonSerialize(using = NoticeEvent.NoticeEventSerializer.class)
 public class NoticeEvent extends AbstractOpenApiSchema {
     private static final Logger log = Logger.getLogger(NoticeEvent.class.getName());
 
-    public static class NoticeEventSerializer extends StdSerializer<NoticeEvent> {
-        public NoticeEventSerializer(Class<NoticeEvent> t) {
-            super(t);
-        }
-
-        public NoticeEventSerializer() {
-            this(null);
-        }
-
+    public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
+        @SuppressWarnings("unchecked")
         @Override
-        public void serialize(NoticeEvent value, JsonGenerator jgen, SerializerProvider provider) throws IOException, JsonProcessingException {
-            jgen.writeObject(value.getActualInstance());
-        }
-    }
-
-    public static class NoticeEventDeserializer extends StdDeserializer<NoticeEvent> {
-        public NoticeEventDeserializer() {
-            this(NoticeEvent.class);
-        }
-
-        public NoticeEventDeserializer(Class<?> vc) {
-            super(vc);
-        }
-
-        @Override
-        public NoticeEvent deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException, JsonProcessingException {
-            JsonNode tree = ctxt.readTree(jp);
-
-            Object deserialized = null;
-            // deserialize NoticeEventAnyOf
-            try {
-                deserialized = tree.traverse(jp.getCodec()).readValueAs(NoticeEventAnyOf.class);
-                NoticeEvent ret = new NoticeEvent();
-                ret.setActualInstance(deserialized);
-                return ret;
-            } catch (Exception e) {
-                // deserialization failed, continue, log to help debugging
-                log.log(Level.FINER, "Input data does not match 'NoticeEvent'", e);
+        public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
+            if (!NoticeEvent.class.isAssignableFrom(type.getRawType())) {
+                return null; // this class only serializes 'NoticeEvent' and its subtypes
             }
+            final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
+            final TypeAdapter<NoticeEventAnyOf> adapterNoticeEventAnyOf = gson.getDelegateAdapter(this, TypeToken.get(NoticeEventAnyOf.class));
+            final TypeAdapter<NoticeEventAnyOf1> adapterNoticeEventAnyOf1 = gson.getDelegateAdapter(this, TypeToken.get(NoticeEventAnyOf1.class));
+            final TypeAdapter<NoticeEventAnyOf2> adapterNoticeEventAnyOf2 = gson.getDelegateAdapter(this, TypeToken.get(NoticeEventAnyOf2.class));
+            final TypeAdapter<NoticeEventAnyOf3> adapterNoticeEventAnyOf3 = gson.getDelegateAdapter(this, TypeToken.get(NoticeEventAnyOf3.class));
+            final TypeAdapter<NoticeEventAnyOf4> adapterNoticeEventAnyOf4 = gson.getDelegateAdapter(this, TypeToken.get(NoticeEventAnyOf4.class));
 
-            // deserialize NoticeEventAnyOf1
-            try {
-                deserialized = tree.traverse(jp.getCodec()).readValueAs(NoticeEventAnyOf1.class);
-                NoticeEvent ret = new NoticeEvent();
-                ret.setActualInstance(deserialized);
-                return ret;
-            } catch (Exception e) {
-                // deserialization failed, continue, log to help debugging
-                log.log(Level.FINER, "Input data does not match 'NoticeEvent'", e);
-            }
+            return (TypeAdapter<T>) new TypeAdapter<NoticeEvent>() {
+                @Override
+                public void write(JsonWriter out, NoticeEvent value) throws IOException {
+                    if (value == null || value.getActualInstance() == null) {
+                        elementAdapter.write(out, null);
+                        return;
+                    }
 
-            // deserialize NoticeEventAnyOf2
-            try {
-                deserialized = tree.traverse(jp.getCodec()).readValueAs(NoticeEventAnyOf2.class);
-                NoticeEvent ret = new NoticeEvent();
-                ret.setActualInstance(deserialized);
-                return ret;
-            } catch (Exception e) {
-                // deserialization failed, continue, log to help debugging
-                log.log(Level.FINER, "Input data does not match 'NoticeEvent'", e);
-            }
+                    // check if the actual instance is of the type `NoticeEventAnyOf`
+                    if (value.getActualInstance() instanceof NoticeEventAnyOf) {
+                        JsonElement element = adapterNoticeEventAnyOf.toJsonTree((NoticeEventAnyOf)value.getActualInstance());
+                        elementAdapter.write(out, element);
+                        return;
+                    }
+                    // check if the actual instance is of the type `NoticeEventAnyOf1`
+                    if (value.getActualInstance() instanceof NoticeEventAnyOf1) {
+                        JsonElement element = adapterNoticeEventAnyOf1.toJsonTree((NoticeEventAnyOf1)value.getActualInstance());
+                        elementAdapter.write(out, element);
+                        return;
+                    }
+                    // check if the actual instance is of the type `NoticeEventAnyOf2`
+                    if (value.getActualInstance() instanceof NoticeEventAnyOf2) {
+                        JsonElement element = adapterNoticeEventAnyOf2.toJsonTree((NoticeEventAnyOf2)value.getActualInstance());
+                        elementAdapter.write(out, element);
+                        return;
+                    }
+                    // check if the actual instance is of the type `NoticeEventAnyOf3`
+                    if (value.getActualInstance() instanceof NoticeEventAnyOf3) {
+                        JsonElement element = adapterNoticeEventAnyOf3.toJsonTree((NoticeEventAnyOf3)value.getActualInstance());
+                        elementAdapter.write(out, element);
+                        return;
+                    }
+                    // check if the actual instance is of the type `NoticeEventAnyOf4`
+                    if (value.getActualInstance() instanceof NoticeEventAnyOf4) {
+                        JsonElement element = adapterNoticeEventAnyOf4.toJsonTree((NoticeEventAnyOf4)value.getActualInstance());
+                        elementAdapter.write(out, element);
+                        return;
+                    }
+                    throw new IOException("Failed to serialize as the type doesn't match anyOf schemas: NoticeEventAnyOf, NoticeEventAnyOf1, NoticeEventAnyOf2, NoticeEventAnyOf3, NoticeEventAnyOf4");
+                }
 
-            // deserialize NoticeEventAnyOf3
-            try {
-                deserialized = tree.traverse(jp.getCodec()).readValueAs(NoticeEventAnyOf3.class);
-                NoticeEvent ret = new NoticeEvent();
-                ret.setActualInstance(deserialized);
-                return ret;
-            } catch (Exception e) {
-                // deserialization failed, continue, log to help debugging
-                log.log(Level.FINER, "Input data does not match 'NoticeEvent'", e);
-            }
+                @Override
+                public NoticeEvent read(JsonReader in) throws IOException {
+                    Object deserialized = null;
+                    JsonElement jsonElement = elementAdapter.read(in);
 
-            // deserialize NoticeEventAnyOf4
-            try {
-                deserialized = tree.traverse(jp.getCodec()).readValueAs(NoticeEventAnyOf4.class);
-                NoticeEvent ret = new NoticeEvent();
-                ret.setActualInstance(deserialized);
-                return ret;
-            } catch (Exception e) {
-                // deserialization failed, continue, log to help debugging
-                log.log(Level.FINER, "Input data does not match 'NoticeEvent'", e);
-            }
+                    ArrayList<String> errorMessages = new ArrayList<>();
+                    TypeAdapter actualAdapter = elementAdapter;
 
-            throw new IOException("Failed deserialization for NoticeEvent: no match found");
-        }
+                    // deserialize NoticeEventAnyOf
+                    try {
+                        // validate the JSON object to see if any exception is thrown
+                        NoticeEventAnyOf.validateJsonElement(jsonElement);
+                        actualAdapter = adapterNoticeEventAnyOf;
+                        NoticeEvent ret = new NoticeEvent();
+                        ret.setActualInstance(actualAdapter.fromJsonTree(jsonElement));
+                        return ret;
+                    } catch (Exception e) {
+                        // deserialization failed, continue
+                        errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for NoticeEventAnyOf failed with `%s`.", e.getMessage()));
+                        log.log(Level.FINER, "Input data does not match schema 'NoticeEventAnyOf'", e);
+                    }
+                    // deserialize NoticeEventAnyOf1
+                    try {
+                        // validate the JSON object to see if any exception is thrown
+                        NoticeEventAnyOf1.validateJsonElement(jsonElement);
+                        actualAdapter = adapterNoticeEventAnyOf1;
+                        NoticeEvent ret = new NoticeEvent();
+                        ret.setActualInstance(actualAdapter.fromJsonTree(jsonElement));
+                        return ret;
+                    } catch (Exception e) {
+                        // deserialization failed, continue
+                        errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for NoticeEventAnyOf1 failed with `%s`.", e.getMessage()));
+                        log.log(Level.FINER, "Input data does not match schema 'NoticeEventAnyOf1'", e);
+                    }
+                    // deserialize NoticeEventAnyOf2
+                    try {
+                        // validate the JSON object to see if any exception is thrown
+                        NoticeEventAnyOf2.validateJsonElement(jsonElement);
+                        actualAdapter = adapterNoticeEventAnyOf2;
+                        NoticeEvent ret = new NoticeEvent();
+                        ret.setActualInstance(actualAdapter.fromJsonTree(jsonElement));
+                        return ret;
+                    } catch (Exception e) {
+                        // deserialization failed, continue
+                        errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for NoticeEventAnyOf2 failed with `%s`.", e.getMessage()));
+                        log.log(Level.FINER, "Input data does not match schema 'NoticeEventAnyOf2'", e);
+                    }
+                    // deserialize NoticeEventAnyOf3
+                    try {
+                        // validate the JSON object to see if any exception is thrown
+                        NoticeEventAnyOf3.validateJsonElement(jsonElement);
+                        actualAdapter = adapterNoticeEventAnyOf3;
+                        NoticeEvent ret = new NoticeEvent();
+                        ret.setActualInstance(actualAdapter.fromJsonTree(jsonElement));
+                        return ret;
+                    } catch (Exception e) {
+                        // deserialization failed, continue
+                        errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for NoticeEventAnyOf3 failed with `%s`.", e.getMessage()));
+                        log.log(Level.FINER, "Input data does not match schema 'NoticeEventAnyOf3'", e);
+                    }
+                    // deserialize NoticeEventAnyOf4
+                    try {
+                        // validate the JSON object to see if any exception is thrown
+                        NoticeEventAnyOf4.validateJsonElement(jsonElement);
+                        actualAdapter = adapterNoticeEventAnyOf4;
+                        NoticeEvent ret = new NoticeEvent();
+                        ret.setActualInstance(actualAdapter.fromJsonTree(jsonElement));
+                        return ret;
+                    } catch (Exception e) {
+                        // deserialization failed, continue
+                        errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for NoticeEventAnyOf4 failed with `%s`.", e.getMessage()));
+                        log.log(Level.FINER, "Input data does not match schema 'NoticeEventAnyOf4'", e);
+                    }
 
-        /**
-         * Handle deserialization of the 'null' value.
-         */
-        @Override
-        public NoticeEvent getNullValue(DeserializationContext ctxt) throws JsonMappingException {
-            throw new JsonMappingException(ctxt.getParser(), "NoticeEvent cannot be null");
+                    throw new IOException(String.format(java.util.Locale.ROOT, "Failed deserialization for NoticeEvent: no class matches result, expected at least 1. Detailed failure message for anyOf schemas: %s. JSON: %s", errorMessages, jsonElement.toString()));
+                }
+            }.nullSafe();
         }
     }
 
@@ -165,28 +210,8 @@ public class NoticeEvent extends AbstractOpenApiSchema {
         super("anyOf", Boolean.FALSE);
     }
 
-    public NoticeEvent(NoticeEventAnyOf o) {
-        this();
-        setActualInstance(o);
-    }
-
-    public NoticeEvent(NoticeEventAnyOf1 o) {
-        this();
-        setActualInstance(o);
-    }
-
-    public NoticeEvent(NoticeEventAnyOf2 o) {
-        this();
-        setActualInstance(o);
-    }
-
-    public NoticeEvent(NoticeEventAnyOf3 o) {
-        this();
-        setActualInstance(o);
-    }
-
-    public NoticeEvent(NoticeEventAnyOf4 o) {
-        this();
+    public NoticeEvent(Object o) {
+        super("anyOf", Boolean.FALSE);
         setActualInstance(o);
     }
 
@@ -196,7 +221,6 @@ public class NoticeEvent extends AbstractOpenApiSchema {
         schemas.put("NoticeEventAnyOf2", NoticeEventAnyOf2.class);
         schemas.put("NoticeEventAnyOf3", NoticeEventAnyOf3.class);
         schemas.put("NoticeEventAnyOf4", NoticeEventAnyOf4.class);
-        JSON.registerDescendants(NoticeEvent.class, Collections.unmodifiableMap(schemas));
     }
 
     @Override
@@ -210,31 +234,30 @@ public class NoticeEvent extends AbstractOpenApiSchema {
      * NoticeEventAnyOf, NoticeEventAnyOf1, NoticeEventAnyOf2, NoticeEventAnyOf3, NoticeEventAnyOf4
      *
      * It could be an instance of the 'anyOf' schemas.
-     * The anyOf child schemas may themselves be a composed schema (allOf, anyOf, anyOf).
      */
     @Override
     public void setActualInstance(Object instance) {
-        if (JSON.isInstanceOf(NoticeEventAnyOf.class, instance, new HashSet<Class<?>>())) {
+        if (instance instanceof NoticeEventAnyOf) {
             super.setActualInstance(instance);
             return;
         }
 
-        if (JSON.isInstanceOf(NoticeEventAnyOf1.class, instance, new HashSet<Class<?>>())) {
+        if (instance instanceof NoticeEventAnyOf1) {
             super.setActualInstance(instance);
             return;
         }
 
-        if (JSON.isInstanceOf(NoticeEventAnyOf2.class, instance, new HashSet<Class<?>>())) {
+        if (instance instanceof NoticeEventAnyOf2) {
             super.setActualInstance(instance);
             return;
         }
 
-        if (JSON.isInstanceOf(NoticeEventAnyOf3.class, instance, new HashSet<Class<?>>())) {
+        if (instance instanceof NoticeEventAnyOf3) {
             super.setActualInstance(instance);
             return;
         }
 
-        if (JSON.isInstanceOf(NoticeEventAnyOf4.class, instance, new HashSet<Class<?>>())) {
+        if (instance instanceof NoticeEventAnyOf4) {
             super.setActualInstance(instance);
             return;
         }
@@ -248,6 +271,7 @@ public class NoticeEvent extends AbstractOpenApiSchema {
      *
      * @return The actual instance (NoticeEventAnyOf, NoticeEventAnyOf1, NoticeEventAnyOf2, NoticeEventAnyOf3, NoticeEventAnyOf4)
      */
+    @SuppressWarnings("unchecked")
     @Override
     public Object getActualInstance() {
         return super.getActualInstance();
@@ -308,42 +332,76 @@ public class NoticeEvent extends AbstractOpenApiSchema {
         return (NoticeEventAnyOf4)super.getActualInstance();
     }
 
-
-
-  /**
-   * Convert the instance into URL query string.
-   *
-   * @return URL query string
-   */
-  public String toUrlQueryString() {
-    return toUrlQueryString(null);
-  }
-
-  /**
-   * Convert the instance into URL query string.
-   *
-   * @param prefix prefix of the query string
-   * @return URL query string
-   */
-  public String toUrlQueryString(String prefix) {
-    String suffix = "";
-    String containerSuffix = "";
-    String containerPrefix = "";
-    if (prefix == null) {
-      // style=form, explode=true, e.g. /pet?name=cat&type=manx
-      prefix = "";
-    } else {
-      // deepObject style e.g. /pet?id[name]=cat&id[type]=manx
-      prefix = prefix + "[";
-      suffix = "]";
-      containerSuffix = "]";
-      containerPrefix = "[";
+    /**
+     * Validates the JSON Element and throws an exception if issues found
+     *
+     * @param jsonElement JSON Element
+     * @throws IOException if the JSON Element is invalid with respect to NoticeEvent
+     */
+    public static void validateJsonElement(JsonElement jsonElement) throws IOException {
+        // validate anyOf schemas one by one
+        ArrayList<String> errorMessages = new ArrayList<>();
+        // validate the json string with NoticeEventAnyOf
+        try {
+            NoticeEventAnyOf.validateJsonElement(jsonElement);
+            return;
+        } catch (Exception e) {
+            errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for NoticeEventAnyOf failed with `%s`.", e.getMessage()));
+            // continue to the next one
+        }
+        // validate the json string with NoticeEventAnyOf1
+        try {
+            NoticeEventAnyOf1.validateJsonElement(jsonElement);
+            return;
+        } catch (Exception e) {
+            errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for NoticeEventAnyOf1 failed with `%s`.", e.getMessage()));
+            // continue to the next one
+        }
+        // validate the json string with NoticeEventAnyOf2
+        try {
+            NoticeEventAnyOf2.validateJsonElement(jsonElement);
+            return;
+        } catch (Exception e) {
+            errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for NoticeEventAnyOf2 failed with `%s`.", e.getMessage()));
+            // continue to the next one
+        }
+        // validate the json string with NoticeEventAnyOf3
+        try {
+            NoticeEventAnyOf3.validateJsonElement(jsonElement);
+            return;
+        } catch (Exception e) {
+            errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for NoticeEventAnyOf3 failed with `%s`.", e.getMessage()));
+            // continue to the next one
+        }
+        // validate the json string with NoticeEventAnyOf4
+        try {
+            NoticeEventAnyOf4.validateJsonElement(jsonElement);
+            return;
+        } catch (Exception e) {
+            errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for NoticeEventAnyOf4 failed with `%s`.", e.getMessage()));
+            // continue to the next one
+        }
+        throw new IOException(String.format(java.util.Locale.ROOT, "The JSON string is invalid for NoticeEvent with anyOf schemas: NoticeEventAnyOf, NoticeEventAnyOf1, NoticeEventAnyOf2, NoticeEventAnyOf3, NoticeEventAnyOf4. no class match the result, expected at least 1. Detailed failure message for anyOf schemas: %s. JSON: %s", errorMessages, jsonElement.toString()));
     }
 
-    StringJoiner joiner = new StringJoiner("&");
+    /**
+     * Create an instance of NoticeEvent given an JSON string
+     *
+     * @param jsonString JSON string
+     * @return An instance of NoticeEvent
+     * @throws IOException if the JSON string is invalid with respect to NoticeEvent
+     */
+    public static NoticeEvent fromJson(String jsonString) throws IOException {
+        return JSON.getGson().fromJson(jsonString, NoticeEvent.class);
+    }
 
-    return null;
-  }
-
+    /**
+     * Convert an instance of NoticeEvent to an JSON string
+     *
+     * @return JSON string
+     */
+    public String toJson() {
+        return JSON.getGson().toJson(this);
+    }
 }
 

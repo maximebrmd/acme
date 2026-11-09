@@ -11,3 +11,7 @@ git_push.sh
 # Empty test stubs.
 phpunit.xml.dist
 test/**
+
+# The smoke test, which scripts/test.ts runs against a stand-in server, and what Composer's downloads leave out.
+smoke.php
+.gitattributes

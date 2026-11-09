@@ -13,17 +13,13 @@
 
 package social.peal.model;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.StringJoiner;
 import java.util.Objects;
-import java.util.Map;
-import java.util.HashMap;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.fasterxml.jackson.annotation.JsonValue;
+import com.google.gson.TypeAdapter;
+import com.google.gson.annotations.JsonAdapter;
+import com.google.gson.annotations.SerializedName;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -31,96 +27,118 @@ import social.peal.model.TikTokOptions;
 import social.peal.model.TikTokPrivacyLevel;
 import social.peal.model.YouTubeOptions;
 import social.peal.model.YouTubePrivacy;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+
 
 
 import java.io.IOException;
+import java.lang.reflect.Type;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
-import social.peal.ApiClient;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonParseException;
+import com.google.gson.TypeAdapter;
+import com.google.gson.TypeAdapterFactory;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.annotations.JsonAdapter;
+import com.google.gson.annotations.SerializedName;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonParseException;
+
 import social.peal.JSON;
 
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.27.0")
-@JsonDeserialize(using=TargetOptions.TargetOptionsDeserializer.class)
-@JsonSerialize(using = TargetOptions.TargetOptionsSerializer.class)
 public class TargetOptions extends AbstractOpenApiSchema {
     private static final Logger log = Logger.getLogger(TargetOptions.class.getName());
 
-    public static class TargetOptionsSerializer extends StdSerializer<TargetOptions> {
-        public TargetOptionsSerializer(Class<TargetOptions> t) {
-            super(t);
-        }
-
-        public TargetOptionsSerializer() {
-            this(null);
-        }
-
+    public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
+        @SuppressWarnings("unchecked")
         @Override
-        public void serialize(TargetOptions value, JsonGenerator jgen, SerializerProvider provider) throws IOException, JsonProcessingException {
-            jgen.writeObject(value.getActualInstance());
-        }
-    }
-
-    public static class TargetOptionsDeserializer extends StdDeserializer<TargetOptions> {
-        public TargetOptionsDeserializer() {
-            this(TargetOptions.class);
-        }
-
-        public TargetOptionsDeserializer(Class<?> vc) {
-            super(vc);
-        }
-
-        @Override
-        public TargetOptions deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException, JsonProcessingException {
-            JsonNode tree = ctxt.readTree(jp);
-
-            Object deserialized = null;
-            // deserialize YouTubeOptions
-            try {
-                deserialized = tree.traverse(jp.getCodec()).readValueAs(YouTubeOptions.class);
-                TargetOptions ret = new TargetOptions();
-                ret.setActualInstance(deserialized);
-                return ret;
-            } catch (Exception e) {
-                // deserialization failed, continue, log to help debugging
-                log.log(Level.FINER, "Input data does not match 'TargetOptions'", e);
+        public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
+            if (!TargetOptions.class.isAssignableFrom(type.getRawType())) {
+                return null; // this class only serializes 'TargetOptions' and its subtypes
             }
+            final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
+            final TypeAdapter<YouTubeOptions> adapterYouTubeOptions = gson.getDelegateAdapter(this, TypeToken.get(YouTubeOptions.class));
+            final TypeAdapter<TikTokOptions> adapterTikTokOptions = gson.getDelegateAdapter(this, TypeToken.get(TikTokOptions.class));
 
-            // deserialize TikTokOptions
-            try {
-                deserialized = tree.traverse(jp.getCodec()).readValueAs(TikTokOptions.class);
-                TargetOptions ret = new TargetOptions();
-                ret.setActualInstance(deserialized);
-                return ret;
-            } catch (Exception e) {
-                // deserialization failed, continue, log to help debugging
-                log.log(Level.FINER, "Input data does not match 'TargetOptions'", e);
-            }
+            return (TypeAdapter<T>) new TypeAdapter<TargetOptions>() {
+                @Override
+                public void write(JsonWriter out, TargetOptions value) throws IOException {
+                    if (value == null || value.getActualInstance() == null) {
+                        elementAdapter.write(out, null);
+                        return;
+                    }
 
-            throw new IOException("Failed deserialization for TargetOptions: no match found");
-        }
+                    // check if the actual instance is of the type `YouTubeOptions`
+                    if (value.getActualInstance() instanceof YouTubeOptions) {
+                        JsonElement element = adapterYouTubeOptions.toJsonTree((YouTubeOptions)value.getActualInstance());
+                        elementAdapter.write(out, element);
+                        return;
+                    }
+                    // check if the actual instance is of the type `TikTokOptions`
+                    if (value.getActualInstance() instanceof TikTokOptions) {
+                        JsonElement element = adapterTikTokOptions.toJsonTree((TikTokOptions)value.getActualInstance());
+                        elementAdapter.write(out, element);
+                        return;
+                    }
+                    throw new IOException("Failed to serialize as the type doesn't match anyOf schemas: TikTokOptions, YouTubeOptions");
+                }
 
-        /**
-         * Handle deserialization of the 'null' value.
-         */
-        @Override
-        public TargetOptions getNullValue(DeserializationContext ctxt) throws JsonMappingException {
-            throw new JsonMappingException(ctxt.getParser(), "TargetOptions cannot be null");
+                @Override
+                public TargetOptions read(JsonReader in) throws IOException {
+                    Object deserialized = null;
+                    JsonElement jsonElement = elementAdapter.read(in);
+
+                    ArrayList<String> errorMessages = new ArrayList<>();
+                    TypeAdapter actualAdapter = elementAdapter;
+
+                    // deserialize YouTubeOptions
+                    try {
+                        // validate the JSON object to see if any exception is thrown
+                        YouTubeOptions.validateJsonElement(jsonElement);
+                        actualAdapter = adapterYouTubeOptions;
+                        TargetOptions ret = new TargetOptions();
+                        ret.setActualInstance(actualAdapter.fromJsonTree(jsonElement));
+                        return ret;
+                    } catch (Exception e) {
+                        // deserialization failed, continue
+                        errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for YouTubeOptions failed with `%s`.", e.getMessage()));
+                        log.log(Level.FINER, "Input data does not match schema 'YouTubeOptions'", e);
+                    }
+                    // deserialize TikTokOptions
+                    try {
+                        // validate the JSON object to see if any exception is thrown
+                        TikTokOptions.validateJsonElement(jsonElement);
+                        actualAdapter = adapterTikTokOptions;
+                        TargetOptions ret = new TargetOptions();
+                        ret.setActualInstance(actualAdapter.fromJsonTree(jsonElement));
+                        return ret;
+                    } catch (Exception e) {
+                        // deserialization failed, continue
+                        errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for TikTokOptions failed with `%s`.", e.getMessage()));
+                        log.log(Level.FINER, "Input data does not match schema 'TikTokOptions'", e);
+                    }
+
+                    throw new IOException(String.format(java.util.Locale.ROOT, "Failed deserialization for TargetOptions: no class matches result, expected at least 1. Detailed failure message for anyOf schemas: %s. JSON: %s", errorMessages, jsonElement.toString()));
+                }
+            }.nullSafe();
         }
     }
 
@@ -131,20 +149,14 @@ public class TargetOptions extends AbstractOpenApiSchema {
         super("anyOf", Boolean.FALSE);
     }
 
-    public TargetOptions(YouTubeOptions o) {
-        this();
-        setActualInstance(o);
-    }
-
-    public TargetOptions(TikTokOptions o) {
-        this();
+    public TargetOptions(Object o) {
+        super("anyOf", Boolean.FALSE);
         setActualInstance(o);
     }
 
     static {
         schemas.put("YouTubeOptions", YouTubeOptions.class);
         schemas.put("TikTokOptions", TikTokOptions.class);
-        JSON.registerDescendants(TargetOptions.class, Collections.unmodifiableMap(schemas));
     }
 
     @Override
@@ -158,16 +170,15 @@ public class TargetOptions extends AbstractOpenApiSchema {
      * TikTokOptions, YouTubeOptions
      *
      * It could be an instance of the 'anyOf' schemas.
-     * The anyOf child schemas may themselves be a composed schema (allOf, anyOf, anyOf).
      */
     @Override
     public void setActualInstance(Object instance) {
-        if (JSON.isInstanceOf(YouTubeOptions.class, instance, new HashSet<Class<?>>())) {
+        if (instance instanceof YouTubeOptions) {
             super.setActualInstance(instance);
             return;
         }
 
-        if (JSON.isInstanceOf(TikTokOptions.class, instance, new HashSet<Class<?>>())) {
+        if (instance instanceof TikTokOptions) {
             super.setActualInstance(instance);
             return;
         }
@@ -181,6 +192,7 @@ public class TargetOptions extends AbstractOpenApiSchema {
      *
      * @return The actual instance (TikTokOptions, YouTubeOptions)
      */
+    @SuppressWarnings("unchecked")
     @Override
     public Object getActualInstance() {
         return super.getActualInstance();
@@ -208,42 +220,52 @@ public class TargetOptions extends AbstractOpenApiSchema {
         return (TikTokOptions)super.getActualInstance();
     }
 
-
-
-  /**
-   * Convert the instance into URL query string.
-   *
-   * @return URL query string
-   */
-  public String toUrlQueryString() {
-    return toUrlQueryString(null);
-  }
-
-  /**
-   * Convert the instance into URL query string.
-   *
-   * @param prefix prefix of the query string
-   * @return URL query string
-   */
-  public String toUrlQueryString(String prefix) {
-    String suffix = "";
-    String containerSuffix = "";
-    String containerPrefix = "";
-    if (prefix == null) {
-      // style=form, explode=true, e.g. /pet?name=cat&type=manx
-      prefix = "";
-    } else {
-      // deepObject style e.g. /pet?id[name]=cat&id[type]=manx
-      prefix = prefix + "[";
-      suffix = "]";
-      containerSuffix = "]";
-      containerPrefix = "[";
+    /**
+     * Validates the JSON Element and throws an exception if issues found
+     *
+     * @param jsonElement JSON Element
+     * @throws IOException if the JSON Element is invalid with respect to TargetOptions
+     */
+    public static void validateJsonElement(JsonElement jsonElement) throws IOException {
+        // validate anyOf schemas one by one
+        ArrayList<String> errorMessages = new ArrayList<>();
+        // validate the json string with YouTubeOptions
+        try {
+            YouTubeOptions.validateJsonElement(jsonElement);
+            return;
+        } catch (Exception e) {
+            errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for YouTubeOptions failed with `%s`.", e.getMessage()));
+            // continue to the next one
+        }
+        // validate the json string with TikTokOptions
+        try {
+            TikTokOptions.validateJsonElement(jsonElement);
+            return;
+        } catch (Exception e) {
+            errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for TikTokOptions failed with `%s`.", e.getMessage()));
+            // continue to the next one
+        }
+        throw new IOException(String.format(java.util.Locale.ROOT, "The JSON string is invalid for TargetOptions with anyOf schemas: TikTokOptions, YouTubeOptions. no class match the result, expected at least 1. Detailed failure message for anyOf schemas: %s. JSON: %s", errorMessages, jsonElement.toString()));
     }
 
-    StringJoiner joiner = new StringJoiner("&");
+    /**
+     * Create an instance of TargetOptions given an JSON string
+     *
+     * @param jsonString JSON string
+     * @return An instance of TargetOptions
+     * @throws IOException if the JSON string is invalid with respect to TargetOptions
+     */
+    public static TargetOptions fromJson(String jsonString) throws IOException {
+        return JSON.getGson().fromJson(jsonString, TargetOptions.class);
+    }
 
-    return null;
-  }
-
+    /**
+     * Convert an instance of TargetOptions to an JSON string
+     *
+     * @return JSON string
+     */
+    public String toJson() {
+        return JSON.getGson().toJson(this);
+    }
 }
 

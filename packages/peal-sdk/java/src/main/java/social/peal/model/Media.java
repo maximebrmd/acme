@@ -13,94 +13,109 @@
 
 package social.peal.model;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.StringJoiner;
 import java.util.Objects;
-import java.util.Map;
-import java.util.HashMap;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.fasterxml.jackson.annotation.JsonValue;
+import com.google.gson.TypeAdapter;
+import com.google.gson.annotations.JsonAdapter;
+import com.google.gson.annotations.SerializedName;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 import java.util.Arrays;
 import social.peal.model.MediaContentType;
 import social.peal.model.MediaDimensions;
 import social.peal.model.MediaKind;
 import social.peal.model.MediaStatus;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonNull;
+import com.google.gson.JsonParseException;
+import com.google.gson.TypeAdapterFactory;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.TypeAdapter;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 
-import social.peal.ApiClient;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import social.peal.JSON;
+
 /**
  * Media
  */
-@JsonPropertyOrder({
-  Media.JSON_PROPERTY_ALT_TEXT,
-  Media.JSON_PROPERTY_BYTE_SIZE,
-  Media.JSON_PROPERTY_CODEC,
-  Media.JSON_PROPERTY_CONTENT_TYPE,
-  Media.JSON_PROPERTY_CREATED_AT,
-  Media.JSON_PROPERTY_DIMENSIONS,
-  Media.JSON_PROPERTY_DURATION_MS,
-  Media.JSON_PROPERTY_ID,
-  Media.JSON_PROPERTY_KIND,
-  Media.JSON_PROPERTY_STATUS,
-  Media.JSON_PROPERTY_UPDATED_AT,
-  Media.JSON_PROPERTY_URL
-})
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.27.0")
 public class Media {
-  public static final String JSON_PROPERTY_ALT_TEXT = "altText";
+  public static final String SERIALIZED_NAME_ALT_TEXT = "altText";
+  @SerializedName(SERIALIZED_NAME_ALT_TEXT)
   @javax.annotation.Nullable
   private String altText;
 
-  public static final String JSON_PROPERTY_BYTE_SIZE = "byteSize";
+  public static final String SERIALIZED_NAME_BYTE_SIZE = "byteSize";
+  @SerializedName(SERIALIZED_NAME_BYTE_SIZE)
   @javax.annotation.Nonnull
   private Integer byteSize;
 
-  public static final String JSON_PROPERTY_CODEC = "codec";
+  public static final String SERIALIZED_NAME_CODEC = "codec";
+  @SerializedName(SERIALIZED_NAME_CODEC)
   @javax.annotation.Nullable
   private String codec;
 
-  public static final String JSON_PROPERTY_CONTENT_TYPE = "contentType";
+  public static final String SERIALIZED_NAME_CONTENT_TYPE = "contentType";
+  @SerializedName(SERIALIZED_NAME_CONTENT_TYPE)
   @javax.annotation.Nonnull
   private MediaContentType contentType;
 
-  public static final String JSON_PROPERTY_CREATED_AT = "createdAt";
+  public static final String SERIALIZED_NAME_CREATED_AT = "createdAt";
+  @SerializedName(SERIALIZED_NAME_CREATED_AT)
   @javax.annotation.Nonnull
   private String createdAt;
 
-  public static final String JSON_PROPERTY_DIMENSIONS = "dimensions";
+  public static final String SERIALIZED_NAME_DIMENSIONS = "dimensions";
+  @SerializedName(SERIALIZED_NAME_DIMENSIONS)
   @javax.annotation.Nullable
   private MediaDimensions dimensions;
 
-  public static final String JSON_PROPERTY_DURATION_MS = "durationMs";
+  public static final String SERIALIZED_NAME_DURATION_MS = "durationMs";
+  @SerializedName(SERIALIZED_NAME_DURATION_MS)
   @javax.annotation.Nullable
   private Integer durationMs;
 
-  public static final String JSON_PROPERTY_ID = "id";
+  public static final String SERIALIZED_NAME_ID = "id";
+  @SerializedName(SERIALIZED_NAME_ID)
   @javax.annotation.Nonnull
   private String id;
 
-  public static final String JSON_PROPERTY_KIND = "kind";
+  public static final String SERIALIZED_NAME_KIND = "kind";
+  @SerializedName(SERIALIZED_NAME_KIND)
   @javax.annotation.Nonnull
   private MediaKind kind;
 
-  public static final String JSON_PROPERTY_STATUS = "status";
+  public static final String SERIALIZED_NAME_STATUS = "status";
+  @SerializedName(SERIALIZED_NAME_STATUS)
   @javax.annotation.Nonnull
   private MediaStatus status;
 
-  public static final String JSON_PROPERTY_UPDATED_AT = "updatedAt";
+  public static final String SERIALIZED_NAME_UPDATED_AT = "updatedAt";
+  @SerializedName(SERIALIZED_NAME_UPDATED_AT)
   @javax.annotation.Nonnull
   private String updatedAt;
 
-  public static final String JSON_PROPERTY_URL = "url";
+  public static final String SERIALIZED_NAME_URL = "url";
+  @SerializedName(SERIALIZED_NAME_URL)
   @javax.annotation.Nullable
   private String url;
 
-  public Media() { 
+  public Media() {
   }
 
   public Media altText(@javax.annotation.Nullable String altText) {
@@ -113,15 +128,10 @@ public class Media {
    * @return altText
    */
   @javax.annotation.Nullable
-  @JsonProperty(value = JSON_PROPERTY_ALT_TEXT, required = false)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public String getAltText() {
     return altText;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_ALT_TEXT, required = false)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setAltText(@javax.annotation.Nullable String altText) {
     this.altText = altText;
   }
@@ -139,15 +149,10 @@ public class Media {
    * @return byteSize
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_BYTE_SIZE, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public Integer getByteSize() {
     return byteSize;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_BYTE_SIZE, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setByteSize(@javax.annotation.Nonnull Integer byteSize) {
     this.byteSize = byteSize;
   }
@@ -163,15 +168,10 @@ public class Media {
    * @return codec
    */
   @javax.annotation.Nullable
-  @JsonProperty(value = JSON_PROPERTY_CODEC, required = false)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public String getCodec() {
     return codec;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_CODEC, required = false)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setCodec(@javax.annotation.Nullable String codec) {
     this.codec = codec;
   }
@@ -187,15 +187,10 @@ public class Media {
    * @return contentType
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_CONTENT_TYPE, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public MediaContentType getContentType() {
     return contentType;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_CONTENT_TYPE, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setContentType(@javax.annotation.Nonnull MediaContentType contentType) {
     this.contentType = contentType;
   }
@@ -211,15 +206,10 @@ public class Media {
    * @return createdAt
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_CREATED_AT, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public String getCreatedAt() {
     return createdAt;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_CREATED_AT, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setCreatedAt(@javax.annotation.Nonnull String createdAt) {
     this.createdAt = createdAt;
   }
@@ -235,15 +225,10 @@ public class Media {
    * @return dimensions
    */
   @javax.annotation.Nullable
-  @JsonProperty(value = JSON_PROPERTY_DIMENSIONS, required = false)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public MediaDimensions getDimensions() {
     return dimensions;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_DIMENSIONS, required = false)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setDimensions(@javax.annotation.Nullable MediaDimensions dimensions) {
     this.dimensions = dimensions;
   }
@@ -261,15 +246,10 @@ public class Media {
    * @return durationMs
    */
   @javax.annotation.Nullable
-  @JsonProperty(value = JSON_PROPERTY_DURATION_MS, required = false)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public Integer getDurationMs() {
     return durationMs;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_DURATION_MS, required = false)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setDurationMs(@javax.annotation.Nullable Integer durationMs) {
     this.durationMs = durationMs;
   }
@@ -285,15 +265,10 @@ public class Media {
    * @return id
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_ID, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public String getId() {
     return id;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_ID, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setId(@javax.annotation.Nonnull String id) {
     this.id = id;
   }
@@ -309,15 +284,10 @@ public class Media {
    * @return kind
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_KIND, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public MediaKind getKind() {
     return kind;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_KIND, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setKind(@javax.annotation.Nonnull MediaKind kind) {
     this.kind = kind;
   }
@@ -333,15 +303,10 @@ public class Media {
    * @return status
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_STATUS, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public MediaStatus getStatus() {
     return status;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_STATUS, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setStatus(@javax.annotation.Nonnull MediaStatus status) {
     this.status = status;
   }
@@ -357,15 +322,10 @@ public class Media {
    * @return updatedAt
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_UPDATED_AT, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public String getUpdatedAt() {
     return updatedAt;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_UPDATED_AT, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setUpdatedAt(@javax.annotation.Nonnull String updatedAt) {
     this.updatedAt = updatedAt;
   }
@@ -381,23 +341,60 @@ public class Media {
    * @return url
    */
   @javax.annotation.Nullable
-  @JsonProperty(value = JSON_PROPERTY_URL, required = false)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public String getUrl() {
     return url;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_URL, required = false)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setUrl(@javax.annotation.Nullable String url) {
     this.url = url;
   }
 
+  /**
+   * A container for additional, undeclared properties.
+   * This is a holder for any undeclared properties as specified with
+   * the 'additionalProperties' keyword in the OAS document.
+   */
+  private Map<String, Object> additionalProperties;
 
   /**
-   * Return true if this Media object is equal to o.
+   * Set the additional (undeclared) property with the specified name and value.
+   * If the property does not already exist, create it otherwise replace it.
+   *
+   * @param key name of the property
+   * @param value value of the property
+   * @return the Media instance itself
    */
+  public Media putAdditionalProperty(String key, Object value) {
+    if (this.additionalProperties == null) {
+        this.additionalProperties = new HashMap<String, Object>();
+    }
+    this.additionalProperties.put(key, value);
+    return this;
+  }
+
+  /**
+   * Return the additional (undeclared) property.
+   *
+   * @return a map of objects
+   */
+  public Map<String, Object> getAdditionalProperties() {
+    return additionalProperties;
+  }
+
+  /**
+   * Return the additional (undeclared) property with the specified name.
+   *
+   * @param key name of the property
+   * @return an object
+   */
+  public Object getAdditionalProperty(String key) {
+    if (this.additionalProperties == null) {
+        return null;
+    }
+    return this.additionalProperties.get(key);
+  }
+
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -418,12 +415,13 @@ public class Media {
         Objects.equals(this.kind, media.kind) &&
         Objects.equals(this.status, media.status) &&
         Objects.equals(this.updatedAt, media.updatedAt) &&
-        Objects.equals(this.url, media.url);
+        Objects.equals(this.url, media.url)&&
+        Objects.equals(this.additionalProperties, media.additionalProperties);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(altText, byteSize, codec, contentType, createdAt, dimensions, durationMs, id, kind, status, updatedAt, url);
+    return Objects.hash(altText, byteSize, codec, contentType, createdAt, dimensions, durationMs, id, kind, status, updatedAt, url, additionalProperties);
   }
 
   @Override
@@ -442,6 +440,7 @@ public class Media {
     sb.append("    status: ").append(toIndentedString(status)).append("\n");
     sb.append("    updatedAt: ").append(toIndentedString(updatedAt)).append("\n");
     sb.append("    url: ").append(toIndentedString(url)).append("\n");
+    sb.append("    additionalProperties: ").append(toIndentedString(additionalProperties)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -454,99 +453,160 @@ public class Media {
     return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
 
-  /**
-   * Convert the instance into URL query string.
-   *
-   * @return URL query string
-   */
-  public String toUrlQueryString() {
-    return toUrlQueryString(null);
+
+  public static HashSet<String> openapiFields;
+  public static HashSet<String> openapiRequiredFields;
+
+  static {
+    // a set of all properties/fields (JSON key names)
+    openapiFields = new HashSet<String>(Arrays.asList("altText", "byteSize", "codec", "contentType", "createdAt", "dimensions", "durationMs", "id", "kind", "status", "updatedAt", "url"));
+
+    // a set of required properties/fields (JSON key names)
+    openapiRequiredFields = new HashSet<String>(Arrays.asList("altText", "byteSize", "codec", "contentType", "createdAt", "dimensions", "durationMs", "id", "kind", "status", "updatedAt", "url"));
   }
 
   /**
-   * Convert the instance into URL query string.
+   * Validates the JSON Element and throws an exception if issues found
    *
-   * @param prefix prefix of the query string
-   * @return URL query string
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to Media
    */
-  public String toUrlQueryString(String prefix) {
-    String suffix = "";
-    String containerSuffix = "";
-    String containerPrefix = "";
-    if (prefix == null) {
-      // style=form, explode=true, e.g. /pet?name=cat&type=manx
-      prefix = "";
-    } else {
-      // deepObject style e.g. /pet?id[name]=cat&id[type]=manx
-      prefix = prefix + "[";
-      suffix = "]";
-      containerSuffix = "]";
-      containerPrefix = "[";
+  public static void validateJsonElement(JsonElement jsonElement) throws IOException {
+      if (jsonElement == null) {
+        if (!Media.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The required field(s) %s in Media is not found in the empty JSON string", Media.openapiRequiredFields.toString()));
+        }
+      }
+
+      // check to make sure all required properties/fields are present in the JSON string
+      for (String requiredField : Media.openapiRequiredFields) {
+        if (jsonElement.getAsJsonObject().get(requiredField) == null) {
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The required field `%s` is not found in the JSON string: %s", requiredField, jsonElement.toString()));
+        }
+      }
+        JsonObject jsonObj = jsonElement.getAsJsonObject();
+      if ((jsonObj.get("altText") != null && !jsonObj.get("altText").isJsonNull()) && !jsonObj.get("altText").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `altText` to be a primitive type in the JSON string but got `%s`", jsonObj.get("altText").toString()));
+      }
+      if ((jsonObj.get("codec") != null && !jsonObj.get("codec").isJsonNull()) && !jsonObj.get("codec").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `codec` to be a primitive type in the JSON string but got `%s`", jsonObj.get("codec").toString()));
+      }
+      // validate the required field `contentType`
+      MediaContentType.validateJsonElement(jsonObj.get("contentType"));
+      if (!jsonObj.get("createdAt").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `createdAt` to be a primitive type in the JSON string but got `%s`", jsonObj.get("createdAt").toString()));
+      }
+      if (jsonObj.get("dimensions") != null && !jsonObj.get("dimensions").isJsonNull()) {
+      // validate the required field `dimensions`
+      MediaDimensions.validateJsonElement(jsonObj.get("dimensions"));
+      }
+      if (!jsonObj.get("id").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `id` to be a primitive type in the JSON string but got `%s`", jsonObj.get("id").toString()));
+      }
+      // validate the required field `kind`
+      MediaKind.validateJsonElement(jsonObj.get("kind"));
+      // validate the required field `status`
+      MediaStatus.validateJsonElement(jsonObj.get("status"));
+      if (!jsonObj.get("updatedAt").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `updatedAt` to be a primitive type in the JSON string but got `%s`", jsonObj.get("updatedAt").toString()));
+      }
+      if ((jsonObj.get("url") != null && !jsonObj.get("url").isJsonNull()) && !jsonObj.get("url").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `url` to be a primitive type in the JSON string but got `%s`", jsonObj.get("url").toString()));
+      }
+  }
+
+  public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
+       if (!Media.class.isAssignableFrom(type.getRawType())) {
+         return null; // this class only serializes 'Media' and its subtypes
+       }
+       final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
+       final TypeAdapter<Media> thisAdapter
+                        = gson.getDelegateAdapter(this, TypeToken.get(Media.class));
+
+       return (TypeAdapter<T>) new TypeAdapter<Media>() {
+           @Override
+           public void write(JsonWriter out, Media value) throws IOException {
+             JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
+             obj.remove("additionalProperties");
+             // serialize additional properties
+             if (value.getAdditionalProperties() != null) {
+               for (Map.Entry<String, Object> entry : value.getAdditionalProperties().entrySet()) {
+                 if (entry.getValue() instanceof String)
+                   obj.addProperty(entry.getKey(), (String) entry.getValue());
+                 else if (entry.getValue() instanceof Number)
+                   obj.addProperty(entry.getKey(), (Number) entry.getValue());
+                 else if (entry.getValue() instanceof Boolean)
+                   obj.addProperty(entry.getKey(), (Boolean) entry.getValue());
+                 else if (entry.getValue() instanceof Character)
+                   obj.addProperty(entry.getKey(), (Character) entry.getValue());
+                 else {
+                   JsonElement jsonElement = gson.toJsonTree(entry.getValue());
+                   if (jsonElement.isJsonNull()) {
+                     obj.add(entry.getKey(), JsonNull.INSTANCE);
+                   } else if (jsonElement.isJsonArray()) {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonArray());
+                   } else {
+                     obj.add(entry.getKey(), jsonElement.getAsJsonObject());
+                   }
+                 }
+               }
+             }
+             elementAdapter.write(out, obj);
+           }
+
+           @Override
+           public Media read(JsonReader in) throws IOException {
+             JsonElement jsonElement = elementAdapter.read(in);
+             validateJsonElement(jsonElement);
+             JsonObject jsonObj = jsonElement.getAsJsonObject();
+             // store additional fields in the deserialized instance
+             Media instance = thisAdapter.fromJsonTree(jsonObj);
+             for (Map.Entry<String, JsonElement> entry : jsonObj.entrySet()) {
+               if (!openapiFields.contains(entry.getKey())) {
+                 if (entry.getValue().isJsonPrimitive()) { // primitive type
+                   if (entry.getValue().getAsJsonPrimitive().isString())
+                     instance.putAdditionalProperty(entry.getKey(), entry.getValue().getAsString());
+                   else if (entry.getValue().getAsJsonPrimitive().isNumber())
+                     instance.putAdditionalProperty(entry.getKey(), entry.getValue().getAsNumber());
+                   else if (entry.getValue().getAsJsonPrimitive().isBoolean())
+                     instance.putAdditionalProperty(entry.getKey(), entry.getValue().getAsBoolean());
+                   else
+                     throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The field `%s` has unknown primitive type. Value: %s", entry.getKey(), entry.getValue().toString()));
+                 } else if (entry.getValue().isJsonArray()) {
+                     instance.putAdditionalProperty(entry.getKey(), gson.fromJson(entry.getValue(), List.class));
+                 } else { // JSON object
+                     instance.putAdditionalProperty(entry.getKey(), gson.fromJson(entry.getValue(), HashMap.class));
+                 }
+               }
+             }
+             return instance;
+           }
+
+       }.nullSafe();
     }
+  }
 
-    StringJoiner joiner = new StringJoiner("&");
+  /**
+   * Create an instance of Media given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of Media
+   * @throws IOException if the JSON string is invalid with respect to Media
+   */
+  public static Media fromJson(String jsonString) throws IOException {
+    return JSON.getGson().fromJson(jsonString, Media.class);
+  }
 
-    // add `altText` to the URL query string
-    if (getAltText() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%saltText%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getAltText()))));
-    }
-
-    // add `byteSize` to the URL query string
-    if (getByteSize() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%sbyteSize%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getByteSize()))));
-    }
-
-    // add `codec` to the URL query string
-    if (getCodec() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%scodec%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getCodec()))));
-    }
-
-    // add `contentType` to the URL query string
-    if (getContentType() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%scontentType%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getContentType()))));
-    }
-
-    // add `createdAt` to the URL query string
-    if (getCreatedAt() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%screatedAt%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getCreatedAt()))));
-    }
-
-    // add `dimensions` to the URL query string
-    if (getDimensions() != null) {
-      joiner.add(getDimensions().toUrlQueryString(prefix + "dimensions" + suffix));
-    }
-
-    // add `durationMs` to the URL query string
-    if (getDurationMs() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%sdurationMs%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getDurationMs()))));
-    }
-
-    // add `id` to the URL query string
-    if (getId() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%sid%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getId()))));
-    }
-
-    // add `kind` to the URL query string
-    if (getKind() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%skind%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getKind()))));
-    }
-
-    // add `status` to the URL query string
-    if (getStatus() != null) {
-      joiner.add(getStatus().toUrlQueryString(prefix + "status" + suffix));
-    }
-
-    // add `updatedAt` to the URL query string
-    if (getUpdatedAt() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%supdatedAt%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getUpdatedAt()))));
-    }
-
-    // add `url` to the URL query string
-    if (getUrl() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%surl%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getUrl()))));
-    }
-
-    return joiner.toString();
+  /**
+   * Convert an instance of Media to an JSON string
+   *
+   * @return JSON string
+   */
+  public String toJson() {
+    return JSON.getGson().toJson(this);
   }
 }
 

@@ -32,7 +32,7 @@ import (
 
 func main() {
 	workspaceId := "workspaceId_example" // string | 
-	createApiKeyRequest := *openapiclient.NewCreateApiKeyRequest("Name_example", []string{"Permissions_example"}) // CreateApiKeyRequest | 
+	createApiKeyRequest := *openapiclient.NewCreateApiKeyRequest("Name_example", []openapiclient.Permission{openapiclient.Permission("analytics:read")}) // CreateApiKeyRequest | 
 
 	configuration := openapiclient.NewConfiguration()
 	apiClient := openapiclient.NewAPIClient(configuration)

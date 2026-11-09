@@ -13,43 +13,57 @@
 
 package social.peal.model;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.StringJoiner;
 import java.util.Objects;
-import java.util.Map;
-import java.util.HashMap;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.fasterxml.jackson.annotation.JsonValue;
+import com.google.gson.TypeAdapter;
+import com.google.gson.annotations.JsonAdapter;
+import com.google.gson.annotations.SerializedName;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonNull;
+import com.google.gson.JsonParseException;
+import com.google.gson.TypeAdapterFactory;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.TypeAdapter;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 
-import social.peal.ApiClient;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import social.peal.JSON;
+
 /**
  * SignedRequest
  */
-@JsonPropertyOrder({
-  SignedRequest.JSON_PROPERTY_HEADERS,
-  SignedRequest.JSON_PROPERTY_METHOD,
-  SignedRequest.JSON_PROPERTY_URL
-})
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.27.0")
 public class SignedRequest {
-  public static final String JSON_PROPERTY_HEADERS = "headers";
+  public static final String SERIALIZED_NAME_HEADERS = "headers";
+  @SerializedName(SERIALIZED_NAME_HEADERS)
   @javax.annotation.Nonnull
   private Map<String, String> headers = new HashMap<>();
 
   /**
    * Gets or Sets method
    */
+  @JsonAdapter(MethodEnum.Adapter.class)
   public enum MethodEnum {
-    PUT(String.valueOf("PUT"));
+    PUT("PUT");
 
     private String value;
 
@@ -57,7 +71,6 @@ public class SignedRequest {
       this.value = value;
     }
 
-    @JsonValue
     public String getValue() {
       return value;
     }
@@ -67,7 +80,6 @@ public class SignedRequest {
       return String.valueOf(value);
     }
 
-    @JsonCreator
     public static MethodEnum fromValue(String value) {
       for (MethodEnum b : MethodEnum.values()) {
         if (b.value.equals(value)) {
@@ -76,17 +88,37 @@ public class SignedRequest {
       }
       throw new IllegalArgumentException("Unexpected value '" + value + "'");
     }
+
+    public static class Adapter extends TypeAdapter<MethodEnum> {
+      @Override
+      public void write(final JsonWriter jsonWriter, final MethodEnum enumeration) throws IOException {
+        jsonWriter.value(enumeration.getValue());
+      }
+
+      @Override
+      public MethodEnum read(final JsonReader jsonReader) throws IOException {
+        String value =  jsonReader.nextString();
+        return MethodEnum.fromValue(value);
+      }
+    }
+
+    public static void validateJsonElement(JsonElement jsonElement) throws IOException {
+      String value = jsonElement.getAsString();
+      MethodEnum.fromValue(value);
+    }
   }
 
-  public static final String JSON_PROPERTY_METHOD = "method";
+  public static final String SERIALIZED_NAME_METHOD = "method";
+  @SerializedName(SERIALIZED_NAME_METHOD)
   @javax.annotation.Nonnull
   private MethodEnum method;
 
-  public static final String JSON_PROPERTY_URL = "url";
+  public static final String SERIALIZED_NAME_URL = "url";
+  @SerializedName(SERIALIZED_NAME_URL)
   @javax.annotation.Nonnull
   private String url;
 
-  public SignedRequest() { 
+  public SignedRequest() {
   }
 
   public SignedRequest headers(@javax.annotation.Nonnull Map<String, String> headers) {
@@ -107,15 +139,10 @@ public class SignedRequest {
    * @return headers
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_HEADERS, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public Map<String, String> getHeaders() {
     return headers;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_HEADERS, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setHeaders(@javax.annotation.Nonnull Map<String, String> headers) {
     this.headers = headers;
   }
@@ -131,15 +158,10 @@ public class SignedRequest {
    * @return method
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_METHOD, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public MethodEnum getMethod() {
     return method;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_METHOD, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setMethod(@javax.annotation.Nonnull MethodEnum method) {
     this.method = method;
   }
@@ -155,23 +177,16 @@ public class SignedRequest {
    * @return url
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_URL, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public String getUrl() {
     return url;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_URL, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setUrl(@javax.annotation.Nonnull String url) {
     this.url = url;
   }
 
 
-  /**
-   * Return true if this SignedRequest object is equal to o.
-   */
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -210,58 +225,103 @@ public class SignedRequest {
     return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
 
-  /**
-   * Convert the instance into URL query string.
-   *
-   * @return URL query string
-   */
-  public String toUrlQueryString() {
-    return toUrlQueryString(null);
+
+  public static HashSet<String> openapiFields;
+  public static HashSet<String> openapiRequiredFields;
+
+  static {
+    // a set of all properties/fields (JSON key names)
+    openapiFields = new HashSet<String>(Arrays.asList("headers", "method", "url"));
+
+    // a set of required properties/fields (JSON key names)
+    openapiRequiredFields = new HashSet<String>(Arrays.asList("headers", "method", "url"));
   }
 
   /**
-   * Convert the instance into URL query string.
+   * Validates the JSON Element and throws an exception if issues found
    *
-   * @param prefix prefix of the query string
-   * @return URL query string
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to SignedRequest
    */
-  public String toUrlQueryString(String prefix) {
-    String suffix = "";
-    String containerSuffix = "";
-    String containerPrefix = "";
-    if (prefix == null) {
-      // style=form, explode=true, e.g. /pet?name=cat&type=manx
-      prefix = "";
-    } else {
-      // deepObject style e.g. /pet?id[name]=cat&id[type]=manx
-      prefix = prefix + "[";
-      suffix = "]";
-      containerSuffix = "]";
-      containerPrefix = "[";
-    }
-
-    StringJoiner joiner = new StringJoiner("&");
-
-    // add `headers` to the URL query string
-    if (getHeaders() != null) {
-      for (String _key : getHeaders().keySet()) {
-        joiner.add(String.format(java.util.Locale.ROOT, "%sheaders%s%s=%s", prefix, suffix,
-            "".equals(suffix) ? "" : String.format(java.util.Locale.ROOT, "%s%d%s", containerPrefix, _key, containerSuffix),
-            getHeaders().get(_key), ApiClient.urlEncode(ApiClient.valueToString(getHeaders().get(_key)))));
+  public static void validateJsonElement(JsonElement jsonElement) throws IOException {
+      if (jsonElement == null) {
+        if (!SignedRequest.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The required field(s) %s in SignedRequest is not found in the empty JSON string", SignedRequest.openapiRequiredFields.toString()));
+        }
       }
-    }
 
-    // add `method` to the URL query string
-    if (getMethod() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%smethod%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getMethod()))));
-    }
+      Set<Map.Entry<String, JsonElement>> entries = jsonElement.getAsJsonObject().entrySet();
+      // check to see if the JSON string contains additional fields
+      for (Map.Entry<String, JsonElement> entry : entries) {
+        if (!SignedRequest.openapiFields.contains(entry.getKey())) {
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The field `%s` in the JSON string is not defined in the `SignedRequest` properties. JSON: %s", entry.getKey(), jsonElement.toString()));
+        }
+      }
 
-    // add `url` to the URL query string
-    if (getUrl() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%surl%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getUrl()))));
-    }
+      // check to make sure all required properties/fields are present in the JSON string
+      for (String requiredField : SignedRequest.openapiRequiredFields) {
+        if (jsonElement.getAsJsonObject().get(requiredField) == null) {
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The required field `%s` is not found in the JSON string: %s", requiredField, jsonElement.toString()));
+        }
+      }
+        JsonObject jsonObj = jsonElement.getAsJsonObject();
+      if (!jsonObj.get("method").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `method` to be a primitive type in the JSON string but got `%s`", jsonObj.get("method").toString()));
+      }
+      // validate the required field `method`
+      MethodEnum.validateJsonElement(jsonObj.get("method"));
+      if (!jsonObj.get("url").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `url` to be a primitive type in the JSON string but got `%s`", jsonObj.get("url").toString()));
+      }
+  }
 
-    return joiner.toString();
+  public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
+       if (!SignedRequest.class.isAssignableFrom(type.getRawType())) {
+         return null; // this class only serializes 'SignedRequest' and its subtypes
+       }
+       final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
+       final TypeAdapter<SignedRequest> thisAdapter
+                        = gson.getDelegateAdapter(this, TypeToken.get(SignedRequest.class));
+
+       return (TypeAdapter<T>) new TypeAdapter<SignedRequest>() {
+           @Override
+           public void write(JsonWriter out, SignedRequest value) throws IOException {
+             JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
+             elementAdapter.write(out, obj);
+           }
+
+           @Override
+           public SignedRequest read(JsonReader in) throws IOException {
+             JsonElement jsonElement = elementAdapter.read(in);
+             validateJsonElement(jsonElement);
+             return thisAdapter.fromJsonTree(jsonElement);
+           }
+
+       }.nullSafe();
+    }
+  }
+
+  /**
+   * Create an instance of SignedRequest given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of SignedRequest
+   * @throws IOException if the JSON string is invalid with respect to SignedRequest
+   */
+  public static SignedRequest fromJson(String jsonString) throws IOException {
+    return JSON.getGson().fromJson(jsonString, SignedRequest.class);
+  }
+
+  /**
+   * Convert an instance of SignedRequest to an JSON string
+   *
+   * @return JSON string
+   */
+  public String toJson() {
+    return JSON.getGson().toJson(this);
   }
 }
 

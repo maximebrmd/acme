@@ -117,8 +117,6 @@ namespace Peal.Client
                 return AlreadyMemberEncoded.TagEnumToJsonValue(alreadyMemberEncodedTagEnum);
             if (obj is AltTextTooLongEncoded.TagEnum altTextTooLongEncodedTagEnum)
                 return AltTextTooLongEncoded.TagEnumToJsonValue(altTextTooLongEncodedTagEnum);
-            if (obj is ApiKey.PermissionsEnum apiKeyPermissionsEnum)
-                return ApiKey.PermissionsEnumToJsonValue(apiKeyPermissionsEnum);
             if (obj is ApiKeyNotFoundEncoded.TagEnum apiKeyNotFoundEncodedTagEnum)
                 return ApiKeyNotFoundEncoded.TagEnumToJsonValue(apiKeyNotFoundEncodedTagEnum);
             if (obj is AssistantActionAnyOf.TagEnum assistantActionAnyOfTagEnum)
@@ -257,10 +255,6 @@ namespace Peal.Client
                 return MediaTooLargeEncoded.TagEnumToJsonValue(mediaTooLargeEncodedTagEnum);
             if (obj is MediaTooLargeEncoded.KindEnum mediaTooLargeEncodedKindEnum)
                 return MediaTooLargeEncoded.KindEnumToJsonValue(mediaTooLargeEncodedKindEnum);
-            if (obj is Membership.PermissionsEnum membershipPermissionsEnum)
-                return Membership.PermissionsEnumToJsonValue(membershipPermissionsEnum);
-            if (obj is NewApiKey.PermissionsEnum newApiKeyPermissionsEnum)
-                return NewApiKey.PermissionsEnumToJsonValue(newApiKeyPermissionsEnum);
             if (obj is NonFiniteNumber nonFiniteNumber)
                 return NonFiniteNumberValueConverter.ToJsonValue(nonFiniteNumber);
             if (obj is NoticeEventAnyOf.TagEnum noticeEventAnyOfTagEnum)
@@ -275,6 +269,8 @@ namespace Peal.Client
                 return NoticeEventAnyOf4.TagEnumToJsonValue(noticeEventAnyOf4TagEnum);
             if (obj is PaidPlan paidPlan)
                 return PaidPlanValueConverter.ToJsonValue(paidPlan);
+            if (obj is Permission permission)
+                return PermissionValueConverter.ToJsonValue(permission);
             if (obj is Plan plan)
                 return PlanValueConverter.ToJsonValue(plan);
             if (obj is PlanLimit planLimit)

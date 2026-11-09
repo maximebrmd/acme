@@ -13,3 +13,7 @@ Peal.sln
 appveyor.yml
 api/**
 src/Peal.Test/**
+
+# Our README, which NuGet shows, and the smoke test, which scripts/test.ts runs against a stand-in server.
+README.md
+smoke/**

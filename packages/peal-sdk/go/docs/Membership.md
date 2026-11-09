@@ -6,7 +6,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **Id** | **string** |  | 
 **Name** | **string** |  | 
-**Permissions** | **[]string** |  | 
+**Permissions** | [**[]Permission**](Permission.md) |  | 
 **Role** | **string** |  | 
 **Slug** | **string** |  | 
 
@@ -14,7 +14,7 @@ Name | Type | Description | Notes
 
 ### NewMembership
 
-`func NewMembership(id string, name string, permissions []string, role string, slug string, ) *Membership`
+`func NewMembership(id string, name string, permissions []Permission, role string, slug string, ) *Membership`
 
 NewMembership instantiates a new Membership object
 This constructor will assign default values to properties that have it defined,
@@ -71,20 +71,20 @@ SetName sets Name field to given value.
 
 ### GetPermissions
 
-`func (o *Membership) GetPermissions() []string`
+`func (o *Membership) GetPermissions() []Permission`
 
 GetPermissions returns the Permissions field if non-nil, zero value otherwise.
 
 ### GetPermissionsOk
 
-`func (o *Membership) GetPermissionsOk() (*[]string, bool)`
+`func (o *Membership) GetPermissionsOk() (*[]Permission, bool)`
 
 GetPermissionsOk returns a tuple with the Permissions field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
 ### SetPermissions
 
-`func (o *Membership) SetPermissions(v []string)`
+`func (o *Membership) SetPermissions(v []Permission)`
 
 SetPermissions sets Permissions field to given value.
 

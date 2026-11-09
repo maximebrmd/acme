@@ -10,13 +10,22 @@
  * Do not edit the class manually.
  */
 
+
 package social.peal.api;
 
+import social.peal.ApiCallback;
 import social.peal.ApiClient;
 import social.peal.ApiException;
 import social.peal.ApiResponse;
 import social.peal.Configuration;
 import social.peal.Pair;
+import social.peal.ProgressRequestBody;
+import social.peal.ProgressResponseBody;
+
+import com.google.gson.reflect.TypeToken;
+
+import java.io.IOException;
+
 
 import social.peal.model.AssistantFailedEncoded;
 import social.peal.model.AssistantInputRejectedEncoded;
@@ -29,396 +38,351 @@ import social.peal.model.SuggestionRequest;
 import social.peal.model.UnauthenticatedEncoded;
 import social.peal.model.WorkspaceNotFoundEncoded;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import java.io.InputStream;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.net.http.HttpRequest;
-import java.nio.channels.Channels;
-import java.nio.channels.Pipe;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.time.Duration;
-
+import java.lang.reflect.Type;
 import java.util.ArrayList;
-import java.util.StringJoiner;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.function.Consumer;
 
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.27.0")
 public class AssistantApi {
-  /**
-   * Utility class for extending HttpRequest.Builder functionality.
-   */
-  private static class HttpRequestBuilderExtensions {
+    private ApiClient localVarApiClient;
+    private int localHostIndex;
+    private String localCustomBaseUrl;
+
+    public AssistantApi() {
+        this(Configuration.getDefaultApiClient());
+    }
+
+    public AssistantApi(ApiClient apiClient) {
+        this.localVarApiClient = apiClient;
+    }
+
+    public ApiClient getApiClient() {
+        return localVarApiClient;
+    }
+
+    public void setApiClient(ApiClient apiClient) {
+        this.localVarApiClient = apiClient;
+    }
+
+    public int getHostIndex() {
+        return localHostIndex;
+    }
+
+    public void setHostIndex(int hostIndex) {
+        this.localHostIndex = hostIndex;
+    }
+
+    public String getCustomBaseUrl() {
+        return localCustomBaseUrl;
+    }
+
+    public void setCustomBaseUrl(String customBaseUrl) {
+        this.localCustomBaseUrl = customBaseUrl;
+    }
+
     /**
-     * Adds additional headers to the provided HttpRequest.Builder. Useful for adding method/endpoint specific headers.
-     *
-     * @param builder the HttpRequest.Builder to which headers will be added
-     * @param headers a map of header names and values to add; may be null
-     * @return the same HttpRequest.Builder instance with the additional headers set
+     * Build call for assistantStatus
+     * @param workspaceId  (required)
+     * @param _callback Callback for upload/download progress
+     * @return Call to execute
+     * @throws ApiException If fail to serialize the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> AssistantStatus </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+     </table>
      */
-    static HttpRequest.Builder withAdditionalHeaders(HttpRequest.Builder builder, Map<String, String> headers) {
-        if (headers != null) {
-            for (Map.Entry<String, String> entry : headers.entrySet()) {
-                builder.header(entry.getKey(), entry.getValue());
-            }
-        }
-        return builder;
-    }
-  }
-  private final HttpClient memberVarHttpClient;
-  private final ObjectMapper memberVarObjectMapper;
-  private final String memberVarBaseUri;
-  private final Consumer<HttpRequest.Builder> memberVarInterceptor;
-  private final Duration memberVarReadTimeout;
-  private final Consumer<HttpResponse<InputStream>> memberVarResponseInterceptor;
-  private final Consumer<HttpResponse<InputStream>> memberVarAsyncResponseInterceptor;
+    public okhttp3.Call assistantStatusCall(@javax.annotation.Nonnull String workspaceId, final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
 
-  public AssistantApi() {
-    this(Configuration.getDefaultApiClient());
-  }
-
-  public AssistantApi(ApiClient apiClient) {
-    memberVarHttpClient = apiClient.getHttpClient();
-    memberVarObjectMapper = apiClient.getObjectMapper();
-    memberVarBaseUri = apiClient.getBaseUri();
-    memberVarInterceptor = apiClient.getRequestInterceptor();
-    memberVarReadTimeout = apiClient.getReadTimeout();
-    memberVarResponseInterceptor = apiClient.getResponseInterceptor();
-    memberVarAsyncResponseInterceptor = apiClient.getAsyncResponseInterceptor();
-  }
-
-
-  protected ApiException getApiException(String operationId, HttpResponse<InputStream> response) throws IOException {
-    InputStream responseBody = ApiClient.getResponseBody(response);
-    String body = null;
-    try {
-      body = responseBody == null ? null : new String(responseBody.readAllBytes());
-    } finally {
-      if (responseBody != null) {
-        responseBody.close();
-      }
-    }
-    String message = formatExceptionMessage(operationId, response.statusCode(), body);
-    return new ApiException(response.statusCode(), message, response.headers(), body);
-  }
-
-  private String formatExceptionMessage(String operationId, int statusCode, String body) {
-    if (body == null || body.isEmpty()) {
-      body = "[no body]";
-    }
-    return operationId + " call failed with: " + statusCode + " - " + body;
-  }
-
-  /**
-   * Download file from the given response.
-   *
-   * @param response Response
-   * @return File
-   * @throws ApiException If fail to read file content from response and write to disk
-   */
-  public File downloadFileFromResponse(HttpResponse<InputStream> response, InputStream responseBody) throws ApiException {
-    if (responseBody == null) {
-      throw new ApiException(new IOException("Response body is empty"));
-    }
-    try {
-      File file = prepareDownloadFile(response);
-      java.nio.file.Files.copy(responseBody, file.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-      return file;
-    } catch (IOException e) {
-      throw new ApiException(e);
-    }
-  }
-
-  /**
-   * <p>Prepare the file for download from the response.</p>
-   *
-   * @param response a {@link java.net.http.HttpResponse} object.
-   * @return a {@link java.io.File} object.
-   * @throws java.io.IOException if any.
-   */
-  private File prepareDownloadFile(HttpResponse<InputStream> response) throws IOException {
-    String filename = null;
-    java.util.Optional<String> contentDisposition = response.headers().firstValue("Content-Disposition");
-    if (contentDisposition.isPresent() && !"".equals(contentDisposition.get())) {
-      // Get filename from the Content-Disposition header.
-      java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("filename=['\"]?([^'\"\\s]+)['\"]?");
-      java.util.regex.Matcher matcher = pattern.matcher(contentDisposition.get());
-      if (matcher.find())
-        filename = matcher.group(1);
-    }
-    File file = null;
-    if (filename != null) {
-      java.nio.file.Path tempDir = java.nio.file.Files.createTempDirectory("swagger-gen-native");
-      java.nio.file.Path filePath = java.nio.file.Files.createFile(tempDir.resolve(filename));
-      file = filePath.toFile();
-      tempDir.toFile().deleteOnExit();   // best effort cleanup
-      file.deleteOnExit(); // best effort cleanup
-    } else {
-      file = java.nio.file.Files.createTempFile("download-", "").toFile();
-      file.deleteOnExit(); // best effort cleanup
-    }
-    return file;
-  }
-
-  /**
-   * Get the assistant&#39;s status
-   * Tells whether the server has a language model, so clients show the assistant or hide it, and how many requests the workspace has left today. Needs assistant:use.
-   * @param workspaceId  (required)
-   * @return AssistantStatus
-   * @throws ApiException if fails to make API call
-   */
-  public AssistantStatus assistantStatus(@javax.annotation.Nonnull String workspaceId) throws ApiException {
-    return assistantStatus(workspaceId, null);
-  }
-
-  /**
-   * Get the assistant&#39;s status
-   * Tells whether the server has a language model, so clients show the assistant or hide it, and how many requests the workspace has left today. Needs assistant:use.
-   * @param workspaceId  (required)
-   * @param headers Optional headers to include in the request
-   * @return AssistantStatus
-   * @throws ApiException if fails to make API call
-   */
-  public AssistantStatus assistantStatus(@javax.annotation.Nonnull String workspaceId, Map<String, String> headers) throws ApiException {
-    ApiResponse<AssistantStatus> localVarResponse = assistantStatusWithHttpInfo(workspaceId, headers);
-    return localVarResponse.getData();
-  }
-
-  /**
-   * Get the assistant&#39;s status
-   * Tells whether the server has a language model, so clients show the assistant or hide it, and how many requests the workspace has left today. Needs assistant:use.
-   * @param workspaceId  (required)
-   * @return ApiResponse&lt;AssistantStatus&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<AssistantStatus> assistantStatusWithHttpInfo(@javax.annotation.Nonnull String workspaceId) throws ApiException {
-    return assistantStatusWithHttpInfo(workspaceId, null);
-  }
-
-  /**
-   * Get the assistant&#39;s status
-   * Tells whether the server has a language model, so clients show the assistant or hide it, and how many requests the workspace has left today. Needs assistant:use.
-   * @param workspaceId  (required)
-   * @param headers Optional headers to include in the request
-   * @return ApiResponse&lt;AssistantStatus&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<AssistantStatus> assistantStatusWithHttpInfo(@javax.annotation.Nonnull String workspaceId, Map<String, String> headers) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = assistantStatusRequestBuilder(workspaceId, headers);
-    try {
-      HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
-          localVarRequestBuilder.build(),
-          HttpResponse.BodyHandlers.ofInputStream());
-      if (memberVarResponseInterceptor != null) {
-        memberVarResponseInterceptor.accept(localVarResponse);
-      }
-      InputStream localVarResponseBody = null;
-      try {
-        if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("assistantStatus", localVarResponse);
-        }
-        localVarResponseBody = ApiClient.getResponseBody(localVarResponse);
-        if (localVarResponseBody == null) {
-          return new ApiResponse<AssistantStatus>(
-              localVarResponse.statusCode(),
-              localVarResponse.headers().map(),
-              null
-          );
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
         }
 
-        
-        
-        String responseBody = new String(localVarResponseBody.readAllBytes());
-        AssistantStatus responseValue = responseBody.isBlank()? null: memberVarObjectMapper.readValue(responseBody, new TypeReference<AssistantStatus>() {});
-        
+        Object localVarPostBody = null;
 
-        return new ApiResponse<AssistantStatus>(
-            localVarResponse.statusCode(),
-            localVarResponse.headers().map(),
-            responseValue
-        );
-      } finally {
-        if (localVarResponseBody != null) {
-          localVarResponseBody.close();
-        }
-      }
-    } catch (IOException e) {
-      throw new ApiException(e);
-    }
-    catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new ApiException(e);
-    }
-  }
+        // create path and map variables
+        String localVarPath = "/api/workspaces/{workspaceId}/assistant"
+            .replace("{" + "workspaceId" + "}", localVarApiClient.escapeString(workspaceId.toString()));
 
-  private HttpRequest.Builder assistantStatusRequestBuilder(@javax.annotation.Nonnull String workspaceId, Map<String, String> headers) throws ApiException {
-    // verify the required parameter 'workspaceId' is set
-    if (workspaceId == null) {
-      throw new ApiException(400, "Missing the required parameter 'workspaceId' when calling assistantStatus");
-    }
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
 
-    HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
-
-    String localVarPath = "/api/workspaces/{workspaceId}/assistant"
-        .replace("{workspaceId}", ApiClient.urlEncode(workspaceId.toString()));
-
-    localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
-
-    localVarRequestBuilder.header("Accept", "application/json");
-
-    localVarRequestBuilder.method("GET", HttpRequest.BodyPublishers.noBody());
-    if (memberVarReadTimeout != null) {
-      localVarRequestBuilder.timeout(memberVarReadTimeout);
-    }
-    // Add custom headers if provided
-    localVarRequestBuilder = HttpRequestBuilderExtensions.withAdditionalHeaders(localVarRequestBuilder, headers);
-    if (memberVarInterceptor != null) {
-      memberVarInterceptor.accept(localVarRequestBuilder);
-    }
-    return localVarRequestBuilder;
-  }
-
-  /**
-   * Suggest a change to a post&#39;s text
-   * Asks the language model to rewrite, shorten or translate a post&#39;s text, or to suggest hashtags for it, and answers once the whole suggestion is checked. The text is sent to the model as data, never as instructions. Each request counts toward the workspace&#39;s daily quota, unless the model&#39;s provider could not be reached. Needs assistant:use.
-   * @param workspaceId  (required)
-   * @param suggestionRequest  (required)
-   * @return Suggestion
-   * @throws ApiException if fails to make API call
-   */
-  public Suggestion assistantSuggest(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull SuggestionRequest suggestionRequest) throws ApiException {
-    return assistantSuggest(workspaceId, suggestionRequest, null);
-  }
-
-  /**
-   * Suggest a change to a post&#39;s text
-   * Asks the language model to rewrite, shorten or translate a post&#39;s text, or to suggest hashtags for it, and answers once the whole suggestion is checked. The text is sent to the model as data, never as instructions. Each request counts toward the workspace&#39;s daily quota, unless the model&#39;s provider could not be reached. Needs assistant:use.
-   * @param workspaceId  (required)
-   * @param suggestionRequest  (required)
-   * @param headers Optional headers to include in the request
-   * @return Suggestion
-   * @throws ApiException if fails to make API call
-   */
-  public Suggestion assistantSuggest(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull SuggestionRequest suggestionRequest, Map<String, String> headers) throws ApiException {
-    ApiResponse<Suggestion> localVarResponse = assistantSuggestWithHttpInfo(workspaceId, suggestionRequest, headers);
-    return localVarResponse.getData();
-  }
-
-  /**
-   * Suggest a change to a post&#39;s text
-   * Asks the language model to rewrite, shorten or translate a post&#39;s text, or to suggest hashtags for it, and answers once the whole suggestion is checked. The text is sent to the model as data, never as instructions. Each request counts toward the workspace&#39;s daily quota, unless the model&#39;s provider could not be reached. Needs assistant:use.
-   * @param workspaceId  (required)
-   * @param suggestionRequest  (required)
-   * @return ApiResponse&lt;Suggestion&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<Suggestion> assistantSuggestWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull SuggestionRequest suggestionRequest) throws ApiException {
-    return assistantSuggestWithHttpInfo(workspaceId, suggestionRequest, null);
-  }
-
-  /**
-   * Suggest a change to a post&#39;s text
-   * Asks the language model to rewrite, shorten or translate a post&#39;s text, or to suggest hashtags for it, and answers once the whole suggestion is checked. The text is sent to the model as data, never as instructions. Each request counts toward the workspace&#39;s daily quota, unless the model&#39;s provider could not be reached. Needs assistant:use.
-   * @param workspaceId  (required)
-   * @param suggestionRequest  (required)
-   * @param headers Optional headers to include in the request
-   * @return ApiResponse&lt;Suggestion&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<Suggestion> assistantSuggestWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull SuggestionRequest suggestionRequest, Map<String, String> headers) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = assistantSuggestRequestBuilder(workspaceId, suggestionRequest, headers);
-    try {
-      HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
-          localVarRequestBuilder.build(),
-          HttpResponse.BodyHandlers.ofInputStream());
-      if (memberVarResponseInterceptor != null) {
-        memberVarResponseInterceptor.accept(localVarResponse);
-      }
-      InputStream localVarResponseBody = null;
-      try {
-        if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("assistantSuggest", localVarResponse);
-        }
-        localVarResponseBody = ApiClient.getResponseBody(localVarResponse);
-        if (localVarResponseBody == null) {
-          return new ApiResponse<Suggestion>(
-              localVarResponse.statusCode(),
-              localVarResponse.headers().map(),
-              null
-          );
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
         }
 
-        
-        
-        String responseBody = new String(localVarResponseBody.readAllBytes());
-        Suggestion responseValue = responseBody.isBlank()? null: memberVarObjectMapper.readValue(responseBody, new TypeReference<Suggestion>() {});
-        
-
-        return new ApiResponse<Suggestion>(
-            localVarResponse.statusCode(),
-            localVarResponse.headers().map(),
-            responseValue
-        );
-      } finally {
-        if (localVarResponseBody != null) {
-          localVarResponseBody.close();
+        final String[] localVarContentTypes = {
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
         }
-      }
-    } catch (IOException e) {
-      throw new ApiException(e);
-    }
-    catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new ApiException(e);
-    }
-  }
 
-  private HttpRequest.Builder assistantSuggestRequestBuilder(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull SuggestionRequest suggestionRequest, Map<String, String> headers) throws ApiException {
-    // verify the required parameter 'workspaceId' is set
-    if (workspaceId == null) {
-      throw new ApiException(400, "Missing the required parameter 'workspaceId' when calling assistantSuggest");
-    }
-    // verify the required parameter 'suggestionRequest' is set
-    if (suggestionRequest == null) {
-      throw new ApiException(400, "Missing the required parameter 'suggestionRequest' when calling assistantSuggest");
+        String[] localVarAuthNames = new String[] { "bearer" };
+        return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
-    HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call assistantStatusValidateBeforeCall(@javax.annotation.Nonnull String workspaceId, final ApiCallback _callback) throws ApiException {
+        // verify the required parameter 'workspaceId' is set
+        if (workspaceId == null) {
+            throw new ApiException("Missing the required parameter 'workspaceId' when calling assistantStatus(Async)");
+        }
 
-    String localVarPath = "/api/workspaces/{workspaceId}/assistant/suggestions"
-        .replace("{workspaceId}", ApiClient.urlEncode(workspaceId.toString()));
+        return assistantStatusCall(workspaceId, _callback);
 
-    localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
-
-    localVarRequestBuilder.header("Content-Type", "application/json");
-    localVarRequestBuilder.header("Accept", "application/json");
-
-    try {
-      byte[] localVarPostBody = memberVarObjectMapper.writeValueAsBytes(suggestionRequest);
-      localVarRequestBuilder.method("POST", HttpRequest.BodyPublishers.ofByteArray(localVarPostBody));
-    } catch (IOException e) {
-      throw new ApiException(e);
     }
-    if (memberVarReadTimeout != null) {
-      localVarRequestBuilder.timeout(memberVarReadTimeout);
-    }
-    // Add custom headers if provided
-    localVarRequestBuilder = HttpRequestBuilderExtensions.withAdditionalHeaders(localVarRequestBuilder, headers);
-    if (memberVarInterceptor != null) {
-      memberVarInterceptor.accept(localVarRequestBuilder);
-    }
-    return localVarRequestBuilder;
-  }
 
+    /**
+     * Get the assistant&#39;s status
+     * Tells whether the server has a language model, so clients show the assistant or hide it, and how many requests the workspace has left today. Needs assistant:use.
+     * @param workspaceId  (required)
+     * @return AssistantStatus
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> AssistantStatus </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+     </table>
+     */
+    public AssistantStatus assistantStatus(@javax.annotation.Nonnull String workspaceId) throws ApiException {
+        ApiResponse<AssistantStatus> localVarResp = assistantStatusWithHttpInfo(workspaceId);
+        return localVarResp.getData();
+    }
+
+    /**
+     * Get the assistant&#39;s status
+     * Tells whether the server has a language model, so clients show the assistant or hide it, and how many requests the workspace has left today. Needs assistant:use.
+     * @param workspaceId  (required)
+     * @return ApiResponse&lt;AssistantStatus&gt;
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> AssistantStatus </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+     </table>
+     */
+    public ApiResponse<AssistantStatus> assistantStatusWithHttpInfo(@javax.annotation.Nonnull String workspaceId) throws ApiException {
+        okhttp3.Call localVarCall = assistantStatusValidateBeforeCall(workspaceId, null);
+        Type localVarReturnType = new TypeToken<AssistantStatus>(){}.getType();
+        return localVarApiClient.execute(localVarCall, localVarReturnType);
+    }
+
+    /**
+     * Get the assistant&#39;s status (asynchronously)
+     * Tells whether the server has a language model, so clients show the assistant or hide it, and how many requests the workspace has left today. Needs assistant:use.
+     * @param workspaceId  (required)
+     * @param _callback The callback to be executed when the API call finishes
+     * @return The request call
+     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> AssistantStatus </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call assistantStatusAsync(@javax.annotation.Nonnull String workspaceId, final ApiCallback<AssistantStatus> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = assistantStatusValidateBeforeCall(workspaceId, _callback);
+        Type localVarReturnType = new TypeToken<AssistantStatus>(){}.getType();
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
+        return localVarCall;
+    }
+    /**
+     * Build call for assistantSuggest
+     * @param workspaceId  (required)
+     * @param suggestionRequest  (required)
+     * @param _callback Callback for upload/download progress
+     * @return Call to execute
+     * @throws ApiException If fail to serialize the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Suggestion </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 422 </td><td> The text is blank, or longer than the assistant takes (&#x60;maxLength&#x60;). </td><td>  -  </td></tr>
+        <tr><td> 429 </td><td> The workspace used every assistant request it has today. Try again after &#x60;resetsAt&#x60;. </td><td>  -  </td></tr>
+        <tr><td> 502 </td><td> The language model gave no answer the assistant can offer (&#x60;reason&#x60;). Trying again may work, unless the provider declined the text. </td><td>  -  </td></tr>
+        <tr><td> 503 </td><td> The writing assistant is off on this server: no language model is configured. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call assistantSuggestCall(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull SuggestionRequest suggestionRequest, final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
+
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
+        }
+
+        Object localVarPostBody = suggestionRequest;
+
+        // create path and map variables
+        String localVarPath = "/api/workspaces/{workspaceId}/assistant/suggestions"
+            .replace("{" + "workspaceId" + "}", localVarApiClient.escapeString(workspaceId.toString()));
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+            "application/json"
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
+        }
+
+        String[] localVarAuthNames = new String[] { "bearer" };
+        return localVarApiClient.buildCall(basePath, localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call assistantSuggestValidateBeforeCall(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull SuggestionRequest suggestionRequest, final ApiCallback _callback) throws ApiException {
+        // verify the required parameter 'workspaceId' is set
+        if (workspaceId == null) {
+            throw new ApiException("Missing the required parameter 'workspaceId' when calling assistantSuggest(Async)");
+        }
+
+        // verify the required parameter 'suggestionRequest' is set
+        if (suggestionRequest == null) {
+            throw new ApiException("Missing the required parameter 'suggestionRequest' when calling assistantSuggest(Async)");
+        }
+
+        return assistantSuggestCall(workspaceId, suggestionRequest, _callback);
+
+    }
+
+    /**
+     * Suggest a change to a post&#39;s text
+     * Asks the language model to rewrite, shorten or translate a post&#39;s text, or to suggest hashtags for it, and answers once the whole suggestion is checked. The text is sent to the model as data, never as instructions. Each request counts toward the workspace&#39;s daily quota, unless the model&#39;s provider could not be reached. Needs assistant:use.
+     * @param workspaceId  (required)
+     * @param suggestionRequest  (required)
+     * @return Suggestion
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Suggestion </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 422 </td><td> The text is blank, or longer than the assistant takes (&#x60;maxLength&#x60;). </td><td>  -  </td></tr>
+        <tr><td> 429 </td><td> The workspace used every assistant request it has today. Try again after &#x60;resetsAt&#x60;. </td><td>  -  </td></tr>
+        <tr><td> 502 </td><td> The language model gave no answer the assistant can offer (&#x60;reason&#x60;). Trying again may work, unless the provider declined the text. </td><td>  -  </td></tr>
+        <tr><td> 503 </td><td> The writing assistant is off on this server: no language model is configured. </td><td>  -  </td></tr>
+     </table>
+     */
+    public Suggestion assistantSuggest(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull SuggestionRequest suggestionRequest) throws ApiException {
+        ApiResponse<Suggestion> localVarResp = assistantSuggestWithHttpInfo(workspaceId, suggestionRequest);
+        return localVarResp.getData();
+    }
+
+    /**
+     * Suggest a change to a post&#39;s text
+     * Asks the language model to rewrite, shorten or translate a post&#39;s text, or to suggest hashtags for it, and answers once the whole suggestion is checked. The text is sent to the model as data, never as instructions. Each request counts toward the workspace&#39;s daily quota, unless the model&#39;s provider could not be reached. Needs assistant:use.
+     * @param workspaceId  (required)
+     * @param suggestionRequest  (required)
+     * @return ApiResponse&lt;Suggestion&gt;
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Suggestion </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 422 </td><td> The text is blank, or longer than the assistant takes (&#x60;maxLength&#x60;). </td><td>  -  </td></tr>
+        <tr><td> 429 </td><td> The workspace used every assistant request it has today. Try again after &#x60;resetsAt&#x60;. </td><td>  -  </td></tr>
+        <tr><td> 502 </td><td> The language model gave no answer the assistant can offer (&#x60;reason&#x60;). Trying again may work, unless the provider declined the text. </td><td>  -  </td></tr>
+        <tr><td> 503 </td><td> The writing assistant is off on this server: no language model is configured. </td><td>  -  </td></tr>
+     </table>
+     */
+    public ApiResponse<Suggestion> assistantSuggestWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull SuggestionRequest suggestionRequest) throws ApiException {
+        okhttp3.Call localVarCall = assistantSuggestValidateBeforeCall(workspaceId, suggestionRequest, null);
+        Type localVarReturnType = new TypeToken<Suggestion>(){}.getType();
+        return localVarApiClient.execute(localVarCall, localVarReturnType);
+    }
+
+    /**
+     * Suggest a change to a post&#39;s text (asynchronously)
+     * Asks the language model to rewrite, shorten or translate a post&#39;s text, or to suggest hashtags for it, and answers once the whole suggestion is checked. The text is sent to the model as data, never as instructions. Each request counts toward the workspace&#39;s daily quota, unless the model&#39;s provider could not be reached. Needs assistant:use.
+     * @param workspaceId  (required)
+     * @param suggestionRequest  (required)
+     * @param _callback The callback to be executed when the API call finishes
+     * @return The request call
+     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Suggestion </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 422 </td><td> The text is blank, or longer than the assistant takes (&#x60;maxLength&#x60;). </td><td>  -  </td></tr>
+        <tr><td> 429 </td><td> The workspace used every assistant request it has today. Try again after &#x60;resetsAt&#x60;. </td><td>  -  </td></tr>
+        <tr><td> 502 </td><td> The language model gave no answer the assistant can offer (&#x60;reason&#x60;). Trying again may work, unless the provider declined the text. </td><td>  -  </td></tr>
+        <tr><td> 503 </td><td> The writing assistant is off on this server: no language model is configured. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call assistantSuggestAsync(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull SuggestionRequest suggestionRequest, final ApiCallback<Suggestion> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = assistantSuggestValidateBeforeCall(workspaceId, suggestionRequest, _callback);
+        Type localVarReturnType = new TypeToken<Suggestion>(){}.getType();
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
+        return localVarCall;
+    }
 }

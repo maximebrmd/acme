@@ -11,3 +11,6 @@ git_push.sh
 # Empty test stubs.
 .rspec
 spec/**
+
+# The smoke test, which scripts/test.ts runs against a stand-in server.
+smoke.rb

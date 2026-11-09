@@ -10,13 +10,22 @@
  * Do not edit the class manually.
  */
 
+
 package social.peal.api;
 
+import social.peal.ApiCallback;
 import social.peal.ApiClient;
 import social.peal.ApiException;
 import social.peal.ApiResponse;
 import social.peal.Configuration;
 import social.peal.Pair;
+import social.peal.ProgressRequestBody;
+import social.peal.ProgressResponseBody;
+
+import com.google.gson.reflect.TypeToken;
+
+import java.io.IOException;
+
 
 import social.peal.model.AltTextTooLongEncoded;
 import social.peal.model.EffectHttpApiErrorBadRequestEncoded;
@@ -36,1056 +45,1150 @@ import social.peal.model.UploadIncompleteEncoded;
 import social.peal.model.UploadRejectedEncoded;
 import social.peal.model.WorkspaceNotFoundEncoded;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import java.io.InputStream;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.net.http.HttpRequest;
-import java.nio.channels.Channels;
-import java.nio.channels.Pipe;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.time.Duration;
-
+import java.lang.reflect.Type;
 import java.util.ArrayList;
-import java.util.StringJoiner;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.function.Consumer;
 
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.27.0")
 public class MediaApi {
-  /**
-   * Utility class for extending HttpRequest.Builder functionality.
-   */
-  private static class HttpRequestBuilderExtensions {
+    private ApiClient localVarApiClient;
+    private int localHostIndex;
+    private String localCustomBaseUrl;
+
+    public MediaApi() {
+        this(Configuration.getDefaultApiClient());
+    }
+
+    public MediaApi(ApiClient apiClient) {
+        this.localVarApiClient = apiClient;
+    }
+
+    public ApiClient getApiClient() {
+        return localVarApiClient;
+    }
+
+    public void setApiClient(ApiClient apiClient) {
+        this.localVarApiClient = apiClient;
+    }
+
+    public int getHostIndex() {
+        return localHostIndex;
+    }
+
+    public void setHostIndex(int hostIndex) {
+        this.localHostIndex = hostIndex;
+    }
+
+    public String getCustomBaseUrl() {
+        return localCustomBaseUrl;
+    }
+
+    public void setCustomBaseUrl(String customBaseUrl) {
+        this.localCustomBaseUrl = customBaseUrl;
+    }
+
     /**
-     * Adds additional headers to the provided HttpRequest.Builder. Useful for adding method/endpoint specific headers.
-     *
-     * @param builder the HttpRequest.Builder to which headers will be added
-     * @param headers a map of header names and values to add; may be null
-     * @return the same HttpRequest.Builder instance with the additional headers set
+     * Build call for mediaComplete
+     * @param workspaceId  (required)
+     * @param mediaId  (required)
+     * @param _callback Callback for upload/download progress
+     * @return Call to execute
+     * @throws ApiException If fail to serialize the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Media </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no media with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 409 </td><td> The file, or one of its parts, has not reached the store yet. Send what is missing, then complete the upload again. </td><td>  -  </td></tr>
+        <tr><td> 422 </td><td> The stored file does not have the declared size or type. It was deleted, and the media is rejected. </td><td>  -  </td></tr>
+        <tr><td> 503 </td><td> The server cannot reach its media store right now. Try again later. </td><td>  -  </td></tr>
+     </table>
      */
-    static HttpRequest.Builder withAdditionalHeaders(HttpRequest.Builder builder, Map<String, String> headers) {
-        if (headers != null) {
-            for (Map.Entry<String, String> entry : headers.entrySet()) {
-                builder.header(entry.getKey(), entry.getValue());
-            }
-        }
-        return builder;
-    }
-  }
-  private final HttpClient memberVarHttpClient;
-  private final ObjectMapper memberVarObjectMapper;
-  private final String memberVarBaseUri;
-  private final Consumer<HttpRequest.Builder> memberVarInterceptor;
-  private final Duration memberVarReadTimeout;
-  private final Consumer<HttpResponse<InputStream>> memberVarResponseInterceptor;
-  private final Consumer<HttpResponse<InputStream>> memberVarAsyncResponseInterceptor;
+    public okhttp3.Call mediaCompleteCall(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String mediaId, final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
 
-  public MediaApi() {
-    this(Configuration.getDefaultApiClient());
-  }
-
-  public MediaApi(ApiClient apiClient) {
-    memberVarHttpClient = apiClient.getHttpClient();
-    memberVarObjectMapper = apiClient.getObjectMapper();
-    memberVarBaseUri = apiClient.getBaseUri();
-    memberVarInterceptor = apiClient.getRequestInterceptor();
-    memberVarReadTimeout = apiClient.getReadTimeout();
-    memberVarResponseInterceptor = apiClient.getResponseInterceptor();
-    memberVarAsyncResponseInterceptor = apiClient.getAsyncResponseInterceptor();
-  }
-
-
-  protected ApiException getApiException(String operationId, HttpResponse<InputStream> response) throws IOException {
-    InputStream responseBody = ApiClient.getResponseBody(response);
-    String body = null;
-    try {
-      body = responseBody == null ? null : new String(responseBody.readAllBytes());
-    } finally {
-      if (responseBody != null) {
-        responseBody.close();
-      }
-    }
-    String message = formatExceptionMessage(operationId, response.statusCode(), body);
-    return new ApiException(response.statusCode(), message, response.headers(), body);
-  }
-
-  private String formatExceptionMessage(String operationId, int statusCode, String body) {
-    if (body == null || body.isEmpty()) {
-      body = "[no body]";
-    }
-    return operationId + " call failed with: " + statusCode + " - " + body;
-  }
-
-  /**
-   * Download file from the given response.
-   *
-   * @param response Response
-   * @return File
-   * @throws ApiException If fail to read file content from response and write to disk
-   */
-  public File downloadFileFromResponse(HttpResponse<InputStream> response, InputStream responseBody) throws ApiException {
-    if (responseBody == null) {
-      throw new ApiException(new IOException("Response body is empty"));
-    }
-    try {
-      File file = prepareDownloadFile(response);
-      java.nio.file.Files.copy(responseBody, file.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-      return file;
-    } catch (IOException e) {
-      throw new ApiException(e);
-    }
-  }
-
-  /**
-   * <p>Prepare the file for download from the response.</p>
-   *
-   * @param response a {@link java.net.http.HttpResponse} object.
-   * @return a {@link java.io.File} object.
-   * @throws java.io.IOException if any.
-   */
-  private File prepareDownloadFile(HttpResponse<InputStream> response) throws IOException {
-    String filename = null;
-    java.util.Optional<String> contentDisposition = response.headers().firstValue("Content-Disposition");
-    if (contentDisposition.isPresent() && !"".equals(contentDisposition.get())) {
-      // Get filename from the Content-Disposition header.
-      java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("filename=['\"]?([^'\"\\s]+)['\"]?");
-      java.util.regex.Matcher matcher = pattern.matcher(contentDisposition.get());
-      if (matcher.find())
-        filename = matcher.group(1);
-    }
-    File file = null;
-    if (filename != null) {
-      java.nio.file.Path tempDir = java.nio.file.Files.createTempDirectory("swagger-gen-native");
-      java.nio.file.Path filePath = java.nio.file.Files.createFile(tempDir.resolve(filename));
-      file = filePath.toFile();
-      tempDir.toFile().deleteOnExit();   // best effort cleanup
-      file.deleteOnExit(); // best effort cleanup
-    } else {
-      file = java.nio.file.Files.createTempFile("download-", "").toFile();
-      file.deleteOnExit(); // best effort cleanup
-    }
-    return file;
-  }
-
-  /**
-   * Complete an upload
-   * Checks that the file reached the store with the declared size and type, joining its parts first, then probes it: the media is ready, or stays uploaded with why it could not be probed. Calling it again is safe, and probes an uploaded file again. Needs media:upload.
-   * @param workspaceId  (required)
-   * @param mediaId  (required)
-   * @return Media
-   * @throws ApiException if fails to make API call
-   */
-  public Media mediaComplete(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String mediaId) throws ApiException {
-    return mediaComplete(workspaceId, mediaId, null);
-  }
-
-  /**
-   * Complete an upload
-   * Checks that the file reached the store with the declared size and type, joining its parts first, then probes it: the media is ready, or stays uploaded with why it could not be probed. Calling it again is safe, and probes an uploaded file again. Needs media:upload.
-   * @param workspaceId  (required)
-   * @param mediaId  (required)
-   * @param headers Optional headers to include in the request
-   * @return Media
-   * @throws ApiException if fails to make API call
-   */
-  public Media mediaComplete(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String mediaId, Map<String, String> headers) throws ApiException {
-    ApiResponse<Media> localVarResponse = mediaCompleteWithHttpInfo(workspaceId, mediaId, headers);
-    return localVarResponse.getData();
-  }
-
-  /**
-   * Complete an upload
-   * Checks that the file reached the store with the declared size and type, joining its parts first, then probes it: the media is ready, or stays uploaded with why it could not be probed. Calling it again is safe, and probes an uploaded file again. Needs media:upload.
-   * @param workspaceId  (required)
-   * @param mediaId  (required)
-   * @return ApiResponse&lt;Media&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<Media> mediaCompleteWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String mediaId) throws ApiException {
-    return mediaCompleteWithHttpInfo(workspaceId, mediaId, null);
-  }
-
-  /**
-   * Complete an upload
-   * Checks that the file reached the store with the declared size and type, joining its parts first, then probes it: the media is ready, or stays uploaded with why it could not be probed. Calling it again is safe, and probes an uploaded file again. Needs media:upload.
-   * @param workspaceId  (required)
-   * @param mediaId  (required)
-   * @param headers Optional headers to include in the request
-   * @return ApiResponse&lt;Media&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<Media> mediaCompleteWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String mediaId, Map<String, String> headers) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = mediaCompleteRequestBuilder(workspaceId, mediaId, headers);
-    try {
-      HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
-          localVarRequestBuilder.build(),
-          HttpResponse.BodyHandlers.ofInputStream());
-      if (memberVarResponseInterceptor != null) {
-        memberVarResponseInterceptor.accept(localVarResponse);
-      }
-      InputStream localVarResponseBody = null;
-      try {
-        if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("mediaComplete", localVarResponse);
-        }
-        localVarResponseBody = ApiClient.getResponseBody(localVarResponse);
-        if (localVarResponseBody == null) {
-          return new ApiResponse<Media>(
-              localVarResponse.statusCode(),
-              localVarResponse.headers().map(),
-              null
-          );
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
         }
 
-        
-        
-        String responseBody = new String(localVarResponseBody.readAllBytes());
-        Media responseValue = responseBody.isBlank()? null: memberVarObjectMapper.readValue(responseBody, new TypeReference<Media>() {});
-        
+        Object localVarPostBody = null;
 
-        return new ApiResponse<Media>(
-            localVarResponse.statusCode(),
-            localVarResponse.headers().map(),
-            responseValue
-        );
-      } finally {
-        if (localVarResponseBody != null) {
-          localVarResponseBody.close();
-        }
-      }
-    } catch (IOException e) {
-      throw new ApiException(e);
-    }
-    catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new ApiException(e);
-    }
-  }
+        // create path and map variables
+        String localVarPath = "/api/workspaces/{workspaceId}/media/{mediaId}/complete"
+            .replace("{" + "workspaceId" + "}", localVarApiClient.escapeString(workspaceId.toString()))
+            .replace("{" + "mediaId" + "}", localVarApiClient.escapeString(mediaId.toString()));
 
-  private HttpRequest.Builder mediaCompleteRequestBuilder(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String mediaId, Map<String, String> headers) throws ApiException {
-    // verify the required parameter 'workspaceId' is set
-    if (workspaceId == null) {
-      throw new ApiException(400, "Missing the required parameter 'workspaceId' when calling mediaComplete");
-    }
-    // verify the required parameter 'mediaId' is set
-    if (mediaId == null) {
-      throw new ApiException(400, "Missing the required parameter 'mediaId' when calling mediaComplete");
-    }
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
 
-    HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
-
-    String localVarPath = "/api/workspaces/{workspaceId}/media/{mediaId}/complete"
-        .replace("{workspaceId}", ApiClient.urlEncode(workspaceId.toString()))
-        .replace("{mediaId}", ApiClient.urlEncode(mediaId.toString()));
-
-    localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
-
-    localVarRequestBuilder.header("Accept", "application/json");
-
-    localVarRequestBuilder.method("POST", HttpRequest.BodyPublishers.noBody());
-    if (memberVarReadTimeout != null) {
-      localVarRequestBuilder.timeout(memberVarReadTimeout);
-    }
-    // Add custom headers if provided
-    localVarRequestBuilder = HttpRequestBuilderExtensions.withAdditionalHeaders(localVarRequestBuilder, headers);
-    if (memberVarInterceptor != null) {
-      memberVarInterceptor.accept(localVarRequestBuilder);
-    }
-    return localVarRequestBuilder;
-  }
-
-  /**
-   * Start an upload
-   * Records pending media and signs the upload of its file: one PUT for an image or a video up to 16 MiB, one PUT per part for a larger video. Send the file with them, then complete the upload. The requests only take the declared size and content type. Needs media:upload.
-   * @param workspaceId  (required)
-   * @param newUpload  (required)
-   * @return PreparedUpload
-   * @throws ApiException if fails to make API call
-   */
-  public PreparedUpload mediaCreate(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull NewUpload newUpload) throws ApiException {
-    return mediaCreate(workspaceId, newUpload, null);
-  }
-
-  /**
-   * Start an upload
-   * Records pending media and signs the upload of its file: one PUT for an image or a video up to 16 MiB, one PUT per part for a larger video. Send the file with them, then complete the upload. The requests only take the declared size and content type. Needs media:upload.
-   * @param workspaceId  (required)
-   * @param newUpload  (required)
-   * @param headers Optional headers to include in the request
-   * @return PreparedUpload
-   * @throws ApiException if fails to make API call
-   */
-  public PreparedUpload mediaCreate(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull NewUpload newUpload, Map<String, String> headers) throws ApiException {
-    ApiResponse<PreparedUpload> localVarResponse = mediaCreateWithHttpInfo(workspaceId, newUpload, headers);
-    return localVarResponse.getData();
-  }
-
-  /**
-   * Start an upload
-   * Records pending media and signs the upload of its file: one PUT for an image or a video up to 16 MiB, one PUT per part for a larger video. Send the file with them, then complete the upload. The requests only take the declared size and content type. Needs media:upload.
-   * @param workspaceId  (required)
-   * @param newUpload  (required)
-   * @return ApiResponse&lt;PreparedUpload&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<PreparedUpload> mediaCreateWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull NewUpload newUpload) throws ApiException {
-    return mediaCreateWithHttpInfo(workspaceId, newUpload, null);
-  }
-
-  /**
-   * Start an upload
-   * Records pending media and signs the upload of its file: one PUT for an image or a video up to 16 MiB, one PUT per part for a larger video. Send the file with them, then complete the upload. The requests only take the declared size and content type. Needs media:upload.
-   * @param workspaceId  (required)
-   * @param newUpload  (required)
-   * @param headers Optional headers to include in the request
-   * @return ApiResponse&lt;PreparedUpload&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<PreparedUpload> mediaCreateWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull NewUpload newUpload, Map<String, String> headers) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = mediaCreateRequestBuilder(workspaceId, newUpload, headers);
-    try {
-      HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
-          localVarRequestBuilder.build(),
-          HttpResponse.BodyHandlers.ofInputStream());
-      if (memberVarResponseInterceptor != null) {
-        memberVarResponseInterceptor.accept(localVarResponse);
-      }
-      InputStream localVarResponseBody = null;
-      try {
-        if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("mediaCreate", localVarResponse);
-        }
-        localVarResponseBody = ApiClient.getResponseBody(localVarResponse);
-        if (localVarResponseBody == null) {
-          return new ApiResponse<PreparedUpload>(
-              localVarResponse.statusCode(),
-              localVarResponse.headers().map(),
-              null
-          );
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
         }
 
-        
-        
-        String responseBody = new String(localVarResponseBody.readAllBytes());
-        PreparedUpload responseValue = responseBody.isBlank()? null: memberVarObjectMapper.readValue(responseBody, new TypeReference<PreparedUpload>() {});
-        
-
-        return new ApiResponse<PreparedUpload>(
-            localVarResponse.statusCode(),
-            localVarResponse.headers().map(),
-            responseValue
-        );
-      } finally {
-        if (localVarResponseBody != null) {
-          localVarResponseBody.close();
-        }
-      }
-    } catch (IOException e) {
-      throw new ApiException(e);
-    }
-    catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new ApiException(e);
-    }
-  }
-
-  private HttpRequest.Builder mediaCreateRequestBuilder(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull NewUpload newUpload, Map<String, String> headers) throws ApiException {
-    // verify the required parameter 'workspaceId' is set
-    if (workspaceId == null) {
-      throw new ApiException(400, "Missing the required parameter 'workspaceId' when calling mediaCreate");
-    }
-    // verify the required parameter 'newUpload' is set
-    if (newUpload == null) {
-      throw new ApiException(400, "Missing the required parameter 'newUpload' when calling mediaCreate");
-    }
-
-    HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
-
-    String localVarPath = "/api/workspaces/{workspaceId}/media"
-        .replace("{workspaceId}", ApiClient.urlEncode(workspaceId.toString()));
-
-    localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
-
-    localVarRequestBuilder.header("Content-Type", "application/json");
-    localVarRequestBuilder.header("Accept", "application/json");
-
-    try {
-      byte[] localVarPostBody = memberVarObjectMapper.writeValueAsBytes(newUpload);
-      localVarRequestBuilder.method("POST", HttpRequest.BodyPublishers.ofByteArray(localVarPostBody));
-    } catch (IOException e) {
-      throw new ApiException(e);
-    }
-    if (memberVarReadTimeout != null) {
-      localVarRequestBuilder.timeout(memberVarReadTimeout);
-    }
-    // Add custom headers if provided
-    localVarRequestBuilder = HttpRequestBuilderExtensions.withAdditionalHeaders(localVarRequestBuilder, headers);
-    if (memberVarInterceptor != null) {
-      memberVarInterceptor.accept(localVarRequestBuilder);
-    }
-    return localVarRequestBuilder;
-  }
-
-  /**
-   * Delete media
-   * Deletes the media and its file, and cancels its upload if it is still pending. Drafts that show it lose it. Posts scheduled or publishing that show it refuse the deletion (&#x60;MediaInUse&#x60;, listing them): take them back to draft first. Needs media:delete.
-   * @param workspaceId  (required)
-   * @param mediaId  (required)
-   * @throws ApiException if fails to make API call
-   */
-  public void mediaDelete(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String mediaId) throws ApiException {
-    mediaDelete(workspaceId, mediaId, null);
-  }
-
-  /**
-   * Delete media
-   * Deletes the media and its file, and cancels its upload if it is still pending. Drafts that show it lose it. Posts scheduled or publishing that show it refuse the deletion (&#x60;MediaInUse&#x60;, listing them): take them back to draft first. Needs media:delete.
-   * @param workspaceId  (required)
-   * @param mediaId  (required)
-   * @param headers Optional headers to include in the request
-   * @throws ApiException if fails to make API call
-   */
-  public void mediaDelete(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String mediaId, Map<String, String> headers) throws ApiException {
-    mediaDeleteWithHttpInfo(workspaceId, mediaId, headers);
-  }
-
-  /**
-   * Delete media
-   * Deletes the media and its file, and cancels its upload if it is still pending. Drafts that show it lose it. Posts scheduled or publishing that show it refuse the deletion (&#x60;MediaInUse&#x60;, listing them): take them back to draft first. Needs media:delete.
-   * @param workspaceId  (required)
-   * @param mediaId  (required)
-   * @return ApiResponse&lt;Void&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<Void> mediaDeleteWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String mediaId) throws ApiException {
-    return mediaDeleteWithHttpInfo(workspaceId, mediaId, null);
-  }
-
-  /**
-   * Delete media
-   * Deletes the media and its file, and cancels its upload if it is still pending. Drafts that show it lose it. Posts scheduled or publishing that show it refuse the deletion (&#x60;MediaInUse&#x60;, listing them): take them back to draft first. Needs media:delete.
-   * @param workspaceId  (required)
-   * @param mediaId  (required)
-   * @param headers Optional headers to include in the request
-   * @return ApiResponse&lt;Void&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<Void> mediaDeleteWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String mediaId, Map<String, String> headers) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = mediaDeleteRequestBuilder(workspaceId, mediaId, headers);
-    try {
-      HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
-          localVarRequestBuilder.build(),
-          HttpResponse.BodyHandlers.ofInputStream());
-      if (memberVarResponseInterceptor != null) {
-        memberVarResponseInterceptor.accept(localVarResponse);
-      }
-      InputStream localVarResponseBody = null;
-      try {
-        if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("mediaDelete", localVarResponse);
-        }
-        localVarResponseBody = ApiClient.getResponseBody(localVarResponse);
-        if (localVarResponseBody != null) {
-          localVarResponseBody.readAllBytes();
-        }
-        return new ApiResponse<>(
-            localVarResponse.statusCode(),
-            localVarResponse.headers().map(),
-            null
-        );
-      } finally {
-        if (localVarResponseBody != null) {
-          localVarResponseBody.close();
-        }
-      }
-    } catch (IOException e) {
-      throw new ApiException(e);
-    }
-    catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new ApiException(e);
-    }
-  }
-
-  private HttpRequest.Builder mediaDeleteRequestBuilder(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String mediaId, Map<String, String> headers) throws ApiException {
-    // verify the required parameter 'workspaceId' is set
-    if (workspaceId == null) {
-      throw new ApiException(400, "Missing the required parameter 'workspaceId' when calling mediaDelete");
-    }
-    // verify the required parameter 'mediaId' is set
-    if (mediaId == null) {
-      throw new ApiException(400, "Missing the required parameter 'mediaId' when calling mediaDelete");
-    }
-
-    HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
-
-    String localVarPath = "/api/workspaces/{workspaceId}/media/{mediaId}"
-        .replace("{workspaceId}", ApiClient.urlEncode(workspaceId.toString()))
-        .replace("{mediaId}", ApiClient.urlEncode(mediaId.toString()));
-
-    localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
-
-    localVarRequestBuilder.header("Accept", "application/json");
-
-    localVarRequestBuilder.method("DELETE", HttpRequest.BodyPublishers.noBody());
-    if (memberVarReadTimeout != null) {
-      localVarRequestBuilder.timeout(memberVarReadTimeout);
-    }
-    // Add custom headers if provided
-    localVarRequestBuilder = HttpRequestBuilderExtensions.withAdditionalHeaders(localVarRequestBuilder, headers);
-    if (memberVarInterceptor != null) {
-      memberVarInterceptor.accept(localVarRequestBuilder);
-    }
-    return localVarRequestBuilder;
-  }
-
-  /**
-   * Describe media
-   * Sets the media&#39;s description, which platforms show to people who cannot see it. It can be written while the file uploads. Needs media:upload.
-   * @param workspaceId  (required)
-   * @param mediaId  (required)
-   * @param mediaDescription  (required)
-   * @return Media
-   * @throws ApiException if fails to make API call
-   */
-  public Media mediaDescribe(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String mediaId, @javax.annotation.Nonnull MediaDescription mediaDescription) throws ApiException {
-    return mediaDescribe(workspaceId, mediaId, mediaDescription, null);
-  }
-
-  /**
-   * Describe media
-   * Sets the media&#39;s description, which platforms show to people who cannot see it. It can be written while the file uploads. Needs media:upload.
-   * @param workspaceId  (required)
-   * @param mediaId  (required)
-   * @param mediaDescription  (required)
-   * @param headers Optional headers to include in the request
-   * @return Media
-   * @throws ApiException if fails to make API call
-   */
-  public Media mediaDescribe(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String mediaId, @javax.annotation.Nonnull MediaDescription mediaDescription, Map<String, String> headers) throws ApiException {
-    ApiResponse<Media> localVarResponse = mediaDescribeWithHttpInfo(workspaceId, mediaId, mediaDescription, headers);
-    return localVarResponse.getData();
-  }
-
-  /**
-   * Describe media
-   * Sets the media&#39;s description, which platforms show to people who cannot see it. It can be written while the file uploads. Needs media:upload.
-   * @param workspaceId  (required)
-   * @param mediaId  (required)
-   * @param mediaDescription  (required)
-   * @return ApiResponse&lt;Media&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<Media> mediaDescribeWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String mediaId, @javax.annotation.Nonnull MediaDescription mediaDescription) throws ApiException {
-    return mediaDescribeWithHttpInfo(workspaceId, mediaId, mediaDescription, null);
-  }
-
-  /**
-   * Describe media
-   * Sets the media&#39;s description, which platforms show to people who cannot see it. It can be written while the file uploads. Needs media:upload.
-   * @param workspaceId  (required)
-   * @param mediaId  (required)
-   * @param mediaDescription  (required)
-   * @param headers Optional headers to include in the request
-   * @return ApiResponse&lt;Media&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<Media> mediaDescribeWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String mediaId, @javax.annotation.Nonnull MediaDescription mediaDescription, Map<String, String> headers) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = mediaDescribeRequestBuilder(workspaceId, mediaId, mediaDescription, headers);
-    try {
-      HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
-          localVarRequestBuilder.build(),
-          HttpResponse.BodyHandlers.ofInputStream());
-      if (memberVarResponseInterceptor != null) {
-        memberVarResponseInterceptor.accept(localVarResponse);
-      }
-      InputStream localVarResponseBody = null;
-      try {
-        if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("mediaDescribe", localVarResponse);
-        }
-        localVarResponseBody = ApiClient.getResponseBody(localVarResponse);
-        if (localVarResponseBody == null) {
-          return new ApiResponse<Media>(
-              localVarResponse.statusCode(),
-              localVarResponse.headers().map(),
-              null
-          );
+        final String[] localVarContentTypes = {
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
         }
 
-        
-        
-        String responseBody = new String(localVarResponseBody.readAllBytes());
-        Media responseValue = responseBody.isBlank()? null: memberVarObjectMapper.readValue(responseBody, new TypeReference<Media>() {});
-        
-
-        return new ApiResponse<Media>(
-            localVarResponse.statusCode(),
-            localVarResponse.headers().map(),
-            responseValue
-        );
-      } finally {
-        if (localVarResponseBody != null) {
-          localVarResponseBody.close();
-        }
-      }
-    } catch (IOException e) {
-      throw new ApiException(e);
-    }
-    catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new ApiException(e);
-    }
-  }
-
-  private HttpRequest.Builder mediaDescribeRequestBuilder(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String mediaId, @javax.annotation.Nonnull MediaDescription mediaDescription, Map<String, String> headers) throws ApiException {
-    // verify the required parameter 'workspaceId' is set
-    if (workspaceId == null) {
-      throw new ApiException(400, "Missing the required parameter 'workspaceId' when calling mediaDescribe");
-    }
-    // verify the required parameter 'mediaId' is set
-    if (mediaId == null) {
-      throw new ApiException(400, "Missing the required parameter 'mediaId' when calling mediaDescribe");
-    }
-    // verify the required parameter 'mediaDescription' is set
-    if (mediaDescription == null) {
-      throw new ApiException(400, "Missing the required parameter 'mediaDescription' when calling mediaDescribe");
+        String[] localVarAuthNames = new String[] { "bearer" };
+        return localVarApiClient.buildCall(basePath, localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
-    HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
-
-    String localVarPath = "/api/workspaces/{workspaceId}/media/{mediaId}"
-        .replace("{workspaceId}", ApiClient.urlEncode(workspaceId.toString()))
-        .replace("{mediaId}", ApiClient.urlEncode(mediaId.toString()));
-
-    localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
-
-    localVarRequestBuilder.header("Content-Type", "application/json");
-    localVarRequestBuilder.header("Accept", "application/json");
-
-    try {
-      byte[] localVarPostBody = memberVarObjectMapper.writeValueAsBytes(mediaDescription);
-      localVarRequestBuilder.method("PATCH", HttpRequest.BodyPublishers.ofByteArray(localVarPostBody));
-    } catch (IOException e) {
-      throw new ApiException(e);
-    }
-    if (memberVarReadTimeout != null) {
-      localVarRequestBuilder.timeout(memberVarReadTimeout);
-    }
-    // Add custom headers if provided
-    localVarRequestBuilder = HttpRequestBuilderExtensions.withAdditionalHeaders(localVarRequestBuilder, headers);
-    if (memberVarInterceptor != null) {
-      memberVarInterceptor.accept(localVarRequestBuilder);
-    }
-    return localVarRequestBuilder;
-  }
-
-  /**
-   * Get media
-   * Shows one of the workspace&#39;s media. Needs media:read.
-   * @param workspaceId  (required)
-   * @param mediaId  (required)
-   * @return Media
-   * @throws ApiException if fails to make API call
-   */
-  public Media mediaGet(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String mediaId) throws ApiException {
-    return mediaGet(workspaceId, mediaId, null);
-  }
-
-  /**
-   * Get media
-   * Shows one of the workspace&#39;s media. Needs media:read.
-   * @param workspaceId  (required)
-   * @param mediaId  (required)
-   * @param headers Optional headers to include in the request
-   * @return Media
-   * @throws ApiException if fails to make API call
-   */
-  public Media mediaGet(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String mediaId, Map<String, String> headers) throws ApiException {
-    ApiResponse<Media> localVarResponse = mediaGetWithHttpInfo(workspaceId, mediaId, headers);
-    return localVarResponse.getData();
-  }
-
-  /**
-   * Get media
-   * Shows one of the workspace&#39;s media. Needs media:read.
-   * @param workspaceId  (required)
-   * @param mediaId  (required)
-   * @return ApiResponse&lt;Media&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<Media> mediaGetWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String mediaId) throws ApiException {
-    return mediaGetWithHttpInfo(workspaceId, mediaId, null);
-  }
-
-  /**
-   * Get media
-   * Shows one of the workspace&#39;s media. Needs media:read.
-   * @param workspaceId  (required)
-   * @param mediaId  (required)
-   * @param headers Optional headers to include in the request
-   * @return ApiResponse&lt;Media&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<Media> mediaGetWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String mediaId, Map<String, String> headers) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = mediaGetRequestBuilder(workspaceId, mediaId, headers);
-    try {
-      HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
-          localVarRequestBuilder.build(),
-          HttpResponse.BodyHandlers.ofInputStream());
-      if (memberVarResponseInterceptor != null) {
-        memberVarResponseInterceptor.accept(localVarResponse);
-      }
-      InputStream localVarResponseBody = null;
-      try {
-        if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("mediaGet", localVarResponse);
-        }
-        localVarResponseBody = ApiClient.getResponseBody(localVarResponse);
-        if (localVarResponseBody == null) {
-          return new ApiResponse<Media>(
-              localVarResponse.statusCode(),
-              localVarResponse.headers().map(),
-              null
-          );
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call mediaCompleteValidateBeforeCall(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String mediaId, final ApiCallback _callback) throws ApiException {
+        // verify the required parameter 'workspaceId' is set
+        if (workspaceId == null) {
+            throw new ApiException("Missing the required parameter 'workspaceId' when calling mediaComplete(Async)");
         }
 
-        
-        
-        String responseBody = new String(localVarResponseBody.readAllBytes());
-        Media responseValue = responseBody.isBlank()? null: memberVarObjectMapper.readValue(responseBody, new TypeReference<Media>() {});
-        
-
-        return new ApiResponse<Media>(
-            localVarResponse.statusCode(),
-            localVarResponse.headers().map(),
-            responseValue
-        );
-      } finally {
-        if (localVarResponseBody != null) {
-          localVarResponseBody.close();
-        }
-      }
-    } catch (IOException e) {
-      throw new ApiException(e);
-    }
-    catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new ApiException(e);
-    }
-  }
-
-  private HttpRequest.Builder mediaGetRequestBuilder(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String mediaId, Map<String, String> headers) throws ApiException {
-    // verify the required parameter 'workspaceId' is set
-    if (workspaceId == null) {
-      throw new ApiException(400, "Missing the required parameter 'workspaceId' when calling mediaGet");
-    }
-    // verify the required parameter 'mediaId' is set
-    if (mediaId == null) {
-      throw new ApiException(400, "Missing the required parameter 'mediaId' when calling mediaGet");
-    }
-
-    HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
-
-    String localVarPath = "/api/workspaces/{workspaceId}/media/{mediaId}"
-        .replace("{workspaceId}", ApiClient.urlEncode(workspaceId.toString()))
-        .replace("{mediaId}", ApiClient.urlEncode(mediaId.toString()));
-
-    localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
-
-    localVarRequestBuilder.header("Accept", "application/json");
-
-    localVarRequestBuilder.method("GET", HttpRequest.BodyPublishers.noBody());
-    if (memberVarReadTimeout != null) {
-      localVarRequestBuilder.timeout(memberVarReadTimeout);
-    }
-    // Add custom headers if provided
-    localVarRequestBuilder = HttpRequestBuilderExtensions.withAdditionalHeaders(localVarRequestBuilder, headers);
-    if (memberVarInterceptor != null) {
-      memberVarInterceptor.accept(localVarRequestBuilder);
-    }
-    return localVarRequestBuilder;
-  }
-
-  /**
-   * List media
-   * Lists the workspace&#39;s media, newest first, 30 a page unless &#x60;limit&#x60; (at most 100) says otherwise. Pass the page&#39;s &#x60;nextCursor&#x60; as &#x60;cursor&#x60; for the next one. Needs media:read.
-   * @param workspaceId  (required)
-   * @param cursor  (optional)
-   * @param limit  (optional)
-   * @return MediaPage
-   * @throws ApiException if fails to make API call
-   */
-  public MediaPage mediaList(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nullable String cursor, @javax.annotation.Nullable String limit) throws ApiException {
-    return mediaList(workspaceId, cursor, limit, null);
-  }
-
-  /**
-   * List media
-   * Lists the workspace&#39;s media, newest first, 30 a page unless &#x60;limit&#x60; (at most 100) says otherwise. Pass the page&#39;s &#x60;nextCursor&#x60; as &#x60;cursor&#x60; for the next one. Needs media:read.
-   * @param workspaceId  (required)
-   * @param cursor  (optional)
-   * @param limit  (optional)
-   * @param headers Optional headers to include in the request
-   * @return MediaPage
-   * @throws ApiException if fails to make API call
-   */
-  public MediaPage mediaList(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nullable String cursor, @javax.annotation.Nullable String limit, Map<String, String> headers) throws ApiException {
-    ApiResponse<MediaPage> localVarResponse = mediaListWithHttpInfo(workspaceId, cursor, limit, headers);
-    return localVarResponse.getData();
-  }
-
-  /**
-   * List media
-   * Lists the workspace&#39;s media, newest first, 30 a page unless &#x60;limit&#x60; (at most 100) says otherwise. Pass the page&#39;s &#x60;nextCursor&#x60; as &#x60;cursor&#x60; for the next one. Needs media:read.
-   * @param workspaceId  (required)
-   * @param cursor  (optional)
-   * @param limit  (optional)
-   * @return ApiResponse&lt;MediaPage&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<MediaPage> mediaListWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nullable String cursor, @javax.annotation.Nullable String limit) throws ApiException {
-    return mediaListWithHttpInfo(workspaceId, cursor, limit, null);
-  }
-
-  /**
-   * List media
-   * Lists the workspace&#39;s media, newest first, 30 a page unless &#x60;limit&#x60; (at most 100) says otherwise. Pass the page&#39;s &#x60;nextCursor&#x60; as &#x60;cursor&#x60; for the next one. Needs media:read.
-   * @param workspaceId  (required)
-   * @param cursor  (optional)
-   * @param limit  (optional)
-   * @param headers Optional headers to include in the request
-   * @return ApiResponse&lt;MediaPage&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<MediaPage> mediaListWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nullable String cursor, @javax.annotation.Nullable String limit, Map<String, String> headers) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = mediaListRequestBuilder(workspaceId, cursor, limit, headers);
-    try {
-      HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
-          localVarRequestBuilder.build(),
-          HttpResponse.BodyHandlers.ofInputStream());
-      if (memberVarResponseInterceptor != null) {
-        memberVarResponseInterceptor.accept(localVarResponse);
-      }
-      InputStream localVarResponseBody = null;
-      try {
-        if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("mediaList", localVarResponse);
-        }
-        localVarResponseBody = ApiClient.getResponseBody(localVarResponse);
-        if (localVarResponseBody == null) {
-          return new ApiResponse<MediaPage>(
-              localVarResponse.statusCode(),
-              localVarResponse.headers().map(),
-              null
-          );
+        // verify the required parameter 'mediaId' is set
+        if (mediaId == null) {
+            throw new ApiException("Missing the required parameter 'mediaId' when calling mediaComplete(Async)");
         }
 
-        
-        
-        String responseBody = new String(localVarResponseBody.readAllBytes());
-        MediaPage responseValue = responseBody.isBlank()? null: memberVarObjectMapper.readValue(responseBody, new TypeReference<MediaPage>() {});
-        
+        return mediaCompleteCall(workspaceId, mediaId, _callback);
 
-        return new ApiResponse<MediaPage>(
-            localVarResponse.statusCode(),
-            localVarResponse.headers().map(),
-            responseValue
-        );
-      } finally {
-        if (localVarResponseBody != null) {
-          localVarResponseBody.close();
-        }
-      }
-    } catch (IOException e) {
-      throw new ApiException(e);
-    }
-    catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new ApiException(e);
-    }
-  }
-
-  private HttpRequest.Builder mediaListRequestBuilder(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nullable String cursor, @javax.annotation.Nullable String limit, Map<String, String> headers) throws ApiException {
-    // verify the required parameter 'workspaceId' is set
-    if (workspaceId == null) {
-      throw new ApiException(400, "Missing the required parameter 'workspaceId' when calling mediaList");
     }
 
-    HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
-
-    String localVarPath = "/api/workspaces/{workspaceId}/media"
-        .replace("{workspaceId}", ApiClient.urlEncode(workspaceId.toString()));
-
-    List<Pair> localVarQueryParams = new ArrayList<>();
-    StringJoiner localVarQueryStringJoiner = new StringJoiner("&");
-    String localVarQueryParameterBaseName;
-    localVarQueryParameterBaseName = "cursor";
-    localVarQueryParams.addAll(ApiClient.parameterToPairs("cursor", cursor));
-    localVarQueryParameterBaseName = "limit";
-    localVarQueryParams.addAll(ApiClient.parameterToPairs("limit", limit));
-
-    if (!localVarQueryParams.isEmpty() || localVarQueryStringJoiner.length() != 0) {
-      StringJoiner queryJoiner = new StringJoiner("&");
-      localVarQueryParams.forEach(p -> queryJoiner.add(p.getName() + '=' + p.getValue()));
-      if (localVarQueryStringJoiner.length() != 0) {
-        queryJoiner.add(localVarQueryStringJoiner.toString());
-      }
-      localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath + '?' + queryJoiner.toString()));
-    } else {
-      localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
+    /**
+     * Complete an upload
+     * Checks that the file reached the store with the declared size and type, joining its parts first, then probes it: the media is ready, or stays uploaded with why it could not be probed. Calling it again is safe, and probes an uploaded file again. Needs media:upload.
+     * @param workspaceId  (required)
+     * @param mediaId  (required)
+     * @return Media
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Media </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no media with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 409 </td><td> The file, or one of its parts, has not reached the store yet. Send what is missing, then complete the upload again. </td><td>  -  </td></tr>
+        <tr><td> 422 </td><td> The stored file does not have the declared size or type. It was deleted, and the media is rejected. </td><td>  -  </td></tr>
+        <tr><td> 503 </td><td> The server cannot reach its media store right now. Try again later. </td><td>  -  </td></tr>
+     </table>
+     */
+    public Media mediaComplete(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String mediaId) throws ApiException {
+        ApiResponse<Media> localVarResp = mediaCompleteWithHttpInfo(workspaceId, mediaId);
+        return localVarResp.getData();
     }
 
-    localVarRequestBuilder.header("Accept", "application/json");
-
-    localVarRequestBuilder.method("GET", HttpRequest.BodyPublishers.noBody());
-    if (memberVarReadTimeout != null) {
-      localVarRequestBuilder.timeout(memberVarReadTimeout);
+    /**
+     * Complete an upload
+     * Checks that the file reached the store with the declared size and type, joining its parts first, then probes it: the media is ready, or stays uploaded with why it could not be probed. Calling it again is safe, and probes an uploaded file again. Needs media:upload.
+     * @param workspaceId  (required)
+     * @param mediaId  (required)
+     * @return ApiResponse&lt;Media&gt;
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Media </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no media with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 409 </td><td> The file, or one of its parts, has not reached the store yet. Send what is missing, then complete the upload again. </td><td>  -  </td></tr>
+        <tr><td> 422 </td><td> The stored file does not have the declared size or type. It was deleted, and the media is rejected. </td><td>  -  </td></tr>
+        <tr><td> 503 </td><td> The server cannot reach its media store right now. Try again later. </td><td>  -  </td></tr>
+     </table>
+     */
+    public ApiResponse<Media> mediaCompleteWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String mediaId) throws ApiException {
+        okhttp3.Call localVarCall = mediaCompleteValidateBeforeCall(workspaceId, mediaId, null);
+        Type localVarReturnType = new TypeToken<Media>(){}.getType();
+        return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
-    // Add custom headers if provided
-    localVarRequestBuilder = HttpRequestBuilderExtensions.withAdditionalHeaders(localVarRequestBuilder, headers);
-    if (memberVarInterceptor != null) {
-      memberVarInterceptor.accept(localVarRequestBuilder);
+
+    /**
+     * Complete an upload (asynchronously)
+     * Checks that the file reached the store with the declared size and type, joining its parts first, then probes it: the media is ready, or stays uploaded with why it could not be probed. Calling it again is safe, and probes an uploaded file again. Needs media:upload.
+     * @param workspaceId  (required)
+     * @param mediaId  (required)
+     * @param _callback The callback to be executed when the API call finishes
+     * @return The request call
+     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Media </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no media with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 409 </td><td> The file, or one of its parts, has not reached the store yet. Send what is missing, then complete the upload again. </td><td>  -  </td></tr>
+        <tr><td> 422 </td><td> The stored file does not have the declared size or type. It was deleted, and the media is rejected. </td><td>  -  </td></tr>
+        <tr><td> 503 </td><td> The server cannot reach its media store right now. Try again later. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call mediaCompleteAsync(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String mediaId, final ApiCallback<Media> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = mediaCompleteValidateBeforeCall(workspaceId, mediaId, _callback);
+        Type localVarReturnType = new TypeToken<Media>(){}.getType();
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
+        return localVarCall;
     }
-    return localVarRequestBuilder;
-  }
+    /**
+     * Build call for mediaCreate
+     * @param workspaceId  (required)
+     * @param newUpload  (required)
+     * @param _callback Callback for upload/download progress
+     * @return Call to execute
+     * @throws ApiException If fail to serialize the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 201 </td><td> PreparedUpload </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 422 </td><td> Peal does not store files of this content type. It takes JPEG, PNG, GIF and WebP images, and MP4 and QuickTime videos. | The file is larger than Peal stores for its kind: 16 MiB for an image, 1 GiB for a video. | The description is longer than Peal keeps. </td><td>  -  </td></tr>
+        <tr><td> 503 </td><td> The server cannot reach its media store right now. Try again later. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call mediaCreateCall(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull NewUpload newUpload, final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
 
-  /**
-   * Get where media is used
-   * Lists the posts that show the media: drafts, which lose it if it is deleted, and posts scheduled or publishing, which keep it from being deleted. Needs media:read.
-   * @param workspaceId  (required)
-   * @param mediaId  (required)
-   * @return MediaUsage
-   * @throws ApiException if fails to make API call
-   */
-  public MediaUsage mediaUsage(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String mediaId) throws ApiException {
-    return mediaUsage(workspaceId, mediaId, null);
-  }
-
-  /**
-   * Get where media is used
-   * Lists the posts that show the media: drafts, which lose it if it is deleted, and posts scheduled or publishing, which keep it from being deleted. Needs media:read.
-   * @param workspaceId  (required)
-   * @param mediaId  (required)
-   * @param headers Optional headers to include in the request
-   * @return MediaUsage
-   * @throws ApiException if fails to make API call
-   */
-  public MediaUsage mediaUsage(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String mediaId, Map<String, String> headers) throws ApiException {
-    ApiResponse<MediaUsage> localVarResponse = mediaUsageWithHttpInfo(workspaceId, mediaId, headers);
-    return localVarResponse.getData();
-  }
-
-  /**
-   * Get where media is used
-   * Lists the posts that show the media: drafts, which lose it if it is deleted, and posts scheduled or publishing, which keep it from being deleted. Needs media:read.
-   * @param workspaceId  (required)
-   * @param mediaId  (required)
-   * @return ApiResponse&lt;MediaUsage&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<MediaUsage> mediaUsageWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String mediaId) throws ApiException {
-    return mediaUsageWithHttpInfo(workspaceId, mediaId, null);
-  }
-
-  /**
-   * Get where media is used
-   * Lists the posts that show the media: drafts, which lose it if it is deleted, and posts scheduled or publishing, which keep it from being deleted. Needs media:read.
-   * @param workspaceId  (required)
-   * @param mediaId  (required)
-   * @param headers Optional headers to include in the request
-   * @return ApiResponse&lt;MediaUsage&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<MediaUsage> mediaUsageWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String mediaId, Map<String, String> headers) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = mediaUsageRequestBuilder(workspaceId, mediaId, headers);
-    try {
-      HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
-          localVarRequestBuilder.build(),
-          HttpResponse.BodyHandlers.ofInputStream());
-      if (memberVarResponseInterceptor != null) {
-        memberVarResponseInterceptor.accept(localVarResponse);
-      }
-      InputStream localVarResponseBody = null;
-      try {
-        if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("mediaUsage", localVarResponse);
-        }
-        localVarResponseBody = ApiClient.getResponseBody(localVarResponse);
-        if (localVarResponseBody == null) {
-          return new ApiResponse<MediaUsage>(
-              localVarResponse.statusCode(),
-              localVarResponse.headers().map(),
-              null
-          );
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
         }
 
-        
-        
-        String responseBody = new String(localVarResponseBody.readAllBytes());
-        MediaUsage responseValue = responseBody.isBlank()? null: memberVarObjectMapper.readValue(responseBody, new TypeReference<MediaUsage>() {});
-        
+        Object localVarPostBody = newUpload;
 
-        return new ApiResponse<MediaUsage>(
-            localVarResponse.statusCode(),
-            localVarResponse.headers().map(),
-            responseValue
-        );
-      } finally {
-        if (localVarResponseBody != null) {
-          localVarResponseBody.close();
+        // create path and map variables
+        String localVarPath = "/api/workspaces/{workspaceId}/media"
+            .replace("{" + "workspaceId" + "}", localVarApiClient.escapeString(workspaceId.toString()));
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
         }
-      }
-    } catch (IOException e) {
-      throw new ApiException(e);
-    }
-    catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new ApiException(e);
-    }
-  }
 
-  private HttpRequest.Builder mediaUsageRequestBuilder(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String mediaId, Map<String, String> headers) throws ApiException {
-    // verify the required parameter 'workspaceId' is set
-    if (workspaceId == null) {
-      throw new ApiException(400, "Missing the required parameter 'workspaceId' when calling mediaUsage");
-    }
-    // verify the required parameter 'mediaId' is set
-    if (mediaId == null) {
-      throw new ApiException(400, "Missing the required parameter 'mediaId' when calling mediaUsage");
+        final String[] localVarContentTypes = {
+            "application/json"
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
+        }
+
+        String[] localVarAuthNames = new String[] { "bearer" };
+        return localVarApiClient.buildCall(basePath, localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
-    HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call mediaCreateValidateBeforeCall(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull NewUpload newUpload, final ApiCallback _callback) throws ApiException {
+        // verify the required parameter 'workspaceId' is set
+        if (workspaceId == null) {
+            throw new ApiException("Missing the required parameter 'workspaceId' when calling mediaCreate(Async)");
+        }
 
-    String localVarPath = "/api/workspaces/{workspaceId}/media/{mediaId}/usage"
-        .replace("{workspaceId}", ApiClient.urlEncode(workspaceId.toString()))
-        .replace("{mediaId}", ApiClient.urlEncode(mediaId.toString()));
+        // verify the required parameter 'newUpload' is set
+        if (newUpload == null) {
+            throw new ApiException("Missing the required parameter 'newUpload' when calling mediaCreate(Async)");
+        }
 
-    localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
+        return mediaCreateCall(workspaceId, newUpload, _callback);
 
-    localVarRequestBuilder.header("Accept", "application/json");
-
-    localVarRequestBuilder.method("GET", HttpRequest.BodyPublishers.noBody());
-    if (memberVarReadTimeout != null) {
-      localVarRequestBuilder.timeout(memberVarReadTimeout);
     }
-    // Add custom headers if provided
-    localVarRequestBuilder = HttpRequestBuilderExtensions.withAdditionalHeaders(localVarRequestBuilder, headers);
-    if (memberVarInterceptor != null) {
-      memberVarInterceptor.accept(localVarRequestBuilder);
-    }
-    return localVarRequestBuilder;
-  }
 
+    /**
+     * Start an upload
+     * Records pending media and signs the upload of its file: one PUT for an image or a video up to 16 MiB, one PUT per part for a larger video. Send the file with them, then complete the upload. The requests only take the declared size and content type. Needs media:upload.
+     * @param workspaceId  (required)
+     * @param newUpload  (required)
+     * @return PreparedUpload
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 201 </td><td> PreparedUpload </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 422 </td><td> Peal does not store files of this content type. It takes JPEG, PNG, GIF and WebP images, and MP4 and QuickTime videos. | The file is larger than Peal stores for its kind: 16 MiB for an image, 1 GiB for a video. | The description is longer than Peal keeps. </td><td>  -  </td></tr>
+        <tr><td> 503 </td><td> The server cannot reach its media store right now. Try again later. </td><td>  -  </td></tr>
+     </table>
+     */
+    public PreparedUpload mediaCreate(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull NewUpload newUpload) throws ApiException {
+        ApiResponse<PreparedUpload> localVarResp = mediaCreateWithHttpInfo(workspaceId, newUpload);
+        return localVarResp.getData();
+    }
+
+    /**
+     * Start an upload
+     * Records pending media and signs the upload of its file: one PUT for an image or a video up to 16 MiB, one PUT per part for a larger video. Send the file with them, then complete the upload. The requests only take the declared size and content type. Needs media:upload.
+     * @param workspaceId  (required)
+     * @param newUpload  (required)
+     * @return ApiResponse&lt;PreparedUpload&gt;
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 201 </td><td> PreparedUpload </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 422 </td><td> Peal does not store files of this content type. It takes JPEG, PNG, GIF and WebP images, and MP4 and QuickTime videos. | The file is larger than Peal stores for its kind: 16 MiB for an image, 1 GiB for a video. | The description is longer than Peal keeps. </td><td>  -  </td></tr>
+        <tr><td> 503 </td><td> The server cannot reach its media store right now. Try again later. </td><td>  -  </td></tr>
+     </table>
+     */
+    public ApiResponse<PreparedUpload> mediaCreateWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull NewUpload newUpload) throws ApiException {
+        okhttp3.Call localVarCall = mediaCreateValidateBeforeCall(workspaceId, newUpload, null);
+        Type localVarReturnType = new TypeToken<PreparedUpload>(){}.getType();
+        return localVarApiClient.execute(localVarCall, localVarReturnType);
+    }
+
+    /**
+     * Start an upload (asynchronously)
+     * Records pending media and signs the upload of its file: one PUT for an image or a video up to 16 MiB, one PUT per part for a larger video. Send the file with them, then complete the upload. The requests only take the declared size and content type. Needs media:upload.
+     * @param workspaceId  (required)
+     * @param newUpload  (required)
+     * @param _callback The callback to be executed when the API call finishes
+     * @return The request call
+     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 201 </td><td> PreparedUpload </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 422 </td><td> Peal does not store files of this content type. It takes JPEG, PNG, GIF and WebP images, and MP4 and QuickTime videos. | The file is larger than Peal stores for its kind: 16 MiB for an image, 1 GiB for a video. | The description is longer than Peal keeps. </td><td>  -  </td></tr>
+        <tr><td> 503 </td><td> The server cannot reach its media store right now. Try again later. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call mediaCreateAsync(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull NewUpload newUpload, final ApiCallback<PreparedUpload> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = mediaCreateValidateBeforeCall(workspaceId, newUpload, _callback);
+        Type localVarReturnType = new TypeToken<PreparedUpload>(){}.getType();
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
+        return localVarCall;
+    }
+    /**
+     * Build call for mediaDelete
+     * @param workspaceId  (required)
+     * @param mediaId  (required)
+     * @param _callback Callback for upload/download progress
+     * @return Call to execute
+     * @throws ApiException If fail to serialize the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 204 </td><td> &lt;No Content&gt; </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no media with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 409 </td><td> Posts that are scheduled or publishing show the media. &#x60;postIds&#x60; lists them. </td><td>  -  </td></tr>
+        <tr><td> 503 </td><td> The server cannot reach its media store right now. Try again later. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call mediaDeleteCall(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String mediaId, final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
+
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
+        }
+
+        Object localVarPostBody = null;
+
+        // create path and map variables
+        String localVarPath = "/api/workspaces/{workspaceId}/media/{mediaId}"
+            .replace("{" + "workspaceId" + "}", localVarApiClient.escapeString(workspaceId.toString()))
+            .replace("{" + "mediaId" + "}", localVarApiClient.escapeString(mediaId.toString()));
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
+        }
+
+        String[] localVarAuthNames = new String[] { "bearer" };
+        return localVarApiClient.buildCall(basePath, localVarPath, "DELETE", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call mediaDeleteValidateBeforeCall(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String mediaId, final ApiCallback _callback) throws ApiException {
+        // verify the required parameter 'workspaceId' is set
+        if (workspaceId == null) {
+            throw new ApiException("Missing the required parameter 'workspaceId' when calling mediaDelete(Async)");
+        }
+
+        // verify the required parameter 'mediaId' is set
+        if (mediaId == null) {
+            throw new ApiException("Missing the required parameter 'mediaId' when calling mediaDelete(Async)");
+        }
+
+        return mediaDeleteCall(workspaceId, mediaId, _callback);
+
+    }
+
+    /**
+     * Delete media
+     * Deletes the media and its file, and cancels its upload if it is still pending. Drafts that show it lose it. Posts scheduled or publishing that show it refuse the deletion (&#x60;MediaInUse&#x60;, listing them): take them back to draft first. Needs media:delete.
+     * @param workspaceId  (required)
+     * @param mediaId  (required)
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 204 </td><td> &lt;No Content&gt; </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no media with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 409 </td><td> Posts that are scheduled or publishing show the media. &#x60;postIds&#x60; lists them. </td><td>  -  </td></tr>
+        <tr><td> 503 </td><td> The server cannot reach its media store right now. Try again later. </td><td>  -  </td></tr>
+     </table>
+     */
+    public void mediaDelete(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String mediaId) throws ApiException {
+        mediaDeleteWithHttpInfo(workspaceId, mediaId);
+    }
+
+    /**
+     * Delete media
+     * Deletes the media and its file, and cancels its upload if it is still pending. Drafts that show it lose it. Posts scheduled or publishing that show it refuse the deletion (&#x60;MediaInUse&#x60;, listing them): take them back to draft first. Needs media:delete.
+     * @param workspaceId  (required)
+     * @param mediaId  (required)
+     * @return ApiResponse&lt;Void&gt;
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 204 </td><td> &lt;No Content&gt; </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no media with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 409 </td><td> Posts that are scheduled or publishing show the media. &#x60;postIds&#x60; lists them. </td><td>  -  </td></tr>
+        <tr><td> 503 </td><td> The server cannot reach its media store right now. Try again later. </td><td>  -  </td></tr>
+     </table>
+     */
+    public ApiResponse<Void> mediaDeleteWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String mediaId) throws ApiException {
+        okhttp3.Call localVarCall = mediaDeleteValidateBeforeCall(workspaceId, mediaId, null);
+        return localVarApiClient.execute(localVarCall);
+    }
+
+    /**
+     * Delete media (asynchronously)
+     * Deletes the media and its file, and cancels its upload if it is still pending. Drafts that show it lose it. Posts scheduled or publishing that show it refuse the deletion (&#x60;MediaInUse&#x60;, listing them): take them back to draft first. Needs media:delete.
+     * @param workspaceId  (required)
+     * @param mediaId  (required)
+     * @param _callback The callback to be executed when the API call finishes
+     * @return The request call
+     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 204 </td><td> &lt;No Content&gt; </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no media with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 409 </td><td> Posts that are scheduled or publishing show the media. &#x60;postIds&#x60; lists them. </td><td>  -  </td></tr>
+        <tr><td> 503 </td><td> The server cannot reach its media store right now. Try again later. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call mediaDeleteAsync(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String mediaId, final ApiCallback<Void> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = mediaDeleteValidateBeforeCall(workspaceId, mediaId, _callback);
+        localVarApiClient.executeAsync(localVarCall, _callback);
+        return localVarCall;
+    }
+    /**
+     * Build call for mediaDescribe
+     * @param workspaceId  (required)
+     * @param mediaId  (required)
+     * @param mediaDescription  (required)
+     * @param _callback Callback for upload/download progress
+     * @return Call to execute
+     * @throws ApiException If fail to serialize the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Media </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no media with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 422 </td><td> The description is longer than Peal keeps. </td><td>  -  </td></tr>
+        <tr><td> 503 </td><td> The server cannot reach its media store right now. Try again later. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call mediaDescribeCall(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String mediaId, @javax.annotation.Nonnull MediaDescription mediaDescription, final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
+
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
+        }
+
+        Object localVarPostBody = mediaDescription;
+
+        // create path and map variables
+        String localVarPath = "/api/workspaces/{workspaceId}/media/{mediaId}"
+            .replace("{" + "workspaceId" + "}", localVarApiClient.escapeString(workspaceId.toString()))
+            .replace("{" + "mediaId" + "}", localVarApiClient.escapeString(mediaId.toString()));
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+            "application/json"
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
+        }
+
+        String[] localVarAuthNames = new String[] { "bearer" };
+        return localVarApiClient.buildCall(basePath, localVarPath, "PATCH", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call mediaDescribeValidateBeforeCall(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String mediaId, @javax.annotation.Nonnull MediaDescription mediaDescription, final ApiCallback _callback) throws ApiException {
+        // verify the required parameter 'workspaceId' is set
+        if (workspaceId == null) {
+            throw new ApiException("Missing the required parameter 'workspaceId' when calling mediaDescribe(Async)");
+        }
+
+        // verify the required parameter 'mediaId' is set
+        if (mediaId == null) {
+            throw new ApiException("Missing the required parameter 'mediaId' when calling mediaDescribe(Async)");
+        }
+
+        // verify the required parameter 'mediaDescription' is set
+        if (mediaDescription == null) {
+            throw new ApiException("Missing the required parameter 'mediaDescription' when calling mediaDescribe(Async)");
+        }
+
+        return mediaDescribeCall(workspaceId, mediaId, mediaDescription, _callback);
+
+    }
+
+    /**
+     * Describe media
+     * Sets the media&#39;s description, which platforms show to people who cannot see it. It can be written while the file uploads. Needs media:upload.
+     * @param workspaceId  (required)
+     * @param mediaId  (required)
+     * @param mediaDescription  (required)
+     * @return Media
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Media </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no media with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 422 </td><td> The description is longer than Peal keeps. </td><td>  -  </td></tr>
+        <tr><td> 503 </td><td> The server cannot reach its media store right now. Try again later. </td><td>  -  </td></tr>
+     </table>
+     */
+    public Media mediaDescribe(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String mediaId, @javax.annotation.Nonnull MediaDescription mediaDescription) throws ApiException {
+        ApiResponse<Media> localVarResp = mediaDescribeWithHttpInfo(workspaceId, mediaId, mediaDescription);
+        return localVarResp.getData();
+    }
+
+    /**
+     * Describe media
+     * Sets the media&#39;s description, which platforms show to people who cannot see it. It can be written while the file uploads. Needs media:upload.
+     * @param workspaceId  (required)
+     * @param mediaId  (required)
+     * @param mediaDescription  (required)
+     * @return ApiResponse&lt;Media&gt;
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Media </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no media with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 422 </td><td> The description is longer than Peal keeps. </td><td>  -  </td></tr>
+        <tr><td> 503 </td><td> The server cannot reach its media store right now. Try again later. </td><td>  -  </td></tr>
+     </table>
+     */
+    public ApiResponse<Media> mediaDescribeWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String mediaId, @javax.annotation.Nonnull MediaDescription mediaDescription) throws ApiException {
+        okhttp3.Call localVarCall = mediaDescribeValidateBeforeCall(workspaceId, mediaId, mediaDescription, null);
+        Type localVarReturnType = new TypeToken<Media>(){}.getType();
+        return localVarApiClient.execute(localVarCall, localVarReturnType);
+    }
+
+    /**
+     * Describe media (asynchronously)
+     * Sets the media&#39;s description, which platforms show to people who cannot see it. It can be written while the file uploads. Needs media:upload.
+     * @param workspaceId  (required)
+     * @param mediaId  (required)
+     * @param mediaDescription  (required)
+     * @param _callback The callback to be executed when the API call finishes
+     * @return The request call
+     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Media </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no media with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 422 </td><td> The description is longer than Peal keeps. </td><td>  -  </td></tr>
+        <tr><td> 503 </td><td> The server cannot reach its media store right now. Try again later. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call mediaDescribeAsync(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String mediaId, @javax.annotation.Nonnull MediaDescription mediaDescription, final ApiCallback<Media> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = mediaDescribeValidateBeforeCall(workspaceId, mediaId, mediaDescription, _callback);
+        Type localVarReturnType = new TypeToken<Media>(){}.getType();
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
+        return localVarCall;
+    }
+    /**
+     * Build call for mediaGet
+     * @param workspaceId  (required)
+     * @param mediaId  (required)
+     * @param _callback Callback for upload/download progress
+     * @return Call to execute
+     * @throws ApiException If fail to serialize the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Media </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no media with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 503 </td><td> The server cannot reach its media store right now. Try again later. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call mediaGetCall(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String mediaId, final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
+
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
+        }
+
+        Object localVarPostBody = null;
+
+        // create path and map variables
+        String localVarPath = "/api/workspaces/{workspaceId}/media/{mediaId}"
+            .replace("{" + "workspaceId" + "}", localVarApiClient.escapeString(workspaceId.toString()))
+            .replace("{" + "mediaId" + "}", localVarApiClient.escapeString(mediaId.toString()));
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
+        }
+
+        String[] localVarAuthNames = new String[] { "bearer" };
+        return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call mediaGetValidateBeforeCall(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String mediaId, final ApiCallback _callback) throws ApiException {
+        // verify the required parameter 'workspaceId' is set
+        if (workspaceId == null) {
+            throw new ApiException("Missing the required parameter 'workspaceId' when calling mediaGet(Async)");
+        }
+
+        // verify the required parameter 'mediaId' is set
+        if (mediaId == null) {
+            throw new ApiException("Missing the required parameter 'mediaId' when calling mediaGet(Async)");
+        }
+
+        return mediaGetCall(workspaceId, mediaId, _callback);
+
+    }
+
+    /**
+     * Get media
+     * Shows one of the workspace&#39;s media. Needs media:read.
+     * @param workspaceId  (required)
+     * @param mediaId  (required)
+     * @return Media
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Media </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no media with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 503 </td><td> The server cannot reach its media store right now. Try again later. </td><td>  -  </td></tr>
+     </table>
+     */
+    public Media mediaGet(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String mediaId) throws ApiException {
+        ApiResponse<Media> localVarResp = mediaGetWithHttpInfo(workspaceId, mediaId);
+        return localVarResp.getData();
+    }
+
+    /**
+     * Get media
+     * Shows one of the workspace&#39;s media. Needs media:read.
+     * @param workspaceId  (required)
+     * @param mediaId  (required)
+     * @return ApiResponse&lt;Media&gt;
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Media </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no media with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 503 </td><td> The server cannot reach its media store right now. Try again later. </td><td>  -  </td></tr>
+     </table>
+     */
+    public ApiResponse<Media> mediaGetWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String mediaId) throws ApiException {
+        okhttp3.Call localVarCall = mediaGetValidateBeforeCall(workspaceId, mediaId, null);
+        Type localVarReturnType = new TypeToken<Media>(){}.getType();
+        return localVarApiClient.execute(localVarCall, localVarReturnType);
+    }
+
+    /**
+     * Get media (asynchronously)
+     * Shows one of the workspace&#39;s media. Needs media:read.
+     * @param workspaceId  (required)
+     * @param mediaId  (required)
+     * @param _callback The callback to be executed when the API call finishes
+     * @return The request call
+     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Media </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no media with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 503 </td><td> The server cannot reach its media store right now. Try again later. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call mediaGetAsync(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String mediaId, final ApiCallback<Media> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = mediaGetValidateBeforeCall(workspaceId, mediaId, _callback);
+        Type localVarReturnType = new TypeToken<Media>(){}.getType();
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
+        return localVarCall;
+    }
+    /**
+     * Build call for mediaList
+     * @param workspaceId  (required)
+     * @param cursor  (optional)
+     * @param limit  (optional)
+     * @param _callback Callback for upload/download progress
+     * @return Call to execute
+     * @throws ApiException If fail to serialize the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> MediaPage </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> BadRequest </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 503 </td><td> The server cannot reach its media store right now. Try again later. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call mediaListCall(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nullable String cursor, @javax.annotation.Nullable String limit, final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
+
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
+        }
+
+        Object localVarPostBody = null;
+
+        // create path and map variables
+        String localVarPath = "/api/workspaces/{workspaceId}/media"
+            .replace("{" + "workspaceId" + "}", localVarApiClient.escapeString(workspaceId.toString()));
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        if (cursor != null) {
+            localVarQueryParams.addAll(localVarApiClient.parameterToPair("cursor", cursor));
+        }
+
+        if (limit != null) {
+            localVarQueryParams.addAll(localVarApiClient.parameterToPair("limit", limit));
+        }
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
+        }
+
+        String[] localVarAuthNames = new String[] { "bearer" };
+        return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call mediaListValidateBeforeCall(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nullable String cursor, @javax.annotation.Nullable String limit, final ApiCallback _callback) throws ApiException {
+        // verify the required parameter 'workspaceId' is set
+        if (workspaceId == null) {
+            throw new ApiException("Missing the required parameter 'workspaceId' when calling mediaList(Async)");
+        }
+
+        return mediaListCall(workspaceId, cursor, limit, _callback);
+
+    }
+
+    /**
+     * List media
+     * Lists the workspace&#39;s media, newest first, 30 a page unless &#x60;limit&#x60; (at most 100) says otherwise. Pass the page&#39;s &#x60;nextCursor&#x60; as &#x60;cursor&#x60; for the next one. Needs media:read.
+     * @param workspaceId  (required)
+     * @param cursor  (optional)
+     * @param limit  (optional)
+     * @return MediaPage
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> MediaPage </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> BadRequest </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 503 </td><td> The server cannot reach its media store right now. Try again later. </td><td>  -  </td></tr>
+     </table>
+     */
+    public MediaPage mediaList(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nullable String cursor, @javax.annotation.Nullable String limit) throws ApiException {
+        ApiResponse<MediaPage> localVarResp = mediaListWithHttpInfo(workspaceId, cursor, limit);
+        return localVarResp.getData();
+    }
+
+    /**
+     * List media
+     * Lists the workspace&#39;s media, newest first, 30 a page unless &#x60;limit&#x60; (at most 100) says otherwise. Pass the page&#39;s &#x60;nextCursor&#x60; as &#x60;cursor&#x60; for the next one. Needs media:read.
+     * @param workspaceId  (required)
+     * @param cursor  (optional)
+     * @param limit  (optional)
+     * @return ApiResponse&lt;MediaPage&gt;
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> MediaPage </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> BadRequest </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 503 </td><td> The server cannot reach its media store right now. Try again later. </td><td>  -  </td></tr>
+     </table>
+     */
+    public ApiResponse<MediaPage> mediaListWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nullable String cursor, @javax.annotation.Nullable String limit) throws ApiException {
+        okhttp3.Call localVarCall = mediaListValidateBeforeCall(workspaceId, cursor, limit, null);
+        Type localVarReturnType = new TypeToken<MediaPage>(){}.getType();
+        return localVarApiClient.execute(localVarCall, localVarReturnType);
+    }
+
+    /**
+     * List media (asynchronously)
+     * Lists the workspace&#39;s media, newest first, 30 a page unless &#x60;limit&#x60; (at most 100) says otherwise. Pass the page&#39;s &#x60;nextCursor&#x60; as &#x60;cursor&#x60; for the next one. Needs media:read.
+     * @param workspaceId  (required)
+     * @param cursor  (optional)
+     * @param limit  (optional)
+     * @param _callback The callback to be executed when the API call finishes
+     * @return The request call
+     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> MediaPage </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> BadRequest </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 503 </td><td> The server cannot reach its media store right now. Try again later. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call mediaListAsync(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nullable String cursor, @javax.annotation.Nullable String limit, final ApiCallback<MediaPage> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = mediaListValidateBeforeCall(workspaceId, cursor, limit, _callback);
+        Type localVarReturnType = new TypeToken<MediaPage>(){}.getType();
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
+        return localVarCall;
+    }
+    /**
+     * Build call for mediaUsage
+     * @param workspaceId  (required)
+     * @param mediaId  (required)
+     * @param _callback Callback for upload/download progress
+     * @return Call to execute
+     * @throws ApiException If fail to serialize the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> MediaUsage </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no media with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call mediaUsageCall(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String mediaId, final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
+
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
+        }
+
+        Object localVarPostBody = null;
+
+        // create path and map variables
+        String localVarPath = "/api/workspaces/{workspaceId}/media/{mediaId}/usage"
+            .replace("{" + "workspaceId" + "}", localVarApiClient.escapeString(workspaceId.toString()))
+            .replace("{" + "mediaId" + "}", localVarApiClient.escapeString(mediaId.toString()));
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
+        }
+
+        String[] localVarAuthNames = new String[] { "bearer" };
+        return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call mediaUsageValidateBeforeCall(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String mediaId, final ApiCallback _callback) throws ApiException {
+        // verify the required parameter 'workspaceId' is set
+        if (workspaceId == null) {
+            throw new ApiException("Missing the required parameter 'workspaceId' when calling mediaUsage(Async)");
+        }
+
+        // verify the required parameter 'mediaId' is set
+        if (mediaId == null) {
+            throw new ApiException("Missing the required parameter 'mediaId' when calling mediaUsage(Async)");
+        }
+
+        return mediaUsageCall(workspaceId, mediaId, _callback);
+
+    }
+
+    /**
+     * Get where media is used
+     * Lists the posts that show the media: drafts, which lose it if it is deleted, and posts scheduled or publishing, which keep it from being deleted. Needs media:read.
+     * @param workspaceId  (required)
+     * @param mediaId  (required)
+     * @return MediaUsage
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> MediaUsage </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no media with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+     </table>
+     */
+    public MediaUsage mediaUsage(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String mediaId) throws ApiException {
+        ApiResponse<MediaUsage> localVarResp = mediaUsageWithHttpInfo(workspaceId, mediaId);
+        return localVarResp.getData();
+    }
+
+    /**
+     * Get where media is used
+     * Lists the posts that show the media: drafts, which lose it if it is deleted, and posts scheduled or publishing, which keep it from being deleted. Needs media:read.
+     * @param workspaceId  (required)
+     * @param mediaId  (required)
+     * @return ApiResponse&lt;MediaUsage&gt;
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> MediaUsage </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no media with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+     </table>
+     */
+    public ApiResponse<MediaUsage> mediaUsageWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String mediaId) throws ApiException {
+        okhttp3.Call localVarCall = mediaUsageValidateBeforeCall(workspaceId, mediaId, null);
+        Type localVarReturnType = new TypeToken<MediaUsage>(){}.getType();
+        return localVarApiClient.execute(localVarCall, localVarReturnType);
+    }
+
+    /**
+     * Get where media is used (asynchronously)
+     * Lists the posts that show the media: drafts, which lose it if it is deleted, and posts scheduled or publishing, which keep it from being deleted. Needs media:read.
+     * @param workspaceId  (required)
+     * @param mediaId  (required)
+     * @param _callback The callback to be executed when the API call finishes
+     * @return The request call
+     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> MediaUsage </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no media with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call mediaUsageAsync(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String mediaId, final ApiCallback<MediaUsage> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = mediaUsageValidateBeforeCall(workspaceId, mediaId, _callback);
+        Type localVarReturnType = new TypeToken<MediaUsage>(){}.getType();
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
+        return localVarCall;
+    }
 }

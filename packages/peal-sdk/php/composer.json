@@ -1,6 +1,5 @@
 {
     "name": "peal-social/peal",
-    "version": "0.1.0",
     "description": "Schedule posts across social platforms, follow how they did, and manage a Peal workspace's channels, media and members.",
     "keywords": [
         "openapitools",

@@ -24,7 +24,7 @@ var _ MappedNullable = &CreateApiKeyRequest{}
 type CreateApiKeyRequest struct {
 	ExpiresInDays *int32 `json:"expiresInDays,omitempty"`
 	Name string `json:"name"`
-	Permissions []string `json:"permissions"`
+	Permissions []Permission `json:"permissions"`
 }
 
 type _CreateApiKeyRequest CreateApiKeyRequest
@@ -33,7 +33,7 @@ type _CreateApiKeyRequest CreateApiKeyRequest
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewCreateApiKeyRequest(name string, permissions []string) *CreateApiKeyRequest {
+func NewCreateApiKeyRequest(name string, permissions []Permission) *CreateApiKeyRequest {
 	this := CreateApiKeyRequest{}
 	this.Name = name
 	this.Permissions = permissions
@@ -105,9 +105,9 @@ func (o *CreateApiKeyRequest) SetName(v string) {
 }
 
 // GetPermissions returns the Permissions field value
-func (o *CreateApiKeyRequest) GetPermissions() []string {
+func (o *CreateApiKeyRequest) GetPermissions() []Permission {
 	if o == nil {
-		var ret []string
+		var ret []Permission
 		return ret
 	}
 
@@ -116,7 +116,7 @@ func (o *CreateApiKeyRequest) GetPermissions() []string {
 
 // GetPermissionsOk returns a tuple with the Permissions field value
 // and a boolean to check if the value has been set.
-func (o *CreateApiKeyRequest) GetPermissionsOk() ([]string, bool) {
+func (o *CreateApiKeyRequest) GetPermissionsOk() ([]Permission, bool) {
 	if o == nil {
 		return nil, false
 	}
@@ -124,7 +124,7 @@ func (o *CreateApiKeyRequest) GetPermissionsOk() ([]string, bool) {
 }
 
 // SetPermissions sets field value
-func (o *CreateApiKeyRequest) SetPermissions(v []string) {
+func (o *CreateApiKeyRequest) SetPermissions(v []Permission) {
 	o.Permissions = v
 }
 

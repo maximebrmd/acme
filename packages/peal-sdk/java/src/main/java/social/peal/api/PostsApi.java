@@ -10,13 +10,22 @@
  * Do not edit the class manually.
  */
 
+
 package social.peal.api;
 
+import social.peal.ApiCallback;
 import social.peal.ApiClient;
 import social.peal.ApiException;
 import social.peal.ApiResponse;
 import social.peal.Configuration;
 import social.peal.Pair;
+import social.peal.ProgressRequestBody;
+import social.peal.ProgressResponseBody;
+
+import com.google.gson.reflect.TypeToken;
+
+import java.io.IOException;
+
 
 import social.peal.model.DraftPage;
 import social.peal.model.EffectHttpApiErrorBadRequestEncoded;
@@ -37,1902 +46,2126 @@ import social.peal.model.TargetConfirmation;
 import social.peal.model.UnauthenticatedEncoded;
 import social.peal.model.WorkspaceNotFoundEncoded;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import java.io.InputStream;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.net.http.HttpRequest;
-import java.nio.channels.Channels;
-import java.nio.channels.Pipe;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.time.Duration;
-
+import java.lang.reflect.Type;
 import java.util.ArrayList;
-import java.util.StringJoiner;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.function.Consumer;
 
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.27.0")
 public class PostsApi {
-  /**
-   * Utility class for extending HttpRequest.Builder functionality.
-   */
-  private static class HttpRequestBuilderExtensions {
+    private ApiClient localVarApiClient;
+    private int localHostIndex;
+    private String localCustomBaseUrl;
+
+    public PostsApi() {
+        this(Configuration.getDefaultApiClient());
+    }
+
+    public PostsApi(ApiClient apiClient) {
+        this.localVarApiClient = apiClient;
+    }
+
+    public ApiClient getApiClient() {
+        return localVarApiClient;
+    }
+
+    public void setApiClient(ApiClient apiClient) {
+        this.localVarApiClient = apiClient;
+    }
+
+    public int getHostIndex() {
+        return localHostIndex;
+    }
+
+    public void setHostIndex(int hostIndex) {
+        this.localHostIndex = hostIndex;
+    }
+
+    public String getCustomBaseUrl() {
+        return localCustomBaseUrl;
+    }
+
+    public void setCustomBaseUrl(String customBaseUrl) {
+        this.localCustomBaseUrl = customBaseUrl;
+    }
+
     /**
-     * Adds additional headers to the provided HttpRequest.Builder. Useful for adding method/endpoint specific headers.
-     *
-     * @param builder the HttpRequest.Builder to which headers will be added
-     * @param headers a map of header names and values to add; may be null
-     * @return the same HttpRequest.Builder instance with the additional headers set
+     * Build call for postsAttempts
+     * @param workspaceId  (required)
+     * @param postId  (required)
+     * @param _callback Callback for upload/download progress
+     * @return Call to execute
+     * @throws ApiException If fail to serialize the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Success </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no post with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+     </table>
      */
-    static HttpRequest.Builder withAdditionalHeaders(HttpRequest.Builder builder, Map<String, String> headers) {
-        if (headers != null) {
-            for (Map.Entry<String, String> entry : headers.entrySet()) {
-                builder.header(entry.getKey(), entry.getValue());
-            }
-        }
-        return builder;
-    }
-  }
-  private final HttpClient memberVarHttpClient;
-  private final ObjectMapper memberVarObjectMapper;
-  private final String memberVarBaseUri;
-  private final Consumer<HttpRequest.Builder> memberVarInterceptor;
-  private final Duration memberVarReadTimeout;
-  private final Consumer<HttpResponse<InputStream>> memberVarResponseInterceptor;
-  private final Consumer<HttpResponse<InputStream>> memberVarAsyncResponseInterceptor;
+    public okhttp3.Call postsAttemptsCall(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
 
-  public PostsApi() {
-    this(Configuration.getDefaultApiClient());
-  }
-
-  public PostsApi(ApiClient apiClient) {
-    memberVarHttpClient = apiClient.getHttpClient();
-    memberVarObjectMapper = apiClient.getObjectMapper();
-    memberVarBaseUri = apiClient.getBaseUri();
-    memberVarInterceptor = apiClient.getRequestInterceptor();
-    memberVarReadTimeout = apiClient.getReadTimeout();
-    memberVarResponseInterceptor = apiClient.getResponseInterceptor();
-    memberVarAsyncResponseInterceptor = apiClient.getAsyncResponseInterceptor();
-  }
-
-
-  protected ApiException getApiException(String operationId, HttpResponse<InputStream> response) throws IOException {
-    InputStream responseBody = ApiClient.getResponseBody(response);
-    String body = null;
-    try {
-      body = responseBody == null ? null : new String(responseBody.readAllBytes());
-    } finally {
-      if (responseBody != null) {
-        responseBody.close();
-      }
-    }
-    String message = formatExceptionMessage(operationId, response.statusCode(), body);
-    return new ApiException(response.statusCode(), message, response.headers(), body);
-  }
-
-  private String formatExceptionMessage(String operationId, int statusCode, String body) {
-    if (body == null || body.isEmpty()) {
-      body = "[no body]";
-    }
-    return operationId + " call failed with: " + statusCode + " - " + body;
-  }
-
-  /**
-   * Download file from the given response.
-   *
-   * @param response Response
-   * @return File
-   * @throws ApiException If fail to read file content from response and write to disk
-   */
-  public File downloadFileFromResponse(HttpResponse<InputStream> response, InputStream responseBody) throws ApiException {
-    if (responseBody == null) {
-      throw new ApiException(new IOException("Response body is empty"));
-    }
-    try {
-      File file = prepareDownloadFile(response);
-      java.nio.file.Files.copy(responseBody, file.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-      return file;
-    } catch (IOException e) {
-      throw new ApiException(e);
-    }
-  }
-
-  /**
-   * <p>Prepare the file for download from the response.</p>
-   *
-   * @param response a {@link java.net.http.HttpResponse} object.
-   * @return a {@link java.io.File} object.
-   * @throws java.io.IOException if any.
-   */
-  private File prepareDownloadFile(HttpResponse<InputStream> response) throws IOException {
-    String filename = null;
-    java.util.Optional<String> contentDisposition = response.headers().firstValue("Content-Disposition");
-    if (contentDisposition.isPresent() && !"".equals(contentDisposition.get())) {
-      // Get filename from the Content-Disposition header.
-      java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("filename=['\"]?([^'\"\\s]+)['\"]?");
-      java.util.regex.Matcher matcher = pattern.matcher(contentDisposition.get());
-      if (matcher.find())
-        filename = matcher.group(1);
-    }
-    File file = null;
-    if (filename != null) {
-      java.nio.file.Path tempDir = java.nio.file.Files.createTempDirectory("swagger-gen-native");
-      java.nio.file.Path filePath = java.nio.file.Files.createFile(tempDir.resolve(filename));
-      file = filePath.toFile();
-      tempDir.toFile().deleteOnExit();   // best effort cleanup
-      file.deleteOnExit(); // best effort cleanup
-    } else {
-      file = java.nio.file.Files.createTempFile("download-", "").toFile();
-      file.deleteOnExit(); // best effort cleanup
-    }
-    return file;
-  }
-
-  /**
-   * List a post&#39;s attempts
-   * Lists every attempt Peal made at publishing the post, by channel, round and attempt, with how each ended. An attempt still in progress is not listed yet. Needs post:read.
-   * @param workspaceId  (required)
-   * @param postId  (required)
-   * @return List&lt;PublicationAttempt&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public List<PublicationAttempt> postsAttempts(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId) throws ApiException {
-    return postsAttempts(workspaceId, postId, null);
-  }
-
-  /**
-   * List a post&#39;s attempts
-   * Lists every attempt Peal made at publishing the post, by channel, round and attempt, with how each ended. An attempt still in progress is not listed yet. Needs post:read.
-   * @param workspaceId  (required)
-   * @param postId  (required)
-   * @param headers Optional headers to include in the request
-   * @return List&lt;PublicationAttempt&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public List<PublicationAttempt> postsAttempts(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, Map<String, String> headers) throws ApiException {
-    ApiResponse<List<PublicationAttempt>> localVarResponse = postsAttemptsWithHttpInfo(workspaceId, postId, headers);
-    return localVarResponse.getData();
-  }
-
-  /**
-   * List a post&#39;s attempts
-   * Lists every attempt Peal made at publishing the post, by channel, round and attempt, with how each ended. An attempt still in progress is not listed yet. Needs post:read.
-   * @param workspaceId  (required)
-   * @param postId  (required)
-   * @return ApiResponse&lt;List&lt;PublicationAttempt&gt;&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<List<PublicationAttempt>> postsAttemptsWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId) throws ApiException {
-    return postsAttemptsWithHttpInfo(workspaceId, postId, null);
-  }
-
-  /**
-   * List a post&#39;s attempts
-   * Lists every attempt Peal made at publishing the post, by channel, round and attempt, with how each ended. An attempt still in progress is not listed yet. Needs post:read.
-   * @param workspaceId  (required)
-   * @param postId  (required)
-   * @param headers Optional headers to include in the request
-   * @return ApiResponse&lt;List&lt;PublicationAttempt&gt;&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<List<PublicationAttempt>> postsAttemptsWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, Map<String, String> headers) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = postsAttemptsRequestBuilder(workspaceId, postId, headers);
-    try {
-      HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
-          localVarRequestBuilder.build(),
-          HttpResponse.BodyHandlers.ofInputStream());
-      if (memberVarResponseInterceptor != null) {
-        memberVarResponseInterceptor.accept(localVarResponse);
-      }
-      InputStream localVarResponseBody = null;
-      try {
-        if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("postsAttempts", localVarResponse);
-        }
-        localVarResponseBody = ApiClient.getResponseBody(localVarResponse);
-        if (localVarResponseBody == null) {
-          return new ApiResponse<List<PublicationAttempt>>(
-              localVarResponse.statusCode(),
-              localVarResponse.headers().map(),
-              null
-          );
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
         }
 
-        
-        
-        String responseBody = new String(localVarResponseBody.readAllBytes());
-        List<PublicationAttempt> responseValue = responseBody.isBlank()? null: memberVarObjectMapper.readValue(responseBody, new TypeReference<List<PublicationAttempt>>() {});
-        
+        Object localVarPostBody = null;
 
-        return new ApiResponse<List<PublicationAttempt>>(
-            localVarResponse.statusCode(),
-            localVarResponse.headers().map(),
-            responseValue
-        );
-      } finally {
-        if (localVarResponseBody != null) {
-          localVarResponseBody.close();
-        }
-      }
-    } catch (IOException e) {
-      throw new ApiException(e);
-    }
-    catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new ApiException(e);
-    }
-  }
+        // create path and map variables
+        String localVarPath = "/api/workspaces/{workspaceId}/posts/{postId}/attempts"
+            .replace("{" + "workspaceId" + "}", localVarApiClient.escapeString(workspaceId.toString()))
+            .replace("{" + "postId" + "}", localVarApiClient.escapeString(postId.toString()));
 
-  private HttpRequest.Builder postsAttemptsRequestBuilder(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, Map<String, String> headers) throws ApiException {
-    // verify the required parameter 'workspaceId' is set
-    if (workspaceId == null) {
-      throw new ApiException(400, "Missing the required parameter 'workspaceId' when calling postsAttempts");
-    }
-    // verify the required parameter 'postId' is set
-    if (postId == null) {
-      throw new ApiException(400, "Missing the required parameter 'postId' when calling postsAttempts");
-    }
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
 
-    HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
-
-    String localVarPath = "/api/workspaces/{workspaceId}/posts/{postId}/attempts"
-        .replace("{workspaceId}", ApiClient.urlEncode(workspaceId.toString()))
-        .replace("{postId}", ApiClient.urlEncode(postId.toString()));
-
-    localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
-
-    localVarRequestBuilder.header("Accept", "application/json");
-
-    localVarRequestBuilder.method("GET", HttpRequest.BodyPublishers.noBody());
-    if (memberVarReadTimeout != null) {
-      localVarRequestBuilder.timeout(memberVarReadTimeout);
-    }
-    // Add custom headers if provided
-    localVarRequestBuilder = HttpRequestBuilderExtensions.withAdditionalHeaders(localVarRequestBuilder, headers);
-    if (memberVarInterceptor != null) {
-      memberVarInterceptor.accept(localVarRequestBuilder);
-    }
-    return localVarRequestBuilder;
-  }
-
-  /**
-   * Cancel a post
-   * Cancels a draft or a scheduled post. A post already publishing finishes with what its channels did: those not yet sent are cancelled. Needs post:schedule.
-   * @param workspaceId  (required)
-   * @param postId  (required)
-   * @return Post
-   * @throws ApiException if fails to make API call
-   */
-  public Post postsCancel(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId) throws ApiException {
-    return postsCancel(workspaceId, postId, null);
-  }
-
-  /**
-   * Cancel a post
-   * Cancels a draft or a scheduled post. A post already publishing finishes with what its channels did: those not yet sent are cancelled. Needs post:schedule.
-   * @param workspaceId  (required)
-   * @param postId  (required)
-   * @param headers Optional headers to include in the request
-   * @return Post
-   * @throws ApiException if fails to make API call
-   */
-  public Post postsCancel(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, Map<String, String> headers) throws ApiException {
-    ApiResponse<Post> localVarResponse = postsCancelWithHttpInfo(workspaceId, postId, headers);
-    return localVarResponse.getData();
-  }
-
-  /**
-   * Cancel a post
-   * Cancels a draft or a scheduled post. A post already publishing finishes with what its channels did: those not yet sent are cancelled. Needs post:schedule.
-   * @param workspaceId  (required)
-   * @param postId  (required)
-   * @return ApiResponse&lt;Post&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<Post> postsCancelWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId) throws ApiException {
-    return postsCancelWithHttpInfo(workspaceId, postId, null);
-  }
-
-  /**
-   * Cancel a post
-   * Cancels a draft or a scheduled post. A post already publishing finishes with what its channels did: those not yet sent are cancelled. Needs post:schedule.
-   * @param workspaceId  (required)
-   * @param postId  (required)
-   * @param headers Optional headers to include in the request
-   * @return ApiResponse&lt;Post&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<Post> postsCancelWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, Map<String, String> headers) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = postsCancelRequestBuilder(workspaceId, postId, headers);
-    try {
-      HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
-          localVarRequestBuilder.build(),
-          HttpResponse.BodyHandlers.ofInputStream());
-      if (memberVarResponseInterceptor != null) {
-        memberVarResponseInterceptor.accept(localVarResponse);
-      }
-      InputStream localVarResponseBody = null;
-      try {
-        if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("postsCancel", localVarResponse);
-        }
-        localVarResponseBody = ApiClient.getResponseBody(localVarResponse);
-        if (localVarResponseBody == null) {
-          return new ApiResponse<Post>(
-              localVarResponse.statusCode(),
-              localVarResponse.headers().map(),
-              null
-          );
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
         }
 
-        
-        
-        String responseBody = new String(localVarResponseBody.readAllBytes());
-        Post responseValue = responseBody.isBlank()? null: memberVarObjectMapper.readValue(responseBody, new TypeReference<Post>() {});
-        
-
-        return new ApiResponse<Post>(
-            localVarResponse.statusCode(),
-            localVarResponse.headers().map(),
-            responseValue
-        );
-      } finally {
-        if (localVarResponseBody != null) {
-          localVarResponseBody.close();
-        }
-      }
-    } catch (IOException e) {
-      throw new ApiException(e);
-    }
-    catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new ApiException(e);
-    }
-  }
-
-  private HttpRequest.Builder postsCancelRequestBuilder(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, Map<String, String> headers) throws ApiException {
-    // verify the required parameter 'workspaceId' is set
-    if (workspaceId == null) {
-      throw new ApiException(400, "Missing the required parameter 'workspaceId' when calling postsCancel");
-    }
-    // verify the required parameter 'postId' is set
-    if (postId == null) {
-      throw new ApiException(400, "Missing the required parameter 'postId' when calling postsCancel");
-    }
-
-    HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
-
-    String localVarPath = "/api/workspaces/{workspaceId}/posts/{postId}/cancel"
-        .replace("{workspaceId}", ApiClient.urlEncode(workspaceId.toString()))
-        .replace("{postId}", ApiClient.urlEncode(postId.toString()));
-
-    localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
-
-    localVarRequestBuilder.header("Accept", "application/json");
-
-    localVarRequestBuilder.method("POST", HttpRequest.BodyPublishers.noBody());
-    if (memberVarReadTimeout != null) {
-      localVarRequestBuilder.timeout(memberVarReadTimeout);
-    }
-    // Add custom headers if provided
-    localVarRequestBuilder = HttpRequestBuilderExtensions.withAdditionalHeaders(localVarRequestBuilder, headers);
-    if (memberVarInterceptor != null) {
-      memberVarInterceptor.accept(localVarRequestBuilder);
-    }
-    return localVarRequestBuilder;
-  }
-
-  /**
-   * Confirm a post on a channel
-   * Says what you found on the platform for a post unconfirmed on one channel: &#x60;published&#x60;, with its address if you have it, or &#x60;notPublished&#x60;, which fails it there so it can be reposted. Its notifications are marked read. Needs post:schedule.
-   * @param workspaceId  (required)
-   * @param postId  (required)
-   * @param targetId  (required)
-   * @param targetConfirmation  (required)
-   * @return Post
-   * @throws ApiException if fails to make API call
-   */
-  public Post postsConfirm(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, @javax.annotation.Nonnull String targetId, @javax.annotation.Nonnull TargetConfirmation targetConfirmation) throws ApiException {
-    return postsConfirm(workspaceId, postId, targetId, targetConfirmation, null);
-  }
-
-  /**
-   * Confirm a post on a channel
-   * Says what you found on the platform for a post unconfirmed on one channel: &#x60;published&#x60;, with its address if you have it, or &#x60;notPublished&#x60;, which fails it there so it can be reposted. Its notifications are marked read. Needs post:schedule.
-   * @param workspaceId  (required)
-   * @param postId  (required)
-   * @param targetId  (required)
-   * @param targetConfirmation  (required)
-   * @param headers Optional headers to include in the request
-   * @return Post
-   * @throws ApiException if fails to make API call
-   */
-  public Post postsConfirm(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, @javax.annotation.Nonnull String targetId, @javax.annotation.Nonnull TargetConfirmation targetConfirmation, Map<String, String> headers) throws ApiException {
-    ApiResponse<Post> localVarResponse = postsConfirmWithHttpInfo(workspaceId, postId, targetId, targetConfirmation, headers);
-    return localVarResponse.getData();
-  }
-
-  /**
-   * Confirm a post on a channel
-   * Says what you found on the platform for a post unconfirmed on one channel: &#x60;published&#x60;, with its address if you have it, or &#x60;notPublished&#x60;, which fails it there so it can be reposted. Its notifications are marked read. Needs post:schedule.
-   * @param workspaceId  (required)
-   * @param postId  (required)
-   * @param targetId  (required)
-   * @param targetConfirmation  (required)
-   * @return ApiResponse&lt;Post&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<Post> postsConfirmWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, @javax.annotation.Nonnull String targetId, @javax.annotation.Nonnull TargetConfirmation targetConfirmation) throws ApiException {
-    return postsConfirmWithHttpInfo(workspaceId, postId, targetId, targetConfirmation, null);
-  }
-
-  /**
-   * Confirm a post on a channel
-   * Says what you found on the platform for a post unconfirmed on one channel: &#x60;published&#x60;, with its address if you have it, or &#x60;notPublished&#x60;, which fails it there so it can be reposted. Its notifications are marked read. Needs post:schedule.
-   * @param workspaceId  (required)
-   * @param postId  (required)
-   * @param targetId  (required)
-   * @param targetConfirmation  (required)
-   * @param headers Optional headers to include in the request
-   * @return ApiResponse&lt;Post&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<Post> postsConfirmWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, @javax.annotation.Nonnull String targetId, @javax.annotation.Nonnull TargetConfirmation targetConfirmation, Map<String, String> headers) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = postsConfirmRequestBuilder(workspaceId, postId, targetId, targetConfirmation, headers);
-    try {
-      HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
-          localVarRequestBuilder.build(),
-          HttpResponse.BodyHandlers.ofInputStream());
-      if (memberVarResponseInterceptor != null) {
-        memberVarResponseInterceptor.accept(localVarResponse);
-      }
-      InputStream localVarResponseBody = null;
-      try {
-        if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("postsConfirm", localVarResponse);
-        }
-        localVarResponseBody = ApiClient.getResponseBody(localVarResponse);
-        if (localVarResponseBody == null) {
-          return new ApiResponse<Post>(
-              localVarResponse.statusCode(),
-              localVarResponse.headers().map(),
-              null
-          );
+        final String[] localVarContentTypes = {
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
         }
 
-        
-        
-        String responseBody = new String(localVarResponseBody.readAllBytes());
-        Post responseValue = responseBody.isBlank()? null: memberVarObjectMapper.readValue(responseBody, new TypeReference<Post>() {});
-        
-
-        return new ApiResponse<Post>(
-            localVarResponse.statusCode(),
-            localVarResponse.headers().map(),
-            responseValue
-        );
-      } finally {
-        if (localVarResponseBody != null) {
-          localVarResponseBody.close();
-        }
-      }
-    } catch (IOException e) {
-      throw new ApiException(e);
-    }
-    catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new ApiException(e);
-    }
-  }
-
-  private HttpRequest.Builder postsConfirmRequestBuilder(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, @javax.annotation.Nonnull String targetId, @javax.annotation.Nonnull TargetConfirmation targetConfirmation, Map<String, String> headers) throws ApiException {
-    // verify the required parameter 'workspaceId' is set
-    if (workspaceId == null) {
-      throw new ApiException(400, "Missing the required parameter 'workspaceId' when calling postsConfirm");
-    }
-    // verify the required parameter 'postId' is set
-    if (postId == null) {
-      throw new ApiException(400, "Missing the required parameter 'postId' when calling postsConfirm");
-    }
-    // verify the required parameter 'targetId' is set
-    if (targetId == null) {
-      throw new ApiException(400, "Missing the required parameter 'targetId' when calling postsConfirm");
-    }
-    // verify the required parameter 'targetConfirmation' is set
-    if (targetConfirmation == null) {
-      throw new ApiException(400, "Missing the required parameter 'targetConfirmation' when calling postsConfirm");
+        String[] localVarAuthNames = new String[] { "bearer" };
+        return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
-    HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
-
-    String localVarPath = "/api/workspaces/{workspaceId}/posts/{postId}/targets/{targetId}/confirm"
-        .replace("{workspaceId}", ApiClient.urlEncode(workspaceId.toString()))
-        .replace("{postId}", ApiClient.urlEncode(postId.toString()))
-        .replace("{targetId}", ApiClient.urlEncode(targetId.toString()));
-
-    localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
-
-    localVarRequestBuilder.header("Content-Type", "application/json");
-    localVarRequestBuilder.header("Accept", "application/json");
-
-    try {
-      byte[] localVarPostBody = memberVarObjectMapper.writeValueAsBytes(targetConfirmation);
-      localVarRequestBuilder.method("POST", HttpRequest.BodyPublishers.ofByteArray(localVarPostBody));
-    } catch (IOException e) {
-      throw new ApiException(e);
-    }
-    if (memberVarReadTimeout != null) {
-      localVarRequestBuilder.timeout(memberVarReadTimeout);
-    }
-    // Add custom headers if provided
-    localVarRequestBuilder = HttpRequestBuilderExtensions.withAdditionalHeaders(localVarRequestBuilder, headers);
-    if (memberVarInterceptor != null) {
-      memberVarInterceptor.accept(localVarRequestBuilder);
-    }
-    return localVarRequestBuilder;
-  }
-
-  /**
-   * Create a draft
-   * Creates a draft for some of the workspace&#39;s channels, possibly none yet, with options on those whose platform takes them (&#x60;TargetOptions&#x60;, of the channel&#39;s platform). Its media must be the workspace&#39;s, and ready. Its text, media and options are checked against each platform&#39;s rules when it is scheduled, not before. Needs post:create, channel:read, and media:read when it shows media.
-   * @param workspaceId  (required)
-   * @param postDraft  (required)
-   * @return Post
-   * @throws ApiException if fails to make API call
-   */
-  public Post postsCreate(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull PostDraft postDraft) throws ApiException {
-    return postsCreate(workspaceId, postDraft, null);
-  }
-
-  /**
-   * Create a draft
-   * Creates a draft for some of the workspace&#39;s channels, possibly none yet, with options on those whose platform takes them (&#x60;TargetOptions&#x60;, of the channel&#39;s platform). Its media must be the workspace&#39;s, and ready. Its text, media and options are checked against each platform&#39;s rules when it is scheduled, not before. Needs post:create, channel:read, and media:read when it shows media.
-   * @param workspaceId  (required)
-   * @param postDraft  (required)
-   * @param headers Optional headers to include in the request
-   * @return Post
-   * @throws ApiException if fails to make API call
-   */
-  public Post postsCreate(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull PostDraft postDraft, Map<String, String> headers) throws ApiException {
-    ApiResponse<Post> localVarResponse = postsCreateWithHttpInfo(workspaceId, postDraft, headers);
-    return localVarResponse.getData();
-  }
-
-  /**
-   * Create a draft
-   * Creates a draft for some of the workspace&#39;s channels, possibly none yet, with options on those whose platform takes them (&#x60;TargetOptions&#x60;, of the channel&#39;s platform). Its media must be the workspace&#39;s, and ready. Its text, media and options are checked against each platform&#39;s rules when it is scheduled, not before. Needs post:create, channel:read, and media:read when it shows media.
-   * @param workspaceId  (required)
-   * @param postDraft  (required)
-   * @return ApiResponse&lt;Post&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<Post> postsCreateWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull PostDraft postDraft) throws ApiException {
-    return postsCreateWithHttpInfo(workspaceId, postDraft, null);
-  }
-
-  /**
-   * Create a draft
-   * Creates a draft for some of the workspace&#39;s channels, possibly none yet, with options on those whose platform takes them (&#x60;TargetOptions&#x60;, of the channel&#39;s platform). Its media must be the workspace&#39;s, and ready. Its text, media and options are checked against each platform&#39;s rules when it is scheduled, not before. Needs post:create, channel:read, and media:read when it shows media.
-   * @param workspaceId  (required)
-   * @param postDraft  (required)
-   * @param headers Optional headers to include in the request
-   * @return ApiResponse&lt;Post&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<Post> postsCreateWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull PostDraft postDraft, Map<String, String> headers) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = postsCreateRequestBuilder(workspaceId, postDraft, headers);
-    try {
-      HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
-          localVarRequestBuilder.build(),
-          HttpResponse.BodyHandlers.ofInputStream());
-      if (memberVarResponseInterceptor != null) {
-        memberVarResponseInterceptor.accept(localVarResponse);
-      }
-      InputStream localVarResponseBody = null;
-      try {
-        if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("postsCreate", localVarResponse);
-        }
-        localVarResponseBody = ApiClient.getResponseBody(localVarResponse);
-        if (localVarResponseBody == null) {
-          return new ApiResponse<Post>(
-              localVarResponse.statusCode(),
-              localVarResponse.headers().map(),
-              null
-          );
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call postsAttemptsValidateBeforeCall(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, final ApiCallback _callback) throws ApiException {
+        // verify the required parameter 'workspaceId' is set
+        if (workspaceId == null) {
+            throw new ApiException("Missing the required parameter 'workspaceId' when calling postsAttempts(Async)");
         }
 
-        
-        
-        String responseBody = new String(localVarResponseBody.readAllBytes());
-        Post responseValue = responseBody.isBlank()? null: memberVarObjectMapper.readValue(responseBody, new TypeReference<Post>() {});
-        
-
-        return new ApiResponse<Post>(
-            localVarResponse.statusCode(),
-            localVarResponse.headers().map(),
-            responseValue
-        );
-      } finally {
-        if (localVarResponseBody != null) {
-          localVarResponseBody.close();
-        }
-      }
-    } catch (IOException e) {
-      throw new ApiException(e);
-    }
-    catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new ApiException(e);
-    }
-  }
-
-  private HttpRequest.Builder postsCreateRequestBuilder(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull PostDraft postDraft, Map<String, String> headers) throws ApiException {
-    // verify the required parameter 'workspaceId' is set
-    if (workspaceId == null) {
-      throw new ApiException(400, "Missing the required parameter 'workspaceId' when calling postsCreate");
-    }
-    // verify the required parameter 'postDraft' is set
-    if (postDraft == null) {
-      throw new ApiException(400, "Missing the required parameter 'postDraft' when calling postsCreate");
-    }
-
-    HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
-
-    String localVarPath = "/api/workspaces/{workspaceId}/posts"
-        .replace("{workspaceId}", ApiClient.urlEncode(workspaceId.toString()));
-
-    localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
-
-    localVarRequestBuilder.header("Content-Type", "application/json");
-    localVarRequestBuilder.header("Accept", "application/json");
-
-    try {
-      byte[] localVarPostBody = memberVarObjectMapper.writeValueAsBytes(postDraft);
-      localVarRequestBuilder.method("POST", HttpRequest.BodyPublishers.ofByteArray(localVarPostBody));
-    } catch (IOException e) {
-      throw new ApiException(e);
-    }
-    if (memberVarReadTimeout != null) {
-      localVarRequestBuilder.timeout(memberVarReadTimeout);
-    }
-    // Add custom headers if provided
-    localVarRequestBuilder = HttpRequestBuilderExtensions.withAdditionalHeaders(localVarRequestBuilder, headers);
-    if (memberVarInterceptor != null) {
-      memberVarInterceptor.accept(localVarRequestBuilder);
-    }
-    return localVarRequestBuilder;
-  }
-
-  /**
-   * Discard a draft
-   * Deletes a draft. A post scheduled or sent is a conflict: cancel it instead. Needs post:delete, or post:update for the user who created the draft.
-   * @param workspaceId  (required)
-   * @param postId  (required)
-   * @throws ApiException if fails to make API call
-   */
-  public void postsDiscard(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId) throws ApiException {
-    postsDiscard(workspaceId, postId, null);
-  }
-
-  /**
-   * Discard a draft
-   * Deletes a draft. A post scheduled or sent is a conflict: cancel it instead. Needs post:delete, or post:update for the user who created the draft.
-   * @param workspaceId  (required)
-   * @param postId  (required)
-   * @param headers Optional headers to include in the request
-   * @throws ApiException if fails to make API call
-   */
-  public void postsDiscard(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, Map<String, String> headers) throws ApiException {
-    postsDiscardWithHttpInfo(workspaceId, postId, headers);
-  }
-
-  /**
-   * Discard a draft
-   * Deletes a draft. A post scheduled or sent is a conflict: cancel it instead. Needs post:delete, or post:update for the user who created the draft.
-   * @param workspaceId  (required)
-   * @param postId  (required)
-   * @return ApiResponse&lt;Void&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<Void> postsDiscardWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId) throws ApiException {
-    return postsDiscardWithHttpInfo(workspaceId, postId, null);
-  }
-
-  /**
-   * Discard a draft
-   * Deletes a draft. A post scheduled or sent is a conflict: cancel it instead. Needs post:delete, or post:update for the user who created the draft.
-   * @param workspaceId  (required)
-   * @param postId  (required)
-   * @param headers Optional headers to include in the request
-   * @return ApiResponse&lt;Void&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<Void> postsDiscardWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, Map<String, String> headers) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = postsDiscardRequestBuilder(workspaceId, postId, headers);
-    try {
-      HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
-          localVarRequestBuilder.build(),
-          HttpResponse.BodyHandlers.ofInputStream());
-      if (memberVarResponseInterceptor != null) {
-        memberVarResponseInterceptor.accept(localVarResponse);
-      }
-      InputStream localVarResponseBody = null;
-      try {
-        if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("postsDiscard", localVarResponse);
-        }
-        localVarResponseBody = ApiClient.getResponseBody(localVarResponse);
-        if (localVarResponseBody != null) {
-          localVarResponseBody.readAllBytes();
-        }
-        return new ApiResponse<>(
-            localVarResponse.statusCode(),
-            localVarResponse.headers().map(),
-            null
-        );
-      } finally {
-        if (localVarResponseBody != null) {
-          localVarResponseBody.close();
-        }
-      }
-    } catch (IOException e) {
-      throw new ApiException(e);
-    }
-    catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new ApiException(e);
-    }
-  }
-
-  private HttpRequest.Builder postsDiscardRequestBuilder(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, Map<String, String> headers) throws ApiException {
-    // verify the required parameter 'workspaceId' is set
-    if (workspaceId == null) {
-      throw new ApiException(400, "Missing the required parameter 'workspaceId' when calling postsDiscard");
-    }
-    // verify the required parameter 'postId' is set
-    if (postId == null) {
-      throw new ApiException(400, "Missing the required parameter 'postId' when calling postsDiscard");
-    }
-
-    HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
-
-    String localVarPath = "/api/workspaces/{workspaceId}/posts/{postId}"
-        .replace("{workspaceId}", ApiClient.urlEncode(workspaceId.toString()))
-        .replace("{postId}", ApiClient.urlEncode(postId.toString()));
-
-    localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
-
-    localVarRequestBuilder.header("Accept", "application/json");
-
-    localVarRequestBuilder.method("DELETE", HttpRequest.BodyPublishers.noBody());
-    if (memberVarReadTimeout != null) {
-      localVarRequestBuilder.timeout(memberVarReadTimeout);
-    }
-    // Add custom headers if provided
-    localVarRequestBuilder = HttpRequestBuilderExtensions.withAdditionalHeaders(localVarRequestBuilder, headers);
-    if (memberVarInterceptor != null) {
-      memberVarInterceptor.accept(localVarRequestBuilder);
-    }
-    return localVarRequestBuilder;
-  }
-
-  /**
-   * List drafts
-   * Lists the workspace&#39;s drafts, newest first, 20 a page unless &#x60;limit&#x60; (at most 50) says otherwise. Pass the page&#39;s &#x60;nextCursor&#x60; as &#x60;cursor&#x60; for the next one. Needs post:read.
-   * @param workspaceId  (required)
-   * @param cursor  (optional)
-   * @param limit  (optional)
-   * @return DraftPage
-   * @throws ApiException if fails to make API call
-   */
-  public DraftPage postsDrafts(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nullable String cursor, @javax.annotation.Nullable String limit) throws ApiException {
-    return postsDrafts(workspaceId, cursor, limit, null);
-  }
-
-  /**
-   * List drafts
-   * Lists the workspace&#39;s drafts, newest first, 20 a page unless &#x60;limit&#x60; (at most 50) says otherwise. Pass the page&#39;s &#x60;nextCursor&#x60; as &#x60;cursor&#x60; for the next one. Needs post:read.
-   * @param workspaceId  (required)
-   * @param cursor  (optional)
-   * @param limit  (optional)
-   * @param headers Optional headers to include in the request
-   * @return DraftPage
-   * @throws ApiException if fails to make API call
-   */
-  public DraftPage postsDrafts(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nullable String cursor, @javax.annotation.Nullable String limit, Map<String, String> headers) throws ApiException {
-    ApiResponse<DraftPage> localVarResponse = postsDraftsWithHttpInfo(workspaceId, cursor, limit, headers);
-    return localVarResponse.getData();
-  }
-
-  /**
-   * List drafts
-   * Lists the workspace&#39;s drafts, newest first, 20 a page unless &#x60;limit&#x60; (at most 50) says otherwise. Pass the page&#39;s &#x60;nextCursor&#x60; as &#x60;cursor&#x60; for the next one. Needs post:read.
-   * @param workspaceId  (required)
-   * @param cursor  (optional)
-   * @param limit  (optional)
-   * @return ApiResponse&lt;DraftPage&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<DraftPage> postsDraftsWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nullable String cursor, @javax.annotation.Nullable String limit) throws ApiException {
-    return postsDraftsWithHttpInfo(workspaceId, cursor, limit, null);
-  }
-
-  /**
-   * List drafts
-   * Lists the workspace&#39;s drafts, newest first, 20 a page unless &#x60;limit&#x60; (at most 50) says otherwise. Pass the page&#39;s &#x60;nextCursor&#x60; as &#x60;cursor&#x60; for the next one. Needs post:read.
-   * @param workspaceId  (required)
-   * @param cursor  (optional)
-   * @param limit  (optional)
-   * @param headers Optional headers to include in the request
-   * @return ApiResponse&lt;DraftPage&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<DraftPage> postsDraftsWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nullable String cursor, @javax.annotation.Nullable String limit, Map<String, String> headers) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = postsDraftsRequestBuilder(workspaceId, cursor, limit, headers);
-    try {
-      HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
-          localVarRequestBuilder.build(),
-          HttpResponse.BodyHandlers.ofInputStream());
-      if (memberVarResponseInterceptor != null) {
-        memberVarResponseInterceptor.accept(localVarResponse);
-      }
-      InputStream localVarResponseBody = null;
-      try {
-        if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("postsDrafts", localVarResponse);
-        }
-        localVarResponseBody = ApiClient.getResponseBody(localVarResponse);
-        if (localVarResponseBody == null) {
-          return new ApiResponse<DraftPage>(
-              localVarResponse.statusCode(),
-              localVarResponse.headers().map(),
-              null
-          );
+        // verify the required parameter 'postId' is set
+        if (postId == null) {
+            throw new ApiException("Missing the required parameter 'postId' when calling postsAttempts(Async)");
         }
 
-        
-        
-        String responseBody = new String(localVarResponseBody.readAllBytes());
-        DraftPage responseValue = responseBody.isBlank()? null: memberVarObjectMapper.readValue(responseBody, new TypeReference<DraftPage>() {});
-        
+        return postsAttemptsCall(workspaceId, postId, _callback);
 
-        return new ApiResponse<DraftPage>(
-            localVarResponse.statusCode(),
-            localVarResponse.headers().map(),
-            responseValue
-        );
-      } finally {
-        if (localVarResponseBody != null) {
-          localVarResponseBody.close();
-        }
-      }
-    } catch (IOException e) {
-      throw new ApiException(e);
-    }
-    catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new ApiException(e);
-    }
-  }
-
-  private HttpRequest.Builder postsDraftsRequestBuilder(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nullable String cursor, @javax.annotation.Nullable String limit, Map<String, String> headers) throws ApiException {
-    // verify the required parameter 'workspaceId' is set
-    if (workspaceId == null) {
-      throw new ApiException(400, "Missing the required parameter 'workspaceId' when calling postsDrafts");
     }
 
-    HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
-
-    String localVarPath = "/api/workspaces/{workspaceId}/posts/drafts"
-        .replace("{workspaceId}", ApiClient.urlEncode(workspaceId.toString()));
-
-    List<Pair> localVarQueryParams = new ArrayList<>();
-    StringJoiner localVarQueryStringJoiner = new StringJoiner("&");
-    String localVarQueryParameterBaseName;
-    localVarQueryParameterBaseName = "cursor";
-    localVarQueryParams.addAll(ApiClient.parameterToPairs("cursor", cursor));
-    localVarQueryParameterBaseName = "limit";
-    localVarQueryParams.addAll(ApiClient.parameterToPairs("limit", limit));
-
-    if (!localVarQueryParams.isEmpty() || localVarQueryStringJoiner.length() != 0) {
-      StringJoiner queryJoiner = new StringJoiner("&");
-      localVarQueryParams.forEach(p -> queryJoiner.add(p.getName() + '=' + p.getValue()));
-      if (localVarQueryStringJoiner.length() != 0) {
-        queryJoiner.add(localVarQueryStringJoiner.toString());
-      }
-      localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath + '?' + queryJoiner.toString()));
-    } else {
-      localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
+    /**
+     * List a post&#39;s attempts
+     * Lists every attempt Peal made at publishing the post, by channel, round and attempt, with how each ended. An attempt still in progress is not listed yet. Needs post:read.
+     * @param workspaceId  (required)
+     * @param postId  (required)
+     * @return List&lt;PublicationAttempt&gt;
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Success </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no post with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+     </table>
+     */
+    public List<PublicationAttempt> postsAttempts(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId) throws ApiException {
+        ApiResponse<List<PublicationAttempt>> localVarResp = postsAttemptsWithHttpInfo(workspaceId, postId);
+        return localVarResp.getData();
     }
 
-    localVarRequestBuilder.header("Accept", "application/json");
-
-    localVarRequestBuilder.method("GET", HttpRequest.BodyPublishers.noBody());
-    if (memberVarReadTimeout != null) {
-      localVarRequestBuilder.timeout(memberVarReadTimeout);
+    /**
+     * List a post&#39;s attempts
+     * Lists every attempt Peal made at publishing the post, by channel, round and attempt, with how each ended. An attempt still in progress is not listed yet. Needs post:read.
+     * @param workspaceId  (required)
+     * @param postId  (required)
+     * @return ApiResponse&lt;List&lt;PublicationAttempt&gt;&gt;
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Success </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no post with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+     </table>
+     */
+    public ApiResponse<List<PublicationAttempt>> postsAttemptsWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId) throws ApiException {
+        okhttp3.Call localVarCall = postsAttemptsValidateBeforeCall(workspaceId, postId, null);
+        Type localVarReturnType = new TypeToken<List<PublicationAttempt>>(){}.getType();
+        return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
-    // Add custom headers if provided
-    localVarRequestBuilder = HttpRequestBuilderExtensions.withAdditionalHeaders(localVarRequestBuilder, headers);
-    if (memberVarInterceptor != null) {
-      memberVarInterceptor.accept(localVarRequestBuilder);
+
+    /**
+     * List a post&#39;s attempts (asynchronously)
+     * Lists every attempt Peal made at publishing the post, by channel, round and attempt, with how each ended. An attempt still in progress is not listed yet. Needs post:read.
+     * @param workspaceId  (required)
+     * @param postId  (required)
+     * @param _callback The callback to be executed when the API call finishes
+     * @return The request call
+     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Success </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no post with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call postsAttemptsAsync(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, final ApiCallback<List<PublicationAttempt>> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = postsAttemptsValidateBeforeCall(workspaceId, postId, _callback);
+        Type localVarReturnType = new TypeToken<List<PublicationAttempt>>(){}.getType();
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
+        return localVarCall;
     }
-    return localVarRequestBuilder;
-  }
+    /**
+     * Build call for postsCancel
+     * @param workspaceId  (required)
+     * @param postId  (required)
+     * @param _callback Callback for upload/download progress
+     * @return Call to execute
+     * @throws ApiException If fail to serialize the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Post </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no post with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 409 </td><td> The post&#39;s status does not allow this. &#x60;status&#x60; is the status it has. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call postsCancelCall(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
 
-  /**
-   * Get a post
-   * Answers with a post of the workspace. Needs post:read.
-   * @param workspaceId  (required)
-   * @param postId  (required)
-   * @return Post
-   * @throws ApiException if fails to make API call
-   */
-  public Post postsGet(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId) throws ApiException {
-    return postsGet(workspaceId, postId, null);
-  }
-
-  /**
-   * Get a post
-   * Answers with a post of the workspace. Needs post:read.
-   * @param workspaceId  (required)
-   * @param postId  (required)
-   * @param headers Optional headers to include in the request
-   * @return Post
-   * @throws ApiException if fails to make API call
-   */
-  public Post postsGet(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, Map<String, String> headers) throws ApiException {
-    ApiResponse<Post> localVarResponse = postsGetWithHttpInfo(workspaceId, postId, headers);
-    return localVarResponse.getData();
-  }
-
-  /**
-   * Get a post
-   * Answers with a post of the workspace. Needs post:read.
-   * @param workspaceId  (required)
-   * @param postId  (required)
-   * @return ApiResponse&lt;Post&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<Post> postsGetWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId) throws ApiException {
-    return postsGetWithHttpInfo(workspaceId, postId, null);
-  }
-
-  /**
-   * Get a post
-   * Answers with a post of the workspace. Needs post:read.
-   * @param workspaceId  (required)
-   * @param postId  (required)
-   * @param headers Optional headers to include in the request
-   * @return ApiResponse&lt;Post&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<Post> postsGetWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, Map<String, String> headers) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = postsGetRequestBuilder(workspaceId, postId, headers);
-    try {
-      HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
-          localVarRequestBuilder.build(),
-          HttpResponse.BodyHandlers.ofInputStream());
-      if (memberVarResponseInterceptor != null) {
-        memberVarResponseInterceptor.accept(localVarResponse);
-      }
-      InputStream localVarResponseBody = null;
-      try {
-        if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("postsGet", localVarResponse);
-        }
-        localVarResponseBody = ApiClient.getResponseBody(localVarResponse);
-        if (localVarResponseBody == null) {
-          return new ApiResponse<Post>(
-              localVarResponse.statusCode(),
-              localVarResponse.headers().map(),
-              null
-          );
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
         }
 
-        
-        
-        String responseBody = new String(localVarResponseBody.readAllBytes());
-        Post responseValue = responseBody.isBlank()? null: memberVarObjectMapper.readValue(responseBody, new TypeReference<Post>() {});
-        
+        Object localVarPostBody = null;
 
-        return new ApiResponse<Post>(
-            localVarResponse.statusCode(),
-            localVarResponse.headers().map(),
-            responseValue
-        );
-      } finally {
-        if (localVarResponseBody != null) {
-          localVarResponseBody.close();
-        }
-      }
-    } catch (IOException e) {
-      throw new ApiException(e);
-    }
-    catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new ApiException(e);
-    }
-  }
+        // create path and map variables
+        String localVarPath = "/api/workspaces/{workspaceId}/posts/{postId}/cancel"
+            .replace("{" + "workspaceId" + "}", localVarApiClient.escapeString(workspaceId.toString()))
+            .replace("{" + "postId" + "}", localVarApiClient.escapeString(postId.toString()));
 
-  private HttpRequest.Builder postsGetRequestBuilder(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, Map<String, String> headers) throws ApiException {
-    // verify the required parameter 'workspaceId' is set
-    if (workspaceId == null) {
-      throw new ApiException(400, "Missing the required parameter 'workspaceId' when calling postsGet");
-    }
-    // verify the required parameter 'postId' is set
-    if (postId == null) {
-      throw new ApiException(400, "Missing the required parameter 'postId' when calling postsGet");
-    }
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
 
-    HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
-
-    String localVarPath = "/api/workspaces/{workspaceId}/posts/{postId}"
-        .replace("{workspaceId}", ApiClient.urlEncode(workspaceId.toString()))
-        .replace("{postId}", ApiClient.urlEncode(postId.toString()));
-
-    localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
-
-    localVarRequestBuilder.header("Accept", "application/json");
-
-    localVarRequestBuilder.method("GET", HttpRequest.BodyPublishers.noBody());
-    if (memberVarReadTimeout != null) {
-      localVarRequestBuilder.timeout(memberVarReadTimeout);
-    }
-    // Add custom headers if provided
-    localVarRequestBuilder = HttpRequestBuilderExtensions.withAdditionalHeaders(localVarRequestBuilder, headers);
-    if (memberVarInterceptor != null) {
-      memberVarInterceptor.accept(localVarRequestBuilder);
-    }
-    return localVarRequestBuilder;
-  }
-
-  /**
-   * List scheduled posts
-   * Lists the posts scheduled from &#x60;from&#x60; (included) to &#x60;to&#x60; (excluded), at most 62 days apart, by scheduled instant, with their channels and how each went. Drafts have no time and are not listed; cancelled posts are, with the time they had. Needs post:read.
-   * @param workspaceId  (required)
-   * @param from  (required)
-   * @param to  (required)
-   * @return List&lt;Post&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public List<Post> postsList(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String from, @javax.annotation.Nonnull String to) throws ApiException {
-    return postsList(workspaceId, from, to, null);
-  }
-
-  /**
-   * List scheduled posts
-   * Lists the posts scheduled from &#x60;from&#x60; (included) to &#x60;to&#x60; (excluded), at most 62 days apart, by scheduled instant, with their channels and how each went. Drafts have no time and are not listed; cancelled posts are, with the time they had. Needs post:read.
-   * @param workspaceId  (required)
-   * @param from  (required)
-   * @param to  (required)
-   * @param headers Optional headers to include in the request
-   * @return List&lt;Post&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public List<Post> postsList(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String from, @javax.annotation.Nonnull String to, Map<String, String> headers) throws ApiException {
-    ApiResponse<List<Post>> localVarResponse = postsListWithHttpInfo(workspaceId, from, to, headers);
-    return localVarResponse.getData();
-  }
-
-  /**
-   * List scheduled posts
-   * Lists the posts scheduled from &#x60;from&#x60; (included) to &#x60;to&#x60; (excluded), at most 62 days apart, by scheduled instant, with their channels and how each went. Drafts have no time and are not listed; cancelled posts are, with the time they had. Needs post:read.
-   * @param workspaceId  (required)
-   * @param from  (required)
-   * @param to  (required)
-   * @return ApiResponse&lt;List&lt;Post&gt;&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<List<Post>> postsListWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String from, @javax.annotation.Nonnull String to) throws ApiException {
-    return postsListWithHttpInfo(workspaceId, from, to, null);
-  }
-
-  /**
-   * List scheduled posts
-   * Lists the posts scheduled from &#x60;from&#x60; (included) to &#x60;to&#x60; (excluded), at most 62 days apart, by scheduled instant, with their channels and how each went. Drafts have no time and are not listed; cancelled posts are, with the time they had. Needs post:read.
-   * @param workspaceId  (required)
-   * @param from  (required)
-   * @param to  (required)
-   * @param headers Optional headers to include in the request
-   * @return ApiResponse&lt;List&lt;Post&gt;&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<List<Post>> postsListWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String from, @javax.annotation.Nonnull String to, Map<String, String> headers) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = postsListRequestBuilder(workspaceId, from, to, headers);
-    try {
-      HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
-          localVarRequestBuilder.build(),
-          HttpResponse.BodyHandlers.ofInputStream());
-      if (memberVarResponseInterceptor != null) {
-        memberVarResponseInterceptor.accept(localVarResponse);
-      }
-      InputStream localVarResponseBody = null;
-      try {
-        if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("postsList", localVarResponse);
-        }
-        localVarResponseBody = ApiClient.getResponseBody(localVarResponse);
-        if (localVarResponseBody == null) {
-          return new ApiResponse<List<Post>>(
-              localVarResponse.statusCode(),
-              localVarResponse.headers().map(),
-              null
-          );
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
         }
 
-        
-        
-        String responseBody = new String(localVarResponseBody.readAllBytes());
-        List<Post> responseValue = responseBody.isBlank()? null: memberVarObjectMapper.readValue(responseBody, new TypeReference<List<Post>>() {});
-        
-
-        return new ApiResponse<List<Post>>(
-            localVarResponse.statusCode(),
-            localVarResponse.headers().map(),
-            responseValue
-        );
-      } finally {
-        if (localVarResponseBody != null) {
-          localVarResponseBody.close();
-        }
-      }
-    } catch (IOException e) {
-      throw new ApiException(e);
-    }
-    catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new ApiException(e);
-    }
-  }
-
-  private HttpRequest.Builder postsListRequestBuilder(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String from, @javax.annotation.Nonnull String to, Map<String, String> headers) throws ApiException {
-    // verify the required parameter 'workspaceId' is set
-    if (workspaceId == null) {
-      throw new ApiException(400, "Missing the required parameter 'workspaceId' when calling postsList");
-    }
-    // verify the required parameter 'from' is set
-    if (from == null) {
-      throw new ApiException(400, "Missing the required parameter 'from' when calling postsList");
-    }
-    // verify the required parameter 'to' is set
-    if (to == null) {
-      throw new ApiException(400, "Missing the required parameter 'to' when calling postsList");
-    }
-
-    HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
-
-    String localVarPath = "/api/workspaces/{workspaceId}/posts"
-        .replace("{workspaceId}", ApiClient.urlEncode(workspaceId.toString()));
-
-    List<Pair> localVarQueryParams = new ArrayList<>();
-    StringJoiner localVarQueryStringJoiner = new StringJoiner("&");
-    String localVarQueryParameterBaseName;
-    localVarQueryParameterBaseName = "from";
-    localVarQueryParams.addAll(ApiClient.parameterToPairs("from", from));
-    localVarQueryParameterBaseName = "to";
-    localVarQueryParams.addAll(ApiClient.parameterToPairs("to", to));
-
-    if (!localVarQueryParams.isEmpty() || localVarQueryStringJoiner.length() != 0) {
-      StringJoiner queryJoiner = new StringJoiner("&");
-      localVarQueryParams.forEach(p -> queryJoiner.add(p.getName() + '=' + p.getValue()));
-      if (localVarQueryStringJoiner.length() != 0) {
-        queryJoiner.add(localVarQueryStringJoiner.toString());
-      }
-      localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath + '?' + queryJoiner.toString()));
-    } else {
-      localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
-    }
-
-    localVarRequestBuilder.header("Accept", "application/json");
-
-    localVarRequestBuilder.method("GET", HttpRequest.BodyPublishers.noBody());
-    if (memberVarReadTimeout != null) {
-      localVarRequestBuilder.timeout(memberVarReadTimeout);
-    }
-    // Add custom headers if provided
-    localVarRequestBuilder = HttpRequestBuilderExtensions.withAdditionalHeaders(localVarRequestBuilder, headers);
-    if (memberVarInterceptor != null) {
-      memberVarInterceptor.accept(localVarRequestBuilder);
-    }
-    return localVarRequestBuilder;
-  }
-
-  /**
-   * Repost on a channel
-   * Sends the post again, now, on one channel where it failed or is unconfirmed: a new round, with its own attempts. Check the platform first when it is unconfirmed, as it may be live already. Needs post:schedule.
-   * @param workspaceId  (required)
-   * @param postId  (required)
-   * @param targetId  (required)
-   * @return Post
-   * @throws ApiException if fails to make API call
-   */
-  public Post postsRepost(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, @javax.annotation.Nonnull String targetId) throws ApiException {
-    return postsRepost(workspaceId, postId, targetId, null);
-  }
-
-  /**
-   * Repost on a channel
-   * Sends the post again, now, on one channel where it failed or is unconfirmed: a new round, with its own attempts. Check the platform first when it is unconfirmed, as it may be live already. Needs post:schedule.
-   * @param workspaceId  (required)
-   * @param postId  (required)
-   * @param targetId  (required)
-   * @param headers Optional headers to include in the request
-   * @return Post
-   * @throws ApiException if fails to make API call
-   */
-  public Post postsRepost(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, @javax.annotation.Nonnull String targetId, Map<String, String> headers) throws ApiException {
-    ApiResponse<Post> localVarResponse = postsRepostWithHttpInfo(workspaceId, postId, targetId, headers);
-    return localVarResponse.getData();
-  }
-
-  /**
-   * Repost on a channel
-   * Sends the post again, now, on one channel where it failed or is unconfirmed: a new round, with its own attempts. Check the platform first when it is unconfirmed, as it may be live already. Needs post:schedule.
-   * @param workspaceId  (required)
-   * @param postId  (required)
-   * @param targetId  (required)
-   * @return ApiResponse&lt;Post&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<Post> postsRepostWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, @javax.annotation.Nonnull String targetId) throws ApiException {
-    return postsRepostWithHttpInfo(workspaceId, postId, targetId, null);
-  }
-
-  /**
-   * Repost on a channel
-   * Sends the post again, now, on one channel where it failed or is unconfirmed: a new round, with its own attempts. Check the platform first when it is unconfirmed, as it may be live already. Needs post:schedule.
-   * @param workspaceId  (required)
-   * @param postId  (required)
-   * @param targetId  (required)
-   * @param headers Optional headers to include in the request
-   * @return ApiResponse&lt;Post&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<Post> postsRepostWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, @javax.annotation.Nonnull String targetId, Map<String, String> headers) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = postsRepostRequestBuilder(workspaceId, postId, targetId, headers);
-    try {
-      HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
-          localVarRequestBuilder.build(),
-          HttpResponse.BodyHandlers.ofInputStream());
-      if (memberVarResponseInterceptor != null) {
-        memberVarResponseInterceptor.accept(localVarResponse);
-      }
-      InputStream localVarResponseBody = null;
-      try {
-        if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("postsRepost", localVarResponse);
-        }
-        localVarResponseBody = ApiClient.getResponseBody(localVarResponse);
-        if (localVarResponseBody == null) {
-          return new ApiResponse<Post>(
-              localVarResponse.statusCode(),
-              localVarResponse.headers().map(),
-              null
-          );
+        final String[] localVarContentTypes = {
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
         }
 
-        
-        
-        String responseBody = new String(localVarResponseBody.readAllBytes());
-        Post responseValue = responseBody.isBlank()? null: memberVarObjectMapper.readValue(responseBody, new TypeReference<Post>() {});
-        
-
-        return new ApiResponse<Post>(
-            localVarResponse.statusCode(),
-            localVarResponse.headers().map(),
-            responseValue
-        );
-      } finally {
-        if (localVarResponseBody != null) {
-          localVarResponseBody.close();
-        }
-      }
-    } catch (IOException e) {
-      throw new ApiException(e);
-    }
-    catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new ApiException(e);
-    }
-  }
-
-  private HttpRequest.Builder postsRepostRequestBuilder(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, @javax.annotation.Nonnull String targetId, Map<String, String> headers) throws ApiException {
-    // verify the required parameter 'workspaceId' is set
-    if (workspaceId == null) {
-      throw new ApiException(400, "Missing the required parameter 'workspaceId' when calling postsRepost");
-    }
-    // verify the required parameter 'postId' is set
-    if (postId == null) {
-      throw new ApiException(400, "Missing the required parameter 'postId' when calling postsRepost");
-    }
-    // verify the required parameter 'targetId' is set
-    if (targetId == null) {
-      throw new ApiException(400, "Missing the required parameter 'targetId' when calling postsRepost");
+        String[] localVarAuthNames = new String[] { "bearer" };
+        return localVarApiClient.buildCall(basePath, localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
-    HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
-
-    String localVarPath = "/api/workspaces/{workspaceId}/posts/{postId}/targets/{targetId}/repost"
-        .replace("{workspaceId}", ApiClient.urlEncode(workspaceId.toString()))
-        .replace("{postId}", ApiClient.urlEncode(postId.toString()))
-        .replace("{targetId}", ApiClient.urlEncode(targetId.toString()));
-
-    localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
-
-    localVarRequestBuilder.header("Accept", "application/json");
-
-    localVarRequestBuilder.method("POST", HttpRequest.BodyPublishers.noBody());
-    if (memberVarReadTimeout != null) {
-      localVarRequestBuilder.timeout(memberVarReadTimeout);
-    }
-    // Add custom headers if provided
-    localVarRequestBuilder = HttpRequestBuilderExtensions.withAdditionalHeaders(localVarRequestBuilder, headers);
-    if (memberVarInterceptor != null) {
-      memberVarInterceptor.accept(localVarRequestBuilder);
-    }
-    return localVarRequestBuilder;
-  }
-
-  /**
-   * Reschedule a post
-   * Moves a scheduled post to another instant, or schedules a draft on the channels it has. Moved to another month, or scheduled, it must fit that month&#39;s posts in the workspace&#39;s plan (PlanLimitReached). Needs post:schedule, and channel:read for a draft.
-   * @param workspaceId  (required)
-   * @param postId  (required)
-   * @param postSchedule  (required)
-   * @return Post
-   * @throws ApiException if fails to make API call
-   */
-  public Post postsReschedule(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, @javax.annotation.Nonnull PostSchedule postSchedule) throws ApiException {
-    return postsReschedule(workspaceId, postId, postSchedule, null);
-  }
-
-  /**
-   * Reschedule a post
-   * Moves a scheduled post to another instant, or schedules a draft on the channels it has. Moved to another month, or scheduled, it must fit that month&#39;s posts in the workspace&#39;s plan (PlanLimitReached). Needs post:schedule, and channel:read for a draft.
-   * @param workspaceId  (required)
-   * @param postId  (required)
-   * @param postSchedule  (required)
-   * @param headers Optional headers to include in the request
-   * @return Post
-   * @throws ApiException if fails to make API call
-   */
-  public Post postsReschedule(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, @javax.annotation.Nonnull PostSchedule postSchedule, Map<String, String> headers) throws ApiException {
-    ApiResponse<Post> localVarResponse = postsRescheduleWithHttpInfo(workspaceId, postId, postSchedule, headers);
-    return localVarResponse.getData();
-  }
-
-  /**
-   * Reschedule a post
-   * Moves a scheduled post to another instant, or schedules a draft on the channels it has. Moved to another month, or scheduled, it must fit that month&#39;s posts in the workspace&#39;s plan (PlanLimitReached). Needs post:schedule, and channel:read for a draft.
-   * @param workspaceId  (required)
-   * @param postId  (required)
-   * @param postSchedule  (required)
-   * @return ApiResponse&lt;Post&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<Post> postsRescheduleWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, @javax.annotation.Nonnull PostSchedule postSchedule) throws ApiException {
-    return postsRescheduleWithHttpInfo(workspaceId, postId, postSchedule, null);
-  }
-
-  /**
-   * Reschedule a post
-   * Moves a scheduled post to another instant, or schedules a draft on the channels it has. Moved to another month, or scheduled, it must fit that month&#39;s posts in the workspace&#39;s plan (PlanLimitReached). Needs post:schedule, and channel:read for a draft.
-   * @param workspaceId  (required)
-   * @param postId  (required)
-   * @param postSchedule  (required)
-   * @param headers Optional headers to include in the request
-   * @return ApiResponse&lt;Post&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<Post> postsRescheduleWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, @javax.annotation.Nonnull PostSchedule postSchedule, Map<String, String> headers) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = postsRescheduleRequestBuilder(workspaceId, postId, postSchedule, headers);
-    try {
-      HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
-          localVarRequestBuilder.build(),
-          HttpResponse.BodyHandlers.ofInputStream());
-      if (memberVarResponseInterceptor != null) {
-        memberVarResponseInterceptor.accept(localVarResponse);
-      }
-      InputStream localVarResponseBody = null;
-      try {
-        if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("postsReschedule", localVarResponse);
-        }
-        localVarResponseBody = ApiClient.getResponseBody(localVarResponse);
-        if (localVarResponseBody == null) {
-          return new ApiResponse<Post>(
-              localVarResponse.statusCode(),
-              localVarResponse.headers().map(),
-              null
-          );
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call postsCancelValidateBeforeCall(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, final ApiCallback _callback) throws ApiException {
+        // verify the required parameter 'workspaceId' is set
+        if (workspaceId == null) {
+            throw new ApiException("Missing the required parameter 'workspaceId' when calling postsCancel(Async)");
         }
 
-        
-        
-        String responseBody = new String(localVarResponseBody.readAllBytes());
-        Post responseValue = responseBody.isBlank()? null: memberVarObjectMapper.readValue(responseBody, new TypeReference<Post>() {});
-        
-
-        return new ApiResponse<Post>(
-            localVarResponse.statusCode(),
-            localVarResponse.headers().map(),
-            responseValue
-        );
-      } finally {
-        if (localVarResponseBody != null) {
-          localVarResponseBody.close();
-        }
-      }
-    } catch (IOException e) {
-      throw new ApiException(e);
-    }
-    catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new ApiException(e);
-    }
-  }
-
-  private HttpRequest.Builder postsRescheduleRequestBuilder(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, @javax.annotation.Nonnull PostSchedule postSchedule, Map<String, String> headers) throws ApiException {
-    // verify the required parameter 'workspaceId' is set
-    if (workspaceId == null) {
-      throw new ApiException(400, "Missing the required parameter 'workspaceId' when calling postsReschedule");
-    }
-    // verify the required parameter 'postId' is set
-    if (postId == null) {
-      throw new ApiException(400, "Missing the required parameter 'postId' when calling postsReschedule");
-    }
-    // verify the required parameter 'postSchedule' is set
-    if (postSchedule == null) {
-      throw new ApiException(400, "Missing the required parameter 'postSchedule' when calling postsReschedule");
-    }
-
-    HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
-
-    String localVarPath = "/api/workspaces/{workspaceId}/posts/{postId}/reschedule"
-        .replace("{workspaceId}", ApiClient.urlEncode(workspaceId.toString()))
-        .replace("{postId}", ApiClient.urlEncode(postId.toString()));
-
-    localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
-
-    localVarRequestBuilder.header("Content-Type", "application/json");
-    localVarRequestBuilder.header("Accept", "application/json");
-
-    try {
-      byte[] localVarPostBody = memberVarObjectMapper.writeValueAsBytes(postSchedule);
-      localVarRequestBuilder.method("POST", HttpRequest.BodyPublishers.ofByteArray(localVarPostBody));
-    } catch (IOException e) {
-      throw new ApiException(e);
-    }
-    if (memberVarReadTimeout != null) {
-      localVarRequestBuilder.timeout(memberVarReadTimeout);
-    }
-    // Add custom headers if provided
-    localVarRequestBuilder = HttpRequestBuilderExtensions.withAdditionalHeaders(localVarRequestBuilder, headers);
-    if (memberVarInterceptor != null) {
-      memberVarInterceptor.accept(localVarRequestBuilder);
-    }
-    return localVarRequestBuilder;
-  }
-
-  /**
-   * Schedule a draft
-   * Schedules a draft on some of the workspace&#39;s channels at an instant, kept with the IANA time zone it was chosen in. The content must fit each platform&#39;s rules, its media included: file types, sizes, durations, dimensions, alt text, how many videos, and whether images and videos go together. A channel whose platform takes options needs those it requires, as the draft gives them on that channel: a channel the draft was not for has none yet. A time up to a minute ago publishes now. On a server that bills, the posts going out in that month (UTC) must fit the workspace&#39;s plan (PlanLimitReached). Needs post:schedule and channel:read, and media:read when it shows media.
-   * @param workspaceId  (required)
-   * @param postId  (required)
-   * @param schedulePost  (required)
-   * @return Post
-   * @throws ApiException if fails to make API call
-   */
-  public Post postsSchedule(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, @javax.annotation.Nonnull SchedulePost schedulePost) throws ApiException {
-    return postsSchedule(workspaceId, postId, schedulePost, null);
-  }
-
-  /**
-   * Schedule a draft
-   * Schedules a draft on some of the workspace&#39;s channels at an instant, kept with the IANA time zone it was chosen in. The content must fit each platform&#39;s rules, its media included: file types, sizes, durations, dimensions, alt text, how many videos, and whether images and videos go together. A channel whose platform takes options needs those it requires, as the draft gives them on that channel: a channel the draft was not for has none yet. A time up to a minute ago publishes now. On a server that bills, the posts going out in that month (UTC) must fit the workspace&#39;s plan (PlanLimitReached). Needs post:schedule and channel:read, and media:read when it shows media.
-   * @param workspaceId  (required)
-   * @param postId  (required)
-   * @param schedulePost  (required)
-   * @param headers Optional headers to include in the request
-   * @return Post
-   * @throws ApiException if fails to make API call
-   */
-  public Post postsSchedule(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, @javax.annotation.Nonnull SchedulePost schedulePost, Map<String, String> headers) throws ApiException {
-    ApiResponse<Post> localVarResponse = postsScheduleWithHttpInfo(workspaceId, postId, schedulePost, headers);
-    return localVarResponse.getData();
-  }
-
-  /**
-   * Schedule a draft
-   * Schedules a draft on some of the workspace&#39;s channels at an instant, kept with the IANA time zone it was chosen in. The content must fit each platform&#39;s rules, its media included: file types, sizes, durations, dimensions, alt text, how many videos, and whether images and videos go together. A channel whose platform takes options needs those it requires, as the draft gives them on that channel: a channel the draft was not for has none yet. A time up to a minute ago publishes now. On a server that bills, the posts going out in that month (UTC) must fit the workspace&#39;s plan (PlanLimitReached). Needs post:schedule and channel:read, and media:read when it shows media.
-   * @param workspaceId  (required)
-   * @param postId  (required)
-   * @param schedulePost  (required)
-   * @return ApiResponse&lt;Post&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<Post> postsScheduleWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, @javax.annotation.Nonnull SchedulePost schedulePost) throws ApiException {
-    return postsScheduleWithHttpInfo(workspaceId, postId, schedulePost, null);
-  }
-
-  /**
-   * Schedule a draft
-   * Schedules a draft on some of the workspace&#39;s channels at an instant, kept with the IANA time zone it was chosen in. The content must fit each platform&#39;s rules, its media included: file types, sizes, durations, dimensions, alt text, how many videos, and whether images and videos go together. A channel whose platform takes options needs those it requires, as the draft gives them on that channel: a channel the draft was not for has none yet. A time up to a minute ago publishes now. On a server that bills, the posts going out in that month (UTC) must fit the workspace&#39;s plan (PlanLimitReached). Needs post:schedule and channel:read, and media:read when it shows media.
-   * @param workspaceId  (required)
-   * @param postId  (required)
-   * @param schedulePost  (required)
-   * @param headers Optional headers to include in the request
-   * @return ApiResponse&lt;Post&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<Post> postsScheduleWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, @javax.annotation.Nonnull SchedulePost schedulePost, Map<String, String> headers) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = postsScheduleRequestBuilder(workspaceId, postId, schedulePost, headers);
-    try {
-      HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
-          localVarRequestBuilder.build(),
-          HttpResponse.BodyHandlers.ofInputStream());
-      if (memberVarResponseInterceptor != null) {
-        memberVarResponseInterceptor.accept(localVarResponse);
-      }
-      InputStream localVarResponseBody = null;
-      try {
-        if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("postsSchedule", localVarResponse);
-        }
-        localVarResponseBody = ApiClient.getResponseBody(localVarResponse);
-        if (localVarResponseBody == null) {
-          return new ApiResponse<Post>(
-              localVarResponse.statusCode(),
-              localVarResponse.headers().map(),
-              null
-          );
+        // verify the required parameter 'postId' is set
+        if (postId == null) {
+            throw new ApiException("Missing the required parameter 'postId' when calling postsCancel(Async)");
         }
 
-        
-        
-        String responseBody = new String(localVarResponseBody.readAllBytes());
-        Post responseValue = responseBody.isBlank()? null: memberVarObjectMapper.readValue(responseBody, new TypeReference<Post>() {});
-        
+        return postsCancelCall(workspaceId, postId, _callback);
 
-        return new ApiResponse<Post>(
-            localVarResponse.statusCode(),
-            localVarResponse.headers().map(),
-            responseValue
-        );
-      } finally {
-        if (localVarResponseBody != null) {
-          localVarResponseBody.close();
-        }
-      }
-    } catch (IOException e) {
-      throw new ApiException(e);
-    }
-    catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new ApiException(e);
-    }
-  }
-
-  private HttpRequest.Builder postsScheduleRequestBuilder(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, @javax.annotation.Nonnull SchedulePost schedulePost, Map<String, String> headers) throws ApiException {
-    // verify the required parameter 'workspaceId' is set
-    if (workspaceId == null) {
-      throw new ApiException(400, "Missing the required parameter 'workspaceId' when calling postsSchedule");
-    }
-    // verify the required parameter 'postId' is set
-    if (postId == null) {
-      throw new ApiException(400, "Missing the required parameter 'postId' when calling postsSchedule");
-    }
-    // verify the required parameter 'schedulePost' is set
-    if (schedulePost == null) {
-      throw new ApiException(400, "Missing the required parameter 'schedulePost' when calling postsSchedule");
     }
 
-    HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
-
-    String localVarPath = "/api/workspaces/{workspaceId}/posts/{postId}/schedule"
-        .replace("{workspaceId}", ApiClient.urlEncode(workspaceId.toString()))
-        .replace("{postId}", ApiClient.urlEncode(postId.toString()));
-
-    localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
-
-    localVarRequestBuilder.header("Content-Type", "application/json");
-    localVarRequestBuilder.header("Accept", "application/json");
-
-    try {
-      byte[] localVarPostBody = memberVarObjectMapper.writeValueAsBytes(schedulePost);
-      localVarRequestBuilder.method("POST", HttpRequest.BodyPublishers.ofByteArray(localVarPostBody));
-    } catch (IOException e) {
-      throw new ApiException(e);
+    /**
+     * Cancel a post
+     * Cancels a draft or a scheduled post. A post already publishing finishes with what its channels did: those not yet sent are cancelled. Needs post:schedule.
+     * @param workspaceId  (required)
+     * @param postId  (required)
+     * @return Post
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Post </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no post with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 409 </td><td> The post&#39;s status does not allow this. &#x60;status&#x60; is the status it has. </td><td>  -  </td></tr>
+     </table>
+     */
+    public Post postsCancel(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId) throws ApiException {
+        ApiResponse<Post> localVarResp = postsCancelWithHttpInfo(workspaceId, postId);
+        return localVarResp.getData();
     }
-    if (memberVarReadTimeout != null) {
-      localVarRequestBuilder.timeout(memberVarReadTimeout);
+
+    /**
+     * Cancel a post
+     * Cancels a draft or a scheduled post. A post already publishing finishes with what its channels did: those not yet sent are cancelled. Needs post:schedule.
+     * @param workspaceId  (required)
+     * @param postId  (required)
+     * @return ApiResponse&lt;Post&gt;
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Post </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no post with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 409 </td><td> The post&#39;s status does not allow this. &#x60;status&#x60; is the status it has. </td><td>  -  </td></tr>
+     </table>
+     */
+    public ApiResponse<Post> postsCancelWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId) throws ApiException {
+        okhttp3.Call localVarCall = postsCancelValidateBeforeCall(workspaceId, postId, null);
+        Type localVarReturnType = new TypeToken<Post>(){}.getType();
+        return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
-    // Add custom headers if provided
-    localVarRequestBuilder = HttpRequestBuilderExtensions.withAdditionalHeaders(localVarRequestBuilder, headers);
-    if (memberVarInterceptor != null) {
-      memberVarInterceptor.accept(localVarRequestBuilder);
+
+    /**
+     * Cancel a post (asynchronously)
+     * Cancels a draft or a scheduled post. A post already publishing finishes with what its channels did: those not yet sent are cancelled. Needs post:schedule.
+     * @param workspaceId  (required)
+     * @param postId  (required)
+     * @param _callback The callback to be executed when the API call finishes
+     * @return The request call
+     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Post </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no post with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 409 </td><td> The post&#39;s status does not allow this. &#x60;status&#x60; is the status it has. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call postsCancelAsync(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, final ApiCallback<Post> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = postsCancelValidateBeforeCall(workspaceId, postId, _callback);
+        Type localVarReturnType = new TypeToken<Post>(){}.getType();
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
+        return localVarCall;
     }
-    return localVarRequestBuilder;
-  }
+    /**
+     * Build call for postsConfirm
+     * @param workspaceId  (required)
+     * @param postId  (required)
+     * @param targetId  (required)
+     * @param targetConfirmation  (required)
+     * @param _callback Callback for upload/download progress
+     * @return Call to execute
+     * @throws ApiException If fail to serialize the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Post </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no post with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 409 </td><td> The post&#39;s status does not allow this. &#x60;status&#x60; is the status it has. | The post&#39;s status on that channel does not allow this. &#x60;status&#x60; is the status it has. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call postsConfirmCall(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, @javax.annotation.Nonnull String targetId, @javax.annotation.Nonnull TargetConfirmation targetConfirmation, final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
 
-  /**
-   * Unschedule a post
-   * Takes a scheduled post back to draft, so its text and media can change: it goes out at no time until it is scheduled again. A post already publishing is a conflict. Needs post:schedule.
-   * @param workspaceId  (required)
-   * @param postId  (required)
-   * @return Post
-   * @throws ApiException if fails to make API call
-   */
-  public Post postsUnschedule(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId) throws ApiException {
-    return postsUnschedule(workspaceId, postId, null);
-  }
-
-  /**
-   * Unschedule a post
-   * Takes a scheduled post back to draft, so its text and media can change: it goes out at no time until it is scheduled again. A post already publishing is a conflict. Needs post:schedule.
-   * @param workspaceId  (required)
-   * @param postId  (required)
-   * @param headers Optional headers to include in the request
-   * @return Post
-   * @throws ApiException if fails to make API call
-   */
-  public Post postsUnschedule(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, Map<String, String> headers) throws ApiException {
-    ApiResponse<Post> localVarResponse = postsUnscheduleWithHttpInfo(workspaceId, postId, headers);
-    return localVarResponse.getData();
-  }
-
-  /**
-   * Unschedule a post
-   * Takes a scheduled post back to draft, so its text and media can change: it goes out at no time until it is scheduled again. A post already publishing is a conflict. Needs post:schedule.
-   * @param workspaceId  (required)
-   * @param postId  (required)
-   * @return ApiResponse&lt;Post&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<Post> postsUnscheduleWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId) throws ApiException {
-    return postsUnscheduleWithHttpInfo(workspaceId, postId, null);
-  }
-
-  /**
-   * Unschedule a post
-   * Takes a scheduled post back to draft, so its text and media can change: it goes out at no time until it is scheduled again. A post already publishing is a conflict. Needs post:schedule.
-   * @param workspaceId  (required)
-   * @param postId  (required)
-   * @param headers Optional headers to include in the request
-   * @return ApiResponse&lt;Post&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<Post> postsUnscheduleWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, Map<String, String> headers) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = postsUnscheduleRequestBuilder(workspaceId, postId, headers);
-    try {
-      HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
-          localVarRequestBuilder.build(),
-          HttpResponse.BodyHandlers.ofInputStream());
-      if (memberVarResponseInterceptor != null) {
-        memberVarResponseInterceptor.accept(localVarResponse);
-      }
-      InputStream localVarResponseBody = null;
-      try {
-        if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("postsUnschedule", localVarResponse);
-        }
-        localVarResponseBody = ApiClient.getResponseBody(localVarResponse);
-        if (localVarResponseBody == null) {
-          return new ApiResponse<Post>(
-              localVarResponse.statusCode(),
-              localVarResponse.headers().map(),
-              null
-          );
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
         }
 
-        
-        
-        String responseBody = new String(localVarResponseBody.readAllBytes());
-        Post responseValue = responseBody.isBlank()? null: memberVarObjectMapper.readValue(responseBody, new TypeReference<Post>() {});
-        
+        Object localVarPostBody = targetConfirmation;
 
-        return new ApiResponse<Post>(
-            localVarResponse.statusCode(),
-            localVarResponse.headers().map(),
-            responseValue
-        );
-      } finally {
-        if (localVarResponseBody != null) {
-          localVarResponseBody.close();
-        }
-      }
-    } catch (IOException e) {
-      throw new ApiException(e);
-    }
-    catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new ApiException(e);
-    }
-  }
+        // create path and map variables
+        String localVarPath = "/api/workspaces/{workspaceId}/posts/{postId}/targets/{targetId}/confirm"
+            .replace("{" + "workspaceId" + "}", localVarApiClient.escapeString(workspaceId.toString()))
+            .replace("{" + "postId" + "}", localVarApiClient.escapeString(postId.toString()))
+            .replace("{" + "targetId" + "}", localVarApiClient.escapeString(targetId.toString()));
 
-  private HttpRequest.Builder postsUnscheduleRequestBuilder(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, Map<String, String> headers) throws ApiException {
-    // verify the required parameter 'workspaceId' is set
-    if (workspaceId == null) {
-      throw new ApiException(400, "Missing the required parameter 'workspaceId' when calling postsUnschedule");
-    }
-    // verify the required parameter 'postId' is set
-    if (postId == null) {
-      throw new ApiException(400, "Missing the required parameter 'postId' when calling postsUnschedule");
-    }
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
 
-    HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
-
-    String localVarPath = "/api/workspaces/{workspaceId}/posts/{postId}/unschedule"
-        .replace("{workspaceId}", ApiClient.urlEncode(workspaceId.toString()))
-        .replace("{postId}", ApiClient.urlEncode(postId.toString()));
-
-    localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
-
-    localVarRequestBuilder.header("Accept", "application/json");
-
-    localVarRequestBuilder.method("POST", HttpRequest.BodyPublishers.noBody());
-    if (memberVarReadTimeout != null) {
-      localVarRequestBuilder.timeout(memberVarReadTimeout);
-    }
-    // Add custom headers if provided
-    localVarRequestBuilder = HttpRequestBuilderExtensions.withAdditionalHeaders(localVarRequestBuilder, headers);
-    if (memberVarInterceptor != null) {
-      memberVarInterceptor.accept(localVarRequestBuilder);
-    }
-    return localVarRequestBuilder;
-  }
-
-  /**
-   * Update a draft
-   * Replaces a draft&#39;s content, channels and options: options left out are removed. A post that is no longer a draft is a conflict. Needs post:update, channel:read, and media:read when it shows media.
-   * @param workspaceId  (required)
-   * @param postId  (required)
-   * @param postDraft  (required)
-   * @return Post
-   * @throws ApiException if fails to make API call
-   */
-  public Post postsUpdate(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, @javax.annotation.Nonnull PostDraft postDraft) throws ApiException {
-    return postsUpdate(workspaceId, postId, postDraft, null);
-  }
-
-  /**
-   * Update a draft
-   * Replaces a draft&#39;s content, channels and options: options left out are removed. A post that is no longer a draft is a conflict. Needs post:update, channel:read, and media:read when it shows media.
-   * @param workspaceId  (required)
-   * @param postId  (required)
-   * @param postDraft  (required)
-   * @param headers Optional headers to include in the request
-   * @return Post
-   * @throws ApiException if fails to make API call
-   */
-  public Post postsUpdate(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, @javax.annotation.Nonnull PostDraft postDraft, Map<String, String> headers) throws ApiException {
-    ApiResponse<Post> localVarResponse = postsUpdateWithHttpInfo(workspaceId, postId, postDraft, headers);
-    return localVarResponse.getData();
-  }
-
-  /**
-   * Update a draft
-   * Replaces a draft&#39;s content, channels and options: options left out are removed. A post that is no longer a draft is a conflict. Needs post:update, channel:read, and media:read when it shows media.
-   * @param workspaceId  (required)
-   * @param postId  (required)
-   * @param postDraft  (required)
-   * @return ApiResponse&lt;Post&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<Post> postsUpdateWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, @javax.annotation.Nonnull PostDraft postDraft) throws ApiException {
-    return postsUpdateWithHttpInfo(workspaceId, postId, postDraft, null);
-  }
-
-  /**
-   * Update a draft
-   * Replaces a draft&#39;s content, channels and options: options left out are removed. A post that is no longer a draft is a conflict. Needs post:update, channel:read, and media:read when it shows media.
-   * @param workspaceId  (required)
-   * @param postId  (required)
-   * @param postDraft  (required)
-   * @param headers Optional headers to include in the request
-   * @return ApiResponse&lt;Post&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<Post> postsUpdateWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, @javax.annotation.Nonnull PostDraft postDraft, Map<String, String> headers) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = postsUpdateRequestBuilder(workspaceId, postId, postDraft, headers);
-    try {
-      HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
-          localVarRequestBuilder.build(),
-          HttpResponse.BodyHandlers.ofInputStream());
-      if (memberVarResponseInterceptor != null) {
-        memberVarResponseInterceptor.accept(localVarResponse);
-      }
-      InputStream localVarResponseBody = null;
-      try {
-        if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("postsUpdate", localVarResponse);
-        }
-        localVarResponseBody = ApiClient.getResponseBody(localVarResponse);
-        if (localVarResponseBody == null) {
-          return new ApiResponse<Post>(
-              localVarResponse.statusCode(),
-              localVarResponse.headers().map(),
-              null
-          );
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
         }
 
-        
-        
-        String responseBody = new String(localVarResponseBody.readAllBytes());
-        Post responseValue = responseBody.isBlank()? null: memberVarObjectMapper.readValue(responseBody, new TypeReference<Post>() {});
-        
-
-        return new ApiResponse<Post>(
-            localVarResponse.statusCode(),
-            localVarResponse.headers().map(),
-            responseValue
-        );
-      } finally {
-        if (localVarResponseBody != null) {
-          localVarResponseBody.close();
+        final String[] localVarContentTypes = {
+            "application/json"
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
         }
-      }
-    } catch (IOException e) {
-      throw new ApiException(e);
-    }
-    catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new ApiException(e);
-    }
-  }
 
-  private HttpRequest.Builder postsUpdateRequestBuilder(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, @javax.annotation.Nonnull PostDraft postDraft, Map<String, String> headers) throws ApiException {
-    // verify the required parameter 'workspaceId' is set
-    if (workspaceId == null) {
-      throw new ApiException(400, "Missing the required parameter 'workspaceId' when calling postsUpdate");
-    }
-    // verify the required parameter 'postId' is set
-    if (postId == null) {
-      throw new ApiException(400, "Missing the required parameter 'postId' when calling postsUpdate");
-    }
-    // verify the required parameter 'postDraft' is set
-    if (postDraft == null) {
-      throw new ApiException(400, "Missing the required parameter 'postDraft' when calling postsUpdate");
+        String[] localVarAuthNames = new String[] { "bearer" };
+        return localVarApiClient.buildCall(basePath, localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
-    HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call postsConfirmValidateBeforeCall(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, @javax.annotation.Nonnull String targetId, @javax.annotation.Nonnull TargetConfirmation targetConfirmation, final ApiCallback _callback) throws ApiException {
+        // verify the required parameter 'workspaceId' is set
+        if (workspaceId == null) {
+            throw new ApiException("Missing the required parameter 'workspaceId' when calling postsConfirm(Async)");
+        }
 
-    String localVarPath = "/api/workspaces/{workspaceId}/posts/{postId}"
-        .replace("{workspaceId}", ApiClient.urlEncode(workspaceId.toString()))
-        .replace("{postId}", ApiClient.urlEncode(postId.toString()));
+        // verify the required parameter 'postId' is set
+        if (postId == null) {
+            throw new ApiException("Missing the required parameter 'postId' when calling postsConfirm(Async)");
+        }
 
-    localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
+        // verify the required parameter 'targetId' is set
+        if (targetId == null) {
+            throw new ApiException("Missing the required parameter 'targetId' when calling postsConfirm(Async)");
+        }
 
-    localVarRequestBuilder.header("Content-Type", "application/json");
-    localVarRequestBuilder.header("Accept", "application/json");
+        // verify the required parameter 'targetConfirmation' is set
+        if (targetConfirmation == null) {
+            throw new ApiException("Missing the required parameter 'targetConfirmation' when calling postsConfirm(Async)");
+        }
 
-    try {
-      byte[] localVarPostBody = memberVarObjectMapper.writeValueAsBytes(postDraft);
-      localVarRequestBuilder.method("PUT", HttpRequest.BodyPublishers.ofByteArray(localVarPostBody));
-    } catch (IOException e) {
-      throw new ApiException(e);
+        return postsConfirmCall(workspaceId, postId, targetId, targetConfirmation, _callback);
+
     }
-    if (memberVarReadTimeout != null) {
-      localVarRequestBuilder.timeout(memberVarReadTimeout);
-    }
-    // Add custom headers if provided
-    localVarRequestBuilder = HttpRequestBuilderExtensions.withAdditionalHeaders(localVarRequestBuilder, headers);
-    if (memberVarInterceptor != null) {
-      memberVarInterceptor.accept(localVarRequestBuilder);
-    }
-    return localVarRequestBuilder;
-  }
 
+    /**
+     * Confirm a post on a channel
+     * Says what you found on the platform for a post unconfirmed on one channel: &#x60;published&#x60;, with its address if you have it, or &#x60;notPublished&#x60;, which fails it there so it can be reposted. Its notifications are marked read. Needs post:schedule.
+     * @param workspaceId  (required)
+     * @param postId  (required)
+     * @param targetId  (required)
+     * @param targetConfirmation  (required)
+     * @return Post
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Post </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no post with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 409 </td><td> The post&#39;s status does not allow this. &#x60;status&#x60; is the status it has. | The post&#39;s status on that channel does not allow this. &#x60;status&#x60; is the status it has. </td><td>  -  </td></tr>
+     </table>
+     */
+    public Post postsConfirm(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, @javax.annotation.Nonnull String targetId, @javax.annotation.Nonnull TargetConfirmation targetConfirmation) throws ApiException {
+        ApiResponse<Post> localVarResp = postsConfirmWithHttpInfo(workspaceId, postId, targetId, targetConfirmation);
+        return localVarResp.getData();
+    }
+
+    /**
+     * Confirm a post on a channel
+     * Says what you found on the platform for a post unconfirmed on one channel: &#x60;published&#x60;, with its address if you have it, or &#x60;notPublished&#x60;, which fails it there so it can be reposted. Its notifications are marked read. Needs post:schedule.
+     * @param workspaceId  (required)
+     * @param postId  (required)
+     * @param targetId  (required)
+     * @param targetConfirmation  (required)
+     * @return ApiResponse&lt;Post&gt;
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Post </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no post with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 409 </td><td> The post&#39;s status does not allow this. &#x60;status&#x60; is the status it has. | The post&#39;s status on that channel does not allow this. &#x60;status&#x60; is the status it has. </td><td>  -  </td></tr>
+     </table>
+     */
+    public ApiResponse<Post> postsConfirmWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, @javax.annotation.Nonnull String targetId, @javax.annotation.Nonnull TargetConfirmation targetConfirmation) throws ApiException {
+        okhttp3.Call localVarCall = postsConfirmValidateBeforeCall(workspaceId, postId, targetId, targetConfirmation, null);
+        Type localVarReturnType = new TypeToken<Post>(){}.getType();
+        return localVarApiClient.execute(localVarCall, localVarReturnType);
+    }
+
+    /**
+     * Confirm a post on a channel (asynchronously)
+     * Says what you found on the platform for a post unconfirmed on one channel: &#x60;published&#x60;, with its address if you have it, or &#x60;notPublished&#x60;, which fails it there so it can be reposted. Its notifications are marked read. Needs post:schedule.
+     * @param workspaceId  (required)
+     * @param postId  (required)
+     * @param targetId  (required)
+     * @param targetConfirmation  (required)
+     * @param _callback The callback to be executed when the API call finishes
+     * @return The request call
+     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Post </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no post with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 409 </td><td> The post&#39;s status does not allow this. &#x60;status&#x60; is the status it has. | The post&#39;s status on that channel does not allow this. &#x60;status&#x60; is the status it has. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call postsConfirmAsync(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, @javax.annotation.Nonnull String targetId, @javax.annotation.Nonnull TargetConfirmation targetConfirmation, final ApiCallback<Post> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = postsConfirmValidateBeforeCall(workspaceId, postId, targetId, targetConfirmation, _callback);
+        Type localVarReturnType = new TypeToken<Post>(){}.getType();
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
+        return localVarCall;
+    }
+    /**
+     * Build call for postsCreate
+     * @param workspaceId  (required)
+     * @param postDraft  (required)
+     * @param _callback Callback for upload/download progress
+     * @return Call to execute
+     * @throws ApiException If fail to serialize the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 201 </td><td> Post </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 422 </td><td> The post&#39;s content breaks the rules of its channels&#39; platforms: &#x60;violations&#x60; says how, channel by channel, for its images and videos, media by media, and for its options on a channel, option by option (&#x60;field&#x60;). | Some channels asked for are not connected to the workspace: &#x60;channelIds&#x60; lists them. | Some media attached are not the workspace&#39;s, or not ready to show: &#x60;mediaIds&#x60; lists them. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call postsCreateCall(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull PostDraft postDraft, final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
+
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
+        }
+
+        Object localVarPostBody = postDraft;
+
+        // create path and map variables
+        String localVarPath = "/api/workspaces/{workspaceId}/posts"
+            .replace("{" + "workspaceId" + "}", localVarApiClient.escapeString(workspaceId.toString()));
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+            "application/json"
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
+        }
+
+        String[] localVarAuthNames = new String[] { "bearer" };
+        return localVarApiClient.buildCall(basePath, localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call postsCreateValidateBeforeCall(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull PostDraft postDraft, final ApiCallback _callback) throws ApiException {
+        // verify the required parameter 'workspaceId' is set
+        if (workspaceId == null) {
+            throw new ApiException("Missing the required parameter 'workspaceId' when calling postsCreate(Async)");
+        }
+
+        // verify the required parameter 'postDraft' is set
+        if (postDraft == null) {
+            throw new ApiException("Missing the required parameter 'postDraft' when calling postsCreate(Async)");
+        }
+
+        return postsCreateCall(workspaceId, postDraft, _callback);
+
+    }
+
+    /**
+     * Create a draft
+     * Creates a draft for some of the workspace&#39;s channels, possibly none yet, with options on those whose platform takes them (&#x60;TargetOptions&#x60;, of the channel&#39;s platform). Its media must be the workspace&#39;s, and ready. Its text, media and options are checked against each platform&#39;s rules when it is scheduled, not before. Needs post:create, channel:read, and media:read when it shows media.
+     * @param workspaceId  (required)
+     * @param postDraft  (required)
+     * @return Post
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 201 </td><td> Post </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 422 </td><td> The post&#39;s content breaks the rules of its channels&#39; platforms: &#x60;violations&#x60; says how, channel by channel, for its images and videos, media by media, and for its options on a channel, option by option (&#x60;field&#x60;). | Some channels asked for are not connected to the workspace: &#x60;channelIds&#x60; lists them. | Some media attached are not the workspace&#39;s, or not ready to show: &#x60;mediaIds&#x60; lists them. </td><td>  -  </td></tr>
+     </table>
+     */
+    public Post postsCreate(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull PostDraft postDraft) throws ApiException {
+        ApiResponse<Post> localVarResp = postsCreateWithHttpInfo(workspaceId, postDraft);
+        return localVarResp.getData();
+    }
+
+    /**
+     * Create a draft
+     * Creates a draft for some of the workspace&#39;s channels, possibly none yet, with options on those whose platform takes them (&#x60;TargetOptions&#x60;, of the channel&#39;s platform). Its media must be the workspace&#39;s, and ready. Its text, media and options are checked against each platform&#39;s rules when it is scheduled, not before. Needs post:create, channel:read, and media:read when it shows media.
+     * @param workspaceId  (required)
+     * @param postDraft  (required)
+     * @return ApiResponse&lt;Post&gt;
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 201 </td><td> Post </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 422 </td><td> The post&#39;s content breaks the rules of its channels&#39; platforms: &#x60;violations&#x60; says how, channel by channel, for its images and videos, media by media, and for its options on a channel, option by option (&#x60;field&#x60;). | Some channels asked for are not connected to the workspace: &#x60;channelIds&#x60; lists them. | Some media attached are not the workspace&#39;s, or not ready to show: &#x60;mediaIds&#x60; lists them. </td><td>  -  </td></tr>
+     </table>
+     */
+    public ApiResponse<Post> postsCreateWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull PostDraft postDraft) throws ApiException {
+        okhttp3.Call localVarCall = postsCreateValidateBeforeCall(workspaceId, postDraft, null);
+        Type localVarReturnType = new TypeToken<Post>(){}.getType();
+        return localVarApiClient.execute(localVarCall, localVarReturnType);
+    }
+
+    /**
+     * Create a draft (asynchronously)
+     * Creates a draft for some of the workspace&#39;s channels, possibly none yet, with options on those whose platform takes them (&#x60;TargetOptions&#x60;, of the channel&#39;s platform). Its media must be the workspace&#39;s, and ready. Its text, media and options are checked against each platform&#39;s rules when it is scheduled, not before. Needs post:create, channel:read, and media:read when it shows media.
+     * @param workspaceId  (required)
+     * @param postDraft  (required)
+     * @param _callback The callback to be executed when the API call finishes
+     * @return The request call
+     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 201 </td><td> Post </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 422 </td><td> The post&#39;s content breaks the rules of its channels&#39; platforms: &#x60;violations&#x60; says how, channel by channel, for its images and videos, media by media, and for its options on a channel, option by option (&#x60;field&#x60;). | Some channels asked for are not connected to the workspace: &#x60;channelIds&#x60; lists them. | Some media attached are not the workspace&#39;s, or not ready to show: &#x60;mediaIds&#x60; lists them. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call postsCreateAsync(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull PostDraft postDraft, final ApiCallback<Post> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = postsCreateValidateBeforeCall(workspaceId, postDraft, _callback);
+        Type localVarReturnType = new TypeToken<Post>(){}.getType();
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
+        return localVarCall;
+    }
+    /**
+     * Build call for postsDiscard
+     * @param workspaceId  (required)
+     * @param postId  (required)
+     * @param _callback Callback for upload/download progress
+     * @return Call to execute
+     * @throws ApiException If fail to serialize the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 204 </td><td> &lt;No Content&gt; </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no post with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 409 </td><td> The post&#39;s status does not allow this. &#x60;status&#x60; is the status it has. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call postsDiscardCall(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
+
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
+        }
+
+        Object localVarPostBody = null;
+
+        // create path and map variables
+        String localVarPath = "/api/workspaces/{workspaceId}/posts/{postId}"
+            .replace("{" + "workspaceId" + "}", localVarApiClient.escapeString(workspaceId.toString()))
+            .replace("{" + "postId" + "}", localVarApiClient.escapeString(postId.toString()));
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
+        }
+
+        String[] localVarAuthNames = new String[] { "bearer" };
+        return localVarApiClient.buildCall(basePath, localVarPath, "DELETE", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call postsDiscardValidateBeforeCall(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, final ApiCallback _callback) throws ApiException {
+        // verify the required parameter 'workspaceId' is set
+        if (workspaceId == null) {
+            throw new ApiException("Missing the required parameter 'workspaceId' when calling postsDiscard(Async)");
+        }
+
+        // verify the required parameter 'postId' is set
+        if (postId == null) {
+            throw new ApiException("Missing the required parameter 'postId' when calling postsDiscard(Async)");
+        }
+
+        return postsDiscardCall(workspaceId, postId, _callback);
+
+    }
+
+    /**
+     * Discard a draft
+     * Deletes a draft. A post scheduled or sent is a conflict: cancel it instead. Needs post:delete, or post:update for the user who created the draft.
+     * @param workspaceId  (required)
+     * @param postId  (required)
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 204 </td><td> &lt;No Content&gt; </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no post with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 409 </td><td> The post&#39;s status does not allow this. &#x60;status&#x60; is the status it has. </td><td>  -  </td></tr>
+     </table>
+     */
+    public void postsDiscard(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId) throws ApiException {
+        postsDiscardWithHttpInfo(workspaceId, postId);
+    }
+
+    /**
+     * Discard a draft
+     * Deletes a draft. A post scheduled or sent is a conflict: cancel it instead. Needs post:delete, or post:update for the user who created the draft.
+     * @param workspaceId  (required)
+     * @param postId  (required)
+     * @return ApiResponse&lt;Void&gt;
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 204 </td><td> &lt;No Content&gt; </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no post with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 409 </td><td> The post&#39;s status does not allow this. &#x60;status&#x60; is the status it has. </td><td>  -  </td></tr>
+     </table>
+     */
+    public ApiResponse<Void> postsDiscardWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId) throws ApiException {
+        okhttp3.Call localVarCall = postsDiscardValidateBeforeCall(workspaceId, postId, null);
+        return localVarApiClient.execute(localVarCall);
+    }
+
+    /**
+     * Discard a draft (asynchronously)
+     * Deletes a draft. A post scheduled or sent is a conflict: cancel it instead. Needs post:delete, or post:update for the user who created the draft.
+     * @param workspaceId  (required)
+     * @param postId  (required)
+     * @param _callback The callback to be executed when the API call finishes
+     * @return The request call
+     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 204 </td><td> &lt;No Content&gt; </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no post with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 409 </td><td> The post&#39;s status does not allow this. &#x60;status&#x60; is the status it has. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call postsDiscardAsync(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, final ApiCallback<Void> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = postsDiscardValidateBeforeCall(workspaceId, postId, _callback);
+        localVarApiClient.executeAsync(localVarCall, _callback);
+        return localVarCall;
+    }
+    /**
+     * Build call for postsDrafts
+     * @param workspaceId  (required)
+     * @param cursor  (optional)
+     * @param limit  (optional)
+     * @param _callback Callback for upload/download progress
+     * @return Call to execute
+     * @throws ApiException If fail to serialize the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> DraftPage </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> BadRequest </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call postsDraftsCall(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nullable String cursor, @javax.annotation.Nullable String limit, final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
+
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
+        }
+
+        Object localVarPostBody = null;
+
+        // create path and map variables
+        String localVarPath = "/api/workspaces/{workspaceId}/posts/drafts"
+            .replace("{" + "workspaceId" + "}", localVarApiClient.escapeString(workspaceId.toString()));
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        if (cursor != null) {
+            localVarQueryParams.addAll(localVarApiClient.parameterToPair("cursor", cursor));
+        }
+
+        if (limit != null) {
+            localVarQueryParams.addAll(localVarApiClient.parameterToPair("limit", limit));
+        }
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
+        }
+
+        String[] localVarAuthNames = new String[] { "bearer" };
+        return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call postsDraftsValidateBeforeCall(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nullable String cursor, @javax.annotation.Nullable String limit, final ApiCallback _callback) throws ApiException {
+        // verify the required parameter 'workspaceId' is set
+        if (workspaceId == null) {
+            throw new ApiException("Missing the required parameter 'workspaceId' when calling postsDrafts(Async)");
+        }
+
+        return postsDraftsCall(workspaceId, cursor, limit, _callback);
+
+    }
+
+    /**
+     * List drafts
+     * Lists the workspace&#39;s drafts, newest first, 20 a page unless &#x60;limit&#x60; (at most 50) says otherwise. Pass the page&#39;s &#x60;nextCursor&#x60; as &#x60;cursor&#x60; for the next one. Needs post:read.
+     * @param workspaceId  (required)
+     * @param cursor  (optional)
+     * @param limit  (optional)
+     * @return DraftPage
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> DraftPage </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> BadRequest </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+     </table>
+     */
+    public DraftPage postsDrafts(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nullable String cursor, @javax.annotation.Nullable String limit) throws ApiException {
+        ApiResponse<DraftPage> localVarResp = postsDraftsWithHttpInfo(workspaceId, cursor, limit);
+        return localVarResp.getData();
+    }
+
+    /**
+     * List drafts
+     * Lists the workspace&#39;s drafts, newest first, 20 a page unless &#x60;limit&#x60; (at most 50) says otherwise. Pass the page&#39;s &#x60;nextCursor&#x60; as &#x60;cursor&#x60; for the next one. Needs post:read.
+     * @param workspaceId  (required)
+     * @param cursor  (optional)
+     * @param limit  (optional)
+     * @return ApiResponse&lt;DraftPage&gt;
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> DraftPage </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> BadRequest </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+     </table>
+     */
+    public ApiResponse<DraftPage> postsDraftsWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nullable String cursor, @javax.annotation.Nullable String limit) throws ApiException {
+        okhttp3.Call localVarCall = postsDraftsValidateBeforeCall(workspaceId, cursor, limit, null);
+        Type localVarReturnType = new TypeToken<DraftPage>(){}.getType();
+        return localVarApiClient.execute(localVarCall, localVarReturnType);
+    }
+
+    /**
+     * List drafts (asynchronously)
+     * Lists the workspace&#39;s drafts, newest first, 20 a page unless &#x60;limit&#x60; (at most 50) says otherwise. Pass the page&#39;s &#x60;nextCursor&#x60; as &#x60;cursor&#x60; for the next one. Needs post:read.
+     * @param workspaceId  (required)
+     * @param cursor  (optional)
+     * @param limit  (optional)
+     * @param _callback The callback to be executed when the API call finishes
+     * @return The request call
+     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> DraftPage </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> BadRequest </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call postsDraftsAsync(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nullable String cursor, @javax.annotation.Nullable String limit, final ApiCallback<DraftPage> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = postsDraftsValidateBeforeCall(workspaceId, cursor, limit, _callback);
+        Type localVarReturnType = new TypeToken<DraftPage>(){}.getType();
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
+        return localVarCall;
+    }
+    /**
+     * Build call for postsGet
+     * @param workspaceId  (required)
+     * @param postId  (required)
+     * @param _callback Callback for upload/download progress
+     * @return Call to execute
+     * @throws ApiException If fail to serialize the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Post </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no post with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call postsGetCall(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
+
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
+        }
+
+        Object localVarPostBody = null;
+
+        // create path and map variables
+        String localVarPath = "/api/workspaces/{workspaceId}/posts/{postId}"
+            .replace("{" + "workspaceId" + "}", localVarApiClient.escapeString(workspaceId.toString()))
+            .replace("{" + "postId" + "}", localVarApiClient.escapeString(postId.toString()));
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
+        }
+
+        String[] localVarAuthNames = new String[] { "bearer" };
+        return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call postsGetValidateBeforeCall(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, final ApiCallback _callback) throws ApiException {
+        // verify the required parameter 'workspaceId' is set
+        if (workspaceId == null) {
+            throw new ApiException("Missing the required parameter 'workspaceId' when calling postsGet(Async)");
+        }
+
+        // verify the required parameter 'postId' is set
+        if (postId == null) {
+            throw new ApiException("Missing the required parameter 'postId' when calling postsGet(Async)");
+        }
+
+        return postsGetCall(workspaceId, postId, _callback);
+
+    }
+
+    /**
+     * Get a post
+     * Answers with a post of the workspace. Needs post:read.
+     * @param workspaceId  (required)
+     * @param postId  (required)
+     * @return Post
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Post </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no post with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+     </table>
+     */
+    public Post postsGet(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId) throws ApiException {
+        ApiResponse<Post> localVarResp = postsGetWithHttpInfo(workspaceId, postId);
+        return localVarResp.getData();
+    }
+
+    /**
+     * Get a post
+     * Answers with a post of the workspace. Needs post:read.
+     * @param workspaceId  (required)
+     * @param postId  (required)
+     * @return ApiResponse&lt;Post&gt;
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Post </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no post with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+     </table>
+     */
+    public ApiResponse<Post> postsGetWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId) throws ApiException {
+        okhttp3.Call localVarCall = postsGetValidateBeforeCall(workspaceId, postId, null);
+        Type localVarReturnType = new TypeToken<Post>(){}.getType();
+        return localVarApiClient.execute(localVarCall, localVarReturnType);
+    }
+
+    /**
+     * Get a post (asynchronously)
+     * Answers with a post of the workspace. Needs post:read.
+     * @param workspaceId  (required)
+     * @param postId  (required)
+     * @param _callback The callback to be executed when the API call finishes
+     * @return The request call
+     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Post </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no post with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call postsGetAsync(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, final ApiCallback<Post> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = postsGetValidateBeforeCall(workspaceId, postId, _callback);
+        Type localVarReturnType = new TypeToken<Post>(){}.getType();
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
+        return localVarCall;
+    }
+    /**
+     * Build call for postsList
+     * @param workspaceId  (required)
+     * @param from  (required)
+     * @param to  (required)
+     * @param _callback Callback for upload/download progress
+     * @return Call to execute
+     * @throws ApiException If fail to serialize the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Success </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> The range ends before it starts, or spans more than 62 days. </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call postsListCall(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String from, @javax.annotation.Nonnull String to, final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
+
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
+        }
+
+        Object localVarPostBody = null;
+
+        // create path and map variables
+        String localVarPath = "/api/workspaces/{workspaceId}/posts"
+            .replace("{" + "workspaceId" + "}", localVarApiClient.escapeString(workspaceId.toString()));
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        if (from != null) {
+            localVarQueryParams.addAll(localVarApiClient.parameterToPair("from", from));
+        }
+
+        if (to != null) {
+            localVarQueryParams.addAll(localVarApiClient.parameterToPair("to", to));
+        }
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
+        }
+
+        String[] localVarAuthNames = new String[] { "bearer" };
+        return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call postsListValidateBeforeCall(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String from, @javax.annotation.Nonnull String to, final ApiCallback _callback) throws ApiException {
+        // verify the required parameter 'workspaceId' is set
+        if (workspaceId == null) {
+            throw new ApiException("Missing the required parameter 'workspaceId' when calling postsList(Async)");
+        }
+
+        // verify the required parameter 'from' is set
+        if (from == null) {
+            throw new ApiException("Missing the required parameter 'from' when calling postsList(Async)");
+        }
+
+        // verify the required parameter 'to' is set
+        if (to == null) {
+            throw new ApiException("Missing the required parameter 'to' when calling postsList(Async)");
+        }
+
+        return postsListCall(workspaceId, from, to, _callback);
+
+    }
+
+    /**
+     * List scheduled posts
+     * Lists the posts scheduled from &#x60;from&#x60; (included) to &#x60;to&#x60; (excluded), at most 62 days apart, by scheduled instant, with their channels and how each went. Drafts have no time and are not listed; cancelled posts are, with the time they had. Needs post:read.
+     * @param workspaceId  (required)
+     * @param from  (required)
+     * @param to  (required)
+     * @return List&lt;Post&gt;
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Success </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> The range ends before it starts, or spans more than 62 days. </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+     </table>
+     */
+    public List<Post> postsList(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String from, @javax.annotation.Nonnull String to) throws ApiException {
+        ApiResponse<List<Post>> localVarResp = postsListWithHttpInfo(workspaceId, from, to);
+        return localVarResp.getData();
+    }
+
+    /**
+     * List scheduled posts
+     * Lists the posts scheduled from &#x60;from&#x60; (included) to &#x60;to&#x60; (excluded), at most 62 days apart, by scheduled instant, with their channels and how each went. Drafts have no time and are not listed; cancelled posts are, with the time they had. Needs post:read.
+     * @param workspaceId  (required)
+     * @param from  (required)
+     * @param to  (required)
+     * @return ApiResponse&lt;List&lt;Post&gt;&gt;
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Success </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> The range ends before it starts, or spans more than 62 days. </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+     </table>
+     */
+    public ApiResponse<List<Post>> postsListWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String from, @javax.annotation.Nonnull String to) throws ApiException {
+        okhttp3.Call localVarCall = postsListValidateBeforeCall(workspaceId, from, to, null);
+        Type localVarReturnType = new TypeToken<List<Post>>(){}.getType();
+        return localVarApiClient.execute(localVarCall, localVarReturnType);
+    }
+
+    /**
+     * List scheduled posts (asynchronously)
+     * Lists the posts scheduled from &#x60;from&#x60; (included) to &#x60;to&#x60; (excluded), at most 62 days apart, by scheduled instant, with their channels and how each went. Drafts have no time and are not listed; cancelled posts are, with the time they had. Needs post:read.
+     * @param workspaceId  (required)
+     * @param from  (required)
+     * @param to  (required)
+     * @param _callback The callback to be executed when the API call finishes
+     * @return The request call
+     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Success </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> The range ends before it starts, or spans more than 62 days. </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call postsListAsync(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String from, @javax.annotation.Nonnull String to, final ApiCallback<List<Post>> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = postsListValidateBeforeCall(workspaceId, from, to, _callback);
+        Type localVarReturnType = new TypeToken<List<Post>>(){}.getType();
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
+        return localVarCall;
+    }
+    /**
+     * Build call for postsRepost
+     * @param workspaceId  (required)
+     * @param postId  (required)
+     * @param targetId  (required)
+     * @param _callback Callback for upload/download progress
+     * @return Call to execute
+     * @throws ApiException If fail to serialize the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Post </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no post with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 409 </td><td> The post&#39;s status does not allow this. &#x60;status&#x60; is the status it has. | The post&#39;s status on that channel does not allow this. &#x60;status&#x60; is the status it has. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call postsRepostCall(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, @javax.annotation.Nonnull String targetId, final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
+
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
+        }
+
+        Object localVarPostBody = null;
+
+        // create path and map variables
+        String localVarPath = "/api/workspaces/{workspaceId}/posts/{postId}/targets/{targetId}/repost"
+            .replace("{" + "workspaceId" + "}", localVarApiClient.escapeString(workspaceId.toString()))
+            .replace("{" + "postId" + "}", localVarApiClient.escapeString(postId.toString()))
+            .replace("{" + "targetId" + "}", localVarApiClient.escapeString(targetId.toString()));
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
+        }
+
+        String[] localVarAuthNames = new String[] { "bearer" };
+        return localVarApiClient.buildCall(basePath, localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call postsRepostValidateBeforeCall(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, @javax.annotation.Nonnull String targetId, final ApiCallback _callback) throws ApiException {
+        // verify the required parameter 'workspaceId' is set
+        if (workspaceId == null) {
+            throw new ApiException("Missing the required parameter 'workspaceId' when calling postsRepost(Async)");
+        }
+
+        // verify the required parameter 'postId' is set
+        if (postId == null) {
+            throw new ApiException("Missing the required parameter 'postId' when calling postsRepost(Async)");
+        }
+
+        // verify the required parameter 'targetId' is set
+        if (targetId == null) {
+            throw new ApiException("Missing the required parameter 'targetId' when calling postsRepost(Async)");
+        }
+
+        return postsRepostCall(workspaceId, postId, targetId, _callback);
+
+    }
+
+    /**
+     * Repost on a channel
+     * Sends the post again, now, on one channel where it failed or is unconfirmed: a new round, with its own attempts. Check the platform first when it is unconfirmed, as it may be live already. Needs post:schedule.
+     * @param workspaceId  (required)
+     * @param postId  (required)
+     * @param targetId  (required)
+     * @return Post
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Post </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no post with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 409 </td><td> The post&#39;s status does not allow this. &#x60;status&#x60; is the status it has. | The post&#39;s status on that channel does not allow this. &#x60;status&#x60; is the status it has. </td><td>  -  </td></tr>
+     </table>
+     */
+    public Post postsRepost(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, @javax.annotation.Nonnull String targetId) throws ApiException {
+        ApiResponse<Post> localVarResp = postsRepostWithHttpInfo(workspaceId, postId, targetId);
+        return localVarResp.getData();
+    }
+
+    /**
+     * Repost on a channel
+     * Sends the post again, now, on one channel where it failed or is unconfirmed: a new round, with its own attempts. Check the platform first when it is unconfirmed, as it may be live already. Needs post:schedule.
+     * @param workspaceId  (required)
+     * @param postId  (required)
+     * @param targetId  (required)
+     * @return ApiResponse&lt;Post&gt;
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Post </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no post with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 409 </td><td> The post&#39;s status does not allow this. &#x60;status&#x60; is the status it has. | The post&#39;s status on that channel does not allow this. &#x60;status&#x60; is the status it has. </td><td>  -  </td></tr>
+     </table>
+     */
+    public ApiResponse<Post> postsRepostWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, @javax.annotation.Nonnull String targetId) throws ApiException {
+        okhttp3.Call localVarCall = postsRepostValidateBeforeCall(workspaceId, postId, targetId, null);
+        Type localVarReturnType = new TypeToken<Post>(){}.getType();
+        return localVarApiClient.execute(localVarCall, localVarReturnType);
+    }
+
+    /**
+     * Repost on a channel (asynchronously)
+     * Sends the post again, now, on one channel where it failed or is unconfirmed: a new round, with its own attempts. Check the platform first when it is unconfirmed, as it may be live already. Needs post:schedule.
+     * @param workspaceId  (required)
+     * @param postId  (required)
+     * @param targetId  (required)
+     * @param _callback The callback to be executed when the API call finishes
+     * @return The request call
+     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Post </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no post with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 409 </td><td> The post&#39;s status does not allow this. &#x60;status&#x60; is the status it has. | The post&#39;s status on that channel does not allow this. &#x60;status&#x60; is the status it has. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call postsRepostAsync(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, @javax.annotation.Nonnull String targetId, final ApiCallback<Post> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = postsRepostValidateBeforeCall(workspaceId, postId, targetId, _callback);
+        Type localVarReturnType = new TypeToken<Post>(){}.getType();
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
+        return localVarCall;
+    }
+    /**
+     * Build call for postsReschedule
+     * @param workspaceId  (required)
+     * @param postId  (required)
+     * @param postSchedule  (required)
+     * @param _callback Callback for upload/download progress
+     * @return Call to execute
+     * @throws ApiException If fail to serialize the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Post </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 402 </td><td> The workspace&#39;s plan allows no more of &#x60;limit&#x60;: it has &#x60;allowed&#x60; already. A larger plan, or removing some, makes room. Nothing was changed. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no post with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 409 </td><td> The post&#39;s status does not allow this. &#x60;status&#x60; is the status it has. </td><td>  -  </td></tr>
+        <tr><td> 422 </td><td> The time asked for has passed. A time up to a minute ago publishes now. | The time zone is not an IANA time zone such as Europe/Paris. Offsets such as +01:00 are refused. | The post&#39;s content breaks the rules of its channels&#39; platforms: &#x60;violations&#x60; says how, channel by channel, for its images and videos, media by media, and for its options on a channel, option by option (&#x60;field&#x60;). | Some channels asked for are not connected to the workspace: &#x60;channelIds&#x60; lists them. | Some media attached are not the workspace&#39;s, or not ready to show: &#x60;mediaIds&#x60; lists them. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call postsRescheduleCall(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, @javax.annotation.Nonnull PostSchedule postSchedule, final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
+
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
+        }
+
+        Object localVarPostBody = postSchedule;
+
+        // create path and map variables
+        String localVarPath = "/api/workspaces/{workspaceId}/posts/{postId}/reschedule"
+            .replace("{" + "workspaceId" + "}", localVarApiClient.escapeString(workspaceId.toString()))
+            .replace("{" + "postId" + "}", localVarApiClient.escapeString(postId.toString()));
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+            "application/json"
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
+        }
+
+        String[] localVarAuthNames = new String[] { "bearer" };
+        return localVarApiClient.buildCall(basePath, localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call postsRescheduleValidateBeforeCall(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, @javax.annotation.Nonnull PostSchedule postSchedule, final ApiCallback _callback) throws ApiException {
+        // verify the required parameter 'workspaceId' is set
+        if (workspaceId == null) {
+            throw new ApiException("Missing the required parameter 'workspaceId' when calling postsReschedule(Async)");
+        }
+
+        // verify the required parameter 'postId' is set
+        if (postId == null) {
+            throw new ApiException("Missing the required parameter 'postId' when calling postsReschedule(Async)");
+        }
+
+        // verify the required parameter 'postSchedule' is set
+        if (postSchedule == null) {
+            throw new ApiException("Missing the required parameter 'postSchedule' when calling postsReschedule(Async)");
+        }
+
+        return postsRescheduleCall(workspaceId, postId, postSchedule, _callback);
+
+    }
+
+    /**
+     * Reschedule a post
+     * Moves a scheduled post to another instant, or schedules a draft on the channels it has. Moved to another month, or scheduled, it must fit that month&#39;s posts in the workspace&#39;s plan (PlanLimitReached). Needs post:schedule, and channel:read for a draft.
+     * @param workspaceId  (required)
+     * @param postId  (required)
+     * @param postSchedule  (required)
+     * @return Post
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Post </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 402 </td><td> The workspace&#39;s plan allows no more of &#x60;limit&#x60;: it has &#x60;allowed&#x60; already. A larger plan, or removing some, makes room. Nothing was changed. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no post with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 409 </td><td> The post&#39;s status does not allow this. &#x60;status&#x60; is the status it has. </td><td>  -  </td></tr>
+        <tr><td> 422 </td><td> The time asked for has passed. A time up to a minute ago publishes now. | The time zone is not an IANA time zone such as Europe/Paris. Offsets such as +01:00 are refused. | The post&#39;s content breaks the rules of its channels&#39; platforms: &#x60;violations&#x60; says how, channel by channel, for its images and videos, media by media, and for its options on a channel, option by option (&#x60;field&#x60;). | Some channels asked for are not connected to the workspace: &#x60;channelIds&#x60; lists them. | Some media attached are not the workspace&#39;s, or not ready to show: &#x60;mediaIds&#x60; lists them. </td><td>  -  </td></tr>
+     </table>
+     */
+    public Post postsReschedule(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, @javax.annotation.Nonnull PostSchedule postSchedule) throws ApiException {
+        ApiResponse<Post> localVarResp = postsRescheduleWithHttpInfo(workspaceId, postId, postSchedule);
+        return localVarResp.getData();
+    }
+
+    /**
+     * Reschedule a post
+     * Moves a scheduled post to another instant, or schedules a draft on the channels it has. Moved to another month, or scheduled, it must fit that month&#39;s posts in the workspace&#39;s plan (PlanLimitReached). Needs post:schedule, and channel:read for a draft.
+     * @param workspaceId  (required)
+     * @param postId  (required)
+     * @param postSchedule  (required)
+     * @return ApiResponse&lt;Post&gt;
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Post </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 402 </td><td> The workspace&#39;s plan allows no more of &#x60;limit&#x60;: it has &#x60;allowed&#x60; already. A larger plan, or removing some, makes room. Nothing was changed. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no post with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 409 </td><td> The post&#39;s status does not allow this. &#x60;status&#x60; is the status it has. </td><td>  -  </td></tr>
+        <tr><td> 422 </td><td> The time asked for has passed. A time up to a minute ago publishes now. | The time zone is not an IANA time zone such as Europe/Paris. Offsets such as +01:00 are refused. | The post&#39;s content breaks the rules of its channels&#39; platforms: &#x60;violations&#x60; says how, channel by channel, for its images and videos, media by media, and for its options on a channel, option by option (&#x60;field&#x60;). | Some channels asked for are not connected to the workspace: &#x60;channelIds&#x60; lists them. | Some media attached are not the workspace&#39;s, or not ready to show: &#x60;mediaIds&#x60; lists them. </td><td>  -  </td></tr>
+     </table>
+     */
+    public ApiResponse<Post> postsRescheduleWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, @javax.annotation.Nonnull PostSchedule postSchedule) throws ApiException {
+        okhttp3.Call localVarCall = postsRescheduleValidateBeforeCall(workspaceId, postId, postSchedule, null);
+        Type localVarReturnType = new TypeToken<Post>(){}.getType();
+        return localVarApiClient.execute(localVarCall, localVarReturnType);
+    }
+
+    /**
+     * Reschedule a post (asynchronously)
+     * Moves a scheduled post to another instant, or schedules a draft on the channels it has. Moved to another month, or scheduled, it must fit that month&#39;s posts in the workspace&#39;s plan (PlanLimitReached). Needs post:schedule, and channel:read for a draft.
+     * @param workspaceId  (required)
+     * @param postId  (required)
+     * @param postSchedule  (required)
+     * @param _callback The callback to be executed when the API call finishes
+     * @return The request call
+     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Post </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 402 </td><td> The workspace&#39;s plan allows no more of &#x60;limit&#x60;: it has &#x60;allowed&#x60; already. A larger plan, or removing some, makes room. Nothing was changed. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no post with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 409 </td><td> The post&#39;s status does not allow this. &#x60;status&#x60; is the status it has. </td><td>  -  </td></tr>
+        <tr><td> 422 </td><td> The time asked for has passed. A time up to a minute ago publishes now. | The time zone is not an IANA time zone such as Europe/Paris. Offsets such as +01:00 are refused. | The post&#39;s content breaks the rules of its channels&#39; platforms: &#x60;violations&#x60; says how, channel by channel, for its images and videos, media by media, and for its options on a channel, option by option (&#x60;field&#x60;). | Some channels asked for are not connected to the workspace: &#x60;channelIds&#x60; lists them. | Some media attached are not the workspace&#39;s, or not ready to show: &#x60;mediaIds&#x60; lists them. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call postsRescheduleAsync(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, @javax.annotation.Nonnull PostSchedule postSchedule, final ApiCallback<Post> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = postsRescheduleValidateBeforeCall(workspaceId, postId, postSchedule, _callback);
+        Type localVarReturnType = new TypeToken<Post>(){}.getType();
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
+        return localVarCall;
+    }
+    /**
+     * Build call for postsSchedule
+     * @param workspaceId  (required)
+     * @param postId  (required)
+     * @param schedulePost  (required)
+     * @param _callback Callback for upload/download progress
+     * @return Call to execute
+     * @throws ApiException If fail to serialize the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Post </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 402 </td><td> The workspace&#39;s plan allows no more of &#x60;limit&#x60;: it has &#x60;allowed&#x60; already. A larger plan, or removing some, makes room. Nothing was changed. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no post with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 409 </td><td> The post&#39;s status does not allow this. &#x60;status&#x60; is the status it has. </td><td>  -  </td></tr>
+        <tr><td> 422 </td><td> The time asked for has passed. A time up to a minute ago publishes now. | The time zone is not an IANA time zone such as Europe/Paris. Offsets such as +01:00 are refused. | The post&#39;s content breaks the rules of its channels&#39; platforms: &#x60;violations&#x60; says how, channel by channel, for its images and videos, media by media, and for its options on a channel, option by option (&#x60;field&#x60;). | Some channels asked for are not connected to the workspace: &#x60;channelIds&#x60; lists them. | Some media attached are not the workspace&#39;s, or not ready to show: &#x60;mediaIds&#x60; lists them. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call postsScheduleCall(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, @javax.annotation.Nonnull SchedulePost schedulePost, final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
+
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
+        }
+
+        Object localVarPostBody = schedulePost;
+
+        // create path and map variables
+        String localVarPath = "/api/workspaces/{workspaceId}/posts/{postId}/schedule"
+            .replace("{" + "workspaceId" + "}", localVarApiClient.escapeString(workspaceId.toString()))
+            .replace("{" + "postId" + "}", localVarApiClient.escapeString(postId.toString()));
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+            "application/json"
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
+        }
+
+        String[] localVarAuthNames = new String[] { "bearer" };
+        return localVarApiClient.buildCall(basePath, localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call postsScheduleValidateBeforeCall(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, @javax.annotation.Nonnull SchedulePost schedulePost, final ApiCallback _callback) throws ApiException {
+        // verify the required parameter 'workspaceId' is set
+        if (workspaceId == null) {
+            throw new ApiException("Missing the required parameter 'workspaceId' when calling postsSchedule(Async)");
+        }
+
+        // verify the required parameter 'postId' is set
+        if (postId == null) {
+            throw new ApiException("Missing the required parameter 'postId' when calling postsSchedule(Async)");
+        }
+
+        // verify the required parameter 'schedulePost' is set
+        if (schedulePost == null) {
+            throw new ApiException("Missing the required parameter 'schedulePost' when calling postsSchedule(Async)");
+        }
+
+        return postsScheduleCall(workspaceId, postId, schedulePost, _callback);
+
+    }
+
+    /**
+     * Schedule a draft
+     * Schedules a draft on some of the workspace&#39;s channels at an instant, kept with the IANA time zone it was chosen in. The content must fit each platform&#39;s rules, its media included: file types, sizes, durations, dimensions, alt text, how many videos, and whether images and videos go together. A channel whose platform takes options needs those it requires, as the draft gives them on that channel: a channel the draft was not for has none yet. A time up to a minute ago publishes now. On a server that bills, the posts going out in that month (UTC) must fit the workspace&#39;s plan (PlanLimitReached). Needs post:schedule and channel:read, and media:read when it shows media.
+     * @param workspaceId  (required)
+     * @param postId  (required)
+     * @param schedulePost  (required)
+     * @return Post
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Post </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 402 </td><td> The workspace&#39;s plan allows no more of &#x60;limit&#x60;: it has &#x60;allowed&#x60; already. A larger plan, or removing some, makes room. Nothing was changed. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no post with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 409 </td><td> The post&#39;s status does not allow this. &#x60;status&#x60; is the status it has. </td><td>  -  </td></tr>
+        <tr><td> 422 </td><td> The time asked for has passed. A time up to a minute ago publishes now. | The time zone is not an IANA time zone such as Europe/Paris. Offsets such as +01:00 are refused. | The post&#39;s content breaks the rules of its channels&#39; platforms: &#x60;violations&#x60; says how, channel by channel, for its images and videos, media by media, and for its options on a channel, option by option (&#x60;field&#x60;). | Some channels asked for are not connected to the workspace: &#x60;channelIds&#x60; lists them. | Some media attached are not the workspace&#39;s, or not ready to show: &#x60;mediaIds&#x60; lists them. </td><td>  -  </td></tr>
+     </table>
+     */
+    public Post postsSchedule(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, @javax.annotation.Nonnull SchedulePost schedulePost) throws ApiException {
+        ApiResponse<Post> localVarResp = postsScheduleWithHttpInfo(workspaceId, postId, schedulePost);
+        return localVarResp.getData();
+    }
+
+    /**
+     * Schedule a draft
+     * Schedules a draft on some of the workspace&#39;s channels at an instant, kept with the IANA time zone it was chosen in. The content must fit each platform&#39;s rules, its media included: file types, sizes, durations, dimensions, alt text, how many videos, and whether images and videos go together. A channel whose platform takes options needs those it requires, as the draft gives them on that channel: a channel the draft was not for has none yet. A time up to a minute ago publishes now. On a server that bills, the posts going out in that month (UTC) must fit the workspace&#39;s plan (PlanLimitReached). Needs post:schedule and channel:read, and media:read when it shows media.
+     * @param workspaceId  (required)
+     * @param postId  (required)
+     * @param schedulePost  (required)
+     * @return ApiResponse&lt;Post&gt;
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Post </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 402 </td><td> The workspace&#39;s plan allows no more of &#x60;limit&#x60;: it has &#x60;allowed&#x60; already. A larger plan, or removing some, makes room. Nothing was changed. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no post with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 409 </td><td> The post&#39;s status does not allow this. &#x60;status&#x60; is the status it has. </td><td>  -  </td></tr>
+        <tr><td> 422 </td><td> The time asked for has passed. A time up to a minute ago publishes now. | The time zone is not an IANA time zone such as Europe/Paris. Offsets such as +01:00 are refused. | The post&#39;s content breaks the rules of its channels&#39; platforms: &#x60;violations&#x60; says how, channel by channel, for its images and videos, media by media, and for its options on a channel, option by option (&#x60;field&#x60;). | Some channels asked for are not connected to the workspace: &#x60;channelIds&#x60; lists them. | Some media attached are not the workspace&#39;s, or not ready to show: &#x60;mediaIds&#x60; lists them. </td><td>  -  </td></tr>
+     </table>
+     */
+    public ApiResponse<Post> postsScheduleWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, @javax.annotation.Nonnull SchedulePost schedulePost) throws ApiException {
+        okhttp3.Call localVarCall = postsScheduleValidateBeforeCall(workspaceId, postId, schedulePost, null);
+        Type localVarReturnType = new TypeToken<Post>(){}.getType();
+        return localVarApiClient.execute(localVarCall, localVarReturnType);
+    }
+
+    /**
+     * Schedule a draft (asynchronously)
+     * Schedules a draft on some of the workspace&#39;s channels at an instant, kept with the IANA time zone it was chosen in. The content must fit each platform&#39;s rules, its media included: file types, sizes, durations, dimensions, alt text, how many videos, and whether images and videos go together. A channel whose platform takes options needs those it requires, as the draft gives them on that channel: a channel the draft was not for has none yet. A time up to a minute ago publishes now. On a server that bills, the posts going out in that month (UTC) must fit the workspace&#39;s plan (PlanLimitReached). Needs post:schedule and channel:read, and media:read when it shows media.
+     * @param workspaceId  (required)
+     * @param postId  (required)
+     * @param schedulePost  (required)
+     * @param _callback The callback to be executed when the API call finishes
+     * @return The request call
+     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Post </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 402 </td><td> The workspace&#39;s plan allows no more of &#x60;limit&#x60;: it has &#x60;allowed&#x60; already. A larger plan, or removing some, makes room. Nothing was changed. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no post with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 409 </td><td> The post&#39;s status does not allow this. &#x60;status&#x60; is the status it has. </td><td>  -  </td></tr>
+        <tr><td> 422 </td><td> The time asked for has passed. A time up to a minute ago publishes now. | The time zone is not an IANA time zone such as Europe/Paris. Offsets such as +01:00 are refused. | The post&#39;s content breaks the rules of its channels&#39; platforms: &#x60;violations&#x60; says how, channel by channel, for its images and videos, media by media, and for its options on a channel, option by option (&#x60;field&#x60;). | Some channels asked for are not connected to the workspace: &#x60;channelIds&#x60; lists them. | Some media attached are not the workspace&#39;s, or not ready to show: &#x60;mediaIds&#x60; lists them. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call postsScheduleAsync(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, @javax.annotation.Nonnull SchedulePost schedulePost, final ApiCallback<Post> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = postsScheduleValidateBeforeCall(workspaceId, postId, schedulePost, _callback);
+        Type localVarReturnType = new TypeToken<Post>(){}.getType();
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
+        return localVarCall;
+    }
+    /**
+     * Build call for postsUnschedule
+     * @param workspaceId  (required)
+     * @param postId  (required)
+     * @param _callback Callback for upload/download progress
+     * @return Call to execute
+     * @throws ApiException If fail to serialize the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Post </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no post with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 409 </td><td> The post&#39;s status does not allow this. &#x60;status&#x60; is the status it has. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call postsUnscheduleCall(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
+
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
+        }
+
+        Object localVarPostBody = null;
+
+        // create path and map variables
+        String localVarPath = "/api/workspaces/{workspaceId}/posts/{postId}/unschedule"
+            .replace("{" + "workspaceId" + "}", localVarApiClient.escapeString(workspaceId.toString()))
+            .replace("{" + "postId" + "}", localVarApiClient.escapeString(postId.toString()));
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
+        }
+
+        String[] localVarAuthNames = new String[] { "bearer" };
+        return localVarApiClient.buildCall(basePath, localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call postsUnscheduleValidateBeforeCall(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, final ApiCallback _callback) throws ApiException {
+        // verify the required parameter 'workspaceId' is set
+        if (workspaceId == null) {
+            throw new ApiException("Missing the required parameter 'workspaceId' when calling postsUnschedule(Async)");
+        }
+
+        // verify the required parameter 'postId' is set
+        if (postId == null) {
+            throw new ApiException("Missing the required parameter 'postId' when calling postsUnschedule(Async)");
+        }
+
+        return postsUnscheduleCall(workspaceId, postId, _callback);
+
+    }
+
+    /**
+     * Unschedule a post
+     * Takes a scheduled post back to draft, so its text and media can change: it goes out at no time until it is scheduled again. A post already publishing is a conflict. Needs post:schedule.
+     * @param workspaceId  (required)
+     * @param postId  (required)
+     * @return Post
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Post </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no post with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 409 </td><td> The post&#39;s status does not allow this. &#x60;status&#x60; is the status it has. </td><td>  -  </td></tr>
+     </table>
+     */
+    public Post postsUnschedule(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId) throws ApiException {
+        ApiResponse<Post> localVarResp = postsUnscheduleWithHttpInfo(workspaceId, postId);
+        return localVarResp.getData();
+    }
+
+    /**
+     * Unschedule a post
+     * Takes a scheduled post back to draft, so its text and media can change: it goes out at no time until it is scheduled again. A post already publishing is a conflict. Needs post:schedule.
+     * @param workspaceId  (required)
+     * @param postId  (required)
+     * @return ApiResponse&lt;Post&gt;
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Post </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no post with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 409 </td><td> The post&#39;s status does not allow this. &#x60;status&#x60; is the status it has. </td><td>  -  </td></tr>
+     </table>
+     */
+    public ApiResponse<Post> postsUnscheduleWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId) throws ApiException {
+        okhttp3.Call localVarCall = postsUnscheduleValidateBeforeCall(workspaceId, postId, null);
+        Type localVarReturnType = new TypeToken<Post>(){}.getType();
+        return localVarApiClient.execute(localVarCall, localVarReturnType);
+    }
+
+    /**
+     * Unschedule a post (asynchronously)
+     * Takes a scheduled post back to draft, so its text and media can change: it goes out at no time until it is scheduled again. A post already publishing is a conflict. Needs post:schedule.
+     * @param workspaceId  (required)
+     * @param postId  (required)
+     * @param _callback The callback to be executed when the API call finishes
+     * @return The request call
+     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Post </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no post with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 409 </td><td> The post&#39;s status does not allow this. &#x60;status&#x60; is the status it has. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call postsUnscheduleAsync(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, final ApiCallback<Post> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = postsUnscheduleValidateBeforeCall(workspaceId, postId, _callback);
+        Type localVarReturnType = new TypeToken<Post>(){}.getType();
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
+        return localVarCall;
+    }
+    /**
+     * Build call for postsUpdate
+     * @param workspaceId  (required)
+     * @param postId  (required)
+     * @param postDraft  (required)
+     * @param _callback Callback for upload/download progress
+     * @return Call to execute
+     * @throws ApiException If fail to serialize the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Post </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no post with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 409 </td><td> The post&#39;s status does not allow this. &#x60;status&#x60; is the status it has. </td><td>  -  </td></tr>
+        <tr><td> 422 </td><td> The post&#39;s content breaks the rules of its channels&#39; platforms: &#x60;violations&#x60; says how, channel by channel, for its images and videos, media by media, and for its options on a channel, option by option (&#x60;field&#x60;). | Some channels asked for are not connected to the workspace: &#x60;channelIds&#x60; lists them. | Some media attached are not the workspace&#39;s, or not ready to show: &#x60;mediaIds&#x60; lists them. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call postsUpdateCall(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, @javax.annotation.Nonnull PostDraft postDraft, final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
+
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
+        }
+
+        Object localVarPostBody = postDraft;
+
+        // create path and map variables
+        String localVarPath = "/api/workspaces/{workspaceId}/posts/{postId}"
+            .replace("{" + "workspaceId" + "}", localVarApiClient.escapeString(workspaceId.toString()))
+            .replace("{" + "postId" + "}", localVarApiClient.escapeString(postId.toString()));
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+            "application/json"
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
+        }
+
+        String[] localVarAuthNames = new String[] { "bearer" };
+        return localVarApiClient.buildCall(basePath, localVarPath, "PUT", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call postsUpdateValidateBeforeCall(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, @javax.annotation.Nonnull PostDraft postDraft, final ApiCallback _callback) throws ApiException {
+        // verify the required parameter 'workspaceId' is set
+        if (workspaceId == null) {
+            throw new ApiException("Missing the required parameter 'workspaceId' when calling postsUpdate(Async)");
+        }
+
+        // verify the required parameter 'postId' is set
+        if (postId == null) {
+            throw new ApiException("Missing the required parameter 'postId' when calling postsUpdate(Async)");
+        }
+
+        // verify the required parameter 'postDraft' is set
+        if (postDraft == null) {
+            throw new ApiException("Missing the required parameter 'postDraft' when calling postsUpdate(Async)");
+        }
+
+        return postsUpdateCall(workspaceId, postId, postDraft, _callback);
+
+    }
+
+    /**
+     * Update a draft
+     * Replaces a draft&#39;s content, channels and options: options left out are removed. A post that is no longer a draft is a conflict. Needs post:update, channel:read, and media:read when it shows media.
+     * @param workspaceId  (required)
+     * @param postId  (required)
+     * @param postDraft  (required)
+     * @return Post
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Post </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no post with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 409 </td><td> The post&#39;s status does not allow this. &#x60;status&#x60; is the status it has. </td><td>  -  </td></tr>
+        <tr><td> 422 </td><td> The post&#39;s content breaks the rules of its channels&#39; platforms: &#x60;violations&#x60; says how, channel by channel, for its images and videos, media by media, and for its options on a channel, option by option (&#x60;field&#x60;). | Some channels asked for are not connected to the workspace: &#x60;channelIds&#x60; lists them. | Some media attached are not the workspace&#39;s, or not ready to show: &#x60;mediaIds&#x60; lists them. </td><td>  -  </td></tr>
+     </table>
+     */
+    public Post postsUpdate(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, @javax.annotation.Nonnull PostDraft postDraft) throws ApiException {
+        ApiResponse<Post> localVarResp = postsUpdateWithHttpInfo(workspaceId, postId, postDraft);
+        return localVarResp.getData();
+    }
+
+    /**
+     * Update a draft
+     * Replaces a draft&#39;s content, channels and options: options left out are removed. A post that is no longer a draft is a conflict. Needs post:update, channel:read, and media:read when it shows media.
+     * @param workspaceId  (required)
+     * @param postId  (required)
+     * @param postDraft  (required)
+     * @return ApiResponse&lt;Post&gt;
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Post </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no post with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 409 </td><td> The post&#39;s status does not allow this. &#x60;status&#x60; is the status it has. </td><td>  -  </td></tr>
+        <tr><td> 422 </td><td> The post&#39;s content breaks the rules of its channels&#39; platforms: &#x60;violations&#x60; says how, channel by channel, for its images and videos, media by media, and for its options on a channel, option by option (&#x60;field&#x60;). | Some channels asked for are not connected to the workspace: &#x60;channelIds&#x60; lists them. | Some media attached are not the workspace&#39;s, or not ready to show: &#x60;mediaIds&#x60; lists them. </td><td>  -  </td></tr>
+     </table>
+     */
+    public ApiResponse<Post> postsUpdateWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, @javax.annotation.Nonnull PostDraft postDraft) throws ApiException {
+        okhttp3.Call localVarCall = postsUpdateValidateBeforeCall(workspaceId, postId, postDraft, null);
+        Type localVarReturnType = new TypeToken<Post>(){}.getType();
+        return localVarApiClient.execute(localVarCall, localVarReturnType);
+    }
+
+    /**
+     * Update a draft (asynchronously)
+     * Replaces a draft&#39;s content, channels and options: options left out are removed. A post that is no longer a draft is a conflict. Needs post:update, channel:read, and media:read when it shows media.
+     * @param workspaceId  (required)
+     * @param postId  (required)
+     * @param postDraft  (required)
+     * @param _callback The callback to be executed when the API call finishes
+     * @return The request call
+     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Post </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no post with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 409 </td><td> The post&#39;s status does not allow this. &#x60;status&#x60; is the status it has. </td><td>  -  </td></tr>
+        <tr><td> 422 </td><td> The post&#39;s content breaks the rules of its channels&#39; platforms: &#x60;violations&#x60; says how, channel by channel, for its images and videos, media by media, and for its options on a channel, option by option (&#x60;field&#x60;). | Some channels asked for are not connected to the workspace: &#x60;channelIds&#x60; lists them. | Some media attached are not the workspace&#39;s, or not ready to show: &#x60;mediaIds&#x60; lists them. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call postsUpdateAsync(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String postId, @javax.annotation.Nonnull PostDraft postDraft, final ApiCallback<Post> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = postsUpdateValidateBeforeCall(workspaceId, postId, postDraft, _callback);
+        Type localVarReturnType = new TypeToken<Post>(){}.getType();
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
+        return localVarCall;
+    }
 }

@@ -13,17 +13,13 @@
 
 package social.peal.model;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.StringJoiner;
 import java.util.Objects;
-import java.util.Map;
-import java.util.HashMap;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.fasterxml.jackson.annotation.JsonValue;
+import com.google.gson.TypeAdapter;
+import com.google.gson.annotations.JsonAdapter;
+import com.google.gson.annotations.SerializedName;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -57,360 +53,598 @@ import social.peal.model.ContentViolationAnyOf9;
 import social.peal.model.MediaContentType;
 import social.peal.model.Platform;
 import social.peal.model.TextUnit;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+
 
 
 import java.io.IOException;
+import java.lang.reflect.Type;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
-import social.peal.ApiClient;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonParseException;
+import com.google.gson.TypeAdapter;
+import com.google.gson.TypeAdapterFactory;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.annotations.JsonAdapter;
+import com.google.gson.annotations.SerializedName;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonParseException;
+
 import social.peal.JSON;
 
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.27.0")
-@JsonDeserialize(using=ContentViolation.ContentViolationDeserializer.class)
-@JsonSerialize(using = ContentViolation.ContentViolationSerializer.class)
 public class ContentViolation extends AbstractOpenApiSchema {
     private static final Logger log = Logger.getLogger(ContentViolation.class.getName());
 
-    public static class ContentViolationSerializer extends StdSerializer<ContentViolation> {
-        public ContentViolationSerializer(Class<ContentViolation> t) {
-            super(t);
-        }
-
-        public ContentViolationSerializer() {
-            this(null);
-        }
-
+    public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
+        @SuppressWarnings("unchecked")
         @Override
-        public void serialize(ContentViolation value, JsonGenerator jgen, SerializerProvider provider) throws IOException, JsonProcessingException {
-            jgen.writeObject(value.getActualInstance());
-        }
-    }
-
-    public static class ContentViolationDeserializer extends StdDeserializer<ContentViolation> {
-        public ContentViolationDeserializer() {
-            this(ContentViolation.class);
-        }
-
-        public ContentViolationDeserializer(Class<?> vc) {
-            super(vc);
-        }
-
-        @Override
-        public ContentViolation deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException, JsonProcessingException {
-            JsonNode tree = ctxt.readTree(jp);
-
-            Object deserialized = null;
-            // deserialize ContentViolationAnyOf
-            try {
-                deserialized = tree.traverse(jp.getCodec()).readValueAs(ContentViolationAnyOf.class);
-                ContentViolation ret = new ContentViolation();
-                ret.setActualInstance(deserialized);
-                return ret;
-            } catch (Exception e) {
-                // deserialization failed, continue, log to help debugging
-                log.log(Level.FINER, "Input data does not match 'ContentViolation'", e);
+        public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
+            if (!ContentViolation.class.isAssignableFrom(type.getRawType())) {
+                return null; // this class only serializes 'ContentViolation' and its subtypes
             }
+            final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
+            final TypeAdapter<ContentViolationAnyOf> adapterContentViolationAnyOf = gson.getDelegateAdapter(this, TypeToken.get(ContentViolationAnyOf.class));
+            final TypeAdapter<ContentViolationAnyOf1> adapterContentViolationAnyOf1 = gson.getDelegateAdapter(this, TypeToken.get(ContentViolationAnyOf1.class));
+            final TypeAdapter<ContentViolationAnyOf2> adapterContentViolationAnyOf2 = gson.getDelegateAdapter(this, TypeToken.get(ContentViolationAnyOf2.class));
+            final TypeAdapter<ContentViolationAnyOf3> adapterContentViolationAnyOf3 = gson.getDelegateAdapter(this, TypeToken.get(ContentViolationAnyOf3.class));
+            final TypeAdapter<ContentViolationAnyOf4> adapterContentViolationAnyOf4 = gson.getDelegateAdapter(this, TypeToken.get(ContentViolationAnyOf4.class));
+            final TypeAdapter<ContentViolationAnyOf5> adapterContentViolationAnyOf5 = gson.getDelegateAdapter(this, TypeToken.get(ContentViolationAnyOf5.class));
+            final TypeAdapter<ContentViolationAnyOf6> adapterContentViolationAnyOf6 = gson.getDelegateAdapter(this, TypeToken.get(ContentViolationAnyOf6.class));
+            final TypeAdapter<ContentViolationAnyOf7> adapterContentViolationAnyOf7 = gson.getDelegateAdapter(this, TypeToken.get(ContentViolationAnyOf7.class));
+            final TypeAdapter<ContentViolationAnyOf8> adapterContentViolationAnyOf8 = gson.getDelegateAdapter(this, TypeToken.get(ContentViolationAnyOf8.class));
+            final TypeAdapter<ContentViolationAnyOf9> adapterContentViolationAnyOf9 = gson.getDelegateAdapter(this, TypeToken.get(ContentViolationAnyOf9.class));
+            final TypeAdapter<ContentViolationAnyOf10> adapterContentViolationAnyOf10 = gson.getDelegateAdapter(this, TypeToken.get(ContentViolationAnyOf10.class));
+            final TypeAdapter<ContentViolationAnyOf11> adapterContentViolationAnyOf11 = gson.getDelegateAdapter(this, TypeToken.get(ContentViolationAnyOf11.class));
+            final TypeAdapter<ContentViolationAnyOf12> adapterContentViolationAnyOf12 = gson.getDelegateAdapter(this, TypeToken.get(ContentViolationAnyOf12.class));
+            final TypeAdapter<ContentViolationAnyOf13> adapterContentViolationAnyOf13 = gson.getDelegateAdapter(this, TypeToken.get(ContentViolationAnyOf13.class));
+            final TypeAdapter<ContentViolationAnyOf14> adapterContentViolationAnyOf14 = gson.getDelegateAdapter(this, TypeToken.get(ContentViolationAnyOf14.class));
+            final TypeAdapter<ContentViolationAnyOf15> adapterContentViolationAnyOf15 = gson.getDelegateAdapter(this, TypeToken.get(ContentViolationAnyOf15.class));
+            final TypeAdapter<ContentViolationAnyOf16> adapterContentViolationAnyOf16 = gson.getDelegateAdapter(this, TypeToken.get(ContentViolationAnyOf16.class));
+            final TypeAdapter<ContentViolationAnyOf17> adapterContentViolationAnyOf17 = gson.getDelegateAdapter(this, TypeToken.get(ContentViolationAnyOf17.class));
+            final TypeAdapter<ContentViolationAnyOf18> adapterContentViolationAnyOf18 = gson.getDelegateAdapter(this, TypeToken.get(ContentViolationAnyOf18.class));
+            final TypeAdapter<ContentViolationAnyOf19> adapterContentViolationAnyOf19 = gson.getDelegateAdapter(this, TypeToken.get(ContentViolationAnyOf19.class));
+            final TypeAdapter<ContentViolationAnyOf20> adapterContentViolationAnyOf20 = gson.getDelegateAdapter(this, TypeToken.get(ContentViolationAnyOf20.class));
+            final TypeAdapter<ContentViolationAnyOf21> adapterContentViolationAnyOf21 = gson.getDelegateAdapter(this, TypeToken.get(ContentViolationAnyOf21.class));
+            final TypeAdapter<ContentViolationAnyOf22> adapterContentViolationAnyOf22 = gson.getDelegateAdapter(this, TypeToken.get(ContentViolationAnyOf22.class));
+            final TypeAdapter<ContentViolationAnyOf23> adapterContentViolationAnyOf23 = gson.getDelegateAdapter(this, TypeToken.get(ContentViolationAnyOf23.class));
+            final TypeAdapter<ContentViolationAnyOf24> adapterContentViolationAnyOf24 = gson.getDelegateAdapter(this, TypeToken.get(ContentViolationAnyOf24.class));
+            final TypeAdapter<ContentViolationAnyOf25> adapterContentViolationAnyOf25 = gson.getDelegateAdapter(this, TypeToken.get(ContentViolationAnyOf25.class));
 
-            // deserialize ContentViolationAnyOf1
-            try {
-                deserialized = tree.traverse(jp.getCodec()).readValueAs(ContentViolationAnyOf1.class);
-                ContentViolation ret = new ContentViolation();
-                ret.setActualInstance(deserialized);
-                return ret;
-            } catch (Exception e) {
-                // deserialization failed, continue, log to help debugging
-                log.log(Level.FINER, "Input data does not match 'ContentViolation'", e);
-            }
+            return (TypeAdapter<T>) new TypeAdapter<ContentViolation>() {
+                @Override
+                public void write(JsonWriter out, ContentViolation value) throws IOException {
+                    if (value == null || value.getActualInstance() == null) {
+                        elementAdapter.write(out, null);
+                        return;
+                    }
 
-            // deserialize ContentViolationAnyOf2
-            try {
-                deserialized = tree.traverse(jp.getCodec()).readValueAs(ContentViolationAnyOf2.class);
-                ContentViolation ret = new ContentViolation();
-                ret.setActualInstance(deserialized);
-                return ret;
-            } catch (Exception e) {
-                // deserialization failed, continue, log to help debugging
-                log.log(Level.FINER, "Input data does not match 'ContentViolation'", e);
-            }
+                    // check if the actual instance is of the type `ContentViolationAnyOf`
+                    if (value.getActualInstance() instanceof ContentViolationAnyOf) {
+                        JsonElement element = adapterContentViolationAnyOf.toJsonTree((ContentViolationAnyOf)value.getActualInstance());
+                        elementAdapter.write(out, element);
+                        return;
+                    }
+                    // check if the actual instance is of the type `ContentViolationAnyOf1`
+                    if (value.getActualInstance() instanceof ContentViolationAnyOf1) {
+                        JsonElement element = adapterContentViolationAnyOf1.toJsonTree((ContentViolationAnyOf1)value.getActualInstance());
+                        elementAdapter.write(out, element);
+                        return;
+                    }
+                    // check if the actual instance is of the type `ContentViolationAnyOf2`
+                    if (value.getActualInstance() instanceof ContentViolationAnyOf2) {
+                        JsonElement element = adapterContentViolationAnyOf2.toJsonTree((ContentViolationAnyOf2)value.getActualInstance());
+                        elementAdapter.write(out, element);
+                        return;
+                    }
+                    // check if the actual instance is of the type `ContentViolationAnyOf3`
+                    if (value.getActualInstance() instanceof ContentViolationAnyOf3) {
+                        JsonElement element = adapterContentViolationAnyOf3.toJsonTree((ContentViolationAnyOf3)value.getActualInstance());
+                        elementAdapter.write(out, element);
+                        return;
+                    }
+                    // check if the actual instance is of the type `ContentViolationAnyOf4`
+                    if (value.getActualInstance() instanceof ContentViolationAnyOf4) {
+                        JsonElement element = adapterContentViolationAnyOf4.toJsonTree((ContentViolationAnyOf4)value.getActualInstance());
+                        elementAdapter.write(out, element);
+                        return;
+                    }
+                    // check if the actual instance is of the type `ContentViolationAnyOf5`
+                    if (value.getActualInstance() instanceof ContentViolationAnyOf5) {
+                        JsonElement element = adapterContentViolationAnyOf5.toJsonTree((ContentViolationAnyOf5)value.getActualInstance());
+                        elementAdapter.write(out, element);
+                        return;
+                    }
+                    // check if the actual instance is of the type `ContentViolationAnyOf6`
+                    if (value.getActualInstance() instanceof ContentViolationAnyOf6) {
+                        JsonElement element = adapterContentViolationAnyOf6.toJsonTree((ContentViolationAnyOf6)value.getActualInstance());
+                        elementAdapter.write(out, element);
+                        return;
+                    }
+                    // check if the actual instance is of the type `ContentViolationAnyOf7`
+                    if (value.getActualInstance() instanceof ContentViolationAnyOf7) {
+                        JsonElement element = adapterContentViolationAnyOf7.toJsonTree((ContentViolationAnyOf7)value.getActualInstance());
+                        elementAdapter.write(out, element);
+                        return;
+                    }
+                    // check if the actual instance is of the type `ContentViolationAnyOf8`
+                    if (value.getActualInstance() instanceof ContentViolationAnyOf8) {
+                        JsonElement element = adapterContentViolationAnyOf8.toJsonTree((ContentViolationAnyOf8)value.getActualInstance());
+                        elementAdapter.write(out, element);
+                        return;
+                    }
+                    // check if the actual instance is of the type `ContentViolationAnyOf9`
+                    if (value.getActualInstance() instanceof ContentViolationAnyOf9) {
+                        JsonElement element = adapterContentViolationAnyOf9.toJsonTree((ContentViolationAnyOf9)value.getActualInstance());
+                        elementAdapter.write(out, element);
+                        return;
+                    }
+                    // check if the actual instance is of the type `ContentViolationAnyOf10`
+                    if (value.getActualInstance() instanceof ContentViolationAnyOf10) {
+                        JsonElement element = adapterContentViolationAnyOf10.toJsonTree((ContentViolationAnyOf10)value.getActualInstance());
+                        elementAdapter.write(out, element);
+                        return;
+                    }
+                    // check if the actual instance is of the type `ContentViolationAnyOf11`
+                    if (value.getActualInstance() instanceof ContentViolationAnyOf11) {
+                        JsonElement element = adapterContentViolationAnyOf11.toJsonTree((ContentViolationAnyOf11)value.getActualInstance());
+                        elementAdapter.write(out, element);
+                        return;
+                    }
+                    // check if the actual instance is of the type `ContentViolationAnyOf12`
+                    if (value.getActualInstance() instanceof ContentViolationAnyOf12) {
+                        JsonElement element = adapterContentViolationAnyOf12.toJsonTree((ContentViolationAnyOf12)value.getActualInstance());
+                        elementAdapter.write(out, element);
+                        return;
+                    }
+                    // check if the actual instance is of the type `ContentViolationAnyOf13`
+                    if (value.getActualInstance() instanceof ContentViolationAnyOf13) {
+                        JsonElement element = adapterContentViolationAnyOf13.toJsonTree((ContentViolationAnyOf13)value.getActualInstance());
+                        elementAdapter.write(out, element);
+                        return;
+                    }
+                    // check if the actual instance is of the type `ContentViolationAnyOf14`
+                    if (value.getActualInstance() instanceof ContentViolationAnyOf14) {
+                        JsonElement element = adapterContentViolationAnyOf14.toJsonTree((ContentViolationAnyOf14)value.getActualInstance());
+                        elementAdapter.write(out, element);
+                        return;
+                    }
+                    // check if the actual instance is of the type `ContentViolationAnyOf15`
+                    if (value.getActualInstance() instanceof ContentViolationAnyOf15) {
+                        JsonElement element = adapterContentViolationAnyOf15.toJsonTree((ContentViolationAnyOf15)value.getActualInstance());
+                        elementAdapter.write(out, element);
+                        return;
+                    }
+                    // check if the actual instance is of the type `ContentViolationAnyOf16`
+                    if (value.getActualInstance() instanceof ContentViolationAnyOf16) {
+                        JsonElement element = adapterContentViolationAnyOf16.toJsonTree((ContentViolationAnyOf16)value.getActualInstance());
+                        elementAdapter.write(out, element);
+                        return;
+                    }
+                    // check if the actual instance is of the type `ContentViolationAnyOf17`
+                    if (value.getActualInstance() instanceof ContentViolationAnyOf17) {
+                        JsonElement element = adapterContentViolationAnyOf17.toJsonTree((ContentViolationAnyOf17)value.getActualInstance());
+                        elementAdapter.write(out, element);
+                        return;
+                    }
+                    // check if the actual instance is of the type `ContentViolationAnyOf18`
+                    if (value.getActualInstance() instanceof ContentViolationAnyOf18) {
+                        JsonElement element = adapterContentViolationAnyOf18.toJsonTree((ContentViolationAnyOf18)value.getActualInstance());
+                        elementAdapter.write(out, element);
+                        return;
+                    }
+                    // check if the actual instance is of the type `ContentViolationAnyOf19`
+                    if (value.getActualInstance() instanceof ContentViolationAnyOf19) {
+                        JsonElement element = adapterContentViolationAnyOf19.toJsonTree((ContentViolationAnyOf19)value.getActualInstance());
+                        elementAdapter.write(out, element);
+                        return;
+                    }
+                    // check if the actual instance is of the type `ContentViolationAnyOf20`
+                    if (value.getActualInstance() instanceof ContentViolationAnyOf20) {
+                        JsonElement element = adapterContentViolationAnyOf20.toJsonTree((ContentViolationAnyOf20)value.getActualInstance());
+                        elementAdapter.write(out, element);
+                        return;
+                    }
+                    // check if the actual instance is of the type `ContentViolationAnyOf21`
+                    if (value.getActualInstance() instanceof ContentViolationAnyOf21) {
+                        JsonElement element = adapterContentViolationAnyOf21.toJsonTree((ContentViolationAnyOf21)value.getActualInstance());
+                        elementAdapter.write(out, element);
+                        return;
+                    }
+                    // check if the actual instance is of the type `ContentViolationAnyOf22`
+                    if (value.getActualInstance() instanceof ContentViolationAnyOf22) {
+                        JsonElement element = adapterContentViolationAnyOf22.toJsonTree((ContentViolationAnyOf22)value.getActualInstance());
+                        elementAdapter.write(out, element);
+                        return;
+                    }
+                    // check if the actual instance is of the type `ContentViolationAnyOf23`
+                    if (value.getActualInstance() instanceof ContentViolationAnyOf23) {
+                        JsonElement element = adapterContentViolationAnyOf23.toJsonTree((ContentViolationAnyOf23)value.getActualInstance());
+                        elementAdapter.write(out, element);
+                        return;
+                    }
+                    // check if the actual instance is of the type `ContentViolationAnyOf24`
+                    if (value.getActualInstance() instanceof ContentViolationAnyOf24) {
+                        JsonElement element = adapterContentViolationAnyOf24.toJsonTree((ContentViolationAnyOf24)value.getActualInstance());
+                        elementAdapter.write(out, element);
+                        return;
+                    }
+                    // check if the actual instance is of the type `ContentViolationAnyOf25`
+                    if (value.getActualInstance() instanceof ContentViolationAnyOf25) {
+                        JsonElement element = adapterContentViolationAnyOf25.toJsonTree((ContentViolationAnyOf25)value.getActualInstance());
+                        elementAdapter.write(out, element);
+                        return;
+                    }
+                    throw new IOException("Failed to serialize as the type doesn't match anyOf schemas: ContentViolationAnyOf, ContentViolationAnyOf1, ContentViolationAnyOf10, ContentViolationAnyOf11, ContentViolationAnyOf12, ContentViolationAnyOf13, ContentViolationAnyOf14, ContentViolationAnyOf15, ContentViolationAnyOf16, ContentViolationAnyOf17, ContentViolationAnyOf18, ContentViolationAnyOf19, ContentViolationAnyOf2, ContentViolationAnyOf20, ContentViolationAnyOf21, ContentViolationAnyOf22, ContentViolationAnyOf23, ContentViolationAnyOf24, ContentViolationAnyOf25, ContentViolationAnyOf3, ContentViolationAnyOf4, ContentViolationAnyOf5, ContentViolationAnyOf6, ContentViolationAnyOf7, ContentViolationAnyOf8, ContentViolationAnyOf9");
+                }
 
-            // deserialize ContentViolationAnyOf3
-            try {
-                deserialized = tree.traverse(jp.getCodec()).readValueAs(ContentViolationAnyOf3.class);
-                ContentViolation ret = new ContentViolation();
-                ret.setActualInstance(deserialized);
-                return ret;
-            } catch (Exception e) {
-                // deserialization failed, continue, log to help debugging
-                log.log(Level.FINER, "Input data does not match 'ContentViolation'", e);
-            }
+                @Override
+                public ContentViolation read(JsonReader in) throws IOException {
+                    Object deserialized = null;
+                    JsonElement jsonElement = elementAdapter.read(in);
 
-            // deserialize ContentViolationAnyOf4
-            try {
-                deserialized = tree.traverse(jp.getCodec()).readValueAs(ContentViolationAnyOf4.class);
-                ContentViolation ret = new ContentViolation();
-                ret.setActualInstance(deserialized);
-                return ret;
-            } catch (Exception e) {
-                // deserialization failed, continue, log to help debugging
-                log.log(Level.FINER, "Input data does not match 'ContentViolation'", e);
-            }
+                    ArrayList<String> errorMessages = new ArrayList<>();
+                    TypeAdapter actualAdapter = elementAdapter;
 
-            // deserialize ContentViolationAnyOf5
-            try {
-                deserialized = tree.traverse(jp.getCodec()).readValueAs(ContentViolationAnyOf5.class);
-                ContentViolation ret = new ContentViolation();
-                ret.setActualInstance(deserialized);
-                return ret;
-            } catch (Exception e) {
-                // deserialization failed, continue, log to help debugging
-                log.log(Level.FINER, "Input data does not match 'ContentViolation'", e);
-            }
+                    // deserialize ContentViolationAnyOf
+                    try {
+                        // validate the JSON object to see if any exception is thrown
+                        ContentViolationAnyOf.validateJsonElement(jsonElement);
+                        actualAdapter = adapterContentViolationAnyOf;
+                        ContentViolation ret = new ContentViolation();
+                        ret.setActualInstance(actualAdapter.fromJsonTree(jsonElement));
+                        return ret;
+                    } catch (Exception e) {
+                        // deserialization failed, continue
+                        errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for ContentViolationAnyOf failed with `%s`.", e.getMessage()));
+                        log.log(Level.FINER, "Input data does not match schema 'ContentViolationAnyOf'", e);
+                    }
+                    // deserialize ContentViolationAnyOf1
+                    try {
+                        // validate the JSON object to see if any exception is thrown
+                        ContentViolationAnyOf1.validateJsonElement(jsonElement);
+                        actualAdapter = adapterContentViolationAnyOf1;
+                        ContentViolation ret = new ContentViolation();
+                        ret.setActualInstance(actualAdapter.fromJsonTree(jsonElement));
+                        return ret;
+                    } catch (Exception e) {
+                        // deserialization failed, continue
+                        errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for ContentViolationAnyOf1 failed with `%s`.", e.getMessage()));
+                        log.log(Level.FINER, "Input data does not match schema 'ContentViolationAnyOf1'", e);
+                    }
+                    // deserialize ContentViolationAnyOf2
+                    try {
+                        // validate the JSON object to see if any exception is thrown
+                        ContentViolationAnyOf2.validateJsonElement(jsonElement);
+                        actualAdapter = adapterContentViolationAnyOf2;
+                        ContentViolation ret = new ContentViolation();
+                        ret.setActualInstance(actualAdapter.fromJsonTree(jsonElement));
+                        return ret;
+                    } catch (Exception e) {
+                        // deserialization failed, continue
+                        errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for ContentViolationAnyOf2 failed with `%s`.", e.getMessage()));
+                        log.log(Level.FINER, "Input data does not match schema 'ContentViolationAnyOf2'", e);
+                    }
+                    // deserialize ContentViolationAnyOf3
+                    try {
+                        // validate the JSON object to see if any exception is thrown
+                        ContentViolationAnyOf3.validateJsonElement(jsonElement);
+                        actualAdapter = adapterContentViolationAnyOf3;
+                        ContentViolation ret = new ContentViolation();
+                        ret.setActualInstance(actualAdapter.fromJsonTree(jsonElement));
+                        return ret;
+                    } catch (Exception e) {
+                        // deserialization failed, continue
+                        errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for ContentViolationAnyOf3 failed with `%s`.", e.getMessage()));
+                        log.log(Level.FINER, "Input data does not match schema 'ContentViolationAnyOf3'", e);
+                    }
+                    // deserialize ContentViolationAnyOf4
+                    try {
+                        // validate the JSON object to see if any exception is thrown
+                        ContentViolationAnyOf4.validateJsonElement(jsonElement);
+                        actualAdapter = adapterContentViolationAnyOf4;
+                        ContentViolation ret = new ContentViolation();
+                        ret.setActualInstance(actualAdapter.fromJsonTree(jsonElement));
+                        return ret;
+                    } catch (Exception e) {
+                        // deserialization failed, continue
+                        errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for ContentViolationAnyOf4 failed with `%s`.", e.getMessage()));
+                        log.log(Level.FINER, "Input data does not match schema 'ContentViolationAnyOf4'", e);
+                    }
+                    // deserialize ContentViolationAnyOf5
+                    try {
+                        // validate the JSON object to see if any exception is thrown
+                        ContentViolationAnyOf5.validateJsonElement(jsonElement);
+                        actualAdapter = adapterContentViolationAnyOf5;
+                        ContentViolation ret = new ContentViolation();
+                        ret.setActualInstance(actualAdapter.fromJsonTree(jsonElement));
+                        return ret;
+                    } catch (Exception e) {
+                        // deserialization failed, continue
+                        errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for ContentViolationAnyOf5 failed with `%s`.", e.getMessage()));
+                        log.log(Level.FINER, "Input data does not match schema 'ContentViolationAnyOf5'", e);
+                    }
+                    // deserialize ContentViolationAnyOf6
+                    try {
+                        // validate the JSON object to see if any exception is thrown
+                        ContentViolationAnyOf6.validateJsonElement(jsonElement);
+                        actualAdapter = adapterContentViolationAnyOf6;
+                        ContentViolation ret = new ContentViolation();
+                        ret.setActualInstance(actualAdapter.fromJsonTree(jsonElement));
+                        return ret;
+                    } catch (Exception e) {
+                        // deserialization failed, continue
+                        errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for ContentViolationAnyOf6 failed with `%s`.", e.getMessage()));
+                        log.log(Level.FINER, "Input data does not match schema 'ContentViolationAnyOf6'", e);
+                    }
+                    // deserialize ContentViolationAnyOf7
+                    try {
+                        // validate the JSON object to see if any exception is thrown
+                        ContentViolationAnyOf7.validateJsonElement(jsonElement);
+                        actualAdapter = adapterContentViolationAnyOf7;
+                        ContentViolation ret = new ContentViolation();
+                        ret.setActualInstance(actualAdapter.fromJsonTree(jsonElement));
+                        return ret;
+                    } catch (Exception e) {
+                        // deserialization failed, continue
+                        errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for ContentViolationAnyOf7 failed with `%s`.", e.getMessage()));
+                        log.log(Level.FINER, "Input data does not match schema 'ContentViolationAnyOf7'", e);
+                    }
+                    // deserialize ContentViolationAnyOf8
+                    try {
+                        // validate the JSON object to see if any exception is thrown
+                        ContentViolationAnyOf8.validateJsonElement(jsonElement);
+                        actualAdapter = adapterContentViolationAnyOf8;
+                        ContentViolation ret = new ContentViolation();
+                        ret.setActualInstance(actualAdapter.fromJsonTree(jsonElement));
+                        return ret;
+                    } catch (Exception e) {
+                        // deserialization failed, continue
+                        errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for ContentViolationAnyOf8 failed with `%s`.", e.getMessage()));
+                        log.log(Level.FINER, "Input data does not match schema 'ContentViolationAnyOf8'", e);
+                    }
+                    // deserialize ContentViolationAnyOf9
+                    try {
+                        // validate the JSON object to see if any exception is thrown
+                        ContentViolationAnyOf9.validateJsonElement(jsonElement);
+                        actualAdapter = adapterContentViolationAnyOf9;
+                        ContentViolation ret = new ContentViolation();
+                        ret.setActualInstance(actualAdapter.fromJsonTree(jsonElement));
+                        return ret;
+                    } catch (Exception e) {
+                        // deserialization failed, continue
+                        errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for ContentViolationAnyOf9 failed with `%s`.", e.getMessage()));
+                        log.log(Level.FINER, "Input data does not match schema 'ContentViolationAnyOf9'", e);
+                    }
+                    // deserialize ContentViolationAnyOf10
+                    try {
+                        // validate the JSON object to see if any exception is thrown
+                        ContentViolationAnyOf10.validateJsonElement(jsonElement);
+                        actualAdapter = adapterContentViolationAnyOf10;
+                        ContentViolation ret = new ContentViolation();
+                        ret.setActualInstance(actualAdapter.fromJsonTree(jsonElement));
+                        return ret;
+                    } catch (Exception e) {
+                        // deserialization failed, continue
+                        errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for ContentViolationAnyOf10 failed with `%s`.", e.getMessage()));
+                        log.log(Level.FINER, "Input data does not match schema 'ContentViolationAnyOf10'", e);
+                    }
+                    // deserialize ContentViolationAnyOf11
+                    try {
+                        // validate the JSON object to see if any exception is thrown
+                        ContentViolationAnyOf11.validateJsonElement(jsonElement);
+                        actualAdapter = adapterContentViolationAnyOf11;
+                        ContentViolation ret = new ContentViolation();
+                        ret.setActualInstance(actualAdapter.fromJsonTree(jsonElement));
+                        return ret;
+                    } catch (Exception e) {
+                        // deserialization failed, continue
+                        errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for ContentViolationAnyOf11 failed with `%s`.", e.getMessage()));
+                        log.log(Level.FINER, "Input data does not match schema 'ContentViolationAnyOf11'", e);
+                    }
+                    // deserialize ContentViolationAnyOf12
+                    try {
+                        // validate the JSON object to see if any exception is thrown
+                        ContentViolationAnyOf12.validateJsonElement(jsonElement);
+                        actualAdapter = adapterContentViolationAnyOf12;
+                        ContentViolation ret = new ContentViolation();
+                        ret.setActualInstance(actualAdapter.fromJsonTree(jsonElement));
+                        return ret;
+                    } catch (Exception e) {
+                        // deserialization failed, continue
+                        errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for ContentViolationAnyOf12 failed with `%s`.", e.getMessage()));
+                        log.log(Level.FINER, "Input data does not match schema 'ContentViolationAnyOf12'", e);
+                    }
+                    // deserialize ContentViolationAnyOf13
+                    try {
+                        // validate the JSON object to see if any exception is thrown
+                        ContentViolationAnyOf13.validateJsonElement(jsonElement);
+                        actualAdapter = adapterContentViolationAnyOf13;
+                        ContentViolation ret = new ContentViolation();
+                        ret.setActualInstance(actualAdapter.fromJsonTree(jsonElement));
+                        return ret;
+                    } catch (Exception e) {
+                        // deserialization failed, continue
+                        errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for ContentViolationAnyOf13 failed with `%s`.", e.getMessage()));
+                        log.log(Level.FINER, "Input data does not match schema 'ContentViolationAnyOf13'", e);
+                    }
+                    // deserialize ContentViolationAnyOf14
+                    try {
+                        // validate the JSON object to see if any exception is thrown
+                        ContentViolationAnyOf14.validateJsonElement(jsonElement);
+                        actualAdapter = adapterContentViolationAnyOf14;
+                        ContentViolation ret = new ContentViolation();
+                        ret.setActualInstance(actualAdapter.fromJsonTree(jsonElement));
+                        return ret;
+                    } catch (Exception e) {
+                        // deserialization failed, continue
+                        errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for ContentViolationAnyOf14 failed with `%s`.", e.getMessage()));
+                        log.log(Level.FINER, "Input data does not match schema 'ContentViolationAnyOf14'", e);
+                    }
+                    // deserialize ContentViolationAnyOf15
+                    try {
+                        // validate the JSON object to see if any exception is thrown
+                        ContentViolationAnyOf15.validateJsonElement(jsonElement);
+                        actualAdapter = adapterContentViolationAnyOf15;
+                        ContentViolation ret = new ContentViolation();
+                        ret.setActualInstance(actualAdapter.fromJsonTree(jsonElement));
+                        return ret;
+                    } catch (Exception e) {
+                        // deserialization failed, continue
+                        errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for ContentViolationAnyOf15 failed with `%s`.", e.getMessage()));
+                        log.log(Level.FINER, "Input data does not match schema 'ContentViolationAnyOf15'", e);
+                    }
+                    // deserialize ContentViolationAnyOf16
+                    try {
+                        // validate the JSON object to see if any exception is thrown
+                        ContentViolationAnyOf16.validateJsonElement(jsonElement);
+                        actualAdapter = adapterContentViolationAnyOf16;
+                        ContentViolation ret = new ContentViolation();
+                        ret.setActualInstance(actualAdapter.fromJsonTree(jsonElement));
+                        return ret;
+                    } catch (Exception e) {
+                        // deserialization failed, continue
+                        errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for ContentViolationAnyOf16 failed with `%s`.", e.getMessage()));
+                        log.log(Level.FINER, "Input data does not match schema 'ContentViolationAnyOf16'", e);
+                    }
+                    // deserialize ContentViolationAnyOf17
+                    try {
+                        // validate the JSON object to see if any exception is thrown
+                        ContentViolationAnyOf17.validateJsonElement(jsonElement);
+                        actualAdapter = adapterContentViolationAnyOf17;
+                        ContentViolation ret = new ContentViolation();
+                        ret.setActualInstance(actualAdapter.fromJsonTree(jsonElement));
+                        return ret;
+                    } catch (Exception e) {
+                        // deserialization failed, continue
+                        errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for ContentViolationAnyOf17 failed with `%s`.", e.getMessage()));
+                        log.log(Level.FINER, "Input data does not match schema 'ContentViolationAnyOf17'", e);
+                    }
+                    // deserialize ContentViolationAnyOf18
+                    try {
+                        // validate the JSON object to see if any exception is thrown
+                        ContentViolationAnyOf18.validateJsonElement(jsonElement);
+                        actualAdapter = adapterContentViolationAnyOf18;
+                        ContentViolation ret = new ContentViolation();
+                        ret.setActualInstance(actualAdapter.fromJsonTree(jsonElement));
+                        return ret;
+                    } catch (Exception e) {
+                        // deserialization failed, continue
+                        errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for ContentViolationAnyOf18 failed with `%s`.", e.getMessage()));
+                        log.log(Level.FINER, "Input data does not match schema 'ContentViolationAnyOf18'", e);
+                    }
+                    // deserialize ContentViolationAnyOf19
+                    try {
+                        // validate the JSON object to see if any exception is thrown
+                        ContentViolationAnyOf19.validateJsonElement(jsonElement);
+                        actualAdapter = adapterContentViolationAnyOf19;
+                        ContentViolation ret = new ContentViolation();
+                        ret.setActualInstance(actualAdapter.fromJsonTree(jsonElement));
+                        return ret;
+                    } catch (Exception e) {
+                        // deserialization failed, continue
+                        errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for ContentViolationAnyOf19 failed with `%s`.", e.getMessage()));
+                        log.log(Level.FINER, "Input data does not match schema 'ContentViolationAnyOf19'", e);
+                    }
+                    // deserialize ContentViolationAnyOf20
+                    try {
+                        // validate the JSON object to see if any exception is thrown
+                        ContentViolationAnyOf20.validateJsonElement(jsonElement);
+                        actualAdapter = adapterContentViolationAnyOf20;
+                        ContentViolation ret = new ContentViolation();
+                        ret.setActualInstance(actualAdapter.fromJsonTree(jsonElement));
+                        return ret;
+                    } catch (Exception e) {
+                        // deserialization failed, continue
+                        errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for ContentViolationAnyOf20 failed with `%s`.", e.getMessage()));
+                        log.log(Level.FINER, "Input data does not match schema 'ContentViolationAnyOf20'", e);
+                    }
+                    // deserialize ContentViolationAnyOf21
+                    try {
+                        // validate the JSON object to see if any exception is thrown
+                        ContentViolationAnyOf21.validateJsonElement(jsonElement);
+                        actualAdapter = adapterContentViolationAnyOf21;
+                        ContentViolation ret = new ContentViolation();
+                        ret.setActualInstance(actualAdapter.fromJsonTree(jsonElement));
+                        return ret;
+                    } catch (Exception e) {
+                        // deserialization failed, continue
+                        errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for ContentViolationAnyOf21 failed with `%s`.", e.getMessage()));
+                        log.log(Level.FINER, "Input data does not match schema 'ContentViolationAnyOf21'", e);
+                    }
+                    // deserialize ContentViolationAnyOf22
+                    try {
+                        // validate the JSON object to see if any exception is thrown
+                        ContentViolationAnyOf22.validateJsonElement(jsonElement);
+                        actualAdapter = adapterContentViolationAnyOf22;
+                        ContentViolation ret = new ContentViolation();
+                        ret.setActualInstance(actualAdapter.fromJsonTree(jsonElement));
+                        return ret;
+                    } catch (Exception e) {
+                        // deserialization failed, continue
+                        errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for ContentViolationAnyOf22 failed with `%s`.", e.getMessage()));
+                        log.log(Level.FINER, "Input data does not match schema 'ContentViolationAnyOf22'", e);
+                    }
+                    // deserialize ContentViolationAnyOf23
+                    try {
+                        // validate the JSON object to see if any exception is thrown
+                        ContentViolationAnyOf23.validateJsonElement(jsonElement);
+                        actualAdapter = adapterContentViolationAnyOf23;
+                        ContentViolation ret = new ContentViolation();
+                        ret.setActualInstance(actualAdapter.fromJsonTree(jsonElement));
+                        return ret;
+                    } catch (Exception e) {
+                        // deserialization failed, continue
+                        errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for ContentViolationAnyOf23 failed with `%s`.", e.getMessage()));
+                        log.log(Level.FINER, "Input data does not match schema 'ContentViolationAnyOf23'", e);
+                    }
+                    // deserialize ContentViolationAnyOf24
+                    try {
+                        // validate the JSON object to see if any exception is thrown
+                        ContentViolationAnyOf24.validateJsonElement(jsonElement);
+                        actualAdapter = adapterContentViolationAnyOf24;
+                        ContentViolation ret = new ContentViolation();
+                        ret.setActualInstance(actualAdapter.fromJsonTree(jsonElement));
+                        return ret;
+                    } catch (Exception e) {
+                        // deserialization failed, continue
+                        errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for ContentViolationAnyOf24 failed with `%s`.", e.getMessage()));
+                        log.log(Level.FINER, "Input data does not match schema 'ContentViolationAnyOf24'", e);
+                    }
+                    // deserialize ContentViolationAnyOf25
+                    try {
+                        // validate the JSON object to see if any exception is thrown
+                        ContentViolationAnyOf25.validateJsonElement(jsonElement);
+                        actualAdapter = adapterContentViolationAnyOf25;
+                        ContentViolation ret = new ContentViolation();
+                        ret.setActualInstance(actualAdapter.fromJsonTree(jsonElement));
+                        return ret;
+                    } catch (Exception e) {
+                        // deserialization failed, continue
+                        errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for ContentViolationAnyOf25 failed with `%s`.", e.getMessage()));
+                        log.log(Level.FINER, "Input data does not match schema 'ContentViolationAnyOf25'", e);
+                    }
 
-            // deserialize ContentViolationAnyOf6
-            try {
-                deserialized = tree.traverse(jp.getCodec()).readValueAs(ContentViolationAnyOf6.class);
-                ContentViolation ret = new ContentViolation();
-                ret.setActualInstance(deserialized);
-                return ret;
-            } catch (Exception e) {
-                // deserialization failed, continue, log to help debugging
-                log.log(Level.FINER, "Input data does not match 'ContentViolation'", e);
-            }
-
-            // deserialize ContentViolationAnyOf7
-            try {
-                deserialized = tree.traverse(jp.getCodec()).readValueAs(ContentViolationAnyOf7.class);
-                ContentViolation ret = new ContentViolation();
-                ret.setActualInstance(deserialized);
-                return ret;
-            } catch (Exception e) {
-                // deserialization failed, continue, log to help debugging
-                log.log(Level.FINER, "Input data does not match 'ContentViolation'", e);
-            }
-
-            // deserialize ContentViolationAnyOf8
-            try {
-                deserialized = tree.traverse(jp.getCodec()).readValueAs(ContentViolationAnyOf8.class);
-                ContentViolation ret = new ContentViolation();
-                ret.setActualInstance(deserialized);
-                return ret;
-            } catch (Exception e) {
-                // deserialization failed, continue, log to help debugging
-                log.log(Level.FINER, "Input data does not match 'ContentViolation'", e);
-            }
-
-            // deserialize ContentViolationAnyOf9
-            try {
-                deserialized = tree.traverse(jp.getCodec()).readValueAs(ContentViolationAnyOf9.class);
-                ContentViolation ret = new ContentViolation();
-                ret.setActualInstance(deserialized);
-                return ret;
-            } catch (Exception e) {
-                // deserialization failed, continue, log to help debugging
-                log.log(Level.FINER, "Input data does not match 'ContentViolation'", e);
-            }
-
-            // deserialize ContentViolationAnyOf10
-            try {
-                deserialized = tree.traverse(jp.getCodec()).readValueAs(ContentViolationAnyOf10.class);
-                ContentViolation ret = new ContentViolation();
-                ret.setActualInstance(deserialized);
-                return ret;
-            } catch (Exception e) {
-                // deserialization failed, continue, log to help debugging
-                log.log(Level.FINER, "Input data does not match 'ContentViolation'", e);
-            }
-
-            // deserialize ContentViolationAnyOf11
-            try {
-                deserialized = tree.traverse(jp.getCodec()).readValueAs(ContentViolationAnyOf11.class);
-                ContentViolation ret = new ContentViolation();
-                ret.setActualInstance(deserialized);
-                return ret;
-            } catch (Exception e) {
-                // deserialization failed, continue, log to help debugging
-                log.log(Level.FINER, "Input data does not match 'ContentViolation'", e);
-            }
-
-            // deserialize ContentViolationAnyOf12
-            try {
-                deserialized = tree.traverse(jp.getCodec()).readValueAs(ContentViolationAnyOf12.class);
-                ContentViolation ret = new ContentViolation();
-                ret.setActualInstance(deserialized);
-                return ret;
-            } catch (Exception e) {
-                // deserialization failed, continue, log to help debugging
-                log.log(Level.FINER, "Input data does not match 'ContentViolation'", e);
-            }
-
-            // deserialize ContentViolationAnyOf13
-            try {
-                deserialized = tree.traverse(jp.getCodec()).readValueAs(ContentViolationAnyOf13.class);
-                ContentViolation ret = new ContentViolation();
-                ret.setActualInstance(deserialized);
-                return ret;
-            } catch (Exception e) {
-                // deserialization failed, continue, log to help debugging
-                log.log(Level.FINER, "Input data does not match 'ContentViolation'", e);
-            }
-
-            // deserialize ContentViolationAnyOf14
-            try {
-                deserialized = tree.traverse(jp.getCodec()).readValueAs(ContentViolationAnyOf14.class);
-                ContentViolation ret = new ContentViolation();
-                ret.setActualInstance(deserialized);
-                return ret;
-            } catch (Exception e) {
-                // deserialization failed, continue, log to help debugging
-                log.log(Level.FINER, "Input data does not match 'ContentViolation'", e);
-            }
-
-            // deserialize ContentViolationAnyOf15
-            try {
-                deserialized = tree.traverse(jp.getCodec()).readValueAs(ContentViolationAnyOf15.class);
-                ContentViolation ret = new ContentViolation();
-                ret.setActualInstance(deserialized);
-                return ret;
-            } catch (Exception e) {
-                // deserialization failed, continue, log to help debugging
-                log.log(Level.FINER, "Input data does not match 'ContentViolation'", e);
-            }
-
-            // deserialize ContentViolationAnyOf16
-            try {
-                deserialized = tree.traverse(jp.getCodec()).readValueAs(ContentViolationAnyOf16.class);
-                ContentViolation ret = new ContentViolation();
-                ret.setActualInstance(deserialized);
-                return ret;
-            } catch (Exception e) {
-                // deserialization failed, continue, log to help debugging
-                log.log(Level.FINER, "Input data does not match 'ContentViolation'", e);
-            }
-
-            // deserialize ContentViolationAnyOf17
-            try {
-                deserialized = tree.traverse(jp.getCodec()).readValueAs(ContentViolationAnyOf17.class);
-                ContentViolation ret = new ContentViolation();
-                ret.setActualInstance(deserialized);
-                return ret;
-            } catch (Exception e) {
-                // deserialization failed, continue, log to help debugging
-                log.log(Level.FINER, "Input data does not match 'ContentViolation'", e);
-            }
-
-            // deserialize ContentViolationAnyOf18
-            try {
-                deserialized = tree.traverse(jp.getCodec()).readValueAs(ContentViolationAnyOf18.class);
-                ContentViolation ret = new ContentViolation();
-                ret.setActualInstance(deserialized);
-                return ret;
-            } catch (Exception e) {
-                // deserialization failed, continue, log to help debugging
-                log.log(Level.FINER, "Input data does not match 'ContentViolation'", e);
-            }
-
-            // deserialize ContentViolationAnyOf19
-            try {
-                deserialized = tree.traverse(jp.getCodec()).readValueAs(ContentViolationAnyOf19.class);
-                ContentViolation ret = new ContentViolation();
-                ret.setActualInstance(deserialized);
-                return ret;
-            } catch (Exception e) {
-                // deserialization failed, continue, log to help debugging
-                log.log(Level.FINER, "Input data does not match 'ContentViolation'", e);
-            }
-
-            // deserialize ContentViolationAnyOf20
-            try {
-                deserialized = tree.traverse(jp.getCodec()).readValueAs(ContentViolationAnyOf20.class);
-                ContentViolation ret = new ContentViolation();
-                ret.setActualInstance(deserialized);
-                return ret;
-            } catch (Exception e) {
-                // deserialization failed, continue, log to help debugging
-                log.log(Level.FINER, "Input data does not match 'ContentViolation'", e);
-            }
-
-            // deserialize ContentViolationAnyOf21
-            try {
-                deserialized = tree.traverse(jp.getCodec()).readValueAs(ContentViolationAnyOf21.class);
-                ContentViolation ret = new ContentViolation();
-                ret.setActualInstance(deserialized);
-                return ret;
-            } catch (Exception e) {
-                // deserialization failed, continue, log to help debugging
-                log.log(Level.FINER, "Input data does not match 'ContentViolation'", e);
-            }
-
-            // deserialize ContentViolationAnyOf22
-            try {
-                deserialized = tree.traverse(jp.getCodec()).readValueAs(ContentViolationAnyOf22.class);
-                ContentViolation ret = new ContentViolation();
-                ret.setActualInstance(deserialized);
-                return ret;
-            } catch (Exception e) {
-                // deserialization failed, continue, log to help debugging
-                log.log(Level.FINER, "Input data does not match 'ContentViolation'", e);
-            }
-
-            // deserialize ContentViolationAnyOf23
-            try {
-                deserialized = tree.traverse(jp.getCodec()).readValueAs(ContentViolationAnyOf23.class);
-                ContentViolation ret = new ContentViolation();
-                ret.setActualInstance(deserialized);
-                return ret;
-            } catch (Exception e) {
-                // deserialization failed, continue, log to help debugging
-                log.log(Level.FINER, "Input data does not match 'ContentViolation'", e);
-            }
-
-            // deserialize ContentViolationAnyOf24
-            try {
-                deserialized = tree.traverse(jp.getCodec()).readValueAs(ContentViolationAnyOf24.class);
-                ContentViolation ret = new ContentViolation();
-                ret.setActualInstance(deserialized);
-                return ret;
-            } catch (Exception e) {
-                // deserialization failed, continue, log to help debugging
-                log.log(Level.FINER, "Input data does not match 'ContentViolation'", e);
-            }
-
-            // deserialize ContentViolationAnyOf25
-            try {
-                deserialized = tree.traverse(jp.getCodec()).readValueAs(ContentViolationAnyOf25.class);
-                ContentViolation ret = new ContentViolation();
-                ret.setActualInstance(deserialized);
-                return ret;
-            } catch (Exception e) {
-                // deserialization failed, continue, log to help debugging
-                log.log(Level.FINER, "Input data does not match 'ContentViolation'", e);
-            }
-
-            throw new IOException("Failed deserialization for ContentViolation: no match found");
-        }
-
-        /**
-         * Handle deserialization of the 'null' value.
-         */
-        @Override
-        public ContentViolation getNullValue(DeserializationContext ctxt) throws JsonMappingException {
-            throw new JsonMappingException(ctxt.getParser(), "ContentViolation cannot be null");
+                    throw new IOException(String.format(java.util.Locale.ROOT, "Failed deserialization for ContentViolation: no class matches result, expected at least 1. Detailed failure message for anyOf schemas: %s. JSON: %s", errorMessages, jsonElement.toString()));
+                }
+            }.nullSafe();
         }
     }
 
@@ -421,133 +655,8 @@ public class ContentViolation extends AbstractOpenApiSchema {
         super("anyOf", Boolean.FALSE);
     }
 
-    public ContentViolation(ContentViolationAnyOf o) {
-        this();
-        setActualInstance(o);
-    }
-
-    public ContentViolation(ContentViolationAnyOf1 o) {
-        this();
-        setActualInstance(o);
-    }
-
-    public ContentViolation(ContentViolationAnyOf2 o) {
-        this();
-        setActualInstance(o);
-    }
-
-    public ContentViolation(ContentViolationAnyOf3 o) {
-        this();
-        setActualInstance(o);
-    }
-
-    public ContentViolation(ContentViolationAnyOf4 o) {
-        this();
-        setActualInstance(o);
-    }
-
-    public ContentViolation(ContentViolationAnyOf5 o) {
-        this();
-        setActualInstance(o);
-    }
-
-    public ContentViolation(ContentViolationAnyOf6 o) {
-        this();
-        setActualInstance(o);
-    }
-
-    public ContentViolation(ContentViolationAnyOf7 o) {
-        this();
-        setActualInstance(o);
-    }
-
-    public ContentViolation(ContentViolationAnyOf8 o) {
-        this();
-        setActualInstance(o);
-    }
-
-    public ContentViolation(ContentViolationAnyOf9 o) {
-        this();
-        setActualInstance(o);
-    }
-
-    public ContentViolation(ContentViolationAnyOf10 o) {
-        this();
-        setActualInstance(o);
-    }
-
-    public ContentViolation(ContentViolationAnyOf11 o) {
-        this();
-        setActualInstance(o);
-    }
-
-    public ContentViolation(ContentViolationAnyOf12 o) {
-        this();
-        setActualInstance(o);
-    }
-
-    public ContentViolation(ContentViolationAnyOf13 o) {
-        this();
-        setActualInstance(o);
-    }
-
-    public ContentViolation(ContentViolationAnyOf14 o) {
-        this();
-        setActualInstance(o);
-    }
-
-    public ContentViolation(ContentViolationAnyOf15 o) {
-        this();
-        setActualInstance(o);
-    }
-
-    public ContentViolation(ContentViolationAnyOf16 o) {
-        this();
-        setActualInstance(o);
-    }
-
-    public ContentViolation(ContentViolationAnyOf17 o) {
-        this();
-        setActualInstance(o);
-    }
-
-    public ContentViolation(ContentViolationAnyOf18 o) {
-        this();
-        setActualInstance(o);
-    }
-
-    public ContentViolation(ContentViolationAnyOf19 o) {
-        this();
-        setActualInstance(o);
-    }
-
-    public ContentViolation(ContentViolationAnyOf20 o) {
-        this();
-        setActualInstance(o);
-    }
-
-    public ContentViolation(ContentViolationAnyOf21 o) {
-        this();
-        setActualInstance(o);
-    }
-
-    public ContentViolation(ContentViolationAnyOf22 o) {
-        this();
-        setActualInstance(o);
-    }
-
-    public ContentViolation(ContentViolationAnyOf23 o) {
-        this();
-        setActualInstance(o);
-    }
-
-    public ContentViolation(ContentViolationAnyOf24 o) {
-        this();
-        setActualInstance(o);
-    }
-
-    public ContentViolation(ContentViolationAnyOf25 o) {
-        this();
+    public ContentViolation(Object o) {
+        super("anyOf", Boolean.FALSE);
         setActualInstance(o);
     }
 
@@ -578,7 +687,6 @@ public class ContentViolation extends AbstractOpenApiSchema {
         schemas.put("ContentViolationAnyOf23", ContentViolationAnyOf23.class);
         schemas.put("ContentViolationAnyOf24", ContentViolationAnyOf24.class);
         schemas.put("ContentViolationAnyOf25", ContentViolationAnyOf25.class);
-        JSON.registerDescendants(ContentViolation.class, Collections.unmodifiableMap(schemas));
     }
 
     @Override
@@ -592,136 +700,135 @@ public class ContentViolation extends AbstractOpenApiSchema {
      * ContentViolationAnyOf, ContentViolationAnyOf1, ContentViolationAnyOf10, ContentViolationAnyOf11, ContentViolationAnyOf12, ContentViolationAnyOf13, ContentViolationAnyOf14, ContentViolationAnyOf15, ContentViolationAnyOf16, ContentViolationAnyOf17, ContentViolationAnyOf18, ContentViolationAnyOf19, ContentViolationAnyOf2, ContentViolationAnyOf20, ContentViolationAnyOf21, ContentViolationAnyOf22, ContentViolationAnyOf23, ContentViolationAnyOf24, ContentViolationAnyOf25, ContentViolationAnyOf3, ContentViolationAnyOf4, ContentViolationAnyOf5, ContentViolationAnyOf6, ContentViolationAnyOf7, ContentViolationAnyOf8, ContentViolationAnyOf9
      *
      * It could be an instance of the 'anyOf' schemas.
-     * The anyOf child schemas may themselves be a composed schema (allOf, anyOf, anyOf).
      */
     @Override
     public void setActualInstance(Object instance) {
-        if (JSON.isInstanceOf(ContentViolationAnyOf.class, instance, new HashSet<Class<?>>())) {
+        if (instance instanceof ContentViolationAnyOf) {
             super.setActualInstance(instance);
             return;
         }
 
-        if (JSON.isInstanceOf(ContentViolationAnyOf1.class, instance, new HashSet<Class<?>>())) {
+        if (instance instanceof ContentViolationAnyOf1) {
             super.setActualInstance(instance);
             return;
         }
 
-        if (JSON.isInstanceOf(ContentViolationAnyOf2.class, instance, new HashSet<Class<?>>())) {
+        if (instance instanceof ContentViolationAnyOf2) {
             super.setActualInstance(instance);
             return;
         }
 
-        if (JSON.isInstanceOf(ContentViolationAnyOf3.class, instance, new HashSet<Class<?>>())) {
+        if (instance instanceof ContentViolationAnyOf3) {
             super.setActualInstance(instance);
             return;
         }
 
-        if (JSON.isInstanceOf(ContentViolationAnyOf4.class, instance, new HashSet<Class<?>>())) {
+        if (instance instanceof ContentViolationAnyOf4) {
             super.setActualInstance(instance);
             return;
         }
 
-        if (JSON.isInstanceOf(ContentViolationAnyOf5.class, instance, new HashSet<Class<?>>())) {
+        if (instance instanceof ContentViolationAnyOf5) {
             super.setActualInstance(instance);
             return;
         }
 
-        if (JSON.isInstanceOf(ContentViolationAnyOf6.class, instance, new HashSet<Class<?>>())) {
+        if (instance instanceof ContentViolationAnyOf6) {
             super.setActualInstance(instance);
             return;
         }
 
-        if (JSON.isInstanceOf(ContentViolationAnyOf7.class, instance, new HashSet<Class<?>>())) {
+        if (instance instanceof ContentViolationAnyOf7) {
             super.setActualInstance(instance);
             return;
         }
 
-        if (JSON.isInstanceOf(ContentViolationAnyOf8.class, instance, new HashSet<Class<?>>())) {
+        if (instance instanceof ContentViolationAnyOf8) {
             super.setActualInstance(instance);
             return;
         }
 
-        if (JSON.isInstanceOf(ContentViolationAnyOf9.class, instance, new HashSet<Class<?>>())) {
+        if (instance instanceof ContentViolationAnyOf9) {
             super.setActualInstance(instance);
             return;
         }
 
-        if (JSON.isInstanceOf(ContentViolationAnyOf10.class, instance, new HashSet<Class<?>>())) {
+        if (instance instanceof ContentViolationAnyOf10) {
             super.setActualInstance(instance);
             return;
         }
 
-        if (JSON.isInstanceOf(ContentViolationAnyOf11.class, instance, new HashSet<Class<?>>())) {
+        if (instance instanceof ContentViolationAnyOf11) {
             super.setActualInstance(instance);
             return;
         }
 
-        if (JSON.isInstanceOf(ContentViolationAnyOf12.class, instance, new HashSet<Class<?>>())) {
+        if (instance instanceof ContentViolationAnyOf12) {
             super.setActualInstance(instance);
             return;
         }
 
-        if (JSON.isInstanceOf(ContentViolationAnyOf13.class, instance, new HashSet<Class<?>>())) {
+        if (instance instanceof ContentViolationAnyOf13) {
             super.setActualInstance(instance);
             return;
         }
 
-        if (JSON.isInstanceOf(ContentViolationAnyOf14.class, instance, new HashSet<Class<?>>())) {
+        if (instance instanceof ContentViolationAnyOf14) {
             super.setActualInstance(instance);
             return;
         }
 
-        if (JSON.isInstanceOf(ContentViolationAnyOf15.class, instance, new HashSet<Class<?>>())) {
+        if (instance instanceof ContentViolationAnyOf15) {
             super.setActualInstance(instance);
             return;
         }
 
-        if (JSON.isInstanceOf(ContentViolationAnyOf16.class, instance, new HashSet<Class<?>>())) {
+        if (instance instanceof ContentViolationAnyOf16) {
             super.setActualInstance(instance);
             return;
         }
 
-        if (JSON.isInstanceOf(ContentViolationAnyOf17.class, instance, new HashSet<Class<?>>())) {
+        if (instance instanceof ContentViolationAnyOf17) {
             super.setActualInstance(instance);
             return;
         }
 
-        if (JSON.isInstanceOf(ContentViolationAnyOf18.class, instance, new HashSet<Class<?>>())) {
+        if (instance instanceof ContentViolationAnyOf18) {
             super.setActualInstance(instance);
             return;
         }
 
-        if (JSON.isInstanceOf(ContentViolationAnyOf19.class, instance, new HashSet<Class<?>>())) {
+        if (instance instanceof ContentViolationAnyOf19) {
             super.setActualInstance(instance);
             return;
         }
 
-        if (JSON.isInstanceOf(ContentViolationAnyOf20.class, instance, new HashSet<Class<?>>())) {
+        if (instance instanceof ContentViolationAnyOf20) {
             super.setActualInstance(instance);
             return;
         }
 
-        if (JSON.isInstanceOf(ContentViolationAnyOf21.class, instance, new HashSet<Class<?>>())) {
+        if (instance instanceof ContentViolationAnyOf21) {
             super.setActualInstance(instance);
             return;
         }
 
-        if (JSON.isInstanceOf(ContentViolationAnyOf22.class, instance, new HashSet<Class<?>>())) {
+        if (instance instanceof ContentViolationAnyOf22) {
             super.setActualInstance(instance);
             return;
         }
 
-        if (JSON.isInstanceOf(ContentViolationAnyOf23.class, instance, new HashSet<Class<?>>())) {
+        if (instance instanceof ContentViolationAnyOf23) {
             super.setActualInstance(instance);
             return;
         }
 
-        if (JSON.isInstanceOf(ContentViolationAnyOf24.class, instance, new HashSet<Class<?>>())) {
+        if (instance instanceof ContentViolationAnyOf24) {
             super.setActualInstance(instance);
             return;
         }
 
-        if (JSON.isInstanceOf(ContentViolationAnyOf25.class, instance, new HashSet<Class<?>>())) {
+        if (instance instanceof ContentViolationAnyOf25) {
             super.setActualInstance(instance);
             return;
         }
@@ -735,6 +842,7 @@ public class ContentViolation extends AbstractOpenApiSchema {
      *
      * @return The actual instance (ContentViolationAnyOf, ContentViolationAnyOf1, ContentViolationAnyOf10, ContentViolationAnyOf11, ContentViolationAnyOf12, ContentViolationAnyOf13, ContentViolationAnyOf14, ContentViolationAnyOf15, ContentViolationAnyOf16, ContentViolationAnyOf17, ContentViolationAnyOf18, ContentViolationAnyOf19, ContentViolationAnyOf2, ContentViolationAnyOf20, ContentViolationAnyOf21, ContentViolationAnyOf22, ContentViolationAnyOf23, ContentViolationAnyOf24, ContentViolationAnyOf25, ContentViolationAnyOf3, ContentViolationAnyOf4, ContentViolationAnyOf5, ContentViolationAnyOf6, ContentViolationAnyOf7, ContentViolationAnyOf8, ContentViolationAnyOf9)
      */
+    @SuppressWarnings("unchecked")
     @Override
     public Object getActualInstance() {
         return super.getActualInstance();
@@ -1026,42 +1134,244 @@ public class ContentViolation extends AbstractOpenApiSchema {
         return (ContentViolationAnyOf25)super.getActualInstance();
     }
 
-
-
-  /**
-   * Convert the instance into URL query string.
-   *
-   * @return URL query string
-   */
-  public String toUrlQueryString() {
-    return toUrlQueryString(null);
-  }
-
-  /**
-   * Convert the instance into URL query string.
-   *
-   * @param prefix prefix of the query string
-   * @return URL query string
-   */
-  public String toUrlQueryString(String prefix) {
-    String suffix = "";
-    String containerSuffix = "";
-    String containerPrefix = "";
-    if (prefix == null) {
-      // style=form, explode=true, e.g. /pet?name=cat&type=manx
-      prefix = "";
-    } else {
-      // deepObject style e.g. /pet?id[name]=cat&id[type]=manx
-      prefix = prefix + "[";
-      suffix = "]";
-      containerSuffix = "]";
-      containerPrefix = "[";
+    /**
+     * Validates the JSON Element and throws an exception if issues found
+     *
+     * @param jsonElement JSON Element
+     * @throws IOException if the JSON Element is invalid with respect to ContentViolation
+     */
+    public static void validateJsonElement(JsonElement jsonElement) throws IOException {
+        // validate anyOf schemas one by one
+        ArrayList<String> errorMessages = new ArrayList<>();
+        // validate the json string with ContentViolationAnyOf
+        try {
+            ContentViolationAnyOf.validateJsonElement(jsonElement);
+            return;
+        } catch (Exception e) {
+            errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for ContentViolationAnyOf failed with `%s`.", e.getMessage()));
+            // continue to the next one
+        }
+        // validate the json string with ContentViolationAnyOf1
+        try {
+            ContentViolationAnyOf1.validateJsonElement(jsonElement);
+            return;
+        } catch (Exception e) {
+            errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for ContentViolationAnyOf1 failed with `%s`.", e.getMessage()));
+            // continue to the next one
+        }
+        // validate the json string with ContentViolationAnyOf2
+        try {
+            ContentViolationAnyOf2.validateJsonElement(jsonElement);
+            return;
+        } catch (Exception e) {
+            errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for ContentViolationAnyOf2 failed with `%s`.", e.getMessage()));
+            // continue to the next one
+        }
+        // validate the json string with ContentViolationAnyOf3
+        try {
+            ContentViolationAnyOf3.validateJsonElement(jsonElement);
+            return;
+        } catch (Exception e) {
+            errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for ContentViolationAnyOf3 failed with `%s`.", e.getMessage()));
+            // continue to the next one
+        }
+        // validate the json string with ContentViolationAnyOf4
+        try {
+            ContentViolationAnyOf4.validateJsonElement(jsonElement);
+            return;
+        } catch (Exception e) {
+            errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for ContentViolationAnyOf4 failed with `%s`.", e.getMessage()));
+            // continue to the next one
+        }
+        // validate the json string with ContentViolationAnyOf5
+        try {
+            ContentViolationAnyOf5.validateJsonElement(jsonElement);
+            return;
+        } catch (Exception e) {
+            errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for ContentViolationAnyOf5 failed with `%s`.", e.getMessage()));
+            // continue to the next one
+        }
+        // validate the json string with ContentViolationAnyOf6
+        try {
+            ContentViolationAnyOf6.validateJsonElement(jsonElement);
+            return;
+        } catch (Exception e) {
+            errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for ContentViolationAnyOf6 failed with `%s`.", e.getMessage()));
+            // continue to the next one
+        }
+        // validate the json string with ContentViolationAnyOf7
+        try {
+            ContentViolationAnyOf7.validateJsonElement(jsonElement);
+            return;
+        } catch (Exception e) {
+            errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for ContentViolationAnyOf7 failed with `%s`.", e.getMessage()));
+            // continue to the next one
+        }
+        // validate the json string with ContentViolationAnyOf8
+        try {
+            ContentViolationAnyOf8.validateJsonElement(jsonElement);
+            return;
+        } catch (Exception e) {
+            errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for ContentViolationAnyOf8 failed with `%s`.", e.getMessage()));
+            // continue to the next one
+        }
+        // validate the json string with ContentViolationAnyOf9
+        try {
+            ContentViolationAnyOf9.validateJsonElement(jsonElement);
+            return;
+        } catch (Exception e) {
+            errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for ContentViolationAnyOf9 failed with `%s`.", e.getMessage()));
+            // continue to the next one
+        }
+        // validate the json string with ContentViolationAnyOf10
+        try {
+            ContentViolationAnyOf10.validateJsonElement(jsonElement);
+            return;
+        } catch (Exception e) {
+            errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for ContentViolationAnyOf10 failed with `%s`.", e.getMessage()));
+            // continue to the next one
+        }
+        // validate the json string with ContentViolationAnyOf11
+        try {
+            ContentViolationAnyOf11.validateJsonElement(jsonElement);
+            return;
+        } catch (Exception e) {
+            errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for ContentViolationAnyOf11 failed with `%s`.", e.getMessage()));
+            // continue to the next one
+        }
+        // validate the json string with ContentViolationAnyOf12
+        try {
+            ContentViolationAnyOf12.validateJsonElement(jsonElement);
+            return;
+        } catch (Exception e) {
+            errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for ContentViolationAnyOf12 failed with `%s`.", e.getMessage()));
+            // continue to the next one
+        }
+        // validate the json string with ContentViolationAnyOf13
+        try {
+            ContentViolationAnyOf13.validateJsonElement(jsonElement);
+            return;
+        } catch (Exception e) {
+            errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for ContentViolationAnyOf13 failed with `%s`.", e.getMessage()));
+            // continue to the next one
+        }
+        // validate the json string with ContentViolationAnyOf14
+        try {
+            ContentViolationAnyOf14.validateJsonElement(jsonElement);
+            return;
+        } catch (Exception e) {
+            errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for ContentViolationAnyOf14 failed with `%s`.", e.getMessage()));
+            // continue to the next one
+        }
+        // validate the json string with ContentViolationAnyOf15
+        try {
+            ContentViolationAnyOf15.validateJsonElement(jsonElement);
+            return;
+        } catch (Exception e) {
+            errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for ContentViolationAnyOf15 failed with `%s`.", e.getMessage()));
+            // continue to the next one
+        }
+        // validate the json string with ContentViolationAnyOf16
+        try {
+            ContentViolationAnyOf16.validateJsonElement(jsonElement);
+            return;
+        } catch (Exception e) {
+            errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for ContentViolationAnyOf16 failed with `%s`.", e.getMessage()));
+            // continue to the next one
+        }
+        // validate the json string with ContentViolationAnyOf17
+        try {
+            ContentViolationAnyOf17.validateJsonElement(jsonElement);
+            return;
+        } catch (Exception e) {
+            errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for ContentViolationAnyOf17 failed with `%s`.", e.getMessage()));
+            // continue to the next one
+        }
+        // validate the json string with ContentViolationAnyOf18
+        try {
+            ContentViolationAnyOf18.validateJsonElement(jsonElement);
+            return;
+        } catch (Exception e) {
+            errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for ContentViolationAnyOf18 failed with `%s`.", e.getMessage()));
+            // continue to the next one
+        }
+        // validate the json string with ContentViolationAnyOf19
+        try {
+            ContentViolationAnyOf19.validateJsonElement(jsonElement);
+            return;
+        } catch (Exception e) {
+            errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for ContentViolationAnyOf19 failed with `%s`.", e.getMessage()));
+            // continue to the next one
+        }
+        // validate the json string with ContentViolationAnyOf20
+        try {
+            ContentViolationAnyOf20.validateJsonElement(jsonElement);
+            return;
+        } catch (Exception e) {
+            errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for ContentViolationAnyOf20 failed with `%s`.", e.getMessage()));
+            // continue to the next one
+        }
+        // validate the json string with ContentViolationAnyOf21
+        try {
+            ContentViolationAnyOf21.validateJsonElement(jsonElement);
+            return;
+        } catch (Exception e) {
+            errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for ContentViolationAnyOf21 failed with `%s`.", e.getMessage()));
+            // continue to the next one
+        }
+        // validate the json string with ContentViolationAnyOf22
+        try {
+            ContentViolationAnyOf22.validateJsonElement(jsonElement);
+            return;
+        } catch (Exception e) {
+            errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for ContentViolationAnyOf22 failed with `%s`.", e.getMessage()));
+            // continue to the next one
+        }
+        // validate the json string with ContentViolationAnyOf23
+        try {
+            ContentViolationAnyOf23.validateJsonElement(jsonElement);
+            return;
+        } catch (Exception e) {
+            errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for ContentViolationAnyOf23 failed with `%s`.", e.getMessage()));
+            // continue to the next one
+        }
+        // validate the json string with ContentViolationAnyOf24
+        try {
+            ContentViolationAnyOf24.validateJsonElement(jsonElement);
+            return;
+        } catch (Exception e) {
+            errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for ContentViolationAnyOf24 failed with `%s`.", e.getMessage()));
+            // continue to the next one
+        }
+        // validate the json string with ContentViolationAnyOf25
+        try {
+            ContentViolationAnyOf25.validateJsonElement(jsonElement);
+            return;
+        } catch (Exception e) {
+            errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for ContentViolationAnyOf25 failed with `%s`.", e.getMessage()));
+            // continue to the next one
+        }
+        throw new IOException(String.format(java.util.Locale.ROOT, "The JSON string is invalid for ContentViolation with anyOf schemas: ContentViolationAnyOf, ContentViolationAnyOf1, ContentViolationAnyOf10, ContentViolationAnyOf11, ContentViolationAnyOf12, ContentViolationAnyOf13, ContentViolationAnyOf14, ContentViolationAnyOf15, ContentViolationAnyOf16, ContentViolationAnyOf17, ContentViolationAnyOf18, ContentViolationAnyOf19, ContentViolationAnyOf2, ContentViolationAnyOf20, ContentViolationAnyOf21, ContentViolationAnyOf22, ContentViolationAnyOf23, ContentViolationAnyOf24, ContentViolationAnyOf25, ContentViolationAnyOf3, ContentViolationAnyOf4, ContentViolationAnyOf5, ContentViolationAnyOf6, ContentViolationAnyOf7, ContentViolationAnyOf8, ContentViolationAnyOf9. no class match the result, expected at least 1. Detailed failure message for anyOf schemas: %s. JSON: %s", errorMessages, jsonElement.toString()));
     }
 
-    StringJoiner joiner = new StringJoiner("&");
+    /**
+     * Create an instance of ContentViolation given an JSON string
+     *
+     * @param jsonString JSON string
+     * @return An instance of ContentViolation
+     * @throws IOException if the JSON string is invalid with respect to ContentViolation
+     */
+    public static ContentViolation fromJson(String jsonString) throws IOException {
+        return JSON.getGson().fromJson(jsonString, ContentViolation.class);
+    }
 
-    return null;
-  }
-
+    /**
+     * Convert an instance of ContentViolation to an JSON string
+     *
+     * @return JSON string
+     */
+    public String toJson() {
+        return JSON.getGson().toJson(this);
+    }
 }
 

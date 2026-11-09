@@ -13,38 +13,52 @@
 
 package social.peal.model;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.StringJoiner;
 import java.util.Objects;
-import java.util.Map;
-import java.util.HashMap;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.fasterxml.jackson.annotation.JsonValue;
+import com.google.gson.TypeAdapter;
+import com.google.gson.annotations.JsonAdapter;
+import com.google.gson.annotations.SerializedName;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonNull;
+import com.google.gson.JsonParseException;
+import com.google.gson.TypeAdapterFactory;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.TypeAdapter;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 
-import social.peal.ApiClient;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import social.peal.JSON;
+
 /**
  * UnknownMediaEncoded
  */
-@JsonPropertyOrder({
-  UnknownMediaEncoded.JSON_PROPERTY_TAG,
-  UnknownMediaEncoded.JSON_PROPERTY_MEDIA_IDS
-})
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.27.0")
 public class UnknownMediaEncoded {
   /**
    * Gets or Sets tag
    */
+  @JsonAdapter(TagEnum.Adapter.class)
   public enum TagEnum {
-    UNKNOWN_MEDIA(String.valueOf("UnknownMedia"));
+    UNKNOWN_MEDIA("UnknownMedia");
 
     private String value;
 
@@ -52,7 +66,6 @@ public class UnknownMediaEncoded {
       this.value = value;
     }
 
-    @JsonValue
     public String getValue() {
       return value;
     }
@@ -62,7 +75,6 @@ public class UnknownMediaEncoded {
       return String.valueOf(value);
     }
 
-    @JsonCreator
     public static TagEnum fromValue(String value) {
       for (TagEnum b : TagEnum.values()) {
         if (b.value.equals(value)) {
@@ -71,17 +83,37 @@ public class UnknownMediaEncoded {
       }
       throw new IllegalArgumentException("Unexpected value '" + value + "'");
     }
+
+    public static class Adapter extends TypeAdapter<TagEnum> {
+      @Override
+      public void write(final JsonWriter jsonWriter, final TagEnum enumeration) throws IOException {
+        jsonWriter.value(enumeration.getValue());
+      }
+
+      @Override
+      public TagEnum read(final JsonReader jsonReader) throws IOException {
+        String value =  jsonReader.nextString();
+        return TagEnum.fromValue(value);
+      }
+    }
+
+    public static void validateJsonElement(JsonElement jsonElement) throws IOException {
+      String value = jsonElement.getAsString();
+      TagEnum.fromValue(value);
+    }
   }
 
-  public static final String JSON_PROPERTY_TAG = "_tag";
+  public static final String SERIALIZED_NAME_TAG = "_tag";
+  @SerializedName(SERIALIZED_NAME_TAG)
   @javax.annotation.Nonnull
   private TagEnum tag;
 
-  public static final String JSON_PROPERTY_MEDIA_IDS = "mediaIds";
+  public static final String SERIALIZED_NAME_MEDIA_IDS = "mediaIds";
+  @SerializedName(SERIALIZED_NAME_MEDIA_IDS)
   @javax.annotation.Nonnull
   private List<String> mediaIds = new ArrayList<>();
 
-  public UnknownMediaEncoded() { 
+  public UnknownMediaEncoded() {
   }
 
   public UnknownMediaEncoded tag(@javax.annotation.Nonnull TagEnum tag) {
@@ -94,15 +126,10 @@ public class UnknownMediaEncoded {
    * @return tag
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_TAG, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public TagEnum getTag() {
     return tag;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_TAG, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setTag(@javax.annotation.Nonnull TagEnum tag) {
     this.tag = tag;
   }
@@ -126,23 +153,16 @@ public class UnknownMediaEncoded {
    * @return mediaIds
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_MEDIA_IDS, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public List<String> getMediaIds() {
     return mediaIds;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_MEDIA_IDS, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setMediaIds(@javax.annotation.Nonnull List<String> mediaIds) {
     this.mediaIds = mediaIds;
   }
 
 
-  /**
-   * Return true if this UnknownMediaEncoded object is equal to o.
-   */
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -179,53 +199,106 @@ public class UnknownMediaEncoded {
     return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
 
-  /**
-   * Convert the instance into URL query string.
-   *
-   * @return URL query string
-   */
-  public String toUrlQueryString() {
-    return toUrlQueryString(null);
+
+  public static HashSet<String> openapiFields;
+  public static HashSet<String> openapiRequiredFields;
+
+  static {
+    // a set of all properties/fields (JSON key names)
+    openapiFields = new HashSet<String>(Arrays.asList("_tag", "mediaIds"));
+
+    // a set of required properties/fields (JSON key names)
+    openapiRequiredFields = new HashSet<String>(Arrays.asList("_tag", "mediaIds"));
   }
 
   /**
-   * Convert the instance into URL query string.
+   * Validates the JSON Element and throws an exception if issues found
    *
-   * @param prefix prefix of the query string
-   * @return URL query string
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to UnknownMediaEncoded
    */
-  public String toUrlQueryString(String prefix) {
-    String suffix = "";
-    String containerSuffix = "";
-    String containerPrefix = "";
-    if (prefix == null) {
-      // style=form, explode=true, e.g. /pet?name=cat&type=manx
-      prefix = "";
-    } else {
-      // deepObject style e.g. /pet?id[name]=cat&id[type]=manx
-      prefix = prefix + "[";
-      suffix = "]";
-      containerSuffix = "]";
-      containerPrefix = "[";
-    }
-
-    StringJoiner joiner = new StringJoiner("&");
-
-    // add `_tag` to the URL query string
-    if (getTag() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%s_tag%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getTag()))));
-    }
-
-    // add `mediaIds` to the URL query string
-    if (getMediaIds() != null) {
-      for (int i = 0; i < getMediaIds().size(); i++) {
-        joiner.add(String.format(java.util.Locale.ROOT, "%smediaIds%s%s=%s", prefix, suffix,
-            "".equals(suffix) ? "" : String.format(java.util.Locale.ROOT, "%s%d%s", containerPrefix, i, containerSuffix),
-            ApiClient.urlEncode(ApiClient.valueToString(getMediaIds().get(i)))));
+  public static void validateJsonElement(JsonElement jsonElement) throws IOException {
+      if (jsonElement == null) {
+        if (!UnknownMediaEncoded.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The required field(s) %s in UnknownMediaEncoded is not found in the empty JSON string", UnknownMediaEncoded.openapiRequiredFields.toString()));
+        }
       }
-    }
 
-    return joiner.toString();
+      Set<Map.Entry<String, JsonElement>> entries = jsonElement.getAsJsonObject().entrySet();
+      // check to see if the JSON string contains additional fields
+      for (Map.Entry<String, JsonElement> entry : entries) {
+        if (!UnknownMediaEncoded.openapiFields.contains(entry.getKey())) {
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The field `%s` in the JSON string is not defined in the `UnknownMediaEncoded` properties. JSON: %s", entry.getKey(), jsonElement.toString()));
+        }
+      }
+
+      // check to make sure all required properties/fields are present in the JSON string
+      for (String requiredField : UnknownMediaEncoded.openapiRequiredFields) {
+        if (jsonElement.getAsJsonObject().get(requiredField) == null) {
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The required field `%s` is not found in the JSON string: %s", requiredField, jsonElement.toString()));
+        }
+      }
+        JsonObject jsonObj = jsonElement.getAsJsonObject();
+      if (!jsonObj.get("_tag").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `_tag` to be a primitive type in the JSON string but got `%s`", jsonObj.get("_tag").toString()));
+      }
+      // validate the required field `_tag`
+      TagEnum.validateJsonElement(jsonObj.get("_tag"));
+      // ensure the required json array is present
+      if (jsonObj.get("mediaIds") == null) {
+        throw new IllegalArgumentException("Expected the field `linkedContent` to be an array in the JSON string but got `null`");
+      } else if (!jsonObj.get("mediaIds").isJsonArray()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `mediaIds` to be an array in the JSON string but got `%s`", jsonObj.get("mediaIds").toString()));
+      }
+  }
+
+  public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
+       if (!UnknownMediaEncoded.class.isAssignableFrom(type.getRawType())) {
+         return null; // this class only serializes 'UnknownMediaEncoded' and its subtypes
+       }
+       final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
+       final TypeAdapter<UnknownMediaEncoded> thisAdapter
+                        = gson.getDelegateAdapter(this, TypeToken.get(UnknownMediaEncoded.class));
+
+       return (TypeAdapter<T>) new TypeAdapter<UnknownMediaEncoded>() {
+           @Override
+           public void write(JsonWriter out, UnknownMediaEncoded value) throws IOException {
+             JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
+             elementAdapter.write(out, obj);
+           }
+
+           @Override
+           public UnknownMediaEncoded read(JsonReader in) throws IOException {
+             JsonElement jsonElement = elementAdapter.read(in);
+             validateJsonElement(jsonElement);
+             return thisAdapter.fromJsonTree(jsonElement);
+           }
+
+       }.nullSafe();
+    }
+  }
+
+  /**
+   * Create an instance of UnknownMediaEncoded given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of UnknownMediaEncoded
+   * @throws IOException if the JSON string is invalid with respect to UnknownMediaEncoded
+   */
+  public static UnknownMediaEncoded fromJson(String jsonString) throws IOException {
+    return JSON.getGson().fromJson(jsonString, UnknownMediaEncoded.class);
+  }
+
+  /**
+   * Convert an instance of UnknownMediaEncoded to an JSON string
+   *
+   * @return JSON string
+   */
+  public String toJson() {
+    return JSON.getGson().toJson(this);
   }
 }
 

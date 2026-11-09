@@ -13,61 +13,73 @@
 
 package social.peal.model;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.StringJoiner;
 import java.util.Objects;
-import java.util.Map;
-import java.util.HashMap;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.fasterxml.jackson.annotation.JsonValue;
+import com.google.gson.TypeAdapter;
+import com.google.gson.annotations.JsonAdapter;
+import com.google.gson.annotations.SerializedName;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import social.peal.model.YouTubePrivacy;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonNull;
+import com.google.gson.JsonParseException;
+import com.google.gson.TypeAdapterFactory;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.TypeAdapter;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 
-import social.peal.ApiClient;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import social.peal.JSON;
+
 /**
  * How a post goes out on a YouTube channel. Scheduling needs &#x60;title&#x60; and &#x60;madeForKids&#x60;.
  */
-@JsonPropertyOrder({
-  YouTubeOptions.JSON_PROPERTY_CATEGORY_ID,
-  YouTubeOptions.JSON_PROPERTY_CONTAINS_SYNTHETIC_MEDIA,
-  YouTubeOptions.JSON_PROPERTY_MADE_FOR_KIDS,
-  YouTubeOptions.JSON_PROPERTY_NOTIFY_SUBSCRIBERS,
-  YouTubeOptions.JSON_PROPERTY_PLATFORM,
-  YouTubeOptions.JSON_PROPERTY_PRIVACY,
-  YouTubeOptions.JSON_PROPERTY_TAGS,
-  YouTubeOptions.JSON_PROPERTY_TITLE
-})
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.27.0")
 public class YouTubeOptions {
-  public static final String JSON_PROPERTY_CATEGORY_ID = "categoryId";
+  public static final String SERIALIZED_NAME_CATEGORY_ID = "categoryId";
+  @SerializedName(SERIALIZED_NAME_CATEGORY_ID)
   @javax.annotation.Nullable
   private String categoryId;
 
-  public static final String JSON_PROPERTY_CONTAINS_SYNTHETIC_MEDIA = "containsSyntheticMedia";
+  public static final String SERIALIZED_NAME_CONTAINS_SYNTHETIC_MEDIA = "containsSyntheticMedia";
+  @SerializedName(SERIALIZED_NAME_CONTAINS_SYNTHETIC_MEDIA)
   @javax.annotation.Nullable
   private Boolean containsSyntheticMedia;
 
-  public static final String JSON_PROPERTY_MADE_FOR_KIDS = "madeForKids";
+  public static final String SERIALIZED_NAME_MADE_FOR_KIDS = "madeForKids";
+  @SerializedName(SERIALIZED_NAME_MADE_FOR_KIDS)
   @javax.annotation.Nullable
   private Boolean madeForKids;
 
-  public static final String JSON_PROPERTY_NOTIFY_SUBSCRIBERS = "notifySubscribers";
+  public static final String SERIALIZED_NAME_NOTIFY_SUBSCRIBERS = "notifySubscribers";
+  @SerializedName(SERIALIZED_NAME_NOTIFY_SUBSCRIBERS)
   @javax.annotation.Nullable
   private Boolean notifySubscribers;
 
   /**
    * Gets or Sets platform
    */
+  @JsonAdapter(PlatformEnum.Adapter.class)
   public enum PlatformEnum {
-    YOUTUBE(String.valueOf("youtube"));
+    YOUTUBE("youtube");
 
     private String value;
 
@@ -75,7 +87,6 @@ public class YouTubeOptions {
       this.value = value;
     }
 
-    @JsonValue
     public String getValue() {
       return value;
     }
@@ -85,7 +96,6 @@ public class YouTubeOptions {
       return String.valueOf(value);
     }
 
-    @JsonCreator
     public static PlatformEnum fromValue(String value) {
       for (PlatformEnum b : PlatformEnum.values()) {
         if (b.value.equals(value)) {
@@ -94,25 +104,47 @@ public class YouTubeOptions {
       }
       throw new IllegalArgumentException("Unexpected value '" + value + "'");
     }
+
+    public static class Adapter extends TypeAdapter<PlatformEnum> {
+      @Override
+      public void write(final JsonWriter jsonWriter, final PlatformEnum enumeration) throws IOException {
+        jsonWriter.value(enumeration.getValue());
+      }
+
+      @Override
+      public PlatformEnum read(final JsonReader jsonReader) throws IOException {
+        String value =  jsonReader.nextString();
+        return PlatformEnum.fromValue(value);
+      }
+    }
+
+    public static void validateJsonElement(JsonElement jsonElement) throws IOException {
+      String value = jsonElement.getAsString();
+      PlatformEnum.fromValue(value);
+    }
   }
 
-  public static final String JSON_PROPERTY_PLATFORM = "platform";
+  public static final String SERIALIZED_NAME_PLATFORM = "platform";
+  @SerializedName(SERIALIZED_NAME_PLATFORM)
   @javax.annotation.Nonnull
   private PlatformEnum platform;
 
-  public static final String JSON_PROPERTY_PRIVACY = "privacy";
+  public static final String SERIALIZED_NAME_PRIVACY = "privacy";
+  @SerializedName(SERIALIZED_NAME_PRIVACY)
   @javax.annotation.Nullable
   private YouTubePrivacy privacy;
 
-  public static final String JSON_PROPERTY_TAGS = "tags";
+  public static final String SERIALIZED_NAME_TAGS = "tags";
+  @SerializedName(SERIALIZED_NAME_TAGS)
   @javax.annotation.Nullable
   private List<String> tags = new ArrayList<>();
 
-  public static final String JSON_PROPERTY_TITLE = "title";
+  public static final String SERIALIZED_NAME_TITLE = "title";
+  @SerializedName(SERIALIZED_NAME_TITLE)
   @javax.annotation.Nullable
   private String title;
 
-  public YouTubeOptions() { 
+  public YouTubeOptions() {
   }
 
   public YouTubeOptions categoryId(@javax.annotation.Nullable String categoryId) {
@@ -125,15 +157,10 @@ public class YouTubeOptions {
    * @return categoryId
    */
   @javax.annotation.Nullable
-  @JsonProperty(value = JSON_PROPERTY_CATEGORY_ID, required = false)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public String getCategoryId() {
     return categoryId;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_CATEGORY_ID, required = false)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setCategoryId(@javax.annotation.Nullable String categoryId) {
     this.categoryId = categoryId;
   }
@@ -149,15 +176,10 @@ public class YouTubeOptions {
    * @return containsSyntheticMedia
    */
   @javax.annotation.Nullable
-  @JsonProperty(value = JSON_PROPERTY_CONTAINS_SYNTHETIC_MEDIA, required = false)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public Boolean getContainsSyntheticMedia() {
     return containsSyntheticMedia;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_CONTAINS_SYNTHETIC_MEDIA, required = false)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setContainsSyntheticMedia(@javax.annotation.Nullable Boolean containsSyntheticMedia) {
     this.containsSyntheticMedia = containsSyntheticMedia;
   }
@@ -173,15 +195,10 @@ public class YouTubeOptions {
    * @return madeForKids
    */
   @javax.annotation.Nullable
-  @JsonProperty(value = JSON_PROPERTY_MADE_FOR_KIDS, required = false)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public Boolean getMadeForKids() {
     return madeForKids;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_MADE_FOR_KIDS, required = false)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setMadeForKids(@javax.annotation.Nullable Boolean madeForKids) {
     this.madeForKids = madeForKids;
   }
@@ -197,15 +214,10 @@ public class YouTubeOptions {
    * @return notifySubscribers
    */
   @javax.annotation.Nullable
-  @JsonProperty(value = JSON_PROPERTY_NOTIFY_SUBSCRIBERS, required = false)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public Boolean getNotifySubscribers() {
     return notifySubscribers;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_NOTIFY_SUBSCRIBERS, required = false)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setNotifySubscribers(@javax.annotation.Nullable Boolean notifySubscribers) {
     this.notifySubscribers = notifySubscribers;
   }
@@ -221,15 +233,10 @@ public class YouTubeOptions {
    * @return platform
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_PLATFORM, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public PlatformEnum getPlatform() {
     return platform;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_PLATFORM, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setPlatform(@javax.annotation.Nonnull PlatformEnum platform) {
     this.platform = platform;
   }
@@ -245,15 +252,10 @@ public class YouTubeOptions {
    * @return privacy
    */
   @javax.annotation.Nullable
-  @JsonProperty(value = JSON_PROPERTY_PRIVACY, required = false)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public YouTubePrivacy getPrivacy() {
     return privacy;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_PRIVACY, required = false)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setPrivacy(@javax.annotation.Nullable YouTubePrivacy privacy) {
     this.privacy = privacy;
   }
@@ -277,15 +279,10 @@ public class YouTubeOptions {
    * @return tags
    */
   @javax.annotation.Nullable
-  @JsonProperty(value = JSON_PROPERTY_TAGS, required = false)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public List<String> getTags() {
     return tags;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_TAGS, required = false)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setTags(@javax.annotation.Nullable List<String> tags) {
     this.tags = tags;
   }
@@ -301,23 +298,16 @@ public class YouTubeOptions {
    * @return title
    */
   @javax.annotation.Nullable
-  @JsonProperty(value = JSON_PROPERTY_TITLE, required = false)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public String getTitle() {
     return title;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_TITLE, required = false)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setTitle(@javax.annotation.Nullable String title) {
     this.title = title;
   }
 
 
-  /**
-   * Return true if this YouTubeOptions object is equal to o.
-   */
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -366,83 +356,114 @@ public class YouTubeOptions {
     return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
 
-  /**
-   * Convert the instance into URL query string.
-   *
-   * @return URL query string
-   */
-  public String toUrlQueryString() {
-    return toUrlQueryString(null);
+
+  public static HashSet<String> openapiFields;
+  public static HashSet<String> openapiRequiredFields;
+
+  static {
+    // a set of all properties/fields (JSON key names)
+    openapiFields = new HashSet<String>(Arrays.asList("categoryId", "containsSyntheticMedia", "madeForKids", "notifySubscribers", "platform", "privacy", "tags", "title"));
+
+    // a set of required properties/fields (JSON key names)
+    openapiRequiredFields = new HashSet<String>(Arrays.asList("platform"));
   }
 
   /**
-   * Convert the instance into URL query string.
+   * Validates the JSON Element and throws an exception if issues found
    *
-   * @param prefix prefix of the query string
-   * @return URL query string
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to YouTubeOptions
    */
-  public String toUrlQueryString(String prefix) {
-    String suffix = "";
-    String containerSuffix = "";
-    String containerPrefix = "";
-    if (prefix == null) {
-      // style=form, explode=true, e.g. /pet?name=cat&type=manx
-      prefix = "";
-    } else {
-      // deepObject style e.g. /pet?id[name]=cat&id[type]=manx
-      prefix = prefix + "[";
-      suffix = "]";
-      containerSuffix = "]";
-      containerPrefix = "[";
-    }
-
-    StringJoiner joiner = new StringJoiner("&");
-
-    // add `categoryId` to the URL query string
-    if (getCategoryId() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%scategoryId%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getCategoryId()))));
-    }
-
-    // add `containsSyntheticMedia` to the URL query string
-    if (getContainsSyntheticMedia() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%scontainsSyntheticMedia%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getContainsSyntheticMedia()))));
-    }
-
-    // add `madeForKids` to the URL query string
-    if (getMadeForKids() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%smadeForKids%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getMadeForKids()))));
-    }
-
-    // add `notifySubscribers` to the URL query string
-    if (getNotifySubscribers() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%snotifySubscribers%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getNotifySubscribers()))));
-    }
-
-    // add `platform` to the URL query string
-    if (getPlatform() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%splatform%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getPlatform()))));
-    }
-
-    // add `privacy` to the URL query string
-    if (getPrivacy() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%sprivacy%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getPrivacy()))));
-    }
-
-    // add `tags` to the URL query string
-    if (getTags() != null) {
-      for (int i = 0; i < getTags().size(); i++) {
-        joiner.add(String.format(java.util.Locale.ROOT, "%stags%s%s=%s", prefix, suffix,
-            "".equals(suffix) ? "" : String.format(java.util.Locale.ROOT, "%s%d%s", containerPrefix, i, containerSuffix),
-            ApiClient.urlEncode(ApiClient.valueToString(getTags().get(i)))));
+  public static void validateJsonElement(JsonElement jsonElement) throws IOException {
+      if (jsonElement == null) {
+        if (!YouTubeOptions.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The required field(s) %s in YouTubeOptions is not found in the empty JSON string", YouTubeOptions.openapiRequiredFields.toString()));
+        }
       }
-    }
 
-    // add `title` to the URL query string
-    if (getTitle() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%stitle%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getTitle()))));
-    }
+      Set<Map.Entry<String, JsonElement>> entries = jsonElement.getAsJsonObject().entrySet();
+      // check to see if the JSON string contains additional fields
+      for (Map.Entry<String, JsonElement> entry : entries) {
+        if (!YouTubeOptions.openapiFields.contains(entry.getKey())) {
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The field `%s` in the JSON string is not defined in the `YouTubeOptions` properties. JSON: %s", entry.getKey(), jsonElement.toString()));
+        }
+      }
 
-    return joiner.toString();
+      // check to make sure all required properties/fields are present in the JSON string
+      for (String requiredField : YouTubeOptions.openapiRequiredFields) {
+        if (jsonElement.getAsJsonObject().get(requiredField) == null) {
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The required field `%s` is not found in the JSON string: %s", requiredField, jsonElement.toString()));
+        }
+      }
+        JsonObject jsonObj = jsonElement.getAsJsonObject();
+      if ((jsonObj.get("categoryId") != null && !jsonObj.get("categoryId").isJsonNull()) && !jsonObj.get("categoryId").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `categoryId` to be a primitive type in the JSON string but got `%s`", jsonObj.get("categoryId").toString()));
+      }
+      if (!jsonObj.get("platform").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `platform` to be a primitive type in the JSON string but got `%s`", jsonObj.get("platform").toString()));
+      }
+      // validate the required field `platform`
+      PlatformEnum.validateJsonElement(jsonObj.get("platform"));
+      // validate the optional field `privacy`
+      if (jsonObj.get("privacy") != null && !jsonObj.get("privacy").isJsonNull()) {
+        YouTubePrivacy.validateJsonElement(jsonObj.get("privacy"));
+      }
+      // ensure the optional json data is an array if present
+      if (jsonObj.get("tags") != null && !jsonObj.get("tags").isJsonNull() && !jsonObj.get("tags").isJsonArray()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `tags` to be an array in the JSON string but got `%s`", jsonObj.get("tags").toString()));
+      }
+      if ((jsonObj.get("title") != null && !jsonObj.get("title").isJsonNull()) && !jsonObj.get("title").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `title` to be a primitive type in the JSON string but got `%s`", jsonObj.get("title").toString()));
+      }
+  }
+
+  public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
+       if (!YouTubeOptions.class.isAssignableFrom(type.getRawType())) {
+         return null; // this class only serializes 'YouTubeOptions' and its subtypes
+       }
+       final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
+       final TypeAdapter<YouTubeOptions> thisAdapter
+                        = gson.getDelegateAdapter(this, TypeToken.get(YouTubeOptions.class));
+
+       return (TypeAdapter<T>) new TypeAdapter<YouTubeOptions>() {
+           @Override
+           public void write(JsonWriter out, YouTubeOptions value) throws IOException {
+             JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
+             elementAdapter.write(out, obj);
+           }
+
+           @Override
+           public YouTubeOptions read(JsonReader in) throws IOException {
+             JsonElement jsonElement = elementAdapter.read(in);
+             validateJsonElement(jsonElement);
+             return thisAdapter.fromJsonTree(jsonElement);
+           }
+
+       }.nullSafe();
+    }
+  }
+
+  /**
+   * Create an instance of YouTubeOptions given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of YouTubeOptions
+   * @throws IOException if the JSON string is invalid with respect to YouTubeOptions
+   */
+  public static YouTubeOptions fromJson(String jsonString) throws IOException {
+    return JSON.getGson().fromJson(jsonString, YouTubeOptions.class);
+  }
+
+  /**
+   * Convert an instance of YouTubeOptions to an JSON string
+   *
+   * @return JSON string
+   */
+  public String toJson() {
+    return JSON.getGson().toJson(this);
   }
 }
 

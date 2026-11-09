@@ -7,3 +7,6 @@ project.json
 .gitlab-ci.yml
 .github/**
 git_push.sh
+
+# The smoke test, which scripts/test.ts runs against a stand-in server.
+examples/**

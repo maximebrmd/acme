@@ -13,21 +13,20 @@
 
 package social.peal.model;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.StringJoiner;
 import java.util.Objects;
-import java.util.Map;
-import java.util.HashMap;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.google.gson.annotations.SerializedName;
 
-
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonValue;
+import java.io.IOException;
+import com.google.gson.TypeAdapter;
+import com.google.gson.JsonElement;
+import com.google.gson.annotations.JsonAdapter;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
 
 /**
  * Gets or Sets ProbeState
  */
+@JsonAdapter(ProbeState.Adapter.class)
 public enum ProbeState {
   
   PENDING("pending"),
@@ -48,7 +47,6 @@ public enum ProbeState {
     this.value = value;
   }
 
-  @JsonValue
   public String getValue() {
     return value;
   }
@@ -58,7 +56,6 @@ public enum ProbeState {
     return String.valueOf(value);
   }
 
-  @JsonCreator
   public static ProbeState fromValue(String value) {
     for (ProbeState b : ProbeState.values()) {
       if (b.value.equals(value)) {
@@ -68,19 +65,22 @@ public enum ProbeState {
     throw new IllegalArgumentException("Unexpected value '" + value + "'");
   }
 
-  /**
-   * Convert the instance into URL query string.
-   *
-   * @param prefix prefix of the query string
-   * @return URL query string
-   */
-  public String toUrlQueryString(String prefix) {
-    if (prefix == null) {
-      prefix = "";
+  public static class Adapter extends TypeAdapter<ProbeState> {
+    @Override
+    public void write(final JsonWriter jsonWriter, final ProbeState enumeration) throws IOException {
+      jsonWriter.value(enumeration.getValue());
     }
 
-    return String.format(java.util.Locale.ROOT, "%s=%s", prefix, this.toString());
+    @Override
+    public ProbeState read(final JsonReader jsonReader) throws IOException {
+      String value = jsonReader.nextString();
+      return ProbeState.fromValue(value);
+    }
   }
 
+  public static void validateJsonElement(JsonElement jsonElement) throws IOException {
+    String value = jsonElement.getAsString();
+    ProbeState.fromValue(value);
+  }
 }
 
