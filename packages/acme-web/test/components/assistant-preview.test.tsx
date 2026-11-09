@@ -115,6 +115,11 @@ describe(AssistantPreview, () => {
       true,
     ],
     [
+      new AssistantFailed({ reason: "timedOut" }),
+      "took too long to answer",
+      true,
+    ],
+    [
       new AssistantFailed({ reason: "invalidAnswer" }),
       "could not be used",
       true,
@@ -126,7 +131,8 @@ describe(AssistantPreview, () => {
 
       expect(html).toContain('role="alert"');
       expect(html).toContain(message);
-      expect(html.includes("Try again")).toBe(retryable);
+      // The button, not a message that says to try again.
+      expect(html.includes(">Try again</button>")).toBe(retryable);
     }
   );
 

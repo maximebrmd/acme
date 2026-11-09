@@ -34,6 +34,7 @@
       "empty": "Écrivez d’abord un texte.",
       "tooLong": "Le texte dépasse les {maxLength} caractères que l’assistant accepte.",
       "unreachable": "L’assistant est injoignable. Réessayez dans un instant.",
+      "timedOut": "L’assistant a mis trop de temps à répondre. Réessayez, éventuellement avec un texte plus court.",
       "declined": "L’assistant a refusé de travailler sur ce texte.",
       "invalidAnswer": "La réponse de l’assistant est inutilisable. Réessayez.",
       "forbidden": "Votre rôle ne vous permet pas d’utiliser l’assistant.",

@@ -1,5 +1,5 @@
 import { Effect, Layer } from "effect";
-import type { Schema } from "effect";
+import type { Duration, Schema } from "effect";
 import { LanguageModel, Prompt } from "effect/ai";
 import type { AiError, Response } from "effect/ai";
 
@@ -13,8 +13,25 @@ export interface ModelIdentity {
   readonly provider: string;
 }
 
+/**
+ * How long the assistant waits for an answer. Models take their time over
+ * a long post, but not this long. The provider may have run a request it
+ * did not answer in time, so such a request counts toward the quota.
+ * Whatever sits between the browser and the server must wait longer (see
+ * the web app's next.config.ts).
+ */
+export const answerTimeout: Duration.Input = "90 seconds";
+
+// The failures that come with an answer from the provider: it ran the
+// request, so the request counts.
+const answered: ReadonlySet<string> = new Set([
+  "InvalidOutputError",
+  "InvalidResponseError",
+  "StructuredOutputError",
+]);
+
 // What a provider's failure means for the person who asked: anything but a
-// refusal or an answer in the wrong shape means the request did not run.
+// refusal or an answer that cannot be read means the request did not run.
 const reasonOf = (error: AiError.AiError): WritingFailed["reason"] => {
   const kind = error.reason._tag;
 
@@ -22,9 +39,7 @@ const reasonOf = (error: AiError.AiError): WritingFailed["reason"] => {
     return "declined";
   }
 
-  return kind === "InvalidOutputError" || kind === "StructuredOutputError"
-    ? "invalidAnswer"
-    : "unreachable";
+  return answered.has(kind) ? "invalidAnswer" : "unreachable";
 };
 
 // The system message holds the instructions alone; the user message holds
@@ -56,28 +71,31 @@ const usageOf = ({ inputTokens, outputTokens }: Response.Usage) => {
 };
 
 // The log and the span name the kind of failure, never its message.
-const failed =
-  ({ model, provider }: ModelIdentity) =>
-  (error: AiError.AiError) => {
-    const reason = reasonOf(error);
-    const kind = error.reason._tag;
+const failWith = (
+  { model, provider }: ModelIdentity,
+  kind: string,
+  reason: WritingFailed["reason"]
+) =>
+  Effect.logWarning("The assistant's language model failed", {
+    kind,
+    model,
+    provider,
+    reason,
+  }).pipe(
+    Effect.andThen(Effect.annotateCurrentSpan("acme.assistant.failure", kind)),
+    Effect.andThen(Effect.fail(new WritingFailed({ reason })))
+  );
 
-    return Effect.logWarning("The assistant's language model failed", {
-      kind,
-      model,
-      provider,
-      reason,
-    }).pipe(
-      Effect.andThen(
-        Effect.annotateCurrentSpan("acme.assistant.failure", kind)
-      ),
-      Effect.andThen(Effect.fail(new WritingFailed({ reason })))
-    );
-  };
+const failed = (identity: ModelIdentity) => (error: AiError.AiError) =>
+  failWith(identity, error.reason._tag, reasonOf(error));
+
+const tookTooLong = (identity: ModelIdentity) => () =>
+  failWith(identity, "Timeout", "timedOut");
 
 /**
  * The assistant's WritingModel on the LanguageModel a provider package
- * gives, asking for structured output that the answer's schema decodes.
+ * gives, asking for structured output that the answer's schema decodes,
+ * and waiting `answerTimeout` for it at most.
  *
  * Prompts and answers stay out of logs and traces. Provider errors can
  * quote either (a structured output error carries the answer), and the
@@ -92,6 +110,7 @@ export const languageModelWritingModel = (identity: ModelIdentity) =>
     Effect.gen(function* makeWritingModel() {
       const model = yield* LanguageModel.LanguageModel;
       const fail = failed(identity);
+      const timedOut = tookTooLong(identity);
 
       const write = <A, I extends Readonly<Record<string, unknown>>>(
         prompt: WritingPrompt,
@@ -113,6 +132,8 @@ export const languageModelWritingModel = (identity: ModelIdentity) =>
             ),
             Effect.map((response) => response.value),
             Effect.catchTag("AiError", fail),
+            // Interrupting the call aborts its HTTP request.
+            Effect.timeoutOrElse({ duration: answerTimeout, orElse: timedOut }),
             Effect.withSpan("WritingModel.write", {
               attributes: {
                 "gen_ai.provider.name": identity.provider,

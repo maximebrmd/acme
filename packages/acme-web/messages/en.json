@@ -34,6 +34,7 @@
       "empty": "Write some text first.",
       "tooLong": "The text is longer than the {maxLength} characters the assistant takes.",
       "unreachable": "The assistant could not be reached. Try again in a moment.",
+      "timedOut": "The assistant took too long to answer. Try again, perhaps with a shorter text.",
       "declined": "The assistant declined to work on this text.",
       "invalidAnswer": "The assistant's answer could not be used. Try again.",
       "forbidden": "Your role does not let you use the assistant.",

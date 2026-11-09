@@ -16,11 +16,9 @@ import { UnavailableWritingModelLive } from "#assistant/infrastructure/unavailab
  */
 const maxOutputTokens = 4096;
 
-// Models take their time over a long post, but not this long: a request
-// that has not answered by then is treated as unreachable.
-const requestTimeout = "90 seconds";
-
-// The provider is not sent Acme's trace context, and its requests time out.
+// The provider is not sent Acme's trace context. Its requests time out in
+// languageModelWritingModel, which tells a timeout from an unreachable
+// provider: the provider may have run a request that timed out.
 const transformClient = (
   client: HttpClient.HttpClient
 ): HttpClient.HttpClient =>
@@ -29,8 +27,7 @@ const transformClient = (
       response.pipe(
         Effect.provideService(HttpClient.TracerPropagationEnabled, false)
       )
-    ),
-    HttpClient.timeout(requestTimeout)
+    )
   );
 
 const anthropic = ({

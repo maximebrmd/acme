@@ -20,10 +20,14 @@ import { MigrationsLive } from "#shared/infrastructure/migrations.ts";
 import { IdsLive } from "#shared/infrastructure/secure-random-ids.ts";
 import { permissionsFor } from "#workspace/domain/roles.ts";
 
-/** What the fake model answers next: JSON text, or a provider failure. */
+/**
+ * What the fake model answers next: JSON text, a provider failure, or
+ * nothing at all.
+ */
 export type Reply =
   | { readonly _tag: "text"; readonly text: string }
-  | { readonly _tag: "failure"; readonly reason: AiError.AiErrorReason };
+  | { readonly _tag: "failure"; readonly reason: AiError.AiErrorReason }
+  | { readonly _tag: "silence" };
 
 /** The model answers with this JSON document. */
 export const answer = (value: typeof Schema.Json.Type): Reply => ({
@@ -39,6 +43,9 @@ export const failure = (reason: AiError.AiErrorReason): Reply => ({
   _tag: "failure",
   reason,
 });
+
+/** The provider takes the request and never answers. */
+export const silence: Reply = { _tag: "silence" };
 
 /**
  * A language model that answers what the test scripted, and records every
@@ -56,8 +63,12 @@ export class FakeModel extends Context.Service<
 
 const partsOf = (
   reply: Reply
-): Effect.Effect<Response.PartEncoded[], AiError.AiError> =>
-  reply._tag === "text"
+): Effect.Effect<Response.PartEncoded[], AiError.AiError> => {
+  if (reply._tag === "silence") {
+    return Effect.never;
+  }
+
+  return reply._tag === "text"
     ? Effect.succeed([{ text: reply.text, type: "text" }])
     : Effect.fail(
         AiError.make({
@@ -66,6 +77,7 @@ const partsOf = (
           reason: reply.reason,
         })
       );
+};
 
 /** The fake model, as LanguageModel, and its script as FakeModel. */
 export const FakeModelLive = Layer.effectContext(

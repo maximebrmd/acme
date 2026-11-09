@@ -1,11 +1,12 @@
 import { assert, layer } from "@effect/vitest";
-import { DateTime, Effect, Schema } from "effect";
+import { DateTime, Effect, Fiber, Schema } from "effect";
 import { AiError } from "effect/ai";
 import { TestClock } from "effect/testing";
 
 import { WritingAssistant } from "#assistant/application/writing-assistant.ts";
 import type { AssistantRequest } from "#assistant/application/writing-assistant.ts";
 import { maxDraftLength } from "#assistant/domain/draft.ts";
+import { answerTimeout } from "#assistant/infrastructure/language-model-writing-model.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
 import {
   actorIn,
@@ -17,6 +18,7 @@ import {
   freshWorkspace,
   messagesOf,
   rawAnswer,
+  silence,
 } from "#test/assistant/support.ts";
 import type { Reply } from "#test/assistant/support.ts";
 import { permissionsFor } from "#workspace/domain/roles.ts";
@@ -384,6 +386,9 @@ layer(DatabaseTest)("the writing assistant", (it) => {
           ),
           failure(new AiError.RateLimitError({})),
           failure(new AiError.ContentPolicyError({ description: "refused" })),
+          failure(
+            new AiError.InvalidResponseError({ description: "unreadable" })
+          ),
         ],
         (reply) =>
           ask(workspaceId, rewrite, reply).pipe(
@@ -398,9 +403,43 @@ layer(DatabaseTest)("the writing assistant", (it) => {
         "unreachable",
         "unreachable",
         "declined",
+        "invalidAnswer",
       ]);
 
-      // Only the refusal ran on the provider.
+      // The refusal and the unreadable answer ran on the provider.
+      assert.strictEqual(yield* remainingIn(workspaceId), 1);
+    }).pipe(Effect.provide(assistantTest()))
+  );
+
+  it.effect("counts a request the model took too long to answer", () =>
+    Effect.gen(function* slow() {
+      const workspaceId = yield* freshWorkspace;
+
+      const asking = yield* ask(workspaceId, rewrite, silence).pipe(
+        Effect.flip,
+        Effect.forkChild
+      );
+
+      // Once the model has the request, its time runs out.
+      for (let round = 0; round < 500; round += 1) {
+        if ((yield* sentPrompts).length > 0) {
+          break;
+        }
+
+        yield* TestClock.withLive(Effect.sleep("10 millis"));
+      }
+
+      yield* TestClock.withLive(Effect.sleep("10 millis"));
+      yield* TestClock.adjust(answerTimeout);
+
+      const refusal = yield* Fiber.join(asking);
+
+      assert.deepStrictEqual(
+        refusal._tag === "WritingFailed" ? refusal.reason : refusal._tag,
+        "timedOut"
+      );
+
+      // The provider may have worked on it, so it is not given back.
       assert.strictEqual(yield* remainingIn(workspaceId), 2);
     }).pipe(Effect.provide(assistantTest()))
   );
