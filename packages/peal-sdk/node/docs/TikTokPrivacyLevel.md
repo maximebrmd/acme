@@ -10,7 +10,7 @@ Name | Type
 ## Example
 
 ```typescript
-import type { TikTokPrivacyLevel } from 'peal'
+import type { TikTokPrivacyLevel } from 'peal-sdk'
 
 // TODO: Update the object below with actual values
 const example = {

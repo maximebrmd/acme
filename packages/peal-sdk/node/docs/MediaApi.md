@@ -28,11 +28,11 @@ Checks that the file reached the store with the declared size and type, joining 
 import {
   Configuration,
   MediaApi,
-} from 'peal';
-import type { MediaCompleteRequest } from 'peal';
+} from 'peal-sdk';
+import type { MediaCompleteRequest } from 'peal-sdk';
 
 async function example() {
-  console.log("🚀 Testing peal SDK...");
+  console.log("🚀 Testing peal-sdk SDK...");
   const config = new Configuration({ 
     // Configure HTTP bearer authorization: bearer
     accessToken: "YOUR BEARER TOKEN",
@@ -108,11 +108,11 @@ Records pending media and signs the upload of its file: one PUT for an image or 
 import {
   Configuration,
   MediaApi,
-} from 'peal';
-import type { MediaCreateRequest } from 'peal';
+} from 'peal-sdk';
+import type { MediaCreateRequest } from 'peal-sdk';
 
 async function example() {
-  console.log("🚀 Testing peal SDK...");
+  console.log("🚀 Testing peal-sdk SDK...");
   const config = new Configuration({ 
     // Configure HTTP bearer authorization: bearer
     accessToken: "YOUR BEARER TOKEN",
@@ -187,11 +187,11 @@ Deletes the media and its file, and cancels its upload if it is still pending. D
 import {
   Configuration,
   MediaApi,
-} from 'peal';
-import type { MediaDeleteRequest } from 'peal';
+} from 'peal-sdk';
+import type { MediaDeleteRequest } from 'peal-sdk';
 
 async function example() {
-  console.log("🚀 Testing peal SDK...");
+  console.log("🚀 Testing peal-sdk SDK...");
   const config = new Configuration({ 
     // Configure HTTP bearer authorization: bearer
     accessToken: "YOUR BEARER TOKEN",
@@ -266,11 +266,11 @@ Sets the media\&#39;s description, which platforms show to people who cannot see
 import {
   Configuration,
   MediaApi,
-} from 'peal';
-import type { MediaDescribeRequest } from 'peal';
+} from 'peal-sdk';
+import type { MediaDescribeRequest } from 'peal-sdk';
 
 async function example() {
-  console.log("🚀 Testing peal SDK...");
+  console.log("🚀 Testing peal-sdk SDK...");
   const config = new Configuration({ 
     // Configure HTTP bearer authorization: bearer
     accessToken: "YOUR BEARER TOKEN",
@@ -348,11 +348,11 @@ Shows one of the workspace\&#39;s media. Needs media:read.
 import {
   Configuration,
   MediaApi,
-} from 'peal';
-import type { MediaGetRequest } from 'peal';
+} from 'peal-sdk';
+import type { MediaGetRequest } from 'peal-sdk';
 
 async function example() {
-  console.log("🚀 Testing peal SDK...");
+  console.log("🚀 Testing peal-sdk SDK...");
   const config = new Configuration({ 
     // Configure HTTP bearer authorization: bearer
     accessToken: "YOUR BEARER TOKEN",
@@ -426,11 +426,11 @@ Lists the workspace\&#39;s media, newest first, 30 a page unless &#x60;limit&#x6
 import {
   Configuration,
   MediaApi,
-} from 'peal';
-import type { MediaListRequest } from 'peal';
+} from 'peal-sdk';
+import type { MediaListRequest } from 'peal-sdk';
 
 async function example() {
-  console.log("🚀 Testing peal SDK...");
+  console.log("🚀 Testing peal-sdk SDK...");
   const config = new Configuration({ 
     // Configure HTTP bearer authorization: bearer
     accessToken: "YOUR BEARER TOKEN",
@@ -508,11 +508,11 @@ Lists the posts that show the media: drafts, which lose it if it is deleted, and
 import {
   Configuration,
   MediaApi,
-} from 'peal';
-import type { MediaUsageRequest } from 'peal';
+} from 'peal-sdk';
+import type { MediaUsageRequest } from 'peal-sdk';
 
 async function example() {
-  console.log("🚀 Testing peal SDK...");
+  console.log("🚀 Testing peal-sdk SDK...");
   const config = new Configuration({ 
     // Configure HTTP bearer authorization: bearer
     accessToken: "YOUR BEARER TOKEN",

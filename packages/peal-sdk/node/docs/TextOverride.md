@@ -12,7 +12,7 @@ Name | Type
 ## Example
 
 ```typescript
-import type { TextOverride } from 'peal'
+import type { TextOverride } from 'peal-sdk'
 
 // TODO: Update the object below with actual values
 const example = {

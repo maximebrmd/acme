@@ -23,11 +23,11 @@ Answers with the counts of a post on each channel it went live on, over time. A 
 import {
   Configuration,
   AnalyticsApi,
-} from 'peal';
-import type { AnalyticsPostRequest } from 'peal';
+} from 'peal-sdk';
+import type { AnalyticsPostRequest } from 'peal-sdk';
 
 async function example() {
-  console.log("🚀 Testing peal SDK...");
+  console.log("🚀 Testing peal-sdk SDK...");
   const config = new Configuration({ 
     // Configure HTTP bearer authorization: bearer
     accessToken: "YOUR BEARER TOKEN",
@@ -100,11 +100,11 @@ Sums up the posts published from &#x60;from&#x60; to &#x60;to&#x60;, both includ
 import {
   Configuration,
   AnalyticsApi,
-} from 'peal';
-import type { AnalyticsSummaryRequest } from 'peal';
+} from 'peal-sdk';
+import type { AnalyticsSummaryRequest } from 'peal-sdk';
 
 async function example() {
-  console.log("🚀 Testing peal SDK...");
+  console.log("🚀 Testing peal-sdk SDK...");
   const config = new Configuration({ 
     // Configure HTTP bearer authorization: bearer
     accessToken: "YOUR BEARER TOKEN",

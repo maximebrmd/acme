@@ -17,7 +17,7 @@ Name | Type
 ## Example
 
 ```typescript
-import type { AnalyticsSummary } from 'peal'
+import type { AnalyticsSummary } from 'peal-sdk'
 
 // TODO: Update the object below with actual values
 const example = {

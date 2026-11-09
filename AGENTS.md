@@ -1296,6 +1296,12 @@ self-hoster needs only Postgres and an S3-compatible store:
   Node's `package.json` and `tsconfig.json` (ES modules, compiled by the
   workspace's TypeScript); the rest of that list keeps CI templates, Gradle
   files, test stubs and copies of the document out.
+- `sdk:generate` depends on `peal-sdk:spec` through the tag `sdk-spec`, never
+  the name: Nx resolves a name in `dependsOn` to the npm package of that name
+  first, and the Node SDK's package is `peal-sdk`. `.nxignore` keeps the
+  SDKs' builds out of the project graph (`cargo package` unpacks a copy of
+  the Rust SDK, `project.json` included). `generate.ts` refuses to run
+  without `openapi.json`, which only Nx writes before it.
 - `scripts/languages.ts` holds each language's generator options, version and
   build, and pins openapi-generator and every toolchain image by digest, as
   `compose.yaml` does. A release bumps that language's version there. Keep

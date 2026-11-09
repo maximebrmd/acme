@@ -14,7 +14,7 @@ Name | Type
 ## Example
 
 ```typescript
-import type { AssistantAction } from 'peal'
+import type { AssistantAction } from 'peal-sdk'
 
 // TODO: Update the object below with actual values
 const example = {

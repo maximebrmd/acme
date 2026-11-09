@@ -11,7 +11,7 @@ Name | Type
 ## Example
 
 ```typescript
-import type { MarkNoticesRead } from 'peal'
+import type { MarkNoticesRead } from 'peal-sdk'
 
 // TODO: Update the object below with actual values
 const example = {

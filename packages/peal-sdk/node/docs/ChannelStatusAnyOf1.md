@@ -11,7 +11,7 @@ Name | Type
 ## Example
 
 ```typescript
-import type { ChannelStatusAnyOf1 } from 'peal'
+import type { ChannelStatusAnyOf1 } from 'peal-sdk'
 
 // TODO: Update the object below with actual values
 const example = {

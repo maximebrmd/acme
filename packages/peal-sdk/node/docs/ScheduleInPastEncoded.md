@@ -11,7 +11,7 @@ Name | Type
 ## Example
 
 ```typescript
-import type { ScheduleInPastEncoded } from 'peal'
+import type { ScheduleInPastEncoded } from 'peal-sdk'
 
 // TODO: Update the object below with actual values
 const example = {

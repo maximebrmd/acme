@@ -34,12 +34,18 @@
       "cache": false
     },
     "sdk:generate": {
-      "dependsOn": [{ "projects": ["peal-sdk"], "target": "spec" }],
+      "dependsOn": [
+        {
+          "projects": ["tag:sdk-spec"],
+          "target": "spec"
+        }
+      ],
       "cache": false
     },
     "sdk:build": {
       "cache": true,
       "inputs": ["default"]
     }
-  }
+  },
+  "analytics": true
 }

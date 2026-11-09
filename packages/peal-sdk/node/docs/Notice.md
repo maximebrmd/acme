@@ -15,7 +15,7 @@ Name | Type
 ## Example
 
 ```typescript
-import type { Notice } from 'peal'
+import type { Notice } from 'peal-sdk'
 
 // TODO: Update the object below with actual values
 const example = {

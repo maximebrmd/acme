@@ -15,7 +15,7 @@ Name | Type
 ## Example
 
 ```typescript
-import type { ChoosableAccount } from 'peal'
+import type { ChoosableAccount } from 'peal-sdk'
 
 // TODO: Update the object below with actual values
 const example = {

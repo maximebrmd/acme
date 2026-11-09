@@ -12,7 +12,7 @@ Name | Type
 ## Example
 
 ```typescript
-import type { NoticeChannel } from 'peal'
+import type { NoticeChannel } from 'peal-sdk'
 
 // TODO: Update the object below with actual values
 const example = {

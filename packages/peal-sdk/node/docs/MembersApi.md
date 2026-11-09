@@ -22,11 +22,11 @@ Lists the workspace\&#39;s members, in the order they joined, with their name, e
 import {
   Configuration,
   MembersApi,
-} from 'peal';
-import type { MembersListRequest } from 'peal';
+} from 'peal-sdk';
+import type { MembersListRequest } from 'peal-sdk';
 
 async function example() {
-  console.log("🚀 Testing peal SDK...");
+  console.log("🚀 Testing peal-sdk SDK...");
   const config = new Configuration({ 
     // Configure HTTP bearer authorization: bearer
     accessToken: "YOUR BEARER TOKEN",

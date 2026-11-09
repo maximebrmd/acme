@@ -22,11 +22,11 @@ Answers with the workspace\&#39;s plan, the subscription that buys it, what each
 import {
   Configuration,
   BillingApi,
-} from 'peal';
-import type { BillingGetRequest } from 'peal';
+} from 'peal-sdk';
+import type { BillingGetRequest } from 'peal-sdk';
 
 async function example() {
-  console.log("🚀 Testing peal SDK...");
+  console.log("🚀 Testing peal-sdk SDK...");
   const config = new Configuration({ 
     // Configure HTTP bearer authorization: bearer
     accessToken: "YOUR BEARER TOKEN",

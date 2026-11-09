@@ -13,7 +13,7 @@ Name | Type
 ## Example
 
 ```typescript
-import type { Suggestion } from 'peal'
+import type { Suggestion } from 'peal-sdk'
 
 // TODO: Update the object below with actual values
 const example = {

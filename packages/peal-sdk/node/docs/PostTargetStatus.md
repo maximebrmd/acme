@@ -10,7 +10,7 @@ Name | Type
 ## Example
 
 ```typescript
-import type { PostTargetStatus } from 'peal'
+import type { PostTargetStatus } from 'peal-sdk'
 
 // TODO: Update the object below with actual values
 const example = {

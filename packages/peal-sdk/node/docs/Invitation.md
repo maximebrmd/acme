@@ -16,7 +16,7 @@ Name | Type
 ## Example
 
 ```typescript
-import type { Invitation } from 'peal'
+import type { Invitation } from 'peal-sdk'
 
 // TODO: Update the object below with actual values
 const example = {

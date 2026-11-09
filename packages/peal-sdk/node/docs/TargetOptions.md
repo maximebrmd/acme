@@ -27,7 +27,7 @@ Name | Type
 ## Example
 
 ```typescript
-import type { TargetOptions } from 'peal'
+import type { TargetOptions } from 'peal-sdk'
 
 // TODO: Update the object below with actual values
 const example = {

@@ -23,11 +23,11 @@ Tells whether the server has a language model, so clients show the assistant or 
 import {
   Configuration,
   AssistantApi,
-} from 'peal';
-import type { AssistantStatusRequest } from 'peal';
+} from 'peal-sdk';
+import type { AssistantStatusRequest } from 'peal-sdk';
 
 async function example() {
-  console.log("🚀 Testing peal SDK...");
+  console.log("🚀 Testing peal-sdk SDK...");
   const config = new Configuration({ 
     // Configure HTTP bearer authorization: bearer
     accessToken: "YOUR BEARER TOKEN",
@@ -97,11 +97,11 @@ Asks the language model to rewrite, shorten or translate a post\&#39;s text, or 
 import {
   Configuration,
   AssistantApi,
-} from 'peal';
-import type { AssistantSuggestRequest } from 'peal';
+} from 'peal-sdk';
+import type { AssistantSuggestRequest } from 'peal-sdk';
 
 async function example() {
-  console.log("🚀 Testing peal SDK...");
+  console.log("🚀 Testing peal-sdk SDK...");
   const config = new Configuration({ 
     // Configure HTTP bearer authorization: bearer
     accessToken: "YOUR BEARER TOKEN",

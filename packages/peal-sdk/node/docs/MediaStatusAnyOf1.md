@@ -12,7 +12,7 @@ Name | Type
 ## Example
 
 ```typescript
-import type { MediaStatusAnyOf1 } from 'peal'
+import type { MediaStatusAnyOf1 } from 'peal-sdk'
 
 // TODO: Update the object below with actual values
 const example = {

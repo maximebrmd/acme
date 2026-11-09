@@ -12,7 +12,7 @@ Name | Type
 ## Example
 
 ```typescript
-import type { TikTokAccountPostingAnyOf } from 'peal'
+import type { TikTokAccountPostingAnyOf } from 'peal-sdk'
 
 // TODO: Update the object below with actual values
 const example = {

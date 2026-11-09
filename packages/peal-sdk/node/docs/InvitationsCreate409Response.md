@@ -11,7 +11,7 @@ Name | Type
 ## Example
 
 ```typescript
-import type { InvitationsCreate409Response } from 'peal'
+import type { InvitationsCreate409Response } from 'peal-sdk'
 
 // TODO: Update the object below with actual values
 const example = {

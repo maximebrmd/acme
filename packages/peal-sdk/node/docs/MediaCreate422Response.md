@@ -16,7 +16,7 @@ Name | Type
 ## Example
 
 ```typescript
-import type { MediaCreate422Response } from 'peal'
+import type { MediaCreate422Response } from 'peal-sdk'
 
 // TODO: Update the object below with actual values
 const example = {

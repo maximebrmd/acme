@@ -2,6 +2,7 @@
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "name": "peal-sdk",
   "projectType": "library",
+  "tags": ["sdk-spec"],
   "targets": {
     "typecheck": {
       "command": "tsc --noEmit",

@@ -14,7 +14,7 @@ Name | Type
 ## Example
 
 ```typescript
-import type { PlanAllowances } from 'peal'
+import type { PlanAllowances } from 'peal-sdk'
 
 // TODO: Update the object below with actual values
 const example = {

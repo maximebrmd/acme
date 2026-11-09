@@ -11,7 +11,7 @@ Name | Type
 ## Example
 
 ```typescript
-import type { PostNotFoundEncoded } from 'peal'
+import type { PostNotFoundEncoded } from 'peal-sdk'
 
 // TODO: Update the object below with actual values
 const example = {

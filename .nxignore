@@ -1,1 +1,8 @@
 .local
+# The SDKs' builds, which their own .gitignore files leave out but Nx reads:
+# cargo package unpacks a copy of the Rust SDK, project.json included.
+packages/peal-sdk/*/dist
+packages/peal-sdk/*/target
+packages/peal-sdk/*/vendor
+packages/peal-sdk/dotnet/src/Peal/bin
+packages/peal-sdk/dotnet/src/Peal/obj

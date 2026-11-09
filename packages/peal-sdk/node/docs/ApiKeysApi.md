@@ -24,11 +24,11 @@ Creates an API key for the workspace with some of the caller\&#39;s permissions,
 import {
   Configuration,
   ApiKeysApi,
-} from 'peal';
-import type { ApiKeysCreateRequest } from 'peal';
+} from 'peal-sdk';
+import type { ApiKeysCreateRequest } from 'peal-sdk';
 
 async function example() {
-  console.log("🚀 Testing peal SDK...");
+  console.log("🚀 Testing peal-sdk SDK...");
   const config = new Configuration({ 
     // Configure HTTP bearer authorization: bearer
     accessToken: "YOUR BEARER TOKEN",
@@ -101,11 +101,11 @@ Lists the workspace\&#39;s API keys. Needs apiKey:read.
 import {
   Configuration,
   ApiKeysApi,
-} from 'peal';
-import type { ApiKeysListRequest } from 'peal';
+} from 'peal-sdk';
+import type { ApiKeysListRequest } from 'peal-sdk';
 
 async function example() {
-  console.log("🚀 Testing peal SDK...");
+  console.log("🚀 Testing peal-sdk SDK...");
   const config = new Configuration({ 
     // Configure HTTP bearer authorization: bearer
     accessToken: "YOUR BEARER TOKEN",
@@ -175,11 +175,11 @@ Revokes an API key of the workspace: it stops working at once. Needs apiKey:dele
 import {
   Configuration,
   ApiKeysApi,
-} from 'peal';
-import type { ApiKeysRevokeRequest } from 'peal';
+} from 'peal-sdk';
+import type { ApiKeysRevokeRequest } from 'peal-sdk';
 
 async function example() {
-  console.log("🚀 Testing peal SDK...");
+  console.log("🚀 Testing peal-sdk SDK...");
   const config = new Configuration({ 
     // Configure HTTP bearer authorization: bearer
     accessToken: "YOUR BEARER TOKEN",
