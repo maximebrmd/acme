@@ -131,6 +131,17 @@ export const AccountHandlers = HttpApiBuilder.group(
     const closing = yield* CloseAccount;
 
     return handlers.handleAll({
+      closure: () =>
+        Effect.gen(function* closure() {
+          const legalHold = yield* data.afterClosure(yield* currentUser).pipe(
+            Effect.catchTags({
+              DatabaseError: Effect.die,
+              SessionRequired: forbidden,
+            })
+          );
+
+          return { legalHold };
+        }),
       delete: ({ payload }) =>
         Effect.gen(function* remove() {
           yield* closing

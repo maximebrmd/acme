@@ -8,6 +8,7 @@ import type { Ids } from "#shared/application/ids.ts";
 import type {
   IdentificationRecord,
   LegalHoldRecord,
+  LegalRemainsRecord,
 } from "#shared/application/personal-data.ts";
 
 import { LegalStore } from "./ports/legal-store.ts";
@@ -94,6 +95,13 @@ export class LegalRecords extends Context.Service<
     readonly exportUser: (
       userId: string
     ) => Effect.Effect<LegalHoldRecord | null, DatabaseError>;
+    /**
+     * What closing the user's account now would leave, and for how long;
+     * null when nothing.
+     */
+    readonly afterClosure: (
+      userId: string
+    ) => Effect.Effect<LegalRemainsRecord | null, DatabaseError>;
   }
 >()("peal-server/legal/application/LegalRecords") {
   static readonly layer = Layer.effect(
@@ -129,7 +137,17 @@ export class LegalRecords extends Context.Service<
           )
         );
 
-      return LegalRecords.of({ connected, exportUser, hold });
+      return LegalRecords.of({
+        afterClosure: () =>
+          Effect.succeed({
+            accountYears: legalRetention.account.years,
+            connectionYears: legalRetention.connections.years,
+            identityYears: legalRetention.identity.years,
+          }),
+        connected,
+        exportUser,
+        hold,
+      });
     })
   );
 
@@ -145,6 +163,18 @@ export class LegalRecords extends Context.Service<
       const store = yield* LegalStore;
 
       return LegalRecords.of({
+        afterClosure: (userId) =>
+          connectionsOf(store, userId).pipe(
+            Effect.map((connections) =>
+              connections.length === 0
+                ? null
+                : {
+                    accountYears: null,
+                    connectionYears: legalRetention.connections.years,
+                    identityYears: null,
+                  }
+            )
+          ),
         connected: () => Effect.void,
         exportUser: (userId) =>
           connectionsOf(store, userId).pipe(

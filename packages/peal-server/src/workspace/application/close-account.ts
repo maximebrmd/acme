@@ -39,11 +39,13 @@ import type { WorkspaceSubscribed } from "./workspace-subscribed.ts";
  * `options` says the user agreed to, before the transaction and once
  * nothing else refuses; otherwise the closure is refused
  * (`WorkspaceSubscribed`, listing what cancelling would end in each).
- * Only what the law has a host keep is left, apart from everything else
- * and readable only on a legal request: who held the account, 5 years,
- * and how they signed in and paid, 1 year (`holdIdentification`); with the
- * connections that made content, each kept a year since it was made. A
- * confirmation is emailed to the address the account had, in its language.
+ * On a server that keeps what the law has a host keep, only that is left,
+ * apart from everything else and readable only on a legal request: who
+ * held the account, 5 years, and how they signed in and paid, 1 year
+ * (`holdIdentification`); with the connections that made content, each
+ * kept a year since it was made. A confirmation is emailed to the address
+ * the account had, in its language, saying what stays, if anything
+ * (`legalRemains`).
  */
 export class CloseAccount extends Context.Service<
   CloseAccount,
@@ -111,6 +113,9 @@ export class CloseAccount extends Context.Service<
           options
         );
 
+        // What the confirmation says stays, read while the account is there.
+        const legalHold = yield* records.legalRemains(userId);
+
         const deleted = yield* transaction(
           Effect.gen(function* closeInTransaction() {
             // Again, under the workspaces' locks: a workspace someone
@@ -158,6 +163,7 @@ export class CloseAccount extends Context.Service<
 
         yield* mail.deleted({
           email: user.email,
+          legalHold,
           locale: user.locale,
           subscriptionsCancelled,
         });

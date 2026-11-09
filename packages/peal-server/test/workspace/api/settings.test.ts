@@ -250,6 +250,12 @@ const PortsLive = Layer.mergeAll(
           }),
         holdIdentification: (held) =>
           record(`hold:${held.userId}:${held.email}`).pipe(provide),
+        legalRemains: () =>
+          Effect.succeed({
+            accountYears: 1,
+            connectionYears: 1,
+            identityYears: 5,
+          }),
         removeWorkspaceFiles: (id) => record(`removeFiles:${id}`).pipe(provide),
         // Stripe may still bill one, until the person agrees to cancel:
         // nothing is cancelled while another refuses.
@@ -334,10 +340,10 @@ const PortsLive = Layer.mergeAll(
       const provide = Effect.provideService(Fakes, fakes);
 
       return AccountMail.of({
-        deleted: ({ email, locale, subscriptionsCancelled }) =>
-          record(`mail:${email}:${locale}:${subscriptionsCancelled}`).pipe(
-            provide
-          ),
+        deleted: ({ email, legalHold, locale, subscriptionsCancelled }) =>
+          record(
+            `mail:${email}:${locale}:${subscriptionsCancelled}:${legalHold?.identityYears ?? "nothing"}`
+          ).pipe(provide),
         exported: ({ email, locale, via }) =>
           record(`mail:exported:${email}:${locale}:${via}`).pipe(provide),
         workspaceDeleted: ({
@@ -703,6 +709,33 @@ layer(Fakes.layer)("the settings endpoints", (it) => {
   );
 
   it.effect(
+    "say what deleting the account would leave, to the user in person only",
+    () =>
+      Effect.gen(function* closure() {
+        const client = yield* as(user());
+
+        assert.deepStrictEqual(yield* client.account.closure(), {
+          legalHold: { accountYears: 1, connectionYears: 1, identityYears: 5 },
+        });
+
+        for (const principal of [
+          apiKey,
+          oauth,
+          mcpClient,
+          otherClient,
+          impersonated,
+        ]) {
+          const refused = yield* as(principal);
+
+          assert.strictEqual(
+            yield* failureOf(refused.account.closure()),
+            "Forbidden"
+          );
+        }
+      })
+  );
+
+  it.effect(
     "delete the account once the password confirms it, unless a workspace would lose its last owner",
     () =>
       Effect.gen(function* closes() {
@@ -784,7 +817,7 @@ layer(Fakes.layer)("the settings endpoints", (it) => {
             `eraseUser:${userId}`,
             `deleteUser:${userId}`,
             `removeFiles:${harbour}`,
-            "mail:ana@example.test:fr:0",
+            "mail:ana@example.test:fr:0:5",
           ]
         );
 
@@ -856,7 +889,7 @@ layer(Fakes.layer)("the settings endpoints", (it) => {
             `cancel:${subscribed}`,
             `eraseWorkspace:${subscribed}`,
             `deleteUser:${userId}`,
-            "mail:ana@example.test:fr:1",
+            "mail:ana@example.test:fr:1:5",
           ]
         );
       })

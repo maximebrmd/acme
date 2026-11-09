@@ -1207,7 +1207,7 @@
     },
     "export": {
       "title": "Your data",
-      "description": "A JSON file of everything Peal keeps about you: your account, sessions, memberships, invitations, connected applications, notifications and preferences, what staff did to your account, the posts you wrote in the workspaces you share, the content of the workspaces where you are the only member, and the connections that created content, which French law has Peal keep, with what it keeps once your account is closed. It holds no password, token or key. We email you each time a copy is downloaded.",
+      "description": "A JSON file of everything Peal keeps about you: your account, sessions, memberships, invitations, connected applications, notifications and preferences, what staff did to your account, the posts you wrote in the workspaces you share and the content of the workspaces where you are the only member. It holds no password, token or key. We email you each time a copy is downloaded.",
       "download": "Download my data"
     },
     "delete": {
@@ -1215,13 +1215,18 @@
       "description": "Deletes your account for good, with the workspaces where you are the only member and everything in them. You leave the others.",
       "open": "Delete my account…",
       "confirmTitle": "Delete your account for good?",
-      "confirmDescription": "Your profile, sessions, notifications, preferences and connected applications go, with the workspaces where you are the only member, and their subscriptions are cancelled. This cannot be undone. As French law requires of a host, Peal keeps apart, for judicial authorities only, your name and email address for 5 years, and how you signed in and the connections that created content for 1 year, then deletes them. Enter your password to confirm.",
+      "confirmDescription": "Your profile, sessions, notifications, preferences and connected applications go, with the workspaces where you are the only member, and their subscriptions are cancelled. This cannot be undone. Enter your password to confirm.",
       "confirm": "Delete my account",
       "deleting": "Deleting…",
       "deleted": "Your account is deleted. A confirmation is on its way to your inbox.",
       "lastOwnerTitle": "These workspaces need another owner",
       "lastOwnerDescription": "You are the only owner of workspaces other members use. Make one of them an owner, or delete the workspace, then try again:",
       "billingPage": "Open the workspace’s billing page"
+    },
+    "legalHold": {
+      "exported": "On this server, it also lists the connections that created content, which French law has a host keep, with what stays once your account is closed.",
+      "identification": "As French law requires of a host, Peal keeps apart, for judicial authorities only, your name and email address for {identityYears, plural, one {# year} other {# years}}, and how you signed in and the connections that created content for {accountYears, plural, one {# year} other {# years}}, then deletes them.",
+      "connections": "This server kept what French law requires of a host, and no longer does: the connections that created content, kept so far, stay {connectionYears, plural, one {# year} other {# years}} from each, apart, for judicial authorities only, then are deleted."
     }
   },
   "Staff": {

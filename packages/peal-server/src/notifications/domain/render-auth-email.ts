@@ -20,11 +20,54 @@ const withBilling = (
     ? { ...messages, body: `${messages.body} ${billingEnded}` }
     : messages;
 
+type LegalHold = Extract<AuthEmail, { _tag: "AccountDeleted" }>["legalHold"];
+
+// A number of years, in the catalog's words.
+const yearsIn = (catalog: EmailCatalog, count: number): string =>
+  fill(
+    count === 1 ? catalog.legalHold.years.one : catalog.legalHold.years.other,
+    new Map([["count", String(count)]]),
+    keep
+  );
+
+// What the law has the server keep of the account, if anything: who held
+// it and how they signed in, or, on a server that stopped keeping these,
+// only the connections it already holds.
+const legalHoldIn = (catalog: EmailCatalog, legalHold: LegalHold) => {
+  if (legalHold === null) {
+    return null;
+  }
+
+  const { accountYears, connectionYears, identityYears } = legalHold;
+
+  return accountYears === null || identityYears === null
+    ? fill(
+        catalog.legalHold.connections,
+        new Map([["connections", yearsIn(catalog, connectionYears)]]),
+        keep
+      )
+    : fill(
+        catalog.legalHold.identification,
+        new Map([
+          ["account", yearsIn(catalog, accountYears)],
+          ["identity", yearsIn(catalog, identityYears)],
+        ]),
+        keep
+      );
+};
+
+// An account deletion's body, with what the law has the server keep.
+const withLegalHold = (
+  messages: EmailMessages,
+  kept: string | null
+): EmailMessages =>
+  kept === null ? messages : { ...messages, body: `${messages.body} ${kept}` };
+
 const contentOf = (email: AuthEmail, catalog: EmailCatalog): Content =>
   Match.valueTags(email, {
-    AccountDeleted: ({ subscriptionsCancelled }): Content => ({
+    AccountDeleted: ({ legalHold, subscriptionsCancelled }): Content => ({
       messages: withBilling(
-        catalog.accountDeleted,
+        withLegalHold(catalog.accountDeleted, legalHoldIn(catalog, legalHold)),
         subscriptionsCancelled,
         catalog.billingEnded.account
       ),

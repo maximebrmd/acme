@@ -1,9 +1,15 @@
 import { Context, DateTime, Effect, Layer, Option } from "effect";
 
 import type { DatabaseError } from "#shared/application/database-error.ts";
-import type { AuthoredPostRecord } from "#shared/application/personal-data.ts";
+import type {
+  AuthoredPostRecord,
+  LegalRemainsRecord,
+} from "#shared/application/personal-data.ts";
 import type { ApiKey } from "#workspace/domain/api-key.ts";
-import { ownSessionOrCommandLine } from "#workspace/domain/own-session.ts";
+import {
+  ownSession,
+  ownSessionOrCommandLine,
+} from "#workspace/domain/own-session.ts";
 import type { SessionRequired } from "#workspace/domain/session-required.ts";
 import type { UserPrincipal } from "#workspace/domain/user-principal.ts";
 
@@ -51,6 +57,16 @@ export class AccountData extends Context.Service<
     ) => Effect.Effect<
       AccountExport,
       AuthUnavailable | DatabaseError | NotSignedIn | SessionRequired
+    >;
+    /**
+     * What the law has the server keep of the user's account once they
+     * close it, for them in person before they do; null when nothing.
+     */
+    readonly afterClosure: (
+      principal: UserPrincipal
+    ) => Effect.Effect<
+      LegalRemainsRecord | null,
+      DatabaseError | SessionRequired
     >;
   }
 >()("peal-server/workspace/application/AccountData") {
@@ -129,7 +145,15 @@ export class AccountData extends Context.Service<
         }
       );
 
-      return AccountData.of({ export: exportAccount });
+      const afterClosure = Effect.fn("AccountData.afterClosure")(
+        function* afterClosure(principal: UserPrincipal) {
+          const userId = yield* Effect.fromResult(ownSession(principal));
+
+          return yield* records.legalRemains(userId);
+        }
+      );
+
+      return AccountData.of({ afterClosure, export: exportAccount });
     })
   );
 }

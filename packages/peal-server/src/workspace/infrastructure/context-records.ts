@@ -116,6 +116,7 @@ export const ContextRecordsLive = Layer.effect(
           posts: posts.exportWorkspace(workspaceId),
         }),
       holdIdentification: (record) => legal.hold(record),
+      legalRemains: (userId) => legal.afterClosure(userId),
       removeWorkspaceFiles: (workspaceId) =>
         media
           .removeWorkspaceFiles(workspaceId)

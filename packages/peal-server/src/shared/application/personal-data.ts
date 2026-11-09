@@ -322,3 +322,17 @@ export interface LegalHoldRecord {
     readonly years: number;
   }[];
 }
+
+/**
+ * What the law has the server keep of an account once it is closed, in
+ * years, for whoever is about to close theirs: who held it
+ * (`identityYears`), how they signed in and paid (`accountYears`), and the
+ * connections that made content, each from when it was made. The first two
+ * are null on a server that stopped keeping them, where only the
+ * connections it already holds stay.
+ */
+export interface LegalRemainsRecord {
+  readonly accountYears: number | null;
+  readonly connectionYears: number;
+  readonly identityYears: number | null;
+}

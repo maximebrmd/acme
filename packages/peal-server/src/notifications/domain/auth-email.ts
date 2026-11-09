@@ -23,10 +23,19 @@ export const AuthEmailSchema = Schema.Union([
     workspaceName: Schema.String,
   }),
   // Confirms, to the address it had, that an account was deleted with its
-  // data, as its owner asked, and how many subscriptions of the workspaces
-  // it deleted were cancelled. Its link opens Peal.
+  // data, as its owner asked, how many subscriptions of the workspaces
+  // it deleted were cancelled, and what the law has the server keep of it,
+  // in years: null when nothing, and without the identity and the account's
+  // years on a server that stopped keeping them. Its link opens Peal.
   Schema.TaggedStruct("AccountDeleted", {
     ...link,
+    legalHold: Schema.NullOr(
+      Schema.Struct({
+        accountYears: Schema.NullOr(Schema.Int),
+        connectionYears: Schema.Int,
+        identityYears: Schema.NullOr(Schema.Int),
+      })
+    ),
     subscriptionsCancelled: Schema.Int,
   }),
   // Confirms, to the owner who deleted it, that a workspace is deleted, and

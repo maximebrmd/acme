@@ -21,10 +21,28 @@ const invitation = (locale: "en" | "fr", role: string): AuthEmail => ({
   workspaceName: 'Studio "Nord"',
 });
 
+// What a server that keeps what French law has a host keep leaves of a
+// closed account, and one that turned it off after having kept connections.
+const identification = {
+  accountYears: 1,
+  connectionYears: 1,
+  identityYears: 5,
+};
+
+const connectionsOnly = {
+  accountYears: null,
+  connectionYears: 1,
+  identityYears: null,
+};
+
 // The text of a deletion's confirmation, in `locale`.
-const deleted = (locale: "en" | "fr") =>
+const deleted = (
+  locale: "en" | "fr",
+  legalHold: typeof identification | typeof connectionsOnly | null
+) =>
   renderAuthEmail({
     _tag: "AccountDeleted",
+    legalHold,
     locale,
     subscriptionsCancelled: 0,
     to: "ada@example.test",
@@ -62,6 +80,7 @@ describe(renderAuthEmail, () => {
   it("confirms an account's deletion in its language, linking to Peal", () => {
     const inEnglish = renderAuthEmail({
       _tag: "AccountDeleted",
+      legalHold: null,
       locale: "en",
       subscriptionsCancelled: 0,
       to: "ada@example.test",
@@ -70,6 +89,7 @@ describe(renderAuthEmail, () => {
 
     const inFrench = renderAuthEmail({
       _tag: "AccountDeleted",
+      legalHold: null,
       locale: "fr",
       subscriptionsCancelled: 0,
       to: "ada@example.test",
@@ -84,14 +104,37 @@ describe(renderAuthEmail, () => {
     );
   });
 
-  it("says what French law has a host keep after an account's deletion, and for whom", () => {
-    expect(deleted("en")).toContain("for judicial authorities only");
-    expect(deleted("fr")).toContain("pour les seules autorités judiciaires");
+  it("says what French law has a host keep after an account's deletion, for how long and for whom, on a server that keeps it", () => {
+    expect(deleted("en", identification)).toContain(
+      "for judicial authorities only, your name and email address for 5 years, and how you signed in and the connections that created content for 1 year"
+    );
+    expect(deleted("fr", identification)).toContain(
+      "pour les seules autorités judiciaires, vos nom et adresse e-mail pendant 5\u00A0ans, et vos moyens de connexion ainsi que les connexions ayant créé du contenu pendant 1\u00A0an"
+    );
+  });
+
+  it("says nothing is kept on a server that keeps nothing for the law", () => {
+    expect(deleted("en", null)).not.toContain("judicial");
+    expect(deleted("en", null)).not.toContain("French law");
+    expect(deleted("fr", null)).not.toContain("judiciaires");
+  });
+
+  it("says only the connections already kept stay, on a server that stopped keeping them", () => {
+    const inEnglish = deleted("en", connectionsOnly);
+
+    expect(inEnglish).toContain(
+      "the connections that created content, kept so far, stay 1 year from each"
+    );
+    expect(inEnglish).not.toContain("your name and email address");
+    expect(deleted("fr", connectionsOnly)).toContain(
+      "les connexions ayant créé du contenu, conservées jusqu’ici, le restent 1\u00A0an à compter de chacune"
+    );
   });
 
   it("says when deleting cancelled subscriptions, and that nothing more is charged", () => {
     const account = renderAuthEmail({
       _tag: "AccountDeleted",
+      legalHold: null,
       locale: "en",
       subscriptionsCancelled: 1,
       to: "ada@example.test",
@@ -102,6 +145,7 @@ describe(renderAuthEmail, () => {
     expect(
       renderAuthEmail({
         _tag: "AccountDeleted",
+        legalHold: null,
         locale: "en",
         subscriptionsCancelled: 0,
         to: "ada@example.test",

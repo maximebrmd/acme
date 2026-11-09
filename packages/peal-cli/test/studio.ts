@@ -795,6 +795,7 @@ export const studioGroupsLive = (studio: Studio) =>
     ),
     HttpApiBuilder.group(Api, "account", (handlers) =>
       handlers.handleAll({
+        closure: () => refusing,
         delete: () => refusing,
         export: () =>
           Effect.gen(function* exportData() {

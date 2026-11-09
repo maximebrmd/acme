@@ -11,6 +11,7 @@ import { SqlLive } from "#shared/infrastructure/database.ts";
 import {
   bodyOf,
   confirmedAccount,
+  emailTo,
   IntegrationLive,
   makeAdmin,
   password,
@@ -43,6 +44,17 @@ const ExportSchema = Schema.Struct({
       Schema.Struct({ data: Schema.Array(Schema.String), years: Schema.Number })
     ),
   }),
+});
+
+// What closing the account would leave, as the dialog asks before it.
+const ClosureSchema = Schema.Struct({
+  legalHold: Schema.NullOr(
+    Schema.Struct({
+      accountYears: Schema.NullOr(Schema.Number),
+      connectionYears: Schema.Number,
+      identityYears: Schema.NullOr(Schema.Number),
+    })
+  ),
 });
 
 const AnswerSchema = Schema.Struct({
@@ -132,6 +144,23 @@ layer(RetainingLive, { excludeTestServices: true, timeout: "120 seconds" })(
             [5, 1]
           );
 
+          // And, before she closes her account, what that would leave.
+          assert.deepStrictEqual(
+            yield* bodyOf(
+              ClosureSchema,
+              yield* app.request("/api/me/closure", {
+                headers: { cookie: ana.cookies },
+              })
+            ),
+            {
+              legalHold: {
+                accountYears: 1,
+                connectionYears: 1,
+                identityYears: 5,
+              },
+            }
+          );
+
           const closed = yield* app.request("/api/me", {
             body: { password },
             headers: { cookie: ana.cookies },
@@ -139,6 +168,10 @@ layer(RetainingLive, { excludeTestServices: true, timeout: "120 seconds" })(
           });
 
           assert.strictEqual(closed.status, 204);
+          assert.include(
+            (yield* emailTo(ana.email, /^Your Peal account is deleted/u)).Text,
+            "for judicial authorities only"
+          );
 
           const request = {
             authority: "Synthetic public prosecutor",
@@ -315,12 +348,27 @@ layer(IntegrationLive, { excludeTestServices: true, timeout: "120 seconds" })(
             (yield* bodyOf(Schema.Struct({ legalHold: Schema.Null }), exported))
               .legalHold
           );
+          assert.deepStrictEqual(
+            yield* bodyOf(
+              ClosureSchema,
+              yield* app.request("/api/me/closure", {
+                headers: { cookie: ben.cookies },
+              })
+            ),
+            { legalHold: null }
+          );
 
           yield* app.request("/api/me", {
             body: { password },
             headers: { cookie: ben.cookies },
             method: "DELETE",
           });
+
+          // The confirmation claims nothing is kept for the law.
+          assert.notInclude(
+            (yield* emailTo(ben.email, /^Your Peal account is deleted/u)).Text,
+            "judicial"
+          );
 
           const kept =
             yield* sql`SELECT (SELECT count(*) FROM legal.connections WHERE user_id = ${ben.id})::int + (SELECT count(*) FROM legal.identification_holds WHERE user_id = ${ben.id})::int AS count`.pipe(
@@ -382,6 +430,21 @@ layer(
         ]);
         assert.strictEqual(exported.legalHold.connectionYears, 1);
         assert.deepStrictEqual(exported.legalHold.keptAfterClosure, []);
+        assert.deepStrictEqual(
+          yield* bodyOf(
+            ClosureSchema,
+            yield* app.request("/api/me/closure", {
+              headers: { cookie: cleo.cookies },
+            })
+          ),
+          {
+            legalHold: {
+              accountYears: null,
+              connectionYears: 1,
+              identityYears: null,
+            },
+          }
+        );
 
         yield* app.request("/api/me", {
           body: { password },

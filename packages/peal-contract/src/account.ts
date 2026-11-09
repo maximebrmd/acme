@@ -315,6 +315,28 @@ export const AccountExportSchema = Schema.Struct({
 export type AccountExport = typeof AccountExportSchema.Type;
 
 /**
+ * What deleting the account would leave, for the page that asks before it.
+ */
+export const AccountClosureSchema = Schema.Struct({
+  // What the law has the server keep once the account is closed, apart
+  // and for authorities only, in years: who held it (`identityYears`), how
+  // they signed in and paid (`accountYears`), and each connection that
+  // created, changed or deleted content, from when it was made. Null on a
+  // server that keeps nothing, as most do; the first two are null on a
+  // server that stopped keeping these, where only the connections it
+  // already holds stay.
+  legalHold: nullable(
+    Schema.Struct({
+      accountYears: nullable(Schema.Int),
+      connectionYears: Schema.Int,
+      identityYears: nullable(Schema.Int),
+    })
+  ),
+}).annotate({ identifier: "AccountClosure" });
+
+export type AccountClosure = typeof AccountClosureSchema.Type;
+
+/**
  * What confirms an account's deletion: its password, and, when a workspace
  * it deletes has a subscription Stripe may still bill, the user's
  * agreement to cancel it.
@@ -348,6 +370,16 @@ export class AccountApi extends HttpApiGroup.make("account")
         description:
           "Answers with a JSON copy of everything Peal keeps about the user, as a file to save: their account, how they sign in, their sessions, memberships, invitations, connected applications, notices and preferences, what staff did to their account (action, time and reason, not who), the posts they wrote in the workspaces they share, the connections that created, changed or deleted content (time, address, protocol), what the law has Peal keep once the account closes and for how long, and the channels, posts, media details, analytics, API keys, assistant usage and billing state (plan and subscription status) of the workspaces where they are the only member. It holds no secret: no password, token, key or card. Open to the user in their own session and to Peal's command line, never to another OAuth client: an MCP client would hand all of it to an AI model. Each copy is emailed to the account's address, saying whether the web app or the command line took it.",
         summary: "Export my data",
+      })
+    ),
+    HttpApiEndpoint.get("closure", "/closure", {
+      error: [Forbidden],
+      success: AccountClosureSchema,
+    }).annotateMerge(
+      OpenApi.annotations({
+        description:
+          "Says what deleting the account would leave: nothing, on most servers; on one whose operator French law has keep what identifies whoever contributed content, who held the account, how they signed in and the connections that made content, each for the years given. Open to the user in their own session only.",
+        summary: "What deleting my account leaves",
       })
     ),
     HttpApiEndpoint.delete("delete", "/", {

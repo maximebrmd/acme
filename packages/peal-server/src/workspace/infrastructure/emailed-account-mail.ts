@@ -31,11 +31,12 @@ export const EmailedAccountMail = Layer.effect(
     const home = (locale: Locale) => `${publicUrl}${localePrefix(locale)}`;
 
     return AccountMail.of({
-      deleted: ({ email, locale, subscriptionsCancelled }) =>
+      deleted: ({ email, legalHold, locale, subscriptionsCancelled }) =>
         FiberSet.run(
           fibers,
           emails.send({
             _tag: "AccountDeleted",
+            legalHold,
             locale,
             subscriptionsCancelled,
             to: email,

@@ -29,11 +29,16 @@ export { DatabaseUnavailable } from "./database-unavailable.ts";
 
 export {
   AccountApi,
+  AccountClosureSchema,
   AccountExportSchema,
   DeleteAccountSchema,
 } from "./account.ts";
 
-export type { AccountExport, DeleteAccount } from "./account.ts";
+export type {
+  AccountClosure,
+  AccountExport,
+  DeleteAccount,
+} from "./account.ts";
 
 export { ConnectedAppNotFound } from "./connected-app-not-found.ts";
 

@@ -3,7 +3,7 @@ import type { EmailCatalog } from "./email-catalog.ts";
 export const french: EmailCatalog = {
   accountDeleted: {
     action: "Ouvrir Peal",
-    body: "Votre compte Peal a été supprimé à votre demande, avec les données qui s’y rattachent : votre profil, vos sessions, vos adhésions, vos notifications, et les espaces de travail dont vous étiez le seul membre, avec tout leur contenu. Comme la loi française l’impose à un hébergeur, Peal conserve à part, pour les seules autorités judiciaires, vos nom et adresse e-mail pendant 5 ans, et vos moyens de connexion ainsi que les connexions ayant créé du contenu pendant 1 an, puis les supprime.",
+    body: "Votre compte Peal a été supprimé à votre demande, avec les données qui s’y rattachent : votre profil, vos sessions, vos adhésions, vos notifications, et les espaces de travail dont vous étiez le seul membre, avec tout leur contenu.",
     ignore:
       "Si vous n’êtes pas à l’origine de cette demande, prévenez la personne qui gère ce serveur Peal. Peal n’envoie plus d’e-mail à cette adresse.",
     subject: "Votre compte Peal est supprimé",
@@ -79,6 +79,13 @@ export const french: EmailCatalog = {
     linkFallback: "Si le bouton ne fonctionne pas, ouvrez ce lien :",
     signature: "L’équipe Peal",
     textLink: "{action} : {url}",
+  },
+  legalHold: {
+    connections:
+      "Ce serveur Peal conservait ce que la loi française impose à un hébergeur, et ne le fait plus : les connexions ayant créé du contenu, conservées jusqu’ici, le restent {connections} à compter de chacune, à part, pour les seules autorités judiciaires, puis sont supprimées.",
+    identification:
+      "Comme la loi française l’impose à un hébergeur, Peal conserve à part, pour les seules autorités judiciaires, vos nom et adresse e-mail pendant {identity}, et vos moyens de connexion ainsi que les connexions ayant créé du contenu pendant {account}, puis les supprime.",
+    years: { one: "{count} an", other: "{count} ans" },
   },
   plans: {
     agency: "Agency",
