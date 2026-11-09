@@ -344,7 +344,7 @@ describe("restarts", () => {
         ).pipe(Effect.provideContext(first));
 
         const cancelled = yield* PostScheduling.use((scheduling) =>
-          scheduling.cancel(post.id)
+          scheduling.cancel(post.workspaceId, post.id)
         ).pipe(Effect.provideContext(first));
 
         assert.strictEqual(cancelled.status._tag, "publishing");
@@ -426,7 +426,7 @@ describe("restarts", () => {
         ).pipe(Effect.provideContext(first));
 
         const cancelled = yield* PostScheduling.use((scheduling) =>
-          scheduling.cancel(post.id)
+          scheduling.cancel(post.workspaceId, post.id)
         ).pipe(Effect.provideContext(first));
 
         assert.strictEqual(cancelled.status._tag, "publishing");

@@ -45,6 +45,9 @@ export interface SchedulePostRequest {
  * Scheduling posts: create one for a time, move it, cancel it. Each use case
  * changes the post and starts or stops its job in one transaction, so a post
  * is scheduled exactly when its job exists.
+ *
+ * A post is only found in the workspace that owns it: another workspace's
+ * post is PostNotFound, whatever its id.
  */
 export class PostScheduling extends Context.Service<
   PostScheduling,
@@ -60,6 +63,7 @@ export class PostScheduling extends Context.Service<
      * `scheduleGrace`).
      */
     readonly reschedule: (
+      workspaceId: WorkspaceId,
       postId: PostId,
       schedule: Schedule
     ) => Effect.Effect<
@@ -73,6 +77,7 @@ export class PostScheduling extends Context.Service<
      * still counts.
      */
     readonly cancel: (
+      workspaceId: WorkspaceId,
       postId: PostId
     ) => Effect.Effect<
       Post,
@@ -90,8 +95,11 @@ export class PostScheduling extends Context.Service<
 
       const withIds = Effect.provideService(Ids, ids);
 
-      const stored = (postId: PostId) =>
+      const stored = (workspaceId: WorkspaceId, postId: PostId) =>
         posts.lock(postId).pipe(
+          Effect.map(
+            Option.filter((found) => found.post.workspaceId === workspaceId)
+          ),
           Effect.flatMap(
             Option.match({
               onNone: () => Effect.fail(new PostNotFound({ postId })),
@@ -177,10 +185,14 @@ export class PostScheduling extends Context.Service<
       });
 
       const reschedule = Effect.fn("PostScheduling.reschedule")(
-        function* reschedule(postId: PostId, at: Schedule) {
+        function* reschedule(
+          workspaceId: WorkspaceId,
+          postId: PostId,
+          at: Schedule
+        ) {
           return yield* transaction(
             Effect.gen(function* moveAndRestart() {
-              const current = yield* stored(postId);
+              const current = yield* stored(workspaceId, postId);
               const now = yield* DateTime.now;
 
               const moved = yield* Effect.fromResult(
@@ -198,11 +210,12 @@ export class PostScheduling extends Context.Service<
       );
 
       const cancel = Effect.fn("PostScheduling.cancel")(function* cancel(
+        workspaceId: WorkspaceId,
         postId: PostId
       ) {
         return yield* transaction(
           Effect.gen(function* cancelAndStop() {
-            const current = yield* stored(postId);
+            const current = yield* stored(workspaceId, postId);
             const now = yield* DateTime.now;
 
             // The job already woke: it finishes with the targets it sent.

@@ -383,7 +383,7 @@ describe("the cluster on Postgres", () => {
 
           // Leaves no job waiting for a dev server to run.
           yield* PostScheduling.use((scheduling) =>
-            scheduling.cancel(waiting.post.id)
+            scheduling.cancel(waiting.post.workspaceId, waiting.post.id)
           );
         }).pipe(
           Effect.provide(
