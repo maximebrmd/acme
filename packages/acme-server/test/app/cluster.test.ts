@@ -16,6 +16,9 @@ import { SqlClient } from "effect/sql";
 
 import { clusterLayer } from "#app/cluster.ts";
 import { CronsLive } from "#app/crons.ts";
+import { ConnectChannel } from "#channels/application/connect-channel.ts";
+import { RefreshChannelTokens } from "#channels/application/refresh-channel-tokens.ts";
+import { WarnChannelsNeedingReconnect } from "#channels/application/warn-channels-needing-reconnect.ts";
 import { PostRepository } from "#publishing/application/post-repository.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
 import { PublicationScheduler } from "#publishing/application/publication-scheduler.ts";
@@ -72,16 +75,56 @@ const Ticks = ClusterCron.make({
   name: tickName,
 });
 
+// The channels jobs the server's crons call, doing nothing: a real sweep
+// would refresh, or mark, the channels other suites keep in this database.
+const ChannelJobsTest = Layer.mergeAll(
+  Layer.succeed(
+    RefreshChannelTokens,
+    RefreshChannelTokens.of({
+      refresh: () => Effect.succeed("skipped"),
+      sweep: Effect.succeed({
+        due: 0,
+        failed: 0,
+        reconnectRequired: 0,
+        refreshed: 0,
+        unavailable: 0,
+      }),
+    })
+  ),
+  Layer.succeed(
+    WarnChannelsNeedingReconnect,
+    WarnChannelsNeedingReconnect.of({
+      run: Effect.succeed({
+        expired: 0,
+        reconnectRequired: 0,
+        reconnectSoon: 0,
+      }),
+    })
+  ),
+  Layer.succeed(
+    ConnectChannel,
+    ConnectChannel.of({
+      complete: () => Effect.die("not used by the crons"),
+      purgeExpired: Effect.succeed(0),
+      reconnect: () => Effect.die("not used by the crons"),
+      start: () => Effect.die("not used by the crons"),
+    })
+  )
+);
+
 const serverWith = <E, R>(
   platforms: Layer.Layer<Layer.Success<typeof FakePlatformPublisher>, E, R>,
   crons: Layer.Layer<
     never,
     never,
-    Sharding.Sharding | SqlClient.SqlClient
+    | Layer.Success<typeof ChannelJobsTest>
+    | Sharding.Sharding
+    | SqlClient.SqlClient
   > = CronsLive
 ) =>
   Layer.mergeAll(publishingWorkers(platforms), crons).pipe(
     Layer.provideMerge(PublishingLive),
+    Layer.provideMerge(ChannelJobsTest),
     Layer.provideMerge(Layer.mergeAll(IdsLive, TransactionRunnerLive)),
     Layer.provideMerge(Cluster),
     Layer.provideMerge(platforms)

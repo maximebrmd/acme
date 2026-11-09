@@ -9,7 +9,10 @@ import {
   EncryptedTokenSchema,
   TokenCipher,
 } from "#channels/application/token-cipher.ts";
-import type { EncryptedToken } from "#channels/application/token-cipher.ts";
+import type {
+  EncryptedToken,
+  SecretContext,
+} from "#channels/application/token-cipher.ts";
 import { UnknownTokenKey } from "#channels/application/unknown-token-key.ts";
 import type { ChannelId } from "#shared/domain/ids.ts";
 
@@ -189,9 +192,9 @@ export const TokenCipherLive = Layer.effect(
     const aead = yield* Aead.Aead;
     const random = yield* SecureRandom.SecureRandom;
 
-    const encrypt = Effect.fn("TokenCipher.encrypt")(function* encrypt(
+    const seal = Effect.fn("TokenCipher.encrypt")(function* seal(
       token: Redacted.Redacted,
-      channelId: ChannelId
+      boundTo: string
     ) {
       if (Option.isNone(keyring.current)) {
         return yield* new MissingTokenKey();
@@ -203,7 +206,7 @@ export const TokenCipherLive = Layer.effect(
       // Aead only fails on a wrong IV length or a plaintext over 64 GiB.
       const sealed = yield* Effect.orDie(
         aead.encrypt(key, encoder.encode(Redacted.value(token)), {
-          aad: encoder.encode(channelId),
+          aad: encoder.encode(boundTo),
           nonce: iv,
         })
       );
@@ -213,9 +216,9 @@ export const TokenCipherLive = Layer.effect(
       );
     });
 
-    const decrypt = Effect.fn("TokenCipher.decrypt")(function* decrypt(
+    const open = Effect.fn("TokenCipher.decrypt")(function* open(
       encrypted: EncryptedToken,
-      channelId: ChannelId
+      boundTo: string
     ) {
       const stored = parseStored(encrypted);
 
@@ -231,7 +234,7 @@ export const TokenCipherLive = Layer.effect(
       }
 
       const plaintext = yield* aead
-        .decrypt(key, sealed, { aad: encoder.encode(channelId), nonce: iv })
+        .decrypt(key, sealed, { aad: encoder.encode(boundTo), nonce: iv })
         .pipe(
           Effect.catchReason(
             "CryptoError",
@@ -244,7 +247,18 @@ export const TokenCipherLive = Layer.effect(
       return Redacted.make(decoder.decode(plaintext));
     });
 
-    return TokenCipher.of({ decrypt, encrypt });
+    // A secret's context starts with "app:" or "connect:", so it never equals
+    // a channel id, a UUID: neither decrypts as the other.
+    return TokenCipher.of({
+      decrypt: (encrypted: EncryptedToken, channelId: ChannelId) =>
+        open(encrypted, channelId),
+      decryptSecret: (encrypted: EncryptedToken, context: SecretContext) =>
+        open(encrypted, context),
+      encrypt: (token: Redacted.Redacted, channelId: ChannelId) =>
+        seal(token, channelId),
+      encryptSecret: (secret: Redacted.Redacted, context: SecretContext) =>
+        seal(secret, context),
+    });
   })
 ).pipe(
   Layer.provide(

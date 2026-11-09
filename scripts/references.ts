@@ -37,6 +37,14 @@ const references: readonly Reference[] = [
     tag: (version) => `v${version}`,
   },
   {
+    // The AT Protocol monorepo, tagged per package: the OAuth client's tag
+    // also carries the oauth-client, jwk and identity packages it depends on.
+    name: "atproto",
+    packageName: "@atproto/oauth-client-node",
+    repository: "bluesky-social/atproto",
+    tag: (version) => `@atproto/oauth-client-node@${version}`,
+  },
+  {
     name: "tiptap",
     packageName: "@tiptap/react",
     repository: "ueberdosis/tiptap",

@@ -3,6 +3,13 @@
  * email fills in, HTML-escaped where it appears in HTML.
  */
 export interface EmailCatalog {
+  /**
+   * A channel's token stopped working. `{platform}`, `{handle}` and
+   * `{workspaceName}` name the account.
+   */
+  readonly channelReconnectRequired: EmailMessages;
+  /** A channel's token expires at `{expiresAt}` and cannot be renewed. */
+  readonly channelReconnectSoon: EmailMessages;
   readonly invitation: EmailMessages;
   readonly layout: {
     /** Under the button, for clients that do not show it. */
@@ -11,6 +18,8 @@ export interface EmailCatalog {
     /** The button in the text part: `{action}` and `{url}`. */
     readonly textLink: string;
   };
+  /** The platforms' names, as `{platform}`; a platform not listed shows its id. */
+  readonly platforms: Readonly<Record<string, string>>;
   readonly resetPassword: EmailMessages;
   /**
    * The role an invitation offers, as `{role}` in its body: "as an editor".

@@ -28,6 +28,11 @@
       "cache": true,
       "inputs": ["default", "^default", "{workspaceRoot}/oxfmt.config.ts"]
     },
+    "bluesky-key": {
+      "command": "bun scripts/bluesky-key.ts",
+      "options": { "cwd": "{projectRoot}" },
+      "cache": false
+    },
     "db:generate": {
       "command": "drizzle-kit generate",
       "options": { "cwd": "{projectRoot}" },

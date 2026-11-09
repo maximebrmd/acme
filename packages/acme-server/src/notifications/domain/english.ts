@@ -1,6 +1,20 @@
 import type { EmailCatalog } from "./email-catalog.ts";
 
 export const english: EmailCatalog = {
+  channelReconnectRequired: {
+    action: "Reconnect the account",
+    body: "Acme can no longer post as {handle} on {platform} in {workspaceName}: the account’s authorization stopped working. Nothing is posted there until someone reconnects it.",
+    ignore:
+      "You receive this email because you manage the channels of {workspaceName} on Acme.",
+    subject: "Reconnect {handle} on {platform}",
+  },
+  channelReconnectSoon: {
+    action: "Reconnect the account",
+    body: "The authorization Acme holds for {handle} on {platform}, in {workspaceName}, ends on {expiresAt}, and {platform} does not let Acme renew it. Reconnect the account before then to keep posting.",
+    ignore:
+      "You receive this email because you manage the channels of {workspaceName} on Acme.",
+    subject: "Reconnect {handle} on {platform} by {expiresAt}",
+  },
   invitation: {
     action: "Accept the invitation",
     body: "{inviterName} invited you to join {workspaceName} on Acme {role}.",
@@ -12,6 +26,18 @@ export const english: EmailCatalog = {
     linkFallback: "If the button does not work, open this link:",
     signature: "The Acme team",
     textLink: "{action}: {url}",
+  },
+  platforms: {
+    bluesky: "Bluesky",
+    facebook: "Facebook",
+    instagram: "Instagram",
+    linkedin: "LinkedIn",
+    mastodon: "Mastodon",
+    pinterest: "Pinterest",
+    threads: "Threads",
+    tiktok: "TikTok",
+    x: "X",
+    youtube: "YouTube",
   },
   resetPassword: {
     action: "Choose a new password",

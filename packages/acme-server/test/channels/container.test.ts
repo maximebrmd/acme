@@ -1,11 +1,17 @@
+import { JoseKey } from "@atproto/oauth-client-node";
 import { assert, layer } from "@effect/vitest";
 import { ConfigProvider, Effect, Layer, Option, Redacted } from "effect";
+import { Base64Url } from "effect/encoding";
+import { Dns } from "effect/net";
 
 import { ChannelCredentials } from "#channels/application/channel-credentials.ts";
 import { ChannelRepository } from "#channels/application/channel-repository.ts";
 import { ListChannels } from "#channels/application/list-channels.ts";
+import { OAuthClientDocuments } from "#channels/application/oauth-client-documents.ts";
+import { PlatformAuthorizers } from "#channels/application/platform-authorizer.ts";
 import { TokenCipher } from "#channels/application/token-cipher.ts";
 import { ChannelsLive } from "#channels/container.ts";
+import { SendChannelNotice } from "#notifications/application/send-channel-notice.ts";
 import {
   actorIn,
   DatabaseTest,
@@ -14,18 +20,38 @@ import {
   syntheticKeyring,
 } from "#test/channels/support.ts";
 
-// The channels context as the server builds it, with this keyring. A blank
+// What the context needs from the rest of the server: names to resolve, and
+// notices to send, which nothing here sends.
+const Neighbours = Layer.mergeAll(
+  Dns.layerStatic({}),
+  Layer.succeed(
+    SendChannelNotice,
+    SendChannelNotice.of({ send: () => Effect.void })
+  )
+);
+
+// The channels context as the server builds it, with these settings. A blank
 // keyring stands for an unset one, whatever the environment says.
-const channelsWith = (keys: string) =>
+const channelsWithSettings = (settings: Record<string, string>) =>
   ChannelsLive.pipe(
     Layer.provide(
-      ConfigProvider.layerAdd(
-        ConfigProvider.fromUnknown({ ACME_TOKEN_KEYS: keys }),
-        { asPrimary: true }
-      )
+      ConfigProvider.layerAdd(ConfigProvider.fromUnknown(settings), {
+        asPrimary: true,
+      })
     ),
+    Layer.provide(Neighbours),
     Layer.provideMerge(DatabaseTest)
   );
+
+const channelsWith = (keys: string) =>
+  channelsWithSettings({ ACME_TOKEN_KEYS: keys, BLUESKY_CLIENT_KEYS: "" });
+
+// A Bluesky client key, as `bun nx run acme-server:bluesky-key` prints it.
+const blueskyKeyEntry = Effect.promise(async () => {
+  const key = await JoseKey.generate(["ES256"], "client-1");
+
+  return `client-1:${Base64Url.encode(JSON.stringify(key.privateJwk))}`;
+});
 
 const accessToken = Redacted.make("synthetic-access-token-0123456789");
 
@@ -104,3 +130,77 @@ layer(channelsWith(syntheticKeyring))(
     );
   }
 );
+
+layer(channelsWith(""))("the channels context on a local server", (it) => {
+  it.effect(
+    "connects Bluesky as a development client, publishing nothing",
+    () =>
+      Effect.gen(function* loopback() {
+        const authorizers = yield* PlatformAuthorizers;
+        const documents = yield* OAuthClientDocuments;
+
+        assert.isTrue(Option.isSome(authorizers.for("bluesky")));
+        assert.isTrue(Option.isSome(authorizers.for("mastodon")));
+        assert.isTrue(Option.isNone(authorizers.for("linkedin")));
+        assert.isTrue(Option.isNone(documents.bluesky));
+      })
+  );
+});
+
+layer(DatabaseTest)("the channels context's Bluesky settings", (it) => {
+  it.effect("publish a confidential client for keys on an HTTPS server", () =>
+    Effect.gen(function* confidential() {
+      const entry = yield* blueskyKeyEntry;
+
+      const documents = yield* OAuthClientDocuments.pipe(
+        Effect.provide(
+          channelsWithSettings({
+            BLUESKY_CLIENT_KEYS: entry,
+            PUBLIC_URL: "https://acme.example",
+          })
+        )
+      );
+
+      const published = Option.getOrThrow(documents.bluesky);
+
+      assert.strictEqual(
+        published.metadata.client_id,
+        "https://acme.example/api/channels/oauth/bluesky/client-metadata.json"
+      );
+      assert.deepStrictEqual(published.metadata.redirect_uris, [
+        "https://acme.example/connect/bluesky/callback",
+      ]);
+      assert.deepStrictEqual(
+        published.jwks.keys.map(({ kid, kty }) => ({ kid, kty })),
+        [{ kid: "client-1", kty: "EC" }]
+      );
+      // Public halves only.
+      assert.notInclude(JSON.stringify(published.jwks), '"d"');
+    }).pipe(Effect.scoped)
+  );
+
+  it.effect("refuse to start with keys the client cannot use", () =>
+    Effect.gen(function* refuses() {
+      const entry = yield* blueskyKeyEntry;
+
+      for (const settings of [
+        { BLUESKY_CLIENT_KEYS: entry, PUBLIC_URL: "http://acme.example" },
+        {
+          BLUESKY_CLIENT_KEYS: "client-1:not-a-key",
+          PUBLIC_URL: "https://acme.example",
+        },
+        {
+          BLUESKY_CLIENT_KEYS: "no separator",
+          PUBLIC_URL: "https://acme.example",
+        },
+      ]) {
+        const failure = yield* Layer.build(channelsWithSettings(settings)).pipe(
+          Effect.scoped,
+          Effect.flip
+        );
+
+        assert.strictEqual(failure._tag, "InvalidBlueskySettings");
+      }
+    })
+  );
+});

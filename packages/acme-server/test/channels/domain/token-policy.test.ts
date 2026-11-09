@@ -1,0 +1,159 @@
+import { describe, expect, it } from "@effect/vitest";
+import { DateTime, Duration, Option } from "effect";
+
+import { connectChannel, markRefreshNeeded } from "#channels/domain/channel.ts";
+import type { TokenLifetime } from "#channels/domain/channel.ts";
+import {
+  isRefreshDue,
+  refreshDueBefore,
+  tokenLifetimeOf,
+  tokenPolicies,
+} from "#channels/domain/token-policy.ts";
+import { ChannelIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
+
+const now = DateTime.makeUnsafe("2026-11-09T10:00:00Z");
+
+const after = (duration: Duration.Input) =>
+  DateTime.addDuration(now, Duration.fromInputUnsafe(duration));
+
+const channelWith = (token: TokenLifetime) =>
+  connectChannel(
+    {
+      accountId: "account-1",
+      avatarUrl: Option.none(),
+      displayName: Option.none(),
+      handle: "@acme_example",
+      id: ChannelIdSchema.make("00000000-0000-7000-8000-000000000001"),
+      platform: "x",
+      scopes: [],
+      token,
+      workspaceId: WorkspaceIdSchema.make(
+        "5b1c5f7e-3d2a-4c1b-9e8f-7a6b5c4d3e2f"
+      ),
+    },
+    now
+  );
+
+describe(tokenLifetimeOf, () => {
+  it("keeps a Mastodon token for good", () => {
+    expect(
+      tokenLifetimeOf(
+        tokenPolicies.mastodon,
+        { expiresAt: Option.none(), renewable: false },
+        now
+      )
+    ).toStrictEqual({ _tag: "nonExpiring" });
+  });
+
+  it("dates a session from the policy when the platform says nothing", () => {
+    expect(
+      tokenLifetimeOf(
+        tokenPolicies.bluesky,
+        { expiresAt: Option.none(), renewable: true },
+        now
+      )
+    ).toStrictEqual({ _tag: "refreshable", expiresAt: after("90 days") });
+  });
+
+  it("takes the platform's expiry over the policy's", () => {
+    expect(
+      tokenLifetimeOf(
+        tokenPolicies.x,
+        { expiresAt: Option.some(after("1 hour")), renewable: true },
+        now
+      )
+    ).toStrictEqual({ _tag: "refreshable", expiresAt: after("1 hour") });
+  });
+
+  it("cannot renew a token that came without the means to", () => {
+    expect(
+      tokenLifetimeOf(
+        tokenPolicies.x,
+        { expiresAt: Option.none(), renewable: false },
+        now
+      )
+    ).toStrictEqual({
+      _tag: "nonRefreshable",
+      expiresAt: after("2 hours"),
+      issuedAt: now,
+    });
+  });
+
+  it("asks a self-serve LinkedIn member to reconnect every 60 days", () => {
+    expect(
+      tokenLifetimeOf(
+        tokenPolicies.linkedin,
+        { expiresAt: Option.none(), renewable: true },
+        now
+      )
+    ).toStrictEqual({
+      _tag: "nonRefreshable",
+      expiresAt: after("60 days"),
+      issuedAt: now,
+    });
+  });
+});
+
+describe(refreshDueBefore, () => {
+  it("is the policy's lead time from now", () => {
+    expect(refreshDueBefore(tokenPolicies.x, now)).toStrictEqual(
+      Option.some(after("30 minutes"))
+    );
+  });
+
+  it("is none for tokens that are never refreshed", () => {
+    expect(refreshDueBefore(tokenPolicies.mastodon, now)).toStrictEqual(
+      Option.none()
+    );
+  });
+});
+
+describe(isRefreshDue, () => {
+  it("is due within the lead time, or past expiry", () => {
+    for (const expiresAt of [after("29 minutes"), after("-1 hour")]) {
+      expect(
+        isRefreshDue(
+          channelWith({ _tag: "refreshable", expiresAt }),
+          tokenPolicies.x,
+          now
+        )
+      ).toBeTruthy();
+    }
+  });
+
+  it("is not due before the lead time", () => {
+    expect(
+      isRefreshDue(
+        channelWith({ _tag: "refreshable", expiresAt: after("31 minutes") }),
+        tokenPolicies.x,
+        now
+      )
+    ).toBeFalsy();
+  });
+
+  it("leaves channels that need reconnecting, or cannot renew, alone", () => {
+    const token: TokenLifetime = {
+      _tag: "refreshable",
+      expiresAt: after("1 minute"),
+    };
+
+    expect(
+      isRefreshDue(
+        markRefreshNeeded(channelWith(token), now),
+        tokenPolicies.x,
+        now
+      )
+    ).toBeFalsy();
+    expect(
+      isRefreshDue(
+        channelWith({
+          _tag: "nonRefreshable",
+          expiresAt: after("1 minute"),
+          issuedAt: now,
+        }),
+        tokenPolicies.x,
+        now
+      )
+    ).toBeFalsy();
+  });
+});

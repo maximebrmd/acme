@@ -19,3 +19,16 @@ export const requiredInProduction = <A>(
       production ? config : config.pipe(Config.withDefault(developmentDefault))
     )
   );
+
+// The web app's address in development (`nx run acme-web:dev`).
+const developmentPublicUrl = "http://localhost:3001";
+
+/**
+ * The origin people open Acme at (PUBLIC_URL): the web app, which forwards
+ * /api/* to the server. Links in emails and the platforms' redirect URIs are
+ * built from it. Outside production it defaults to the development web app.
+ */
+export const publicUrlConfig = requiredInProduction(
+  Config.URL("PUBLIC_URL"),
+  new URL(developmentPublicUrl)
+).pipe(Config.map((url) => url.origin));
