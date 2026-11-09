@@ -38,6 +38,7 @@ import {
   ScheduleFields,
 } from "#components/posts/schedule-fields.tsx";
 import type { ScheduleChoice } from "#components/posts/schedule-fields.tsx";
+import { TargetOptionsSection } from "#components/posts/target-options-panel.tsx";
 import { TargetStatuses } from "#components/posts/target-statuses.tsx";
 import { TextTabs } from "#components/posts/text-tabs.tsx";
 import { getPathname, useRouter } from "#i18n/navigation.ts";
@@ -46,6 +47,12 @@ import { connectedTargets } from "#posts/channel-selection.ts";
 import { fitOn, fits } from "#posts/character-count.ts";
 import { capabilitiesOf } from "#posts/composer-capabilities.ts";
 import { mediaFitOn, mediaFits } from "#posts/media-fit.ts";
+import {
+  channelOptionsOf,
+  initialValues,
+  valuesOfPost,
+} from "#posts/target-options.ts";
+import type { OptionValues, ValuesByChannel } from "#posts/target-options.ts";
 import { usePostRequests } from "#posts/use-post-requests.ts";
 import {
   browserTimeZone,
@@ -169,10 +176,13 @@ interface ComposerProps {
 }
 
 // Writes a post: its text, a text of its own on some channels, its images
-// and videos, where it goes and when. A draft is saved as it is, or
-// discarded; scheduling checks it against each platform's limits, which the
-// counters show as the user types. A scheduled post keeps its text and can
-// be moved, cancelled, or taken back to draft to change it.
+// and videos, the options of the channels whose platform takes some, where
+// it goes and when. A draft is saved as it is, or discarded; scheduling
+// checks it against each platform's limits, which the counters show as the
+// user types, and the options each platform needs, which the options fields
+// show once scheduling refused them. A scheduled post keeps its text and
+// options, and can be moved, cancelled, or taken back to draft to change
+// them.
 export const Composer = ({
   channels,
   permissions,
@@ -193,6 +203,15 @@ export const Composer = ({
   // Counts the texts accepted from the assistant: each starts fresh editors.
   const [accepted, setAccepted] = useState(0);
   const [overrides, setOverrides] = useState(() => overridesOf(post));
+
+  // The options each channel's fields hold, by channel.
+  const [optionValues, setOptionValues] = useState<ValuesByChannel>(() =>
+    valuesOfPost(post, (channelId) =>
+      Option.fromUndefinedOr(
+        channels.find(({ id }) => id === channelId)?.platform
+      )
+    )
+  );
 
   const [media, setMedia] = useState<readonly MediaAttachment[]>(
     post?.content.media ?? []
@@ -233,7 +252,11 @@ export const Composer = ({
   );
 
   const content = contentOf(text, overrides, channelIds, media);
+  const options = channelOptionsOf(selected, optionValues);
   const attached = useAttachedMedia(workspaceId, media);
+
+  const valuesOn = (channel: Channel): OptionValues =>
+    optionValues[channel.id] ?? initialValues(channel.platform);
 
   const channelFits = selected.map((channel) => {
     const own = content.overrides.find(
@@ -269,7 +292,11 @@ export const Composer = ({
   };
 
   const saveDraft = async () => {
-    const saved = await requests.save(postId, { channelIds, content });
+    const saved = await requests.save(postId, {
+      channelIds,
+      content,
+      options,
+    });
 
     if (Option.isSome(saved)) {
       toast.success(t("saved"));
@@ -286,7 +313,12 @@ export const Composer = ({
       return;
     }
 
-    const saved = await requests.save(postId, { channelIds, content });
+    const saved = await requests.save(postId, {
+      channelIds,
+      content,
+      options,
+    });
+
     const [first, ...rest] = channelIds;
 
     if (Option.isNone(saved)) {
@@ -468,6 +500,18 @@ export const Composer = ({
             </h2>
             <CharacterCounters fits={channelFits} />
           </section>
+          <TargetOptionsSection
+            channels={selected}
+            disabled={locked}
+            failure={requests.failure}
+            valuesOf={valuesOn}
+            onChange={(channelId, values) => {
+              setOptionValues((current) => ({
+                ...current,
+                [channelId]: values,
+              }));
+            }}
+          />
           <Separator />
           <fieldset className="flex flex-col gap-3">
             <legend className="mb-3 text-sm font-medium">
