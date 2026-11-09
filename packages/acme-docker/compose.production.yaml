@@ -96,7 +96,9 @@ services:
     stop_grace_period: 60s
     healthcheck:
       <<: *healthcheck
-      test: [CMD, pg_isready, --username=acme, --dbname=acme]
+      # Over TCP: while the image initialises a new database, it runs a
+      # temporary server on the Unix socket alone, which then shuts down.
+      test: [CMD, pg_isready, --host=127.0.0.1, --username=acme, --dbname=acme]
 
   # Applies pending migrations before it listens, so starting a new release
   # migrates the database.
