@@ -46,7 +46,7 @@ const UseCasesLive = Layer.mergeAll(
  * environment, with the command line's OAuth client registered, and the use
  * cases behind the API and the MCP endpoint. It needs the database,
  * migrated, the notifications context's SendAuthEmail, and the billing
- * context's WorkspaceEntitlements and RecordSubscription.
+ * context's WorkspaceEntitlements, RecordSubscription and BilledWorkspaces.
  */
 export const WorkspaceLive = Layer.merge(
   UseCasesLive,

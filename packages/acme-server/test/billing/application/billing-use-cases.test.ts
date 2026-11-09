@@ -1,6 +1,7 @@
 import { assert, layer } from "@effect/vitest";
 import { DateTime, Effect, Layer, Option, Ref } from "effect";
 
+import { BilledWorkspaces } from "#billing/application/billed-workspaces.ts";
 import { BillingOverview } from "#billing/application/billing-overview.ts";
 import { BillingMode } from "#billing/application/ports/billing-mode.ts";
 import { Subscriptions } from "#billing/application/ports/subscriptions.ts";
@@ -158,8 +159,44 @@ layer(billingWith(false))("billing on a server that does not bill", (it) => {
   );
 });
 
+// Whether a workspace is still billed, once it has a subscription of each
+// status the test records.
+const BilledTest = Layer.mergeAll(
+  BilledWorkspaces.layer,
+  RecordSubscription.layer
+).pipe(
+  Layer.provide(SubscriptionsInMemory),
+  Layer.provide(Layer.succeed(BillingMode, BillingMode.of({ enabled: true })))
+);
+
+layer(BilledTest)("a workspace Stripe may still bill", (it) => {
+  it.effect("is one with a subscription unpaid, not only cancelled", () =>
+    Effect.gen(function* billed() {
+      const stillBilled = BilledWorkspaces.use((billing) =>
+        billing.stillBilled(workspaceId)
+      );
+
+      assert.isFalse(yield* stillBilled);
+
+      yield* RecordSubscription.use((record) =>
+        record.record(event("canceled"))
+      );
+
+      assert.isFalse(yield* stillBilled);
+
+      // Unpaid gives no plan, but Stripe still has it.
+      yield* RecordSubscription.use((record) => record.record(event("unpaid")));
+
+      assert.isTrue(yield* stillBilled);
+    })
+  );
+});
+
 // Billing off, with subscriptions that may not be read.
-const UnreadTest = WorkspaceEntitlements.layer.pipe(
+const UnreadTest = Layer.mergeAll(
+  WorkspaceEntitlements.layer,
+  BilledWorkspaces.layer
+).pipe(
   Layer.provide(
     Layer.mergeAll(
       Layer.succeed(BillingMode, BillingMode.of({ enabled: false })),
@@ -182,6 +219,11 @@ layer(UnreadTest)("billing off", (it) => {
       );
 
       assert.isTrue(Option.isNone(entitlements.plan));
+      assert.isFalse(
+        yield* BilledWorkspaces.use((billing) =>
+          billing.stillBilled(workspaceId)
+        )
+      );
     })
   );
 });

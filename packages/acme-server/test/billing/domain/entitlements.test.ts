@@ -3,7 +3,7 @@ import { DateTime, Option } from "effect";
 
 import { entitlementsOf, unmetered } from "#billing/domain/entitlements.ts";
 import { planAllowances, unlimited } from "#billing/domain/plans.ts";
-import { Subscription } from "#billing/domain/subscription.ts";
+import { stillBills, Subscription } from "#billing/domain/subscription.ts";
 import type { SubscriptionStatus } from "#billing/domain/subscription.ts";
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import type { PaidPlan } from "#shared/domain/plan.ts";
@@ -81,6 +81,25 @@ describe(entitlementsOf, () => {
       ]).plan
     ).toStrictEqual(Option.some("pro"));
   });
+});
+
+describe(stillBills, () => {
+  it.each<SubscriptionStatus>([
+    "active",
+    "trialing",
+    "past_due",
+    "unpaid",
+    "paused",
+  ])("counts a subscription %s, which Stripe may still bill", (status) => {
+    expect(stillBills(subscription("pro", status))).toBeTruthy();
+  });
+
+  it.each<SubscriptionStatus>(["canceled", "incomplete", "incomplete_expired"])(
+    "leaves out a subscription %s",
+    (status) => {
+      expect(stillBills(subscription("pro", status))).toBeFalsy();
+    }
+  );
 });
 
 describe("the plans", () => {

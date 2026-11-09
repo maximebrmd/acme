@@ -28,7 +28,10 @@ export interface BillingHooks {
    * makes the webhook answer an error, so Stripe sends the event again.
    */
   readonly subscriptionChanged: (event: SubscriptionEvent) => Promise<void>;
-  /** Whether a subscription buys the workspace its plan. */
+  /**
+   * Whether Stripe may still bill the workspace: a subscription that is
+   * not cancelled or incomplete, whether it buys a plan or not.
+   */
   readonly subscribed: (workspaceId: WorkspaceId) => Promise<boolean>;
 }
 

@@ -555,8 +555,10 @@ and no socket, for tests.
 - Better Auth's subscription routes take `customerType: "organization"` and
   the workspace as `referenceId` only, for members with `billing:manage`,
   never staff impersonating them. Checkout sends Stripe Tax's parameters
-  when `STRIPE_AUTOMATIC_TAX` is on. A workspace a subscription pays for is
-  not deleted: the refusal comes before its API keys go.
+  when `STRIPE_AUTOMATIC_TAX` is on. A workspace Stripe may still bill
+  (`BilledWorkspaces`: any subscription not cancelled or incomplete, unpaid
+  and paused included) is not deleted: the refusal comes before its API
+  keys go.
 - Never call Stripe in tests: checkout and the portal run against
   stripe-mock, and webhooks post the payloads in
   `test/billing/fixtures/webhooks`, signed in the test.

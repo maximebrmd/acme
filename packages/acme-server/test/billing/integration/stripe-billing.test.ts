@@ -336,9 +336,10 @@ layer(BillingIntegration, {
     })
   );
 
-  it.effect(
-    "keeps a workspace a subscription pays for, with its API keys",
-    () =>
+  // Unpaid, a subscription buys no plan, but Stripe still has it.
+  it.effect.each(["active", "unpaid"])(
+    "keeps a workspace a subscription %s is on, with its API keys",
+    (status) =>
       Effect.gen(function* deleting() {
         const app = yield* TestApp;
         const delivery = newDelivery();
@@ -350,10 +351,12 @@ layer(BillingIntegration, {
 
         yield* apiKeyOf(owner, workspaceId, ["post:read"]);
 
-        assert.strictEqual(
-          yield* deliver(payloadOf("customer.subscription.created", delivery)),
-          200
-        );
+        const created = payloadOf(
+          "customer.subscription.created",
+          delivery
+        ).replace('"status": "active"', `"status": "${status}"`);
+
+        assert.strictEqual(yield* deliver(created), 200);
 
         const refused = yield* app.request("/api/auth/organization/delete", {
           body: { organizationId: workspaceId },

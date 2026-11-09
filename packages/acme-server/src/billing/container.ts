@@ -1,5 +1,6 @@
 import { Layer } from "effect";
 
+import { BilledWorkspaces } from "#billing/application/billed-workspaces.ts";
 import { BillingOverview } from "#billing/application/billing-overview.ts";
 import { RecordSubscription } from "#billing/application/record-subscription.ts";
 import { WorkspaceEntitlements } from "#billing/application/workspace-entitlements.ts";
@@ -9,14 +10,16 @@ import { DrizzleSubscriptionsLive } from "#billing/infrastructure/drizzle-subscr
 
 /**
  * The billing context's use cases for the other contexts: what each
- * workspace's plan allows (WorkspaceEntitlements), and the subscriptions
- * Stripe's webhook reports (RecordSubscription). Billing is on when the
+ * workspace's plan allows (WorkspaceEntitlements), the subscriptions
+ * Stripe's webhook reports (RecordSubscription), and whether Stripe may
+ * still bill a workspace (BilledWorkspaces). Billing is on when the
  * server has a Stripe key, read when it starts. Needs the database (Drizzle
  * and SqlClient), migrated.
  */
 export const BillingLive = Layer.mergeAll(
   WorkspaceEntitlements.layer,
-  RecordSubscription.layer
+  RecordSubscription.layer,
+  BilledWorkspaces.layer
 ).pipe(
   Layer.provide(
     Layer.mergeAll(DrizzleSubscriptionsLive, ConfiguredBillingModeLive)
