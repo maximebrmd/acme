@@ -64,12 +64,12 @@ describe(SubscriptionCancellation, () => {
       "The period already paid for, until December 9, 2026, is not refunded, except where the law gives a refund."
     );
     expect(english).toContain(
-      "If you subscribed as a consumer less than 14 days ago, you may withdraw and be refunded the unused part"
+      "If you subscribed as a consumer less than 14 days ago, withdraw first with Withdraw from contract here"
     );
     expect(english).not.toContain("without a refund of the period paid for<");
 
     await expect(render("fr", [pro])).resolves.toContain(
-      "vous pouvez vous rétracter et être remboursé de la part non utilisée"
+      "rétractez-vous d’abord avec Se rétracter du contrat ici"
     );
   });
 });
