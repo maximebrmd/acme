@@ -1,0 +1,270 @@
+name: SDK release
+
+# A tag sdk-<language>-v<version> publishes that language's SDK, built from
+# the tagged commit, once scripts/release.ts confirms the version is the one
+# scripts/languages.ts gives it. npm, PyPI, RubyGems, NuGet and crates.io
+# take it through trusted publishing (OpenID Connect: no token is stored),
+# Maven Central with its token and signing key, Go as a tag of this
+# repository, and Packagist as a tag of the PHP mirror. Every publishing job
+# runs in the sdk-release environment, whose rules decide who may release.
+on:
+  push:
+    tags: ["sdk-*-v*"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sdk-release-${{ github.ref_name }}
+  cancel-in-progress: false
+
+env:
+  DO_NOT_TRACK: "1"
+  NX_NO_CLOUD: "true"
+
+jobs:
+  resolve:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      language: ${{ steps.tag.outputs.language }}
+      version: ${{ steps.tag.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version-file: .bun-version
+      - id: tag
+        run: bun packages/peal-sdk/scripts/release.ts "$GITHUB_REF_NAME"
+
+  node:
+    needs: resolve
+    if: needs.resolve.outputs.language == 'node'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: sdk-release
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 26.13.0
+          registry-url: https://registry.npmjs.org
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version-file: .bun-version
+      - run: bun install --frozen-lockfile
+      - run: bun nx run peal-sdk-node:sdk:build
+      # Trusted publishing, with a provenance statement linking the package
+      # to this run.
+      - run: npm publish --provenance --access public
+        working-directory: packages/peal-sdk/node
+
+  python:
+    needs: resolve
+    if: needs.resolve.outputs.language == 'python'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: sdk-release
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 26.13.0
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version-file: .bun-version
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: 0.13.7
+      - run: bun install --frozen-lockfile
+      - run: bun nx run peal-sdk-python:sdk:build
+      - uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
+        with:
+          packages-dir: packages/peal-sdk/python/dist
+
+  ruby:
+    needs: resolve
+    if: needs.resolve.outputs.language == 'ruby'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: sdk-release
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 26.13.0
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version-file: .bun-version
+      - run: bun install --frozen-lockfile
+      # Builds the gem in the Ruby image scripts/languages.ts pins.
+      - run: bun nx run peal-sdk-ruby:sdk:build
+      # gem push, with the Ruby that builds the gem.
+      - uses: ruby/setup-ruby@b3aaceaef7e0ee231b499e7b5f49c03fc1d32199 # v1.338.0
+        with:
+          ruby-version: 4.0.9
+      # Trades this run's OIDC token for a RubyGems key that pushes gems for
+      # 15 minutes. RubyGems lets a pending trusted publisher create the gem
+      # only for the account the exchange names as its owner (RUBYGEMS_OWNER,
+      # an immutable account id), which rubygems/configure-rubygems-credentials
+      # cannot send yet, so the run makes the exchange itself.
+      - run: |
+          jwt=$(curl --fail --silent --show-error \
+            --header "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=rubygems.org" | jq --raw-output .value)
+          key=$(jq --null-input --arg jwt "$jwt" --arg owner "$RUBYGEMS_OWNER" '{jwt: $jwt, owner: $owner}' |
+            curl --fail --silent --show-error --header "Content-Type: application/json" --data @- \
+              https://rubygems.org/api/v1/oidc/trusted_publisher/exchange_token | jq --raw-output .rubygems_api_key)
+          echo "::add-mask::$key"
+          echo "GEM_HOST_API_KEY=$key" >> "$GITHUB_ENV"
+        env:
+          RUBYGEMS_OWNER: "255818"
+      - run: gem push "packages/peal-sdk/ruby/dist/peal-${VERSION}.gem"
+        env:
+          VERSION: ${{ needs.resolve.outputs.version }}
+
+  java:
+    needs: resolve
+    if: needs.resolve.outputs.language == 'java'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: sdk-release
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # The JDK of the Maven image scripts/languages.ts pins, and Maven's
+      # settings for the portal's server `central`.
+      - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
+        with:
+          distribution: temurin
+          java-version: 25
+          server-id: central
+          server-username: MAVEN_CENTRAL_USERNAME
+          server-password: MAVEN_CENTRAL_PASSWORD
+      # The `release` profile signs with BouncyCastle, from MAVEN_GPG_KEY, and
+      # publishes through Sonatype's plugin, waiting until Central shows it.
+      - run: mvn --batch-mode --activate-profiles release -DskipTests deploy
+        working-directory: packages/peal-sdk/java
+        env:
+          MAVEN_CENTRAL_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          MAVEN_CENTRAL_PASSWORD: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+          MAVEN_GPG_KEY: ${{ secrets.MAVEN_GPG_KEY }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.MAVEN_GPG_PASSPHRASE }}
+
+  dotnet:
+    needs: resolve
+    if: needs.resolve.outputs.language == 'dotnet'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: sdk-release
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 26.13.0
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+        with:
+          bun-version-file: .bun-version
+      - run: bun install --frozen-lockfile
+      # Packs the package in the .NET SDK image scripts/languages.ts pins.
+      - run: bun nx run peal-sdk-dotnet:sdk:build
+      # dotnet nuget push.
+      - uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
+        with:
+          dotnet-version: 10.0.403
+      # A key for an hour, from the trusted publishing policy of the account
+      # that owns it, for packages owned by the peal-social organization.
+      - id: nuget
+        uses: NuGet/login@8d196754b4036150537f80ac539e15c2f1028841 # v1.2.0
+        with:
+          user: maximebrmd
+      - run: >-
+          dotnet nuget push "packages/peal-sdk/dotnet/dist/Peal.${VERSION}.nupkg"
+          --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json
+        env:
+          NUGET_API_KEY: ${{ steps.nuget.outputs.NUGET_API_KEY }}
+          VERSION: ${{ needs.resolve.outputs.version }}
+
+  rust:
+    needs: resolve
+    if: needs.resolve.outputs.language == 'rust'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: sdk-release
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - id: crates
+        uses: rust-lang/crates-io-auth-action@3268eb413133e2960fa4ae0e963ca76380c54cd9 # v1.0.6
+      # cargo publish builds the crate before it uploads it.
+      - run: cargo publish
+        working-directory: packages/peal-sdk/rust
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ steps.crates.outputs.token }}
+
+  # Go reads a module's versions from tags named after its folder.
+  go:
+    needs: resolve
+    if: needs.resolve.outputs.language == 'go'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: sdk-release
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: |
+          git tag "packages/peal-sdk/go/v${VERSION}" "$GITHUB_SHA"
+          git push origin "packages/peal-sdk/go/v${VERSION}"
+        env:
+          VERSION: ${{ needs.resolve.outputs.version }}
+      # Asks Go's module proxy for the version, so pkg.go.dev lists it.
+      - run: curl --fail --silent --show-error "https://proxy.golang.org/github.com/peal-social/peal/packages/peal-sdk/go/@v/v${VERSION}.info"
+        env:
+          VERSION: ${{ needs.resolve.outputs.version }}
+
+  # Packagist reads the PHP mirror (see sdk-php-mirror.yml): the tagged
+  # commit's packages/peal-sdk/php becomes its tag v<version>.
+  php:
+    needs: resolve
+    if: needs.resolve.outputs.language == 'php'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: sdk-release
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - run: git subtree split --prefix=packages/peal-sdk/php --branch=php-mirror
+      - run: .github/scripts/push-php-mirror.sh "refs/tags/v${VERSION}"
+        env:
+          DEPLOY_KEY: ${{ secrets.PHP_MIRROR_DEPLOY_KEY }}
+          VERSION: ${{ needs.resolve.outputs.version }}

@@ -18,6 +18,11 @@
       "description": "Lint and format tools release together.",
       "matchPackageNames": ["ultracite", "oxlint", "oxlint-tsgolint", "oxfmt"],
       "groupName": "lint tooling"
+    },
+    {
+      "description": "The SDKs' manifests are generated, and keep the generator's ranges: a library leaves its dependencies' versions to its users.",
+      "matchFileNames": ["packages/peal-sdk/**"],
+      "enabled": false
     }
   ]
 }

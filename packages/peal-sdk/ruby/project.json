@@ -1,0 +1,17 @@
+{
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "name": "peal-sdk-ruby",
+  "projectType": "library",
+  "tags": ["sdk"],
+  "targets": {
+    "sdk:generate": {
+      "command": "bun scripts/generate.ts ruby",
+      "options": { "cwd": "packages/peal-sdk" }
+    },
+    "sdk:build": {
+      "command": "bun scripts/build.ts ruby",
+      "options": { "cwd": "packages/peal-sdk" },
+      "outputs": ["{projectRoot}/dist"]
+    }
+  }
+}

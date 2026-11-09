@@ -32,6 +32,14 @@
     },
     "typegen": {
       "cache": false
+    },
+    "sdk:generate": {
+      "dependsOn": [{ "projects": ["peal-sdk"], "target": "spec" }],
+      "cache": false
+    },
+    "sdk:build": {
+      "cache": true,
+      "inputs": ["default"]
     }
   }
 }

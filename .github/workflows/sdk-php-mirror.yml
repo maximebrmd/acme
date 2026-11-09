@@ -1,0 +1,31 @@
+name: SDK PHP mirror
+
+# Packagist reads a package from the root of a repository, so the PHP SDK
+# also lives in peal-social/peal-php: a read-only copy of packages/peal-sdk/php
+# that this workflow brings up to date whenever main changes the folder.
+# Releases tag it from sdk-release.yml.
+on:
+  push:
+    branches: [main]
+    paths: ["packages/peal-sdk/php/**"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sdk-php-mirror
+  cancel-in-progress: false
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - run: git subtree split --prefix=packages/peal-sdk/php --branch=php-mirror
+      - run: .github/scripts/push-php-mirror.sh refs/heads/main
+        env:
+          DEPLOY_KEY: ${{ secrets.PHP_MIRROR_DEPLOY_KEY }}

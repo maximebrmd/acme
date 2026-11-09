@@ -7,9 +7,10 @@ Schedule social media posts across platforms, from one place:
 
 Peal is fair source: you may use, modify and self-host it under the
 [Functional Source License](LICENSE.md), and each release becomes Apache-2.0
-two years after it ships. The API contract and the SDKs are Apache-2.0
-already ([Licensing](#licensing)). The source and the issues are on GitHub,
-at [peal-social/peal](https://github.com/peal-social/peal).
+two years after it ships. The API contract and the SDKs in
+[`packages/peal-sdk`](packages/peal-sdk) are Apache-2.0 already
+([Licensing](#licensing)). The source and the issues are on GitHub, at
+[peal-social/peal](https://github.com/peal-social/peal).
 
 It is not released yet. Today you can:
 
@@ -406,6 +407,19 @@ point them elsewhere. Run the tests on a database of
 their own when a dev server uses the stack's: it would run the jobs they leave
 behind.
 
+### SDKs
+
+The SDKs in `packages/peal-sdk` are generated from the contract and
+committed. After changing the contract, regenerate them, then build them; both
+need Docker, which runs openapi-generator and every toolchain but TypeScript's
+and uv's:
+
+```sh
+bun run sdk:generate   # rewrite every SDK from the contract
+bun run sdk:build      # build each one as its registry would get it, and load it
+bun run sdk:check      # what CI runs: fails when the committed SDKs are stale
+```
+
 ### End-to-end tests
 
 `packages/peal-e2e` drives a new member's first steps in Chromium: signing
@@ -563,6 +577,7 @@ The docs' self-hosting page explains each setting.
 | [`peal-site`](packages/peal-site)         | The marketing site (Astro), with the privacy, terms and data deletion pages    |
 | [`peal-e2e`](packages/peal-e2e)           | End-to-end browser tests, run against the server and the web app's build       |
 | [`peal-infra`](packages/peal-infra)       | Ansible for Peal's servers, behind a Cloudflare Tunnel                         |
+| [`peal-sdk`](packages/peal-sdk)           | The API's clients in eight languages, generated from the contract (Apache-2.0) |
 
 How the code is organised, and the rules it follows, are in
 [AGENTS.md](AGENTS.md).
@@ -576,7 +591,7 @@ licences:
 | ------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------- |
 | Everything, unless a folder below has a `LICENSE` of its own | [FSL-1.1-ALv2](LICENSE.md): any use but a competing service, and Apache-2.0 two years after each release |
 | [`peal-contract`](packages/peal-contract), the API contract  | [Apache-2.0](packages/peal-contract/LICENSE)                                                             |
-| `peal-sdk`, the SDKs, still to come                          | Apache-2.0, in `packages/peal-sdk/LICENSE` once they exist                                               |
+| [`peal-sdk`](packages/peal-sdk), the SDKs                    | [Apache-2.0](packages/peal-sdk/LICENSE)                                                                  |
 
 The SDKs are generated from the contract's OpenAPI document, so the contract
 is Apache-2.0 with them: what an SDK user installs, and the API description

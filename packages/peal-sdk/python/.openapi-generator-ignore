@@ -1,0 +1,17 @@
+# Ours, not the generator's.
+LICENSE
+project.json
+
+# What the generator adds that the SDKs do not ship: CI templates and a push script.
+.travis.yml
+.gitlab-ci.yml
+.github/**
+git_push.sh
+
+# pyproject.toml is the one build description: no setup.py, tox or requirement files.
+setup.py
+setup.cfg
+tox.ini
+requirements.txt
+test-requirements.txt
+test/**

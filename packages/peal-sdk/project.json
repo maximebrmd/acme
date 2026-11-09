@@ -1,0 +1,23 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "peal-sdk",
+  "projectType": "library",
+  "targets": {
+    "typecheck": {
+      "command": "tsc --noEmit",
+      "options": { "cwd": "{projectRoot}" }
+    },
+    "spec": {
+      "command": "bun scripts/spec.ts",
+      "options": { "cwd": "{projectRoot}" },
+      "dependsOn": [{ "projects": ["peal-contract"], "target": "openapi" }],
+      "cache": false
+    },
+    "check": {
+      "command": "bun scripts/check.ts",
+      "options": { "cwd": "{projectRoot}" },
+      "dependsOn": [{ "projects": ["tag:sdk"], "target": "sdk:generate" }],
+      "cache": false
+    }
+  }
+}

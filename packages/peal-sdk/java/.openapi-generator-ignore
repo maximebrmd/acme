@@ -1,0 +1,20 @@
+# Ours, not the generator's.
+LICENSE
+project.json
+
+# What the generator adds that the SDKs do not ship: CI templates and a push script.
+.travis.yml
+.gitlab-ci.yml
+.github/**
+git_push.sh
+
+# Maven builds the SDK: no Gradle or sbt files. No copy of the OpenAPI document or test stubs.
+build.gradle
+build.sbt
+settings.gradle
+gradle.properties
+gradlew
+gradlew.bat
+gradle/**
+api/**
+src/test/**

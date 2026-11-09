@@ -1,0 +1,13 @@
+# Ours, not the generator's.
+LICENSE
+project.json
+
+# What the generator adds that the SDKs do not ship: CI templates and a push script.
+.travis.yml
+.gitlab-ci.yml
+.github/**
+git_push.sh
+
+# Empty test stubs.
+.rspec
+spec/**
