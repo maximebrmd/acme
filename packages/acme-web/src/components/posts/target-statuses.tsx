@@ -23,7 +23,7 @@ export const TargetStatuses = ({ channels, post }: TargetStatusesProps) => {
             key={target.id}
             className="flex flex-wrap items-center justify-between gap-2 text-sm"
           >
-            <span>{channel?.handle ?? target.channelId}</span>
+            <span>{channel?.handle ?? t("disconnectedChannel")}</span>
             <Badge
               variant={target.status === "failed" ? "destructive" : "outline"}
             >

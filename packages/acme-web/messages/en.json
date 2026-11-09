@@ -143,6 +143,7 @@
     "status": "{status, select, draft {Draft} scheduled {Scheduled} publishing {Publishing} finished {Finished} cancelled {Cancelled} other {{status}}}",
     "targetStatus": "{status, select, pending {Waiting} publishing {Publishing} published {Published} failed {Failed} unconfirmed {To check} cancelled {Cancelled} other {{status}}}",
     "outcome": "{outcome, select, published {Published} partiallyPublished {Partly published} unconfirmed {To check} failed {Failed} cancelled {Cancelled} other {{outcome}}}",
+    "disconnectedChannel": "A disconnected channel",
     "nav": {
       "calendar": "Calendar",
       "newPost": "New post"

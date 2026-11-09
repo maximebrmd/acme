@@ -7,10 +7,20 @@ import { useTranslations } from "next-intl";
 
 import type { ComposerFailure } from "#posts/composer-failure.ts";
 
-const violationKey = (violation: ContentViolation) =>
-  violation._tag === "noChannels"
-    ? violation._tag
-    : `${violation._tag}-${violation.channelId}`;
+/**
+ * What tells a violation from the others in the list: its kind and channel,
+ * and for a text too long the unit, since a platform with two limits, such
+ * as Bluesky's graphemes and bytes, can see both broken at once.
+ */
+export const violationKey = (violation: ContentViolation): string => {
+  if (violation._tag === "noChannels") {
+    return violation._tag;
+  }
+
+  const unit = violation._tag === "textTooLong" ? `-${violation.unit}` : "";
+
+  return `${violation._tag}-${violation.channelId}${unit}`;
+};
 
 interface ComposerErrorsProps {
   readonly channels: readonly Channel[];
@@ -31,7 +41,7 @@ export const ComposerErrors = ({ channels, failure }: ComposerErrorsProps) => {
     const channel = channels.find(({ id }) => id === channelId);
 
     return channel === undefined
-      ? channelId
+      ? tPosts("disconnectedChannel")
       : t("channelDetail", {
           handle: channel.handle,
           platform: tPosts("platform", { platform: channel.platform }),
