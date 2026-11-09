@@ -48,6 +48,8 @@ export const useMediaProblemText = () => {
           position,
         }),
       mixedMedia: () => t("problem.mixedMedia"),
+      tooManyMedia: ({ count, maximum }) =>
+        t("problem.tooManyMedia", { count, maximum }),
       tooManyPixels: ({ kind, maximum, position }) =>
         t("problem.tooManyPixels", { kind, maximum, position }),
       tooManyVideos: ({ count, maximum }) =>

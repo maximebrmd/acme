@@ -24,6 +24,11 @@ export interface MediaPlace {
 /** Something about the post's media that the platform would refuse. */
 export type MediaProblem =
   | {
+      readonly _tag: "tooManyMedia";
+      readonly count: number;
+      readonly maximum: number;
+    }
+  | {
       readonly _tag: "tooManyVideos";
       readonly count: number;
       readonly maximum: number;
@@ -200,8 +205,8 @@ const noMediaRules: MediaFit = { missingAltText: 0, problems: [] };
 
 /**
  * How the attached media fits `platform`: each file's type, size, duration,
- * dimensions and alt text, then how many videos there are and whether they
- * come with images. Media not described yet is checked once it is; how
+ * dimensions and alt text, whether a file that goes alone has company, then
+ * how many videos there are and whether they come with images. Media not described yet is checked once it is; how
  * many the platform shows is the text's fit (see character-count.ts).
  */
 export const mediaFitOn = (
@@ -226,6 +231,20 @@ export const mediaFitOn = (
   const mixed = !rules.mixesKinds && videos > 0 && videos < known.length;
   const { maxVideos } = rules;
 
+  // A file that takes fewer companions than the platform's own count, as
+  // X's GIFs, which go alone. Past that count, the text's fit says so.
+  const { maxMedia } = platformRules[platform];
+
+  const fewest = Math.min(
+    ...known.map(
+      ({ file }) => rules.formats[file.contentType]?.maxMediaWith ?? Infinity
+    )
+  );
+
+  const tooMany =
+    known.length > fewest &&
+    (maxMedia === undefined || attached.length <= maxMedia);
+
   return {
     missingAltText: rules.showsAltText
       ? attached.filter(({ altText }) => altText.trim() === "").length
@@ -234,6 +253,15 @@ export const mediaFitOn = (
       ...known.flatMap(({ altText, file, position }) =>
         fileProblems(rules, file, altText, position)
       ),
+      ...(tooMany
+        ? [
+            {
+              _tag: "tooManyMedia" as const,
+              count: known.length,
+              maximum: fewest,
+            },
+          ]
+        : []),
       ...(maxVideos !== undefined && videos > maxVideos
         ? [
             {

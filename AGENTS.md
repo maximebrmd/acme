@@ -489,7 +489,7 @@ and no socket, for tests.
   key) or by what `prepare` made when the run still has it (a Meta
   container, published once at most: `PUBLISHED` found, `FINISHED` absent),
   or by a search that answers `found` or `unknown`, never `absent`, so the
-  post is never sent again (X's recent posts, by text and file count;
+  post is never sent again (X's recent posts, by text, links and files;
   Facebook Pages', by text, as they keep no key); `resend` with the
   attempt's idempotency key within the window the platform keeps it
   (Mastodon: 50 minutes of its hour); or `none`, unconfirmed at once

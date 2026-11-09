@@ -157,6 +157,8 @@ export interface FormatLimits {
   readonly aspectRatio?: AspectRatioRange;
   readonly maxByteSize?: number;
   readonly maxDurationMs?: number;
+  /** The most files a post holding one of this type shows (X: a GIF alone). */
+  readonly maxMediaWith?: number;
   /** Width times height. */
   readonly maxPixels?: number;
   readonly minDurationMs?: number;
@@ -356,7 +358,7 @@ export const platformRules: Readonly<Record<Platform, PlatformRules>> = {
     maxMedia: 4,
     media: {
       formats: {
-        "image/gif": { maxByteSize: 15 * mebibyte },
+        "image/gif": { maxByteSize: 15 * mebibyte, maxMediaWith: 1 },
         "image/jpeg": xImage,
         "image/png": xImage,
         "image/webp": xImage,

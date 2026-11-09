@@ -667,6 +667,7 @@
     },
     "problem": {
       "tooManyVideos": "Trop de vidéos ({count} sur {maximum})",
+      "tooManyMedia": "Un GIF part seul ({count} sur {maximum})",
       "mixedMedia": "Pas d’images avec une vidéo",
       "mediaTypeUnsupported": "{kind, select, image {Image {position}} video {Vidéo {position}} other {Média {position}}} : {format} non accepté",
       "mediaTooLarge": "{kind, select, image {Image {position}} video {Vidéo {position}} other {Média {position}}} : plus de {maximum}",

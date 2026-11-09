@@ -145,6 +145,17 @@ describe(mediaFitOn, () => {
     expect(mediaFitOn("threads", both).problems).toStrictEqual([]);
   });
 
+  it("shows a GIF alone where the platform must", () => {
+    const gif = file("a", { contentType: "image/gif" });
+    const withPhoto = [loaded(gif), loaded(file("b"))];
+
+    expect(mediaFitOn("x", [loaded(gif)]).problems).toStrictEqual([]);
+    expect(mediaFitOn("x", withPhoto).problems).toStrictEqual([
+      { _tag: "tooManyMedia", count: 2, maximum: 1 },
+    ]);
+    expect(mediaFitOn("bluesky", withPhoto).problems).toStrictEqual([]);
+  });
+
   it("checks the alt text against the platform's limit", () => {
     expect(
       mediaFitOn("x", [loaded(file("a"), "😀".repeat(1001))]).problems

@@ -55,6 +55,10 @@ const video = (
 
 const sized = (width: number, height: number) => Option.some({ height, width });
 
+// An animated GIF.
+const animated = (mediaId: MediaAssetId) =>
+  mediaFile(mediaId, { contentType: "image/gif" });
+
 // A video lasting `ms` milliseconds, a fraction possibly.
 const lasting = (ms: number) =>
   video(first, { duration: Option.some(Duration.millis(ms)) });
@@ -278,6 +282,35 @@ describe(mediaViolationsOn, () => {
     ).toStrictEqual([{ _tag: "mixedMedia", ...on("mastodon") }]);
     expect(
       violations("threads", video(first), video(second), mediaFile(third))
+    ).toStrictEqual([]);
+  });
+
+  it("shows a GIF alone on X, as it shows a video", () => {
+    expect(violations("x", animated(first))).toStrictEqual([]);
+    expect(violations("x", animated(first), mediaFile(second))).toStrictEqual([
+      { _tag: "tooManyMedia", ...on("x"), count: 2, maximum: 1 },
+    ]);
+    expect(violations("x", animated(first), animated(second))).toStrictEqual([
+      { _tag: "tooManyMedia", ...on("x"), count: 2, maximum: 1 },
+    ]);
+    // Elsewhere, a GIF is an image like the others.
+    expect(
+      violations("bluesky", animated(first), mediaFile(second))
+    ).toStrictEqual([]);
+  });
+
+  it("leaves a post over the platform's own count to that count", () => {
+    const images = ["a002", "a003", "a004", "a005"].map((suffix) =>
+      mediaFile(
+        MediaAssetIdSchema.make(`00000000-0000-7000-8000-00000000${suffix}`)
+      )
+    );
+
+    // Five files are over X's four already: violationsOn says so.
+    expect(
+      violations("x", animated(first), ...images).filter(
+        ({ _tag }) => _tag === "tooManyMedia"
+      )
     ).toStrictEqual([]);
   });
 

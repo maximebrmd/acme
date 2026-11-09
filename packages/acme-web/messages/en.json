@@ -667,6 +667,7 @@
     },
     "problem": {
       "tooManyVideos": "Too many videos ({count} of {maximum})",
+      "tooManyMedia": "A GIF goes alone ({count} of {maximum})",
       "mixedMedia": "No images with a video",
       "mediaTypeUnsupported": "{kind, select, image {Image {position}} video {Video {position}} other {Media {position}}}: {format} not taken",
       "mediaTooLarge": "{kind, select, image {Image {position}} video {Video {position}} other {Media {position}}}: over {maximum}",

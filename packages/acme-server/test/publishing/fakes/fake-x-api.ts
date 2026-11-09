@@ -89,19 +89,58 @@ const unauthorized = json(
   401
 );
 
-// The text as X shows it back: `&`, `<` and `>` as entities, links as its
-// short ones, and a link to the media at the end.
-const shownText = (post: FakeXPost) =>
-  [
-    post.text
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll(/https?:\/\/\S+/gu, "https://t.co/aBcDeF1234"),
-    ...(post.mediaIds.length > 0 ? ["https://t.co/MeDiA56789"] : []),
-  ]
-    .join(" ")
-    .trim();
+// A short link X put in a text, with the address it stands for; the
+// media's names the file.
+type ShownLink =
+  | { readonly expanded_url: string; readonly url: string }
+  | {
+      readonly expanded_url: string;
+      readonly media_key: string;
+      readonly url: string;
+    };
+
+// Text as X writes it: `&`, `<` and `>` as entities.
+const escaped = (part: string) =>
+  part.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+
+// A link as X finds it in a text: up to the next space, without the
+// punctuation that ends a sentence.
+const typedLinks = /https?:\/\/\S+?(?=[.,;:!?'")\]}]*(?:\s|$))/gu;
+
+const mediaLink = "https://t.co/MeDiA56789";
+
+// The text as X shows it back: `&`, `<` and `>` as entities, each link as a
+// short one of its own, and a link to the media at the end; with the links
+// it replaced, as X writes them, and the media's.
+const shown = (post: FakeXPost, keys: readonly string[]) => {
+  const urls: ShownLink[] = [];
+
+  let text = "";
+  let from = 0;
+
+  for (const match of post.text.matchAll(typedLinks)) {
+    const url = `https://t.co/L${String(urls.length + 1).padStart(8, "0")}`;
+
+    urls.push({ expanded_url: new URL(match[0]).href, url });
+    text += `${escaped(post.text.slice(from, match.index))}${url}`;
+    from = match.index + match[0].length;
+  }
+
+  text += escaped(post.text.slice(from));
+
+  for (const key of keys.slice(0, 1)) {
+    urls.push({
+      expanded_url: `https://x.com/acme_example/status/1/photo/1`,
+      media_key: key,
+      url: mediaLink,
+    });
+  }
+
+  return {
+    text: [text, ...(keys.length > 0 ? [mediaLink] : [])].join(" ").trim(),
+    urls,
+  };
+};
 
 // The route a request takes, and the id in its path.
 const routeOf = (request: PlatformRequest) => {
@@ -300,31 +339,34 @@ export const fakeXApi = Effect.fnUntraced(function* fakeXApi(
         );
   };
 
-  // A post as X lists it, with its files' keys when it has some.
-  const listed = (post: FakeXPost) => {
-    const shown = {
-      edit_history_tweet_ids: [post.id],
-      id: post.id,
-      text: shownText(post),
-    };
+  // A post as X lists it, with its files' keys when it has some, and the
+  // links it replaced when asked for its entities.
+  const listed = (post: FakeXPost, fields: readonly string[]) => {
+    const keys = post.mediaIds.map((id) => uploads.get(id)?.key ?? id);
+    const { text, urls } = shown(post, keys);
 
-    return post.mediaIds.length === 0
-      ? shown
-      : {
-          ...shown,
-          attachments: {
-            media_keys: post.mediaIds.map((id) => uploads.get(id)?.key ?? id),
-          },
-        };
+    const listing = { edit_history_tweet_ids: [post.id], id: post.id, text };
+
+    const attached =
+      keys.length > 0 && fields.includes("attachments")
+        ? { ...listing, attachments: { media_keys: keys } }
+        : listing;
+
+    return urls.length > 0 && fields.includes("entities")
+      ? { ...attached, entities: { urls } }
+      : attached;
   };
 
-  const recent = (accountId: string) =>
-    accountId === xAccountId
+  const recent = (accountId: string, request: PlatformRequest) => {
+    const fields = (request.query.get("tweet.fields") ?? "").split(",");
+
+    return accountId === xAccountId
       ? json({
-          data: posts.toReversed().map(listed),
+          data: posts.toReversed().map((post) => listed(post, fields)),
           meta: { result_count: posts.length },
         })
       : problem(404, "resource-not-found", "Could not find user.");
+  };
 
   const describe = (request: PlatformRequest) => {
     const { id, metadata } = metadataOf(request);
@@ -386,7 +428,7 @@ export const fakeXApi = Effect.fnUntraced(function* fakeXApi(
       }
 
       case "GET /2/users/:id/tweets": {
-        return recent(id);
+        return recent(id, request);
       }
 
       default: {

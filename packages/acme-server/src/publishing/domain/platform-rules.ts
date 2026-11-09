@@ -20,6 +20,8 @@ export interface FormatLimits {
   readonly aspectRatio?: AspectRatioRange;
   readonly maxByteSize?: number;
   readonly maxDurationMs?: number;
+  /** The most files a post holding one of this type shows (X: a GIF alone). */
+  readonly maxMediaWith?: number;
   /** Width times height. */
   readonly maxPixels?: number;
   readonly minDurationMs?: number;
@@ -97,7 +99,7 @@ const minute = 60 * second;
 //   alt text of up to 4,086 characters.
 // - X: JPEG, PNG and WebP images of up to 5 MB, GIFs of up to 15 MB; one
 //   video, MP4 or QuickTime, of 0.5 to 140 seconds and up to 512 MB, never
-//   with images; alt text of up to 1,000 characters.
+//   with images; a GIF alone too; alt text of up to 1,000 characters.
 // - Threads: JPEG and PNG images of up to 8 MB, at most 10:1 either way;
 //   MP4 and QuickTime videos of up to 1 GB and 5 minutes, from 1:100 to
 //   10:1; carousels mix them; alt text of up to 1,000 characters.
@@ -269,7 +271,7 @@ export const platformRules: Readonly<Record<Platform, PlatformRules>> = {
     maxMedia: 4,
     media: {
       formats: {
-        "image/gif": { maxByteSize: 15 * mebibyte },
+        "image/gif": { maxByteSize: 15 * mebibyte, maxMediaWith: 1 },
         "image/jpeg": xImage,
         "image/png": xImage,
         "image/webp": xImage,

@@ -20,7 +20,7 @@ import { tokenLifetimeOf } from "#channels/domain/token-policy.ts";
 import type { TokenPolicy } from "#channels/domain/token-policy.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import type { ChannelId } from "#shared/domain/ids.ts";
-import type { PlatformUnavailable } from "#shared/domain/platform-unavailable.ts";
+import { PlatformUnavailable } from "#shared/domain/platform-unavailable.ts";
 import { TokenExpired } from "#shared/domain/token-expired.ts";
 import { isTokenRejected } from "#shared/domain/token-rejected.ts";
 import type { TokenRejected } from "#shared/domain/token-rejected.ts";
@@ -31,7 +31,11 @@ import { ChannelRepository } from "./channel-repository.ts";
 import { decryptTokens, encryptTokens } from "./channel-tokens.ts";
 import { ChannelUnusable } from "./channel-unusable.ts";
 import { PlatformAuthorizers } from "./platform-authorizer.ts";
-import type { IssuedTokens, StoredTokens } from "./platform-authorizer.ts";
+import type {
+  IssuedTokens,
+  PlatformAuthorizer,
+  StoredTokens,
+} from "./platform-authorizer.ts";
 import { TokenCipher } from "./token-cipher.ts";
 
 /** Who a channel posts as, on which platform. */
@@ -73,6 +77,10 @@ const expiryMargin = Duration.minutes(1);
 const saveRetry = Schedule.exponential("200 millis");
 
 const saveRetries = 3;
+
+// The longest a renewal may wait on the platform: past what an answer takes,
+// headers and body, short of how long another renewal waits for the lock.
+const renewalTimeout = Duration.seconds(45);
 
 // What a renewal under the channel's lock came to.
 type Renewal =
@@ -239,6 +247,41 @@ export class ChannelAccess extends Context.Service<
         }
       );
 
+      // Asks the platform for new tokens and saves them. A rotating refresh
+      // token stops working once the platform has it, so from then on the
+      // renewal runs to its save: a call given up meanwhile (a timeout, a
+      // shutdown) waits for it rather than lose the session. The platform
+      // call keeps its own timeout.
+      const renewAndSave = Effect.fn("ChannelAccess.renewAndSave")(
+        function* renewAndSave(
+          channel: Channel,
+          tokens: StoredTokens,
+          authorizer: PlatformAuthorizer
+        ) {
+          const renewed = yield* authorizer.refresh(channel, tokens).pipe(
+            Effect.timeoutOrElse({
+              duration: renewalTimeout,
+              orElse: () => Effect.fail(new PlatformUnavailable()),
+            }),
+            Effect.result
+          );
+
+          if (renewed._tag === "Failure") {
+            // Refused for good, or not answered: then the call waits.
+            return renewed.failure._tag === "TokenExpired"
+              ? yield* markLocked(channel)
+              : yield* renewed.failure;
+          }
+
+          return yield* saveRenewed(
+            channel,
+            renewed.success,
+            authorizer.policy
+          );
+        },
+        Effect.uninterruptible
+      );
+
       // Renews the channel's token under its lock: when `rejected` was
       // refused, or when the token is due. Another renewal may have come
       // first while this one waited: its token is used as it is.
@@ -278,22 +321,7 @@ export class ChannelAccess extends Context.Service<
             return yield* markLocked(channel);
           }
 
-          const renewed = yield* authorizer.value
-            .refresh(channel, tokens.value)
-            .pipe(Effect.result);
-
-          if (renewed._tag === "Failure") {
-            // Refused for good, or not answered: then the call waits.
-            return renewed.failure._tag === "TokenExpired"
-              ? yield* markLocked(channel)
-              : yield* renewed.failure;
-          }
-
-          return yield* saveRenewed(
-            channel,
-            renewed.success,
-            authorizer.value.policy
-          );
+          return yield* renewAndSave(channel, tokens.value, authorizer.value);
         }
       );
 
@@ -315,21 +343,62 @@ export class ChannelAccess extends Context.Service<
         return tokenOf(renewal.channel, renewal.tokens);
       });
 
+      // Marks the channel for a reconnect, unless its token was replaced
+      // while this waited for the lock (a reconnect, or another renewal):
+      // the channel then works again, and keeps its new token. `refused` is
+      // the token found not to work, if one was tried.
+      const reconnectUnlessReplaced = Effect.fn(
+        "ChannelAccess.reconnectUnlessReplaced"
+      )(function* reconnectUnlessReplaced(
+        channelId: ChannelId,
+        refused: Option.Option<Redacted.Redacted>
+      ) {
+        const channel = yield* usable(channelId);
+        const tokens = yield* storedTokens(channel);
+        const now = yield* DateTime.now;
+
+        const replaced =
+          Option.isSome(tokens) &&
+          !isTokenExpired(channel, now) &&
+          Option.match(refused, {
+            onNone: () => true,
+            onSome: (token) => !sameToken(token, tokens.value.accessToken),
+          });
+
+        if (replaced) {
+          const renewal: Renewal = {
+            _tag: "renewed",
+            channel,
+            tokens: tokens.value,
+          };
+
+          return renewal;
+        }
+
+        return yield* markLocked(channel);
+      });
+
       // The token will not work until the user reconnects the channel: it
-      // was refused once renewed, or ran out with nothing to renew it, or
-      // cannot be read.
+      // was refused once renewed (`refused`), or ran out with nothing to
+      // renew it, or cannot be read. A token replaced meanwhile is given
+      // instead.
       const requireReconnect = Effect.fn("ChannelAccess.requireReconnect")(
-        function* requireReconnect(channelId: ChannelId) {
+        function* requireReconnect(
+          channelId: ChannelId,
+          refused: Option.Option<Redacted.Redacted>
+        ) {
           const renewal = yield* locks.withLock(
             channelId,
-            usable(channelId).pipe(Effect.flatMap(markLocked))
+            reconnectUnlessReplaced(channelId, refused)
           );
 
           if (renewal._tag === "reconnect") {
             yield* notices.reconnectRequired(renewal.marked);
+
+            return yield* new TokenExpired();
           }
 
-          return yield* new TokenExpired();
+          return tokenOf(renewal.channel, renewal.tokens);
         }
       );
 
@@ -341,7 +410,7 @@ export class ChannelAccess extends Context.Service<
         const now = yield* DateTime.now;
 
         if (isTokenExpired(channel, now)) {
-          return yield* requireReconnect(channelId);
+          return yield* requireReconnect(channelId, Option.none());
         }
 
         if (isDue(channel, now)) {
@@ -351,7 +420,7 @@ export class ChannelAccess extends Context.Service<
         const tokens = yield* storedTokens(channel);
 
         if (Option.isNone(tokens)) {
-          return yield* requireReconnect(channelId);
+          return yield* requireReconnect(channelId, Option.none());
         }
 
         return tokenOf(channel, tokens.value);
@@ -369,7 +438,14 @@ export class ChannelAccess extends Context.Service<
                   Effect.flatMap((renewed) =>
                     use(renewed).pipe(
                       Effect.catchIf(isTokenRejected, () =>
-                        requireReconnect(channelId)
+                        // Replaced meanwhile, as by a reconnect: the new
+                        // token was not tried, and a later call takes it.
+                        requireReconnect(
+                          channelId,
+                          Option.some(renewed.accessToken)
+                        ).pipe(
+                          Effect.andThen(Effect.fail(new PlatformUnavailable()))
+                        )
                       )
                     )
                   )
