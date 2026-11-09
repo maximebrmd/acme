@@ -3,6 +3,7 @@ import { Context, DateTime, Effect, Latch, Layer, Match, Ref } from "effect";
 import { PlatformPublisher } from "#publishing/application/platform-publisher.ts";
 import type { PublishRequest } from "#publishing/application/platform-publisher.ts";
 import type { ChannelId } from "#shared/domain/ids.ts";
+import { PlatformUnavailable } from "#shared/domain/platform-unavailable.ts";
 import type { PublishFailure } from "#shared/domain/publish-failure.ts";
 import { PlatformPostIdSchema } from "#shared/domain/publish-result.ts";
 import type { PublishResult } from "#shared/domain/publish-result.ts";
@@ -16,6 +17,9 @@ export type FakeBehaviour =
   // The post goes live, and the answer only comes once the test calls
   // `release` for the channel, if ever.
   | { readonly _tag: "hang" }
+  // The call stalls before it reaches the platform: nothing goes live, and
+  // once the test calls `release`, if ever, the platform is unavailable.
+  | { readonly _tag: "stall" }
   // The post goes live and the answer is lost, as after a timeout: the
   // adapter can only say it does not know.
   | { readonly _tag: "loseResponse" };
@@ -167,6 +171,10 @@ export class FakePlatform extends Context.Service<
                 _tag: "unconfirmed",
                 reason: "noResponse",
               })
+            ),
+          stall: () =>
+            holdUntilReleased(request.channelId).pipe(
+              Effect.andThen(Effect.fail(new PlatformUnavailable()))
             ),
           succeed: () => goLive(request),
         });
