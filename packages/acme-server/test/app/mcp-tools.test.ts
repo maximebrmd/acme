@@ -365,6 +365,41 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
             `optionsForOtherPlatform on ${fixture.channelId}`
           );
 
+          // A channel's options come once: which of two would stand is
+          // nobody's guess.
+          const twice = [
+            { channelId: fixture.youtubeId, options: youtube },
+            {
+              channelId: fixture.youtubeId,
+              options: { ...youtube, title: "Another title" },
+            },
+          ];
+
+          for (const [tool, input] of [
+            [
+              "create_draft",
+              {
+                channelIds: [fixture.youtubeId],
+                content: content("A synthetic video, twice set."),
+                options: twice,
+              },
+            ],
+            [
+              "update_draft",
+              {
+                channelIds: [fixture.youtubeId],
+                content: content("A synthetic video, twice set."),
+                options: twice,
+                postId: created.id,
+              },
+            ],
+          ] as const) {
+            assert.include(
+              yield* writer.refused(tool, input),
+              "options for each channel once"
+            );
+          }
+
           // An empty list removes them.
           const cleared = yield* writer.call("update_draft", PostJsonSchema, {
             channelIds: [fixture.youtubeId],

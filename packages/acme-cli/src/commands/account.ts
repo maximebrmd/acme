@@ -7,6 +7,7 @@ import {
   FileSystem,
   Option,
   Path,
+  Random,
   Schema,
 } from "effect";
 import { Command, Flag } from "effect/cli";
@@ -30,6 +31,11 @@ const serverFileName = (disposition: string): Option.Option<string> =>
     Option.flatMap((match) => Option.fromUndefinedOr(match.groups?.["name"])),
     Option.filter((name) => !name.startsWith("."))
   );
+
+const existing = (file: string) =>
+  new Refused({
+    reason: `${file} exists already: give another --output, or --force to replace it.`,
+  });
 
 const cannotSave =
   (file: string) =>
@@ -72,11 +78,41 @@ const exportData = Command.make(
           .pipe(Effect.mapError(cannotSave(file)));
 
         if (exists && !force) {
-          yield* new Refused({
-            reason: `${file} exists already: give another --output, or --force to replace it.`,
-          });
+          yield* existing(file);
         }
       });
+
+    // A file made for the copy alone, readable by the user only: created
+    // exclusively, it follows no link left there and replaces nothing,
+    // even one made since it was checked. Removed when writing it fails.
+    const created = (file: string, contents: string) =>
+      fs
+        .writeFileString(file, contents, { flag: "wx", mode: fileMode })
+        .pipe(
+          Effect.tapError((failure) =>
+            failure.reason._tag === "AlreadyExists"
+              ? Effect.void
+              : fs.remove(file).pipe(Effect.ignore)
+          )
+        );
+
+    // Without --force, the copy goes in a new file. With it, it goes in one
+    // of its own beside the file, then is renamed over it: a file replaced
+    // is never readable by others, even for a moment.
+    const saved = (file: string, contents: string) =>
+      force
+        ? Effect.gen(function* replacing() {
+            const suffix = yield* Random.nextIntBetween(0, 2 ** 31);
+            const temporary = `${file}.${suffix.toString(36)}.tmp`;
+
+            yield* created(temporary, contents);
+            yield* fs
+              .rename(temporary, file)
+              .pipe(
+                Effect.tapError(() => fs.remove(temporary).pipe(Effect.ignore))
+              );
+          })
+        : created(file, contents);
 
     const named = output.pipe(Option.map((file) => path.resolve(file)));
 
@@ -113,15 +149,12 @@ const exportData = Command.make(
       2
     );
 
-    // Written beside it, readable by the user alone, then renamed over it:
-    // a file replaced is never readable by others, even for a moment.
-    const temporary = `${file}.tmp`;
-
-    yield* fs.writeFileString(temporary, `${json}\n`, { mode: fileMode }).pipe(
-      // A temporary file left by an earlier run keeps its mode.
-      Effect.andThen(fs.chmod(temporary, fileMode)),
-      Effect.andThen(fs.rename(temporary, file)),
-      Effect.mapError(cannotSave(file))
+    yield* saved(file, `${json}\n`).pipe(
+      Effect.mapError((failure) =>
+        failure.reason._tag === "AlreadyExists"
+          ? existing(file)
+          : cannotSave(file)(failure)
+      )
     );
 
     yield* Console.log(

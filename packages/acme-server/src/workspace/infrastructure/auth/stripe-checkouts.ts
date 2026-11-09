@@ -54,12 +54,35 @@ const expireFor = (
     Effect.map((expired) => expired.length)
   );
 
+// The status of every subscription Stripe holds for the customer, those
+// its events have not reported yet included. Kept to the customer's own,
+// which is all Stripe lists.
+const subscriptionsOf = (
+  stripe: Stripe,
+  customer: string,
+  workspaceId: WorkspaceId
+) =>
+  Effect.tryPromise({
+    catch: () => new StripeUnreachable({ workspaceId }),
+    try: async () =>
+      await stripe.subscriptions
+        .list({ customer, limit: listLimit, status: "all" })
+        .autoPagingToArray({ limit: sessionsAtMost }),
+  }).pipe(
+    Effect.map((subscriptions) =>
+      subscriptions.flatMap((held) =>
+        held.customer === customer ? [held.status] : []
+      )
+    )
+  );
+
 /**
  * Checkouts through the Stripe plugin's rows, in the `auth` schema: the
  * subscriptions its checkouts started (`subscription`, by workspace as
  * `reference_id`), and the Stripe customer it made for the workspace
  * (`organization.stripe_customer_id`), whose open Checkout Sessions are
- * expired at Stripe. Without a Stripe key, there are none to expire.
+ * expired at Stripe, and whose subscriptions Stripe is asked for. Without a
+ * Stripe key, there are none.
  */
 export const StripeCheckoutsLive = Layer.effect(
   Checkouts,
@@ -128,6 +151,26 @@ export const StripeCheckoutsLive = Layer.effect(
       return counts.reduce((sum, count) => sum + count, 0);
     });
 
-    return Checkouts.of({ expireOpen, statuses });
+    const atStripe = Effect.fn("Checkouts.atStripe")(function* atStripe(
+      workspaceId: WorkspaceId
+    ) {
+      if (Option.isNone(client)) {
+        return [];
+      }
+
+      const stripe = client.value;
+
+      const found = yield* customersOf(workspaceId).pipe(
+        Effect.flatMap(
+          Effect.forEach((customer) =>
+            subscriptionsOf(stripe, customer, workspaceId)
+          )
+        )
+      );
+
+      return found.flat();
+    });
+
+    return Checkouts.of({ atStripe, expireOpen, statuses });
   })
 );
