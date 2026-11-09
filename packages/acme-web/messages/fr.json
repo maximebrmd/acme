@@ -165,6 +165,7 @@
       "used": "Ce code a déjà servi. Relancez acme login pour en obtenir un nouveau.",
       "reviewTitle": "Autoriser {client} à agir en votre nom ?",
       "reviewDescription": "Elle pourra :",
+      "onlyYours": "Ne l’autorisez que si vous avez lancé cette connexion vous-même, avec acme login dans votre propre terminal, il y a un instant. Quelqu’un qui vous aurait envoyé ce code obtiendrait un accès en votre nom.",
       "approve": "Autoriser",
       "approving": "Autorisation…",
       "deny": "Refuser",

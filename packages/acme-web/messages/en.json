@@ -165,6 +165,7 @@
       "used": "This code was already used. Run acme login again for a new one.",
       "reviewTitle": "Allow {client} to act as you?",
       "reviewDescription": "It will be able to:",
+      "onlyYours": "Allow it only if you started this sign-in yourself, by running acme login in your own terminal a moment ago. Someone who sent you this code would get access as you.",
       "approve": "Allow",
       "approving": "Allowing…",
       "deny": "Deny",

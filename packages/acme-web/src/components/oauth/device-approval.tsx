@@ -144,6 +144,9 @@ export const DeviceApproval = ({
           {t("reviewDescription")}
         </p>
         <ScopeList scopes={step.scopes} />
+        <Alert>
+          <AlertDescription>{t("onlyYours")}</AlertDescription>
+        </Alert>
         <div className="flex gap-2">
           <Button
             disabled={isPending}
