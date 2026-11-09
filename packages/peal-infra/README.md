@@ -40,9 +40,12 @@ The tunnel's routes, for production (`roles/cloudflared/templates/config.yml.j2`
 The sandbox has the same routes on its own names (`sandbox.peal.social`,
 `sandbox-grafana.peal.social`…), all behind Access but for what outside
 services call: `/api/channels/oauth/*`, which Bluesky's servers fetch, and
-Stripe's webhook (`/api/auth/stripe/webhook`) and Meta's data deletion
-requests (`/api/data-deletion/facebook` and `/threads`), which the server
-checks the signature of. Cloudflare's free certificate covers the zone and
+Stripe's webhook (`/api/auth/stripe/webhook`) and Meta's data deletion and
+deauthorize requests (`/api/data-deletion/<app>` and
+`/api/data-deletion/<app>/deauthorize`, for its three apps), which the
+server checks the signature of. A test keeps those paths equal to the
+addresses the server lists as called by the platforms' servers
+([The platforms' apps](#the-platforms-apps)). Cloudflare's free certificate covers the zone and
 its first-level subdomains only, so no name goes deeper than that.
 
 A rule with Access needs an Access application at Cloudflare's edge, and
@@ -330,6 +333,37 @@ the owner's approval.
    in a URL. The uptime server has a bot of its own.
 6. **Email**: a Resend key for the verified sending domain `mail.peal.social`,
    which sends as `notifications@mail.peal.social` (`peal_mail_from`).
+7. **The platforms' apps**, a set of its own for each environment
+   ([The platforms' apps](#the-platforms-apps)).
+
+### The platforms' apps
+
+Each environment has its own apps on the platforms (LinkedIn, X, Meta's
+three use cases, TikTok, a Google OAuth client for YouTube), each given
+that environment's addresses: where the platform sends people back and,
+for Meta, where its servers call. Print them, and copy them from what is
+printed, never by hand:
+
+```sh
+# From the repository root, before a server exists:
+PUBLIC_URL=https://app.peal.social bun nx run peal-server:platform-addresses
+# On a server that runs, for its own PUBLIC_URL:
+ssh ops@ssh.peal.social sudo peal-compose exec server bun packages/peal-server/scripts/platform-addresses.ts
+```
+
+The command builds the list from the paths the server's sign-ins send and
+its routes answer, and the server's tests fail when a platform gains one
+that the list lacks, so it is the one place to read them from. It reads
+`PUBLIC_URL` and nothing else. Each app's id goes in `peal_settings`, and
+its secret in the vault (`inventory/vault.example.yml` names them); the
+docs' self-hosting page says what each platform asks of an app besides.
+
+The addresses it marks as called by the platform's servers must answer
+without Access. Production is public. On the sandbox, they are
+`peal_access_bypass_paths` (`group_vars/all/main.yml`), each with its
+Bypass application at Cloudflare's edge (step 2 above):
+`tests/test_cloudflared.py` runs the command for the sandbox's name and
+fails when cloudflared would stop one of them.
 
 ### Credentials
 

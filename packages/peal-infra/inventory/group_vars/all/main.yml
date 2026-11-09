@@ -104,12 +104,15 @@ peal_access_paths:
 # outside services call, which stay open, each with an Access application of
 # its own that bypasses Access (README.md): Bluesky reads the client metadata
 # and keys under /api/channels/oauth/, Stripe posts its events to the
-# webhook, and Meta its data deletion requests. Each request to the last two
-# is signed, and the server checks the signature.
+# webhook, and Meta its data deletion and deauthorize requests, for each of
+# its three apps. Each request to the last two is signed, and the server
+# checks the signature. tests/test_cloudflared.py checks them against the
+# addresses the server lists as called by the platforms' servers
+# (peal-server:platform-addresses): a platform's new route joins them here.
 peal_access_bypass_paths:
   - path: ^/+api/+channels/+oauth/
     to: server
   - path: ^/+api/+auth/+stripe/+webhook/*$
     to: server
-  - path: ^/+api/+data-deletion/+(facebook|threads)/*$
+  - path: ^/+api/+data-deletion/+(facebook|instagram|threads)(/+deauthorize)?/*$
     to: server

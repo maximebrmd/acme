@@ -152,6 +152,26 @@ The server reaches the platforms itself, over HTTPS, so it needs to reach the in
 
 To publish an image or a video, the server reads it from the media store, whole, into memory, then uploads it: a Bluesky video can take up to 300 MB. LinkedIn and X take videos in parts of 4 MiB, and TikTok in parts of 10 MB, so the server holds one part at a time. Give the server the memory for the largest files your members post.
 
+### Addresses to register [#platform-addresses]
+
+Each platform's app is given addresses on your server: where the platform sends people back after they sign in and, for Meta, where its servers call yours. One command prints them all for your `PUBLIC_URL`, each beside the setting it goes in, from the paths the server itself answers and sends. From the repository:
+
+```sh
+PUBLIC_URL=https://peal.example.com bun nx run peal-server:platform-addresses
+```
+
+Or on a running server, which answers for its own `PUBLIC_URL`, with the stack's files and settings as in [With Docker Compose and Caddy](#compose):
+
+```sh
+docker compose --project-name peal --file compose.production.yaml \
+  --file compose.self-host.yaml --env-file /srv/peal/peal.env \
+  exec server bun packages/peal-server/scripts/platform-addresses.ts
+```
+
+Register what it prints, copied, rather than addresses written by hand: a platform refuses a sign-in whose redirect address differs from the one registered by a single character, a trailing slash included. Run it again after changing `PUBLIC_URL`, and after an upgrade that adds a platform. With `--json`, it prints the same list for a program to read.
+
+The addresses it marks as called by the platform's servers, Meta's two callbacks and Bluesky's client documents, must answer the internet with no sign-in in front of them: let them through any login page or allow list you put before the server. The others are opened by people's browsers.
+
 ### Bluesky [#bluesky]
 
 A production server connects Bluesky accounts only with keys of its own, which identify it to Bluesky. `PUBLIC_URL` must be HTTPS, without a port. Create a key, from the repository:
@@ -160,7 +180,7 @@ A production server connects Bluesky accounts only with keys of its own, which i
 bun nx run peal-server:bluesky-key
 ```
 
-Put the line it prints in `BLUESKY_CLIENT_KEYS`. Entries are separated by commas: to rotate, put a new key first, and keep the old ones until the sessions they signed for have been refreshed. Bluesky reads Peal's client description at `PUBLIC_URL/api/channels/oauth/bluesky/client-metadata.json`, and its public keys beside it.
+Put the line it prints in `BLUESKY_CLIENT_KEYS`. Entries are separated by commas: to rotate, put a new key first, and keep the old ones until the sessions they signed for have been refreshed. Nothing is registered with Bluesky: its servers read Peal's client description, and its public keys beside it, at the addresses [the command](#platform-addresses) prints for Bluesky.
 
 Without keys, a server running from source on `localhost` uses Bluesky's development client, whose sessions last two weeks, and any other server cannot connect Bluesky.
 
@@ -169,7 +189,7 @@ Without keys, a server running from source on `localhost` uses Bluesky's develop
 A server connects LinkedIn members once you register an app for it on LinkedIn's developer portal, which asks for a LinkedIn page to own it:
 
 1. Add the **Sign In with LinkedIn using OpenID Connect** and **Share on LinkedIn** products. Both are granted at once, without review.
-2. Under **Auth**, add `PUBLIC_URL/connect/linkedin/callback` as an authorized redirect URL, such as `https://peal.example.com/connect/linkedin/callback`.
+2. Under **Auth**, add the address [the command](#platform-addresses) prints for LinkedIn as an authorized redirect URL.
 3. Put the app's client id in `LINKEDIN_CLIENT_ID` and its primary client secret in `LINKEDIN_CLIENT_SECRET`.
 
 These apps get no refresh token: members reconnect their channel every 60 days, and are told a week before. Peal calls LinkedIn's API in the version `LINKEDIN_API_VERSION` names, a recent one unless set; LinkedIn retires each version a year after its release, and a retired one fails every post.
@@ -179,7 +199,7 @@ These apps get no refresh token: members reconnect their channel every 60 days, 
 A server connects X accounts once you register an app for it in X's developer console:
 
 1. Under the app's user authentication settings, turn on OAuth 2.0, as a **Web App, Automated App or Bot**, with **Read and write** permissions.
-2. Add `PUBLIC_URL/connect/x/callback` as a callback URI, exactly, such as `https://peal.example.com/connect/x/callback`. X refuses `localhost`: in development, use `http://127.0.0.1` and its port.
+2. Add the address [the command](#platform-addresses) prints for X as a callback URI, exactly. X refuses `localhost`: in development, use `http://127.0.0.1` and its port.
 3. Put the OAuth 2.0 client id in `X_CLIENT_ID` and its client secret in `X_CLIENT_SECRET`.
 
 X bills each request of the API to the app, from credits bought ahead ([pricing](https://docs.x.com/x-api/getting-started/pricing)), and a post with a link costs about 13 times one without. Buy credits and set a spending limit in X's console. Once the credits run out (X answers `402`) or the limit is reached (`usage-capped`), X refuses every post of the app until you add credits or raise the limit: the posts are not at fault, so Peal logs an error, which the server's error-log alert reports, and waits as it does for an outage, for over two hours, before a post fails with the reason "the platform refused this server's app until its operator pays for it".
@@ -194,7 +214,7 @@ For LinkedIn as for X, one of the two settings without the other stops the serve
 
 A server connects TikTok creators once you register an app for it on TikTok for Developers:
 
-1. Add the **Login Kit** product, with `PUBLIC_URL/connect/tiktok/callback` as its redirect URI for the web, such as `https://peal.example.com/connect/tiktok/callback`. TikTok takes HTTPS redirect URIs only: in development, use an HTTPS tunnel.
+1. Add the **Login Kit** product, with the address [the command](#platform-addresses) prints for TikTok as its redirect URI for the web. TikTok takes HTTPS redirect URIs only: in development, use an HTTPS tunnel.
 2. Add the **Content Posting API**, with **Direct Post** on, and the **Display API**, for analytics. Add the scopes `user.info.basic`, `user.info.profile`, `video.publish` and `video.list`.
 3. Put the app's client key in `TIKTOK_CLIENT_KEY` and its client secret in `TIKTOK_CLIENT_SECRET`.
 
@@ -217,15 +237,13 @@ A platform whose settings are missing is not offered. Instagram is offered with 
 | Instagram Login (`INSTAGRAM_APP_ID`)          | A professional account, no Page         | 60 days, renewed by Peal a week ahead | Publishing (images, reels, carousels), insights; calls `graph.instagram.com`                                                                 |
 | Facebook Login through a Page (`META_APP_ID`) | A professional account linked to a Page | The Page's, which does not expire     | The same, plus what only that API has (product tags, collaborators, hashtag search), which Peal does not use yet; calls `graph.facebook.com` |
 
-In the dashboard, register these addresses:
+In the dashboard, give each use case the addresses [the command](#platform-addresses) prints for it:
 
-| Setting                                        | Address                                                                                                                                             |
-| ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Facebook Login's valid OAuth redirect URIs     | `PUBLIC_URL/connect/facebook/callback` and `PUBLIC_URL/connect/instagram/callback`                                                                  |
-| Instagram business login's OAuth redirect URIs | `PUBLIC_URL/connect/instagram/callback`                                                                                                             |
-| Threads' redirect callback URL                 | `PUBLIC_URL/connect/threads/callback`                                                                                                               |
-| Data deletion request URL                      | `PUBLIC_URL/api/data-deletion/facebook`; `PUBLIC_URL/api/data-deletion/instagram` for Instagram; `PUBLIC_URL/api/data-deletion/threads` for Threads |
-| Deauthorize callback URL                       | `PUBLIC_URL/api/data-deletion/facebook/deauthorize`, and the same with `instagram` and `threads` in their use cases                                 |
+| Use case       | Settings the addresses go in                                                                                                                  |
+| -------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| Facebook Login | Its valid OAuth redirect URIs, two of them, for Facebook Pages and for Instagram; its data deletion request URL; its deauthorize callback URL |
+| Instagram      | Its business login's OAuth redirect URIs; its data deletion request URL; its deauthorize callback URL                                         |
+| Threads        | Its redirect callback URL; its data deletion request URL; its deauthorize callback URL                                                        |
 
 When one of its users asks Meta to delete what Peal holds about them, Meta calls the data deletion address with a request signed with that use case's secret. Peal checks the signature, deletes, in every workspace, the channels that person connected through it and their tokens, and the accounts their sign-in still offers a member to choose from, and answers with a confirmation code and the page where its status shows, `PUBLIC_URL/data-deletion/<code>`. The same request sent again, as Meta may retry it, gets the same answer and deletes nothing more. An Instagram request names the account by its app-scoped id or its own: Peal takes either.
 
@@ -241,7 +259,7 @@ A server connects YouTube channels once you make an OAuth client for it in a Goo
 
 1. In the Google Cloud console, create a project, and turn on the **YouTube Data API v3** under APIs and services.
 2. Under **Google Auth Platform**, set up the consent screen for **External** users, and add the scopes `https://www.googleapis.com/auth/youtube.upload` and `https://www.googleapis.com/auth/youtube.readonly`.
-3. Under **Clients**, create a **Web application** client, with `PUBLIC_URL/connect/youtube/callback` as an authorized redirect URI, such as `https://peal.example.com/connect/youtube/callback`.
+3. Under **Clients**, create a **Web application** client, with the address [the command](#platform-addresses) prints for YouTube as an authorized redirect URI.
 4. Put the client id in `YOUTUBE_CLIENT_ID` and its secret in `YOUTUBE_CLIENT_SECRET`.
 
 One of the two settings without the other stops the server at startup; without both, **Channels** does not offer YouTube. Members sign in with Google and pick the channel, a brand account's included, on Google's account chooser: one connection is one channel. Peal asks to upload videos and to read the channel and its videos, nothing more, and renews its access every hour. Disconnecting a channel revokes that access at Google, unless another workspace still connects the same channel.

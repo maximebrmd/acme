@@ -33,6 +33,11 @@
       "options": { "cwd": "{projectRoot}" },
       "cache": false
     },
+    "platform-addresses": {
+      "command": "bun scripts/platform-addresses.ts",
+      "options": { "cwd": "{projectRoot}" },
+      "cache": false
+    },
     "db:generate": {
       "command": "drizzle-kit generate",
       "options": { "cwd": "{projectRoot}" },
