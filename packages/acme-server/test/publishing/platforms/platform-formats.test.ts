@@ -92,6 +92,14 @@ describe("X's text, as it shows it back", () => {
   it("does not match another text", () => {
     expect(isSameText("Launch day", "Launch night")).toBeFalsy();
   });
+
+  it("reads back entities in X's text only, not in the text sent", () => {
+    // Typed as it is: X shows the ampersand of "&amp;" as an entity too.
+    expect(
+      isSameText("Write &amp; as &", "Write &amp;amp; as &amp;")
+    ).toBeTruthy();
+    expect(isSameText("Fish &amp; chips", "Fish &amp; chips")).toBeFalsy();
+  });
 });
 
 describe("X's rate limit headers", () => {
