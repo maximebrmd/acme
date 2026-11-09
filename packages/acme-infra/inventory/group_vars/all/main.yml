@@ -49,10 +49,11 @@ acme_ports:
   otlp_http: 14318
 
 # What release.yml deploys: a branch, tag or commit of this repository, built
-# on the machine running Ansible for the servers' architecture.
+# on the machine running Ansible for each server's architecture, which its
+# facts give (linux/amd64 or linux/arm64). Set acme_image_platform to build
+# for another.
 acme_version: main
 acme_release_repo_url: https://github.com/maximebrmd/acme.git
-acme_image_platform: linux/amd64
 
 # Credentials the server needs from outside services, by name. The values
 # stay in the vault or on the server; the playbooks only check that each is
