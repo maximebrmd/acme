@@ -365,4 +365,47 @@ layer(StoreTest)("the analytics store", (it) => {
         }).pipe(Effect.ensuring(forgetWorkspace(workspaceId)));
       })
   );
+
+  it.effect("ranks posts whose counts add up past what an integer holds", () =>
+    Effect.gen(function* large() {
+      const workspaceId = yield* freshWorkspace;
+
+      yield* Effect.gen(function* checks() {
+        const busy = yield* seedPost(
+          yield* publicationOf(
+            workspaceId,
+            yield* newChannelId,
+            "2043-03-10T09:00:00Z"
+          ),
+          [
+            {
+              at: "2043-03-10T10:07:00Z",
+              metrics: countsOf(2_000_000_000, 2_000_000_000, 1),
+            },
+          ]
+        );
+
+        const range = yield* Effect.fromResult(
+          reportRange({
+            from: { day: 10, month: 3, year: 2043 },
+            timeZone: paris,
+            to: { day: 10, month: 3, year: 2043 },
+          })
+        );
+
+        const rows = yield* AnalyticsReports.use((reports) =>
+          reports.report(workspaceId, dayStarts(range), 5)
+        );
+
+        assert.deepStrictEqual(
+          rows.top.map(({ targetId }) => targetId),
+          [busy.targetId]
+        );
+        assert.deepStrictEqual(
+          rows.channels.map(({ likes, reposts }) => likes + reposts),
+          [4_000_000_000]
+        );
+      }).pipe(Effect.ensuring(forgetWorkspace(workspaceId)));
+    })
+  );
 });

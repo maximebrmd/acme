@@ -1,7 +1,11 @@
 import { describe, expect, it } from "@effect/vitest";
-import { DateTime, Option, Result } from "effect";
+import { DateTime, Option, Result, Schema } from "effect";
 
-import { engagementOf, PostMetrics } from "#analytics/domain/post-metrics.ts";
+import {
+  engagementOf,
+  maxCount,
+  PostMetrics,
+} from "#analytics/domain/post-metrics.ts";
 import {
   dayStarts,
   reportDays,
@@ -57,6 +61,22 @@ describe(reportRange, () => {
         onSuccess: () => 0,
       })
     ).toBe(367);
+  });
+});
+
+const counts = (likes: number) =>
+  Schema.decodeUnknownOption(PostMetrics)({
+    impressions: null,
+    likes,
+    quotes: null,
+    replies: 0,
+    reposts: 0,
+  });
+
+describe(PostMetrics, () => {
+  it("refuses a count past what Acme keeps", () => {
+    expect(Option.isSome(counts(maxCount))).toBeTruthy();
+    expect(Option.isNone(counts(maxCount + 1))).toBeTruthy();
   });
 });
 

@@ -720,7 +720,9 @@ and no socket, for tests.
   is 30 days old (`analytics/domain/collection-schedule.ts`), each next read
   counted from the run's scheduled time (`ClusterCron.CurrentScheduledTime`).
 - Counts are likes, reposts, replies, and quotes and impressions as Options:
-  none, where a platform does not give one, is not zero.
+  none, where a platform does not give one, is not zero. A count is at most
+  2^31 − 1 (`maxCount`), what its column holds: a server saying more fails
+  to decode, rather than fail the run's insert.
 - Reads go through the `MetricsReader` port. `GatedMetricsReader` sends each
   one, 25 posts at most, through the channel's `ChannelGate` (`ReadMetrics`),
   whose handler runs the readers in `analytics/infrastructure/platforms/`:

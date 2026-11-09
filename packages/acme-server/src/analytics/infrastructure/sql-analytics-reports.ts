@@ -242,8 +242,9 @@ export const SqlAnalyticsReports = Layer.effect(
         ORDER BY day
       `.pipe(Effect.flatMap(decodeDays), Effect.mapError(failed));
 
-      // The posts of the range people did the most with.
-      const engagement = sql`${trackedPosts.likes} + ${trackedPosts.reposts} + ${trackedPosts.replies} + coalesce(${trackedPosts.quotes}, 0)`;
+      // The posts of the range people did the most with, added up in
+      // bigint: one post's counts together can pass what an integer holds.
+      const engagement = sql`${trackedPosts.likes}::bigint + ${trackedPosts.reposts} + ${trackedPosts.replies} + coalesce(${trackedPosts.quotes}, 0)`;
 
       const topRows = yield* db
         .select()
