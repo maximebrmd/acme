@@ -26,6 +26,13 @@ describe(isPublicAddress, () => {
     "64:ff9b::7f00:1",
     "2002:a00:1::",
     "2001:db8::1",
+    // IPv4-compatible and IPv4-translated forms, which carry 127.0.0.1 and
+    // 10.0.0.1; segment routing ids; the newer documentation range.
+    "::7f00:1",
+    "::a00:1",
+    "::ffff:0:7f00:1",
+    "5f00::1",
+    "3fff::1",
   ])("refuses %s", (address) => {
     expect(isPublicAddress(ip(address))).toBeFalsy();
   });

@@ -30,8 +30,14 @@ const reserved: readonly IpNetwork.IpNetwork[] = [
   "2001:20::/28",
   "2001:db8::/32",
   "2002::/16",
+  "3fff::/20",
   "fec0::/10",
 ].map((network) => IpNetwork.fromStringUnsafe(network));
+
+// Every public IPv6 address is global unicast, which IANA allocates from
+// this block only. Outside it are the forms that carry an IPv4 address
+// (IPv4-compatible, translated), and ranges not meant for the internet.
+const globalUnicast = IpNetwork.fromStringUnsafe("2000::/3");
 
 /** Whether an address is one anyone on the internet could reach. */
 export const isPublicAddress = (address: NetAddress.IpAddress): boolean => {
@@ -42,7 +48,7 @@ export const isPublicAddress = (address: NetAddress.IpAddress): boolean => {
       return isPublicAddress(mapped.value);
     }
 
-    if (NetAddress.isUniqueLocal(address)) {
+    if (!IpNetwork.contains(globalUnicast, address)) {
       return false;
     }
   } else if (NetAddress.isPrivate(address)) {
