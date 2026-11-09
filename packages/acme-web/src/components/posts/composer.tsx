@@ -503,6 +503,13 @@ export const Composer = ({
           <TargetOptionsSection
             channels={selected}
             disabled={locked}
+            photos={
+              attached.length > 0 &&
+              attached.every(({ media: found }) =>
+                Option.exists(found, ({ kind }) => kind === "image")
+              )
+            }
+            workspaceId={workspaceId}
             failure={requests.failure}
             valuesOf={valuesOn}
             onChange={(channelId, values) => {

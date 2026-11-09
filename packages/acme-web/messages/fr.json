@@ -302,6 +302,11 @@
       "title": "X",
       "description": "Votre compte X. Vous vous connectez sur X et autorisez Acme à publier et à envoyer des médias pour vous.",
       "connect": "Connecter X"
+    },
+    "tiktok": {
+      "title": "TikTok",
+      "description": "Votre compte TikTok. Vous vous connectez sur TikTok et autorisez Acme à publier des vidéos et des photos pour vous, et à lire leurs statistiques.",
+      "connect": "Connecter TikTok"
     }
   },
   "ConnectCallbackPage": {
@@ -497,7 +502,19 @@
         "brandContent": "Contenu de marque",
         "brandContentHint": "Vous faites la promotion d’une autre marque ou d’un tiers : signalé comme « Partenariat rémunéré ».",
         "brandContentInvalid": "Un contenu de marque ne peut pas être visible par vous seul : choisissez qui peut le voir.",
-        "aiGenerated": "Contenu généré par IA"
+        "aiGenerated": "Contenu généré par IA",
+        "loadingCreator": "Lecture des réglages du compte sur TikTok…",
+        "postingAs": "Publication en tant que {nickname} (@{username}).",
+        "blocked": "{reason, select, postLimit {Ce compte a publié aujourd’hui autant que TikTok le permet : réessayez plus tard.} banned {TikTok a interdit à ce compte de publier.} clientLimit {Aujourd’hui, TikTok n’accepte plus de comptes publiant par ce serveur : réessayez plus tard.} other {Ce compte ne peut pas publier pour le moment : réessayez plus tard.}}",
+        "creatorFailed": "{reason, select, reconnect {Reconnectez ce compte pour lire ses réglages sur TikTok.} disabled {Ce canal est désactivé.} other {Les réglages du compte n’ont pas pu être lus sur TikTok. Réessayez plus tard : la programmation les vérifie aussi.}}",
+        "turnedOff": "Désactivé dans les réglages TikTok du compte.",
+        "brandedNotPrivate": "Un contenu de marque ne peut pas être privé.",
+        "labelPromotional": "Votre {kind, select, photo {photo} other {vidéo}} portera la mention « Contenu promotionnel ».",
+        "labelPaidPartnership": "Votre {kind, select, photo {photo} other {vidéo}} portera la mention « Partenariat rémunéré ».",
+        "noPhotos": "Ce serveur ne peut pas publier de photos sur TikTok : joignez plutôt une vidéo.",
+        "processing": "Une fois publiée, la publication peut mettre quelques minutes à être traitée avant d’apparaître sur le profil.",
+        "consentMusic": "En publiant, vous acceptez la Confirmation d’utilisation de la musique de TikTok.",
+        "consentBranded": "En publiant, vous acceptez la Politique relative au contenu de marque et la Confirmation d’utilisation de la musique de TikTok."
       }
     },
     "Calendar": {

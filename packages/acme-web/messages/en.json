@@ -302,6 +302,11 @@
       "title": "X",
       "description": "Your X account. You sign in on X and allow Acme to post and upload media for you.",
       "connect": "Connect X"
+    },
+    "tiktok": {
+      "title": "TikTok",
+      "description": "Your TikTok account. You sign in on TikTok and allow Acme to post videos and photos for you and read their counts.",
+      "connect": "Connect TikTok"
     }
   },
   "ConnectCallbackPage": {
@@ -497,7 +502,19 @@
         "brandContent": "Branded content",
         "brandContentHint": "You are promoting another brand or a third party: labelled “Paid partnership”.",
         "brandContentInvalid": "Branded content cannot be visible to you only: choose who can view it.",
-        "aiGenerated": "AI-generated content"
+        "aiGenerated": "AI-generated content",
+        "loadingCreator": "Reading the account’s settings on TikTok…",
+        "postingAs": "Posting as {nickname} (@{username}).",
+        "blocked": "{reason, select, postLimit {This account has made as many posts today as TikTok allows: try again later.} banned {TikTok has banned this account from posting.} clientLimit {Today, TikTok takes no more accounts posting through this server: try again later.} other {This account cannot post right now: try again later.}}",
+        "creatorFailed": "{reason, select, reconnect {Reconnect this account to read its settings on TikTok.} disabled {This channel is turned off.} other {The account’s settings could not be read from TikTok. Try again later: scheduling checks them too.}}",
+        "turnedOff": "Turned off in the account’s TikTok settings.",
+        "brandedNotPrivate": "Branded content visibility cannot be set to private.",
+        "labelPromotional": "Your {kind, select, photo {photo} other {video}} will be labeled “Promotional content”.",
+        "labelPaidPartnership": "Your {kind, select, photo {photo} other {video}} will be labeled “Paid partnership”.",
+        "noPhotos": "This server cannot post photos to TikTok: attach one video instead.",
+        "processing": "Once published, the post may take a few minutes to process before it shows on the profile.",
+        "consentMusic": "By posting, you agree to TikTok’s Music Usage Confirmation.",
+        "consentBranded": "By posting, you agree to TikTok’s Branded Content Policy and Music Usage Confirmation."
       }
     },
     "Calendar": {
