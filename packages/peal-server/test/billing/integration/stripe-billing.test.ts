@@ -170,6 +170,26 @@ const recordedEvents = Effect.fn("recordedEvents")(function* recordedEvents(
 
 const ErrorSchema = Schema.Struct({ code: Schema.String });
 
+// The way out of a limit the sign-in service's refusals carry.
+const upgradeFields = {
+  billingUrl: Schema.String,
+  code: Schema.String,
+  plan: Schema.String,
+  planWithRoom: Schema.NullOr(Schema.String),
+};
+
+const LimitErrorSchema = Schema.Struct({
+  ...upgradeFields,
+  allowed: Schema.Number,
+  limit: Schema.String,
+  used: Schema.Number,
+});
+
+const FreeWorkspaceErrorSchema = Schema.Struct({
+  ...upgradeFields,
+  workspaceId: Schema.String,
+});
+
 // The subscriptions a refused deletion lists, as JSON carries them.
 const decodeSubscribed = Schema.decodeUnknownSync(
   Schema.Struct({
@@ -867,10 +887,17 @@ layer(BillingIntegration, {
       const second = yield* invite(newEmail("second"));
 
       assert.strictEqual(second.status, 402);
-      assert.strictEqual(
-        (yield* bodyOf(ErrorSchema, second)).code,
-        "MEMBER_LIMIT_REACHED"
-      );
+
+      // With what a client needs to offer the way out.
+      assert.deepStrictEqual(yield* bodyOf(LimitErrorSchema, second), {
+        allowed: 2,
+        billingUrl: `http://localhost:3001/app/${workspaceId}/billing`,
+        code: "MEMBER_LIMIT_REACHED",
+        limit: "members",
+        plan: "free",
+        planWithRoom: "starter",
+        used: 2,
+      });
 
       // Inviting the same person again replaces their invitation.
       assert.strictEqual((yield* invite(first)).status, 200);
@@ -1003,9 +1030,17 @@ layer(BillingIntegration, {
         });
 
         assert.strictEqual(another.status, 402);
-        assert.strictEqual(
-          (yield* bodyOf(ErrorSchema, another)).code,
-          "FREE_WORKSPACE_LIMIT_REACHED"
+
+        // Ordering the plan it tries is the way out.
+        assert.deepStrictEqual(
+          yield* bodyOf(FreeWorkspaceErrorSchema, another),
+          {
+            billingUrl: `http://localhost:3001/app/${workspaceId}/billing`,
+            code: "FREE_WORKSPACE_LIMIT_REACHED",
+            plan: "pro",
+            planWithRoom: "pro",
+            workspaceId,
+          }
         );
 
         // The same account, admin of another workspace: no second trial.
@@ -1130,7 +1165,7 @@ layer(BillingIntegration, {
       const app = yield* TestApp;
       const owner = yield* signedUp("one-free");
 
-      yield* workspaceOf(owner, "First");
+      const first = yield* workspaceOf(owner, "First");
 
       const refused = yield* app.request("/api/auth/organization/create", {
         body: { name: "Second", slug: `second-${randomUUID()}` },
@@ -1138,10 +1173,15 @@ layer(BillingIntegration, {
       });
 
       assert.strictEqual(refused.status, 402);
-      assert.strictEqual(
-        (yield* bodyOf(ErrorSchema, refused)).code,
-        "FREE_WORKSPACE_LIMIT_REACHED"
-      );
+
+      // Names the free workspace, and the plan that makes room for another.
+      assert.deepStrictEqual(yield* bodyOf(FreeWorkspaceErrorSchema, refused), {
+        billingUrl: `http://localhost:3001/app/${first}/billing`,
+        code: "FREE_WORKSPACE_LIMIT_REACHED",
+        plan: "free",
+        planWithRoom: "starter",
+        workspaceId: first,
+      });
     })
   );
 
@@ -1268,10 +1308,14 @@ layer(BillingIntegration, {
       );
 
       assert.strictEqual(refused.status, 402);
-      assert.deepInclude(refused.body, {
+      assert.deepStrictEqual(refused.body, {
         _tag: "PlanLimitReached",
         allowed: 500_000_000,
+        billingUrl: `http://localhost:3001/app/${workspaceId}/billing`,
         limit: "mediaStorage",
+        plan: "free",
+        planWithRoom: "starter",
+        used: 0,
       });
     })
   );

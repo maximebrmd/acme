@@ -5,12 +5,14 @@ import { CheckoutOrders } from "#billing/application/checkout-orders.ts";
 import { RecordSubscription } from "#billing/application/record-subscription.ts";
 import { WorkspaceEntitlements } from "#billing/application/workspace-entitlements.ts";
 import { SendAuthEmail } from "#notifications/application/send-auth-email.ts";
+import { UpgradePaths } from "#shared/application/upgrade-paths.ts";
+import type { UpgradePath } from "#shared/application/upgrade-paths.ts";
 import { UserIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import { ImpersonationGuard } from "#workspace/application/impersonation-guard.ts";
 import { UserPrincipal } from "#workspace/domain/user-principal.ts";
 
 import { AuthStartFailed } from "./auth-start-failed.ts";
-import type { CheckoutAnswer } from "./billing.ts";
+import type { CheckoutAnswer, Upgrade } from "./billing.ts";
 import { makeAuthDatabase } from "./database.ts";
 import type { ImpersonatedAuthRequest } from "./impersonation.ts";
 import { servesMcp } from "./oauth.ts";
@@ -44,6 +46,14 @@ const orderRequired: CheckoutAnswer = {
   _tag: "refused",
   code: "ORDER_REQUIRED",
 };
+
+// The way out of a limit, as a refusal tells clients. Only a workspace
+// with a plan is refused.
+const upgradeOf = (path: UpgradePath): Upgrade => ({
+  billingUrl: path.billingUrl,
+  plan: Option.getOrElse(path.plan, () => "free" as const),
+  planWithRoom: Option.getOrNull(path.planWithRoom),
+});
 
 // A request staff send while acting as someone, through the guard: false
 // when it is refused. Better Auth's sessions hold the ids it issued.
@@ -94,6 +104,7 @@ export const BetterAuthLive = Layer.effect(
     const database = yield* makeAuthDatabase(settings.databasePoolMax);
     const emails = yield* SendAuthEmail;
     const entitlements = yield* WorkspaceEntitlements;
+    const upgrades = yield* UpgradePaths;
     const subscriptions = yield* RecordSubscription;
     const checkouts = yield* CheckoutOrders;
     const guard = yield* ImpersonationGuard;
@@ -135,18 +146,18 @@ export const BetterAuthLive = Layer.effect(
       // A workspace in its trial counts as free: it is, once the trial ends.
       freeWorkspace: async (workspaceId) =>
         await runPromise(
-          entitlements
-            .of(workspaceId)
-            .pipe(
-              Effect.map(
-                ({ plan, subscription }) =>
-                  Option.exists(plan, (current) => current === "free") ||
-                  Option.exists(
-                    subscription,
-                    ({ status }) => status === "trialing"
-                  )
-              )
-            )
+          Effect.gen(function* freeWorkspace() {
+            const { plan, subscription } = yield* entitlements.of(workspaceId);
+
+            const free =
+              Option.exists(plan, (current) => current === "free") ||
+              Option.exists(
+                subscription,
+                ({ status }) => status === "trialing"
+              );
+
+            return free ? upgradeOf(yield* upgrades.paid(workspaceId)) : null;
+          })
         ),
       // Awaited: the route runs only once the request is admitted and
       // recorded. A database failure refuses it.
@@ -169,6 +180,12 @@ export const BetterAuthLive = Layer.effect(
           entitlements
             .of(workspaceId)
             .pipe(Effect.map(({ allowances }) => allowances.members))
+        ),
+      memberUpgrade: async (workspaceId, needed) =>
+        await runPromise(
+          upgrades
+            .from(workspaceId, "members", needed)
+            .pipe(Effect.map(upgradeOf))
         ),
       resetPassword: (link) => {
         run(emails.send({ _tag: "ResetPassword", ...link }));

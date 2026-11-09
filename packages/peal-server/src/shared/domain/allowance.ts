@@ -25,7 +25,14 @@ export const roomFor = (
     onSome: (allowed) =>
       used + adding <= allowed
         ? Result.succeed(undefined)
-        : Result.fail(new PlanLimitReached({ allowed, limit })),
+        : Result.fail(
+            new PlanLimitReached({
+              allowed,
+              limit,
+              needed: used + adding,
+              used,
+            })
+          ),
   });
 
 /** Whether one more fits, with `used` already taken (`roomFor`). */

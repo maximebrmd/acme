@@ -26,6 +26,7 @@ import type {
 
 import { requestFailed } from "#api-request-failed.ts";
 import type { ApiRequestFailed } from "#api-request-failed.ts";
+import { planLimitReason } from "#plan-limit.ts";
 import { Refused } from "#refused.ts";
 import { SignInExpired } from "#sign-in-expired.ts";
 
@@ -52,14 +53,6 @@ export type ApiFailure =
   | UnknownChannels
   | UnknownMedia
   | WorkspaceNotFound;
-
-const limits: Readonly<Record<PlanLimitReached["limit"], string>> = {
-  assistantRequests: "assistant requests a day",
-  channels: "channels",
-  mediaStorage: "bytes of media stored, uploads in progress included",
-  members: "members, pending invitations included",
-  scheduledPosts: "posts going out a month",
-};
 
 // What breaks a rule, with the option field it names and its channel.
 const violationOf = (violation: ContentViolation): string => {
@@ -109,10 +102,7 @@ export const explain =
         refused(
           "The workspace has no pending invitation with that id: it was accepted, declined or revoked."
         ),
-      PlanLimitReached: ({ allowed, limit }) =>
-        refused(
-          `The workspace's plan allows ${String(allowed)} ${limits[limit]}, and has them all. A larger plan makes room: see peal billing.`
-        ),
+      PlanLimitReached: (reached) => refused(planLimitReason(reached)),
       PlatformUnreachable: () =>
         refused(
           "The platform did not answer, or asked to slow down: try again in a few minutes."

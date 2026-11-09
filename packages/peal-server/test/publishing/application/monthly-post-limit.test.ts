@@ -97,6 +97,8 @@ const freshWorkspace = newId(WorkspaceIdSchema);
 const limitReached = new PlanLimitReached({
   allowed,
   limit: "scheduledPosts",
+  needed: allowed + 1,
+  used: allowed,
 });
 
 // A draft scheduled on the channel at `iso`.
@@ -495,7 +497,12 @@ describe("the channel limit", () => {
             assert.deepStrictEqual(
               failure,
               Option.some(
-                new PlanLimitReached({ allowed: 3, limit: "channels" })
+                new PlanLimitReached({
+                  allowed: 3,
+                  limit: "channels",
+                  needed: 4,
+                  used: 4,
+                })
               )
             );
           }).pipe(Effect.provide(OverChannelsServer))

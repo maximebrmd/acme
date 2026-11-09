@@ -89,7 +89,14 @@ describe(ComposerErrors, () => {
         <ComposerErrors
           channels={[bluesky]}
           failure={
-            new PlanLimitReached({ allowed: 30, limit: "scheduledPosts" })
+            new PlanLimitReached({
+              allowed: 30,
+              limit: "scheduledPosts",
+              used: 30,
+              billingUrl: "https://peal.example/app/w/billing",
+              plan: "free",
+              planWithRoom: "starter",
+            })
           }
         />
       </NextIntlClientProvider>

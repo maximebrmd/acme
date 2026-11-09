@@ -13,10 +13,24 @@ describe(roomForOneMore, () => {
 
   it("refuses one more once the allowance is used up, or more than used", () => {
     expect(roomForOneMore("channels", Option.some(3), 3)).toStrictEqual(
-      Result.fail(new PlanLimitReached({ allowed: 3, limit: "channels" }))
+      Result.fail(
+        new PlanLimitReached({
+          allowed: 3,
+          limit: "channels",
+          needed: 4,
+          used: 3,
+        })
+      )
     );
     expect(roomForOneMore("members", Option.some(2), 5)).toStrictEqual(
-      Result.fail(new PlanLimitReached({ allowed: 2, limit: "members" }))
+      Result.fail(
+        new PlanLimitReached({
+          allowed: 2,
+          limit: "members",
+          needed: 6,
+          used: 5,
+        })
+      )
     );
   });
 

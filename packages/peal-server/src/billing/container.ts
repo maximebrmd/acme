@@ -22,6 +22,7 @@ import { DrizzleSubscriptionsLive } from "#billing/infrastructure/drizzle-subscr
 import { DrizzleTrialsLive } from "#billing/infrastructure/drizzle-trials.ts";
 import { DrizzleWithdrawalsLive } from "#billing/infrastructure/drizzle-withdrawals.ts";
 import { NotifiedBillingNoticesLive } from "#billing/infrastructure/notified-billing-notices.ts";
+import { PlanUpgradePathsLive } from "#billing/infrastructure/plan-upgrade-paths.ts";
 import { StripeContractsLive } from "#billing/infrastructure/stripe-contracts-live.ts";
 import { KeyedPseudonymsLive } from "#shared/infrastructure/keyed-pseudonyms.ts";
 
@@ -41,7 +42,8 @@ const RecordsLive = Layer.mergeAll(
  * needs (CheckoutOrders), the posts each workspace makes on platforms that
  * bill per post, which publishing reports (MeteredPosts), and what billing
  * keeps of a workspace, for the workspace context's exports and erasures
- * (BillingRecords), which refuse one Stripe may still bill. Recording a
+ * (BillingRecords), which refuse one Stripe may still bill, and the way
+ * out of a limit every surface tells (UpgradePaths). Recording a
  * subscription calls Stripe too, to keep trials from charging and to end
  * a trial a paid plan replaces. Billing is on
  * when the server has a Stripe key, read when it starts. Needs the database
@@ -55,7 +57,8 @@ export const BillingLive = Layer.mergeAll(
   CheckoutOrders.layer,
   BillingRecords.layer,
   MeteredPosts.layer,
-  PurgeContractRecords.layer
+  PurgeContractRecords.layer,
+  PlanUpgradePathsLive.pipe(Layer.provide(WorkspaceEntitlements.layer))
 ).pipe(
   Layer.provide(
     Layer.mergeAll(RecordsLive, StripeContractsLive, KeyedPseudonymsLive)

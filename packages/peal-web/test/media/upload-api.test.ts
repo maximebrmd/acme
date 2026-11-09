@@ -51,7 +51,14 @@ describe(failureOf, () => {
     );
     expect(
       failureOf(
-        new PlanLimitReached({ allowed: 500_000_000, limit: "mediaStorage" })
+        new PlanLimitReached({
+          allowed: 500_000_000,
+          limit: "mediaStorage",
+          used: 480_000_000,
+          billingUrl: "https://peal.example/app/w/billing",
+          plan: "free",
+          planWithRoom: "starter",
+        })
       )
     ).toStrictEqual(
       new UploadFailed({ limit: 500_000_000, reason: "storageFull" })
