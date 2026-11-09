@@ -1,10 +1,18 @@
 import { Command } from "effect/cli";
 
 import { AcmeApi } from "#api.ts";
+import { account } from "#commands/account.ts";
+import { analytics } from "#commands/analytics.ts";
+import { billing } from "#commands/billing.ts";
+import { channels } from "#commands/channels.ts";
+import { drafts } from "#commands/drafts.ts";
 import { health } from "#commands/health.ts";
+import { invitations } from "#commands/invitations.ts";
 import { login } from "#commands/login.ts";
 import { logout } from "#commands/logout.ts";
 import { mcp } from "#commands/mcp.ts";
+import { members } from "#commands/members.ts";
+import { posts } from "#commands/posts.ts";
 import { whoami } from "#commands/whoami.ts";
 import { CredentialStore } from "#credentials.ts";
 import manifest from "#package.json" with { type: "json" };
@@ -15,7 +23,21 @@ import { acme } from "#root.ts";
 // (HttpClient) and the file system come from the caller, so main.ts uses
 // fetch and the disk, and tests an in-memory server.
 export const cli = acme.pipe(
-  Command.withSubcommands([health, login, logout, whoami, mcp]),
+  Command.withSubcommands([
+    health,
+    login,
+    logout,
+    whoami,
+    mcp,
+    channels,
+    drafts,
+    posts,
+    analytics,
+    billing,
+    members,
+    invitations,
+    account,
+  ]),
   Command.provide(({ apiUrl }) => AcmeApi.layer(apiUrl)),
   Command.provide(CredentialStore.layer)
 );

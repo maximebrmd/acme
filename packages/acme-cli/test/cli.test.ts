@@ -72,6 +72,19 @@ describe("acme", () => {
       assert.match(help, /logout\s+Sign out of the Acme server/u);
       assert.match(help, /whoami\s+Show who the command line is signed in as/u);
       assert.match(help, /mcp\s+Show how to connect an MCP client/u);
+
+      for (const command of [
+        "channels",
+        "drafts",
+        "posts",
+        "analytics",
+        "billing",
+        "members",
+        "invitations",
+        "account",
+      ]) {
+        assert.match(help, new RegExp(`\\n  ${command}\\s+\\S`, "u"));
+      }
     })
   );
 
