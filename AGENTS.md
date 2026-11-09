@@ -3,8 +3,15 @@
 Peal is a social media scheduling platform: teams write posts once, schedule
 them across platforms, and see how they perform, at [peal.social](https://peal.social). The
 source is public under the Functional Source License (FSL-1.1-ALv2, in
-[`LICENSE.md`](LICENSE.md)): anyone may self-host it, and each release becomes
-Apache-2.0 two years after it ships. Call it "fair source", not open source.
+[`LICENSE.md`](LICENSE.md)), with Peal as its licensor: anyone may self-host
+it, and each release becomes Apache-2.0 two years after it ships. Call it
+"fair source", not open source. The SDKs (`peal-sdk`) are Apache-2.0, and so
+is `peal-contract`, which they are generated from, each with its own
+`LICENSE`: keep anything an SDK user installs or generates from free of FSL
+code, so an SDK never depends on another workspace package but the contract.
+Every `package.json` names its licence (SPDX), the repository
+(https://github.com/peal-social/peal, with its folder), its homepage and where
+issues go; README.md's "Licensing" says which part is under which.
 
 Until its rename, the product carried the placeholder name "acme". That name
 is gone from the repository and must not come back, in any case or form; the

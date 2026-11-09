@@ -7,7 +7,9 @@ Schedule social media posts across platforms, from one place:
 
 Peal is fair source: you may use, modify and self-host it under the
 [Functional Source License](LICENSE.md), and each release becomes Apache-2.0
-two years after it ships.
+two years after it ships. The API contract and the SDKs are Apache-2.0
+already ([Licensing](#licensing)). The source and the issues are on GitHub,
+at [peal-social/peal](https://github.com/peal-social/peal).
 
 It is not released yet. Today you can:
 
@@ -562,3 +564,19 @@ The docs' self-hosting page explains each setting.
 
 How the code is organised, and the rules it follows, are in
 [AGENTS.md](AGENTS.md).
+
+## Licensing
+
+Peal's licensor is Peal. Each part of the repository is under one of two
+licences:
+
+| Part                                                         | Licence                                                                                                  |
+| ------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------- |
+| Everything, unless a folder below has a `LICENSE` of its own | [FSL-1.1-ALv2](LICENSE.md): any use but a competing service, and Apache-2.0 two years after each release |
+| [`peal-contract`](packages/peal-contract), the API contract  | [Apache-2.0](packages/peal-contract/LICENSE)                                                             |
+| `peal-sdk`, the SDKs                                         | Apache-2.0, in `packages/peal-sdk/LICENSE`                                                               |
+
+The SDKs are generated from the contract's OpenAPI document, so the contract
+is Apache-2.0 with them: what an SDK user installs, and the API description
+it comes from, carry no FSL terms. Each `package.json` says which licence
+applies.
