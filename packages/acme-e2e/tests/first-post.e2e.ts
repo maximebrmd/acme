@@ -14,9 +14,13 @@ const name = "Sam Example";
 const workspace = "Field Notes";
 const handle = "@notes@social.example";
 const text = "Our first field note, written once and scheduled from Acme.";
+const edited = "Our first field note, taken back, edited and scheduled again.";
 
 // The calendar names each post "<time>, <status>: <text>".
-const scheduledPost = new RegExp(`, Scheduled: ${RegExp.escape(text)}$`, "u");
+const scheduledAs = (body: string) =>
+  new RegExp(`, Scheduled: ${RegExp.escape(body)}$`, "u");
+
+const scheduledPost = scheduledAs(text);
 
 // The member account from e2e.config.ts, under an address of this run.
 const address = () =>
@@ -114,6 +118,26 @@ describe("a new member's first post", { serial: true }, () => {
     );
   });
 
+  test("finds it on the drafts page", async ({ app, browser, screen }) => {
+    await app.open("/app");
+    await screen
+      .getByRole("navigation", `Posts of ${workspace}`)
+      .getByRole("link", "Drafts")
+      .tap();
+
+    await expect(
+      screen.getByRole("heading", "Drafts", { level: 1 })
+    ).toBeVisible();
+    await expect(browser).toHaveURL(`/app/${workspaceId}/drafts`);
+
+    await screen.getByRole("main").getByRole("link", text).tap();
+
+    await expect(screen.getByRole("heading", "Edit the draft")).toBeVisible();
+    await expect(
+      screen.getByRole("textbox", "Text for all channels")
+    ).toHaveText(text);
+  });
+
   test("schedules it and finds it in the calendar", async ({
     browser,
     screen,
@@ -130,8 +154,28 @@ describe("a new member's first post", { serial: true }, () => {
     await expect(screen.getByRole("link", scheduledPost)).toBeVisible();
   });
 
-  test("cancels the scheduled post", async ({ screen }) => {
+  test("takes it back to draft, edits it and schedules it again", async ({
+    screen,
+  }) => {
     await screen.getByRole("link", scheduledPost).tap();
+    await expect(screen.getByRole("heading", "Scheduled post")).toBeVisible();
+    await screen.getByRole("button", "Back to draft").tap();
+
+    await expect(
+      screen.getByText("The post is a draft again: edit it, then schedule it.")
+    ).toBeVisible();
+    await expect(screen.getByRole("heading", "Edit the draft")).toBeVisible();
+
+    await screen.getByRole("textbox", "Text for all channels").fill(edited);
+    await screen.getByRole("button", "Schedule").tap();
+
+    await expect(screen.getByRole("heading", "Calendar")).toBeVisible();
+    await expect(screen.getByRole("link", scheduledAs(edited))).toBeVisible();
+    await expect(screen.getByRole("link", scheduledPost)).toBeHidden();
+  });
+
+  test("cancels the scheduled post", async ({ screen }) => {
+    await screen.getByRole("link", scheduledAs(edited)).tap();
     await expect(screen.getByRole("heading", "Scheduled post")).toBeVisible();
     await screen.getByRole("button", "Cancel the post").tap();
     await screen
