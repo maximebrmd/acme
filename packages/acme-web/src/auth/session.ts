@@ -4,6 +4,7 @@ import { Effect, Option } from "effect";
 import { FetchHttpClient, HttpClient, HttpClientRequest } from "effect/http";
 import { HttpApiClient } from "effect/http-api";
 import { headers } from "next/headers";
+import { cache } from "react";
 
 import { serverUrl } from "#api/server-url.ts";
 
@@ -31,12 +32,15 @@ export const currentUserEffect = Effect.fn("currentUser")(function* currentUser(
   );
 }, Effect.provide(FetchHttpClient.layer));
 
-/** For Server Components: the user the request's cookies sign in, if any. */
-export const currentUser = async (): Promise<Option.Option<Me>> => {
+/**
+ * For Server Components: the user the request's cookies sign in, if any.
+ * Read once per request, however many components ask.
+ */
+export const currentUser = cache(async (): Promise<Option.Option<Me>> => {
   const incoming = await headers();
   const cookie = incoming.get("cookie");
 
   return cookie === null
     ? Option.none()
     : await Effect.runPromise(currentUserEffect(cookie));
-};
+});
