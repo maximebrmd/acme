@@ -100,6 +100,7 @@ const PortsInMemory = Layer.mergeAll(
 
       return Effect.succeed(
         StripeContracts.of({
+          cancelAt: () => Effect.void,
           cancelAtPeriodEnd: (_workspace, id) =>
             asked(`cancelAtPeriodEnd ${id}`),
           credit: (_workspace, id) => asked(`credit ${id}`),

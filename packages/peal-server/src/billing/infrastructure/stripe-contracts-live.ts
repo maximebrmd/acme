@@ -18,6 +18,8 @@ const requestTimeout = 10_000;
 
 // Why Stripe ended it, in its dashboard and its events.
 const comments: Readonly<Record<EndReason, string>> = {
+  cancelledLate:
+    "Cancelled on Peal: the request came before the period renewed",
   duplicateTrial: "Second trial of the same account or workspace",
   orderedDuringTrial: "Trial ended on Peal: a paid plan was ordered",
   trialCancelled: "Trial cancelled on Peal",
@@ -128,6 +130,26 @@ export const StripeContractsLive = Layer.effect(
         Effect.asVoid,
         Effect.withSpan("StripeContracts.cancelAtPeriodEnd")
       );
+
+    const cancelOn = (
+      workspaceId: WorkspaceId,
+      id: string,
+      at: DateTime.Utc
+    ) => {
+      const seconds = Math.floor(DateTime.toEpochMillis(at) / 1000);
+
+      return call(
+        workspaceId,
+        async (stripe) =>
+          await stripe.subscriptions.update(
+            id,
+            // In a later period, Stripe always charges that period only up
+            // to this instant.
+            { cancel_at: seconds, proration_behavior: "create_prorations" },
+            { idempotencyKey: `cancel-at-${id}-${seconds}` }
+          )
+      ).pipe(Effect.asVoid, Effect.withSpan("StripeContracts.cancelAt"));
+    };
 
     const endNow = (workspaceId: WorkspaceId, id: string, reason: EndReason) =>
       Option.match(client, {
@@ -290,6 +312,7 @@ export const StripeContractsLive = Layer.effect(
       }).pipe(Effect.withSpan("StripeContracts.upcomingTotal"));
 
     return StripeContracts.of({
+      cancelAt: cancelOn,
       cancelAtPeriodEnd,
       credit,
       endAtTrialEnd,

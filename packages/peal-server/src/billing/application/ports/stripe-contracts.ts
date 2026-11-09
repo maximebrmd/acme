@@ -24,6 +24,8 @@ export interface InvoiceCredit {
 
 /** Why a subscription is ended at once. */
 export type EndReason =
+  // A cancellation applied after the period it was received in had ended.
+  | "cancelledLate"
   | "duplicateTrial"
   | "orderedDuringTrial"
   | "trialCancelled"
@@ -38,6 +40,16 @@ export type EndReason =
 export class StripeContracts extends Context.Service<
   StripeContracts,
   {
+    /**
+     * Sets the subscription to end at `at`, after the period paid for: it
+     * renews until then, and Stripe charges its last period only up to
+     * `at`.
+     */
+    readonly cancelAt: (
+      workspaceId: WorkspaceId,
+      subscriptionId: string,
+      at: DateTime.Utc
+    ) => Effect.Effect<void, StripeUnreachable>;
     /** Sets the subscription to end when its period does. */
     readonly cancelAtPeriodEnd: (
       workspaceId: WorkspaceId,

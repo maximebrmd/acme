@@ -16,6 +16,7 @@ import { ConfiguredBillingModeLive } from "#billing/infrastructure/configured-bi
 import { ContextWorkspaceUsageLive } from "#billing/infrastructure/context-workspace-usage.ts";
 import { contractRetention } from "#billing/infrastructure/contract-retention-cron.ts";
 import { DrizzleContractRecordsLive } from "#billing/infrastructure/drizzle-contract-records.ts";
+import { DrizzleContractRequestsLive } from "#billing/infrastructure/drizzle-contract-requests.ts";
 import { DrizzleMeteredPostLedgerLive } from "#billing/infrastructure/drizzle-metered-post-ledger.ts";
 import { DrizzleOrdersLive } from "#billing/infrastructure/drizzle-orders.ts";
 import { DrizzleSubscriptionsLive } from "#billing/infrastructure/drizzle-subscriptions.ts";
@@ -81,6 +82,7 @@ export const BillingOverviewLive = Layer.mergeAll(
     Layer.mergeAll(
       RecordsLive,
       DrizzleWithdrawalsLive,
+      DrizzleContractRequestsLive,
       StripeContractsLive,
       NotifiedBillingNoticesLive
     )

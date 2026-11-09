@@ -25,7 +25,7 @@ describe(cancellationEffect, () => {
     expect(
       cancellationEffect(
         subscriptionOf(paid),
-        at("2026-11-10T08:00:00Z"),
+        { desiredAt: Option.none(), receivedAt: at("2026-11-10T08:00:00Z") },
         at("2026-11-10T08:00:01Z")
       ).pipe(Result.getSuccess)
     ).toStrictEqual(
@@ -37,7 +37,7 @@ describe(cancellationEffect, () => {
     expect(
       cancellationEffect(
         subscriptionOf({ ...paid, status: "trialing" }),
-        at("2026-11-10T08:00:00Z"),
+        { desiredAt: Option.none(), receivedAt: at("2026-11-10T08:00:00Z") },
         at("2026-11-10T08:00:01Z")
       ).pipe(Result.getSuccess)
     ).toStrictEqual(
@@ -61,7 +61,7 @@ describe(cancellationEffect, () => {
     expect(
       cancellationEffect(
         renewed,
-        at("2026-11-30T22:00:00Z"),
+        { desiredAt: Option.none(), receivedAt: at("2026-11-30T22:00:00Z") },
         at("2026-12-02T09:00:00Z")
       ).pipe(Result.getSuccess)
     ).toStrictEqual(
@@ -70,6 +70,54 @@ describe(cancellationEffect, () => {
         endsAt: at("2026-12-02T09:00:00Z"),
         refundSince: Option.some(at("2026-11-30T22:00:00Z")),
       })
+    );
+  });
+
+  it("ends on the day asked for, when it is after the period paid for", () => {
+    const asked = (desired: string) =>
+      cancellationEffect(
+        subscriptionOf(paid),
+        {
+          desiredAt: Option.some(at(desired)),
+          receivedAt: at("2026-11-10T08:00:00Z"),
+        },
+        at("2026-11-10T08:00:01Z")
+      ).pipe(Result.getSuccess);
+
+    expect(asked("2027-02-15T00:00:00Z")).toStrictEqual(
+      Option.some({ _tag: "onDate", endsAt: at("2027-02-15T00:00:00Z") })
+    );
+
+    // A day within the period paid for, which is not refunded: the period
+    // runs to its end.
+    for (const within of ["2026-11-20T00:00:00Z", "2026-12-01T00:00:00Z"]) {
+      expect(asked(within)).toStrictEqual(
+        Option.some({
+          _tag: "atPeriodEnd",
+          endsAt: at("2026-12-01T00:00:00Z"),
+        })
+      );
+    }
+  });
+
+  it("keeps a plan that renewed since, when the day asked for is in the new period", () => {
+    const renewed = subscriptionOf({
+      ...paid,
+      currentPeriodEnd: Option.some(at("2027-01-01T00:00:00Z")),
+      currentPeriodStart: Option.some(at("2026-12-01T00:00:00Z")),
+    });
+
+    expect(
+      cancellationEffect(
+        renewed,
+        {
+          desiredAt: Option.some(at("2026-12-20T00:00:00Z")),
+          receivedAt: at("2026-11-30T22:00:00Z"),
+        },
+        at("2026-12-02T09:00:00Z")
+      ).pipe(Result.getSuccess)
+    ).toStrictEqual(
+      Option.some({ _tag: "atPeriodEnd", endsAt: at("2027-01-01T00:00:00Z") })
     );
   });
 
@@ -82,7 +130,10 @@ describe(cancellationEffect, () => {
         Result.isFailure(
           cancellationEffect(
             subscription,
-            at("2026-11-10T08:00:00Z"),
+            {
+              desiredAt: Option.none(),
+              receivedAt: at("2026-11-10T08:00:00Z"),
+            },
             at("2026-11-10T08:00:01Z")
           )
         )

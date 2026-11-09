@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import { DateTime, Effect, Layer, Schema } from "effect";
+import { DateTime, Effect, Layer, Option, Schema } from "effect";
 
 import { Withdrawals } from "#billing/application/ports/withdrawals.ts";
 import type { Withdrawal } from "#billing/application/ports/withdrawals.ts";
@@ -29,7 +29,7 @@ export const DrizzleWithdrawalsLive = Layer.effect(
           refunded: withdrawal.refunded.amount,
           requestedAt: DateTime.toDateUtc(withdrawal.requestedAt),
           stripeSubscriptionId: withdrawal.stripeSubscriptionId,
-          userId: withdrawal.userId,
+          userId: Option.getOrNull(withdrawal.userId),
           workspaceId: withdrawal.workspaceId,
         })
         .onConflictDoNothing()
@@ -54,7 +54,7 @@ export const DrizzleWithdrawalsLive = Layer.effect(
         userId:
           row.userId === null
             ? withdrawal.userId
-            : yield* decodeUserId(row.userId).pipe(Effect.orDie),
+            : Option.some(yield* decodeUserId(row.userId).pipe(Effect.orDie)),
         workspaceId: withdrawal.workspaceId,
       };
 

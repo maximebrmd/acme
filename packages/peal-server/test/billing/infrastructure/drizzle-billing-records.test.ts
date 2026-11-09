@@ -200,7 +200,7 @@ layer(RecordsTest, { timeout: 60_000 })(
             refunded: { amount: 810, currency: "eur" },
             requestedAt: at("2026-11-04T00:00:00Z"),
             stripeSubscriptionId,
-            userId: yield* freshUser,
+            userId: Option.some(yield* freshUser),
             workspaceId: yield* freshWorkspace,
           };
 
@@ -250,7 +250,7 @@ layer(RecordsTest, { timeout: 60_000 })(
             refunded: { amount: 0, currency: "eur" },
             requestedAt: at("2026-11-10T10:00:00Z"),
             stripeSubscriptionId: yield* freshSubscription,
-            userId,
+            userId: Option.some(userId),
             workspaceId,
           });
 
@@ -316,7 +316,7 @@ layer(RecordsTest, { timeout: 60_000 })(
             refunded: { amount: 810, currency: "eur" },
             requestedAt: at("2026-11-04T00:00:00Z"),
             stripeSubscriptionId,
-            userId,
+            userId: Option.some(userId),
             workspaceId,
           });
 
