@@ -1,0 +1,56 @@
+---
+title: Déploiement
+description: Comment tournent les serveurs d’Acme, la production et le bac à sable derrière Cloudflare, leurs versions, sauvegardes et alertes, et le serveur de disponibilité qui les surveille de l’extérieur.
+sidebar:
+  order: 13
+---
+
+L’instance d’Acme fait tourner la pile que fait tourner une instance [auto-hébergée](/self-hosting), sur des serveurs que l’Ansible de `packages/acme-infra` configure et modifie : rien d’autre ne le fait. Son README est le manuel d’exploitation, avec chaque commande.
+
+<Callout type="warning" title="Avant la première version">
+  Ces serveurs sont en préparation, et rien n’y tourne encore : leur inventaire
+  contient des valeurs d’exemple, et chaque playbook refuse de s’exécuter tant
+  qu’elles ne sont pas remplacées.
+</Callout>
+
+## Serveurs [#servers]
+
+| Serveur       | Ce qu’il fait tourner                                                                                                                  |
+| ------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| Production    | La pile (`compose.production.yaml`) : Postgres, le serveur, l’application web, le site, la documentation, la télémétrie et les alertes |
+| Bac à sable   | La même, avant la production, avec sa propre base de données, ses buckets, son compte Stripe et ses applications de plateforme         |
+| Disponibilité | [Gatus](#uptime), qui vérifie les deux autres de l’extérieur, et Caddy, son unique entrée publique                                     |
+
+Chacun est un serveur Hetzner Cloud sous Ubuntu LTS, avec les mises à jour de sécurité chaque jour, un compte d’administration qui se connecte avec une clé, et un pare-feu qui refuse toute connexion dont il n’a pas besoin. La production et le bac à sable ne sont joignables que par un tunnel Cloudflare, qu’ils ouvrent eux-mêmes vers Cloudflare, SSH compris, et Cloudflare Access protège Grafana, SSH, l’administration et tout le bac à sable. Le serveur de disponibilité n’a ni tunnel, ni réseau privé, ni aucun de leurs secrets.
+
+Les secrets sont générés sur le serveur qui s’en sert et y restent. Ce que délivrent les services extérieurs, comme les clés du stockage ou le jeton d’un bot Telegram, vient d’un coffre chiffré ou est écrit sur le serveur, et Ansible ne le vérifie que par son nom.
+
+## Versions [#releases]
+
+Une version construit les images d’un commit sur la machine qui exécute Ansible, les envoie par SSH, puis les démarre : le serveur applique ses migrations avant d’écouter. Le bac à sable reçoit une version en premier. Pour revenir en arrière, publiez le commit précédent : les migrations ne s’annulent pas, donc chacune laisse fonctionner la version d’avant.
+
+## Sauvegardes [#backups]
+
+Postgres archive ses journaux de transactions (WAL) dans Cloudflare R2 avec pgBackRest au moins toutes les 5 minutes, et fait une sauvegarde complète le dimanche et une différentielle les autres jours. La base de données peut être restaurée à n’importe quel moment des trois dernières semaines. Les sauvegardes sont chiffrées avant de quitter le serveur. Les médias sont dans R2 et ne sont pas copiés une seconde fois.
+
+## Alertes [#alerts]
+
+Le Grafana de la production et celui du bac à sable envoient leurs alertes à une discussion Telegram : quand le serveur ne répond à aucune requête, en échoue ou consigne des erreurs, quand aucune sauvegarde ne s’est terminée depuis 30 heures, et quand le disque est plein à 85 %.
+
+## Disponibilité [#uptime]
+
+Le serveur de disponibilité surveille la production et le bac à sable comme les gens les atteignent, à travers Cloudflare, si bien que ses alertes partent encore quand Cloudflare, un tunnel ou un serveur est en panne. Elles vont à un bot Telegram à lui. Sa configuration est générée depuis le même inventaire que le leur :
+
+| Vérification                | Réussit quand                                                              |
+| --------------------------- | -------------------------------------------------------------------------- |
+| Le site et la documentation | `/` répond `200` en moins d’une seconde, chaque minute                     |
+| L’application web           | `/sign-in` répond `200` en moins de deux secondes, chaque minute           |
+| L’API                       | `/api/ready` répond `204` en moins d’une seconde, chaque minute            |
+| Chaque nom d’hôte           | Son certificat est valable encore deux semaines, et il se résout par Quad9 |
+| Le Grafana de la production | Son battement de cœur est arrivé dans les 15 dernières minutes             |
+
+Une redirection fait échouer une vérification. Le bac à sable, derrière Cloudflare Access, est vérifié avec un jeton de service qu’Access laisse passer.
+
+Le Grafana de la production envoie un battement de cœur au serveur de disponibilité toutes les 5 minutes environ, comme le décrit [Surveiller de l’extérieur](/self-hosting#uptime) : quand les alertes de la production elles-mêmes s’arrêtent, le serveur de disponibilité alerte à leur place. Le jeton que porte le battement est généré sur le serveur de disponibilité, et donné à la production comme l’un de ses identifiants.
+
+Le tableau de bord est réservé à l’équipe, par SSH, et le serveur de disponibilité ne montre au monde que l’adresse où arrivent les battements. Une page de statut publique, qui servirait ce même tableau de bord en lecture seule, est une décision du propriétaire, et elle est désactivée.

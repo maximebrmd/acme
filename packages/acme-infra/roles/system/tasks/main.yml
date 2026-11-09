@@ -44,32 +44,32 @@
     mode: "0644"
 
 # Swap absorbs a memory spike, such as a large video read whole before it is
-# published, instead of the kernel killing a process. Created once: the stat
-# skips the block on later runs.
-- name: Check for the swap file
-  ansible.builtin.stat:
-    path: /swapfile
-  register: system_swapfile
-
+# published, instead of the kernel killing a process. The file is made under
+# another name and renamed once it is a swap area, so a run cut short leaves
+# no /swapfile half made; `creates` skips it once /swapfile exists, and check
+# mode says it would run.
 - name: Create the swap file
-  when: not system_swapfile.stat.exists
-  block:
-    - name: Allocate the swap file
-      ansible.builtin.command: fallocate -l {{ swap_size_mb }}M /swapfile
-      changed_when: true
+  ansible.builtin.shell: |
+    set -eu
+    umask 077
+    rm -f /swapfile.new
+    fallocate -l {{ swap_size_mb }}M /swapfile.new
+    mkswap /swapfile.new
+    mv /swapfile.new /swapfile
+  args:
+    creates: /swapfile
 
-    - name: Restrict the swap file
-      ansible.builtin.file:
-        path: /swapfile
-        mode: "0600"
+# Read-only, so it runs in check mode too.
+- name: Read the active swap
+  ansible.builtin.command: swapon --show=NAME --noheadings
+  register: system_swap_active
+  changed_when: false
+  check_mode: false
 
-    - name: Format the swap file
-      ansible.builtin.command: mkswap /swapfile
-      changed_when: true
-
-    - name: Turn the swap on
-      ansible.builtin.command: swapon /swapfile
-      changed_when: true
+- name: Turn the swap on
+  ansible.builtin.command: swapon /swapfile
+  when: "'/swapfile' not in system_swap_active.stdout_lines"
+  changed_when: true
 
 - name: Mount the swap at boot
   ansible.posix.mount:
@@ -85,6 +85,15 @@
     value: "10"
     sysctl_file: /etc/sysctl.d/60-swap.conf
 
+# Ubuntu ships no drop-in folder for journald. In check mode on a new
+# server, the file waits for it.
+- name: Create journald's drop-in folder
+  ansible.builtin.file:
+    path: /etc/systemd/journald.conf.d
+    state: directory
+    mode: "0755"
+  register: system_journald_folder
+
 - name: Cap the journal size
   ansible.builtin.copy:
     dest: /etc/systemd/journald.conf.d/50-size.conf
@@ -92,4 +101,5 @@
       [Journal]
       SystemMaxUse=500M
     mode: "0644"
+  when: not (ansible_check_mode and system_journald_folder is changed)
   notify: Restart journald

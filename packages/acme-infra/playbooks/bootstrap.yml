@@ -2,10 +2,11 @@
 # Run once on a new server, as root over its public address, before
 # anything else:
 #   ansible-playbook playbooks/bootstrap.yml --limit production -e ansible_user=root -e ssh_via_tunnel=false
-# It creates the admin account every other playbook logs in with; site.yml
-# then turns root logins off.
+#   ansible-playbook playbooks/bootstrap.yml --limit uptime -e ansible_user=root
+# It creates the admin account every other playbook logs in with; site.yml,
+# or uptime.yml, then turns root logins off.
 - name: Create the admin account
-  hosts: servers
+  hosts: servers:uptime
   gather_facts: false
   roles:
     - acme_preflight

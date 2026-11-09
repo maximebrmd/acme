@@ -86,7 +86,8 @@ Work from the repository root unless a command names another directory.
 - `bun run test` also runs ansible-lint (production profile),
   `ansible-playbook --syntax-check` and the pytest suite in `tests/` on
   `packages/acme-infra`, through uv (`nx run acme-infra:test`). Its release
-  tests run Postgres's base image in Docker, and skip without Docker.
+  and uptime tests run images in Docker (Postgres's base image, Gatus, Caddy,
+  BusyBox), and skip without Docker.
 - Define Nx target defaults in [`nx.json`](nx.json) and package targets in
   `project.json`. Declare build dependencies and cache outputs there. Keep
   tests uncached.
@@ -1185,14 +1186,30 @@ self-hoster needs only Postgres and an S3-compatible store:
   --diff` before applying it, and keep every task idempotent: a second run
   reports no change. The inventory holds placeholders that `acme_preflight`
   refuses; nothing has been applied yet.
+- Keep check mode working on a new server: a task that needs what an earlier
+  one would make (a folder, a package, a unit) skips in check mode when that
+  one reports a change.
+- Docker Engine and its plugins are pinned exactly (`docker_packages` in the
+  docker role, held by an apt pin); the role's defaults say how to bump them.
 - Containers publish ports on 127.0.0.1 only, and the tunnel reaches them
   there; Docker's own rules would otherwise bypass ufw.
 - Telemetry goes through an OpenTelemetry Collector to Loki, Tempo, Prometheus
-  and Grafana; alerts go to a Telegram bot. A separate server checks uptime.
-  Grafana's alert rules (`config/production/grafana/alerting/rules.yaml`)
-  and dashboards (`config/production/grafana/dashboards/`) are provisioned
-  from `acme-docker`; the web app's error reports have an alert and a
-  dashboard of their own, and the server's error-log alert leaves them out.
+  and Grafana; alerts go to a Telegram bot. Grafana's alert rules
+  (`config/production/grafana/alerting/rules.yaml`) and dashboards
+  (`config/production/grafana/dashboards/`) are provisioned from
+  `acme-docker`; the web app's error reports have an alert and a dashboard
+  of their own, and the server's error-log alert leaves them out. The
+  heartbeat rule (`alerting/heartbeat.yaml`) is apart: it always fires, to
+  its own contact point, never to Telegram.
+- A separate Hetzner server checks uptime (`uptime.yml`, inventory group
+  `uptime`): Gatus, its configuration generated from the inventory, checks
+  the public endpoints of production and the sandbox and alerts on a
+  Telegram bot of its own; Caddy is its only public entry, for the heartbeat
+  production's Grafana posts every few minutes. It shares no secret, tunnel
+  or network with them: it generates the heartbeat token, which production
+  holds as a credential (`ACME_HEARTBEAT_TOKEN`). Keep `uptime_environments`
+  equal to each environment's host names; Gatus's dashboard stays on
+  127.0.0.1, and a public status page is the owner's decision.
 - Secrets are generated on the server and stay there. Do not copy them, print
   them, or give the server's credentials to other systems, GitHub included:
   `release.yml` builds the images on the machine running Ansible and uploads

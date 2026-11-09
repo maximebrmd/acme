@@ -44,8 +44,14 @@
   become: false
   register: acme_release_postgres_dockerfile
 
+# Read here, from the server's facts, rather than in the builds below, which
+# run on the machine running Ansible.
 - name: Name the release
   ansible.builtin.set_fact:
+    acme_release_platform: >-
+      {{ acme_image_platform
+         | default(acme_release_platforms[ansible_facts.architecture]
+                   | default('linux/' ~ ansible_facts.architecture)) }}
     acme_release_tag: "{{ acme_release_checkout.after[:12] }}"
     acme_release_postgres_tag: "{{ acme_release_postgres_dockerfile.stat.checksum[:12] }}"
     acme_release_dir: "{{ acme_root }}/releases/{{ acme_release_checkout.after[:12] }}"
@@ -85,13 +91,15 @@
       {{ acme_release_present.results | rejectattr('rc', 'equalto', 0)
          | map(attribute='item.key') | list }}
 
-# Built and saved once per set of images and environment: `creates` skips
-# the build when the archive is there, such as when an upload is run again.
+# Built and saved once per set of images, platform and environment: `creates`
+# skips the build when the archive is there, such as when an upload is run
+# again.
 - name: Name the archive
   ansible.builtin.set_fact:
     acme_release_archive: >-
       {{ acme_release_local_dir }}/images-{{ acme_environment }}-{{
-         (acme_release_missing | map('extract', acme_release_built) | join(' ') | hash('sha256'))[:12] }}.tar.gz
+         ((acme_release_missing | map('extract', acme_release_built) | list + [acme_release_platform])
+          | join(' ') | hash('sha256'))[:12] }}.tar.gz
 
 - name: Look for the release's archive
   ansible.builtin.stat:
@@ -110,7 +118,7 @@
           - buildx
           - build
           - --platform
-          - "{{ acme_image_platform }}"
+          - "{{ acme_release_platform }}"
           - --file
           - packages/acme-docker/{{ item }}.Dockerfile
           - --tag
@@ -130,7 +138,7 @@
     - name: Build the static image
       ansible.builtin.command:
         argv: >-
-          {{ ['docker', 'buildx', 'build', '--platform', acme_image_platform,
+          {{ ['docker', 'buildx', 'build', '--platform', acme_release_platform,
               '--file', 'packages/acme-docker/static.Dockerfile',
               '--tag', acme_release_built.static, '--load']
              + (['--build-arg'] | product(acme_static_build_args.keys()) | flatten)

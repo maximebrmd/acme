@@ -27,6 +27,10 @@ acme_credentials:
   # The alert bot (from @BotFather) and the chat it writes to.
   TELEGRAM_BOT_TOKEN: REPLACE
   TELEGRAM_CHAT_ID: REPLACE
+  # Where acme_heartbeat_url is set (production): the token Grafana's
+  # heartbeat carries, which the uptime server generated, from its
+  # /srv/uptime/secrets.env (PRODUCTION_HEARTBEAT_TOKEN; README.md, "Uptime").
+  ACME_HEARTBEAT_TOKEN: REPLACE
   # Optional, each turning a feature on (the docs' environment variables
   # page): the writing assistant's provider key; Stripe's, with the price ids
   # in acme_settings; Turnstile's secret, with TURNSTILE_SITE_KEY there; and

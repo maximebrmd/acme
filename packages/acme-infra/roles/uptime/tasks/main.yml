@@ -1,0 +1,198 @@
+---
+# Gatus checks the public endpoints of the environments uptime_environments
+# lists, from outside, and alerts on Telegram; Caddy takes the heartbeats
+# their Grafana sends. The server shares nothing with them: its credentials
+# are its own, from its vault or written on it, and the heartbeat tokens are
+# generated here, then given to each environment as one of its credentials
+# (README.md, "Uptime").
+#
+# In check mode on a new server, the files that go in uptime_root wait for the
+# folder: the tasks that write them skip until it exists.
+- name: Refuse environments the configuration cannot name
+  ansible.builtin.assert:
+    that:
+      - uptime_environments | map(attribute='name') | reject('match', '^[a-z][a-z0-9]*$') | list | length == 0
+      - uptime_environments | map(attribute='name') | unique | list | length == uptime_environments | length
+      - uptime_environments | rejectattr('hostnames', 'defined') | list | length == 0
+    fail_msg: >-
+      Give each environment of uptime_environments its own name, in lowercase
+      letters and digits, and its host names.
+    quiet: true
+
+- name: Look for the uptime folder
+  ansible.builtin.stat:
+    path: "{{ uptime_root }}"
+  register: uptime_root_folder
+
+# Gatus runs as this user, which owns its database and nothing else.
+- name: Create the gatus user
+  ansible.builtin.user:
+    name: gatus
+    system: true
+    shell: /usr/sbin/nologin
+    create_home: false
+  register: uptime_gatus_user
+
+- name: Create the uptime folders
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: "{{ item.owner }}"
+    group: "{{ item.group }}"
+    mode: "{{ item.mode }}"
+  loop:
+    - { path: "{{ uptime_root }}", owner: root, group: root, mode: "0750" }
+    - { path: "{{ uptime_root }}/gatus", owner: root, group: gatus, mode: "0750" }
+    - { path: "{{ uptime_root }}/caddy", owner: root, group: root, mode: "0755" }
+    - { path: "{{ uptime_root }}/data", owner: gatus, group: gatus, mode: "0700" }
+  loop_control:
+    label: "{{ item.path }}"
+
+# Generated on the server, one per environment whose Grafana sends a
+# heartbeat, and never again once there. The value goes from openssl into
+# the file, never into Ansible's output. A file with a new token replaces
+# the old one whole, so a run cut short leaves the old one.
+- name: Generate the heartbeat tokens
+  ansible.builtin.shell: |
+    set -eu
+    umask 077
+    cd {{ uptime_root }}
+    [ -e secrets.env ] || : > secrets.env
+    cp secrets.env secrets.env.new
+    for name in {{ uptime_heartbeat_tokens | join(' ') }}; do
+      if ! grep -q "^${name}=" secrets.env; then
+        printf '%s=%s\n' "$name" "$(openssl rand -hex 32)" >> secrets.env.new
+        echo "$name"
+      fi
+    done
+    if cmp -s secrets.env secrets.env.new; then
+      rm secrets.env.new
+    else
+      mv secrets.env.new secrets.env
+    fi
+  register: uptime_tokens
+  changed_when: uptime_tokens.stdout | length > 0
+
+# Credentials that outside services issued: from the vault when it holds
+# them, otherwise written on the server by hand (README.md). Gatus reads them
+# into its YAML between double quotes.
+- name: Refuse credentials Gatus would misread
+  ansible.builtin.assert:
+    that: uptime_credentials.values() | map('string') | select('search', uptime_misread) | list | length == 0
+    fail_msg: A credential holds a quote, a backslash or a line break, which credentials.env and Gatus cannot.
+    quiet: true
+  vars:
+    uptime_misread: "['\"\\\\\r\n]"
+  when: uptime_credentials is defined
+
+- name: Write the credentials from the vault
+  ansible.builtin.template:
+    src: credentials.env.j2
+    dest: "{{ uptime_root }}/credentials.env"
+    owner: root
+    group: root
+    mode: "0600"
+  when: >-
+    uptime_credentials is defined
+    and (not ansible_check_mode or uptime_root_folder.stat.exists)
+  no_log: true
+
+- name: Check for the credentials
+  ansible.builtin.stat:
+    path: "{{ uptime_root }}/credentials.env"
+  register: uptime_credentials_file
+
+- name: Require the credentials file
+  ansible.builtin.assert:
+    that: uptime_credentials is defined or uptime_credentials_file.stat.exists
+    fail_msg: >-
+      Put the credentials in the vault (uptime_credentials), or write
+      {{ uptime_root }}/credentials.env on the server (README.md, "Uptime").
+    quiet: true
+
+# Names only: the values never leave the file. Read-only, so it runs in check
+# mode too.
+- name: Find the credentials not set on the server
+  ansible.builtin.shell: |
+    set -eu
+    for name in {{ uptime_required_credentials | join(' ') }}; do
+      grep -Eq "^${name}=.+" {{ uptime_root }}/credentials.env || echo "$name"
+    done
+  register: uptime_unset
+  changed_when: false
+  check_mode: false
+  when: uptime_credentials is not defined
+
+- name: Require every credential
+  ansible.builtin.assert:
+    that: uptime_missing | length == 0
+    fail_msg: "Set {{ uptime_missing | join(', ') }} in the credentials."
+    quiet: true
+  vars:
+    uptime_missing: >-
+      {{ uptime_required_credentials
+         | difference(uptime_credentials | dict2items | rejectattr('value', 'equalto', '')
+                      | rejectattr('value', 'none') | map(attribute='key') | list)
+         if uptime_credentials is defined else uptime_unset.stdout_lines }}
+
+- name: Render the configuration
+  ansible.builtin.set_fact:
+    uptime_gatus_config: "{{ lookup('ansible.builtin.template', 'config.yaml.j2') }}"
+    uptime_caddyfile: "{{ lookup('ansible.builtin.template', 'Caddyfile.j2') }}"
+    uptime_caddy_routes: "{{ lookup('ansible.builtin.template', 'routes.caddy.j2') }}"
+
+- name: Write Gatus's configuration
+  ansible.builtin.copy:
+    dest: "{{ uptime_root }}/gatus/config.yaml"
+    content: "{{ uptime_gatus_config }}"
+    owner: root
+    group: gatus
+    mode: "0640"
+  when: not ansible_check_mode or uptime_root_folder.stat.exists
+
+- name: Write Caddy's configuration
+  ansible.builtin.copy:
+    dest: "{{ uptime_root }}/caddy/{{ item.name }}"
+    content: "{{ item.content }}"
+    owner: root
+    group: root
+    mode: "0644"
+  loop:
+    - { name: Caddyfile, content: "{{ uptime_caddyfile }}" }
+    - { name: routes.caddy, content: "{{ uptime_caddy_routes }}" }
+  loop_control:
+    label: "{{ item.name }}"
+  when: not ansible_check_mode or uptime_root_folder.stat.exists
+
+- name: Write the stack's Compose file
+  ansible.builtin.template:
+    src: compose.yaml.j2
+    dest: "{{ uptime_root }}/compose.yaml"
+    owner: root
+    group: root
+    mode: "0640"
+  when: not ansible_check_mode or uptime_root_folder.stat.exists
+
+- name: Install uptime-compose
+  ansible.builtin.template:
+    src: uptime-compose.j2
+    dest: "{{ uptime_compose_bin }}"
+    owner: root
+    group: root
+    mode: "0755"
+
+# Compose creates what is missing and recreates a service whose image or
+# configuration changed (its acme.config label), and nothing else.
+- name: Start the stack
+  ansible.builtin.command: "{{ uptime_compose_bin }} up --detach --wait --wait-timeout 120 --remove-orphans"
+  register: uptime_up
+  changed_when: uptime_up.stderr is search('(Started|Recreated|Removed)')
+
+- name: Check that Gatus answers
+  ansible.builtin.uri:
+    url: http://127.0.0.1:{{ uptime_gatus_port }}/health
+  register: uptime_health
+  until: uptime_health.status == 200
+  retries: 20
+  delay: 3
+  when: not ansible_check_mode

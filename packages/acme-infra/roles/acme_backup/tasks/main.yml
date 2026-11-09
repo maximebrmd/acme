@@ -12,6 +12,14 @@
     group: root
     mode: "0750"
 
+# On a new server in check mode, the timers are not written yet, so there is
+# nothing to start.
+- name: Look for the backup timers
+  ansible.builtin.stat:
+    path: /etc/systemd/system/{{ item }}
+  loop: [acme-backup-full.timer, acme-backup-diff.timer]
+  register: acme_backup_timers
+
 - name: Write the backup service and timers
   ansible.builtin.template:
     src: "{{ item }}.j2"
@@ -28,9 +36,10 @@
 
 - name: Start the backup timers at boot
   ansible.builtin.systemd_service:
-    name: "{{ item }}"
+    name: "{{ item.item }}"
     state: started
     enabled: true
-  loop:
-    - acme-backup-full.timer
-    - acme-backup-diff.timer
+  loop: "{{ acme_backup_timers.results }}"
+  loop_control:
+    label: "{{ item.item }}"
+  when: not ansible_check_mode or item.stat.exists

@@ -1,4 +1,26 @@
 ---
+# Docker Engine, Compose and what they need, at these exact versions from
+# Docker's apt repository. The role adds the suffix of the server's release
+# (`~ubuntu.24.04~noble`), and an apt pin holds each package there: neither
+# the daily security updates nor the system role's upgrade moves them.
+#
+# To bump them, list what Docker publishes for the servers' release (noble
+# for Ubuntu 24.04, resolute for 26.04), newest last:
+#
+#   curl -s https://download.docker.com/linux/ubuntu/dists/noble/stable/binary-amd64/Packages \
+#     | awk '/^Package:/ {p = $2} /^Version:/ {print p, $2}' | sort -V
+#
+# put the versions here without the suffix, read Docker Engine's release
+# notes, then run site.yml with --check --diff and apply it, on the sandbox
+# first. The engine restarts, and the containers with it unless the bump is a
+# patch release (live-restore keeps them running across those only).
+docker_packages:
+  docker-ce: 5:29.9.3-1
+  docker-ce-cli: 5:29.9.3-1
+  containerd.io: 2.4.2-3
+  docker-buildx-plugin: 0.38.1-1
+  docker-compose-plugin: 5.7.0-1
+
 # Rotated local logs, and containers keep running while the daemon restarts.
 docker_daemon:
   log-driver: local

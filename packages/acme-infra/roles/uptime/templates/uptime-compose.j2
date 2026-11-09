@@ -1,0 +1,8 @@
+#!/bin/sh
+# Managed by Ansible (acme-infra). Docker Compose on the uptime stack:
+# `sudo uptime-compose ps`, `logs --tail 50 gatus`.
+set -eu
+exec docker compose \
+  --project-directory {{ uptime_root }} \
+  --file {{ uptime_root }}/compose.yaml \
+  "$@"

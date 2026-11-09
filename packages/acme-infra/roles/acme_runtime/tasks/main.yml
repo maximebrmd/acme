@@ -1,4 +1,11 @@
 ---
+# In check mode on a new server, the files that go in acme_root wait for the
+# folder: the tasks that write them skip until it exists.
+- name: Look for the Acme folder
+  ansible.builtin.stat:
+    path: "{{ acme_root }}"
+  register: acme_runtime_root
+
 - name: Create the Acme folders
   ansible.builtin.file:
     path: "{{ item }}"
@@ -34,7 +41,7 @@
 # them, otherwise written on the server by hand (README.md).
 - name: Refuse credentials Compose would misread
   ansible.builtin.assert:
-    that: acme_credentials.values() | map('string') | select('search', "['\n]") | list | length == 0
+    that: acme_credentials.values() | map('string') | select('search', "['\r\n]") | list | length == 0
     fail_msg: A credential holds a single quote or a line break, which credentials.env cannot.
     quiet: true
   when: acme_credentials is defined
@@ -46,7 +53,9 @@
     owner: root
     group: root
     mode: "0600"
-  when: acme_credentials is defined
+  when: >-
+    acme_credentials is defined
+    and (not ansible_check_mode or acme_runtime_root.stat.exists)
   no_log: true
 
 - name: Check for the credentials
@@ -67,7 +76,7 @@
 - name: Find the credentials not set on the server
   ansible.builtin.shell: |
     set -eu
-    for name in {{ acme_required_credentials | join(' ') }}; do
+    for name in {{ acme_runtime_required_credentials | join(' ') }}; do
       grep -Eq "^${name}=.+" {{ acme_root }}/credentials.env || echo "$name"
     done
     grep -Eq '^({{ acme_mail_credentials | join('|') }})=.+' {{ acme_root }}/credentials.env ||
@@ -84,9 +93,35 @@
     quiet: true
   vars:
     acme_runtime_missing: >-
-      {{ (acme_required_credentials | difference(acme_credentials.keys())
-          + ([] if acme_credentials.keys() | intersect(acme_mail_credentials) else [acme_mail_credentials | join(' or ')]))
+      {{ (acme_runtime_required_credentials | difference(acme_runtime_vault_set)
+          + ([] if acme_runtime_vault_set | intersect(acme_mail_credentials) else [acme_mail_credentials | join(' or ')]))
          if acme_credentials is defined else acme_runtime_unset.stdout_lines }}
+    # The names the vault gives a value to, as the check on the server reads
+    # them.
+    acme_runtime_vault_set: >-
+      {{ acme_credentials | default({}) | dict2items
+         | rejectattr('value', 'equalto', '') | rejectattr('value', 'none')
+         | map(attribute='key') | list }}
+
+# host.env holds NAME='value' lines, which Compose reads as they are: a
+# quote or a line break in a value would end it early, and the rest would be
+# read as more settings, or lost.
+- name: Refuse host settings Compose would misread
+  ansible.builtin.assert:
+    that: acme_runtime_misread | length == 0
+    fail_msg: >-
+      Change {{ acme_runtime_misread | join(', ') }}: host.env takes names of
+      letters, digits and underscores, and values that are a string or a
+      number without a single quote or a line break.
+    quiet: true
+  vars:
+    acme_runtime_misread: >-
+      {{ (acme_runtime_host_settings | dict2items
+          | rejectattr('key', 'match', '^[A-Za-z_][A-Za-z0-9_]*$') | map(attribute='key') | list)
+         + (acme_runtime_host_settings | dict2items
+            | rejectattr('value', 'string') | rejectattr('value', 'number') | map(attribute='key') | list)
+         + (acme_runtime_host_settings | dict2items | selectattr('value', 'string')
+            | selectattr('value', 'search', "['\r\n]") | map(attribute='key') | list) }}
 
 - name: Write the host settings for Compose
   ansible.builtin.template:
@@ -95,6 +130,7 @@
     owner: root
     group: root
     mode: "0640"
+  when: not ansible_check_mode or acme_runtime_root.stat.exists
 
 # `sudo acme-compose ps`, `logs server`, `exec postgres psql --username acme`:
 # Compose on the release that runs, with its settings.

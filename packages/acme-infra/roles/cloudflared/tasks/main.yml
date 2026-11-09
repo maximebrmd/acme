@@ -3,6 +3,10 @@
 # the tunnel, so the server opens no inbound port. It runs a locally managed
 # tunnel: its routes are config.yml below, and its token comes from the vault
 # or was written on the server (README.md).
+#
+# In check mode, a task that needs what an earlier one would make skips when
+# that one reports a change: on a new server, neither the download folder,
+# the package, the configuration folder nor the service exists yet.
 - name: Create the cloudflared user
   ansible.builtin.user:
     name: cloudflared
@@ -19,6 +23,7 @@
     path: /var/cache/cloudflared
     state: directory
     mode: "0755"
+  register: cloudflared_cache
 
 # Skipped once the file is there with this digest.
 - name: Download cloudflared
@@ -27,11 +32,14 @@
     dest: /var/cache/cloudflared/cloudflared-{{ cloudflared_version }}-{{ cloudflared_arch }}.deb
     checksum: sha256:{{ cloudflared_deb_sha256[cloudflared_arch] }}
     mode: "0644"
+  register: cloudflared_download
+  when: not (ansible_check_mode and cloudflared_cache is changed)
 
 # Unchanged when this version is installed already.
 - name: Install cloudflared
   ansible.builtin.apt:
     deb: /var/cache/cloudflared/cloudflared-{{ cloudflared_version }}-{{ cloudflared_arch }}.deb
+  when: not (ansible_check_mode and (cloudflared_download is changed or cloudflared_download is skipped))
   notify: Restart cloudflared
 
 - name: Create the configuration folder
@@ -41,6 +49,7 @@
     owner: root
     group: cloudflared
     mode: "0750"
+  register: cloudflared_folder
 
 - name: Write the tunnel token from the vault
   ansible.builtin.copy:
@@ -49,7 +58,9 @@
     owner: root
     group: cloudflared
     mode: "0440"
-  when: cloudflared_tunnel_token is defined
+  when: >-
+    cloudflared_tunnel_token is defined
+    and not (ansible_check_mode and cloudflared_folder is changed)
   no_log: true
   notify: Restart cloudflared
 
@@ -76,7 +87,13 @@
     group: cloudflared
     mode: "0640"
     validate: /usr/bin/cloudflared tunnel --config %s ingress validate
+  when: not (ansible_check_mode and cloudflared_folder is changed)
   notify: Restart cloudflared
+
+- name: Look for the cloudflared service
+  ansible.builtin.stat:
+    path: /etc/systemd/system/cloudflared.service
+  register: cloudflared_unit
 
 - name: Write the cloudflared service
   ansible.builtin.template:
@@ -91,6 +108,7 @@
     state: started
     enabled: true
     daemon_reload: true
+  when: not ansible_check_mode or cloudflared_unit.stat.exists
 
 - name: Apply a changed configuration now
   ansible.builtin.meta: flush_handlers

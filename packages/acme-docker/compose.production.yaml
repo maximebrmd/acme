@@ -348,12 +348,16 @@ services:
       # Read by the Telegram contact point, when it is mounted.
       TELEGRAM_BOT_TOKEN:
       TELEGRAM_CHAT_ID:
+      # Read by the heartbeat, when it is mounted.
+      ACME_HEARTBEAT_URL:
+      ACME_HEARTBEAT_TOKEN:
     volumes:
       - ./config/grafana/datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml:ro
       - ./config/production/grafana/alerting/rules.yaml:/etc/grafana/provisioning/alerting/rules.yaml:ro
       - ./config/production/grafana/dashboards.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml:ro
       - ./config/production/grafana/dashboards:/etc/grafana/dashboards:ro
       - ${ACME_GRAFANA_CONTACT_POINTS:-./config/production/grafana/alerting/none.yaml}:/etc/grafana/provisioning/alerting/contact-points.yaml:ro
+      - ${ACME_GRAFANA_HEARTBEAT:-./config/production/grafana/alerting/none.yaml}:/etc/grafana/provisioning/alerting/heartbeat.yaml:ro
       - grafana:/var/lib/grafana
     ports:
       - 127.0.0.1:${ACME_GRAFANA_PORT:-13000}:3000

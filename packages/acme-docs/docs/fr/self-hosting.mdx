@@ -71,6 +71,15 @@ Grafana n’écoute que sur `127.0.0.1:13000` : joignez-le par un tunnel SSH, co
 
 Pour sauvegarder la base de données, définissez `ACME_POSTGRES_ARCHIVE_MODE=on` et les réglages `PGBACKREST_REPO1_*` que liste le fichier d’exemple. Postgres archive alors ses journaux de transactions (WAL) dans ce bucket avec pgBackRest, que fournit l’image Postgres de la pile. Créez le dépôt de sauvegarde une fois avec `docker compose … exec --user postgres postgres pgbackrest stanza-create`, puis lancez les sauvegardes à intervalles réguliers avec `… pgbackrest backup --type=full`. Les serveurs d’Acme le font avec l’Ansible de `packages/acme-infra`, dont le README et la procédure de restauration montrent chaque commande. [Variables d’environnement](/environment-variables#compose) liste les réglages de la pile.
 
+## Surveiller de l’extérieur [#uptime]
+
+Les alertes de Grafana viennent du serveur qu’elles surveillent : quand ce serveur, son réseau ou Grafana s’arrête, elles s’arrêtent aussi. Surveillez aussi l’instance depuis une autre machine, qui ne partage rien avec elle, et qui alerte par un moyen à elle :
+
+- Vérifiez ce que les gens atteignent, à travers votre frontal : `GET /api/ready`, qui répond `204 No Content` quand le serveur et sa base de données répondent, une page de l’application web comme `/sign-in`, qui répond `200`, et le temps qu’il reste au certificat. Comptez une redirection comme un échec, pour qu’une page de connexion placée devant l’instance ne passe jamais pour elle.
+- Faites montrer à Grafana que ses alertes fonctionnent. Avec `ACME_GRAFANA_HEARTBEAT=./config/production/grafana/alerting/heartbeat.yaml`, `ACME_HEARTBEAT_URL` et `ACME_HEARTBEAT_TOKEN` définis, une règle qui se déclenche toujours envoie une requête à cette adresse toutes les 5 minutes environ, avec le jeton comme jeton porteur. Quand les requêtes cessent, Grafana, Prometheus ou la sortie vers Internet est en panne, et les autres alertes risquent de ne plus vous parvenir non plus : le service de surveillance le signale. Avec [Gatus](https://github.com/TwiN/gatus), faites-en un point de terminaison externe avec un intervalle de battement de 15 minutes, et donnez à `ACME_HEARTBEAT_URL` son adresse d’envoi, `https://<gatus>/api/v1/endpoints/<group>_<name>/external?success=true`.
+
+Les serveurs d’Acme sont surveillés ainsi : [Déploiement](/deployment#uptime) décrit le serveur de disponibilité, dont l’Ansible et la configuration de Gatus sont dans `packages/acme-infra`.
+
 ## Devant Acme [#reverse-proxy]
 
 Placez devant l’application web un proxy inverse qui termine TLS, comme Caddy, et n’exposez que le proxy. Envoyez toutes les requêtes à l’application web, qui transmet les chemins du serveur, ou envoyez `/api/*` et `/.well-known/oauth-*` directement au serveur et tout le reste à l’application web.

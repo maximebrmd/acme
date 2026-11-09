@@ -491,10 +491,13 @@ read-only file system, and the server gets 75 seconds to stop.
 Acme's own servers, production and the sandbox, run on Hetzner Cloud and are
 reachable only through a Cloudflare Tunnel: no inbound port, SSH included.
 Cloudflare Access guards Grafana, SSH, the admin and the whole sandbox;
-Grafana's alerts go to a Telegram chat; Postgres is backed up to R2. Ansible
-in [`packages/acme-infra`](packages/acme-infra/README.md) sets the servers up
-and releases a commit: it builds the images on the machine running it,
-uploads them over SSH, and starts the new server, which migrates the database.
+Grafana's alerts go to a Telegram chat; Postgres is backed up to R2. A third
+server, linked to neither, checks their public endpoints from outside with
+Gatus, and alerts when production's Grafana stops sending its heartbeat.
+Ansible in [`packages/acme-infra`](packages/acme-infra/README.md) sets the
+servers up and releases a commit: it builds the images on the machine running
+it, uploads them over SSH, and starts the new server, which migrates the
+database.
 
 ```sh
 cd packages/acme-infra
@@ -502,6 +505,7 @@ uv sync --locked
 uv run ansible-galaxy collection install --requirements-file requirements.yml
 uv run ansible-playbook playbooks/site.yml --limit sandbox --check --diff
 uv run ansible-playbook playbooks/release.yml --limit sandbox
+uv run ansible-playbook playbooks/uptime.yml --check --diff
 ```
 
 Nothing has been applied yet: the inventory holds placeholders, and every

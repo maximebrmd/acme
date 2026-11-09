@@ -1,0 +1,16 @@
+---
+# The uptime server: the same baseline as Acme's servers, and Gatus. Run
+# after bootstrap.yml, as the admin user, and again whenever this folder
+# changes; a second run reports no change:
+#   ansible-playbook playbooks/uptime.yml --check --diff
+#   ansible-playbook playbooks/uptime.yml --diff
+- name: Configure the uptime server
+  hosts: uptime
+  become: true
+  roles:
+    - acme_preflight
+    - system
+    - ssh
+    - docker
+    - firewall
+    - uptime

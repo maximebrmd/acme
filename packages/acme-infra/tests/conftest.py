@@ -13,6 +13,8 @@ from typing import Any
 import jinja2
 import pytest
 import yaml
+from ansible.parsing.dataloader import DataLoader
+from ansible.template import Templar, trust_as_template
 
 INFRA = Path(__file__).resolve().parent.parent
 
@@ -23,6 +25,29 @@ _jinja = jinja2.Environment(undefined=jinja2.StrictUndefined, autoescape=False)
 def render(text: str, **names: Any) -> str:
     """Renders one string as Ansible would, with the names given."""
     return _jinja.from_string(text).render(**names)
+
+
+def ansible_render(text: str, **names: Any) -> Any:
+    """Renders one string with Ansible's own templating, its filters and
+    tests included, with the names given: a lone expression keeps its type,
+    as it does in a task."""
+    templar = Templar(loader=DataLoader(), variables=names)
+    return templar.template(trust_as_template(text))
+
+
+def settings(group: str) -> dict[str, Any]:
+    """The inventory's settings for a group: group_vars/all, then the
+    group's own."""
+    folder = INFRA / "inventory" / "group_vars"
+    return {
+        **yaml.safe_load((folder / "all" / "main.yml").read_text()),
+        **yaml.safe_load((folder / group / "main.yml").read_text()),
+    }
+
+
+def role_file(role: str, folder: str) -> dict[str, Any]:
+    """A role's defaults or vars, as written."""
+    return yaml.safe_load((INFRA / "roles" / role / folder / "main.yml").read_text())
 
 
 def _flatten(tasks: list[dict[str, Any]]) -> list[dict[str, Any]]:
