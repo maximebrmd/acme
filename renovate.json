@@ -10,6 +10,11 @@
       "groupName": "effect"
     },
     {
+      "description": "The e2e runner and its engines release together.",
+      "matchPackageNames": ["e2e", "@e2e-dev/**"],
+      "groupName": "e2e"
+    },
+    {
       "description": "Lint and format tools release together.",
       "matchPackageNames": ["ultracite", "oxlint", "oxlint-tsgolint", "oxfmt"],
       "groupName": "lint tooling"
