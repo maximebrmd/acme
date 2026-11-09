@@ -60,6 +60,10 @@ export const useCaptcha = (siteKey: string | null): Captcha => {
         onSuccess={setToken}
         onExpire={forget}
         onError={forget}
+        // A fieldset, so screen readers read its label: a plain div's is
+        // ignored.
+        as="fieldset"
+        className="min-w-0"
         aria-label={t("label")}
       />
     ),

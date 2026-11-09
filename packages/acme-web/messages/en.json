@@ -676,8 +676,7 @@
       "forbidden": "Only owners and admins of the workspace can change its billing.",
       "generic": "Stripe could not be reached. Try again in a moment."
     },
-    "limitReached": "{limit, select, channels {The workspace’s plan allows no more channels. Move to a larger plan, or disconnect a channel first.} members {The workspace’s plan allows no more members. An owner or an admin can move it to a larger plan.} scheduledPosts {The workspace’s plan allows no more posts going out that month. Pick another month, cancel a post, or move to a larger plan.} assistantRequests {The workspace’s plan allows no more writing assistant requests today.} other {The workspace’s plan allows no more of this.}}",
-    "seePlans": "See the plans"
+    "limitReached": "{limit, select, channels {The workspace’s plan allows no more channels. Move to a larger plan, or disconnect a channel first.} members {The workspace’s plan allows no more members. An owner or an admin can move it to a larger plan.} scheduledPosts {The workspace’s plan allows no more posts going out that month. Pick another month, cancel a post, or move to a larger plan.} assistantRequests {The workspace’s plan allows no more writing assistant requests today.} other {The workspace’s plan allows no more of this.}}"
   },
   "Captcha": {
     "label": "Check that you are a person"
