@@ -1,5 +1,5 @@
 import { TargetConfirmationSchema } from "acme-contract";
-import type { Post, PostTarget } from "acme-contract";
+import type { FailureReason, Post, PostTarget } from "acme-contract";
 import { Console, Effect, Option, Schema } from "effect";
 import { Argument, Command, Flag } from "effect/cli";
 
@@ -28,9 +28,29 @@ const whenOf = (post: Post): string => {
   return `, for ${instant(post.schedule.at)} (${post.schedule.timeZone})`;
 };
 
+// Why a post did not go out on a channel, as the user acts on it. Every
+// reason has its sentence, so a new one fails to compile until it has one.
+const failureReasons: Readonly<Record<FailureReason, string>> = {
+  appNotAudited:
+    "the platform takes only private posts from this server's app until it audits it: make the account private and the post visible to its owner only",
+  channelDisabled:
+    "the channel was turned off: disconnect it and connect the account again, then schedule the post anew",
+  channelDisconnected: "the channel was disconnected before it went out",
+  contentRejected: "the platform refused its text or its format",
+  mediaRejected: "the platform refused one of its images or videos",
+  mediaRemoved: "one of its images or videos was deleted before it went out",
+  missed: "Acme was down at its time, and it came too late to send",
+  notPublished: "someone checked the platform and did not find it",
+  quotaExceeded:
+    "the platform's daily upload allowance stayed spent: post it again after it resets",
+  rateLimited: "the platform kept limiting Acme, which stopped trying",
+  tokenExpired: "the account's authorization stopped working: reconnect it",
+  unavailable: "the platform could not be reached",
+};
+
 const targetDetail = (target: PostTarget): string => {
   if (target.status === "failed" && target.failureReason !== null) {
-    return `failed: ${target.failureReason}`;
+    return `failed: ${target.failureReason} (${failureReasons[target.failureReason]})`;
   }
 
   if (target.status === "unconfirmed" && target.unconfirmedReason !== null) {
@@ -38,9 +58,14 @@ const targetDetail = (target: PostTarget): string => {
   }
 
   if (target.status === "published") {
+    const published =
+      target.keptPrivate === true
+        ? "published, but the platform kept it private: change its visibility there"
+        : "published";
+
     return target.permalink === null
-      ? "published"
-      : `published at ${target.permalink}`;
+      ? published
+      : `${published} at ${target.permalink}`;
   }
 
   return target.status;
@@ -87,10 +112,18 @@ const show = Command.make(
     )) {
       yield* Console.log(line);
     }
+
+    for (const target of post.targets) {
+      if (target.options !== null) {
+        yield* Console.log(
+          `Options on ${named(names, target.channelId)}: ${JSON.stringify(target.options)}`
+        );
+      }
+    }
   })
 ).pipe(
   Command.withDescription(
-    "Show a post: its status and time, and how it went on each channel, with the target ids repost and confirm take."
+    "Show a post: its status and time, how it went on each channel, with the target ids repost and confirm take, and its options on the platforms that ask for more."
   )
 );
 

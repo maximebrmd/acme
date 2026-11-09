@@ -4,6 +4,7 @@ import {
   PostSchema,
   WorkspaceMemberSchema,
 } from "acme-contract";
+import type { TargetOptions } from "acme-contract";
 import { Context, Effect, Layer, Option, Schema } from "effect";
 import { McpClient } from "effect/ai";
 import type { McpSchema } from "effect/ai";
@@ -36,6 +37,8 @@ import {
 
 interface Fixture {
   readonly channelId: string;
+  /** A YouTube channel of the workspace. */
+  readonly youtubeId: string;
   /** A token that may do what the owner's role allows in the workspace. */
   readonly writing: string;
   /** A token that may only read the workspace. */
@@ -54,8 +57,15 @@ const ToolsFixtureLive = Layer.effect(
     const workspaceId = yield* workspaceOf(owner, "Atelier");
     const channel = yield* freshChannel(WorkspaceIdSchema.make(workspaceId));
 
+    const youtube = yield* freshChannel(WorkspaceIdSchema.make(workspaceId), {
+      platform: "youtube",
+    });
+
     yield* ChannelRepository.use((channels) =>
-      channels.insert(channel, syntheticCredentials(channel))
+      Effect.all([
+        channels.insert(channel, syntheticCredentials(channel)),
+        channels.insert(youtube, syntheticCredentials(youtube)),
+      ])
     );
 
     const clientId = yield* registeredClient;
@@ -75,6 +85,7 @@ const ToolsFixtureLive = Layer.effect(
         workspaceId,
         "openid workspace:read workspace:write"
       ),
+      youtubeId: youtube.id,
     };
   })
 ).pipe(
@@ -183,6 +194,7 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           discard_draft: [false, true, true, false],
           get_billing: [true, false, true, false],
           get_post: [true, false, true, false],
+          get_tiktok_creator: [true, false, true, true],
           invite_member: [false, true, false, true],
           list_channels: [true, false, true, false],
           list_drafts: [true, false, true, false],
@@ -298,6 +310,84 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           assert.include(
             yield* writer.refused("get_post", { postId: created.id }),
             "The workspace has no post with this id."
+          );
+        })
+    );
+
+    it.effect(
+      "keep a draft's platform options, unless told to change them, and read TikTok creators only on TikTok",
+      () =>
+        Effect.gen(function* withOptions() {
+          const fixture = yield* ToolsFixture;
+
+          const writer = yield* connected(fixture.writing);
+
+          const youtube = {
+            madeForKids: false,
+            platform: "youtube",
+            title: "A synthetic launch video",
+          } satisfies TargetOptions;
+
+          const created = yield* writer.call("create_draft", PostJsonSchema, {
+            channelIds: [fixture.youtubeId, fixture.channelId],
+            content: content("A synthetic video from an assistant."),
+            options: [{ channelId: fixture.youtubeId, options: youtube }],
+          });
+
+          const optionsOf = (post: typeof created) =>
+            post.targets.map(({ channelId, options }) => ({
+              channelId,
+              options,
+            }));
+
+          assert.deepStrictEqual(optionsOf(created), [
+            { channelId: fixture.youtubeId, options: youtube },
+            { channelId: fixture.channelId, options: null },
+          ]);
+
+          // A rewrite that says nothing of options keeps them.
+          const rewritten = yield* writer.call("update_draft", PostJsonSchema, {
+            channelIds: [fixture.youtubeId, fixture.channelId],
+            content: content("A synthetic video, rewritten."),
+            postId: created.id,
+          });
+
+          assert.deepStrictEqual(optionsOf(rewritten), optionsOf(created));
+
+          // Options of another platform are refused, naming the channel.
+          assert.include(
+            yield* writer.refused("update_draft", {
+              channelIds: [fixture.youtubeId, fixture.channelId],
+              content: content("A synthetic video, rewritten."),
+              options: [{ channelId: fixture.channelId, options: youtube }],
+              postId: created.id,
+            }),
+            `optionsForOtherPlatform on ${fixture.channelId}`
+          );
+
+          // An empty list removes them.
+          const cleared = yield* writer.call("update_draft", PostJsonSchema, {
+            channelIds: [fixture.youtubeId],
+            content: content("A synthetic video, rewritten."),
+            options: [],
+            postId: created.id,
+          });
+
+          assert.deepStrictEqual(optionsOf(cleared), [
+            { channelId: fixture.youtubeId, options: null },
+          ]);
+
+          assert.include(
+            yield* writer.refused("get_tiktok_creator", {
+              channelId: fixture.youtubeId,
+            }),
+            "This is not one of the workspace's TikTok channels"
+          );
+
+          yield* writer.call(
+            "discard_draft",
+            Schema.Struct({ discarded: Schema.String }),
+            { postId: created.id }
           );
         })
     );

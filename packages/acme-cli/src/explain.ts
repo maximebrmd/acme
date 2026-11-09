@@ -1,11 +1,14 @@
 import type {
   AlreadyMember,
+  ChannelCannotPost,
+  ChannelNotFound,
   ContentViolation,
   Forbidden,
   InvalidDateRange,
   InvalidTimeZone,
   InvitationNotFound,
   PlanLimitReached,
+  PlatformUnreachable,
   PostContentInvalid,
   PostNotFound,
   PostStatusConflict,
@@ -29,6 +32,8 @@ import { SignInExpired } from "#sign-in-expired.ts";
 /** Whatever a signed-in command's request may fail with. */
 export type ApiFailure =
   | AlreadyMember
+  | ChannelCannotPost
+  | ChannelNotFound
   | Forbidden
   | HttpApiError.BadRequest
   | HttpClientError.HttpClientError
@@ -36,6 +41,7 @@ export type ApiFailure =
   | InvalidTimeZone
   | InvitationNotFound
   | PlanLimitReached
+  | PlatformUnreachable
   | PostContentInvalid
   | PostNotFound
   | PostStatusConflict
@@ -54,10 +60,14 @@ const limits: Readonly<Record<PlanLimitReached["limit"], string>> = {
   scheduledPosts: "posts going out a month",
 };
 
-const violationOf = (violation: ContentViolation): string =>
-  "channelId" in violation
-    ? `${violation._tag} on channel ${violation.channelId}`
-    : violation._tag;
+// What breaks a rule, with the option field it names and its channel.
+const violationOf = (violation: ContentViolation): string => {
+  const field = "field" in violation ? ` (${violation.field})` : "";
+
+  return "channelId" in violation
+    ? `${violation._tag}${field} on channel ${violation.channelId}`
+    : `${violation._tag}${field}`;
+};
 
 const refused = (reason: string) => new Refused({ reason });
 
@@ -71,6 +81,16 @@ export const explain =
     Match.valueTags(failure, {
       AlreadyMember: () => refused("That address belongs to a member already."),
       BadRequest: () => refused("Acme could not read the request."),
+      ChannelCannotPost: ({ reason }) =>
+        refused(
+          reason === "disabled"
+            ? "The channel is turned off: disconnect it and connect the account again, in the web app, to post to it."
+            : "The channel must be reconnected, in the web app, before it can post."
+        ),
+      ChannelNotFound: () =>
+        refused(
+          "The workspace has no such channel, or it is not of this platform: acme channels list shows them."
+        ),
       Forbidden: () =>
         refused(
           "Acme refused: your role in this workspace does not allow it, or your account was suspended."
@@ -91,6 +111,10 @@ export const explain =
       PlanLimitReached: ({ allowed, limit }) =>
         refused(
           `The workspace's plan allows ${String(allowed)} ${limits[limit]}, and has them all. A larger plan makes room: see acme billing.`
+        ),
+      PlatformUnreachable: () =>
+        refused(
+          "The platform did not answer, or asked to slow down: try again in a few minutes."
         ),
       PostContentInvalid: ({ violations }) =>
         refused(

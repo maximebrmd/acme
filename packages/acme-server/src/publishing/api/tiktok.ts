@@ -6,40 +6,14 @@ import {
   Forbidden,
   PlatformUnreachable,
 } from "acme-contract";
-import type { TikTokAccount as TikTokAccountView } from "acme-contract";
-import { Duration, Effect, Match, Option } from "effect";
+import { Effect, Match } from "effect";
 import { HttpApiBuilder } from "effect/http-api";
 
 import { TikTokCreatorInfo } from "#publishing/application/tiktok-creator-info.ts";
-import type { TikTokAccount } from "#publishing/application/tiktok-creator-info.ts";
 import { ownRefusalCodes } from "#publishing/domain/own-refusals.ts";
 import { actorOf } from "#shared/api/actor.ts";
 
-const accountView = ({
-  posting,
-  takesPhotos,
-}: TikTokAccount): TikTokAccountView => ({
-  posting:
-    posting._tag === "blocked"
-      ? posting
-      : {
-          _tag: "ready",
-          creator: {
-            avatarUrl: Option.getOrNull(posting.creator.avatarUrl),
-            commentDisabled: posting.creator.commentDisabled,
-            duetDisabled: posting.creator.duetDisabled,
-            maxVideoDurationMs: posting.creator.maxVideoDuration.pipe(
-              Option.map((duration) => Math.round(Duration.toMillis(duration))),
-              Option.getOrNull
-            ),
-            nickname: posting.creator.nickname,
-            privacyLevels: posting.creator.privacyLevels,
-            stitchDisabled: posting.creator.stitchDisabled,
-            username: posting.creator.username,
-          },
-        },
-  takesPhotos,
-});
+import { tiktokAccountView } from "./tiktok-account-view.ts";
 
 // TikTok did not answer, or asked to slow down: logged, then 502.
 const unreachable = (failure: { readonly _tag: string }) =>
@@ -79,7 +53,7 @@ export const TikTokHandlers = HttpApiBuilder.group(
             )
           );
 
-          return accountView(account);
+          return tiktokAccountView(account);
         }),
     });
   })

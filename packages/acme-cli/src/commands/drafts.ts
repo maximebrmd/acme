@@ -1,5 +1,9 @@
-import { maxDraftPageSize, PostDraftSchema } from "acme-contract";
-import type { Post, PostDraft } from "acme-contract";
+import {
+  maxDraftPageSize,
+  PostDraftSchema,
+  TargetOptionsSchema,
+} from "acme-contract";
+import type { ChannelOptions, Post, PostDraft } from "acme-contract";
 import { Console, Effect, Option, Schema } from "effect";
 import { Argument, Command, Flag } from "effect/cli";
 
@@ -22,6 +26,52 @@ const checkDraft = (draft: PostDraft) =>
         })
     )
   );
+
+const decodeOptions = Schema.decodeUnknownEffect(
+  Schema.fromJsonString(TargetOptionsSchema)
+);
+
+// `--options <channel-id>=<json>`: a channel's platform options, as JSON.
+const optionsOf = (given: string) =>
+  Effect.gen(function* parse() {
+    const at = given.indexOf("=");
+
+    if (at <= 0) {
+      return yield* new Refused({
+        reason: `--options takes <channel-id>=<json>, not ${given}.`,
+      });
+    }
+
+    const channelId = given.slice(0, at);
+
+    const options = yield* decodeOptions(given.slice(at + 1)).pipe(
+      Effect.mapError(
+        (failure) =>
+          new Refused({
+            reason: `The options for channel ${channelId} are not a platform's options: ${failure.message}`,
+          })
+      )
+    );
+
+    const chosen: ChannelOptions = { channelId, options };
+
+    return chosen;
+  });
+
+// The options a draft goes with: those given replace the draft's on their
+// channel; the draft keeps the others it has on the channels it keeps.
+const withOptions = (
+  channelIds: readonly string[],
+  given: readonly ChannelOptions[],
+  draft: readonly ChannelOptions[]
+): ChannelOptions[] => [
+  ...draft.filter(
+    ({ channelId }) =>
+      channelIds.includes(channelId) &&
+      !given.some((chosen) => chosen.channelId === channelId)
+  ),
+  ...given,
+];
 
 const list = Command.make(
   "list",
@@ -100,6 +150,13 @@ const save = Command.make(
       ),
       Flag.atLeast(0)
     ),
+    options: Flag.String("options").pipe(
+      Flag.withMetavar("<channel-id>=<json>"),
+      Flag.withDescription(
+        'What the post sets on a channel whose platform asks for more, as JSON tagged by its platform, such as 0190…=\'{"platform":"youtube","title":"Launch","madeForKids":false}\'; repeat it for several channels. A draft you change keeps the options it has on its other channels. acme channels tiktok shows what a TikTok channel takes.'
+      ),
+      Flag.atLeast(0)
+    ),
     postId: Flag.String("post").pipe(
       Flag.withMetavar("<post-id>"),
       Flag.withDescription("The draft to change. Without it, a new draft."),
@@ -116,6 +173,7 @@ const save = Command.make(
   Effect.fn("drafts.save")(function* save(input) {
     const { client, url, workspace } = yield* inWorkspace(input.workspace);
     const params = { workspaceId: workspace.id };
+    const given = yield* Effect.all(input.options.map(optionsOf));
 
     const saved: Post = yield* Option.match(input.postId, {
       onNone: () =>
@@ -126,6 +184,7 @@ const save = Command.make(
             overrides: [],
             text: Option.getOrElse(input.text, () => ""),
           },
+          options: given,
         }).pipe(
           Effect.flatMap((payload) =>
             client.posts
@@ -134,22 +193,30 @@ const save = Command.make(
           )
         ),
       // What the flags leave out stays as the draft has it: its media,
-      // and its text on some channels.
+      // its text on some channels, and its options on the channels it
+      // keeps.
       onSome: (postId) =>
         client.posts.get({ params: { ...params, postId } }).pipe(
           Effect.mapError(explain(url)),
-          Effect.flatMap((draft) =>
-            checkDraft({
-              channelIds:
-                input.channels.length > 0
-                  ? input.channels
-                  : draft.targets.map(({ channelId }) => channelId),
+          Effect.flatMap((draft) => {
+            const channelIds =
+              input.channels.length > 0
+                ? input.channels
+                : draft.targets.map(({ channelId }) => channelId);
+
+            const kept = draft.targets.flatMap(({ channelId, options }) =>
+              options === null ? [] : [{ channelId, options }]
+            );
+
+            return checkDraft({
+              channelIds,
               content: {
                 ...draft.content,
                 text: Option.getOrElse(input.text, () => draft.content.text),
               },
-            })
-          ),
+              options: withOptions(channelIds, given, kept),
+            });
+          }),
           Effect.flatMap((payload) =>
             client.posts
               .update({ params: { ...params, postId }, payload })
@@ -164,7 +231,7 @@ const save = Command.make(
   })
 ).pipe(
   Command.withDescription(
-    "Write a new draft, or change one: its text and channels. Scheduling it is for the web app."
+    "Write a new draft, or change one: its text, channels and the options of platforms that ask for more. Scheduling it is for the web app."
   )
 );
 

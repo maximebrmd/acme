@@ -1,4 +1,5 @@
 import { CurrentMember, defaultDraftPageSize } from "acme-contract";
+import type { ChannelOptions as ChannelOptionsInput } from "acme-contract";
 import { Effect, Option } from "effect";
 
 import { PostTools } from "#app/mcp/posts-tools.ts";
@@ -6,17 +7,24 @@ import { notAllowed, refuse } from "#app/mcp/refusals.ts";
 import {
   channelIdsFrom,
   contentFrom,
+  optionsFrom,
   postIdFrom,
   postIdOption,
   targetIdFrom,
 } from "#publishing/api/post-input.ts";
 import { postView } from "#publishing/api/post-view.ts";
+import { tiktokAccountView } from "#publishing/api/tiktok-account-view.ts";
 import { PostDrafts } from "#publishing/application/post-drafts.ts";
 import { PostFollowUp } from "#publishing/application/post-follow-up.ts";
 import type { Confirmation } from "#publishing/application/post-follow-up.ts";
 import { PostQueries } from "#publishing/application/post-queries.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
+import { TikTokCreatorInfo } from "#publishing/application/tiktok-creator-info.ts";
+import { ChannelOptions } from "#publishing/domain/channel-options.ts";
+import { ownRefusalCodes } from "#publishing/domain/own-refusals.ts";
 import { actorOf } from "#shared/api/actor.ts";
+import type { Actor } from "#shared/domain/access.ts";
+import type { ChannelId, PostId } from "#shared/domain/ids.ts";
 
 // What the use cases' refusals tell the user, through their MCP client.
 
@@ -30,13 +38,32 @@ const targetConflict = ({ from }: { readonly from: string }) =>
     `The post is ${from} on that channel: only a failed or unconfirmed post is reposted, and only an unconfirmed one confirmed.`
   );
 
+// A violation as the user reads it: what, on which channel, and which
+// option field.
+const violationText = (violation: {
+  readonly _tag: string;
+  readonly channelId?: string;
+  readonly field?: string;
+}) => {
+  const where =
+    violation.channelId === undefined ? "" : ` on ${violation.channelId}`;
+
+  const field = violation.field === undefined ? "" : ` (${violation.field})`;
+
+  return `${violation._tag}${field}${where}`;
+};
+
 const contentRejected = ({
   violations,
 }: {
-  readonly violations: readonly { readonly _tag: string }[];
+  readonly violations: readonly {
+    readonly _tag: string;
+    readonly channelId?: string;
+    readonly field?: string;
+  }[];
 }) =>
   refuse(
-    `The content cannot be saved: ${[...new Set(violations.map(({ _tag }) => _tag))].join(", ")}.`
+    `The content cannot be saved: ${[...new Set(violations.map(violationText))].join(", ")}.`
   );
 
 const unknownChannels = ({
@@ -61,6 +88,22 @@ const malformedContent = {
   UnknownMedia: unknownMedia,
 } as const;
 
+const notTikTok = () =>
+  refuse(
+    "This is not one of the workspace's TikTok channels: list_channels answers them."
+  );
+
+const tiktokUnreachable = () =>
+  refuse(
+    "TikTok did not answer, or asked to slow down: try again in a few minutes."
+  );
+
+// The options a request gives, decoded: `undefined` when it gives none.
+const givenOptions = (input: readonly ChannelOptionsInput[] | undefined) =>
+  input === undefined
+    ? Effect.succeed(Option.none<readonly ChannelOptions[]>())
+    : optionsFrom(input).pipe(Effect.map(Option.some));
+
 /** What the post tools do, through the publishing context's use cases. */
 export const PostToolsLive = PostTools.toLayer(
   Effect.gen(function* postTools() {
@@ -68,8 +111,35 @@ export const PostToolsLive = PostTools.toLayer(
     const followUp = yield* PostFollowUp;
     const queries = yield* PostQueries;
     const scheduling = yield* PostScheduling;
+    const tiktok = yield* TikTokCreatorInfo;
 
     const actor = CurrentMember.pipe(Effect.map(actorOf));
+
+    // The options a draft has on those of `channels` it is for already.
+    const keptOptions = Effect.fn("keptOptions")(function* keptOptions(
+      member: Actor,
+      postId: PostId,
+      channels: readonly ChannelId[]
+    ) {
+      const found = yield* queries.get(member, postId).pipe(
+        Effect.catchTags({
+          DatabaseError: Effect.die,
+          MissingPermission: notAllowed("read posts"),
+          PostNotFound: notFound,
+        })
+      );
+
+      return found.targets.flatMap((target) =>
+        Option.isSome(target.options) && channels.includes(target.channelId)
+          ? [
+              new ChannelOptions({
+                channelId: target.channelId,
+                options: target.options.value,
+              }),
+            ]
+          : []
+      );
+    });
 
     const followUpFailures = {
       DatabaseError: Effect.die,
@@ -99,12 +169,15 @@ export const PostToolsLive = PostTools.toLayer(
 
           return postView(confirmed);
         }).pipe(Effect.catchTags(malformedPost)),
-      create_draft: ({ channelIds, content }) =>
+      create_draft: ({ channelIds, content, options }) =>
         Effect.gen(function* create() {
+          const given = yield* givenOptions(options);
+
           const created = yield* drafts
             .create(yield* actor, {
               channelIds: yield* channelIdsFrom(channelIds),
               content: yield* contentFrom(content),
+              options: Option.getOrElse(given, () => []),
             })
             .pipe(
               Effect.catchTags({
@@ -145,6 +218,28 @@ export const PostToolsLive = PostTools.toLayer(
 
           return postView(found);
         }).pipe(Effect.catchTags(malformedPost)),
+      get_tiktok_creator: ({ channelId }) =>
+        actor.pipe(
+          Effect.flatMap((member) => tiktok.read(member, channelId)),
+          Effect.map(tiktokAccountView),
+          Effect.catchTags({
+            BadRequest: ({ code }) =>
+              code === ownRefusalCodes.channelDisabled
+                ? refuse(
+                    "This channel is turned off: the user disconnects it and connects the account again to post to it."
+                  )
+                : notTikTok(),
+            DatabaseError: Effect.die,
+            MissingPermission: notAllowed("read what a TikTok channel takes"),
+            PlatformUnavailable: tiktokUnreachable,
+            RateLimited: tiktokUnreachable,
+            TokenExpired: () =>
+              refuse(
+                "The channel must be reconnected, in the web app, before TikTok tells its settings."
+              ),
+            UnknownChannels: notTikTok,
+          })
+        ),
       list_drafts: ({ cursor, limit }) =>
         Effect.gen(function* listDrafts() {
           // A cursor is the id of the last draft of the page before.
@@ -202,12 +297,23 @@ export const PostToolsLive = PostTools.toLayer(
 
           return postView(draft);
         }).pipe(Effect.catchTags(malformedPost)),
-      update_draft: ({ channelIds, content, postId }) =>
+      update_draft: ({ channelIds, content, options, postId }) =>
         Effect.gen(function* update() {
+          const id = yield* postIdFrom(postId);
+          const channels = yield* channelIdsFrom(channelIds);
+          const given = yield* givenOptions(options);
+
+          // Without options, the draft keeps those it has on the channels
+          // it keeps, rather than lose them as the API's update would.
+          const kept = Option.isSome(given)
+            ? given.value
+            : yield* keptOptions(yield* actor, id, channels);
+
           const updated = yield* drafts
-            .update(yield* actor, yield* postIdFrom(postId), {
-              channelIds: yield* channelIdsFrom(channelIds),
+            .update(yield* actor, id, {
+              channelIds: channels,
               content: yield* contentFrom(content),
+              options: kept,
             })
             .pipe(
               Effect.catchTags({

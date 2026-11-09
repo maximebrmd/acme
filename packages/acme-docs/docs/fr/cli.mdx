@@ -106,9 +106,12 @@ Chaque commande fait ce que votre rôle y permet, comme l’application web : un
 
 ```sh
 acme channels list
+acme channels tiktok <channel-id>
 ```
 
-Liste les canaux de l’espace de travail avec leurs identifiants, que les brouillons prennent, et si chacun publie ou est à reconnecter. Connecter un canal se fait dans l’application web.
+`acme channels list` liste les canaux de l’espace de travail avec leurs identifiants, que les brouillons prennent, et si chacun publie ou est à reconnecter. Connecter un canal se fait dans l’application web.
+
+`acme channels tiktok` lit les réglages d’un canal TikTok sur TikTok, comme TikTok le demande avant une publication : sous quel nom il publie, les audiences qu’une publication peut choisir (son `privacyLevel`, sans valeur par défaut), les interactions que le compte a désactivées, qui restent désactivées, et sa vidéo la plus longue, ou pourquoi il ne peut pas publier aujourd’hui. Publier sur TikTok vaut acceptation de sa confirmation d’utilisation de la musique, et de sa politique sur le contenu de marque pour un contenu de marque.
 
 ## Brouillons [#drafts]
 
@@ -116,10 +119,12 @@ Liste les canaux de l’espace de travail avec leurs identifiants, que les broui
 acme drafts list                  # du plus récent au plus ancien ; --limit et --cursor les parcourent
 acme drafts save --text "Le catalogue de printemps est sorti" --channel <channel-id> --channel <channel-id>
 acme drafts save --post <post-id> --text "Le catalogue de printemps sort aujourd’hui"
+acme drafts save --post <post-id> --options '<channel-id>={"platform":"youtube","title":"Catalogue de printemps","madeForKids":false}'
 acme drafts discard <post-id>
 ```
 
-- `acme drafts save` sans `--post` écrit un nouveau brouillon, pour les canaux que nomme `--channel` (aucun pour l’instant convient). Avec `--post`, il modifie ce brouillon : le texte, quand `--text` est donné, et les canaux, quand un `--channel` l’est. Ce que vous laissez de côté reste tel quel, médias compris.
+- `acme drafts save` sans `--post` écrit un nouveau brouillon, pour les canaux que nomme `--channel` (aucun pour l’instant convient). Avec `--post`, il modifie ce brouillon : le texte, quand `--text` est donné, et les canaux, quand un `--channel` l’est. Ce que vous laissez de côté reste tel quel, médias et [options des plateformes](/scheduling#options) des canaux qu’il garde compris.
+- `--options <channel-id>=<json>` règle les options de la plateforme d’un canal, en JSON avec sa `platform` : pour YouTube, `title` et `madeForKids` (tous deux nécessaires pour programmer), `privacy`, `tags`, `categoryId`, `notifySubscribers`, `containsSyntheticMedia` ; pour TikTok, `privacyLevel` (nécessaire, l’un de ceux que liste `acme channels tiktok`), `disableComment`, `disableDuet`, `disableStitch`, `commercialContent`, `brandOrganic`, `brandContent`, `aiGenerated`. Répétez-le pour plusieurs canaux ; il remplace en entier les options de ce canal.
 - Un brouillon ne part à aucune heure. Son texte est vérifié contre les limites de chaque plateforme quand il est programmé, dans l’application web.
 - `acme drafts discard` supprime un brouillon pour de bon. Une publication programmée ou partie n’est pas un brouillon : déprogrammez-la ou annulez-la plutôt.
 
@@ -133,7 +138,7 @@ acme posts confirm <post-id> <target-id> published --permalink https://mastodon.
 acme posts confirm <post-id> <target-id> not-published
 ```
 
-- `acme posts show` affiche le statut et l’heure de la publication, puis une ligne par canal, qui commence par l’identifiant de sa cible, avec ce qui s’y est passé : échouée et pourquoi, non confirmée et pourquoi, ou publiée à son adresse.
+- `acme posts show` affiche le statut et l’heure de la publication, puis une ligne par canal, qui commence par l’identifiant de sa cible, avec ce qui s’y est passé : échouée et pourquoi, non confirmée et pourquoi, ou publiée à son adresse (et gardée privée, quand YouTube a gardé privée une vidéo publique ou non répertoriée), puis les options de la publication sur chaque canal qui en a.
 - `acme posts unschedule` ramène une publication programmée à l’état de brouillon : elle ne part à aucune heure tant qu’elle n’est pas reprogrammée. Une publication déjà en cours de publication ne peut pas être déprogrammée.
 - `acme posts repost` renvoie la publication, maintenant, sur un canal où elle a échoué ou n’est pas confirmée. Quand elle n’est pas confirmée, vérifiez d’abord sur la plateforme : elle est peut-être déjà en ligne.
 - `acme posts confirm` enregistre ce que vous avez trouvé sur la plateforme pour une publication qu’Acme n’a pas pu confirmer : `published`, avec son adresse si vous l’avez, ou `not-published`, qui la marque en échec sur ce canal pour que `acme posts repost` puisse la renvoyer. [Programmer des publications](/scheduling) explique comment finissent les publications.

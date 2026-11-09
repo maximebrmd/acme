@@ -1,6 +1,7 @@
 import {
   AlreadyMember,
   Api,
+  ChannelNotFound,
   CurrentMember,
   CurrentPrincipal,
   Forbidden,
@@ -21,7 +22,9 @@ import type {
   Me,
   Permission,
   Post,
+  PostDraft,
   PostTarget,
+  TikTokAccount,
 } from "acme-contract";
 import { DateTime, Effect, Layer, Option, Ref } from "effect";
 import { HttpRouter } from "effect/http";
@@ -92,6 +95,10 @@ export const mastodonId = "0190f3a0-0000-7000-8000-00000000c001";
 
 export const blueskyId = "0190f3a0-0000-7000-8000-00000000c002";
 
+export const tiktokId = "0190f3a0-0000-7000-8000-00000000c003";
+
+export const youtubeId = "0190f3a0-0000-7000-8000-00000000c004";
+
 const channels: readonly Channel[] = [
   {
     avatarUrl: null,
@@ -111,7 +118,43 @@ const channels: readonly Channel[] = [
     status: { _tag: "refreshNeeded" },
     tokenExpiresAt: null,
   },
+  {
+    avatarUrl: null,
+    displayName: "Studio",
+    handle: "@studio_example",
+    id: tiktokId,
+    platform: "tiktok",
+    status: { _tag: "active" },
+    tokenExpiresAt: null,
+  },
+  {
+    avatarUrl: null,
+    displayName: "Studio videos",
+    handle: "Studio videos",
+    id: youtubeId,
+    platform: "youtube",
+    status: { _tag: "active" },
+    tokenExpiresAt: null,
+  },
 ];
+
+// The TikTok channel's creator, as TikTok tells it.
+const tiktokAccount: TikTokAccount = {
+  posting: {
+    _tag: "ready",
+    creator: {
+      avatarUrl: null,
+      commentDisabled: false,
+      duetDisabled: true,
+      maxVideoDurationMs: 600_000,
+      nickname: "Studio",
+      privacyLevels: ["PUBLIC_TO_EVERYONE", "SELF_ONLY"],
+      stitchDisabled: true,
+      username: "studio_example",
+    },
+  },
+  takesPhotos: false,
+};
 
 export const draftId = "0190f3a0-0000-7000-8000-00000000d001";
 
@@ -122,6 +165,8 @@ export const finishedId = "0190f3a0-0000-7000-8000-00000000d003";
 export const failedTargetId = "0190f3a0-0000-7000-8000-00000000e001";
 
 export const unconfirmedTargetId = "0190f3a0-0000-7000-8000-00000000e002";
+
+export const quotaTargetId = "0190f3a0-0000-7000-8000-00000000e003";
 
 const pendingOn = (id: string, channelId: string): PostTarget => ({
   channelId,
@@ -173,6 +218,16 @@ const posts: readonly Post[] = [
         ...pendingOn(unconfirmedTargetId, blueskyId),
         status: "unconfirmed",
         unconfirmedReason: "noResponse",
+      },
+      {
+        ...pendingOn(quotaTargetId, youtubeId),
+        failureReason: "quotaExceeded",
+        options: {
+          madeForKids: false,
+          platform: "youtube",
+          title: "A synthetic launch video",
+        },
+        status: "failed",
       },
     ],
   },
@@ -346,6 +401,15 @@ const changingTarget = (
 
 const refusing = Effect.fail(new Unauthenticated());
 
+// A draft's targets, with the options the request gives each channel.
+const targetsOf = (postId: string, draft: PostDraft) =>
+  draft.channelIds.map((channelId, index): PostTarget => ({
+    ...pendingOn(`${postId}-${String(index)}`, channelId),
+    options:
+      draft.options?.find((chosen) => chosen.channelId === channelId)
+        ?.options ?? null,
+  }));
+
 /** The workspace groups and the account's, answered from the studio. */
 export const studioGroupsLive = (studio: Studio) =>
   Layer.mergeAll(
@@ -417,9 +481,7 @@ export const studioGroupsLive = (studio: Studio) =>
               outcome: null,
               schedule: null,
               status: "draft",
-              targets: payload.channelIds.map((channelId, index) =>
-                pendingOn(`${id}-${String(index)}`, channelId)
-              ),
+              targets: targetsOf(id, payload),
             });
           }),
         discard: ({ params }) =>
@@ -535,9 +597,7 @@ export const studioGroupsLive = (studio: Studio) =>
             return yield* savePost(studio, {
               ...post,
               content: payload.content,
-              targets: payload.channelIds.map((channelId, index) =>
-                pendingOn(`${post.id}-${String(index)}`, channelId)
-              ),
+              targets: targetsOf(post.id, payload),
             });
           }),
       })
@@ -727,7 +787,16 @@ export const studioGroupsLive = (studio: Studio) =>
       })
     ),
     HttpApiBuilder.group(Api, "tiktok", (handlers) =>
-      handlers.handleAll({ creator: () => refusing })
+      handlers.handleAll({
+        creator: ({ params }) =>
+          allowed("post:create").pipe(
+            Effect.andThen(
+              params.workspaceId === studioId && params.channelId === tiktokId
+                ? Effect.succeed(tiktokAccount)
+                : Effect.fail(new ChannelNotFound())
+            )
+          ),
+      })
     )
   );
 

@@ -15,9 +15,12 @@ import {
   failedTargetId,
   finishedId,
   mastodonId,
+  quotaTargetId,
   scheduledId,
   studioMe,
+  tiktokId,
   unconfirmedTargetId,
+  youtubeId,
 } from "./studio.ts";
 import type { Studio } from "./studio.ts";
 
@@ -175,6 +178,114 @@ describe("acme drafts", () => {
       }).pipe(Effect.scoped, Effect.provide(filesLayer))
   );
 
+  it.effect(
+    "carries a channel's platform options, keeps them when changing other things, and replaces them when given",
+    () =>
+      Effect.gen(function* options() {
+        const session = yield* signedIn();
+
+        const first = JSON.stringify({
+          madeForKids: false,
+          platform: "youtube",
+          title: "A synthetic launch video",
+        });
+
+        const created = yield* session.printed([
+          "drafts",
+          "save",
+          ...inStudio,
+          "--text",
+          "A synthetic video note",
+          "--channel",
+          youtubeId,
+          "--channel",
+          mastodonId,
+          "--options",
+          `${youtubeId}=${first}`,
+        ]);
+
+        const id =
+          /Saved draft (?<id>\S+) in Studio/u.exec(created)?.groups?.["id"] ??
+          "";
+
+        const optionsOf = Effect.gen(function* read() {
+          const { posts } = yield* Ref.get(session.studio.state);
+
+          return (
+            posts
+              .find((post) => post.id === id)
+              ?.targets.map((target) => target.options) ?? []
+          );
+        });
+
+        assert.deepStrictEqual(yield* optionsOf, [
+          {
+            madeForKids: false,
+            platform: "youtube",
+            title: "A synthetic launch video",
+          },
+          null,
+        ]);
+
+        // Changing the text keeps them.
+        yield* session.printed([
+          "drafts",
+          "save",
+          ...inStudio,
+          "--post",
+          id,
+          "--text",
+          "A synthetic video note, edited",
+        ]);
+
+        assert.deepStrictEqual((yield* optionsOf)[0], {
+          madeForKids: false,
+          platform: "youtube",
+          title: "A synthetic launch video",
+        });
+
+        yield* session.printed([
+          "drafts",
+          "save",
+          ...inStudio,
+          "--post",
+          id,
+          "--options",
+          `${youtubeId}={"platform":"youtube","title":"A synthetic title, renamed"}`,
+        ]);
+
+        assert.deepStrictEqual((yield* optionsOf)[0], {
+          platform: "youtube",
+          title: "A synthetic title, renamed",
+        });
+
+        assert.include(
+          yield* session.refused([
+            "drafts",
+            "save",
+            ...inStudio,
+            "--post",
+            id,
+            "--options",
+            `${youtubeId}={"platform":"myspace"}`,
+          ]),
+          `The options for channel ${youtubeId} are not a platform's options`
+        );
+        assert.include(
+          yield* session.refused([
+            "drafts",
+            "save",
+            ...inStudio,
+            "--post",
+            id,
+            "--options",
+            "no-channel",
+          ]),
+          "--options takes <channel-id>=<json>"
+        );
+      }).pipe(Effect.scoped, Effect.provide(filesLayer))
+  );
+
   it.effect("refuses a draft that breaks the contract before sending it", () =>
     Effect.gen(function* refuses() {
       const session = yield* signedIn();
@@ -212,6 +323,37 @@ describe("acme drafts", () => {
   );
 });
 
+describe("acme channels", () => {
+  it.effect("shows what a TikTok channel takes, and refuses another", () =>
+    Effect.gen(function* tiktok() {
+      const session = yield* signedIn();
+
+      const shown = yield* session.printed([
+        "channels",
+        "tiktok",
+        tiktokId,
+        ...inStudio,
+      ]);
+
+      assert.include(shown, "Posting as Studio (@studio_example).");
+      assert.include(
+        shown,
+        "Who can view a post (its privacyLevel, no default): PUBLIC_TO_EVERYONE, SELF_ONLY."
+      );
+      assert.include(
+        shown,
+        "Turned off in the account's settings, so off on every post: Duet, Stitch."
+      );
+      assert.include(shown, "Videos up to 600 seconds.");
+      assert.include(shown, "Music Usage Confirmation");
+      assert.include(
+        yield* session.refused(["channels", "tiktok", youtubeId, ...inStudio]),
+        "The workspace has no such channel, or it is not of this platform"
+      );
+    }).pipe(Effect.scoped, Effect.provide(filesLayer))
+  );
+});
+
 describe("acme posts", () => {
   it.effect("shows how a post went on each channel, with its targets", () =>
     Effect.gen(function* shows() {
@@ -230,8 +372,20 @@ describe("acme posts", () => {
       );
       assert.include(shown, failedTargetId);
       assert.include(shown, "(mastodon @studio@example.social)");
-      assert.include(shown, "failed: rateLimited");
+      assert.include(
+        shown,
+        "failed: rateLimited (the platform kept limiting Acme, which stopped trying)"
+      );
       assert.include(shown, "unconfirmed: noResponse");
+      assert.include(shown, quotaTargetId);
+      assert.include(
+        shown,
+        "failed: quotaExceeded (the platform's daily upload allowance stayed spent: post it again after it resets)"
+      );
+      assert.include(
+        shown,
+        `Options on ${youtubeId} (youtube Studio videos): {"madeForKids":false,"platform":"youtube","title":"A synthetic launch video"}`
+      );
     }).pipe(Effect.scoped, Effect.provide(filesLayer))
   );
 

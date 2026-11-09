@@ -1,6 +1,6 @@
-import type { ChannelStatus } from "acme-contract";
+import type { ChannelStatus, TikTokAccount } from "acme-contract";
 import { Console, Effect, Match } from "effect";
-import { Command } from "effect/cli";
+import { Argument, Command } from "effect/cli";
 
 import { explain } from "#explain.ts";
 import { columns, instant } from "#print.ts";
@@ -54,7 +54,84 @@ const list = Command.make(
   )
 );
 
+const blocks: Readonly<
+  Record<
+    Extract<TikTokAccount["posting"], { _tag: "blocked" }>["reason"],
+    string
+  >
+> = {
+  banned: "TikTok bars this account from posting.",
+  clientLimit:
+    "This server's TikTok app reached its count of creators for the day: try again tomorrow.",
+  postLimit:
+    "The account posted as much as TikTok allows today: try again tomorrow.",
+};
+
+// What a TikTok channel takes, as TikTok asks a client to show it first.
+const creatorLines = (account: TikTokAccount): readonly string[] => {
+  const photos = account.takesPhotos
+    ? "This server posts videos and photos to TikTok."
+    : "This server posts videos only to TikTok: photos need an address TikTok verified.";
+
+  if (account.posting._tag === "blocked") {
+    return [blocks[account.posting.reason], photos];
+  }
+
+  const { creator } = account.posting;
+
+  const off = [
+    creator.commentDisabled ? "comments" : [],
+    creator.duetDisabled ? "Duet" : [],
+    creator.stitchDisabled ? "Stitch" : [],
+  ].flat();
+
+  return [
+    creator.username === ""
+      ? `Posting as ${creator.nickname}.`
+      : `Posting as ${creator.nickname} (@${creator.username}).`,
+    `Who can view a post (its privacyLevel, no default): ${creator.privacyLevels.join(", ")}.`,
+    off.length === 0
+      ? "The account allows comments, Duet and Stitch: each stays off until a post turns it on."
+      : `Turned off in the account's settings, so off on every post: ${off.join(", ")}.`,
+    creator.maxVideoDurationMs === null
+      ? "TikTok does not say how long its videos may be."
+      : `Videos up to ${String(Math.floor(creator.maxVideoDurationMs / 1000))} seconds.`,
+    photos,
+    "Posting means agreeing to TikTok's Music Usage Confirmation, and to its Branded Content Policy for branded content.",
+  ];
+};
+
+const tiktok = Command.make(
+  "tiktok",
+  {
+    channelId: Argument.String("channel-id").pipe(
+      Argument.withDescription(
+        "The TikTok channel, as acme channels list shows its id."
+      )
+    ),
+    workspace: workspaceFlag,
+  },
+  Effect.fn("channels.tiktok")(function* tiktokCreator({
+    channelId,
+    workspace: choice,
+  }) {
+    const { client, url, workspace } = yield* inWorkspace(choice);
+
+    const account = yield* client.tiktok
+      .creator({ params: { channelId, workspaceId: workspace.id } })
+      .pipe(Effect.mapError(explain(url)));
+
+    for (const line of creatorLines(account)) {
+      yield* Console.log(line);
+    }
+  })
+).pipe(
+  Command.withDescription(
+    "Show what a TikTok channel takes, fresh from TikTok: who it posts as, the audiences a post may choose, the interactions the account turned off and its longest video."
+  )
+);
+
 export const channels = Command.make("channels").pipe(
   Command.withDescription("The social accounts connected to a workspace."),
-  Command.withSubcommands([list])
+  Command.withSubcommands([list, tiktok])
 );

@@ -949,6 +949,15 @@ and no socket, for tests.
   and say in its description what it changes. Refusals are `ToolRefused`,
   with a message the user can act on (`refusals.ts`). The account's own
   data (its export, its applications) has no tool.
+- What the web app's composer sends, the CLI and the tools send too: a
+  draft's per-channel `options` (`create_draft`, `update_draft`, `acme
+  drafts save --options`), and TikTok's creator before a TikTok post
+  (`get_tiktok_creator`, `acme channels tiktok`). The API's update replaces
+  a draft's options; `update_draft` and `acme drafts save` keep those of the
+  channels it keeps unless told otherwise, so a rewrite never drops them.
+  Every failure reason has its words in the CLI (`posts.ts`
+  `failureReasons`, typed by the contract) and in `get_post`'s
+  description: add a reason there with the others. Neither schedules.
 
 ### Database
 
