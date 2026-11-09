@@ -2,14 +2,14 @@ import { Button } from "acme-ui/components/button";
 import { Option } from "effect";
 import { getTranslations } from "next-intl/server";
 
-import { currentUser } from "#auth/session.ts";
+import { currentUserOrNone } from "#auth/session.ts";
 import { AccountMenuView } from "#components/account-menu-view.tsx";
 import { Link } from "#i18n/navigation.ts";
 
 // The header's account corner: the signed-in user, read from GET /api/me
-// while the page renders, or a way to sign in.
+// while the page renders, or a way to sign in, also when that read fails.
 export const AccountMenu = async () => {
-  const me = await currentUser();
+  const me = await currentUserOrNone();
   const t = await getTranslations("UserMenu");
 
   return Option.match(me, {

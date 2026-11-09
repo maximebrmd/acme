@@ -1,6 +1,6 @@
 import { Api } from "acme-contract";
 import type { Me } from "acme-contract";
-import { Effect, Option } from "effect";
+import { Effect, Exit, Option } from "effect";
 import { FetchHttpClient, HttpClient, HttpClientRequest } from "effect/http";
 import { HttpApiClient } from "effect/http-api";
 import { headers } from "next/headers";
@@ -33,14 +33,41 @@ export const currentUserEffect = Effect.fn("currentUser")(function* currentUser(
 }, Effect.provide(FetchHttpClient.layer));
 
 /**
- * For Server Components: the user the request's cookies sign in, if any.
- * Read once per request, however many components ask.
+ * The user, or none when reading them failed, which is logged: for what
+ * every page shows, so that the API being down leaves the pages up.
  */
-export const currentUser = cache(async (): Promise<Option.Option<Me>> => {
+export const orSignedOut = <E, R>(
+  user: Effect.Effect<Option.Option<Me>, E, R>
+) =>
+  user.pipe(
+    Effect.catchCause((cause) =>
+      Effect.logWarning("The signed-in user could not be read", cause).pipe(
+        Effect.as(Option.none<Me>())
+      )
+    )
+  );
+
+// Read once per request, however many components ask; each decides what a
+// failure means.
+const readCurrentUser = cache(async () => {
   const incoming = await headers();
   const cookie = incoming.get("cookie");
 
   return cookie === null
-    ? Option.none()
-    : await Effect.runPromise(currentUserEffect(cookie));
+    ? Exit.succeed(Option.none<Me>())
+    : await Effect.runPromiseExit(currentUserEffect(cookie));
 });
+
+/**
+ * For Server Components: the user the request's cookies sign in, if any.
+ * Fails when GET /api/me does.
+ */
+export const currentUser = async (): Promise<Option.Option<Me>> =>
+  await Effect.runPromise(await readCurrentUser());
+
+/**
+ * For the header, on every page: the same user, or none when GET /api/me
+ * fails, so the page still renders, with a way to sign in.
+ */
+export const currentUserOrNone = async (): Promise<Option.Option<Me>> =>
+  await Effect.runPromise(orSignedOut(await readCurrentUser()));
