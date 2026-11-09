@@ -26,6 +26,12 @@ acme_access_everything: false
 
 acme_mail_from: Acme <noreply@example.com>
 
+# Grafana posts a heartbeat to the uptime server every few minutes, which
+# alerts when it stops (group_vars/uptime: uptime_hostname, and the external
+# endpoint `grafana heartbeat` of the group `production`). Its token is the
+# credential ACME_HEARTBEAT_TOKEN, which the uptime server generates.
+acme_heartbeat_url: https://uptime.example.com/api/v1/endpoints/production_grafana-heartbeat/external?success=true
+
 # Cloudflare R2: one bucket for media, one for database backups, in the
 # account whose id names the endpoint.
 acme_media_endpoint: https://0123456789abcdef0123456789abcdef.r2.cloudflarestorage.com

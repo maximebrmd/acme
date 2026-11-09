@@ -25,4 +25,13 @@ acme_runtime_host_settings: >-
        'ACME_GRAFANA_PORT': acme_ports.grafana,
        'ACME_OTLP_HTTP_PORT': acme_ports.otlp_http,
      }
+     | combine({
+         'ACME_GRAFANA_HEARTBEAT': './config/production/grafana/alerting/heartbeat.yaml',
+         'ACME_HEARTBEAT_URL': acme_heartbeat_url,
+       } if acme_heartbeat_url else {})
      | combine(acme_settings) }}
+
+# The credentials this server needs, by name: acme_required_credentials, and
+# the heartbeat's token when Grafana sends one.
+acme_runtime_required_credentials: >-
+  {{ acme_required_credentials + (['ACME_HEARTBEAT_TOKEN'] if acme_heartbeat_url else []) }}

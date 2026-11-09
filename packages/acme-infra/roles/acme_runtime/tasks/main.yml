@@ -76,7 +76,7 @@
 - name: Find the credentials not set on the server
   ansible.builtin.shell: |
     set -eu
-    for name in {{ acme_required_credentials | join(' ') }}; do
+    for name in {{ acme_runtime_required_credentials | join(' ') }}; do
       grep -Eq "^${name}=.+" {{ acme_root }}/credentials.env || echo "$name"
     done
     grep -Eq '^({{ acme_mail_credentials | join('|') }})=.+' {{ acme_root }}/credentials.env ||
@@ -93,7 +93,7 @@
     quiet: true
   vars:
     acme_runtime_missing: >-
-      {{ (acme_required_credentials | difference(acme_runtime_vault_set)
+      {{ (acme_runtime_required_credentials | difference(acme_runtime_vault_set)
           + ([] if acme_runtime_vault_set | intersect(acme_mail_credentials) else [acme_mail_credentials | join(' or ')]))
          if acme_credentials is defined else acme_runtime_unset.stdout_lines }}
     # The names the vault gives a value to, as the check on the server reads

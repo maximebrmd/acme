@@ -1,5 +1,6 @@
 # No contact point: alerts show in Grafana and notify no one. compose.production.yaml
 # mounts this file unless ACME_GRAFANA_CONTACT_POINTS names another, such as
-# telegram.yaml.
+# telegram.yaml, and in place of the heartbeat unless ACME_GRAFANA_HEARTBEAT
+# names heartbeat.yaml.
 
 apiVersion: 1

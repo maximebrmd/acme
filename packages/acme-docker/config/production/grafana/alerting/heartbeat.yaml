@@ -1,0 +1,71 @@
+# A heartbeat: a rule that always fires, whose notifications go to an
+# outside checker, such as the uptime server's Gatus, every 5 minutes or so.
+# When they stop, Grafana, Prometheus or the way out is down, so this
+# server's own alerts may not reach anyone either: the checker says so.
+#
+# Mount this file (ACME_GRAFANA_HEARTBEAT) only where ACME_HEARTBEAT_URL and
+# ACME_HEARTBEAT_TOKEN are set: Grafana reads them from its environment when
+# it starts. The token goes as a bearer token. The rule names its contact
+# point, so its notifications go there alone, never to the contact points
+# file's.
+
+apiVersion: 1
+
+contactPoints:
+  - orgId: 1
+    name: Heartbeat
+    receivers:
+      - uid: heartbeat
+        type: webhook
+        # A resolved heartbeat would look like one more beat.
+        disableResolveMessage: true
+        settings:
+          url: $ACME_HEARTBEAT_URL
+          httpMethod: POST
+          authorization_scheme: Bearer
+          authorization_credentials: $ACME_HEARTBEAT_TOKEN
+
+groups:
+  - orgId: 1
+    name: heartbeat
+    folder: Acme
+    interval: 1m
+    rules:
+      - uid: acme-heartbeat
+        title: Heartbeat
+        condition: B
+        for: 0s
+        # Fires while Prometheus answers: without an answer, the rule
+        # resolves, sends nothing, and the checker hears silence.
+        noDataState: OK
+        execErrState: OK
+        annotations:
+          summary: Always firing while alerting works. Its notifications tell the uptime server this server's alerting is alive.
+        labels:
+          severity: none
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 600
+              to: 0
+            model:
+              refId: A
+              instant: true
+              expr: vector(1)
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [0]
+        notification_settings:
+          receiver: Heartbeat
+          group_by: [grafana_folder, alertname]
+          group_wait: 0s
+          group_interval: 1m
+          repeat_interval: 5m

@@ -121,6 +121,39 @@ def test_the_server_provides_every_secret_the_configuration_names(rendered: Path
     assert _references(_config(rendered)) == _provided()
 
 
+def test_production_sends_its_heartbeat_to_its_endpoint(rendered: Path) -> None:
+    (heartbeat,) = _config(rendered)["external-endpoints"]
+    key = _key(heartbeat["group"], heartbeat["name"])
+
+    assert heartbeat["group"] == "production"
+    assert settings("production")["acme_heartbeat_url"] == (
+        f"https://{UPTIME['uptime_hostname']}/api/v1/endpoints/{key}/external?success=true"
+    )
+    assert settings("sandbox")["acme_heartbeat_url"] == ""
+
+
+def test_the_heartbeat_tolerates_a_missed_beat(rendered: Path) -> None:
+    """Grafana repeats it every 5 minutes (heartbeat.yaml)."""
+    (heartbeat,) = _config(rendered)["external-endpoints"]
+    grafana = yaml.safe_load(
+        (INFRA.parent / "acme-docker" / "config" / "production" / "grafana" / "alerting" / "heartbeat.yaml").read_text()
+    )
+    (rule,) = grafana["groups"][0]["rules"]
+
+    def minutes(duration: str) -> int:
+        return int(duration.removesuffix("m"))
+
+    assert minutes(heartbeat["heartbeat"]["interval"]) >= 2 * minutes(rule["notification_settings"]["repeat_interval"])
+
+
+def test_grafana_heartbeat_reads_the_settings_compose_passes() -> None:
+    compose = yaml.safe_load((INFRA.parent / "acme-docker" / "compose.production.yaml").read_text())
+    grafana = compose["services"]["grafana"]
+
+    assert {"ACME_HEARTBEAT_URL", "ACME_HEARTBEAT_TOKEN"} <= set(grafana["environment"])
+    assert any(volume.endswith(":/etc/grafana/provisioning/alerting/heartbeat.yaml:ro") for volume in grafana["volumes"])
+
+
 @pytest.mark.parametrize("service", ["gatus", "caddy"])
 def test_the_stack_pins_and_confines_each_service(rendered: Path, service: str) -> None:
     spec = _compose(rendered)["services"][service]

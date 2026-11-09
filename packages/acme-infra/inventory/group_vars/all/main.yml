@@ -68,6 +68,11 @@ acme_required_credentials:
   - TELEGRAM_CHAT_ID
 acme_mail_credentials: [RESEND_API_KEY, SMTP_URL]
 
+# The uptime server's address that Grafana sends its heartbeat to, every few
+# minutes, so the uptime server says when this server's alerting goes silent
+# (README.md, "Uptime"). Empty: no heartbeat.
+acme_heartbeat_url: ""
+
 # More plain settings for the server, as NAME: value (the docs' environment
 # variables page lists them), such as ACME_AI_PROVIDER: anthropic. Secrets go
 # in the credentials instead.
