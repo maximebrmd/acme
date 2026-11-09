@@ -11,10 +11,19 @@ from conftest import ansible_render, role_file, task
 def test_docker_packages_are_pinned_exactly() -> None:
     packages = role_file("docker", "defaults")["docker_packages"]
 
-    assert set(packages) == {"docker-ce", "docker-ce-cli", "containerd.io", "docker-buildx-plugin", "docker-compose-plugin"}
+    # docker-ce-rootless-extras too, which docker-ce recommends, so apt
+    # installs it, and the system role's upgrade would move it otherwise.
+    assert set(packages) == {
+        "docker-ce",
+        "docker-ce-cli",
+        "docker-ce-rootless-extras",
+        "containerd.io",
+        "docker-buildx-plugin",
+        "docker-compose-plugin",
+    }
     # Debian versions, without the release's suffix, which the role adds.
     assert all(re.fullmatch(r"(\d+:)?\d+\.\d+\.\d+-\d+", str(version)) for version in packages.values())
-    assert packages["docker-ce"] == packages["docker-ce-cli"]
+    assert packages["docker-ce"] == packages["docker-ce-cli"] == packages["docker-ce-rootless-extras"]
 
 
 def test_docker_installs_and_holds_each_package_for_the_release() -> None:

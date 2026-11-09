@@ -111,12 +111,14 @@
     quiet: true
 
 # Names only: the values never leave the file. Read-only, so it runs in check
-# mode too.
+# mode too. A value counts once it holds a character, quoted or not: as in
+# the vault, NAME= and NAME='' leave it unset.
 - name: Find the credentials not set on the server
   ansible.builtin.shell: |
     set -eu
+    value="=['\"]?[^'\"[:space:]]"
     for name in {{ uptime_required_credentials | join(' ') }}; do
-      grep -Eq "^${name}=.+" {{ uptime_root }}/credentials.env || echo "$name"
+      grep -Eq "^${name}${value}" {{ uptime_root }}/credentials.env || echo "$name"
     done
   register: uptime_unset
   changed_when: false

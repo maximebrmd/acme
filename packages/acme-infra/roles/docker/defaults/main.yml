@@ -17,6 +17,8 @@
 docker_packages:
   docker-ce: 5:29.9.3-1
   docker-ce-cli: 5:29.9.3-1
+  # docker-ce recommends it, so apt installs it: pinned with the engine.
+  docker-ce-rootless-extras: 5:29.9.3-1
   containerd.io: 2.4.2-3
   docker-buildx-plugin: 0.38.1-1
   docker-compose-plugin: 5.7.0-1
