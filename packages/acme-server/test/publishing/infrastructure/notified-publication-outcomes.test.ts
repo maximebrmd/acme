@@ -150,6 +150,7 @@ const settledAs = (
   new PostTarget({
     channelId: target.channelId,
     id: target.id,
+    options: target.options,
     postId: target.postId,
     round,
     status,

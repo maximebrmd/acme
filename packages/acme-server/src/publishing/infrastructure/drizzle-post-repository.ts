@@ -27,6 +27,7 @@ import type { PostTargetStatus } from "#publishing/domain/post-target-status.ts"
 import { PostTarget } from "#publishing/domain/post-target.ts";
 import { Post } from "#publishing/domain/post.ts";
 import type { Schedule } from "#publishing/domain/schedule.ts";
+import { TargetOptionsSchema } from "#publishing/domain/target-options.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
 import type { MediaAssetId, PostId, WorkspaceId } from "#shared/domain/ids.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
@@ -42,6 +43,9 @@ type TargetRow = typeof postTargets.$inferSelect;
 const decodePost = Schema.decodeUnknownEffect(Post);
 
 const decodeTarget = Schema.decodeUnknownEffect(PostTarget);
+
+// A target's options as their column holds them: JSON, tagged by platform.
+const encodeOptions = Schema.encodeSync(TargetOptionsSchema);
 
 const decodeExecution = Schema.decodeUnknownEffect(
   Schema.OptionFromNullOr(ExecutionIdSchema)
@@ -107,6 +111,7 @@ const toTarget = (row: TargetRow) =>
   decodeTarget({
     channelId: row.channelId,
     id: row.id,
+    options: Option.fromNullOr(row.options),
     postId: row.postId,
     round: row.round,
     status: targetStatusOf(row),
@@ -234,10 +239,14 @@ const storedFrom = (rows: readonly PostRow[]) => {
 
 const failed = (cause: unknown) => new DatabaseError({ cause });
 
+const optionsColumn = (target: PostTarget) =>
+  target.options.pipe(Option.map(encodeOptions), Option.getOrNull);
+
 const targetRow = (target: PostTarget) => ({
   ...targetColumns(target.status),
   channelId: target.channelId,
   id: target.id,
+  options: optionsColumn(target),
   postId: target.postId,
   round: target.round,
 });
@@ -462,11 +471,16 @@ export const DrizzlePostRepository = Layer.effect(
               )
             );
 
+          // A target the post had keeps its status and round, and takes
+          // the options it is given.
           if (targets.length > 0) {
             yield* db
               .insert(postTargets)
               .values(targets.map(targetRow))
-              .onConflictDoNothing({ target: postTargets.id });
+              .onConflictDoUpdate({
+                set: { options: sql`excluded.options` },
+                target: postTargets.id,
+              });
           }
         }).pipe(Effect.mapError(failed)),
       showing: (workspaceId, mediaId, statuses) =>

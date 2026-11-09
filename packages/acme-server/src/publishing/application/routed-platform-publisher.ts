@@ -25,9 +25,9 @@ const interrupted: PublishResult = {
 };
 
 /**
- * The PlatformPublisher the channel gates run: it reads the post, finds the
- * channel's platform, and hands the post, as it reads on that channel, to
- * the platform's client.
+ * The PlatformPublisher the channel gates run: it reads the post and its
+ * target, finds the channel's platform, and hands the post, as it reads on
+ * that channel and with the target's options, to the platform's client.
  */
 export const RoutedPlatformPublisher = Layer.effect(
   PlatformPublisher,
@@ -39,12 +39,17 @@ export const RoutedPlatformPublisher = Layer.effect(
     const outgoing = Effect.fn("Publishing.outgoing")(function* outgoing(
       request: PublishRequest
     ) {
-      const stored = yield* posts
-        .find(request.postId)
-        .pipe(Effect.catchTag("DatabaseError", databaseDown));
+      const { stored, target } = yield* Effect.all({
+        stored: posts.find(request.postId),
+        target: posts.findTarget(request.targetId),
+      }).pipe(Effect.catchTag("DatabaseError", databaseDown));
 
       if (Option.isNone(stored)) {
         return yield* Effect.die(`Post ${request.postId} is missing`);
+      }
+
+      if (Option.isNone(target)) {
+        return yield* Effect.die(`Target ${request.targetId} is missing`);
       }
 
       const account = yield* credentials.account(request.channelId);
@@ -61,6 +66,7 @@ export const RoutedPlatformPublisher = Layer.effect(
         channelId: request.channelId,
         idempotencyKey: request.idempotencyKey,
         media: post.content.media,
+        options: target.value.options,
         startedAt: request.startedAt,
         text: textOn(post.content, request.channelId),
         workspaceId: post.workspaceId,

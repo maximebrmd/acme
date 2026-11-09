@@ -38,7 +38,14 @@ const now = utc("2026-06-15T08:00:05Z");
 const platformPostId = PlatformPostIdSchema.make("1790000000000000001");
 
 const targetIn = (status: PostTargetStatus): PostTarget =>
-  new PostTarget({ channelId, id: targetId, postId, round: 1, status });
+  new PostTarget({
+    channelId,
+    id: targetId,
+    options: Option.none(),
+    postId,
+    round: 1,
+    status,
+  });
 
 const statuses = {
   cancelled: targetIn({ _tag: "cancelled", cancelledAt: startedAt }),

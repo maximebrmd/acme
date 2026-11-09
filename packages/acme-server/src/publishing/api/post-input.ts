@@ -4,10 +4,14 @@ import {
   UnknownChannels,
   UnknownMedia,
 } from "acme-contract";
-import type { PostContent as ContentInput } from "acme-contract";
+import type {
+  ChannelOptions as OptionsInput,
+  PostContent as ContentInput,
+} from "acme-contract";
 import type { DateTime } from "effect";
 import { Array as Arr, Effect, Option, Schema } from "effect";
 
+import { ChannelOptionsListSchema } from "#publishing/domain/channel-options.ts";
 import { PostContent } from "#publishing/domain/post-content.ts";
 import { PostTargetIdSchema } from "#publishing/domain/post-target-id.ts";
 import { Schedule } from "#publishing/domain/schedule.ts";
@@ -34,6 +38,8 @@ const decodeTimeZone = Schema.decodeUnknownOption(TimeZoneIdSchema);
 // The contract checks the same limits as the domain, so content that passed
 // it always decodes.
 const decodeContent = Schema.decodeUnknownEffect(PostContent);
+
+const decodeOptions = Schema.decodeUnknownEffect(ChannelOptionsListSchema);
 
 const malformed = <A>(
   raw: readonly string[],
@@ -65,6 +71,12 @@ export const contentFrom = (input: ContentInput) =>
 
     return yield* decodeContent(input).pipe(Effect.orDie);
   });
+
+/** The options a request gives on some channels, with their ids decoded. */
+export const optionsFrom = (input: readonly OptionsInput[]) =>
+  channelIdsFrom(input.map(({ channelId }) => channelId)).pipe(
+    Effect.andThen(decodeOptions(input).pipe(Effect.orDie))
+  );
 
 /** The post a path names, or PostNotFound. */
 export const postIdFrom = (raw: string) =>

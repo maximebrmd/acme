@@ -1,5 +1,5 @@
 import { assert, describe, it } from "@effect/vitest";
-import { DateTime, Duration, Effect, Fiber, Ref } from "effect";
+import { DateTime, Duration, Effect, Fiber, Option, Ref } from "effect";
 import { TestClock } from "effect/testing";
 
 import { OutcomeUnknown } from "#publishing/application/outcome-unknown.ts";
@@ -118,6 +118,7 @@ const postStarted = (startedAt: DateTime.Utc): OutgoingPost => ({
   channelId: ChannelIdSchema.make("01900000-0000-7000-8000-0000000000d1"),
   idempotencyKey: "4c9a82ce3e1a3b5b0a1f3bd3c1a7e0a2",
   media: [],
+  options: Option.none(),
   startedAt,
   text: "A synthetic post for tests.",
   workspaceId: WorkspaceIdSchema.make("6a1c2d3e-4f50-4617-8829-3a4b5c6d7e8f"),

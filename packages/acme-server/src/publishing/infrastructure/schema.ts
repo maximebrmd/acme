@@ -65,7 +65,10 @@ export const posts = publishing.table(
 
 /**
  * A post on one channel. `round` goes up when the user sends it again, so a
- * job from an earlier round leaves it alone.
+ * job from an earlier round leaves it alone. `options` holds what the post
+ * says there that only the channel's platform knows (a YouTube title, who
+ * sees a TikTok post), tagged by `platform`, and is null on platforms that
+ * take none: rows from before options were kept have none.
  */
 export const postTargets = publishing.table(
   "post_targets",
@@ -76,6 +79,7 @@ export const postTargets = publishing.table(
     failureReason: text("failure_reason"),
     finishedAt: instant("finished_at"),
     id: uuid("id").primaryKey(),
+    options: jsonb("options"),
     permalink: text("permalink"),
     platformPostId: text("platform_post_id"),
     postId: uuid("post_id")

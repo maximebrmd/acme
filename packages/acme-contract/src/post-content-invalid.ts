@@ -8,6 +8,9 @@ const onChannel = { channelId: Schema.String, platform: PlatformSchema };
 
 const tooMany = { ...onChannel, count: Schema.Int, maximum: Schema.Int };
 
+// One of the options the post has on the channel, by name.
+const onOption = { ...onChannel, field: Schema.String };
+
 // One of the post's images or videos, on one channel.
 const onMedia = { ...onChannel, mediaId: Schema.String };
 
@@ -23,6 +26,27 @@ export const ContentViolationSchema = Schema.Union([
   Schema.TaggedStruct("noChannels", {}),
   // A text override names a channel the post is not for.
   Schema.TaggedStruct("overrideWithoutChannel", { channelId: Schema.String }),
+  // Options name a channel the post is not for.
+  Schema.TaggedStruct("optionsWithoutChannel", { channelId: Schema.String }),
+  // The options on the channel are another platform's.
+  Schema.TaggedStruct("optionsForOtherPlatform", {
+    ...onChannel,
+    optionsPlatform: PlatformSchema,
+  }),
+  // The channel's platform needs this option (`field`), and it has none.
+  Schema.TaggedStruct("optionMissing", onOption),
+  // The option is longer than the platform takes, in code points.
+  Schema.TaggedStruct("optionTooLong", {
+    ...onOption,
+    length: Schema.Int,
+    maximum: Schema.Int,
+  }),
+  // The platform refuses the option's value, for a reason of the field's
+  // own: a YouTube title with "<" or ">", a blank tag or one with a comma,
+  // a category that is not a number; a TikTok post disclosed as commercial
+  // without saying whose (`commercialContent`), or a paid partnership only
+  // its creator may see (`brandContent`).
+  Schema.TaggedStruct("optionInvalid", onOption),
   // The post would go out on the channel with no text and no media.
   Schema.TaggedStruct("empty", onChannel),
   // The text on the channel is longer than its platform takes.
@@ -89,7 +113,7 @@ export class PostContentInvalid extends Schema.TaggedError<PostContentInvalid>()
   { violations: Schema.Array(ContentViolationSchema) },
   {
     description:
-      "The post's content breaks the rules of its channels' platforms: `violations` says how, channel by channel, and for its images and videos, media by media.",
+      "The post's content breaks the rules of its channels' platforms: `violations` says how, channel by channel, for its images and videos, media by media, and for its options on a channel, option by option (`field`).",
     httpApiStatus: 422,
   }
 ) {}

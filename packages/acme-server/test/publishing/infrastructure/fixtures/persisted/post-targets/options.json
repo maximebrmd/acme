@@ -1,0 +1,26 @@
+[
+  { "platform": "youtube" },
+  {
+    "categoryId": "22",
+    "containsSyntheticMedia": false,
+    "madeForKids": false,
+    "notifySubscribers": true,
+    "platform": "youtube",
+    "privacy": "unlisted",
+    "tags": ["launch", "launch day"],
+    "title": "A synthetic launch video"
+  },
+  { "platform": "youtube", "tags": [""], "title": "An unfinished draft's title" },
+  { "platform": "tiktok" },
+  {
+    "aiGenerated": false,
+    "brandContent": true,
+    "brandOrganic": true,
+    "commercialContent": true,
+    "disableComment": true,
+    "disableDuet": true,
+    "disableStitch": false,
+    "platform": "tiktok",
+    "privacyLevel": "MUTUAL_FOLLOW_FRIENDS"
+  }
+]

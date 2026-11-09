@@ -29,6 +29,7 @@ import { actorOf } from "#shared/api/actor.ts";
 import {
   channelIdsFrom,
   contentFrom,
+  optionsFrom,
   postIdFrom,
   postIdOption,
   scheduleFrom,
@@ -144,9 +145,10 @@ export const PostsHandlers = HttpApiBuilder.group(
           const actor = actorOf(yield* CurrentMember);
           const channelIds = yield* channelIdsFrom(payload.channelIds);
           const content = yield* contentFrom(payload.content);
+          const options = yield* optionsFrom(payload.options ?? []);
 
           const created = yield* drafts
-            .create(actor, { channelIds, content })
+            .create(actor, { channelIds, content, options })
             .pipe(
               Effect.catchTags({
                 DatabaseError: Effect.die,
@@ -313,9 +315,10 @@ export const PostsHandlers = HttpApiBuilder.group(
           const postId = yield* postIdFrom(params.postId);
           const channelIds = yield* channelIdsFrom(payload.channelIds);
           const content = yield* contentFrom(payload.content);
+          const options = yield* optionsFrom(payload.options ?? []);
 
           const updated = yield* drafts
-            .update(actor, postId, { channelIds, content })
+            .update(actor, postId, { channelIds, content, options })
             .pipe(
               Effect.catchTags({
                 DatabaseError: Effect.die,

@@ -23,6 +23,8 @@ import {
   maxPostTextLength,
 } from "./post-text.ts";
 import { ScheduleInPast } from "./schedule-in-past.ts";
+import { ChannelOptionsSchema, TargetOptionsSchema } from "./target-options.ts";
+import type { ChannelOptions } from "./target-options.ts";
 import { TargetStatusConflict } from "./target-status-conflict.ts";
 import { UnknownChannels } from "./unknown-channels.ts";
 import { UnknownMedia } from "./unknown-media.ts";
@@ -146,6 +148,9 @@ export const PostTargetSchema = Schema.Struct({
   // Why it failed, once it has.
   failureReason: Schema.NullOr(FailureReasonSchema),
   id: Schema.String,
+  // What it says that only its channel's platform knows, such as a YouTube
+  // title; null on platforms that take none, or while a draft has none yet.
+  options: Schema.NullOr(TargetOptionsSchema),
   // Its address on the platform, when the platform gave one, or the member
   // who confirmed it.
   permalink: Schema.NullOr(Schema.String),
@@ -185,10 +190,22 @@ export const PostSchema = Schema.Struct({
 
 export type Post = typeof PostSchema.Type;
 
-/** A draft: what it says, and the channels it is for so far. */
+/**
+ * A draft: what it says, the channels it is for so far, and the options it
+ * has on some of them, which its targets keep. Options left out are none:
+ * an update replaces them all.
+ */
 export const PostDraftSchema = Schema.Struct({
   channelIds: Schema.Array(Schema.String),
   content: PostContentSchema,
+  options: Schema.optionalKey(
+    Schema.Array(ChannelOptionsSchema).check(
+      uniqueBy(
+        (chosen: ChannelOptions) => chosen.channelId,
+        "options for each channel once"
+      )
+    )
+  ),
 }).annotate({ identifier: "PostDraft" });
 
 export type PostDraft = typeof PostDraftSchema.Type;
@@ -348,7 +365,7 @@ export class PostsApi extends HttpApiGroup.make("posts")
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Creates a draft for some of the workspace's channels, possibly none yet. Its media must be the workspace's, and ready. Its text and media are checked against each platform's limits when it is scheduled, not before. Needs post:create, channel:read, and media:read when it shows media.",
+          "Creates a draft for some of the workspace's channels, possibly none yet, with options on those whose platform takes them (`TargetOptions`, of the channel's platform). Its media must be the workspace's, and ready. Its text, media and options are checked against each platform's rules when it is scheduled, not before. Needs post:create, channel:read, and media:read when it shows media.",
         summary: "Create a draft",
       })
     ),
@@ -399,7 +416,7 @@ export class PostsApi extends HttpApiGroup.make("posts")
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Replaces a draft's content and channels. A post that is no longer a draft is a conflict. Needs post:update, channel:read, and media:read when it shows media.",
+          "Replaces a draft's content, channels and options: options left out are removed. A post that is no longer a draft is a conflict. Needs post:update, channel:read, and media:read when it shows media.",
         summary: "Update a draft",
       })
     ),
@@ -411,7 +428,7 @@ export class PostsApi extends HttpApiGroup.make("posts")
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Schedules a draft on some of the workspace's channels at an instant, kept with the IANA time zone it was chosen in. The content must fit each platform's rules, its media included: file types, sizes, durations, dimensions, alt text, how many videos, and whether images and videos go together. A time up to a minute ago publishes now. On a server that bills, the posts going out in that month (UTC) must fit the workspace's plan (PlanLimitReached). Needs post:schedule and channel:read, and media:read when it shows media.",
+          "Schedules a draft on some of the workspace's channels at an instant, kept with the IANA time zone it was chosen in. The content must fit each platform's rules, its media included: file types, sizes, durations, dimensions, alt text, how many videos, and whether images and videos go together. A channel whose platform takes options needs those it requires, as the draft gives them on that channel: a channel the draft was not for has none yet. A time up to a minute ago publishes now. On a server that bills, the posts going out in that month (UTC) must fit the workspace's plan (PlanLimitReached). Needs post:schedule and channel:read, and media:read when it shows media.",
         summary: "Schedule a draft",
       })
     ),
