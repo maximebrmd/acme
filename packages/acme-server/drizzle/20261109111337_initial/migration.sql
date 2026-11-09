@@ -201,6 +201,7 @@ CREATE TABLE "publishing"."post_targets" (
 	"failure_reason" text,
 	"finished_at" timestamp with time zone,
 	"id" uuid PRIMARY KEY,
+	"kept_private" boolean DEFAULT false NOT NULL,
 	"options" jsonb,
 	"permalink" text,
 	"platform_post_id" text,
@@ -253,6 +254,23 @@ CREATE TABLE "publishing"."publication_calls" (
 	"started_at" timestamp with time zone NOT NULL,
 	"target_id" uuid NOT NULL,
 	CONSTRAINT "publication_calls_target_round_attempt" UNIQUE("target_id","round","attempt")
+);
+--> statement-breakpoint
+CREATE TABLE "publishing"."quota_usage" (
+	"bucket" text,
+	"day" date,
+	"units" integer NOT NULL,
+	CONSTRAINT "quota_usage_pkey" PRIMARY KEY("bucket","day"),
+	CONSTRAINT "quota_usage_units" CHECK ("units" >= 0)
+);
+--> statement-breakpoint
+CREATE TABLE "publishing"."upload_sessions" (
+	"byte_size" bigint NOT NULL,
+	"final_part_sent" boolean DEFAULT false NOT NULL,
+	"idempotency_key" text PRIMARY KEY,
+	"opened_at" timestamp with time zone NOT NULL,
+	"session_url" text,
+	"video_id" text
 );
 --> statement-breakpoint
 CREATE TABLE "auth"."account" (
@@ -583,6 +601,7 @@ ALTER TABLE "analytics"."metric_snapshots" ADD CONSTRAINT "metric_snapshots_targ
 ALTER TABLE "publishing"."post_targets" ADD CONSTRAINT "post_targets_post_id_posts_id_fkey" FOREIGN KEY ("post_id") REFERENCES "publishing"."posts"("id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "publishing"."publication_attempts" ADD CONSTRAINT "publication_attempts_target_id_post_targets_id_fkey" FOREIGN KEY ("target_id") REFERENCES "publishing"."post_targets"("id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "publishing"."publication_calls" ADD CONSTRAINT "publication_calls_target_id_post_targets_id_fkey" FOREIGN KEY ("target_id") REFERENCES "publishing"."post_targets"("id") ON DELETE CASCADE;--> statement-breakpoint
+ALTER TABLE "publishing"."upload_sessions" ADD CONSTRAINT "upload_sessions_72ct0kRYe5re_fkey" FOREIGN KEY ("idempotency_key") REFERENCES "publishing"."publication_calls"("idempotency_key") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "auth"."account" ADD CONSTRAINT "account_user_id_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "auth"."user"("id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "auth"."invitation" ADD CONSTRAINT "invitation_organization_id_organization_id_fkey" FOREIGN KEY ("organization_id") REFERENCES "auth"."organization"("id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "auth"."invitation" ADD CONSTRAINT "invitation_inviter_id_user_id_fkey" FOREIGN KEY ("inviter_id") REFERENCES "auth"."user"("id") ON DELETE CASCADE;--> statement-breakpoint

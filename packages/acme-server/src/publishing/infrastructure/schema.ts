@@ -1,6 +1,9 @@
 import { sql } from "drizzle-orm";
 import {
+  bigint,
   boolean,
+  check,
+  date,
   index,
   integer,
   jsonb,
@@ -68,7 +71,9 @@ export const posts = publishing.table(
  * job from an earlier round leaves it alone. `options` holds what the post
  * says there that only the channel's platform knows (a YouTube title, who
  * sees a TikTok post), tagged by `platform`, and is null on platforms that
- * take none: rows from before options were kept have none.
+ * take none: rows from before options were kept have none. `kept_private`
+ * is true on a published target the platform made private although asked
+ * to show it to more people.
  */
 export const postTargets = publishing.table(
   "post_targets",
@@ -79,6 +84,7 @@ export const postTargets = publishing.table(
     failureReason: text("failure_reason"),
     finishedAt: instant("finished_at"),
     id: uuid("id").primaryKey(),
+    keptPrivate: boolean("kept_private").notNull().default(false),
     options: jsonb("options"),
     permalink: text("permalink"),
     platformPostId: text("platform_post_id"),
@@ -154,5 +160,43 @@ export const publicationCalls = publishing.table(
       table.round,
       table.attempt
     ),
+  ]
+);
+
+/**
+ * A resumable upload a platform keeps for one publishing call (YouTube's
+ * videos.insert), journaled before any byte is sent, so a run found in
+ * flight asks the platform where the upload stands instead of sending it
+ * again. `session_url` is where the bytes go, cleared once the platform
+ * made the video, whose id `video_id` then keeps; `final_part_sent` is set
+ * before the part holding the last byte leaves, after which the video may
+ * exist. Rows go with their call.
+ */
+export const uploadSessions = publishing.table("upload_sessions", {
+  byteSize: bigint("byte_size", { mode: "number" }).notNull(),
+  finalPartSent: boolean("final_part_sent").notNull().default(false),
+  idempotencyKey: text("idempotency_key")
+    .primaryKey()
+    .references(() => publicationCalls.idempotencyKey, { onDelete: "cascade" }),
+  openedAt: instant("opened_at").notNull(),
+  sessionUrl: text("session_url"),
+  videoId: text("video_id"),
+});
+
+/**
+ * Units of a platform's daily quota this server spent, by bucket and day,
+ * as the platform counts its days (YouTube: in Pacific Time). Counts only,
+ * naming nobody.
+ */
+export const quotaUsage = publishing.table(
+  "quota_usage",
+  {
+    bucket: text("bucket").notNull(),
+    day: date("day", { mode: "string" }).notNull(),
+    units: integer("units").notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.bucket, table.day] }),
+    check("quota_usage_units", sql`${table.units} >= 0`),
   ]
 );

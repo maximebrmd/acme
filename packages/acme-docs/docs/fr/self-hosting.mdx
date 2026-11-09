@@ -206,6 +206,10 @@ L’un des deux réglages sans l’autre arrête le serveur au démarrage ; sans
 
 Tant que l’écran de consentement du projet est en **Test**, seuls les utilisateurs test que vous listez peuvent se connecter, et Google met fin à leur accès sept jours après la connexion : leurs chaînes doivent alors être reconnectées, et Acme prévient l’espace de travail. Publiez l’écran de consentement, et faites vérifier l’application par Google pour ses champs d’application, pour servir tout le monde durablement.
 
+Le serveur appelle `oauth2.googleapis.com` et `www.googleapis.com`, et y envoie chaque vidéo par parties de 8 Mio, en n’en gardant qu’une à la fois ; un envoi coupé, même par un redémarrage, reprend là où en est YouTube. Les mises en ligne puisent dans le quota **Video Uploads** du projet, 100 par jour sauf si Google en accorde plus, qui repart à minuit, heure du Pacifique : Acme les compte pour tout le serveur, et une mise en ligne au-delà de `YOUTUBE_DAILY_UPLOADS`, ou que YouTube refuse pour son quota ou la limite quotidienne de la chaîne, attend le jour suivant. Le suivi du traitement et les statistiques puisent dans l’autre quota du projet, 10 000 unités par jour.
+
+Jusqu’en novembre 2026, Google gardait privées les vidéos des projets d’API qu’il n’avait pas audités. Il ne le fait plus, mais les réglages d’une chaîne ou les restrictions de Google peuvent encore garder une vidéo privée : Acme compare la réponse de YouTube à la visibilité choisie par le membre, et le dit sur la page de la publication.
+
 ## Assistant de rédaction [#ai]
 
 L’assistant de rédaction de l’éditeur réécrit une publication sur un ton, la raccourcit pour une plateforme, la traduit ou suggère des hashtags. Il est désactivé tant que `ACME_AI_PROVIDER` ne nomme pas de fournisseur : d’ici là, l’application web le masque, et ses points d’accès répondent `AssistantUnavailable`.

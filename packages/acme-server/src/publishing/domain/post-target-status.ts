@@ -30,6 +30,9 @@ export const FailureReasonSchema = Schema.Literals([
   "notPublished",
   // The platform kept rate limiting until the attempt gave up.
   "rateLimited",
+  // A daily allowance stayed spent until the attempt gave up: the server's
+  // quota of uploads on the platform, or the account's own (YouTube).
+  "quotaExceeded",
   // The channel's token expired or was revoked: the user must reconnect.
   "tokenExpired",
   // The platform could not be reached, and nothing was sent.
@@ -48,6 +51,9 @@ const PublishingSchema = Schema.TaggedStruct("publishing", {
 });
 
 const PublishedSchema = Schema.TaggedStruct("published", {
+  // The platform made it private, although it was asked to show it to more
+  // people (YouTube, for an API project or a channel it restricts).
+  keptPrivate: Schema.optionalKey(Schema.Boolean),
   permalink: Schema.Option(Schema.String),
   // None when the user confirmed an unconfirmed post by hand.
   platformPostId: Schema.Option(PlatformPostIdSchema),

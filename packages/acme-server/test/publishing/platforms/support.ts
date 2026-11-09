@@ -18,7 +18,10 @@ import type { PublishableMedia } from "#publishing/application/media-for-publish
 import type { OutgoingPost } from "#publishing/application/platform-client.ts";
 import { PlatformCredentials } from "#publishing/application/platform-credentials.ts";
 import type { CredentialFailure } from "#publishing/application/platform-credentials.ts";
+import { PlatformQuota } from "#publishing/application/platform-quota.ts";
 import type { StepTiming } from "#publishing/application/publication-steps.ts";
+import { UploadSessions } from "#publishing/application/upload-sessions.ts";
+import type { UploadSession } from "#publishing/application/upload-sessions.ts";
 import { MediaAttachment } from "#publishing/domain/media-attachment.ts";
 import { blueskyClient } from "#publishing/infrastructure/platforms/bluesky/bluesky-client.ts";
 import { linkedinClient } from "#publishing/infrastructure/platforms/linkedin/linkedin-client.ts";
@@ -27,6 +30,7 @@ import { facebookClient } from "#publishing/infrastructure/platforms/meta/facebo
 import { instagramClient } from "#publishing/infrastructure/platforms/meta/instagram-client.ts";
 import { threadsClient } from "#publishing/infrastructure/platforms/meta/threads-client.ts";
 import { xClient } from "#publishing/infrastructure/platforms/x/x-client.ts";
+import { youtubeClient } from "#publishing/infrastructure/platforms/youtube/youtube-client.ts";
 import {
   ChannelIdSchema,
   MediaAssetIdSchema,
@@ -38,6 +42,7 @@ import type { Platform } from "#shared/domain/platform.ts";
 import { TokenExpired } from "#shared/domain/token-expired.ts";
 import { isTokenRejected } from "#shared/domain/token-rejected.ts";
 import type { TokenRejected } from "#shared/domain/token-rejected.ts";
+import type { LocalDate } from "#shared/domain/wall-clock.ts";
 import type { MetaHosts } from "#shared/infrastructure/platforms/meta-graph.ts";
 import { publicHttpClient } from "#shared/infrastructure/platforms/public-http.ts";
 import { OpenOutboundGuard } from "#test/channels/support.ts";
@@ -421,5 +426,115 @@ export const metaClientWith = Effect.fn("test.metaClient")(
       timing: testTiming,
       uploads: api,
     }).pipe(Effect.provide(services));
+  }
+);
+
+/** What the in-memory journal and ledger of YouTube's uploads hold. */
+export interface UploadLedger {
+  /** The sessions journaled, by idempotency key. */
+  readonly sessions: Map<string, UploadSession>;
+  /** The units spent, by bucket and ISO day. */
+  readonly spent: Map<string, number>;
+}
+
+const dayKey = (bucket: string, day: LocalDate) =>
+  `${bucket}:${day.year}-${day.month}-${day.day}`;
+
+/** UploadSessions and PlatformQuota over `ledger`, in memory. */
+export const uploadLedgerOf = (ledger: UploadLedger) =>
+  Layer.mergeAll(
+    Layer.succeed(
+      UploadSessions,
+      UploadSessions.of({
+        finalPartSent: (key) =>
+          Effect.sync(() => {
+            const found = ledger.sessions.get(key);
+
+            if (found !== undefined) {
+              ledger.sessions.set(key, { ...found, finalPartSent: true });
+            }
+          }),
+        find: (key) =>
+          Effect.sync(() => Option.fromUndefinedOr(ledger.sessions.get(key))),
+        made: (key, videoId) =>
+          Effect.sync(() => {
+            const found = ledger.sessions.get(key);
+
+            if (found !== undefined) {
+              ledger.sessions.set(key, {
+                ...found,
+                sessionUrl: Option.none(),
+                videoId: Option.some(videoId),
+              });
+            }
+          }),
+        open: (key, session) =>
+          Effect.sync(() => {
+            ledger.sessions.set(key, {
+              byteSize: session.byteSize,
+              finalPartSent: false,
+              sessionUrl: Option.some(session.sessionUrl),
+              videoId: Option.none(),
+            });
+          }),
+      })
+    ),
+    Layer.succeed(
+      PlatformQuota,
+      PlatformQuota.of({
+        exhaust: ({ allowance, bucket, day }) =>
+          Effect.sync(() => {
+            ledger.spent.set(dayKey(bucket, day), allowance);
+          }),
+        spend: ({ allowance, bucket, day, units }) =>
+          Effect.sync(() => {
+            const key = dayKey(bucket, day);
+            const spent = (ledger.spent.get(key) ?? 0) + units;
+
+            if (spent > allowance) {
+              return false;
+            }
+
+            ledger.spent.set(key, spent);
+
+            return true;
+          }),
+      })
+    )
+  );
+
+/** An empty journal and ledger. */
+export const emptyLedger = (): UploadLedger => ({
+  sessions: new Map(),
+  spent: new Map(),
+});
+
+/** The YouTube client, with the fake as API, in parts of 256 KiB. */
+export const youtubeClientWith = Effect.fn("test.youtubeClient")(
+  function* youtubeClientWith(options: {
+    readonly api: string;
+    readonly credentials: Layer.Layer<CredentialLog | PlatformCredentials>;
+    readonly dailyUploads?: number;
+    readonly files?: readonly TestFile[];
+    readonly ledger: UploadLedger;
+  }) {
+    const api = yield* httpClient;
+
+    return yield* youtubeClient({
+      api,
+      apiUrl: new URL(options.api),
+      chunkSize: 256 * 1024,
+      dailyUploads: options.dailyUploads ?? 100,
+      timing: testTiming,
+      uploads: api,
+    }).pipe(
+      Effect.provide(
+        Layer.mergeAll(
+          options.credentials,
+          mediaOf(options.files ?? []),
+          uploadLedgerOf(options.ledger)
+        )
+      )
+    );
   }
 );

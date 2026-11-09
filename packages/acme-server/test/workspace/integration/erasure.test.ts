@@ -101,6 +101,8 @@ const workspaceRows = {
     sql`SELECT count(*)::int AS count FROM publishing.publication_attempts a JOIN publishing.post_targets t ON t.id = a.target_id JOIN publishing.posts p ON p.id = t.post_id WHERE p.workspace_id = ${id}`,
   "publishing.publication_calls": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM publishing.publication_calls c JOIN publishing.post_targets t ON t.id = c.target_id JOIN publishing.posts p ON p.id = t.post_id WHERE p.workspace_id = ${id}`,
+  "publishing.upload_sessions": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM publishing.upload_sessions u JOIN publishing.publication_calls c ON c.idempotency_key = u.idempotency_key JOIN publishing.post_targets t ON t.id = c.target_id JOIN publishing.posts p ON p.id = t.post_id WHERE p.workspace_id = ${id}`,
 } satisfies Readonly<Record<string, Count>>;
 
 // The rows of each table that name a user: none may be left once their
@@ -164,6 +166,8 @@ const kept = {
   "channels.mastodon_apps": "Acme's own app on each Mastodon instance",
   "notifications.sent_notices":
     "the keys of events already told, ids and instants only",
+  "publishing.quota_usage":
+    "the units of a platform's daily quota the server spent, by day",
 } satisfies Readonly<Record<string, string>>;
 
 const TablesSchema = Schema.Array(Schema.Struct({ name: Schema.String }));
@@ -227,8 +231,13 @@ const fill = Effect.fn("fill")(function* fill(
   yield* sql`INSERT INTO publishing.publication_attempts (target_id, round, attempt, decision, detail, outcome, started_at, finished_at)
     VALUES (${targetId}, 1, 1, 'settle', '{}'::jsonb, 'published', now(), now())`;
 
+  const callKey = randomUUID();
+
   yield* sql`INSERT INTO publishing.publication_calls (idempotency_key, target_id, round, attempt, operation, started_at)
-    VALUES (${randomUUID()}, ${targetId}, 1, 1, 'publish', now())`;
+    VALUES (${callKey}, ${targetId}, 1, 1, 'publish', now())`;
+
+  yield* sql`INSERT INTO publishing.upload_sessions (idempotency_key, byte_size, opened_at, video_id)
+    VALUES (${callKey}, 2048, now(), 'synthetic-video')`;
 
   yield* seedTrackedPost(workspaceId, channelId, postId);
   yield* seedUsage(workspaceId, 2);

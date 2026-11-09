@@ -501,8 +501,8 @@ and no socket, for tests.
   publish runs inside the gate: uploads, processing waits, token renewal,
   the post and its confirmation.
 - Platform adapters live in `publishing/infrastructure/platforms/<platform>/`
-  (Mastodon, Bluesky, LinkedIn and X, and Threads, Instagram and Facebook
-  Pages in `meta/`), beside `ChannelGate`, and implement the steps of
+  (Mastodon, Bluesky, LinkedIn, X and YouTube, and Threads, Instagram and
+  Facebook Pages in `meta/`), beside `ChannelGate`, and implement the steps of
   `publishing/application/publication-steps.ts`, which `sequenced` runs:
   `prepare` uploads the media (safe to repeat: media alone shows nowhere),
   `poll` waits while the platform processes it (15 minutes at most),
@@ -517,6 +517,24 @@ and no socket, for tests.
   attempt's idempotency key within the window the platform keeps it
   (Mastodon: 50 minutes of its hour); or `none`, unconfirmed at once
   (LinkedIn members' posts cannot be read back).
+- YouTube's adapter (`platforms/youtube/`) uploads with the resumable
+  protocol, in parts of a multiple of 256 KiB from the media stream
+  (`fromByte` skips what YouTube already has). It journals the session URL
+  (`UploadSessions`, `publishing.upload_sessions`, keyed by the call's
+  idempotency key and cascading with it) and commits it before any byte,
+  marks `final_part_sent` before the part holding the last byte, and
+  records the video id once made, clearing the URL. Its `lookUp` reads that
+  journal and asks the session (`bytes */size`): 308 or no row is `absent`
+  (the commit then resumes from the `Range`), 200/201 `found`, an expired
+  session `absent` only while no last part left. After the upload only
+  YouTube's `failed`/`rejected` refuse the post: nothing that could make a
+  retry upload twice. Each upload first spends a unit of the server-wide
+  ledger (`PlatformQuota`, `publishing.quota_usage`, by Pacific day,
+  `YOUTUBE_DAILY_UPLOADS`); past it, or on `quotaExceeded` and
+  `uploadLimitExceeded`, it fails as `RateLimited` with that code
+  (`dailyLimitCodes`) until Pacific midnight, which the policy ends as
+  `quotaExceeded`. A video YouTube made private against the options is
+  `Published.keptPrivate`, kept on the target and shown on its page.
 - Large uploads go in parts read one at a time from the media stream
   (`inParts` in `platforms/byte-parts.ts`): LinkedIn's video parts, X's
   4 MiB appends. LinkedIn calls name `Linkedin-Version`

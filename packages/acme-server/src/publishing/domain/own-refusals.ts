@@ -12,3 +12,23 @@ export const ownRefusalCodes = {
   // A MediaRejected: the media was deleted, or is no longer ready.
   mediaRemoved: "mediaUnavailable",
 } as const;
+
+/**
+ * The codes of a RateLimited that waits for a daily allowance to reset,
+ * kept in the journal too: the platform's quota for this server's API
+ * project, as Acme counts it or the platform answers (`quotaExceeded`), or
+ * the account's own daily uploads (`uploadLimitExceeded`), both YouTube's.
+ * A target that waited past them fails as quotaExceeded, not rateLimited.
+ */
+export const dailyLimitCodes = {
+  accountUploads: "uploadLimitExceeded",
+  projectQuota: "quotaExceeded",
+} as const;
+
+const dailyLimits: ReadonlySet<string> = new Set(
+  Object.values(dailyLimitCodes)
+);
+
+/** Whether a rate limit's code names a daily allowance. */
+export const isDailyLimit = (code: string | undefined): boolean =>
+  code !== undefined && dailyLimits.has(code);

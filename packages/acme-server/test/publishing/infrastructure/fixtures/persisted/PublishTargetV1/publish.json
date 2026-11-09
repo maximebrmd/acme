@@ -58,6 +58,23 @@
   {
     "_tag": "settle",
     "settlement": {
+      "_tag": "published",
+      "keptPrivate": true,
+      "permalink": "https://www.youtube.com/watch?v=synthetic01",
+      "platformPostId": "synthetic01"
+    }
+  },
+  {
+    "_tag": "settle",
+    "settlement": {
+      "_tag": "failed",
+      "code": "quotaExceeded",
+      "reason": "quotaExceeded"
+    }
+  },
+  {
+    "_tag": "settle",
+    "settlement": {
       "_tag": "cancelled"
     }
   }

@@ -109,7 +109,8 @@ export type PostOutcome = typeof PostOutcomeSchema.Type;
  * disconnected (`channelDisconnected`) or turned off (`channelDisabled`), or
  * one of its media deleted (`mediaRemoved`), before it went out; Acme was
  * down at its time (`missed`); a member found it missing (`notPublished`);
- * the platform kept limiting Acme (`rateLimited`), refused the account's
+ * the platform kept limiting Acme (`rateLimited`), a daily allowance of
+ * uploads stayed spent (`quotaExceeded`), the platform refused the account's
  * token (`tokenExpired`) or could not be reached (`unavailable`).
  */
 export const FailureReasonSchema = Schema.Literals([
@@ -123,6 +124,7 @@ export const FailureReasonSchema = Schema.Literals([
   "rateLimited",
   "tokenExpired",
   "unavailable",
+  "quotaExceeded",
 ]).annotate({ identifier: "FailureReason" });
 
 export type FailureReason = typeof FailureReasonSchema.Type;
@@ -148,6 +150,9 @@ export const PostTargetSchema = Schema.Struct({
   // Why it failed, once it has.
   failureReason: Schema.NullOr(FailureReasonSchema),
   id: Schema.String,
+  // True when it went live private on the platform, although asked to show
+  // it to more people (YouTube); left out otherwise.
+  keptPrivate: Schema.optionalKey(Schema.Boolean),
   // What it says that only its channel's platform knows, such as a YouTube
   // title; null on platforms that take none, or while a draft has none yet.
   options: Schema.NullOr(TargetOptionsSchema),
@@ -251,6 +256,7 @@ export const AttemptResultSchema = Schema.Literals([
   "rateLimited",
   "tokenExpired",
   "unavailable",
+  "quotaExceeded",
 ]).annotate({ identifier: "AttemptResult" });
 
 export type AttemptResult = typeof AttemptResultSchema.Type;

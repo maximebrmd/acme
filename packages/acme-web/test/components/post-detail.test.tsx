@@ -121,7 +121,52 @@ const render = async (locale: "en" | "fr", canAct: boolean) => {
   );
 };
 
+const renderPost = async (locale: "en" | "fr", shown: Post) =>
+  renderToStaticMarkup(
+    <NextIntlClientProvider
+      locale={locale}
+      messages={await loadMessages(locale)}
+      timeZone="UTC"
+    >
+      <PostDetailView
+        attempts={[]}
+        busy={null}
+        canAct
+        channels={[channel("c4", "@acmeexample")]}
+        post={shown}
+        onRequest={() => {
+          // Nothing is asked while rendering to markup.
+        }}
+      />
+    </NextIntlClientProvider>
+  );
+
 describe(PostDetailView, () => {
+  it("tells a video YouTube kept private, and why the quota stopped one", async () => {
+    const shown: Post = {
+      ...post,
+      targets: [
+        target("t4", "c4", {
+          keptPrivate: true,
+          permalink: "https://www.youtube.com/watch?v=synthetic01",
+          publishedAt: utc("2026-06-15T08:00:02Z"),
+          status: "published",
+        }),
+        target("t5", "c4", {
+          failureReason: "quotaExceeded",
+          status: "failed",
+        }),
+      ],
+    };
+
+    const english = await renderPost("en", shown);
+    const french = await renderPost("fr", shown);
+
+    expect(english).toContain("YouTube made the video private");
+    expect(english).toContain("daily allowance of uploads stayed used up");
+    expect(french).toContain("YouTube a rendu la vidéo privée");
+  });
+
   it("says how the post went on each channel, and why", async () => {
     const html = await render("en", true);
 

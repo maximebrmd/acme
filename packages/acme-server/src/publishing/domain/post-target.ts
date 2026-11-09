@@ -146,12 +146,20 @@ export const settleTarget = (
       failedAt: now,
       reason,
     }),
-    published: ({ permalink, platformPostId }): PostTargetStatus => ({
-      _tag: "published",
-      permalink: Option.fromUndefinedOr(permalink),
-      platformPostId: Option.some(platformPostId),
-      publishedAt: now,
-    }),
+    published: ({
+      keptPrivate,
+      permalink,
+      platformPostId,
+    }): PostTargetStatus => {
+      const live: PostTargetStatus = {
+        _tag: "published",
+        permalink: Option.fromUndefinedOr(permalink),
+        platformPostId: Option.some(platformPostId),
+        publishedAt: now,
+      };
+
+      return keptPrivate === true ? { ...live, keptPrivate } : live;
+    },
     unconfirmed: ({ attemptedAt, reason }): PostTargetStatus => ({
       _tag: "unconfirmed",
       attemptedAt: attemptedAt ?? status.startedAt,

@@ -20,9 +20,11 @@ import {
   GatedPlatformPublisher,
   UnreadMetrics,
 } from "#publishing/infrastructure/channel-gate.ts";
+import { DrizzlePlatformQuota } from "#publishing/infrastructure/drizzle-platform-quota.ts";
 import { DrizzlePostRepository } from "#publishing/infrastructure/drizzle-post-repository.ts";
 import { DrizzlePublicationJournal } from "#publishing/infrastructure/drizzle-publication-journal.ts";
 import { DrizzlePublishedTargets } from "#publishing/infrastructure/drizzle-published-targets.ts";
+import { DrizzleUploadSessions } from "#publishing/infrastructure/drizzle-upload-sessions.ts";
 import { DrizzleWorkspacePostStore } from "#publishing/infrastructure/drizzle-workspace-post-store.ts";
 import { LibraryAttachableMedia } from "#publishing/infrastructure/library-attachable-media.ts";
 import { LibraryMediaForPublishing } from "#publishing/infrastructure/library-media-for-publishing.ts";
@@ -129,8 +131,8 @@ export const publishingWorkers = <E, R, E2 = never, R2 = never>(
   );
 
 /**
- * The platforms the gates publish to, Mastodon, Bluesky, Threads, Instagram
- * and Facebook Pages, with the tokens
+ * The platforms the gates publish to, Mastodon, Bluesky, LinkedIn, X,
+ * Threads, Instagram, Facebook Pages and YouTube, with the tokens
  * the channels context hands out (ChannelAccess) and the files the media
  * context does (MediaForPlatforms), which the composition root provides
  * with Dns and the PostRepository.
@@ -138,7 +140,12 @@ export const publishingWorkers = <E, R, E2 = never, R2 = never>(
 export const PlatformsLive = RoutedPlatformPublisher.pipe(
   Layer.provide(PlatformClientsLive),
   Layer.provide(
-    Layer.mergeAll(ChannelAccessCredentials, LibraryMediaForPublishing)
+    Layer.mergeAll(
+      ChannelAccessCredentials,
+      LibraryMediaForPublishing,
+      DrizzleUploadSessions,
+      DrizzlePlatformQuota
+    )
   ),
   Layer.provide(OutboundGuard.layer),
   Layer.provide(

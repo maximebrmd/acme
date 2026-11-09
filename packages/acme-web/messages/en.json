@@ -556,6 +556,7 @@
     "going": "Acme is sending it: this page updates as it goes.",
     "publishedAt": "Live since {at, date, medium} at {at, time, short}.",
     "viewPost": "See it on {platform}",
+    "keptPrivate": "YouTube made the video private, although it was to be seen by more people: the account's settings, or Google's restrictions on the server's API project, keep it so. Change its visibility in YouTube Studio.",
     "failed": "It did not go out: {reason}",
     "unconfirmed": "Acme cannot tell whether it went out: {reason}. Check {platform} before you post it again, then say what you found.",
     "unconfirmedReason": "{reason, select, noResponse {the platform did not answer} unreadableResponse {its answer could not be read} interrupted {the server stopped during the call} adapterFailure {Acme failed during the call} other {{reason}}}",
@@ -565,7 +566,7 @@
     "rounds": "Sent {count, plural, one {once} other {# times}}",
     "attemptsTitle": "Attempts",
     "attempt": "{round, plural, =1 {Attempt {attempt}} other {Send {round}, attempt {attempt}}}, {at, date, medium} at {at, time, short}: {result}",
-    "result": "{result, select, published {published} unconfirmed {no answer, so it may have gone out} contentRejected {the platform refused its text or its format} channelDisconnected {the channel was disconnected} channelDisabled {the channel was turned off} mediaRemoved {an image or video was deleted} mediaRejected {the platform refused an image or video} rateLimited {the platform asked Acme to wait} tokenExpired {the account’s authorization stopped working} unavailable {the platform could not be reached} other {{result}}}",
+    "result": "{result, select, published {published} unconfirmed {no answer, so it may have gone out} contentRejected {the platform refused its text or its format} channelDisconnected {the channel was disconnected} channelDisabled {the channel was turned off} mediaRemoved {an image or video was deleted} mediaRejected {the platform refused an image or video} quotaExceeded {the platform's daily upload allowance was used up} rateLimited {the platform asked Acme to wait} tokenExpired {the account’s authorization stopped working} unavailable {the platform could not be reached} other {{result}}}",
     "retryAt": "Tried again at {at, time, short}.",
     "noAttempts": "No attempt yet.",
     "repost": "Post again",
@@ -821,7 +822,7 @@
       "ChannelReconnectRequired": "{channel} in {workspace} must be reconnected: nothing is posted there until it is.",
       "ChannelReconnectSoon": "{channel} in {workspace} must be reconnected by {expiresAt, date, long}: its authorization cannot be renewed."
     },
-    "reason": "{reason, select, contentRejected {the platform refused its text or its format.} channelDisconnected {its channel was disconnected from the workspace before it went out.} channelDisabled {its channel was turned off before it went out. Turn it back on, then post again.} mediaRemoved {one of its images or videos was deleted from the media library before it went out.} mediaRejected {the platform refused one of its images or videos.} missed {Acme was unavailable at the scheduled time, and the post came too late to send.} notPublished {someone checked the platform and did not find it.} rateLimited {the platform kept turning requests away, and Acme stopped trying.} tokenExpired {the account’s authorization stopped working. Reconnect it, then post again.} unavailable {the platform could not be reached.} other {{reason}}}",
+    "reason": "{reason, select, contentRejected {the platform refused its text or its format.} channelDisconnected {its channel was disconnected from the workspace before it went out.} channelDisabled {its channel was turned off before it went out. Turn it back on, then post again.} mediaRemoved {one of its images or videos was deleted from the media library before it went out.} mediaRejected {the platform refused one of its images or videos.} missed {Acme was unavailable at the scheduled time, and the post came too late to send.} notPublished {someone checked the platform and did not find it.} quotaExceeded {the platform's daily allowance of uploads stayed used up, for this Acme server or for the account, and Acme stopped waiting.} rateLimited {the platform kept turning requests away, and Acme stopped trying.} tokenExpired {the account’s authorization stopped working. Reconnect it, then post again.} unavailable {the platform could not be reached.} other {{reason}}}",
     "open": "{page, select, post {Open the post} other {Open the channels}}",
     "bell": {
       "label": "{count, plural, =0 {Notifications} one {Notifications, # unread} other {Notifications, # unread}}",

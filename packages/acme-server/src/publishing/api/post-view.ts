@@ -36,18 +36,24 @@ const targetView = ({
   options,
   round,
   status,
-}: PostTarget): TargetView => ({
-  channelId,
-  failureReason: status._tag === "failed" ? status.reason : null,
-  id,
-  options: options.pipe(Option.map(encodeOptions), Option.getOrNull),
-  permalink:
-    status._tag === "published" ? Option.getOrNull(status.permalink) : null,
-  publishedAt: status._tag === "published" ? status.publishedAt : null,
-  round,
-  status: status._tag,
-  unconfirmedReason: status._tag === "unconfirmed" ? status.reason : null,
-});
+}: PostTarget): TargetView => {
+  const view: TargetView = {
+    channelId,
+    failureReason: status._tag === "failed" ? status.reason : null,
+    id,
+    options: options.pipe(Option.map(encodeOptions), Option.getOrNull),
+    permalink:
+      status._tag === "published" ? Option.getOrNull(status.permalink) : null,
+    publishedAt: status._tag === "published" ? status.publishedAt : null,
+    round,
+    status: status._tag,
+    unconfirmedReason: status._tag === "unconfirmed" ? status.reason : null,
+  };
+
+  return status._tag === "published" && status.keptPrivate === true
+    ? { ...view, keptPrivate: true }
+    : view;
+};
 
 /** What clients see of a post: what it says, when, and where it went. */
 export const postView = ({ post, targets }: PostWithTargets): PostView => ({

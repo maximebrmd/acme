@@ -68,6 +68,17 @@ On Meta's platforms:
 | Images and a video together   | Yes                                                 | Yes                                                      | No                              |
 | Alt text                      | Shown to people who need it, up to 1,000 characters | Not sent                                                 | Shown to people who need it     |
 
+On YouTube:
+
+| Limit                         | YouTube                                      |
+| ----------------------------- | -------------------------------------------- |
+| Images and videos in one post | One video, required                          |
+| Images                        | Not taken                                    |
+| Videos                        | MP4 or QuickTime, up to 256 GiB and 12 hours |
+| Alt text                      | Not sent: the post's text is the description |
+
+A video of 3 minutes or less, square or taller than wide, becomes a Short. YouTube takes videos longer than 15 minutes only from channels Google verified; it rejects the others once uploaded, and the post fails with that reason.
+
 Acme checks only what it read from each file: a fact it could not read, such as a video's duration, is not checked, and the platform may still refuse the file.
 
 ## When you schedule [#schedule]
@@ -84,7 +95,9 @@ At the post's time, Acme sends each file from the library to the platform, then 
 - **Bluesky**: images go to the server that holds the account, and a video to Bluesky's video service, which processes it.
 - **Threads**, **Instagram** and **Facebook Pages**: Acme gives Meta a link to each file in the media store, valid for two hours, and Meta fetches it. On Threads and Instagram, Meta then processes the files before the post goes out.
 
-Acme waits up to 15 minutes for a platform to process a file. Past that, it tries the post again later, as for a platform that does not answer.
+- **YouTube**: Acme uploads the video in parts of 8 MiB, picking up where YouTube stands if an upload is cut off, even after the server restarts, then waits while YouTube processes it.
+
+Acme waits up to 15 minutes for a platform to process a file. Past that, it tries the post again later, as for a platform that does not answer; a YouTube video, already uploaded, is left published while YouTube finishes.
 
 ## Delete media [#delete]
 

@@ -16,7 +16,8 @@ It is not released yet. Today you can:
 - write a post, with its own text on some channels and images or videos
   with alt text, keep it with the workspace's drafts or discard it, then
   schedule it, move it on a calendar, take it back to draft or cancel it;
-- have it published on those channels at its time, with its media, then
+- have it published on those channels at its time, with its media (a
+  video uploaded to YouTube with the title and settings it asks for), then
   follow each channel's attempts, post it again where it failed, and say
   whether one Acme could not confirm went out;
 - hear how your posts ended, or every post if you choose, and which
