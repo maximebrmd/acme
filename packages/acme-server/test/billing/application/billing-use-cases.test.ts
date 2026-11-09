@@ -1,10 +1,10 @@
 import { assert, layer } from "@effect/vitest";
-import { DateTime, Effect, Layer, Option, Ref } from "effect";
+import { Context, DateTime, Effect, Layer, Option, Ref } from "effect";
 
-import { BilledWorkspaces } from "#billing/application/billed-workspaces.ts";
 import { BillingOverview } from "#billing/application/billing-overview.ts";
 import { BillingRecords } from "#billing/application/billing-records.ts";
 import { BillingMode } from "#billing/application/ports/billing-mode.ts";
+import { Checkouts } from "#billing/application/ports/checkouts.ts";
 import { Subscriptions } from "#billing/application/ports/subscriptions.ts";
 import { WorkspaceUsage } from "#billing/application/ports/workspace-usage.ts";
 import { RecordSubscription } from "#billing/application/record-subscription.ts";
@@ -161,44 +161,49 @@ layer(billingWith(false))("billing on a server that does not bill", (it) => {
   );
 });
 
-// Whether a workspace is still billed, once it has a subscription of each
-// status the test records.
-const BilledTest = Layer.mergeAll(
-  BilledWorkspaces.layer,
-  RecordSubscription.layer
+// What the Stripe plugin holds of the workspace's checkouts: the statuses
+// a test sets, and the open Checkout Sessions, which expiring empties.
+class CheckoutsLog extends Context.Service<
+  CheckoutsLog,
+  {
+    readonly expired: Ref.Ref<number>;
+    readonly open: Ref.Ref<number>;
+    readonly statuses: Ref.Ref<readonly string[]>;
+  }
+>()("acme-server/test/billing/CheckoutsLog") {}
+
+const CheckoutsInMemory = Layer.effect(
+  Checkouts,
+  Effect.gen(function* inMemory() {
+    const { expired, open, statuses } = yield* CheckoutsLog;
+
+    return Checkouts.of({
+      expireOpen: () =>
+        Ref.getAndSet(open, 0).pipe(
+          Effect.tap((count) => Ref.update(expired, (all) => all + count))
+        ),
+      statuses: () => Ref.get(statuses),
+    });
+  })
 ).pipe(
-  Layer.provide(SubscriptionsInMemory),
-  Layer.provide(Layer.succeed(BillingMode, BillingMode.of({ enabled: true })))
+  Layer.provideMerge(
+    Layer.effect(
+      CheckoutsLog,
+      Effect.all({
+        expired: Ref.make(0),
+        open: Ref.make(0),
+        statuses: Ref.make<readonly string[]>([]),
+      })
+    )
+  )
 );
-
-layer(BilledTest)("a workspace Stripe may still bill", (it) => {
-  it.effect("is one with a subscription unpaid, not only cancelled", () =>
-    Effect.gen(function* billed() {
-      const stillBilled = BilledWorkspaces.use((billing) =>
-        billing.stillBilled(workspaceId)
-      );
-
-      assert.isFalse(yield* stillBilled);
-
-      yield* RecordSubscription.use((record) =>
-        record.record(event("canceled"))
-      );
-
-      assert.isFalse(yield* stillBilled);
-
-      // Unpaid gives no plan, but Stripe still has it.
-      yield* RecordSubscription.use((record) => record.record(event("unpaid")));
-
-      assert.isTrue(yield* stillBilled);
-    })
-  );
-});
 
 // What billing keeps of a workspace, for its exports and erasures, on a
 // server that bills or not.
 const recordsWith = (enabled: boolean) =>
   Layer.mergeAll(BillingRecords.layer, RecordSubscription.layer).pipe(
     Layer.provide(SubscriptionsInMemory),
+    Layer.provideMerge(CheckoutsInMemory),
     Layer.provide(Layer.succeed(BillingMode, BillingMode.of({ enabled })))
   );
 
@@ -239,6 +244,84 @@ layer(recordsWith(true))("billing's records of a billed workspace", (it) => {
       })
   );
 });
+
+layer(recordsWith(true))(
+  "billing's records of a workspace whose subscription is unpaid",
+  (it) => {
+    it.effect("refuse to go: unpaid gives no plan, but Stripe still has it", () =>
+      Effect.gen(function* unpaid() {
+        yield* RecordSubscription.use((record) => record.record(event("unpaid")));
+
+        const refused = yield* BillingRecords.use((records) =>
+          records.eraseWorkspace(workspaceId)
+        ).pipe(Effect.flip);
+
+        assert.strictEqual(refused._tag, "WorkspaceStillBilled");
+      })
+    );
+  }
+);
+
+// Stripe sends the member back from checkout, and the plugin records the
+// subscription, before Stripe's events reach billing.
+layer(recordsWith(true))(
+  "billing's records of a workspace whose checkout just completed",
+  (it) => {
+    it.effect(
+      "refuse to go while the plugin holds a subscription that may bill, and expire nothing",
+      () =>
+        Effect.gen(function* checkedOut() {
+          const log = yield* CheckoutsLog;
+          const erase = BillingRecords.use((records) =>
+            records.eraseWorkspace(workspaceId)
+          );
+
+          yield* Ref.set(log.open, 1);
+
+          for (const status of ["active", "trialing", "past_due", "paused", "new_one"]) {
+            yield* Ref.set(log.statuses, ["incomplete", status]);
+
+            const refused = yield* Effect.flip(erase);
+
+            assert.strictEqual(refused._tag, "WorkspaceStillBilled", status);
+          }
+
+          assert.strictEqual(yield* Ref.get(log.expired), 0);
+
+          // A checkout never completed, or a subscription that ended.
+          yield* Ref.set(log.statuses, [
+            "incomplete",
+            "incomplete_expired",
+            "canceled",
+          ]);
+
+          yield* erase;
+
+          assert.strictEqual(yield* Ref.get(log.expired), 1);
+        })
+    );
+  }
+);
+
+layer(recordsWith(true))(
+  "billing's records of a workspace with a checkout left open",
+  (it) => {
+    it.effect("expire its open checkouts as it goes, so none completes", () =>
+      Effect.gen(function* open() {
+        const log = yield* CheckoutsLog;
+
+        yield* Ref.set(log.open, 2);
+
+        yield* BillingRecords.use((records) =>
+          records.eraseWorkspace(workspaceId)
+        );
+
+        assert.strictEqual(yield* Ref.get(log.expired), 2);
+        assert.strictEqual(yield* Ref.get(log.open), 0);
+      })
+    );
+  }
+);
 
 layer(recordsWith(true))(
   "billing's records of a workspace that ended",
@@ -291,18 +374,25 @@ layer(recordsWith(false))(
   }
 );
 
-// Billing off, with subscriptions that may not be read.
+// Billing off, with subscriptions and checkouts that may not be read.
 const UnreadTest = Layer.mergeAll(
   WorkspaceEntitlements.layer,
-  BilledWorkspaces.layer
+  BillingRecords.layer
 ).pipe(
   Layer.provide(
     Layer.mergeAll(
       Layer.succeed(BillingMode, BillingMode.of({ enabled: false })),
       Layer.succeed(
+        Checkouts,
+        Checkouts.of({
+          expireOpen: () => Effect.die("Stripe called while billing is off"),
+          statuses: () => Effect.die("read while billing is off"),
+        })
+      ),
+      Layer.succeed(
         Subscriptions,
         Subscriptions.of({
-          eraseWorkspace: () => Effect.die("not used"),
+          eraseWorkspace: () => Effect.void,
           ofWorkspace: () => Effect.die("read while billing is off"),
           record: () => Effect.die("not used"),
         })
@@ -312,17 +402,16 @@ const UnreadTest = Layer.mergeAll(
 );
 
 layer(UnreadTest)("billing off", (it) => {
-  it.effect("reads no subscription", () =>
+  it.effect("reads no subscription, and calls no Stripe", () =>
     Effect.gen(function* noRead() {
       const entitlements = yield* WorkspaceEntitlements.use((found) =>
         found.of(workspaceId)
       );
 
       assert.isTrue(Option.isNone(entitlements.plan));
-      assert.isFalse(
-        yield* BilledWorkspaces.use((billing) =>
-          billing.stillBilled(workspaceId)
-        )
+
+      yield* BillingRecords.use((records) =>
+        records.eraseWorkspace(workspaceId)
       );
     })
   );

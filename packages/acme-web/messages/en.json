@@ -866,6 +866,7 @@
     "errors": {
       "alreadyInvited": "This address already has a pending invitation. Send it again from the list.",
       "alreadyMember": "This person is already a member of the workspace.",
+      "billingUnavailable": "Stripe could not be reached to close the checkouts still open for a workspace this would delete, so nothing was deleted. Try again in a few minutes.",
       "busy": "A post of this workspace is being published. Try again in a few minutes, once it has finished.",
       "forbidden": "Your role does not allow this.",
       "impersonating": "Staff acting as a member cannot change this.",

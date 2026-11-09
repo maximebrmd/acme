@@ -18,6 +18,7 @@ import {
   AuthSettings,
   authSettingsConfig,
 } from "#workspace/infrastructure/auth/settings.ts";
+import { StripeCheckoutsLive } from "#workspace/infrastructure/auth/stripe-checkouts.ts";
 
 import { newEmail, origin } from "./harness.ts";
 
@@ -44,9 +45,10 @@ const authWith = (env: Record<string, string>) =>
       )
     ),
     Layer.provide(
-      Layer.mergeAll(BillingLive, MigrationsLive).pipe(
-        Layer.provide(DatabaseLive)
-      )
+      Layer.mergeAll(
+        BillingLive.pipe(Layer.provide(StripeCheckoutsLive)),
+        MigrationsLive
+      ).pipe(Layer.provide(DatabaseLive))
     )
   );
 

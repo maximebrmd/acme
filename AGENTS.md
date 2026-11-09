@@ -319,9 +319,14 @@ and no socket, for tests.
   does not say what becomes of its rows (deleted, left without the user, or
   kept because they name nobody).
 - `ContextRecords.eraseWorkspace` asks billing first: `BillingRecords`
-  refuses a workspace Stripe may still bill (`stillBills`), before anything
-  goes, and `DeleteWorkspace` and `CloseAccount`, for the workspaces it
-  deletes, answer `WorkspaceSubscribed` (409). Closing an account leaves the
+  refuses a workspace Stripe may still bill (`stillBills`, or a status the
+  Stripe plugin's `auth.subscription` holds that `billsAt` bills, as a
+  checkout can complete before Stripe's events come), before anything
+  goes, then expires the workspace's open Checkout Sessions at Stripe
+  (`Checkouts`, which the workspace context's `StripeCheckoutsLive` backs).
+  `DeleteWorkspace` and `CloseAccount`, for the workspaces it deletes,
+  answer `WorkspaceSubscribed` (409), or `BillingUnavailable` (503) when
+  Stripe does not answer. Closing an account leaves the
   posts its user wrote in the workspaces that remain without an author
   (`PostRecords.forgetAuthor`: `author_id` has no foreign key), and drops the
   connections and account choices they had in progress
@@ -717,11 +722,11 @@ and no socket, for tests.
   the workspace as `referenceId` only, for members with `billing:manage`,
   never staff impersonating them. Checkout sends Stripe Tax's parameters
   when `STRIPE_AUTOMATIC_TAX` is on. A workspace Stripe may still bill
-  (`stillBills`: any subscription not cancelled or incomplete, unpaid and
-  paused included) is not deleted: Acme's own deletions ask
-  `BillingRecords` first (see Accounts and access), and the hook on Better
-  Auth's disabled `/organization/delete` asks `BilledWorkspaces` before its
-  API keys go.
+  (`billsAt`: any status but cancelled or incomplete, unpaid and paused
+  included, in `billing.subscriptions` or the plugin's `auth.subscription`)
+  is not deleted: Acme's own deletions ask `BillingRecords` first (see
+  Accounts and access), which also expires its open checkouts. Better
+  Auth's `/organization/delete` is disabled, so its hook refuses nothing.
 - Never call Stripe in tests: checkout and the portal run against
   stripe-mock, and webhooks post the payloads in
   `test/billing/fixtures/webhooks`, signed in the test.

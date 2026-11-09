@@ -866,6 +866,7 @@
     "errors": {
       "alreadyInvited": "Une invitation attend déjà une réponse à cette adresse. Renvoyez-la depuis la liste.",
       "alreadyMember": "Cette personne est déjà membre de l’espace de travail.",
+      "billingUnavailable": "Stripe n’a pas pu être joint pour clore les paiements encore ouverts d’un espace de travail que ceci supprimerait, donc rien n’a été supprimé. Réessayez dans quelques minutes.",
       "busy": "Une publication de cet espace de travail est en cours. Réessayez dans quelques minutes, une fois qu’elle est terminée.",
       "forbidden": "Votre rôle ne le permet pas.",
       "impersonating": "L’équipe qui agit à la place d’un membre ne peut pas modifier ceci.",

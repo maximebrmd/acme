@@ -27,6 +27,7 @@ const reasons = new Map<string, SettingsErrorKey>([
 export const SettingsErrorKeySchema = Schema.Literals([
   "alreadyInvited",
   "alreadyMember",
+  "billingUnavailable",
   "busy",
   "forbidden",
   "impersonating",
@@ -58,6 +59,7 @@ export const settingsErrorKey = (error: AuthClientError): SettingsErrorKey => {
 
 // The API's errors, by tag.
 const apiReasons = new Map<string, SettingsErrorKey>([
+  ["BillingUnavailable", "billingUnavailable"],
   ["ConnectedAppNotFound", "notFound"],
   ["Forbidden", "forbidden"],
   ["IncorrectPassword", "incorrectPassword"],

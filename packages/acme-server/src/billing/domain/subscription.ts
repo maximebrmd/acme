@@ -45,14 +45,20 @@ export const entitles = ({ status }: Subscription): boolean =>
   status === "active" || status === "trialing" || status === "past_due";
 
 /**
- * Whether Stripe may still bill it: anything but cancelled or never
- * completed, unpaid and paused included. Better Auth's Stripe plugin
- * refuses to delete a workspace with one, and so does Acme.
+ * Whether Stripe may still bill a subscription in this status: anything but
+ * cancelled or never completed, unpaid and paused included.
  */
-export const stillBills = ({ status }: Subscription): boolean =>
+export const billsAt = (status: SubscriptionStatus): boolean =>
   status !== "canceled" &&
   status !== "incomplete" &&
   status !== "incomplete_expired";
+
+/**
+ * Whether Stripe may still bill it (`billsAt`). Acme refuses to delete a
+ * workspace with one.
+ */
+export const stillBills = ({ status }: Subscription): boolean =>
+  billsAt(status);
 
 /**
  * How far along its life each status is: incomplete until the first

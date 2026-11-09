@@ -1,5 +1,6 @@
 import {
   Api,
+  BillingUnavailable,
   CurrentMember,
   Forbidden,
   WorkspaceBusy,
@@ -36,6 +37,15 @@ export const WorkspacesHandlers = HttpApiBuilder.group(
 
           yield* deletion.delete(actorOf(member), principal, payload.name).pipe(
             Effect.catchTags({
+              BillingUnavailable: ({ workspaceId }) =>
+                Effect.logWarning(
+                  "Stripe could not be reached to expire a workspace's open checkouts"
+                ).pipe(
+                  Effect.annotateLogs({ workspaceId }),
+                  Effect.andThen(
+                    Effect.fail(new BillingUnavailable({ workspaceId }))
+                  )
+                ),
               DatabaseError: Effect.die,
               MissingPermission: forbidden,
               NotAMember: () => Effect.fail(new WorkspaceNotFound()),

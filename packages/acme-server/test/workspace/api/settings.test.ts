@@ -28,6 +28,7 @@ import { AccountMail } from "#workspace/application/account-mail.ts";
 import { AccountStore } from "#workspace/application/account-store.ts";
 import type { AccountRecords } from "#workspace/application/account-store.ts";
 import { ApiKeyIssuer } from "#workspace/application/api-key-issuer.ts";
+import { BillingUnavailable } from "#workspace/application/billing-unavailable.ts";
 import { CloseAccount } from "#workspace/application/close-account.ts";
 import { ConnectedAppStore } from "#workspace/application/connected-app-store.ts";
 import { ConnectedApps } from "#workspace/application/connected-apps.ts";
@@ -60,11 +61,17 @@ const subscribed = WorkspaceIdSchema.make(
   "6b1c8d0e-9f7a-4eb5-8a21-7c8d9eafb0c1"
 );
 
+// Stripe does not answer when its checkouts are expired.
+const unreachable = WorkspaceIdSchema.make(
+  "7c2d9e1f-0a8b-4fc6-9b32-8d9eafb0c1d2"
+);
+
 const names: ReadonlyMap<WorkspaceId, string> = new Map([
   [harbour, "Harbour"],
   [busy, "Busy"],
   [shared, "Shared"],
   [subscribed, "Subscribed"],
+  [unreachable, "Unreachable"],
 ]);
 
 const records: AccountRecords = {
@@ -162,6 +169,10 @@ const PortsLive = Layer.mergeAll(
           // Stripe may still bill it.
           if (id === subscribed) {
             return Effect.fail(new WorkspaceSubscribed({ workspaceId: id }));
+          }
+
+          if (id === unreachable) {
+            return Effect.fail(new BillingUnavailable({ workspaceId: id }));
           }
 
           return record(`eraseWorkspace:${id}`).pipe(provide);
@@ -452,6 +463,25 @@ layer(Fakes.layer)("the settings endpoints", (it) => {
       );
       assert.notInclude(yield* calls, `deleteWorkspace:${subscribed}`);
     })
+  );
+
+  it.effect(
+    "answer 503 and delete nothing when Stripe cannot expire a workspace's checkouts",
+    () =>
+      Effect.gen(function* refusesUnreachable() {
+        const client = yield* as(user(), unreachable);
+
+        assert.strictEqual(
+          yield* failureOf(
+            client.workspaces.delete({
+              params: { workspaceId: unreachable },
+              payload: { name: "Unreachable" },
+            })
+          ),
+          "BillingUnavailable"
+        );
+        assert.notInclude(yield* calls, `deleteWorkspace:${unreachable}`);
+      })
   );
 
   it.effect("export the user's data as a file, to them in person only", () =>

@@ -1,5 +1,6 @@
 import {
   Api,
+  BillingUnavailable,
   Forbidden,
   IncorrectPassword,
   LastOwner,
@@ -95,6 +96,15 @@ export const AccountHandlers = HttpApiBuilder.group(
             .pipe(
               Effect.catchTags({
                 AuthUnavailable: Effect.die,
+                BillingUnavailable: ({ workspaceId }) =>
+                  Effect.logWarning(
+                    "Stripe could not be reached to expire a workspace's open checkouts"
+                  ).pipe(
+                    Effect.annotateLogs({ workspaceId }),
+                    Effect.andThen(
+                      Effect.fail(new BillingUnavailable({ workspaceId }))
+                    )
+                  ),
                 DatabaseError: Effect.die,
                 IncorrectPassword: () => Effect.fail(new IncorrectPassword()),
                 LastOwner: ({ workspaces }) =>
