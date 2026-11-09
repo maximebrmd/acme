@@ -91,9 +91,9 @@ export const emailKindOf = (event: NoticeEvent): EmailKind =>
   });
 
 /**
- * Who hears about the event: the members able to act on it. Those who may
- * schedule posts can repost one, or confirm whether it went out; those who
- * may connect channels can reconnect one.
+ * Who may act on the event: those who may schedule posts can repost one, or
+ * confirm whether it went out; those who may connect channels can reconnect
+ * one. Who hears about it follows from it (`recipientsOf`).
  */
 export const audienceOf = (event: NoticeEvent): Permission =>
   Match.valueTags(event, {

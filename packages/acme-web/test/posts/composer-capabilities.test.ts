@@ -92,6 +92,7 @@ describe(capabilitiesOf, () => {
         userId: author,
       })
     ).toMatchObject({
+      canCancel: true,
       canDiscard: false,
       canUnschedule: true,
       canWrite: false,
@@ -110,7 +111,7 @@ describe(capabilitiesOf, () => {
         post: postIn("draft"),
         saved: true,
         userId: author,
-      }).canUnschedule
-    ).toBeFalsy();
+      })
+    ).toMatchObject({ canCancel: false, canUnschedule: false });
   });
 });

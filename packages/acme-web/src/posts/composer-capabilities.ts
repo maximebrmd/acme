@@ -32,7 +32,8 @@ export const capabilitiesOf = ({
     can("post:schedule") && (status === "draft" || status === "scheduled");
 
   return {
-    canCancel: post !== undefined && canSchedule,
+    // A draft is discarded rather than cancelled.
+    canCancel: status === "scheduled" && canSchedule,
     canDiscard:
       exists &&
       status === "draft" &&
