@@ -209,7 +209,7 @@ export class ChannelsApi extends HttpApiGroup.make("channels")
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Connects the accounts the member chose among those a completed sign-in listed: each becomes a channel of the workspace, or reconnects the one it has. Each new account needs room in the workspace's plan (PlanLimitReached). Only the member who completed the sign-in can choose, once, within 15 minutes. Needs channel:connect.",
+          "Connects the accounts the member chose among those a completed sign-in listed: each becomes a channel of the workspace, or reconnects the one it has. The new accounts chosen need room in the workspace's plan, all of them: otherwise none is connected (PlanLimitReached), and the choice can be made again with fewer. Only the member who completed the sign-in can choose, once, within 15 minutes. Needs channel:connect.",
         summary: "Choose the accounts to connect",
       })
     ),

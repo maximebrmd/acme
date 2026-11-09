@@ -160,7 +160,9 @@ const connectedTo = (channel: Channel): ConnectOutcome => ({
  *
  * A new account needs room in the workspace's plan (`ChannelAllowance`):
  * checked when the connection starts, and again before each channel is
- * added, chosen ones included. Reconnecting adds nothing, so it needs none.
+ * added. Accounts chosen together need room for all of them, checked before
+ * the choice is taken, so a choice too large connects none and can be made
+ * again with fewer. Reconnecting adds nothing, so it needs none.
  */
 export class ConnectChannel extends Context.Service<
   ConnectChannel,
@@ -255,6 +257,44 @@ export class ConnectChannel extends Context.Service<
 
           yield* Effect.fromResult(
             roomForOneMore("channels", allowed, connected.length)
+          );
+        }
+      );
+
+      // Room for every new account among those chosen, at once: a choice
+      // the plan cannot hold whole connects none of them, rather than the
+      // first few, and can be made again with fewer.
+      const roomForChosen = Effect.fn("ConnectChannel.roomForChosen")(
+        function* roomForChosen(
+          workspaceId: WorkspaceId,
+          platform: Platform,
+          accountIds: readonly string[]
+        ) {
+          const allowed = yield* allowance.channels(workspaceId);
+
+          if (Option.isNone(allowed)) {
+            return;
+          }
+
+          const connected = yield* channels.list(workspaceId);
+
+          const known = new Set(
+            connected.flatMap((channel) =>
+              channel.platform === platform ? [channel.accountId] : []
+            )
+          );
+
+          const added = [...new Set(accountIds)].filter(
+            (accountId) => !known.has(accountId)
+          ).length;
+
+          if (added === 0) {
+            return;
+          }
+
+          // The last one added must still be one more the plan has room for.
+          yield* Effect.fromResult(
+            roomForOneMore("channels", allowed, connected.length + added - 1)
           );
         }
       );
@@ -624,6 +664,9 @@ export class ConnectChannel extends Context.Service<
         }
       ) {
         yield* Effect.fromResult(authorize(actor, "channel:connect"));
+
+        // Before the choice is taken, so a refusal leaves it to make again.
+        yield* roomForChosen(actor.workspaceId, platform, request.accountIds);
 
         const taken = yield* choices.take(request.selection, {
           platform,

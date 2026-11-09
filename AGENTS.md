@@ -673,7 +673,8 @@ and no socket, for tests.
 - Each context checks its own limit when something is added, through a port
   of its own backed by the billing context's `WorkspaceEntitlements`:
   `ChannelAllowance` (connecting a new account: on start, and again before
-  the channel is added), `PostAllowance` (a post scheduled or moved into a
+  the channel is added; accounts chosen together need room for all of them,
+  checked before the choice is taken), `PostAllowance` (a post scheduled or moved into a
   month, UTC: drafts and cancelled posts are left out, and a repost adds
   nothing, as `countGoingOut` counts posts, not rounds), `AssistantAllowance`,
   and members in
