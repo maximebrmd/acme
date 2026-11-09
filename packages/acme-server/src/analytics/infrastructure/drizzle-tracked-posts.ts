@@ -4,6 +4,7 @@ import {
   desc,
   eq,
   getColumns,
+  inArray,
   isNotNull,
   lte,
   sql as drizzleSql,
@@ -19,7 +20,8 @@ import { DatabaseError } from "#shared/application/database-error.ts";
 import { PostTargetIdSchema } from "#shared/domain/ids.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 
-import { metricSnapshots, trackedPosts } from "./schema.ts";
+import { erasedWorkspaces, metricSnapshots, trackedPosts } from "./schema.ts";
+import { holdTrackingLock } from "./tracking-lock.ts";
 
 export type TrackedRow = typeof trackedPosts.$inferSelect;
 
@@ -149,6 +151,38 @@ export const DrizzleTrackedPosts = Layer.effect(
       }
     );
 
+    // Under the tracking lock, which no erasure in progress holds then: a
+    // workspace erased since its posts were listed is passed over.
+    const trackLocked = Effect.fn("TrackedPosts.trackLocked")(
+      function* trackLocked(posts: readonly TrackedPost[]) {
+        yield* holdTrackingLock(sql);
+
+        const erased = yield* db
+          .select({ workspaceId: erasedWorkspaces.workspaceId })
+          .from(erasedWorkspaces)
+          .where(
+            inArray(erasedWorkspaces.workspaceId, [
+              ...new Set(posts.map(({ workspaceId }) => workspaceId)),
+            ])
+          );
+
+        const gone = new Set(erased.map(({ workspaceId }) => workspaceId));
+        const kept = posts.filter(({ workspaceId }) => !gone.has(workspaceId));
+
+        if (kept.length === 0) {
+          return 0;
+        }
+
+        const inserted = yield* db
+          .insert(trackedPosts)
+          .values(kept.map(rowOf))
+          .onConflictDoNothing()
+          .returning({ targetId: trackedPosts.targetId });
+
+        return inserted.length;
+      }
+    );
+
     const track = Effect.fn("TrackedPosts.track")(function* track(
       posts: readonly TrackedPost[]
     ) {
@@ -156,14 +190,9 @@ export const DrizzleTrackedPosts = Layer.effect(
         return 0;
       }
 
-      const inserted = yield* db
-        .insert(trackedPosts)
-        .values(posts.map(rowOf))
-        .onConflictDoNothing()
-        .returning({ targetId: trackedPosts.targetId })
+      return yield* sql
+        .withTransaction(trackLocked(posts))
         .pipe(Effect.mapError(failed));
-
-      return inserted.length;
     });
 
     const due = Effect.fn("TrackedPosts.due")(function* due(

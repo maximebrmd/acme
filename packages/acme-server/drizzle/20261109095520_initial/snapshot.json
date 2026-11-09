@@ -2,7 +2,7 @@
   "type": "base",
   "version": "9",
   "dialect": "postgres",
-  "id": "dd5138c4-0a46-41ab-8d52-b7007879dd15",
+  "id": "bccfd13a-bf45-4732-a8b5-f525dcdfeacb",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
@@ -101,6 +101,25 @@
         "s|sch|auth",
         "n|sch|auth",
         "e|sch|auth"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "analytics",
+        "erased_workspaces"
+      ],
+      "writes": [
+        "s|tbl|analytics.erased_workspaces",
+        "n|tbl|analytics.erased_workspaces",
+        "e|tbl|analytics.erased_workspaces",
+        "n|rel|analytics.erased_workspaces",
+        "n|type|analytics.erased_workspaces",
+        "n|rel|analytics.erased_workspaces_pkey"
+      ],
+      "reads": [
+        "n|sch|analytics"
       ]
     },
     {
@@ -2251,6 +2270,12 @@
     },
     {
       "schema": "analytics",
+      "name": "erased_workspaces",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "analytics",
       "name": "metric_snapshots",
       "isRlsEnabled": false,
       "entityType": "tables"
@@ -2470,6 +2495,32 @@
       "name": "verification",
       "isRlsEnabled": false,
       "entityType": "tables"
+    },
+    {
+      "schema": "analytics",
+      "table": "erased_workspaces",
+      "name": "erased_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "analytics",
+      "table": "erased_workspaces",
+      "name": "workspace_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
     },
     {
       "schema": "analytics",
@@ -8956,6 +9007,16 @@
         "target_id",
         "round",
         "attempt"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "analytics",
+      "table": "erased_workspaces",
+      "name": "erased_workspaces_pkey",
+      "columns": [
+        "workspace_id"
       ],
       "nameExplicit": false,
       "entityType": "pks"

@@ -1,5 +1,6 @@
 import { asc, eq } from "drizzle-orm";
 import { DateTime, Effect, Layer } from "effect";
+import { SqlClient } from "effect/sql";
 
 import { AnalyticsRecords } from "#analytics/application/analytics-records.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
@@ -9,7 +10,8 @@ import type {
 } from "#shared/application/personal-data.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 
-import { metricSnapshots, trackedPosts } from "./schema.ts";
+import { erasedWorkspaces, metricSnapshots, trackedPosts } from "./schema.ts";
+import { shareTrackingLock } from "./tracking-lock.ts";
 
 const failed = (cause: unknown) => new DatabaseError({ cause });
 
@@ -17,12 +19,15 @@ const utc = (date: Date) => DateTime.fromDateUnsafe(date);
 
 /**
  * AnalyticsRecords on the analytics schema. Deleting a post followed
- * deletes its snapshots, which reference it with ON DELETE CASCADE.
+ * deletes its snapshots, which reference it with ON DELETE CASCADE. An
+ * erased workspace is recorded first, under the tracking lock, so posts of
+ * it a collection run listed before are never followed after.
  */
 export const DrizzleAnalyticsRecords = Layer.effect(
   AnalyticsRecords,
   Effect.gen(function* DrizzleAnalyticsRecords() {
     const db = yield* Drizzle;
+    const sql = yield* SqlClient.SqlClient;
 
     const exportWorkspace = Effect.fn("AnalyticsRecords.exportWorkspace")(
       function* exportWorkspace(workspaceId: string) {
@@ -90,9 +95,24 @@ export const DrizzleAnalyticsRecords = Layer.effect(
 
     const eraseWorkspace = Effect.fn("AnalyticsRecords.eraseWorkspace")(
       function* eraseWorkspace(workspaceId: string) {
-        yield* db
-          .delete(trackedPosts)
-          .where(eq(trackedPosts.workspaceId, workspaceId))
+        const now = yield* DateTime.now;
+
+        // In the caller's transaction, whose end releases the lock.
+        yield* sql
+          .withTransaction(
+            Effect.gen(function* erasing() {
+              yield* shareTrackingLock(sql);
+
+              yield* db
+                .insert(erasedWorkspaces)
+                .values({ erasedAt: DateTime.toDateUtc(now), workspaceId })
+                .onConflictDoNothing();
+
+              yield* db
+                .delete(trackedPosts)
+                .where(eq(trackedPosts.workspaceId, workspaceId));
+            })
+          )
           .pipe(Effect.mapError(failed));
       }
     );

@@ -26,7 +26,8 @@ export class TrackedPosts extends Context.Service<
       before: DateTime.Utc
     ) => Effect.Effect<Option.Option<LatestPublication>, DatabaseError>;
     /**
-     * Starts following these posts; one already followed stays as it is.
+     * Starts following these posts; one already followed stays as it is,
+     * and one of a workspace erased since it was listed is passed over.
      * Answers how many were new.
      */
     readonly track: (

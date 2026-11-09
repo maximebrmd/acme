@@ -83,3 +83,14 @@ export const metricSnapshots = analytics.table(
     ),
   ]
 );
+
+/**
+ * The workspaces whose analytics were erased, by id, so a collection run
+ * that listed their posts before the erasure follows none of them after
+ * (`TrackedPosts.track`). Erasing and following take turns through an
+ * advisory lock (`./tracking-lock.ts`). The ids name nothing that remains.
+ */
+export const erasedWorkspaces = analytics.table("erased_workspaces", {
+  erasedAt: instant("erased_at").notNull(),
+  workspaceId: uuid("workspace_id").primaryKey(),
+});

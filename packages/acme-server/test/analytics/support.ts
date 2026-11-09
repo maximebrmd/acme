@@ -110,7 +110,9 @@ export const seedPost = Effect.fn("test.seedPost")(function* seedPost(
 
 /** Deletes what analytics stored for the workspace, snapshots included. */
 export const forgetWorkspace = (workspaceId: WorkspaceId) =>
-  SqlClient.SqlClient.use(
-    (sql) =>
-      sql`DELETE FROM analytics.tracked_posts WHERE workspace_id = ${workspaceId}`
+  SqlClient.SqlClient.use((sql) =>
+    Effect.all([
+      sql`DELETE FROM analytics.tracked_posts WHERE workspace_id = ${workspaceId}`,
+      sql`DELETE FROM analytics.erased_workspaces WHERE workspace_id = ${workspaceId}`,
+    ])
   ).pipe(Effect.orDie);

@@ -1,6 +1,7 @@
 import { assert, layer } from "@effect/vitest";
-import { DateTime, Effect, Layer, Option, Result } from "effect";
+import { DateTime, Deferred, Effect, Fiber, Layer, Option, Result } from "effect";
 import { SqlClient } from "effect/sql";
+import { TestClock } from "effect/testing";
 
 import { AnalyticsRecords } from "#analytics/application/analytics-records.ts";
 import { AnalyticsReports } from "#analytics/application/analytics-reports.ts";
@@ -111,6 +112,102 @@ layer(StoreTest)("the analytics store", (it) => {
         ]);
       }).pipe(Effect.ensuring(forgetWorkspace(workspaceId)));
     })
+  );
+
+  // A collection run lists a workspace's publications, the workspace is
+  // erased, then the run follows what it listed.
+  it.effect(
+    "follows no post of a workspace erased since its posts were listed",
+    () =>
+      Effect.gen(function* erasedMeanwhile() {
+        const workspaceId = yield* freshWorkspace;
+        const other = yield* freshWorkspace;
+        const tracked = yield* TrackedPosts;
+        const channelId = yield* newChannelId;
+
+        yield* Effect.gen(function* checks() {
+          const listed = trackPublication(
+            yield* publicationOf(
+              workspaceId,
+              channelId,
+              "2044-04-04T10:00:00.000Z"
+            )
+          );
+
+          const elsewhere = trackPublication(
+            yield* publicationOf(other, channelId, "2044-04-04T10:00:00.000Z")
+          );
+
+          yield* AnalyticsRecords.use((records) =>
+            records.eraseWorkspace(workspaceId)
+          );
+
+          assert.strictEqual(yield* tracked.track([listed, elsewhere]), 1);
+          assert.deepStrictEqual(
+            yield* AnalyticsRecords.use((records) =>
+              records.exportWorkspace(workspaceId)
+            ),
+            []
+          );
+          assert.lengthOf(
+            yield* AnalyticsRecords.use((records) =>
+              records.exportWorkspace(other)
+            ),
+            1
+          );
+        }).pipe(
+          Effect.ensuring(forgetWorkspace(workspaceId)),
+          Effect.ensuring(forgetWorkspace(other))
+        );
+      })
+  );
+
+  // The same, with the erasure's transaction still open when the run
+  // follows: it waits for the erasure to commit, then passes the posts over.
+  it.effect(
+    "waits for an erasure in progress before following the posts it listed",
+    () =>
+      Effect.gen(function* erasing() {
+        const workspaceId = yield* freshWorkspace;
+        const tracked = yield* TrackedPosts;
+        const sql = yield* SqlClient.SqlClient;
+        const erased = yield* Deferred.make<void>();
+        const commit = yield* Deferred.make<void>();
+
+        yield* Effect.gen(function* checks() {
+          const listed = trackPublication(
+            yield* publicationOf(
+              workspaceId,
+              yield* newChannelId,
+              "2044-05-05T10:00:00.000Z"
+            )
+          );
+
+          const eraser = yield* sql
+            .withTransaction(
+              AnalyticsRecords.use((records) =>
+                records.eraseWorkspace(workspaceId)
+              ).pipe(
+                Effect.andThen(Deferred.succeed(erased, undefined)),
+                Effect.andThen(Deferred.await(commit))
+              )
+            )
+            .pipe(Effect.forkChild);
+
+          yield* Deferred.await(erased);
+
+          const following = yield* tracked
+            .track([listed])
+            .pipe(Effect.forkChild);
+
+          // Long enough for the run to have reached the database.
+          yield* TestClock.withLive(Effect.sleep("300 millis"));
+          yield* Deferred.succeed(commit, undefined);
+          yield* Fiber.join(eraser);
+
+          assert.strictEqual(yield* Fiber.join(following), 0);
+        }).pipe(Effect.ensuring(forgetWorkspace(workspaceId)));
+      })
   );
 
   it.effect("hands out due posts taking turns between channels", () =>

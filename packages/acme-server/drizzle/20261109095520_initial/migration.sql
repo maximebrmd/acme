@@ -14,6 +14,11 @@ CREATE SCHEMA "publishing";
 --> statement-breakpoint
 CREATE SCHEMA "auth";
 --> statement-breakpoint
+CREATE TABLE "analytics"."erased_workspaces" (
+	"erased_at" timestamp with time zone NOT NULL,
+	"workspace_id" uuid PRIMARY KEY
+);
+--> statement-breakpoint
 CREATE TABLE "analytics"."metric_snapshots" (
 	"collected_at" timestamp with time zone,
 	"impressions" integer,

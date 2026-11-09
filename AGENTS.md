@@ -738,7 +738,11 @@ and no socket, for tests.
   below), in `analytics.tracked_posts`, and keeps each reading in
   `analytics.metric_snapshots`: ids and counts, never content. A workspace's
   go with it (`AnalyticsRecords`), and a reading saved after its post was
-  erased keeps nothing (`saveReading` updates the post first).
+  erased keeps nothing (`saveReading` updates the post first). Erasing
+  records the workspace's id in `analytics.erased_workspaces`, and `track`
+  passes those over, under a transaction advisory lock erasures share and
+  following holds alone, so a run that listed a workspace's posts before
+  it was erased follows none of them after.
 - Platforms without a reader (LinkedIn, X and Meta's so far) answer
   `ChannelUnreadable` `unsupported`: their posts end at their first turn,
   with no warning, and the reports leave them out.
