@@ -456,24 +456,24 @@
     "problem": {
       "tooManyVideos": "Trop de vidéos ({count} sur {maximum})",
       "mixedMedia": "Pas d’images avec une vidéo",
-      "mediaTypeUnsupported": "{kind, select, image {Image {position}} video {Vidéo {position}} other {Média {position}}} : {format} non pris",
+      "mediaTypeUnsupported": "{kind, select, image {Image {position}} video {Vidéo {position}} other {Média {position}}} : {format} non accepté",
       "mediaTooLarge": "{kind, select, image {Image {position}} video {Vidéo {position}} other {Média {position}}} : plus de {maximum}",
       "videoTooLong": "{kind, select, image {Image {position}} video {Vidéo {position}} other {Média {position}}} : plus de {maximum}",
       "videoTooShort": "{kind, select, image {Image {position}} video {Vidéo {position}} other {Média {position}}} : moins de {minimum}",
       "tooManyPixels": "{kind, select, image {Image {position}} video {Vidéo {position}} other {Média {position}}} : plus de {maximum, number} pixels",
-      "aspectRatioUnsupported": "{kind, select, image {Image {position}} video {Vidéo {position}} other {Média {position}}} : format non pris",
+      "aspectRatioUnsupported": "{kind, select, image {Image {position}} video {Vidéo {position}} other {Média {position}}} : proportions non acceptées",
       "altTextTooLong": "{kind, select, image {Image {position}} video {Vidéo {position}} other {Média {position}}} : texte alternatif de plus de {maximum, number} caractères",
       "missingAltText": "{count, plural, one {# sans texte alternatif} other {# sans texte alternatif}}"
     },
     "violation": {
       "tooManyVideos": "{channel} : {count} vidéos, {maximum} au plus.",
       "mixedMedia": "{channel} : des images et une vidéo ne peuvent pas partir ensemble.",
-      "mediaTypeUnsupported": "{channel} : {kind, select, image {l’image {position}} video {la vidéo {position}} other {une image ou une vidéo}} est au format {format}, qu’il ne prend pas.",
+      "mediaTypeUnsupported": "{channel} : {kind, select, image {l’image {position}} video {la vidéo {position}} other {une image ou une vidéo}} est au format {format}, que ce canal n’accepte pas.",
       "mediaTooLarge": "{channel} : {kind, select, image {l’image {position}} video {la vidéo {position}} other {une image ou une vidéo}} pèse {size}, {maximum} au plus.",
       "videoTooLong": "{channel} : {kind, select, image {l’image {position}} video {la vidéo {position}} other {une image ou une vidéo}} dure {duration}, {maximum} au plus.",
       "videoTooShort": "{channel} : {kind, select, image {l’image {position}} video {la vidéo {position}} other {une image ou une vidéo}} dure {duration}, {minimum} au moins.",
       "tooManyPixels": "{channel} : {kind, select, image {l’image {position}} video {la vidéo {position}} other {une image ou une vidéo}} fait {width} × {height}, plus de {maximum, number} pixels.",
-      "aspectRatioUnsupported": "{channel} : {kind, select, image {l’image {position}} video {la vidéo {position}} other {une image ou une vidéo}} fait {width} × {height} ; il prend une largeur de {minimum} à {maximum} fois la hauteur.",
+      "aspectRatioUnsupported": "{channel} : {kind, select, image {l’image {position}} video {la vidéo {position}} other {une image ou une vidéo}} fait {width} × {height} ; ce canal accepte une largeur de {minimum} à {maximum} fois la hauteur.",
       "altTextTooLong": "{channel} : le texte alternatif de {kind, select, image {l’image {position}} video {la vidéo {position}} other {une image ou une vidéo}} a {length, number} caractères, {maximum, number} au plus."
     },
     "calendar": "{count, plural, one {Avec # image ou vidéo} other {Avec # images ou vidéos}}"

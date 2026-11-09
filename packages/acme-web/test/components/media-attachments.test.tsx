@@ -250,6 +250,33 @@ describe("the media checks beside the counters", () => {
     expect(html).toContain("1 without alt text");
     expect(html).toContain("2 channels would refuse the post as it is.");
   });
+
+  it("speak the reader's language", async () => {
+    const tall = {
+      ...photo,
+      contentType: "image/jpeg",
+      dimensions: { height: 4000, width: 1000 },
+    } satisfies Media;
+
+    const html = await render(
+      "fr",
+      <CharacterCounters
+        fits={[
+          {
+            channel: channel("instagram"),
+            fit: fitOn("instagram", "Une publication synthétique", 2),
+            media: mediaFitOn("instagram", [
+              ...attached.slice(0, 1),
+              { altText: "", media: Option.some(tall), mediaId: "tall" },
+            ]),
+          },
+        ]}
+      />
+    );
+
+    expect(html).toMatch(/Image 1\s:\sGIF non accepté/u);
+    expect(html).toMatch(/Image 2\s:\sproportions non acceptées/u);
+  });
 });
 
 describe("the media violations the API reports", () => {
