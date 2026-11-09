@@ -24,6 +24,7 @@ import { roomForOneMore } from "#shared/domain/allowance.ts";
 import { authorize } from "#shared/domain/authorize.ts";
 import { ChannelIdSchema } from "#shared/domain/ids.ts";
 import type { ChannelId, WorkspaceId } from "#shared/domain/ids.ts";
+import { connectionOf } from "#shared/domain/instagram-connection.ts";
 import type { InstagramConnection } from "#shared/domain/instagram-connection.ts";
 import type { MissingPermission } from "#shared/domain/missing-permission.ts";
 import type { PlanLimitReached } from "#shared/domain/plan-limit-reached.ts";
@@ -187,7 +188,8 @@ const connectedTo = (channel: Channel): ConnectOutcome => ({
  * the choice is taken, so a choice too large connects none and can be made
  * again with fewer; a choice that fails for any other reason before an
  * account is connected is kept for another try too. Reconnecting adds
- * nothing, so it needs none.
+ * nothing, so it needs none, nor does moving an Instagram account from one
+ * way in to the other, which is checked once the account is known.
  */
 export class ConnectChannel extends Context.Service<
   ConnectChannel,
@@ -292,6 +294,37 @@ export class ConnectChannel extends Context.Service<
         }
       );
 
+      // Room for one more channel when a connection starts, unless it may
+      // move an Instagram account the workspace has the other way in: that
+      // adds no channel, and a new account is still checked before it is
+      // added.
+      const roomToStart = Effect.fn("ConnectChannel.roomToStart")(
+        function* roomToStart(
+          workspaceId: WorkspaceId,
+          authorizer: PlatformAuthorizer
+        ) {
+          const { connection, platform } = authorizer;
+
+          if (platform === "instagram" && connection !== undefined) {
+            const connected = yield* channels.list(workspaceId);
+
+            const movable = connected.some(
+              (channel) =>
+                channel.platform === "instagram" &&
+                Option.getOrUndefined(
+                  connectionOf(channel.platform, channel.connection)
+                ) !== connection
+            );
+
+            if (movable) {
+              return;
+            }
+          }
+
+          yield* roomForChannel(workspaceId);
+        }
+      );
+
       // Room for every new account among those chosen, at once: a choice
       // the plan cannot hold whole connects none of them, rather than the
       // first few, and can be made again with fewer.
@@ -371,7 +404,7 @@ export class ConnectChannel extends Context.Service<
 
         const authorizer = yield* authorizerFor(platform, request.connection);
 
-        yield* roomForChannel(actor.workspaceId);
+        yield* roomToStart(actor.workspaceId, authorizer);
 
         const pending = yield* authorizer.begin({
           handle: request.handle,

@@ -26,7 +26,9 @@ import { instagramAuthorizer } from "#channels/infrastructure/platforms/meta/ins
 import { instagramLoginAuthorizer } from "#channels/infrastructure/platforms/meta/instagram-login-authorizer.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
 import type { InstagramConnection } from "#shared/domain/instagram-connection.ts";
+import { PlanLimitReached } from "#shared/domain/plan-limit-reached.ts";
 import { publicHttpClient } from "#shared/infrastructure/platforms/public-http.ts";
+import { everyWorkspaceOn } from "#test/billing/support.ts";
 import {
   authorizersOf,
   connectChannelWith,
@@ -45,9 +47,11 @@ import {
 } from "#test/channels/fakes/fake-meta.ts";
 import {
   actorIn,
+  freshChannel,
   freshWorkspace,
   OpenOutboundGuard,
   RecordedNotices,
+  syntheticCredentials,
 } from "#test/channels/support.ts";
 
 // One fake Instagram and one fake Facebook for each block.
@@ -104,10 +108,15 @@ const authorizersWith = (ways: readonly InstagramConnection[]) =>
 
 const connectTest = (
   ways: readonly InstagramConnection[],
-  options: { readonly flatGrant?: boolean } = {}
+  options: {
+    readonly entitlements?: Parameters<typeof connectChannelWith>[1];
+    readonly flatGrant?: boolean;
+  } = {}
 ) =>
   RefreshChannelTokens.layer.pipe(
-    Layer.provideMerge(connectChannelWith(authorizersWith(ways))),
+    Layer.provideMerge(
+      connectChannelWith(authorizersWith(ways), options.entitlements)
+    ),
     Layer.provideMerge(RecordedNotices.layer),
     Layer.provideMerge(fakesWith(options))
   );
@@ -618,3 +627,123 @@ layer(connectTest(["instagramLogin"], { flatGrant: true }))(
     );
   }
 );
+
+// The free plan, which allows 3 channels.
+const freeChannels = 3;
+
+// Synthetic channels on another platform, connected without it.
+const fill = Effect.fn("fill")(function* fill(
+  workspaceId: WorkspaceId,
+  count: number
+) {
+  const repository = yield* ChannelRepository;
+
+  for (let added = 0; added < count; added += 1) {
+    const channel = yield* freshChannel(workspaceId);
+
+    yield* repository.insert(channel, syntheticCredentials(channel));
+  }
+});
+
+layer(
+  connectTest(["instagramLogin", "facebookLogin"], {
+    entitlements: everyWorkspaceOn("free"),
+  })
+)("connecting Instagram on a full plan", (it) => {
+  it.effect(
+    "moves a Page's Instagram channel to Instagram Login though the plan is full",
+    () =>
+      Effect.gen(function* moves() {
+        const { meta } = yield* Fakes;
+        const workspaceId = yield* freshWorkspace;
+
+        meta.setPages([
+          {
+            id: "905",
+            instagram: {
+              id: instagramAccount.user_id,
+              username: "studio_example",
+            },
+            name: "Synthetic Page 905",
+          },
+        ]);
+
+        yield* fill(workspaceId, freeChannels - 1);
+
+        const viaPage = yield* signIn(
+          workspaceId,
+          Option.some("facebookLogin")
+        ).pipe(Effect.flatMap(connectedChannel));
+
+        const direct = yield* signIn(workspaceId).pipe(
+          Effect.flatMap(connectedChannel)
+        );
+
+        assert.strictEqual(direct.id, viaPage.id);
+        assert.deepStrictEqual(
+          direct.connection,
+          Option.some("instagramLogin")
+        );
+        assert.lengthOf(
+          yield* ChannelRepository.use((channels) =>
+            channels.list(workspaceId)
+          ),
+          freeChannels
+        );
+      })
+  );
+
+  it.effect(
+    "refuses a new Instagram account once the plan's channels are taken",
+    () =>
+      Effect.gen(function* full() {
+        const workspaceId = yield* freshWorkspace;
+
+        yield* fill(workspaceId, freeChannels);
+
+        const refused = yield* Effect.flip(
+          ConnectChannel.use((connect) =>
+            connect.start(
+              manager(workspaceId),
+              "instagram",
+              request(Option.none())
+            )
+          )
+        );
+
+        assert.deepStrictEqual(
+          refused,
+          new PlanLimitReached({ allowed: freeChannels, limit: "channels" })
+        );
+      })
+  );
+
+  it.effect(
+    "still refuses a new account signed in through Instagram while another moves",
+    () =>
+      Effect.gen(function* stillFull() {
+        const workspaceId = yield* freshWorkspace;
+        const repository = yield* ChannelRepository;
+
+        yield* fill(workspaceId, freeChannels - 1);
+
+        // An Instagram account connected through a Page, other than the
+        // one that signs in.
+        const other = yield* freshChannel(workspaceId, {
+          accountId: "17841400000000999",
+          connection: "facebookLogin",
+          platform: "instagram",
+        });
+
+        yield* repository.insert(other, syntheticCredentials(other));
+
+        const refused = yield* Effect.flip(signIn(workspaceId));
+
+        assert.deepStrictEqual(
+          refused,
+          new PlanLimitReached({ allowed: freeChannels, limit: "channels" })
+        );
+        assert.lengthOf(yield* repository.list(workspaceId), freeChannels);
+      })
+  );
+});

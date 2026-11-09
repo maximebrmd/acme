@@ -1037,7 +1037,9 @@ and no socket, for tests.
   of its own backed by the billing context's `WorkspaceEntitlements`:
   `ChannelAllowance` (connecting a new account: on start, and again before
   the channel is added; accounts chosen together need room for all of them,
-  checked before the choice is taken), `PostAllowance` (a post scheduled or
+  checked before the choice is taken; an Instagram connection that may move
+  a channel the workspace has the other way in is checked only once its
+  account is known, as moving adds none), `PostAllowance` (a post scheduled or
   moved into a month, UTC: drafts and cancelled posts are left out, and a
   repost adds nothing, as `countGoingOut` counts posts, not rounds; and a
   workspace with more channels than its plan allows, as after a trial,
