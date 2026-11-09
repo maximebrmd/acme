@@ -6,8 +6,11 @@ import {
 import { drizzleAdapter } from "@better-auth/drizzle-adapter/relations-v2";
 import type { DrizzleAdapterConfig } from "@better-auth/drizzle-adapter/relations-v2";
 import { mcp } from "@better-auth/mcp";
-import type { McpOptions } from "@better-auth/mcp";
-import { oauthDeviceAuthorization } from "@better-auth/oauth-provider";
+import {
+  oauthDeviceAuthorization,
+  oauthProvider,
+} from "@better-auth/oauth-provider";
+import type { OAuthOptions, Scope } from "@better-auth/oauth-provider";
 import { betterAuth } from "better-auth";
 import type { Session, User } from "better-auth";
 import { APIError } from "better-auth/api";
@@ -28,6 +31,7 @@ import {
   mcpResourceOf,
   oauthPages,
   oauthScopes,
+  servesMcp,
   workspaceClaim,
 } from "./oauth.ts";
 import type { AuthConfiguration } from "./settings.ts";
@@ -161,7 +165,7 @@ const isMember = async (
 // MCP clients register themselves, when the server allows it, with the
 // right to ask for reading; writing they may ask for too, and the user then
 // agrees to it or not on the consent page.
-const dynamicClientRegistration: Partial<McpOptions> = {
+const dynamicClientRegistration: Partial<OAuthOptions<Scope[]>> = {
   allowDynamicClientRegistration: true,
   allowUnauthenticatedClientRegistration: true,
   clientRegistrationAllowedScopes: ["workspace:write"],
@@ -179,9 +183,15 @@ const dynamicClientRegistration: Partial<McpOptions> = {
  * The OAuth authorization server, for the HTTP API and the MCP endpoint.
  * Access tokens are JWTs that resource servers check locally, so they are
  * short-lived; refresh tokens renew them, once each.
+ *
+ * Better Auth's MCP plugin refuses an MCP endpoint that is neither HTTPS nor
+ * on a loopback host, as MCP clients do. A server whose PUBLIC_URL is plain
+ * HTTP elsewhere, as on a home network, still starts and signs the command
+ * line in: it runs the same OAuth provider, with the same tables, without
+ * the MCP resource, so no token is ever issued for its MCP endpoint.
  */
 const oauthServer = (settings: AuthConfiguration) => {
-  const options: McpOptions = {
+  const options: OAuthOptions<Scope[]> = {
     accessTokenExpiresIn: fifteenMinutes,
     cachedTrustedClients: new Set([cliClientId]),
     consentPage: oauthPages.consent,
@@ -221,16 +231,17 @@ const oauthServer = (settings: AuthConfiguration) => {
       },
     },
     refreshTokenReuseInterval: 0,
-    resource: mcpResourceOf(settings.publicUrl),
     resources: [apiResourceOf(settings.publicUrl)],
     scopes: oauthScopes,
   };
 
-  return mcp(
-    settings.dynamicClientRegistration
-      ? { ...options, ...dynamicClientRegistration }
-      : options
-  );
+  const provider = settings.dynamicClientRegistration
+    ? { ...options, ...dynamicClientRegistration }
+    : options;
+
+  return servesMcp(settings.publicUrl)
+    ? mcp({ ...provider, resource: mcpResourceOf(settings.publicUrl) })
+    : oauthProvider(provider);
 };
 
 /**

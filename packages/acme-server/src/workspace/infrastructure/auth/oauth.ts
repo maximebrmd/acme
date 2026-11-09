@@ -32,6 +32,25 @@ export const apiResourceOf = (publicUrl: string): string => `${publicUrl}/api`;
 export const mcpResourceOf = (publicUrl: string): string =>
   `${publicUrl}/api/mcp`;
 
+const loopbackHostnames: ReadonlySet<string> = new Set(["localhost", "[::1]"]);
+
+const loopbackIpv4 = /^127(?:\.\d{1,3}){3}$/u;
+
+/**
+ * Whether MCP clients can sign in to a server at `publicUrl`: over HTTPS, or
+ * over plain HTTP on a loopback host, for development. Better Auth's MCP
+ * plugin refuses any other MCP endpoint, as MCP clients do.
+ */
+export const servesMcp = (publicUrl: string): boolean => {
+  const { hostname, protocol } = new URL(publicUrl);
+
+  return (
+    protocol === "https:" ||
+    (protocol === "http:" &&
+      (loopbackHostnames.has(hostname) || loopbackIpv4.test(hostname)))
+  );
+};
+
 /**
  * The web app's pages the OAuth flows send people to, under PUBLIC_URL: to
  * sign in, pick the workspace an MCP client may use, agree to what it asks,

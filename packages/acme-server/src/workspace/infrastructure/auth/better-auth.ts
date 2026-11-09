@@ -5,6 +5,7 @@ import { SendAuthEmail } from "#notifications/application/send-auth-email.ts";
 
 import { AuthStartFailed } from "./auth-start-failed.ts";
 import { makeAuthDatabase } from "./database.ts";
+import { servesMcp } from "./oauth.ts";
 import { makeAuth } from "./options.ts";
 import type { AcmeAuth, AuthHooks, AuthLogLevel } from "./options.ts";
 import { AuthSettings } from "./settings.ts";
@@ -71,6 +72,12 @@ export const BetterAuthLive = Layer.effect(
       catch: (cause) => new AuthStartFailed({ cause }),
       try: async () => await auth.$context,
     });
+
+    if (!servesMcp(settings.publicUrl)) {
+      yield* Effect.logWarning(
+        "PUBLIC_URL is plain HTTP on another host than this one, so MCP clients cannot sign in and the MCP endpoint refuses every request. Serve Acme over HTTPS to use it."
+      );
+    }
 
     return auth;
   })
