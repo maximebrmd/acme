@@ -30,6 +30,8 @@ import type { ChangeEvent } from "react";
 import { describeUpload, upload, uploadProgress } from "#media/atoms.ts";
 import { UploadFailed } from "#media/upload-failed.ts";
 
+import { useFileSize } from "./use-file-size.ts";
+
 // What the file picker offers: the content types the API takes.
 const accept = MediaContentTypeSchema.literals.join(",");
 
@@ -220,11 +222,7 @@ const UploadItem = ({
   const phase = outcome._tag === "running" ? progress.phase : outcome._tag;
   const { sent } = progress;
 
-  const size = format.number(entry.file.size / mebibyte, {
-    maximumFractionDigits: 1,
-    style: "unit",
-    unit: "megabyte",
-  });
+  const size = useFileSize()(entry.file.size);
 
   return (
     <li className="flex flex-col gap-3 rounded-lg border p-3">

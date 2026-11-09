@@ -216,7 +216,6 @@
       "reload": "Try again",
       "loadMore": "Show more",
       "kind": "{kind, select, image {Image} other {Video}}",
-      "size": "{size, number} MB",
       "dimensions": "{width} × {height}",
       "duration": "{seconds, number} s",
       "noAltText": "No description",

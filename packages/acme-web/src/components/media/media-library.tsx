@@ -28,8 +28,8 @@ import { toast } from "sonner";
 import { deleteMedia, mediaKey, mediaPage } from "#media/atoms.ts";
 
 import { MediaUploader } from "./media-uploader.tsx";
-
-const mebibyte = 1024 * 1024;
+import { useFileSize } from "./use-file-size.ts";
+import { useHydrated } from "./use-hydrated.ts";
 
 const badgeVariant = {
   pending: "outline",
@@ -64,7 +64,8 @@ const Thumbnail = ({ media }: { readonly media: Media }) => {
     />
   ) : (
     <video
-      src={url}
+      // Seeking a little in makes browsers fetch and show a first frame.
+      src={`${url}#t=0.1`}
       muted
       playsInline
       preload="metadata"
@@ -174,12 +175,11 @@ const MediaCard = ({
   readonly workspaceId: string;
 }) => {
   const t = useTranslations("Media");
+  const fileSize = useFileSize();
 
   const facts = [
     t("library.kind", { kind: media.kind }),
-    t("library.size", {
-      size: Math.round((media.byteSize / mebibyte) * 10) / 10,
-    }),
+    fileSize(media.byteSize),
     ...(media.dimensions === null
       ? []
       : [t("library.dimensions", media.dimensions)]),
@@ -227,6 +227,19 @@ const MediaCard = ({
 
 const grid = "grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4";
 
+const LoadingGrid = () => {
+  const t = useTranslations("Media.library");
+
+  return (
+    <div className={grid} aria-busy>
+      <span className="sr-only">{t("loading")}</span>
+      {Array.from({ length: 4 }, (_, index) => (
+        <Skeleton key={index} className="aspect-square" />
+      ))}
+    </div>
+  );
+};
+
 // A page of the library, then the pages after it that "Show more" opened.
 // Each page starts where the one before now ends, so media uploaded or
 // deleted meanwhile never leave a gap or show twice.
@@ -262,14 +275,7 @@ const MediaPages = ({
         </AlertDescription>
       </Alert>
     ),
-    onInitial: () => (
-      <div className={grid} aria-busy>
-        <span className="sr-only">{t("loading")}</span>
-        {Array.from({ length: 4 }, (_, index) => (
-          <Skeleton key={index} className="aspect-square" />
-        ))}
-      </div>
-    ),
+    onInitial: () => <LoadingGrid />,
     onSuccess: ({ value }) => {
       if (Option.isNone(cursor) && value.items.length === 0) {
         return <p className="text-muted-foreground">{t("empty")}</p>;
@@ -324,6 +330,9 @@ export const MediaLibrary = ({
 }) => {
   const t = useTranslations("Media.library");
   const [more, setMore] = useState(0);
+  // The list is fetched with the visitor's cookies, which only the browser
+  // sends.
+  const hydrated = useHydrated();
 
   const handleMore = () => {
     setMore((current) => current + 1);
@@ -336,13 +345,17 @@ export const MediaLibrary = ({
         <h2 id="media-library" className="text-xl font-semibold">
           {t("title")}
         </h2>
-        <MediaPages
-          canDelete={canDelete}
-          cursor={Option.none()}
-          more={more}
-          workspaceId={workspaceId}
-          onMore={handleMore}
-        />
+        {hydrated ? (
+          <MediaPages
+            canDelete={canDelete}
+            cursor={Option.none()}
+            more={more}
+            workspaceId={workspaceId}
+            onMore={handleMore}
+          />
+        ) : (
+          <LoadingGrid />
+        )}
       </section>
     </div>
   );
