@@ -40,7 +40,7 @@ import type { Published } from "#shared/domain/publish-result.ts";
 import type { TokenRejected } from "#shared/domain/token-rejected.ts";
 import type { OutboundRequestRefused } from "#shared/infrastructure/platforms/outbound-request-refused.ts";
 
-import { isSameText } from "./x-post-match.ts";
+import { isSamePost } from "./x-post-match.ts";
 import { mediaRefusal, postRefusal } from "./x-refusal.ts";
 import type { XRefusal } from "./x-refusal.ts";
 
@@ -123,6 +123,14 @@ const CreatedSchema = Schema.Struct({
   data: Schema.Struct({ id: Schema.NonEmptyString }),
 });
 
+// The short links X put in a post's text, each with the address it stands
+// for; the media's carries the file's key.
+const LinkEntitySchema = Schema.Struct({
+  expanded_url: Schema.optionalKey(Schema.String),
+  media_key: Schema.optionalKey(Schema.String),
+  url: Schema.String,
+});
+
 const RecentPostsSchema = Schema.Struct({
   data: Schema.optionalKey(
     Schema.Array(
@@ -132,12 +140,25 @@ const RecentPostsSchema = Schema.Struct({
             media_keys: Schema.optionalKey(Schema.Array(Schema.String)),
           })
         ),
+        entities: Schema.optionalKey(
+          Schema.Struct({
+            urls: Schema.optionalKey(Schema.Array(LinkEntitySchema)),
+          })
+        ),
         id: Schema.NonEmptyString,
         text: Schema.String,
       })
     )
   ),
 });
+
+type LinkEntity = typeof LinkEntitySchema.Type;
+
+// Where the links of a listed post lead, in order, the media's left out.
+const linksOf = (urls: readonly LinkEntity[]): readonly string[] =>
+  urls.flatMap(({ expanded_url: expanded, media_key: mediaKey, url }) =>
+    mediaKey === undefined ? [expanded ?? url] : []
+  );
 
 /** A file X processes, and how long it asked to wait before looking. */
 interface Pending {
@@ -238,9 +259,10 @@ const publishedAs = (id: string): Published => ({
  * /2/tweets makes the post.
  *
  * X has no idempotency key. A post whose answer was lost is looked for among
- * the account's recent posts since the attempt started, by its text and its
- * number of files: found, it is published; not found proves nothing, as X
- * may not list it yet, so it is never sent again and ends unconfirmed.
+ * the account's recent posts since the attempt started, by its text, the
+ * addresses it links to and its number of files: found, it is published;
+ * not found proves nothing, as X may not list it yet, so it is never sent
+ * again and ends unconfirmed.
  */
 export const xClient = Effect.fn("XClient.make")(function* xClient(
   options: XClientOptions
@@ -508,8 +530,8 @@ export const xClient = Effect.fn("XClient.make")(function* xClient(
   });
 
   // Looks for the attempt's post among the account's recent ones: the same
-  // text, as X shows it, with as many files. Not finding it settles
-  // nothing.
+  // text, as X shows it, linking to the same addresses, with as many files.
+  // Not finding it settles nothing.
   const lookUp = (post: OutgoingPost): Effect.Effect<LookUp, PublishFailure> =>
     mediaCall(
       post,
@@ -527,7 +549,7 @@ export const xClient = Effect.fn("XClient.make")(function* xClient(
             start_time: rfc3339(
               DateTime.subtractDuration(post.startedAt, clockSkew)
             ),
-            "tweet.fields": "attachments",
+            "tweet.fields": "attachments,entities",
           }),
           HttpClientRequest.bearerToken(token)
         ),
@@ -535,9 +557,11 @@ export const xClient = Effect.fn("XClient.make")(function* xClient(
     ).pipe(
       Effect.map(({ data = [] }): LookUp => {
         const found = data.find(
-          ({ attachments, text }) =>
-            isSameText(post.text, text) &&
-            (attachments?.media_keys?.length ?? 0) === post.media.length
+          ({ attachments, entities, text }) =>
+            isSamePost(post.text, {
+              linksTo: linksOf(entities?.urls ?? []),
+              text,
+            }) && (attachments?.media_keys?.length ?? 0) === post.media.length
         );
 
         return found === undefined

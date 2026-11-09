@@ -8,7 +8,10 @@ import {
   LinkedInVersionSchema,
 } from "#publishing/infrastructure/platforms/linkedin/linkedin-version.ts";
 import { littleTextOf } from "#publishing/infrastructure/platforms/linkedin/little-text.ts";
-import { isSameText } from "#publishing/infrastructure/platforms/x/x-post-match.ts";
+import {
+  isSamePost,
+  isSameText,
+} from "#publishing/infrastructure/platforms/x/x-post-match.ts";
 import { xRetryAfter } from "#publishing/infrastructure/platforms/x/x-refusal.ts";
 
 // What the LinkedIn and X adapters write and read besides their requests.
@@ -91,6 +94,29 @@ describe("X's text, as it shows it back", () => {
 
   it("does not match another text", () => {
     expect(isSameText("Launch day", "Launch night")).toBeFalsy();
+  });
+
+  it("takes a post for the one sent only when it links to the same places", () => {
+    const sent = "Read (https://Acme.example) and www.acme.example/two.";
+
+    expect(
+      isSamePost(sent, {
+        linksTo: ["https://acme.example/", "http://www.acme.example/two"],
+        text: "Read (https://t.co/a) and https://t.co/b.",
+      })
+    ).toBeTruthy();
+    expect(
+      isSamePost(sent, {
+        linksTo: ["https://acme.example/", "http://www.acme.example/one"],
+        text: "Read (https://t.co/a) and https://t.co/b.",
+      })
+    ).toBeFalsy();
+    expect(
+      isSamePost(sent, {
+        linksTo: [],
+        text: "Read (https://t.co/a) and https://t.co/b.",
+      })
+    ).toBeFalsy();
   });
 
   it("reads back entities in X's text only, not in the text sent", () => {
