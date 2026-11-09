@@ -250,13 +250,20 @@ describe("the cluster on Postgres", () => {
             assert.strictEqual(yield* regclass(table), table);
           }
 
-          const runners = yield* SqlClient.SqlClient.use((sql) =>
+          // The runner registers itself in the background once the cluster is
+          // up, so under load the row can appear a moment after the tables.
+          const runners = SqlClient.SqlClient.use((sql) =>
             count(
               sql`SELECT count(*)::int AS count FROM cluster_runners WHERE address = ${`${runner.host}:${runner.port}`}`
             )
           );
 
-          assert.strictEqual(runners, 1);
+          yield* waitUntil(
+            "the runner is registered",
+            runners.pipe(Effect.map((registered) => registered > 0))
+          );
+
+          assert.strictEqual(yield* runners, 1);
         }).pipe(
           Effect.provide(serverWith(FakePlatformPublisher)),
           Effect.provide(Database)
