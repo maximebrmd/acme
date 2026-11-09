@@ -101,19 +101,24 @@ export interface SubscriptionToCancel {
 const isSubscribed = Schema.is(WorkspaceSubscribed);
 
 /**
- * The subscription a deletion refused for, so the person reads what
- * cancelling ends before they agree; none for any other ending.
+ * The subscriptions a deletion refused for, every one it would cancel, so
+ * the person reads what cancelling ends before they agree; none for any
+ * other ending.
  */
-export const subscriptionToCancel = <A, E>(
+export const subscriptionsToCancel = <A, E>(
   exit: Exit.Exit<A, E>
-): Option.Option<SubscriptionToCancel> =>
+): Option.Option<readonly SubscriptionToCancel[]> =>
   Exit.isSuccess(exit)
     ? Option.none()
     : Cause.findErrorOption(exit.cause).pipe(
         Option.filter(isSubscribed),
-        Option.map(({ paidUntil, plan, workspaceId }) => ({
-          paidUntil: Option.fromNullOr(paidUntil),
-          plan: Option.fromNullOr(plan),
-          workspaceId,
-        }))
+        Option.map(({ subscriptions }) =>
+          subscriptions.map(
+            ({ paidUntil, plan, workspaceId }): SubscriptionToCancel => ({
+              paidUntil: Option.fromNullOr(paidUntil),
+              plan: Option.fromNullOr(plan),
+              workspaceId,
+            })
+          )
+        )
       );

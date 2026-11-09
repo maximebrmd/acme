@@ -22,7 +22,7 @@ import { toast } from "sonner";
 
 import { Link, useRouter } from "#i18n/navigation.ts";
 import { deleteWorkspace } from "#settings/atoms.ts";
-import { apiErrorKey, subscriptionToCancel } from "#settings/errors.ts";
+import { apiErrorKey, subscriptionsToCancel } from "#settings/errors.ts";
 import type {
   SettingsErrorKey,
   SubscriptionToCancel,
@@ -50,15 +50,15 @@ export const DeleteWorkspace = ({
   const [typed, setTyped] = useState("");
   const [error, setError] = useState<SettingsErrorKey | null>(null);
 
-  const [subscription, setSubscription] = useState<
-    Option.Option<SubscriptionToCancel>
+  const [subscriptions, setSubscriptions] = useState<
+    Option.Option<readonly SubscriptionToCancel[]>
   >(Option.none());
 
   const [agreed, setAgreed] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   const confirmed =
-    typed.trim() === name.trim() && (Option.isNone(subscription) || agreed);
+    typed.trim() === name.trim() && (Option.isNone(subscriptions) || agreed);
 
   const handleTyped = (event: ChangeEvent<HTMLInputElement>) => {
     setTyped(event.target.value);
@@ -68,7 +68,7 @@ export const DeleteWorkspace = ({
     if (!open) {
       setTyped("");
       setError(null);
-      setSubscription(Option.none());
+      setSubscriptions(Option.none());
       setAgreed(false);
     }
   };
@@ -80,10 +80,10 @@ export const DeleteWorkspace = ({
         payload: { cancelSubscriptions: agreed, name: typed },
       });
 
-      const toCancel = subscriptionToCancel(exit);
+      const toCancel = subscriptionsToCancel(exit);
 
       if (Option.isSome(toCancel)) {
-        setSubscription(toCancel);
+        setSubscriptions(toCancel);
         setError(null);
 
         return;
@@ -113,19 +113,19 @@ export const DeleteWorkspace = ({
           </AlertDialogDescription>
         </AlertDialogHeader>
         <SettingsError error={error} />
-        {Option.isSome(subscription) ? (
+        {Option.isSome(subscriptions) ? (
           <SubscriptionCancellation
             agreed={agreed}
             onAgreedChange={setAgreed}
-            subscription={subscription.value}
-            billingLink={
+            subscriptions={subscriptions.value}
+            billingLink={(billed) => (
               <Link
-                href={`/app/${workspaceId}/billing`}
+                href={`/app/${billed}/billing`}
                 className="underline underline-offset-4"
               >
                 {t("billingPage")}
               </Link>
-            }
+            )}
           />
         ) : null}
         <div className="flex flex-col gap-2">

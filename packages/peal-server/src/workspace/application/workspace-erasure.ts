@@ -4,29 +4,40 @@ import type { WorkspaceId } from "#shared/domain/ids.ts";
 
 import { AccountStore } from "./account-store.ts";
 import { ContextRecords } from "./context-records.ts";
-import type { WorkspaceErasureOptions } from "./context-records.ts";
 
 /**
  * Deletes a workspace and everything every context keeps in it, its media
- * files aside, cancelling its subscriptions at Stripe when `options` says
- * to, and says what it cancelled. Run it in a transaction, which it joins:
- * the workspace goes whole or not at all.
+ * files aside, once `ContextRecords.settleWorkspaces` settled it at Stripe.
+ * Run it in a transaction, which it joins: the workspace goes whole or not
+ * at all.
  */
 export const eraseWorkspace = Effect.fn("Workspace.erase")(
-  function* eraseWorkspace(
-    workspaceId: WorkspaceId,
-    options: WorkspaceErasureOptions
-  ) {
+  function* eraseWorkspace(workspaceId: WorkspaceId) {
     const records = yield* ContextRecords;
     const store = yield* AccountStore;
 
-    const erased = yield* records.eraseWorkspace(workspaceId, options);
-
+    yield* records.eraseWorkspace(workspaceId);
     yield* store.deleteWorkspace(workspaceId);
-
-    return erased;
   }
 );
+
+/**
+ * Logs an erasure that failed once settling cancelled subscriptions at
+ * Stripe: the workspaces stay, on the free plan once Stripe's events come,
+ * and deleting them again goes without cancelling anything more.
+ */
+export const reportCancelledFirst =
+  (subscriptionsCancelled: number) =>
+  <A, E, R>(erasure: Effect.Effect<A, E, R>) =>
+    subscriptionsCancelled === 0
+      ? erasure
+      : erasure.pipe(
+          Effect.tapError(() =>
+            Effect.logWarning(
+              "An erasure failed after its subscriptions were cancelled at Stripe"
+            ).pipe(Effect.annotateLogs({ subscriptionsCancelled }))
+          )
+        );
 
 // A store briefly unavailable gets three more tries, over a few seconds.
 const retry = { schedule: Schedule.exponential("500 millis"), times: 3 };

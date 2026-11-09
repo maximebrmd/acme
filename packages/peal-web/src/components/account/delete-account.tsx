@@ -25,7 +25,7 @@ import { SettingsError } from "#components/settings/settings-error.tsx";
 import { SubscriptionCancellation } from "#components/settings/subscription-cancellation.tsx";
 import { Link, useRouter } from "#i18n/navigation.ts";
 import { deleteAccount } from "#settings/atoms.ts";
-import { apiErrorKey, subscriptionToCancel } from "#settings/errors.ts";
+import { apiErrorKey, subscriptionsToCancel } from "#settings/errors.ts";
 import type {
   SettingsErrorKey,
   SubscriptionToCancel,
@@ -86,8 +86,8 @@ export const DeleteAccount = () => {
   const [error, setError] = useState<SettingsErrorKey | null>(null);
   const [owned, setOwned] = useState<readonly Workspace[]>([]);
 
-  const [subscription, setSubscription] = useState<
-    Option.Option<SubscriptionToCancel>
+  const [subscriptions, setSubscriptions] = useState<
+    Option.Option<readonly SubscriptionToCancel[]>
   >(Option.none());
 
   const [agreed, setAgreed] = useState(false);
@@ -98,7 +98,7 @@ export const DeleteAccount = () => {
       setPassword("");
       setError(null);
       setOwned([]);
-      setSubscription(Option.none());
+      setSubscriptions(Option.none());
       setAgreed(false);
     }
   };
@@ -121,10 +121,10 @@ export const DeleteAccount = () => {
         return;
       }
 
-      const toCancel = subscriptionToCancel(exit);
+      const toCancel = subscriptionsToCancel(exit);
 
       if (Option.isSome(toCancel)) {
-        setSubscription(toCancel);
+        setSubscriptions(toCancel);
         setOwned([]);
         setError(null);
 
@@ -162,19 +162,19 @@ export const DeleteAccount = () => {
           ) : (
             <SettingsError error={error} />
           )}
-          {Option.isSome(subscription) ? (
+          {Option.isSome(subscriptions) ? (
             <SubscriptionCancellation
               agreed={agreed}
               onAgreedChange={setAgreed}
-              subscription={subscription.value}
-              billingLink={
+              subscriptions={subscriptions.value}
+              billingLink={(workspaceId) => (
                 <Link
-                  href={`/app/${subscription.value.workspaceId}/billing`}
+                  href={`/app/${workspaceId}/billing`}
                   className="underline underline-offset-4"
                 >
                   {t("billingPage")}
                 </Link>
-              }
+              )}
             />
           ) : null}
           <FormField
@@ -195,7 +195,7 @@ export const DeleteAccount = () => {
               disabled={
                 isPending ||
                 password === "" ||
-                (Option.isSome(subscription) && !agreed)
+                (Option.isSome(subscriptions) && !agreed)
               }
               focusableWhenDisabled
             >

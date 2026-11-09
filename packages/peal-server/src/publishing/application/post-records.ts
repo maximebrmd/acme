@@ -31,6 +31,14 @@ export class PostRecords extends Context.Service<
     readonly eraseWorkspace: (
       workspaceId: WorkspaceId
     ) => Effect.Effect<void, DatabaseError | PostsPublishing>;
+    /**
+     * Refused while one of the workspace's posts is being published, as
+     * erasing it would be: for a deletion to check before it does what
+     * cannot be undone.
+     */
+    readonly ensureErasable: (
+      workspaceId: WorkspaceId
+    ) => Effect.Effect<void, DatabaseError | PostsPublishing>;
     /** The posts the user wrote in these workspaces, oldest first. */
     readonly exportAuthored: (
       userId: UserId,
@@ -82,7 +90,18 @@ export class PostRecords extends Context.Service<
         }
       );
 
+      const ensureErasable = Effect.fn("PostRecords.ensureErasable")(
+        function* ensureErasable(workspaceId: WorkspaceId) {
+          const standings = yield* transaction(store.lockAll(workspaceId));
+
+          if (standings.some(({ status }) => status === "publishing")) {
+            yield* new PostsPublishing({ workspaceId });
+          }
+        }
+      );
+
       return PostRecords.of({
+        ensureErasable,
         eraseWorkspace,
         exportAuthored: (userId, workspaceIds) =>
           store.exportAuthored(userId, workspaceIds),

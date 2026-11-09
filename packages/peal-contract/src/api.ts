@@ -73,7 +73,11 @@ export type { DeleteWorkspace } from "./workspaces.ts";
 
 export { WorkspaceBusy } from "./workspace-busy.ts";
 
-export { WorkspaceSubscribed } from "./workspace-subscribed.ts";
+export {
+  SubscriptionToCancelSchema,
+  WorkspaceSubscribed,
+} from "./workspace-subscribed.ts";
+export type { SubscriptionToCancel } from "./workspace-subscribed.ts";
 
 export { BillingUnavailable } from "./billing-unavailable.ts";
 

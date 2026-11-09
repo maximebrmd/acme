@@ -30,7 +30,7 @@ export interface WorkspaceErasureOptions {
   readonly cancelSubscriptions: boolean;
 }
 
-/** What erasing a workspace ended outside Peal. */
+/** What erasing workspaces ended outside Peal. */
 export interface ErasedWorkspace {
   /** The subscriptions cancelled at Stripe. */
   readonly subscriptionsCancelled: number;
@@ -76,18 +76,33 @@ export class ContextRecords extends Context.Service<
       workspaceIds: readonly WorkspaceId[]
     ) => Effect.Effect<readonly AuthoredPostRecord[], DatabaseError>;
     /**
-     * Deletes everything of the workspace, stopping its scheduled posts and
-     * expiring its open checkouts at Stripe, and, when `options` says to,
-     * cancelling at Stripe the subscriptions that may still bill it.
-     * Refused, before anything is deleted, while one of its posts is being
-     * published, while Stripe may still bill it and `options` does not say
-     * to cancel, and while Stripe cannot be reached.
+     * What erasing these workspaces does outside the database, which
+     * cannot be undone, so it runs before the erasure's transaction:
+     * refused while one of their posts is being published, while Stripe
+     * may still bill one of them and `options` does not say to cancel (with
+     * every subscription that would be cancelled), and while Stripe cannot
+     * be reached; then their open checkouts are expired at Stripe and, when
+     * `options` says to, the subscriptions that may still bill them
+     * cancelled. Says how many were cancelled.
      */
-    readonly eraseWorkspace: (
-      workspaceId: WorkspaceId,
+    readonly settleWorkspaces: (
+      workspaceIds: readonly WorkspaceId[],
       options: WorkspaceErasureOptions
     ) => Effect.Effect<
       ErasedWorkspace,
+      BillingUnavailable | DatabaseError | WorkspaceBusy | WorkspaceSubscribed
+    >;
+    /**
+     * Deletes everything of the workspace, once settled, stopping its
+     * scheduled posts. Refused, before anything is deleted, while one of
+     * its posts is being published, while Stripe still bills it, as a
+     * checkout completed since settling would, and while Stripe cannot be
+     * reached.
+     */
+    readonly eraseWorkspace: (
+      workspaceId: WorkspaceId
+    ) => Effect.Effect<
+      void,
       BillingUnavailable | DatabaseError | WorkspaceBusy | WorkspaceSubscribed
     >;
     /**

@@ -11,6 +11,7 @@ import { RecordSubscription } from "#billing/application/record-subscription.ts"
 import type { SubscriptionEvent } from "#billing/application/record-subscription.ts";
 import { WorkspaceEntitlements } from "#billing/application/workspace-entitlements.ts";
 import type { Subscription } from "#billing/domain/subscription.ts";
+import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 import { Actor } from "#shared/domain/access.ts";
 import type { Permission } from "#shared/domain/access.ts";
 import { UserIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
@@ -62,6 +63,22 @@ const UsageTest = Layer.succeed(
   })
 );
 
+// A workspace deleted while Stripe's event about it was on its way.
+const deletedWorkspace = WorkspaceIdSchema.make(
+  "4d5e6f7a-8b9c-4d0e-9f1a-2b3c4d5e6f7a"
+);
+
+// Transactions in memory: what runs in one is all that is checked.
+const TransactionsTest = Layer.succeed(
+  TransactionRunner,
+  TransactionRunner.of({ transaction: (effect) => effect })
+);
+
+// The workspaces as the webhook finds them: all there but one.
+const WorkspacesTest = Layer.mock(Checkouts, {
+  holdWorkspace: (id) => Effect.succeed(id !== deletedWorkspace),
+});
+
 const billingWith = (enabled: boolean) =>
   BillingOverview.layer.pipe(
     Layer.provide(UsageTest),
@@ -69,6 +86,7 @@ const billingWith = (enabled: boolean) =>
       Layer.mergeAll(WorkspaceEntitlements.layer, RecordSubscription.layer)
     ),
     Layer.provide(SubscriptionsInMemory),
+    Layer.provide(Layer.mergeAll(TransactionsTest, WorkspacesTest)),
     Layer.provide(Layer.succeed(BillingMode, BillingMode.of({ enabled })))
   );
 
@@ -104,6 +122,16 @@ layer(billingWith(true))("billing on a server that bills", (it) => {
       );
 
       assert.deepStrictEqual(after.plan, Option.some("business"));
+    })
+  );
+
+  it.effect("ignores an event about a workspace deleted meanwhile", () =>
+    Effect.gen(function* gone() {
+      const outcome = yield* RecordSubscription.use((record) =>
+        record.record({ ...event("canceled"), workspaceId: deletedWorkspace })
+      );
+
+      assert.strictEqual(outcome, "ignored");
     })
   );
 
@@ -202,6 +230,7 @@ const CheckoutsInMemory = Layer.effect(
           Effect.tap(() => Ref.set(cancelledKnown, known)),
           Effect.map(([stripe, started]) => stripe + started + known.length)
         ),
+      holdWorkspace: () => Effect.succeed(true),
       expireOpen: () =>
         Ref.getAndSet(open, 0).pipe(
           Effect.tap((count) => Ref.update(expired, (all) => all + count))
@@ -229,11 +258,20 @@ const CheckoutsInMemory = Layer.effect(
 const recordsWith = (enabled: boolean) =>
   Layer.mergeAll(BillingRecords.layer, RecordSubscription.layer).pipe(
     Layer.provide(SubscriptionsInMemory),
+    Layer.provide(TransactionsTest),
     Layer.provideMerge(CheckoutsInMemory),
     Layer.provide(Layer.succeed(BillingMode, BillingMode.of({ enabled })))
   );
 
 const periodEnd = DateTime.makeUnsafe("2026-12-09T10:00:00Z");
+
+// Both steps of an erasure: Stripe's side, then the records.
+const erase = (options?: { readonly cancelSubscriptions: boolean }) =>
+  BillingRecords.use((records) =>
+    records
+      .settleWorkspace(workspaceId, options)
+      .pipe(Effect.tap(() => records.eraseWorkspace(workspaceId)))
+  );
 
 layer(recordsWith(true))("billing's records of a billed workspace", (it) => {
   it.effect(
@@ -258,16 +296,24 @@ layer(recordsWith(true))("billing's records of a billed workspace", (it) => {
           ],
         });
 
-        const refused = yield* records
-          .eraseWorkspace(workspaceId)
-          .pipe(Effect.flip);
+        const refused = yield* erase().pipe(Effect.flip);
 
         assert.strictEqual(refused._tag, "WorkspaceStillBilled");
         // What cancelling would end, for the person to read first.
         assert.deepInclude(refused, {
-          paidUntil: Option.some(periodEnd),
-          plan: Option.some("business" as const),
+          subscriptions: [
+            {
+              paidUntil: Option.some(periodEnd),
+              plan: Option.some("business" as const),
+            },
+          ],
         });
+        assert.deepStrictEqual(yield* records.billedBy(workspaceId), [
+          {
+            paidUntil: Option.some(periodEnd),
+            plan: Option.some("business" as const),
+          },
+        ]);
         assert.lengthOf(
           (yield* records.exportWorkspace(workspaceId)).subscriptions,
           1
@@ -284,9 +330,7 @@ layer(recordsWith(true))("billing's records of a billed workspace", (it) => {
 
         yield* Ref.set(log.open, 1);
 
-        const erased = yield* records.eraseWorkspace(workspaceId, {
-          cancelSubscriptions: true,
-        });
+        const erased = yield* erase({ cancelSubscriptions: true });
 
         assert.deepStrictEqual(erased, { subscriptionsCancelled: 1 });
         assert.deepStrictEqual(yield* Ref.get(log.cancelledKnown), [
@@ -313,9 +357,7 @@ layer(recordsWith(true))(
             record.record(event("unpaid"))
           );
 
-          const refused = yield* BillingRecords.use((records) =>
-            records.eraseWorkspace(workspaceId)
-          ).pipe(Effect.flip);
+          const refused = yield* erase().pipe(Effect.flip);
 
           assert.strictEqual(refused._tag, "WorkspaceStillBilled");
         })
@@ -334,10 +376,6 @@ layer(recordsWith(true))(
         Effect.gen(function* checkedOut() {
           const log = yield* CheckoutsLog;
 
-          const erase = BillingRecords.use((records) =>
-            records.eraseWorkspace(workspaceId)
-          );
-
           yield* Ref.set(log.open, 1);
 
           for (const status of [
@@ -349,7 +387,7 @@ layer(recordsWith(true))(
           ]) {
             yield* Ref.set(log.statuses, ["incomplete", status]);
 
-            const refused = yield* Effect.flip(erase);
+            const refused = yield* Effect.flip(erase());
 
             assert.strictEqual(refused._tag, "WorkspaceStillBilled", status);
           }
@@ -363,7 +401,7 @@ layer(recordsWith(true))(
             "canceled",
           ]);
 
-          yield* erase;
+          yield* erase();
 
           assert.strictEqual(yield* Ref.get(log.expired), 1);
         })
@@ -382,20 +420,16 @@ layer(recordsWith(true))(
         Effect.gen(function* unseen() {
           const log = yield* CheckoutsLog;
 
-          const erase = BillingRecords.use((records) =>
-            records.eraseWorkspace(workspaceId)
-          );
-
           yield* Ref.set(log.statuses, ["incomplete"]);
           yield* Ref.set(log.atStripe, ["canceled", "active"]);
 
-          const refused = yield* Effect.flip(erase);
+          const refused = yield* Effect.flip(erase());
 
           assert.strictEqual(refused._tag, "WorkspaceStillBilled");
 
           yield* Ref.set(log.atStripe, ["canceled", "incomplete_expired"]);
 
-          yield* erase;
+          yield* erase();
         })
     );
 
@@ -406,16 +440,14 @@ layer(recordsWith(true))(
         yield* Ref.set(log.statuses, ["active"]);
         yield* Ref.set(log.atStripe, ["canceled", "active"]);
 
-        const refused = yield* BillingRecords.use((records) =>
-          records.eraseWorkspace(workspaceId)
-        ).pipe(Effect.flip);
+        const refused = yield* erase().pipe(Effect.flip);
 
         // Nothing billing recorded tells the plan yet.
-        assert.deepInclude(refused, { plan: Option.none() });
+        assert.deepInclude(refused, {
+          subscriptions: [{ paidUntil: Option.none(), plan: Option.none() }],
+        });
 
-        const erased = yield* BillingRecords.use((records) =>
-          records.eraseWorkspace(workspaceId, { cancelSubscriptions: true })
-        );
+        const erased = yield* erase({ cancelSubscriptions: true });
 
         assert.deepStrictEqual(erased, { subscriptionsCancelled: 2 });
         assert.deepStrictEqual(yield* Ref.get(log.atStripe), [
@@ -436,9 +468,7 @@ layer(recordsWith(true))(
 
         yield* Ref.set(log.open, 2);
 
-        yield* BillingRecords.use((records) =>
-          records.eraseWorkspace(workspaceId)
-        );
+        yield* erase();
 
         assert.strictEqual(yield* Ref.get(log.expired), 2);
         assert.strictEqual(yield* Ref.get(log.open), 0);
@@ -463,7 +493,7 @@ layer(recordsWith(true))(
           "free"
         );
 
-        yield* records.eraseWorkspace(workspaceId);
+        yield* erase();
 
         assert.deepStrictEqual(yield* records.exportWorkspace(workspaceId), {
           plan: "free",
@@ -487,7 +517,7 @@ layer(recordsWith(false))(
 
         assert.isNull((yield* records.exportWorkspace(workspaceId)).plan);
 
-        yield* records.eraseWorkspace(workspaceId);
+        yield* erase();
 
         assert.lengthOf(
           (yield* records.exportWorkspace(workspaceId)).subscriptions,
@@ -512,6 +542,7 @@ const UnreadTest = Layer.mergeAll(
           atStripe: () => Effect.die("Stripe called while billing is off"),
           cancelBilled: () => Effect.die("Stripe called while billing is off"),
           expireOpen: () => Effect.die("Stripe called while billing is off"),
+          holdWorkspace: () => Effect.succeed(true),
           statuses: () => Effect.die("read while billing is off"),
         })
       ),
@@ -536,13 +567,9 @@ layer(UnreadTest)("billing off", (it) => {
 
       assert.isTrue(Option.isNone(entitlements.plan));
 
-      yield* BillingRecords.use((records) =>
-        records.eraseWorkspace(workspaceId)
-      );
+      yield* erase();
 
-      const erased = yield* BillingRecords.use((records) =>
-        records.eraseWorkspace(workspaceId, { cancelSubscriptions: true })
-      );
+      const erased = yield* erase({ cancelSubscriptions: true });
 
       assert.deepStrictEqual(erased, { subscriptionsCancelled: 0 });
     })

@@ -40,10 +40,10 @@ Tant qu’une de ses publications est en cours d’envoi, la suppression attend 
 Quand l’espace de travail a un abonnement que Stripe peut encore facturer, actif, impayé ou suspendu, y compris un abonnement dont le paiement vient d’aboutir avant que Stripe n’en ait informé Peal, la fenêtre dit d’abord ce que la suppression en fait, et attend que vous cochiez **Résilier l’abonnement maintenant** :
 
 - l’abonnement est résilié immédiatement chez Stripe, et plus rien n’est facturé ;
-- la période déjà payée n’est pas remboursée : ni avoir au prorata, ni facture de clôture ;
+- la période déjà payée n’est pas remboursée : ni avoir au prorata, ni facture de clôture, sauf lorsque la loi prévoit un remboursement : un consommateur qui a souscrit il y a moins de 14 jours peut se rétracter et être remboursé de la part non utilisée, en le demandant à la personne qui gère le serveur ;
 - la page **Facturation** de l’espace de travail disparaît avec lui : téléchargez d’abord vos factures depuis le portail de facturation. Stripe garde les factures qu’il a émises, comme le droit comptable l’exige (10 ans en France), et l’e-mail de confirmation dit à qui en demander une copie.
 
-Un paiement de l’espace de travail encore ouvert, dans un autre onglet par exemple, est clos chez Stripe quand l’espace de travail disparaît, si bien qu’il ne peut plus être réglé ensuite. Quand Stripe ne peut pas être joint, rien n’est supprimé ni résilié : réessayez quelques minutes plus tard. Une fois l’espace de travail supprimé, une confirmation part à votre adresse, dans votre langue.
+Un paiement de l’espace de travail encore ouvert, dans un autre onglet par exemple, est clos chez Stripe quand l’espace de travail disparaît, si bien qu’il ne peut plus être réglé ensuite. Quand Stripe ne peut pas être joint, rien n’est supprimé : réessayez quelques minutes plus tard. Un abonnement résilié avant l’échec le reste, et réessayer ne résilie rien de plus. Fermer un compte qui supprime plusieurs espaces de travail abonnés liste chaque abonnement résilié, avec la page de facturation de son espace de travail, avant que vous ne cochiez la case. Une fois l’espace de travail supprimé, une confirmation part à votre adresse, dans votre langue.
 
 Pour cesser de payer en gardant l’espace de travail, résiliez plutôt l’abonnement depuis sa page **Facturation** : il prend alors fin avec la période payée.
 

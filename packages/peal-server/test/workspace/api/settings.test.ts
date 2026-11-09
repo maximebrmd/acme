@@ -161,36 +161,45 @@ const PortsLive = Layer.mergeAll(
 
       return ContextRecords.of({
         eraseUser: (id) => record(`eraseUser:${id}`).pipe(provide),
-        eraseWorkspace: (id, { cancelSubscriptions }) => {
+        eraseWorkspace: (id) => {
           if (id === busy) {
             return Effect.fail(new WorkspaceBusy({ workspaceId: id }));
           }
 
-          // Stripe may still bill it, until the person agrees to cancel.
-          if (id === subscribed) {
-            return cancelSubscriptions
-              ? record(`eraseWorkspace:${id}:cancel`).pipe(
-                  provide,
-                  Effect.as({ subscriptionsCancelled: 1 })
-                )
-              : Effect.fail(
-                  new WorkspaceSubscribed({
-                    paidUntil: Option.some(at),
-                    plan: Option.some("pro"),
-                    workspaceId: id,
-                  })
-                );
-          }
-
-          if (id === unreachable) {
-            return Effect.fail(new BillingUnavailable({ workspaceId: id }));
-          }
-
-          return record(`eraseWorkspace:${id}`).pipe(
-            provide,
-            Effect.as({ subscriptionsCancelled: 0 })
-          );
+          return record(`eraseWorkspace:${id}`).pipe(provide);
         },
+        // Stripe may still bill one, until the person agrees to cancel:
+        // nothing is cancelled while another refuses.
+        settleWorkspaces: (ids, { cancelSubscriptions }) =>
+          Effect.gen(function* settle() {
+            if (ids.includes(busy)) {
+              return yield* new WorkspaceBusy({ workspaceId: busy });
+            }
+
+            if (ids.includes(unreachable)) {
+              return yield* new BillingUnavailable({ workspaceId: unreachable });
+            }
+
+            const billed = ids.filter((id) => id === subscribed);
+
+            if (billed.length > 0 && !cancelSubscriptions) {
+              return yield* new WorkspaceSubscribed({
+                subscriptions: billed.map((workspaceId) => ({
+                  paidUntil: Option.some(at),
+                  plan: Option.some("pro" as const),
+                  workspaceId,
+                })),
+              });
+            }
+
+            yield* Effect.forEach(
+              billed,
+              (id) => record(`cancel:${id}`).pipe(provide),
+              { discard: true }
+            );
+
+            return { subscriptionsCancelled: billed.length };
+          }),
         exportAuthoredPosts: (id, workspaceIds) =>
           record(`exportAuthored:${id}:${workspaceIds.join(",")}`).pipe(
             provide,
@@ -503,15 +512,25 @@ layer(Fakes.layer)("the settings endpoints", (it) => {
         const client = yield* as(user(), subscribed);
         const params = { workspaceId: subscribed };
 
+        // A name typed wrong cancels nothing, agreed or not.
+        assert.strictEqual(
+          yield* failureOf(
+            client.workspaces.delete({
+              params,
+              payload: { cancelSubscriptions: true, name: "Subscribe" },
+            })
+          ),
+          "WorkspaceNameMismatch"
+        );
+        assert.notInclude(yield* calls, `cancel:${subscribed}`);
+
         const refused = yield* client.workspaces
           .delete({ params, payload: { name: "Subscribed" } })
           .pipe(Effect.flip);
 
         assert.deepInclude(refused, {
           _tag: "WorkspaceSubscribed",
-          paidUntil: at,
-          plan: "pro",
-          workspaceId: subscribed,
+          subscriptions: [{ paidUntil: at, plan: "pro", workspaceId: subscribed }],
         });
         assert.notInclude(yield* calls, `deleteWorkspace:${subscribed}`);
 
@@ -523,7 +542,8 @@ layer(Fakes.layer)("the settings endpoints", (it) => {
         assert.includeMembers(
           [...(yield* calls)],
           [
-            `eraseWorkspace:${subscribed}:cancel`,
+            `cancel:${subscribed}`,
+            `eraseWorkspace:${subscribed}`,
             `deleteWorkspace:${subscribed}`,
             `removeFiles:${subscribed}`,
             "mail:workspaceDeleted:ana@example.test:fr:Subscribed:1",
@@ -781,7 +801,8 @@ layer(Fakes.layer)("the settings endpoints", (it) => {
         assert.includeMembers(
           [...(yield* calls)],
           [
-            `eraseWorkspace:${subscribed}:cancel`,
+            `cancel:${subscribed}`,
+            `eraseWorkspace:${subscribed}`,
             `deleteUser:${userId}`,
             "mail:ana@example.test:fr:1",
           ]

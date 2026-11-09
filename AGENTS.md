@@ -405,28 +405,39 @@ and no socket, for tests.
   `test/workspace/integration/erasure.test.ts`, which fails on a table that
   does not say what becomes of its rows (deleted, left without the user, or
   kept because they name nobody).
-- `ContextRecords.eraseWorkspace` erases posts first, which refuse while
-  one goes out, and billing last, in the same transaction, so nothing else
-  can refuse once Stripe has cancelled anything. `BillingRecords` finds what
-  Stripe may still bill (`stillBills`, a status the Stripe plugin's
-  `auth.subscription` holds that `billsAt` bills, as a checkout can complete
-  before Stripe's events come, or a subscription Stripe itself holds,
-  `Checkouts.atStripe`, as a checkout completed unseen leaves one) and
-  expires the workspace's open Checkout Sessions (`Checkouts`, which the
-  workspace context's `StripeCheckoutsLive` backs). Without the person's
+- Erasing workspaces takes two steps, as Stripe cannot be rolled back.
+  First, outside any transaction, `ContextRecords.settleWorkspaces` checks
+  every workspace the deletion erases: it refuses while one of their posts
+  goes out (`PostRecords.ensureErasable`), and, without the person's
   agreement (`cancelSubscriptions`, in `DeleteWorkspaceSchema` and
-  `DeleteAccountSchema`), a billed workspace is refused: `DeleteWorkspace`
-  and `CloseAccount` answer `WorkspaceSubscribed` (409) with the plan and
-  `paidUntil`, which the web app's dialogs show (`SubscriptionCancellation`)
-  until the box is ticked. With it, `Checkouts.cancelBilled` cancels every
-  such subscription at once, `prorate: false` and `invoice_now: false`: the
-  period paid for is not refunded and nothing more is charged. The Stripe
-  customer and its invoices stay with Stripe (accounting law keeps invoices
-  10 years); Stripe's event for the cancellation finds no workspace and is
-  left alone. Stripe not answering is `BillingUnavailable` (503), and the
-  transaction rolls back: nothing is deleted. A subscription cancelled for
-  an account closure that a later workspace then refuses stays cancelled;
-  the workspace stays, on the free plan. The owner is emailed
+  `DeleteAccountSchema`), while Stripe may bill any of them, listing every
+  subscription at once. `BillingRecords.billedBy` finds what may bill
+  (`stillBills`, a status the Stripe plugin's `auth.subscription` holds that
+  `billsAt` bills, as a checkout can complete before Stripe's events come);
+  `settleWorkspace` then expires the workspace's open Checkout Sessions
+  (`Checkouts`, which the workspace context's `StripeCheckoutsLive` backs),
+  refuses when Stripe itself holds a subscription that may bill
+  (`Checkouts.atStripe`, as a checkout completed unseen leaves one) and,
+  agreed, cancels each one once (`Checkouts.cancelBilled`, with an
+  idempotency key per workspace and subscription), at once,
+  `prorate: false` and `invoice_now: false`. `DeleteWorkspace` checks the
+  typed name before it. Then the erasure's transaction erases posts first,
+  which refuse while one goes out, and billing last, which asks Stripe again
+  and refuses while anything still bills, as a checkout completed in between
+  would. `DeleteWorkspace` and `CloseAccount` answer `WorkspaceSubscribed`
+  (409) with each subscription's workspace, plan and `paidUntil`, which the
+  web app's dialogs list (`SubscriptionCancellation`) until the box is
+  ticked. The period paid for is not refunded, except where the law gives
+  a refund (a consumer who withdraws within 14 days of subscribing): every
+  surface that says so says that too. The Stripe customer and its invoices
+  stay with Stripe (accounting law keeps invoices 10 years). Stripe's
+  event for a cancellation is recorded under the workspace's row
+  (`Checkouts.holdWorkspace`, FOR KEY SHARE, in `RecordSubscription`'s
+  transaction): one that comes during the erasure waits for it, then finds
+  no workspace and is left alone. Stripe not answering is
+  `BillingUnavailable` (503). A failure after settling, as the transaction
+  failing, leaves the workspaces, on the free plan once Stripe's events
+  come, and is logged; deleting them again cancels nothing more. The owner is emailed
   (`AccountMail.workspaceDeleted`, `deleted`), saying what was cancelled,
   and each erasure is logged by id (`event.name` `peal.erasure`) for the
   restore runbook. Closing an account leaves the

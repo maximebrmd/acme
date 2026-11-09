@@ -40,10 +40,10 @@ While one of the workspace's posts is going out, deleting it waits: try again a 
 When the workspace has a subscription Stripe may still bill, active, unpaid or paused, including one whose checkout has just completed before Stripe told Peal about it, the dialog first says what deleting does to it, and waits until you tick **Cancel the subscription now**:
 
 - the subscription is cancelled at Stripe at once, and nothing more is charged;
-- the period already paid for is not refunded: there is no proration credit and no final invoice;
+- the period already paid for is not refunded: there is no proration credit and no final invoice, except where the law gives a refund: a consumer who subscribed less than 14 days ago may withdraw and be refunded the unused part, by asking whoever runs the server;
 - the workspace's **Billing** page goes with it, so download your invoices from the billing portal first. Stripe keeps the invoices it issued, as accounting law requires (10 years in France), and the confirmation email says whom to ask for a copy.
 
-A checkout of the workspace still open, in another tab say, is closed at Stripe as the workspace goes, so it cannot be paid afterwards. When Stripe cannot be reached, nothing is deleted and nothing is cancelled: try again a few minutes later. Once the workspace is deleted, a confirmation goes to your address, in your language.
+A checkout of the workspace still open, in another tab say, is closed at Stripe as the workspace goes, so it cannot be paid afterwards. When Stripe cannot be reached, nothing is deleted: try again a few minutes later. A subscription cancelled before the failure stays cancelled, and trying again cancels nothing more. Closing an account that deletes several subscribed workspaces lists every subscription it cancels, each with its workspace's billing page, before you tick the box. Once the workspace is deleted, a confirmation goes to your address, in your language.
 
 To stop paying and keep the workspace, cancel the subscription from its **Billing** page instead: it then ends with the period paid for.
 

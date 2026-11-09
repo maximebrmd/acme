@@ -253,7 +253,31 @@ layer(DatabaseTest)("the Stripe plugin's checkouts", (it) => {
           assert.strictEqual(sent.get("prorate"), "false");
           assert.strictEqual(sent.get("invoice_now"), "false");
           assert.isNotNull(sent.get("cancellation_details[comment]"));
+          // A deletion tried again cancels each one once.
+          assert.strictEqual(
+            request.headers["idempotency-key"],
+            `erase-${workspaceId}-${request.path.replace("/v1/subscriptions/", "")}`
+          );
         }
+      }).pipe(Effect.scoped)
+  );
+
+  it.effect(
+    "hold a workspace that exists, and say one deleted is gone",
+    () =>
+      Effect.gen(function* holds() {
+        const sql = yield* SqlClient.SqlClient;
+        const checkouts = yield* checkoutsOn(undefined);
+        const { workspaceId } = yield* seeded;
+
+        assert.isTrue(
+          yield* sql.withTransaction(checkouts.holdWorkspace(workspaceId))
+        );
+
+        yield* sql`DELETE FROM auth.subscription WHERE reference_id = ${workspaceId}`;
+        yield* sql`DELETE FROM auth.organization WHERE id = ${workspaceId}`;
+
+        assert.isFalse(yield* checkouts.holdWorkspace(workspaceId));
       }).pipe(Effect.scoped)
   );
 

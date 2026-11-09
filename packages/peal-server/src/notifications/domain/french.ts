@@ -10,9 +10,9 @@ export const french: EmailCatalog = {
   },
   billingEnded: {
     account:
-      "Les abonnements des espaces de travail supprimés ont été résiliés immédiatement : plus rien n’est facturé, et la période déjà payée n’est pas remboursée. Leurs factures sont conservées comme le droit comptable l’exige ; demandez-en une copie à la personne qui gère ce serveur Peal.",
+      "Les abonnements des espaces de travail supprimés ont été résiliés immédiatement : plus rien n’est facturé, et la période déjà payée n’est pas remboursée, sauf lorsque la loi prévoit un remboursement : si vous avez souscrit en tant que consommateur il y a moins de 14 jours, vous pouvez vous rétracter et être remboursé de la part non utilisée. Leurs factures sont conservées comme le droit comptable l’exige ; demandez-en une copie à la personne qui gère ce serveur Peal.",
     workspace:
-      "Son abonnement a été résilié immédiatement : plus rien n’est facturé, et la période déjà payée n’est pas remboursée. Ses factures sont conservées comme le droit comptable l’exige ; demandez-en une copie à la personne qui gère ce serveur Peal.",
+      "Son abonnement a été résilié immédiatement : plus rien n’est facturé, et la période déjà payée n’est pas remboursée, sauf lorsque la loi prévoit un remboursement : si vous avez souscrit en tant que consommateur il y a moins de 14 jours, vous pouvez vous rétracter et être remboursé de la part non utilisée. Ses factures sont conservées comme le droit comptable l’exige ; demandez-en une copie à la personne qui gère ce serveur Peal.",
   },
   channel: "{platform} ({handle})",
   channelReconnectRequired: {

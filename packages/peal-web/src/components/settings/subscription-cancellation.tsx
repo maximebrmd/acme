@@ -10,28 +10,16 @@ import type { ReactNode } from "react";
 
 import type { SubscriptionToCancel } from "#settings/errors.ts";
 
-/**
- * What deleting does to a subscription Stripe may still bill, before the
- * person agrees: it ends now, nothing more is charged, the period paid for
- * is not refunded, and the invoices are best downloaded first. The
- * deletion waits for the box, never ticked beforehand.
- */
-export const SubscriptionCancellation = ({
-  agreed,
+const Cancelled = ({
   billingLink,
-  onAgreedChange,
   subscription,
 }: {
-  readonly agreed: boolean;
-  /** The billing page of the workspace, where its invoices are. */
   readonly billingLink: ReactNode;
-  readonly onAgreedChange: (agreed: boolean) => void;
   readonly subscription: SubscriptionToCancel;
 }) => {
   const t = useTranslations("Settings.cancellation");
   const billing = useTranslations("Billing");
   const format = useFormatter();
-  const id = useId();
 
   const plan = Option.match(subscription.plan, {
     onNone: () => "none",
@@ -39,31 +27,74 @@ export const SubscriptionCancellation = ({
   });
 
   return (
+    <li className="flex flex-col gap-1">
+      <span>{t("ends", { plan })}</span>
+      <span>
+        {Option.match(subscription.paidUntil, {
+          onNone: () => t("notRefunded"),
+          onSome: (until) =>
+            t("notRefundedUntil", {
+              date: format.dateTime(DateTime.toDate(until), {
+                dateStyle: "long",
+              }),
+            }),
+        })}
+      </span>
+      {billingLink}
+    </li>
+  );
+};
+
+/**
+ * What deleting does to each subscription Stripe may still bill, before
+ * the person agrees: it ends now, nothing more is charged, the period paid
+ * for is not refunded but where the law gives a refund, as to a consumer
+ * who withdraws within 14 days, and the invoices are best downloaded
+ * first. Every subscription is listed before the one box that agrees to
+ * cancel them all, never ticked beforehand.
+ */
+export const SubscriptionCancellation = ({
+  agreed,
+  billingLink,
+  onAgreedChange,
+  subscriptions,
+}: {
+  readonly agreed: boolean;
+  /** The billing page of a workspace, where its invoices are. */
+  readonly billingLink: (workspaceId: string) => ReactNode;
+  readonly onAgreedChange: (agreed: boolean) => void;
+  readonly subscriptions: readonly SubscriptionToCancel[];
+}) => {
+  const t = useTranslations("Settings.cancellation");
+  const id = useId();
+
+  return (
     <Alert variant="destructive">
-      <AlertTitle>{t("title")}</AlertTitle>
+      <AlertTitle>{t("title", { count: subscriptions.length })}</AlertTitle>
       <AlertDescription>
         <span className="flex flex-col gap-2">
-          <span>{t("ends", { plan })}</span>
-          <span>
-            {Option.match(subscription.paidUntil, {
-              onNone: () => t("notRefunded"),
-              onSome: (until) =>
-                t("notRefundedUntil", {
-                  date: format.dateTime(DateTime.toDate(until), {
-                    dateStyle: "long",
-                  }),
-                }),
-            })}
-          </span>
+          <ul className="flex flex-col gap-2">
+            {subscriptions.map((subscription, index) => (
+              <Cancelled
+                // The same workspace may list two subscriptions, neither
+                // with an id of its own.
+                key={`${subscription.workspaceId}-${String(index)}`}
+                billingLink={billingLink(subscription.workspaceId)}
+                subscription={subscription}
+              />
+            ))}
+          </ul>
+          <span>{t("withdrawal")}</span>
           <span>{t("invoices")}</span>
-          {billingLink}
           <span className="flex items-start gap-2">
             <Checkbox
               id={id}
               checked={agreed}
               onCheckedChange={onAgreedChange}
             />
-            <Label htmlFor={id}>{t("agree")}</Label>
+            <Label htmlFor={id}>
+              {t("agree", { count: subscriptions.length })}
+            </Label>
           </span>
         </span>
       </AlertDescription>

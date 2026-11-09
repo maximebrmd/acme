@@ -42,7 +42,7 @@ Votre utilisation de chaque plateforme reste soumise à ses propres conditions. 
 
 [Les offres et les prix, les taxes, les périodes de facturation, les renouvellements, les résiliations et les remboursements, ainsi que le droit de rétractation des consommateurs dans l’UE lorsqu’il s’applique. Les paiements sont traités par [Prestataire de paiement].]
 
-Supprimer une organisation, ou fermer votre compte de sorte qu’une organisation soit supprimée avec lui, résilie immédiatement son abonnement, une fois que vous l’acceptez sur l’écran de confirmation : plus rien n’est facturé, et la période déjà payée n’est pas remboursée. [Si un consommateur qui se rétracte dans les 14 jours suivant la souscription est remboursé de la part non utilisée, et comment.] Les factures sont conservées comme le droit comptable l’exige.
+Supprimer une organisation, ou fermer votre compte de sorte qu’une organisation soit supprimée avec lui, résilie immédiatement son abonnement, une fois que vous l’acceptez sur l’écran de confirmation : plus rien n’est facturé, et la période déjà payée n’est pas remboursée, sauf lorsque la loi prévoit un remboursement, comme pour un consommateur qui se rétracte dans les 14 jours suivant la souscription, qui est remboursé de la part non utilisée. [Comment un consommateur qui se rétracte demande ce remboursement.] Les factures sont conservées comme le droit comptable l’exige.
 
 ## Disponibilité et évolutions du service
 

@@ -10,9 +10,9 @@ export const english: EmailCatalog = {
   },
   billingEnded: {
     account:
-      "The subscriptions of the workspaces it deleted were cancelled at once: nothing more is charged, and the period already paid for is not refunded. Their invoices are kept as accounting law requires; ask whoever runs this Peal server for a copy.",
+      "The subscriptions of the workspaces it deleted were cancelled at once: nothing more is charged, and the period already paid for is not refunded, except where the law gives a refund: if you subscribed as a consumer less than 14 days ago, you may withdraw and be refunded the unused part. Their invoices are kept as accounting law requires; ask whoever runs this Peal server for a copy.",
     workspace:
-      "Its subscription was cancelled at once: nothing more is charged, and the period already paid for is not refunded. Its invoices are kept as accounting law requires; ask whoever runs this Peal server for a copy.",
+      "Its subscription was cancelled at once: nothing more is charged, and the period already paid for is not refunded, except where the law gives a refund: if you subscribed as a consumer less than 14 days ago, you may withdraw and be refunded the unused part. Its invoices are kept as accounting law requires; ask whoever runs this Peal server for a copy.",
   },
   channel: "{platform} ({handle})",
   channelReconnectRequired: {

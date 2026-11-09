@@ -17,8 +17,8 @@ import { stripeClientOf } from "./stripe-client.ts";
 
 const failed = (cause: unknown) => new DatabaseError({ cause });
 
-// A deletion waits on these calls, inside its transaction: Stripe gets this
-// long to answer each one.
+// A deletion waits on these calls, and holds its transaction while it asks
+// whether anything still bills: Stripe gets this long to answer each one.
 const requestTimeout = 10_000;
 
 // Better Auth's own default, for a row written without one.
@@ -96,11 +96,16 @@ const cancelAtStripe = (
     // Whether Stripe answered that it does not know the subscription.
     catch: (cause) => isMissing(cause),
     try: async () =>
-      await stripe.subscriptions.cancel(subscriptionId, {
-        cancellation_details: { comment: cancellationComment },
-        invoice_now: false,
-        prorate: false,
-      }),
+      await stripe.subscriptions.cancel(
+        subscriptionId,
+        {
+          cancellation_details: { comment: cancellationComment },
+          invoice_now: false,
+          prorate: false,
+        },
+        // A deletion tried again asks Stripe once.
+        { idempotencyKey: `erase-${workspaceId}-${subscriptionId}` }
+      ),
   }).pipe(
     Effect.matchEffect({
       onFailure: (missing) =>
@@ -273,6 +278,26 @@ export const StripeCheckoutsLive = Layer.effect(
       }
     );
 
-    return Checkouts.of({ atStripe, cancelBilled, expireOpen, statuses });
+    // FOR KEY SHARE waits on a deletion that holds the row, which locks it
+    // first, and then finds it gone.
+    const holdWorkspace = (workspaceId: WorkspaceId) =>
+      db
+        .select({ id: organization.id })
+        .from(organization)
+        .where(eq(organization.id, workspaceId))
+        .for("key share")
+        .pipe(
+          Effect.mapError(failed),
+          Effect.map((rows) => rows.length > 0),
+          Effect.withSpan("Checkouts.holdWorkspace")
+        );
+
+    return Checkouts.of({
+      atStripe,
+      cancelBilled,
+      expireOpen,
+      holdWorkspace,
+      statuses,
+    });
   })
 );

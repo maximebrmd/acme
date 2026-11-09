@@ -7,13 +7,11 @@ import type { WorkspaceSubscribed as Refused } from "#workspace/application/work
  * The contract's refusal of a deletion Stripe may still bill, with what
  * cancelling would end.
  */
-export const subscribedOf = ({
-  paidUntil,
-  plan,
-  workspaceId,
-}: Refused): WorkspaceSubscribed =>
+export const subscribedOf = ({ subscriptions }: Refused): WorkspaceSubscribed =>
   new WorkspaceSubscribed({
-    paidUntil: Option.getOrNull(paidUntil),
-    plan: Option.getOrNull(plan),
-    workspaceId,
+    subscriptions: subscriptions.map(({ paidUntil, plan, workspaceId }) => ({
+      paidUntil: Option.getOrNull(paidUntil),
+      plan: Option.getOrNull(plan),
+      workspaceId,
+    })),
   });

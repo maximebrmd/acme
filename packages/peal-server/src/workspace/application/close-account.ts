@@ -20,7 +20,11 @@ import { NotSignedIn } from "./not-signed-in.ts";
 import { PasswordCheck } from "./password-check.ts";
 import type { TooManyPasswordAttempts } from "./too-many-password-attempts.ts";
 import type { WorkspaceBusy } from "./workspace-busy.ts";
-import { eraseWorkspace, removeWorkspaceFiles } from "./workspace-erasure.ts";
+import {
+  eraseWorkspace,
+  removeWorkspaceFiles,
+  reportCancelledFirst,
+} from "./workspace-erasure.ts";
 import type { WorkspaceSubscribed } from "./workspace-subscribed.ts";
 
 /**
@@ -32,8 +36,9 @@ import type { WorkspaceSubscribed } from "./workspace-subscribed.ts";
  * they are the only owner of a workspace others still use (`planClosure`),
  * and while Stripe cannot be reached. A subscription Stripe may still bill
  * one of the workspaces it deletes through is cancelled at once, when
- * `options` says the user agreed to; otherwise the closure is refused
- * (`WorkspaceSubscribed`, with what cancelling would end). A confirmation
+ * `options` says the user agreed to, before the transaction and once
+ * nothing else refuses; otherwise the closure is refused
+ * (`WorkspaceSubscribed`, listing what cancelling would end in each). A confirmation
  * is emailed to the address the account had, in its language.
  */
 export class CloseAccount extends Context.Service<
@@ -91,30 +96,35 @@ export class CloseAccount extends Context.Service<
           )
         );
 
-        const { deleted, subscriptionsCancelled } = yield* transaction(
+        // What it would delete, so Stripe's side, which cannot be undone,
+        // is settled first, once nothing else refuses.
+        const planned = yield* Effect.fromResult(
+          planClosure(yield* store.standings(userId))
+        );
+
+        const { subscriptionsCancelled } = yield* records.settleWorkspaces(
+          planned.deleted,
+          options
+        );
+
+        const deleted = yield* transaction(
           Effect.gen(function* closeInTransaction() {
+            // Again, under the workspaces' locks: a workspace someone
+            // joined meanwhile is left rather than deleted.
             const plan = yield* Effect.fromResult(
               planClosure(yield* store.standings(userId))
             );
 
-            const erased = yield* Effect.all(
-              plan.deleted.map((workspaceId) =>
-                eraseWorkspace(workspaceId, options)
-              )
-            );
+            yield* Effect.forEach(plan.deleted, eraseWorkspace, {
+              discard: true,
+            });
 
             yield* records.eraseUser(userId);
             yield* store.deleteUser(userId);
 
-            return {
-              deleted: plan.deleted,
-              subscriptionsCancelled: erased.reduce(
-                (sum, workspace) => sum + workspace.subscriptionsCancelled,
-                0
-              ),
-            };
+            return plan.deleted;
           })
-        );
+        ).pipe(reportCancelledFirst(subscriptionsCancelled));
 
         yield* Effect.forEach(deleted, removeWorkspaceFiles, { discard: true });
 

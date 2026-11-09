@@ -24,6 +24,14 @@ export class Checkouts extends Context.Service<
       workspaceId: WorkspaceId
     ) => Effect.Effect<readonly string[], DatabaseError>;
     /**
+     * Whether the workspace still exists, holding it, in the caller's
+     * transaction, until that ends: a deletion of it running at once is
+     * waited for, and once it commits the workspace is gone.
+     */
+    readonly holdWorkspace: (
+      workspaceId: WorkspaceId
+    ) => Effect.Effect<boolean, DatabaseError>;
+    /**
      * Expires every Checkout Session still open at Stripe for the
      * workspace, so none can complete, and says how many.
      */

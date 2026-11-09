@@ -6,6 +6,7 @@ import {
   stillBills,
   SubscriptionStatusSchema,
 } from "#billing/domain/subscription.ts";
+import type { Subscription } from "#billing/domain/subscription.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import type { BillingRecord } from "#shared/application/personal-data.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
@@ -15,6 +16,7 @@ import { Checkouts } from "./ports/checkouts.ts";
 import { Subscriptions } from "./ports/subscriptions.ts";
 import type { StripeUnreachable } from "./stripe-unreachable.ts";
 import { WorkspaceStillBilled } from "./workspace-still-billed.ts";
+import type { BilledSubscription } from "./workspace-still-billed.ts";
 
 const decodeStatus = Schema.decodeUnknownOption(SubscriptionStatusSchema);
 
@@ -22,6 +24,32 @@ const decodeStatus = Schema.decodeUnknownOption(SubscriptionStatusSchema);
 // may bill: refusing a deletion can be tried again, a bill cannot be undone.
 const mayBill = (status: string): boolean =>
   Option.match(decodeStatus(status), { onNone: () => true, onSome: billsAt });
+
+// One that Stripe holds and no record describes yet.
+const undescribed: BilledSubscription = {
+  paidUntil: Option.none(),
+  plan: Option.none(),
+};
+
+// What may still bill, for the person deleting: each subscription billing
+// recorded, or, for a checkout completed before Stripe's events, one that
+// nothing describes yet.
+const describe = ({
+  billed,
+  checkedOut,
+}: {
+  readonly billed: readonly Subscription[];
+  readonly checkedOut: boolean;
+}): readonly BilledSubscription[] => {
+  const described = billed.map(
+    (subscription): BilledSubscription => ({
+      paidUntil: subscription.currentPeriodEnd,
+      plan: Option.some(subscription.plan),
+    })
+  );
+
+  return described.length === 0 && checkedOut ? [undescribed] : described;
+};
 
 /** How an erasure treats a subscription Stripe may still bill. */
 export interface ErasureOptions {
@@ -32,7 +60,7 @@ export interface ErasureOptions {
   readonly cancelSubscriptions: boolean;
 }
 
-/** What erasing a workspace did at Stripe. */
+/** What settling a workspace's billing did at Stripe. */
 export interface ErasedBilling {
   /** The subscriptions cancelled at Stripe, none unless asked to. */
   readonly subscriptionsCancelled: number;
@@ -44,20 +72,28 @@ const refuseBilled: ErasureOptions = { cancelSubscriptions: false };
  * What billing keeps of a workspace as a whole, for the workspace context
  * when a workspace's data is exported or erased: its plan and the state of
  * its subscriptions, never a card, an invoice or Stripe's ids, which stay
- * with Stripe. Erasing runs in the caller's transaction, if any. Stripe may
+ * with Stripe.
+ *
+ * Erasing takes two steps. Stripe's side goes first, outside the erasure's
+ * transaction, as it cannot be rolled back (`settleWorkspace`): Stripe may
  * still bill the workspace through a subscription Stripe's events reported
  * that `stillBills`, one a checkout started that the Stripe plugin holds in
  * such a status, since its events may not have come yet, or one Stripe
  * holds that no event told of, as a checkout completed just before would
- * leave. Unless told to cancel them, the erasure is refused, before
- * anything is deleted, while one of those may bill. Either way the
- * workspace's Checkout Sessions still open are expired at Stripe, so a
- * checkout left open in another tab cannot complete for a workspace that is
- * gone; told to, it then cancels every subscription that may bill, at
- * once, without proration or a final invoice. The Stripe customer and its
- * invoices stay with Stripe, as accounting law keeps invoices. Stripe not
- * answering refuses the erasure. On a server that does not bill, a
- * workspace has no plan, and erasing it is never refused.
+ * leave. Unless told to cancel them, settling is refused while one of those
+ * may bill (`billedBy` lists them). Either way the workspace's Checkout
+ * Sessions still open are expired at Stripe, so a checkout left open in
+ * another tab cannot complete for a workspace that is gone; told to, it
+ * then cancels every subscription that may bill, at once, without
+ * proration or a final invoice, each once however often it is retried.
+ * Then the erasure, in the caller's transaction (`eraseWorkspace`), asks
+ * Stripe again and is refused while anything still bills, as a checkout
+ * completed in between would, and deletes billing's records. A failure
+ * after settling leaves the workspace on the free plan, to be deleted
+ * again. The Stripe customer and its invoices stay with Stripe, as
+ * accounting law keeps invoices. Stripe not answering refuses either step.
+ * On a server that does not bill, a workspace has no plan, and erasing it
+ * is never refused.
  */
 export class BillingRecords extends Context.Service<
   BillingRecords,
@@ -67,14 +103,35 @@ export class BillingRecords extends Context.Service<
       workspaceId: WorkspaceId
     ) => Effect.Effect<BillingRecord, DatabaseError>;
     /**
-     * Deletes the workspace's subscriptions, once none may bill it, after
-     * cancelling those that may when `options` says to.
+     * The subscriptions billing's records and the Stripe plugin's say may
+     * still bill the workspace, described for the person deleting it; one
+     * only the plugin holds has no plan or end yet. None on a server that
+     * does not bill.
      */
-    readonly eraseWorkspace: (
+    readonly billedBy: (
+      workspaceId: WorkspaceId
+    ) => Effect.Effect<readonly BilledSubscription[], DatabaseError>;
+    /**
+     * Stripe's side of erasing the workspace, before the erasure's
+     * transaction: refused while Stripe may still bill it unless `options`
+     * says to cancel, then expires its open checkouts and, told to,
+     * cancels what may bill. Cannot be undone.
+     */
+    readonly settleWorkspace: (
       workspaceId: WorkspaceId,
       options?: ErasureOptions
     ) => Effect.Effect<
       ErasedBilling,
+      DatabaseError | StripeUnreachable | WorkspaceStillBilled
+    >;
+    /**
+     * Deletes the workspace's subscriptions, in the caller's transaction,
+     * once Stripe says none may still bill it: settle it first.
+     */
+    readonly eraseWorkspace: (
+      workspaceId: WorkspaceId
+    ) => Effect.Effect<
+      void,
       DatabaseError | StripeUnreachable | WorkspaceStillBilled
     >;
   }
@@ -104,65 +161,108 @@ export class BillingRecords extends Context.Service<
         }
       );
 
-      const eraseWorkspace = Effect.fn("BillingRecords.eraseWorkspace")(
-        function* eraseWorkspace(
+      // What billing's records say still bills, and whether a checkout the
+      // plugin holds may.
+      const billedOf = Effect.fn("BillingRecords.billedOf")(function* billedOf(
+        workspaceId: WorkspaceId
+      ) {
+        const held = yield* subscriptions.ofWorkspace(workspaceId);
+        const started = yield* checkouts.statuses(workspaceId);
+
+        return {
+          billed: held.filter((subscription) => stillBills(subscription)),
+          checkedOut: started.some(mayBill),
+        };
+      });
+
+      const billedBy = Effect.fn("BillingRecords.billedBy")(function* billedBy(
+        workspaceId: WorkspaceId
+      ) {
+        if (!enabled) {
+          const none: readonly BilledSubscription[] = [];
+
+          return none;
+        }
+
+        return describe(yield* billedOf(workspaceId));
+      });
+
+      const settleWorkspace = Effect.fn("BillingRecords.settleWorkspace")(
+        function* settleWorkspace(
           workspaceId: WorkspaceId,
           options: ErasureOptions = refuseBilled
         ) {
-          let subscriptionsCancelled = 0;
+          const settled: ErasedBilling = { subscriptionsCancelled: 0 };
 
           // A server that does not bill never refuses, nor calls Stripe.
-          if (enabled) {
-            const held = yield* subscriptions.ofWorkspace(workspaceId);
-            const started = yield* checkouts.statuses(workspaceId);
-
-            const billed = held.filter((subscription) =>
-              stillBills(subscription)
-            );
-
-            const refused = new WorkspaceStillBilled({
-              paidUntil: Option.fromUndefinedOr(billed[0]).pipe(
-                Option.flatMap(({ currentPeriodEnd }) => currentPeriodEnd)
-              ),
-              plan: Option.fromUndefinedOr(billed[0]?.plan),
-              workspaceId,
-            });
-
-            if (
-              !options.cancelSubscriptions &&
-              (billed.length > 0 || started.some(mayBill))
-            ) {
-              return yield* refused;
-            }
-
-            // None can complete now: whatever completed before started a
-            // subscription that Stripe holds, its events or not.
-            yield* checkouts.expireOpen(workspaceId);
-
-            if (options.cancelSubscriptions) {
-              subscriptionsCancelled = yield* checkouts.cancelBilled(
-                workspaceId,
-                {
-                  known: billed.map(
-                    ({ stripeSubscriptionId }) => stripeSubscriptionId
-                  ),
-                  mayBill,
-                }
-              );
-            } else if ((yield* checkouts.atStripe(workspaceId)).some(mayBill)) {
-              return yield* refused;
-            }
+          if (!enabled) {
+            return settled;
           }
 
-          yield* subscriptions.eraseWorkspace(workspaceId);
+          const found = yield* billedOf(workspaceId);
+          const described = describe(found);
 
-          const erased: ErasedBilling = { subscriptionsCancelled };
+          const refused = new WorkspaceStillBilled({
+            subscriptions: described,
+            workspaceId,
+          });
 
-          return erased;
+          if (!options.cancelSubscriptions && described.length > 0) {
+            return yield* refused;
+          }
+
+          // None can complete now: whatever completed before started a
+          // subscription that Stripe holds, its events or not.
+          yield* checkouts.expireOpen(workspaceId);
+
+          if (!options.cancelSubscriptions) {
+            if ((yield* checkouts.atStripe(workspaceId)).some(mayBill)) {
+              return yield* new WorkspaceStillBilled({
+                subscriptions: [undescribed],
+                workspaceId,
+              });
+            }
+
+            return settled;
+          }
+
+          const subscriptionsCancelled = yield* checkouts.cancelBilled(
+            workspaceId,
+            {
+              known: found.billed.map(
+                ({ stripeSubscriptionId }) => stripeSubscriptionId
+              ),
+              mayBill,
+            }
+          );
+
+          const cancelled: ErasedBilling = { subscriptionsCancelled };
+
+          return cancelled;
         }
       );
 
-      return BillingRecords.of({ eraseWorkspace, exportWorkspace });
+      const eraseWorkspace = Effect.fn("BillingRecords.eraseWorkspace")(
+        function* eraseWorkspace(workspaceId: WorkspaceId) {
+          // Stripe decides: billing's records wait for the events of what
+          // settling cancelled.
+          if (enabled && (yield* checkouts.atStripe(workspaceId)).some(mayBill)) {
+            return yield* new WorkspaceStillBilled({
+              subscriptions: [undescribed],
+              workspaceId,
+            });
+          }
+
+          yield* subscriptions.eraseWorkspace(workspaceId);
+        }
+      );
+
+      return BillingRecords.of({
+        billedBy,
+        eraseWorkspace,
+        exportWorkspace,
+        settleWorkspace,
+      });
     })
   );
 }
