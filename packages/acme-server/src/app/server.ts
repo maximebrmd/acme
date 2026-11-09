@@ -4,11 +4,19 @@ import { Config, Effect, Layer } from "effect";
 import { HttpRouter } from "effect/http";
 import { HttpApiBuilder } from "effect/http-api";
 
+import { ClusterLive } from "#app/cluster.ts";
+import { CronsLive } from "#app/crons.ts";
 import { ObservabilityLive } from "#app/observability.ts";
 import { SystemHandlers } from "#app/system.ts";
 import { NotificationsLive } from "#notifications/container.ts";
+import {
+  PublishingLive,
+  PublishingWorkersLive,
+} from "#publishing/container.ts";
 import { DatabaseLive } from "#shared/infrastructure/database.ts";
 import { MigrationsLive } from "#shared/infrastructure/migrations.ts";
+import { IdsLive } from "#shared/infrastructure/secure-random-ids.ts";
+import { TransactionRunnerLive } from "#shared/infrastructure/transaction-runner-live.ts";
 import {
   AuthRoutesLive,
   WorkspaceApiLive,
@@ -42,11 +50,27 @@ const HttpServerLive = Layer.unwrap(
   })
 );
 
+// The durable jobs: workflows, cluster entities and crons.
+const WorkersLive = Layer.mergeAll(PublishingWorkersLive, CronsLive);
+
+// The contexts' use cases and adapters, which handlers and workers share.
+const ContextsLive = Layer.mergeAll(
+  WorkspaceLive.pipe(Layer.provideMerge(NotificationsLive)),
+  PublishingLive
+).pipe(Layer.provideMerge(Layer.mergeAll(IdsLive, TransactionRunnerLive)));
+
 // Each layer is built after the ones it is provided with, from the bottom up:
-// telemetry, the services, then the HTTP server. The server only listens once
-// the database is up to date.
-export const ServerLive = HttpRouter.serve(RoutesLive).pipe(
-  Layer.provide(HttpServerLive),
-  Layer.provide(ServicesLive),
+// telemetry, the database pool, the migrations, the cluster, the contexts,
+// then the HTTP server and the workers. Nothing listens or runs before the
+// database is up to date, and the cluster shares the pool with Drizzle, so a
+// use case can save a post and start its workflow in one transaction.
+export const ServerLive = Layer.mergeAll(
+  HttpRouter.serve(RoutesLive).pipe(Layer.provide(HttpServerLive)),
+  WorkersLive
+).pipe(
+  Layer.provide(ContextsLive),
+  Layer.provide(ClusterLive),
+  Layer.provide(MigrationsLive),
+  Layer.provide(DatabaseLive),
   Layer.provide(ObservabilityLive)
 );

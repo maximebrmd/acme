@@ -1,0 +1,886 @@
+{
+  "type": "base",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "c945e585-4008-4bf9-a578-a9669582a3b5",
+  "prevIds": [
+    "00000000-0000-0000-0000-000000000000"
+  ],
+  "footprints": [
+    {
+      "statementType": "create_schema",
+      "statementTarget": [
+        "schema",
+        "publishing"
+      ],
+      "writes": [
+        "s|sch|publishing",
+        "n|sch|publishing",
+        "e|sch|publishing"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "publishing",
+        "post_targets"
+      ],
+      "writes": [
+        "s|tbl|publishing.post_targets",
+        "n|tbl|publishing.post_targets",
+        "e|tbl|publishing.post_targets",
+        "n|rel|publishing.post_targets",
+        "n|type|publishing.post_targets",
+        "n|rel|publishing.post_targets_pkey",
+        "n|rel|publishing.post_targets_post_channel"
+      ],
+      "reads": [
+        "n|sch|publishing"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "publishing",
+        "posts"
+      ],
+      "writes": [
+        "s|tbl|publishing.posts",
+        "n|tbl|publishing.posts",
+        "e|tbl|publishing.posts",
+        "n|rel|publishing.posts",
+        "n|type|publishing.posts",
+        "n|rel|publishing.posts_pkey"
+      ],
+      "reads": [
+        "n|sch|publishing"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "publishing",
+        "publication_attempts"
+      ],
+      "writes": [
+        "s|tbl|publishing.publication_attempts",
+        "n|tbl|publishing.publication_attempts",
+        "e|tbl|publishing.publication_attempts",
+        "n|rel|publishing.publication_attempts",
+        "n|type|publishing.publication_attempts",
+        "n|rel|publishing.publication_attempts_pkey"
+      ],
+      "reads": [
+        "n|sch|publishing"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "publishing",
+        "publication_calls"
+      ],
+      "writes": [
+        "s|tbl|publishing.publication_calls",
+        "n|tbl|publishing.publication_calls",
+        "e|tbl|publishing.publication_calls",
+        "n|rel|publishing.publication_calls",
+        "n|type|publishing.publication_calls",
+        "n|rel|publishing.publication_calls_pkey"
+      ],
+      "reads": [
+        "n|sch|publishing"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "publishing",
+        "posts",
+        "posts_workspace_scheduled_at"
+      ],
+      "writes": [
+        "s|idx|publishing.posts_workspace_scheduled_at",
+        "n|idx|publishing.posts_workspace_scheduled_at",
+        "e|idx|publishing.posts_workspace_scheduled_at",
+        "n|rel|publishing.posts_workspace_scheduled_at"
+      ],
+      "reads": [
+        "n|tbl|publishing.posts",
+        "n|sch|publishing",
+        "n|col|publishing.posts.workspace_id",
+        "n|col|publishing.posts.scheduled_at"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "publishing",
+        "post_targets"
+      ],
+      "writes": [
+        "s|fk|publishing.post_targets.post_targets_post_id_posts_id_fkey",
+        "n|fk|publishing.post_targets.post_targets_post_id_posts_id_fkey",
+        "e|fk|publishing.post_targets.post_targets_post_id_posts_id_fkey",
+        "n|con|publishing.post_targets.post_targets_post_id_posts_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|publishing.post_targets",
+        "n|sch|publishing",
+        "n|tbl|publishing.posts",
+        "n|sch|publishing",
+        "n|col|publishing.post_targets.post_id",
+        "n|col|publishing.posts.id",
+        "e|uniqueness|publishing.posts.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "publishing",
+        "publication_attempts"
+      ],
+      "writes": [
+        "s|fk|publishing.publication_attempts.publication_attempts_target_id_post_targets_id_fkey",
+        "n|fk|publishing.publication_attempts.publication_attempts_target_id_post_targets_id_fkey",
+        "e|fk|publishing.publication_attempts.publication_attempts_target_id_post_targets_id_fkey",
+        "n|con|publishing.publication_attempts.publication_attempts_target_id_post_targets_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|publishing.publication_attempts",
+        "n|sch|publishing",
+        "n|tbl|publishing.post_targets",
+        "n|sch|publishing",
+        "n|col|publishing.publication_attempts.target_id",
+        "n|col|publishing.post_targets.id",
+        "e|uniqueness|publishing.post_targets.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "publishing",
+        "publication_calls"
+      ],
+      "writes": [
+        "s|fk|publishing.publication_calls.publication_calls_target_id_post_targets_id_fkey",
+        "n|fk|publishing.publication_calls.publication_calls_target_id_post_targets_id_fkey",
+        "e|fk|publishing.publication_calls.publication_calls_target_id_post_targets_id_fkey",
+        "n|con|publishing.publication_calls.publication_calls_target_id_post_targets_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|publishing.publication_calls",
+        "n|sch|publishing",
+        "n|tbl|publishing.post_targets",
+        "n|sch|publishing",
+        "n|col|publishing.publication_calls.target_id",
+        "n|col|publishing.post_targets.id",
+        "e|uniqueness|publishing.post_targets.id"
+      ]
+    }
+  ],
+  "ddl": [
+    {
+      "name": "publishing",
+      "entityType": "schemas"
+    },
+    {
+      "schema": "publishing",
+      "name": "post_targets",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "publishing",
+      "name": "posts",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "publishing",
+      "name": "publication_attempts",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "publishing",
+      "name": "publication_calls",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "publishing",
+      "table": "post_targets",
+      "name": "cancel_requested",
+      "type": "boolean",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "false",
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "post_targets",
+      "name": "channel_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "post_targets",
+      "name": "failure_code",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "post_targets",
+      "name": "failure_reason",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "post_targets",
+      "name": "finished_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "post_targets",
+      "name": "id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "post_targets",
+      "name": "permalink",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "post_targets",
+      "name": "platform_post_id",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "post_targets",
+      "name": "post_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "post_targets",
+      "name": "round",
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "1",
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "post_targets",
+      "name": "started_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "post_targets",
+      "name": "status",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "post_targets",
+      "name": "unconfirmed_reason",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "posts",
+      "name": "cancelled_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "posts",
+      "name": "execution_id",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "posts",
+      "name": "finished_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "posts",
+      "name": "id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "posts",
+      "name": "outcome",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "posts",
+      "name": "schedule_revision",
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "0",
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "posts",
+      "name": "schedule_zone",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "posts",
+      "name": "scheduled_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "posts",
+      "name": "started_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "posts",
+      "name": "status",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "posts",
+      "name": "workspace_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "publication_attempts",
+      "name": "attempt",
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "publication_attempts",
+      "name": "decision",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "publication_attempts",
+      "name": "detail",
+      "type": "jsonb",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "publication_attempts",
+      "name": "finished_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "publication_attempts",
+      "name": "outcome",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "publication_attempts",
+      "name": "retry_delay_millis",
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "publication_attempts",
+      "name": "round",
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "publication_attempts",
+      "name": "started_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "publication_attempts",
+      "name": "target_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "publication_calls",
+      "name": "attempt",
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "publication_calls",
+      "name": "finished_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "publication_calls",
+      "name": "idempotency_key",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "publication_calls",
+      "name": "operation",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "publication_calls",
+      "name": "outcome",
+      "type": "jsonb",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "publication_calls",
+      "name": "round",
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "publication_calls",
+      "name": "started_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "publication_calls",
+      "name": "target_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "posts",
+      "name": "posts_workspace_scheduled_at",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "workspace_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "scheduled_at",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "publishing",
+      "table": "post_targets",
+      "name": "post_targets_post_id_posts_id_fkey",
+      "nameExplicit": false,
+      "columns": [
+        "post_id"
+      ],
+      "schemaTo": "publishing",
+      "tableTo": "posts",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "entityType": "fks"
+    },
+    {
+      "schema": "publishing",
+      "table": "publication_attempts",
+      "name": "publication_attempts_target_id_post_targets_id_fkey",
+      "nameExplicit": false,
+      "columns": [
+        "target_id"
+      ],
+      "schemaTo": "publishing",
+      "tableTo": "post_targets",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "entityType": "fks"
+    },
+    {
+      "schema": "publishing",
+      "table": "publication_calls",
+      "name": "publication_calls_target_id_post_targets_id_fkey",
+      "nameExplicit": false,
+      "columns": [
+        "target_id"
+      ],
+      "schemaTo": "publishing",
+      "tableTo": "post_targets",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "entityType": "fks"
+    },
+    {
+      "schema": "publishing",
+      "table": "publication_attempts",
+      "name": "publication_attempts_pkey",
+      "columns": [
+        "target_id",
+        "round",
+        "attempt"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "publishing",
+      "table": "post_targets",
+      "name": "post_targets_pkey",
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "publishing",
+      "table": "posts",
+      "name": "posts_pkey",
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "publishing",
+      "table": "publication_calls",
+      "name": "publication_calls_pkey",
+      "columns": [
+        "idempotency_key"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "publishing",
+      "table": "post_targets",
+      "name": "post_targets_post_channel",
+      "nameExplicit": true,
+      "columns": [
+        "post_id",
+        "channel_id"
+      ],
+      "nullsNotDistinct": false,
+      "entityType": "uniques"
+    }
+  ]
+}

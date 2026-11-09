@@ -9,11 +9,8 @@ export const PostActionSchema = Schema.Literals([
   "schedule",
   "moveToDraft",
   "startPublishing",
-  "markPublished",
-  "markFailed",
-  "markUnconfirmed",
-  "confirmPublished",
-  "confirmNotPublished",
+  "finish",
+  "cancel",
 ]);
 
 export type PostAction = typeof PostActionSchema.Type;
