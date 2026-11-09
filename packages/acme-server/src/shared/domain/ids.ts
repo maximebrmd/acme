@@ -40,3 +40,10 @@ export type ChannelId = typeof ChannelIdSchema.Type;
 export const PostIdSchema = Uuid7Schema.pipe(Schema.brand("PostId"));
 
 export type PostId = typeof PostIdSchema.Type;
+
+// Media assets are the media context's; posts refer to them by id.
+export const MediaAssetIdSchema = Uuid7Schema.pipe(
+  Schema.brand("MediaAssetId")
+);
+
+export type MediaAssetId = typeof MediaAssetIdSchema.Type;
