@@ -27,9 +27,9 @@ def test_every_secret_is_set(tmp_path: Path) -> None:
     secrets = _generate(tmp_path)
 
     assert sorted(secrets) == [
-        "PEAL_TOKEN_KEYS",
         "BETTER_AUTH_SECRET",
         "GRAFANA_ADMIN_PASSWORD",
+        "PEAL_TOKEN_KEYS",
         "POSTGRES_PASSWORD",
     ]
     # Part of DATABASE_URL, so URL-safe.
