@@ -14,7 +14,7 @@ Name | Type
 ## Example
 
 ```typescript
-import type { NotificationPreferencesEmail } from 'peal'
+import type { NotificationPreferencesEmail } from 'peal-sdk'
 
 // TODO: Update the object below with actual values
 const example = {

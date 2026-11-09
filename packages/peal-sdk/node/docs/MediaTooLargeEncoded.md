@@ -14,7 +14,7 @@ Name | Type
 ## Example
 
 ```typescript
-import type { MediaTooLargeEncoded } from 'peal'
+import type { MediaTooLargeEncoded } from 'peal-sdk'
 
 // TODO: Update the object below with actual values
 const example = {

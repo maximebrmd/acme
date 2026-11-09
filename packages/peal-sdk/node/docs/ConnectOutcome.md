@@ -15,7 +15,7 @@ Name | Type
 ## Example
 
 ```typescript
-import type { ConnectOutcome } from 'peal'
+import type { ConnectOutcome } from 'peal-sdk'
 
 // TODO: Update the object below with actual values
 const example = {

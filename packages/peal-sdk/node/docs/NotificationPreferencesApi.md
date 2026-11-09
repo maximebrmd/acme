@@ -23,11 +23,11 @@ Answers with which notices the user receives by email, and whether they hear abo
 import {
   Configuration,
   NotificationPreferencesApi,
-} from 'peal';
-import type { NotificationPreferencesGetRequest } from 'peal';
+} from 'peal-sdk';
+import type { NotificationPreferencesGetRequest } from 'peal-sdk';
 
 async function example() {
-  console.log("🚀 Testing peal SDK...");
+  console.log("🚀 Testing peal-sdk SDK...");
   const config = new Configuration({ 
     // Configure HTTP bearer authorization: bearer
     accessToken: "YOUR BEARER TOKEN",
@@ -88,11 +88,11 @@ Changes the preferences given, keeps the others, and answers with them all. Staf
 import {
   Configuration,
   NotificationPreferencesApi,
-} from 'peal';
-import type { NotificationPreferencesUpdateRequest } from 'peal';
+} from 'peal-sdk';
+import type { NotificationPreferencesUpdateRequest } from 'peal-sdk';
 
 async function example() {
-  console.log("🚀 Testing peal SDK...");
+  console.log("🚀 Testing peal-sdk SDK...");
   const config = new Configuration({ 
     // Configure HTTP bearer authorization: bearer
     accessToken: "YOUR BEARER TOKEN",

@@ -17,7 +17,7 @@ Name | Type
 ## Example
 
 ```typescript
-import type { Channel } from 'peal'
+import type { Channel } from 'peal-sdk'
 
 // TODO: Update the object below with actual values
 const example = {

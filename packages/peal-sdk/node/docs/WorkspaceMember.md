@@ -15,7 +15,7 @@ Name | Type
 ## Example
 
 ```typescript
-import type { WorkspaceMember } from 'peal'
+import type { WorkspaceMember } from 'peal-sdk'
 
 // TODO: Update the object below with actual values
 const example = {

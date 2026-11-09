@@ -11,7 +11,7 @@ Name | Type
 ## Example
 
 ```typescript
-import type { UnreadNotices } from 'peal'
+import type { UnreadNotices } from 'peal-sdk'
 
 // TODO: Update the object below with actual values
 const example = {

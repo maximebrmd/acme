@@ -28,11 +28,11 @@ Connects the accounts the member chose among those a completed sign-in listed: e
 import {
   Configuration,
   ChannelsApi,
-} from 'peal';
-import type { ChannelsChooseAccountsRequest } from 'peal';
+} from 'peal-sdk';
+import type { ChannelsChooseAccountsRequest } from 'peal-sdk';
 
 async function example() {
-  console.log("🚀 Testing peal SDK...");
+  console.log("🚀 Testing peal-sdk SDK...");
   const config = new Configuration({ 
     // Configure HTTP bearer authorization: bearer
     accessToken: "YOUR BEARER TOKEN",
@@ -111,11 +111,11 @@ Completes a connection with what the platform sent back: the account becomes a c
 import {
   Configuration,
   ChannelsApi,
-} from 'peal';
-import type { ChannelsCompleteConnectRequest } from 'peal';
+} from 'peal-sdk';
+import type { ChannelsCompleteConnectRequest } from 'peal-sdk';
 
 async function example() {
-  console.log("🚀 Testing peal SDK...");
+  console.log("🚀 Testing peal-sdk SDK...");
   const config = new Configuration({ 
     // Configure HTTP bearer authorization: bearer
     accessToken: "YOUR BEARER TOKEN",
@@ -194,11 +194,11 @@ Starts connecting an account of the platform: answers with the platform\&#39;s s
 import {
   Configuration,
   ChannelsApi,
-} from 'peal';
-import type { ChannelsConnectRequest } from 'peal';
+} from 'peal-sdk';
+import type { ChannelsConnectRequest } from 'peal-sdk';
 
 async function example() {
-  console.log("🚀 Testing peal SDK...");
+  console.log("🚀 Testing peal-sdk SDK...");
   const config = new Configuration({ 
     // Configure HTTP bearer authorization: bearer
     accessToken: "YOUR BEARER TOKEN",
@@ -277,11 +277,11 @@ Disconnects a channel from the workspace: the channel and the tokens Peal holds 
 import {
   Configuration,
   ChannelsApi,
-} from 'peal';
-import type { ChannelsDisconnectRequest } from 'peal';
+} from 'peal-sdk';
+import type { ChannelsDisconnectRequest } from 'peal-sdk';
 
 async function example() {
-  console.log("🚀 Testing peal SDK...");
+  console.log("🚀 Testing peal-sdk SDK...");
   const config = new Configuration({ 
     // Configure HTTP bearer authorization: bearer
     accessToken: "YOUR BEARER TOKEN",
@@ -354,11 +354,11 @@ Lists the channels connected to the workspace, oldest first. Their tokens are ne
 import {
   Configuration,
   ChannelsApi,
-} from 'peal';
-import type { ChannelsListRequest } from 'peal';
+} from 'peal-sdk';
+import type { ChannelsListRequest } from 'peal-sdk';
 
 async function example() {
-  console.log("🚀 Testing peal SDK...");
+  console.log("🚀 Testing peal-sdk SDK...");
   const config = new Configuration({ 
     // Configure HTTP bearer authorization: bearer
     accessToken: "YOUR BEARER TOKEN",
@@ -428,11 +428,11 @@ Lists the platforms this server can connect accounts of, in Peal\&#39;s order. A
 import {
   Configuration,
   ChannelsApi,
-} from 'peal';
-import type { ChannelsPlatformsRequest } from 'peal';
+} from 'peal-sdk';
+import type { ChannelsPlatformsRequest } from 'peal-sdk';
 
 async function example() {
-  console.log("🚀 Testing peal SDK...");
+  console.log("🚀 Testing peal-sdk SDK...");
   const config = new Configuration({ 
     // Configure HTTP bearer authorization: bearer
     accessToken: "YOUR BEARER TOKEN",
@@ -502,11 +502,11 @@ Starts reconnecting a channel whose token stopped working or is about to: answer
 import {
   Configuration,
   ChannelsApi,
-} from 'peal';
-import type { ChannelsReconnectRequest } from 'peal';
+} from 'peal-sdk';
+import type { ChannelsReconnectRequest } from 'peal-sdk';
 
 async function example() {
-  console.log("🚀 Testing peal SDK...");
+  console.log("🚀 Testing peal-sdk SDK...");
   const config = new Configuration({ 
     // Configure HTTP bearer authorization: bearer
     accessToken: "YOUR BEARER TOKEN",

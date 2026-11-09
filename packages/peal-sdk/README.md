@@ -7,7 +7,7 @@ yet.
 
 | Language              | Folder             | Registry      | Install                                                   |
 | --------------------- | ------------------ | ------------- | --------------------------------------------------------- |
-| TypeScript/JavaScript | [`node`](node)     | npm           | `npm install peal`                                        |
+| TypeScript/JavaScript | [`node`](node)     | npm           | `npm install peal-sdk`                                    |
 | Python                | [`python`](python) | PyPI          | `pip install peal-sdk` (imported as `peal`)               |
 | Go                    | [`go`](go)         | Go modules    | `go get github.com/peal-social/peal/packages/peal-sdk/go` |
 | Ruby                  | [`ruby`](ruby)     | RubyGems      | `gem install peal`                                        |

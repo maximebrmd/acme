@@ -13,7 +13,7 @@ Name | Type
 ## Example
 
 ```typescript
-import type { SignedRequest } from 'peal'
+import type { SignedRequest } from 'peal-sdk'
 
 // TODO: Update the object below with actual values
 const example = {

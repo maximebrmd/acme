@@ -12,7 +12,7 @@ Name | Type
 ## Example
 
 ```typescript
-import type { CreatedApiKey } from 'peal'
+import type { CreatedApiKey } from 'peal-sdk'
 
 // TODO: Update the object below with actual values
 const example = {

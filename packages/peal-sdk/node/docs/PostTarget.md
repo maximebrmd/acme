@@ -20,7 +20,7 @@ Name | Type
 ## Example
 
 ```typescript
-import type { PostTarget } from 'peal'
+import type { PostTarget } from 'peal-sdk'
 
 // TODO: Update the object below with actual values
 const example = {

@@ -17,7 +17,7 @@ Name | Type
 ## Example
 
 ```typescript
-import type { ChannelMetrics } from 'peal'
+import type { ChannelMetrics } from 'peal-sdk'
 
 // TODO: Update the object below with actual values
 const example = {

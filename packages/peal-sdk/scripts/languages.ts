@@ -77,11 +77,12 @@ export const languages: readonly Language[] = [
     options: {
       hideGenerationTimestamp: true,
       importFileExtension: ".js",
-      npmName: "peal",
+      // npm refuses `peal` as too close to other packages' names.
+      npmName: "peal-sdk",
       npmVersion: node,
       supportsES6: true,
     },
-    package: { name: "peal", registry: "npm" },
+    package: { name: "peal-sdk", registry: "npm" },
     version: node,
   },
   {

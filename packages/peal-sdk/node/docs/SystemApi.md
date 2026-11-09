@@ -23,11 +23,11 @@ Answers as soon as the server is up, whatever the state of its database. Use it 
 import {
   Configuration,
   SystemApi,
-} from 'peal';
-import type { HealthRequest } from 'peal';
+} from 'peal-sdk';
+import type { HealthRequest } from 'peal-sdk';
 
 async function example() {
-  console.log("🚀 Testing peal SDK...");
+  console.log("🚀 Testing peal-sdk SDK...");
   const api = new SystemApi();
 
   try {
@@ -82,11 +82,11 @@ Answers once the server can reach its database, and fails with DatabaseUnavailab
 import {
   Configuration,
   SystemApi,
-} from 'peal';
-import type { ReadyRequest } from 'peal';
+} from 'peal-sdk';
+import type { ReadyRequest } from 'peal-sdk';
 
 async function example() {
-  console.log("🚀 Testing peal SDK...");
+  console.log("🚀 Testing peal-sdk SDK...");
   const api = new SystemApi();
 
   try {

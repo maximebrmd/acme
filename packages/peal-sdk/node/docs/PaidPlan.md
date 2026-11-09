@@ -10,7 +10,7 @@ Name | Type
 ## Example
 
 ```typescript
-import type { PaidPlan } from 'peal'
+import type { PaidPlan } from 'peal-sdk'
 
 // TODO: Update the object below with actual values
 const example = {
