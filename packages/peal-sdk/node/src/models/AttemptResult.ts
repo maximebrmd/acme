@@ -30,6 +30,7 @@ export const AttemptResult = {
     Unavailable: 'unavailable',
     AppNotAudited: 'appNotAudited',
     QuotaExceeded: 'quotaExceeded',
+    AppBillingLimit: 'appBillingLimit',
 } as const;
 export type AttemptResult = typeof AttemptResult[keyof typeof AttemptResult];
 

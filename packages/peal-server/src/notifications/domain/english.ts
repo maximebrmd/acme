@@ -41,6 +41,8 @@ export const english: EmailCatalog = {
     web: "from the web app",
   },
   failureReasons: {
+    appBillingLimit:
+      "the platform refused this Peal server’s app until its account with the platform is paid for (on X: its credits ran out or it reached its spending cap). Your post is not at fault: once the server’s operator has fixed it, post it again.",
     appNotAudited:
       "the platform takes only private posts from this server’s app until it approves the app. Make the account private and the post visible to its owner only, or ask the server’s operator.",
     channelDisabled:

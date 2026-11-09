@@ -67,6 +67,8 @@ class FailureReason
 
     public const QUOTA_EXCEEDED = 'quotaExceeded';
 
+    public const APP_BILLING_LIMIT = 'appBillingLimit';
+
     /**
      * Gets allowable values of the enum
      * @return string[]
@@ -85,7 +87,8 @@ class FailureReason
             self::TOKEN_EXPIRED,
             self::UNAVAILABLE,
             self::APP_NOT_AUDITED,
-            self::QUOTA_EXCEEDED
+            self::QUOTA_EXCEEDED,
+            self::APP_BILLING_LIMIT
         ];
     }
 }

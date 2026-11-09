@@ -3,6 +3,7 @@ import { DateTime, Duration } from "effect";
 
 import {
   dailyLimitCodes,
+  operatorRefusalCodes,
   ownRefusalCodes,
 } from "#publishing/domain/own-refusals.ts";
 import {
@@ -209,6 +210,22 @@ describe(decide, () => {
       "rateLimited"
     );
   });
+
+  it.each(Object.values(operatorRefusalCodes))(
+    "waits as for an outage when the platform refuses the server's app (%s), then blames its billing",
+    (code) => {
+      const refused = new PlatformUnavailable({ code });
+
+      expect(decide(refused, first)).toStrictEqual(retry(Duration.minutes(1)));
+      expect(decide(refused, after({ unavailable: 5 }))).toStrictEqual(
+        giveUp("appBillingLimit", code)
+      );
+      expect(failureReasonOf(refused)).toBe("appBillingLimit");
+      expect(failureReasonOf(new PlatformUnavailable({ code: "other" }))).toBe(
+        "unavailable"
+      );
+    }
+  );
 
   it.each([0, 2])(
     "fails a refused token at once, after %i refusals, and asks for a reconnect",

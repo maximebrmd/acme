@@ -31,6 +31,8 @@ const whenOf = (post: Post): string => {
 // Why a post did not go out on a channel, as the user acts on it. Every
 // reason has its sentence, so a new one fails to compile until it has one.
 const failureReasons: Readonly<Record<FailureReason, string>> = {
+  appBillingLimit:
+    "the platform refused this server's app until its operator pays for it: the post is not at fault, post it again once that is fixed",
   appNotAudited:
     "the platform takes only private posts from this server's app until it audits it: make the account private and the post visible to its owner only",
   channelDisabled:

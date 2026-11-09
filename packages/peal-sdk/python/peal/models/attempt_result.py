@@ -39,6 +39,7 @@ class AttemptResult(str, Enum):
     UNAVAILABLE = 'unavailable'
     APPNOTAUDITED = 'appNotAudited'
     QUOTAEXCEEDED = 'quotaExceeded'
+    APPBILLINGLIMIT = 'appBillingLimit'
 
     @classmethod
     def from_json(cls, json_str: str) -> Self:

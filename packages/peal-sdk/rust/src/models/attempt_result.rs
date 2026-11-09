@@ -38,6 +38,8 @@ pub enum AttemptResult {
     AppNotAudited,
     #[serde(rename = "quotaExceeded")]
     QuotaExceeded,
+    #[serde(rename = "appBillingLimit")]
+    AppBillingLimit,
 
 }
 
@@ -56,6 +58,7 @@ impl std::fmt::Display for AttemptResult {
             Self::Unavailable => write!(f, "unavailable"),
             Self::AppNotAudited => write!(f, "appNotAudited"),
             Self::QuotaExceeded => write!(f, "quotaExceeded"),
+            Self::AppBillingLimit => write!(f, "appBillingLimit"),
         }
     }
 }

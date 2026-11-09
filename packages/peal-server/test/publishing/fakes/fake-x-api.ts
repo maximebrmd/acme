@@ -1,5 +1,7 @@
 import { Effect, Schema } from "effect";
 
+import { xLinksIn } from "#publishing/domain/x-links.ts";
+
 import {
   dropped,
   formPartsOf,
@@ -103,9 +105,9 @@ type ShownLink =
 const escaped = (part: string) =>
   part.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
 
-// A link as X finds it in a text: up to the next space, without the
-// punctuation that ends a sentence.
-const typedLinks = /https?:\/\/\S+?(?=[.,;:!?'")\]}]*(?:\s|$))/gu;
+// X expands a link typed without a scheme as an http one.
+const expandedOf = (link: string) =>
+  new URL(/^https?:\/\//iu.test(link) ? link : `http://${link}`).href;
 
 const mediaLink = "https://t.co/MeDiA56789";
 
@@ -118,12 +120,13 @@ const shown = (post: FakeXPost, keys: readonly string[]) => {
   let text = "";
   let from = 0;
 
-  for (const match of post.text.matchAll(typedLinks)) {
+  // Links as X finds them, with twitter-text's rules.
+  for (const link of xLinksIn(post.text)) {
     const url = `https://t.co/L${String(urls.length + 1).padStart(8, "0")}`;
 
-    urls.push({ expanded_url: new URL(match[0]).href, url });
-    text += `${escaped(post.text.slice(from, match.index))}${url}`;
-    from = match.index + match[0].length;
+    urls.push({ expanded_url: expandedOf(link.url), url });
+    text += `${escaped(post.text.slice(from, link.start))}${url}`;
+    from = link.end;
   }
 
   text += escaped(post.text.slice(from));

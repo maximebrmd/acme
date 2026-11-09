@@ -33,6 +33,7 @@ const (
 	FAILUREREASON_UNAVAILABLE FailureReason = "unavailable"
 	FAILUREREASON_APP_NOT_AUDITED FailureReason = "appNotAudited"
 	FAILUREREASON_QUOTA_EXCEEDED FailureReason = "quotaExceeded"
+	FAILUREREASON_APP_BILLING_LIMIT FailureReason = "appBillingLimit"
 )
 
 // All allowed values of FailureReason enum
@@ -49,6 +50,7 @@ var AllowedFailureReasonEnumValues = []FailureReason{
 	"unavailable",
 	"appNotAudited",
 	"quotaExceeded",
+	"appBillingLimit",
 }
 
 func (v *FailureReason) UnmarshalJSON(src []byte) error {

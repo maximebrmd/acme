@@ -318,7 +318,7 @@ layer(AdaptersTest)("connecting an X account", (it) => {
   );
 
   it.effect(
-    "leaves the channel alone when X is down or refuses Peal's client",
+    "leaves the channel alone when X is down, refuses Peal's client or wants paying",
     () =>
       Effect.gen(function* unavailable() {
         const on = yield* onX();
@@ -334,6 +334,7 @@ layer(AdaptersTest)("connecting an X account", (it) => {
             },
             status: 401,
           },
+          { body: { title: "Payment Required" }, status: 402 },
         ]);
         yield* makeDue(channel);
 
@@ -343,9 +344,10 @@ layer(AdaptersTest)("connecting an X account", (it) => {
 
         assert.strictEqual(yield* refresh, "unavailable");
         assert.strictEqual(yield* refresh, "unavailable");
+        assert.strictEqual(yield* refresh, "unavailable");
         assert.deepStrictEqual(yield* statusOf(channel), Option.some("active"));
 
-        // X answered neither: the refresh token still works.
+        // X answered none: the refresh token still works.
         assert.strictEqual(yield* refresh, "refreshed");
       }).pipe(Effect.scoped)
   );

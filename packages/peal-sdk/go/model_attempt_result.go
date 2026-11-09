@@ -33,6 +33,7 @@ const (
 	ATTEMPTRESULT_UNAVAILABLE AttemptResult = "unavailable"
 	ATTEMPTRESULT_APP_NOT_AUDITED AttemptResult = "appNotAudited"
 	ATTEMPTRESULT_QUOTA_EXCEEDED AttemptResult = "quotaExceeded"
+	ATTEMPTRESULT_APP_BILLING_LIMIT AttemptResult = "appBillingLimit"
 )
 
 // All allowed values of AttemptResult enum
@@ -49,6 +50,7 @@ var AllowedAttemptResultEnumValues = []AttemptResult{
 	"unavailable",
 	"appNotAudited",
 	"quotaExceeded",
+	"appBillingLimit",
 }
 
 func (v *AttemptResult) UnmarshalJSON(src []byte) error {

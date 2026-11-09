@@ -29,5 +29,7 @@
 
 * `QUOTA_EXCEEDED` (value: `"quotaExceeded"`)
 
+* `APP_BILLING_LIMIT` (value: `"appBillingLimit"`)
+
 
 

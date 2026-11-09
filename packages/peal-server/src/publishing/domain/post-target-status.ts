@@ -41,6 +41,10 @@ export const FailureReasonSchema = Schema.Literals([
   // approves it, as TikTok takes only private posts from an app it has
   // not audited: nothing was sent.
   "appNotAudited",
+  // The platform kept refusing this server's app until the attempt gave up,
+  // as X does once the app's credits or spending cap are used up: only the
+  // server's operator can fix it, and nothing was sent.
+  "appBillingLimit",
 ]);
 
 export type FailureReason = typeof FailureReasonSchema.Type;

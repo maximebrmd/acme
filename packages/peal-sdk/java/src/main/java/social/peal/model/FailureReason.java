@@ -51,7 +51,9 @@ public enum FailureReason {
   
   APP_NOT_AUDITED("appNotAudited"),
   
-  QUOTA_EXCEEDED("quotaExceeded");
+  QUOTA_EXCEEDED("quotaExceeded"),
+  
+  APP_BILLING_LIMIT("appBillingLimit");
 
   private String value;
 

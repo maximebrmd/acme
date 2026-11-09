@@ -89,7 +89,12 @@ namespace Peal.Model
         /// <summary>
         /// Enum QuotaExceeded for value: quotaExceeded
         /// </summary>
-        QuotaExceeded = 12
+        QuotaExceeded = 12,
+
+        /// <summary>
+        /// Enum AppBillingLimit for value: appBillingLimit
+        /// </summary>
+        AppBillingLimit = 13
     }
 
     /// <summary>
@@ -140,6 +145,9 @@ namespace Peal.Model
             if (value.Equals("quotaExceeded"))
                 return AttemptResult.QuotaExceeded;
 
+            if (value.Equals("appBillingLimit"))
+                return AttemptResult.AppBillingLimit;
+
             throw new NotImplementedException($"Could not convert value to type AttemptResult: '{value}'");
         }
 
@@ -185,6 +193,9 @@ namespace Peal.Model
 
             if (value.Equals("quotaExceeded"))
                 return AttemptResult.QuotaExceeded;
+
+            if (value.Equals("appBillingLimit"))
+                return AttemptResult.AppBillingLimit;
 
             return null;
         }
@@ -232,6 +243,9 @@ namespace Peal.Model
 
             if (value == AttemptResult.QuotaExceeded)
                 return "quotaExceeded";
+
+            if (value == AttemptResult.AppBillingLimit)
+                return "appBillingLimit";
 
             throw new NotImplementedException($"Value could not be handled: '{value}'");
         }

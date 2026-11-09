@@ -292,7 +292,7 @@ describe("publishing on X", () => {
   );
 
   it.live(
-    "tells a spending cap, a duplicate, a refused post and an outage apart",
+    "tells a spending cap, used-up credits, a duplicate, a refused post and an outage apart",
     () =>
       Effect.gen(function* failures() {
         const image = testFile("image", 512, "image/png");
@@ -312,6 +312,14 @@ describe("publishing on X", () => {
           ),
           json(
             {
+              detail: "Your account has no credits left.",
+              status: 402,
+              title: "Payment Required",
+            },
+            402
+          ),
+          json(
+            {
               detail: "One or more parameters to your request was invalid.",
               status: 400,
               title: "Invalid Request",
@@ -327,6 +335,7 @@ describe("publishing on X", () => {
         const outcomes = yield* Effect.all(
           [
             { text: "Capped" },
+            { text: "No credits" },
             { text: "Invalid" },
             { text: "Said once" },
             { media: [attached(image)], text: "With a picture" },
@@ -340,7 +349,8 @@ describe("publishing on X", () => {
         );
 
         assert.deepStrictEqual(outcomes, [
-          new BadRequest({ code: "usageCapped" }),
+          new PlatformUnavailable({ code: "usageCapped" }),
+          new PlatformUnavailable({ code: "creditsDepleted" }),
           new BadRequest({ code: "invalid-request" }),
           new BadRequest({ code: "duplicate" }),
           new PlatformUnavailable(),
@@ -361,7 +371,7 @@ describe("publishing on X", () => {
         const result = yield* client.publish(
           yield* post({
             media: [attached(image)],
-            text: "Read https://peal.example/launch & share",
+            text: "Read https://peal.social/launch & share",
           })
         );
 
@@ -409,14 +419,14 @@ describe("publishing on X", () => {
         const { client, x } = yield* onX();
 
         yield* client.publish(
-          yield* post({ text: "New article: https://peal.example/one" })
+          yield* post({ text: "New article: https://peal.social/one" })
         );
 
         x.script("POST /2/tweets", [dropped]);
 
         // The same words, another link: X made nothing of it.
         const result = yield* client.publish(
-          yield* post({ text: "New article: https://peal.example/two." })
+          yield* post({ text: "New article: https://peal.social/two." })
         );
 
         assert.deepStrictEqual(result, {
@@ -462,7 +472,7 @@ describe("publishing on X", () => {
 
       const result = yield* client.publish(
         yield* post({
-          text: "Read (https://Peal.example) and https://peal.example/two.",
+          text: "Read (https://Peal.social), https://peal.social/two. and peal.social/three",
         })
       );
 
