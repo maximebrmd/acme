@@ -99,9 +99,10 @@ export class AccountStore extends Context.Service<
       workspaceId: WorkspaceId
     ) => Effect.Effect<void, DatabaseError>;
     /**
-     * Deletes the user with their sessions, sign-in methods, memberships,
-     * the invitations they sent or that await their address, and what they
-     * let OAuth clients do.
+     * Deletes the user with their sessions, those they opened as staff to
+     * act as someone else included, sign-in methods, memberships, the
+     * invitations they sent or that await their address, and what they let
+     * OAuth clients do.
      */
     readonly deleteUser: (userId: UserId) => Effect.Effect<void, DatabaseError>;
   }
