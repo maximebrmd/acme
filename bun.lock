@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "acme",
+      "name": "peal",
       "devDependencies": {
         "@types/bun": "1.4.4",
         "@types/node": "26.6.6",
@@ -16,13 +16,13 @@
         "ultracite": "8.1.1",
       },
     },
-    "packages/acme-cli": {
-      "name": "acme-cli",
+    "packages/peal-cli": {
+      "name": "peal-cli",
       "version": "0.1.0",
       "dependencies": {
         "@effect/platform-bun": "4.1.2",
-        "acme-contract": "workspace:*",
         "effect": "4.1.2",
+        "peal-contract": "workspace:*",
       },
       "devDependencies": {
         "@effect/platform-node-shared": "4.1.2",
@@ -32,8 +32,8 @@
         "vitest": "5.1.0",
       },
     },
-    "packages/acme-contract": {
-      "name": "acme-contract",
+    "packages/peal-contract": {
+      "name": "peal-contract",
       "dependencies": {
         "effect": "4.1.2",
       },
@@ -42,8 +42,8 @@
         "typescript": "7.0.2",
       },
     },
-    "packages/acme-docker": {
-      "name": "acme-docker",
+    "packages/peal-docker": {
+      "name": "peal-docker",
       "devDependencies": {
         "@types/bun": "1.4.4",
         "effect": "4.1.2",
@@ -52,8 +52,8 @@
         "yaml": "2.9.1",
       },
     },
-    "packages/acme-docs": {
-      "name": "acme-docs",
+    "packages/peal-docs": {
+      "name": "peal-docs",
       "dependencies": {
         "blume": "2.2.7",
       },
@@ -62,8 +62,8 @@
         "typescript": "7.0.2",
       },
     },
-    "packages/acme-e2e": {
-      "name": "acme-e2e",
+    "packages/peal-e2e": {
+      "name": "peal-e2e",
       "devDependencies": {
         "@e2e-dev/web": "0.15.5",
         "@types/node": "26.6.6",
@@ -74,8 +74,8 @@
         "typescript": "7.0.2",
       },
     },
-    "packages/acme-server": {
-      "name": "acme-server",
+    "packages/peal-server": {
+      "name": "peal-server",
       "dependencies": {
         "@atproto/oauth-client-node": "0.5.16",
         "@aws-sdk/client-s3": "3.1164.0",
@@ -92,12 +92,12 @@
         "@effect/ai-openai-compat": "4.1.2",
         "@effect/platform-bun": "4.1.2",
         "@effect/sql-pg": "4.1.2",
-        "acme-contract": "workspace:*",
         "better-auth": "1.7.18",
         "better-call": "1.4.5",
         "drizzle-orm": "1.0.0-rc.5",
         "effect": "4.1.2",
         "nodemailer": "10.4.0",
+        "peal-contract": "workspace:*",
         "pg": "8.23.1",
         "sharp": "0.35.5",
         "stripe": "23.1.0",
@@ -111,8 +111,8 @@
         "vitest": "5.1.0",
       },
     },
-    "packages/acme-site": {
-      "name": "acme-site",
+    "packages/peal-site": {
+      "name": "peal-site",
       "dependencies": {
         "@astrojs/react": "7.1.4",
         "@tailwindcss/typography": "0.5.20",
@@ -129,8 +129,8 @@
         "typescript": "7.0.2",
       },
     },
-    "packages/acme-ui": {
-      "name": "acme-ui",
+    "packages/peal-ui": {
+      "name": "peal-ui",
       "dependencies": {
         "@base-ui/react": "1.9.0",
         "class-variance-authority": "0.7.1",
@@ -161,8 +161,8 @@
         "tailwindcss": "4.3.5",
       },
     },
-    "packages/acme-web": {
-      "name": "acme-web",
+    "packages/peal-web": {
+      "name": "peal-web",
       "dependencies": {
         "@better-auth/oauth-provider": "1.7.18",
         "@better-auth/stripe": "1.7.18",
@@ -176,13 +176,13 @@
         "@tiptap/extensions": "3.33.0",
         "@tiptap/pm": "3.33.0",
         "@tiptap/react": "3.33.0",
-        "acme-contract": "workspace:*",
-        "acme-ui": "workspace:*",
         "better-auth": "1.7.18",
         "effect": "4.1.2",
         "lucide-react": "1.70.0",
         "next": "16.4.5",
         "next-intl": "4.14.9",
+        "peal-contract": "workspace:*",
+        "peal-ui": "workspace:*",
         "react": "19.3.1",
         "react-day-picker": "10.0.2",
         "react-dom": "19.3.1",
@@ -1372,24 +1372,6 @@
 
     "accepts": ["accepts@2.0.0", "", { "dependencies": { "mime-types": "^3.0.0", "negotiator": "^1.0.0" } }, "sha512-5cvg6CtKwfgdmVqY1WIiXKc3Q1bkRqGLi+2W/6ao+6Y7gu/RCwRuAhGEzh5B4KlszSuTLgZYuqFqo5bImjNKng=="],
 
-    "acme-cli": ["acme-cli@workspace:packages/acme-cli"],
-
-    "acme-contract": ["acme-contract@workspace:packages/acme-contract"],
-
-    "acme-docker": ["acme-docker@workspace:packages/acme-docker"],
-
-    "acme-docs": ["acme-docs@workspace:packages/acme-docs"],
-
-    "acme-e2e": ["acme-e2e@workspace:packages/acme-e2e"],
-
-    "acme-server": ["acme-server@workspace:packages/acme-server"],
-
-    "acme-site": ["acme-site@workspace:packages/acme-site"],
-
-    "acme-ui": ["acme-ui@workspace:packages/acme-ui"],
-
-    "acme-web": ["acme-web@workspace:packages/acme-web"],
-
     "acorn": ["acorn@8.19.0", "", { "bin": { "acorn": "bin/acorn" } }, "sha512-oJlA3XiRm7Cyk6qFD2Jn8ak9B7jSy0qy00ADO3+8dpT0LSjFihQYv4C02LFCSYJV3Q37xYwwRy5m+IpIiUzqWw=="],
 
     "acorn-import-attributes": ["acorn-import-attributes@1.9.5", "", { "peerDependencies": { "acorn": "^8" } }, "sha512-n02Vykv5uA3eHGM/Z2dQrcD56kL8TyDb2p1+0P83PClMnC/nc+anbQRhIOWnSq4Ke/KvDPrY3C9hDtC/A3eHnQ=="],
@@ -2349,6 +2331,24 @@
     "path-to-regexp-updated": ["path-to-regexp@6.3.0", "", {}, "sha512-Yhpw4T9C6hPpgPeA28us07OJeqZ5EzQTkbfwuhsUg0c237RomFoETJgmp2sa3F/41gfLE6G5cqcYwznmeEeOlQ=="],
 
     "pathe": ["pathe@2.0.3", "", {}, "sha512-WUjGcAqP1gQacoQe+OBJsFA7Ld4DyXuUIjZ5cc75cLHvJ7dtNsTugphxIADwspS+AraAUePCKrSVtPLFj/F88w=="],
+
+    "peal-cli": ["peal-cli@workspace:packages/peal-cli"],
+
+    "peal-contract": ["peal-contract@workspace:packages/peal-contract"],
+
+    "peal-docker": ["peal-docker@workspace:packages/peal-docker"],
+
+    "peal-docs": ["peal-docs@workspace:packages/peal-docs"],
+
+    "peal-e2e": ["peal-e2e@workspace:packages/peal-e2e"],
+
+    "peal-server": ["peal-server@workspace:packages/peal-server"],
+
+    "peal-site": ["peal-site@workspace:packages/peal-site"],
+
+    "peal-ui": ["peal-ui@workspace:packages/peal-ui"],
+
+    "peal-web": ["peal-web@workspace:packages/peal-web"],
 
     "perfect-debounce": ["perfect-debounce@2.1.0", "", {}, "sha512-LjgdTytVFXeUgtHZr9WYViYSM/g8MkcTPYDlPa3cDqMirHjKiSZPYd6DoL7pK8AJQr+uWkQvCjHNdiMqsrJs+g=="],
 
