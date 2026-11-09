@@ -64,19 +64,26 @@ const AppPage = async ({ params }: PageProps<"/[locale]/app">) => {
                   </CardAction>
                 </CardHeader>
                 <CardFooter>
-                  <nav className="flex gap-4 text-sm">
+                  <nav
+                    aria-label={tPosts("workspaceLinks", {
+                      workspace: workspace.name,
+                    })}
+                    className="flex gap-4 text-sm"
+                  >
                     <Link
                       href={`/app/${workspace.id}/calendar`}
                       className="underline-offset-4 hover:underline"
                     >
                       {tPosts("calendar")}
                     </Link>
-                    <Link
-                      href={`/app/${workspace.id}/posts/new`}
-                      className="underline-offset-4 hover:underline"
-                    >
-                      {tPosts("newPost")}
-                    </Link>
+                    {workspace.permissions.includes("post:create") ? (
+                      <Link
+                        href={`/app/${workspace.id}/posts/new`}
+                        className="underline-offset-4 hover:underline"
+                      >
+                        {tPosts("newPost")}
+                      </Link>
+                    ) : null}
                   </nav>
                 </CardFooter>
               </Card>

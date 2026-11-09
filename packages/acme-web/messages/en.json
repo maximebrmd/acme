@@ -146,7 +146,8 @@
     "disconnectedChannel": "A disconnected channel",
     "nav": {
       "calendar": "Calendar",
-      "newPost": "New post"
+      "newPost": "New post",
+      "workspaceLinks": "Posts of {workspace}"
     },
     "Composer": {
       "newTitle": "New post",

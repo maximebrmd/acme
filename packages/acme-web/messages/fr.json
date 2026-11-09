@@ -146,7 +146,8 @@
     "disconnectedChannel": "Un canal déconnecté",
     "nav": {
       "calendar": "Calendrier",
-      "newPost": "Nouvelle publication"
+      "newPost": "Nouvelle publication",
+      "workspaceLinks": "Publications de {workspace}"
     },
     "Composer": {
       "newTitle": "Nouvelle publication",
