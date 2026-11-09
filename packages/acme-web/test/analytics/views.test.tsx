@@ -211,7 +211,7 @@ describe(PostMetricsView, () => {
     );
 
     expect(html).toContain(
-      "Les chiffres sont relevés dans l’heure qui suit la parution."
+      "Acme relève pour l’instant les chiffres sur Mastodon et Bluesky, dans l’heure qui suit la parution."
     );
   });
 });

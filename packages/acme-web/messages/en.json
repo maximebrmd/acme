@@ -15,7 +15,7 @@
       "loading": "Loading the analytics…",
       "loadFailed": "The analytics could not be loaded.",
       "retry": "Try again",
-      "empty": "No post went out in this range yet. A post’s counts appear within the hour after it goes live.",
+      "empty": "No post went out on Mastodon or Bluesky in this range yet, the platforms Acme reads counts on so far. A post’s counts appear within the hour after it goes live.",
       "collection": "Acme reads each post’s counts every hour for 48 hours after it goes live, then every day until it is 30 days old.",
       "noImpressions": "Mastodon and Bluesky do not tell how many people saw a post, so there are no impressions."
     },
@@ -49,7 +49,7 @@
       "title": "How it did",
       "loading": "Loading the post’s counts…",
       "loadFailed": "The post’s counts could not be loaded.",
-      "notYet": "Counts are read within the hour after a post goes live.",
+      "notYet": "Acme reads counts on Mastodon and Bluesky so far, within the hour after a post goes live.",
       "notRead": "Not read yet",
       "readAt": "Read {at}",
       "stopped": "No longer read: posts are followed for 30 days.",
