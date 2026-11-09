@@ -8,7 +8,7 @@ Effective date: [Date]
 
 ## About this policy
 
-This policy explains how [Legal entity name] ("we") processes personal data when you use the hosted Peal service at [Service domain] and this website. It follows the transparency requirements of the EU General Data Protection Regulation (GDPR), Articles 13 and 14.
+This policy explains how [Legal entity name] ("we") processes personal data when you use the hosted Peal service at app.peal.social and this website. It follows the transparency requirements of the EU General Data Protection Regulation (GDPR), Articles 13 and 14.
 
 It does not cover self-hosted instances of Peal. Whoever runs a self-hosted instance is the controller of the data it processes and is responsible for its own privacy notice.
 
@@ -17,7 +17,7 @@ It does not cover self-hosted instances of Peal. Whoever runs a self-hosted inst
 - Controller: [Legal entity name]
 - Address: [Registered address]
 - Registration number: [Company registration number]
-- Privacy contact: [Privacy contact email]
+- Privacy contact: privacy@peal.social
 - Data protection officer: [Name and contact of the data protection officer, or a statement that none is appointed]
 - Representative in the EU: [Only if the controller is established outside the EU]
 
@@ -104,7 +104,7 @@ Under the GDPR, you have the right to:
 - object to processing based on legitimate interests (Article 21);
 - withdraw your consent at any time where processing relies on it, without affecting the processing that came before (Article 7(3)).
 
-To exercise these rights, write to [Privacy contact email]. The GDPR requires an answer within one month, which can be extended in some cases (Article 12(3)). [Describe how a requester's identity is checked.]
+To exercise these rights, write to privacy@peal.social. The GDPR requires an answer within one month, which can be extended in some cases (Article 12(3)). [Describe how a requester's identity is checked.]
 
 You also have the right to lodge a complaint with a supervisory authority, in particular in the EU country where you live, where you work or where you think the infringement took place (Article 77). [Name the lead supervisory authority.]
 
@@ -128,4 +128,4 @@ You also have the right to lodge a complaint with a supervisory authority, in pa
 
 ## Contact
 
-[Privacy contact email], [Registered address]
+privacy@peal.social, [Registered address]

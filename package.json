@@ -2,6 +2,11 @@
   "name": "peal",
   "private": true,
   "license": "FSL-1.1-ALv2",
+  "homepage": "https://peal.social",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/peal-social/peal.git"
+  },
   "workspaces": [
     "packages/*"
   ],

@@ -4,7 +4,7 @@ description: Comment supprimer votre compte Peal et ses données, ce qui est sup
 draft: true
 ---
 
-En vertu du RGPD, vous pouvez demander l’effacement de vos données personnelles (article 17) ; la [politique de confidentialité](/fr/privacy/) liste vos autres droits. Cette page explique comment supprimer votre compte et ses données sur le service Peal hébergé à l’adresse [Domaine du service].
+En vertu du RGPD, vous pouvez demander l’effacement de vos données personnelles (article 17) ; la [politique de confidentialité](/fr/privacy/) liste vos autres droits. Cette page explique comment supprimer votre compte et ses données sur le service Peal hébergé à l’adresse app.peal.social.
 
 ## Supprimer votre compte dans Peal
 
@@ -12,7 +12,7 @@ En vertu du RGPD, vous pouvez demander l’effacement de vos données personnell
 
 ## Faire la demande par e-mail
 
-Écrivez à [Adresse e-mail de contact confidentialité] depuis l’adresse e-mail de votre compte, afin que la demande puisse y être rattachée. [Le délai de traitement d’une demande, et la manière dont vous êtes informé qu’elle est traitée.]
+Écrivez à privacy@peal.social depuis l’adresse e-mail de votre compte, afin que la demande puisse y être rattachée. [Le délai de traitement d’une demande, et la manière dont vous êtes informé qu’elle est traitée.]
 
 ## Déconnecter un compte de réseau social
 
@@ -40,4 +40,4 @@ Sur une instance auto-hébergée de Peal, c’est la personne ou l’organisatio
 
 ## Contact
 
-[Adresse e-mail de contact confidentialité]
+privacy@peal.social

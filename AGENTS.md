@@ -1,10 +1,15 @@
 # Peal
 
 Peal is a social media scheduling platform: teams write posts once, schedule
-them across platforms, and see how they perform. "Peal" is a working name. The
+them across platforms, and see how they perform, at [peal.social](https://peal.social). The
 source is public under the Functional Source License (FSL-1.1-ALv2, in
 [`LICENSE.md`](LICENSE.md)): anyone may self-host it, and each release becomes
 Apache-2.0 two years after it ships. Call it "fair source", not open source.
+
+Until its rename, the product carried the placeholder name "acme". That name
+is gone from the repository and must not come back, in any case or form; the
+one `acme` left is Caddy's ACME certificate issuer, a protocol, in the uptime
+role's `Caddyfile.j2`.
 
 Nx projects live directly under `packages/`:
 
@@ -1242,6 +1247,9 @@ self-hoster needs only Postgres and an S3-compatible store:
   `SITE_PLAUSIBLE_DOMAIN`, `SITE_PLAUSIBLE_HOST`. Nx hashes them from the
   process environment only, not `.env` files: export them, or build with
   `--skip-nx-cache`.
+- The site serves `/.well-known/security.txt` (`public/.well-known/`) for
+  peal.social, with `security@peal.social`: move its `Expires` a year ahead
+  before it passes.
 - Run the site with `nx run peal-site:dev`: it sets `ASTRO_DEV_BACKGROUND=0`,
   because Astro otherwise detaches `astro dev` when an agent runs it.
 

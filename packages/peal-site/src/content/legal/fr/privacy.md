@@ -8,7 +8,7 @@ Date d’entrée en vigueur : [Date]
 
 ## À propos de cette politique
 
-Cette politique explique comment [Nom de l’entité juridique] (« nous ») traite les données personnelles lorsque vous utilisez le service Peal hébergé à l’adresse [Domaine du service] et ce site. Elle suit les exigences de transparence du règlement général sur la protection des données (RGPD), articles 13 et 14.
+Cette politique explique comment [Nom de l’entité juridique] (« nous ») traite les données personnelles lorsque vous utilisez le service Peal hébergé à l’adresse app.peal.social et ce site. Elle suit les exigences de transparence du règlement général sur la protection des données (RGPD), articles 13 et 14.
 
 Elle ne couvre pas les instances auto-hébergées de Peal. Quiconque exploite une instance auto-hébergée est responsable du traitement de ses données et rédige sa propre politique de confidentialité.
 
@@ -17,7 +17,7 @@ Elle ne couvre pas les instances auto-hébergées de Peal. Quiconque exploite un
 - Responsable du traitement : [Nom de l’entité juridique]
 - Adresse : [Adresse du siège]
 - Numéro d’immatriculation : [Numéro d’immatriculation]
-- Contact confidentialité : [Adresse e-mail de contact confidentialité]
+- Contact confidentialité : privacy@peal.social
 - Délégué à la protection des données : [Nom et coordonnées du délégué, ou mention qu’aucun n’est désigné]
 - Représentant dans l’UE : [Uniquement si le responsable est établi hors de l’UE]
 
@@ -104,7 +104,7 @@ En vertu du RGPD, vous avez le droit :
 - de vous opposer à un traitement fondé sur des intérêts légitimes (article 21) ;
 - de retirer votre consentement à tout moment lorsqu’un traitement repose sur celui-ci, sans remettre en cause le traitement effectué auparavant (article 7, paragraphe 3).
 
-Pour exercer ces droits, écrivez à [Adresse e-mail de contact confidentialité]. Le RGPD impose une réponse dans un délai d’un mois, qui peut être prolongé dans certains cas (article 12, paragraphe 3). [Décrire comment l’identité du demandeur est vérifiée.]
+Pour exercer ces droits, écrivez à privacy@peal.social. Le RGPD impose une réponse dans un délai d’un mois, qui peut être prolongé dans certains cas (article 12, paragraphe 3). [Décrire comment l’identité du demandeur est vérifiée.]
 
 Vous avez aussi le droit d’introduire une réclamation auprès d’une autorité de contrôle, notamment dans le pays de l’UE où vous résidez, où vous travaillez ou où vous pensez que la violation a eu lieu (article 77). [Nommer l’autorité de contrôle chef de file.]
 
@@ -128,4 +128,4 @@ Vous avez aussi le droit d’introduire une réclamation auprès d’une autorit
 
 ## Contact
 
-[Adresse e-mail de contact confidentialité], [Adresse du siège]
+privacy@peal.social, [Adresse du siège]

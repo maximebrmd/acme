@@ -3,8 +3,9 @@
 Ansible for the servers Peal runs on, production and the sandbox, each a
 Hetzner Cloud server reachable only through a Cloudflare Tunnel, and for the
 uptime server that watches them from outside. Nothing here has been applied
-yet: the inventory holds placeholders (`example.com`, `203.0.113.0/24`,
-`REPLACE…`), and every playbook refuses to run until they are replaced.
+yet: the inventory names the hosts on `peal.social` but holds placeholders for
+the rest (`203.0.113.0/24`, `example-team`, `REPLACE…`), and every playbook
+refuses to run until they are replaced.
 
 Self-hosters do not need this folder: Caddy and Compose are enough (the docs'
 self-hosting page, and [`peal-docker`](../peal-docker)).
@@ -26,16 +27,16 @@ The tunnel's routes, for production (`roles/cloudflared/templates/config.yml.j2`
 
 | Host name             | Path                                                                    | Goes to                     | Access    |
 | --------------------- | ----------------------------------------------------------------------- | --------------------------- | --------- |
-| `grafana.example.com` | any                                                                     | Grafana, 127.0.0.1:13000    | team only |
-| `ssh.example.com`     | any                                                                     | sshd, 127.0.0.1:22          | team only |
-| `app.example.com`     | `/api/auth/admin/*`, `/api/admin/*`, `/admin`, `/en/admin`, `/fr/admin` | the server or the web app   | team only |
-| `app.example.com`     | `/api/*`, `/.well-known/oauth-*`                                        | the server, 127.0.0.1:3000  | public    |
-| `app.example.com`     | anything else                                                           | the web app, 127.0.0.1:3001 | public    |
-| `example.com`         | any                                                                     | the site, 127.0.0.1:4321    | public    |
-| `docs.example.com`    | any                                                                     | the docs, 127.0.0.1:4322    | public    |
+| `grafana.peal.social` | any                                                                     | Grafana, 127.0.0.1:13000    | team only |
+| `ssh.peal.social`     | any                                                                     | sshd, 127.0.0.1:22          | team only |
+| `app.peal.social`     | `/api/auth/admin/*`, `/api/admin/*`, `/admin`, `/en/admin`, `/fr/admin` | the server or the web app   | team only |
+| `app.peal.social`     | `/api/*`, `/.well-known/oauth-*`                                        | the server, 127.0.0.1:3000  | public    |
+| `app.peal.social`     | anything else                                                           | the web app, 127.0.0.1:3001 | public    |
+| `peal.social`         | any                                                                     | the site, 127.0.0.1:4321    | public    |
+| `docs.peal.social`    | any                                                                     | the docs, 127.0.0.1:4322    | public    |
 
-The sandbox has the same routes on its own names (`sandbox.example.com`,
-`grafana-sandbox.example.com`…), all behind Access but for what outside
+The sandbox has the same routes on its own names (`sandbox.peal.social`,
+`sandbox-grafana.peal.social`…), all behind Access but for what outside
 services call: `/api/channels/oauth/*`, which Bluesky's servers fetch, and
 Stripe's webhook (`/api/auth/stripe/webhook`) and Meta's data deletion
 requests (`/api/data-deletion/facebook` and `/threads`), which the server
@@ -99,16 +100,16 @@ Run each with `--limit production` or `--limit sandbox` (`--limit uptime` for
 files. SSH is for reading:
 
 ```sh
-ssh ops@ssh.example.com sudo peal-compose ps
-ssh ops@ssh.example.com sudo peal-compose logs --tail 50 server
-ssh ops@ssh.example.com systemctl list-timers 'peal-*'
-ssh ops@ssh.example.com sudo peal-compose exec --user postgres postgres pgbackrest info
+ssh ops@ssh.peal.social sudo peal-compose ps
+ssh ops@ssh.peal.social sudo peal-compose logs --tail 50 server
+ssh ops@ssh.peal.social systemctl list-timers 'peal-*'
+ssh ops@ssh.peal.social sudo peal-compose exec --user postgres postgres pgbackrest info
 ```
 
 Your `~/.ssh/config` sends those through the tunnel:
 
 ```
-Host ssh.example.com ssh-sandbox.example.com
+Host ssh.peal.social sandbox-ssh.peal.social
   User ops
   ProxyCommand cloudflared access ssh --hostname %h
 ```
@@ -160,17 +161,17 @@ the owner's approval.
 2. **Zero Trust**: a team (`<team>.cloudflareaccess.com`) and these Access
    applications, each with a policy that lets in the team's emails. Copy each
    application's audience tag (AUD) into `cloudflare_access_aud`.
-   - Grafana: `grafana.example.com`.
-   - SSH: `ssh.example.com`.
-   - Admin: `app.example.com/api/auth/admin`, `app.example.com/api/admin`
-     (the staff console's API), `app.example.com/admin`,
-     `app.example.com/en/admin` (where Next also serves English pages) and
-     `app.example.com/fr/admin`.
+   - Grafana: `grafana.peal.social`.
+   - SSH: `ssh.peal.social`.
+   - Admin: `app.peal.social/api/auth/admin`, `app.peal.social/api/admin`
+     (the staff console's API), `app.peal.social/admin`,
+     `app.peal.social/en/admin` (where Next also serves English pages) and
+     `app.peal.social/fr/admin`.
    - Sandbox: its app, site and docs names; an application with a Bypass
      policy for everyone on each path outside services call,
-     `sandbox.example.com/api/channels/oauth` for Bluesky,
-     `sandbox.example.com/api/auth/stripe/webhook` for Stripe, and
-     `sandbox.example.com/api/data-deletion` for Meta; and its own Grafana and
+     `sandbox.peal.social/api/channels/oauth` for Bluesky,
+     `sandbox.peal.social/api/auth/stripe/webhook` for Stripe, and
+     `sandbox.peal.social/api/data-deletion` for Meta; and its own Grafana and
      SSH applications.
 3. **A tunnel per environment**, locally managed so `config.yml` holds its
    routes, from your own machine:
@@ -178,7 +179,7 @@ the owner's approval.
    ```sh
    cloudflared tunnel login                              # once, a certificate for your account
    cloudflared tunnel create peal-production
-   cloudflared tunnel route dns peal-production app.example.com   # and each other name
+   cloudflared tunnel route dns peal-production app.peal.social   # and each other name
    cloudflared tunnel token peal-production              # the token for the vault
    ```
 
@@ -188,7 +189,8 @@ the owner's approval.
    the upload CORS rule on it with `bun nx run peal-server:media-cors`, from
    your machine, with a token that may change the bucket's settings.
 5. **Telegram**: a bot from @BotFather, and the id of the chat it writes to.
-6. **Email**: a Resend key for a verified domain, or an SMTP server.
+6. **Email**: a Resend key for the verified sending domain `mail.peal.social`,
+   which sends as `notifications@mail.peal.social` (`peal_mail_from`).
 
 ### Credentials
 
@@ -204,8 +206,8 @@ services issue reaches it in one of two ways:
   `NAME='value'` lines, over SSH:
 
   ```sh
-  ssh -t ops@ssh.example.com 'sudo install -m 600 /dev/null /srv/peal/credentials.env && sudoedit /srv/peal/credentials.env'
-  ssh -t ops@ssh.example.com 'sudo install -o root -g cloudflared -m 440 /dev/stdin /etc/cloudflared/token'
+  ssh -t ops@ssh.peal.social 'sudo install -m 600 /dev/null /srv/peal/credentials.env && sudoedit /srv/peal/credentials.env'
+  ssh -t ops@ssh.peal.social 'sudo install -o root -g cloudflared -m 440 /dev/stdin /etc/cloudflared/token'
   ```
 
 `site.yml` stops and names what is missing either way. Keep a copy of the
@@ -220,11 +222,11 @@ password manager: the backups cannot be read without it.
 3. `uv run ansible-playbook playbooks/site.yml --limit production -e ssh_via_tunnel=false`:
    port 22 stays open while the tunnel comes up. With a Hetzner firewall in
    front, open 22 there for your address for these two runs.
-4. Check SSH through the tunnel: `ssh ops@ssh.example.com true`.
+4. Check SSH through the tunnel: `ssh ops@ssh.peal.social true`.
 5. `uv run ansible-playbook playbooks/site.yml --limit production`: Ansible
    now connects through the tunnel, and port 22 closes.
 6. `uv run ansible-playbook playbooks/release.yml --limit production`.
-7. Take the first backup, `ssh ops@ssh.example.com sudo systemctl start peal-backup@full`,
+7. Take the first backup, `ssh ops@ssh.peal.social sudo systemctl start peal-backup@full`,
    and send a test alert from Grafana (Alerting › Contact points › Telegram ›
    Test).
 8. For production, once the uptime server runs: give it its heartbeat token
@@ -348,7 +350,7 @@ resource. Then:
    folder is the one `uptime.yml` makes, with the same owner and mode):
 
    ```sh
-   ssh -t ops@uptime.example.com 'sudo install -d -m 750 /srv/uptime && sudo install -m 600 /dev/null /srv/uptime/credentials.env && sudoedit /srv/uptime/credentials.env'
+   ssh -t ops@uptime.peal.social 'sudo install -d -m 750 /srv/uptime && sudo install -m 600 /dev/null /srv/uptime/credentials.env && sudoedit /srv/uptime/credentials.env'
    ```
 
 3. `uv run ansible-playbook playbooks/bootstrap.yml --limit uptime -e ansible_user=root`
@@ -375,15 +377,15 @@ passes between the two servers. Carry it from one to the other through your
 own machine:
 
 - into production's vault: read it with
-  `ssh ops@uptime.example.com sudo grep PRODUCTION_HEARTBEAT_TOKEN /srv/uptime/secrets.env`,
+  `ssh ops@uptime.peal.social sudo grep PRODUCTION_HEARTBEAT_TOKEN /srv/uptime/secrets.env`,
   and put the value in `group_vars/production/vault.yml` as
   `PEAL_HEARTBEAT_TOKEN`;
 - or on production's server, without showing it: once
   `/srv/peal/credentials.env` lacks the line,
 
   ```sh
-  ssh ops@uptime.example.com sudo sed -n "s/^PRODUCTION_HEARTBEAT_TOKEN=/PEAL_HEARTBEAT_TOKEN=/p" /srv/uptime/secrets.env \
-    | ssh ops@ssh.example.com 'sudo tee -a /srv/peal/credentials.env > /dev/null'
+  ssh ops@uptime.peal.social sudo sed -n "s/^PRODUCTION_HEARTBEAT_TOKEN=/PEAL_HEARTBEAT_TOKEN=/p" /srv/uptime/secrets.env \
+    | ssh ops@ssh.peal.social 'sudo tee -a /srv/peal/credentials.env > /dev/null'
   ```
 
 Then run `site.yml` on production, which writes the heartbeat's settings to
@@ -397,7 +399,7 @@ Gatus's dashboard listens on the uptime server's 127.0.0.1 only. SSH lets
 `ops` forward a local port to it, and to nothing else:
 
 ```sh
-ssh -N -L 8080:127.0.0.1:8080 ops@uptime.example.com   # then open http://localhost:8080
+ssh -N -L 8080:127.0.0.1:8080 ops@uptime.peal.social   # then open http://localhost:8080
 ```
 
 To the world, Caddy answers the heartbeats' path and nothing else:
@@ -407,7 +409,7 @@ A public status page is the owner's decision, and is off. Turned on with
 `uptime_public_status: true` in `group_vars/uptime/main.yml`, Caddy also
 serves the dashboard and Gatus's read-only API at `https://<uptime_hostname>/`:
 anyone could then see what is checked, every host name included, and when it
-failed. A name such as `status.example.com` would suit it better, as
+failed. A name such as `status.peal.social` would suit it better, as
 `uptime_hostname`.
 
 ### On the uptime server

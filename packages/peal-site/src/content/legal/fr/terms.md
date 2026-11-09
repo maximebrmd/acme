@@ -8,7 +8,7 @@ Date d’entrée en vigueur : [Date]
 
 ## À propos de ces conditions
 
-Ces conditions encadrent l’utilisation du service Peal hébergé à l’adresse [Domaine du service], fourni par [Nom de l’entité juridique] (« nous »), [Adresse du siège], [Numéro d’immatriculation]. [Indiquer comment les conditions sont acceptées, par exemple à la création d’un compte.]
+Ces conditions encadrent l’utilisation du service Peal hébergé à l’adresse app.peal.social, fourni par [Nom de l’entité juridique] (« nous »), [Adresse du siège], [Numéro d’immatriculation]. [Indiquer comment les conditions sont acceptées, par exemple à la création d’un compte.]
 
 Elles ne couvrent pas le code source de Peal. Le code source fait l’objet d’une licence distincte, la Functional Source License, Version 1.1, ALv2 Future License (FSL-1.1-ALv2), qui encadre son auto-hébergement, sa modification et sa redistribution.
 

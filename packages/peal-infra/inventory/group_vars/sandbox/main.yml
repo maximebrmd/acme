@@ -1,18 +1,19 @@
 ---
 # The sandbox: pre-production, with its own database, buckets and platform
-# redirect URIs, behind Cloudflare Access throughout. Every value below is a
-# placeholder until the domain, the Cloudflare account and the server exist.
+# redirect URIs, behind Cloudflare Access throughout. The host names are the official
+# ones; the other values are placeholders until the Cloudflare account and
+# the server exist.
 server_hostname: peal-sandbox
 peal_environment: sandbox
 
 # First-level subdomains only: Cloudflare's free certificate covers no
-# deeper name, such as app.sandbox.example.com.
+# deeper name, such as app.sandbox.peal.social.
 peal_hostnames:
-  app: sandbox.example.com
-  site: site-sandbox.example.com
-  docs: docs-sandbox.example.com
-  grafana: grafana-sandbox.example.com
-  ssh: ssh-sandbox.example.com
+  app: sandbox.peal.social
+  site: sandbox-site.peal.social
+  docs: sandbox-docs.peal.social
+  grafana: sandbox-grafana.peal.social
+  ssh: sandbox-ssh.peal.social
 
 cloudflare_access_team: example-team
 cloudflare_access_aud:
@@ -22,7 +23,7 @@ cloudflare_access_aud:
   ssh: REPLACE-WITH-THE-SANDBOX-SSH-APPLICATION-AUD
 peal_access_everything: true
 
-peal_mail_from: Peal Sandbox <noreply@example.com>
+peal_mail_from: Peal Sandbox <notifications@mail.peal.social>
 
 peal_media_endpoint: https://0123456789abcdef0123456789abcdef.r2.cloudflarestorage.com
 peal_media_bucket: peal-sandbox-media
@@ -31,6 +32,6 @@ peal_backup_bucket: peal-sandbox-backups
 peal_backup_path: /sandbox
 
 peal_static_build_args:
-  SITE_URL: https://site-sandbox.example.com
-  SITE_DOCS_URL: https://docs-sandbox.example.com
-  DOCS_SITE_URL: https://docs-sandbox.example.com
+  SITE_URL: https://sandbox-site.peal.social
+  SITE_DOCS_URL: https://sandbox-docs.peal.social
+  DOCS_SITE_URL: https://sandbox-docs.peal.social

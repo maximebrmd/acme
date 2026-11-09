@@ -1,7 +1,7 @@
 # Peal
 
-Schedule social media posts across platforms, from one place. "Peal" is a
-working name.
+Schedule social media posts across platforms, from one place:
+[peal.social](https://peal.social).
 
 Peal is fair source: you may use, modify and self-host it under the
 [Functional Source License](LICENSE.md), and each release becomes Apache-2.0

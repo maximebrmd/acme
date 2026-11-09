@@ -12,7 +12,7 @@ const en = {
     language: "Language",
     legal: "Legal",
     license:
-      "Fair source under the Functional Source License (FSL-1.1-ALv2). “Peal” is a working name.",
+      "Fair source under the Functional Source License (FSL-1.1-ALv2).",
   },
   home: {
     description:
@@ -83,7 +83,7 @@ const fr: Messages = {
     language: "Langue",
     legal: "Informations juridiques",
     license:
-      "Fair source sous la Functional Source License (FSL-1.1-ALv2). « Peal » est un nom provisoire.",
+      "Fair source sous la Functional Source License (FSL-1.1-ALv2).",
   },
   home: {
     description:
