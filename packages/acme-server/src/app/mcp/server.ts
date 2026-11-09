@@ -26,7 +26,7 @@ export const mcpPath = "/api/mcp";
 export const McpLive = McpServer.layerHttp({
   allowSessionTermination: true,
   instructions:
-    "Acme schedules social media posts for teams. These tools act in the one workspace the user picked when they connected; call whoami to see which, and what this connection may do there.",
+    "Acme schedules social media posts for teams. These tools act in the one workspace the user picked when they connected; call whoami to see which, and what this connection may do there. Tools that change something (drafts, follow-ups on published posts, invitations) need the user to have let this client do what their role allows, and say what they change: ask the user before reposting, confirming or inviting. Scheduling and publishing are for the user, in the web app.",
   name: "Acme",
   path: mcpPath,
   protocols: [

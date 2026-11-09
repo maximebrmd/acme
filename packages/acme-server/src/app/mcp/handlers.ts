@@ -1,9 +1,12 @@
 import { CurrentMember } from "acme-contract";
-import { Array, Effect, Option } from "effect";
+import { Array, Effect, Layer, Option } from "effect";
 
 import { makeDatabasePing } from "#app/database-ping.ts";
+import { PeopleToolsLive } from "#app/mcp/people-handlers.ts";
+import { PostToolsLive } from "#app/mcp/posts-handlers.ts";
+import { ReportToolsLive } from "#app/mcp/reports-handlers.ts";
 import { ToolRefused } from "#app/mcp/tool-refused.ts";
-import { AcmeTools } from "#app/mcp/tools.ts";
+import { BasicTools } from "#app/mcp/tools.ts";
 import { toChannelView } from "#channels/api/channel-view.ts";
 import { ListChannels } from "#channels/application/list-channels.ts";
 import { actorOf } from "#shared/api/actor.ts";
@@ -13,11 +16,7 @@ import { Accounts } from "#workspace/application/accounts.ts";
 const refuse = (message: string) => () =>
   Effect.fail(new ToolRefused({ message }));
 
-/**
- * What the tools do, through the use cases of each context, as the member
- * that the MCP endpoint's authentication provides (CurrentMember).
- */
-export const AcmeToolsLive = AcmeTools.toLayer(
+const BasicToolsLive = BasicTools.toLayer(
   Effect.gen(function* acmeTools() {
     const accounts = yield* Accounts;
     const listChannels = yield* ListChannels;
@@ -46,7 +45,7 @@ export const AcmeToolsLive = AcmeTools.toLayer(
       return { current, member };
     });
 
-    return AcmeTools.of({
+    return BasicTools.of({
       list_channels: () =>
         Effect.gen(function* channels() {
           const actor = actorOf(yield* CurrentMember);
@@ -117,4 +116,15 @@ export const AcmeToolsLive = AcmeTools.toLayer(
         }),
     });
   })
+);
+
+/**
+ * What the tools do, through the use cases of each context, as the member
+ * that the MCP endpoint's authentication provides (CurrentMember).
+ */
+export const AcmeToolsLive = Layer.mergeAll(
+  BasicToolsLive,
+  PostToolsLive,
+  ReportToolsLive,
+  PeopleToolsLive
 );

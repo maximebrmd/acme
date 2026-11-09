@@ -1,14 +1,10 @@
-import { createHash, randomBytes } from "node:crypto";
-
 import { assert, layer } from "@effect/vitest";
 import {
   AuthorizationServerSchema,
   ProtectedResourceSchema,
-  PublicClientSchema,
 } from "acme-contract";
 import { Context, Effect, Layer, Option, Schema } from "effect";
 import { McpClient, McpProtocol } from "effect/ai";
-import type { McpSchema } from "effect/ai";
 
 import { ChannelRepository } from "#channels/application/channel-repository.ts";
 import { DrizzleChannelRepository } from "#channels/infrastructure/drizzle-channel-repository.ts";
@@ -18,58 +14,27 @@ import { IdsLive } from "#shared/infrastructure/secure-random-ids.ts";
 import { freshChannel, syntheticCredentials } from "#test/channels/support.ts";
 import {
   bodyOf,
-  inProcessHttpClient,
   origin,
   signedUpUnconfirmed,
   TestApp,
   unconfirmedEmails,
   workspaceOf,
 } from "#test/workspace/integration/harness.ts";
-import type { Person, Reply } from "#test/workspace/integration/harness.ts";
+import type { Person } from "#test/workspace/integration/harness.ts";
+
+import {
+  authorize,
+  connect,
+  mcpResource,
+  registeredClient,
+  toolNamed,
+} from "./mcp-support.ts";
+import type { JsonRpcRequest } from "./mcp-support.ts";
 
 // The MCP endpoint, as an MCP client meets it: a 401 that leads to the
 // authorization server, dynamic registration, the authorization code flow
 // with PKCE through the workspace picker and the consent page, then tool
 // calls with a token bound to the workspace the user picked.
-
-const mcpResource = `${origin}/api/mcp`;
-
-const redirectUri = "http://127.0.0.1:33418/callback";
-
-// The cookies a session holds after a reply that may change some.
-const withCookies = (cookies: string, reply: Reply): string => {
-  const jar = new Map(
-    cookies
-      .split("; ")
-      .filter((cookie) => cookie !== "")
-      .map((cookie) => [cookie.split("=")[0] ?? "", cookie])
-  );
-
-  for (const header of reply.headers.getSetCookie()) {
-    const pair = header.split(";")[0] ?? "";
-    const name = pair.split("=")[0] ?? "";
-
-    if (pair.endsWith("=")) {
-      jar.delete(name);
-    } else {
-      jar.set(name, pair);
-    }
-  }
-
-  return [...jar.values()].join("; ");
-};
-
-const base64Url = (bytes: Uint8Array) =>
-  Buffer.from(bytes).toString("base64url");
-
-const RedirectSchema = Schema.Struct({
-  redirect: Schema.Literal(true),
-  url: Schema.String,
-});
-
-const RegisteredSchema = Schema.Struct({ client_id: Schema.String });
-
-const TokensSchema = Schema.Struct({ access_token: Schema.String });
 
 interface Fixture {
   readonly clientId: string;
@@ -85,103 +50,9 @@ class McpFixture extends Context.Service<McpFixture, Fixture>()(
   "acme-server/test/McpFixture"
 ) {}
 
-/**
- * Signs `person` in to the MCP client through the browser steps: authorize,
- * the workspace picker, the consent page; then exchanges the code for an
- * access token bound to `workspaceId`.
- */
-const authorize = Effect.fn("authorize")(function* authorize(
-  person: Person,
-  clientId: string,
-  workspaceId: string,
-  scope: string
-) {
-  const app = yield* TestApp;
-  const verifier = base64Url(randomBytes(32));
-  const challenge = base64Url(createHash("sha256").update(verifier).digest());
-
-  const query = new URLSearchParams({
-    client_id: clientId,
-    code_challenge: challenge,
-    code_challenge_method: "S256",
-    redirect_uri: redirectUri,
-    resource: mcpResource,
-    response_type: "code",
-    scope,
-    state: "mcp-test",
-  });
-
-  const authorization = yield* app.request(
-    `/api/auth/oauth2/authorize?${query.toString()}`,
-    { headers: { cookie: person.cookies } }
-  );
-
-  assert.strictEqual(authorization.status, 302);
-
-  const picker = new URL(authorization.headers.get("location") ?? "", origin);
-
-  assert.strictEqual(picker.pathname, "/oauth/workspace");
-
-  const picked = yield* app.request("/api/auth/organization/set-active", {
-    body: { organizationId: workspaceId },
-    headers: { cookie: person.cookies },
-  });
-
-  const cookie = withCookies(person.cookies, picked);
-
-  const continued = yield* bodyOf(
-    RedirectSchema,
-    yield* app.request("/api/auth/oauth2/continue", {
-      body: { oauth_query: picker.search.slice(1), postLogin: true },
-      headers: { cookie },
-    })
-  );
-
-  const consentPage = new URL(continued.url, origin);
-
-  assert.strictEqual(consentPage.pathname, "/oauth/consent");
-
-  // What the consent page shows of the client.
-  const described = yield* bodyOf(
-    PublicClientSchema,
-    yield* app.request(`/api/auth/oauth2/public-client?client_id=${clientId}`, {
-      headers: { cookie },
-    })
-  );
-
-  assert.strictEqual(described.client_name, "Synthetic agent");
-
-  const consented = yield* bodyOf(
-    RedirectSchema,
-    yield* app.request("/api/auth/oauth2/consent", {
-      body: { accept: true, oauth_query: consentPage.search.slice(1) },
-      headers: { cookie },
-    })
-  );
-
-  const callback = new URL(consented.url);
-
-  assert.strictEqual(`${callback.origin}${callback.pathname}`, redirectUri);
-  assert.strictEqual(callback.searchParams.get("state"), "mcp-test");
-
-  const tokens = yield* app.request("/api/auth/oauth2/token", {
-    form: {
-      client_id: clientId,
-      code: callback.searchParams.get("code") ?? "",
-      code_verifier: verifier,
-      grant_type: "authorization_code",
-      redirect_uri: redirectUri,
-      resource: mcpResource,
-    },
-  });
-
-  return (yield* bodyOf(TokensSchema, tokens)).access_token;
-});
-
 const McpFixtureLive = Layer.effect(
   McpFixture,
   Effect.gen(function* mcpFixture() {
-    const app = yield* TestApp;
     const owner = yield* signedUpUnconfirmed("agent-owner");
     const studio = yield* workspaceOf(owner, "Studio");
     const shop = yield* workspaceOf(owner, "Shop");
@@ -192,18 +63,7 @@ const McpFixtureLive = Layer.effect(
       channels.insert(channel, syntheticCredentials(channel))
     );
 
-    // An MCP client registers itself (RFC 7591), with no account.
-    const registered = yield* app.request("/api/auth/oauth2/register", {
-      body: {
-        client_name: "Synthetic agent",
-        grant_types: ["authorization_code", "refresh_token"],
-        redirect_uris: [redirectUri],
-        response_types: ["code"],
-        token_endpoint_auth_method: "none",
-      },
-    });
-
-    const { client_id: clientId } = yield* bodyOf(RegisteredSchema, registered);
+    const clientId = yield* registeredClient;
 
     return { clientId, owner, shop, studio, studioChannel: channel.id };
   })
@@ -221,43 +81,6 @@ const McpFixtureLive = Layer.effect(
     )
   )
 );
-
-// An MCP client of the endpoint, in process, with the token if any. The fetch
-// client reads its Fetch when each request runs, so both stay in context.
-const connect = (
-  token: Option.Option<string>,
-  protocol:
-    | typeof McpProtocol.v2025_11_25
-    | typeof McpProtocol.v2026_07_28 = McpProtocol.v2026_07_28
-) =>
-  McpClient.layerHttp({
-    headers: Option.match(token, {
-      onNone: () => ({}),
-      onSome: (value) => ({ authorization: `Bearer ${value}` }),
-    }),
-    name: "acme-test",
-    protocol,
-    url: mcpResource,
-    version: "1.0.0",
-  }).pipe(Layer.provideMerge(inProcessHttpClient));
-
-// A JSON-RPC request, as MCP clients send them.
-interface JsonRpcRequest {
-  readonly id: number;
-  readonly jsonrpc: "2.0";
-  readonly method: string;
-  readonly params?: object;
-}
-
-const toolNamed = (tools: readonly McpSchema.Tool[], name: string) => {
-  const found = tools.find((tool) => tool.name === name);
-
-  if (found === undefined) {
-    throw new Error(`The server offers no tool named ${name}`);
-  }
-
-  return found;
-};
 
 const WhoAmISchema = Schema.Struct({
   user: Schema.Struct({ id: Schema.String }),
@@ -411,10 +234,26 @@ layer(McpFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           Effect.provide(connect(Option.some(token)))
         );
 
+        // Every tool is listed; those that change something refuse.
         assert.deepStrictEqual(results.names, [
+          "analytics_summary",
+          "confirm_target",
+          "create_draft",
+          "discard_draft",
+          "get_billing",
+          "get_post",
+          "invite_member",
           "list_channels",
+          "list_drafts",
+          "list_invitations",
+          "list_members",
           "list_workspaces",
+          "post_analytics",
+          "repost_target",
+          "revoke_invitation",
           "server_health",
+          "unschedule_post",
+          "update_draft",
           "whoami",
         ]);
         assert.strictEqual(results.whoami.user.id, fixture.owner.id);
