@@ -5,6 +5,7 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **AvatarUrl** | **NullableString** |  | 
+**Connection** | [**NullableInstagramConnection**](InstagramConnection.md) |  | 
 **DisplayName** | **NullableString** |  | 
 **Handle** | **string** |  | 
 **Id** | **string** |  | 
@@ -16,7 +17,7 @@ Name | Type | Description | Notes
 
 ### NewChannel
 
-`func NewChannel(avatarUrl NullableString, displayName NullableString, handle string, id string, platform Platform, status ChannelStatus, tokenExpiresAt NullableString, ) *Channel`
+`func NewChannel(avatarUrl NullableString, connection NullableInstagramConnection, displayName NullableString, handle string, id string, platform Platform, status ChannelStatus, tokenExpiresAt NullableString, ) *Channel`
 
 NewChannel instantiates a new Channel object
 This constructor will assign default values to properties that have it defined,
@@ -61,6 +62,36 @@ SetAvatarUrl sets AvatarUrl field to given value.
 `func (o *Channel) UnsetAvatarUrl()`
 
 UnsetAvatarUrl ensures that no value is present for AvatarUrl, not even an explicit nil
+### GetConnection
+
+`func (o *Channel) GetConnection() InstagramConnection`
+
+GetConnection returns the Connection field if non-nil, zero value otherwise.
+
+### GetConnectionOk
+
+`func (o *Channel) GetConnectionOk() (*InstagramConnection, bool)`
+
+GetConnectionOk returns a tuple with the Connection field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetConnection
+
+`func (o *Channel) SetConnection(v InstagramConnection)`
+
+SetConnection sets Connection field to given value.
+
+
+### SetConnectionNil
+
+`func (o *Channel) SetConnectionNil(b bool)`
+
+ SetConnectionNil sets the value for Connection to be an explicit nil
+
+### UnsetConnection
+`func (o *Channel) UnsetConnection()`
+
+UnsetConnection ensures that no value is present for Connection, not even an explicit nil
 ### GetDisplayName
 
 `func (o *Channel) GetDisplayName() string`

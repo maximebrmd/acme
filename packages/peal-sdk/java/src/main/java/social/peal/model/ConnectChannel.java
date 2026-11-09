@@ -21,6 +21,7 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 import java.util.Arrays;
+import social.peal.model.InstagramConnection;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -51,6 +52,11 @@ import social.peal.JSON;
  */
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.27.0")
 public class ConnectChannel {
+  public static final String SERIALIZED_NAME_CONNECTION = "connection";
+  @SerializedName(SERIALIZED_NAME_CONNECTION)
+  @javax.annotation.Nullable
+  private InstagramConnection connection;
+
   public static final String SERIALIZED_NAME_HANDLE = "handle";
   @SerializedName(SERIALIZED_NAME_HANDLE)
   @javax.annotation.Nullable
@@ -63,6 +69,25 @@ public class ConnectChannel {
 
   public ConnectChannel() {
   }
+
+  public ConnectChannel connection(@javax.annotation.Nullable InstagramConnection connection) {
+    this.connection = connection;
+    return this;
+  }
+
+  /**
+   * Get connection
+   * @return connection
+   */
+  @javax.annotation.Nullable
+  public InstagramConnection getConnection() {
+    return connection;
+  }
+
+  public void setConnection(@javax.annotation.Nullable InstagramConnection connection) {
+    this.connection = connection;
+  }
+
 
   public ConnectChannel handle(@javax.annotation.Nullable String handle) {
     this.handle = handle;
@@ -112,19 +137,21 @@ public class ConnectChannel {
       return false;
     }
     ConnectChannel connectChannel = (ConnectChannel) o;
-    return Objects.equals(this.handle, connectChannel.handle) &&
+    return Objects.equals(this.connection, connectChannel.connection) &&
+        Objects.equals(this.handle, connectChannel.handle) &&
         Objects.equals(this.instance, connectChannel.instance);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(handle, instance);
+    return Objects.hash(connection, handle, instance);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class ConnectChannel {\n");
+    sb.append("    connection: ").append(toIndentedString(connection)).append("\n");
     sb.append("    handle: ").append(toIndentedString(handle)).append("\n");
     sb.append("    instance: ").append(toIndentedString(instance)).append("\n");
     sb.append("}");
@@ -145,7 +172,7 @@ public class ConnectChannel {
 
   static {
     // a set of all properties/fields (JSON key names)
-    openapiFields = new HashSet<String>(Arrays.asList("handle", "instance"));
+    openapiFields = new HashSet<String>(Arrays.asList("connection", "handle", "instance"));
 
     // a set of required properties/fields (JSON key names)
     openapiRequiredFields = new HashSet<String>(0);
@@ -172,6 +199,10 @@ public class ConnectChannel {
         }
       }
         JsonObject jsonObj = jsonElement.getAsJsonObject();
+      // validate the optional field `connection`
+      if (jsonObj.get("connection") != null && !jsonObj.get("connection").isJsonNull()) {
+        InstagramConnection.validateJsonElement(jsonObj.get("connection"));
+      }
       if ((jsonObj.get("handle") != null && !jsonObj.get("handle").isJsonNull()) && !jsonObj.get("handle").isJsonPrimitive()) {
         throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `handle` to be a primitive type in the JSON string but got `%s`", jsonObj.get("handle").toString()));
       }

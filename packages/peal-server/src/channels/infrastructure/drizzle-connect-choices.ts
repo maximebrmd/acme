@@ -10,6 +10,7 @@ import { DatabaseError } from "#shared/application/database-error.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 
 import { connectChoices } from "./schema.ts";
+import { storedConnection } from "./stored-connection.ts";
 
 type Row = typeof connectChoices.$inferSelect;
 
@@ -29,6 +30,7 @@ const toStored = (row: Row, selection: string) =>
   Effect.all({
     accounts: decodeAccounts(row.accounts),
     choice: decodeChoice({
+      connection: storedConnection(row.platform, row.connection),
       createdAt: DateTime.fromDateUnsafe(row.createdAt),
       expiresAt: DateTime.fromDateUnsafe(row.expiresAt),
       grantedBy: Option.fromNullOr(row.grantedBy),
@@ -64,6 +66,7 @@ export const DrizzleConnectChoices = Layer.effect(
           Effect.flatMap((selectionHash) =>
             db.insert(connectChoices).values({
               accounts,
+              connection: Option.getOrNull(choice.connection),
               createdAt: date(choice.createdAt),
               expiresAt: date(choice.expiresAt),
               grantedBy: Option.getOrNull(choice.grantedBy),

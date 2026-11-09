@@ -13,6 +13,8 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ConnectChannel {
+    #[serde(rename = "connection", skip_serializing_if = "Option::is_none")]
+    pub connection: Option<models::InstagramConnection>,
     #[serde(rename = "handle", skip_serializing_if = "Option::is_none")]
     pub handle: Option<String>,
     #[serde(rename = "instance", skip_serializing_if = "Option::is_none")]
@@ -22,6 +24,7 @@ pub struct ConnectChannel {
 impl ConnectChannel {
     pub fn new() -> ConnectChannel {
         ConnectChannel {
+            connection: None,
             handle: None,
             instance: None,
         }

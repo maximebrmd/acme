@@ -81,6 +81,7 @@ docs/EffectHttpApiErrorBadRequestEncoded.md
 docs/EngagementDay.md
 docs/FailureReason.md
 docs/ForbiddenEncoded.md
+docs/InstagramConnection.md
 docs/InvalidDateRangeEncoded.md
 docs/InvalidTimeRangeEncoded.md
 docs/InvalidTimeZoneEncoded.md
@@ -312,6 +313,7 @@ peal/models/effect_http_api_error_bad_request_encoded.py
 peal/models/engagement_day.py
 peal/models/failure_reason.py
 peal/models/forbidden_encoded.py
+peal/models/instagram_connection.py
 peal/models/invalid_date_range_encoded.py
 peal/models/invalid_time_range_encoded.py
 peal/models/invalid_time_zone_encoded.py

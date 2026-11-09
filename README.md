@@ -191,9 +191,12 @@ be read, and their channels must be reconnected.
   build, or through an HTTPS tunnel. LinkedIn members reconnect every 60 days.
 - **Threads**, **Instagram** and **Facebook Pages** need an app in Meta's
   developer dashboard, in development mode with you in its roles, and its ids
-  and secrets in `META_APP_ID`, `META_APP_SECRET`, `THREADS_APP_ID` and
-  `THREADS_APP_SECRET`; the docs' self-hosting page lists its permissions and
-  addresses. Facebook and Instagram come back with the accounts the sign-in
+  and secrets in `META_APP_ID`, `META_APP_SECRET`, `INSTAGRAM_APP_ID`,
+  `INSTAGRAM_APP_SECRET`, `THREADS_APP_ID` and `THREADS_APP_SECRET`; the
+  docs' self-hosting page lists its permissions and addresses. Instagram
+  connects with Instagram Login (`INSTAGRAM_APP_*`, no Facebook Page
+  needed) and through a Facebook Page (`META_APP_*`). Facebook, and
+  Instagram through a Page, come back with the accounts the sign-in
   reached, to tick. Meta fetches the media it publishes from the store, which
   it cannot reach on this machine: text posts work, media needs a public
   store.
@@ -371,6 +374,7 @@ In development, these are the ones you may want:
 | `LINKEDIN_CLIENT_ID`          | unset: LinkedIn is not offered   | The LinkedIn app's client id, with `LINKEDIN_CLIENT_SECRET`    |
 | `X_CLIENT_ID`                 | unset: X is not offered          | The X app's OAuth 2.0 client id, with `X_CLIENT_SECRET`        |
 | `META_APP_ID`                 | unset: no Facebook nor Instagram | Meta's app, with `META_APP_SECRET`                             |
+| `INSTAGRAM_APP_ID`            | unset: Instagram through a Page  | The app's Instagram id, with `INSTAGRAM_APP_SECRET`            |
 | `THREADS_APP_ID`              | unset: no Threads                | The app's Threads id, with `THREADS_APP_SECRET`                |
 | `TIKTOK_CLIENT_KEY`           | unset: TikTok is not offered     | The TikTok app's client key, with `TIKTOK_CLIENT_SECRET`       |
 | `YOUTUBE_CLIENT_ID`           | unset: YouTube is not offered    | The Google OAuth client's id, with `YOUTUBE_CLIENT_SECRET`     |

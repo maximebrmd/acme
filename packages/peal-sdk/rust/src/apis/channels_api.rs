@@ -183,7 +183,7 @@ pub async fn channels_complete_connect(configuration: &configuration::Configurat
     }
 }
 
-/// Starts connecting an account of the platform: answers with the platform's sign-in page, where the browser goes next. The connection is tied to the caller and the workspace, and must be completed within 15 minutes. On a server that bills, a workspace whose plan allows no more channels gets PlanLimitReached. Needs channel:connect.
+/// Starts connecting an account of the platform: answers with the platform's sign-in page, where the browser goes next. For Instagram, `connection` picks Instagram Login (the professional account itself, no Facebook Page needed) or Facebook Login (the accounts linked to the caller's Pages); without it, the server's preferred way. The connection is tied to the caller and the workspace, and must be completed within 15 minutes. On a server that bills, a workspace whose plan allows no more channels gets PlanLimitReached. Needs channel:connect.
 pub async fn channels_connect(configuration: &configuration::Configuration, workspace_id: &str, platform: models::Platform, connect_channel: models::ConnectChannel) -> Result<models::Authorization, Error<ChannelsConnectError>> {
     // add a prefix to parameters to efficiently prevent name collisions
     let p_path_workspace_id = workspace_id;

@@ -18,8 +18,9 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from typing import Any, ClassVar, Dict, List
+from peal.models.instagram_connection import InstagramConnection
 from peal.models.platform import Platform
 from typing import Optional, Set
 from typing_extensions import Self
@@ -29,8 +30,9 @@ class ConnectablePlatforms(BaseModel):
     """
     ConnectablePlatforms
     """ # noqa: E501
+    instagram_connections: List[InstagramConnection] = Field(alias="instagramConnections")
     platforms: List[Platform]
-    __properties: ClassVar[List[str]] = ["platforms"]
+    __properties: ClassVar[List[str]] = ["instagramConnections", "platforms"]
 
     model_config = ConfigDict(
         validate_by_name=True,
@@ -83,6 +85,7 @@ class ConnectablePlatforms(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
+            "instagramConnections": obj.get("instagramConnections"),
             "platforms": obj.get("platforms")
         })
         return _obj

@@ -22,6 +22,7 @@ var _ MappedNullable = &ConnectablePlatforms{}
 
 // ConnectablePlatforms struct for ConnectablePlatforms
 type ConnectablePlatforms struct {
+	InstagramConnections []InstagramConnection `json:"instagramConnections"`
 	Platforms []Platform `json:"platforms"`
 }
 
@@ -31,8 +32,9 @@ type _ConnectablePlatforms ConnectablePlatforms
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewConnectablePlatforms(platforms []Platform) *ConnectablePlatforms {
+func NewConnectablePlatforms(instagramConnections []InstagramConnection, platforms []Platform) *ConnectablePlatforms {
 	this := ConnectablePlatforms{}
+	this.InstagramConnections = instagramConnections
 	this.Platforms = platforms
 	return &this
 }
@@ -43,6 +45,30 @@ func NewConnectablePlatforms(platforms []Platform) *ConnectablePlatforms {
 func NewConnectablePlatformsWithDefaults() *ConnectablePlatforms {
 	this := ConnectablePlatforms{}
 	return &this
+}
+
+// GetInstagramConnections returns the InstagramConnections field value
+func (o *ConnectablePlatforms) GetInstagramConnections() []InstagramConnection {
+	if o == nil {
+		var ret []InstagramConnection
+		return ret
+	}
+
+	return o.InstagramConnections
+}
+
+// GetInstagramConnectionsOk returns a tuple with the InstagramConnections field value
+// and a boolean to check if the value has been set.
+func (o *ConnectablePlatforms) GetInstagramConnectionsOk() ([]InstagramConnection, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return o.InstagramConnections, true
+}
+
+// SetInstagramConnections sets field value
+func (o *ConnectablePlatforms) SetInstagramConnections(v []InstagramConnection) {
+	o.InstagramConnections = v
 }
 
 // GetPlatforms returns the Platforms field value
@@ -79,6 +105,7 @@ func (o ConnectablePlatforms) MarshalJSON() ([]byte, error) {
 
 func (o ConnectablePlatforms) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
+	toSerialize["instagramConnections"] = o.InstagramConnections
 	toSerialize["platforms"] = o.Platforms
 	return toSerialize, nil
 }
@@ -88,6 +115,7 @@ func (o *ConnectablePlatforms) UnmarshalJSON(data []byte) (err error) {
 	// by unmarshalling the object into a generic map with string keys and checking
 	// that every required field exists as a key in the generic map.
 	requiredProperties := []string{
+		"instagramConnections",
 		"platforms",
 	}
 

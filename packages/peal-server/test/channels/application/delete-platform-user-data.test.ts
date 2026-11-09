@@ -10,16 +10,20 @@ import { DataDeletionHandlers } from "#channels/api/data-deletion.ts";
 import { ChannelCredentials } from "#channels/application/channel-credentials.ts";
 import { ChannelRepository } from "#channels/application/channel-repository.ts";
 import { DataDeletionLinks } from "#channels/application/data-deletion-links.ts";
+import { DeauthorizePlatformUser } from "#channels/application/deauthorize-platform-user.ts";
 import { DeletePlatformUserData } from "#channels/application/delete-platform-user-data.ts";
 import type { Platform } from "#channels/domain/platform.ts";
 import { DrizzleChannelRepository } from "#channels/infrastructure/drizzle-channel-repository.ts";
 import { DrizzleDataDeletions } from "#channels/infrastructure/drizzle-data-deletions.ts";
 import { ChannelPlatforms } from "#channels/infrastructure/platforms/channel-platform-settings.ts";
 import { MetaSignedRequestsLive } from "#channels/infrastructure/platforms/meta/meta-signed-requests.ts";
+import { SqlChannelLocks } from "#channels/infrastructure/sql-channel-locks.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
+import type { InstagramConnection } from "#shared/domain/instagram-connection.ts";
 import { metaHosts } from "#shared/infrastructure/platforms/meta-graph.ts";
 import { tiktokHosts } from "#shared/infrastructure/platforms/tiktok-api.ts";
 import {
+  instagramApp,
   metaApp,
   signedRequest,
   threadsApp,
@@ -28,6 +32,7 @@ import {
   DatabaseTest,
   freshChannel,
   freshWorkspace,
+  RecordedNotices,
   syntheticCredentials,
 } from "#test/channels/support.ts";
 import { anonymousSecurityTest } from "#workspace/api/security.ts";
@@ -37,6 +42,7 @@ const settings = (apps: { readonly threads: boolean }) =>
     ChannelPlatforms,
     ChannelPlatforms.of({
       bluesky: Option.none(),
+      instagram: Option.some(instagramApp),
       linkedin: Option.none(),
       meta: Option.some(metaApp),
       metaHosts,
@@ -50,12 +56,17 @@ const settings = (apps: { readonly threads: boolean }) =>
   );
 
 const deletionsWith = (apps: { readonly threads: boolean }) =>
-  DeletePlatformUserData.layer.pipe(
+  Layer.mergeAll(
+    DeletePlatformUserData.layer,
+    DeauthorizePlatformUser.layer
+  ).pipe(
     Layer.provideMerge(
       Layer.mergeAll(
         MetaSignedRequestsLive,
         DrizzleDataDeletions,
         DrizzleChannelRepository,
+        SqlChannelLocks,
+        RecordedNotices.layer,
         Layer.succeed(
           DataDeletionLinks,
           DataDeletionLinks.of({
@@ -78,18 +89,22 @@ const deletionsWith = (apps: { readonly threads: boolean }) =>
 const userIdOf = (workspaceId: WorkspaceId) =>
   `1022${workspaceId.replaceAll("-", "").slice(-12)}`;
 
-// A channel whose token a Facebook user granted, or a Threads account.
+// A channel whose token a Facebook user granted, or a Threads account, or
+// an Instagram account through the way in given.
 const seeded = Effect.fn("seeded")(function* seeded(
   workspaceId: WorkspaceId,
   platform: Platform,
-  options: { readonly accountId?: string; readonly grantedBy?: string } = {}
+  options: {
+    readonly accountId?: string;
+    readonly connection?: InstagramConnection;
+    readonly grantedBy?: string;
+  } = {}
 ) {
-  const channel = yield* freshChannel(
-    workspaceId,
-    options.accountId === undefined
-      ? { platform }
-      : { accountId: options.accountId, platform }
-  );
+  const channel = yield* freshChannel(workspaceId, {
+    accountId: options.accountId,
+    connection: options.connection,
+    platform,
+  });
 
   const synthetic = syntheticCredentials(channel, { keyId: "test-key" });
 
@@ -310,6 +325,82 @@ layer(deletionsWith({ threads: true }))(
       })
     );
 
+    it.effect(
+      "delete an Instagram Login account by either of its ids, and only it",
+      () =>
+        Effect.gen(function* instagram() {
+          const workspaceId = yield* freshWorkspace;
+          const appUser = userIdOf(workspaceId);
+          const professional = `17841${appUser.slice(-12)}`;
+
+          // The same professional account: by its app-scoped grant, by its
+          // own id, and reached through a Page, which the main app answers
+          // for.
+          yield* seeded(workspaceId, "instagram", {
+            accountId: `${professional}1`,
+            connection: "instagramLogin",
+            grantedBy: appUser,
+          });
+
+          yield* seeded(workspaceId, "instagram", {
+            accountId: professional,
+            connection: "instagramLogin",
+            grantedBy: `${appUser}7`,
+          });
+
+          const viaPage = yield* seeded(workspaceId, "instagram", {
+            accountId: `${professional}2`,
+            connection: "facebookLogin",
+            grantedBy: appUser,
+          });
+
+          const byAppUser = yield* DeletePlatformUserData.use((deletions) =>
+            deletions.request(
+              "instagram",
+              request(appUser, instagramApp.appSecret)
+            )
+          );
+
+          const byAccount = yield* DeletePlatformUserData.use((deletions) =>
+            deletions.request(
+              "instagram",
+              request(professional, instagramApp.appSecret)
+            )
+          );
+
+          assert.strictEqual(byAppUser.deletion.app, "instagram");
+          assert.strictEqual(byAppUser.deletion.channelsDeleted, 1);
+          assert.strictEqual(byAccount.deletion.channelsDeleted, 1);
+          assert.deepStrictEqual(yield* channelIdsIn(workspaceId), [
+            viaPage.id,
+          ]);
+        })
+    );
+
+    it.effect("leave Instagram Login accounts to the Instagram app", () =>
+      Effect.gen(function* facebookOnly() {
+        const workspaceId = yield* freshWorkspace;
+        const userId = userIdOf(workspaceId);
+
+        const direct = yield* seeded(workspaceId, "instagram", {
+          connection: "instagramLogin",
+          grantedBy: userId,
+        });
+
+        yield* seeded(workspaceId, "instagram", {
+          connection: "facebookLogin",
+          grantedBy: userId,
+        });
+
+        const receipt = yield* DeletePlatformUserData.use((deletions) =>
+          deletions.request("facebook", request(userId, metaApp.appSecret))
+        );
+
+        assert.strictEqual(receipt.deletion.channelsDeleted, 1);
+        assert.deepStrictEqual(yield* channelIdsIn(workspaceId), [direct.id]);
+      })
+    );
+
     it.effect("answer the status page through the API, and nothing else", () =>
       Effect.gen(function* api() {
         const workspaceId = yield* freshWorkspace;
@@ -382,3 +473,150 @@ layer(deletionsWith({ threads: false }))("a server without Threads", (it) => {
     })
   );
 });
+
+// A day after the synthetic channels were connected: a request made then
+// is about the tokens they hold.
+const afterConnecting = 1_781_600_000;
+
+const statusesIn = (workspaceId: WorkspaceId) =>
+  ChannelRepository.use((channels) => channels.list(workspaceId)).pipe(
+    Effect.map((channels) =>
+      channels.map(({ id, status }) => ({ id, status: status._tag }))
+    )
+  );
+
+layer(deletionsWith({ threads: true }))(
+  "Meta's deauthorization requests",
+  (it) => {
+    it.effect(
+      "mark the channels a user removed Peal from to reconnect, and tell",
+      () =>
+        Effect.gen(function* deauthorizes() {
+          const workspaceId = yield* freshWorkspace;
+          const userId = userIdOf(workspaceId);
+
+          const direct = yield* seeded(workspaceId, "instagram", {
+            accountId: userId,
+            connection: "instagramLogin",
+          });
+
+          const viaPage = yield* seeded(workspaceId, "instagram", {
+            connection: "facebookLogin",
+            grantedBy: userId,
+          });
+
+          const marked = yield* DeauthorizePlatformUser.use((users) =>
+            users.deauthorize(
+              "instagram",
+              request(userId, instagramApp.appSecret, afterConnecting)
+            )
+          );
+
+          assert.strictEqual(marked, 1);
+          assert.sameDeepMembers(yield* statusesIn(workspaceId), [
+            { id: direct.id, status: "refreshNeeded" },
+            { id: viaPage.id, status: "active" },
+          ]);
+
+          const notices = yield* RecordedNotices.use((recorded) =>
+            recorded.of(workspaceId)
+          );
+
+          assert.deepStrictEqual(notices, [
+            {
+              channelId: direct.id,
+              expiresAt: Option.none(),
+              kind: "reconnectRequired",
+            },
+          ]);
+        })
+    );
+
+    it.effect(
+      "leave a channel changed since the request, and mark nothing twice",
+      () =>
+        Effect.gen(function* replayed() {
+          const workspaceId = yield* freshWorkspace;
+          const userId = userIdOf(workspaceId);
+
+          // Connected after the request was made, as by reconnecting it.
+          const reconnected = yield* seeded(workspaceId, "facebook", {
+            grantedBy: userId,
+          });
+
+          const old = request(userId, metaApp.appSecret, 1_780_000_000);
+
+          const none = yield* DeauthorizePlatformUser.use((users) =>
+            users.deauthorize("facebook", old)
+          );
+
+          assert.strictEqual(none, 0);
+          assert.deepStrictEqual(yield* statusesIn(workspaceId), [
+            { id: reconnected.id, status: "active" },
+          ]);
+
+          const recent = request(userId, metaApp.appSecret, afterConnecting);
+
+          const first = yield* DeauthorizePlatformUser.use((users) =>
+            users.deauthorize("facebook", recent)
+          );
+
+          const again = yield* DeauthorizePlatformUser.use((users) =>
+            users.deauthorize("facebook", recent)
+          );
+
+          assert.strictEqual(first, 1);
+          assert.strictEqual(again, 0);
+          assert.lengthOf(
+            yield* RecordedNotices.use((recorded) => recorded.of(workspaceId)),
+            1
+          );
+        })
+    );
+
+    it.effect("answer Meta through the API, refusing a forged request", () =>
+      Effect.gen(function* api() {
+        const workspaceId = yield* freshWorkspace;
+        const userId = userIdOf(workspaceId);
+
+        const channel = yield* seeded(workspaceId, "threads", {
+          accountId: userId,
+        });
+
+        const client = yield* HttpApiTest.groups(Api, ["dataDeletion"]).pipe(
+          Effect.provide(
+            Layer.mergeAll(
+              DataDeletionHandlers,
+              anonymousSecurityTest,
+              HttpServer.layerServices
+            )
+          )
+        );
+
+        const refused = yield* Effect.flip(
+          client.dataDeletion.deauthorize({
+            params: { app: "threads" },
+            payload: { signed_request: request(userId, metaApp.appSecret) },
+          })
+        );
+
+        assert.strictEqual(refused._tag, "SignedRequestRefused");
+
+        yield* client.dataDeletion.deauthorize({
+          params: { app: "threads" },
+          payload: {
+            signed_request: request(
+              userId,
+              threadsApp.appSecret,
+              afterConnecting
+            ),
+          },
+        });
+
+        assert.deepStrictEqual(yield* statusesIn(workspaceId), [
+          { id: channel.id, status: "refreshNeeded" },
+        ]);
+      }).pipe(Effect.scoped)
+    );
+  }
+);

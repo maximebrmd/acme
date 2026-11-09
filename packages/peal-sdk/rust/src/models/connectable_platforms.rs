@@ -13,13 +13,16 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ConnectablePlatforms {
+    #[serde(rename = "instagramConnections")]
+    pub instagram_connections: Vec<models::InstagramConnection>,
     #[serde(rename = "platforms")]
     pub platforms: Vec<models::Platform>,
 }
 
 impl ConnectablePlatforms {
-    pub fn new(platforms: Vec<models::Platform>) -> ConnectablePlatforms {
+    pub fn new(instagram_connections: Vec<models::InstagramConnection>, platforms: Vec<models::Platform>) -> ConnectablePlatforms {
         ConnectablePlatforms {
+            instagram_connections,
             platforms,
         }
     }

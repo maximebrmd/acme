@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import social.peal.model.InstagramConnection;
 import social.peal.model.Platform;
 
 import com.google.gson.Gson;
@@ -54,6 +55,11 @@ import social.peal.JSON;
  */
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.27.0")
 public class ConnectablePlatforms {
+  public static final String SERIALIZED_NAME_INSTAGRAM_CONNECTIONS = "instagramConnections";
+  @SerializedName(SERIALIZED_NAME_INSTAGRAM_CONNECTIONS)
+  @javax.annotation.Nonnull
+  private List<InstagramConnection> instagramConnections = new ArrayList<>();
+
   public static final String SERIALIZED_NAME_PLATFORMS = "platforms";
   @SerializedName(SERIALIZED_NAME_PLATFORMS)
   @javax.annotation.Nonnull
@@ -61,6 +67,33 @@ public class ConnectablePlatforms {
 
   public ConnectablePlatforms() {
   }
+
+  public ConnectablePlatforms instagramConnections(@javax.annotation.Nonnull List<InstagramConnection> instagramConnections) {
+    this.instagramConnections = instagramConnections;
+    return this;
+  }
+
+  public ConnectablePlatforms addInstagramConnectionsItem(InstagramConnection instagramConnectionsItem) {
+    if (this.instagramConnections == null) {
+      this.instagramConnections = new ArrayList<>();
+    }
+    this.instagramConnections.add(instagramConnectionsItem);
+    return this;
+  }
+
+  /**
+   * Get instagramConnections
+   * @return instagramConnections
+   */
+  @javax.annotation.Nonnull
+  public List<InstagramConnection> getInstagramConnections() {
+    return instagramConnections;
+  }
+
+  public void setInstagramConnections(@javax.annotation.Nonnull List<InstagramConnection> instagramConnections) {
+    this.instagramConnections = instagramConnections;
+  }
+
 
   public ConnectablePlatforms platforms(@javax.annotation.Nonnull List<Platform> platforms) {
     this.platforms = platforms;
@@ -99,18 +132,20 @@ public class ConnectablePlatforms {
       return false;
     }
     ConnectablePlatforms connectablePlatforms = (ConnectablePlatforms) o;
-    return Objects.equals(this.platforms, connectablePlatforms.platforms);
+    return Objects.equals(this.instagramConnections, connectablePlatforms.instagramConnections) &&
+        Objects.equals(this.platforms, connectablePlatforms.platforms);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(platforms);
+    return Objects.hash(instagramConnections, platforms);
   }
 
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("class ConnectablePlatforms {\n");
+    sb.append("    instagramConnections: ").append(toIndentedString(instagramConnections)).append("\n");
     sb.append("    platforms: ").append(toIndentedString(platforms)).append("\n");
     sb.append("}");
     return sb.toString();
@@ -130,10 +165,10 @@ public class ConnectablePlatforms {
 
   static {
     // a set of all properties/fields (JSON key names)
-    openapiFields = new HashSet<String>(Arrays.asList("platforms"));
+    openapiFields = new HashSet<String>(Arrays.asList("instagramConnections", "platforms"));
 
     // a set of required properties/fields (JSON key names)
-    openapiRequiredFields = new HashSet<String>(Arrays.asList("platforms"));
+    openapiRequiredFields = new HashSet<String>(Arrays.asList("instagramConnections", "platforms"));
   }
 
   /**
@@ -164,6 +199,12 @@ public class ConnectablePlatforms {
         }
       }
         JsonObject jsonObj = jsonElement.getAsJsonObject();
+      // ensure the required json array is present
+      if (jsonObj.get("instagramConnections") == null) {
+        throw new IllegalArgumentException("Expected the field `linkedContent` to be an array in the JSON string but got `null`");
+      } else if (!jsonObj.get("instagramConnections").isJsonArray()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `instagramConnections` to be an array in the JSON string but got `%s`", jsonObj.get("instagramConnections").toString()));
+      }
       // ensure the required json array is present
       if (jsonObj.get("platforms") == null) {
         throw new IllegalArgumentException("Expected the field `linkedContent` to be an array in the JSON string but got `null`");

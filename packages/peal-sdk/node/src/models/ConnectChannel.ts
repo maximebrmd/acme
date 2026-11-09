@@ -13,6 +13,14 @@
  */
 
 import { mapValues } from '../runtime.js';
+import type { InstagramConnection } from './InstagramConnection.js';
+import {
+    InstagramConnectionFromJSON,
+    InstagramConnectionFromJSONTyped,
+    InstagramConnectionToJSON,
+    InstagramConnectionToJSONTyped,
+} from './InstagramConnection.js';
+
 /**
  * 
  * @export
@@ -22,12 +30,18 @@ export interface ConnectChannel {
     /**
      * 
      */
+    connection?: InstagramConnection;
+    /**
+     * 
+     */
     handle?: string;
     /**
      * 
      */
     instance?: string;
 }
+
+
 
 /**
  * Check if a given object implements the ConnectChannel interface.
@@ -46,6 +60,7 @@ export function ConnectChannelFromJSONTyped(json: any, ignoreDiscriminator: bool
     }
     return {
         
+        'connection': json['connection'] == null ? undefined : InstagramConnectionFromJSON(json['connection']),
         'handle': json['handle'] == null ? undefined : json['handle'],
         'instance': json['instance'] == null ? undefined : json['instance'],
     };
@@ -62,6 +77,7 @@ export function ConnectChannelToJSONTyped(value?: ConnectChannel | null, ignoreD
 
     return {
         
+        'connection': InstagramConnectionToJSON(value['connection']),
         'handle': value['handle'],
         'instance': value['instance'],
     };

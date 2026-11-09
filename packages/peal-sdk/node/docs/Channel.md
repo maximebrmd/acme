@@ -7,6 +7,7 @@
 Name | Type
 ------------ | -------------
 `avatarUrl` | string
+`connection` | [InstagramConnection](InstagramConnection.md)
 `displayName` | string
 `handle` | string
 `id` | string
@@ -22,6 +23,7 @@ import type { Channel } from 'peal-sdk'
 // TODO: Update the object below with actual values
 const example = {
   "avatarUrl": null,
+  "connection": null,
   "displayName": null,
   "handle": null,
   "id": null,

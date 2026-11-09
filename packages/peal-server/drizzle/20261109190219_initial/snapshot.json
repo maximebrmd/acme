@@ -2,7 +2,7 @@
   "type": "base",
   "version": "9",
   "dialect": "postgres",
-  "id": "111df661-b9d5-44eb-8a5c-c3c05cd033e0",
+  "id": "af934097-f5de-40f2-a709-31b51ab3e91a",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
@@ -3255,6 +3255,19 @@
     {
       "schema": "channels",
       "table": "channels",
+      "name": "connection",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "channels",
+      "table": "channels",
       "name": "created_at",
       "type": "timestamp with time zone",
       "typeSchema": null,
@@ -3476,6 +3489,19 @@
     {
       "schema": "channels",
       "table": "connect_attempts",
+      "name": "connection",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "channels",
+      "table": "connect_attempts",
       "name": "created_at",
       "type": "timestamp with time zone",
       "typeSchema": null,
@@ -3584,6 +3610,19 @@
       "type": "text",
       "typeSchema": null,
       "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "channels",
+      "table": "connect_choices",
+      "name": "connection",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
       "dimensions": 0,
       "default": null,
       "generated": null,

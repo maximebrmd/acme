@@ -36,6 +36,7 @@ const attempt = startAttempt(
   {
     actor: ada,
     channelId: Option.none(),
+    connection: Option.none(),
     instance: Option.some("https://mastodon.example"),
     platform: "mastodon",
     state: "state-1",

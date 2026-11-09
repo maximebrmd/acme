@@ -21,6 +21,7 @@ import json
 from pydantic import BaseModel, ConfigDict, Field
 from typing import Any, ClassVar, Dict, List, Optional
 from typing_extensions import Annotated
+from peal.models.instagram_connection import InstagramConnection
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -29,9 +30,10 @@ class ConnectChannel(BaseModel):
     """
     ConnectChannel
     """ # noqa: E501
+    connection: Optional[InstagramConnection] = None
     handle: Optional[Annotated[str, Field(strict=True, max_length=256)]] = None
     instance: Optional[Annotated[str, Field(strict=True, max_length=256)]] = None
-    __properties: ClassVar[List[str]] = ["handle", "instance"]
+    __properties: ClassVar[List[str]] = ["connection", "handle", "instance"]
 
     model_config = ConfigDict(
         validate_by_name=True,
@@ -84,6 +86,7 @@ class ConnectChannel(BaseModel):
             return cls.model_validate(obj)
 
         _obj = cls.model_validate({
+            "connection": obj.get("connection"),
             "handle": obj.get("handle"),
             "instance": obj.get("instance")
         })

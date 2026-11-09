@@ -22,6 +22,7 @@ import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 import java.util.Arrays;
 import social.peal.model.ChannelStatus;
+import social.peal.model.InstagramConnection;
 import social.peal.model.Platform;
 
 import com.google.gson.Gson;
@@ -57,6 +58,11 @@ public class Channel {
   @SerializedName(SERIALIZED_NAME_AVATAR_URL)
   @javax.annotation.Nullable
   private String avatarUrl;
+
+  public static final String SERIALIZED_NAME_CONNECTION = "connection";
+  @SerializedName(SERIALIZED_NAME_CONNECTION)
+  @javax.annotation.Nullable
+  private InstagramConnection connection;
 
   public static final String SERIALIZED_NAME_DISPLAY_NAME = "displayName";
   @SerializedName(SERIALIZED_NAME_DISPLAY_NAME)
@@ -107,6 +113,25 @@ public class Channel {
 
   public void setAvatarUrl(@javax.annotation.Nullable String avatarUrl) {
     this.avatarUrl = avatarUrl;
+  }
+
+
+  public Channel connection(@javax.annotation.Nullable InstagramConnection connection) {
+    this.connection = connection;
+    return this;
+  }
+
+  /**
+   * Get connection
+   * @return connection
+   */
+  @javax.annotation.Nullable
+  public InstagramConnection getConnection() {
+    return connection;
+  }
+
+  public void setConnection(@javax.annotation.Nullable InstagramConnection connection) {
+    this.connection = connection;
   }
 
 
@@ -235,6 +260,7 @@ public class Channel {
     }
     Channel channel = (Channel) o;
     return Objects.equals(this.avatarUrl, channel.avatarUrl) &&
+        Objects.equals(this.connection, channel.connection) &&
         Objects.equals(this.displayName, channel.displayName) &&
         Objects.equals(this.handle, channel.handle) &&
         Objects.equals(this.id, channel.id) &&
@@ -245,7 +271,7 @@ public class Channel {
 
   @Override
   public int hashCode() {
-    return Objects.hash(avatarUrl, displayName, handle, id, platform, status, tokenExpiresAt);
+    return Objects.hash(avatarUrl, connection, displayName, handle, id, platform, status, tokenExpiresAt);
   }
 
   @Override
@@ -253,6 +279,7 @@ public class Channel {
     StringBuilder sb = new StringBuilder();
     sb.append("class Channel {\n");
     sb.append("    avatarUrl: ").append(toIndentedString(avatarUrl)).append("\n");
+    sb.append("    connection: ").append(toIndentedString(connection)).append("\n");
     sb.append("    displayName: ").append(toIndentedString(displayName)).append("\n");
     sb.append("    handle: ").append(toIndentedString(handle)).append("\n");
     sb.append("    id: ").append(toIndentedString(id)).append("\n");
@@ -277,10 +304,10 @@ public class Channel {
 
   static {
     // a set of all properties/fields (JSON key names)
-    openapiFields = new HashSet<String>(Arrays.asList("avatarUrl", "displayName", "handle", "id", "platform", "status", "tokenExpiresAt"));
+    openapiFields = new HashSet<String>(Arrays.asList("avatarUrl", "connection", "displayName", "handle", "id", "platform", "status", "tokenExpiresAt"));
 
     // a set of required properties/fields (JSON key names)
-    openapiRequiredFields = new HashSet<String>(Arrays.asList("avatarUrl", "displayName", "handle", "id", "platform", "status", "tokenExpiresAt"));
+    openapiRequiredFields = new HashSet<String>(Arrays.asList("avatarUrl", "connection", "displayName", "handle", "id", "platform", "status", "tokenExpiresAt"));
   }
 
   /**
@@ -313,6 +340,10 @@ public class Channel {
         JsonObject jsonObj = jsonElement.getAsJsonObject();
       if ((jsonObj.get("avatarUrl") != null && !jsonObj.get("avatarUrl").isJsonNull()) && !jsonObj.get("avatarUrl").isJsonPrimitive()) {
         throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `avatarUrl` to be a primitive type in the JSON string but got `%s`", jsonObj.get("avatarUrl").toString()));
+      }
+      if (jsonObj.get("connection") != null && !jsonObj.get("connection").isJsonNull()) {
+      // validate the required field `connection`
+      InstagramConnection.validateJsonElement(jsonObj.get("connection"));
       }
       if ((jsonObj.get("displayName") != null && !jsonObj.get("displayName").isJsonNull()) && !jsonObj.get("displayName").isJsonPrimitive()) {
         throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `displayName` to be a primitive type in the JSON string but got `%s`", jsonObj.get("displayName").toString()));

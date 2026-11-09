@@ -5,6 +5,7 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
+**instagram_connections** | [**List[InstagramConnection]**](InstagramConnection.md) |  | 
 **platforms** | [**List[Platform]**](Platform.md) |  | 
 
 ## Example

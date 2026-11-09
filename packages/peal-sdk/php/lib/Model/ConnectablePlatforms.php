@@ -58,6 +58,7 @@ class ConnectablePlatforms implements ModelInterface, ArrayAccess, \JsonSerializ
      * @var string[]
      */
     protected static $openAPITypes = [
+        'instagram_connections' => '\Peal\Model\InstagramConnection[]',
         'platforms' => '\Peal\Model\Platform[]'
     ];
 
@@ -69,6 +70,7 @@ class ConnectablePlatforms implements ModelInterface, ArrayAccess, \JsonSerializ
      * @psalm-var array<string, string|null>
      */
     protected static $openAPIFormats = [
+        'instagram_connections' => null,
         'platforms' => null
     ];
 
@@ -78,6 +80,7 @@ class ConnectablePlatforms implements ModelInterface, ArrayAccess, \JsonSerializ
      * @var boolean[]
      */
     protected static array $openAPINullables = [
+        'instagram_connections' => false,
         'platforms' => false
     ];
 
@@ -167,6 +170,7 @@ class ConnectablePlatforms implements ModelInterface, ArrayAccess, \JsonSerializ
      * @var string[]
      */
     protected static $attributeMap = [
+        'instagram_connections' => 'instagramConnections',
         'platforms' => 'platforms'
     ];
 
@@ -176,6 +180,7 @@ class ConnectablePlatforms implements ModelInterface, ArrayAccess, \JsonSerializ
      * @var string[]
      */
     protected static $setters = [
+        'instagram_connections' => 'setInstagramConnections',
         'platforms' => 'setPlatforms'
     ];
 
@@ -185,6 +190,7 @@ class ConnectablePlatforms implements ModelInterface, ArrayAccess, \JsonSerializ
      * @var string[]
      */
     protected static $getters = [
+        'instagram_connections' => 'getInstagramConnections',
         'platforms' => 'getPlatforms'
     ];
 
@@ -245,6 +251,7 @@ class ConnectablePlatforms implements ModelInterface, ArrayAccess, \JsonSerializ
      */
     public function __construct(?array $data = null)
     {
+        $this->setIfExists('instagram_connections', $data ?? [], null);
         $this->setIfExists('platforms', $data ?? [], null);
     }
 
@@ -275,6 +282,9 @@ class ConnectablePlatforms implements ModelInterface, ArrayAccess, \JsonSerializ
     {
         $invalidProperties = [];
 
+        if ($this->container['instagram_connections'] === null) {
+            $invalidProperties[] = "'instagram_connections' can't be null";
+        }
         if ($this->container['platforms'] === null) {
             $invalidProperties[] = "'platforms' can't be null";
         }
@@ -292,6 +302,33 @@ class ConnectablePlatforms implements ModelInterface, ArrayAccess, \JsonSerializ
         return count($this->listInvalidProperties()) === 0;
     }
 
+
+    /**
+     * Gets instagram_connections
+     *
+     * @return \Peal\Model\InstagramConnection[]
+     */
+    public function getInstagramConnections()
+    {
+        return $this->container['instagram_connections'];
+    }
+
+    /**
+     * Sets instagram_connections
+     *
+     * @param \Peal\Model\InstagramConnection[] $instagram_connections instagram_connections
+     *
+     * @return self
+     */
+    public function setInstagramConnections($instagram_connections)
+    {
+        if (is_null($instagram_connections)) {
+            throw new \InvalidArgumentException('non-nullable instagram_connections cannot be null');
+        }
+        $this->container['instagram_connections'] = $instagram_connections;
+
+        return $this;
+    }
 
     /**
      * Gets platforms

@@ -76,6 +76,7 @@ export * from './EffectHttpApiErrorBadRequestEncoded.js';
 export * from './EngagementDay.js';
 export * from './FailureReason.js';
 export * from './ForbiddenEncoded.js';
+export * from './InstagramConnection.js';
 export * from './InvalidDateRangeEncoded.js';
 export * from './InvalidTimeRangeEncoded.js';
 export * from './InvalidTimeZoneEncoded.js';

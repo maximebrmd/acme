@@ -97,7 +97,7 @@ namespace Peal.Api
         /// Start connecting an account
         /// </summary>
         /// <remarks>
-        /// Starts connecting an account of the platform: answers with the platform&#39;s sign-in page, where the browser goes next. The connection is tied to the caller and the workspace, and must be completed within 15 minutes. On a server that bills, a workspace whose plan allows no more channels gets PlanLimitReached. Needs channel:connect.
+        /// Starts connecting an account of the platform: answers with the platform&#39;s sign-in page, where the browser goes next. For Instagram, &#x60;connection&#x60; picks Instagram Login (the professional account itself, no Facebook Page needed) or Facebook Login (the accounts linked to the caller&#39;s Pages); without it, the server&#39;s preferred way. The connection is tied to the caller and the workspace, and must be completed within 15 minutes. On a server that bills, a workspace whose plan allows no more channels gets PlanLimitReached. Needs channel:connect.
         /// </remarks>
         /// <exception cref="ApiException">Thrown when fails to make API call</exception>
         /// <param name="workspaceId"></param>
@@ -111,7 +111,7 @@ namespace Peal.Api
         /// Start connecting an account
         /// </summary>
         /// <remarks>
-        /// Starts connecting an account of the platform: answers with the platform&#39;s sign-in page, where the browser goes next. The connection is tied to the caller and the workspace, and must be completed within 15 minutes. On a server that bills, a workspace whose plan allows no more channels gets PlanLimitReached. Needs channel:connect.
+        /// Starts connecting an account of the platform: answers with the platform&#39;s sign-in page, where the browser goes next. For Instagram, &#x60;connection&#x60; picks Instagram Login (the professional account itself, no Facebook Page needed) or Facebook Login (the accounts linked to the caller&#39;s Pages); without it, the server&#39;s preferred way. The connection is tied to the caller and the workspace, and must be completed within 15 minutes. On a server that bills, a workspace whose plan allows no more channels gets PlanLimitReached. Needs channel:connect.
         /// </remarks>
         /// <param name="workspaceId"></param>
         /// <param name="platform"></param>
@@ -1940,7 +1940,7 @@ namespace Peal.Api
         partial void OnErrorChannelsConnect(ref bool suppressDefaultLogLocalVar, Exception exceptionLocalVar, string pathFormatLocalVar, string pathLocalVar, string workspaceId, Platform platform, ConnectChannel connectChannel);
 
         /// <summary>
-        /// Start connecting an account Starts connecting an account of the platform: answers with the platform&#39;s sign-in page, where the browser goes next. The connection is tied to the caller and the workspace, and must be completed within 15 minutes. On a server that bills, a workspace whose plan allows no more channels gets PlanLimitReached. Needs channel:connect.
+        /// Start connecting an account Starts connecting an account of the platform: answers with the platform&#39;s sign-in page, where the browser goes next. For Instagram, &#x60;connection&#x60; picks Instagram Login (the professional account itself, no Facebook Page needed) or Facebook Login (the accounts linked to the caller&#39;s Pages); without it, the server&#39;s preferred way. The connection is tied to the caller and the workspace, and must be completed within 15 minutes. On a server that bills, a workspace whose plan allows no more channels gets PlanLimitReached. Needs channel:connect.
         /// </summary>
         /// <param name="workspaceId"></param>
         /// <param name="platform"></param>
@@ -1960,7 +1960,7 @@ namespace Peal.Api
         }
 
         /// <summary>
-        /// Start connecting an account Starts connecting an account of the platform: answers with the platform&#39;s sign-in page, where the browser goes next. The connection is tied to the caller and the workspace, and must be completed within 15 minutes. On a server that bills, a workspace whose plan allows no more channels gets PlanLimitReached. Needs channel:connect.
+        /// Start connecting an account Starts connecting an account of the platform: answers with the platform&#39;s sign-in page, where the browser goes next. For Instagram, &#x60;connection&#x60; picks Instagram Login (the professional account itself, no Facebook Page needed) or Facebook Login (the accounts linked to the caller&#39;s Pages); without it, the server&#39;s preferred way. The connection is tied to the caller and the workspace, and must be completed within 15 minutes. On a server that bills, a workspace whose plan allows no more channels gets PlanLimitReached. Needs channel:connect.
         /// </summary>
         /// <exception cref="ApiException">Thrown when fails to make API call</exception>
         /// <param name="workspaceId"></param>

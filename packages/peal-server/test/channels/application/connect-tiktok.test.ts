@@ -70,6 +70,7 @@ const connected = Effect.fn("test.connected")(function* connected(
   workspaceId: WorkspaceId
 ) {
   const url = yield* on.connect.start(manager(workspaceId), "tiktok", {
+    connection: Option.none(),
     handle: Option.none(),
     instance: Option.none(),
   });
@@ -141,6 +142,7 @@ layer(AdaptersTest)("connecting a TikTok account", (it) => {
 
       const url = new URL(
         yield* on.connect.start(manager(workspaceId), "tiktok", {
+          connection: Option.none(),
           handle: Option.none(),
           instance: Option.none(),
         })
@@ -234,6 +236,7 @@ layer(AdaptersTest)("connecting a TikTok account", (it) => {
       const workspaceId = yield* freshWorkspace;
 
       const url = yield* on.connect.start(manager(workspaceId), "tiktok", {
+        connection: Option.none(),
         handle: Option.none(),
         instance: Option.none(),
       });
@@ -256,6 +259,7 @@ layer(AdaptersTest)("connecting a TikTok account", (it) => {
       const workspaceId = yield* freshWorkspace;
 
       const url = yield* on.connect.start(manager(workspaceId), "tiktok", {
+        connection: Option.none(),
         handle: Option.none(),
         instance: Option.none(),
       });

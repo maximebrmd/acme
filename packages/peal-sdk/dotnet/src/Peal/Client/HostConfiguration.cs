@@ -119,6 +119,8 @@ namespace Peal.Client
             _jsonOptions.Converters.Add(new FailureReasonJsonConverter());
             _jsonOptions.Converters.Add(new FailureReasonNullableJsonConverter());
             _jsonOptions.Converters.Add(new ForbiddenEncodedJsonConverter());
+            _jsonOptions.Converters.Add(new InstagramConnectionJsonConverter());
+            _jsonOptions.Converters.Add(new InstagramConnectionNullableJsonConverter());
             _jsonOptions.Converters.Add(new InvalidDateRangeEncodedJsonConverter());
             _jsonOptions.Converters.Add(new InvalidTimeRangeEncodedJsonConverter());
             _jsonOptions.Converters.Add(new InvalidTimeZoneEncodedJsonConverter());

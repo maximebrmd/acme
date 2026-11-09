@@ -5,6 +5,7 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **avatar_url** | **string** |  |
+**connection** | [**\Peal\Model\InstagramConnection**](InstagramConnection.md) |  |
 **display_name** | **string** |  |
 **handle** | **string** |  |
 **id** | **string** |  |

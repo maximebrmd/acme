@@ -21,6 +21,7 @@ import json
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
 from peal.models.channel_status import ChannelStatus
+from peal.models.instagram_connection import InstagramConnection
 from peal.models.platform import Platform
 from typing import Optional, Set
 from typing_extensions import Self
@@ -31,13 +32,14 @@ class Channel(BaseModel):
     Channel
     """ # noqa: E501
     avatar_url: Optional[StrictStr] = Field(alias="avatarUrl")
+    connection: Optional[InstagramConnection]
     display_name: Optional[StrictStr] = Field(alias="displayName")
     handle: StrictStr
     id: StrictStr
     platform: Platform
     status: ChannelStatus
     token_expires_at: Optional[StrictStr] = Field(alias="tokenExpiresAt")
-    __properties: ClassVar[List[str]] = ["avatarUrl", "displayName", "handle", "id", "platform", "status", "tokenExpiresAt"]
+    __properties: ClassVar[List[str]] = ["avatarUrl", "connection", "displayName", "handle", "id", "platform", "status", "tokenExpiresAt"]
 
     model_config = ConfigDict(
         validate_by_name=True,
@@ -86,6 +88,11 @@ class Channel(BaseModel):
         if self.avatar_url is None and "avatar_url" in self.model_fields_set:
             _dict['avatarUrl'] = None
 
+        # set to None if connection (nullable) is None
+        # and model_fields_set contains the field
+        if self.connection is None and "connection" in self.model_fields_set:
+            _dict['connection'] = None
+
         # set to None if display_name (nullable) is None
         # and model_fields_set contains the field
         if self.display_name is None and "display_name" in self.model_fields_set:
@@ -109,6 +116,7 @@ class Channel(BaseModel):
 
         _obj = cls.model_validate({
             "avatarUrl": obj.get("avatarUrl"),
+            "connection": obj.get("connection"),
             "displayName": obj.get("displayName"),
             "handle": obj.get("handle"),
             "id": obj.get("id"),

@@ -10,6 +10,7 @@ import { DatabaseError } from "#shared/application/database-error.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 
 import { connectAttempts } from "./schema.ts";
+import { storedConnection } from "./stored-connection.ts";
 
 type Row = typeof connectAttempts.$inferSelect;
 
@@ -29,6 +30,7 @@ const toStored = (row: Row, state: string) =>
   Effect.all({
     attempt: decodeAttempt({
       channelId: Option.fromNullOr(row.channelId),
+      connection: storedConnection(row.platform, row.connection),
       createdAt: DateTime.fromDateUnsafe(row.createdAt),
       expiresAt: DateTime.fromDateUnsafe(row.expiresAt),
       instance: Option.fromNullOr(row.instance),
@@ -65,6 +67,7 @@ export const DrizzleConnectAttempts = Layer.effect(
           Effect.flatMap((stateHash) =>
             db.insert(connectAttempts).values({
               channelId: Option.getOrNull(attempt.channelId),
+              connection: Option.getOrNull(attempt.connection),
               createdAt: date(attempt.createdAt),
               expiresAt: date(attempt.expiresAt),
               instance: Option.getOrNull(attempt.instance),

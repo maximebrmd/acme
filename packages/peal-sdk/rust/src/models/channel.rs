@@ -15,6 +15,8 @@ use serde::{Deserialize, Serialize};
 pub struct Channel {
     #[serde(rename = "avatarUrl", deserialize_with = "Option::deserialize")]
     pub avatar_url: Option<String>,
+    #[serde(rename = "connection", deserialize_with = "Option::deserialize")]
+    pub connection: Option<models::InstagramConnection>,
     #[serde(rename = "displayName", deserialize_with = "Option::deserialize")]
     pub display_name: Option<String>,
     #[serde(rename = "handle")]
@@ -30,9 +32,10 @@ pub struct Channel {
 }
 
 impl Channel {
-    pub fn new(avatar_url: Option<String>, display_name: Option<String>, handle: String, id: String, platform: models::Platform, status: models::ChannelStatus, token_expires_at: Option<String>) -> Channel {
+    pub fn new(avatar_url: Option<String>, connection: Option<models::InstagramConnection>, display_name: Option<String>, handle: String, id: String, platform: models::Platform, status: models::ChannelStatus, token_expires_at: Option<String>) -> Channel {
         Channel {
             avatar_url,
+            connection,
             display_name,
             handle,
             id,

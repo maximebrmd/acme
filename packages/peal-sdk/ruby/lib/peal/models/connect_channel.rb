@@ -15,13 +15,38 @@ require 'time'
 
 module Peal
   class ConnectChannel < ApiModelBase
+    attr_accessor :connection
+
     attr_accessor :handle
 
     attr_accessor :instance
 
+    class EnumAttributeValidator
+      attr_reader :datatype
+      attr_reader :allowable_values
+
+      def initialize(datatype, allowable_values)
+        @allowable_values = allowable_values.map do |value|
+          case datatype.to_s
+          when /Integer/i
+            value.to_i
+          when /Float/i
+            value.to_f
+          else
+            value
+          end
+        end
+      end
+
+      def valid?(value)
+        !value || allowable_values.include?(value)
+      end
+    end
+
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map
       {
+        :'connection' => :'connection',
         :'handle' => :'handle',
         :'instance' => :'instance'
       }
@@ -40,6 +65,7 @@ module Peal
     # Attribute type mapping.
     def self.openapi_types
       {
+        :'connection' => :'InstagramConnection',
         :'handle' => :'String',
         :'instance' => :'String'
       }
@@ -76,6 +102,10 @@ module Peal
         end
         h[k.to_sym] = v
       }
+
+      if attributes.key?(:'connection')
+        self.connection = attributes[:'connection']
+      end
 
       if attributes.key?(:'handle')
         self.handle = attributes[:'handle']
@@ -144,6 +174,7 @@ module Peal
     def ==(o)
       return true if self.equal?(o)
       self.class == o.class &&
+          connection == o.connection &&
           handle == o.handle &&
           instance == o.instance
     end
@@ -157,7 +188,7 @@ module Peal
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [handle, instance].hash
+      [connection, handle, instance].hash
     end
 
     # Builds the object from hash

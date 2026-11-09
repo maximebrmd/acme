@@ -58,6 +58,7 @@ class ConnectChannel implements ModelInterface, ArrayAccess, \JsonSerializable
      * @var string[]
      */
     protected static $openAPITypes = [
+        'connection' => '\Peal\Model\InstagramConnection',
         'handle' => 'string',
         'instance' => 'string'
     ];
@@ -70,6 +71,7 @@ class ConnectChannel implements ModelInterface, ArrayAccess, \JsonSerializable
      * @psalm-var array<string, string|null>
      */
     protected static $openAPIFormats = [
+        'connection' => null,
         'handle' => null,
         'instance' => null
     ];
@@ -80,6 +82,7 @@ class ConnectChannel implements ModelInterface, ArrayAccess, \JsonSerializable
      * @var boolean[]
      */
     protected static array $openAPINullables = [
+        'connection' => false,
         'handle' => false,
         'instance' => false
     ];
@@ -170,6 +173,7 @@ class ConnectChannel implements ModelInterface, ArrayAccess, \JsonSerializable
      * @var string[]
      */
     protected static $attributeMap = [
+        'connection' => 'connection',
         'handle' => 'handle',
         'instance' => 'instance'
     ];
@@ -180,6 +184,7 @@ class ConnectChannel implements ModelInterface, ArrayAccess, \JsonSerializable
      * @var string[]
      */
     protected static $setters = [
+        'connection' => 'setConnection',
         'handle' => 'setHandle',
         'instance' => 'setInstance'
     ];
@@ -190,6 +195,7 @@ class ConnectChannel implements ModelInterface, ArrayAccess, \JsonSerializable
      * @var string[]
      */
     protected static $getters = [
+        'connection' => 'getConnection',
         'handle' => 'getHandle',
         'instance' => 'getInstance'
     ];
@@ -251,6 +257,7 @@ class ConnectChannel implements ModelInterface, ArrayAccess, \JsonSerializable
      */
     public function __construct(?array $data = null)
     {
+        $this->setIfExists('connection', $data ?? [], null);
         $this->setIfExists('handle', $data ?? [], null);
         $this->setIfExists('instance', $data ?? [], null);
     }
@@ -304,6 +311,33 @@ class ConnectChannel implements ModelInterface, ArrayAccess, \JsonSerializable
         return count($this->listInvalidProperties()) === 0;
     }
 
+
+    /**
+     * Gets connection
+     *
+     * @return \Peal\Model\InstagramConnection|null
+     */
+    public function getConnection()
+    {
+        return $this->container['connection'];
+    }
+
+    /**
+     * Sets connection
+     *
+     * @param \Peal\Model\InstagramConnection|null $connection connection
+     *
+     * @return self
+     */
+    public function setConnection($connection)
+    {
+        if (is_null($connection)) {
+            throw new \InvalidArgumentException('non-nullable connection cannot be null');
+        }
+        $this->container['connection'] = $connection;
+
+        return $this;
+    }
 
     /**
      * Gets handle

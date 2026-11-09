@@ -6,6 +6,7 @@
 
 Name | Type
 ------------ | -------------
+`connection` | [InstagramConnection](InstagramConnection.md)
 `handle` | string
 `instance` | string
 
@@ -16,6 +17,7 @@ import type { ConnectChannel } from 'peal-sdk'
 
 // TODO: Update the object below with actual values
 const example = {
+  "connection": null,
   "handle": null,
   "instance": null,
 } satisfies ConnectChannel

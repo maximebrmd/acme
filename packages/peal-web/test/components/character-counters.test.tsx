@@ -10,6 +10,7 @@ import { fitOn } from "#posts/character-count.ts";
 
 const channel = (platform: Channel["platform"]): Channel => ({
   avatarUrl: null,
+  connection: null,
   displayName: null,
   handle: `@peal_${platform}`,
   id: `channel-${platform}`,

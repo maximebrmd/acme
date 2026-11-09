@@ -5,6 +5,7 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **avatar_url** | Option<**String**> |  | 
+**connection** | Option<[**models::InstagramConnection**](InstagramConnection.md)> |  | 
 **display_name** | Option<**String**> |  | 
 **handle** | **String** |  | 
 **id** | **String** |  | 

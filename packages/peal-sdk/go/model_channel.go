@@ -23,6 +23,7 @@ var _ MappedNullable = &Channel{}
 // Channel struct for Channel
 type Channel struct {
 	AvatarUrl NullableString `json:"avatarUrl"`
+	Connection NullableInstagramConnection `json:"connection"`
 	DisplayName NullableString `json:"displayName"`
 	Handle string `json:"handle"`
 	Id string `json:"id"`
@@ -37,9 +38,10 @@ type _Channel Channel
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewChannel(avatarUrl NullableString, displayName NullableString, handle string, id string, platform Platform, status ChannelStatus, tokenExpiresAt NullableString) *Channel {
+func NewChannel(avatarUrl NullableString, connection NullableInstagramConnection, displayName NullableString, handle string, id string, platform Platform, status ChannelStatus, tokenExpiresAt NullableString) *Channel {
 	this := Channel{}
 	this.AvatarUrl = avatarUrl
+	this.Connection = connection
 	this.DisplayName = displayName
 	this.Handle = handle
 	this.Id = id
@@ -81,6 +83,32 @@ func (o *Channel) GetAvatarUrlOk() (*string, bool) {
 // SetAvatarUrl sets field value
 func (o *Channel) SetAvatarUrl(v string) {
 	o.AvatarUrl.Set(&v)
+}
+
+// GetConnection returns the Connection field value
+// If the value is explicit nil, the zero value for InstagramConnection will be returned
+func (o *Channel) GetConnection() InstagramConnection {
+	if o == nil || o.Connection.Get() == nil {
+		var ret InstagramConnection
+		return ret
+	}
+
+	return *o.Connection.Get()
+}
+
+// GetConnectionOk returns a tuple with the Connection field value
+// and a boolean to check if the value has been set.
+// NOTE: If the value is an explicit nil, `nil, true` will be returned
+func (o *Channel) GetConnectionOk() (*InstagramConnection, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return o.Connection.Get(), o.Connection.IsSet()
+}
+
+// SetConnection sets field value
+func (o *Channel) SetConnection(v InstagramConnection) {
+	o.Connection.Set(&v)
 }
 
 // GetDisplayName returns the DisplayName field value
@@ -242,6 +270,7 @@ func (o Channel) MarshalJSON() ([]byte, error) {
 func (o Channel) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
 	toSerialize["avatarUrl"] = o.AvatarUrl.Get()
+	toSerialize["connection"] = o.Connection.Get()
 	toSerialize["displayName"] = o.DisplayName.Get()
 	toSerialize["handle"] = o.Handle
 	toSerialize["id"] = o.Id
@@ -257,6 +286,7 @@ func (o *Channel) UnmarshalJSON(data []byte) (err error) {
 	// that every required field exists as a key in the generic map.
 	requiredProperties := []string{
 		"avatarUrl",
+		"connection",
 		"displayName",
 		"handle",
 		"id",

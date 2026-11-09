@@ -4,6 +4,7 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
+**connection** | Option<[**models::InstagramConnection**](InstagramConnection.md)> |  | [optional]
 **handle** | Option<**String**> |  | [optional]
 **instance** | Option<**String**> |  | [optional]
 

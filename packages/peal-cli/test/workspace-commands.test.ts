@@ -583,6 +583,23 @@ describe("peal billing, members and invitations", () => {
     }).pipe(Effect.scoped, Effect.provide(filesLayer))
   );
 
+  it.effect("lists the channels, with Instagram's way in", () =>
+    Effect.gen(function* lists() {
+      const session = yield* signedIn();
+      const listed = yield* session.printed(["channels", "list", ...inStudio]);
+
+      assert.match(listed, /mastodon\s+@studio@example\.social\s+posts/u);
+      assert.match(
+        listed,
+        /bluesky\s+studio\.example\.test\s+must be reconnected/u
+      );
+      assert.match(
+        listed,
+        /instagram \(Instagram Login\)\s+@studio_example\s+posts/u
+      );
+    }).pipe(Effect.scoped, Effect.provide(filesLayer))
+  );
+
   it.effect("lists the members and the pending invitations", () =>
     Effect.gen(function* lists() {
       const session = yield* signedIn();

@@ -205,6 +205,7 @@ Class | Method | HTTP request | Description
 - [EngagementDay](docs/Model/EngagementDay.md)
 - [FailureReason](docs/Model/FailureReason.md)
 - [ForbiddenEncoded](docs/Model/ForbiddenEncoded.md)
+- [InstagramConnection](docs/Model/InstagramConnection.md)
 - [InvalidDateRangeEncoded](docs/Model/InvalidDateRangeEncoded.md)
 - [InvalidTimeRangeEncoded](docs/Model/InvalidTimeRangeEncoded.md)
 - [InvalidTimeZoneEncoded](docs/Model/InvalidTimeZoneEncoded.md)

@@ -51,6 +51,7 @@ const channelWith = (status: ChannelStatus, token: TokenLifetime): Channel =>
     avatarUrl: Option.some(
       AvatarUrlSchema.make("https://social.example/avatars/peal.png")
     ),
+    connection: Option.none(),
     createdAt: connectedAt,
     displayName: Option.some("Peal Example"),
     handle: "@peal_example",
@@ -67,6 +68,7 @@ const channelWith = (status: ChannelStatus, token: TokenLifetime): Channel =>
 // and one more scope.
 const renamed = (token: TokenLifetime): ConnectedAccount => ({
   avatarUrl: Option.none(),
+  connection: Option.none(),
   displayName: Option.some("Peal Renamed"),
   handle: "@peal_renamed",
   scopes: ["read", "write", "push"],

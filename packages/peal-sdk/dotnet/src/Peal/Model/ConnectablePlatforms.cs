@@ -34,15 +34,23 @@ namespace Peal.Model
         /// <summary>
         /// Initializes a new instance of the <see cref="ConnectablePlatforms" /> class.
         /// </summary>
+        /// <param name="instagramConnections">instagramConnections</param>
         /// <param name="platforms">platforms</param>
         [JsonConstructor]
-        public ConnectablePlatforms(List<Platform> platforms)
+        public ConnectablePlatforms(List<InstagramConnection> instagramConnections, List<Platform> platforms)
         {
+            InstagramConnections = instagramConnections;
             Platforms = platforms;
             OnCreated();
         }
 
         partial void OnCreated();
+
+        /// <summary>
+        /// Gets or Sets InstagramConnections
+        /// </summary>
+        [JsonPropertyName("instagramConnections")]
+        public List<InstagramConnection> InstagramConnections { get; set; }
 
         /// <summary>
         /// Gets or Sets Platforms
@@ -58,6 +66,7 @@ namespace Peal.Model
         {
             StringBuilder sb = new StringBuilder();
             sb.Append("class ConnectablePlatforms {\n");
+            sb.Append("  InstagramConnections: ").Append(InstagramConnections).Append("\n");
             sb.Append("  Platforms: ").Append(Platforms).Append("\n");
             sb.Append("}\n");
             return sb.ToString();
@@ -106,6 +115,7 @@ namespace Peal.Model
 
             JsonTokenType startingTokenType = utf8JsonReader.TokenType;
 
+            Option<List<InstagramConnection>?> instagramConnections = default;
             Option<List<Platform>?> platforms = default;
 
             while (utf8JsonReader.Read())
@@ -123,6 +133,9 @@ namespace Peal.Model
 
                     switch (localVarJsonPropertyName)
                     {
+                        case "instagramConnections":
+                            instagramConnections = new Option<List<InstagramConnection>?>(JsonSerializer.Deserialize<List<InstagramConnection>>(ref utf8JsonReader, jsonSerializerOptions)!);
+                            break;
                         case "platforms":
                             platforms = new Option<List<Platform>?>(JsonSerializer.Deserialize<List<Platform>>(ref utf8JsonReader, jsonSerializerOptions)!);
                             break;
@@ -132,13 +145,19 @@ namespace Peal.Model
                 }
             }
 
+            if (!instagramConnections.IsSet)
+                throw new JsonException("Property is required for class ConnectablePlatforms: instagramConnections.");
+
             if (!platforms.IsSet)
                 throw new JsonException("Property is required for class ConnectablePlatforms: platforms.");
+
+            if (instagramConnections.IsSet && instagramConnections.Value == null)
+                throw new JsonException("Property is not nullable for class ConnectablePlatforms: instagramConnections.");
 
             if (platforms.IsSet && platforms.Value == null)
                 throw new JsonException("Property is not nullable for class ConnectablePlatforms: platforms.");
 
-            return new ConnectablePlatforms(platforms.Value!);
+            return new ConnectablePlatforms(instagramConnections.Value!, platforms.Value!);
         }
 
         /// <summary>
@@ -163,6 +182,8 @@ namespace Peal.Model
         /// <param name="jsonSerializerOptions"></param>
         public void WriteProperties(Utf8JsonWriter writer, ConnectablePlatforms connectablePlatforms, JsonSerializerOptions jsonSerializerOptions)
         {
+            writer.WritePropertyName("instagramConnections");
+            JsonSerializer.Serialize(writer, connectablePlatforms.InstagramConnections, jsonSerializerOptions);
             writer.WritePropertyName("platforms");
             JsonSerializer.Serialize(writer, connectablePlatforms.Platforms, jsonSerializerOptions);
         }

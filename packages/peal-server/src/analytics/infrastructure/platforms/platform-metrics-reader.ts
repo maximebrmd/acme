@@ -1,4 +1,6 @@
-import { Effect, Layer } from "effect";
+import { Effect, Layer, Option } from "effect";
+import type { Redacted } from "effect";
+import { Mac, SecureRandom } from "effect/crypto";
 import { FetchHttpClient } from "effect/http";
 
 import { ChannelUnreadable } from "#analytics/application/channel-unreadable.ts";
@@ -11,10 +13,14 @@ import {
   needsReconnect,
   unusable,
 } from "#analytics/infrastructure/platforms/channel-refusals.ts";
+import { instagramMetrics } from "#analytics/infrastructure/platforms/instagram/instagram-metrics.ts";
 import { mastodonMetrics } from "#analytics/infrastructure/platforms/mastodon/mastodon-metrics.ts";
 import { tiktokMetrics } from "#analytics/infrastructure/platforms/tiktok/tiktok-metrics.ts";
 import { youtubeMetrics } from "#analytics/infrastructure/platforms/youtube/youtube-metrics.ts";
 import { ChannelAccess } from "#channels/application/channel-access.ts";
+import { metaAppConfig } from "#shared/infrastructure/platforms/meta-apps.ts";
+import { metaHosts } from "#shared/infrastructure/platforms/meta-graph.ts";
+import type { MetaHosts } from "#shared/infrastructure/platforms/meta-graph.ts";
 import { OutboundGuard } from "#shared/infrastructure/platforms/outbound-guard.ts";
 import { publicHttpClient } from "#shared/infrastructure/platforms/public-http.ts";
 import { tiktokHosts } from "#shared/infrastructure/platforms/tiktok-api.ts";
@@ -25,6 +31,13 @@ export interface MetricsReaderSettings {
   readonly blueskyAppView: URL;
   /** `https:`; `http:` only for tests against local fakes. */
   readonly mastodonScheme: "http:" | "https:";
+  /**
+   * The secret of Meta's main app, which signs the proof of Instagram
+   * accounts reached through Facebook Login.
+   */
+  readonly metaAppSecret: Option.Option<Redacted.Redacted>;
+  /** Where Meta's services are, for Instagram. */
+  readonly metaHosts: MetaHosts;
   /** TikTok's API. */
   readonly tiktokApi: URL;
   /** The YouTube Data API. */
@@ -36,7 +49,7 @@ export interface MetricsReaderSettings {
  * found through the channels context (ChannelAccess), which says who it
  * posts as, what it allowed, and whether it still works. Every request
  * goes through the public HTTP client, so the outbound guard checks the
- * servers users chose. Needs an HttpClient and the OutboundGuard.
+ * servers users chose. Needs an HttpClient, the OutboundGuard and Mac.
  */
 export const platformMetricsReaderWith = (settings: MetricsReaderSettings) =>
   Layer.effect(
@@ -56,6 +69,12 @@ export const platformMetricsReaderWith = (settings: MetricsReaderSettings) =>
       });
 
       const tiktok = yield* tiktokMetrics({ api: settings.tiktokApi, http });
+
+      const instagram = yield* instagramMetrics({
+        hosts: settings.metaHosts,
+        http,
+        metaAppSecret: settings.metaAppSecret,
+      });
 
       const youtube = yield* youtubeMetrics({
         api: settings.youtubeApi,
@@ -85,6 +104,10 @@ export const platformMetricsReaderWith = (settings: MetricsReaderSettings) =>
           return yield* tiktok.read(account, request.posts);
         }
 
+        if (account.platform === "instagram") {
+          return yield* instagram.read(account, request.posts);
+        }
+
         if (account.platform === "youtube") {
           return yield* youtube.read(account, request.posts);
         }
@@ -97,15 +120,27 @@ export const platformMetricsReaderWith = (settings: MetricsReaderSettings) =>
   );
 
 /**
- * The platforms as production reaches them. Needs ChannelAccess and Dns,
- * which the composition root provides.
+ * The platforms as production reaches them, with Meta's app secret read
+ * when the server starts. Needs ChannelAccess and Dns, which the
+ * composition root provides.
  */
-export const PlatformMetricsReaderLive = platformMetricsReaderWith({
-  blueskyAppView: new URL("https://public.api.bsky.app"),
-  mastodonScheme: "https:",
-  tiktokApi: tiktokHosts.api,
-  youtubeApi: new URL("https://www.googleapis.com"),
-}).pipe(
+export const PlatformMetricsReaderLive = Layer.unwrap(
+  metaAppConfig.pipe(
+    Effect.map((meta) =>
+      platformMetricsReaderWith({
+        blueskyAppView: new URL("https://public.api.bsky.app"),
+        mastodonScheme: "https:",
+        metaAppSecret: meta.pipe(Option.map(({ appSecret }) => appSecret)),
+        metaHosts,
+        tiktokApi: tiktokHosts.api,
+        youtubeApi: new URL("https://www.googleapis.com"),
+      })
+    )
+  )
+).pipe(
   Layer.provide(OutboundGuard.layer),
-  Layer.provide(FetchHttpClient.layer)
+  Layer.provide(FetchHttpClient.layer),
+  Layer.provide(
+    Mac.layerWebCrypto.pipe(Layer.provide(SecureRandom.layerWebCrypto))
+  )
 );

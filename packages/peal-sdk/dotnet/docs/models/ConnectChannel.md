@@ -4,6 +4,7 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
+**Connection** | **InstagramConnection** |  | [optional] 
 **Handle** | **string** |  | [optional] 
 **Instance** | **string** |  | [optional] 
 

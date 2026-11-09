@@ -249,6 +249,7 @@ const notConfigured = Effect.fail(new MetaAppNotConfigured());
 
 const DataDeletionLive = HttpApiBuilder.group(Api, "dataDeletion", (handlers) =>
   handlers.handleAll({
+    deauthorize: () => notConfigured,
     request: () => notConfigured,
     status: () => Effect.fail(new DataDeletionNotFound()),
   })

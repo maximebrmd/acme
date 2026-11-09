@@ -20,6 +20,13 @@ import {
     PlatformToJSON,
     PlatformToJSONTyped,
 } from './Platform.js';
+import type { InstagramConnection } from './InstagramConnection.js';
+import {
+    InstagramConnectionFromJSON,
+    InstagramConnectionFromJSONTyped,
+    InstagramConnectionToJSON,
+    InstagramConnectionToJSONTyped,
+} from './InstagramConnection.js';
 
 /**
  * 
@@ -30,6 +37,10 @@ export interface ConnectablePlatforms {
     /**
      * 
      */
+    instagramConnections: Array<InstagramConnection>;
+    /**
+     * 
+     */
     platforms: Array<Platform>;
 }
 
@@ -37,6 +48,7 @@ export interface ConnectablePlatforms {
  * Check if a given object implements the ConnectablePlatforms interface.
  */
 export function instanceOfConnectablePlatforms(value: object): value is ConnectablePlatforms {
+    if (!('instagramConnections' in value) || value['instagramConnections'] === undefined) return false;
     if (!('platforms' in value) || value['platforms'] === undefined) return false;
     return true;
 }
@@ -51,6 +63,7 @@ export function ConnectablePlatformsFromJSONTyped(json: any, ignoreDiscriminator
     }
     return {
         
+        'instagramConnections': ((json['instagramConnections'] as Array<any>).map(InstagramConnectionFromJSON)),
         'platforms': ((json['platforms'] as Array<any>).map(PlatformFromJSON)),
     };
 }
@@ -66,6 +79,7 @@ export function ConnectablePlatformsToJSONTyped(value?: ConnectablePlatforms | n
 
     return {
         
+        'instagramConnections': ((value['instagramConnections'] as Array<any>).map(InstagramConnectionToJSON)),
         'platforms': ((value['platforms'] as Array<any>).map(PlatformToJSON)),
     };
 }

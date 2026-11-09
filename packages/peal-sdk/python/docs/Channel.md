@@ -6,6 +6,7 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **avatar_url** | **str** |  | 
+**connection** | [**InstagramConnection**](InstagramConnection.md) |  | 
 **display_name** | **str** |  | 
 **handle** | **str** |  | 
 **id** | **str** |  | 

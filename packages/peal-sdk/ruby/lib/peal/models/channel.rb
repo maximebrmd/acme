@@ -17,6 +17,8 @@ module Peal
   class Channel < ApiModelBase
     attr_accessor :avatar_url
 
+    attr_accessor :connection
+
     attr_accessor :display_name
 
     attr_accessor :handle
@@ -55,6 +57,7 @@ module Peal
     def self.attribute_map
       {
         :'avatar_url' => :'avatarUrl',
+        :'connection' => :'connection',
         :'display_name' => :'displayName',
         :'handle' => :'handle',
         :'id' => :'id',
@@ -78,6 +81,7 @@ module Peal
     def self.openapi_types
       {
         :'avatar_url' => :'String',
+        :'connection' => :'InstagramConnection',
         :'display_name' => :'String',
         :'handle' => :'String',
         :'id' => :'String',
@@ -91,6 +95,7 @@ module Peal
     def self.openapi_nullable
       Set.new([
         :'avatar_url',
+        :'connection',
         :'display_name',
         :'token_expires_at'
       ])
@@ -126,6 +131,12 @@ module Peal
         self.avatar_url = attributes[:'avatar_url']
       else
         self.avatar_url = nil
+      end
+
+      if attributes.key?(:'connection')
+        self.connection = attributes[:'connection']
+      else
+        self.connection = nil
       end
 
       if attributes.key?(:'display_name')
@@ -246,6 +257,7 @@ module Peal
       return true if self.equal?(o)
       self.class == o.class &&
           avatar_url == o.avatar_url &&
+          connection == o.connection &&
           display_name == o.display_name &&
           handle == o.handle &&
           id == o.id &&
@@ -263,7 +275,7 @@ module Peal
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [avatar_url, display_name, handle, id, platform, status, token_expires_at].hash
+      [avatar_url, connection, display_name, handle, id, platform, status, token_expires_at].hash
     end
 
     # Builds the object from hash

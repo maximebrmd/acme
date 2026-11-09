@@ -12,7 +12,7 @@ import { ConnectFailed } from "./connect-failed.ts";
 import { Forbidden } from "./forbidden.ts";
 import { PlanLimitReached } from "./plan-limit-reached.ts";
 import { PlatformUnreachable } from "./platform-unreachable.ts";
-import { PlatformSchema } from "./platform.ts";
+import { InstagramConnectionSchema, PlatformSchema } from "./platform.ts";
 import { WorkspaceAccess } from "./workspace-access.ts";
 
 /**
@@ -37,6 +37,9 @@ export type ChannelStatus = typeof ChannelStatusSchema.Type;
 export const ChannelSchema = Schema.Struct({
   // The account's picture, as the platform serves it.
   avatarUrl: Schema.NullOr(Schema.String),
+  // How an Instagram channel reaches its account: through Instagram Login
+  // or through a Facebook Page. Null on other platforms.
+  connection: Schema.NullOr(InstagramConnectionSchema),
   // The account's name, when the platform shows one besides the handle.
   displayName: Schema.NullOr(Schema.String),
   handle: Schema.String,
@@ -53,10 +56,15 @@ export type Channel = typeof ChannelSchema.Type;
 
 /**
  * What starting a connection needs, by platform: Mastodon asks which
- * instance the account lives on, and Bluesky may take the account's handle
- * (or DID, or its server's address) so the sign-in page knows it.
+ * instance the account lives on, Bluesky may take the account's handle
+ * (or DID, or its server's address) so the sign-in page knows it, and
+ * Instagram may take the way in.
  */
 export const ConnectChannelSchema = Schema.Struct({
+  // Instagram only: sign in with Instagram Login or with Facebook Login.
+  // Left out, the server's preferred way, the first of
+  // `instagramConnections` in the connectable platforms.
+  connection: Schema.optionalKey(InstagramConnectionSchema),
   // A Bluesky handle such as "peal.bsky.social", a DID, or a server URL.
   handle: Schema.optionalKey(Schema.String.check(Schema.isMaxLength(256))),
   // A Mastodon instance, as "mastodon.social" or "https://mastodon.social".
@@ -81,6 +89,9 @@ export type Authorization = typeof AuthorizationSchema.Type;
  * registered on LinkedIn, X or Meta, or a Google OAuth client. Clients offer only these.
  */
 export const ConnectablePlatformsSchema = Schema.Struct({
+  // The ways this server connects Instagram accounts, the one it prefers
+  // first; empty when Instagram is not among the platforms.
+  instagramConnections: Schema.Array(InstagramConnectionSchema),
   platforms: Schema.Array(PlatformSchema),
 }).annotate({ identifier: "ConnectablePlatforms" });
 
@@ -187,7 +198,7 @@ export class ChannelsApi extends HttpApiGroup.make("channels")
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Starts connecting an account of the platform: answers with the platform's sign-in page, where the browser goes next. The connection is tied to the caller and the workspace, and must be completed within 15 minutes. On a server that bills, a workspace whose plan allows no more channels gets PlanLimitReached. Needs channel:connect.",
+          "Starts connecting an account of the platform: answers with the platform's sign-in page, where the browser goes next. For Instagram, `connection` picks Instagram Login (the professional account itself, no Facebook Page needed) or Facebook Login (the accounts linked to the caller's Pages); without it, the server's preferred way. The connection is tied to the caller and the workspace, and must be completed within 15 minutes. On a server that bills, a workspace whose plan allows no more channels gets PlanLimitReached. Needs channel:connect.",
         summary: "Start connecting an account",
       })
     ),

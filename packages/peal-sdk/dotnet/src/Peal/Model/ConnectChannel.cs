@@ -34,17 +34,32 @@ namespace Peal.Model
         /// <summary>
         /// Initializes a new instance of the <see cref="ConnectChannel" /> class.
         /// </summary>
+        /// <param name="connection">connection</param>
         /// <param name="handle">handle</param>
         /// <param name="instance">instance</param>
         [JsonConstructor]
-        public ConnectChannel(Option<string?> handle = default, Option<string?> instance = default)
+        public ConnectChannel(Option<InstagramConnection?> connection = default, Option<string?> handle = default, Option<string?> instance = default)
         {
+            ConnectionOption = connection;
             HandleOption = handle;
             InstanceOption = instance;
             OnCreated();
         }
 
         partial void OnCreated();
+
+        /// <summary>
+        /// Used to track the state of Connection
+        /// </summary>
+        [JsonIgnore]
+        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
+        public Option<InstagramConnection?> ConnectionOption { get; private set; }
+
+        /// <summary>
+        /// Gets or Sets Connection
+        /// </summary>
+        [JsonPropertyName("connection")]
+        public InstagramConnection? Connection { get { return this.ConnectionOption.Value; } set { this.ConnectionOption = new(value); } }
 
         /// <summary>
         /// Used to track the state of Handle
@@ -80,6 +95,7 @@ namespace Peal.Model
         {
             StringBuilder sb = new StringBuilder();
             sb.Append("class ConnectChannel {\n");
+            sb.Append("  Connection: ").Append(Connection).Append("\n");
             sb.Append("  Handle: ").Append(Handle).Append("\n");
             sb.Append("  Instance: ").Append(Instance).Append("\n");
             sb.Append("}\n");
@@ -141,6 +157,7 @@ namespace Peal.Model
 
             JsonTokenType startingTokenType = utf8JsonReader.TokenType;
 
+            Option<InstagramConnection?> connection = default;
             Option<string?> handle = default;
             Option<string?> instance = default;
 
@@ -159,6 +176,9 @@ namespace Peal.Model
 
                     switch (localVarJsonPropertyName)
                     {
+                        case "connection":
+                            connection = new Option<InstagramConnection?>(JsonSerializer.Deserialize<InstagramConnection?>(ref utf8JsonReader, jsonSerializerOptions));
+                            break;
                         case "handle":
                             handle = new Option<string?>(utf8JsonReader.GetString()!);
                             break;
@@ -171,13 +191,16 @@ namespace Peal.Model
                 }
             }
 
+            if (connection.IsSet && connection.Value == null)
+                throw new JsonException("Property is not nullable for class ConnectChannel: connection.");
+
             if (handle.IsSet && handle.Value == null)
                 throw new JsonException("Property is not nullable for class ConnectChannel: handle.");
 
             if (instance.IsSet && instance.Value == null)
                 throw new JsonException("Property is not nullable for class ConnectChannel: instance.");
 
-            return new ConnectChannel(handle, instance);
+            return new ConnectChannel(connection, handle, instance);
         }
 
         /// <summary>
@@ -202,12 +225,20 @@ namespace Peal.Model
         /// <param name="jsonSerializerOptions"></param>
         public void WriteProperties(Utf8JsonWriter writer, ConnectChannel connectChannel, JsonSerializerOptions jsonSerializerOptions)
         {
+            if (connectChannel.ConnectionOption.IsSet && connectChannel.Connection == null)
+                throw new JsonException("Cannot write null property ConnectChannel.Connection to non-nullable JSON property 'connection'.");
+
             if (connectChannel.HandleOption.IsSet && connectChannel.Handle == null)
                 throw new JsonException("Cannot write null property ConnectChannel.Handle to non-nullable JSON property 'handle'.");
 
             if (connectChannel.InstanceOption.IsSet && connectChannel.Instance == null)
                 throw new JsonException("Cannot write null property ConnectChannel.Instance to non-nullable JSON property 'instance'.");
 
+            if (connectChannel.ConnectionOption.IsSet)
+            {
+                var connectionRawValue = InstagramConnectionValueConverter.ToJsonValue(connectChannel.Connection!.Value);
+                writer.WriteString("connection", connectionRawValue);
+            }
             if (connectChannel.HandleOption.IsSet)
                 writer.WriteString("handle", connectChannel.Handle);
 

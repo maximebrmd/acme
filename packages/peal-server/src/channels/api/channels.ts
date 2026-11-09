@@ -193,6 +193,11 @@ export const ChannelsHandlers = HttpApiBuilder.group(
 
           const authorizationUrl = yield* connectChannel
             .start(actor, params.platform, {
+              // A way in names Instagram's only, and others have one.
+              connection:
+                params.platform === "instagram"
+                  ? Option.fromUndefinedOr(payload.connection)
+                  : Option.none(),
               handle: Option.fromUndefinedOr(payload.handle),
               instance: Option.fromUndefinedOr(payload.instance),
             })
@@ -233,7 +238,10 @@ export const ChannelsHandlers = HttpApiBuilder.group(
             .connectable(actor)
             .pipe(Effect.catchTag("MissingPermission", forbidden));
 
-          return { platforms: connectable };
+          return {
+            instagramConnections: connectable.instagramConnections,
+            platforms: connectable.platforms,
+          };
         }),
       reconnect: ({ params }) =>
         Effect.gen(function* reconnect() {

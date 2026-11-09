@@ -39,16 +39,18 @@ namespace Peal.Model
         /// <param name="platform">platform</param>
         /// <param name="status">status</param>
         /// <param name="avatarUrl">avatarUrl</param>
+        /// <param name="connection">connection</param>
         /// <param name="displayName">displayName</param>
         /// <param name="tokenExpiresAt">tokenExpiresAt</param>
         [JsonConstructor]
-        public Channel(string handle, string id, Platform platform, ChannelStatus status, string? avatarUrl = default, string? displayName = default, string? tokenExpiresAt = default)
+        public Channel(string handle, string id, Platform platform, ChannelStatus status, string? avatarUrl = default, InstagramConnection? connection = default, string? displayName = default, string? tokenExpiresAt = default)
         {
             Handle = handle;
             Id = id;
             Platform = platform;
             Status = status;
             AvatarUrl = avatarUrl;
+            Connection = connection;
             DisplayName = displayName;
             TokenExpiresAt = tokenExpiresAt;
             OnCreated();
@@ -61,6 +63,12 @@ namespace Peal.Model
         /// </summary>
         [JsonPropertyName("platform")]
         public Platform Platform { get; set; }
+
+        /// <summary>
+        /// Gets or Sets Connection
+        /// </summary>
+        [JsonPropertyName("connection")]
+        public InstagramConnection? Connection { get; set; }
 
         /// <summary>
         /// Gets or Sets Handle
@@ -111,6 +119,7 @@ namespace Peal.Model
             sb.Append("  Platform: ").Append(Platform).Append("\n");
             sb.Append("  Status: ").Append(Status).Append("\n");
             sb.Append("  AvatarUrl: ").Append(AvatarUrl).Append("\n");
+            sb.Append("  Connection: ").Append(Connection).Append("\n");
             sb.Append("  DisplayName: ").Append(DisplayName).Append("\n");
             sb.Append("  TokenExpiresAt: ").Append(TokenExpiresAt).Append("\n");
             sb.Append("}\n");
@@ -165,6 +174,7 @@ namespace Peal.Model
             Option<Platform?> platform = default;
             Option<ChannelStatus?> status = default;
             Option<string?> avatarUrl = default;
+            Option<InstagramConnection?> connection = default;
             Option<string?> displayName = default;
             Option<string?> tokenExpiresAt = default;
 
@@ -198,6 +208,9 @@ namespace Peal.Model
                         case "avatarUrl":
                             avatarUrl = new Option<string?>(utf8JsonReader.GetString());
                             break;
+                        case "connection":
+                            connection = new Option<InstagramConnection?>(JsonSerializer.Deserialize<InstagramConnection?>(ref utf8JsonReader, jsonSerializerOptions));
+                            break;
                         case "displayName":
                             displayName = new Option<string?>(utf8JsonReader.GetString());
                             break;
@@ -225,6 +238,9 @@ namespace Peal.Model
             if (!avatarUrl.IsSet)
                 throw new JsonException("Property is required for class Channel: avatarUrl.");
 
+            if (!connection.IsSet)
+                throw new JsonException("Property is required for class Channel: connection.");
+
             if (!displayName.IsSet)
                 throw new JsonException("Property is required for class Channel: displayName.");
 
@@ -243,7 +259,7 @@ namespace Peal.Model
             if (status.IsSet && status.Value == null)
                 throw new JsonException("Property is not nullable for class Channel: status.");
 
-            return new Channel(handle.Value!, id.Value!, platform.Value!.Value!, status.Value!, avatarUrl.Value!, displayName.Value!, tokenExpiresAt.Value!);
+            return new Channel(handle.Value!, id.Value!, platform.Value!.Value!, status.Value!, avatarUrl.Value!, connection.Value!, displayName.Value!, tokenExpiresAt.Value!);
         }
 
         /// <summary>
@@ -281,6 +297,17 @@ namespace Peal.Model
                 writer.WriteString("avatarUrl", channel.AvatarUrl);
             else
                 writer.WriteNull("avatarUrl");
+
+            if (channel.Connection == null)
+                writer.WriteNull("connection");
+            else
+            {
+                var connectionRawValue = InstagramConnectionValueConverter.ToJsonValue(channel.Connection.Value);
+                if (connectionRawValue != null)
+                    writer.WriteString("connection", connectionRawValue);
+                else
+                    writer.WriteNull("connection");
+            }
 
             if (channel.DisplayName != null)
                 writer.WriteString("displayName", channel.DisplayName);

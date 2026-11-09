@@ -1,6 +1,11 @@
 import { Console, Effect, Match } from "effect";
 import { Argument, Command } from "effect/cli";
-import type { ChannelStatus, TikTokAccount } from "peal-contract";
+import type {
+  Channel,
+  ChannelStatus,
+  InstagramConnection,
+  TikTokAccount,
+} from "peal-contract";
 
 import { explain } from "#explain.ts";
 import { columns, instant } from "#print.ts";
@@ -13,6 +18,17 @@ const statusOf = (status: ChannelStatus): string =>
       refreshNeeded ? "turned off, and must be reconnected" : "turned off",
     refreshNeeded: () => "must be reconnected",
   });
+
+const connections: Readonly<Record<InstagramConnection, string>> = {
+  facebookLogin: "through a Facebook Page",
+  instagramLogin: "Instagram Login",
+};
+
+// The platform, and for Instagram the way in, which reconnecting takes.
+const platformOf = (channel: Channel): string =>
+  channel.connection === null
+    ? channel.platform
+    : `${channel.platform} (${connections[channel.connection]})`;
 
 const list = Command.make(
   "list",
@@ -37,7 +53,7 @@ const list = Command.make(
     for (const line of columns(
       channels.map((channel) => [
         `  ${channel.id}`,
-        channel.platform,
+        platformOf(channel),
         channel.handle,
         statusOf(channel.status),
         channel.tokenExpiresAt === null

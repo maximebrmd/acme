@@ -20,6 +20,13 @@ import {
     PlatformToJSON,
     PlatformToJSONTyped,
 } from './Platform.js';
+import type { InstagramConnection } from './InstagramConnection.js';
+import {
+    InstagramConnectionFromJSON,
+    InstagramConnectionFromJSONTyped,
+    InstagramConnectionToJSON,
+    InstagramConnectionToJSONTyped,
+} from './InstagramConnection.js';
 import type { ChannelStatus } from './ChannelStatus.js';
 import {
     ChannelStatusFromJSON,
@@ -38,6 +45,10 @@ export interface Channel {
      * 
      */
     avatarUrl: string | null;
+    /**
+     * 
+     */
+    connection: InstagramConnection | null;
     /**
      * 
      */
@@ -71,6 +82,7 @@ export interface Channel {
  */
 export function instanceOfChannel(value: object): value is Channel {
     if (!('avatarUrl' in value) || value['avatarUrl'] === undefined) return false;
+    if (!('connection' in value) || value['connection'] === undefined) return false;
     if (!('displayName' in value) || value['displayName'] === undefined) return false;
     if (!('handle' in value) || value['handle'] === undefined) return false;
     if (!('id' in value) || value['id'] === undefined) return false;
@@ -91,6 +103,7 @@ export function ChannelFromJSONTyped(json: any, ignoreDiscriminator: boolean): C
     return {
         
         'avatarUrl': json['avatarUrl'],
+        'connection': InstagramConnectionFromJSON(json['connection']),
         'displayName': json['displayName'],
         'handle': json['handle'],
         'id': json['id'],
@@ -112,6 +125,7 @@ export function ChannelToJSONTyped(value?: Channel | null, ignoreDiscriminator: 
     return {
         
         'avatarUrl': value['avatarUrl'],
+        'connection': InstagramConnectionToJSON(value['connection']),
         'displayName': value['displayName'],
         'handle': value['handle'],
         'id': value['id'],

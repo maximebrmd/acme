@@ -102,6 +102,7 @@ layer(UseCasesTest)("the channels endpoints", (it) => {
       assert.deepStrictEqual(listed, [
         {
           avatarUrl: `https://social.example/avatars/${expiring.id}.png`,
+          connection: null,
           displayName: "Peal Example",
           handle: "@peal_example",
           id: expiring.id,
@@ -111,6 +112,7 @@ layer(UseCasesTest)("the channels endpoints", (it) => {
         },
         {
           avatarUrl: `https://social.example/avatars/${renewing.id}.png`,
+          connection: null,
           displayName: "Peal Example",
           handle: "@peal_example",
           id: renewing.id,
@@ -345,7 +347,10 @@ layer(UseCasesTest)("the channels endpoints", (it) => {
           owner(workspaceId)
         )).channels.platforms({ params });
 
-        assert.deepStrictEqual(listed, { platforms: ["mastodon"] });
+        assert.deepStrictEqual(listed, {
+          instagramConnections: [],
+          platforms: ["mastodon"],
+        });
 
         const refused = yield* Effect.flip(
           (yield* clientAs(viewer(workspaceId))).channels.platforms({ params })

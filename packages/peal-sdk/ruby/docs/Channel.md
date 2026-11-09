@@ -5,6 +5,7 @@
 | Name | Type | Description | Notes |
 | ---- | ---- | ----------- | ----- |
 | **avatar_url** | **String** |  |  |
+| **connection** | [**InstagramConnection**](InstagramConnection.md) |  |  |
 | **display_name** | **String** |  |  |
 | **handle** | **String** |  |  |
 | **id** | **String** |  |  |
@@ -19,6 +20,7 @@ require 'peal'
 
 instance = Peal::Channel.new(
   avatar_url: null,
+  connection: null,
   display_name: null,
   handle: null,
   id: null,

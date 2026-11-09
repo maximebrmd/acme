@@ -1,8 +1,9 @@
 import { Context } from "effect";
-import type { Effect, Redacted } from "effect";
+import type { Effect, Option, Redacted } from "effect";
 
 import type { BadRequest } from "#shared/domain/bad-request.ts";
 import type { ChannelId } from "#shared/domain/ids.ts";
+import type { InstagramConnection } from "#shared/domain/instagram-connection.ts";
 import type { PlatformUnavailable } from "#shared/domain/platform-unavailable.ts";
 import type { Platform } from "#shared/domain/platform.ts";
 import type { TokenExpired } from "#shared/domain/token-expired.ts";
@@ -12,6 +13,13 @@ import type { TokenRejected } from "#shared/domain/token-rejected.ts";
 export interface PublishingAccount {
   /** The account's id on the platform, as the channels context stores it. */
   readonly accountId: string;
+  /**
+   * How an Instagram channel reaches its account: through Instagram Login,
+   * its calls go to `graph.instagram.com` with its own token; through
+   * Facebook Login, to `graph.facebook.com` with its Page's. None on other
+   * platforms.
+   */
+  readonly connection: Option.Option<InstagramConnection>;
   readonly platform: Platform;
 }
 

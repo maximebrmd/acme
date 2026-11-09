@@ -9,6 +9,7 @@ Name | Type | Description | Notes
 **Platform** | **Platform** |  | 
 **Status** | [**ChannelStatus**](ChannelStatus.md) |  | 
 **AvatarUrl** | **string** |  | 
+**Connection** | **InstagramConnection** |  | 
 **DisplayName** | **string** |  | 
 **TokenExpiresAt** | **string** |  | 
 

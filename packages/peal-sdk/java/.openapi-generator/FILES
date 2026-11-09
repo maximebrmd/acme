@@ -81,6 +81,7 @@ docs/EffectHttpApiErrorBadRequestEncoded.md
 docs/EngagementDay.md
 docs/FailureReason.md
 docs/ForbiddenEncoded.md
+docs/InstagramConnection.md
 docs/InvalidDateRangeEncoded.md
 docs/InvalidTimeRangeEncoded.md
 docs/InvalidTimeZoneEncoded.md
@@ -325,6 +326,7 @@ src/main/java/social/peal/model/EffectHttpApiErrorBadRequestEncoded.java
 src/main/java/social/peal/model/EngagementDay.java
 src/main/java/social/peal/model/FailureReason.java
 src/main/java/social/peal/model/ForbiddenEncoded.java
+src/main/java/social/peal/model/InstagramConnection.java
 src/main/java/social/peal/model/InvalidDateRangeEncoded.java
 src/main/java/social/peal/model/InvalidTimeRangeEncoded.java
 src/main/java/social/peal/model/InvalidTimeZoneEncoded.java

@@ -4,6 +4,7 @@ import type { Redacted } from "effect";
 import { MediaForPublishing } from "#publishing/application/media-for-publishing.ts";
 import type { PublishableMedia } from "#publishing/application/media-for-publishing.ts";
 import type { OutgoingPost } from "#publishing/application/platform-client.ts";
+import type { PublishingAccount } from "#publishing/application/platform-credentials.ts";
 import {
   defaultStepTiming,
   sequenced,
@@ -18,7 +19,10 @@ import { MediaRejected } from "#shared/domain/media-rejected.ts";
 import { PlatformPostIdSchema } from "#shared/domain/publish-result.ts";
 import type { Published } from "#shared/domain/publish-result.ts";
 import { RateLimited } from "#shared/domain/rate-limited.ts";
-import { graphUrl } from "#shared/infrastructure/platforms/meta-graph.ts";
+import {
+  graphUrl,
+  instagramUrl,
+} from "#shared/infrastructure/platforms/meta-graph.ts";
 import type { MetaHosts } from "#shared/infrastructure/platforms/meta-graph.ts";
 
 import {
@@ -43,7 +47,8 @@ import {
 import type { GraphAuth, MetaHttp } from "./graph-calls.ts";
 
 // From Instagram's "Content Publishing" page and the IG User Media
-// reference: a container per post (an image, a reel, or a carousel of 2 to
+// reference, the same with Instagram Login (on graph.instagram.com) as with
+// Facebook Login (on graph.facebook.com): a container per post (an image, a reel, or a carousel of 2 to
 // 20 items made first), whose `status_code` runs IN_PROGRESS, FINISHED,
 // PUBLISHED, or ERROR, or EXPIRED after a day unpublished; `status` says
 // more about an error.
@@ -115,9 +120,16 @@ const listedOf = (
   ),
 });
 
+// Instagram Login's channels call Instagram's host with their own token,
+// another app's than the one whose secret signs Facebook Login's calls.
+const viaInstagramLogin = (account: PublishingAccount) =>
+  Option.contains(account.connection, "instagramLogin");
+
 /**
- * Publishes on an Instagram professional account, with the token of the
- * Page it is linked to: makes a container of the post (an image, a reel, or
+ * Publishes on an Instagram professional account, through Instagram Login
+ * with the account's own token on `graph.instagram.com`, or through
+ * Facebook Login with the token of the Page it is linked to on
+ * `graph.facebook.com`, as the channel was connected: makes a container of the post (an image, a reel, or
  * a carousel whose items come first), with the media fetched by Meta from
  * their public URLs, waits until Meta has processed them, then publishes
  * the container. Before making any, it checks the account's daily
@@ -136,10 +148,15 @@ export const instagramClient = Effect.fn("InstagramClient.make")(
 
     const { commit: commitCall, step } = yield* graphCalls({
       appSecret: options.appSecret,
+      proves: (on) => !viaInstagramLogin(on),
     });
 
-    const account = (post: OutgoingPost, path: string) =>
-      graphUrl(hosts, `/${encodeURIComponent(post.accountId)}${path}`);
+    // A path of the API the account is reached through.
+    const apiUrl = (on: PublishingAccount, path: string) =>
+      viaInstagramLogin(on) ? instagramUrl(hosts, path) : graphUrl(hosts, path);
+
+    const account = (on: PublishingAccount, post: OutgoingPost, path: string) =>
+      apiUrl(on, `/${encodeURIComponent(post.accountId)}${path}`);
 
     const quotaCheck = Effect.fn("InstagramClient.quota")(function* quotaCheck(
       post: OutgoingPost
@@ -148,8 +165,8 @@ export const instagramClient = Effect.fn("InstagramClient.make")(
         post,
         api,
         "read",
-        (auth) =>
-          query(account(post, "/content_publishing_limit"), {
+        (auth, on) =>
+          query(account(on, post, "/content_publishing_limit"), {
             ...auth,
             fields: "quota_usage,config",
           }),
@@ -214,7 +231,8 @@ export const instagramClient = Effect.fn("InstagramClient.make")(
         post,
         api,
         "media",
-        (auth) => formPost(account(post, "/media"), { ...params, ...auth }),
+        (auth, on) =>
+          formPost(account(on, post, "/media"), { ...params, ...auth }),
         IdSchema
       ).pipe(Effect.map(({ id }) => id));
 
@@ -280,8 +298,8 @@ export const instagramClient = Effect.fn("InstagramClient.make")(
         post,
         api,
         "read",
-        (auth) =>
-          query(graphUrl(hosts, `/${encodeURIComponent(containerId)}`), {
+        (auth, on) =>
+          query(apiUrl(on, `/${encodeURIComponent(containerId)}`), {
             ...auth,
             fields: "status_code,status",
           }),
@@ -329,10 +347,10 @@ export const instagramClient = Effect.fn("InstagramClient.make")(
       return processing({ ...prepared, post: Option.some(id) });
     });
 
-    const permalinkOf = (id: string, auth: GraphAuth) =>
+    const permalinkOf = (id: string, auth: GraphAuth, on: PublishingAccount) =>
       readWith(
         api,
-        query(graphUrl(hosts, `/${encodeURIComponent(id)}`), {
+        query(apiUrl(on, `/${encodeURIComponent(id)}`), {
           ...auth,
           fields: "permalink",
         }),
@@ -354,13 +372,13 @@ export const instagramClient = Effect.fn("InstagramClient.make")(
       return yield* commitCall(
         post,
         api,
-        (auth) =>
-          formPost(account(post, "/media_publish"), {
+        (auth, on) =>
+          formPost(account(on, post, "/media_publish"), {
             ...auth,
             creation_id: creationId,
           }),
         IdSchema,
-        ({ id }, auth) => permalinkOf(id, auth),
+        ({ id }, auth, on) => permalinkOf(id, auth, on),
         ({ id }): Published => ({
           _tag: "published",
           platformPostId: PlatformPostIdSchema.make(id),
@@ -374,8 +392,8 @@ export const instagramClient = Effect.fn("InstagramClient.make")(
         post,
         api,
         "read",
-        (auth) =>
-          query(account(post, "/media"), {
+        (auth, on) =>
+          query(account(on, post, "/media"), {
             ...auth,
             fields: "id,caption,permalink,timestamp",
             limit: "25",

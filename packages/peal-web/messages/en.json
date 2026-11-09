@@ -244,6 +244,7 @@
     "empty": "No account is connected yet.",
     "listTitle": "Connected accounts",
     "platform": "{platform, select, bluesky {Bluesky} facebook {Facebook} instagram {Instagram} linkedin {LinkedIn} mastodon {Mastodon} pinterest {Pinterest} threads {Threads} tiktok {TikTok} x {X} youtube {YouTube} other {{platform}}}",
+    "platformVia": "{platform, select, instagram {Instagram} other {{platform}}} ({connection, select, instagramLogin {Instagram Login} facebookLogin {through a Facebook Page} other {{connection}}})",
     "status": {
       "active": "Connected",
       "refreshNeeded": "Reconnect needed",
@@ -288,7 +289,7 @@
       "forbidden": "You may not do this in this workspace.",
       "notFound": "This channel is no longer connected.",
       "unknown": "Something went wrong. Try again.",
-      "noAccounts": "The sign-in reached no account to connect: on Facebook and Instagram, you manage no Page, or no Instagram professional account is linked to your Pages; on YouTube, the Google account you chose has no channel."
+      "noAccounts": "The sign-in reached no account to connect: on Facebook, and on Instagram through a Facebook Page, you manage no Page, or no Instagram professional account is linked to your Pages (connect it with Instagram instead); on YouTube, the Google account you chose has no channel."
     }
   },
   "PlatformConnect": {
@@ -340,12 +341,18 @@
     "retry": "Choose again, or sign in with Facebook again for a new list.",
     "startOver": "Sign in with Facebook again"
   },
+  "InstagramChannels": {
+    "title": "Instagram",
+    "description": "{connection, select, instagramLogin {Sign in to your professional account (Business or Creator) on Instagram: no Facebook Page needed. Peal renews its access every 60 days by itself.} facebookLogin {Or, for accounts run from a Facebook Page: sign in with Facebook, then choose the accounts linked to your Pages.} other {Sign in on Instagram.}}",
+    "connect": "{connection, select, instagramLogin {Connect with Instagram} facebookLogin {Connect through a Facebook Page} other {Connect Instagram}}",
+    "connecting": "Opening…"
+  },
   "DataDeletionPage": {
     "title": "Data deletion request",
     "description": "Where a request to delete the data Peal holds about you stands.",
     "code": "Confirmation code: {code}",
-    "done": "Done: Peal deleted the accounts it had connected through {app, select, facebook {Facebook} threads {Threads} other {{app}}}, and their tokens.",
-    "completed": "Done on {date, date, long}: Peal deleted {count, plural, =0 {no connected account, as it had none} one {# connected account} other {# connected accounts}} of yours from {app, select, facebook {Facebook} threads {Threads} other {{app}}}, with {count, plural, =0 {nothing else} one {its tokens} other {their tokens}}.",
+    "done": "Done: Peal deleted the accounts it had connected through {app, select, facebook {Facebook} instagram {Instagram} threads {Threads} other {{app}}}, and their tokens.",
+    "completed": "Done on {date, date, long}: Peal deleted {count, plural, =0 {no connected account, as it had none} one {# connected account} other {# connected accounts}} of yours from {app, select, facebook {Facebook} instagram {Instagram} threads {Threads} other {{app}}}, with {count, plural, =0 {nothing else} one {its tokens} other {their tokens}}.",
     "notFound": "No request has this confirmation code.",
     "unavailable": "The status could not be read. Try again later."
   },

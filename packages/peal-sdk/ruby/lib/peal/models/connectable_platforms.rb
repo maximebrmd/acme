@@ -15,11 +15,14 @@ require 'time'
 
 module Peal
   class ConnectablePlatforms < ApiModelBase
+    attr_accessor :instagram_connections
+
     attr_accessor :platforms
 
     # Attribute mapping from ruby-style variable name to JSON key.
     def self.attribute_map
       {
+        :'instagram_connections' => :'instagramConnections',
         :'platforms' => :'platforms'
       }
     end
@@ -37,6 +40,7 @@ module Peal
     # Attribute type mapping.
     def self.openapi_types
       {
+        :'instagram_connections' => :'Array<InstagramConnection>',
         :'platforms' => :'Array<Platform>'
       }
     end
@@ -73,6 +77,14 @@ module Peal
         h[k.to_sym] = v
       }
 
+      if attributes.key?(:'instagram_connections')
+        if (value = attributes[:'instagram_connections']).is_a?(Array)
+          self.instagram_connections = value
+        end
+      else
+        self.instagram_connections = nil
+      end
+
       if attributes.key?(:'platforms')
         if (value = attributes[:'platforms']).is_a?(Array)
           self.platforms = value
@@ -87,6 +99,10 @@ module Peal
     def list_invalid_properties
       warn '[DEPRECATED] the `list_invalid_properties` method is obsolete'
       invalid_properties = Array.new
+      if @instagram_connections.nil?
+        invalid_properties.push('invalid value for "instagram_connections", instagram_connections cannot be nil.')
+      end
+
       if @platforms.nil?
         invalid_properties.push('invalid value for "platforms", platforms cannot be nil.')
       end
@@ -98,8 +114,19 @@ module Peal
     # @return true if the model is valid
     def valid?
       warn '[DEPRECATED] the `valid?` method is obsolete'
+      return false if @instagram_connections.nil?
       return false if @platforms.nil?
       true
+    end
+
+    # Custom attribute writer method with validation
+    # @param [Object] instagram_connections Value to be assigned
+    def instagram_connections=(instagram_connections)
+      if instagram_connections.nil?
+        fail ArgumentError, 'instagram_connections cannot be nil'
+      end
+
+      @instagram_connections = instagram_connections
     end
 
     # Custom attribute writer method with validation
@@ -117,6 +144,7 @@ module Peal
     def ==(o)
       return true if self.equal?(o)
       self.class == o.class &&
+          instagram_connections == o.instagram_connections &&
           platforms == o.platforms
     end
 
@@ -129,7 +157,7 @@ module Peal
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [platforms].hash
+      [instagram_connections, platforms].hash
     end
 
     # Builds the object from hash

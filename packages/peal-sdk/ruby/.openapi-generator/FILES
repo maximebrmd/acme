@@ -84,6 +84,7 @@ docs/EffectHttpApiErrorBadRequestEncoded.md
 docs/EngagementDay.md
 docs/FailureReason.md
 docs/ForbiddenEncoded.md
+docs/InstagramConnection.md
 docs/InvalidDateRangeEncoded.md
 docs/InvalidTimeRangeEncoded.md
 docs/InvalidTimeZoneEncoded.md
@@ -313,6 +314,7 @@ lib/peal/models/effect_http_api_error_bad_request_encoded.rb
 lib/peal/models/engagement_day.rb
 lib/peal/models/failure_reason.rb
 lib/peal/models/forbidden_encoded.rb
+lib/peal/models/instagram_connection.rb
 lib/peal/models/invalid_date_range_encoded.rb
 lib/peal/models/invalid_time_range_encoded.rb
 lib/peal/models/invalid_time_zone_encoded.rb

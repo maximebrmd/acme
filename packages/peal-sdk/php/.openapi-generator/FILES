@@ -92,6 +92,7 @@ docs/Model/EffectHttpApiErrorBadRequestEncoded.md
 docs/Model/EngagementDay.md
 docs/Model/FailureReason.md
 docs/Model/ForbiddenEncoded.md
+docs/Model/InstagramConnection.md
 docs/Model/InvalidDateRangeEncoded.md
 docs/Model/InvalidTimeRangeEncoded.md
 docs/Model/InvalidTimeZoneEncoded.md
@@ -311,6 +312,7 @@ lib/Model/EffectHttpApiErrorBadRequestEncoded.php
 lib/Model/EngagementDay.php
 lib/Model/FailureReason.php
 lib/Model/ForbiddenEncoded.php
+lib/Model/InstagramConnection.php
 lib/Model/InvalidDateRangeEncoded.php
 lib/Model/InvalidTimeRangeEncoded.php
 lib/Model/InvalidTimeZoneEncoded.php

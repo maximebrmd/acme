@@ -43,7 +43,11 @@ const manager = (workspaceId: WorkspaceId) =>
     "channel:disconnect",
   ]);
 
-const noHandle = { handle: Option.none(), instance: Option.none() };
+const noHandle = {
+  connection: Option.none(),
+  handle: Option.none(),
+  instance: Option.none(),
+};
 
 const callbackOf = (back: {
   readonly code?: string;

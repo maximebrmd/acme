@@ -59,6 +59,7 @@ const attached: readonly AttachedMedia[] = [
 
 const channel = (platform: Platform): Channel => ({
   avatarUrl: null,
+  connection: null,
   displayName: null,
   handle: `@peal_${platform}`,
   id: `channel-${platform}`,

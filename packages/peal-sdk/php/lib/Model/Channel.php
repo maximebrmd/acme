@@ -59,6 +59,7 @@ class Channel implements ModelInterface, ArrayAccess, \JsonSerializable
      */
     protected static $openAPITypes = [
         'avatar_url' => 'string',
+        'connection' => '\Peal\Model\InstagramConnection',
         'display_name' => 'string',
         'handle' => 'string',
         'id' => 'string',
@@ -76,6 +77,7 @@ class Channel implements ModelInterface, ArrayAccess, \JsonSerializable
      */
     protected static $openAPIFormats = [
         'avatar_url' => null,
+        'connection' => null,
         'display_name' => null,
         'handle' => null,
         'id' => null,
@@ -91,6 +93,7 @@ class Channel implements ModelInterface, ArrayAccess, \JsonSerializable
      */
     protected static array $openAPINullables = [
         'avatar_url' => true,
+        'connection' => true,
         'display_name' => true,
         'handle' => false,
         'id' => false,
@@ -186,6 +189,7 @@ class Channel implements ModelInterface, ArrayAccess, \JsonSerializable
      */
     protected static $attributeMap = [
         'avatar_url' => 'avatarUrl',
+        'connection' => 'connection',
         'display_name' => 'displayName',
         'handle' => 'handle',
         'id' => 'id',
@@ -201,6 +205,7 @@ class Channel implements ModelInterface, ArrayAccess, \JsonSerializable
      */
     protected static $setters = [
         'avatar_url' => 'setAvatarUrl',
+        'connection' => 'setConnection',
         'display_name' => 'setDisplayName',
         'handle' => 'setHandle',
         'id' => 'setId',
@@ -216,6 +221,7 @@ class Channel implements ModelInterface, ArrayAccess, \JsonSerializable
      */
     protected static $getters = [
         'avatar_url' => 'getAvatarUrl',
+        'connection' => 'getConnection',
         'display_name' => 'getDisplayName',
         'handle' => 'getHandle',
         'id' => 'getId',
@@ -282,6 +288,7 @@ class Channel implements ModelInterface, ArrayAccess, \JsonSerializable
     public function __construct(?array $data = null)
     {
         $this->setIfExists('avatar_url', $data ?? [], null);
+        $this->setIfExists('connection', $data ?? [], null);
         $this->setIfExists('display_name', $data ?? [], null);
         $this->setIfExists('handle', $data ?? [], null);
         $this->setIfExists('id', $data ?? [], null);
@@ -319,6 +326,9 @@ class Channel implements ModelInterface, ArrayAccess, \JsonSerializable
 
         if ($this->container['avatar_url'] === null && !$this->isNullableSetToNull('avatar_url')) {
             $invalidProperties[] = "'avatar_url' is required";
+        }
+        if ($this->container['connection'] === null && !$this->isNullableSetToNull('connection')) {
+            $invalidProperties[] = "'connection' is required";
         }
         if ($this->container['display_name'] === null && !$this->isNullableSetToNull('display_name')) {
             $invalidProperties[] = "'display_name' is required";
@@ -383,6 +393,40 @@ class Channel implements ModelInterface, ArrayAccess, \JsonSerializable
             }
         }
         $this->container['avatar_url'] = $avatar_url;
+
+        return $this;
+    }
+
+    /**
+     * Gets connection
+     *
+     * @return \Peal\Model\InstagramConnection|null
+     */
+    public function getConnection()
+    {
+        return $this->container['connection'];
+    }
+
+    /**
+     * Sets connection
+     *
+     * @param \Peal\Model\InstagramConnection|null $connection connection
+     *
+     * @return self
+     */
+    public function setConnection($connection)
+    {
+        if (is_null($connection)) {
+            array_push($this->openAPINullablesSetToNull, 'connection');
+        } else {
+            $nullablesSetToNull = $this->getOpenAPINullablesSetToNull();
+            $index = array_search('connection', $nullablesSetToNull);
+            if ($index !== FALSE) {
+                unset($nullablesSetToNull[$index]);
+                $this->setOpenAPINullablesSetToNull($nullablesSetToNull);
+            }
+        }
+        $this->container['connection'] = $connection;
 
         return $this;
     }

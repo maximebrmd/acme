@@ -8,6 +8,7 @@
 | Name | Type | Description | Notes |
 |------------ | ------------- | ------------- | -------------|
 |**avatarUrl** | **String** |  |  |
+|**connection** | **InstagramConnection** |  |  |
 |**displayName** | **String** |  |  |
 |**handle** | **String** |  |  |
 |**id** | **String** |  |  |

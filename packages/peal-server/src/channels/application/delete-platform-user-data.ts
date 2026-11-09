@@ -1,9 +1,6 @@
 import { Context, DateTime, Effect, Layer, Option, Schema } from "effect";
 
-import {
-  DataDeletion,
-  platformsSignedInWith,
-} from "#channels/domain/data-deletion.ts";
+import { DataDeletion } from "#channels/domain/data-deletion.ts";
 import type { MetaAppKind } from "#channels/domain/data-deletion.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import { Ids } from "#shared/application/ids.ts";
@@ -24,7 +21,7 @@ export interface DeletionReceipt {
 
 /**
  * Meta's data deletion callbacks: when one of its users asks, through
- * Facebook or Threads, for the data Peal holds about them to be deleted,
+ * Facebook, Instagram or Threads, for the data Peal holds about them to be deleted,
  * Meta sends a request signed with the app's secret. Peal deletes the
  * channels that user connected, in every workspace, with their tokens, and
  * the accounts their sign-in still offers a member to choose from, and
@@ -67,7 +64,6 @@ export class DeletePlatformUserData extends Context.Service<
             app,
             code,
             now: yield* DateTime.now,
-            platforms: platformsSignedInWith(app),
             signedRequest,
             userId,
           });

@@ -1,5 +1,5 @@
 import { Context } from "effect";
-import type { Effect } from "effect";
+import type { DateTime, Effect, Option } from "effect";
 
 import type { MetaAppKind } from "#channels/domain/data-deletion.ts";
 
@@ -8,6 +8,8 @@ import type { MetaAppNotConfigured } from "./meta-app-not-configured.ts";
 
 /** What a signed request Meta sent says, once its signature checks out. */
 export interface SignedRequest {
+  /** When Meta made the request, if it said. */
+  readonly issuedAt: Option.Option<DateTime.Utc>;
   /** The app-scoped id of the user the request is about. */
   readonly userId: string;
 }

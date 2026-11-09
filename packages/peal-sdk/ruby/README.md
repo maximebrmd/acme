@@ -217,6 +217,7 @@ Class | Method | HTTP request | Description
  - [Peal::EngagementDay](docs/EngagementDay.md)
  - [Peal::FailureReason](docs/FailureReason.md)
  - [Peal::ForbiddenEncoded](docs/ForbiddenEncoded.md)
+ - [Peal::InstagramConnection](docs/InstagramConnection.md)
  - [Peal::InvalidDateRangeEncoded](docs/InvalidDateRangeEncoded.md)
  - [Peal::InvalidTimeRangeEncoded](docs/InvalidTimeRangeEncoded.md)
  - [Peal::InvalidTimeZoneEncoded](docs/InvalidTimeZoneEncoded.md)

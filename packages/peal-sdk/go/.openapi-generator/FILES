@@ -99,6 +99,7 @@ docs/EffectHttpApiErrorBadRequestEncoded.md
 docs/EngagementDay.md
 docs/FailureReason.md
 docs/ForbiddenEncoded.md
+docs/InstagramConnection.md
 docs/InvalidDateRangeEncoded.md
 docs/InvalidTimeRangeEncoded.md
 docs/InvalidTimeZoneEncoded.md
@@ -311,6 +312,7 @@ model_effect_http_api_error_bad_request_encoded.go
 model_engagement_day.go
 model_failure_reason.go
 model_forbidden_encoded.go
+model_instagram_connection.go
 model_invalid_date_range_encoded.go
 model_invalid_time_range_encoded.go
 model_invalid_time_zone_encoded.go

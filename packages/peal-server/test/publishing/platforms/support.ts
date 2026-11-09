@@ -17,7 +17,10 @@ import { MediaForPublishing } from "#publishing/application/media-for-publishing
 import type { PublishableMedia } from "#publishing/application/media-for-publishing.ts";
 import type { OutgoingPost } from "#publishing/application/platform-client.ts";
 import { PlatformCredentials } from "#publishing/application/platform-credentials.ts";
-import type { CredentialFailure } from "#publishing/application/platform-credentials.ts";
+import type {
+  CredentialFailure,
+  PublishingAccount,
+} from "#publishing/application/platform-credentials.ts";
 import { PlatformQuota } from "#publishing/application/platform-quota.ts";
 import type { PublicationProgress } from "#publishing/application/publication-progress.ts";
 import type { StepTiming } from "#publishing/application/publication-steps.ts";
@@ -40,6 +43,8 @@ import {
   WorkspaceIdSchema,
 } from "#shared/domain/ids.ts";
 import type { ChannelId, MediaAssetId } from "#shared/domain/ids.ts";
+import { connectionOf } from "#shared/domain/instagram-connection.ts";
+import type { InstagramConnection } from "#shared/domain/instagram-connection.ts";
 import { MediaRejected } from "#shared/domain/media-rejected.ts";
 import type { Platform } from "#shared/domain/platform.ts";
 import { TokenExpired } from "#shared/domain/token-expired.ts";
@@ -85,11 +90,25 @@ export class CredentialLog extends Context.Service<
  * refused again, or no token left to renew to, is TokenExpired.
  */
 export const credentialsOf = (
-  account: { readonly accountId: string; readonly platform: Platform },
+  given: {
+    readonly accountId: string;
+    readonly connection?: Option.Option<InstagramConnection>;
+    readonly platform: Platform;
+  },
   tokens: readonly string[]
 ) =>
   Layer.effectContext(
     Effect.gen(function* building() {
+      // An Instagram account comes through Facebook Login unless said.
+      const account: PublishingAccount = {
+        accountId: given.accountId,
+        connection: connectionOf(
+          given.platform,
+          given.connection ?? Option.none()
+        ),
+        platform: given.platform,
+      };
+
       const current = yield* Ref.make(0);
       const handed = yield* Ref.make<readonly string[]>([]);
       const renewals = yield* Ref.make(0);
@@ -370,10 +389,16 @@ export const blueskySession = Effect.fn("test.blueskySession")(
   }
 );
 
-/** Every Meta service at the fake's address. */
-export const metaHostsAt = (url: string): MetaHosts => ({
+/**
+ * Every Meta service at the fake's address, but Instagram Login's Graph
+ * host, which may be another fake's.
+ */
+export const metaHostsAt = (url: string, instagramUrl = url): MetaHosts => ({
   facebookDialog: new URL(url),
   facebookGraph: new URL(url),
+  instagramApi: new URL(instagramUrl),
+  instagramAuthorize: new URL(instagramUrl),
+  instagramGraph: new URL(instagramUrl),
   threadsAuthorize: new URL(url),
   threadsGraph: new URL(url),
 });
@@ -394,11 +419,13 @@ export const metaClientWith = Effect.fn("test.metaClient")(
     readonly appSecret: string;
     readonly credentials: Layer.Layer<CredentialLog | PlatformCredentials>;
     readonly files?: readonly TestFile[];
+    /** Instagram Login's Graph host, when it is not the fake at `url`. */
+    readonly instagramUrl?: string;
     readonly platform: MetaPlatform;
     readonly url: string;
   }) {
     const api = yield* httpClient;
-    const hosts = metaHostsAt(options.url);
+    const hosts = metaHostsAt(options.url, options.instagramUrl);
     const appSecret = Option.some(Redacted.make(options.appSecret));
 
     const services = Layer.mergeAll(

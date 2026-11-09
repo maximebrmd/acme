@@ -5,6 +5,7 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
+**connection** | [**InstagramConnection**](InstagramConnection.md) |  | [optional] 
 **handle** | **str** |  | [optional] 
 **instance** | **str** |  | [optional] 
 

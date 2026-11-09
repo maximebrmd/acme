@@ -90,6 +90,7 @@ from peal.models.effect_http_api_error_bad_request_encoded import EffectHttpApiE
 from peal.models.engagement_day import EngagementDay
 from peal.models.failure_reason import FailureReason
 from peal.models.forbidden_encoded import ForbiddenEncoded
+from peal.models.instagram_connection import InstagramConnection
 from peal.models.invalid_date_range_encoded import InvalidDateRangeEncoded
 from peal.models.invalid_time_range_encoded import InvalidTimeRangeEncoded
 from peal.models.invalid_time_zone_encoded import InvalidTimeZoneEncoded

@@ -61,6 +61,15 @@ export const ChannelRow = ({
   const name = channel.displayName ?? channel.handle;
   const needsReconnect = channel.status._tag === "refreshNeeded";
 
+  // Instagram's way in tells which sign-in reconnecting opens.
+  const platformName =
+    channel.connection === null
+      ? t("platform", { platform: channel.platform })
+      : t("platformVia", {
+          connection: channel.connection,
+          platform: channel.platform,
+        });
+
   const handleReconnect = () => {
     startReconnect(async () => {
       const exit = await reconnect({ params });
@@ -113,7 +122,7 @@ export const ChannelRow = ({
           </Badge>
         </div>
         <span className="text-muted-foreground truncate text-sm">
-          {t("platform", { platform: channel.platform })} · {channel.handle}
+          {platformName} · {channel.handle}
         </span>
         {channel.tokenExpiresAt === null ? null : (
           <span className="text-muted-foreground text-sm">

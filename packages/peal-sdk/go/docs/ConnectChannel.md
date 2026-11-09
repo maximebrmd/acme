@@ -4,6 +4,7 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
+**Connection** | Pointer to [**InstagramConnection**](InstagramConnection.md) |  | [optional] 
 **Handle** | Pointer to **string** |  | [optional] 
 **Instance** | Pointer to **string** |  | [optional] 
 
@@ -25,6 +26,31 @@ will change when the set of required properties is changed
 NewConnectChannelWithDefaults instantiates a new ConnectChannel object
 This constructor will only assign default values to properties that have it defined,
 but it doesn't guarantee that properties required by API are set
+
+### GetConnection
+
+`func (o *ConnectChannel) GetConnection() InstagramConnection`
+
+GetConnection returns the Connection field if non-nil, zero value otherwise.
+
+### GetConnectionOk
+
+`func (o *ConnectChannel) GetConnectionOk() (*InstagramConnection, bool)`
+
+GetConnectionOk returns a tuple with the Connection field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetConnection
+
+`func (o *ConnectChannel) SetConnection(v InstagramConnection)`
+
+SetConnection sets Connection field to given value.
+
+### HasConnection
+
+`func (o *ConnectChannel) HasConnection() bool`
+
+HasConnection returns a boolean if a field has been set.
 
 ### GetHandle
 

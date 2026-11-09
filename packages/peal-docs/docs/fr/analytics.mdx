@@ -1,6 +1,6 @@
 ---
 title: Statistiques
-description: Voyez ce qu’ont donné vos publications sur Mastodon, Bluesky, TikTok et YouTube, par canal et par jour, lesquelles ont le mieux marché, et les chiffres de chacune au fil du temps.
+description: Voyez ce qu’ont donné vos publications sur Mastodon, Bluesky, TikTok, YouTube et Instagram, par canal et par jour, lesquelles ont le mieux marché, et les chiffres de chacune au fil du temps.
 sidebar:
   order: 6
 ---
@@ -9,15 +9,15 @@ Une fois une publication parue, Peal relève ses chiffres sur la plateforme pend
 
 ## Ce que Peal compte [#counts]
 
-| Chiffre     | Mastodon                 | Bluesky        | TikTok       | YouTube           |
-| ----------- | ------------------------ | -------------- | ------------ | ----------------- |
-| J’aime      | Favoris                  | J’aime         | J’aime       | J’aime            |
-| Partages    | Partages (boosts)        | Republications | Partages     | Aucun, toujours 0 |
-| Réponses    | Réponses                 | Réponses       | Commentaires | Commentaires      |
-| Citations   | À partir de Mastodon 4.5 | Citations      | Non fournies | Non fournies      |
-| Impressions | Non fournies             | Non fournies   | Vues         | Vues              |
+| Chiffre     | Mastodon                 | Bluesky        | TikTok       | YouTube           | Instagram    |
+| ----------- | ------------------------ | -------------- | ------------ | ----------------- | ------------ |
+| J’aime      | Favoris                  | J’aime         | J’aime       | J’aime            | J’aime       |
+| Partages    | Partages (boosts)        | Republications | Partages     | Aucun, toujours 0 | Partages     |
+| Réponses    | Réponses                 | Réponses       | Commentaires | Commentaires      | Commentaires |
+| Citations   | À partir de Mastodon 4.5 | Citations      | Non fournies | Non fournies      | Non fournies |
+| Impressions | Non fournies             | Non fournies   | Vues         | Vues              | Vues         |
 
-Mastodon et Bluesky ne disent pas combien de personnes ont vu une publication : Peal n’affiche donc pas d’impressions pour elles ; sur TikTok et YouTube, les impressions sont les vues de la publication. Un chiffre qu’une plateforme ne donne pas apparaît comme manquant, jamais comme zéro. L’**engagement**, ce sont les j’aime, partages, réponses et citations réunis.
+Mastodon et Bluesky ne disent pas combien de personnes ont vu une publication : Peal n’affiche donc pas d’impressions pour elles ; sur TikTok, YouTube et Instagram, les impressions sont les vues de la publication. Un chiffre qu’une plateforme ne donne pas apparaît comme manquant, jamais comme zéro. L’**engagement**, ce sont les j’aime, partages, réponses et citations réunis.
 
 ## Quand les chiffres sont relevés [#schedule]
 
@@ -29,8 +29,9 @@ Les relevés passent à tour de rôle avec les publications du canal : Peal fait
 - **Bluesky** : Peal lit les publications sur le service public de Bluesky, 25 à la fois, sans la session du compte : les chiffres d’une publication sont publics sur Bluesky.
 - **TikTok** : Peal lit les publications publiques du compte, 20 à la fois, avec l’accès du compte, quand celui-ci a autorisé Peal à lire ses vidéos : leurs mentions j’aime, partages comme repartages, commentaires comme réponses, et vues. TikTok ne donne pas d’identifiant pour une publication que seul son titulaire voit : elles ne sont jamais relevées.
 - **YouTube** : Peal lit les vidéos de la chaîne avec son accès, 50 à la fois, si bien que les vidéos privées et non répertoriées sont lues aussi. Un chiffre que la chaîne masque, comme ses j’aime, vaut 0.
+- **Instagram** : Peal lit les statistiques de chaque publication, une à la fois, avec l’accès du compte, quand celui-ci a autorisé Peal à les lire : avec la connexion Instagram, ou via une Page Facebook connectée depuis que Peal les demande. Un compte qui ne l’a pas fait est laissé de côté jusqu’à ce que vous le [reconnectiez](/channels#reconnect) en les autorisant.
 
-Peal ne relève encore aucun chiffre sur LinkedIn, X, Threads, Instagram ni les Pages Facebook. Il le constate au premier tour d’une publication, s’arrête là, et laisse la publication hors des **Statistiques**, plutôt que de la montrer sans chiffres.
+Peal ne relève encore aucun chiffre sur LinkedIn, X, Threads ni les Pages Facebook. Il le constate au premier tour d’une publication, s’arrête là, et laisse la publication hors des **Statistiques**, plutôt que de la montrer sans chiffres.
 
 ## La page des statistiques [#page]
 

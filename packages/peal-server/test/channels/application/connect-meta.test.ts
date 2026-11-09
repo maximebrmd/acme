@@ -138,6 +138,7 @@ const signIn = Effect.fn("signIn")(function* signIn(
     manager(workspaceId),
     platform,
     {
+      connection: Option.none(),
       handle: Option.none(),
       instance: Option.none(),
     }
@@ -189,6 +190,7 @@ layer(MetaConnectTest)("connecting Meta accounts", (it) => {
 
         const authorizationUrl = yield* ConnectChannel.use((connect) =>
           connect.start(manager(workspaceId), "facebook", {
+            connection: Option.none(),
             handle: Option.none(),
             instance: Option.none(),
           })
@@ -453,7 +455,11 @@ layer(MetaConnectTest)("connecting Meta accounts", (it) => {
       const authorizationUrl = yield* connect.start(
         manager(workspaceId),
         "facebook",
-        { handle: Option.none(), instance: Option.none() }
+        {
+          connection: Option.none(),
+          handle: Option.none(),
+          instance: Option.none(),
+        }
       );
 
       const failure = yield* Effect.flip(
@@ -519,7 +525,11 @@ layer(MetaConnectTest)("connecting Meta accounts", (it) => {
       const authorizationUrl = yield* connect.start(
         manager(workspaceId),
         "threads",
-        { handle: Option.none(), instance: Option.none() }
+        {
+          connection: Option.none(),
+          handle: Option.none(),
+          instance: Option.none(),
+        }
       );
 
       const url = new URL(authorizationUrl);
@@ -623,7 +633,10 @@ layer(MetaConnectTest)("connecting Meta accounts", (it) => {
         connect.connectable(manager(workspaceId))
       );
 
-      assert.deepStrictEqual(platforms, ["threads", "instagram", "facebook"]);
+      assert.deepStrictEqual(platforms, {
+        instagramConnections: ["facebookLogin"],
+        platforms: ["threads", "instagram", "facebook"],
+      });
 
       const refused = yield* Effect.flip(
         ConnectChannel.use((connect) =>
@@ -873,7 +886,6 @@ layer(DeletionsMetaTest)("Meta's data deletion requests", (it) => {
             app: "facebook",
             code: workspaceId.replaceAll("-", ""),
             now,
-            platforms: ["facebook", "instagram"],
             signedRequest: `synthetic.${workspaceId}`,
             userId,
           })

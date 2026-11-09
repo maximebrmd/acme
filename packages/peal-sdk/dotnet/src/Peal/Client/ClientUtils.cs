@@ -223,6 +223,8 @@ namespace Peal.Client
                 return FailureReasonValueConverter.ToJsonValue(failureReason);
             if (obj is ForbiddenEncoded.TagEnum forbiddenEncodedTagEnum)
                 return ForbiddenEncoded.TagEnumToJsonValue(forbiddenEncodedTagEnum);
+            if (obj is InstagramConnection instagramConnection)
+                return InstagramConnectionValueConverter.ToJsonValue(instagramConnection);
             if (obj is InvalidDateRangeEncoded.TagEnum invalidDateRangeEncodedTagEnum)
                 return InvalidDateRangeEncoded.TagEnumToJsonValue(invalidDateRangeEncodedTagEnum);
             if (obj is InvalidTimeRangeEncoded.TagEnum invalidTimeRangeEncodedTagEnum)

@@ -4,6 +4,7 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
+**connection** | [**\Peal\Model\InstagramConnection**](InstagramConnection.md) |  | [optional]
 **handle** | **string** |  | [optional]
 **instance** | **string** |  | [optional]
 

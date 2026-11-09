@@ -519,7 +519,7 @@ public class ChannelsApi {
 
     /**
      * Start connecting an account
-     * Starts connecting an account of the platform: answers with the platform&#39;s sign-in page, where the browser goes next. The connection is tied to the caller and the workspace, and must be completed within 15 minutes. On a server that bills, a workspace whose plan allows no more channels gets PlanLimitReached. Needs channel:connect.
+     * Starts connecting an account of the platform: answers with the platform&#39;s sign-in page, where the browser goes next. For Instagram, &#x60;connection&#x60; picks Instagram Login (the professional account itself, no Facebook Page needed) or Facebook Login (the accounts linked to the caller&#39;s Pages); without it, the server&#39;s preferred way. The connection is tied to the caller and the workspace, and must be completed within 15 minutes. On a server that bills, a workspace whose plan allows no more channels gets PlanLimitReached. Needs channel:connect.
      * @param workspaceId  (required)
      * @param platform  (required)
      * @param connectChannel  (required)
@@ -545,7 +545,7 @@ public class ChannelsApi {
 
     /**
      * Start connecting an account
-     * Starts connecting an account of the platform: answers with the platform&#39;s sign-in page, where the browser goes next. The connection is tied to the caller and the workspace, and must be completed within 15 minutes. On a server that bills, a workspace whose plan allows no more channels gets PlanLimitReached. Needs channel:connect.
+     * Starts connecting an account of the platform: answers with the platform&#39;s sign-in page, where the browser goes next. For Instagram, &#x60;connection&#x60; picks Instagram Login (the professional account itself, no Facebook Page needed) or Facebook Login (the accounts linked to the caller&#39;s Pages); without it, the server&#39;s preferred way. The connection is tied to the caller and the workspace, and must be completed within 15 minutes. On a server that bills, a workspace whose plan allows no more channels gets PlanLimitReached. Needs channel:connect.
      * @param workspaceId  (required)
      * @param platform  (required)
      * @param connectChannel  (required)
@@ -572,7 +572,7 @@ public class ChannelsApi {
 
     /**
      * Start connecting an account (asynchronously)
-     * Starts connecting an account of the platform: answers with the platform&#39;s sign-in page, where the browser goes next. The connection is tied to the caller and the workspace, and must be completed within 15 minutes. On a server that bills, a workspace whose plan allows no more channels gets PlanLimitReached. Needs channel:connect.
+     * Starts connecting an account of the platform: answers with the platform&#39;s sign-in page, where the browser goes next. For Instagram, &#x60;connection&#x60; picks Instagram Login (the professional account itself, no Facebook Page needed) or Facebook Login (the accounts linked to the caller&#39;s Pages); without it, the server&#39;s preferred way. The connection is tied to the caller and the workspace, and must be completed within 15 minutes. On a server that bills, a workspace whose plan allows no more channels gets PlanLimitReached. Needs channel:connect.
      * @param workspaceId  (required)
      * @param platform  (required)
      * @param connectChannel  (required)

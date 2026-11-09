@@ -150,6 +150,8 @@ pub mod failure_reason;
 pub use self::failure_reason::FailureReason;
 pub mod forbidden_encoded;
 pub use self::forbidden_encoded::ForbiddenEncoded;
+pub mod instagram_connection;
+pub use self::instagram_connection::InstagramConnection;
 pub mod invalid_date_range_encoded;
 pub use self::invalid_date_range_encoded::InvalidDateRangeEncoded;
 pub mod invalid_time_range_encoded;

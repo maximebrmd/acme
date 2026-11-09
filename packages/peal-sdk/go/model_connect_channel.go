@@ -20,6 +20,7 @@ var _ MappedNullable = &ConnectChannel{}
 
 // ConnectChannel struct for ConnectChannel
 type ConnectChannel struct {
+	Connection *InstagramConnection `json:"connection,omitempty"`
 	Handle *string `json:"handle,omitempty"`
 	Instance *string `json:"instance,omitempty"`
 }
@@ -39,6 +40,38 @@ func NewConnectChannel() *ConnectChannel {
 func NewConnectChannelWithDefaults() *ConnectChannel {
 	this := ConnectChannel{}
 	return &this
+}
+
+// GetConnection returns the Connection field value if set, zero value otherwise.
+func (o *ConnectChannel) GetConnection() InstagramConnection {
+	if o == nil || IsNil(o.Connection) {
+		var ret InstagramConnection
+		return ret
+	}
+	return *o.Connection
+}
+
+// GetConnectionOk returns a tuple with the Connection field value if set, nil otherwise
+// and a boolean to check if the value has been set.
+func (o *ConnectChannel) GetConnectionOk() (*InstagramConnection, bool) {
+	if o == nil || IsNil(o.Connection) {
+		return nil, false
+	}
+	return o.Connection, true
+}
+
+// HasConnection returns a boolean if a field has been set.
+func (o *ConnectChannel) HasConnection() bool {
+	if o != nil && !IsNil(o.Connection) {
+		return true
+	}
+
+	return false
+}
+
+// SetConnection gets a reference to the given InstagramConnection and assigns it to the Connection field.
+func (o *ConnectChannel) SetConnection(v InstagramConnection) {
+	o.Connection = &v
 }
 
 // GetHandle returns the Handle field value if set, zero value otherwise.
@@ -115,6 +148,9 @@ func (o ConnectChannel) MarshalJSON() ([]byte, error) {
 
 func (o ConnectChannel) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
+	if !IsNil(o.Connection) {
+		toSerialize["connection"] = o.Connection
+	}
 	if !IsNil(o.Handle) {
 		toSerialize["handle"] = o.Handle
 	}

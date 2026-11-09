@@ -198,21 +198,36 @@ TikTok fetches photos only from a URL prefix or a domain you verified for the ap
 
 ### Threads, Instagram and Facebook Pages [#meta]
 
-One app in Meta's developer dashboard connects all three. Give it the Facebook Login use case, with the permissions `pages_show_list`, `pages_read_engagement` and `pages_manage_posts` for Facebook Pages, and `instagram_basic` and `instagram_content_publish` for Instagram; and the Threads use case, with `threads_basic` and `threads_content_publish`. Then set `META_APP_ID` and `META_APP_SECRET` from the app's basic settings, and `THREADS_APP_ID` and `THREADS_APP_SECRET` from its Threads settings. A platform whose settings are missing is not offered.
+One app in Meta's developer dashboard connects all three, through three use cases, each with its own credentials:
+
+- **Facebook Login** (Facebook Pages, and Instagram through a Page): the permissions `pages_show_list`, `pages_read_engagement` and `pages_manage_posts` for Facebook Pages, and `instagram_basic`, `instagram_content_publish` and `instagram_manage_insights` for Instagram (insights only for analytics: a member may decline them). Set `META_APP_ID` and `META_APP_SECRET` from the app's basic settings.
+- **Instagram** ("Manage messaging and content on Instagram", the Instagram API with Instagram Login): the permissions `instagram_business_basic`, `instagram_business_content_publish` and `instagram_business_manage_insights`. Set `INSTAGRAM_APP_ID` and `INSTAGRAM_APP_SECRET` from its **Business login settings**, which show an Instagram app id and secret apart from the main ones.
+- **Threads**: `threads_basic` and `threads_content_publish`. Set `THREADS_APP_ID` and `THREADS_APP_SECRET` from its Threads settings.
+
+A platform whose settings are missing is not offered. Instagram is offered with either of its settings; with both, members connect with Instagram first, and through a Facebook Page as the other way:
+
+| Way in                                        | Needs                                   | Access                                | Gives                                                                                                                                        |
+| --------------------------------------------- | --------------------------------------- | ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Instagram Login (`INSTAGRAM_APP_ID`)          | A professional account, no Page         | 60 days, renewed by Peal a week ahead | Publishing (images, reels, carousels), insights; calls `graph.instagram.com`                                                                 |
+| Facebook Login through a Page (`META_APP_ID`) | A professional account linked to a Page | The Page's, which does not expire     | The same, plus what only that API has (product tags, collaborators, hashtag search), which Peal does not use yet; calls `graph.facebook.com` |
 
 In the dashboard, register these addresses:
 
-| Setting                                    | Address                                                                                         |
-| ------------------------------------------ | ----------------------------------------------------------------------------------------------- |
-| Facebook Login's valid OAuth redirect URIs | `PUBLIC_URL/connect/facebook/callback` and `PUBLIC_URL/connect/instagram/callback`              |
-| Threads' redirect callback URL             | `PUBLIC_URL/connect/threads/callback`                                                           |
-| Data deletion request URL                  | `PUBLIC_URL/api/data-deletion/facebook`, and `PUBLIC_URL/api/data-deletion/threads` for Threads |
+| Setting                                        | Address                                                                                                                                             |
+| ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Facebook Login's valid OAuth redirect URIs     | `PUBLIC_URL/connect/facebook/callback` and `PUBLIC_URL/connect/instagram/callback`                                                                  |
+| Instagram business login's OAuth redirect URIs | `PUBLIC_URL/connect/instagram/callback`                                                                                                             |
+| Threads' redirect callback URL                 | `PUBLIC_URL/connect/threads/callback`                                                                                                               |
+| Data deletion request URL                      | `PUBLIC_URL/api/data-deletion/facebook`; `PUBLIC_URL/api/data-deletion/instagram` for Instagram; `PUBLIC_URL/api/data-deletion/threads` for Threads |
+| Deauthorize callback URL                       | `PUBLIC_URL/api/data-deletion/facebook/deauthorize`, and the same with `instagram` and `threads` in their use cases                                 |
 
-When one of its users asks Meta to delete what Peal holds about them, Meta calls that address with a request signed with the app's secret. Peal checks the signature, deletes, in every workspace, the channels that person connected and their tokens, and the accounts their sign-in still offers a member to choose from, and answers with a confirmation code and the page where its status shows, `PUBLIC_URL/data-deletion/<code>`. The same request sent again, as Meta may retry it, gets the same answer and deletes nothing more.
+When one of its users asks Meta to delete what Peal holds about them, Meta calls the data deletion address with a request signed with that use case's secret. Peal checks the signature, deletes, in every workspace, the channels that person connected through it and their tokens, and the accounts their sign-in still offers a member to choose from, and answers with a confirmation code and the page where its status shows, `PUBLIC_URL/data-deletion/<code>`. The same request sent again, as Meta may retry it, gets the same answer and deletes nothing more. An Instagram request names the account by its app-scoped id or its own: Peal takes either.
 
-Meta fetches the images and videos it publishes from links to the media store, valid for two hours: the store must answer Meta's servers on the internet, through presigned links or `PEAL_MEDIA_PUBLIC_BASE_URL`. The server calls `graph.facebook.com` and `graph.threads.com`, and signs every Facebook and Instagram call with the app secret, so you may turn on **Require App Secret** in the app's advanced settings.
+When someone removes Peal from their account, Meta calls the deauthorize address the same way: Peal marks the channels that person connected through it to be reconnected, in every workspace, and tells the members who manage them; it deletes nothing. A channel connected again since the request was made is left as it is.
 
-While the app is in development mode, only people with a role on it can connect their accounts: add yourself, and Threads testers, under App roles. Serving other people needs Meta's App Review of each permission. Instagram accounts must be professional ones linked to a Facebook Page.
+Meta fetches the images and videos it publishes from links to the media store, valid for two hours: the store must answer Meta's servers on the internet, through presigned links or `PEAL_MEDIA_PUBLIC_BASE_URL`. The server calls `graph.facebook.com`, `graph.instagram.com`, `api.instagram.com` and `graph.threads.com`, and signs every call through Facebook Login with the main app's secret, so you may turn on **Require App Secret** in the app's advanced settings. Calls with an Instagram Login token carry no proof.
+
+While the app is in development mode, only people with a role on it can connect their accounts: add yourself, Instagram testers and Threads testers, under App roles. Serving other people needs Meta's App Review of each permission and Business Verification, for each use case. Instagram accounts must be professional ones (business or creator), and, through Facebook Login, linked to a Facebook Page. Each account publishes at most 100 posts in 24 hours through Meta's API, which Peal checks before each one.
 
 ### YouTube [#youtube]
 

@@ -81,6 +81,7 @@ docs/EffectHttpApiErrorBadRequestEncoded.md
 docs/EngagementDay.md
 docs/FailureReason.md
 docs/ForbiddenEncoded.md
+docs/InstagramConnection.md
 docs/InvalidDateRangeEncoded.md
 docs/InvalidTimeRangeEncoded.md
 docs/InvalidTimeZoneEncoded.md
@@ -307,6 +308,7 @@ src/models/EffectHttpApiErrorBadRequestEncoded.ts
 src/models/EngagementDay.ts
 src/models/FailureReason.ts
 src/models/ForbiddenEncoded.ts
+src/models/InstagramConnection.ts
 src/models/InvalidDateRangeEncoded.ts
 src/models/InvalidTimeRangeEncoded.ts
 src/models/InvalidTimeZoneEncoded.ts

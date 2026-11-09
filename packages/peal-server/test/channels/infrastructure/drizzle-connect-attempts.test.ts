@@ -32,6 +32,7 @@ const saved = Effect.fn("saved")(function* saved(workspaceId: WorkspaceId) {
       channelId: Option.some(
         ChannelIdSchema.make("00000000-0000-7000-8000-000000000042")
       ),
+      connection: Option.none(),
       instance: Option.some("https://mastodon.example"),
       platform: "mastodon",
       state: `state-${unique}`,

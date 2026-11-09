@@ -218,7 +218,12 @@ export class RefreshChannelTokens extends Context.Service<
               }
 
               const channel = found.value;
-              const authorizer = authorizers.for(channel.platform);
+
+              const authorizer = authorizers.for(
+                channel.platform,
+                channel.connection
+              );
+
               const now = yield* DateTime.now;
 
               if (
@@ -243,6 +248,9 @@ export class RefreshChannelTokens extends Context.Service<
       const sweep = Effect.gen(function* sweep() {
         const now = yield* DateTime.now;
 
+        // Each platform's cutoff from the authorizer that connects it: for
+        // Instagram, Instagram Login's, whose tokens alone renew; channels
+        // whose tokens never expire are not due whatever the cutoff.
         const cutoffs = platforms.flatMap((platform) =>
           Option.toArray(
             Option.flatMap(authorizers.for(platform), (authorizer) =>

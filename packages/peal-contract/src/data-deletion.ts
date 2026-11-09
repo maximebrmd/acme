@@ -11,11 +11,17 @@ import { MetaAppNotConfigured } from "./meta-app-not-configured.ts";
 import { SignedRequestRefused } from "./signed-request-refused.ts";
 
 /**
- * The Meta apps whose users can ask Peal to delete their data: `facebook`,
- * the main app, whose Facebook Login connects Facebook Pages and Instagram
- * accounts, and `threads`, its Threads credentials.
+ * The Meta apps whose users can ask Peal to delete their data, or remove
+ * Peal: `facebook`, the main app, whose Facebook Login connects Facebook
+ * Pages and Instagram accounts linked to them, `instagram`, its Instagram
+ * credentials, whose Instagram Login connects professional accounts, and
+ * `threads`, its Threads credentials.
  */
-export const MetaAppSchema = Schema.Literals(["facebook", "threads"]).annotate({
+export const MetaAppSchema = Schema.Literals([
+  "facebook",
+  "instagram",
+  "threads",
+]).annotate({
   description: "A Meta app that signs users in to connect channels.",
   identifier: "MetaApp",
 });
@@ -55,9 +61,10 @@ export const DataDeletionStatusSchema = Schema.Struct({
 export type DataDeletionStatus = typeof DataDeletionStatusSchema.Type;
 
 /**
- * Meta's data deletion callbacks. Meta calls them, without signing in, when
- * one of its users asks for the data Peal holds about them to be deleted;
- * the request's signature, made with the app's secret, is its authority.
+ * Meta's data deletion and deauthorization callbacks. Meta calls them,
+ * without signing in, when one of its users asks for the data Peal holds
+ * about them to be deleted, or removes Peal from their account; the
+ * request's signature, made with the app's secret, is its authority.
  */
 export class DataDeletionApi extends HttpApiGroup.make("dataDeletion")
   .add(
@@ -71,6 +78,18 @@ export class DataDeletionApi extends HttpApiGroup.make("dataDeletion")
         description:
           "Meta's data deletion callback for the app: deletes, in every workspace, the channels the user connected, with their tokens, and answers with a confirmation code and the page where its status shows. Register it in the app's dashboard as the data deletion request URL.",
         summary: "Delete a Meta user's data",
+      })
+    ),
+    HttpApiEndpoint.post("deauthorize", "/:app/deauthorize", {
+      error: [SignedRequestRefused, MetaAppNotConfigured],
+      params: { app: MetaAppSchema },
+      payload: SignedRequestFormSchema.pipe(HttpApiSchema.asFormUrlEncoded()),
+      success: HttpApiSchema.NoContent,
+    }).annotateMerge(
+      OpenApi.annotations({
+        description:
+          "Meta's deauthorization callback for the app: the user removed Peal from their account, so the tokens Peal holds for the channels they connected no longer work. Those channels, in every workspace, are marked to reconnect, and their workspaces told; nothing is deleted. The same request sent again changes nothing more. Register it in the app's dashboard as the deauthorize callback URL.",
+        summary: "Take note that a Meta user removed Peal",
       })
     ),
     HttpApiEndpoint.get("status", "/requests/:code", {

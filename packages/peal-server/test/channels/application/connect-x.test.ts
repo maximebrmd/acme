@@ -63,6 +63,7 @@ const connected = Effect.fn("test.connected")(function* connected(
   workspaceId: WorkspaceId
 ) {
   const url = yield* on.connect.start(manager(workspaceId), "x", {
+    connection: Option.none(),
     handle: Option.none(),
     instance: Option.none(),
   });
@@ -126,7 +127,11 @@ layer(AdaptersTest)("connecting an X account", (it) => {
       const authorizationUrl = yield* on.connect.start(
         manager(workspaceId),
         "x",
-        { handle: Option.none(), instance: Option.none() }
+        {
+          connection: Option.none(),
+          handle: Option.none(),
+          instance: Option.none(),
+        }
       );
 
       const url = new URL(authorizationUrl);
@@ -182,6 +187,7 @@ layer(AdaptersTest)("connecting an X account", (it) => {
       const workspaceId = yield* freshWorkspace;
 
       const url = yield* on.connect.start(manager(workspaceId), "x", {
+        connection: Option.none(),
         handle: Option.none(),
         instance: Option.none(),
       });
@@ -219,6 +225,7 @@ layer(AdaptersTest)("connecting an X account", (it) => {
       const workspaceId = yield* freshWorkspace;
 
       const url = yield* on.connect.start(manager(workspaceId), "x", {
+        connection: Option.none(),
         handle: Option.none(),
         instance: Option.none(),
       });

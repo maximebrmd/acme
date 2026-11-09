@@ -6,6 +6,7 @@
 
 Name | Type
 ------------ | -------------
+`instagramConnections` | [Array&lt;InstagramConnection&gt;](InstagramConnection.md)
 `platforms` | [Array&lt;Platform&gt;](Platform.md)
 
 ## Example
@@ -15,6 +16,7 @@ import type { ConnectablePlatforms } from 'peal-sdk'
 
 // TODO: Update the object below with actual values
 const example = {
+  "instagramConnections": null,
   "platforms": null,
 } satisfies ConnectablePlatforms
 
