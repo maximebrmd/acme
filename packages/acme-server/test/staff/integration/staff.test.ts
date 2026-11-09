@@ -32,8 +32,11 @@ import {
 } from "#test/workspace/integration/harness.ts";
 import { seedChannel, seedPost } from "#test/workspace/integration/seed.ts";
 
-// What staff must never see of a workspace: its posts' text.
+// What staff must never see of a workspace: its posts' text, and what
+// their options say.
 const secretText = `A synthetic post only its members read ${randomUUID()}`;
+
+const secretTitle = `A synthetic video title only members read ${randomUUID()}`;
 
 const release = "synthetic-release-2026.11.0";
 
@@ -46,7 +49,9 @@ interface Fixture {
   readonly staff: { readonly email: string; readonly id: string };
   readonly staffCookies: string;
   readonly targetId: string;
+  readonly tiktokTargetId: string;
   readonly workspaceId: string;
+  readonly youtubeTargetId: string;
 }
 
 class Staffed extends Context.Service<Staffed, Fixture>()(
@@ -86,6 +91,38 @@ const StaffedLive = Layer.effect(
         Effect.orDie
       );
 
+    // TikTok and YouTube channels, one to reconnect, whose posts failed for
+    // their platform's own reasons; the YouTube one has a title of its own.
+    const tiktokChannel = yield* seedChannel(workspaceId, "@console_tiktok", {
+      platform: "tiktok",
+      refreshNeeded: true,
+    });
+
+    const youtubeChannel = yield* seedChannel(workspaceId, "Console videos", {
+      platform: "youtube",
+    });
+
+    const tiktokPost = yield* seedPost(workspaceId, tiktokChannel, secretText);
+
+    const youtubePost = yield* seedPost(
+      workspaceId,
+      youtubeChannel,
+      secretText,
+      "draft",
+      null,
+      { madeForKids: false, platform: "youtube", title: secretTitle }
+    );
+
+    const failedOn = (postId: string, reason: string) =>
+      sql`UPDATE publishing.post_targets SET status = 'failed', failure_reason = ${reason}, failure_code = ${reason}, finished_at = now() WHERE post_id = ${postId} RETURNING id`.pipe(
+        Effect.flatMap(Schema.decodeUnknownEffect(IdsSchema)),
+        Effect.map(([row]) => row?.id ?? ""),
+        Effect.orDie
+      );
+
+    const tiktokTargetId = yield* failedOn(tiktokPost, "appNotAudited");
+    const youtubeTargetId = yield* failedOn(youtubePost, "quotaExceeded");
+
     // A post due within the hour, with no job behind it: the system page
     // reads the table, and the test deletes it after.
     const scheduledPostId = yield* seedPost(workspaceId, channelId, secretText);
@@ -107,7 +144,9 @@ const StaffedLive = Layer.effect(
       staff,
       staffCookies: yield* signIn(staff.email),
       targetId: target?.id ?? "",
+      tiktokTargetId,
       workspaceId,
+      youtubeTargetId,
     };
   })
 ).pipe(
@@ -360,31 +399,54 @@ layer(StaffedLive, { excludeTestServices: true, timeout: "180 seconds" })(
         const workspace = yield* bodyOf(json(StaffWorkspaceSchema), reply);
 
         assert.notInclude(JSON.stringify(reply.body), secretText);
+        assert.notInclude(JSON.stringify(reply.body), secretTitle);
         assert.deepStrictEqual(
           workspace.members.map(({ role, userId }) => ({ role, userId })),
           [{ role: "owner", userId: fixture.member.id }]
         );
         assert.deepStrictEqual(
-          workspace.channels.map(({ handle, status }) => ({ handle, status })),
-          [{ handle: "@console@social.example", status: { _tag: "active" } }]
+          workspace.channels
+            .map(({ handle, platform, status }) => ({
+              handle,
+              platform,
+              status,
+            }))
+            .toSorted((a, b) => a.platform.localeCompare(b.platform)),
+          [
+            {
+              handle: "@console@social.example",
+              platform: "mastodon",
+              status: { _tag: "active" },
+            },
+            {
+              handle: "@console_tiktok",
+              platform: "tiktok",
+              status: { _tag: "refreshNeeded" },
+            },
+            {
+              handle: "Console videos",
+              platform: "youtube",
+              status: { _tag: "active" },
+            },
+          ]
         );
         assert.deepStrictEqual(workspace.posts, {
           cancelled: 0,
-          draft: 1,
+          draft: 3,
           finished: 0,
           publishing: 0,
           scheduled: 1,
         });
         assert.deepStrictEqual(
-          workspace.failures.map(
-            ({ code, platform, reason: why, status, targetId }) => ({
+          workspace.failures
+            .map(({ code, platform, reason: why, status, targetId }) => ({
               code,
               platform,
               reason: why,
               status,
               targetId,
-            })
-          ),
+            }))
+            .toSorted((a, b) => a.targetId.localeCompare(b.targetId)),
           [
             {
               code: "synthetic_code",
@@ -393,7 +455,21 @@ layer(StaffedLive, { excludeTestServices: true, timeout: "180 seconds" })(
               status: "failed",
               targetId: fixture.targetId,
             },
-          ]
+            {
+              code: "appNotAudited",
+              platform: "tiktok",
+              reason: "appNotAudited",
+              status: "failed",
+              targetId: fixture.tiktokTargetId,
+            },
+            {
+              code: "quotaExceeded",
+              platform: "youtube",
+              reason: "quotaExceeded",
+              status: "failed",
+              targetId: fixture.youtubeTargetId,
+            },
+          ].toSorted((a, b) => a.targetId.localeCompare(b.targetId))
         );
         // Billing is off in tests: no plan, no limit.
         assert.deepStrictEqual(workspace.billing, {

@@ -1,4 +1,9 @@
 import { describe, expect, it } from "@effect/vitest";
+import {
+  AttemptResultSchema,
+  FailureReasonSchema,
+  UnconfirmedReasonSchema,
+} from "acme-contract";
 import { Predicate } from "effect";
 
 import { loadMessages } from "#i18n/messages.ts";
@@ -36,4 +41,26 @@ describe("message catalogues", () => {
 
     expect(empty).toStrictEqual([]);
   });
+
+  // A reason a select leaves out reads as its raw code, as `other` does.
+  it.each(routing.locales)(
+    "%s names every reason a post can end with",
+    async (locale) => {
+      const messages = new Map(entries(await loadMessages(locale)));
+
+      const missing = (key: string, cases: readonly string[]) =>
+        cases
+          .filter((name) => !(messages.get(key) ?? "").includes(` ${name} {`))
+          .map((name) => `${key}: ${name}`);
+
+      expect([
+        ...missing("Notices.reason", FailureReasonSchema.literals),
+        ...missing("PostDetail.result", AttemptResultSchema.literals),
+        ...missing("Staff.reason", [
+          ...FailureReasonSchema.literals,
+          ...UnconfirmedReasonSchema.literals,
+        ]),
+      ]).toStrictEqual([]);
+    }
+  );
 });

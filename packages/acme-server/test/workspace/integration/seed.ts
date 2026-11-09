@@ -46,27 +46,38 @@ export const seedConnectChoice = Effect.fn("seedConnectChoice")(
   }
 );
 
-/** A connected Mastodon account, with a synthetic encrypted token. */
+/**
+ * A connected account, Mastodon's unless `platform` says otherwise, with a
+ * synthetic encrypted token; `refreshNeeded` asks for it to be reconnected.
+ */
 export const seedChannel = Effect.fn("seedChannel")(function* seedChannel(
   workspaceId: string,
-  handle: string
+  handle: string,
+  {
+    platform = "mastodon",
+    refreshNeeded = false,
+  }: { readonly platform?: string; readonly refreshNeeded?: boolean } = {}
 ) {
   const sql = yield* SqlClient.SqlClient;
 
   return yield* firstId(
     yield* sql`INSERT INTO channels.channels (id, workspace_id, platform, account_id, handle, display_name, access_token, token_key_id, token_kind, scopes, status, refresh_needed, created_at, updated_at)
-      VALUES (${newUuid7()}, ${workspaceId}, 'mastodon', ${randomUUID()}, ${handle}, 'Synthetic', 'synthetic.iv.ciphertext', 'synthetic', 'nonExpiring', '{}', 'active', false, now(), now())
+      VALUES (${newUuid7()}, ${workspaceId}, ${platform}, ${randomUUID()}, ${handle}, 'Synthetic', 'synthetic.iv.ciphertext', 'synthetic', 'nonExpiring', '{}', ${refreshNeeded ? "refreshNeeded" : "active"}, ${refreshNeeded}, now(), now())
       RETURNING id`
   );
 });
 
-/** A post in `status`, with a target on the channel, by `authorId` if any. */
+/**
+ * A post in `status`, with a target on the channel, by `authorId` if any,
+ * and the target's `options` (a platform's, as JSON) when given.
+ */
 export const seedPost = Effect.fn("seedPost")(function* seedPost(
   workspaceId: string,
   channelId: string,
   text: string,
   status: "draft" | "finished" | "publishing" = "draft",
-  authorId: string | null = null
+  authorId: string | null = null,
+  options: object | null = null
 ) {
   const sql = yield* SqlClient.SqlClient;
 
@@ -76,8 +87,10 @@ export const seedPost = Effect.fn("seedPost")(function* seedPost(
       RETURNING id`
   );
 
-  yield* sql`INSERT INTO publishing.post_targets (id, post_id, channel_id, status)
-    VALUES (${newUuid7()}, ${postId}, ${channelId}, 'pending')`;
+  const stored = options === null ? null : JSON.stringify(options);
+
+  yield* sql`INSERT INTO publishing.post_targets (id, post_id, channel_id, status, options)
+    VALUES (${newUuid7()}, ${postId}, ${channelId}, 'pending', ${stored}::jsonb)`;
 
   return postId;
 });
