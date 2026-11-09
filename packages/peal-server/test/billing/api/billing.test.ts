@@ -7,13 +7,16 @@ import type { Member } from "peal-contract";
 
 import { BillingOverview } from "#billing/application/billing-overview.ts";
 import { BillingMode } from "#billing/application/ports/billing-mode.ts";
-import { Subscriptions } from "#billing/application/ports/subscriptions.ts";
 import { WorkspaceUsage } from "#billing/application/ports/workspace-usage.ts";
 import { WorkspaceEntitlements } from "#billing/application/workspace-entitlements.ts";
 import { BillingApiLive } from "#billing/container.ts";
-import { Subscription } from "#billing/domain/subscription.ts";
 import type { Permission } from "#shared/domain/access.ts";
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
+import {
+  NoTrialsTest,
+  subscriptionOf,
+  subscriptionsHolding,
+} from "#test/billing/support.ts";
 import {
   anonymousSecurityTest,
   securityTest,
@@ -32,26 +35,19 @@ const midnight = DateTime.makeUnsafe("2026-11-10T00:00:00Z");
 
 const periodEnd = DateTime.makeUnsafe("2026-12-09T10:00:00Z");
 
+const startedAt = DateTime.makeUnsafe("2026-11-09T10:00:00Z");
+
 // A Pro subscription, paid for, with synthetic Stripe ids.
-const SubscriptionsTest = Layer.succeed(
-  Subscriptions,
-  Subscriptions.of({
-    eraseWorkspace: () => Effect.void,
-    ofWorkspace: () =>
-      Effect.succeed([
-        new Subscription({
-          cancelAtPeriodEnd: false,
-          currentPeriodEnd: Option.some(periodEnd),
-          plan: "pro",
-          status: "active",
-          stripeCustomerId: "cus_synthetic",
-          stripeSubscriptionId: "sub_synthetic",
-          workspaceId,
-        }),
-      ]),
-    record: () => Effect.succeed("recorded" as const),
-  })
-);
+const SubscriptionsTest = subscriptionsHolding([
+  subscriptionOf({
+    currentPeriodEnd: Option.some(periodEnd),
+    currentPeriodStart: Option.some(startedAt),
+    plan: "pro",
+    startedAt: Option.some(startedAt),
+    status: "active",
+    workspaceId,
+  }),
+]);
 
 const UsageTest = Layer.succeed(
   WorkspaceUsage,
@@ -60,6 +56,7 @@ const UsageTest = Layer.succeed(
       Effect.succeed({
         assistantRequests: { resetsAt: midnight, used: 4 },
         channels: 2,
+        mediaStorage: 1_250_000,
         members: 1,
         scheduledPosts: { resetsAt: midnight, used: 12 },
       }),
@@ -71,6 +68,7 @@ const overviewOn = (enabled: boolean) =>
     Layer.provide(UsageTest),
     Layer.provide(WorkspaceEntitlements.layer),
     Layer.provide(SubscriptionsTest),
+    Layer.provide(NoTrialsTest),
     Layer.provide(Layer.succeed(BillingMode, BillingMode.of({ enabled })))
   );
 
@@ -114,18 +112,42 @@ layer(overviewOn(true))("the billing endpoint on a server that bills", (it) => {
         assert.deepStrictEqual(billing.subscription, {
           cancelAtPeriodEnd: false,
           currentPeriodEnd: periodEnd,
+          interval: "month",
           plan: "pro",
+          startedAt,
           status: "active",
+          trialEnd: null,
         });
         assert.deepStrictEqual(billing.allowances, {
-          assistantRequests: 100,
+          assistantRequests: 20,
           channels: 10,
-          members: 5,
-          scheduledPosts: 300,
+          mediaStorage: 20_000_000_000,
+          members: null,
+          scheduledPosts: null,
         });
         assert.deepStrictEqual(
-          billing.plans.map(({ plan }) => plan),
-          ["free", "pro", "business"]
+          billing.plans.map(({ plan, price }) => [plan, price]),
+          [
+            ["free", null],
+            ["starter", { month: 750, year: 7500 }],
+            ["pro", { month: 1250, year: 12_500 }],
+            ["business", { month: 2500, year: 25_000 }],
+            ["agency", { month: 5000, year: 50_000 }],
+          ]
+        );
+        assert.strictEqual(billing.currency, "eur");
+        assert.strictEqual(billing.vatRate, 20);
+        assert.strictEqual(billing.usage.mediaStorage, 1_250_000);
+        // A workspace that had a subscription has no trial left.
+        assert.deepStrictEqual(billing.trial, {
+          available: false,
+          days: 14,
+          plan: "pro",
+        });
+        // Started today: a consumer may withdraw for 14 days.
+        assert.deepStrictEqual(
+          billing.withdrawableUntil,
+          DateTime.makeUnsafe("2026-11-23T10:00:00Z")
         );
         assert.deepStrictEqual(billing.usage.scheduledPosts, {
           resetsAt: midnight,
@@ -171,9 +193,12 @@ layer(overviewOn(false))(
         assert.isNull(billing.plan);
         assert.isNull(billing.subscription);
         assert.deepStrictEqual(billing.plans, []);
+        assert.isNull(billing.trial);
+        assert.isNull(billing.withdrawableUntil);
         assert.deepStrictEqual(billing.allowances, {
           assistantRequests: null,
           channels: null,
+          mediaStorage: null,
           members: null,
           scheduledPosts: null,
         });

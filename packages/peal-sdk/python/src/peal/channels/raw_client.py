@@ -21,6 +21,7 @@ from ..types.channel import Channel
 from ..types.connect_outcome import ConnectOutcome
 from ..types.connectable_platforms import ConnectablePlatforms
 from ..types.forbidden_encoded import ForbiddenEncoded
+from ..types.instagram_connection import InstagramConnection
 from ..types.plan_limit_reached_encoded import PlanLimitReachedEncoded
 from ..types.platform import Platform
 from ..types.unauthenticated_encoded import UnauthenticatedEncoded
@@ -189,18 +190,21 @@ class RawChannelsClient:
         workspace_id: str,
         platform: Platform,
         *,
+        connection: typing.Optional[InstagramConnection] = OMIT,
         handle: typing.Optional[str] = OMIT,
         instance: typing.Optional[str] = OMIT,
         request_options: typing.Optional[RequestOptions] = None,
     ) -> HttpResponse[Authorization]:
         """
-        Starts connecting an account of the platform: answers with the platform's sign-in page, where the browser goes next. The connection is tied to the caller and the workspace, and must be completed within 15 minutes. On a server that bills, a workspace whose plan allows no more channels gets PlanLimitReached. Needs channel:connect.
+        Starts connecting an account of the platform: answers with the platform's sign-in page, where the browser goes next. For Instagram, `connection` picks Instagram Login (the professional account itself, no Facebook Page needed) or Facebook Login (the accounts linked to the caller's Pages); without it, the server's preferred way. The connection is tied to the caller and the workspace, and must be completed within 15 minutes. On a server that bills, a workspace whose plan allows no more channels gets PlanLimitReached. Needs channel:connect.
 
         Parameters
         ----------
         workspace_id : str
 
         platform : Platform
+
+        connection : typing.Optional[InstagramConnection]
 
         handle : typing.Optional[str]
 
@@ -221,6 +225,7 @@ class RawChannelsClient:
             f"api/workspaces/{encode_path_param(workspace_id)}/channels/connect/{encode_path_param(platform)}",
             method="POST",
             json={
+                "connection": connection,
                 "handle": handle,
                 "instance": instance,
             },
@@ -916,18 +921,21 @@ class AsyncRawChannelsClient:
         workspace_id: str,
         platform: Platform,
         *,
+        connection: typing.Optional[InstagramConnection] = OMIT,
         handle: typing.Optional[str] = OMIT,
         instance: typing.Optional[str] = OMIT,
         request_options: typing.Optional[RequestOptions] = None,
     ) -> AsyncHttpResponse[Authorization]:
         """
-        Starts connecting an account of the platform: answers with the platform's sign-in page, where the browser goes next. The connection is tied to the caller and the workspace, and must be completed within 15 minutes. On a server that bills, a workspace whose plan allows no more channels gets PlanLimitReached. Needs channel:connect.
+        Starts connecting an account of the platform: answers with the platform's sign-in page, where the browser goes next. For Instagram, `connection` picks Instagram Login (the professional account itself, no Facebook Page needed) or Facebook Login (the accounts linked to the caller's Pages); without it, the server's preferred way. The connection is tied to the caller and the workspace, and must be completed within 15 minutes. On a server that bills, a workspace whose plan allows no more channels gets PlanLimitReached. Needs channel:connect.
 
         Parameters
         ----------
         workspace_id : str
 
         platform : Platform
+
+        connection : typing.Optional[InstagramConnection]
 
         handle : typing.Optional[str]
 
@@ -948,6 +956,7 @@ class AsyncRawChannelsClient:
             f"api/workspaces/{encode_path_param(workspace_id)}/channels/connect/{encode_path_param(platform)}",
             method="POST",
             json={
+                "connection": connection,
                 "handle": handle,
                 "instance": instance,
             },

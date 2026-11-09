@@ -751,7 +751,11 @@ layer(Layer.mergeAll(IntegrationLive, StoreLive), {
           [{ likes: [4], postId: atelierPost }]
         );
         // This server does not bill: no plan, no subscription.
-        assert.deepStrictEqual(own?.billing, { plan: null, subscriptions: [] });
+        assert.deepStrictEqual(own?.billing, {
+          meteredPosts: [],
+          plan: null,
+          subscriptions: [],
+        });
         assert.notInclude(text, "A synthetic draft of Studio.");
         assert.deepStrictEqual(
           exported.authoredPosts.map(({ text: postText, workspaceId }) => ({

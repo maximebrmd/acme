@@ -3,18 +3,34 @@ import { DateTime, Duration, Option, Schema } from "effect";
 import type { Channel, TokenLifetime } from "./channel.ts";
 
 /**
+ * When the refresh sweep renews a refreshable token:
+ *
+ * - `beforeExpiry`: `ahead` of its expiry, so it never lapses.
+ * - `keepAlive`: only once it has gone `unused` past its expiry. Access is
+ *   renewed when a call needs it (`ChannelAccess`); the sweep only keeps
+ *   the refresh token of an account that does not post from going stale.
+ */
+export const RefreshSweepSchema = Schema.Union([
+  Schema.TaggedStruct("beforeExpiry", { ahead: Schema.Duration }),
+  Schema.TaggedStruct("keepAlive", { unused: Schema.Duration }),
+]);
+
+export type RefreshSweep = typeof RefreshSweepSchema.Type;
+
+/**
  * Whether a platform's tokens can be renewed without the user:
  *
  * - `none`: they cannot. Before one expires, the user reconnects the account.
- * - `refreshToken`: a refresh token renews them, `ahead` of their expiry.
- *   When `rotates`, each refresh token works once, so a refresh runs alone
- *   on its channel and its answer is saved before anything uses it.
+ * - `refreshToken`: a refresh token renews them, when a call needs it and
+ *   when `sweep` says. When `rotates`, each refresh token works once, so a
+ *   refresh runs alone on its channel and its answer is saved before
+ *   anything uses it.
  */
 export const TokenRefreshSchema = Schema.Union([
   Schema.TaggedStruct("none", {}),
   Schema.TaggedStruct("refreshToken", {
-    ahead: Schema.Duration,
     rotates: Schema.Boolean,
+    sweep: RefreshSweepSchema,
   }),
 ]);
 
@@ -49,8 +65,8 @@ export const tokenPolicies = {
     lifetime: Option.some(Duration.days(90)),
     refresh: {
       _tag: "refreshToken",
-      ahead: Duration.days(30),
       rotates: true,
+      sweep: { _tag: "beforeExpiry", ahead: Duration.days(30) },
     },
   }),
   // A development (loopback) client is public: its sessions last two weeks,
@@ -59,8 +75,8 @@ export const tokenPolicies = {
     lifetime: Option.some(Duration.days(14)),
     refresh: {
       _tag: "refreshToken",
-      ahead: Duration.days(7),
       rotates: true,
+      sweep: { _tag: "beforeExpiry", ahead: Duration.days(7) },
     },
   }),
   // Page tokens never expire; they stop working when revoked.
@@ -73,6 +89,18 @@ export const tokenPolicies = {
   instagram: new TokenPolicy({
     lifetime: Option.none(),
     refresh: { _tag: "none" },
+  }),
+  // Through Instagram Login, a long-lived Instagram user token lasts 60
+  // days and is renewed with itself once at least a day old; one nobody
+  // renewed in 60 days cannot be renewed again. The sweep renews it a week
+  // ahead, as Threads'.
+  instagramLogin: new TokenPolicy({
+    lifetime: Option.some(Duration.days(60)),
+    refresh: {
+      _tag: "refreshToken",
+      rotates: false,
+      sweep: { _tag: "beforeExpiry", ahead: Duration.days(7) },
+    },
   }),
   // Self-serve apps get no refresh token: members reconnect every 60 days.
   linkedin: new TokenPolicy({
@@ -89,8 +117,8 @@ export const tokenPolicies = {
     lifetime: Option.some(Duration.days(60)),
     refresh: {
       _tag: "refreshToken",
-      ahead: Duration.days(7),
       rotates: false,
+      sweep: { _tag: "beforeExpiry", ahead: Duration.days(7) },
     },
   }),
   // Access tokens last two hours by TikTok's guide (its examples say a
@@ -100,17 +128,20 @@ export const tokenPolicies = {
     lifetime: Option.some(Duration.hours(2)),
     refresh: {
       _tag: "refreshToken",
-      ahead: Duration.minutes(30),
       rotates: true,
+      sweep: { _tag: "beforeExpiry", ahead: Duration.minutes(30) },
     },
   }),
-  // Access tokens last two hours, and each refresh token works once.
+  // Access tokens last two hours, and each refresh token works once. X
+  // gives refresh tokens no lifetime: access is renewed when a post needs
+  // it, and an account that does not post is renewed after 30 days, so its
+  // refresh token never goes stale, rather than every two hours.
   x: new TokenPolicy({
     lifetime: Option.some(Duration.hours(2)),
     refresh: {
       _tag: "refreshToken",
-      ahead: Duration.minutes(30),
       rotates: true,
+      sweep: { _tag: "keepAlive", unused: Duration.days(30) },
     },
   }),
   // Google's access tokens last an hour; its refresh tokens do not rotate,
@@ -120,8 +151,8 @@ export const tokenPolicies = {
     lifetime: Option.some(Duration.hours(1)),
     refresh: {
       _tag: "refreshToken",
-      ahead: Duration.minutes(15),
       rotates: false,
+      sweep: { _tag: "beforeExpiry", ahead: Duration.minutes(15) },
     },
   }),
 } as const;
@@ -162,21 +193,34 @@ export const tokenLifetimeOf = (
 };
 
 /**
- * Refreshable tokens expiring before this instant are due for a refresh now.
+ * Refreshable tokens expiring before this instant are due for the sweep
+ * now: those within the lead time before their expiry, or, to keep them
+ * alive, those that expired longer ago than the policy leaves them unused.
  * None for a policy that never refreshes.
  */
 export const refreshDueBefore = (
   policy: TokenPolicy,
   now: DateTime.Utc
-): Option.Option<DateTime.Utc> =>
-  policy.refresh._tag === "refreshToken"
-    ? Option.some(DateTime.addDuration(now, policy.refresh.ahead))
-    : Option.none();
+): Option.Option<DateTime.Utc> => {
+  const { refresh } = policy;
+
+  if (refresh._tag === "none") {
+    return Option.none();
+  }
+
+  const { sweep } = refresh;
+
+  return Option.some(
+    sweep._tag === "beforeExpiry"
+      ? DateTime.addDuration(now, sweep.ahead)
+      : DateTime.subtractDuration(now, sweep.unused)
+  );
+};
 
 /**
- * Whether the channel's token should be refreshed now: it is active, its
- * token renews itself, and the policy's lead time before expiry has begun. A
- * channel that already needs reconnecting is left to the user.
+ * Whether the sweep should refresh the channel's token now: it is active,
+ * its token renews itself, and `refreshDueBefore` takes it. A channel that
+ * already needs reconnecting is left to the user.
  */
 export const isRefreshDue = (
   channel: Channel,

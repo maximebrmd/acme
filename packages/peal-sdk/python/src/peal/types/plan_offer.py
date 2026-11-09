@@ -6,11 +6,13 @@ import pydantic
 from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 from .plan import Plan
 from .plan_allowances import PlanAllowances
+from .plan_price import PlanPrice
 
 
 class PlanOffer(UniversalBaseModel):
     allowances: PlanAllowances
     plan: Plan
+    price: typing.Optional[PlanPrice] = None
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

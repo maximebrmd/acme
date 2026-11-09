@@ -32,16 +32,16 @@ From a workspace's card on **Workspaces**, choose **New post**.
 
 Under **Length on each channel**, each channel the post goes to shows how much room its platform leaves, and what else the platform would refuse, its images and videos included. Platforms count differently, so the same text can fit on one and not on another:
 
-| Platform  | Text limit                                                                                                      | Images and videos       |
-| --------- | --------------------------------------------------------------------------------------------------------------- | ----------------------- |
-| Bluesky   | 300 characters, and 3,000 bytes                                                                                 | 4                       |
-| Mastodon  | 500 characters (the default of a server)                                                                        | 4                       |
-| X         | 280, where a link counts 23, and an emoji or a character outside the Latin, Greek and Cyrillic scripts counts 2 | 4                       |
-| Threads   | 500 characters, where an emoji counts its bytes, 4 for most; 5 different links                                  | 20                      |
-| LinkedIn  | 3,000 characters                                                                                                | 20                      |
-| Instagram | 2,200 characters, 30 hashtags, 20 mentions; an image or a video is required                                     | 20                      |
-| TikTok    | 2,200, where most emoji count 2 (UTF-16 code units); an image or a video is required                            | One video, or 35 photos |
-| YouTube   | A description of 5,000 bytes, without `<` or `>`; a video is required                                           | 1                       |
+| Platform  | Text limit                                                                                                                                                      | Images and videos       |
+| --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
+| Bluesky   | 300 characters, and 3,000 bytes                                                                                                                                 | 4                       |
+| Mastodon  | 500 characters (the default of a server)                                                                                                                        | 4                       |
+| X         | 280, where a link counts 23, with or without `https://` (`peal.social` too), and an emoji or a character outside the Latin, Greek and Cyrillic scripts counts 2 | 4                       |
+| Threads   | 500 characters, where an emoji counts its bytes, 4 for most; 5 different links                                                                                  | 20                      |
+| LinkedIn  | 3,000 characters                                                                                                                                                | 20                      |
+| Instagram | 2,200 characters, 30 hashtags, 20 mentions; an image or a video is required                                                                                     | 20                      |
+| TikTok    | 2,200, where most emoji count 2 (UTF-16 code units); an image or a video is required                                                                            | One video, or 35 photos |
+| YouTube   | A description of 5,000 bytes, without `<` or `>`; a video is required                                                                                           | 1                       |
 
 Bluesky counts what a reader sees as one character, so an emoji made of several code points counts once. YouTube counts bytes, so an accented letter counts two. TikTok takes 2,200 for a video's caption and 4,000 for a photo post's description: Peal holds both to 2,200. Facebook and Pinterest have no limit in Peal yet. Peal checks the limits when you schedule a post, not while you write a draft.
 

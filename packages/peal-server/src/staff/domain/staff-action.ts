@@ -24,6 +24,9 @@ export const StaffActionSchema = Schema.Literals([
   // signed out everywhere or no longer staff, or the account was banned or
   // signed out everywhere.
   "impersonationEnded",
+  // Answered a legal request (`legal` context): the reason holds the
+  // authority and its reference, the target the account it named.
+  "legalDisclosure",
 ]);
 
 export type StaffAction = typeof StaffActionSchema.Type;

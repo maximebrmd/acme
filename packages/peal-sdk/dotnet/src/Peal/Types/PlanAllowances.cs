@@ -17,6 +17,9 @@ public record PlanAllowances : IJsonOnDeserialized
     [JsonPropertyName("channels")]
     public int? Channels { get; set; }
 
+    [JsonPropertyName("mediaStorage")]
+    public int? MediaStorage { get; set; }
+
     [JsonPropertyName("members")]
     public int? Members { get; set; }
 

@@ -64,3 +64,12 @@ export const metaAppConfig = appConfig("META");
  * None when unset: the server then connects no Threads account.
  */
 export const threadsAppConfig = appConfig("THREADS");
+
+/**
+ * The app's Instagram credentials (`INSTAGRAM_APP_ID`,
+ * `INSTAGRAM_APP_SECRET`), which the dashboard's Instagram use case gives
+ * apart from the main ones, for Business Login for Instagram. None when
+ * unset: the server then connects Instagram accounts through Facebook Login
+ * only, with Meta's main app.
+ */
+export const instagramAppConfig = appConfig("INSTAGRAM");

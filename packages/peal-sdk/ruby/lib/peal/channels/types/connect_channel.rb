@@ -8,6 +8,8 @@ module Peal
 
         field :platform, -> { Peal::Types::Platform }, optional: false, nullable: false
 
+        field :connection, -> { Peal::Types::InstagramConnection }, optional: true, nullable: false
+
         field :handle, -> { String }, optional: true, nullable: false
 
         field :instance, -> { String }, optional: true, nullable: false

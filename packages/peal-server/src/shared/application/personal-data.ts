@@ -106,12 +106,43 @@ export interface UsageRecord {
  * a server that does not bill.
  */
 export interface BillingRecord {
+  /**
+   * The posts it made on platforms that bill the server per post, and how
+   * many held a link, by month (its first instant).
+   */
+  readonly meteredPosts: readonly {
+    readonly month: DateTime.Utc;
+    readonly platform: string;
+    readonly posts: number;
+    readonly postsWithLinks: number;
+  }[];
   readonly plan: string | null;
   readonly subscriptions: readonly {
     readonly cancelAtPeriodEnd: boolean;
     readonly currentPeriodEnd: DateTime.Utc | null;
     readonly plan: string;
     readonly status: string;
+  }[];
+}
+
+/**
+ * The orders and withdrawals a user made, kept as the proof of each
+ * contract; the workspace is null once it is erased. No Stripe id.
+ */
+export interface ContractsRecord {
+  readonly orders: readonly {
+    readonly consentVersion: string;
+    readonly createdAt: DateTime.Utc;
+    readonly interval: string;
+    readonly plan: string;
+    readonly trial: boolean;
+    readonly usedAt: DateTime.Utc | null;
+    readonly workspaceId: string | null;
+  }[];
+  readonly withdrawals: readonly {
+    readonly refunded: { readonly amount: number; readonly currency: string };
+    readonly requestedAt: DateTime.Utc;
+    readonly workspaceId: string | null;
   }[];
 }
 
@@ -148,7 +179,43 @@ export type NoticeEventRecord =
       readonly _tag: "PostUnconfirmed";
       readonly channel: NoticeChannelRecord | null;
       readonly postId: string;
+    }
+  | {
+      readonly _tag: "SubscriptionCancelled";
+      readonly endsAt: DateTime.Utc;
+      readonly plan: string;
+    }
+  | {
+      readonly _tag: "SubscriptionRenewing";
+      readonly plan: string;
+      readonly price: MoneyRecord;
+      readonly renewsAt: DateTime.Utc;
+    }
+  | {
+      readonly _tag: "SubscriptionStarted";
+      readonly interval: string;
+      readonly plan: string;
+      readonly price: MoneyRecord;
+      readonly startedAt: DateTime.Utc;
+      readonly trialEnd: DateTime.Utc | null;
+    }
+  | {
+      readonly _tag: "SubscriptionWithdrawn";
+      readonly plan: string;
+      readonly refunded: MoneyRecord;
+      readonly withdrawnAt: DateTime.Utc;
+    }
+  | {
+      readonly _tag: "TrialEnding";
+      readonly endsAt: DateTime.Utc;
+      readonly plan: string;
     };
+
+/** An amount in cents of its currency. */
+export interface MoneyRecord {
+  readonly amount: number;
+  readonly currency: string;
+}
 
 /** A notice of a user. */
 export interface NoticeRecord {
@@ -189,4 +256,69 @@ export interface StaffActionRecord {
   readonly reason: string | null;
   /** The workspace a change staff made while acting as the user was in. */
   readonly workspaceId: string | null;
+}
+
+/**
+ * Who held an account, and how they signed in, as closing it leaves them
+ * for the law (`#legal`): the name and address they gave, the identifier
+ * of each sign-in method, and the Stripe customers that reference their
+ * payments. Never a password or what checks one (the Conseil d'État read
+ * décret n° 2021-1362, art. 3, 3°, as recovery channels only: CE, 30 June
+ * 2023, n° 459724), a session, a token, or content.
+ */
+export interface IdentificationRecord {
+  readonly accountCreatedAt: DateTime.Utc;
+  readonly email: string;
+  readonly name: string;
+  /** Each way it signed in: the provider, and the id it knew the account by. */
+  readonly signInMethods: readonly {
+    readonly accountId: string;
+    readonly provider: string;
+  }[];
+  /**
+   * The Stripe customers of the account and of the workspaces its closure
+   * deletes, which find its payments at Stripe.
+   */
+  readonly stripeCustomerIds: readonly string[];
+  readonly userId: string;
+}
+
+/**
+ * A connection that created, changed or deleted content, as the law has
+ * Peal keep it for a year (`#legal`): when, from which address, and how.
+ */
+export interface ContentConnectionRecord {
+  /**
+   * How it authenticated: `session` (the web app), `apiKey`, `oauth` (the
+   * command line or another client of the API), or `mcp`.
+   */
+  readonly access: string;
+  readonly at: DateTime.Utc;
+  /** The address it came from, when the server could tell. */
+  readonly ipAddress: string | null;
+  /** The protocol it reached Peal over: `https`, or `http` on a local server. */
+  readonly protocol: string;
+  /** The workspace the content is in. */
+  readonly workspaceId: string | null;
+}
+
+/**
+ * What the law has Peal keep about a user beyond their account, as their
+ * export tells them (Art. 15(1) GDPR): the connections that made content
+ * so far, what closing the account will leave and for how long, why, and
+ * who may obtain it.
+ */
+export interface LegalHoldRecord {
+  /** The texts that oblige Peal to keep it. */
+  readonly basis: string;
+  /** How many years each connection is kept after it was made. */
+  readonly connectionYears: number;
+  readonly connections: readonly ContentConnectionRecord[];
+  /** Who may obtain it, and how. */
+  readonly disclosedTo: string;
+  /** What closing the account leaves, and for how many years after. */
+  readonly keptAfterClosure: readonly {
+    readonly data: readonly string[];
+    readonly years: number;
+  }[];
 }

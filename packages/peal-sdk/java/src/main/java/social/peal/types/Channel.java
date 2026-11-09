@@ -26,6 +26,8 @@ import social.peal.core.ObjectMappers;
 public final class Channel {
     private final Optional<String> avatarUrl;
 
+    private final Optional<InstagramConnection> connection;
+
     private final Optional<String> displayName;
 
     private final String handle;
@@ -42,6 +44,7 @@ public final class Channel {
 
     private Channel(
             Optional<String> avatarUrl,
+            Optional<InstagramConnection> connection,
             Optional<String> displayName,
             String handle,
             String id,
@@ -50,6 +53,7 @@ public final class Channel {
             Optional<String> tokenExpiresAt,
             Map<String, Object> additionalProperties) {
         this.avatarUrl = avatarUrl;
+        this.connection = connection;
         this.displayName = displayName;
         this.handle = handle;
         this.id = id;
@@ -65,6 +69,14 @@ public final class Channel {
             return Optional.empty();
         }
         return avatarUrl;
+    }
+
+    @JsonIgnore
+    public Optional<InstagramConnection> getConnection() {
+        if (connection == null) {
+            return Optional.empty();
+        }
+        return connection;
     }
 
     @JsonIgnore
@@ -110,6 +122,12 @@ public final class Channel {
     }
 
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
+    @JsonProperty("connection")
+    private Optional<InstagramConnection> _getConnection() {
+        return connection;
+    }
+
+    @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("displayName")
     private Optional<String> _getDisplayName() {
         return displayName;
@@ -134,6 +152,7 @@ public final class Channel {
 
     private boolean equalTo(Channel other) {
         return avatarUrl.equals(other.avatarUrl)
+                && connection.equals(other.connection)
                 && displayName.equals(other.displayName)
                 && handle.equals(other.handle)
                 && id.equals(other.id)
@@ -146,6 +165,7 @@ public final class Channel {
     public int hashCode() {
         return Objects.hash(
                 this.avatarUrl,
+                this.connection,
                 this.displayName,
                 this.handle,
                 this.id,
@@ -194,6 +214,12 @@ public final class Channel {
 
         _FinalStage avatarUrl(Nullable<String> avatarUrl);
 
+        _FinalStage connection(Optional<InstagramConnection> connection);
+
+        _FinalStage connection(InstagramConnection connection);
+
+        _FinalStage connection(Nullable<InstagramConnection> connection);
+
         _FinalStage displayName(Optional<String> displayName);
 
         _FinalStage displayName(String displayName);
@@ -221,6 +247,8 @@ public final class Channel {
 
         private Optional<String> displayName = Optional.empty();
 
+        private Optional<InstagramConnection> connection = Optional.empty();
+
         private Optional<String> avatarUrl = Optional.empty();
 
         private Map<String, Object> additionalProperties = new HashMap<>();
@@ -230,6 +258,7 @@ public final class Channel {
         @java.lang.Override
         public Builder from(Channel other) {
             avatarUrl(other.getAvatarUrl());
+            connection(other.getConnection());
             displayName(other.getDisplayName());
             handle(other.getHandle());
             id(other.getId());
@@ -318,6 +347,31 @@ public final class Channel {
         }
 
         @java.lang.Override
+        public _FinalStage connection(Nullable<InstagramConnection> connection) {
+            if (connection.isNull()) {
+                this.connection = null;
+            } else if (connection.isEmpty()) {
+                this.connection = Optional.empty();
+            } else {
+                this.connection = Optional.of(connection.get());
+            }
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage connection(InstagramConnection connection) {
+            this.connection = Optional.ofNullable(connection);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "connection", nulls = Nulls.SKIP)
+        public _FinalStage connection(Optional<InstagramConnection> connection) {
+            this.connection = connection;
+            return this;
+        }
+
+        @java.lang.Override
         public _FinalStage avatarUrl(Nullable<String> avatarUrl) {
             if (avatarUrl.isNull()) {
                 this.avatarUrl = null;
@@ -345,12 +399,21 @@ public final class Channel {
         @java.lang.Override
         public Channel build() {
             return new Channel(
-                    avatarUrl, displayName, handle, id, platform, status, tokenExpiresAt, additionalProperties);
+                    avatarUrl,
+                    connection,
+                    displayName,
+                    handle,
+                    id,
+                    platform,
+                    status,
+                    tokenExpiresAt,
+                    additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
             if (key.equalsIgnoreCase("avatarUrl")
+                    || key.equalsIgnoreCase("connection")
                     || key.equalsIgnoreCase("displayName")
                     || key.equalsIgnoreCase("handle")
                     || key.equalsIgnoreCase("id")

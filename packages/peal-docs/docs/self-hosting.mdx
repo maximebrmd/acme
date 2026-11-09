@@ -101,7 +101,7 @@ The server answers two probes:
 
 ## Database [#database]
 
-At startup, the server applies the database migrations it has not applied yet, one server at a time, and only listens once they are done. Each part of Peal keeps its tables in a Postgres schema of its own (`assistant`, `auth`, `channels`, `media`, `notifications`, `publishing`); the job runner's tables (`cluster_*`) are in `public`.
+At startup, the server applies the database migrations it has not applied yet, one server at a time, and only listens once they are done. Each part of Peal keeps its tables in a Postgres schema of its own (`assistant`, `auth`, `channels`, `legal`, `media`, `notifications`, `publishing`); the job runner's tables (`cluster_*`) are in `public`.
 
 The server runs its durable jobs from the same database, and holds them with session advisory locks for as long as it runs. Connect it to Postgres directly, or through a pooler in session mode: a pooler in transaction mode gives each statement another connection, which loses those locks. Each server process opens up to 10 connections, and up to 5 more for sign-in (`AUTH_DB_POOL_MAX`).
 
@@ -121,6 +121,8 @@ Set `MAIL_FROM` to the sender, as `Peal <noreply@example.com>` or an address you
 Peal sends the email that confirms an address, password resets, invitations to a workspace, and [notifications](/notifications) about posts and channels, each in the reader's language. Members choose which notifications also reach them by email. When the mail service turns an email away for now, an account email is tried again for a few seconds, then dropped, as people can ask for another; a notification's email is tried again for about five hours. With `AUTH_REQUIRE_EMAIL_VERIFICATION=false`, people can sign in before they confirm their address.
 
 ## Media storage [#media-storage]
+
+To keep media in the EU on Cloudflare R2, create the bucket in R2's EU jurisdiction (in the dashboard, or `wrangler r2 bucket create <name> --jurisdiction eu`), which cannot be changed later, and reach it at the `.eu.` endpoint, `https://<account>.eu.r2.cloudflarestorage.com`, in `PEAL_S3_ENDPOINT`. Wrangler's other bucket commands need `--jurisdiction eu` too. The same goes for a backup bucket, whose endpoint is a host without a scheme.
 
 Browsers send media straight to the bucket, with requests the server signs, so the bucket must let the web app's origin send them: a CORS rule that allows `PUT` from that origin with the `Content-Type` and `If-None-Match` headers. With the server's variables set, and `PUBLIC_URL` and `TRUSTED_ORIGINS` naming the web app's origins, this command puts the rule on the bucket, keeping its other rules, and prints the same policy for Cloudflare R2's dashboard (R2 › the bucket › Settings › CORS policy):
 
@@ -180,7 +182,11 @@ A server connects X accounts once you register an app for it in X's developer co
 2. Add `PUBLIC_URL/connect/x/callback` as a callback URI, exactly, such as `https://peal.example.com/connect/x/callback`. X refuses `localhost`: in development, use `http://127.0.0.1` and its port.
 3. Put the OAuth 2.0 client id in `X_CLIENT_ID` and its client secret in `X_CLIENT_SECRET`.
 
-X bills each request of the API to the app, and a post with a link costs more. Set a spending limit in X's console: once it is reached, X refuses posts, which fail with their reason, until you raise it. Peal renews each account's access every two hours, and keeps it working as long as it is renewed.
+X bills each request of the API to the app, from credits bought ahead ([pricing](https://docs.x.com/x-api/getting-started/pricing)), and a post with a link costs about 13 times one without. Buy credits and set a spending limit in X's console. Once the credits run out (X answers `402`) or the limit is reached (`usage-capped`), X refuses every post of the app until you add credits or raise the limit: the posts are not at fault, so Peal logs an error, which the server's error-log alert reports, and waits as it does for an outage, for over two hours, before a post fails with the reason "the platform refused this server's app until its operator pays for it".
+
+Peal counts each workspace's posts on X, and how many held a link, by calendar month (UTC), in `billing.metered_posts`, so you can see who spends what; plans do not limit them yet. The counts go with the workspace's export and its deletion.
+
+X's access lasts two hours. Peal renews it when it posts, and renews that of an account that has not posted for 30 days, so X keeps it connected without a rotation every two hours.
 
 For LinkedIn as for X, one of the two settings without the other stops the server at startup; without both, **Channels** does not offer the platform.
 
@@ -198,21 +204,36 @@ TikTok fetches photos only from a URL prefix or a domain you verified for the ap
 
 ### Threads, Instagram and Facebook Pages [#meta]
 
-One app in Meta's developer dashboard connects all three. Give it the Facebook Login use case, with the permissions `pages_show_list`, `pages_read_engagement` and `pages_manage_posts` for Facebook Pages, and `instagram_basic` and `instagram_content_publish` for Instagram; and the Threads use case, with `threads_basic` and `threads_content_publish`. Then set `META_APP_ID` and `META_APP_SECRET` from the app's basic settings, and `THREADS_APP_ID` and `THREADS_APP_SECRET` from its Threads settings. A platform whose settings are missing is not offered.
+One app in Meta's developer dashboard connects all three, through three use cases, each with its own credentials:
+
+- **Facebook Login** (Facebook Pages, and Instagram through a Page): the permissions `pages_show_list`, `pages_read_engagement` and `pages_manage_posts` for Facebook Pages, and `instagram_basic`, `instagram_content_publish` and `instagram_manage_insights` for Instagram (insights only for analytics: a member may decline them). Set `META_APP_ID` and `META_APP_SECRET` from the app's basic settings.
+- **Instagram** ("Manage messaging and content on Instagram", the Instagram API with Instagram Login): the permissions `instagram_business_basic`, `instagram_business_content_publish` and `instagram_business_manage_insights`. Set `INSTAGRAM_APP_ID` and `INSTAGRAM_APP_SECRET` from its **Business login settings**, which show an Instagram app id and secret apart from the main ones.
+- **Threads**: `threads_basic` and `threads_content_publish`. Set `THREADS_APP_ID` and `THREADS_APP_SECRET` from its Threads settings.
+
+A platform whose settings are missing is not offered. Instagram is offered with either of its settings; with both, members connect with Instagram first, and through a Facebook Page as the other way:
+
+| Way in                                        | Needs                                   | Access                                | Gives                                                                                                                                        |
+| --------------------------------------------- | --------------------------------------- | ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Instagram Login (`INSTAGRAM_APP_ID`)          | A professional account, no Page         | 60 days, renewed by Peal a week ahead | Publishing (images, reels, carousels), insights; calls `graph.instagram.com`                                                                 |
+| Facebook Login through a Page (`META_APP_ID`) | A professional account linked to a Page | The Page's, which does not expire     | The same, plus what only that API has (product tags, collaborators, hashtag search), which Peal does not use yet; calls `graph.facebook.com` |
 
 In the dashboard, register these addresses:
 
-| Setting                                    | Address                                                                                         |
-| ------------------------------------------ | ----------------------------------------------------------------------------------------------- |
-| Facebook Login's valid OAuth redirect URIs | `PUBLIC_URL/connect/facebook/callback` and `PUBLIC_URL/connect/instagram/callback`              |
-| Threads' redirect callback URL             | `PUBLIC_URL/connect/threads/callback`                                                           |
-| Data deletion request URL                  | `PUBLIC_URL/api/data-deletion/facebook`, and `PUBLIC_URL/api/data-deletion/threads` for Threads |
+| Setting                                        | Address                                                                                                                                             |
+| ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Facebook Login's valid OAuth redirect URIs     | `PUBLIC_URL/connect/facebook/callback` and `PUBLIC_URL/connect/instagram/callback`                                                                  |
+| Instagram business login's OAuth redirect URIs | `PUBLIC_URL/connect/instagram/callback`                                                                                                             |
+| Threads' redirect callback URL                 | `PUBLIC_URL/connect/threads/callback`                                                                                                               |
+| Data deletion request URL                      | `PUBLIC_URL/api/data-deletion/facebook`; `PUBLIC_URL/api/data-deletion/instagram` for Instagram; `PUBLIC_URL/api/data-deletion/threads` for Threads |
+| Deauthorize callback URL                       | `PUBLIC_URL/api/data-deletion/facebook/deauthorize`, and the same with `instagram` and `threads` in their use cases                                 |
 
-When one of its users asks Meta to delete what Peal holds about them, Meta calls that address with a request signed with the app's secret. Peal checks the signature, deletes, in every workspace, the channels that person connected and their tokens, and the accounts their sign-in still offers a member to choose from, and answers with a confirmation code and the page where its status shows, `PUBLIC_URL/data-deletion/<code>`. The same request sent again, as Meta may retry it, gets the same answer and deletes nothing more.
+When one of its users asks Meta to delete what Peal holds about them, Meta calls the data deletion address with a request signed with that use case's secret. Peal checks the signature, deletes, in every workspace, the channels that person connected through it and their tokens, and the accounts their sign-in still offers a member to choose from, and answers with a confirmation code and the page where its status shows, `PUBLIC_URL/data-deletion/<code>`. The same request sent again, as Meta may retry it, gets the same answer and deletes nothing more. An Instagram request names the account by its app-scoped id or its own: Peal takes either.
 
-Meta fetches the images and videos it publishes from links to the media store, valid for two hours: the store must answer Meta's servers on the internet, through presigned links or `PEAL_MEDIA_PUBLIC_BASE_URL`. The server calls `graph.facebook.com` and `graph.threads.com`, and signs every Facebook and Instagram call with the app secret, so you may turn on **Require App Secret** in the app's advanced settings.
+When someone removes Peal from their account, Meta calls the deauthorize address the same way: Peal marks the channels that person connected through it to be reconnected, in every workspace, and tells the members who manage them; it deletes nothing. A channel connected again since the request was made is left as it is.
 
-While the app is in development mode, only people with a role on it can connect their accounts: add yourself, and Threads testers, under App roles. Serving other people needs Meta's App Review of each permission. Instagram accounts must be professional ones linked to a Facebook Page.
+Meta fetches the images and videos it publishes from links to the media store, valid for two hours: the store must answer Meta's servers on the internet, through presigned links or `PEAL_MEDIA_PUBLIC_BASE_URL`. The server calls `graph.facebook.com`, `graph.instagram.com`, `api.instagram.com` and `graph.threads.com`, and signs every call through Facebook Login with the main app's secret, so you may turn on **Require App Secret** in the app's advanced settings. Calls with an Instagram Login token carry no proof.
+
+While the app is in development mode, only people with a role on it can connect their accounts: add yourself, Instagram testers and Threads testers, under App roles. Serving other people needs Meta's App Review of each permission and Business Verification, for each use case. Instagram accounts must be professional ones (business or creator), and, through Facebook Login, linked to a Facebook Page. Each account publishes at most 100 posts in 24 hours through Meta's API, which Peal checks before each one.
 
 ### YouTube [#youtube]
 
@@ -246,21 +267,15 @@ What members send is the post's text, up to 5,000 characters, and answers are ca
 
 ## Billing [#billing]
 
-Billing is off until `STRIPE_SECRET_KEY` is set: there are no plans, nothing is limited, and the workspaces' billing page says so. With a key, every workspace starts on the free plan, and a Stripe subscription moves it to Pro or Business:
+Billing is off until `STRIPE_SECRET_KEY` is set: there are no plans, nothing is limited, and the workspaces' billing page says so. With a key, every workspace starts on the free plan, and a Stripe subscription moves it to Starter, Pro, Business or Agency, monthly or yearly. [Plans and billing](/billing) lists them, with what each limits, the trial, ordering, cancelling and withdrawing.
 
-| Plan     | Channels | Members | Posts a month | Assistant requests a day |
-| -------- | -------- | ------- | ------------- | ------------------------ |
-| Free     | 3        | 2       | 30            | 10                       |
-| Pro      | 10       | 5       | 300           | 100                      |
-| Business | 30       | 20      | Unlimited     | 500                      |
+Posts count in the calendar month (UTC) they go out in, once scheduled: drafts and cancelled posts do not, a post taken back to draft gives its place back, and one posted again on a channel counts once. Members count with the invitations still pending when inviting. Pages or Instagram accounts ticked together need room for all of them, or none is connected. Media count by the bytes stored, uploads in progress included. A limit applies when something is added, so a workspace on a smaller plan than it needs keeps what it has, but schedules nothing while it has more channels than its plan allows.
 
-Posts count in the calendar month (UTC) they go out in, once scheduled: drafts and cancelled posts do not, a post taken back to draft gives its place back, and one posted again on a channel counts once. Members count with the invitations still pending when inviting. Pages or Instagram accounts ticked together need room for all of them, or none is connected. A limit applies when something is added, so a workspace on a smaller plan than it needs keeps what it has.
-
-1. In Stripe, create a product for each paid plan with a monthly price, and set `STRIPE_PRICE_PRO` and `STRIPE_PRICE_BUSINESS` to their ids.
+1. In Stripe, create a product for each paid plan, with a monthly and a yearly EUR price, both tax-exclusive, and give them the lookup keys `peal_<plan>_monthly` and `peal_<plan>_yearly` (`peal_starter_monthly`, `peal_pro_yearly`…), or another prefix set in `STRIPE_LOOKUP_KEY_PREFIX`. Their amounts are those of [Plans and billing](/billing#plans): Peal shows them before checkout, so keep them equal.
 2. Add a webhook endpoint for `PUBLIC_URL/api/auth/stripe/webhook` with the `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted` and `checkout.session.completed` events, and set `STRIPE_WEBHOOK_SECRET` to its signing secret. Leave this path open to Stripe if something guards the rest of `/api/auth`.
-3. Turn on the customer portal, where members update their payment method and cancel. For EU VAT, turn on Stripe Tax and set `STRIPE_AUTOMATIC_TAX=true`.
+3. Turn on Stripe Tax: checkout always has it add the VAT, as the prices are tax-exclusive and Peal shows them VAT included. Turn on the customer portal, where members update their payment method and download invoices, without retention offers, and with plan switching (subscription updates) and cancellation turned off: plans change and end on the billing page only, where each change takes an order. Set the web app's `PEAL_TERMS_URL` to your terms of service, which the billing page links to before an order.
 
-Owners and admins open checkout and the portal from the workspace's billing page; staff impersonating them cannot. A subscription's state comes only from its webhook events, checked against the signing secret: an event sent twice is recorded once, and an older one never replaces a newer one. A subscription stays paid for while Stripe retries a failed payment; unpaid, paused or cancelled, the workspace is back on the free plan. A workspace with a subscription Stripe may still bill, unpaid and paused ones included, cannot be deleted, nor the account of its only member, until the subscription is cancelled.
+Owners and admins order, cancel and withdraw from the workspace's billing page, in their own session; staff impersonating them, API keys and OAuth clients cannot. A checkout starts only for an order placed there in the last 30 minutes, which records the request to start at once. A subscription's state comes only from its webhook events, checked against the signing secret: an event sent twice is recorded once, and an older one never replaces a newer one. A subscription stays paid for while Stripe retries a failed payment; unpaid, paused or cancelled, the workspace is back on the free plan. A trial is set to end, cancelled, with its trial, even if a payment method is added, so it never turns into a charge: its workspace is then on the free plan, and a paid plan ordered during the trial ends the trial once it is paid for. A workspace with a subscription Stripe may still bill, unpaid and paused ones included, cannot be deleted, nor the account of its only member, until the subscription is cancelled. The `billing.reminders` job reminds, every morning, the trials that end within three days and the yearly plans that renew within 45 days.
 
 ## Captcha [#captcha]
 
@@ -283,6 +298,17 @@ UPDATE auth."user" SET role = 'admin' WHERE email = 'you@example.com';
 ```
 
 While impersonating, staff cannot connect channels, publish, manage API keys or billing, change workspaces, or let an application act for the member. They can read the member's notifications, but not mark them read or change the member's email preferences. They can ask the writing assistant in the member's workspaces, which counts toward those workspaces' daily requests.
+
+## Legal retention [#legal-retention]
+
+French law has a host keep the data that identifies whoever contributed content, so that a judicial authority can ask for it (loi n° 2004-575, Article 6, V, and décret n° 2021-1362). Peal does it by default, in the `legal` schema, which nothing else in the server reads:
+
+- each request that creates, changes or deletes posts or media, through the web app, an API key, the command line or an MCP client: when, from which address (read as sign-in reads it, from `AUTH_IP_HEADERS`), over which protocol and how it signed in, kept 1 year;
+- when an account closes, its holder's name and email address, kept 5 years, and how they signed in (each sign-in method's identifier, never the password or its hash) and their Stripe customers, kept 1 year.
+
+A daily job (`legal.retention`, at 03:47 UTC) deletes each record once its time is up. Staff read these records only by answering a legal request in the [staff console](/staff#legal-requests), and each answer is recorded. Each user's export lists their connections and what closing their account would leave.
+
+If you run Peal outside France and no law obliges you to keep these, set `PEAL_LEGAL_RETENTION=false`: the server then keeps none of them, and closing an account leaves nothing. Your own privacy notice should say which you chose.
 
 ## Telemetry [#telemetry]
 

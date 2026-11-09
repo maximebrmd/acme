@@ -6,6 +6,7 @@ import pydantic
 import typing_extensions
 from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 from ..core.serialization import FieldMetadata
+from .billing_interval import BillingInterval
 from .paid_plan import PaidPlan
 from .subscription_status import SubscriptionStatus
 
@@ -17,8 +18,15 @@ class BillingSubscription(UniversalBaseModel):
     current_period_end: typing_extensions.Annotated[
         typing.Optional[str], FieldMetadata(alias="currentPeriodEnd"), pydantic.Field(alias="currentPeriodEnd")
     ] = None
+    interval: BillingInterval
     plan: PaidPlan
+    started_at: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="startedAt"), pydantic.Field(alias="startedAt")
+    ] = None
     status: SubscriptionStatus
+    trial_end: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="trialEnd"), pydantic.Field(alias="trialEnd")
+    ] = None
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

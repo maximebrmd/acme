@@ -6,6 +6,7 @@ import { ChannelAccess } from "#channels/application/channel-access.ts";
 import { ChannelOversight } from "#channels/application/channel-oversight.ts";
 import { ChannelUsage } from "#channels/application/channel-usage.ts";
 import { ConnectChannel } from "#channels/application/connect-channel.ts";
+import { DeauthorizePlatformUser } from "#channels/application/deauthorize-platform-user.ts";
 import { DeletePlatformUserData } from "#channels/application/delete-platform-user-data.ts";
 import { DisconnectChannel } from "#channels/application/disconnect-channel.ts";
 import { ListChannels } from "#channels/application/list-channels.ts";
@@ -72,6 +73,7 @@ const UseCasesLive = Layer.mergeAll(
   ConnectChannel.layer,
   ChannelUsage.layer,
   DeletePlatformUserData.layer,
+  DeauthorizePlatformUser.layer,
   RefreshChannelTokens.layer,
   WarnChannelsNeedingReconnect.layer
 );
@@ -94,7 +96,10 @@ export {
   ChannelsHandlers as ChannelsApiLive,
 } from "#channels/api/channels.ts";
 
-/** Meta's data deletion callbacks, which Meta calls without signing in. */
+/**
+ * Meta's data deletion and deauthorization callbacks, which Meta calls
+ * without signing in.
+ */
 export { DataDeletionHandlers as DataDeletionApiLive } from "#channels/api/data-deletion.ts";
 
 /** The token refresh sweep and the daily reconnect warnings. */

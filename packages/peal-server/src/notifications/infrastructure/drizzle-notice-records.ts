@@ -49,6 +49,46 @@ const plainEvent = (event: NoticeEvent): NoticeEventRecord =>
       channel: Option.getOrNull(channel),
       postId,
     }),
+    SubscriptionCancelled: ({ endsAt, plan }): NoticeEventRecord => ({
+      _tag: "SubscriptionCancelled",
+      endsAt,
+      plan,
+    }),
+    SubscriptionRenewing: ({ plan, price, renewsAt }): NoticeEventRecord => ({
+      _tag: "SubscriptionRenewing",
+      plan,
+      price,
+      renewsAt,
+    }),
+    SubscriptionStarted: ({
+      interval,
+      plan,
+      price,
+      startedAt,
+      trialEnd,
+    }): NoticeEventRecord => ({
+      _tag: "SubscriptionStarted",
+      interval,
+      plan,
+      price,
+      startedAt,
+      trialEnd: Option.getOrNull(trialEnd),
+    }),
+    SubscriptionWithdrawn: ({
+      plan,
+      refunded,
+      withdrawnAt,
+    }): NoticeEventRecord => ({
+      _tag: "SubscriptionWithdrawn",
+      plan,
+      refunded,
+      withdrawnAt,
+    }),
+    TrialEnding: ({ endsAt, plan }): NoticeEventRecord => ({
+      _tag: "TrialEnding",
+      endsAt,
+      plan,
+    }),
   });
 
 /** NoticeRecords on the notifications schema. */

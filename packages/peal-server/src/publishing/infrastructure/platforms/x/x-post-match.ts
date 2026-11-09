@@ -4,14 +4,10 @@
 // links are left out, X's entities read back, and spaces collapsed, and
 // when they link to the same addresses, in order. Only X's text has
 // entities: one typed in the text sent stays as typed, since X writes its
-// ampersand as an entity in turn.
+// ampersand as an entity in turn. Links are found as X finds them
+// (`#publishing/domain/x-links.ts`), with or without a scheme.
 
-// A link starts with a scheme or "www.", after a space or punctuation, and
-// runs to the next space, as the composer counts them.
-const links = /(?<![\p{L}\p{N}@])(?:https?:\/\/|www\.)[^\s<>"]+/giu;
-
-// Punctuation that ends a sentence is not part of a link.
-const trailingPunctuation = /[.,;:!?'")\]}]+$/u;
+import { xLinksIn } from "#publishing/domain/x-links.ts";
 
 const scheme = /^https?:\/\//iu;
 
@@ -28,8 +24,18 @@ const entityPattern = /&(?:amp|gt|lt);/gu;
 const spaces = /\s+/gu;
 
 /** A post's text, as compared with what X shows of it. */
-export const comparableText = (text: string): string =>
-  text.replaceAll(links, " ").normalize("NFC").replaceAll(spaces, " ").trim();
+export const comparableText = (text: string): string => {
+  const normalized = text.normalize("NFC");
+  let kept = "";
+  let from = 0;
+
+  for (const link of xLinksIn(normalized)) {
+    kept += `${normalized.slice(from, link.start)} `;
+    from = link.end;
+  }
+
+  return (kept + normalized.slice(from)).replaceAll(spaces, " ").trim();
+};
 
 /** X's text with its entities read back, as it was sent. */
 export const unescapedText = (shown: string): string =>
@@ -51,9 +57,7 @@ const addressOf = (link: string): string => {
 
 /** The addresses a text sent links to, in order. */
 export const addressesIn = (sent: string): readonly string[] =>
-  Array.from(sent.matchAll(links), ([link]) =>
-    addressOf(link.replace(trailingPunctuation, ""))
-  );
+  xLinksIn(sent.normalize("NFC")).map(({ url }) => addressOf(url));
 
 /**
  * Whether a post X lists is the one Peal sent: the same text, and links to

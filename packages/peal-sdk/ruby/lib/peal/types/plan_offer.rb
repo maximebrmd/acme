@@ -8,6 +8,8 @@ module Peal
       field :allowances, -> { Peal::Types::PlanAllowances }, optional: false, nullable: false
 
       field :plan, -> { Peal::Types::Plan }, optional: false, nullable: false
+
+      field :price, -> { Peal::Types::PlanPrice }, optional: false, nullable: true
     end
   end
 end

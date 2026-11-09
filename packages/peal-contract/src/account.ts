@@ -132,6 +132,36 @@ const ExportedStaffActionSchema = Schema.Struct({
   workspaceId: nullable(Schema.String),
 });
 
+// A connection that created, changed or deleted content: when, from which
+// address, over which protocol, how it authenticated (`session`, `apiKey`,
+// `oauth` or `mcp`) and in which workspace.
+const ExportedConnectionSchema = Schema.Struct({
+  access: Schema.String,
+  at: instant,
+  ipAddress: nullable(Schema.String),
+  protocol: Schema.String,
+  workspaceId: nullable(Schema.String),
+});
+
+// What the law has Peal keep beyond the account, as a host must so that
+// whoever contributed content can be identified: why, for how long, who may
+// obtain it, the connections kept so far, and what closing the account
+// leaves.
+const ExportedLegalHoldSchema = Schema.Struct({
+  // The texts that oblige Peal to keep it.
+  basis: Schema.String,
+  // How many years each connection is kept after it was made.
+  connectionYears: Schema.Int,
+  // The connections of the account that made content, oldest first.
+  connections: Schema.Array(ExportedConnectionSchema),
+  // Who may obtain it, and how.
+  disclosedTo: Schema.String,
+  // What closing the account leaves, and for how many years after.
+  keptAfterClosure: Schema.Array(
+    Schema.Struct({ data: Schema.Array(Schema.String), years: Schema.Int })
+  ),
+});
+
 const ExportedMediaSchema = Schema.Struct({
   altText: nullable(Schema.String),
   byteSize: Schema.Int,
@@ -153,10 +183,20 @@ const ExportedAuthoredPostSchema = Schema.Struct({
   workspaceId: Schema.String,
 });
 
-// The workspace's plan, null on a server that does not bill, and its
+// The workspace's plan, null on a server that does not bill, its
 // subscriptions as Stripe last described them: no card, invoice or Stripe
-// id, which stay with Stripe.
+// id, which stay with Stripe; and how many posts it made each month (from
+// its first instant, UTC) on platforms that bill the server per post (X),
+// and how many of them held a link.
 const ExportedBillingSchema = Schema.Struct({
+  meteredPosts: Schema.Array(
+    Schema.Struct({
+      month: instant,
+      platform: Schema.String,
+      posts: Schema.Int,
+      postsWithLinks: Schema.Int,
+    })
+  ),
   plan: nullable(Schema.String),
   subscriptions: Schema.Array(
     Schema.Struct({
@@ -164,6 +204,31 @@ const ExportedBillingSchema = Schema.Struct({
       currentPeriodEnd: nullable(instant),
       plan: Schema.String,
       status: Schema.String,
+    })
+  ),
+});
+
+// The orders and withdrawals the user made, kept as the proof of each
+// contract: the workspace is null once it is erased.
+const ExportedContractsSchema = Schema.Struct({
+  orders: Schema.Array(
+    Schema.Struct({
+      // The version of the words they agreed to when ordering.
+      consentVersion: Schema.String,
+      createdAt: instant,
+      interval: Schema.String,
+      plan: Schema.String,
+      trial: Schema.Boolean,
+      // When a checkout took it.
+      usedAt: nullable(instant),
+      workspaceId: nullable(Schema.String),
+    })
+  ),
+  withdrawals: Schema.Array(
+    Schema.Struct({
+      refunded: Schema.Struct({ amount: Schema.Int, currency: Schema.String }),
+      requestedAt: instant,
+      workspaceId: nullable(Schema.String),
     })
   ),
 });
@@ -211,7 +276,10 @@ const ExportedWorkspaceSchema = Schema.Struct({
 /**
  * Everything Peal keeps about the user: their account, how they sign in,
  * their sessions, workspaces, invitations, connected applications, notices
- * and preferences, what staff did to their account, the posts they wrote in the workspaces they share, and
+ * and preferences, what staff did to their account, the orders and
+ * withdrawals they made, the posts they wrote in the workspaces they share, the
+ * connections that made content and what the law has Peal keep once the
+ * account closes, and
  * the content of the workspaces where they are the only member, which
  * belongs to them alone. The rest of the content of workspaces they share
  * belongs to the team, and is not part of it.
@@ -220,6 +288,8 @@ export const AccountExportSchema = Schema.Struct({
   // The posts the user wrote in the workspaces they share with others.
   authoredPosts: Schema.Array(ExportedAuthoredPostSchema),
   connectedApps: Schema.Array(ConnectedAppSchema),
+  // The orders and withdrawals the user made, in any workspace.
+  contracts: ExportedContractsSchema,
   exportedAt: instant,
   invitations: Schema.Struct({
     // Sent to the user's address.
@@ -227,6 +297,9 @@ export const AccountExportSchema = Schema.Struct({
     // Sent by the user.
     sent: Schema.Array(ExportedInvitationSchema),
   }),
+  // What the law has Peal keep beyond the account, and what closing it
+  // leaves; null on a server that keeps nothing for the law.
+  legalHold: nullable(ExportedLegalHoldSchema),
   memberships: Schema.Array(ExportedMembershipSchema),
   notices: Schema.Array(ExportedNoticeSchema),
   notificationPreferences: NotificationPreferencesSchema,
@@ -273,7 +346,7 @@ export class AccountApi extends HttpApiGroup.make("account")
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Answers with a JSON copy of everything Peal keeps about the user, as a file to save: their account, how they sign in, their sessions, memberships, invitations, connected applications, notices and preferences, what staff did to their account (action, time and reason, not who), the posts they wrote in the workspaces they share, and the channels, posts, media details, analytics, API keys, assistant usage and billing state (plan and subscription status) of the workspaces where they are the only member. It holds no secret: no password, token, key or card. Open to the user in their own session and to Peal's command line, never to another OAuth client: an MCP client would hand all of it to an AI model. Each copy is emailed to the account's address, saying whether the web app or the command line took it.",
+          "Answers with a JSON copy of everything Peal keeps about the user, as a file to save: their account, how they sign in, their sessions, memberships, invitations, connected applications, notices and preferences, what staff did to their account (action, time and reason, not who), the posts they wrote in the workspaces they share, the connections that created, changed or deleted content (time, address, protocol), what the law has Peal keep once the account closes and for how long, and the channels, posts, media details, analytics, API keys, assistant usage and billing state (plan and subscription status) of the workspaces where they are the only member. It holds no secret: no password, token, key or card. Open to the user in their own session and to Peal's command line, never to another OAuth client: an MCP client would hand all of it to an AI model. Each copy is emailed to the account's address, saying whether the web app or the command line took it.",
         summary: "Export my data",
       })
     ),

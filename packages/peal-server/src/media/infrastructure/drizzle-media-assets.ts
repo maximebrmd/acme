@@ -1,5 +1,6 @@
-import { and, desc, eq, lt } from "drizzle-orm";
+import { and, desc, eq, gt, inArray, lt, or, sql } from "drizzle-orm";
 import { DateTime, Duration, Effect, Layer, Option, Schema } from "effect";
+import { SqlClient } from "effect/sql";
 
 import { MediaAssetNotFound } from "#media/application/media-asset-not-found.ts";
 import { MediaAssets } from "#media/application/ports/media-assets.ts";
@@ -11,6 +12,8 @@ import type { AltText } from "#media/domain/alt-text.ts";
 import type { MediaAssetId } from "#media/domain/media-asset-id.ts";
 import { MediaAsset } from "#media/domain/media-asset.ts";
 import type { MediaStatusName } from "#media/domain/media-status.ts";
+import { roomFor } from "#shared/domain/allowance.ts";
+import type { Allowance } from "#shared/domain/allowance.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 
@@ -125,6 +128,63 @@ export const DrizzleMediaAssetsLive = Layer.effect(
   MediaAssets,
   Effect.gen(function* DrizzleMediaAssetsLive() {
     const db = yield* Drizzle;
+    const client = yield* SqlClient.SqlClient;
+
+    const storedBytes = Effect.fn("MediaAssets.storedBytes")(
+      function* storedBytes(
+        workspaceId: WorkspaceId,
+        pendingSince: DateTime.Utc
+      ) {
+        const [row] = yield* db
+          .select({
+            bytes: sql<string>`coalesce(sum(${mediaAssets.byteSize}), 0)::text`,
+          })
+          .from(mediaAssets)
+          .where(
+            and(
+              eq(mediaAssets.workspaceId, workspaceId),
+              or(
+                inArray(mediaAssets.status, ["uploaded", "ready"]),
+                and(
+                  eq(mediaAssets.status, "pending"),
+                  gt(mediaAssets.createdAt, DateTime.toDate(pendingSince))
+                )
+              )
+            )
+          )
+          .pipe(Effect.orDie);
+
+        return Number(row?.bytes ?? "0");
+      }
+    );
+
+    const insertWithin = (
+      asset: MediaAsset,
+      allowance: Allowance,
+      pendingSince: DateTime.Utc
+    ) =>
+      client
+        .withTransaction(
+          Effect.gen(function* insertHeld() {
+            yield* client`SELECT pg_advisory_xact_lock(hashtext('peal-server/media/storage'), hashtext(${asset.workspaceId}))`;
+
+            const used = yield* storedBytes(asset.workspaceId, pendingSince);
+
+            yield* Effect.fromResult(
+              roomFor("mediaStorage", allowance, used, asset.byteSize)
+            );
+
+            yield* db.insert(mediaAssets).values(toRow(asset));
+          })
+        )
+        .pipe(
+          Effect.catchTag("SqlError", Effect.die),
+          Effect.catchIf(
+            (failure) => failure._tag !== "PlanLimitReached",
+            Effect.die
+          ),
+          Effect.withSpan("MediaAssets.insertWithin")
+        );
 
     const findById = Effect.fn("MediaAssets.findById")(function* findById(
       workspaceId: WorkspaceId,
@@ -170,6 +230,7 @@ export const DrizzleMediaAssetsLive = Layer.effect(
       ) {
         yield* db.insert(mediaAssets).values(toRow(asset)).pipe(Effect.orDie);
       }),
+      insertWithin,
       list: Effect.fn("MediaAssets.list")(function* list(
         workspaceId: WorkspaceId,
         { after, limit }: MediaPageRequest
@@ -217,6 +278,7 @@ export const DrizzleMediaAssetsLive = Layer.effect(
           .where(byId(workspaceId, assetId))
           .pipe(Effect.orDie);
       }),
+      storedBytes,
       update: Effect.fn("MediaAssets.update")(function* update(
         asset: MediaAsset,
         from: MediaStatusName

@@ -3,6 +3,7 @@ import { Effect, Layer, Option } from "effect";
 import { PlatformAuthorizers } from "#channels/application/platform-authorizer.ts";
 import type { PlatformAuthorizer } from "#channels/application/platform-authorizer.ts";
 import type { Platform } from "#channels/domain/platform.ts";
+import type { InstagramConnection } from "#shared/domain/instagram-connection.ts";
 import type { MetaApp } from "#shared/infrastructure/platforms/meta-apps.ts";
 import {
   publicFetch,
@@ -19,6 +20,7 @@ import { MastodonApps } from "./mastodon/mastodon-apps.ts";
 import { mastodonAuthorizer } from "./mastodon/mastodon-authorizer.ts";
 import { facebookAuthorizer } from "./meta/facebook-authorizer.ts";
 import { instagramAuthorizer } from "./meta/instagram-authorizer.ts";
+import { instagramLoginAuthorizer } from "./meta/instagram-login-authorizer.ts";
 import { threadsAuthorizer } from "./meta/threads-authorizer.ts";
 import { tiktokAuthorizer } from "./tiktok/tiktok-authorizer.ts";
 import { xAuthorizer, xEndpoints } from "./x/x-authorizer.ts";
@@ -28,10 +30,57 @@ import {
 } from "./youtube/youtube-authorizer.ts";
 
 /**
+ * The registry of the authorizers given, in the order given: a platform's
+ * first one connects its new accounts, so for Instagram the first way in
+ * listed is the one the server prefers.
+ */
+export const registryOf = (
+  configured: readonly PlatformAuthorizer[],
+  unconfigured: ReadonlySet<Platform> = new Set()
+): PlatformAuthorizers["Service"] => {
+  // Each platform's first authorizer, which connects new accounts.
+  const byPlatform = new Map<Platform, PlatformAuthorizer>();
+
+  for (const authorizer of configured) {
+    if (!byPlatform.has(authorizer.platform)) {
+      byPlatform.set(authorizer.platform, authorizer);
+    }
+  }
+
+  const instagram = configured.filter(
+    (authorizer) => authorizer.platform === "instagram"
+  );
+
+  const instagramConnections = instagram.flatMap(({ connection }) =>
+    connection === undefined ? [] : [connection]
+  );
+
+  const forPlatform = (
+    platform: Platform,
+    connection: Option.Option<InstagramConnection> = Option.none()
+  ): Option.Option<PlatformAuthorizer> =>
+    platform === "instagram" && Option.isSome(connection)
+      ? Option.fromUndefinedOr(
+          instagram.find(
+            (authorizer) => authorizer.connection === connection.value
+          )
+        )
+      : Option.fromUndefinedOr(byPlatform.get(platform));
+
+  return PlatformAuthorizers.of({
+    for: forPlatform,
+    instagramConnections,
+    unconfigured,
+  });
+};
+
+/**
  * Every platform this server connects, from its settings: Mastodon always,
  * Bluesky when it has a client to run, LinkedIn and X when the operator
  * registered an app there, Facebook Pages and Instagram with Meta's app,
- * Threads with its credentials, TikTok with its client key and secret, YouTube with a Google OAuth client. Needs an HttpClient, the outbound guard, the
+ * Instagram through Instagram Login with the app's Instagram credentials
+ * (preferred to Facebook Login when both are set), Threads with its
+ * credentials, TikTok with its client key and secret, YouTube with a Google OAuth client. Needs an HttpClient, the outbound guard, the
  * database, the TokenCipher, SecureRandom, Digest and Mac.
  */
 export const PlatformAuthorizersLive = Layer.effect(
@@ -97,6 +146,11 @@ export const PlatformAuthorizersLive = Layer.effect(
         ]
       : [];
 
+    // Instagram Login first: the way in the server prefers.
+    const instagramLogin = Option.isSome(settings.instagram)
+      ? [yield* instagramLoginAuthorizer(metaOptions(settings.instagram.value))]
+      : [];
+
     const threads = Option.isSome(settings.threads)
       ? [yield* threadsAuthorizer(metaOptions(settings.threads.value))]
       : [];
@@ -117,15 +171,12 @@ export const PlatformAuthorizersLive = Layer.effect(
       ...Option.toArray(bluesky),
       ...Option.toArray(linkedin),
       ...Option.toArray(x),
+      ...instagramLogin,
       ...meta,
       ...threads,
       ...tiktok,
       ...Option.toArray(youtube),
     ];
-
-    const byPlatform: ReadonlyMap<Platform, PlatformAuthorizer> = new Map(
-      configured.map((authorizer) => [authorizer.platform, authorizer])
-    );
 
     // Platforms Peal supports, which this server lacks the settings for.
     const unconfigured: ReadonlySet<Platform> = new Set(
@@ -140,12 +191,12 @@ export const PlatformAuthorizersLive = Layer.effect(
           "tiktok",
           "youtube",
         ] as const
-      ).filter((platform) => !byPlatform.has(platform))
+      ).filter(
+        (platform) =>
+          !configured.some((authorizer) => authorizer.platform === platform)
+      )
     );
 
-    return PlatformAuthorizers.of({
-      for: (platform) => Option.fromUndefinedOr(byPlatform.get(platform)),
-      unconfigured,
-    });
+    return registryOf(configured, unconfigured);
   })
 ).pipe(Layer.provide(MastodonApps.layer));

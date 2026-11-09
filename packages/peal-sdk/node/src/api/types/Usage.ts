@@ -5,6 +5,7 @@ import * as Peal from "../index.js";
 export interface Usage {
     assistantRequests: Peal.PeriodUsage;
     channels: number;
+    mediaStorage: number;
     members: number;
     scheduledPosts: Peal.PeriodUsage;
 }

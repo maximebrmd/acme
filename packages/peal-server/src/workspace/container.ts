@@ -1,5 +1,6 @@
 import { Layer } from "effect";
 
+import { KeyedPseudonymsLive } from "#shared/infrastructure/keyed-pseudonyms.ts";
 import { AccountHandlers } from "#workspace/api/account.ts";
 import { ApiKeysHandlers } from "#workspace/api/api-keys.ts";
 import { CaptchaHandlers } from "#workspace/api/captcha.ts";
@@ -35,6 +36,7 @@ import { BetterAuthLive } from "#workspace/infrastructure/auth/better-auth.ts";
 import { CaptchaChallengeLive } from "#workspace/infrastructure/auth/captcha-challenge.ts";
 import { CliClientLive } from "#workspace/infrastructure/auth/cli-client.ts";
 import { AuthGatewayLive } from "#workspace/infrastructure/auth/gateway.ts";
+import { LegalConnectionJournal } from "#workspace/infrastructure/auth/legal-connection-journal.ts";
 import { PasswordCheckLive } from "#workspace/infrastructure/auth/password-check.ts";
 import { AuthSettings } from "#workspace/infrastructure/auth/settings.ts";
 import { WorkspacePeopleLive } from "#workspace/infrastructure/auth/workspace-people.ts";
@@ -94,10 +96,11 @@ const ImpersonationGuardLive = ImpersonationGuard.layer.pipe(
  * environment, with the command line's OAuth client registered, and the use
  * cases behind the API and the MCP endpoint, with the accounts and
  * workspaces the staff console reads and acts on (AccountDirectory,
- * AccountModeration), and the guard of staff's impersonations. It needs
- * the database, migrated, Ids, the notifications context's SendAuthEmail,
- * the billing context's WorkspaceEntitlements and RecordSubscription, and
- * the staff context's ImpersonationAudit.
+ * AccountModeration), the guard of staff's impersonations, and the
+ * journal of the connections that change content. It needs the database,
+ * migrated, Ids, the notifications context's SendAuthEmail, the billing
+ * context's WorkspaceEntitlements and RecordSubscription, the staff
+ * context's ImpersonationAudit and the legal context's LegalRecords.
  */
 export const WorkspaceLive = Layer.merge(
   UseCasesLive,
@@ -107,6 +110,7 @@ export const WorkspaceLive = Layer.merge(
   Layer.provideMerge(StaffToolsLive),
   Layer.provideMerge(BetterAuthLive),
   Layer.provideMerge(ImpersonationGuardLive),
+  Layer.provideMerge(LegalConnectionJournal),
   Layer.provideMerge(AuthSettings.layer)
 );
 
@@ -116,7 +120,7 @@ export const WorkspaceLive = Layer.merge(
  * and the applications acting for a user. Needs what WorkspaceLive provides,
  * the database, a TransactionRunner, and the other contexts' records
  * (ChannelRecords, PostRecords, MediaRecords, NoticeRecords, UsageRecords,
- * AnalyticsRecords, BillingRecords, StaffRecords) and SendAuthEmail, which
+ * AnalyticsRecords, BillingRecords, StaffRecords, LegalRecords) and SendAuthEmail, which
  * the composition root brings.
  */
 export const WorkspaceSettingsLive = Layer.mergeAll(
@@ -128,7 +132,7 @@ export const WorkspaceSettingsLive = Layer.mergeAll(
   Layer.provide(
     Layer.mergeAll(
       ApiKeyIssuerLive,
-      ContextRecordsLive,
+      ContextRecordsLive.pipe(Layer.provide(KeyedPseudonymsLive)),
       DrizzleAccountStore,
       DrizzleConnectedAppStore,
       EmailedAccountMail,
@@ -168,7 +172,7 @@ export { StripeCheckoutsLive } from "#workspace/infrastructure/auth/stripe-check
  * The MCP endpoint's authentication: its routes act as the member an OAuth
  * access token issued for it is bound to.
  */
-export { McpAuthenticationLive } from "#workspace/api/mcp-authentication.ts";
+export { mcpAuthentication } from "#workspace/api/mcp-authentication.ts";
 
 /**
  * Better Auth's routes under /api/auth, and the OAuth discovery documents

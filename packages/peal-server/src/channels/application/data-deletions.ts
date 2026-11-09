@@ -5,7 +5,6 @@ import type {
   DataDeletion,
   MetaAppKind,
 } from "#channels/domain/data-deletion.ts";
-import type { Platform } from "#channels/domain/platform.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 
 /**
@@ -16,8 +15,9 @@ export class DataDeletions extends Context.Service<
   DataDeletions,
   {
     /**
-     * Deletes, in every workspace, the channels on these platforms whose
-     * tokens rest on the user: granted by them, or their own account, and
+     * Deletes, in every workspace, the channels the app signs in
+     * (`channelsSignedInWith`) whose tokens rest on the user: granted by
+     * them, or their own account, and
      * the accounts their sign-in offers a member to choose from, with their
      * tokens. Then records the request under `code`, which counts the
      * channels: all of it happens, or none.
@@ -31,7 +31,6 @@ export class DataDeletions extends Context.Service<
       readonly app: MetaAppKind;
       readonly code: string;
       readonly now: DateTime.Utc;
-      readonly platforms: readonly Platform[];
       /** The request as Meta sent it, whose signature checked out. */
       readonly signedRequest: string;
       readonly userId: string;

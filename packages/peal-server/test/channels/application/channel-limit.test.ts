@@ -74,6 +74,7 @@ layer(FreePlanTest)("connecting channels on the free plan", (it) => {
 
       const refused = yield* connect
         .start(manager(workspaceId), "mastodon", {
+          connection: Option.none(),
           handle: Option.none(),
           instance: Option.some(instance.url),
         })
@@ -96,7 +97,11 @@ layer(FreePlanTest)("connecting channels on the free plan", (it) => {
         const authorizationUrl = yield* connect.start(
           manager(workspaceId),
           "mastodon",
-          { handle: Option.none(), instance: Option.some(instance.url) }
+          {
+            connection: Option.none(),
+            handle: Option.none(),
+            instance: Option.some(instance.url),
+          }
         );
 
         yield* fill(workspaceId, 1);
@@ -126,6 +131,7 @@ layer(FreePlanTest)("connecting channels on the free plan", (it) => {
       const connect = yield* ConnectChannel;
 
       const begin = connect.start(manager(workspaceId), "mastodon", {
+        connection: Option.none(),
         handle: Option.none(),
         instance: Option.some(instance.url),
       });

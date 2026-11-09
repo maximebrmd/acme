@@ -31,18 +31,24 @@ const docs = docsLink(locale);
       {t.nav.brand}
     </a>
     <div class="flex items-center gap-6">
-      {
-        docs !== undefined && (
-          <nav aria-label={t.nav.main}>
+      <nav aria-label={t.nav.main} class="flex items-center gap-6">
+        <a
+          href={getRelativeLocaleUrl(locale, "pricing")}
+          class="text-sm font-medium text-neutral-700 hover:text-neutral-900 dark:text-neutral-300 dark:hover:text-neutral-100"
+        >
+          {t.pricing.nav}
+        </a>
+        {
+          docs !== undefined && (
             <a
               href={docs}
               class="text-sm font-medium text-neutral-700 hover:text-neutral-900 dark:text-neutral-300 dark:hover:text-neutral-100"
             >
               {t.nav.docs}
             </a>
-          </nav>
-        )
-      }
+          )
+        }
+      </nav>
       <LanguageLinks label={t.footer.language} locale={locale} path={path} />
     </div>
   </div>

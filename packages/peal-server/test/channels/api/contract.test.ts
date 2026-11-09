@@ -1,6 +1,15 @@
 import { describe, expect, it } from "@effect/vitest";
 import { OpenApi } from "effect/http-api";
-import { Api } from "peal-contract";
+import {
+  Api,
+  InstagramConnectionSchema as ContractConnectionSchema,
+  MetaAppSchema,
+  PlatformSchema as ContractPlatformSchema,
+} from "peal-contract";
+
+import { MetaAppKindSchema } from "#channels/domain/data-deletion.ts";
+import { PlatformSchema } from "#channels/domain/platform.ts";
+import { InstagramConnectionSchema } from "#shared/domain/instagram-connection.ts";
 
 // What the API reference tells clients each endpoint may answer.
 const documentedStatuses = (path: string) =>
@@ -18,5 +27,15 @@ describe("the channels contract", () => {
         "/api/workspaces/{workspaceId}/channels/connect/{platform}"
       )
     ).toContain("402");
+  });
+
+  it("copies the server's platforms, Instagram's ways in and Meta's apps", () => {
+    expect(ContractPlatformSchema.literals).toStrictEqual(
+      PlatformSchema.literals
+    );
+    expect(ContractConnectionSchema.literals).toStrictEqual(
+      InstagramConnectionSchema.literals
+    );
+    expect(MetaAppSchema.literals).toStrictEqual(MetaAppKindSchema.literals);
   });
 });

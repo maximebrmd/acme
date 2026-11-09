@@ -94,6 +94,108 @@ func (m *MarkNoticesRead) MarshalJSON() ([]byte, error) {
 }
 
 var (
+	moneyFieldAmount   = big.NewInt(1 << 0)
+	moneyFieldCurrency = big.NewInt(1 << 1)
+)
+
+type Money struct {
+	Amount   int    `json:"amount" url:"amount"`
+	Currency string `json:"currency" url:"currency"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (m *Money) GetAmount() int {
+	if m == nil {
+		return 0
+	}
+	return m.Amount
+}
+
+func (m *Money) GetCurrency() string {
+	if m == nil {
+		return ""
+	}
+	return m.Currency
+}
+
+func (m *Money) GetExtraProperties() map[string]interface{} {
+	if m == nil {
+		return nil
+	}
+	return m.extraProperties
+}
+
+func (m *Money) require(field *big.Int) {
+	next := new(big.Int)
+	if m.explicitFields != nil {
+		next.Set(m.explicitFields)
+	}
+	next.Or(next, field)
+	m.explicitFields = next
+}
+
+// SetAmount sets the Amount field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (m *Money) SetAmount(amount int) {
+	m.Amount = amount
+	m.require(moneyFieldAmount)
+}
+
+// SetCurrency sets the Currency field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (m *Money) SetCurrency(currency string) {
+	m.Currency = currency
+	m.require(moneyFieldCurrency)
+}
+
+func (m *Money) UnmarshalJSON(data []byte) error {
+	type unmarshaler Money
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*m = Money(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *m)
+	if err != nil {
+		return err
+	}
+	m.extraProperties = extraProperties
+	m.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (m *Money) MarshalJSON() ([]byte, error) {
+	type embed Money
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*m),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, m.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (m *Money) String() string {
+	if m == nil {
+		return "<nil>"
+	}
+	if len(m.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(m.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(m); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", m)
+}
+
+var (
 	noticeFieldCreatedAt   = big.NewInt(1 << 0)
 	noticeFieldEvent       = big.NewInt(1 << 1)
 	noticeFieldID          = big.NewInt(1 << 2)
@@ -364,6 +466,11 @@ type NoticeEvent struct {
 	PostUnconfirmed          *NoticeEventPostUnconfirmed
 	ChannelReconnectRequired *NoticeEventChannelReconnectRequired
 	ChannelReconnectSoon     *NoticeEventChannelReconnectSoon
+	SubscriptionStarted      *NoticeEventSubscriptionStarted
+	TrialEnding              *NoticeEventTrialEnding
+	SubscriptionRenewing     *NoticeEventSubscriptionRenewing
+	SubscriptionCancelled    *NoticeEventSubscriptionCancelled
+	SubscriptionWithdrawn    *NoticeEventSubscriptionWithdrawn
 
 	rawJSON json.RawMessage
 }
@@ -410,6 +517,41 @@ func (n *NoticeEvent) GetChannelReconnectSoon() *NoticeEventChannelReconnectSoon
 	return n.ChannelReconnectSoon
 }
 
+func (n *NoticeEvent) GetSubscriptionStarted() *NoticeEventSubscriptionStarted {
+	if n == nil {
+		return nil
+	}
+	return n.SubscriptionStarted
+}
+
+func (n *NoticeEvent) GetTrialEnding() *NoticeEventTrialEnding {
+	if n == nil {
+		return nil
+	}
+	return n.TrialEnding
+}
+
+func (n *NoticeEvent) GetSubscriptionRenewing() *NoticeEventSubscriptionRenewing {
+	if n == nil {
+		return nil
+	}
+	return n.SubscriptionRenewing
+}
+
+func (n *NoticeEvent) GetSubscriptionCancelled() *NoticeEventSubscriptionCancelled {
+	if n == nil {
+		return nil
+	}
+	return n.SubscriptionCancelled
+}
+
+func (n *NoticeEvent) GetSubscriptionWithdrawn() *NoticeEventSubscriptionWithdrawn {
+	if n == nil {
+		return nil
+	}
+	return n.SubscriptionWithdrawn
+}
+
 func (n *NoticeEvent) UnmarshalJSON(data []byte) error {
 	var unmarshaler struct {
 		Type string `json:"_tag"`
@@ -452,6 +594,36 @@ func (n *NoticeEvent) UnmarshalJSON(data []byte) error {
 			return err
 		}
 		n.ChannelReconnectSoon = value
+	case "SubscriptionStarted":
+		value := new(NoticeEventSubscriptionStarted)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		n.SubscriptionStarted = value
+	case "TrialEnding":
+		value := new(NoticeEventTrialEnding)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		n.TrialEnding = value
+	case "SubscriptionRenewing":
+		value := new(NoticeEventSubscriptionRenewing)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		n.SubscriptionRenewing = value
+	case "SubscriptionCancelled":
+		value := new(NoticeEventSubscriptionCancelled)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		n.SubscriptionCancelled = value
+	case "SubscriptionWithdrawn":
+		value := new(NoticeEventSubscriptionWithdrawn)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		n.SubscriptionWithdrawn = value
 	}
 	n.rawJSON = json.RawMessage(data)
 	return nil
@@ -476,6 +648,21 @@ func (n NoticeEvent) MarshalJSON() ([]byte, error) {
 	if n.ChannelReconnectSoon != nil {
 		return internal.MarshalJSONWithExtraProperty(n.ChannelReconnectSoon, "_tag", "ChannelReconnectSoon")
 	}
+	if n.SubscriptionStarted != nil {
+		return internal.MarshalJSONWithExtraProperty(n.SubscriptionStarted, "_tag", "SubscriptionStarted")
+	}
+	if n.TrialEnding != nil {
+		return internal.MarshalJSONWithExtraProperty(n.TrialEnding, "_tag", "TrialEnding")
+	}
+	if n.SubscriptionRenewing != nil {
+		return internal.MarshalJSONWithExtraProperty(n.SubscriptionRenewing, "_tag", "SubscriptionRenewing")
+	}
+	if n.SubscriptionCancelled != nil {
+		return internal.MarshalJSONWithExtraProperty(n.SubscriptionCancelled, "_tag", "SubscriptionCancelled")
+	}
+	if n.SubscriptionWithdrawn != nil {
+		return internal.MarshalJSONWithExtraProperty(n.SubscriptionWithdrawn, "_tag", "SubscriptionWithdrawn")
+	}
 	if len(n.rawJSON) > 0 {
 		return n.rawJSON, nil
 	}
@@ -488,6 +675,11 @@ type NoticeEventVisitor interface {
 	VisitPostUnconfirmed(*NoticeEventPostUnconfirmed) error
 	VisitChannelReconnectRequired(*NoticeEventChannelReconnectRequired) error
 	VisitChannelReconnectSoon(*NoticeEventChannelReconnectSoon) error
+	VisitSubscriptionStarted(*NoticeEventSubscriptionStarted) error
+	VisitTrialEnding(*NoticeEventTrialEnding) error
+	VisitSubscriptionRenewing(*NoticeEventSubscriptionRenewing) error
+	VisitSubscriptionCancelled(*NoticeEventSubscriptionCancelled) error
+	VisitSubscriptionWithdrawn(*NoticeEventSubscriptionWithdrawn) error
 }
 
 func (n *NoticeEvent) Accept(visitor NoticeEventVisitor) error {
@@ -505,6 +697,21 @@ func (n *NoticeEvent) Accept(visitor NoticeEventVisitor) error {
 	}
 	if n.ChannelReconnectSoon != nil {
 		return visitor.VisitChannelReconnectSoon(n.ChannelReconnectSoon)
+	}
+	if n.SubscriptionStarted != nil {
+		return visitor.VisitSubscriptionStarted(n.SubscriptionStarted)
+	}
+	if n.TrialEnding != nil {
+		return visitor.VisitTrialEnding(n.TrialEnding)
+	}
+	if n.SubscriptionRenewing != nil {
+		return visitor.VisitSubscriptionRenewing(n.SubscriptionRenewing)
+	}
+	if n.SubscriptionCancelled != nil {
+		return visitor.VisitSubscriptionCancelled(n.SubscriptionCancelled)
+	}
+	if n.SubscriptionWithdrawn != nil {
+		return visitor.VisitSubscriptionWithdrawn(n.SubscriptionWithdrawn)
 	}
 	return fmt.Errorf("type %T does not define a non-empty union type", n)
 }
@@ -528,6 +735,21 @@ func (n *NoticeEvent) validate() error {
 	}
 	if n.ChannelReconnectSoon != nil {
 		fields = append(fields, "ChannelReconnectSoon")
+	}
+	if n.SubscriptionStarted != nil {
+		fields = append(fields, "SubscriptionStarted")
+	}
+	if n.TrialEnding != nil {
+		fields = append(fields, "TrialEnding")
+	}
+	if n.SubscriptionRenewing != nil {
+		fields = append(fields, "SubscriptionRenewing")
+	}
+	if n.SubscriptionCancelled != nil {
+		fields = append(fields, "SubscriptionCancelled")
+	}
+	if n.SubscriptionWithdrawn != nil {
+		fields = append(fields, "SubscriptionWithdrawn")
 	}
 	if len(fields) == 0 {
 		if n.Type != "" {
@@ -1104,6 +1326,608 @@ func (n *NoticeEventPostUnconfirmed) MarshalJSON() ([]byte, error) {
 }
 
 func (n *NoticeEventPostUnconfirmed) String() string {
+	if n == nil {
+		return "<nil>"
+	}
+	if len(n.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(n.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(n); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", n)
+}
+
+var (
+	noticeEventSubscriptionCancelledFieldEndsAt = big.NewInt(1 << 0)
+	noticeEventSubscriptionCancelledFieldPlan   = big.NewInt(1 << 1)
+)
+
+type NoticeEventSubscriptionCancelled struct {
+	EndsAt string   `json:"endsAt" url:"endsAt"`
+	Plan   PaidPlan `json:"plan" url:"plan"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (n *NoticeEventSubscriptionCancelled) GetEndsAt() string {
+	if n == nil {
+		return ""
+	}
+	return n.EndsAt
+}
+
+func (n *NoticeEventSubscriptionCancelled) GetPlan() PaidPlan {
+	if n == nil {
+		return ""
+	}
+	return n.Plan
+}
+
+func (n *NoticeEventSubscriptionCancelled) GetExtraProperties() map[string]interface{} {
+	if n == nil {
+		return nil
+	}
+	return n.extraProperties
+}
+
+func (n *NoticeEventSubscriptionCancelled) require(field *big.Int) {
+	next := new(big.Int)
+	if n.explicitFields != nil {
+		next.Set(n.explicitFields)
+	}
+	next.Or(next, field)
+	n.explicitFields = next
+}
+
+// SetEndsAt sets the EndsAt field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NoticeEventSubscriptionCancelled) SetEndsAt(endsAt string) {
+	n.EndsAt = endsAt
+	n.require(noticeEventSubscriptionCancelledFieldEndsAt)
+}
+
+// SetPlan sets the Plan field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NoticeEventSubscriptionCancelled) SetPlan(plan PaidPlan) {
+	n.Plan = plan
+	n.require(noticeEventSubscriptionCancelledFieldPlan)
+}
+
+func (n *NoticeEventSubscriptionCancelled) UnmarshalJSON(data []byte) error {
+	type unmarshaler NoticeEventSubscriptionCancelled
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*n = NoticeEventSubscriptionCancelled(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *n)
+	if err != nil {
+		return err
+	}
+	n.extraProperties = extraProperties
+	n.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (n *NoticeEventSubscriptionCancelled) MarshalJSON() ([]byte, error) {
+	type embed NoticeEventSubscriptionCancelled
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*n),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, n.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (n *NoticeEventSubscriptionCancelled) String() string {
+	if n == nil {
+		return "<nil>"
+	}
+	if len(n.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(n.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(n); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", n)
+}
+
+var (
+	noticeEventSubscriptionRenewingFieldPlan     = big.NewInt(1 << 0)
+	noticeEventSubscriptionRenewingFieldPrice    = big.NewInt(1 << 1)
+	noticeEventSubscriptionRenewingFieldRenewsAt = big.NewInt(1 << 2)
+)
+
+type NoticeEventSubscriptionRenewing struct {
+	Plan     PaidPlan `json:"plan" url:"plan"`
+	Price    *Money   `json:"price" url:"price"`
+	RenewsAt string   `json:"renewsAt" url:"renewsAt"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (n *NoticeEventSubscriptionRenewing) GetPlan() PaidPlan {
+	if n == nil {
+		return ""
+	}
+	return n.Plan
+}
+
+func (n *NoticeEventSubscriptionRenewing) GetPrice() *Money {
+	if n == nil {
+		return nil
+	}
+	return n.Price
+}
+
+func (n *NoticeEventSubscriptionRenewing) GetRenewsAt() string {
+	if n == nil {
+		return ""
+	}
+	return n.RenewsAt
+}
+
+func (n *NoticeEventSubscriptionRenewing) GetExtraProperties() map[string]interface{} {
+	if n == nil {
+		return nil
+	}
+	return n.extraProperties
+}
+
+func (n *NoticeEventSubscriptionRenewing) require(field *big.Int) {
+	next := new(big.Int)
+	if n.explicitFields != nil {
+		next.Set(n.explicitFields)
+	}
+	next.Or(next, field)
+	n.explicitFields = next
+}
+
+// SetPlan sets the Plan field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NoticeEventSubscriptionRenewing) SetPlan(plan PaidPlan) {
+	n.Plan = plan
+	n.require(noticeEventSubscriptionRenewingFieldPlan)
+}
+
+// SetPrice sets the Price field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NoticeEventSubscriptionRenewing) SetPrice(price *Money) {
+	n.Price = price
+	n.require(noticeEventSubscriptionRenewingFieldPrice)
+}
+
+// SetRenewsAt sets the RenewsAt field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NoticeEventSubscriptionRenewing) SetRenewsAt(renewsAt string) {
+	n.RenewsAt = renewsAt
+	n.require(noticeEventSubscriptionRenewingFieldRenewsAt)
+}
+
+func (n *NoticeEventSubscriptionRenewing) UnmarshalJSON(data []byte) error {
+	type unmarshaler NoticeEventSubscriptionRenewing
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*n = NoticeEventSubscriptionRenewing(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *n)
+	if err != nil {
+		return err
+	}
+	n.extraProperties = extraProperties
+	n.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (n *NoticeEventSubscriptionRenewing) MarshalJSON() ([]byte, error) {
+	type embed NoticeEventSubscriptionRenewing
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*n),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, n.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (n *NoticeEventSubscriptionRenewing) String() string {
+	if n == nil {
+		return "<nil>"
+	}
+	if len(n.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(n.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(n); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", n)
+}
+
+var (
+	noticeEventSubscriptionStartedFieldInterval  = big.NewInt(1 << 0)
+	noticeEventSubscriptionStartedFieldPlan      = big.NewInt(1 << 1)
+	noticeEventSubscriptionStartedFieldPrice     = big.NewInt(1 << 2)
+	noticeEventSubscriptionStartedFieldStartedAt = big.NewInt(1 << 3)
+	noticeEventSubscriptionStartedFieldTrialEnd  = big.NewInt(1 << 4)
+)
+
+// noticeEventSubscriptionStartedNullableFields maps the wire names of NoticeEventSubscriptionStarted's nullable fields (required or optional) to their field bits.
+var noticeEventSubscriptionStartedNullableFields = map[string]*big.Int{
+	"trialEnd": noticeEventSubscriptionStartedFieldTrialEnd,
+}
+
+type NoticeEventSubscriptionStarted struct {
+	Interval  BillingInterval `json:"interval" url:"interval"`
+	Plan      PaidPlan        `json:"plan" url:"plan"`
+	Price     *Money          `json:"price" url:"price"`
+	StartedAt string          `json:"startedAt" url:"startedAt"`
+	TrialEnd  *string         `json:"trialEnd,omitempty" url:"trialEnd,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (n *NoticeEventSubscriptionStarted) GetInterval() BillingInterval {
+	if n == nil {
+		return ""
+	}
+	return n.Interval
+}
+
+func (n *NoticeEventSubscriptionStarted) GetPlan() PaidPlan {
+	if n == nil {
+		return ""
+	}
+	return n.Plan
+}
+
+func (n *NoticeEventSubscriptionStarted) GetPrice() *Money {
+	if n == nil {
+		return nil
+	}
+	return n.Price
+}
+
+func (n *NoticeEventSubscriptionStarted) GetStartedAt() string {
+	if n == nil {
+		return ""
+	}
+	return n.StartedAt
+}
+
+func (n *NoticeEventSubscriptionStarted) GetTrialEnd() *string {
+	if n == nil {
+		return nil
+	}
+	return n.TrialEnd
+}
+
+func (n *NoticeEventSubscriptionStarted) GetExtraProperties() map[string]interface{} {
+	if n == nil {
+		return nil
+	}
+	return n.extraProperties
+}
+
+func (n *NoticeEventSubscriptionStarted) require(field *big.Int) {
+	next := new(big.Int)
+	if n.explicitFields != nil {
+		next.Set(n.explicitFields)
+	}
+	next.Or(next, field)
+	n.explicitFields = next
+}
+
+// SetInterval sets the Interval field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NoticeEventSubscriptionStarted) SetInterval(interval BillingInterval) {
+	n.Interval = interval
+	n.require(noticeEventSubscriptionStartedFieldInterval)
+}
+
+// SetPlan sets the Plan field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NoticeEventSubscriptionStarted) SetPlan(plan PaidPlan) {
+	n.Plan = plan
+	n.require(noticeEventSubscriptionStartedFieldPlan)
+}
+
+// SetPrice sets the Price field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NoticeEventSubscriptionStarted) SetPrice(price *Money) {
+	n.Price = price
+	n.require(noticeEventSubscriptionStartedFieldPrice)
+}
+
+// SetStartedAt sets the StartedAt field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NoticeEventSubscriptionStarted) SetStartedAt(startedAt string) {
+	n.StartedAt = startedAt
+	n.require(noticeEventSubscriptionStartedFieldStartedAt)
+}
+
+// SetTrialEnd sets the TrialEnd field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NoticeEventSubscriptionStarted) SetTrialEnd(trialEnd *string) {
+	n.TrialEnd = trialEnd
+	n.require(noticeEventSubscriptionStartedFieldTrialEnd)
+}
+
+func (n *NoticeEventSubscriptionStarted) UnmarshalJSON(data []byte) error {
+	type unmarshaler NoticeEventSubscriptionStarted
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*n = NoticeEventSubscriptionStarted(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *n)
+	if err != nil {
+		return err
+	}
+	n.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, noticeEventSubscriptionStartedNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		n.require(presentFields)
+	}
+	n.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (n *NoticeEventSubscriptionStarted) MarshalJSON() ([]byte, error) {
+	type embed NoticeEventSubscriptionStarted
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*n),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, n.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (n *NoticeEventSubscriptionStarted) String() string {
+	if n == nil {
+		return "<nil>"
+	}
+	if len(n.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(n.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(n); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", n)
+}
+
+var (
+	noticeEventSubscriptionWithdrawnFieldPlan        = big.NewInt(1 << 0)
+	noticeEventSubscriptionWithdrawnFieldRefunded    = big.NewInt(1 << 1)
+	noticeEventSubscriptionWithdrawnFieldWithdrawnAt = big.NewInt(1 << 2)
+)
+
+type NoticeEventSubscriptionWithdrawn struct {
+	Plan        PaidPlan `json:"plan" url:"plan"`
+	Refunded    *Money   `json:"refunded" url:"refunded"`
+	WithdrawnAt string   `json:"withdrawnAt" url:"withdrawnAt"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (n *NoticeEventSubscriptionWithdrawn) GetPlan() PaidPlan {
+	if n == nil {
+		return ""
+	}
+	return n.Plan
+}
+
+func (n *NoticeEventSubscriptionWithdrawn) GetRefunded() *Money {
+	if n == nil {
+		return nil
+	}
+	return n.Refunded
+}
+
+func (n *NoticeEventSubscriptionWithdrawn) GetWithdrawnAt() string {
+	if n == nil {
+		return ""
+	}
+	return n.WithdrawnAt
+}
+
+func (n *NoticeEventSubscriptionWithdrawn) GetExtraProperties() map[string]interface{} {
+	if n == nil {
+		return nil
+	}
+	return n.extraProperties
+}
+
+func (n *NoticeEventSubscriptionWithdrawn) require(field *big.Int) {
+	next := new(big.Int)
+	if n.explicitFields != nil {
+		next.Set(n.explicitFields)
+	}
+	next.Or(next, field)
+	n.explicitFields = next
+}
+
+// SetPlan sets the Plan field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NoticeEventSubscriptionWithdrawn) SetPlan(plan PaidPlan) {
+	n.Plan = plan
+	n.require(noticeEventSubscriptionWithdrawnFieldPlan)
+}
+
+// SetRefunded sets the Refunded field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NoticeEventSubscriptionWithdrawn) SetRefunded(refunded *Money) {
+	n.Refunded = refunded
+	n.require(noticeEventSubscriptionWithdrawnFieldRefunded)
+}
+
+// SetWithdrawnAt sets the WithdrawnAt field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NoticeEventSubscriptionWithdrawn) SetWithdrawnAt(withdrawnAt string) {
+	n.WithdrawnAt = withdrawnAt
+	n.require(noticeEventSubscriptionWithdrawnFieldWithdrawnAt)
+}
+
+func (n *NoticeEventSubscriptionWithdrawn) UnmarshalJSON(data []byte) error {
+	type unmarshaler NoticeEventSubscriptionWithdrawn
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*n = NoticeEventSubscriptionWithdrawn(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *n)
+	if err != nil {
+		return err
+	}
+	n.extraProperties = extraProperties
+	n.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (n *NoticeEventSubscriptionWithdrawn) MarshalJSON() ([]byte, error) {
+	type embed NoticeEventSubscriptionWithdrawn
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*n),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, n.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (n *NoticeEventSubscriptionWithdrawn) String() string {
+	if n == nil {
+		return "<nil>"
+	}
+	if len(n.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(n.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(n); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", n)
+}
+
+var (
+	noticeEventTrialEndingFieldEndsAt = big.NewInt(1 << 0)
+	noticeEventTrialEndingFieldPlan   = big.NewInt(1 << 1)
+)
+
+type NoticeEventTrialEnding struct {
+	EndsAt string   `json:"endsAt" url:"endsAt"`
+	Plan   PaidPlan `json:"plan" url:"plan"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (n *NoticeEventTrialEnding) GetEndsAt() string {
+	if n == nil {
+		return ""
+	}
+	return n.EndsAt
+}
+
+func (n *NoticeEventTrialEnding) GetPlan() PaidPlan {
+	if n == nil {
+		return ""
+	}
+	return n.Plan
+}
+
+func (n *NoticeEventTrialEnding) GetExtraProperties() map[string]interface{} {
+	if n == nil {
+		return nil
+	}
+	return n.extraProperties
+}
+
+func (n *NoticeEventTrialEnding) require(field *big.Int) {
+	next := new(big.Int)
+	if n.explicitFields != nil {
+		next.Set(n.explicitFields)
+	}
+	next.Or(next, field)
+	n.explicitFields = next
+}
+
+// SetEndsAt sets the EndsAt field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NoticeEventTrialEnding) SetEndsAt(endsAt string) {
+	n.EndsAt = endsAt
+	n.require(noticeEventTrialEndingFieldEndsAt)
+}
+
+// SetPlan sets the Plan field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (n *NoticeEventTrialEnding) SetPlan(plan PaidPlan) {
+	n.Plan = plan
+	n.require(noticeEventTrialEndingFieldPlan)
+}
+
+func (n *NoticeEventTrialEnding) UnmarshalJSON(data []byte) error {
+	type unmarshaler NoticeEventTrialEnding
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*n = NoticeEventTrialEnding(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *n)
+	if err != nil {
+		return err
+	}
+	n.extraProperties = extraProperties
+	n.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (n *NoticeEventTrialEnding) MarshalJSON() ([]byte, error) {
+	type embed NoticeEventTrialEnding
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*n),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, n.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (n *NoticeEventTrialEnding) String() string {
 	if n == nil {
 		return "<nil>"
 	}

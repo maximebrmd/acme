@@ -32,6 +32,10 @@ public readonly record struct FailureReason : IStringEnum
 
     public static readonly FailureReason QuotaExceeded = new(Values.QuotaExceeded);
 
+    public static readonly FailureReason AppBillingLimit = new(Values.AppBillingLimit);
+
+    public static readonly FailureReason PlanLimit = new(Values.PlanLimit);
+
     public FailureReason(string value)
     {
         Value = value;
@@ -151,5 +155,9 @@ public readonly record struct FailureReason : IStringEnum
         public const string AppNotAudited = "appNotAudited";
 
         public const string QuotaExceeded = "quotaExceeded";
+
+        public const string AppBillingLimit = "appBillingLimit";
+
+        public const string PlanLimit = "planLimit";
     }
 }

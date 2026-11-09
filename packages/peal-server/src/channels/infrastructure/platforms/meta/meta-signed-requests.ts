@@ -1,4 +1,12 @@
-import { Effect, Layer, Option, Redacted, Result, Schema } from "effect";
+import {
+  DateTime,
+  Effect,
+  Layer,
+  Option,
+  Redacted,
+  Result,
+  Schema,
+} from "effect";
 import { Mac } from "effect/crypto";
 import { Base64Url } from "effect/encoding";
 
@@ -15,6 +23,8 @@ import type { MetaApp } from "#shared/infrastructure/platforms/meta-apps.ts";
 // Callback" and "Parsing the Signed Request" pages).
 const PayloadSchema = Schema.Struct({
   algorithm: Schema.String,
+  // Seconds since the epoch.
+  issued_at: Schema.optionalKey(Schema.Int),
   user_id: Schema.Union([Schema.NonEmptyString, Schema.Int]),
 });
 
@@ -36,8 +46,13 @@ export const MetaSignedRequestsLive = Layer.effect(
     const settings = yield* ChannelPlatforms;
     const mac = yield* Mac.Mac;
 
-    const appOf = (app: MetaAppKind): Option.Option<MetaApp> =>
-      app === "facebook" ? settings.meta : settings.threads;
+    const apps: Readonly<Record<MetaAppKind, Option.Option<MetaApp>>> = {
+      facebook: settings.meta,
+      instagram: settings.instagram,
+      threads: settings.threads,
+    };
+
+    const appOf = (app: MetaAppKind): Option.Option<MetaApp> => apps[app];
 
     const verify = Effect.fn("SignedRequests.verify")(function* verify(
       app: MetaAppKind,
@@ -91,7 +106,12 @@ export const MetaSignedRequestsLive = Layer.effect(
         return yield* refused("the algorithm is not HMAC-SHA256");
       }
 
-      return { userId: String(payload.value.user_id) };
+      return {
+        issuedAt: Option.fromUndefinedOr(payload.value.issued_at).pipe(
+          Option.flatMap((seconds) => DateTime.make(seconds * 1000))
+        ),
+        userId: String(payload.value.user_id),
+      };
     });
 
     return SignedRequests.of({ verify });

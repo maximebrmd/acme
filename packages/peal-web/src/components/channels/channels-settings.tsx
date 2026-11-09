@@ -129,6 +129,7 @@ const LoadedConnectForms = ({
   if (AsyncResult.isSuccess(platforms)) {
     return (
       <ConnectForms
+        instagramConnections={platforms.value.instagramConnections}
         platforms={platforms.value.platforms}
         workspaceId={workspaceId}
       />

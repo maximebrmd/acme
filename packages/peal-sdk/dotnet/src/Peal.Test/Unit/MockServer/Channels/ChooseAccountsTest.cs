@@ -26,6 +26,7 @@ public class ChooseAccountsTest : BaseMockServerTest
             [
               {
                 "avatarUrl": "avatarUrl",
+                "connection": "instagramLogin",
                 "displayName": "displayName",
                 "handle": "handle",
                 "id": "id",
@@ -37,6 +38,7 @@ public class ChooseAccountsTest : BaseMockServerTest
               },
               {
                 "avatarUrl": "avatarUrl",
+                "connection": "instagramLogin",
                 "displayName": "displayName",
                 "handle": "handle",
                 "id": "id",
@@ -93,6 +95,7 @@ public class ChooseAccountsTest : BaseMockServerTest
             [
               {
                 "avatarUrl": "avatarUrl",
+                "connection": "instagramLogin",
                 "displayName": "displayName",
                 "handle": "handle",
                 "id": "id",

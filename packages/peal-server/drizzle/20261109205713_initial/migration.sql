@@ -6,6 +6,8 @@ CREATE SCHEMA "billing";
 --> statement-breakpoint
 CREATE SCHEMA "channels";
 --> statement-breakpoint
+CREATE SCHEMA "legal";
+--> statement-breakpoint
 CREATE SCHEMA "media";
 --> statement-breakpoint
 CREATE SCHEMA "notifications";
@@ -61,6 +63,30 @@ CREATE TABLE "assistant"."daily_usage" (
 	CONSTRAINT "daily_usage_requests" CHECK ("requests" >= 0)
 );
 --> statement-breakpoint
+CREATE TABLE "billing"."metered_posts" (
+	"month" date,
+	"platform" text,
+	"posts" integer NOT NULL,
+	"posts_with_links" integer NOT NULL,
+	"workspace_id" uuid,
+	CONSTRAINT "metered_posts_pkey" PRIMARY KEY("workspace_id","platform","month"),
+	CONSTRAINT "metered_posts_counts" CHECK ("posts_with_links" >= 0 AND "posts_with_links" <= "posts")
+);
+--> statement-breakpoint
+CREATE TABLE "billing"."orders" (
+	"consent_version" text NOT NULL,
+	"created_at" timestamp with time zone NOT NULL,
+	"erased_at" timestamp with time zone,
+	"id" uuid PRIMARY KEY,
+	"interval" text NOT NULL,
+	"plan" text NOT NULL,
+	"stripe_customer_id" text,
+	"trial" boolean NOT NULL,
+	"used_at" timestamp with time zone,
+	"user_id" text,
+	"workspace_id" uuid
+);
+--> statement-breakpoint
 CREATE TABLE "billing"."stripe_events" (
 	"id" text PRIMARY KEY,
 	"received_at" timestamp with time zone NOT NULL
@@ -69,20 +95,47 @@ CREATE TABLE "billing"."stripe_events" (
 CREATE TABLE "billing"."subscriptions" (
 	"cancel_at_period_end" boolean NOT NULL,
 	"current_period_end" timestamp with time zone,
+	"current_period_start" timestamp with time zone,
+	"interval" text DEFAULT 'month' NOT NULL,
 	"last_event_at" timestamp with time zone NOT NULL,
 	"last_event_id" text NOT NULL,
 	"plan" text NOT NULL,
+	"started_at" timestamp with time zone,
 	"status" text NOT NULL,
 	"stripe_customer_id" text NOT NULL,
 	"stripe_subscription_id" text PRIMARY KEY,
+	"trial_end" timestamp with time zone,
 	"updated_at" timestamp with time zone NOT NULL,
 	"workspace_id" uuid NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "billing"."trials" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+	"plan" text,
+	"reserved_at" timestamp with time zone NOT NULL,
+	"started_at" timestamp with time zone,
+	"forgotten_at" timestamp with time zone,
+	"stripe_subscription_id" text,
+	"user_id" text,
+	"user_pseudonym" text,
+	"workspace_id" uuid
+);
+--> statement-breakpoint
+CREATE TABLE "billing"."withdrawals" (
+	"currency" text NOT NULL,
+	"erased_at" timestamp with time zone,
+	"refunded" bigint NOT NULL,
+	"requested_at" timestamp with time zone NOT NULL,
+	"stripe_subscription_id" text PRIMARY KEY,
+	"user_id" text,
+	"workspace_id" uuid
 );
 --> statement-breakpoint
 CREATE TABLE "channels"."channels" (
 	"access_token" text NOT NULL,
 	"account_id" text NOT NULL,
 	"avatar_url" text,
+	"connection" text,
 	"created_at" timestamp with time zone NOT NULL,
 	"display_name" text,
 	"granted_by" text,
@@ -108,6 +161,7 @@ CREATE TABLE "channels"."channels" (
 --> statement-breakpoint
 CREATE TABLE "channels"."connect_attempts" (
 	"channel_id" uuid,
+	"connection" text,
 	"created_at" timestamp with time zone NOT NULL,
 	"expires_at" timestamp with time zone NOT NULL,
 	"instance" text,
@@ -120,6 +174,7 @@ CREATE TABLE "channels"."connect_attempts" (
 --> statement-breakpoint
 CREATE TABLE "channels"."connect_choices" (
 	"accounts" text NOT NULL,
+	"connection" text,
 	"created_at" timestamp with time zone NOT NULL,
 	"expires_at" timestamp with time zone NOT NULL,
 	"granted_by" text,
@@ -146,6 +201,39 @@ CREATE TABLE "channels"."mastodon_apps" (
 	"redirect_uri" text,
 	"scopes" text NOT NULL,
 	CONSTRAINT "mastodon_apps_pkey" PRIMARY KEY("instance","redirect_uri")
+);
+--> statement-breakpoint
+CREATE TABLE "legal"."connections" (
+	"access" text NOT NULL,
+	"api_key_id" text,
+	"at" timestamp with time zone NOT NULL,
+	"id" uuid PRIMARY KEY,
+	"ip_address" text,
+	"protocol" text NOT NULL,
+	"user_id" uuid,
+	"workspace_id" uuid
+);
+--> statement-breakpoint
+CREATE TABLE "legal"."disclosures" (
+	"at" timestamp with time zone NOT NULL,
+	"authority" text NOT NULL,
+	"connections" integer NOT NULL,
+	"held" integer NOT NULL,
+	"id" uuid PRIMARY KEY,
+	"reference" text NOT NULL,
+	"staff_id" uuid NOT NULL,
+	"subject" jsonb NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "legal"."identification_holds" (
+	"account_created_at" timestamp with time zone NOT NULL,
+	"closed_at" timestamp with time zone NOT NULL,
+	"email" text NOT NULL,
+	"id" uuid PRIMARY KEY,
+	"name" text NOT NULL,
+	"sign_in_methods" jsonb DEFAULT '[]' NOT NULL,
+	"stripe_customer_ids" jsonb DEFAULT '[]' NOT NULL,
+	"user_id" uuid NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "media"."media_assets" (
@@ -292,6 +380,7 @@ CREATE TABLE "staff"."audit_events" (
 	"reason" text,
 	"staff_id" uuid,
 	"target_id" uuid,
+	"target_pseudonym" text,
 	"workspace_id" uuid
 );
 --> statement-breakpoint
@@ -580,18 +669,36 @@ CREATE INDEX "tracked_posts_due" ON "analytics"."tracked_posts" ("next_collectio
 CREATE INDEX "tracked_posts_workspace_published" ON "analytics"."tracked_posts" ("workspace_id","published_at");--> statement-breakpoint
 CREATE INDEX "tracked_posts_post" ON "analytics"."tracked_posts" ("post_id");--> statement-breakpoint
 CREATE INDEX "tracked_posts_published" ON "analytics"."tracked_posts" ("published_at","target_id");--> statement-breakpoint
+CREATE INDEX "orders_workspace" ON "billing"."orders" ("workspace_id");--> statement-breakpoint
+CREATE INDEX "orders_user" ON "billing"."orders" ("user_id");--> statement-breakpoint
+CREATE INDEX "orders_erased" ON "billing"."orders" ("erased_at");--> statement-breakpoint
 CREATE INDEX "subscriptions_workspace" ON "billing"."subscriptions" ("workspace_id");--> statement-breakpoint
+CREATE INDEX "subscriptions_reminders" ON "billing"."subscriptions" ("status","current_period_end");--> statement-breakpoint
+CREATE INDEX "trials_pseudonym" ON "billing"."trials" ("user_pseudonym");--> statement-breakpoint
+CREATE UNIQUE INDEX "trials_subscription" ON "billing"."trials" ("stripe_subscription_id");--> statement-breakpoint
+CREATE UNIQUE INDEX "trials_user" ON "billing"."trials" ("user_id");--> statement-breakpoint
+CREATE UNIQUE INDEX "trials_workspace" ON "billing"."trials" ("workspace_id");--> statement-breakpoint
+CREATE INDEX "withdrawals_workspace" ON "billing"."withdrawals" ("workspace_id");--> statement-breakpoint
+CREATE INDEX "withdrawals_user" ON "billing"."withdrawals" ("user_id");--> statement-breakpoint
+CREATE INDEX "withdrawals_erased" ON "billing"."withdrawals" ("erased_at");--> statement-breakpoint
 CREATE INDEX "channels_token_expiry" ON "channels"."channels" ("token_expires_at") WHERE "status" = 'active' AND "token_kind" <> 'nonExpiring';--> statement-breakpoint
 CREATE INDEX "channels_granted_by" ON "channels"."channels" ("granted_by") WHERE "granted_by" IS NOT NULL;--> statement-breakpoint
 CREATE INDEX "connect_attempts_expires_at" ON "channels"."connect_attempts" ("expires_at");--> statement-breakpoint
 CREATE INDEX "connect_choices_expires_at" ON "channels"."connect_choices" ("expires_at");--> statement-breakpoint
 CREATE INDEX "connect_choices_granted_by" ON "channels"."connect_choices" ("granted_by") WHERE "granted_by" IS NOT NULL;--> statement-breakpoint
+CREATE INDEX "connections_at" ON "legal"."connections" ("at");--> statement-breakpoint
+CREATE INDEX "connections_user" ON "legal"."connections" ("user_id","at");--> statement-breakpoint
+CREATE INDEX "connections_workspace" ON "legal"."connections" ("workspace_id","at");--> statement-breakpoint
+CREATE INDEX "disclosures_at" ON "legal"."disclosures" ("at");--> statement-breakpoint
+CREATE INDEX "identification_holds_closed_at" ON "legal"."identification_holds" ("closed_at");--> statement-breakpoint
+CREATE INDEX "identification_holds_user" ON "legal"."identification_holds" ("user_id");--> statement-breakpoint
 CREATE INDEX "media_assets_workspace_id_id_index" ON "media"."media_assets" ("workspace_id","id" DESC NULLS LAST);--> statement-breakpoint
 CREATE INDEX "notices_user" ON "notifications"."notices" ("user_id","id");--> statement-breakpoint
 CREATE INDEX "notices_user_unread" ON "notifications"."notices" ("user_id") WHERE "read_at" IS NULL;--> statement-breakpoint
 CREATE INDEX "post_targets_published" ON "publishing"."post_targets" ("finished_at","id") WHERE "status" = 'published';--> statement-breakpoint
 CREATE INDEX "posts_workspace_scheduled_at" ON "publishing"."posts" ("workspace_id","scheduled_at");--> statement-breakpoint
 CREATE INDEX "posts_workspace_drafts" ON "publishing"."posts" ("workspace_id","id") WHERE "status" = 'draft';--> statement-breakpoint
+CREATE INDEX "audit_events_pseudonym" ON "staff"."audit_events" ("target_pseudonym");--> statement-breakpoint
 CREATE INDEX "audit_events_at" ON "staff"."audit_events" ("at","id");--> statement-breakpoint
 CREATE INDEX "audit_events_target" ON "staff"."audit_events" ("target_id","at");--> statement-breakpoint
 CREATE INDEX "audit_events_staff" ON "staff"."audit_events" ("staff_id");--> statement-breakpoint

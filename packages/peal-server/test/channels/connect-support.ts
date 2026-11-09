@@ -1,4 +1,4 @@
-import { Context, Effect, Layer, Option, Redacted } from "effect";
+import { Context, Effect, Layer, Redacted } from "effect";
 import { Digest, SecureRandom } from "effect/crypto";
 import { FetchHttpClient } from "effect/http";
 
@@ -6,7 +6,6 @@ import { ConnectChannel } from "#channels/application/connect-channel.ts";
 import type { ConnectOutcome } from "#channels/application/connect-channel.ts";
 import { PlatformAuthorizers } from "#channels/application/platform-authorizer.ts";
 import type { PlatformAuthorizer } from "#channels/application/platform-authorizer.ts";
-import type { Platform } from "#channels/domain/platform.ts";
 import { DrizzleChannelRepository } from "#channels/infrastructure/drizzle-channel-repository.ts";
 import { DrizzleConnectAttempts } from "#channels/infrastructure/drizzle-connect-attempts.ts";
 import { DrizzleConnectChoices } from "#channels/infrastructure/drizzle-connect-choices.ts";
@@ -15,6 +14,7 @@ import { linkedinAuthorizer } from "#channels/infrastructure/platforms/linkedin/
 import type { LinkedInEndpoints } from "#channels/infrastructure/platforms/linkedin/linkedin-authorizer.ts";
 import { MastodonApps } from "#channels/infrastructure/platforms/mastodon/mastodon-apps.ts";
 import { mastodonAuthorizer } from "#channels/infrastructure/platforms/mastodon/mastodon-authorizer.ts";
+import { registryOf } from "#channels/infrastructure/platforms/platform-authorizers.ts";
 import { tiktokAuthorizer } from "#channels/infrastructure/platforms/tiktok/tiktok-authorizer.ts";
 import { xAuthorizer } from "#channels/infrastructure/platforms/x/x-authorizer.ts";
 import type { XEndpoints } from "#channels/infrastructure/platforms/x/x-authorizer.ts";
@@ -49,16 +49,7 @@ export const connectedChannel = (outcome: ConnectOutcome) =>
 /** A registry of the authorizers given, as the server builds it. */
 export const authorizersOf = (
   ...authorizers: readonly PlatformAuthorizer[]
-): PlatformAuthorizers["Service"] => {
-  const byPlatform = new Map<Platform, PlatformAuthorizer>(
-    authorizers.map((authorizer) => [authorizer.platform, authorizer])
-  );
-
-  return PlatformAuthorizers.of({
-    for: (platform) => Option.fromUndefinedOr(byPlatform.get(platform)),
-    unconfigured: new Set(),
-  });
-};
+): PlatformAuthorizers["Service"] => registryOf(authorizers);
 
 /**
  * The Mastodon authorizer as the server runs it, over HTTP through the

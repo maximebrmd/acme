@@ -115,6 +115,8 @@ export class AccountDirectory extends Context.Service<
     readonly standing: (userId: UserId) => Effect.Effect<
       Option.Option<{
         readonly ban: Option.Option<Ban>;
+        /** Whether it may also answer legal requests (`legalRole`). */
+        readonly legal: boolean;
         readonly staff: boolean;
       }>,
       DirectoryUnavailable

@@ -80,11 +80,13 @@ const viewOf = Effect.fn("AccountExport.view")(function* viewOf(
   const view: AccountExportView = {
     authoredPosts,
     connectedApps: exported.connectedApps,
+    contracts: exported.contracts,
     exportedAt: exported.exportedAt,
     invitations: {
       received: account.invitationsReceived,
       sent: account.invitationsSent,
     },
+    legalHold: exported.legalHold,
     memberships: account.memberships,
     notices,
     notificationPreferences: exported.preferences,

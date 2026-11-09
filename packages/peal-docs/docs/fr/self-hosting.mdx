@@ -101,7 +101,7 @@ Le serveur répond à deux sondes :
 
 ## Base de données [#database]
 
-Au démarrage, le serveur applique les migrations de la base de données qu’il n’a pas encore appliquées, un serveur à la fois, et n’écoute qu’une fois qu’elles sont terminées. Chaque partie de Peal range ses tables dans un schéma Postgres à elle (`assistant`, `auth`, `channels`, `media`, `notifications`, `publishing`) ; les tables de l’exécuteur de tâches (`cluster_*`) sont dans `public`.
+Au démarrage, le serveur applique les migrations de la base de données qu’il n’a pas encore appliquées, un serveur à la fois, et n’écoute qu’une fois qu’elles sont terminées. Chaque partie de Peal range ses tables dans un schéma Postgres à elle (`assistant`, `auth`, `channels`, `legal`, `media`, `notifications`, `publishing`) ; les tables de l’exécuteur de tâches (`cluster_*`) sont dans `public`.
 
 Le serveur exécute ses tâches durables depuis la même base, et les garde par des verrous consultatifs de session tant qu’il tourne. Connectez-le à Postgres directement, ou par un pooler en mode session : un pooler en mode transaction donne une autre connexion à chaque requête, ce qui perd ces verrous. Chaque processus serveur ouvre jusqu’à 10 connexions, et jusqu’à 5 de plus pour la connexion des utilisateurs (`AUTH_DB_POOL_MAX`).
 
@@ -121,6 +121,8 @@ Définissez `MAIL_FROM`, l’expéditeur, comme `Peal <noreply@example.com>` ou 
 Peal envoie l’e-mail qui confirme une adresse, les réinitialisations de mot de passe, les invitations à un espace de travail, et les [notifications](/notifications) sur les publications et les canaux, chacun dans la langue du lecteur. Les membres choisissent quelles notifications leur arrivent aussi par e-mail. Quand le service de messagerie refuse un e-mail pour le moment, un e-mail de compte est réessayé quelques secondes, puis abandonné, car on peut en demander un autre ; l’e-mail d’une notification est réessayé pendant environ cinq heures. Avec `AUTH_REQUIRE_EMAIL_VERIFICATION=false`, on peut se connecter avant d’avoir confirmé son adresse.
 
 ## Stockage des médias [#media-storage]
+
+Pour garder les médias dans l’UE sur Cloudflare R2, créez le bucket dans la juridiction UE de R2 (depuis le tableau de bord, ou `wrangler r2 bucket create <nom> --jurisdiction eu`), qui ne peut plus changer ensuite, et joignez-le par le point d’accès `.eu.`, `https://<compte>.eu.r2.cloudflarestorage.com`, dans `PEAL_S3_ENDPOINT`. Les autres commandes de bucket de Wrangler demandent aussi `--jurisdiction eu`. Il en va de même pour un bucket de sauvegardes, dont le point d’accès est un hôte sans schéma.
 
 Les navigateurs envoient les médias directement au bucket, avec des requêtes que le serveur signe : le bucket doit donc laisser l’origine de l’application web les envoyer. Il lui faut une règle CORS qui autorise `PUT` depuis cette origine, avec les en-têtes `Content-Type` et `If-None-Match`. Avec les variables du serveur définies, et `PUBLIC_URL` et `TRUSTED_ORIGINS` nommant les origines de l’application web, cette commande pose la règle sur le bucket, en gardant ses autres règles, puis affiche la même politique pour le tableau de bord de Cloudflare R2 (R2 › le bucket › Settings › CORS policy) :
 
@@ -180,7 +182,11 @@ Un serveur connecte des comptes X une fois que vous lui avez enregistré une app
 2. Ajoutez `PUBLIC_URL/connect/x/callback` comme URI de rappel, exactement, comme `https://peal.example.com/connect/x/callback`. X refuse `localhost` : en développement, utilisez `http://127.0.0.1` et son port.
 3. Mettez l’identifiant client OAuth 2.0 dans `X_CLIENT_ID` et son secret client dans `X_CLIENT_SECRET`.
 
-X facture chaque requête de l’API à l’application, et une publication avec un lien coûte plus. Fixez une limite de dépenses dans la console de X : une fois atteinte, X refuse les publications, qui échouent avec leur raison, jusqu’à ce que vous la releviez. Peal renouvelle l’accès de chaque compte toutes les deux heures, et le garde valable tant qu’il est renouvelé.
+X facture chaque requête de l’API à l’application, sur des crédits achetés d’avance ([tarifs](https://docs.x.com/x-api/getting-started/pricing)), et une publication avec un lien coûte environ 13 fois plus qu’une sans. Achetez des crédits et fixez une limite de dépenses dans la console de X. Une fois les crédits épuisés (X répond `402`) ou la limite atteinte (`usage-capped`), X refuse toutes les publications de l’application jusqu’à ce que vous ajoutiez des crédits ou releviez la limite : les publications n’y sont pour rien, alors Peal journalise une erreur, que l’alerte du serveur sur les journaux d’erreurs signale, et attend comme pour une panne, plus de deux heures, avant qu’une publication échoue avec la raison « la plateforme refuse l’application de ce serveur tant que son opérateur ne l’a pas réglée ».
+
+Peal compte les publications de chaque espace de travail sur X, et combien contenaient un lien, par mois civil (UTC), dans `billing.metered_posts`, pour que vous voyiez qui dépense quoi ; les offres ne les limitent pas encore. Les comptes suivent l’export de l’espace de travail et sa suppression.
+
+L’accès à X dure deux heures. Peal le renouvelle quand il publie, et renouvelle celui d’un compte qui n’a pas publié depuis 30 jours, pour que X le garde connecté sans rotation toutes les deux heures.
 
 Pour LinkedIn comme pour X, l’un des deux réglages sans l’autre arrête le serveur au démarrage ; sans les deux, **Canaux** ne propose pas la plateforme.
 
@@ -198,21 +204,36 @@ TikTok ne va chercher des photos qu’à un préfixe d’URL ou un domaine véri
 
 ### Threads, Instagram et Pages Facebook [#meta]
 
-Une application du tableau de bord des développeurs de Meta connecte les trois. Donnez-lui le cas d’usage Facebook Login, avec les autorisations `pages_show_list`, `pages_read_engagement` et `pages_manage_posts` pour les Pages Facebook, et `instagram_basic` et `instagram_content_publish` pour Instagram ; et le cas d’usage Threads, avec `threads_basic` et `threads_content_publish`. Définissez ensuite `META_APP_ID` et `META_APP_SECRET` d’après les paramètres de base de l’application, et `THREADS_APP_ID` et `THREADS_APP_SECRET` d’après ses paramètres Threads. Une plateforme dont les paramètres manquent n’est pas proposée.
+Une application du tableau de bord des développeurs de Meta connecte les trois, par trois cas d’usage, chacun avec ses propres identifiants :
+
+- **Facebook Login** (les Pages Facebook, et Instagram via une Page) : les autorisations `pages_show_list`, `pages_read_engagement` et `pages_manage_posts` pour les Pages Facebook, et `instagram_basic`, `instagram_content_publish` et `instagram_manage_insights` pour Instagram (les statistiques ne servent qu’aux statistiques de Peal : un membre peut les refuser). Définissez `META_APP_ID` et `META_APP_SECRET` d’après les paramètres de base de l’application.
+- **Instagram** (« Gérer les messages et le contenu sur Instagram », l’API Instagram avec connexion Instagram) : les autorisations `instagram_business_basic`, `instagram_business_content_publish` et `instagram_business_manage_insights`. Définissez `INSTAGRAM_APP_ID` et `INSTAGRAM_APP_SECRET` d’après ses **paramètres de connexion professionnelle**, qui montrent un identifiant et un secret d’application Instagram à part des principaux.
+- **Threads** : `threads_basic` et `threads_content_publish`. Définissez `THREADS_APP_ID` et `THREADS_APP_SECRET` d’après ses paramètres Threads.
+
+Une plateforme dont les paramètres manquent n’est pas proposée. Instagram l’est avec l’un ou l’autre de ses paramètres ; avec les deux, les membres se connectent d’abord avec Instagram, et via une Page Facebook comme autre voie :
+
+| Voie                                        | Demande                                | Accès                                          | Donne                                                                                                                                                                            |
+| ------------------------------------------- | -------------------------------------- | ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Connexion Instagram (`INSTAGRAM_APP_ID`)    | Un compte professionnel, sans Page     | 60 jours, renouvelé par Peal une semaine avant | La publication (images, reels, carrousels), les statistiques ; appelle `graph.instagram.com`                                                                                     |
+| Facebook Login via une Page (`META_APP_ID`) | Un compte professionnel lié à une Page | Celui de la Page, qui n’expire pas             | La même chose, plus ce que seule cette API a (identification de produits, collaborateurs, recherche de hashtags), dont Peal ne se sert pas encore ; appelle `graph.facebook.com` |
 
 Dans le tableau de bord, enregistrez ces adresses :
 
-| Paramètre                                          | Adresse                                                                                         |
-| -------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| URI de redirection OAuth valides de Facebook Login | `PUBLIC_URL/connect/facebook/callback` et `PUBLIC_URL/connect/instagram/callback`               |
-| URL de rappel de redirection de Threads            | `PUBLIC_URL/connect/threads/callback`                                                           |
-| URL de demande de suppression des données          | `PUBLIC_URL/api/data-deletion/facebook`, et `PUBLIC_URL/api/data-deletion/threads` pour Threads |
+| Paramètre                                                          | Adresse                                                                                                                                                 |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| URI de redirection OAuth valides de Facebook Login                 | `PUBLIC_URL/connect/facebook/callback` et `PUBLIC_URL/connect/instagram/callback`                                                                       |
+| URI de redirection OAuth de la connexion professionnelle Instagram | `PUBLIC_URL/connect/instagram/callback`                                                                                                                 |
+| URL de rappel de redirection de Threads                            | `PUBLIC_URL/connect/threads/callback`                                                                                                                   |
+| URL de demande de suppression des données                          | `PUBLIC_URL/api/data-deletion/facebook` ; `PUBLIC_URL/api/data-deletion/instagram` pour Instagram ; `PUBLIC_URL/api/data-deletion/threads` pour Threads |
+| URL de rappel d’annulation d’autorisation                          | `PUBLIC_URL/api/data-deletion/facebook/deauthorize`, et de même avec `instagram` et `threads` dans leurs cas d’usage                                    |
 
-Quand l’une de ses utilisatrices ou l’un de ses utilisateurs demande à Meta de supprimer ce que Peal détient sur elle ou lui, Meta appelle cette adresse avec une demande signée avec le secret de l’application. Peal vérifie la signature, supprime, dans chaque espace de travail, les canaux que la personne a connectés et leurs jetons, ainsi que les comptes que sa connexion propose encore à un membre de choisir, et répond avec un code de confirmation et la page où s’affiche son état, `PUBLIC_URL/data-deletion/<code>`. La même demande envoyée à nouveau, comme Meta peut la renvoyer, reçoit la même réponse et ne supprime rien de plus.
+Quand l’une de ses utilisatrices ou l’un de ses utilisateurs demande à Meta de supprimer ce que Peal détient sur elle ou lui, Meta appelle l’adresse de suppression des données avec une demande signée avec le secret de ce cas d’usage. Peal vérifie la signature, supprime, dans chaque espace de travail, les canaux que la personne a connectés par là et leurs jetons, ainsi que les comptes que sa connexion propose encore à un membre de choisir, et répond avec un code de confirmation et la page où s’affiche son état, `PUBLIC_URL/data-deletion/<code>`. La même demande envoyée à nouveau, comme Meta peut la renvoyer, reçoit la même réponse et ne supprime rien de plus. Une demande d’Instagram désigne le compte par son identifiant propre à l’application ou par le sien : Peal prend l’un comme l’autre.
 
-Meta va chercher les images et vidéos qu’il publie par des liens vers le stockage des médias, valables deux heures : le stockage doit répondre aux serveurs de Meta sur Internet, par des liens présignés ou `PEAL_MEDIA_PUBLIC_BASE_URL`. Le serveur appelle `graph.facebook.com` et `graph.threads.com`, et signe chaque appel à Facebook et Instagram avec le secret de l’application : vous pouvez activer **Exiger la clé secrète** dans les paramètres avancés de l’application.
+Quand quelqu’un retire Peal de son compte, Meta appelle de même l’adresse d’annulation d’autorisation : Peal marque à reconnecter les canaux que cette personne a connectés par là, dans chaque espace de travail, et prévient les membres qui les gèrent ; il ne supprime rien. Un canal reconnecté depuis la demande reste tel quel.
 
-Tant que l’application est en mode développement, seules les personnes qui y ont un rôle peuvent connecter leurs comptes : ajoutez-vous, ainsi que les testeurs Threads, sous Rôles de l’application. Servir d’autres personnes demande l’examen par Meta de chaque autorisation. Les comptes Instagram doivent être des comptes professionnels liés à une Page Facebook.
+Meta va chercher les images et vidéos qu’il publie par des liens vers le stockage des médias, valables deux heures : le stockage doit répondre aux serveurs de Meta sur Internet, par des liens présignés ou `PEAL_MEDIA_PUBLIC_BASE_URL`. Le serveur appelle `graph.facebook.com`, `graph.instagram.com`, `api.instagram.com` et `graph.threads.com`, et signe chaque appel passant par Facebook Login avec le secret de l’application principale : vous pouvez activer **Exiger la clé secrète** dans les paramètres avancés de l’application. Les appels avec un jeton de connexion Instagram ne portent pas de preuve.
+
+Tant que l’application est en mode développement, seules les personnes qui y ont un rôle peuvent connecter leurs comptes : ajoutez-vous, ainsi que les testeurs Instagram et Threads, sous Rôles de l’application. Servir d’autres personnes demande l’examen par Meta de chaque autorisation et la vérification de l’entreprise, pour chaque cas d’usage. Les comptes Instagram doivent être des comptes professionnels (entreprise ou créateur) et, via Facebook Login, liés à une Page Facebook. Chaque compte publie au plus 100 publications en 24 heures par l’API de Meta, ce que Peal vérifie avant chacune.
 
 ### YouTube [#youtube]
 
@@ -246,21 +267,15 @@ Ce que les membres envoient, c’est le texte de la publication, jusqu’à 5 00
 
 ## Facturation [#billing]
 
-La facturation est désactivée tant que `STRIPE_SECRET_KEY` n’est pas définie : il n’y a pas d’abonnement, rien n’est limité, et la page de facturation des espaces de travail le dit. Avec une clé, chaque espace de travail commence avec l’abonnement gratuit, et un abonnement Stripe le fait passer à Pro ou Business :
+La facturation est désactivée tant que `STRIPE_SECRET_KEY` n’est pas définie : il n’y a pas d’abonnement, rien n’est limité, et la page de facturation des espaces de travail le dit. Avec une clé, chaque espace de travail commence avec l’offre gratuite, et un abonnement Stripe le fait passer à Starter, Pro, Business ou Agency, au mois ou à l’année. [Abonnements et facturation](/billing) les présente, avec ce que chacun limite, l’essai, la commande, la résiliation et la rétractation.
 
-| Abonnement | Canaux | Membres | Publications par mois | Demandes à l’assistant par jour |
-| ---------- | ------ | ------- | --------------------- | ------------------------------- |
-| Gratuit    | 3      | 2       | 30                    | 10                              |
-| Pro        | 10     | 5       | 300                   | 100                             |
-| Business   | 30     | 20      | Illimitées            | 500                             |
+Les publications comptent dans le mois civil (UTC) où elles partent, une fois programmées : les brouillons et les publications annulées ne comptent pas, une publication repassée en brouillon libère sa place, et une publication renvoyée sur un canal ne compte qu’une fois. Les membres comptent avec les invitations encore en attente au moment d’inviter. Les Pages ou les comptes Instagram cochés ensemble doivent tous avoir de la place, sinon aucun n’est connecté. Les médias comptent par les octets stockés, envois en cours compris. Une limite s’applique quand on ajoute quelque chose : un espace de travail passé à un abonnement inférieur garde ce qu’il a déjà, mais ne programme rien tant qu’il a plus de canaux que son abonnement n’en permet.
 
-Les publications comptent dans le mois civil (UTC) où elles partent, une fois programmées : les brouillons et les publications annulées ne comptent pas, une publication repassée en brouillon libère sa place, et une publication renvoyée sur un canal ne compte qu’une fois. Les membres comptent avec les invitations encore en attente au moment d’inviter. Les Pages ou les comptes Instagram cochés ensemble doivent tous avoir de la place, sinon aucun n’est connecté. Une limite s’applique quand on ajoute quelque chose : un espace de travail passé à un abonnement inférieur garde ce qu’il a déjà.
-
-1. Dans Stripe, créez un produit pour chaque abonnement payant avec un prix mensuel, et définissez `STRIPE_PRICE_PRO` et `STRIPE_PRICE_BUSINESS` à leurs identifiants.
+1. Dans Stripe, créez un produit pour chaque abonnement payant, avec un prix mensuel et un prix annuel en euros, tous deux hors taxes, et donnez-leur les clés de recherche (lookup keys) `peal_<plan>_monthly` et `peal_<plan>_yearly` (`peal_starter_monthly`, `peal_pro_yearly`…), ou un autre préfixe défini dans `STRIPE_LOOKUP_KEY_PREFIX`. Leurs montants sont ceux d’[Abonnements et facturation](/billing#plans) : Peal les affiche avant le paiement, gardez-les égaux.
 2. Ajoutez un webhook vers `PUBLIC_URL/api/auth/stripe/webhook` avec les événements `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted` et `checkout.session.completed`, et définissez `STRIPE_WEBHOOK_SECRET` à son secret de signature. Laissez ce chemin ouvert à Stripe si quelque chose protège le reste de `/api/auth`.
-3. Activez l’espace client, où les membres changent de moyen de paiement et résilient. Pour la TVA européenne, activez Stripe Tax et définissez `STRIPE_AUTOMATIC_TAX=true`.
+3. Activez Stripe Tax : le paiement lui fait toujours ajouter la TVA, car les prix sont hors taxes et Peal les affiche TVA comprise. Activez l’espace client, où les membres changent de moyen de paiement et téléchargent leurs factures, sans offre de rétention, et avec le changement d’abonnement (mises à jour d’abonnement) et la résiliation désactivés : les abonnements changent et prennent fin depuis la page de facturation seulement, où chaque changement demande une commande. Définissez `PEAL_TERMS_URL` de l’application web à vos conditions d’utilisation, vers lesquelles la page de facturation renvoie avant une commande.
 
-Les propriétaires et les administrateurs ouvrent le paiement et l’espace client depuis la page de facturation de l’espace de travail ; l’équipe qui se fait passer pour eux ne le peut pas. L’état d’un abonnement ne vient que de ses événements de webhook, vérifiés avec le secret de signature : un événement envoyé deux fois n’est enregistré qu’une fois, et un événement plus ancien ne remplace jamais un plus récent. Un abonnement reste payé tant que Stripe retente un paiement échoué ; impayé, suspendu ou résilié, l’espace de travail revient à l’abonnement gratuit. Un espace de travail dont un abonnement peut encore être facturé par Stripe, impayé ou suspendu compris, ne peut pas être supprimé, ni le compte de son seul membre, tant que l’abonnement n’est pas résilié.
+Les propriétaires et les administrateurs commandent, résilient et se rétractent depuis la page de facturation de l’espace de travail, dans leur propre session ; l’équipe qui se fait passer pour eux, les clés d’API et les clients OAuth ne le peuvent pas. Un paiement ne commence que pour une commande passée là dans les 30 dernières minutes, qui enregistre la demande de commencer immédiatement. L’état d’un abonnement ne vient que de ses événements de webhook, vérifiés avec le secret de signature : un événement envoyé deux fois n’est enregistré qu’une fois, et un événement plus ancien ne remplace jamais un plus récent. Un abonnement reste payé tant que Stripe retente un paiement échoué ; impayé, suspendu ou résilié, l’espace de travail revient à l’offre gratuite. Un essai est programmé pour prendre fin, résilié, avec son essai, même si un moyen de paiement est ajouté, si bien qu’il ne devient jamais payant : son espace de travail revient alors à l’offre gratuite, et un abonnement payant commandé pendant l’essai y met fin une fois payé. Un espace de travail dont un abonnement peut encore être facturé par Stripe, impayé ou suspendu compris, ne peut pas être supprimé, ni le compte de son seul membre, tant que l’abonnement n’est pas résilié. La tâche `billing.reminders` rappelle chaque matin les essais qui se terminent dans les trois jours et les abonnements annuels qui se renouvellent dans les 45 jours.
 
 ## Captcha [#captcha]
 
@@ -283,6 +298,17 @@ UPDATE auth."user" SET role = 'admin' WHERE email = 'vous@example.com';
 ```
 
 En se faisant passer pour un membre, l’équipe ne peut ni connecter de canaux, ni publier, ni gérer les clés d’API ou la facturation, ni modifier les espaces de travail, ni laisser une application agir pour le membre. Elle peut lire les notifications du membre, mais pas les marquer comme lues ni changer ses préférences d’e-mail. Elle peut demander de l’aide à l’assistant de rédaction dans les espaces de travail du membre, ce qui compte dans les demandes du jour de ces espaces.
+
+## Conservation légale [#legal-retention]
+
+La loi française impose à un hébergeur de conserver les données permettant d’identifier quiconque a contribué à la création d’un contenu, afin que l’autorité judiciaire puisse les requérir (loi n° 2004-575, article 6, V, et décret n° 2021-1362). Peal le fait par défaut, dans le schéma `legal`, que rien d’autre dans le serveur ne lit :
+
+- chaque requête qui crée, modifie ou supprime des publications ou des médias, depuis l’application web, une clé d’API, la ligne de commande ou un client MCP : quand, depuis quelle adresse (lue comme la connexion la lit, depuis `AUTH_IP_HEADERS`), par quel protocole et avec quel moyen de connexion, conservée 1 an ;
+- à la fermeture d’un compte, les nom et adresse e-mail de son titulaire, conservés 5 ans, et ses moyens de connexion (l’identifiant de chaque méthode de connexion, jamais le mot de passe ni son empreinte) et ses clients Stripe, conservés 1 an.
+
+Une tâche quotidienne (`legal.retention`, à 03 h 47 UTC) supprime chaque donnée une fois sa durée écoulée. L’équipe ne lit ces données qu’en répondant à une réquisition dans la [console de l’équipe](/staff#legal-requests), et chaque réponse est consignée. L’export de chaque utilisateur liste ses connexions et ce que la fermeture de son compte laisserait.
+
+Si vous exploitez Peal hors de France et qu’aucune loi ne vous oblige à les conserver, définissez `PEAL_LEGAL_RETENTION=false` : le serveur n’en conserve alors aucune, et la fermeture d’un compte ne laisse rien. Votre propre politique de confidentialité doit dire ce que vous avez choisi.
 
 ## Télémétrie [#telemetry]
 

@@ -24,6 +24,8 @@ import { roomForOneMore } from "#shared/domain/allowance.ts";
 import { authorize } from "#shared/domain/authorize.ts";
 import { ChannelIdSchema } from "#shared/domain/ids.ts";
 import type { ChannelId, WorkspaceId } from "#shared/domain/ids.ts";
+import { connectionOf } from "#shared/domain/instagram-connection.ts";
+import type { InstagramConnection } from "#shared/domain/instagram-connection.ts";
 import type { MissingPermission } from "#shared/domain/missing-permission.ts";
 import type { PlanLimitReached } from "#shared/domain/plan-limit-reached.ts";
 
@@ -105,8 +107,24 @@ export type ChooseFailure =
 
 /** What a member asked to connect. */
 export interface ConnectRequest {
+  /**
+   * The way in, for Instagram: none takes the one the server prefers
+   * (`instagramConnections`' first).
+   */
+  readonly connection: Option.Option<InstagramConnection>;
   readonly handle: Option.Option<string>;
   readonly instance: Option.Option<string>;
+}
+
+/** What this server can connect, as `connectable` answers it. */
+export interface Connectable {
+  /**
+   * The ways it connects Instagram accounts, the preferred one first;
+   * empty when it connects none.
+   */
+  readonly instagramConnections: readonly InstagramConnection[];
+  /** The platforms, in Peal's order. */
+  readonly platforms: readonly Platform[];
 }
 
 /** An account a member may choose to connect, as the member sees it. */
@@ -140,6 +158,7 @@ const connectedOf = (
   now: DateTimeType.Utc
 ): ConnectedAccount => ({
   avatarUrl: account.avatarUrl,
+  connection: Option.fromUndefinedOr(authorizer.connection),
   displayName: account.displayName,
   handle: account.handle,
   scopes: account.tokens.scopes,
@@ -169,7 +188,8 @@ const connectedTo = (channel: Channel): ConnectOutcome => ({
  * the choice is taken, so a choice too large connects none and can be made
  * again with fewer; a choice that fails for any other reason before an
  * account is connected is kept for another try too. Reconnecting adds
- * nothing, so it needs none.
+ * nothing, so it needs none, nor does moving an Instagram account from one
+ * way in to the other, which is checked once the account is known.
  */
 export class ConnectChannel extends Context.Service<
   ConnectChannel,
@@ -215,7 +235,7 @@ export class ConnectChannel extends Context.Service<
      */
     readonly connectable: (
       actor: Actor
-    ) => Effect.Effect<readonly Platform[], MissingPermission>;
+    ) => Effect.Effect<Connectable, MissingPermission>;
     /**
      * Forgets the attempts and choices nobody completed in time, and says
      * how many.
@@ -236,17 +256,22 @@ export class ConnectChannel extends Context.Service<
       const ids = yield* Ids;
       const tokenServices = Effect.provideService(TokenCipher, cipher);
 
+      // The platform's authorizer, for Instagram the connection's: one the
+      // server lacks the settings for is not configured.
       const authorizerFor = (
-        platform: Platform
+        platform: Platform,
+        connection: Option.Option<InstagramConnection> = Option.none()
       ): Effect.Effect<PlatformAuthorizer, PlatformNotConnectable> =>
-        Option.match(authorizers.for(platform), {
+        Option.match(authorizers.for(platform, connection), {
           onNone: () =>
             Effect.fail(
               new PlatformNotConnectable({
                 platform,
-                reason: authorizers.unconfigured.has(platform)
-                  ? "notConfigured"
-                  : "notSupported",
+                reason:
+                  authorizers.unconfigured.has(platform) ||
+                  (platform === "instagram" && Option.isSome(connection))
+                    ? "notConfigured"
+                    : "notSupported",
               })
             ),
           onSome: Effect.succeed,
@@ -266,6 +291,37 @@ export class ConnectChannel extends Context.Service<
           yield* Effect.fromResult(
             roomForOneMore("channels", allowed, connected.length)
           );
+        }
+      );
+
+      // Room for one more channel when a connection starts, unless it may
+      // move an Instagram account the workspace has the other way in: that
+      // adds no channel, and a new account is still checked before it is
+      // added.
+      const roomToStart = Effect.fn("ConnectChannel.roomToStart")(
+        function* roomToStart(
+          workspaceId: WorkspaceId,
+          authorizer: PlatformAuthorizer
+        ) {
+          const { connection, platform } = authorizer;
+
+          if (platform === "instagram" && connection !== undefined) {
+            const connected = yield* channels.list(workspaceId);
+
+            const movable = connected.some(
+              (channel) =>
+                channel.platform === "instagram" &&
+                Option.getOrUndefined(
+                  connectionOf(channel.platform, channel.connection)
+                ) !== connection
+            );
+
+            if (movable) {
+              return;
+            }
+          }
+
+          yield* roomForChannel(workspaceId);
         }
       );
 
@@ -310,7 +366,7 @@ export class ConnectChannel extends Context.Service<
       const saveAttempt = Effect.fn("ConnectChannel.saveAttempt")(
         function* saveAttempt(
           actor: Actor,
-          platform: Platform,
+          authorizer: PlatformAuthorizer,
           pending: PendingAuthorization,
           channelId: Option.Option<ChannelId>
         ) {
@@ -320,8 +376,9 @@ export class ConnectChannel extends Context.Service<
             {
               actor,
               channelId,
+              connection: Option.fromUndefinedOr(authorizer.connection),
               instance: pending.instance,
-              platform,
+              platform: authorizer.platform,
               state: pending.state,
             },
             now
@@ -345,9 +402,9 @@ export class ConnectChannel extends Context.Service<
       ) {
         yield* Effect.fromResult(authorize(actor, "channel:connect"));
 
-        const authorizer = yield* authorizerFor(platform);
+        const authorizer = yield* authorizerFor(platform, request.connection);
 
-        yield* roomForChannel(actor.workspaceId);
+        yield* roomToStart(actor.workspaceId, authorizer);
 
         const pending = yield* authorizer.begin({
           handle: request.handle,
@@ -355,7 +412,7 @@ export class ConnectChannel extends Context.Service<
           reconnecting: Option.none(),
         });
 
-        return yield* saveAttempt(actor, platform, pending, Option.none());
+        return yield* saveAttempt(actor, authorizer, pending, Option.none());
       });
 
       const findChannel = Effect.fn("ConnectChannel.findChannel")(
@@ -379,7 +436,12 @@ export class ConnectChannel extends Context.Service<
           yield* Effect.fromResult(authorize(actor, "channel:connect"));
 
           const channel = yield* findChannel(actor, channelId);
-          const authorizer = yield* authorizerFor(channel.platform);
+
+          // The way in the channel came through: its account is there.
+          const authorizer = yield* authorizerFor(
+            channel.platform,
+            channel.connection
+          );
 
           const pending = yield* authorizer.begin({
             handle: Option.none(),
@@ -389,7 +451,7 @@ export class ConnectChannel extends Context.Service<
 
           return yield* saveAttempt(
             actor,
-            channel.platform,
+            authorizer,
             pending,
             Option.some(channel.id)
           );
@@ -541,9 +603,10 @@ export class ConnectChannel extends Context.Service<
       // their tokens, and says what the member sees of them.
       const offer = Effect.fn("ConnectChannel.offer")(function* offer(
         actor: Actor,
-        platform: Platform,
+        authorizer: PlatformAuthorizer,
         accounts: readonly AuthorizedAccount[]
       ) {
+        const { platform } = authorizer;
         const selection = yield* ids.next;
 
         // One sign-in, so one user's grant: the Facebook user's, for Pages
@@ -554,7 +617,13 @@ export class ConnectChannel extends Context.Service<
         );
 
         const choice = offerChoice(
-          { actor, grantedBy, platform, selection },
+          {
+            actor,
+            connection: Option.fromUndefinedOr(authorizer.connection),
+            grantedBy,
+            platform,
+            selection,
+          },
           yield* DateTime.now
         );
 
@@ -610,7 +679,7 @@ export class ConnectChannel extends Context.Service<
           completableBy(taken.value.attempt, actor, platform, now)
         );
 
-        const authorizer = yield* authorizerFor(platform);
+        const authorizer = yield* authorizerFor(platform, attempt.connection);
 
         if (Option.isSome(returned.error)) {
           return yield* denials.has(returned.error.value)
@@ -667,7 +736,7 @@ export class ConnectChannel extends Context.Service<
         }
 
         if (others.length > 0) {
-          return yield* offer(actor, platform, reached);
+          return yield* offer(actor, authorizer, reached);
         }
 
         return connectedTo(
@@ -705,7 +774,7 @@ export class ConnectChannel extends Context.Service<
         const connected = yield* Ref.make(0);
 
         const connecting = Effect.gen(function* connecting() {
-          const authorizer = yield* authorizerFor(platform);
+          const authorizer = yield* authorizerFor(platform, choice.connection);
 
           // Sealed by this server a few minutes ago, as an attempt's secret.
           const offered = yield* cipher
@@ -755,9 +824,14 @@ export class ConnectChannel extends Context.Service<
         function* connectable(actor: Actor) {
           yield* Effect.fromResult(authorize(actor, "channel:connect"));
 
-          return platforms.filter((platform) =>
-            Option.isSome(authorizers.for(platform))
-          );
+          const reachable: Connectable = {
+            instagramConnections: authorizers.instagramConnections,
+            platforms: platforms.filter((platform) =>
+              Option.isSome(authorizers.for(platform))
+            ),
+          };
+
+          return reachable;
         }
       );
 

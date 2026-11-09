@@ -13,6 +13,7 @@ const userId = UserIdSchema.make("0b6f2f3e-6c1e-4f0e-8a3b-1d2c3e4f5a60");
 const standingWith = (
   found: Option.Option<{
     readonly ban: Option.Option<Ban>;
+    readonly legal: boolean;
     readonly staff: boolean;
   }>
 ) =>
@@ -32,7 +33,7 @@ const standingWith = (
     )
   );
 
-const asStaff = Option.some({ ban: Option.none(), staff: true });
+const asStaff = Option.some({ ban: Option.none(), legal: false, staff: true });
 
 const verdict = (principal: UserPrincipal) =>
   StaffStanding.use((standing) => standing.staffOf(principal)).pipe(
@@ -89,11 +90,12 @@ describe(StaffStanding, () => {
         ban: Option.some({
           expiresAt: Option.some(DateTime.makeUnsafe("2026-11-10T12:00:00Z")),
         }),
+        legal: false,
         staff: true,
       });
 
       for (const found of [
-        Option.some({ ban: Option.none(), staff: false }),
+        Option.some({ ban: Option.none(), legal: false, staff: false }),
         Option.none(),
         bannedUntilTomorrow,
       ]) {

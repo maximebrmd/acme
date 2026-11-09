@@ -18,6 +18,16 @@ module Peal
       member -> { Peal::Types::NoticeEventChannelReconnectRequired }, key: "CHANNEL_RECONNECT_REQUIRED"
 
       member -> { Peal::Types::NoticeEventChannelReconnectSoon }, key: "CHANNEL_RECONNECT_SOON"
+
+      member -> { Peal::Types::NoticeEventSubscriptionStarted }, key: "SUBSCRIPTION_STARTED"
+
+      member -> { Peal::Types::NoticeEventTrialEnding }, key: "TRIAL_ENDING"
+
+      member -> { Peal::Types::NoticeEventSubscriptionRenewing }, key: "SUBSCRIPTION_RENEWING"
+
+      member -> { Peal::Types::NoticeEventSubscriptionCancelled }, key: "SUBSCRIPTION_CANCELLED"
+
+      member -> { Peal::Types::NoticeEventSubscriptionWithdrawn }, key: "SUBSCRIPTION_WITHDRAWN"
     end
   end
 end

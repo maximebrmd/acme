@@ -16,6 +16,8 @@ public readonly record struct PlanLimit : IStringEnum
 
     public static readonly PlanLimit AssistantRequests = new(Values.AssistantRequests);
 
+    public static readonly PlanLimit MediaStorage = new(Values.MediaStorage);
+
     public PlanLimit(string value)
     {
         Value = value;
@@ -117,5 +119,7 @@ public readonly record struct PlanLimit : IStringEnum
         public const string ScheduledPosts = "scheduledPosts";
 
         public const string AssistantRequests = "assistantRequests";
+
+        public const string MediaStorage = "mediaStorage";
     }
 }

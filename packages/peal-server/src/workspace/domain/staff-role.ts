@@ -14,3 +14,17 @@ export const isStaffRole = (role: Option.Option<string>): boolean =>
   Option.exists(role, (roles) =>
     roles.split(",").some((name) => name.trim() === staffRole)
   );
+
+/**
+ * The role that, with the staff role, lets an account answer legal
+ * requests: a few named people, apart from staff who help users, since an
+ * answer hands closed accounts' identities and addresses to an authority.
+ */
+export const legalRole = "legal";
+
+/** Whether an account's roles let it answer legal requests. */
+export const isLegalRole = (role: Option.Option<string>): boolean =>
+  isStaffRole(role) &&
+  Option.exists(role, (roles) =>
+    roles.split(",").some((name) => name.trim() === legalRole)
+  );

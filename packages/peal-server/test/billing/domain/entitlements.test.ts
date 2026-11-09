@@ -20,10 +20,14 @@ const subscription = (plan: PaidPlan, status: SubscriptionStatus) => {
   return new Subscription({
     cancelAtPeriodEnd: false,
     currentPeriodEnd: Option.some(DateTime.makeUnsafe("2026-12-09T00:00:00Z")),
+    currentPeriodStart: Option.none(),
+    interval: "month",
     plan,
+    startedAt: Option.none(),
     status,
     stripeCustomerId: "cus_synthetic",
     stripeSubscriptionId: `sub_synthetic_${count}`,
+    trialEnd: Option.none(),
     workspaceId,
   });
 };

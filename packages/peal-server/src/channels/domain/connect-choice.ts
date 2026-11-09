@@ -2,6 +2,8 @@ import { DateTime, Option, Result, Schema } from "effect";
 
 import type { Actor } from "#shared/domain/access.ts";
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
+import { InstagramConnectionSchema } from "#shared/domain/instagram-connection.ts";
+import type { InstagramConnection } from "#shared/domain/instagram-connection.ts";
 
 import { connectAttemptLifetime, starterOf } from "./connect-attempt.ts";
 import { InvalidConnectState } from "./invalid-connect-state.ts";
@@ -19,6 +21,8 @@ import type { Platform } from "./platform.ts";
 export class ConnectChoice extends Schema.Class<ConnectChoice>(
   "peal-server/channels/domain/ConnectChoice"
 )({
+  // The way in the sign-in took, for Instagram; none on other platforms.
+  connection: Schema.Option(InstagramConnectionSchema),
   createdAt: Schema.DateTimeUtc,
   expiresAt: Schema.DateTimeUtc,
   grantedBy: Schema.Option(Schema.NonEmptyString),
@@ -32,6 +36,7 @@ export class ConnectChoice extends Schema.Class<ConnectChoice>(
 export const offerChoice = (
   choice: {
     readonly actor: Actor;
+    readonly connection: Option.Option<InstagramConnection>;
     readonly grantedBy: Option.Option<string>;
     readonly platform: Platform;
     readonly selection: string;
@@ -39,6 +44,7 @@ export const offerChoice = (
   now: DateTime.Utc
 ): ConnectChoice =>
   new ConnectChoice({
+    connection: choice.connection,
     createdAt: now,
     expiresAt: DateTime.addDuration(now, connectAttemptLifetime),
     grantedBy: choice.grantedBy.pipe(Option.filter((user) => user !== "")),

@@ -244,6 +244,7 @@
     "empty": "No account is connected yet.",
     "listTitle": "Connected accounts",
     "platform": "{platform, select, bluesky {Bluesky} facebook {Facebook} instagram {Instagram} linkedin {LinkedIn} mastodon {Mastodon} pinterest {Pinterest} threads {Threads} tiktok {TikTok} x {X} youtube {YouTube} other {{platform}}}",
+    "platformVia": "{platform, select, instagram {Instagram} other {{platform}}} ({connection, select, instagramLogin {Instagram Login} facebookLogin {through a Facebook Page} other {{connection}}})",
     "status": {
       "active": "Connected",
       "refreshNeeded": "Reconnect needed",
@@ -288,7 +289,7 @@
       "forbidden": "You may not do this in this workspace.",
       "notFound": "This channel is no longer connected.",
       "unknown": "Something went wrong. Try again.",
-      "noAccounts": "The sign-in reached no account to connect: on Facebook and Instagram, you manage no Page, or no Instagram professional account is linked to your Pages; on YouTube, the Google account you chose has no channel."
+      "noAccounts": "The sign-in reached no account to connect: on Facebook, and on Instagram through a Facebook Page, you manage no Page, or no Instagram professional account is linked to your Pages (connect it with Instagram instead); on YouTube, the Google account you chose has no channel."
     }
   },
   "PlatformConnect": {
@@ -340,12 +341,18 @@
     "retry": "Choose again, or sign in with Facebook again for a new list.",
     "startOver": "Sign in with Facebook again"
   },
+  "InstagramChannels": {
+    "title": "Instagram",
+    "description": "{connection, select, instagramLogin {Sign in to your professional account (Business or Creator) on Instagram: no Facebook Page needed. Peal renews its access every 60 days by itself.} facebookLogin {Or, for accounts run from a Facebook Page: sign in with Facebook, then choose the accounts linked to your Pages.} other {Sign in on Instagram.}}",
+    "connect": "{connection, select, instagramLogin {Connect with Instagram} facebookLogin {Connect through a Facebook Page} other {Connect Instagram}}",
+    "connecting": "Opening…"
+  },
   "DataDeletionPage": {
     "title": "Data deletion request",
     "description": "Where a request to delete the data Peal holds about you stands.",
     "code": "Confirmation code: {code}",
-    "done": "Done: Peal deleted the accounts it had connected through {app, select, facebook {Facebook} threads {Threads} other {{app}}}, and their tokens.",
-    "completed": "Done on {date, date, long}: Peal deleted {count, plural, =0 {no connected account, as it had none} one {# connected account} other {# connected accounts}} of yours from {app, select, facebook {Facebook} threads {Threads} other {{app}}}, with {count, plural, =0 {nothing else} one {its tokens} other {their tokens}}.",
+    "done": "Done: Peal deleted the accounts it had connected through {app, select, facebook {Facebook} instagram {Instagram} threads {Threads} other {{app}}}, and their tokens.",
+    "completed": "Done on {date, date, long}: Peal deleted {count, plural, =0 {no connected account, as it had none} one {# connected account} other {# connected accounts}} of yours from {app, select, facebook {Facebook} instagram {Instagram} threads {Threads} other {{app}}}, with {count, plural, =0 {nothing else} one {its tokens} other {their tokens}}.",
     "notFound": "No request has this confirmation code.",
     "unavailable": "The status could not be read. Try again later."
   },
@@ -585,7 +592,7 @@
     "rounds": "Sent {count, plural, one {once} other {# times}}",
     "attemptsTitle": "Attempts",
     "attempt": "{round, plural, =1 {Attempt {attempt}} other {Send {round}, attempt {attempt}}}, {at, date, medium} at {at, time, short}: {result}",
-    "result": "{result, select, published {published} unconfirmed {no answer, so it may have gone out} contentRejected {the platform refused its text or its format} channelDisconnected {the channel was disconnected} channelDisabled {the channel was turned off} mediaRemoved {an image or video was deleted} mediaRejected {the platform refused an image or video} rateLimited {the platform asked Peal to wait} tokenExpired {the account’s authorization stopped working} unavailable {the platform could not be reached} appNotAudited {the platform takes only private posts from this server’s app} quotaExceeded {the platform's daily upload allowance was used up} other {{result}}}",
+    "result": "{result, select, published {published} unconfirmed {no answer, so it may have gone out} contentRejected {the platform refused its text or its format} channelDisconnected {the channel was disconnected} channelDisabled {the channel was turned off} mediaRemoved {an image or video was deleted} mediaRejected {the platform refused an image or video} rateLimited {the platform asked Peal to wait} tokenExpired {the account’s authorization stopped working} unavailable {the platform could not be reached} appNotAudited {the platform takes only private posts from this server’s app} quotaExceeded {the platform's daily upload allowance was used up} appBillingLimit {the platform refused this server’s app until its operator pays for it} planLimit {the workspace’s plan had no room for it} other {{result}}}",
     "retryAt": "Tried again at {at, time, short}.",
     "noAttempts": "No attempt yet.",
     "repost": "Post again",
@@ -652,6 +659,7 @@
       "errors": {
         "unsupportedType": "Peal does not take this type of file. Upload a JPEG, PNG, GIF or WebP image, or an MP4 or QuickTime video.",
         "tooLarge": "This file is larger than the {limit, number} MB Peal takes for its kind.",
+        "storageFull": "The workspace’s plan has no room left for this file: it allows {limit} MB of media. Delete media, or ask an owner or an admin to move to a larger plan.",
         "altTextTooLong": "The description is longer than {limit, number} characters.",
         "forbidden": "You may not upload media in this workspace.",
         "signedOut": "You are signed out. Sign in, then upload the file again.",
@@ -844,10 +852,16 @@
       "PostFailed": "A post of {workspace} did not go out on {channel}: {reason}",
       "PostUnconfirmed": "A post of {workspace} may have gone out on {channel}. Check the platform before you post it again.",
       "ChannelReconnectRequired": "{channel} in {workspace} must be reconnected: nothing is posted there until it is.",
-      "ChannelReconnectSoon": "{channel} in {workspace} must be reconnected by {expiresAt, date, long}: its authorization cannot be renewed."
+      "ChannelReconnectSoon": "{channel} in {workspace} must be reconnected by {expiresAt, date, long}: its authorization cannot be renewed.",
+      "TrialEnding": "The {plan} trial of {workspace} ends on {endsAt, date, long}. Nothing is charged: the workspace then moves to the free plan unless someone orders a plan.",
+      "SubscriptionRenewing": "The yearly {plan} plan of {workspace} renews on {renewsAt, date, long} for {price}, VAT included. Cancel it before then to stop it.",
+      "SubscriptionCancelled": "The {plan} subscription of {workspace} is cancelled: it ends on {endsAt, date, long}, and nothing more is charged.",
+      "SubscriptionWithdrawn": "Your withdrawal from the {plan} subscription of {workspace} was received on {withdrawnAt, date, long} at {withdrawnAt, time, short}: it has ended, and {refunded} is refunded within 14 days.",
+      "SubscriptionStarted": "{workspace} is subscribed to {plan} since {startedAt, date, long}, for {price} {interval, select, month {a month} other {a year}}, VAT included. As a consumer you may withdraw within 14 days.",
+      "TrialStarted": "{workspace} is trying {plan} until {endsAt, date, long}: nothing is charged."
     },
-    "reason": "{reason, select, contentRejected {the platform refused its text or its format.} channelDisconnected {its channel was disconnected from the workspace before it went out.} channelDisabled {its channel was turned off before it went out. Disconnect the channel and connect the account again, then schedule it in a new post.} mediaRemoved {one of its images or videos was deleted from the media library before it went out.} mediaRejected {the platform refused one of its images or videos.} missed {Peal was unavailable at the scheduled time, and the post came too late to send.} notPublished {someone checked the platform and did not find it.} rateLimited {the platform kept turning requests away, and Peal stopped trying.} tokenExpired {the account’s authorization stopped working. Reconnect it, then post again.} unavailable {the platform could not be reached.} appNotAudited {the platform takes only private posts from this server’s app until it approves the app. Make the account private and the post visible to its owner only, or ask the server’s operator.} quotaExceeded {the platform's daily allowance of uploads stayed used up, for this Peal server or for the account, and Peal stopped waiting.} other {{reason}}}",
-    "open": "{page, select, post {Open the post} other {Open the channels}}",
+    "reason": "{reason, select, contentRejected {the platform refused its text or its format.} channelDisconnected {its channel was disconnected from the workspace before it went out.} channelDisabled {its channel was turned off before it went out. Disconnect the channel and connect the account again, then schedule it in a new post.} mediaRemoved {one of its images or videos was deleted from the media library before it went out.} mediaRejected {the platform refused one of its images or videos.} missed {Peal was unavailable at the scheduled time, and the post came too late to send.} notPublished {someone checked the platform and did not find it.} rateLimited {the platform kept turning requests away, and Peal stopped trying.} tokenExpired {the account’s authorization stopped working. Reconnect it, then post again.} unavailable {the platform could not be reached.} appNotAudited {the platform takes only private posts from this server’s app until it approves the app. Make the account private and the post visible to its owner only, or ask the server’s operator.} quotaExceeded {the platform's daily allowance of uploads stayed used up, for this Peal server or for the account, and Peal stopped waiting.} appBillingLimit {the platform refused this Peal server’s app until its account with the platform is paid for (on X: its credits ran out or it reached its spending cap). Your post is not at fault: once the server’s operator has fixed it, post it again.} planLimit {the workspace’s plan had no room for it when it was due: it has more channels connected than the plan allows, or the month’s posts were used up. Nothing was sent. Disconnect channels or move to a larger plan, then post it again.} other {{reason}}}",
+    "open": "{page, select, post {Open the post} billing {Open billing} other {Open the channels}}",
     "bell": {
       "label": "{count, plural, =0 {Notifications} one {Notifications, # unread} other {Notifications, # unread}}",
       "many": "99+",
@@ -888,7 +902,8 @@
       "loading": "Loading your preferences…",
       "loadFailed": "Your preferences could not be loaded.",
       "reload": "Try again"
-    }
+    },
+    "plan": "{plan, select, starter {Starter} pro {Pro} business {Business} agency {Agency} other {{plan}}}"
   },
   "Billing": {
     "open": "Billing",
@@ -898,7 +913,7 @@
     "description": "The plan of {workspace}, and how much of it the workspace uses.",
     "loadFailed": "The billing could not be loaded.",
     "retry": "Try again",
-    "plan": "{plan, select, free {Free} pro {Pro} business {Business} other {{plan}}}",
+    "plan": "{plan, select, free {Free} starter {Starter} pro {Pro} business {Business} agency {Agency} other {{plan}}}",
     "off": {
       "title": "Nothing is limited",
       "description": "This server does not bill workspaces: there is no plan, and every feature is available without limits."
@@ -907,40 +922,93 @@
       "title": "Current plan",
       "free": "The workspace has no subscription.",
       "status": "{status, select, active {Active} trialing {Trial} past_due {Payment due} canceled {Cancelled} unpaid {Unpaid} paused {Paused} incomplete {Incomplete} incomplete_expired {Expired} other {{status}}}",
-      "renews": "Renews on {date}",
+      "renews": "Renews on {date}, {interval, select, month {each month} other {each year}} until cancelled",
       "ends": "Ends on {date}",
       "pastDue": "The last payment did not go through. Update the payment method in the billing portal to keep the plan.",
       "manage": "Manage billing",
       "managing": "Opening the billing portal…",
-      "manageHint": "Change the payment method, the billing address or the VAT number, download invoices, or cancel the subscription."
+      "manageHint": "Change the payment method, the billing address or the VAT number, or download invoices, in Stripe’s billing portal.",
+      "trialEnds": "The trial ends on {date}. Nothing is charged: the workspace then moves to the free plan unless someone orders a plan.",
+      "withdrawable": "Until {date}, as a consumer you may withdraw from the contract: it ends at once and the unused part is refunded.",
+      "trialHint": "A plan ordered during the trial ends it once it is paid for; nothing is charged for the trial."
     },
     "usage": {
       "title": "Usage",
-      "limit": "{limit, select, channels {Connected channels} members {Members} scheduledPosts {Posts going out this month} assistantRequests {Writing assistant requests today} other {{limit}}}",
+      "limit": "{limit, select, channels {Connected channels} members {Members} scheduledPosts {Posts going out this month} assistantRequests {Writing assistant requests today} mediaStorage {Media stored} other {{limit}}}",
       "of": "{used, number} of {allowed, number}",
       "unlimited": "{used, number}, no limit",
-      "resets": "Starts again on {date}"
+      "resets": "Starts again on {date}",
+      "ofStorage": "{used} of {allowed}",
+      "unlimitedStorage": "{used}, no limit"
     },
     "plans": {
       "title": "Plans",
-      "description": "Prices, with VAT where it applies, are shown at checkout.",
       "allowance": "{limit, select, channels {{count, plural, one {# channel} other {# channels}}} members {{count, plural, one {# member} other {# members}}} scheduledPosts {{count, plural, one {# post a month} other {# posts a month}}} assistantRequests {{count, plural, one {# assistant request a day} other {# assistant requests a day}}} other {{count}}}",
-      "unlimited": "{limit, select, channels {Unlimited channels} members {Unlimited members} scheduledPosts {Unlimited posts} assistantRequests {Unlimited assistant requests} other {Unlimited}}",
+      "unlimited": "{limit, select, channels {Unlimited channels} members {Unlimited members} scheduledPosts {Unlimited posts} assistantRequests {Unlimited assistant requests} mediaStorage {Unlimited media} other {Unlimited}}",
       "yours": "Your plan",
-      "choose": "Move to {plan}",
-      "choosing": "Opening checkout…",
       "inPortal": "To move to a smaller plan, use the billing portal.",
-      "askAdmin": "Owners and admins of the workspace change its plan."
+      "askAdmin": "Owners and admins of the workspace order and cancel its plan.",
+      "storage": "{size} of media",
+      "order": "Order with obligation to pay",
+      "ordering": "Opening checkout…",
+      "renewal": "{interval, select, month {Renews each month until cancelled.} other {Renews each year until cancelled; you are reminded 45 days before.}}"
     },
     "checkout": {
       "done": "Thank you. The plan changes as soon as Stripe confirms the payment, usually within seconds.",
       "refresh": "Refresh"
     },
     "errors": {
-      "forbidden": "Only owners and admins of the workspace can change its billing.",
-      "generic": "Stripe could not be reached. Try again in a moment."
+      "forbidden": "Only owners and admins of the workspace, in their own session, can change its billing.",
+      "generic": "Stripe could not be reached. Try again in a moment.",
+      "nothingToCancel": "The subscription is already cancelled.",
+      "trialUsed": "This workspace or your account already had its trial: order a plan instead.",
+      "withdrawalBusiness": "A business with a verified VAT number has no right to withdraw. You can still cancel the subscription.",
+      "withdrawalExpired": "The 14 days to withdraw are over. You can still cancel the subscription."
     },
-    "limitReached": "{limit, select, channels {The workspace’s plan allows no more channels. Move to a larger plan, or disconnect a channel first.} members {The workspace’s plan allows no more members. An owner or an admin can move it to a larger plan.} scheduledPosts {The workspace’s plan allows no more posts going out that month. Pick another month, cancel a post, or move to a larger plan.} assistantRequests {The workspace’s plan allows no more writing assistant requests today.} other {The workspace’s plan allows no more of this.}}"
+    "limitReached": "{limit, select, channels {The workspace’s plan allows no more channels. Move to a larger plan, or disconnect a channel first.} members {The workspace’s plan allows no more members. An owner or an admin can move it to a larger plan.} scheduledPosts {The workspace’s plan allows no more posts going out that month. Pick another month, cancel a post, or move to a larger plan.} assistantRequests {The workspace’s plan allows no more writing assistant requests today.} mediaStorage {The workspace’s plan has no room for this file. Delete media, or move to a larger plan.} other {The workspace’s plan allows no more of this.}}",
+    "prices": {
+      "vat": "Prices include {rate}% VAT, France’s. In another EU country, its own VAT applies at checkout; a business with a valid VAT number pays the price excluding VAT.",
+      "included": "{price} {interval, select, month {a month} other {a year}}, VAT incl.",
+      "excluded": "{price} excl. VAT",
+      "yearlyMonth": "That is {price} a month",
+      "perChannel": "{price} per channel a month",
+      "free": "Free",
+      "interval": "{interval, select, month {Monthly} other {Yearly}}",
+      "intervalLabel": "Billing period"
+    },
+    "consent": {
+      "startNow": "I ask Peal to start my subscription now. I know that, as a consumer, I may withdraw within 14 days and then pay only for the days used.",
+      "terms": "Ordering accepts the terms of service, which say how to cancel and how to withdraw.",
+      "termsLink": "Ordering accepts the terms of service, which say how to cancel and how to withdraw.",
+      "needed": "Tick the box above to order a plan or start the trial."
+    },
+    "trial": {
+      "title": "Try {plan} free for {days} days",
+      "description": "No payment method needed, and nothing is charged. When the trial ends, the workspace moves back to the free plan unless you order {plan}. One trial per account and per workspace.",
+      "start": "Start the free trial",
+      "starting": "Opening checkout…"
+    },
+    "cancel": {
+      "open": "Cancel the subscription",
+      "title": "Cancel the subscription",
+      "summary": "The {plan} subscription ends on {date}, and nothing more is charged. Until then the workspace keeps its plan; it then moves to the free plan, with its content.",
+      "summaryNow": "The {plan} trial ends now, and nothing is charged. The workspace moves to the free plan, with its content.",
+      "confirm": "Confirm cancellation",
+      "confirming": "Cancelling…",
+      "doneTitle": "Subscription cancelled",
+      "done": "It ends on {date}. A confirmation was emailed to the members who manage billing."
+    },
+    "withdraw": {
+      "open": "Withdraw from contract here",
+      "loading": "Loading…",
+      "title": "Withdraw from the contract",
+      "summary": "You subscribed to {plan} on {started}. Withdrawing ends the subscription now, and {refund} is refunded to your payment method within 14 days.",
+      "confirm": "Confirm withdrawal",
+      "confirming": "Withdrawing…",
+      "doneTitle": "Withdrawal received",
+      "done": "The subscription has ended, and {refund} is refunded within 14 days. An acknowledgement with its date and time was emailed to you."
+    },
+    "keep": "Keep the subscription"
   },
   "Captcha": {
     "label": "Check that you are a person"
@@ -974,7 +1042,7 @@
       "ends": "{plan, select, other {The {plan} subscription} none {The subscription}} ends now: nothing more is charged.",
       "notRefunded": "The period already paid for is not refunded, except where the law gives a refund.",
       "notRefundedUntil": "The period already paid for, until {date}, is not refunded, except where the law gives a refund.",
-      "withdrawal": "If you subscribed as a consumer less than 14 days ago, you may withdraw and be refunded the unused part: ask whoever runs this Peal server.",
+      "withdrawal": "If you subscribed as a consumer less than 14 days ago, withdraw first with Withdraw from contract here on the workspace’s billing page: the unused part is then refunded. Once the workspace is deleted, ask whoever runs this Peal server.",
       "invoices": "Download your invoices from the billing page first: it goes with the workspace. Invoices are kept as accounting law requires, and a confirmation is emailed to you.",
       "agree": "{count, plural, one {Cancel the subscription now} other {Cancel these # subscriptions now}}, without a refund of the period paid for except where the law gives one"
     }
@@ -1139,7 +1207,7 @@
     },
     "export": {
       "title": "Your data",
-      "description": "A JSON file of everything Peal keeps about you: your account, sessions, memberships, invitations, connected applications, notifications and preferences, what staff did to your account, the posts you wrote in the workspaces you share, and the content of the workspaces where you are the only member. It holds no password, token or key. We email you each time a copy is downloaded.",
+      "description": "A JSON file of everything Peal keeps about you: your account, sessions, memberships, invitations, connected applications, notifications and preferences, what staff did to your account, the posts you wrote in the workspaces you share, the content of the workspaces where you are the only member, and the connections that created content, which French law has Peal keep, with what it keeps once your account is closed. It holds no password, token or key. We email you each time a copy is downloaded.",
       "download": "Download my data"
     },
     "delete": {
@@ -1147,7 +1215,7 @@
       "description": "Deletes your account for good, with the workspaces where you are the only member and everything in them. You leave the others.",
       "open": "Delete my account…",
       "confirmTitle": "Delete your account for good?",
-      "confirmDescription": "Your profile, sessions, notifications, preferences and connected applications go, with the workspaces where you are the only member, and their subscriptions are cancelled. This cannot be undone. Enter your password to confirm.",
+      "confirmDescription": "Your profile, sessions, notifications, preferences and connected applications go, with the workspaces where you are the only member, and their subscriptions are cancelled. This cannot be undone. As French law requires of a host, Peal keeps apart, for judicial authorities only, your name and email address for 5 years, and how you signed in and the connections that created content for 1 year, then deletes them. Enter your password to confirm.",
       "confirm": "Delete my account",
       "deleting": "Deleting…",
       "deleted": "Your account is deleted. A confirmation is on its way to your inbox.",
@@ -1369,7 +1437,7 @@
       "noReason": "Not kept",
       "until": "Until",
       "workspace": "In a workspace",
-      "action": "{action, select, ban {Banned} unban {Lifted the ban} revokeSessions {Signed out everywhere} resendVerification {Sent the confirmation again} impersonate {Acted as the account} impersonatedChange {Changed something as the account} stopImpersonating {Stopped acting as the account} impersonationEnded {Acting as the account ended, by the server} other {{action}}}"
+      "action": "{action, select, ban {Banned} unban {Lifted the ban} revokeSessions {Signed out everywhere} resendVerification {Sent the confirmation again} impersonate {Acted as the account} impersonatedChange {Changed something as the account} stopImpersonating {Stopped acting as the account} impersonationEnded {Acting as the account ended, by the server} legalDisclosure {Answered a legal request} other {{action}}}"
     },
     "channelStatus": {
       "active": "Works",
@@ -1378,7 +1446,7 @@
       "disabledToReconnect": "Turned off, to reconnect"
     },
     "troubleStatus": "{status, select, failed {Failed} other {Unconfirmed}}",
-    "reason": "{reason, select, contentRejected {Content refused} channelDisconnected {Channel disconnected} channelDisabled {Channel turned off} mediaRemoved {Media deleted} mediaRejected {Media refused} missed {Missed} notPublished {Not found after a check} rateLimited {Rate limited} tokenExpired {Authorization stopped working} unavailable {Platform unreachable} appNotAudited {Private posts only, app not audited} quotaExceeded {Daily upload allowance spent} noResponse {No answer} unreadableResponse {Unreadable answer} interrupted {Interrupted} adapterFailure {Failed during the call} other {{reason}}}"
+    "reason": "{reason, select, contentRejected {Content refused} channelDisconnected {Channel disconnected} channelDisabled {Channel turned off} mediaRemoved {Media deleted} mediaRejected {Media refused} missed {Missed} notPublished {Not found after a check} rateLimited {Rate limited} tokenExpired {Authorization stopped working} unavailable {Platform unreachable} appNotAudited {Private posts only, app not audited} quotaExceeded {Daily upload allowance spent} appBillingLimit {Server’s app not paid for} planLimit {Plan limit reached} noResponse {No answer} unreadableResponse {Unreadable answer} interrupted {Interrupted} adapterFailure {Failed during the call} other {{reason}}}"
   },
   "Impersonation": {
     "label": "Acting as another account",

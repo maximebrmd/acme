@@ -14,6 +14,9 @@ public record Billing : IJsonOnDeserialized
     [JsonPropertyName("allowances")]
     public required PlanAllowances Allowances { get; set; }
 
+    [JsonPropertyName("currency")]
+    public required string Currency { get; set; }
+
     [JsonPropertyName("enabled")]
     public required bool Enabled { get; set; }
 
@@ -26,8 +29,17 @@ public record Billing : IJsonOnDeserialized
     [JsonPropertyName("subscription")]
     public BillingSubscription? Subscription { get; set; }
 
+    [JsonPropertyName("trial")]
+    public TrialOffer? Trial { get; set; }
+
     [JsonPropertyName("usage")]
     public required Usage Usage { get; set; }
+
+    [JsonPropertyName("vatRate")]
+    public required int VatRate { get; set; }
+
+    [JsonPropertyName("withdrawableUntil")]
+    public string? WithdrawableUntil { get; set; }
 
     [JsonIgnore]
     public ReadOnlyAdditionalProperties AdditionalProperties { get; private set; } = new();

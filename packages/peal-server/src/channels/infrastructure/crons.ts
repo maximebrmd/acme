@@ -7,8 +7,9 @@ import { WarnChannelsNeedingReconnect } from "#channels/application/warn-channel
 
 /**
  * Every ten minutes: refreshes the tokens due (each platform's policy says
- * how long before expiry), and forgets connection attempts nobody completed.
- * A run more than half an hour late is skipped: the next one does its work.
+ * when: how long before expiry, or, for those renewed as they are used, how
+ * long unused), and forgets connection attempts nobody completed. A run
+ * more than half an hour late is skipped: the next one does its work.
  */
 export const TokenRefreshCron = ClusterCron.make({
   cron: Cron.parseUnsafe("*/10 * * * *", "UTC"),

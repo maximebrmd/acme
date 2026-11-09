@@ -1,12 +1,29 @@
 import { describe, expect, it } from "@effect/vitest";
+import { Option } from "effect";
 import {
+  billingCurrency,
+  BillingIntervalSchema as ContractIntervalSchema,
+  displayVatRate as contractVatRate,
+  planCatalogue,
+  trialOffer,
   PaidPlanSchema as ContractPaidPlanSchema,
   PlanLimitSchema as ContractPlanLimitSchema,
   PlanSchema as ContractPlanSchema,
   SubscriptionStatusSchema as ContractStatusSchema,
 } from "peal-contract";
 
-import { plans } from "#billing/domain/plans.ts";
+import { BillingIntervalSchema } from "#billing/domain/billing-interval.ts";
+import {
+  planAllowances,
+  plans,
+  trialDays,
+  trialPlan,
+} from "#billing/domain/plans.ts";
+import {
+  currency,
+  displayVatRate,
+  planPrices,
+} from "#billing/domain/prices.ts";
 import { SubscriptionStatusSchema } from "#billing/domain/subscription.ts";
 import { PlanLimitSchema } from "#shared/domain/plan-limit.ts";
 import { PaidPlanSchema, PlanSchema } from "#shared/domain/plan.ts";
@@ -24,5 +41,38 @@ describe("the contract", () => {
     expect(ContractStatusSchema.literals).toStrictEqual(
       SubscriptionStatusSchema.literals
     );
+  });
+
+  it("lists the intervals the server bills", () => {
+    expect(ContractIntervalSchema.literals).toStrictEqual(
+      BillingIntervalSchema.literals
+    );
+  });
+
+  // The site and the web app show these before anyone signs in.
+  it("publishes the plans' limits and prices the server bills", () => {
+    for (const plan of plans) {
+      const { limits, price } = planCatalogue[plan];
+
+      expect(limits).toStrictEqual(
+        Object.fromEntries(
+          Object.entries(planAllowances[plan]).map(([limit, allowance]) => [
+            limit,
+            Option.getOrNull(allowance),
+          ])
+        )
+      );
+      expect(price).toStrictEqual(plan === "free" ? null : planPrices[plan]);
+    }
+
+    expect(Object.keys(planCatalogue).toSorted()).toStrictEqual(
+      [...plans].toSorted()
+    );
+  });
+
+  it("publishes the currency, the VAT rate shown and the trial", () => {
+    expect(billingCurrency).toBe(currency);
+    expect(contractVatRate).toBe(displayVatRate);
+    expect(trialOffer).toStrictEqual({ days: trialDays, plan: trialPlan });
   });
 });

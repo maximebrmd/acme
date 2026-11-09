@@ -21,6 +21,7 @@ import { SystemHandlers } from "#app/system.ts";
 import { AssistantApiLive, AssistantLive } from "#assistant/container.ts";
 import {
   BillingApiLive,
+  BillingActionsApiLive,
   BillingLive,
   BillingOverviewLive,
 } from "#billing/container.ts";
@@ -30,6 +31,11 @@ import {
   ChannelsLive,
   DataDeletionApiLive,
 } from "#channels/container.ts";
+import {
+  LegalApiLive,
+  LegalLive,
+  LegalRequestsLive,
+} from "#legal/container.ts";
 import { MediaApiLive, MediaLive } from "#media/container.ts";
 import {
   NoticesApiLive,
@@ -52,6 +58,7 @@ import { IdsLive } from "#shared/infrastructure/secure-random-ids.ts";
 import { TransactionRunnerLive } from "#shared/infrastructure/transaction-runner-live.ts";
 import {
   ImpersonationAuditLive,
+  LegalDisclosureAuditLive,
   StaffApiLive,
   StaffLive,
   StaffRecordsLive,
@@ -75,9 +82,11 @@ const WorkspaceGroupsLive = Layer.mergeAll(
   NotificationPreferencesApiLive,
   AssistantApiLive,
   BillingApiLive,
+  BillingActionsApiLive,
   AnalyticsApiLive,
   TikTokApiLive,
-  StaffApiLive
+  StaffApiLive,
+  LegalApiLive
 ).pipe(Layer.provideMerge(WorkspaceApiLive));
 
 const ApiLive = HttpApiBuilder.layer(Api, {
@@ -105,7 +114,8 @@ const BillingContextsLive = BillingLive.pipe(
 );
 
 // The workspace context with the notifications it sends, the plans that
-// limit it and the audit log of staff's impersonations it records, then the
+// limit it, the audit log of staff's impersonations it records and the
+// legal records of the connections that change content, then the
 // notices, which read the workspace's members, then the channels context,
 // which sends them, as publishing does.
 const ChannelsWithNoticesLive = ChannelsLive.pipe(
@@ -114,14 +124,17 @@ const ChannelsWithNoticesLive = ChannelsLive.pipe(
     WorkspaceLive.pipe(
       Layer.provideMerge(NotificationsLive),
       Layer.provideMerge(BillingContextsLive),
-      Layer.provide(ImpersonationAuditLive)
+      Layer.provide(ImpersonationAuditLive),
+      Layer.provideMerge(LegalLive)
     )
   )
 );
 
 // The media context, which asks publishing which posts show an asset before
-// deleting it.
-const MediaContextLive = MediaLive.pipe(Layer.provide(MediaInPostsLive));
+// deleting it, and billing how much a workspace may store.
+const MediaContextLive = MediaLive.pipe(
+  Layer.provide(Layer.mergeAll(MediaInPostsLive, BillingContextsLive))
+);
 
 // Publishing posts to the channels the channels context lists, with the
 // media the media context holds.
@@ -135,8 +148,8 @@ const AssistantContextLive = AssistantLive.pipe(
 );
 
 // Workspace and account settings, which erase and export what every context
-// keeps, billing's included, which the workspace context brings, and the
-// staff audit log's.
+// keeps, billing's included, which the workspace context brings, the staff
+// audit log's, and the legal records, which keep who held a closed account.
 const SettingsContextLive = WorkspaceSettingsLive.pipe(
   Layer.provide(
     Layer.mergeAll(
@@ -157,12 +170,23 @@ const StaffContextLive = StaffLive.pipe(
   Layer.provide(Layer.mergeAll(ChannelsWithNoticesLive, PublishingContextLive))
 );
 
-// The billing page, which counts what each context holds.
+// Legal requests, for staff holding the legal role, as the workspace
+// context tells, each answer shown in the staff audit log.
+const LegalRequestsContextLive = LegalRequestsLive.pipe(
+  Layer.provide(
+    Layer.mergeAll(ChannelsWithNoticesLive, LegalDisclosureAuditLive)
+  )
+);
+
+// The billing page, which counts what each context holds, and its
+// orders, cancellations and withdrawals, which tell members through the
+// notices.
 const BillingContextLive = BillingOverviewLive.pipe(
   Layer.provide(
     Layer.mergeAll(
       ChannelsWithNoticesLive,
       PublishingContextLive,
+      MediaContextLive,
       AssistantContextLive
     )
   )
@@ -197,7 +221,8 @@ const ServicesLive = Layer.mergeAll(
   SettingsContextLive,
   BillingContextLive,
   AnalyticsLive,
-  StaffContextLive
+  StaffContextLive,
+  LegalRequestsContextLive
 ).pipe(
   Layer.provide(Layer.mergeAll(JobsWithoutWorkersLive, BunDns.layer)),
   Layer.provideMerge(MigrationsLive),
@@ -239,7 +264,8 @@ const ContextsLive = Layer.mergeAll(
   SettingsContextLive,
   BillingContextLive,
   AnalyticsContextLive,
-  StaffContextLive
+  StaffContextLive,
+  LegalRequestsContextLive
 ).pipe(
   Layer.provideMerge(
     Layer.mergeAll(IdsLive, TransactionRunnerLive, BunDns.layer)

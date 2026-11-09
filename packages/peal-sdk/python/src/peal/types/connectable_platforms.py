@@ -3,11 +3,19 @@
 import typing
 
 import pydantic
+import typing_extensions
 from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
+from ..core.serialization import FieldMetadata
+from .instagram_connection import InstagramConnection
 from .platform import Platform
 
 
 class ConnectablePlatforms(UniversalBaseModel):
+    instagram_connections: typing_extensions.Annotated[
+        typing.List[InstagramConnection],
+        FieldMetadata(alias="instagramConnections"),
+        pydantic.Field(alias="instagramConnections"),
+    ]
     platforms: typing.List[Platform]
 
     if IS_PYDANTIC_V2:

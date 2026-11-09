@@ -1,5 +1,6 @@
 import { Effect, Layer, Option } from "effect";
 
+import { ChannelUsage } from "#channels/application/channel-usage.ts";
 import { AttachableMedia } from "#publishing/application/attachable-media.ts";
 import { WorkspaceChannels } from "#publishing/application/workspace-channels.ts";
 import { MediaAttachment } from "#publishing/domain/media-attachment.ts";
@@ -68,8 +69,18 @@ export const mediaFile = (
  * (none, by default: nothing is limited).
  */
 export const postAllowance = (
-  entitlements: typeof UnmeteredTest = UnmeteredTest
-) => PlanPostAllowanceLive.pipe(Layer.provide(entitlements));
+  entitlements: typeof UnmeteredTest = UnmeteredTest,
+  connected = 0
+) =>
+  PlanPostAllowanceLive.pipe(
+    Layer.provide(entitlements),
+    Layer.provide(
+      Layer.succeed(
+        ChannelUsage,
+        ChannelUsage.of({ connected: () => Effect.succeed(connected) })
+      )
+    )
+  );
 
 /** Channels on Mastodon, no media, and no limit: what most tests need. */
 export const ReferencesTest = Layer.mergeAll(

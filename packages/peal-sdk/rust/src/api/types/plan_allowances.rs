@@ -7,6 +7,9 @@ pub struct PlanAllowances {
     pub assistant_requests: Option<i64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub channels: Option<i64>,
+    #[serde(rename = "mediaStorage")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub media_storage: Option<i64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub members: Option<i64>,
     #[serde(rename = "scheduledPosts")]
@@ -25,6 +28,7 @@ impl PlanAllowances {
 pub struct PlanAllowancesBuilder {
     assistant_requests: Option<i64>,
     channels: Option<i64>,
+    media_storage: Option<i64>,
     members: Option<i64>,
     scheduled_posts: Option<i64>,
 }
@@ -37,6 +41,11 @@ impl PlanAllowancesBuilder {
 
     pub fn channels(mut self, value: i64) -> Self {
         self.channels = Some(value);
+        self
+    }
+
+    pub fn media_storage(mut self, value: i64) -> Self {
+        self.media_storage = Some(value);
         self
     }
 
@@ -55,6 +64,7 @@ impl PlanAllowancesBuilder {
         Ok(PlanAllowances {
             assistant_requests: self.assistant_requests,
             channels: self.channels,
+            media_storage: self.media_storage,
             members: self.members,
             scheduled_posts: self.scheduled_posts,
         })

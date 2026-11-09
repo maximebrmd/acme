@@ -27,6 +27,8 @@ public final class PlanAllowances {
 
     private final Optional<Integer> channels;
 
+    private final Optional<Integer> mediaStorage;
+
     private final Optional<Integer> members;
 
     private final Optional<Integer> scheduledPosts;
@@ -36,11 +38,13 @@ public final class PlanAllowances {
     private PlanAllowances(
             Optional<Integer> assistantRequests,
             Optional<Integer> channels,
+            Optional<Integer> mediaStorage,
             Optional<Integer> members,
             Optional<Integer> scheduledPosts,
             Map<String, Object> additionalProperties) {
         this.assistantRequests = assistantRequests;
         this.channels = channels;
+        this.mediaStorage = mediaStorage;
         this.members = members;
         this.scheduledPosts = scheduledPosts;
         this.additionalProperties = additionalProperties;
@@ -60,6 +64,14 @@ public final class PlanAllowances {
             return Optional.empty();
         }
         return channels;
+    }
+
+    @JsonIgnore
+    public Optional<Integer> getMediaStorage() {
+        if (mediaStorage == null) {
+            return Optional.empty();
+        }
+        return mediaStorage;
     }
 
     @JsonIgnore
@@ -91,6 +103,12 @@ public final class PlanAllowances {
     }
 
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
+    @JsonProperty("mediaStorage")
+    private Optional<Integer> _getMediaStorage() {
+        return mediaStorage;
+    }
+
+    @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("members")
     private Optional<Integer> _getMembers() {
         return members;
@@ -116,13 +134,15 @@ public final class PlanAllowances {
     private boolean equalTo(PlanAllowances other) {
         return assistantRequests.equals(other.assistantRequests)
                 && channels.equals(other.channels)
+                && mediaStorage.equals(other.mediaStorage)
                 && members.equals(other.members)
                 && scheduledPosts.equals(other.scheduledPosts);
     }
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.assistantRequests, this.channels, this.members, this.scheduledPosts);
+        return Objects.hash(
+                this.assistantRequests, this.channels, this.mediaStorage, this.members, this.scheduledPosts);
     }
 
     @java.lang.Override
@@ -140,6 +160,8 @@ public final class PlanAllowances {
 
         private Optional<Integer> channels = Optional.empty();
 
+        private Optional<Integer> mediaStorage = Optional.empty();
+
         private Optional<Integer> members = Optional.empty();
 
         private Optional<Integer> scheduledPosts = Optional.empty();
@@ -151,6 +173,7 @@ public final class PlanAllowances {
         public Builder from(PlanAllowances other) {
             assistantRequests(other.getAssistantRequests());
             channels(other.getChannels());
+            mediaStorage(other.getMediaStorage());
             members(other.getMembers());
             scheduledPosts(other.getScheduledPosts());
             return this;
@@ -200,6 +223,28 @@ public final class PlanAllowances {
             return this;
         }
 
+        @JsonSetter(value = "mediaStorage", nulls = Nulls.SKIP)
+        public Builder mediaStorage(Optional<Integer> mediaStorage) {
+            this.mediaStorage = mediaStorage;
+            return this;
+        }
+
+        public Builder mediaStorage(Integer mediaStorage) {
+            this.mediaStorage = Optional.ofNullable(mediaStorage);
+            return this;
+        }
+
+        public Builder mediaStorage(Nullable<Integer> mediaStorage) {
+            if (mediaStorage.isNull()) {
+                this.mediaStorage = null;
+            } else if (mediaStorage.isEmpty()) {
+                this.mediaStorage = Optional.empty();
+            } else {
+                this.mediaStorage = Optional.of(mediaStorage.get());
+            }
+            return this;
+        }
+
         @JsonSetter(value = "members", nulls = Nulls.SKIP)
         public Builder members(Optional<Integer> members) {
             this.members = members;
@@ -245,13 +290,15 @@ public final class PlanAllowances {
         }
 
         public PlanAllowances build() {
-            return new PlanAllowances(assistantRequests, channels, members, scheduledPosts, additionalProperties);
+            return new PlanAllowances(
+                    assistantRequests, channels, mediaStorage, members, scheduledPosts, additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
             if (key.equalsIgnoreCase("assistantRequests")
                     || key.equalsIgnoreCase("channels")
+                    || key.equalsIgnoreCase("mediaStorage")
                     || key.equalsIgnoreCase("members")
                     || key.equalsIgnoreCase("scheduledPosts")) {
                 return;

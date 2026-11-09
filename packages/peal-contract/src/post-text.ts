@@ -2,6 +2,7 @@ import { Schema } from "effect";
 
 import type { MediaContentType } from "./media.ts";
 import type { Platform } from "./platform.ts";
+import { xLinksIn } from "./x-links.ts";
 
 // The rules the API applies to a post's text and media before it schedules
 // it, so clients count as the server does: a composer shows how much room is
@@ -22,8 +23,9 @@ export const maxMediaPerPost = 20;
  * How a platform measures text: graphemes (what a reader sees as one
  * character), Unicode code points, UTF-8 bytes, code points with each emoji
  * counted by its UTF-8 bytes (Threads), UTF-16 code units (TikTok), or X's
- * weighted count, where a link counts as 23, an emoji as 2, and a code point
- * outside Latin, Greek, Cyrillic and common punctuation as 2.
+ * weighted count, where a link counts as 23 (`peal.social` too), an emoji as
+ * 2, and a code point outside Latin, Greek, Cyrillic and common punctuation
+ * as 2, once the text is normalized to NFC.
  */
 export const TextUnitSchema = Schema.Literals([
   "graphemes",
@@ -80,40 +82,45 @@ const emojiWeight = 2;
 
 const emoji = /^\p{RGI_Emoji}$/v;
 
-const links = /(?<![\p{L}\p{N}@])(?:https?:\/\/|www\.)[^\s<>"]+/giu;
+// The emoji X counts as 2 each, whatever they are built of, found as
+// twitter-text finds them: the longest at each place, a keycap without its
+// variation selector too ("1⃣"). The list is Unicode's current one
+// (`RGI_Emoji`), on purpose: twitter-text 3.1.0 carries a 2019 list, which
+// lacks some ZWJ sequences and counts them by code point (🧑🏽‍💻 and 👁️‍🗨️ as
+// 5, where Peal counts 2), and X's own composer counts by a newer one. A
+// post near 280 made of such sequences is the only text the two can tell
+// apart; X's answer then wins, as for any refusal.
+const emojis = /\p{RGI_Emoji}|[#*0-9]\u20E3/gv;
 
-const trailingPunctuation = /[.,;:!?'")\]}]+$/u;
+const codePointsWeight = (text: string): number =>
+  codePointsOf(text).reduce(
+    (weight, codePoint) => weight + codePointWeight(codePoint),
+    0
+  );
 
-const withoutLinks = (text: string) => {
-  let rest = "";
-  let count = 0;
+const weightOf = (text: string): number => {
+  let length = 0;
   let from = 0;
 
-  for (const match of text.matchAll(links)) {
-    const link = match[0].replace(trailingPunctuation, "");
-
-    rest += text.slice(from, match.index);
-    count += 1;
-    from = match.index + link.length;
+  for (const match of text.matchAll(emojis)) {
+    length += codePointsWeight(text.slice(from, match.index)) + emojiWeight;
+    from = match.index + match[0].length;
   }
 
-  return { links: count, rest: rest + text.slice(from) };
+  return length + codePointsWeight(text.slice(from));
 };
 
 const weightedLength = (text: string): number => {
-  const { links: linkCount, rest } = withoutLinks(text.normalize("NFC"));
+  const normalized = text.normalize("NFC");
+  let length = 0;
+  let from = 0;
 
-  return segmentsOf(rest).reduce(
-    (length, segment) =>
-      length +
-      (emoji.test(segment)
-        ? emojiWeight
-        : codePointsOf(segment).reduce(
-            (weight, codePoint) => weight + codePointWeight(codePoint),
-            0
-          )),
-    linkCount * weightedLinkLength
-  );
+  for (const link of xLinksIn(normalized)) {
+    length += weightOf(normalized.slice(from, link.start)) + weightedLinkLength;
+    from = link.end;
+  }
+
+  return length + weightOf(normalized.slice(from));
 };
 
 const utf8BytesOf = (text: string): number =>
@@ -158,16 +165,13 @@ export const countMentions = (text: string): number =>
   [...text.matchAll(mentions)].length;
 
 /**
- * How many different links the text holds, each as X finds them: starting
- * with a scheme or "www.", without the punctuation that ends a sentence.
- * The same link twice counts once.
+ * How many different links the text holds, each as X finds them (see
+ * `./x-links.ts`): with or without a scheme, on a known top-level domain,
+ * without the punctuation that ends a sentence. The same link twice counts
+ * once.
  */
 export const countLinks = (text: string): number =>
-  new Set(
-    Array.from(text.matchAll(links), ([link]) =>
-      link.replace(trailingPunctuation, "")
-    )
-  ).size;
+  new Set(xLinksIn(text).map(({ url }) => url)).size;
 
 /** At most `maximum` of `unit`. */
 export interface TextLimit {

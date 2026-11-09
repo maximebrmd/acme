@@ -31,6 +31,8 @@ const whenOf = (post: Post): string => {
 // Why a post did not go out on a channel, as the user acts on it. Every
 // reason has its sentence, so a new one fails to compile until it has one.
 const failureReasons: Readonly<Record<FailureReason, string>> = {
+  appBillingLimit:
+    "the platform refused this server's app until its operator pays for it: the post is not at fault, post it again once that is fixed",
   appNotAudited:
     "the platform takes only private posts from this server's app until it audits it: make the account private and the post visible to its owner only",
   channelDisabled:
@@ -41,6 +43,8 @@ const failureReasons: Readonly<Record<FailureReason, string>> = {
   mediaRemoved: "one of its images or videos was deleted before it went out",
   missed: "Peal was down at its time, and it came too late to send",
   notPublished: "someone checked the platform and did not find it",
+  planLimit:
+    "the workspace's plan had no room for it when it was due: disconnect channels or move to a larger plan, then post it again",
   quotaExceeded:
     "the platform's daily upload allowance stayed spent: post it again after it resets",
   rateLimited: "the platform kept limiting Peal, which stopped trying",

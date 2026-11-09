@@ -7,6 +7,9 @@ import type {
   AuthoredPostRecord,
   BillingRecord,
   ChannelRecord,
+  ContractsRecord,
+  IdentificationRecord,
+  LegalHoldRecord,
   MediaRecord,
   NoticeRecord,
   PostRecord,
@@ -48,6 +51,14 @@ export interface WorkspaceContent {
 
 /** What the other contexts keep about a user, wherever they are a member. */
 export interface UserContent {
+  /** The orders and withdrawals they made. */
+  readonly contracts: ContractsRecord;
+  /**
+   * What the law has Peal keep beyond the account: the connections that
+   * made content, and what closing it leaves; null on a server that keeps
+   * nothing for the law.
+   */
+  readonly legalHold: LegalHoldRecord | null;
   readonly notices: readonly NoticeRecord[];
   readonly preferences: PreferencesRecord;
   /** What staff did to their account, from the audit log. */
@@ -57,7 +68,8 @@ export interface UserContent {
 /**
  * The data the other contexts keep about workspaces and users: channels,
  * posts and their authors, media, analytics, assistant usage, billing,
- * notices and preferences, and the staff audit log. Erasures run in the caller's transaction, except the media
+ * notices and preferences, the staff audit log, and what the law has Peal
+ * keep (`#legal`). Erasures run in the caller's transaction, except the media
  * files, which the store holds outside the database: remove them once the
  * rest is committed.
  */
@@ -109,9 +121,23 @@ export class ContextRecords extends Context.Service<
      * Deletes the user's notices and preferences, and the connections they
      * have in progress, and forgets them as the author of posts in the
      * workspaces that remain, and as the account staff acted on in the
-     * audit log.
+     * audit log; what is kept beyond the account (a ban's reason, the
+     * trial it had) is kept by a keyed pseudonym of `email`.
      */
-    readonly eraseUser: (userId: UserId) => Effect.Effect<void, DatabaseError>;
+    readonly eraseUser: (
+      userId: UserId,
+      email: string
+    ) => Effect.Effect<void, DatabaseError>;
+    /**
+     * Keeps who held an account that closes, apart from everything else,
+     * as the law requires of a host (loi n° 2004-575, art. 6, V, A; décret
+     * n° 2021-1362): 5 years, the name and address; 1 year, how they
+     * signed in and the references of their payments. Runs in the
+     * caller's transaction, so no account closes without it.
+     */
+    readonly holdIdentification: (
+      record: IdentificationRecord
+    ) => Effect.Effect<void, DatabaseError>;
     readonly removeWorkspaceFiles: (
       workspaceId: WorkspaceId
     ) => Effect.Effect<void, WorkspaceFilesRemain>;

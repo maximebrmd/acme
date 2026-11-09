@@ -240,6 +240,14 @@ export const xAuthorizer = Effect.fn("XAuthorizer.make")(
           return yield* new PlatformUnavailable();
         }
 
+        // The app's credits are used up: the operator's to fix, never the
+        // account's, so the channel keeps its refresh token.
+        if (response.status === 402) {
+          return yield* Effect.logError(
+            "X refuses this server's app until its account is paid for: add credits or raise its spending cap in X's developer console"
+          ).pipe(Effect.andThen(Effect.fail(new PlatformUnavailable())));
+        }
+
         if (response.status !== 200) {
           return yield* refusedRefresh(response);
         }

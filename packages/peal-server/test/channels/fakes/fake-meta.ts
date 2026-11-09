@@ -23,6 +23,12 @@ export const threadsApp: MetaApp = {
   appSecret: Redacted.make("synthetic-threads-secret"),
 };
 
+/** The app's Instagram credentials, for Business Login for Instagram. */
+export const instagramApp: MetaApp = {
+  appId: "5550001112",
+  appSecret: Redacted.make("synthetic-instagram-secret"),
+};
+
 /** The Facebook user who signs in, as Meta scopes their id to the app. */
 export const facebookUserId = "10220000000000001";
 
@@ -301,6 +307,9 @@ export const fakeMeta = Effect.fnUntraced(function* fakeMeta(
   const hosts: MetaHosts = {
     facebookDialog: new URL(server.url),
     facebookGraph: new URL(server.url),
+    instagramApi: new URL(server.url),
+    instagramAuthorize: new URL(server.url),
+    instagramGraph: new URL(server.url),
     threadsAuthorize: new URL(server.url),
     threadsGraph: new URL(server.url),
   };

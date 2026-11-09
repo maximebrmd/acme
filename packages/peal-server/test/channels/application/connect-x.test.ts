@@ -63,6 +63,7 @@ const connected = Effect.fn("test.connected")(function* connected(
   workspaceId: WorkspaceId
 ) {
   const url = yield* on.connect.start(manager(workspaceId), "x", {
+    connection: Option.none(),
     handle: Option.none(),
     instance: Option.none(),
   });
@@ -90,7 +91,8 @@ const storedTokens = (channel: Channel) =>
     }))
   );
 
-// Makes the channel's token due for a refresh, as two hours later.
+// Makes the channel's token due for the sweep: unused for a month, X's
+// keep-alive.
 const makeDue = (channel: Channel) =>
   Effect.gen(function* due() {
     const now = yield* DateTime.now;
@@ -101,7 +103,7 @@ const makeDue = (channel: Channel) =>
         scopes: channel.scopes,
         token: {
           _tag: "refreshable",
-          expiresAt: DateTime.addDuration(now, Duration.minutes(10)),
+          expiresAt: DateTime.subtractDuration(now, Duration.days(31)),
         },
       },
       now
@@ -126,7 +128,11 @@ layer(AdaptersTest)("connecting an X account", (it) => {
       const authorizationUrl = yield* on.connect.start(
         manager(workspaceId),
         "x",
-        { handle: Option.none(), instance: Option.none() }
+        {
+          connection: Option.none(),
+          handle: Option.none(),
+          instance: Option.none(),
+        }
       );
 
       const url = new URL(authorizationUrl);
@@ -182,6 +188,7 @@ layer(AdaptersTest)("connecting an X account", (it) => {
       const workspaceId = yield* freshWorkspace;
 
       const url = yield* on.connect.start(manager(workspaceId), "x", {
+        connection: Option.none(),
         handle: Option.none(),
         instance: Option.none(),
       });
@@ -219,6 +226,7 @@ layer(AdaptersTest)("connecting an X account", (it) => {
       const workspaceId = yield* freshWorkspace;
 
       const url = yield* on.connect.start(manager(workspaceId), "x", {
+        connection: Option.none(),
         handle: Option.none(),
         instance: Option.none(),
       });
@@ -242,7 +250,7 @@ layer(AdaptersTest)("connecting an X account", (it) => {
         tokens.refresh(channel.id)
       ).pipe(Effect.provide(jobs));
 
-      // Not due: two hours left.
+      // Not due: two hours left, and then renewed as posts need it.
       assert.strictEqual(yield* refresh, "skipped");
 
       yield* makeDue(channel);
@@ -264,6 +272,47 @@ layer(AdaptersTest)("connecting an X account", (it) => {
         access: "x-access-3",
         refresh: Option.some("x-refresh-3"),
       });
+    }).pipe(Effect.scoped)
+  );
+
+  it.effect("leaves an expired token to the next post, which renews it", () =>
+    Effect.gen(function* onUse() {
+      const on = yield* onX();
+      const workspaceId = yield* freshWorkspace;
+      const channel = yield* connected(on, workspaceId);
+      const jobs = tokenJobs(workspaceId, on.authorizer);
+      const now = yield* DateTime.now;
+
+      yield* ChannelRepository.use((channels) =>
+        channels.update(
+          renewToken(
+            channel,
+            {
+              scopes: channel.scopes,
+              token: {
+                _tag: "refreshable",
+                expiresAt: DateTime.subtractDuration(now, Duration.hours(5)),
+              },
+            },
+            now
+          ),
+          Option.none()
+        )
+      );
+
+      const swept = yield* RefreshChannelTokens.use((tokens) =>
+        tokens.refresh(channel.id)
+      ).pipe(Effect.provide(jobs));
+
+      const used = yield* ChannelAccess.use((access) =>
+        access.withToken(channel.id, ({ accessToken }) =>
+          Effect.succeed(Redacted.value(accessToken))
+        )
+      ).pipe(Effect.provide(jobs));
+
+      assert.strictEqual(swept, "skipped");
+      assert.strictEqual(used, "x-access-2");
+      assert.deepStrictEqual(on.x.usedRefreshTokens(), ["x-refresh-1"]);
     }).pipe(Effect.scoped)
   );
 
@@ -318,7 +367,7 @@ layer(AdaptersTest)("connecting an X account", (it) => {
   );
 
   it.effect(
-    "leaves the channel alone when X is down or refuses Peal's client",
+    "leaves the channel alone when X is down, refuses Peal's client or wants paying",
     () =>
       Effect.gen(function* unavailable() {
         const on = yield* onX();
@@ -334,6 +383,7 @@ layer(AdaptersTest)("connecting an X account", (it) => {
             },
             status: 401,
           },
+          { body: { title: "Payment Required" }, status: 402 },
         ]);
         yield* makeDue(channel);
 
@@ -343,9 +393,10 @@ layer(AdaptersTest)("connecting an X account", (it) => {
 
         assert.strictEqual(yield* refresh, "unavailable");
         assert.strictEqual(yield* refresh, "unavailable");
+        assert.strictEqual(yield* refresh, "unavailable");
         assert.deepStrictEqual(yield* statusOf(channel), Option.some("active"));
 
-        // X answered neither: the refresh token still works.
+        // X answered none: the refresh token still works.
         assert.strictEqual(yield* refresh, "refreshed");
       }).pipe(Effect.scoped)
   );

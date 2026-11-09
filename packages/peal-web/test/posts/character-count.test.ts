@@ -37,6 +37,12 @@ describe(fitOn, () => {
     expect(fits(fitOn("x", "日".repeat(140), 0))).toBeTruthy();
   });
 
+  it("weighs a domain without a scheme as a link on X, as X does", () => {
+    expect(fitOn("x", "Read peal.social now", 0).tightest?.length).toBe(32);
+    expect(fits(fitOn("x", `${"x".repeat(256)} peal.social`, 0))).toBeTruthy();
+    expect(fits(fitOn("x", `${"x".repeat(257)} peal.social`, 0))).toBeFalsy();
+  });
+
   it("counts a Threads emoji by its UTF-8 bytes, as Threads does", () => {
     expect(
       fitOn("threads", `${"a".repeat(480)}${"😀".repeat(5)}`, 0).tightest

@@ -8,6 +8,7 @@ import type { InvalidInstance } from "#channels/domain/invalid-instance.ts";
 import type { Platform } from "#channels/domain/platform.ts";
 import type { TokenPolicy } from "#channels/domain/token-policy.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
+import type { InstagramConnection } from "#shared/domain/instagram-connection.ts";
 import type { PlatformUnavailable } from "#shared/domain/platform-unavailable.ts";
 import type { TokenExpired } from "#shared/domain/token-expired.ts";
 
@@ -70,9 +71,9 @@ export interface IssuedTokens {
   readonly scopes: readonly string[];
   /**
    * The platform user whose grant the tokens rest on, when it is not the
-   * account itself: the Facebook user who manages a Page. A request to
-   * delete that user's data finds the channel by it. A refresh gives the
-   * same again.
+   * account itself: the Facebook user who manages a Page, or the app-scoped
+   * id of an Instagram Login account's user. A request to delete that
+   * user's data finds the channel by it. A refresh gives the same again.
    */
   readonly grantedBy?: string;
 }
@@ -134,6 +135,12 @@ export type RefreshFailure = PlatformUnavailable | TokenExpired;
  */
 export interface PlatformAuthorizer {
   readonly platform: Platform;
+  /**
+   * The way in this authorizer is, for Instagram, which has two: its
+   * channels keep it, so their tokens are renewed, and their posts sent,
+   * the same way.
+   */
+  readonly connection?: InstagramConnection;
   /** How the tokens this adapter issues live. */
   readonly policy: TokenPolicy;
   /** Prepares a sign-in and says where to send the browser. */
@@ -175,8 +182,20 @@ export interface PlatformAuthorizer {
 export class PlatformAuthorizers extends Context.Service<
   PlatformAuthorizers,
   {
-    /** The platform's authorizer, if this server can connect it. */
-    readonly for: (platform: Platform) => Option.Option<PlatformAuthorizer>;
+    /**
+     * The platform's authorizer, if this server can connect it: for
+     * Instagram, the one of the connection given, or without one the
+     * server's first in `instagramConnections`.
+     */
+    readonly for: (
+      platform: Platform,
+      connection?: Option.Option<InstagramConnection>
+    ) => Option.Option<PlatformAuthorizer>;
+    /**
+     * The ways this server connects Instagram accounts, the one it prefers
+     * first: Instagram Login, then Facebook Login.
+     */
+    readonly instagramConnections: readonly InstagramConnection[];
     /**
      * Platforms Peal supports but this server cannot connect for want of a
      * setting, as Bluesky without client keys in production.

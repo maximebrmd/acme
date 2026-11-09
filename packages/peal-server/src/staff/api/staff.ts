@@ -125,8 +125,11 @@ const workspaceView = Effect.fn("StaffWorkspace.view")(function* workspaceView(
         Effect.map((status) => ({
           cancelAtPeriodEnd: bought.cancelAtPeriodEnd,
           currentPeriodEnd: orNull(bought.currentPeriodEnd),
+          interval: bought.interval,
           plan: bought.plan,
+          startedAt: orNull(bought.startedAt),
           status,
+          trialEnd: orNull(bought.trialEnd),
         }))
       ),
   });

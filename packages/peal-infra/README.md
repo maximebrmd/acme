@@ -181,7 +181,9 @@ the owner's approval.
      `sandbox.peal.social/api/channels/oauth` for Bluesky,
      `sandbox.peal.social/api/auth/stripe/webhook` for Stripe, and
      `sandbox.peal.social/api/data-deletion` for Meta; and its own Grafana and
-     SSH applications.
+     SSH applications. The uptime server's checks of the sandbox need a
+     service token and a Service Auth policy on its application too (see
+     [Uptime › Set it up](#set-it-up)).
 3. **A tunnel per environment**, locally managed so `config.yml` holds its
    routes, from your own machine:
 
@@ -194,12 +196,30 @@ the owner's approval.
 
 4. **R2**: a media bucket and a backup bucket per environment, created in
    R2's EU jurisdiction (their endpoint is
-   `<account>.eu.r2.cloudflarestorage.com`), an API token
-   with Object Read & Write on each bucket alone, and on the media bucket a
-   lifecycle rule that aborts incomplete multipart uploads after a day. Put
-   the upload CORS rule on it with `bun nx run peal-server:media-cors`, from
-   your machine, with a token that may change the bucket's settings.
-5. **Telegram**: a bot from @BotFather, and the id of the chat it writes to.
+   `<account>.eu.r2.cloudflarestorage.com`), which cannot be changed once a
+   bucket exists: a bucket made without it is deleted while empty and made
+   again. An API token with Object Read & Write on each bucket alone, and on
+   the media bucket a lifecycle rule that aborts incomplete multipart uploads
+   after a day; never an expiry rule on a backup bucket, as pgBackRest keeps
+   its own and a restore needs every WAL file. With Wrangler, every bucket
+   command takes `--jurisdiction eu`:
+
+   ```sh
+   wrangler r2 bucket create peal-production-media --jurisdiction eu
+   wrangler r2 bucket info peal-production-media --jurisdiction eu   # check its jurisdiction
+   wrangler r2 bucket lifecycle add peal-production-media abort-incomplete-uploads --abort-multipart-days 1 --jurisdiction eu
+   ```
+
+   Put the upload CORS rule on the media bucket with
+   `bun nx run peal-server:media-cors`, from your machine, with a token that
+   may change the bucket's settings, or paste the policy it prints into the
+   dashboard (R2 › the bucket › Settings › CORS policy), which needs no such
+   token.
+
+5. **Telegram**: a bot from @BotFather per environment, each writing to a
+   private channel, and that chat's id. Read the id from Telegram Web's
+   address bar rather than calling `getUpdates`, which puts the bot's token
+   in a URL. The uptime server has a bot of its own.
 6. **Email**: a Resend key for the verified sending domain `mail.peal.social`,
    which sends as `notifications@mail.peal.social` (`peal_mail_from`).
 

@@ -2,6 +2,12 @@ import { Config, Option, Redacted, Schema } from "effect";
 
 import type { PaidPlan } from "#shared/domain/plan.ts";
 
+/** The lookup keys of a plan's Stripe prices, monthly and yearly. */
+export interface PlanLookupKeys {
+  readonly month: string;
+  readonly year: string;
+}
+
 /** How this server bills through Stripe. */
 export interface StripeSettings {
   /**
@@ -10,12 +16,13 @@ export interface StripeSettings {
    */
   readonly apiUrl: Option.Option<URL>;
   /**
-   * Whether checkout computes and collects tax (Stripe Tax), such as EU VAT
-   * from the customer's address and VAT number.
+   * The lookup keys of the Stripe prices each paid plan is sold at, monthly
+   * and yearly: `<prefix>_<plan>_monthly` and `<prefix>_<plan>_yearly`, the
+   * prefix being STRIPE_LOOKUP_KEY_PREFIX (`peal` unless set). Lookup keys
+   * rather than ids, so the same settings work in every Stripe account and
+   * a price can be replaced at Stripe by moving its key.
    */
-  readonly automaticTax: boolean;
-  /** The Stripe price each paid plan is sold at, monthly. */
-  readonly prices: Readonly<Record<PaidPlan, string>>;
+  readonly prices: Readonly<Record<PaidPlan, PlanLookupKeys>>;
   readonly secretKey: Redacted.Redacted;
   /** Checks that webhooks come from Stripe (their `stripe-signature`). */
   readonly webhookSecret: Redacted.Redacted;
@@ -30,16 +37,36 @@ const optionalSecret = (name: string) =>
 const requiredSecret = (name: string) =>
   Config.schema(Schema.Redacted(Schema.NonEmptyString), name);
 
+// Letters, digits and underscores, as a lookup key is written in Stripe's
+// dashboard; at most 200 characters with the plan and interval after it.
+const LookupKeyPrefixSchema = Schema.String.check(
+  Schema.isPattern(/^[a-z0-9_]{1,160}$/u)
+);
+
+/** The lookup keys of each plan's prices, under `prefix`. */
+export const lookupKeysOf = (
+  prefix: string
+): Readonly<Record<PaidPlan, PlanLookupKeys>> => {
+  const keys = (plan: PaidPlan): PlanLookupKeys => ({
+    month: `${prefix}_${plan}_monthly`,
+    year: `${prefix}_${plan}_yearly`,
+  });
+
+  return {
+    agency: keys("agency"),
+    business: keys("business"),
+    pro: keys("pro"),
+    starter: keys("starter"),
+  };
+};
+
 const billing = (secretKey: Redacted.Redacted) =>
   Config.all({
     apiUrl: Config.option(Config.URL("STRIPE_API_URL")),
-    automaticTax: Config.Boolean("STRIPE_AUTOMATIC_TAX").pipe(
-      Config.withDefault(false)
-    ),
-    prices: Config.all({
-      business: Config.NonEmptyString("STRIPE_PRICE_BUSINESS"),
-      pro: Config.NonEmptyString("STRIPE_PRICE_PRO"),
-    }),
+    prices: Config.schema(
+      LookupKeyPrefixSchema,
+      "STRIPE_LOOKUP_KEY_PREFIX"
+    ).pipe(Config.withDefault("peal"), Config.map(lookupKeysOf)),
     webhookSecret: requiredSecret("STRIPE_WEBHOOK_SECRET"),
   }).pipe(
     Config.map((settings): StripeSettings => ({ ...settings, secretKey }))
@@ -53,12 +80,13 @@ const billing = (secretKey: Redacted.Redacted) =>
  * - `STRIPE_WEBHOOK_SECRET`: the signing secret of the webhook endpoint
  *   that sends `${PUBLIC_URL}/api/auth/stripe/webhook` the subscription
  *   events;
- * - `STRIPE_PRICE_PRO` and `STRIPE_PRICE_BUSINESS`: the monthly price of
- *   each paid plan;
  *
- * and reads `STRIPE_AUTOMATIC_TAX` (`false` unless set: Stripe Tax must be
- * set up in the account first) and `STRIPE_API_URL`. A webhook secret
- * without a key stops the server: one of the two is a mistake.
+ * and reads `STRIPE_LOOKUP_KEY_PREFIX` (the prices' lookup keys,
+ * `peal_<plan>_monthly` and `peal_<plan>_yearly` unless set) and
+ * `STRIPE_API_URL`. Checkout always has Stripe Tax compute the VAT, as the
+ * prices are tax-exclusive and every page shows them VAT included: the
+ * Stripe account needs Stripe Tax set up. A webhook secret without a key
+ * stops the server: one of the two is a mistake.
  */
 export const stripeSettingsConfig = Config.all({
   secretKey: optionalSecret("STRIPE_SECRET_KEY"),

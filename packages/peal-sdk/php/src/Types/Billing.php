@@ -15,6 +15,12 @@ class Billing extends JsonSerializableType
     public PlanAllowances $allowances;
 
     /**
+     * @var string $currency
+     */
+    #[JsonProperty('currency')]
+    public string $currency;
+
+    /**
      * @var bool $enabled
      */
     #[JsonProperty('enabled')]
@@ -39,30 +45,56 @@ class Billing extends JsonSerializableType
     public ?BillingSubscription $subscription;
 
     /**
+     * @var ?TrialOffer $trial
+     */
+    #[JsonProperty('trial')]
+    public ?TrialOffer $trial;
+
+    /**
      * @var Usage $usage
      */
     #[JsonProperty('usage')]
     public Usage $usage;
 
     /**
+     * @var int $vatRate
+     */
+    #[JsonProperty('vatRate')]
+    public int $vatRate;
+
+    /**
+     * @var ?string $withdrawableUntil
+     */
+    #[JsonProperty('withdrawableUntil')]
+    public ?string $withdrawableUntil;
+
+    /**
      * @param array{
      *   allowances: PlanAllowances,
+     *   currency: string,
      *   enabled: bool,
      *   plans: array<PlanOffer>,
      *   usage: Usage,
+     *   vatRate: int,
      *   plan?: ?value-of<Plan>,
      *   subscription?: ?BillingSubscription,
+     *   trial?: ?TrialOffer,
+     *   withdrawableUntil?: ?string,
      * } $values
      */
     public function __construct(
         array $values,
     ) {
         $this->allowances = $values['allowances'];
+        $this->currency = $values['currency'];
         $this->enabled = $values['enabled'];
         $this->plan = $values['plan'] ?? null;
         $this->plans = $values['plans'];
         $this->subscription = $values['subscription'] ?? null;
+        $this->trial = $values['trial'] ?? null;
         $this->usage = $values['usage'];
+        $this->vatRate = $values['vatRate'];
+        $this->withdrawableUntil = $values['withdrawableUntil'] ?? null;
     }
 
     /**

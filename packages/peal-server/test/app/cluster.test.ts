@@ -17,9 +17,12 @@ import { SqlClient } from "effect/sql";
 import { CollectMetrics } from "#analytics/application/collect-metrics.ts";
 import { clusterLayer } from "#app/cluster.ts";
 import { CronsLive } from "#app/crons.ts";
+import { PurgeContractRecords } from "#billing/application/purge-contract-records.ts";
+import { SendBillingReminders } from "#billing/application/send-billing-reminders.ts";
 import { ConnectChannel } from "#channels/application/connect-channel.ts";
 import { RefreshChannelTokens } from "#channels/application/refresh-channel-tokens.ts";
 import { WarnChannelsNeedingReconnect } from "#channels/application/warn-channels-needing-reconnect.ts";
+import { PurgeLegalRecords } from "#legal/application/purge-legal-records.ts";
 import { PostRepository } from "#publishing/application/post-repository.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
 import { PublicationScheduler } from "#publishing/application/publication-scheduler.ts";
@@ -85,10 +88,22 @@ const Ticks = ClusterCron.make({
 
 // The jobs the server's crons call, doing nothing: a real sweep would
 // refresh, or mark, the channels other suites keep in this database, a
-// real collection read their posts, and a real purge delete their audit
-// events.
+// real collection read their posts, a real purge delete their audit
+// events, and real reminders tell their members.
 const ChannelJobsTest = Layer.mergeAll(
   Layer.succeed(PurgeAuditLog, PurgeAuditLog.of({ purge: Effect.succeed(0) })),
+  Layer.succeed(
+    SendBillingReminders,
+    SendBillingReminders.of({ run: Effect.succeed(0) })
+  ),
+  Layer.succeed(
+    PurgeContractRecords,
+    PurgeContractRecords.of({ run: Effect.succeed(0) })
+  ),
+  Layer.succeed(
+    PurgeLegalRecords,
+    PurgeLegalRecords.of({ purge: Effect.succeed(0) })
+  ),
   Layer.succeed(
     CollectMetrics,
     CollectMetrics.of({

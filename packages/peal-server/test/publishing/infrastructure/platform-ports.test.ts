@@ -60,6 +60,7 @@ const refusingAccess = (failure: AccessFailure) =>
 const account: ChannelAccount = {
   accountId: "synthetic@mastodon.test",
   channelId,
+  connection: Option.none(),
   platform: "mastodon",
   scopes: ["profile", "write:statuses", "write:media"],
 };
@@ -181,6 +182,7 @@ describe("the channels context, as publishing sees it", () => {
       assert.deepStrictEqual(own, new MediaRejected({ code: "tooLarge" }));
       assert.deepStrictEqual(yield* credentials.account(channelId), {
         accountId: "synthetic@mastodon.test",
+        connection: Option.none(),
         platform: "mastodon",
       });
     }).pipe(Effect.provide(grantingAccess))

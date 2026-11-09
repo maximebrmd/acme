@@ -191,9 +191,12 @@ be read, and their channels must be reconnected.
   build, or through an HTTPS tunnel. LinkedIn members reconnect every 60 days.
 - **Threads**, **Instagram** and **Facebook Pages** need an app in Meta's
   developer dashboard, in development mode with you in its roles, and its ids
-  and secrets in `META_APP_ID`, `META_APP_SECRET`, `THREADS_APP_ID` and
-  `THREADS_APP_SECRET`; the docs' self-hosting page lists its permissions and
-  addresses. Facebook and Instagram come back with the accounts the sign-in
+  and secrets in `META_APP_ID`, `META_APP_SECRET`, `INSTAGRAM_APP_ID`,
+  `INSTAGRAM_APP_SECRET`, `THREADS_APP_ID` and `THREADS_APP_SECRET`; the
+  docs' self-hosting page lists its permissions and addresses. Instagram
+  connects with Instagram Login (`INSTAGRAM_APP_*`, no Facebook Page
+  needed) and through a Facebook Page (`META_APP_*`). Facebook, and
+  Instagram through a Page, come back with the accounts the sign-in
   reached, to tick. Meta fetches the media it publishes from the store, which
   it cannot reach on this machine: text posts work, media needs a public
   store.
@@ -266,20 +269,23 @@ directly, so a model server on this machine or your network works.
 ### Billing and captcha
 
 Billing and the captcha are off until the server has their keys. To try
-billing, use a Stripe account in test mode, with a monthly price for each
-paid plan, and forward its webhooks with the Stripe CLI:
+billing, use a Stripe account in test mode, with a monthly and a yearly
+EUR price for each paid plan, tax-exclusive, whose lookup keys are
+`peal_<plan>_monthly` and `peal_<plan>_yearly` (`peal_starter_monthly`,
+`peal_pro_yearly`…), and forward its webhooks with the Stripe CLI:
 
 ```sh
 stripe listen --forward-to localhost:3001/api/auth/stripe/webhook   # prints the signing secret
-export STRIPE_SECRET_KEY=sk_test_... STRIPE_WEBHOOK_SECRET=whsec_... \
-  STRIPE_PRICE_PRO=price_... STRIPE_PRICE_BUSINESS=price_...
+export STRIPE_SECRET_KEY=sk_test_... STRIPE_WEBHOOK_SECRET=whsec_...
 ```
 
 On each workspace's **Billing** page, linked from its card, owners and
-admins then move to a paid plan through Stripe's checkout and manage the
-subscription in its customer portal. Every workspace starts on the free
-plan: 3 channels, 2 members, 30 posts a month and 10 assistant requests a
-day.
+admins then tick the box asking to start at once, order a plan or start
+the trial through Stripe's checkout, cancel, or withdraw within 14 days,
+and manage the subscription in its customer portal. Every workspace starts
+on the free plan: 3 channels, 2 members, 30 posts a month, 3 assistant
+requests a day and 500 MB of media; the docs' **Plans and billing** page
+lists the others.
 
 For the captcha, Cloudflare's test keys pass every check without a real
 widget: `TURNSTILE_SITE_KEY=1x00000000000000000000AA` and
@@ -303,7 +309,8 @@ bun nx run peal-server:auth-schema   # regenerate Better Auth's tables after cha
 
 Each context keeps its tables in a Postgres schema of its own (`analytics`,
 `assistant`, `auth`, `billing`, `channels`, `media`, `notifications`,
-`publishing`, `staff`); the job runner's `cluster_*` tables are in `public`. The server
+`publishing`, `staff`, and `legal`, what the law has a host keep); the job
+runner's `cluster_*` tables are in `public`. The server
 keeps finished jobs for 30 days (`PEAL_CLUSTER_RETENTION` changes it), and
 names itself among the job runners with `HOSTNAME`.
 
@@ -371,6 +378,7 @@ In development, these are the ones you may want:
 | `LINKEDIN_CLIENT_ID`          | unset: LinkedIn is not offered   | The LinkedIn app's client id, with `LINKEDIN_CLIENT_SECRET`    |
 | `X_CLIENT_ID`                 | unset: X is not offered          | The X app's OAuth 2.0 client id, with `X_CLIENT_SECRET`        |
 | `META_APP_ID`                 | unset: no Facebook nor Instagram | Meta's app, with `META_APP_SECRET`                             |
+| `INSTAGRAM_APP_ID`            | unset: Instagram through a Page  | The app's Instagram id, with `INSTAGRAM_APP_SECRET`            |
 | `THREADS_APP_ID`              | unset: no Threads                | The app's Threads id, with `THREADS_APP_SECRET`                |
 | `TIKTOK_CLIENT_KEY`           | unset: TikTok is not offered     | The TikTok app's client key, with `TIKTOK_CLIENT_SECRET`       |
 | `YOUTUBE_CLIENT_ID`           | unset: YouTube is not offered    | The Google OAuth client's id, with `YOUTUBE_CLIENT_SECRET`     |

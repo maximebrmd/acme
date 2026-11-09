@@ -43,6 +43,7 @@ public class ConnectTest : BaseMockServerTest
             {
                 WorkspaceId = "workspaceId",
                 Platform = Platform.X,
+                Connection = null,
                 Handle = null,
                 Instance = null,
             }

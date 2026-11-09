@@ -114,7 +114,12 @@ export type PostOutcome = typeof PostOutcomeSchema.Type;
  * token (`tokenExpired`) or could not be reached (`unavailable`); or the
  * platform takes only some posts from the server's app until it approves
  * it (`appNotAudited`: TikTok takes only private posts, from private
- * accounts, from an app it has not audited).
+ * accounts, from an app it has not audited), or refuses the server's app
+ * until its operator pays for it (`appBillingLimit`: X, once the app's
+ * credits are used up or its spending cap reached), which is not the
+ * post's fault; or the workspace's plan had no room for it when it was due
+ * (`planLimit`: more channels than the plan allows, or the month's posts
+ * used up, as after a trial), and nothing was sent.
  */
 export const FailureReasonSchema = Schema.Literals([
   "contentRejected",
@@ -129,6 +134,8 @@ export const FailureReasonSchema = Schema.Literals([
   "unavailable",
   "appNotAudited",
   "quotaExceeded",
+  "appBillingLimit",
+  "planLimit",
 ]).annotate({ identifier: "FailureReason" });
 
 export type FailureReason = typeof FailureReasonSchema.Type;
@@ -262,6 +269,8 @@ export const AttemptResultSchema = Schema.Literals([
   "unavailable",
   "appNotAudited",
   "quotaExceeded",
+  "appBillingLimit",
+  "planLimit",
 ]).annotate({ identifier: "AttemptResult" });
 
 export type AttemptResult = typeof AttemptResultSchema.Type;

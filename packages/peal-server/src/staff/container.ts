@@ -1,6 +1,7 @@
 import { Layer } from "effect";
 
 import { ImpersonationAudit } from "#staff/application/impersonation-audit.ts";
+import { LegalDisclosureAudit } from "#staff/application/legal-disclosure-audit.ts";
 import { PurgeAuditLog } from "#staff/application/purge-audit-log.ts";
 import { StaffActions } from "#staff/application/staff-actions.ts";
 import { StaffConsole } from "#staff/application/staff-console.ts";
@@ -43,6 +44,14 @@ export { AuditRetentionCron as StaffCronsLive } from "#staff/infrastructure/cron
  * context, which sees every request. Needs the database (Drizzle) and Ids.
  */
 export const ImpersonationAuditLive = ImpersonationAudit.layer.pipe(
+  Layer.provide(DrizzleAuditLog)
+);
+
+/**
+ * The audit log's record of each legal request staff answer, for the legal
+ * context. Needs the database (Drizzle) and Ids.
+ */
+export const LegalDisclosureAuditLive = LegalDisclosureAudit.layer.pipe(
   Layer.provide(DrizzleAuditLog)
 );
 

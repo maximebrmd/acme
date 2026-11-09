@@ -40,9 +40,27 @@ Votre utilisation de chaque plateforme reste soumise à ses propres conditions. 
 
 ## Offres, prix et paiement
 
-[Les offres et les prix, les taxes, les périodes de facturation, les renouvellements, les résiliations et les remboursements, ainsi que le droit de rétractation des consommateurs dans l’UE lorsqu’il s’applique. Les paiements sont traités par [Prestataire de paiement].]
+Chaque organisation a un abonnement. Les abonnements, leurs prix et ce que chacun permet (canaux connectés, membres, publications par mois, demandes à l’assistant de rédaction par jour et stockage des médias) figurent sur la [page des tarifs](/fr/pricing/), et sur la page de facturation de l’organisation avant toute commande. Les prix sont en euros, toutes taxes comprises au taux de TVA français ; un consommateur d’un autre pays de l’UE paie la TVA de son pays, calculée au paiement avant qu’il ne règle, et une entreprise disposant d’un numéro de TVA intracommunautaire valide paie le prix hors taxes, la TVA étant autoliquidée. Les paiements sont traités par Stripe. [Nom de l’entité juridique], [Numéro de TVA].
 
-Supprimer une organisation, ou fermer votre compte de sorte qu’une organisation soit supprimée avec lui, résilie immédiatement son abonnement, une fois que vous l’acceptez sur l’écran de confirmation : plus rien n’est facturé, et la période déjà payée n’est pas remboursée, sauf lorsque la loi prévoit un remboursement, comme pour un consommateur qui se rétracte dans les 14 jours suivant la souscription, qui est remboursé de la part non utilisée. [Comment un consommateur qui se rétracte demande ce remboursement.] Les factures sont conservées comme le droit comptable l’exige.
+**Offre gratuite.** Une organisation sans abonnement bénéficie de l’offre gratuite, avec ses limites. Un compte possède au plus une organisation sur l’offre gratuite.
+
+**Essai.** Une organisation qui n’a jamais eu d’abonnement peut essayer l’abonnement indiqué sur la page de facturation, une fois par compte et par organisation, pendant le nombre de jours indiqué, sans fournir de moyen de paiement. Rien n’est facturé pendant l’essai, et aucun contrat d’abonnement payant ne commence avec lui. Nous le rappelons aux membres qui gèrent la facturation trois jours avant sa fin. À sa fin, l’organisation passe à l’offre gratuite, sauf si un abonnement payant a été commandé.
+
+**Commande.** Une commande est passée depuis la page de facturation de l’organisation par un propriétaire ou un administrateur, qui demande que le service commence immédiatement et confirme avec le bouton « Commander avec obligation de paiement » ; le paiement a lieu ensuite sur la page de paiement de Stripe. Le contrat est conclu à l’acceptation du paiement. Nous le confirmons par e-mail, avec les présentes conditions.
+
+**Périodes de facturation et renouvellement.** Un abonnement est payé d’avance, chaque mois ou chaque année, et se renouvelle pour la même durée jusqu’à sa résiliation. 45 jours avant le renouvellement d’un abonnement annuel, nous rappelons par e-mail aux membres qui gèrent la facturation la date du renouvellement, le prix et la façon de résilier, conformément à l’article L215-1 du Code de la consommation. Passer à un abonnement supérieur prend effet immédiatement, la différence de prix pour la période en cours étant calculée au prorata.
+
+**Résiliation.** Un abonnement peut être résilié en ligne à tout moment, depuis la page de facturation, avec le bouton « Résilier l’abonnement » puis « Confirmer la résiliation ». La résiliation prend effet à la fin de la période déjà payée ; plus rien n’est facturé, et la période payée n’est pas remboursée, sauf dans le cas ci-dessous. Nous confirmons la résiliation et sa date par e-mail.
+
+**Droit de rétractation.** Un consommateur peut se rétracter du contrat dans les 14 jours suivant sa conclusion, sans avoir à se justifier, avec le bouton « Se rétracter du contrat ici » de la page de facturation puis « Confirmer la rétractation », ou par toute autre déclaration dénuée d’ambiguïté envoyée à [E-mail de contact]. Le consommateur ayant demandé que le service commence immédiatement, il ne paie, s’il se rétracte, que la part du service fournie jusqu’à la rétractation : nous lui remboursons le reste de ce qu’il a payé pour la période, par le même moyen de paiement, dans les 14 jours suivant la réception de la rétractation. Nous accusons réception de la rétractation par e-mail, avec sa date et son heure. Le droit de rétractation ne s’applique pas à un client qui agit à des fins professionnelles.
+
+**Changement de prix.** Nous annonçons un changement de prix par e-mail au moins 30 jours avant qu’il ne prenne effet. Il s’applique à partir du renouvellement qui suit ce préavis ; un client qui ne l’accepte pas peut résilier d’ici là, sans frais.
+
+**Impayés.** Tant qu’un paiement échoue, Stripe le retente ; une organisation dont le paiement reste impayé passe à l’offre gratuite.
+
+Supprimer une organisation, ou fermer votre compte de sorte qu’une organisation soit supprimée avec lui, résilie immédiatement son abonnement, une fois que vous l’acceptez sur l’écran de confirmation : plus rien n’est facturé, et la période déjà payée n’est pas remboursée, sauf lorsque la loi prévoit un remboursement, comme pour un consommateur qui se rétracte dans les 14 jours suivant la souscription, qui est remboursé de la part non utilisée. Les factures sont conservées comme le droit comptable l’exige.
+
+Une organisation qui a plus de canaux connectés que son abonnement n’en permet, comme après un essai ou un passage à un abonnement inférieur, les garde mais ne peut plus programmer de publication tant qu’elle n’en a pas déconnecté ; une organisation au-delà de son stockage de médias garde ses fichiers mais ne peut plus en importer.
 
 ## Disponibilité et évolutions du service
 

@@ -3,7 +3,7 @@ import type { EmailCatalog } from "./email-catalog.ts";
 export const french: EmailCatalog = {
   accountDeleted: {
     action: "Ouvrir Peal",
-    body: "Votre compte Peal a été supprimé à votre demande, avec les données qui s’y rattachent : votre profil, vos sessions, vos adhésions, vos notifications, et les espaces de travail dont vous étiez le seul membre, avec tout leur contenu.",
+    body: "Votre compte Peal a été supprimé à votre demande, avec les données qui s’y rattachent : votre profil, vos sessions, vos adhésions, vos notifications, et les espaces de travail dont vous étiez le seul membre, avec tout leur contenu. Comme la loi française l’impose à un hébergeur, Peal conserve à part, pour les seules autorités judiciaires, vos nom et adresse e-mail pendant 5 ans, et vos moyens de connexion ainsi que les connexions ayant créé du contenu pendant 1 an, puis les supprime.",
     ignore:
       "Si vous n’êtes pas à l’origine de cette demande, prévenez la personne qui gère ce serveur Peal. Peal n’envoie plus d’e-mail à cette adresse.",
     subject: "Votre compte Peal est supprimé",
@@ -41,6 +41,8 @@ export const french: EmailCatalog = {
     web: "depuis l’application web",
   },
   failureReasons: {
+    appBillingLimit:
+      "la plateforme refuse l’application de ce serveur Peal tant que son compte auprès d’elle n’est pas réglé (sur X : crédits épuisés ou plafond de dépenses atteint). Votre publication n’y est pour rien : une fois le problème réglé par l’opérateur du serveur, publiez-la à nouveau.",
     appNotAudited:
       "la plateforme n’accepte que des publications privées de l’application de ce serveur tant qu’elle ne l’a pas approuvée. Rendez le compte privé et la publication visible par son seul propriétaire, ou contactez l’opérateur du serveur.",
     channelDisabled:
@@ -55,6 +57,8 @@ export const french: EmailCatalog = {
       "Peal était indisponible à l’heure prévue, et la publication est arrivée trop tard pour partir.",
     notPublished:
       "quelqu’un a vérifié sur la plateforme et ne l’a pas trouvée.",
+    planLimit:
+      "l’abonnement de l’espace de travail n’avait plus de place pour elle à son heure : il a plus de canaux connectés que l’abonnement n’en permet, ou les publications du mois étaient épuisées. Rien n’a été envoyé. Déconnectez des canaux ou passez à un abonnement supérieur, puis publiez-la à nouveau.",
     quotaExceeded:
       "l’allocation quotidienne de mises en ligne de la plateforme est restée épuisée, pour ce serveur Peal ou pour le compte, et Peal a cessé d’attendre.",
     rateLimited:
@@ -63,6 +67,7 @@ export const french: EmailCatalog = {
       "l’autorisation du compte ne fonctionne plus. Reconnectez-le, puis publiez à nouveau.",
     unavailable: "la plateforme était injoignable.",
   },
+  intervals: { month: "mois", year: "an" },
   invitation: {
     action: "Accepter l’invitation",
     body: "{inviterName} vous invite à rejoindre {workspaceName} sur Peal {role}.",
@@ -74,6 +79,12 @@ export const french: EmailCatalog = {
     linkFallback: "Si le bouton ne fonctionne pas, ouvrez ce lien :",
     signature: "L’équipe Peal",
     textLink: "{action} : {url}",
+  },
+  plans: {
+    agency: "Agency",
+    business: "Business",
+    pro: "Pro",
+    starter: "Starter",
   },
   platforms: {
     bluesky: "Bluesky",
@@ -121,6 +132,48 @@ export const french: EmailCatalog = {
     editor: "en tant qu’éditeur",
     owner: "en tant que propriétaire",
     viewer: "en tant que lecteur",
+  },
+  subscriptionCancelled: {
+    action: "Ouvrir la facturation",
+    body: "L’abonnement {plan} de {workspaceName} est résilié. Il prend fin le {endsAt}, et plus rien n’est facturé ensuite : d’ici là, l’espace de travail garde son abonnement, puis il passe à l’offre gratuite avec son contenu. Cet e-mail confirme la résiliation et la date à laquelle elle prend effet.",
+    ignore:
+      "Vous recevez cet e-mail parce que vous gérez la facturation de {workspaceName} sur Peal. Les e-mails de facturation sont toujours envoyés : conservez celui-ci, il vous sert de preuve.",
+    subject: "Votre abonnement {plan} est résilié : il prend fin le {endsAt}",
+  },
+  subscriptionRenewing: {
+    action: "Ouvrir la facturation",
+    body: "L’abonnement annuel {plan} de {workspaceName} se renouvelle le {renewsAt} pour {price} TTC. Pour l’arrêter, résiliez l’abonnement depuis la page de facturation avant cette date : il prend alors fin le {renewsAt} et plus rien n’est facturé.",
+    ignore:
+      "Vous recevez cet e-mail parce que vous gérez la facturation de {workspaceName} sur Peal. Les e-mails de facturation sont toujours envoyés : conservez celui-ci, il vous sert de preuve.",
+    subject: "Votre abonnement annuel {plan} se renouvelle le {renewsAt}",
+  },
+  subscriptionStarted: {
+    action: "Ouvrir la facturation",
+    body: "Merci : {workspaceName} est abonné à {plan} depuis le {startedAt}, pour {price} TTC par {interval}, renouvelé jusqu’à résiliation. Vous avez demandé qu’il commence immédiatement : en tant que consommateur, vous pouvez encore vous rétracter dans les 14 jours, depuis la page de facturation (Se rétracter du contrat ici), et ne payer alors que les jours utilisés. Vous pouvez y résilier à tout moment ; les conditions d’utilisation s’appliquent.",
+    ignore:
+      "Vous recevez cet e-mail parce que vous gérez la facturation de {workspaceName} sur Peal. Les e-mails de facturation sont toujours envoyés : conservez celui-ci, il vous sert de preuve.",
+    subject: "Votre abonnement {plan} a commencé",
+  },
+  subscriptionWithdrawn: {
+    action: "Ouvrir la facturation",
+    body: "Nous avons bien reçu votre rétractation de l’abonnement {plan} de {workspaceName} le {withdrawnAt}. L’abonnement a pris fin à ce moment, et {refunded} vous est remboursé sur le moyen de paiement utilisé, sous 14 jours. Cet e-mail accuse réception de votre rétractation.",
+    ignore:
+      "Vous recevez cet e-mail parce que vous gérez la facturation de {workspaceName} sur Peal. Les e-mails de facturation sont toujours envoyés : conservez celui-ci, il vous sert de preuve.",
+    subject: "Rétractation reçue : votre abonnement {plan} a pris fin",
+  },
+  trialEnding: {
+    action: "Choisir un abonnement",
+    body: "L’essai {plan} de {workspaceName} prend fin le {endsAt}. Rien n’est facturé : sauf si quelqu’un commande un abonnement d’ici là, l’espace de travail passe à l’offre gratuite. Il garde son contenu, mais doit déconnecter les canaux au-delà de ceux de l’offre gratuite avant de pouvoir programmer à nouveau.",
+    ignore:
+      "Vous recevez cet e-mail parce que vous gérez la facturation de {workspaceName} sur Peal. Les e-mails de facturation sont toujours envoyés : conservez celui-ci, il vous sert de preuve.",
+    subject: "Votre essai {plan} prend fin le {endsAt}",
+  },
+  trialStarted: {
+    action: "Ouvrir la facturation",
+    body: "{workspaceName} essaie {plan} depuis le {startedAt}, jusqu’au {endsAt}. Rien n’est facturé, et aucun moyen de paiement n’a été demandé. Sauf si quelqu’un commande {plan} ({price} HT par mois) d’ici là, l’espace de travail repasse à l’offre gratuite à la fin de l’essai. Vous pouvez mettre fin à l’essai à tout moment depuis la page de facturation.",
+    ignore:
+      "Vous recevez cet e-mail parce que vous gérez la facturation de {workspaceName} sur Peal. Les e-mails de facturation sont toujours envoyés : conservez celui-ci, il vous sert de preuve.",
+    subject: "Votre essai {plan} a commencé : il prend fin le {endsAt}",
   },
   unknownChannel: "un canal déconnecté",
   verifyEmail: {

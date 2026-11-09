@@ -20,6 +20,13 @@ export class StaffStanding extends Context.Service<
     readonly staffOf: (
       principal: UserPrincipal
     ) => Effect.Effect<UserId, DirectoryUnavailable | NotStaff>;
+    /**
+     * Whether a staff member may answer legal requests: staff, not banned,
+     * and holding the legal role too, as the database says now.
+     */
+    readonly answersLegalRequests: (
+      staffId: UserId
+    ) => Effect.Effect<boolean, DirectoryUnavailable>;
   }
 >()("peal-server/workspace/application/StaffStanding") {
   static readonly layer = Layer.effect(
@@ -49,7 +56,19 @@ export class StaffStanding extends Context.Service<
         return userId;
       });
 
-      return StaffStanding.of({ staffOf });
+      const answersLegalRequests = Effect.fn(
+        "StaffStanding.answersLegalRequests"
+      )(function* answersLegalRequests(staffId: UserId) {
+        const standing = yield* directory.standing(staffId);
+        const now = yield* DateTime.now;
+
+        return Option.exists(
+          standing,
+          ({ ban, legal, staff }) => staff && legal && !isBanned(ban, now)
+        );
+      });
+
+      return StaffStanding.of({ answersLegalRequests, staffOf });
     })
   );
 }

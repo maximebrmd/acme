@@ -140,6 +140,8 @@ services:
       LINKEDIN_API_VERSION:
       META_APP_ID:
       META_APP_SECRET:
+      INSTAGRAM_APP_ID:
+      INSTAGRAM_APP_SECRET:
       THREADS_APP_ID:
       THREADS_APP_SECRET:
       TIKTOK_CLIENT_KEY:
@@ -170,9 +172,7 @@ services:
       PEAL_AI_DAILY_REQUESTS:
       STRIPE_SECRET_KEY:
       STRIPE_WEBHOOK_SECRET:
-      STRIPE_PRICE_PRO:
-      STRIPE_PRICE_BUSINESS:
-      STRIPE_AUTOMATIC_TAX:
+      STRIPE_LOOKUP_KEY_PREFIX:
       STRIPE_API_URL:
       TURNSTILE_SITE_KEY:
       TURNSTILE_SECRET_KEY:
@@ -182,6 +182,7 @@ services:
       OTEL_METRICS_EXPORTER:
       OTEL_LOGS_EXPORTER:
       PEAL_CLUSTER_RETENTION:
+      PEAL_LEGAL_RETENTION:
     ports:
       - 127.0.0.1:${PEAL_SERVER_PORT:-3000}:3000
     depends_on:
@@ -212,6 +213,8 @@ services:
       PEAL_API_URL: http://server:3000
       # Named in the web app's error reports.
       PEAL_RELEASE: ${PEAL_VERSION:-local}
+      # The terms of service the billing page links to before an order.
+      PEAL_TERMS_URL:
       # Longer than the edge keeps idle connections (90 s for the tunnel, 2
       # minutes for Caddy), so it never reuses one Node has closed.
       KEEP_ALIVE_TIMEOUT: "125000"

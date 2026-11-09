@@ -104,8 +104,6 @@ const checkoutsOn = (apiUrl: string | undefined) =>
               ? {}
               : {
                   STRIPE_API_URL: apiUrl,
-                  STRIPE_PRICE_BUSINESS: "price_synthetic_business",
-                  STRIPE_PRICE_PRO: "price_synthetic_pro",
                   STRIPE_SECRET_KEY: "sk_test_0123456789syntheticcheckouts",
                   STRIPE_WEBHOOK_SECRET: "whsec_synthetic_checkouts",
                 }

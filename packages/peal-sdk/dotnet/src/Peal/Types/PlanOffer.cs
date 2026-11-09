@@ -17,6 +17,9 @@ public record PlanOffer : IJsonOnDeserialized
     [JsonPropertyName("plan")]
     public required Plan Plan { get; set; }
 
+    [JsonPropertyName("price")]
+    public PlanPrice? Price { get; set; }
+
     [JsonIgnore]
     public ReadOnlyAdditionalProperties AdditionalProperties { get; private set; } = new();
 

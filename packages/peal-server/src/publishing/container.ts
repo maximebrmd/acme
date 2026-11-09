@@ -34,6 +34,7 @@ import { LibraryAttachableMedia } from "#publishing/infrastructure/library-attac
 import { LibraryMediaForPublishing } from "#publishing/infrastructure/library-media-for-publishing.ts";
 import { ListedWorkspaceChannels } from "#publishing/infrastructure/listed-workspace-channels.ts";
 import { LoggedChannelHealth } from "#publishing/infrastructure/logged-channel-health.ts";
+import { meteredOutcomes } from "#publishing/infrastructure/metered-publication-outcomes.ts";
 import { NotifiedPublicationOutcomes } from "#publishing/infrastructure/notified-publication-outcomes.ts";
 import { PlanPostAllowanceLive } from "#publishing/infrastructure/plan-post-allowance.ts";
 import { PlatformClientsLive } from "#publishing/infrastructure/platforms/platform-clients-live.ts";
@@ -90,7 +91,8 @@ export const publishingWith = <E, R, E2 = never, R2 = never>(
  * month allows the workspace's plan, which the composition root provides
  * (ListChannels, MediaLibrary, WorkspaceEntitlements). How each target ends
  * is told through the notifications context (Notify), naming channels as
- * the channels context has them (ChannelRepository).
+ * the channels context has them (ChannelRepository), once billing counted
+ * the posts that went out on platforms that bill per post (MeteredPosts).
  */
 export const PublishingLive = publishingWith(
   Layer.mergeAll(
@@ -107,7 +109,9 @@ export const PublishingLive = publishingWith(
     TikTokCreatorsLive.pipe(Layer.provide(ChannelAccessCredentials))
   ),
   Layer.provideMerge(
-    NotifiedPublicationOutcomes.pipe(Layer.provide(DrizzlePostRepository))
+    meteredOutcomes(NotifiedPublicationOutcomes).pipe(
+      Layer.provide(DrizzlePostRepository)
+    )
   )
 );
 

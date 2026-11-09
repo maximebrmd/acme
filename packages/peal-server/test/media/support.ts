@@ -16,6 +16,7 @@ import { DatabaseLive } from "#shared/infrastructure/database.ts";
 import { MigrationsLive } from "#shared/infrastructure/migrations.ts";
 import { IdsLive } from "#shared/infrastructure/secure-random-ids.ts";
 import { TransactionRunnerLive } from "#shared/infrastructure/transaction-runner-live.ts";
+import { UnmeteredTest } from "#test/billing/support.ts";
 
 // The development stack's SeaweedFS (packages/peal-docker/compose.yaml),
 // which CI starts too. The environment wins over these defaults, so another
@@ -51,8 +52,15 @@ export const MediaInPostsTest = MediaInPostsLive.pipe(
   )
 );
 
-/** The media context as the server builds it, with MediaInPostsTest. */
-export const MediaTestLive = MediaLive.pipe(Layer.provide(MediaInPostsTest));
+/**
+ * The media context as the server builds it, with MediaInPostsTest, on a
+ * server that does not bill, or with the entitlements given.
+ */
+export const mediaTestWith = (entitlements: typeof UnmeteredTest) =>
+  MediaLive.pipe(Layer.provide(Layer.mergeAll(MediaInPostsTest, entitlements)));
+
+/** The media context on a server that does not bill: no storage limit. */
+export const MediaTestLive = mediaTestWith(UnmeteredTest);
 
 const mebibyte = 1024 * 1024;
 

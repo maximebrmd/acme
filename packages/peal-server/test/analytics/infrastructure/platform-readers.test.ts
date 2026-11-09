@@ -83,6 +83,7 @@ const onInstance = Effect.fn("test.onInstance")(function* onInstance(
   const account: ChannelAccount = {
     accountId: mastodonAccountId(instance.url),
     channelId,
+    connection: Option.none(),
     platform: "mastodon",
     scopes,
   };
@@ -379,6 +380,7 @@ describe("reading counts on Bluesky", () => {
   const account: ChannelAccount = {
     accountId: did,
     channelId,
+    connection: Option.none(),
     platform: "bluesky",
     scopes: ["atproto", "repo:app.bsky.feed.post?action=create&action=delete"],
   };
@@ -531,6 +533,7 @@ describe("reading counts on YouTube", () => {
   const account: ChannelAccount = {
     accountId: "UCsyntheticChannel000001",
     channelId,
+    connection: Option.none(),
     platform: "youtube",
     scopes: [
       "https://www.googleapis.com/auth/youtube.upload",
@@ -677,6 +680,7 @@ describe("reading counts on a channel", () => {
         const { batch } = yield* reading(posts, {
           accountId: `synthetic-${platform}-account`,
           channelId,
+          connection: Option.none(),
           platform,
           scopes: [],
         });

@@ -21,3 +21,22 @@ export const PlatformSchema = Schema.Literals([
 });
 
 export type Platform = typeof PlatformSchema.Type;
+
+/**
+ * How an Instagram channel reaches its account, one of Meta's two APIs:
+ * `instagramLogin` (the member signs in to the professional account on
+ * Instagram; no Facebook Page needed) or `facebookLogin` (the member signs
+ * in to Facebook and picks among the professional accounts linked to the
+ * Pages they manage). The server's copy
+ * (src/shared/domain/instagram-connection.ts) is the source; a test keeps
+ * the two equal.
+ */
+export const InstagramConnectionSchema = Schema.Literals([
+  "instagramLogin",
+  "facebookLogin",
+]).annotate({
+  description: "How an Instagram channel reaches its account.",
+  identifier: "InstagramConnection",
+});
+
+export type InstagramConnection = typeof InstagramConnectionSchema.Type;

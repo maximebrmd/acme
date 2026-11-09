@@ -22,6 +22,7 @@ const workspaceId = WorkspaceIdSchema.make(
 
 type Standing = Option.Option<{
   readonly ban: Option.Option<Ban>;
+  readonly legal: boolean;
   readonly staff: boolean;
 }>;
 
@@ -105,7 +106,11 @@ const impersonated = new UserPrincipal({
   userId: memberId,
 });
 
-const asStaff: Standing = Option.some({ ban: Option.none(), staff: true });
+const asStaff: Standing = Option.some({
+  ban: Option.none(),
+  legal: false,
+  staff: true,
+});
 
 const outcome = <E extends { readonly _tag: string }>(
   effect: Effect.Effect<void, E>
@@ -156,12 +161,13 @@ describe(ImpersonationGuard, () => {
   it.effect.each([
     {
       name: "no longer staff",
-      standing: Option.some({ ban: Option.none(), staff: false }),
+      standing: Option.some({ ban: Option.none(), legal: false, staff: false }),
     },
     {
       name: "banned",
       standing: Option.some({
         ban: Option.some({ expiresAt: Option.none() }),
+        legal: false,
         staff: true,
       }),
     },

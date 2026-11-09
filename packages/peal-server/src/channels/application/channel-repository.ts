@@ -2,6 +2,7 @@ import { Context } from "effect";
 import type { DateTime, Duration, Effect, Option } from "effect";
 
 import type { Channel } from "#channels/domain/channel.ts";
+import type { SignedInChannels } from "#channels/domain/data-deletion.ts";
 import type { Platform } from "#channels/domain/platform.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import type { ChannelId, WorkspaceId } from "#shared/domain/ids.ts";
@@ -39,6 +40,15 @@ export class ChannelRepository extends Context.Service<
       platform: Platform,
       accountId: string
     ) => Effect.Effect<boolean, DatabaseError>;
+    /**
+     * The channels of every workspace among those signed in that rest on
+     * the platform user: granted by them, or their own account, as a Meta
+     * deauthorization names them.
+     */
+    readonly restingOn: (request: {
+      readonly signedIn: readonly SignedInChannels[];
+      readonly userId: string;
+    }) => Effect.Effect<readonly Channel[], DatabaseError>;
     /** Any workspace's channel, for jobs that act on channels by id. */
     readonly get: (
       channelId: ChannelId

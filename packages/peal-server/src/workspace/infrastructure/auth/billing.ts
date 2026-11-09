@@ -2,7 +2,11 @@ import { getCurrentAuthEndpointContext } from "@better-auth/core/context";
 import { stripe } from "@better-auth/stripe";
 import type { StripePlan } from "@better-auth/stripe";
 import type { GenericEndpointContext } from "better-auth";
-import { APIError } from "better-auth/api";
+import {
+  APIError,
+  createAuthMiddleware,
+  getSessionFromCtx,
+} from "better-auth/api";
 import { captcha } from "better-auth/plugins";
 import { DateTime, Option, Redacted, Result, Schema } from "effect";
 import type { Stripe } from "stripe";
@@ -10,18 +14,49 @@ import type { Stripe } from "stripe";
 import type { SubscriptionEvent } from "#billing/application/record-subscription.ts";
 import { roomForOneMore } from "#shared/domain/allowance.ts";
 import type { Allowance } from "#shared/domain/allowance.ts";
-import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
-import type { WorkspaceId } from "#shared/domain/ids.ts";
+import { UserIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
+import type { UserId, WorkspaceId } from "#shared/domain/ids.ts";
+import { LocaleSchema } from "#shared/domain/locale.ts";
 import { PaidPlanSchema } from "#shared/domain/plan.ts";
 import type { PaidPlan } from "#shared/domain/plan.ts";
+import { stripeClientOf } from "#shared/infrastructure/stripe-client.ts";
 import type { StripeSettings } from "#shared/infrastructure/stripe-settings.ts";
 import { permissionsFor } from "#workspace/domain/roles.ts";
 
 import type { CaptchaSettings } from "./settings.ts";
-import { stripeClientOf } from "./stripe-client.ts";
+
+/** A checkout about to start, for the order it needs. */
+export interface CheckoutStart {
+  /** The member's email address, as their session has it. */
+  readonly email: string;
+  readonly interval: "month" | "year";
+  readonly orderId: string;
+  readonly plan: PaidPlan;
+  readonly userId: UserId;
+  readonly workspaceId: WorkspaceId;
+}
+
+/**
+ * Whether the checkout may start, and how: with the trial's days, or paid
+ * at once; or why not, as Better Auth's error code.
+ */
+export type CheckoutAnswer =
+  | {
+      readonly _tag: "refused";
+      readonly code: "ORDER_REQUIRED" | "TRIAL_UNAVAILABLE";
+    }
+  | { readonly _tag: "start"; readonly trialDays: number | null };
 
 /** What the billing plugin calls back into the rest of the server for. */
 export interface BillingHooks {
+  /** Whether a checkout may start, from the order the member placed. */
+  readonly checkout: (start: CheckoutStart) => Promise<CheckoutAnswer>;
+  /**
+   * Whether the workspace is on the free plan of a server that bills, or
+   * in its trial, which ends on it: an account owns one such workspace at
+   * most.
+   */
+  readonly freeWorkspace: (workspaceId: WorkspaceId) => Promise<boolean>;
   /** The workspace's member allowance, from its plan. */
   readonly memberAllowance: (workspaceId: WorkspaceId) => Promise<Allowance>;
   /**
@@ -49,10 +84,14 @@ export const turnstile = (settings: CaptchaSettings) =>
 
 const decodeWorkspaceId = Schema.decodeUnknownOption(WorkspaceIdSchema);
 
+const decodeUserId = Schema.decodeUnknownOption(UserIdSchema);
+
+const stripeInstant = Schema.optionalKey(Schema.NullOr(Schema.Number));
+
 // What a subscription event carries that billing reads. Stripe sends more,
 // and more over time: only these fields are decoded.
 const StripeSubscriptionSchema = Schema.Struct({
-  cancel_at: Schema.optionalKey(Schema.NullOr(Schema.Number)),
+  cancel_at: stripeInstant,
   cancel_at_period_end: Schema.Boolean,
   // An id: events never expand it.
   customer: Schema.NonEmptyString,
@@ -61,11 +100,24 @@ const StripeSubscriptionSchema = Schema.Struct({
     data: Schema.Array(
       Schema.Struct({
         current_period_end: Schema.optionalKey(Schema.Number),
-        price: Schema.Struct({ id: Schema.String }),
+        current_period_start: Schema.optionalKey(Schema.Number),
+        price: Schema.Struct({
+          id: Schema.String,
+          lookup_key: Schema.optionalKey(Schema.NullOr(Schema.String)),
+          recurring: Schema.optionalKey(
+            Schema.NullOr(Schema.Struct({ interval: Schema.String }))
+          ),
+        }),
       })
     ),
   }),
+  // The checkout's metadata, which names the member who started it.
+  metadata: Schema.optionalKey(
+    Schema.NullOr(Schema.Record(Schema.String, Schema.String))
+  ),
+  start_date: stripeInstant,
   status: Schema.String,
+  trial_end: stripeInstant,
 });
 
 const decodeStripeSubscription = Schema.decodeUnknownOption(
@@ -105,14 +157,34 @@ const workspaceOfCustomer = async (
   );
 };
 
-// The plan a subscription's prices buy, if one of them is a plan's.
+// The plan a subscription's prices buy, and how often, if one of them is a
+// plan's, by its lookup key.
+interface PricedPlan {
+  readonly interval: "month" | "year";
+  readonly plan: PaidPlan;
+}
+
 const planOf = (
   prices: StripeSettings["prices"],
-  priceIds: readonly string[]
-): Option.Option<PaidPlan> =>
+  lookupKeys: readonly (string | null | undefined)[]
+): Option.Option<PricedPlan> =>
   Option.fromUndefinedOr(
-    PaidPlanSchema.literals.find((plan) => priceIds.includes(prices[plan]))
+    PaidPlanSchema.literals
+      .flatMap((plan): PricedPlan[] => [
+        ...(lookupKeys.includes(prices[plan].month)
+          ? [{ interval: "month" as const, plan }]
+          : []),
+        ...(lookupKeys.includes(prices[plan].year)
+          ? [{ interval: "year" as const, plan }]
+          : []),
+      ])
+      .at(0)
   );
+
+const optionalTime = (value: number | null | undefined) =>
+  value === undefined || value === null
+    ? Option.none<DateTime.Utc>()
+    : Option.some(fromStripeTime(value));
 
 const isSubscriptionEvent = (type: string): boolean =>
   type.startsWith("customer.subscription.");
@@ -145,7 +217,7 @@ const subscriptionEventOf = async (
 
   const plan = planOf(
     settings.prices,
-    subscription.items.data.map(({ price }) => price.id)
+    subscription.items.data.map(({ price }) => price.lookup_key)
   );
 
   const workspaceId = await workspaceOfCustomer(customerId);
@@ -162,20 +234,45 @@ const subscriptionEventOf = async (
     ({ current_period_end: end }) => (end === undefined ? [] : [end])
   );
 
+  const periodStarts = subscription.items.data.flatMap(
+    ({ current_period_start: start }) => (start === undefined ? [] : [start])
+  );
+
+  const cancelAt = optionalTime(subscription.cancel_at);
+  const trialEnd = optionalTime(subscription.trial_end);
+
+  // A trial Peal set to end with its trial is not one someone cancelled.
+  const endsWithTrial =
+    subscription.status === "trialing" &&
+    Option.isSome(cancelAt) &&
+    Option.isSome(trialEnd) &&
+    DateTime.isLessThanOrEqualTo(cancelAt.value, trialEnd.value);
+
   return Option.some({
+    cancelAt,
     cancelAtPeriodEnd:
       subscription.cancel_at_period_end ||
-      (subscription.cancel_at !== undefined && subscription.cancel_at !== null),
+      (Option.isSome(cancelAt) && !endsWithTrial),
     currentPeriodEnd:
       periodEnds.length === 0
         ? Option.none()
         : Option.some(fromStripeTime(Math.max(...periodEnds))),
+    currentPeriodStart:
+      periodStarts.length === 0
+        ? Option.none()
+        : Option.some(fromStripeTime(Math.min(...periodStarts))),
     eventId: event.id,
+    interval: plan.value.interval,
     occurredAt: fromStripeTime(event.created),
-    plan: plan.value,
+    plan: plan.value.plan,
+    startedAt: optionalTime(subscription.start_date),
+    startedBy: Option.fromNullishOr(subscription.metadata?.["userId"]).pipe(
+      Option.flatMap(decodeUserId)
+    ),
     status: subscription.status,
     stripeCustomerId: customerId,
     stripeSubscriptionId: subscription.id,
+    trialEnd,
     workspaceId: workspaceId.value,
   });
 };
@@ -230,14 +327,404 @@ const mayBill = async ({
   });
 };
 
-// Checkout with Stripe Tax: the customer's address and VAT number decide
-// the tax, and both are kept on the customer for the next invoices.
+// Checkout with Stripe Tax, always: prices are tax-exclusive at Stripe and
+// shown VAT included everywhere, so the VAT must be added. The customer's
+// address and VAT number decide it, and both are kept on the customer for
+// the next invoices.
 const automaticTax = {
   automatic_tax: { enabled: true },
   billing_address_collection: "required",
   customer_update: { address: "auto", name: "auto" },
   tax_id_collection: { enabled: true },
 } satisfies Stripe.Checkout.SessionCreateParams;
+
+// Nothing to add to the checkout.
+const noParams = {} satisfies Stripe.Checkout.SessionCreateParams;
+
+// How long a trial's checkout stays open: Stripe's shortest, a few minutes
+// more, well within the trial's hold (`trialReservationMinutes`), so a
+// checkout cannot complete once its hold is gone.
+const trialCheckoutMinutes = 35;
+
+// A trial without a payment method: Stripe asks for none, and cancels the
+// subscription when the trial ends without one, which puts the workspace
+// back on the free plan; once it is recorded, it is also set to end with
+// its trial, should someone add a payment method. A paid plan starts with
+// an order of its own.
+const trialParams = (days: number) =>
+  ({
+    expires_at: Math.floor(Date.now() / 1000) + trialCheckoutMinutes * 60,
+    payment_method_collection: "if_required",
+    subscription_data: {
+      trial_period_days: days,
+      trial_settings: { end_behavior: { missing_payment_method: "cancel" } },
+    },
+  }) satisfies Stripe.Checkout.SessionCreateParams;
+
+// What an upgrade request says of the order it follows.
+const UpgradeBodySchema = Schema.Struct({
+  annual: Schema.optionalKey(Schema.Boolean),
+  metadata: Schema.optionalKey(
+    Schema.Struct({ orderId: Schema.optionalKey(Schema.String) })
+  ),
+});
+
+const decodeUpgradeBody = Schema.decodeUnknownOption(UpgradeBodySchema);
+
+const OrderErrors = {
+  ORDER_REQUIRED: {
+    code: "CHECKOUT_ORDER_REQUIRED",
+    message:
+      "Place the order on the billing page first, with the consent it asks",
+  },
+  TRIAL_UNAVAILABLE: {
+    code: "TRIAL_UNAVAILABLE",
+    message: "The workspace or the account already had its trial",
+  },
+} as const;
+
+/**
+ * The checkout's parameters for the order the member placed on the billing
+ * page (`metadata.orderId`): refused without one, with the trial's days and
+ * no payment method for the trial, and Stripe Tax's.
+ */
+export const checkoutParams =
+  (hooks: BillingHooks) =>
+  async (
+    {
+      plan,
+      subscription,
+      user,
+    }: {
+      readonly plan: { readonly name: string };
+      readonly subscription: { readonly referenceId: string };
+      readonly user: { readonly email: string; readonly id: string };
+    },
+    _request: GenericEndpointContext["request"],
+    ctx: { readonly body?: unknown } | undefined
+  ) => {
+    const body = decodeUpgradeBody(ctx?.body).pipe(Option.getOrUndefined);
+    const workspaceId = decodeWorkspaceId(subscription.referenceId);
+    const userId = decodeUserId(user.id);
+    const paidPlan = Schema.decodeUnknownOption(PaidPlanSchema)(plan.name);
+    const orderId = body?.metadata?.orderId;
+
+    if (
+      Option.isNone(workspaceId) ||
+      Option.isNone(userId) ||
+      Option.isNone(paidPlan) ||
+      orderId === undefined
+    ) {
+      throw APIError.from("BAD_REQUEST", OrderErrors.ORDER_REQUIRED);
+    }
+
+    const answer = await hooks.checkout({
+      email: user.email,
+      interval: body?.annual === true ? "year" : "month",
+      orderId,
+      plan: paidPlan.value,
+      userId: userId.value,
+      workspaceId: workspaceId.value,
+    });
+
+    if (answer._tag === "refused") {
+      throw APIError.from("BAD_REQUEST", OrderErrors[answer.code]);
+    }
+
+    const trial =
+      answer.trialDays === null ? noParams : trialParams(answer.trialDays);
+
+    return { params: { ...automaticTax, ...trial } };
+  };
+
+// What an upgrade request names, for a workspace that already has a
+// subscription Better Auth would change in place.
+const UpgradeRequestSchema = Schema.Struct({
+  annual: Schema.optionalKey(Schema.Boolean),
+  cancelUrl: Schema.optionalKey(Schema.String),
+  disableRedirect: Schema.optionalKey(Schema.Boolean),
+  locale: Schema.optionalKey(Schema.Unknown),
+  metadata: Schema.optionalKey(
+    Schema.Struct({ orderId: Schema.optionalKey(Schema.String) })
+  ),
+  plan: Schema.String,
+  referenceId: Schema.optionalKey(Schema.String),
+  subscriptionId: Schema.optionalKey(Schema.Unknown),
+  successUrl: Schema.optionalKey(Schema.String),
+});
+
+const decodeUpgradeRequest = Schema.decodeUnknownOption(UpgradeRequestSchema);
+
+const decodeLocale = Schema.decodeUnknownOption(LocaleSchema);
+
+const LiveRowSchema = Schema.Struct({
+  status: Schema.Literals(["active", "trialing"]),
+});
+
+const decodeLiveRow = Schema.decodeUnknownOption(LiveRowSchema);
+
+const CustomerRowSchema = Schema.Struct({
+  stripeCustomerId: Schema.NonEmptyString,
+});
+
+const decodeCustomerRow = Schema.decodeUnknownOption(CustomerRowSchema);
+
+const PriceListSchema = Schema.Struct({
+  data: Schema.Array(Schema.Struct({ id: Schema.NonEmptyString })),
+});
+
+const decodePriceList = Schema.decodeUnknownOption(PriceListSchema);
+
+const SessionUrlSchema = Schema.Struct({ url: Schema.NonEmptyString });
+
+const decodeSessionUrl = Schema.decodeUnknownOption(SessionUrlSchema);
+
+const ChangeErrors = {
+  NAMED_SUBSCRIPTION: {
+    code: "SUBSCRIPTION_CHOICE_REFUSED",
+    message:
+      "A workspace's subscription is changed from its billing page, which names none",
+  },
+  UNAVAILABLE: {
+    code: "CHECKOUT_UNAVAILABLE",
+    message: "Stripe could not open the checkout. Try again in a moment.",
+  },
+} as const;
+
+// The status of the subscription Better Auth would change in place rather
+// than open a checkout for: the workspace's active or trialing one.
+const liveStatusOf = async (
+  workspaceId: WorkspaceId
+): Promise<Option.Option<typeof LiveRowSchema.Type.status>> => {
+  const { adapter } = getCurrentAuthEndpointContext().context;
+
+  const rows: unknown[] = await adapter.findMany({
+    model: "subscription",
+    select: ["status"],
+    where: [{ field: "referenceId", value: workspaceId }],
+  });
+
+  const live = rows.flatMap((row) => Option.toArray(decodeLiveRow(row)));
+
+  return Option.fromUndefinedOr(
+    live.find(({ status }) => status === "trialing") ?? live.at(0)
+  ).pipe(Option.map(({ status }) => status));
+};
+
+// A return address the checkout may send the browser to: one of the
+// server's, or of an origin it trusts.
+const trustedUrl = (
+  ctx: GenericEndpointContext,
+  url: string | undefined
+): string => {
+  const { origin } = new URL(ctx.context.baseURL);
+  const absolute = new URL(url ?? "/", origin).href;
+
+  if (!ctx.context.isTrustedOrigin(absolute, { allowRelativePaths: false })) {
+    throw APIError.from("FORBIDDEN", {
+      code: "INVALID_CALLBACK_URL",
+      message: "The return address is not one this server trusts",
+    });
+  }
+
+  return absolute;
+};
+
+/**
+ * Opens a checkout for a paid plan ordered during the workspace's trial:
+ * a new subscription, beside the trial, which runs until the paid one is
+ * recorded (`RecordSubscription` then ends it). Better Auth would rather
+ * change the trialing subscription in place, which buys nothing and takes
+ * no payment.
+ */
+const checkoutDuringTrial = async (
+  client: Stripe,
+  settings: StripeSettings,
+  order: {
+    readonly cancelUrl: string;
+    readonly interval: "month" | "year";
+    readonly locale: Option.Option<"en" | "fr">;
+    readonly orderId: string;
+    readonly plan: PaidPlan;
+    readonly successUrl: string;
+    readonly userId: UserId;
+    readonly workspaceId: WorkspaceId;
+  }
+): Promise<string> => {
+  const { adapter } = getCurrentAuthEndpointContext().context;
+
+  const found: unknown = await adapter.findOne({
+    model: "organization",
+    select: ["stripeCustomerId"],
+    where: [{ field: "id", value: order.workspaceId }],
+  });
+
+  const customer = decodeCustomerRow(found);
+
+  if (Option.isNone(customer)) {
+    throw APIError.from("BAD_REQUEST", ChangeErrors.UNAVAILABLE);
+  }
+
+  const lookupKey = settings.prices[order.plan][order.interval];
+
+  const session = await client.prices
+    .list({ active: true, limit: 1, lookup_keys: [lookupKey] })
+    .then(async (prices) => {
+      const price = decodePriceList(prices).pipe(
+        Option.flatMap(({ data }) => Option.fromUndefinedOr(data[0]))
+      );
+
+      if (Option.isNone(price)) {
+        return Option.none();
+      }
+
+      const metadata = {
+        orderId: order.orderId,
+        referenceId: order.workspaceId,
+        userId: order.userId,
+      };
+
+      return decodeSessionUrl(
+        await client.checkout.sessions.create(
+          {
+            ...automaticTax,
+            cancel_url: order.cancelUrl,
+            client_reference_id: order.workspaceId,
+            customer: customer.value.stripeCustomerId,
+            line_items: [{ price: price.value.id, quantity: 1 }],
+            metadata,
+            mode: "subscription",
+            subscription_data: { metadata },
+            success_url: order.successUrl,
+            ...Option.match(order.locale, {
+              onNone: () => ({}),
+              onSome: (locale) => ({ locale }),
+            }),
+          },
+          { idempotencyKey: `checkout-${order.orderId}` }
+        )
+      );
+    })
+    .catch(() => Option.none());
+
+  if (Option.isNone(session)) {
+    throw APIError.from("BAD_REQUEST", ChangeErrors.UNAVAILABLE);
+  }
+
+  return session.value.url;
+};
+
+// The checkout to answer instead of Better Auth's in-place change, if any,
+// once the order is taken.
+const checkoutInstead = async (
+  client: Stripe,
+  settings: StripeSettings,
+  hooks: BillingHooks,
+  ctx: GenericEndpointContext
+): Promise<
+  Option.Option<{ readonly redirect: boolean; readonly url: string }>
+> => {
+  const request = decodeUpgradeRequest(ctx.body);
+
+  if (Option.isNone(request)) {
+    return Option.none();
+  }
+
+  if (request.value.subscriptionId !== undefined) {
+    throw APIError.from("BAD_REQUEST", ChangeErrors.NAMED_SUBSCRIPTION);
+  }
+
+  const workspaceId = decodeWorkspaceId(request.value.referenceId);
+  const plan = Schema.decodeUnknownOption(PaidPlanSchema)(request.value.plan);
+
+  if (Option.isNone(workspaceId) || Option.isNone(plan)) {
+    return Option.none();
+  }
+
+  const live = await liveStatusOf(workspaceId.value);
+
+  if (Option.isNone(live)) {
+    return Option.none();
+  }
+
+  const session = await getSessionFromCtx(ctx);
+  const userId = decodeUserId(session?.user.id);
+
+  if (
+    session === null ||
+    Option.isNone(userId) ||
+    !session.user.emailVerified ||
+    !(await mayBill({
+      action: "upgrade-subscription",
+      referenceId: workspaceId.value,
+      session: session.session,
+      user: session.user,
+    }))
+  ) {
+    return Option.none();
+  }
+
+  const orderId = request.value.metadata?.orderId;
+
+  if (orderId === undefined) {
+    throw APIError.from("BAD_REQUEST", OrderErrors.ORDER_REQUIRED);
+  }
+
+  const interval = request.value.annual === true ? "year" : "month";
+
+  const answer = await hooks.checkout({
+    email: session.user.email,
+    interval,
+    orderId,
+    plan: plan.value,
+    userId: userId.value,
+    workspaceId: workspaceId.value,
+  });
+
+  if (answer._tag === "refused") {
+    throw APIError.from("BAD_REQUEST", OrderErrors[answer.code]);
+  }
+
+  if (live.value !== "trialing") {
+    return Option.none();
+  }
+
+  const url = await checkoutDuringTrial(client, settings, {
+    cancelUrl: trustedUrl(ctx, request.value.cancelUrl),
+    interval,
+    locale: decodeLocale(request.value.locale),
+    orderId,
+    plan: plan.value,
+    successUrl: trustedUrl(ctx, request.value.successUrl),
+    userId: userId.value,
+    workspaceId: workspaceId.value,
+  });
+
+  return Option.some({
+    redirect: request.value.disableRedirect !== true,
+    url,
+  });
+};
+
+/**
+ * The order an upgrade needs when the workspace already has a subscription,
+ * which Better Auth changes in place, through Stripe's API or its portal,
+ * without the checkout whose parameters take the order
+ * (`getCheckoutSessionParams`): the order is taken here first, for the
+ * same member, plan and interval, or the request refused. During the
+ * trial, a paid plan opens a checkout of its own (`checkoutDuringTrial`),
+ * and the trial runs until it is paid. A request naming a subscription is
+ * refused: the billing page names none. Requests Better Auth refuses
+ * itself, as from someone who may not bill, are left to it.
+ */
+const orderedChange =
+  (client: Stripe, settings: StripeSettings, hooks: BillingHooks) =>
+  async (ctx: GenericEndpointContext) => {
+    const checkout = await checkoutInstead(client, settings, hooks, ctx);
+
+    // Null lets Better Auth's route go on.
+    return Option.isSome(checkout) ? await ctx.json(checkout.value) : null;
+  };
 
 /**
  * Better Auth's Stripe plugin, for workspace subscriptions: checkout and
@@ -253,11 +740,12 @@ export const stripeBilling = (
   const client = stripeClientOf(settings);
 
   const plans: StripePlan[] = PaidPlanSchema.literals.map((name) => ({
+    annualDiscountLookupKey: settings.prices[name].year,
+    lookupKey: settings.prices[name].month,
     name,
-    priceId: settings.prices[name],
   }));
 
-  return stripe({
+  const plugin = stripe({
     onEvent: async (event) => {
       const found = await subscriptionEventOf(settings, event, log);
 
@@ -271,13 +759,24 @@ export const stripeBilling = (
     subscription: {
       authorizeReference: mayBill,
       enabled: true,
-      getCheckoutSessionParams: () => ({
-        params: settings.automaticTax ? automaticTax : {},
-      }),
+      getCheckoutSessionParams: checkoutParams(hooks),
       plans,
       requireEmailVerification: true,
     },
   });
+
+  return {
+    ...plugin,
+    hooks: {
+      before: [
+        {
+          handler: createAuthMiddleware(orderedChange(client, settings, hooks)),
+          matcher: (ctx: { readonly path?: string }) =>
+            ctx.path === "/subscription/upgrade",
+        },
+      ],
+    },
+  };
 };
 
 const CustomerTypeSchema = Schema.Struct({
@@ -376,5 +875,58 @@ export const checkMemberRoom = async (
 
   if (Result.isFailure(room)) {
     throw APIError.from("PAYMENT_REQUIRED", MemberLimitError);
+  }
+};
+
+const FreeWorkspaceError = {
+  code: "FREE_WORKSPACE_LIMIT_REACHED",
+  message:
+    "The account already owns a workspace on the free plan: subscribe it, or use that one",
+} as const;
+
+const OwnedRowSchema = Schema.Struct({ organizationId: Schema.String });
+
+const decodeOwnedRow = Schema.decodeUnknownOption(OwnedRowSchema);
+
+/**
+ * Refuses a new workspace to an account that already owns one on the free
+ * plan of a server that bills: one free workspace per account, as each
+ * gets the free plan's allowances. A workspace that falls back to the free
+ * plan stays; paid ones do not count, and trialing ones do, as the trial
+ * puts them back on the free plan when it ends.
+ */
+export const checkFreeWorkspace = async (
+  hooks: BillingHooks,
+  userId: string
+): Promise<void> => {
+  const { adapter } = getCurrentAuthEndpointContext().context;
+
+  const owned: unknown[] = await adapter.findMany({
+    model: "member",
+    select: ["organizationId"],
+    where: [
+      { field: "userId", value: userId },
+      { field: "role", value: "owner" },
+    ],
+  });
+
+  const workspaces = owned.flatMap((row) =>
+    Option.toArray(
+      decodeOwnedRow(row).pipe(
+        Option.flatMap(({ organizationId }) =>
+          decodeWorkspaceId(organizationId)
+        )
+      )
+    )
+  );
+
+  const free = await Promise.all(
+    workspaces.map(
+      async (workspaceId) => await hooks.freeWorkspace(workspaceId)
+    )
+  );
+
+  if (free.includes(true)) {
+    throw APIError.from("PAYMENT_REQUIRED", FreeWorkspaceError);
   }
 };

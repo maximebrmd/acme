@@ -32,7 +32,15 @@ Posts already published stay on the platforms they were published to. Delete the
 
 ## What may be kept
 
-[The data kept after deletion and why, such as invoices that accounting law requires, and how long backups keep deleted data.]
+French law requires a host to keep the data that identifies whoever contributed content (loi n° 2004-575, Article 6, V, and décret n° 2021-1362). So when your account is deleted, we keep apart from the service, readable only to answer a judicial authority's written request:
+
+- your name and email address, for 5 years;
+- how you signed in (each sign-in method's identifier, never your password) and the references of your payments, for 1 year;
+- for each connection that created, changed or deleted content, its time, IP address and protocol, for 1 year from that connection.
+
+They are then deleted automatically. Nothing else of your account is kept.
+
+[Other data kept after deletion and why, such as invoices that accounting law requires, and how long backups keep deleted data.]
 
 ## Self-hosted instances
 

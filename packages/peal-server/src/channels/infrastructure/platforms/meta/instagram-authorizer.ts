@@ -6,7 +6,8 @@ import { avatarOf, facebookLogin } from "./facebook-login.ts";
 import type { FacebookLoginProduct } from "./facebook-login.ts";
 
 // Listing the user's Pages and their Instagram accounts, and publishing on
-// those accounts (Instagram's "Content Publishing" page).
+// those accounts (Instagram's "Content Publishing" page). Insights, which
+// analytics reads, may be declined.
 const instagramScopes = [
   "instagram_basic",
   "instagram_content_publish",
@@ -14,10 +15,14 @@ const instagramScopes = [
   "pages_read_engagement",
 ] as const;
 
+const insightsScopes = ["instagram_manage_insights"] as const;
+
 /**
  * Instagram professional accounts through Facebook Login: each linked to
  * one of the user's Pages is an account to choose, publishing with the
- * Page's token, as Meta's Instagram API with Facebook Login does.
+ * Page's token, as Meta's Instagram API with Facebook Login does. The
+ * other way in, Instagram Login, needs no Page
+ * (`instagram-login-authorizer.ts`).
  */
 export const instagramAccounts: FacebookLoginProduct = {
   accountsOf: (page) => {
@@ -36,6 +41,8 @@ export const instagramAccounts: FacebookLoginProduct = {
           },
         ];
   },
+  connection: "facebookLogin",
+  optionalScopes: insightsScopes,
   platform: "instagram",
   policy: tokenPolicies.instagram,
   scopes: instagramScopes,

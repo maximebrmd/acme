@@ -7,17 +7,21 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 public final class AttemptResult {
-    public static final AttemptResult TOKEN_EXPIRED = new AttemptResult(Value.TOKEN_EXPIRED, "tokenExpired");
-
-    public static final AttemptResult APP_NOT_AUDITED = new AttemptResult(Value.APP_NOT_AUDITED, "appNotAudited");
-
     public static final AttemptResult CONTENT_REJECTED = new AttemptResult(Value.CONTENT_REJECTED, "contentRejected");
-
-    public static final AttemptResult CHANNEL_DISABLED = new AttemptResult(Value.CHANNEL_DISABLED, "channelDisabled");
 
     public static final AttemptResult MEDIA_REMOVED = new AttemptResult(Value.MEDIA_REMOVED, "mediaRemoved");
 
     public static final AttemptResult UNAVAILABLE = new AttemptResult(Value.UNAVAILABLE, "unavailable");
+
+    public static final AttemptResult MEDIA_REJECTED = new AttemptResult(Value.MEDIA_REJECTED, "mediaRejected");
+
+    public static final AttemptResult TOKEN_EXPIRED = new AttemptResult(Value.TOKEN_EXPIRED, "tokenExpired");
+
+    public static final AttemptResult APP_NOT_AUDITED = new AttemptResult(Value.APP_NOT_AUDITED, "appNotAudited");
+
+    public static final AttemptResult CHANNEL_DISABLED = new AttemptResult(Value.CHANNEL_DISABLED, "channelDisabled");
+
+    public static final AttemptResult PLAN_LIMIT = new AttemptResult(Value.PLAN_LIMIT, "planLimit");
 
     public static final AttemptResult UNCONFIRMED = new AttemptResult(Value.UNCONFIRMED, "unconfirmed");
 
@@ -30,7 +34,7 @@ public final class AttemptResult {
 
     public static final AttemptResult RATE_LIMITED = new AttemptResult(Value.RATE_LIMITED, "rateLimited");
 
-    public static final AttemptResult MEDIA_REJECTED = new AttemptResult(Value.MEDIA_REJECTED, "mediaRejected");
+    public static final AttemptResult APP_BILLING_LIMIT = new AttemptResult(Value.APP_BILLING_LIMIT, "appBillingLimit");
 
     private final Value value;
 
@@ -64,18 +68,22 @@ public final class AttemptResult {
 
     public <T> T visit(Visitor<T> visitor) {
         switch (value) {
-            case TOKEN_EXPIRED:
-                return visitor.visitTokenExpired();
-            case APP_NOT_AUDITED:
-                return visitor.visitAppNotAudited();
             case CONTENT_REJECTED:
                 return visitor.visitContentRejected();
-            case CHANNEL_DISABLED:
-                return visitor.visitChannelDisabled();
             case MEDIA_REMOVED:
                 return visitor.visitMediaRemoved();
             case UNAVAILABLE:
                 return visitor.visitUnavailable();
+            case MEDIA_REJECTED:
+                return visitor.visitMediaRejected();
+            case TOKEN_EXPIRED:
+                return visitor.visitTokenExpired();
+            case APP_NOT_AUDITED:
+                return visitor.visitAppNotAudited();
+            case CHANNEL_DISABLED:
+                return visitor.visitChannelDisabled();
+            case PLAN_LIMIT:
+                return visitor.visitPlanLimit();
             case UNCONFIRMED:
                 return visitor.visitUnconfirmed();
             case PUBLISHED:
@@ -86,8 +94,8 @@ public final class AttemptResult {
                 return visitor.visitQuotaExceeded();
             case RATE_LIMITED:
                 return visitor.visitRateLimited();
-            case MEDIA_REJECTED:
-                return visitor.visitMediaRejected();
+            case APP_BILLING_LIMIT:
+                return visitor.visitAppBillingLimit();
             case UNKNOWN:
             default:
                 return visitor.visitUnknown(string);
@@ -97,18 +105,22 @@ public final class AttemptResult {
     @JsonCreator(mode = JsonCreator.Mode.DELEGATING)
     public static AttemptResult valueOf(String value) {
         switch (value) {
-            case "tokenExpired":
-                return TOKEN_EXPIRED;
-            case "appNotAudited":
-                return APP_NOT_AUDITED;
             case "contentRejected":
                 return CONTENT_REJECTED;
-            case "channelDisabled":
-                return CHANNEL_DISABLED;
             case "mediaRemoved":
                 return MEDIA_REMOVED;
             case "unavailable":
                 return UNAVAILABLE;
+            case "mediaRejected":
+                return MEDIA_REJECTED;
+            case "tokenExpired":
+                return TOKEN_EXPIRED;
+            case "appNotAudited":
+                return APP_NOT_AUDITED;
+            case "channelDisabled":
+                return CHANNEL_DISABLED;
+            case "planLimit":
+                return PLAN_LIMIT;
             case "unconfirmed":
                 return UNCONFIRMED;
             case "published":
@@ -119,8 +131,8 @@ public final class AttemptResult {
                 return QUOTA_EXCEEDED;
             case "rateLimited":
                 return RATE_LIMITED;
-            case "mediaRejected":
-                return MEDIA_REJECTED;
+            case "appBillingLimit":
+                return APP_BILLING_LIMIT;
             default:
                 return new AttemptResult(Value.UNKNOWN, value);
         }
@@ -151,6 +163,10 @@ public final class AttemptResult {
 
         QUOTA_EXCEEDED,
 
+        APP_BILLING_LIMIT,
+
+        PLAN_LIMIT,
+
         UNKNOWN
     }
 
@@ -178,6 +194,10 @@ public final class AttemptResult {
         T visitAppNotAudited();
 
         T visitQuotaExceeded();
+
+        T visitAppBillingLimit();
+
+        T visitPlanLimit();
 
         T visitUnknown(String unknownType);
     }

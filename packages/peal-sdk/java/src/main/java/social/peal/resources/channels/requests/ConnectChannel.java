@@ -16,10 +16,13 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import social.peal.core.ObjectMappers;
+import social.peal.types.InstagramConnection;
 
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
 @JsonDeserialize(builder = ConnectChannel.Builder.class)
 public final class ConnectChannel {
+    private final Optional<InstagramConnection> connection;
+
     private final Optional<String> handle;
 
     private final Optional<String> instance;
@@ -27,10 +30,19 @@ public final class ConnectChannel {
     private final Map<String, Object> additionalProperties;
 
     private ConnectChannel(
-            Optional<String> handle, Optional<String> instance, Map<String, Object> additionalProperties) {
+            Optional<InstagramConnection> connection,
+            Optional<String> handle,
+            Optional<String> instance,
+            Map<String, Object> additionalProperties) {
+        this.connection = connection;
         this.handle = handle;
         this.instance = instance;
         this.additionalProperties = additionalProperties;
+    }
+
+    @JsonProperty("connection")
+    public Optional<InstagramConnection> getConnection() {
+        return connection;
     }
 
     @JsonProperty("handle")
@@ -55,12 +67,12 @@ public final class ConnectChannel {
     }
 
     private boolean equalTo(ConnectChannel other) {
-        return handle.equals(other.handle) && instance.equals(other.instance);
+        return connection.equals(other.connection) && handle.equals(other.handle) && instance.equals(other.instance);
     }
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.handle, this.instance);
+        return Objects.hash(this.connection, this.handle, this.instance);
     }
 
     @java.lang.Override
@@ -74,6 +86,8 @@ public final class ConnectChannel {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static final class Builder {
+        private Optional<InstagramConnection> connection = Optional.empty();
+
         private Optional<String> handle = Optional.empty();
 
         private Optional<String> instance = Optional.empty();
@@ -83,8 +97,20 @@ public final class ConnectChannel {
         private Builder() {}
 
         public Builder from(ConnectChannel other) {
+            connection(other.getConnection());
             handle(other.getHandle());
             instance(other.getInstance());
+            return this;
+        }
+
+        @JsonSetter(value = "connection", nulls = Nulls.SKIP)
+        public Builder connection(Optional<InstagramConnection> connection) {
+            this.connection = connection;
+            return this;
+        }
+
+        public Builder connection(InstagramConnection connection) {
+            this.connection = Optional.ofNullable(connection);
             return this;
         }
 
@@ -111,12 +137,14 @@ public final class ConnectChannel {
         }
 
         public ConnectChannel build() {
-            return new ConnectChannel(handle, instance, additionalProperties);
+            return new ConnectChannel(connection, handle, instance, additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
-            if (key.equalsIgnoreCase("handle") || key.equalsIgnoreCase("instance")) {
+            if (key.equalsIgnoreCase("connection")
+                    || key.equalsIgnoreCase("handle")
+                    || key.equalsIgnoreCase("instance")) {
                 return;
             }
             this.additionalProperties.put(key, value);

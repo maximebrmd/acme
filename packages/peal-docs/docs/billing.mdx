@@ -1,0 +1,56 @@
+---
+title: Plans and billing
+description: Peal Cloud's plans, priced by connected accounts with VAT included, the free plan and the trial, ordering, cancelling online, withdrawing within 14 days, and what each plan limits.
+sidebar:
+  order: 15
+---
+
+On Peal Cloud, each workspace is on a plan. The plans are priced by connected accounts (channels): the more a workspace connects, the less each one costs. Every plan, the free one included, has every platform, the calendar, analytics, the API, the [MCP server](/mcp) and the [command line](/cli). A server you run yourself bills nothing and limits nothing ([Self-hosting](/self-hosting#billing)).
+
+## The plans [#plans]
+
+Prices include France's {{vat-rate}}% VAT; the price excluding VAT is in brackets. In another EU country, its own VAT applies at checkout, and a business with a valid VAT number pays the price excluding VAT (reverse charge). A year costs ten months.
+
+| Plan     | Channels                 | Members                 | Posts a month                  | Assistant a day                   | Media                        | Monthly                                            | Yearly                                           |
+| -------- | ------------------------ | ----------------------- | ------------------------------ | --------------------------------- | ---------------------------- | -------------------------------------------------- | ------------------------------------------------ |
+| Free     | {{free-channels-en}}     | {{free-members-en}}     | {{free-scheduledPosts-en}}     | {{free-assistantRequests-en}}     | {{free-mediaStorage-en}}     | free                                               | free                                             |
+| Starter  | {{starter-channels-en}}  | {{starter-members-en}}  | {{starter-scheduledPosts-en}}  | {{starter-assistantRequests-en}}  | {{starter-mediaStorage-en}}  | {{starter-month-en}} ({{starter-month-excl-en}})   | {{starter-year-en}} ({{starter-year-excl-en}})   |
+| Pro      | {{pro-channels-en}}      | {{pro-members-en}}      | {{pro-scheduledPosts-en}}      | {{pro-assistantRequests-en}}      | {{pro-mediaStorage-en}}      | {{pro-month-en}} ({{pro-month-excl-en}})           | {{pro-year-en}} ({{pro-year-excl-en}})           |
+| Business | {{business-channels-en}} | {{business-members-en}} | {{business-scheduledPosts-en}} | {{business-assistantRequests-en}} | {{business-mediaStorage-en}} | {{business-month-en}} ({{business-month-excl-en}}) | {{business-year-en}} ({{business-year-excl-en}}) |
+| Agency   | {{agency-channels-en}}   | {{agency-members-en}}   | {{agency-scheduledPosts-en}}   | {{agency-assistantRequests-en}}   | {{agency-mediaStorage-en}}   | {{agency-month-en}} ({{agency-month-excl-en}})     | {{agency-year-en}} ({{agency-year-excl-en}})     |
+
+The workspace's **Billing** page shows the same prices, its plan, and how much of each limit it uses; `GET /api/workspaces/:workspaceId/billing` answers them too, prices in cents excluding VAT.
+
+## The free plan and the trial [#trial]
+
+A new workspace is on the free plan. An account owns one workspace on the free plan at most: creating a second answers 402 `FREE_WORKSPACE_LIMIT_REACHED` until the first is subscribed. A workspace in its trial counts as free, as it is once the trial ends. A workspace that falls back to the free plan, after a trial or a cancellation, stays.
+
+Once per account and per workspace, a workspace that never had a subscription may try Pro free for {{trial-days}} days, without a payment method: nothing is charged, and three days before the end the members who manage billing are reminded, in the app and by email. When the trial ends, the workspace is back on the free plan, with its content, even if a payment method was added meanwhile: a trial never turns into a charge. A plan ordered during the trial starts once it is paid for, and the trial ends then; a checkout left unfinished leaves the trial running. An account closed after its trial leaves a keyed pseudonym of its email address for 2 years, so the same address signing up again gets no second trial.
+
+## What a plan limits [#limits]
+
+Each limit is checked when something is added, and a workspace over a smaller plan's limits, as after its trial, keeps what it has:
+
+- **Channels**: connecting an account the plan has no room for is refused. An Instagram account is one channel whichever way it is connected: moving it from a Facebook Page to Instagram, or back, adds none, even on a full plan. A workspace with more channels than its plan allows schedules nothing until it disconnects some, and its scheduled posts do not go out either.
+- **Members**, pending invitations included.
+- **Posts** going out in a calendar month (UTC), on the free plan. Checked again when each post is due: once a trial or a larger plan ends, only the month's first posts the plan allows go out, by their time.
+- **Writing assistant** requests per UTC day.
+- **Media**: the bytes of images and videos stored, uploads in progress included. An upload the plan has no room for is refused before anything is sent; delete media to make room.
+
+Each refusal answers 402 `PlanLimitReached`, naming the `limit` and what the plan `allowed`. A scheduled post the plan has no room for when it is due fails on its channels as `planLimit`, nothing sent: make room or move to a larger plan, then post it again.
+
+## Ordering [#ordering]
+
+Owners and admins order on the workspace's **Billing** page, in their own session. Before anything is paid, they tick a box that is never ticked for them: "I ask Peal to start my subscription now. I know that, as a consumer, I may withdraw within 14 days and then pay only for the days used." Peal records it with the order, then opens Stripe's checkout from the **Order with obligation to pay** button. Stripe asks for the billing address and, for a business, the VAT number, and computes the VAT. A confirmation of the subscription comes by email, with what Stripe charged, VAT included. A plan changes on the billing page only, with an order each time; Stripe's portal changes the payment method and gives the invoices.
+
+## Cancelling [#cancelling]
+
+Cancel online at any time, from the **Billing** page: **Cancel the subscription**, then **Confirm cancellation**. A paid plan ends with the period paid for, and nothing more is charged; a trial ends at once. The members who manage billing get the confirmation, with the date it takes effect, by email. Deleting the workspace cancels at once too ([Workspaces and your account](/settings#delete-workspace)).
+
+## Withdrawing within 14 days [#withdrawal]
+
+As a consumer, you may withdraw from the contract within 14 days of subscribing, without giving a reason. While the 14 days run, the **Billing** page shows **Withdraw from contract here**, even after cancelling; it says what is refunded, then **Confirm withdrawal** ends the subscription at once and refunds, for each payment since you subscribed, the part of the period it paid for not used, to the second, to your payment method within 14 days, through a credit note on each invoice. An acknowledgement, with its date and time, comes by email. A business that gave a VAT number Stripe verified has no right to withdraw, and can cancel instead.
+
+## Yearly plans [#renewal]
+
+A yearly plan renews each year until cancelled. 45 days before it renews, the members who manage billing are reminded, in the app and by email, with what Stripe will charge, VAT included, and how to cancel. A price change is announced by email 30 days ahead, and applies from the next renewal.

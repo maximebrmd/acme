@@ -11,7 +11,8 @@
   },
   "type": "module",
   "dependencies": {
-    "blume": "2.2.7"
+    "blume": "2.2.7",
+    "peal-contract": "workspace:*"
   },
   "devDependencies": {
     "@types/bun": "1.4.4",

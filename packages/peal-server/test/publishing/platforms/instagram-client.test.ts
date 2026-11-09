@@ -1,7 +1,7 @@
 import { createHmac } from "node:crypto";
 
 import { assert, describe, it } from "@effect/vitest";
-import { Effect } from "effect";
+import { Context, Effect, Layer, Option } from "effect";
 
 import { MediaRejected } from "#shared/domain/media-rejected.ts";
 import { PlatformPostIdSchema } from "#shared/domain/publish-result.ts";
@@ -16,6 +16,7 @@ import { headerOf } from "#test/publishing/fakes/platform-server.ts";
 
 import {
   attached,
+  CredentialLog,
   credentialsOf,
   metaClientWith,
   outgoing,
@@ -355,5 +356,226 @@ describe("publishing on Instagram", () => {
         });
         assert.lengthOf(graph.posts(), 1);
       }).pipe(Effect.scoped)
+  );
+});
+
+const instagramToken = "instagram-user-token-1";
+
+// Two fakes: Facebook's Graph, which an account connected with Instagram
+// Login is never sent to, and Instagram's, which takes the account's own
+// tokens without the main app's proof.
+const onInstagramLogin = Effect.fn("test.onInstagramLogin")(
+  function* onInstagramLogin(
+    options: {
+      readonly files?: readonly TestFile[];
+      readonly tokens?: readonly string[];
+    } = {}
+  ) {
+    const tokens = options.tokens ?? [instagramToken];
+    const facebook = yield* fakeMetaGraph([pageToken]);
+
+    const instagram = yield* fakeMetaGraph(tokens, {
+      instagramLogin: true,
+    });
+
+    const credentials = yield* Layer.build(
+      credentialsOf(
+        {
+          accountId: instagramUserId,
+          connection: Option.some("instagramLogin"),
+          platform: "instagram",
+        },
+        tokens
+      )
+    );
+
+    const client = yield* metaClientWith({
+      appSecret: graphAppSecret,
+      credentials: Layer.succeedContext(credentials),
+      files: options.files ?? [],
+      instagramUrl: instagram.url,
+      platform: "instagram",
+      url: facebook.url,
+    });
+
+    return {
+      client,
+      facebook,
+      instagram,
+      log: Context.get(credentials, CredentialLog),
+    };
+  }
+);
+
+describe("publishing on Instagram through Instagram Login", () => {
+  it.live(
+    "publishes on Instagram's host with the account's own token, unproved",
+    () =>
+      Effect.gen(function* image() {
+        const photo = jpeg();
+
+        const { client, facebook, instagram } = yield* onInstagramLogin({
+          files: [photo],
+        });
+
+        const result = yield* client.publish(
+          yield* outgoing({
+            accountId: instagramUserId,
+            media: [attached(photo)],
+            text: "Straight from the account",
+          })
+        );
+
+        const [post] = instagram.posts();
+
+        assert.deepStrictEqual(result, {
+          _tag: "published",
+          permalink: `https://social.example/p/${post?.id ?? ""}`,
+          platformPostId: PlatformPostIdSchema.make(post?.id ?? "missing"),
+        });
+        assert.deepStrictEqual(instagram.containers()[0]?.params, {
+          caption: "Straight from the account",
+          image_url: `https://media.test/${photo.media.mediaId}`,
+        });
+        assert.lengthOf(facebook.requests(), 0);
+
+        // The quota, the container, its status, the publish and the
+        // permalink, each with the token and no proof.
+        const paths = instagram
+          .requests()
+          .map((request) => `${request.method} ${request.path}`);
+
+        assert.deepStrictEqual(paths, [
+          `GET /v27.0/${instagramUserId}/content_publishing_limit`,
+          `POST /v27.0/${instagramUserId}/media`,
+          `GET /v27.0/${instagram.containers()[0]?.id ?? ""}`,
+          `POST /v27.0/${instagramUserId}/media_publish`,
+          `GET /v27.0/${post?.id ?? ""}`,
+        ]);
+
+        for (const request of instagram.requests()) {
+          const params =
+            request.method === "GET"
+              ? request.query
+              : new URLSearchParams(new TextDecoder().decode(request.body));
+
+          assert.strictEqual(params.get("access_token"), instagramToken);
+          assert.isNull(params.get("appsecret_proof"));
+        }
+      }).pipe(Effect.scoped)
+  );
+
+  it.live("publishes a carousel and a reel the same way", () =>
+    Effect.gen(function* carousel() {
+      const photo = jpeg();
+      const clip = testFile("video", 4096);
+
+      const { client, instagram } = yield* onInstagramLogin({
+        files: [photo, clip],
+      });
+
+      const album = yield* client.publish(
+        yield* outgoing({
+          accountId: instagramUserId,
+          media: [attached(photo), attached(clip)],
+          text: "Both",
+        })
+      );
+
+      const reel = yield* client.publish(
+        yield* outgoing({
+          accountId: instagramUserId,
+          idempotencyKey: "3c5e1a0b7f2d4e6c8a9b0c1d2e3f4a5b",
+          media: [attached(clip)],
+          text: "A reel",
+        })
+      );
+
+      assert.strictEqual(album._tag, "published");
+      assert.strictEqual(reel._tag, "published");
+      assert.deepStrictEqual(
+        instagram.containers().map(({ params }) => params["media_type"]),
+        [undefined, "VIDEO", "CAROUSEL", "REELS"]
+      );
+      assert.lengthOf(instagram.posts(), 2);
+    }).pipe(Effect.scoped)
+  );
+
+  it.live("renews a token Instagram refuses, once, then goes on", () =>
+    Effect.gen(function* renewed() {
+      const photo = jpeg();
+      const renewedToken = "instagram-user-token-2";
+
+      const { client, instagram, log } = yield* onInstagramLogin({
+        files: [photo],
+        tokens: [instagramToken, renewedToken],
+      });
+
+      // Instagram stops taking the first token before anything is made.
+      instagram.script.push(
+        `GET /v27.0/${instagramUserId}/content_publishing_limit`,
+        [metaError(190, 401)]
+      );
+
+      const result = yield* client.publish(
+        yield* outgoing({
+          accountId: instagramUserId,
+          media: [attached(photo)],
+        })
+      );
+
+      assert.strictEqual(result._tag, "published");
+      assert.strictEqual(yield* log.renewals, 1);
+      assert.lengthOf(instagram.posts(), 1);
+    }).pipe(Effect.scoped)
+  );
+
+  it.live("confirms by its container a publish whose answer was lost", () =>
+    Effect.gen(function* lostAnswer() {
+      const photo = jpeg();
+
+      const { client, instagram } = yield* onInstagramLogin({
+        files: [photo],
+      });
+
+      instagram.loseAnswer(`POST /v27.0/${instagramUserId}/media_publish`);
+
+      const result = yield* client.publish(
+        yield* outgoing({
+          accountId: instagramUserId,
+          media: [attached(photo)],
+          text: "Lost on Instagram",
+        })
+      );
+
+      // Never sent twice: the container said it was published.
+      assert.strictEqual(result._tag, "published");
+      assert.lengthOf(instagram.posts(), 1);
+    }).pipe(Effect.scoped)
+  );
+
+  it.live("looks for a resumed attempt's post among the account's", () =>
+    Effect.gen(function* resumed() {
+      const photo = jpeg();
+
+      const { client, instagram } = yield* onInstagramLogin({
+        files: [photo],
+      });
+
+      const post = yield* outgoing({
+        accountId: instagramUserId,
+        media: [attached(photo)],
+        text: "Sent before a restart",
+      });
+
+      yield* client.publish(post);
+
+      // The run that sent it stopped before it knew: a resume never sends
+      // it again, and finds it on Instagram's host.
+      const found = yield* client.resume(post);
+
+      assert.strictEqual(found._tag, "published");
+      assert.lengthOf(instagram.posts(), 1);
+    }).pipe(Effect.scoped)
   );
 });

@@ -1,0 +1,13 @@
+# frozen_string_literal: true
+
+require_relative "../../peal"
+
+module Peal
+  module Types
+    class NoticeEventSubscriptionCancelled < Internal::Types::Model
+      field :ends_at, -> { String }, optional: false, nullable: false, api_name: "endsAt"
+
+      field :plan, -> { Peal::Types::PaidPlan }, optional: false, nullable: false
+    end
+  end
+end

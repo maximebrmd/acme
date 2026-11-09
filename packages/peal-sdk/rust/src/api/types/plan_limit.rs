@@ -7,6 +7,7 @@ pub enum PlanLimit {
     Members,
     ScheduledPosts,
     AssistantRequests,
+    MediaStorage,
     /// This variant is used for forward compatibility.
     /// If the server sends a value not recognized by the current SDK version,
     /// it will be captured here with the raw string value.
@@ -19,6 +20,7 @@ impl Serialize for PlanLimit {
             Self::Members => serializer.serialize_str("members"),
             Self::ScheduledPosts => serializer.serialize_str("scheduledPosts"),
             Self::AssistantRequests => serializer.serialize_str("assistantRequests"),
+            Self::MediaStorage => serializer.serialize_str("mediaStorage"),
             Self::__Unknown(val) => serializer.serialize_str(val),
         }
     }
@@ -32,6 +34,7 @@ impl<'de> Deserialize<'de> for PlanLimit {
             "members" => Ok(Self::Members),
             "scheduledPosts" => Ok(Self::ScheduledPosts),
             "assistantRequests" => Ok(Self::AssistantRequests),
+            "mediaStorage" => Ok(Self::MediaStorage),
             _ => Ok(Self::__Unknown(value)),
         }
     }
@@ -44,6 +47,7 @@ impl fmt::Display for PlanLimit {
             Self::Members => write!(f, "members"),
             Self::ScheduledPosts => write!(f, "scheduledPosts"),
             Self::AssistantRequests => write!(f, "assistantRequests"),
+            Self::MediaStorage => write!(f, "mediaStorage"),
             Self::__Unknown(val) => write!(f, "{}", val),
         }
     }

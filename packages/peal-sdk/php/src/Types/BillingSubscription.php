@@ -20,10 +20,22 @@ class BillingSubscription extends JsonSerializableType
     public ?string $currentPeriodEnd;
 
     /**
+     * @var value-of<BillingInterval> $interval
+     */
+    #[JsonProperty('interval')]
+    public string $interval;
+
+    /**
      * @var value-of<PaidPlan> $plan
      */
     #[JsonProperty('plan')]
     public string $plan;
+
+    /**
+     * @var ?string $startedAt
+     */
+    #[JsonProperty('startedAt')]
+    public ?string $startedAt;
 
     /**
      * @var value-of<SubscriptionStatus> $status
@@ -32,11 +44,20 @@ class BillingSubscription extends JsonSerializableType
     public string $status;
 
     /**
+     * @var ?string $trialEnd
+     */
+    #[JsonProperty('trialEnd')]
+    public ?string $trialEnd;
+
+    /**
      * @param array{
      *   cancelAtPeriodEnd: bool,
+     *   interval: value-of<BillingInterval>,
      *   plan: value-of<PaidPlan>,
      *   status: value-of<SubscriptionStatus>,
      *   currentPeriodEnd?: ?string,
+     *   startedAt?: ?string,
+     *   trialEnd?: ?string,
      * } $values
      */
     public function __construct(
@@ -44,8 +65,11 @@ class BillingSubscription extends JsonSerializableType
     ) {
         $this->cancelAtPeriodEnd = $values['cancelAtPeriodEnd'];
         $this->currentPeriodEnd = $values['currentPeriodEnd'] ?? null;
+        $this->interval = $values['interval'];
         $this->plan = $values['plan'];
+        $this->startedAt = $values['startedAt'] ?? null;
         $this->status = $values['status'];
+        $this->trialEnd = $values['trialEnd'] ?? null;
     }
 
     /**

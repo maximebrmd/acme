@@ -48,6 +48,7 @@ const schemas = [
   "auth",
   "billing",
   "channels",
+  "legal",
   "media",
   "notifications",
   "publishing",
@@ -82,8 +83,18 @@ const workspaceRows = {
     sql`SELECT count(*)::int AS count FROM auth.session WHERE active_organization_id = ${id}`,
   "auth.subscription": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM auth.subscription WHERE reference_id = ${id}`,
+  "billing.metered_posts": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM billing.metered_posts WHERE workspace_id = ${id}`,
+  "billing.orders": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM billing.orders WHERE workspace_id = ${id}`,
   "billing.subscriptions": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM billing.subscriptions WHERE workspace_id = ${id}`,
+  // A trial an account started stays, without the workspace, so the
+  // account starts no second one.
+  "billing.trials": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM billing.trials WHERE workspace_id = ${id}`,
+  "billing.withdrawals": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM billing.withdrawals WHERE workspace_id = ${id}`,
   "channels.channels": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM channels.channels WHERE workspace_id = ${id}`,
   "channels.connect_attempts": (sql, id) =>
@@ -135,6 +146,14 @@ const userRows = {
   // Password reset tokens hold their user's id.
   "auth.verification": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM auth.verification WHERE value = ${id}`,
+  // Orders, trials and withdrawals stay with their workspaces, without the
+  // user.
+  "billing.orders": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM billing.orders WHERE user_id = ${id}`,
+  "billing.trials": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM billing.trials WHERE user_id = ${id}`,
+  "billing.withdrawals": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM billing.withdrawals WHERE user_id = ${id}`,
   "channels.connect_attempts": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM channels.connect_attempts WHERE started_by = ${`user:${id}`}`,
   "channels.connect_choices": (sql, id) =>
@@ -153,6 +172,18 @@ const userRows = {
     sql`SELECT count(*)::int AS count FROM staff.audit_events
       WHERE target_id = ${id}
         OR EXISTS (SELECT 1 FROM jsonb_each_text(object_ids) AS named(name, value) WHERE value = ${id})`,
+} satisfies Readonly<Record<string, Count>>;
+
+// The rows of each table that the law has Peal keep about a user once
+// their account closes, apart from everything else (loi n° 2004-575,
+// art. 6, V, A; décret n° 2021-1362): who held the account, and each
+// connection that made content, the workspace's included. Each is kept for
+// its period, then purged (`#legal/domain/legal-retention.ts`).
+const heldRows = {
+  "legal.connections": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM legal.connections WHERE user_id = ${id}`,
+  "legal.identification_holds": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM legal.identification_holds WHERE user_id = ${id}`,
 } satisfies Readonly<Record<string, Count>>;
 
 // Tables that name neither a workspace nor a user, and why they stay.
@@ -175,6 +206,8 @@ const kept = {
   "channels.data_deletions":
     "the codes and counts of Meta's deletion requests, which name nobody",
   "channels.mastodon_apps": "Peal's own app on each Mastodon instance",
+  "legal.disclosures":
+    "what staff handed over on legal requests, and on what grounds, kept 5 years",
   "notifications.sent_notices":
     "the keys of events already told, ids and instants only",
   "publishing.quota_usage":
@@ -261,10 +294,27 @@ const fill = Effect.fn("fill")(function* fill(
   yield* seedUsage(workspaceId, 2);
   yield* seedSubscription(workspaceId, "canceled");
 
+  yield* sql`INSERT INTO billing.metered_posts (workspace_id, platform, month, posts, posts_with_links)
+    VALUES (${workspaceId}, 'x', date_trunc('month', now())::date, 2, 1)`;
+  // An order with its consent, a trial (one per account: the user's
+  // first workspace has it) and a withdrawal.
+  yield* sql`INSERT INTO billing.orders (id, workspace_id, user_id, plan, interval, trial, consent_version, created_at)
+    VALUES (${uuid7()}, ${workspaceId}, ${person.id}, 'pro', 'month', true, '2026-11-09', now())`;
+
+  yield* sql`INSERT INTO billing.trials (stripe_subscription_id, workspace_id, user_id, plan, started_at, reserved_at)
+    VALUES (${`sub_${randomUUID()}`}, ${workspaceId}, (SELECT CASE WHEN EXISTS (SELECT 1 FROM billing.trials WHERE user_id = ${person.id}) THEN NULL ELSE ${person.id} END), 'pro', now(), now())`;
+
+  yield* sql`INSERT INTO billing.withdrawals (stripe_subscription_id, workspace_id, user_id, refunded, currency, requested_at)
+    VALUES (${`sub_${randomUUID()}`}, ${workspaceId}, ${person.id}, 0, 'eur', now())`;
+
   yield* sql`INSERT INTO media.media_assets (id, workspace_id, storage_key, content_type, byte_size, status, created_at, updated_at)
     VALUES (${randomUUID()}, ${workspaceId}, ${`media/${workspaceId}/${randomUUID()}.png`}, 'image/png', 128, 'pending', now(), now())`;
 
   yield* apiKeyOf(person, workspaceId, ["post:read"]);
+
+  // A connection that made content in the workspace.
+  yield* sql`INSERT INTO legal.connections (id, access, at, protocol, user_id, workspace_id)
+    VALUES (${uuid7()}, 'session', now(), 'https', ${person.id}, ${workspaceId})`;
   yield* seedOAuthGrant(person.id, workspaceId, "Synthetic erasure client");
   yield* seedConnectChoice(workspaceId, person.id);
   yield* seedNotice(person.id, workspaceId, "@erasure@social.example");
@@ -366,6 +416,7 @@ layer(IntegrationLive, {
       const accounted = new Set([
         ...Object.keys(workspaceRows),
         ...Object.keys(userRows),
+        ...Object.keys(heldRows),
         ...Object.keys(kept),
       ]);
 
@@ -437,18 +488,63 @@ layer(IntegrationLive, {
           none(userRows)
         );
 
+        // Only what the law has a host keep is left, apart: who held the
+        // account, once, and the connections that made content.
+        assert.deepStrictEqual(yield* countsOf(heldRows, ana.id), {
+          "legal.connections": 2,
+          "legal.identification_holds": 1,
+        });
+
+        const holds =
+          yield* sql`SELECT email, sign_in_methods -> 0 ->> 'provider' AS sign_in FROM legal.identification_holds WHERE user_id = ${ana.id}`.pipe(
+            Effect.flatMap(
+              Schema.decodeUnknownEffect(
+                Schema.Array(
+                  Schema.Struct({
+                    email: Schema.String,
+                    sign_in: Schema.String,
+                  })
+                )
+              )
+            ),
+            Effect.orDie
+          );
+
+        assert.deepStrictEqual(holds, [
+          {
+            email: ana.email,
+            sign_in: "credential",
+          },
+        ]);
+
         const posts = yield* count(
           sql`SELECT count(*)::int AS count FROM publishing.posts WHERE workspace_id = ${shared} AND author_id IS NULL`
         );
 
         assert.strictEqual(posts, 1);
 
-        // The reason staff gave about her went with her id.
+        // The reason staff gave about her went with her id, but a ban's,
+        // which stays with a keyed pseudonym of her address instead, so
+        // Peal can show a court what it did and why.
         const reasons = yield* count(
-          sql`SELECT count(*)::int AS count FROM staff.audit_events WHERE target_id IS NULL AND reason IS NOT NULL`
+          sql`SELECT count(*)::int AS count FROM staff.audit_events WHERE target_id IS NULL AND reason IS NOT NULL AND action NOT IN ('ban', 'unban', 'legalDisclosure')`
         );
 
         assert.strictEqual(reasons, 0);
+
+        const bans = yield* count(
+          sql`SELECT count(*)::int AS count FROM staff.audit_events WHERE target_id IS NULL AND action = 'ban' AND reason = 'Synthetic reason naming the user' AND target_pseudonym IS NOT NULL`
+        );
+
+        assert.isAbove(bans, 0);
+
+        // Her trial stays, by the same pseudonym, so her address gets no
+        // second one.
+        const trials = yield* count(
+          sql`SELECT count(*)::int AS count FROM billing.trials WHERE user_id IS NULL AND user_pseudonym IS NOT NULL AND forgotten_at IS NOT NULL`
+        );
+
+        assert.isAbove(trials, 0);
 
         // So did the workspace and the ids of what staff changed as her,
         // which would tie the events back to her.

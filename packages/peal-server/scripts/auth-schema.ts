@@ -10,6 +10,7 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { Option, Redacted } from "effect";
 import { format } from "oxfmt";
 
+import { lookupKeysOf } from "#shared/infrastructure/stripe-settings.ts";
 import { makeAuth } from "#workspace/infrastructure/auth/options.ts";
 
 import oxfmtConfig from "../../../oxfmt.config.ts";
@@ -38,6 +39,9 @@ const nothing = async (): Promise<void> => {
 const auth = makeAuth({
   database: { db: drizzle.mock(), tables: {} },
   hooks: {
+    checkout: async () =>
+      await Promise.resolve({ _tag: "start", trialDays: null } as const),
+    freeWorkspace: async () => await Promise.resolve(false),
     impersonatedRequest: async () => await Promise.resolve(true),
     invitation: ignore,
     log: ignore,
@@ -57,8 +61,7 @@ const auth = makeAuth({
     secret: Redacted.make("auth-schema-generator-only-0123456789abcdef"),
     stripe: Option.some({
       apiUrl: Option.none(),
-      automaticTax: false,
-      prices: { business: "price_schema_only", pro: "price_schema_only" },
+      prices: lookupKeysOf("schema_only"),
       secretKey: Redacted.make("sk_test_schema_only"),
       webhookSecret: Redacted.make("whsec_schema_only"),
     }),

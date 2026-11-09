@@ -1,6 +1,7 @@
 /**
  * The codes of the refusals Peal makes itself, before any platform is
- * called: the post's channel or one of its media can no longer be used.
+ * called: the post's channel or one of its media can no longer be used, or
+ * the workspace's plan has no room for it.
  * They are stored in the publication journal, so never change one. The
  * publication policy tells them apart from the platforms' own codes.
  */
@@ -11,6 +12,9 @@ export const ownRefusalCodes = {
   channelDisconnected: "channelDisconnected",
   // A MediaRejected: the media was deleted, or is no longer ready.
   mediaRemoved: "mediaUnavailable",
+  // A BadRequest: the workspace's plan has no room for the post when it is
+  // due, as after a trial or on a smaller plan.
+  planLimit: "planLimit",
 } as const;
 
 /**
@@ -24,6 +28,28 @@ export const platformRefusalCodes = {
   // audited).
   appNotAudited: "appNotAudited",
 } as const;
+
+/**
+ * The codes of a PlatformUnavailable that the server's operator must fix:
+ * the platform refuses every call of the server's app until its account
+ * with the platform is paid for. They are retried as the platform being
+ * unavailable, and a target that gave up fails as appBillingLimit, never
+ * as the post's fault. Stored in the journal too, so never change one.
+ */
+export const operatorRefusalCodes = {
+  // X: the app's pay-per-use credits are used up (HTTP 402).
+  creditsDepleted: "creditsDepleted",
+  // X: the app reached the spending cap set on its account (`usage-capped`).
+  usageCapped: "usageCapped",
+} as const;
+
+const operatorRefusals: ReadonlySet<string> = new Set(
+  Object.values(operatorRefusalCodes)
+);
+
+/** Whether an unavailable platform's code is the operator's to fix. */
+export const isOperatorRefusal = (code: string | undefined): boolean =>
+  code !== undefined && operatorRefusals.has(code);
 
 /**
  * The codes of a RateLimited that waits for a daily allowance to reset,

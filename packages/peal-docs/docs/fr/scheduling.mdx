@@ -32,16 +32,16 @@ Sur la carte d’un espace de travail, dans **Espaces de travail**, choisissez *
 
 Sous **Longueur sur chaque canal**, chaque canal où part la publication montre la place que laisse sa plateforme, et ce qu’elle refuserait d’autre, images et vidéos comprises. Les plateformes ne comptent pas de la même façon : un même texte peut tenir sur l’une et pas sur l’autre.
 
-| Plateforme | Limite du texte                                                                                              | Images et vidéos        |
-| ---------- | ------------------------------------------------------------------------------------------------------------ | ----------------------- |
-| Bluesky    | 300 caractères, et 3 000 octets                                                                              | 4                       |
-| Mastodon   | 500 caractères (la valeur par défaut d’un serveur)                                                           | 4                       |
-| X          | 280, où un lien compte 23, et un emoji ou un caractère hors des alphabets latin, grec et cyrillique compte 2 | 4                       |
-| Threads    | 500 caractères, où un emoji compte ses octets, 4 pour la plupart ; 5 liens différents                        | 20                      |
-| LinkedIn   | 3 000 caractères                                                                                             | 20                      |
-| Instagram  | 2 200 caractères, 30 hashtags, 20 mentions ; une image ou une vidéo est obligatoire                          | 20                      |
-| TikTok     | 2 200, où la plupart des emoji comptent 2 (unités de code UTF-16) ; une image ou une vidéo est obligatoire   | Une vidéo, ou 35 photos |
-| YouTube    | Une description de 5 000 octets, sans `<` ni `>` ; une vidéo est obligatoire                                 | 1                       |
+| Plateforme | Limite du texte                                                                                                                                             | Images et vidéos        |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- |
+| Bluesky    | 300 caractères, et 3 000 octets                                                                                                                             | 4                       |
+| Mastodon   | 500 caractères (la valeur par défaut d’un serveur)                                                                                                          | 4                       |
+| X          | 280, où un lien compte 23, avec ou sans `https://` (`peal.social` aussi), et un emoji ou un caractère hors des alphabets latin, grec et cyrillique compte 2 | 4                       |
+| Threads    | 500 caractères, où un emoji compte ses octets, 4 pour la plupart ; 5 liens différents                                                                       | 20                      |
+| LinkedIn   | 3 000 caractères                                                                                                                                            | 20                      |
+| Instagram  | 2 200 caractères, 30 hashtags, 20 mentions ; une image ou une vidéo est obligatoire                                                                         | 20                      |
+| TikTok     | 2 200, où la plupart des emoji comptent 2 (unités de code UTF-16) ; une image ou une vidéo est obligatoire                                                  | Une vidéo, ou 35 photos |
+| YouTube    | Une description de 5 000 octets, sans `<` ni `>` ; une vidéo est obligatoire                                                                                | 1                       |
 
 Bluesky compte ce qu’un lecteur voit comme un seul caractère : un emoji fait de plusieurs points de code compte une fois. YouTube compte des octets : une lettre accentuée en compte deux. TikTok accepte 2 200 pour la légende d’une vidéo et 4 000 pour la description d’une publication de photos : Peal limite les deux à 2 200. Facebook et Pinterest n’ont pas encore de limite dans Peal. Peal vérifie les limites quand vous programmez une publication, pas pendant que vous rédigez un brouillon.
 

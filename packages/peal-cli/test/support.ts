@@ -190,6 +190,14 @@ const signedInGroupsLive = (
     ),
     HttpApiBuilder.group(Api, "workspaces", (handlers) =>
       handlers.handleAll({ delete: () => refusing })
+    ),
+    HttpApiBuilder.group(Api, "billingActions", (handlers) =>
+      handlers.handleAll({
+        cancel: () => refusing,
+        order: () => refusing,
+        withdraw: () => refusing,
+        withdrawal: () => refusing,
+      })
     )
   ).pipe(Layer.provideMerge(securityLive(authorization, studio)));
 
@@ -233,6 +241,15 @@ const StaffLive = HttpApiBuilder.group(Api, "staff", (handlers) =>
   )
 );
 
+// Nor are legal requests answered.
+const LegalLive = HttpApiBuilder.group(Api, "legal", (handlers) =>
+  handlers.handleAll({ answer: () => notStaff })
+).pipe(
+  Layer.provideMerge(
+    Layer.succeed(StaffAccess, StaffAccess.of({ session: () => notStaff }))
+  )
+);
+
 // Error reports are taken, and dropped.
 const ClientErrorsLive = HttpApiBuilder.group(Api, "clientErrors", (handlers) =>
   handlers.handleAll({ reportClientError: () => Effect.void })
@@ -249,6 +266,7 @@ const notConfigured = Effect.fail(new MetaAppNotConfigured());
 
 const DataDeletionLive = HttpApiBuilder.group(Api, "dataDeletion", (handlers) =>
   handlers.handleAll({
+    deauthorize: () => notConfigured,
     request: () => notConfigured,
     status: () => Effect.fail(new DataDeletionNotFound()),
   })
@@ -286,6 +304,7 @@ export const inMemoryServer = (
                 Layer.provide(CaptchaLive),
                 Layer.provide(DataDeletionLive),
                 Layer.provide(StaffLive),
+                Layer.provide(LegalLive),
                 Layer.provide(ClientErrorsLive)
               ),
               HttpApiBuilder.layer(OAuthApi).pipe(

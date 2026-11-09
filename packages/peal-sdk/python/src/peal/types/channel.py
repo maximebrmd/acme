@@ -7,6 +7,7 @@ import typing_extensions
 from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 from ..core.serialization import FieldMetadata
 from .channel_status import ChannelStatus
+from .instagram_connection import InstagramConnection
 from .platform import Platform
 
 
@@ -14,6 +15,7 @@ class Channel(UniversalBaseModel):
     avatar_url: typing_extensions.Annotated[
         typing.Optional[str], FieldMetadata(alias="avatarUrl"), pydantic.Field(alias="avatarUrl")
     ] = None
+    connection: typing.Optional[InstagramConnection] = None
     display_name: typing_extensions.Annotated[
         typing.Optional[str], FieldMetadata(alias="displayName"), pydantic.Field(alias="displayName")
     ] = None

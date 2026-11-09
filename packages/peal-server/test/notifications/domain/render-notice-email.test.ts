@@ -25,6 +25,94 @@ const render = (event: NoticeEvent, locale: Locale) =>
 const locales: readonly Locale[] = ["en", "fr"];
 
 describe(renderNoticeEmail, () => {
+  const withdrawn: NoticeEvent = {
+    _tag: "SubscriptionWithdrawn",
+    plan: "starter",
+    refunded: { amount: 810, currency: "eur" },
+    withdrawnAt: DateTime.makeUnsafe("2026-11-04T08:15:00Z"),
+  };
+
+  it("acknowledges a withdrawal with its date, time and refund", () => {
+    const english = render(withdrawn, "en");
+
+    expect(english.subject).toBe(
+      "Withdrawal received: your Starter subscription has ended"
+    );
+    expect(english.text).toContain("on November 4, 2026 at 8:15 AM UTC");
+    expect(english.text).toContain("€8.10 is refunded");
+  });
+
+  it("acknowledges a withdrawal in French", () => {
+    const french = render(withdrawn, "fr");
+
+    expect(french.subject).toBe(
+      "Rétractation reçue : votre abonnement Starter a pris fin"
+    );
+    expect(french.text).toContain("le 4 novembre 2026 à 08:15 UTC");
+    expect(french.text).toContain("8,10\u00A0€ vous est remboursé");
+  });
+
+  it("confirms a subscription with its price and the right to withdraw", () => {
+    const email = render(
+      {
+        _tag: "SubscriptionStarted",
+        interval: "month",
+        plan: "pro",
+        price: { amount: 1500, currency: "eur" },
+        startedAt: DateTime.makeUnsafe("2026-11-09T10:00:00Z"),
+        trialEnd: Option.none(),
+      },
+      "en"
+    );
+
+    expect(email.subject).toBe("Your Pro subscription has started");
+    expect(email.text).toContain("for €15.00 a month, VAT included");
+    expect(email.text).toContain("Withdraw from contract here");
+  });
+
+  it("reminds a yearly renewal with what it will charge, VAT included", () => {
+    const email = render(
+      {
+        _tag: "SubscriptionRenewing",
+        plan: "business",
+        price: { amount: 30_000, currency: "eur" },
+        renewsAt: DateTime.makeUnsafe("2027-01-31T00:00:00Z"),
+      },
+      "fr"
+    );
+
+    expect(email.subject).toBe(
+      "Votre abonnement annuel Business se renouvelle le 31 janvier 2027 à 00:00 UTC"
+    );
+    expect(email.text).toContain("300,00\u00A0€ TTC");
+  });
+
+  it("tells a trial's end and a cancellation's", () => {
+    expect(
+      render(
+        {
+          _tag: "TrialEnding",
+          endsAt: DateTime.makeUnsafe("2026-11-23T10:00:00Z"),
+          plan: "pro",
+        },
+        "en"
+      ).subject
+    ).toBe("Your Pro trial ends on November 23, 2026 at 10:00 AM UTC");
+
+    expect(
+      render(
+        {
+          _tag: "SubscriptionCancelled",
+          endsAt: DateTime.makeUnsafe("2026-12-01T00:00:00Z"),
+          plan: "agency",
+        },
+        "fr"
+      ).subject
+    ).toBe(
+      "Votre abonnement Agency est résilié : il prend fin le 1 décembre 2026 à 00:00 UTC"
+    );
+  });
+
   it("asks to reconnect a channel, in English", () => {
     const email = render(
       {

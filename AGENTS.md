@@ -196,6 +196,7 @@ them:
 | `analytics`     | the posts it follows, snapshots of their counts, the hourly collection      |
 | `billing`       | plans, subscriptions, entitlements, the billing page's usage                |
 | `staff`         | the staff console: what staff read and do, and the audit log of it          |
+| `legal`         | what French law has a host keep, and the legal requests that read it        |
 
 - `domain`: entities and rules on Effect's core (`effect`: Schema, DateTime,
   Data). No HTTP, SQL, cluster, workflow, AI, Drizzle or Better Auth.
@@ -463,18 +464,51 @@ and no socket, for tests.
   Page's token rests on (`granted_by`), stay with their workspaces, which
   erasing deletes. `data_deletions` names nobody, and stays. In the staff
   audit log (`StaffRecords.forgetUser`), the events about the account lose
-  its id, the reason given, their workspace and object ids, and its id
+  its id, the reason given (a ban's or unban's keeps it, with a keyed
+  pseudonym of the account's email instead of its id, `target_pseudonym`,
+  until the same 5-year cutoff), their workspace and object ids, and its id
   leaves the object ids of every other event; the events its user made as staff keep
   their id, a legitimate interest: the operator answers for what staff did
   to other people's accounts; their workspace, operation and object ids
   stay too. The log keeps an event 12 months, impersonation records
-  included, a ban or unban 3 years or 12 months past a longer ban's end, a
+  included, a ban or unban 5 years (art. 2224 Code civil: the time to sue over it) or 12 months past a longer ban's end, a
   ban until lifted as long as it holds: 12 months past a later unban, or
   once its account is closed (`staff/domain/audit-retention.ts`); the `staff.audit-retention` cron
   (`PurgeAuditLog`) deletes the rest daily, the log's one deletion besides
   `forgetUser`. YouTube's upload journal goes with its
   publication calls, and `publishing.quota_usage`, the server's daily
   units, names nobody.
+- Peal Cloud is a host under French law (loi n° 2004-575, art. 6, I, 2
+  now names the DSA's hosting services, which store what users give them,
+  public or not), so it keeps what identifies whoever contributed content
+  (art. 6, V, A; décret n° 2021-1362), in the `legal` context and its own
+  Postgres schema, which no other code reads. `ConnectionJournal`
+  (`workspace/application`, backed by `LegalRecords`) keeps each request
+  that changes posts or media and succeeds, whatever authenticated it
+  (`Authentication`, both paths, and `mcpAuthentication` for the MCP tools
+  that change posts, which `app/mcp/server.ts` names from their
+  annotations): when, the address as Better Auth reads it (full IPv6), the
+  protocol of `PUBLIC_URL` and how it signed in, never what it carried, 1
+  year. `CloseAccount` reads `AccountStore.identification` (name, email,
+  each sign-in method's account id, never a password or its hash, the Stripe
+  customers of the account and of the workspaces it deletes) before it
+  erases anything, and keeps it (`ContextRecords.holdIdentification`) in
+  the same transaction, last: no account closes without it, and nothing
+  else of it stays. The `legal.retention` cron (`PurgeLegalRecords`) empties
+  how they signed in and paid after 1 year, deletes the rest after 5, each
+  connection after 1, and each answer to a legal request after 5
+  (`legal/domain/legal-retention.ts`). Only `LegalRequests` reads them,
+  for staff who also hold the legal role (`legal` beside `admin` in Better
+  Auth's comma-separated `role`, `LegalOfficers` from `StaffStanding`;
+  other staff get 404 too) (`POST /api/admin/legal-requests`, `LegalApi`,
+  StaffAccess), recording the answer (staff, authority, reference,
+  subject, counts) in the transaction that reads it, and in the staff
+  audit log (`legalDisclosure`, through the staff context's
+  `LegalDisclosureAudit`), so the rest of staff see it. The export carries the user's connections
+  and what closing would leave (`legalHold`). `PEAL_LEGAL_RETENTION=false`
+  (`LegalRecords.layerOff`) keeps nothing, for an operator outside France;
+  `legalHold` is then null. A new way to change content (a group, a tool)
+  goes through the journal too.
 - `AccountData` exports what is tied to the user, the posts they wrote in
   the workspaces they share (`exportAuthored`), and the content of the
   workspaces where they are the only member, with their analytics and
@@ -533,7 +567,9 @@ and no socket, for tests.
   when the server has a client for it, LinkedIn and X when the operator set
   their app (`<PLATFORM>_CLIENT_ID` and `_CLIENT_SECRET`, read by
   `oauthClientConfig`; one half alone stops the server), Facebook Pages and
-  Instagram with `META_APP_ID`/`META_APP_SECRET`, Threads with
+  Instagram through a Page with `META_APP_ID`/`META_APP_SECRET`, Instagram
+  through Instagram Login with `INSTAGRAM_APP_ID`/`INSTAGRAM_APP_SECRET`,
+  Threads with
   `THREADS_APP_ID`/`THREADS_APP_SECRET`, TikTok with
   `TIKTOK_CLIENT_KEY`/`TIKTOK_CLIENT_SECRET` (`oauthClientConfig`'s
   `idSuffix`), YouTube with `YOUTUBE_CLIENT_ID` and `_CLIENT_SECRET` (a
@@ -543,7 +579,13 @@ and no socket, for tests.
   reconnect warnings follow: LinkedIn's tokens are not renewed and expire
   after 60 days, X's last two hours and rotate on refresh, as TikTok's do
   (`expires_in` decides; refresh tokens end 180 days after sign-in),
-  Google's last an hour and do not rotate.
+  Google's last an hour and do not rotate, Threads' and Instagram Login's
+  (`instagramLogin`) last 60 days and renew themselves a week ahead. A
+  refreshable policy's `sweep` renews tokens `beforeExpiry` (`ahead` of it)
+  or keeps them alive (`keepAlive`: only once `unused` that long past their
+  expiry, the access being renewed when a call needs it, through
+  `ChannelAccess`). X's keep alive after 30 days, rather than rotating every
+  two hours: its refresh tokens have no stated lifetime.
 - TikTok's Login Kit for Web takes no PKCE (TikTok asks it of desktop and
   mobile apps only): the state, bound to member and workspace, guards the
   callback, and a token answer naming an `error` is a refusal whatever its
@@ -567,8 +609,31 @@ and no socket, for tests.
   for `choose`, which puts a choice back when it fails before connecting
   any account. `IssuedTokens.grantedBy` keeps the Facebook user a Page token
   rests on, in `channels.granted_by`. Threads has its own OAuth: a 60-day
-  long-lived token that renews itself. Every Graph call carries
-  `appsecret_proof` (`#shared/infrastructure/platforms/meta-graph.ts`).
+  long-lived token that renews itself. Every Graph call through Facebook
+  Login carries `appsecret_proof`
+  (`#shared/infrastructure/platforms/meta-graph.ts`).
+- Instagram has two ways in, one platform with a connection kind
+  (`InstagramConnectionSchema` in `#shared/domain/instagram-connection.ts`,
+  copied by the contract): `instagramLogin`, the default, and
+  `facebookLogin`, through a Page. Channels, attempts and choices keep it
+  (`connection`, null on other platforms; an Instagram row without one
+  came through Facebook Login, `storedConnection`), and it picks the
+  authorizer (`PlatformAuthorizers.for(platform, connection)`; for a new
+  account without one, the first of `instagramConnections`, Instagram
+  Login when configured), the token policy, the refresh, the publishing
+  host and the insights scope. Everything else (text and media rules,
+  options, analytics' list) is the platform's, so a channel can move
+  between the two: connecting an account the workspace has through the
+  other way reconnects its channel there. Instagram Login
+  (`meta/instagram-login-authorizer.ts`, Business Login for Instagram:
+  `www.instagram.com/oauth/authorize` with `force_reauth`, the code on
+  `api.instagram.com`, then `ig_exchange_token` and `ig_refresh_token` on
+  `graph.instagram.com`) needs `instagram_business_basic` and
+  `instagram_business_content_publish` and asks for
+  `instagram_business_manage_insights`, which a member may decline; its
+  account id is `/me`'s `user_id`, and its `grantedBy` the app-scoped `id`,
+  read again before each refresh so the renewed token keeps it. Its calls
+  carry no `appsecret_proof`: the token is the Instagram app's.
 - YouTube connects through Google's OAuth 2.0 web server flow
   (`infrastructure/platforms/youtube/youtube-authorizer.ts`): PKCE, offline
   access, `prompt=select_account consent`, and the scopes `youtube.upload`
@@ -584,7 +649,15 @@ and no socket, for tests.
   only the code, counts and the SHA-256 of the signed request
   (`data_deletions`), and answer the status page
   `PUBLIC_URL/data-deletion/<code>`. The same signed request sent again
-  answers its first receipt and deletes nothing more.
+  answers its first receipt and deletes nothing more. Each app (`facebook`,
+  `instagram`, `threads`) answers for the channels it signs in
+  (`channelsSignedInWith`): an Instagram Login channel only to `instagram`,
+  which may name it by its grant or its account id. Their deauthorization
+  callbacks (`POST /api/data-deletion/:app/deauthorize`,
+  `DeauthorizePlatformUser`) mark those channels `refreshNeeded` under
+  their locks and tell their workspaces; a channel changed after the
+  request's `issued_at` is left alone, so a replay marks nothing reconnected
+  since.
 - `ConnectChannel` stores each attempt under the SHA-256 of its state, bound
   to the member, the workspace and the platform, for 15 minutes, completed
   once. One channel per platform account per workspace: connecting an account
@@ -615,6 +688,14 @@ and no socket, for tests.
 - A platform failure is temporary (`PlatformUnavailable`) when any server on
   the way answered 5xx or 429; only the platform's own refusal marks a channel
   `refreshNeeded`.
+- A platform that refuses the server's app until its operator pays (X: 402
+  once its pay-per-use credits are used up, `usage-capped` at its spending
+  cap) is the operator's problem, never the post's or the account's: the
+  adapter fails with `PlatformUnavailable` and a code of
+  `operatorRefusalCodes` (`#publishing/domain/own-refusals.ts`) and logs an
+  error, which the error-log alert reports; the attempt is retried as an
+  outage, and a target that gave up fails as `appBillingLimit`. A refresh
+  answered so leaves the channel's token alone.
 
 ### Publishing and the cluster
 
@@ -711,7 +792,8 @@ and no socket, for tests.
   send the member's token to LinkedIn's hosts only.
 - Meta's adapters hand Meta public media URLs (`MediaForPublishing.publicUrl`,
   two hours), check the daily publishing quota before Threads and Instagram
-  containers, and read Graph refusals with
+  containers (Instagram's on the host its channel's connection names, from
+  `PublishingAccount.connection`, the same container flow on both), and read Graph refusals with
   `#shared/infrastructure/platforms/graph-refusal.ts`, whose rate limits wait
   as long as `X-Business-Use-Case-Usage` says.
 - Derive whatever an adapter sends from the request's `idempotencyKey` and
@@ -763,6 +845,19 @@ and no socket, for tests.
   `peal-contract/post-text` is the clients' copy, kept equal by
   `test/publishing/api/contract.test.ts`: change both together. Compare video
   durations in whole milliseconds, as the media API shows them.
+- X's weighted count, `countLinks` and X's search for a lost post find links
+  as twitter-text's `extractUrlsWithIndices` does, ported in
+  `#publishing/domain/x-links.ts` (copied, identical, in
+  `peal-contract/src/x-links.ts`): with or without a scheme, on a top-level
+  domain of its list, so `peal.social` is a link and `localhost` is not. Its
+  patterns are Unicode-aware, so it reads the long s and the Kelvin sign as
+  letters that fold onto no ASCII one, and starts a bare domain after a
+  character outside the Basic Multilingual Plane as twitter-text's UTF-16
+  units do. `test/publishing/domain/x-links.test.ts` runs twitter-text's
+  conformance cases (`x-conformance.ts`); an emoji counts 2 by Unicode's
+  current list (`RGI_Emoji`), longest first. The twitter-text package is not
+  a dependency: the domain cannot import it, and it pulls core-js 2 and a
+  2019 emoji list.
 - A post's target carries options only its channel's platform knows
   (`TargetOptionsSchema`, `#publishing/domain/target-options.ts`), tagged by
   `platform`, in `publishing.post_targets.options` (JSON the domain decodes;
@@ -807,6 +902,12 @@ and no socket, for tests.
 - Accepted media: JPEG, PNG, GIF and WebP images up to 16 MiB; MP4 and
   QuickTime videos up to 1 GiB (`media/domain/media-format.ts`). Publishing
   checks per-platform limits when a post is scheduled.
+- On a server that bills, `createUpload` checks the declared size against
+  the plan's media storage (`StorageAllowance`) before the store opens an
+  upload, and again as the asset is recorded (`MediaAssets.insertWithin`,
+  under the workspace's advisory lock): `PlanLimitReached`
+  `mediaStorage`. Rejected files count for nothing, pending ones until
+  their URLs expire.
 - Storage keys are `media/<workspace id>/<asset id>.<ext>` under
   `PEAL_S3_KEY_PREFIX`, and never change. Keep presigned URLs out of logs and
   errors.
@@ -850,10 +951,11 @@ and no socket, for tests.
   (`NoticeRequest.author`), whatever their role, and the members with
   `post:schedule` who chose `everyPost`, off by default; for a post without
   an author, or whose author left the workspace, every member with
-  `post:schedule`. Every notice reaches the
-  app; `NotificationPreferences` say which are also emailed (failed and
-  unconfirmed posts and channels to reconnect by default, not published
-  posts). A preferences change writes only what it names.
+  `post:schedule`; for billing, every member with `billing:manage`. Every
+  notice reaches the app; `NotificationPreferences` say which are also
+  emailed (failed and unconfirmed posts and channels to reconnect by
+  default, not published posts; billing's always, as no preference covers
+  them). A preferences change writes only what it names.
 - `Notify.resolve(key)` says an event was dealt with: its notices are marked
   read for everyone and its pending emails skipped. Publishing resolves a
   round once a member confirms or reposts it.
@@ -914,51 +1016,179 @@ and no socket, for tests.
   (`#shared/infrastructure/stripe-settings.ts`, read by the billing context
   and by Better Auth). Off, every workspace is `unmetered`: no plan, no
   limit, and the assistant keeps `PEAL_AI_DAILY_REQUESTS`. Keep it so: a
-  self-hosted server limits nothing.
-- Plans are `billing/domain/plans.ts`; their ids (`#shared/domain/plan.ts`),
-  the limits' names (`plan-limit.ts`), `PlanLimitReached` and
-  `roomForOneMore` (`allowance.ts`) are in the shared kernel, since every
-  context checks a limit. The contract copies them, kept equal by
-  `test/billing/api/contract.test.ts`.
+  self-hosted server limits nothing, and its billing routes answer
+  `BillingNotEnabled`.
+- Plans are priced by connected channels, in tiers: free, starter, pro,
+  business, agency, each a monthly and a yearly price (ten months). Their
+  allowances are `billing/domain/plans.ts` and their prices, euro cents
+  excluding VAT, `prices.ts`; their ids (`#shared/domain/plan.ts`), the
+  limits' names (`plan-limit.ts`: channels, members, scheduledPosts,
+  assistantRequests, mediaStorage in decimal bytes), `PlanLimitReached`
+  and `roomFor`/`roomForOneMore`/`withinAllowance` (`allowance.ts`) are in
+  the shared kernel, since every context checks a limit. The contract
+  copies them, with the catalogue (`planCatalogue`, `trialOffer`,
+  `displayVatRate` in `peal-contract/src/billing-plans.ts`, exported as
+  `peal-contract/billing-plans`), kept equal by
+  `test/billing/api/contract.test.ts`. The site's pricing page
+  (`peal-site/src/pricing.ts`) and the docs' variables
+  (`peal-docs/pricing-variables.ts`, `{{starter-month-en}}`…) read that
+  catalogue: never write a price by hand. `GET …/billing` answers it too.
+- Each paid tier must stay strictly cheaper than the comparable tier of
+  the per-account schedulers Peal is measured against, monthly and yearly,
+  with or without VAT, by a margin a 25% move of the EUR/USD rate does not
+  undo; recheck before any price change. The comparison lives outside the
+  repository: never name another product here.
+- Stripe prices are tax-exclusive EUR prices found by lookup key,
+  `<prefix>_<plan>_monthly` and `_yearly` (`STRIPE_LOOKUP_KEY_PREFIX`,
+  `peal`), never by id: Better Auth's plans carry `lookupKey` and
+  `annualDiscountLookupKey`, and `planOf` reads the plan and interval from
+  the event's `price.lookup_key`. Their amounts must equal `prices.ts`.
 - Each context checks its own limit when something is added, through a port
   of its own backed by the billing context's `WorkspaceEntitlements`:
   `ChannelAllowance` (connecting a new account: on start, and again before
   the channel is added; accounts chosen together need room for all of them,
-  checked before the choice is taken), `PostAllowance` (a post scheduled or
+  checked before the choice is taken; an Instagram connection that may move
+  a channel the workspace has the other way in is checked only once its
+  account is known, as moving adds none), `PostAllowance` (a post scheduled or
   moved into a month, UTC: drafts and cancelled posts are left out, and a
-  repost adds nothing, as `countGoingOut` counts posts, not rounds),
-  `AssistantAllowance`, and members in Better Auth's organization hooks
+  repost adds nothing, as `countGoingOut` counts posts, not rounds; and a
+  workspace with more channels than its plan allows, as after a trial,
+  schedules nothing: `PostAllowance.channels`, with the channels context's
+  `ChannelUsage`; both are checked again when a target is about to go out,
+  in `RoutedPlatformPublisher.publish`, as a trial or a larger plan may have
+  ended since: over its channels, nothing goes out, and of a month's posts
+  only the first the plan allows, by time then id
+  (`PostRepository.countGoingOutBefore`); the others fail as `planLimit`,
+  nothing sent; a resumed run is not checked), `AssistantAllowance`, `StorageAllowance` (an upload's
+  declared size against the bytes stored, pending uploads younger than
+  their URLs included: `MediaAssets.insertWithin`, under the workspace's
+  advisory lock), and members in Better Auth's organization hooks
   (`workspace/infrastructure/auth/billing.ts`: pending invitations count when
   inviting). Channels and posts are counted and added under a transaction's
   advisory lock (`ChannelRepository.addingTo`, `PostRepository.claimMonth`),
   so requests sent together never pass a limit. A workspace over a smaller
   plan's limits keeps what it has. Each context also counts for the billing
-  page (`ChannelUsage`, `PostUsage`, `WorkspaceSeats`, `AssistantRequests`),
-  so `BillingOverviewLive` is built after the contexts it reads.
+  page (`ChannelUsage`, `PostUsage`, `WorkspaceSeats`, `AssistantRequests`,
+  `MediaStorageUsage`), so `BillingOverviewLive` is built after the
+  contexts it reads.
+- An account owns one workspace on the free plan at most: Better Auth's
+  `beforeCreateOrganization` (`checkFreeWorkspace`) refuses another with
+  402 `FREE_WORKSPACE_LIMIT_REACHED` while one it owns is on the free plan
+  or in its trial, which ends on it.
+- Billing counts the posts each workspace makes on platforms that bill the
+  server per post (`meteredPlatforms` in `billing/domain/metered-posts.ts`:
+  X, where a post with a link costs about 13 times more), and those with a
+  link, by calendar month (UTC), in `billing.metered_posts` (`MeteredPosts`),
+  on a server that does not bill too. Publishing reports each target that
+  went out through `meteredOutcomes`
+  (`publishing/infrastructure/metered-publication-outcomes.ts`), which wraps
+  `PublicationOutcomes` in the transaction that settles it, with whether its
+  text on the channel holds a link (`countLinks`); an unconfirmed post found
+  later is not counted. No plan limits them yet; the counts go with the
+  workspace's export and erasure (`BillingRecords`).
 - Entitlements come only from `billing.subscriptions`, which
   `RecordSubscription` keeps from Stripe's `customer.subscription.*` events:
   Better Auth's webhook checks their signature, then its `onEvent` finds the
-  workspace by its Stripe customer and the plan by its price. An event is
-  recorded once (`billing.stripe_events`), never over a newer one; Stripe
-  dates events to the second, so of two in the same second the one further
-  along the subscription's life wins (`lifecycleStage`). A failure answers
-  the webhook an error, so Stripe sends it again. Active, trialing and past
-  due subscriptions give their plan.
+  workspace by its Stripe customer and the plan and interval by the price's
+  lookup key, with the start, the period's bounds, the trial's end and the
+  member who checked out (`metadata.userId`). An event is recorded once
+  (`billing.stripe_events`), never over a newer one; Stripe dates events to
+  the second, so of two in the same second the one further along the
+  subscription's life wins (`lifecycleStage`). A failure answers the
+  webhook an error, so Stripe sends it again. Active, trialing and past due
+  subscriptions give their plan.
+- Ordering takes two steps. `POST …/billing/orders` (`PlaceOrder`) records
+  the order in `billing.orders`: plan, interval or the trial, the member,
+  and their request to start at once knowing their right to withdraw
+  (`startNow: true`, the unticked box of the billing page;
+  `consentVersion` names its words, change it with them). Then Better
+  Auth's `/subscription/upgrade` with `metadata.orderId`: its
+  `getCheckoutSessionParams` (`checkoutParams`) takes the order once,
+  within 30 minutes, for the same member, plan and interval
+  (`CheckoutOrders`), or refuses `CHECKOUT_ORDER_REQUIRED`. That hook runs
+  only when Better Auth opens a Checkout Session: for a workspace with an
+  active or trialing subscription, which it would change in place (Stripe's
+  API or a portal `subscription_update_confirm`), the plugin's before hook
+  on `/subscription/upgrade` (`orderedChange`) takes the order first, refuses
+  a request naming a `subscriptionId`, and, during the trial, opens a
+  Checkout Session of its own for the paid plan (`checkoutDuringTrial`), as
+  the trial must not change in place. The trial runs until the paid
+  subscription is recorded: `RecordSubscription` then ends it
+  (`orderedDuringTrial`). The Stripe portal has plan switching and
+  cancellation turned off (the self-hosting docs say so): plans change and
+  end on the billing page only.
+- The trial: Pro for 14 days (`trialPlan`, `trialDays`), once per account
+  and per workspace (`billing.trials`; a workspace that ever had a
+  subscription has none), through Checkout with
+  `payment_method_collection: "if_required"`,
+  `trial_settings.end_behavior.missing_payment_method: "cancel"` and a
+  35-minute `expires_at`. `CheckoutOrders.take` holds the trial at once
+  (`Trials.reserve`, a row without a subscription the unique indexes keep
+  to one, for `trialReservationMinutes`), and the trialing event takes the
+  hold; a second trial of the account or the workspace that still gets
+  through is ended (`duplicateTrial`). Before recording a trialing event,
+  `RecordSubscription` sets `cancel_at` to the trial's end
+  (`StripeContracts.endAtTrialEnd`), so a card added in the portal never
+  turns it into a charge; such a trial is not "cancelled" for the billing
+  page. Closing the account keeps a keyed pseudonym of its email address on
+  its trial (`Pseudonyms`, HMAC under `BETTER_AUTH_SECRET`) for
+  `trialMemory` (2 years), which checkout refuses a trial to. Pause would
+  leave a subscription that may still bill.
+- `billingActions` (`/orders`, `/cancellation`, `/withdrawal`) answer only
+  members with billing:manage in their own session: never an API key, an
+  OAuth client or staff impersonating them (403; the use cases refuse an
+  impersonated actor too, `PersonRequired`). The SDKs leave the group out
+  (`ownSessionTags`).
+- Cancelling (`CancelSubscription`, French law's few clicks: the button,
+  then the confirmation) sets `cancel_at_period_end`, or ends a trial at
+  once. Withdrawing (`Withdraw`, CRD art. 11a: **Withdraw from contract
+  here**, then **Confirm withdrawal**) is open 14 days from the contract's
+  start (`mayWithdraw`), cancelled or not, refused to a customer with a
+  verified `eu_vat` id (`StripeContracts.isBusiness`), and refunds each
+  paid invoice since the start for the part of its own period not
+  supplied, to the second (`refundOf`), through a credit note on each
+  (`StripeContracts.credit`), so the invoice and Stripe Tax's report match:
+  the withdrawal is recorded first (`billing.withdrawals`), then credited,
+  computed at the time recorded, and ended under idempotency keys, so
+  trying again refunds the same amounts once.
+- Billing tells the members with billing:manage through `BillingNotices`
+  (`Notify`), in the app and by email whatever their email choices
+  (`emailKindOf` is none for these): `SubscriptionStarted`, the contract's
+  confirmation; `SubscriptionCancelled`; `SubscriptionWithdrawn`, with its
+  date and time; and, from the hourly `billing.reminders` cron
+  (`SendBillingReminders`), `TrialEnding` three days before and
+  `SubscriptionRenewing` 45 days before a yearly plan renews (Code de la
+  consommation L215-1). Each once, by key. A confirmation and a renewal
+  quote what Stripe charges, VAT included (the first paid invoice, the
+  next invoice's preview, `StripeContracts.upcomingTotal`), never the
+  catalogue: one Stripe cannot price yet waits for the next run.
 - Better Auth's subscription routes take `customerType: "organization"` and
   the workspace as `referenceId` only, for members with `billing:manage`,
-  never staff impersonating them. Checkout sends Stripe Tax's parameters
-  when `STRIPE_AUTOMATIC_TAX` is on. A workspace Stripe may still bill
+  never staff impersonating them. Checkout always sends Stripe Tax's
+  parameters: prices are tax-exclusive at Stripe and shown VAT included
+  everywhere, so a server that bills needs Stripe Tax. A workspace Stripe may still bill
   (`billsAt`: any status but cancelled or incomplete, unpaid and paused
   included, in `billing.subscriptions` or the plugin's `auth.subscription`)
   is deleted only once the person agrees to cancel its subscriptions, which
   `BillingRecords` then does at Stripe at once, without proration (see
   Accounts and access); it also expires its open checkouts. Better Auth's
-  `/organization/delete` is disabled, so its hook refuses nothing. To stop
-  paying and keep the workspace, members use the portal, which cancels at
-  the period's end.
+  `/organization/delete` is disabled, so its hook refuses nothing. Erasing
+  a workspace deletes the orders no contract followed; those of a
+  workspace that had a subscription, and its withdrawals, stay without
+  it, by their Stripe customer and subscription (`erased_at`), for
+  `contractRetention` (5 years, Code civil art. 2224), then the daily
+  `billing.contract-retention` cron (`PurgeContractRecords`) deletes them,
+  and the trial pseudonyms past `trialMemory`. A user's orders and
+  withdrawals are in their export (`contracts`, `ContractRecords`).
+  Erasing leaves the trial to the account; closing an account leaves
+  orders, trials and withdrawals without the user
+  (`Subscriptions.forgetUser`).
 - Never call Stripe in tests: checkout and the portal run against
-  stripe-mock, and webhooks post the payloads in
-  `test/billing/fixtures/webhooks`, signed in the test.
+  stripe-mock, billing's own calls (`StripeContractsLive`) against a
+  stand-in server, and webhooks post the payloads in
+  `test/billing/fixtures/webhooks`, signed in the test. The app's engine
+  in tests runs no workflow, so what notifies (cancelling, withdrawing) is
+  tested at the use cases and with `NoticesTest`.
 
 ### Analytics
 
@@ -976,7 +1206,16 @@ and no socket, for tests.
   ids a call, with the channel's token when its scopes include
   `video.list`; a post known by its `publish_id` (not digits) is missing
   without a call.
-- Platforms without a reader (LinkedIn, X and Meta's so far) answer
+- Instagram reads each post's media insights (`views`, `likes`,
+  `comments`, `shares`), one call a post, on the connection's host, when the
+  channel's scopes include its insights permission
+  (`instagram_business_manage_insights`, or `instagram_manage_insights`
+  through a Page), `paused` otherwise. Code 100 is missing; a rate limit
+  halts; any other refusal, the token's included, fails the post and
+  halts, so analytics never marks a channel to reconnect for insights it
+  may not read.
+- Platforms without a reader (LinkedIn, X, Threads and Facebook Pages so
+  far) answer
   `ChannelUnreadable` `unsupported`: their posts end at their first turn,
   with no warning, and the reports leave them out. The platforms with one
   are `countedPlatforms` (`analytics/domain/counted-platforms.ts`), which
@@ -1067,7 +1306,7 @@ and no socket, for tests.
   SQL.
 - Each context keeps its tables in a Postgres schema named after it
   (`publishing`, `channels`, `media`, `notifications`, `assistant`,
-  `analytics`, `billing`, `staff`; the workspace context's are Better
+  `analytics`, `billing`, `staff`, `legal`; the workspace context's are Better
   Auth's, in `auth`). Effect creates its `cluster_*` tables in `public`; drizzle-kit
   never manages them.
 - Declare a context's tables in `src/<context>/infrastructure/schema.ts`, then
@@ -1221,12 +1460,17 @@ self-hoster needs only Postgres and an S3-compatible store:
   only while `GET …/assistant` answers `available`; refresh that status after
   every request, which can change the requests left. Show each suggestion in
   a preview the person accepts or discards: never apply one unasked.
-- The billing page shows `GET …/billing` (`BillingView` renders each state)
-  and opens Stripe's checkout and customer portal through `billingClient`
+- The billing page shows `GET …/billing` (`BillingView` renders each state,
+  `BillingStep` the cancellation and withdrawal steps) with prices
+  including VAT first and excluding VAT beside them, a monthly and yearly
+  switch, the unticked box asking to start at once, and **Order with
+  obligation to pay**; it places the order (`#billing/api.ts`), then opens
+  Stripe's checkout and customer portal through `billingClient`
   (`#auth/billing-client.ts`, Better Auth's Stripe client), with
-  `disableRedirect` and the page as the way back. Explain a
-  `PlanLimitReached`, and Better Auth's `MEMBER_LIMIT_REACHED`, wherever they
-  surface, from the `Billing` catalogue and `Auth.errors`.
+  `disableRedirect` and the page as the way back. It links the terms of
+  service at `PEAL_TERMS_URL`. Explain a `PlanLimitReached`, and Better
+  Auth's `MEMBER_LIMIT_REACHED`, wherever they surface, from the `Billing`
+  catalogue and `Auth.errors`.
 - The sign-up and password reset pages read the Turnstile site key at
   request time (`captchaSiteKey()`, `GET /api/captcha`); `useCaptcha` shows
   the widget only with one, sends its token as `x-captcha-response`, and
@@ -1423,6 +1667,10 @@ self-hoster needs only Postgres and an S3-compatible store:
 - Do not run `blume build` or `blume check` while `blume dev` runs in the same
   package: they share the generated runtime in `.blume/` (typecheck uses
   `--isolated` for that reason). Leave Blume's own TypeScript 6 alone.
+- The site's pricing page (`src/pages/[...locale]/pricing.astro`, its
+  logic in `src/pricing.ts`) and the docs' **Plans and billing** page
+  (`docs/billing.mdx`, with the variables of `pricing-variables.ts`) show
+  the contract's catalogue; the legal pages' plans section follows it.
 - Site strings live in `packages/peal-site/src/i18n/messages.ts`, legal
   documents in `src/content/legal/<locale>/<document>.md`. Keep a legal
   document `draft: true` (banner and noindex) until legal review approves it,

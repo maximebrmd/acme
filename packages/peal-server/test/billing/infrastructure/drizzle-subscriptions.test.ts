@@ -35,10 +35,14 @@ const changeOf = (
       currentPeriodEnd: Option.some(
         DateTime.makeUnsafe("2026-12-09T10:00:00Z")
       ),
+      currentPeriodStart: Option.none(),
+      interval: "month",
       plan: "pro",
+      startedAt: Option.none(),
       status: options.status,
       stripeCustomerId: "cus_synthetic",
       stripeSubscriptionId: options.subscriptionId,
+      trialEnd: Option.none(),
       workspaceId,
     }),
   });

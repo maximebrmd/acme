@@ -136,6 +136,20 @@ const PortsLive = Layer.mergeAll(
       return AccountStore.of({
         deleteUser: (id) => record(`deleteUser:${id}`).pipe(provide),
         deleteWorkspace: (id) => record(`deleteWorkspace:${id}`).pipe(provide),
+        identification: (id, workspaceIds) =>
+          record(`identification:${id}:${workspaceIds.join(",")}`).pipe(
+            provide,
+            Effect.as(
+              Option.some({
+                accountCreatedAt: at,
+                email: "ana@example.test",
+                name: "Ana",
+                signInMethods: [{ accountId: id, provider: "credential" }],
+                stripeCustomerIds: [],
+                userId: id,
+              })
+            )
+          ),
         records: (id) =>
           Effect.succeed(id === userId ? Option.some(records) : Option.none()),
         standings: (id) =>
@@ -187,6 +201,14 @@ const PortsLive = Layer.mergeAll(
           ),
         exportUser: () =>
           Effect.succeed({
+            contracts: { orders: [], withdrawals: [] },
+            legalHold: {
+              basis: "Synthetic basis",
+              connectionYears: 1,
+              connections: [],
+              disclosedTo: "Synthetic authorities",
+              keptAfterClosure: [{ data: ["name", "email"], years: 5 }],
+            },
             notices: [],
             preferences: {
               email: {
@@ -204,6 +226,14 @@ const PortsLive = Layer.mergeAll(
             analytics: [],
             assistantUsage: [{ day: "2026-11-09", requests: 3 }],
             billing: {
+              meteredPosts: [
+                {
+                  month: at,
+                  platform: "x",
+                  posts: 3,
+                  postsWithLinks: 1,
+                },
+              ],
               plan: "pro",
               subscriptions: [
                 {
@@ -218,6 +248,8 @@ const PortsLive = Layer.mergeAll(
             media: [],
             posts: [],
           }),
+        holdIdentification: (held) =>
+          record(`hold:${held.userId}:${held.email}`).pipe(provide),
         removeWorkspaceFiles: (id) => record(`removeFiles:${id}`).pipe(provide),
         // Stripe may still bill one, until the person agrees to cancel:
         // nothing is cancelled while another refuses.
@@ -755,6 +787,21 @@ layer(Fakes.layer)("the settings endpoints", (it) => {
             "mail:ana@example.test:fr:0",
           ]
         );
+
+        // Who held the account is kept for the law, read before the
+        // workspace it deletes goes, and kept once everything else went.
+        const identified = done.lastIndexOf(
+          `identification:${userId}:${harbour}`
+        );
+
+        const held = done.lastIndexOf(`hold:${userId}:ana@example.test`);
+
+        assert.isAbove(identified, -1);
+        assert.isBelow(
+          identified,
+          done.lastIndexOf(`eraseWorkspace:${harbour}`)
+        );
+        assert.isAbove(held, done.lastIndexOf(`deleteUser:${userId}`));
         assert.notInclude(done, `eraseWorkspace:${shared}`);
       })
   );
@@ -796,6 +843,7 @@ layer(Fakes.layer)("the settings endpoints", (it) => {
 
         assert.notInclude(after, `eraseUser:${userId}`);
         assert.notInclude(after, `deleteUser:${userId}`);
+        assert.notInclude(after, `hold:${userId}:ana@example.test`);
 
         // Told to, closing cancels the subscription with the workspace.
         yield* client.account.delete({

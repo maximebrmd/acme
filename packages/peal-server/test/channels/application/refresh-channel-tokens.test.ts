@@ -85,7 +85,7 @@ const scripted = Effect.fn("scripted")(function* scripted(
         expiresAt: Option.some(DateTime.addDuration(now, Duration.hours(2))),
         refreshToken: Option.some(Redacted.make(`rotated-refresh-${call}`)),
         renewable: true,
-        scopes: ["tweet.write", "offline.access"],
+        scopes: ["user.info.basic", "video.publish"],
       };
 
       return issued;
@@ -95,7 +95,9 @@ const scripted = Effect.fn("scripted")(function* scripted(
     begin: () => Effect.die("not used"),
     complete: () => Effect.die("not used"),
     platform,
-    policy: tokenPolicies.x,
+    // X's policy keeps unused tokens alive; the others' here is TikTok's,
+    // which renews them ahead of expiry.
+    policy: platform === "x" ? tokenPolicies.x : tokenPolicies.tiktok,
     refresh,
   };
 
@@ -121,7 +123,7 @@ const stored = Effect.fn("stored")(function* stored(
   options: { readonly platform?: Platform; readonly token: TokenLifetime }
 ) {
   const channel = yield* freshChannel(workspaceId, {
-    platform: options.platform ?? "x",
+    platform: options.platform ?? "tiktok",
     token: options.token,
   });
 
@@ -170,7 +172,7 @@ layer(FileTest)("refreshing channel tokens", (it) => {
     Effect.gen(function* selects() {
       const workspaceId = yield* freshWorkspace;
       const now = yield* DateTime.now;
-      const platform = yield* scripted("x");
+      const platform = yield* scripted("tiktok");
 
       const due = yield* stored(workspaceId, {
         token: {
@@ -258,11 +260,52 @@ layer(FileTest)("refreshing channel tokens", (it) => {
     })
   );
 
+  it.effect("keeps an X token alive only once it has gone a month unused", () =>
+    Effect.gen(function* keepsAlive() {
+      const workspaceId = yield* freshWorkspace;
+      const now = yield* DateTime.now;
+      const platform = yield* scripted("x");
+
+      const tokenOf = (expiresIn: Duration.Input) =>
+        stored(workspaceId, {
+          platform: "x",
+          token: {
+            _tag: "refreshable",
+            expiresAt: expiringIn(now, expiresIn),
+          },
+        });
+
+      // Renewed when a post needs it: the sweep leaves them be.
+      const expiring = yield* tokenOf("10 minutes");
+      const expired = yield* tokenOf("-1 day");
+      const unused = yield* tokenOf("-31 days");
+
+      const report = yield* RefreshChannelTokens.use(
+        (refresh) => refresh.sweep
+      ).pipe(Effect.provide(refresherFor(workspaceId, platform.authorizer)));
+
+      assert.strictEqual(report.refreshed, 1);
+      assert.strictEqual(yield* platform.calls, 1);
+
+      for (const untouched of [expiring, expired]) {
+        assert.deepStrictEqual(
+          (yield* reread(untouched)).token,
+          untouched.token
+        );
+      }
+
+      assert.deepStrictEqual((yield* reread(unused)).token, {
+        _tag: "refreshable",
+        expiresAt: expiringIn(now, "2 hours"),
+      });
+    })
+  );
+
   it.effect("saves the new tokens, encrypted for the channel", () =>
     Effect.gen(function* saves() {
       const workspaceId = yield* freshWorkspace;
       const now = yield* DateTime.now;
-      const platform = yield* scripted("x");
+      const platform = yield* scripted("tiktok");
 
       const channel = yield* stored(workspaceId, {
         token: { _tag: "refreshable", expiresAt: expiringIn(now, "5 minutes") },
@@ -291,8 +334,8 @@ layer(FileTest)("refreshing channel tokens", (it) => {
         "rotated-refresh-1"
       );
       assert.deepStrictEqual((yield* reread(channel)).scopes, [
-        "tweet.write",
-        "offline.access",
+        "user.info.basic",
+        "video.publish",
       ]);
     })
   );
@@ -305,7 +348,7 @@ layer(FileTest)("refreshing channel tokens", (it) => {
         const now = yield* DateTime.now;
         const asked = yield* Deferred.make<true>();
         const answer = yield* Deferred.make<true>();
-        const platform = yield* scripted("x");
+        const platform = yield* scripted("tiktok");
 
         // The platform spends the refresh token when asked, and answers a
         // little later.
@@ -351,7 +394,7 @@ layer(FileTest)("refreshing channel tokens", (it) => {
     Effect.gen(function* refused() {
       const workspaceId = yield* freshWorkspace;
       const now = yield* DateTime.now;
-      const platform = yield* scripted("x", ["refuse"]);
+      const platform = yield* scripted("tiktok", ["refuse"]);
 
       const channel = yield* stored(workspaceId, {
         token: { _tag: "refreshable", expiresAt: expiringIn(now, "5 minutes") },
@@ -381,7 +424,7 @@ layer(FileTest)("refreshing channel tokens", (it) => {
     Effect.gen(function* unreachable() {
       const workspaceId = yield* freshWorkspace;
       const now = yield* DateTime.now;
-      const platform = yield* scripted("x", ["unreachable"]);
+      const platform = yield* scripted("tiktok", ["unreachable"]);
 
       const channel = yield* stored(workspaceId, {
         token: { _tag: "refreshable", expiresAt: expiringIn(now, "5 minutes") },
@@ -402,11 +445,11 @@ layer(FileTest)("refreshing channel tokens", (it) => {
     Effect.gen(function* unreadable() {
       const workspaceId = yield* freshWorkspace;
       const now = yield* DateTime.now;
-      const platform = yield* scripted("x");
+      const platform = yield* scripted("tiktok");
 
       // Stored under a key the keyring does not hold.
       const channel = yield* freshChannel(workspaceId, {
-        platform: "x",
+        platform: "tiktok",
         token: { _tag: "refreshable", expiresAt: expiringIn(now, "5 minutes") },
       });
 
@@ -436,7 +479,7 @@ layer(FileTest, { excludeTestServices: true })(
       Effect.gen(function* races() {
         const workspaceId = yield* freshWorkspace;
         const now = yield* DateTime.now;
-        const platform = yield* scripted("x", [], Duration.millis(300));
+        const platform = yield* scripted("tiktok", [], Duration.millis(300));
 
         const channel = yield* stored(workspaceId, {
           token: {

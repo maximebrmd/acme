@@ -1,14 +1,18 @@
-import { and, eq, inArray, isNull, or } from "drizzle-orm";
+import { and, eq, or } from "drizzle-orm";
 import { DateTime, Effect, Layer, Option, Schema } from "effect";
 import { Digest } from "effect/crypto";
 import { SqlClient, SqlError } from "effect/sql";
 
 import { DataDeletions } from "#channels/application/data-deletions.ts";
-import { DataDeletion } from "#channels/domain/data-deletion.ts";
+import {
+  channelsSignedInWith,
+  DataDeletion,
+} from "#channels/domain/data-deletion.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 
 import { channels, connectChoices, dataDeletions } from "./schema.ts";
+import { signedInRows, userChannels } from "./signed-in-rows.ts";
 
 type Row = typeof dataDeletions.$inferSelect;
 
@@ -47,7 +51,6 @@ export const DrizzleDataDeletions = Layer.effect(
       readonly app: DataDeletion["app"];
       readonly code: string;
       readonly now: DateTime.Utc;
-      readonly platforms: readonly string[];
       readonly signedRequest: string;
       readonly userId: string;
     }) {
@@ -87,20 +90,11 @@ export const DrizzleDataDeletions = Layer.effect(
         return yield* toDeletion(earlier);
       }
 
+      const signedIn = channelsSignedInWith(request.app);
+
       const removed = yield* db
         .delete(channels)
-        .where(
-          and(
-            inArray(channels.platform, [...request.platforms]),
-            or(
-              eq(channels.grantedBy, request.userId),
-              and(
-                isNull(channels.grantedBy),
-                eq(channels.accountId, request.userId)
-              )
-            )
-          )
-        )
+        .where(userChannels(signedIn, request.userId))
         .returning({ id: channels.id })
         .pipe(Effect.mapError(failed));
 
@@ -110,7 +104,7 @@ export const DrizzleDataDeletions = Layer.effect(
         .delete(connectChoices)
         .where(
           and(
-            inArray(connectChoices.platform, [...request.platforms]),
+            or(...signedIn.map((rows) => signedInRows(connectChoices, rows))),
             eq(connectChoices.grantedBy, request.userId)
           )
         )

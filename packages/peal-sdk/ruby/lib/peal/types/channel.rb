@@ -7,6 +7,8 @@ module Peal
     class Channel < Internal::Types::Model
       field :avatar_url, -> { String }, optional: false, nullable: true, api_name: "avatarUrl"
 
+      field :connection, -> { Peal::Types::InstagramConnection }, optional: false, nullable: true
+
       field :display_name, -> { String }, optional: false, nullable: true, api_name: "displayName"
 
       field :handle, -> { String }, optional: false, nullable: false

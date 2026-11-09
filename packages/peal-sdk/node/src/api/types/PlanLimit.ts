@@ -4,6 +4,7 @@ export const PlanLimit = {
         Channels: "channels",
         Members: "members",
         ScheduledPosts: "scheduledPosts",
-        AssistantRequests: "assistantRequests"
+        AssistantRequests: "assistantRequests",
+        MediaStorage: "mediaStorage"
     } as const;
 export type PlanLimit = typeof PlanLimit[keyof typeof PlanLimit];

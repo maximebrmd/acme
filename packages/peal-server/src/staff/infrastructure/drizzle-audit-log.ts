@@ -1,4 +1,4 @@
-import { asc, count, desc, eq, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray, sql } from "drizzle-orm";
 import { DateTime, Effect, Layer, Option, Schema } from "effect";
 
 import { DatabaseError } from "#shared/application/database-error.ts";
@@ -8,6 +8,7 @@ import { Drizzle } from "#shared/infrastructure/database.ts";
 import { AuditLog } from "#staff/application/ports/audit-log.ts";
 import { StaffRecords } from "#staff/application/staff-records.ts";
 import { AuditEvent } from "#staff/domain/audit-event.ts";
+import { banActions } from "#staff/domain/audit-retention.ts";
 
 import { auditEvents } from "./schema.ts";
 
@@ -140,9 +141,28 @@ export const DrizzleStaffRecords = Layer.effect(
       ),
       // What the user did as staff keeps their id: see the port.
       forgetUser: Effect.fn("StaffRecords.forgetUser")(
-        function* forgetUser(userId) {
-          // The events about them, with what would tie them back: the
-          // workspace and the ids staff's changes named.
+        function* forgetUser(userId, pseudonym) {
+          // A ban, or its lifting, keeps why, and the account's pseudonym
+          // instead of its id, for as long as the log keeps it: Peal may
+          // have to show what it did and why to a court.
+          yield* db
+            .update(auditEvents)
+            .set({
+              objectIds: {},
+              targetId: null,
+              targetPseudonym: pseudonym,
+              workspaceId: null,
+            })
+            .where(
+              and(
+                eq(auditEvents.targetId, userId),
+                inArray(auditEvents.action, [...banActions])
+              )
+            )
+            .pipe(Effect.mapError(failed));
+
+          // The others about them, with what would tie them back: the
+          // reason, the workspace and the ids staff's changes named.
           yield* db
             .update(auditEvents)
             .set({

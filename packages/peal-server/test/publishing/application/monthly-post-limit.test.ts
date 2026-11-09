@@ -39,6 +39,7 @@ const TwoPostsServer = postsServerWith(
   Layer.succeed(
     PostAllowance,
     PostAllowance.of({
+      channels: () => Effect.succeed({ allowed: Option.none(), connected: 0 }),
       scheduledPerMonth: () => Effect.succeed(Option.some(allowed)),
     })
   )
@@ -52,8 +53,21 @@ const ChangingPlanServer = postsServerWith(
   Layer.succeed(
     PostAllowance,
     PostAllowance.of({
+      channels: () => Effect.succeed({ allowed: Option.none(), connected: 0 }),
       scheduledPerMonth: () =>
         Ref.get(changingAllowance).pipe(Effect.map(Option.some)),
+    })
+  )
+);
+
+// A workspace with four channels on a plan of three, as after its trial.
+const OverChannelsServer = postsServerWith(
+  attachableMedia(),
+  Layer.succeed(
+    PostAllowance,
+    PostAllowance.of({
+      channels: () => Effect.succeed({ allowed: Option.some(3), connected: 4 }),
+      scheduledPerMonth: () => Effect.succeed(Option.none()),
     })
   )
 );
@@ -459,5 +473,33 @@ describe("the monthly post limit", () => {
         })
       ),
     60_000
+  );
+});
+
+describe("the channel limit", () => {
+  it.effect(
+    "lets a workspace over its plan's channels schedule nothing until it disconnects some",
+    () =>
+      setTime("2026-06-10T07:00:00Z").pipe(
+        Effect.andThen(
+          Effect.gen(function* overChannels() {
+            const workspaceId = yield* freshWorkspace;
+            const channel = yield* connect(workspaceId, "mastodon");
+
+            const { failure } = yield* scheduledAt(
+              workspaceId,
+              channel,
+              "2026-06-20T08:00:00Z"
+            );
+
+            assert.deepStrictEqual(
+              failure,
+              Option.some(
+                new PlanLimitReached({ allowed: 3, limit: "channels" })
+              )
+            );
+          }).pipe(Effect.provide(OverChannelsServer))
+        )
+      )
   );
 });

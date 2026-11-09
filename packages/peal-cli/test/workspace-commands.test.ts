@@ -576,9 +576,28 @@ describe("peal billing, members and invitations", () => {
         shown,
         /Posts this month\s+7 of 30, until 2026-12-01T00:00:00Z/u
       );
+      assert.match(shown, /Media stored\s+125\.0 MB of 500\.0 MB/u);
+      assert.include(shown, "may try the pro plan free for 14 days");
       assert.include(
         yield* session.refused(["billing", "--workspace", "shop"]),
         "your role in this workspace does not allow it"
+      );
+    }).pipe(Effect.scoped, Effect.provide(filesLayer))
+  );
+
+  it.effect("lists the channels, with Instagram's way in", () =>
+    Effect.gen(function* lists() {
+      const session = yield* signedIn();
+      const listed = yield* session.printed(["channels", "list", ...inStudio]);
+
+      assert.match(listed, /mastodon\s+@studio@example\.social\s+posts/u);
+      assert.match(
+        listed,
+        /bluesky\s+studio\.example\.test\s+must be reconnected/u
+      );
+      assert.match(
+        listed,
+        /instagram \(Instagram Login\)\s+@studio_example\s+posts/u
       );
     }).pipe(Effect.scoped, Effect.provide(filesLayer))
   );

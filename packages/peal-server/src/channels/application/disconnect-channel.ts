@@ -57,7 +57,7 @@ export class DisconnectChannel extends Context.Service<
         credentials: ChannelCredentials
       ) {
         const revoking = authorizers
-          .for(channel.platform)
+          .for(channel.platform, channel.connection)
           .pipe(Option.flatMapNullishOr((authorizer) => authorizer.revoke));
 
         if (Option.isNone(revoking)) {

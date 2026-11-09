@@ -7,6 +7,10 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 public final class Plan {
+    public static final Plan STARTER = new Plan(Value.STARTER, "starter");
+
+    public static final Plan AGENCY = new Plan(Value.AGENCY, "agency");
+
     public static final Plan FREE = new Plan(Value.FREE, "free");
 
     public static final Plan PRO = new Plan(Value.PRO, "pro");
@@ -44,6 +48,10 @@ public final class Plan {
 
     public <T> T visit(Visitor<T> visitor) {
         switch (value) {
+            case STARTER:
+                return visitor.visitStarter();
+            case AGENCY:
+                return visitor.visitAgency();
             case FREE:
                 return visitor.visitFree();
             case PRO:
@@ -59,6 +67,10 @@ public final class Plan {
     @JsonCreator(mode = JsonCreator.Mode.DELEGATING)
     public static Plan valueOf(String value) {
         switch (value) {
+            case "starter":
+                return STARTER;
+            case "agency":
+                return AGENCY;
             case "free":
                 return FREE;
             case "pro":
@@ -73,9 +85,13 @@ public final class Plan {
     public enum Value {
         FREE,
 
+        STARTER,
+
         PRO,
 
         BUSINESS,
+
+        AGENCY,
 
         UNKNOWN
     }
@@ -83,9 +99,13 @@ public final class Plan {
     public interface Visitor<T> {
         T visitFree();
 
+        T visitStarter();
+
         T visitPro();
 
         T visitBusiness();
+
+        T visitAgency();
 
         T visitUnknown(String unknownType);
     }

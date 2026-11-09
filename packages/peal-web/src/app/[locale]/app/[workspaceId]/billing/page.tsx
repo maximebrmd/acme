@@ -1,17 +1,19 @@
-import { Option } from "effect";
+import { Effect, Option } from "effect";
 import { hasLocale } from "next-intl";
 import { getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { Button } from "peal-ui/components/button";
 
 import { currentUser } from "#auth/session.ts";
+import { termsUrlConfig } from "#billing/terms.ts";
 import { BillingScreen } from "#components/billing/billing-screen.tsx";
 import { Link, redirect } from "#i18n/navigation.ts";
 import { routing } from "#i18n/routing.ts";
 
 // A workspace's billing, for members with billing:read: its plan, what it
-// uses of it, and, for those with billing:manage, checkout and the billing
-// portal. Stripe sends the browser back here with ?checkout=done.
+// uses of it, and, for those with billing:manage, orders, checkout, the
+// billing portal, cancelling and withdrawing. Stripe sends the browser back
+// here with ?checkout=done.
 const BillingPage = async ({
   params,
   searchParams,
@@ -39,6 +41,7 @@ const BillingPage = async ({
 
   const t = await getTranslations("Billing");
   const { checkout } = await searchParams;
+  const termsUrl = await Effect.runPromise(termsUrlConfig);
 
   return (
     <div className="flex flex-col gap-8">
@@ -62,6 +65,7 @@ const BillingPage = async ({
         workspaceId={workspace.id}
         canManage={workspace.permissions.includes("billing:manage")}
         checkedOut={checkout === "done"}
+        termsUrl={termsUrl}
       />
     </div>
   );

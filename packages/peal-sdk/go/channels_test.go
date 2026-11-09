@@ -428,6 +428,14 @@ func TestSettersConnectChannel(t *testing.T) {
 		assert.NotNil(t, obj.explicitFields)
 	})
 
+	t.Run("SetConnection", func(t *testing.T) {
+		obj := &ConnectChannel{}
+		var fernTestValueConnection *InstagramConnection
+		obj.SetConnection(fernTestValueConnection)
+		assert.Equal(t, fernTestValueConnection, obj.Connection)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
 	t.Run("SetHandle", func(t *testing.T) {
 		obj := &ConnectChannel{}
 		var fernTestValueHandle *string
@@ -486,6 +494,37 @@ func TestSettersMarkExplicitConnectChannel(t *testing.T) {
 
 		// Act
 		obj.SetPlatform(fernTestValuePlatform)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetConnection_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &ConnectChannel{}
+		var fernTestValueConnection *InstagramConnection
+
+		// Act
+		obj.SetConnection(fernTestValueConnection)
 
 		// Assert - object with explicitly set field can be marshaled/unmarshaled
 		bytes, err := json.Marshal(obj)
@@ -911,6 +950,14 @@ func TestSettersChannel(t *testing.T) {
 		assert.NotNil(t, obj.explicitFields)
 	})
 
+	t.Run("SetConnection", func(t *testing.T) {
+		obj := &Channel{}
+		var fernTestValueConnection *InstagramConnection
+		obj.SetConnection(fernTestValueConnection)
+		assert.Equal(t, fernTestValueConnection, obj.Connection)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
 	t.Run("SetDisplayName", func(t *testing.T) {
 		obj := &Channel{}
 		var fernTestValueDisplayName *string
@@ -993,6 +1040,39 @@ func TestGettersChannel(t *testing.T) {
 			}
 		}()
 		_ = obj.GetAvatarURL() // Should return zero value
+	})
+
+	t.Run("GetConnection", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &Channel{}
+		var expected *InstagramConnection
+		obj.Connection = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetConnection(), "getter should return the property value")
+	})
+
+	t.Run("GetConnection_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &Channel{}
+		obj.Connection = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetConnection(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetConnection_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *Channel
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetConnection() // Should return zero value
 	})
 
 	t.Run("GetDisplayName", func(t *testing.T) {
@@ -1174,6 +1254,37 @@ func TestSettersMarkExplicitChannel(t *testing.T) {
 
 		// Act
 		obj.SetAvatarURL(fernTestValueAvatarURL)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetConnection_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &Channel{}
+		var fernTestValueConnection *InstagramConnection
+
+		// Act
+		obj.SetConnection(fernTestValueConnection)
 
 		// Assert - object with explicitly set field can be marshaled/unmarshaled
 		bytes, err := json.Marshal(obj)
@@ -2299,6 +2410,14 @@ func TestSettersMarkExplicitConnectOutcomeConnected(t *testing.T) {
 }
 
 func TestSettersConnectablePlatforms(t *testing.T) {
+	t.Run("SetInstagramConnections", func(t *testing.T) {
+		obj := &ConnectablePlatforms{}
+		var fernTestValueInstagramConnections []InstagramConnection
+		obj.SetInstagramConnections(fernTestValueInstagramConnections)
+		assert.Equal(t, fernTestValueInstagramConnections, obj.InstagramConnections)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
 	t.Run("SetPlatforms", func(t *testing.T) {
 		obj := &ConnectablePlatforms{}
 		var fernTestValuePlatforms []Platform
@@ -2310,6 +2429,39 @@ func TestSettersConnectablePlatforms(t *testing.T) {
 }
 
 func TestGettersConnectablePlatforms(t *testing.T) {
+	t.Run("GetInstagramConnections", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &ConnectablePlatforms{}
+		var expected []InstagramConnection
+		obj.InstagramConnections = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetInstagramConnections(), "getter should return the property value")
+	})
+
+	t.Run("GetInstagramConnections_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &ConnectablePlatforms{}
+		obj.InstagramConnections = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetInstagramConnections(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetInstagramConnections_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *ConnectablePlatforms
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetInstagramConnections() // Should return zero value
+	})
+
 	t.Run("GetPlatforms", func(t *testing.T) {
 		t.Parallel()
 		// Arrange
@@ -2346,6 +2498,37 @@ func TestGettersConnectablePlatforms(t *testing.T) {
 }
 
 func TestSettersMarkExplicitConnectablePlatforms(t *testing.T) {
+	t.Run("SetInstagramConnections_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &ConnectablePlatforms{}
+		var fernTestValueInstagramConnections []InstagramConnection
+
+		// Act
+		obj.SetInstagramConnections(fernTestValueInstagramConnections)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
 	t.Run("SetPlatforms_MarksExplicit", func(t *testing.T) {
 		t.Parallel()
 		// Arrange
@@ -2679,6 +2862,7 @@ func TestJSONMarshalingConnectablePlatforms(t *testing.T) {
 func TestRequiredNullableRoundTripChannel(t *testing.T) {
 	requiredNullableKeys := []string{
 		"avatarUrl",
+		"connection",
 		"displayName",
 		"tokenExpiresAt",
 	}
@@ -2693,7 +2877,7 @@ func TestRequiredNullableRoundTripChannel(t *testing.T) {
 	t.Run("NullPreserved", func(t *testing.T) {
 		t.Parallel()
 		var obj Channel
-		require.NoError(t, json.Unmarshal([]byte(`{"avatarUrl":null,"displayName":null,"tokenExpiresAt":null}`), &obj))
+		require.NoError(t, json.Unmarshal([]byte(`{"avatarUrl":null,"connection":null,"displayName":null,"tokenExpiresAt":null}`), &obj))
 		result := marshalToMap(t, &obj)
 		for _, key := range requiredNullableKeys {
 			value, ok := result[key]
@@ -2906,6 +3090,35 @@ func TestStringConnectablePlatforms(t *testing.T) {
 		var obj *ConnectablePlatforms
 		result := obj.String()
 		assert.Equal(t, "<nil>", result, "String() should return <nil> for nil receiver")
+	})
+}
+
+func TestEnumInstagramConnection(t *testing.T) {
+	t.Run("NewFromString_instagramLogin", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewInstagramConnectionFromString("instagramLogin")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, InstagramConnection("instagramLogin"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_facebookLogin", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewInstagramConnectionFromString("facebookLogin")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, InstagramConnection("facebookLogin"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_Invalid", func(t *testing.T) {
+		_, err := NewInstagramConnectionFromString("invalid_value_that_does_not_exist")
+		assert.Error(t, err)
+	})
+
+	t.Run("Ptr", func(t *testing.T) {
+		val, err := NewInstagramConnectionFromString("instagramLogin")
+		assert.NoError(t, err)
+		ptr := val.Ptr()
+		assert.NotNil(t, ptr)
+		assert.Equal(t, val, *ptr)
 	})
 }
 

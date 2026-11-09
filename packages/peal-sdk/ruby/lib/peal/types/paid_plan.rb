@@ -7,8 +7,10 @@ module Peal
     module PaidPlan
       extend Peal::Internal::Types::Enum
 
+      STARTER = "starter"
       PRO = "pro"
       BUSINESS = "business"
+      AGENCY = "agency"
     end
   end
 end

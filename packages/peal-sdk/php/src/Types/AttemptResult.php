@@ -16,4 +16,6 @@ enum AttemptResult: string
     case Unavailable = "unavailable";
     case AppNotAudited = "appNotAudited";
     case QuotaExceeded = "quotaExceeded";
+    case AppBillingLimit = "appBillingLimit";
+    case PlanLimit = "planLimit";
 }

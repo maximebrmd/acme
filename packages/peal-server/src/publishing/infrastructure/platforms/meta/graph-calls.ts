@@ -7,6 +7,7 @@ import type { HttpClient, HttpClientError } from "effect/http";
 import { OutcomeUnknown } from "#publishing/application/outcome-unknown.ts";
 import type { OutgoingPost } from "#publishing/application/platform-client.ts";
 import { PlatformCredentials } from "#publishing/application/platform-credentials.ts";
+import type { PublishingAccount } from "#publishing/application/platform-credentials.ts";
 import {
   commitUnanswered,
   unanswered,
@@ -138,27 +139,38 @@ export const readWith = <A, I>(
 /**
  * Graph calls with a channel's token, through PlatformCredentials, which
  * renews a token Meta refuses once. With the app's secret, each call
- * carries its `appsecret_proof`.
+ * carries its `appsecret_proof`, unless `proves` says the account's token
+ * is another app's (an Instagram Login token is the Instagram app's). Each
+ * request is built for the account the token is for, whose connection says
+ * which host it goes to.
  */
 export const graphCalls = Effect.fn("MetaGraph.calls")(
   function* graphCalls(options: {
     readonly appSecret: Option.Option<Redacted.Redacted>;
+    readonly proves?: (account: PublishingAccount) => boolean;
   }) {
     const credentials = yield* PlatformCredentials;
     const mac = yield* Mac.Mac;
+    const proves = options.proves ?? (() => true);
 
-    const authOf = (token: Redacted.Redacted): Effect.Effect<GraphAuth> =>
-      Option.match(options.appSecret, {
-        onNone: () => Effect.succeed({ access_token: token }),
-        onSome: (secret) =>
-          appSecretProof(token, secret).pipe(
-            Effect.provideService(Mac.Mac, mac),
-            Effect.map((proof) => ({
-              access_token: token,
-              appsecret_proof: proof,
-            }))
-          ),
-      });
+    const authOf = (
+      token: Redacted.Redacted,
+      account: PublishingAccount
+    ): Effect.Effect<GraphAuth> =>
+      Option.match(
+        options.appSecret.pipe(Option.filter(() => proves(account))),
+        {
+          onNone: () => Effect.succeed({ access_token: token }),
+          onSome: (secret) =>
+            appSecretProof(token, secret).pipe(
+              Effect.provideService(Mac.Mac, mac),
+              Effect.map((proof) => ({
+                access_token: token,
+                appsecret_proof: proof,
+              }))
+            ),
+        }
+      );
 
     /**
      * A call that makes nothing live: without an answer, whatever it did does
@@ -168,12 +180,15 @@ export const graphCalls = Effect.fn("MetaGraph.calls")(
       post: OutgoingPost,
       http: MetaHttp,
       call: Exclude<GraphCall, "post">,
-      request: (auth: GraphAuth) => HttpClientRequest.HttpClientRequest,
+      request: (
+        auth: GraphAuth,
+        account: PublishingAccount
+      ) => HttpClientRequest.HttpClientRequest,
       schema: Schema.Codec<A, I>
     ) =>
-      credentials.withToken(post.channelId, ({ accessToken }) =>
-        authOf(accessToken).pipe(
-          Effect.flatMap((auth) => http.execute(request(auth))),
+      credentials.withToken(post.channelId, (token) =>
+        authOf(token.accessToken, token).pipe(
+          Effect.flatMap((auth) => http.execute(request(auth, token))),
           Effect.flatMap(answered(call, schema)),
           Effect.catchTags({
             HttpClientError: unanswered,
@@ -196,15 +211,22 @@ export const graphCalls = Effect.fn("MetaGraph.calls")(
     const commit = <A, I, B>(
       post: OutgoingPost,
       http: MetaHttp,
-      request: (auth: GraphAuth) => HttpClientRequest.HttpClientRequest,
+      request: (
+        auth: GraphAuth,
+        account: PublishingAccount
+      ) => HttpClientRequest.HttpClientRequest,
       schema: Schema.Codec<A, I>,
-      after: (made: A, auth: GraphAuth) => Effect.Effect<B, unknown>,
+      after: (
+        made: A,
+        auth: GraphAuth,
+        account: PublishingAccount
+      ) => Effect.Effect<B, unknown>,
       fallback: (made: A) => B
     ) =>
-      credentials.withToken(post.channelId, ({ accessToken }) =>
-        authOf(accessToken).pipe(
+      credentials.withToken(post.channelId, (token) =>
+        authOf(token.accessToken, token).pipe(
           Effect.flatMap((auth) =>
-            http.execute(request(auth)).pipe(
+            http.execute(request(auth, token)).pipe(
               Effect.flatMap(answered("post", schema)),
               Effect.catchTags({
                 HttpClientError: commitUnanswered,
@@ -212,7 +234,7 @@ export const graphCalls = Effect.fn("MetaGraph.calls")(
                 SchemaError: commitUnanswered,
               }),
               Effect.flatMap((made) =>
-                after(made, auth).pipe(
+                after(made, auth, token).pipe(
                   Effect.orElseSucceed(() => fallback(made))
                 )
               )

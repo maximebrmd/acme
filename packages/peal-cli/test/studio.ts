@@ -99,9 +99,12 @@ export const tiktokId = "0190f3a0-0000-7000-8000-00000000c003";
 
 export const youtubeId = "0190f3a0-0000-7000-8000-00000000c004";
 
+export const instagramId = "0190f3a0-0000-7000-8000-00000000c005";
+
 const channels: readonly Channel[] = [
   {
     avatarUrl: null,
+    connection: null,
     displayName: "Studio",
     handle: "@studio@example.social",
     id: mastodonId,
@@ -111,6 +114,7 @@ const channels: readonly Channel[] = [
   },
   {
     avatarUrl: null,
+    connection: null,
     displayName: null,
     handle: "studio.example.test",
     id: blueskyId,
@@ -120,6 +124,7 @@ const channels: readonly Channel[] = [
   },
   {
     avatarUrl: null,
+    connection: null,
     displayName: "Studio",
     handle: "@studio_example",
     id: tiktokId,
@@ -129,10 +134,21 @@ const channels: readonly Channel[] = [
   },
   {
     avatarUrl: null,
+    connection: null,
     displayName: "Studio videos",
     handle: "Studio videos",
     id: youtubeId,
     platform: "youtube",
+    status: { _tag: "active" },
+    tokenExpiresAt: null,
+  },
+  {
+    avatarUrl: null,
+    connection: "instagramLogin",
+    displayName: "Studio",
+    handle: "@studio_example",
+    id: instagramId,
+    platform: "instagram",
     status: { _tag: "active" },
     tokenExpiresAt: null,
   },
@@ -244,21 +260,27 @@ const invitation: Invitation = {
 
 const billing: Billing = {
   allowances: {
-    assistantRequests: 10,
+    assistantRequests: 3,
     channels: 3,
+    mediaStorage: 500_000_000,
     members: 2,
     scheduledPosts: 30,
   },
+  currency: "eur",
   enabled: true,
   plan: "free",
   plans: [],
   subscription: null,
+  trial: { available: true, days: 14, plan: "pro" },
   usage: {
-    assistantRequests: { resetsAt: at("2026-11-10T00:00:00Z"), used: 4 },
+    assistantRequests: { resetsAt: at("2026-11-10T00:00:00Z"), used: 2 },
     channels: 2,
+    mediaStorage: 125_000_000,
     members: 2,
     scheduledPosts: { resetsAt: at("2026-12-01T00:00:00Z"), used: 7 },
   },
+  vatRate: 20,
+  withdrawableUntil: null,
 };
 
 const cli: ConnectedApp = {
@@ -274,8 +296,10 @@ const cli: ConnectedApp = {
 const exported = (exportedAt: DateTime.Utc): AccountExport => ({
   authoredPosts: [],
   connectedApps: [cli],
+  contracts: { orders: [], withdrawals: [] },
   exportedAt,
   invitations: { received: [], sent: [] },
+  legalHold: null,
   memberships: [
     {
       joinedAt: at("2026-10-01T08:00:00Z"),
