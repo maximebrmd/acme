@@ -35,7 +35,7 @@ const decodePostId = Schema.decodeUnknownOption(PostIdSchema);
 
 const decodeTimeZone = Schema.decodeUnknownOption(TimeZoneIdSchema);
 
-const decodeDate = Schema.decodeUnknownEffect(LocalDateSchema);
+const decodeDate = Schema.decodeUnknownOption(LocalDateSchema);
 
 const forbidden = () => Effect.fail(new Forbidden());
 
@@ -48,11 +48,12 @@ const pad = (value: number, length = 2) =>
 const dayView = ({ day, month, year }: LocalDate): CalendarDay =>
   `${pad(year, 4)}-${pad(month)}-${pad(day)}`;
 
-// The contract checked the day is on the calendar, so it decodes.
+// The contract checked the day is on the calendar. One before 1970 is not
+// a date Acme keeps, and no post went out then: no range has it.
 const dateFrom = (day: CalendarDay) => {
   const [year = 0, month = 0, date = 0] = day.split("-").map(Number);
 
-  return decodeDate({ day: date, month, year }).pipe(Effect.orDie);
+  return decodeDate({ day: date, month, year });
 };
 
 const metricsView = (metrics: PostMetrics): MetricsView => ({
@@ -159,11 +160,18 @@ export const AnalyticsHandlers = HttpApiBuilder.group(
             return yield* new InvalidTimeZone({ timeZone: query.timeZone });
           }
 
+          const from = dateFrom(query.from);
+          const to = dateFrom(query.to);
+
+          if (Option.isNone(from) || Option.isNone(to)) {
+            return yield* new InvalidDateRange();
+          }
+
           const found = yield* queries
             .summary(actor, {
-              from: yield* dateFrom(query.from),
+              from: from.value,
               timeZone: timeZone.value,
-              to: yield* dateFrom(query.to),
+              to: to.value,
             })
             .pipe(
               Effect.catchTags({

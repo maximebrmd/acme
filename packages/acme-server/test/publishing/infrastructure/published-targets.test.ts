@@ -138,4 +138,49 @@ layer(ListingTest)("the published targets", (it) => {
       }).pipe(Effect.ensuring(deletePost(postId)));
     })
   );
+
+  it.effect("are told apart by id when they went live at once", () =>
+    Effect.gen(function* together() {
+      const { ids, postId } = yield* insertPost(
+        Array.from({ length: 3 }, (_, index) => ({
+          finishedAt: "2045-02-02T10:00:00.000Z",
+          platformPostId: `11000000000000001${index}`,
+          status: "published",
+        }))
+      );
+
+      yield* Effect.gen(function* checks() {
+        const published = yield* PublishedTargets;
+        const [first, second, third] = ids.toSorted();
+
+        const listed = (targetId: Option.Option<PostTargetId>) =>
+          published
+            .from(
+              { publishedAt: utc("2045-02-02T10:00:00.000Z"), targetId },
+              100
+            )
+            .pipe(
+              Effect.map((found) =>
+                found
+                  .map(({ targetId: id }) => id)
+                  .filter((id) => ids.includes(id))
+              )
+            );
+
+        assert.deepStrictEqual(yield* listed(Option.none()), [
+          first,
+          second,
+          third,
+        ]);
+        assert.deepStrictEqual(yield* listed(Option.fromUndefinedOr(first)), [
+          second,
+          third,
+        ]);
+        assert.deepStrictEqual(
+          yield* listed(Option.fromUndefinedOr(third)),
+          []
+        );
+      }).pipe(Effect.ensuring(deletePost(postId)));
+    })
+  );
 });

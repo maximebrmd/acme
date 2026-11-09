@@ -21,6 +21,7 @@ import {
   rangeEnding,
   ranges,
   RangeSchema,
+  summaryTimeZone,
   todayIn,
 } from "#analytics/report.ts";
 import type { Range } from "#analytics/report.ts";
@@ -142,7 +143,7 @@ interface AnalyticsScreenProps {
 }
 
 // The analytics render in the browser, where the reader's time zone, and
-// so the days of the range, are known.
+// so the days of the range, are known: UTC's when the browser cannot tell.
 export const AnalyticsScreen = (props: AnalyticsScreenProps) => {
   const t = useTranslations("Analytics");
   const mounted = useMounted();
@@ -151,5 +152,7 @@ export const AnalyticsScreen = (props: AnalyticsScreenProps) => {
     return <Loading label={t("page.loading")} />;
   }
 
-  return <AnalyticsView {...props} timeZone={browserTimeZone()} />;
+  return (
+    <AnalyticsView {...props} timeZone={summaryTimeZone(browserTimeZone())} />
+  );
 };

@@ -44,14 +44,31 @@ const metricsOf = (view: typeof PostViewSchema.Type) =>
     reposts: view.repostCount ?? 0,
   });
 
+// What one call came to: readings to go on from, or a reason to stop. An
+// AppView that slows the read down leaves the posts due; one that fails on
+// them, or answers what Acme cannot read, makes them wait for their next
+// turn, so posts it cannot show hold nothing back.
+type Call =
+  | { readonly _tag: "read"; readonly readings: readonly PostReading[] }
+  | { readonly _tag: "failed"; readonly readings: readonly PostReading[] }
+  | { readonly _tag: "halt" };
+
+const halt: Call = { _tag: "halt" };
+
+const failedOn = (posts: readonly PostToRead[]): Call => ({
+  _tag: "failed",
+  readings: posts.map(({ targetId }) => ({ _tag: "failed", targetId })),
+});
+
 /**
  * Reads posts on Bluesky with app.bsky.feed.getPosts, 25 to a call, from
  * the public AppView: a post's likes, reposts, replies and quotes are
  * public on the AT Protocol, so no session is needed, and the account's
  * scope stays what posting needs. A post the AppView does not return is
  * missing: deleted, or hidden by moderation; so are all of a request the
- * AppView refuses (400). An AppView that answers 429 or fails halts the
- * read.
+ * AppView refuses (400). An AppView that answers 429 halts the read; one
+ * that fails, does not answer, or answers what Acme cannot read, marks the
+ * call's posts failed and halts.
  */
 export const blueskyMetrics = (options: BlueskyMetricsOptions) => {
   const { appView, http } = options;
@@ -70,38 +87,46 @@ export const blueskyMetrics = (options: BlueskyMetricsOptions) => {
       .pipe(Effect.result);
 
     if (sent._tag === "Failure") {
-      return Option.none<readonly PostReading[]>();
+      return failedOn(posts);
     }
 
     // A request the AppView cannot read names no post it has.
     if (sent.success.status === 400) {
-      return Option.some(
-        posts.map(({ targetId }): PostReading => ({
-          _tag: "missing",
-          targetId,
-        }))
-      );
+      const missing: Call = {
+        _tag: "read",
+        readings: posts.map(({ targetId }) => ({ _tag: "missing", targetId })),
+      };
+
+      return missing;
+    }
+
+    if (sent.success.status === 429) {
+      return halt;
     }
 
     if (sent.success.status !== 200) {
-      return Option.none<readonly PostReading[]>();
+      return failedOn(posts);
     }
 
     const found = yield* postsOf(sent.success).pipe(Effect.option);
 
-    return found.pipe(
-      Option.map(({ posts: views }) => {
+    return Option.match(found, {
+      onNone: () => failedOn(posts),
+      onSome: ({ posts: views }): Call => {
         const byUri = new Map(views.map((view) => [view.uri, view]));
 
-        return posts.map(({ platformPostId, targetId }): PostReading => {
-          const view = byUri.get(platformPostId);
+        return {
+          _tag: "read",
+          readings: posts.map(({ platformPostId, targetId }): PostReading => {
+            const view = byUri.get(platformPostId);
 
-          return view === undefined
-            ? { _tag: "missing", targetId }
-            : { _tag: "counted", metrics: metricsOf(view), targetId };
-        });
-      })
-    );
+            return view === undefined
+              ? { _tag: "missing", targetId }
+              : { _tag: "counted", metrics: metricsOf(view), targetId };
+          }),
+        };
+      },
+    });
   });
 
   const read = Effect.fn("BlueskyMetrics.read")(function* read(
@@ -110,15 +135,17 @@ export const blueskyMetrics = (options: BlueskyMetricsOptions) => {
     const readings: PostReading[] = [];
 
     for (const some of Arr.chunksOf(posts, urisPerCall)) {
-      const found = yield* readSome(some);
+      const call = yield* readSome(some);
 
-      if (Option.isNone(found)) {
+      if (call._tag !== "halt") {
+        readings.push(...call.readings);
+      }
+
+      if (call._tag !== "read") {
         const halted: MetricsBatch = { halted: true, readings };
 
         return halted;
       }
-
-      readings.push(...found.value);
     }
 
     const batch: MetricsBatch = { halted: false, readings };

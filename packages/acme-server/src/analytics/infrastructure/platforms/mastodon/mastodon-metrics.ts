@@ -52,6 +52,13 @@ const StatusCountsSchema = Schema.Struct({
 
 const countsOf = HttpClientResponse.schemaBodyJson(StatusCountsSchema);
 
+// How Mastodon refuses a token, or a reader signed out: a JSON error. A
+// page from something on the way, such as a proxy's challenge, says
+// nothing of the token.
+const refusalOf = HttpClientResponse.schemaBodyJson(
+  Schema.Struct({ error: Schema.String })
+);
+
 // The channels context names a Mastodon account `<id>@<host>`.
 const accountPattern = /^[^@\s]+@(?<host>[^@\s/]+)$/u;
 
@@ -67,12 +74,21 @@ const remainingOf = (response: HttpClientResponse.HttpClientResponse) =>
     Option.filter(Number.isFinite)
   );
 
-// What reading one status came to: a reading, or a reason to stop.
+// What reading one status came to: a reading to go on from, or a reason
+// to stop. A server that slows the read down leaves the status due; one
+// that fails on it, or answers what Acme cannot read, makes it wait for
+// its next turn, so a status the server cannot show holds nothing back.
 type Step =
   | { readonly _tag: "read"; readonly reading: PostReading }
+  | { readonly _tag: "failed"; readonly reading: PostReading }
   | { readonly _tag: "halt" };
 
 const halt: Step = { _tag: "halt" };
+
+const failedOn = (post: PostToRead): Step => ({
+  _tag: "failed",
+  reading: { _tag: "failed", targetId: post.targetId },
+});
 
 /**
  * Reads statuses on a Mastodon server, one GET /api/v1/statuses/:id at a
@@ -80,9 +96,11 @@ const halt: Step = { _tag: "halt" };
  * account's token when it may read statuses (`read:statuses`), as the
  * channels context hands it out; without one otherwise, which public and
  * unlisted statuses allow. A status the server no longer shows (404) is
- * missing. A refused token is refused once renewed: the channel needs
- * reconnecting. A server that answers 429, fails, or has few requests
- * left halts the read.
+ * missing. A token Mastodon refuses, with its JSON error, is refused once
+ * renewed: the channel needs reconnecting; a 401 or 403 without one, from
+ * something on the way, is a failure. A server that answers 429 or has few
+ * requests left halts the read; one that fails on a status, does not
+ * answer, or answers what Acme cannot read, marks it failed and halts.
  */
 export const mastodonMetrics = Effect.fn("MastodonMetrics.make")(
   function* mastodonMetrics(options: MastodonMetricsOptions) {
@@ -110,7 +128,7 @@ export const mastodonMetrics = Effect.fn("MastodonMetrics.make")(
       const sent = yield* http.execute(request).pipe(Effect.result);
 
       if (sent._tag === "Failure") {
-        return { remaining: Option.none<number>(), step: halt };
+        return { remaining: Option.none<number>(), step: failedOn(post) };
       }
 
       const response = sent.success;
@@ -120,7 +138,7 @@ export const mastodonMetrics = Effect.fn("MastodonMetrics.make")(
         const counts = yield* countsOf(response).pipe(Effect.option);
 
         const step: Step = Option.match(counts, {
-          onNone: () => halt,
+          onNone: () => failedOn(post),
           onSome: (status) => ({
             _tag: "read",
             reading: {
@@ -151,17 +169,25 @@ export const mastodonMetrics = Effect.fn("MastodonMetrics.make")(
         return { remaining, step };
       }
 
-      if (response.status === 401 || response.status === 403) {
-        // The token was refused: the channels context renews it, and asks
-        // for a reconnect when that does not help. Without a token, the
-        // server reads nothing for anyone signed out.
+      // Only Mastodon's own refusal counts: the channels context renews a
+      // refused token, and asks for a reconnect when that does not help,
+      // which stops the channel's publishing, so a proxy's page must not.
+      // Without a token, the server reads nothing for anyone signed out.
+      if (
+        (response.status === 401 || response.status === 403) &&
+        Option.isSome(yield* refusalOf(response).pipe(Effect.option))
+      ) {
         return yield* Option.isSome(token)
           ? new TokenRejected()
           : new ChannelUnreadable({ reason: "paused" });
       }
 
-      // Rate limited, failing, or answering what Acme does not know.
-      return { remaining, step: halt };
+      if (response.status === 429) {
+        return { remaining, step: halt };
+      }
+
+      // Failing, or answering what Acme does not know.
+      return { remaining, step: failedOn(post) };
     });
 
     const readAll = Effect.fn("MastodonMetrics.readAll")(function* readAll(
@@ -188,6 +214,10 @@ export const mastodonMetrics = Effect.fn("MastodonMetrics.make")(
         }
 
         readings.push(step.reading);
+
+        if (step._tag === "failed") {
+          return { halted: true, readings };
+        }
 
         if (Option.exists(remaining, (left) => left <= budget.reserve)) {
           return { halted: readings.length < posts.length, readings };

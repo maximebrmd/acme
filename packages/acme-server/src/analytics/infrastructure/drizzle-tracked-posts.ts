@@ -1,4 +1,13 @@
-import { and, asc, desc, eq, isNotNull, lte } from "drizzle-orm";
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  getColumns,
+  isNotNull,
+  lte,
+  sql as drizzleSql,
+} from "drizzle-orm";
 import { DateTime, Effect, Layer, Option, Schema } from "effect";
 import { SqlClient } from "effect/sql";
 
@@ -161,8 +170,14 @@ export const DrizzleTrackedPosts = Layer.effect(
       at: DateTime.Utc,
       limit: number
     ) {
-      const rows = yield* db
-        .select()
+      // Each channel's due posts, numbered in the order they came due.
+      const ranked = db
+        .select({
+          ...getColumns(trackedPosts),
+          turn: drizzleSql<number>`row_number() OVER (PARTITION BY ${trackedPosts.channelId} ORDER BY ${trackedPosts.nextCollectionAt}, ${trackedPosts.targetId})`.as(
+            "turn"
+          ),
+        })
         .from(trackedPosts)
         .where(
           and(
@@ -170,7 +185,16 @@ export const DrizzleTrackedPosts = Layer.effect(
             lte(trackedPosts.nextCollectionAt, date(at))
           )
         )
-        .orderBy(asc(trackedPosts.nextCollectionAt), asc(trackedPosts.targetId))
+        .as("ranked");
+
+      const rows = yield* db
+        .select()
+        .from(ranked)
+        .orderBy(
+          asc(ranked.turn),
+          asc(ranked.nextCollectionAt),
+          asc(ranked.targetId)
+        )
         .limit(limit)
         .pipe(
           Effect.mapError(failed),

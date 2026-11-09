@@ -1,7 +1,16 @@
 import { Option, Schema } from "effect";
 
+/**
+ * The most a count can be: 2,147,483,647, what Acme keeps each count in.
+ * No post comes near it, so a server that says more (a Mastodon server is
+ * anyone's choice) is not believed.
+ */
+export const maxCount = 2_147_483_647;
+
 /** A count a platform keeps: a whole number, never negative. */
-export const CountSchema = Schema.Int.check(Schema.isGreaterThanOrEqualTo(0));
+export const CountSchema = Schema.Int.check(
+  Schema.isBetween({ maximum: maxCount, minimum: 0 })
+);
 
 /**
  * A post's counts on its platform at one moment, in Acme's words: likes are

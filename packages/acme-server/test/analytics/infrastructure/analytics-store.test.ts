@@ -1,5 +1,6 @@
 import { assert, layer } from "@effect/vitest";
 import { DateTime, Effect, Layer, Option, Result } from "effect";
+import { SqlClient } from "effect/sql";
 
 import { AnalyticsRecords } from "#analytics/application/analytics-records.ts";
 import { AnalyticsReports } from "#analytics/application/analytics-reports.ts";
@@ -108,6 +109,41 @@ layer(StoreTest)("the analytics store", (it) => {
             metrics: countsOf(3, 1, 0, 2),
           },
         ]);
+      }).pipe(Effect.ensuring(forgetWorkspace(workspaceId)));
+    })
+  );
+
+  it.effect("hands out due posts taking turns between channels", () =>
+    Effect.gen(function* turns() {
+      const workspaceId = yield* freshWorkspace;
+      const tracked = yield* TrackedPosts;
+      const busy = yield* newChannelId;
+      const quiet = yield* newChannelId;
+
+      yield* Effect.gen(function* checks() {
+        // Instants no other suite uses, so only these posts are due.
+        const posts = yield* Effect.forEach(
+          [
+            [busy, "1990-01-01T10:00:00.000Z"],
+            [busy, "1990-01-01T10:01:00.000Z"],
+            [busy, "1990-01-01T10:02:00.000Z"],
+            [quiet, "1990-01-01T10:03:00.000Z"],
+          ] as const,
+          ([channelId, publishedAt]) =>
+            publicationOf(workspaceId, channelId, publishedAt).pipe(
+              Effect.map(trackPublication)
+            ),
+          { concurrency: 1 }
+        );
+
+        yield* tracked.track(posts);
+
+        const due = yield* tracked.due(utc("1990-01-01T11:07:00.000Z"), 3);
+
+        assert.deepStrictEqual(
+          due.map(({ targetId }) => targetId),
+          [posts[0], posts[3], posts[1]].map((post) => post?.targetId)
+        );
       }).pipe(Effect.ensuring(forgetWorkspace(workspaceId)));
     })
   );
@@ -364,5 +400,102 @@ layer(StoreTest)("the analytics store", (it) => {
           );
         }).pipe(Effect.ensuring(forgetWorkspace(workspaceId)));
       })
+  );
+
+  it.effect("ranks posts whose counts add up past what an integer holds", () =>
+    Effect.gen(function* large() {
+      const workspaceId = yield* freshWorkspace;
+
+      yield* Effect.gen(function* checks() {
+        const busy = yield* seedPost(
+          yield* publicationOf(
+            workspaceId,
+            yield* newChannelId,
+            "2043-03-10T09:00:00Z"
+          ),
+          [
+            {
+              at: "2043-03-10T10:07:00Z",
+              metrics: countsOf(2_000_000_000, 2_000_000_000, 1),
+            },
+          ]
+        );
+
+        const range = yield* Effect.fromResult(
+          reportRange({
+            from: { day: 10, month: 3, year: 2043 },
+            timeZone: paris,
+            to: { day: 10, month: 3, year: 2043 },
+          })
+        );
+
+        const rows = yield* AnalyticsReports.use((reports) =>
+          reports.report(workspaceId, dayStarts(range), 5)
+        );
+
+        assert.deepStrictEqual(
+          rows.top.map(({ targetId }) => targetId),
+          [busy.targetId]
+        );
+        assert.deepStrictEqual(
+          rows.channels.map(({ likes, reposts }) => likes + reposts),
+          [4_000_000_000]
+        );
+      }).pipe(Effect.ensuring(forgetWorkspace(workspaceId)));
+    })
+  );
+
+  it.effect("exports a workspace past the parameters one query takes", () =>
+    Effect.gen(function* many() {
+      const workspaceId = yield* freshWorkspace;
+      const sql = yield* SqlClient.SqlClient;
+
+      yield* Effect.gen(function* checks() {
+        // More posts than Postgres takes parameters in one query, no longer
+        // read, so no collection picks them up.
+        yield* sql`
+          INSERT INTO analytics.tracked_posts (
+            target_id, channel_id, post_id, workspace_id, platform_post_id,
+            published_at, ended_at, end_reason
+          )
+          SELECT
+            gen_random_uuid(), gen_random_uuid(), gen_random_uuid(),
+            ${workspaceId}, i::text,
+            '2045-01-01T00:00:00Z'::timestamptz + i * interval '1 second',
+            '2045-03-01T00:00:00Z', 'window'
+          FROM generate_series(1, 70000) AS i
+        `;
+
+        const read = yield* seedPost(
+          yield* publicationOf(
+            workspaceId,
+            yield* newChannelId,
+            "2045-02-01T00:00:00Z"
+          ),
+          [
+            { at: "2045-02-01T01:07:00Z", metrics: countsOf(1, 0, 0) },
+            { at: "2045-02-01T02:07:00Z", metrics: countsOf(3, 1, 0) },
+          ]
+        );
+
+        const exported = yield* AnalyticsRecords.use((records) =>
+          records.exportWorkspace(workspaceId)
+        );
+
+        assert.lengthOf(exported, 70_001);
+        assert.deepStrictEqual(
+          exported
+            .find(({ targetId }) => targetId === read.targetId)
+            ?.snapshots.map(({ likes }) => likes),
+          [1, 3]
+        );
+        assert.isTrue(
+          exported.every(
+            ({ snapshots, targetId }) =>
+              targetId === read.targetId || snapshots.length === 0
+          )
+        );
+      }).pipe(Effect.ensuring(forgetWorkspace(workspaceId)));
+    })
   );
 });

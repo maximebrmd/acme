@@ -20,6 +20,7 @@ import {
 } from "#analytics/domain/tracked-post.ts";
 import type {
   CollectionEnd,
+  Publication,
   TrackedPost,
 } from "#analytics/domain/tracked-post.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
@@ -29,6 +30,7 @@ import type { MetricsBatch } from "./metrics-reader.ts";
 import { PublishedPosts } from "./published-posts.ts";
 import type { PublicationCursor } from "./published-posts.ts";
 import { TrackedPosts } from "./tracked-posts.ts";
+import type { LatestPublication } from "./tracked-posts.ts";
 
 /** What a run of the collection did. */
 export interface CollectionReport {
@@ -36,7 +38,7 @@ export interface CollectionReport {
   readonly discovered: number;
   /** Posts whose counts were read. */
   readonly read: number;
-  /** Posts passed over until their next turn: gone from the platform, or on a channel that is off. */
+  /** Posts passed over until their next turn: gone from the platform, unreadable there, or on a channel that is off. */
   readonly skipped: number;
   /** Posts no longer read, their channel gone or their platform unread. */
   readonly ended: number;
@@ -46,13 +48,16 @@ export interface CollectionReport {
 
 // A post publishing settles in a transaction that may commit a little
 // after the instant it records: each run looks again this far back, and
-// posts already followed stay as they are.
+// posts already followed stay as they are. It does so after following
+// those that went live since the latest one, so however many went live
+// within this time, every run moves on.
 const discoveryOverlap = Duration.minutes(15);
 
 const discoveryPage = 500;
 
-// A run imports at most this many pages, and reads at most this many
-// posts; whatever is left waits for the next run.
+// A run imports at most this many pages forward, and as many looking
+// back, and reads at most this many posts; whatever is left waits for the
+// next run.
 const discoveryPages = 20;
 
 const maxDuePerRun = 5000;
@@ -70,6 +75,16 @@ const channelConcurrency = 4;
 type Tally = Omit<CollectionReport, "discovered">;
 
 const emptyTally: Tally = { deferred: 0, ended: 0, read: 0, skipped: 0 };
+
+// Whether a publication comes before another in publishing's order: when
+// it went live, then its target's id.
+const isBefore = (
+  publication: Pick<Publication, "publishedAt" | "targetId">,
+  other: LatestPublication
+): boolean =>
+  DateTime.isLessThan(publication.publishedAt, other.publishedAt) ||
+  (DateTime.Equivalence(publication.publishedAt, other.publishedAt) &&
+    publication.targetId < other.targetId);
 
 const addTallies = (left: Tally, right: Tally): Tally => ({
   deferred: left.deferred + right.deferred,
@@ -100,23 +115,13 @@ export class CollectMetrics extends Context.Service<
       const tracked = yield* TrackedPosts;
       const reader = yield* MetricsReader;
 
-      // Follows the posts published since the latest one followed, or for
-      // a first run, those young enough to be read.
-      const discover = Effect.fn("CollectMetrics.discover")(function* discover(
-        at: DateTime.Utc
+      // Follows the posts published from `from` on, a page at a time, until
+      // there are no more, the pages run out, or a page reaches `until`.
+      const follow = Effect.fn("CollectMetrics.follow")(function* follow(
+        from: PublicationCursor,
+        until: Option.Option<LatestPublication>
       ) {
-        const latest = yield* tracked.latestPublication(at);
-
-        const start: PublicationCursor = {
-          publishedAt: Option.match(latest, {
-            onNone: () => DateTime.subtractDuration(at, collectedFor),
-            onSome: ({ publishedAt }) =>
-              DateTime.subtractDuration(publishedAt, discoveryOverlap),
-          }),
-          targetId: Option.none(),
-        };
-
-        let cursor = start;
+        let cursor = from;
         let discovered = 0;
 
         for (let page = 0; page < discoveryPages; page += 1) {
@@ -128,7 +133,11 @@ export class CollectMetrics extends Context.Service<
 
           const last = publications.at(-1);
 
-          if (last === undefined || publications.length < discoveryPage) {
+          if (
+            last === undefined ||
+            publications.length < discoveryPage ||
+            Option.exists(until, (end) => !isBefore(last, end))
+          ) {
             break;
           }
 
@@ -139,6 +148,48 @@ export class CollectMetrics extends Context.Service<
         }
 
         return discovered;
+      });
+
+      // Follows the posts published since the latest one followed, then
+      // those that settled late before it; for a first run, those young
+      // enough to be read.
+      const discover = Effect.fn("CollectMetrics.discover")(function* discover(
+        at: DateTime.Utc
+      ) {
+        const found = yield* tracked.latestPublication(at);
+
+        if (Option.isNone(found)) {
+          return yield* follow(
+            {
+              publishedAt: DateTime.subtractDuration(at, collectedFor),
+              targetId: Option.none(),
+            },
+            Option.none()
+          );
+        }
+
+        const latest = found.value;
+
+        const since = yield* follow(
+          {
+            publishedAt: latest.publishedAt,
+            targetId: Option.some(latest.targetId),
+          },
+          Option.none()
+        );
+
+        const late = yield* follow(
+          {
+            publishedAt: DateTime.subtractDuration(
+              latest.publishedAt,
+              discoveryOverlap
+            ),
+            targetId: Option.none(),
+          },
+          found
+        );
+
+        return since + late;
       });
 
       const ending = (
@@ -159,7 +210,8 @@ export class CollectMetrics extends Context.Service<
           { discard: true }
         ).pipe(Effect.as<Tally>({ ...emptyTally, skipped: posts.length }));
 
-      // Saves what a read found; the posts it says nothing of stay due.
+      // Saves what a read found: a post missing, or whose read failed,
+      // waits for its next turn; the posts it says nothing of stay due.
       const recordBatch = Effect.fn("CollectMetrics.recordBatch")(
         function* recordBatch(
           posts: readonly TrackedPost[],

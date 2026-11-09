@@ -53,10 +53,18 @@ const nextAtOf = (post: TrackedPost) =>
     ? Option.some(post.collection.nextAt)
     : Option.none();
 
+// The order a channel's posts come due in: when, then target id.
+const byDue = (left: TrackedPost, right: TrackedPost) =>
+  Option.match(Option.all([nextAtOf(left), nextAtOf(right)]), {
+    onNone: () => 0,
+    onSome: ([leftAt, rightAt]) => DateTime.Order(leftAt, rightAt),
+  }) || left.targetId.localeCompare(right.targetId);
+
 /**
  * TrackedPosts in memory, as the Drizzle store behaves: posts by target,
- * the due ones by when they are due then target id, a reading saved with
- * its snapshot, a schedule saved on its own.
+ * the due ones taking turns between channels, each channel's by when they
+ * are due then target id, a reading saved with its snapshot, a schedule
+ * saved on its own.
  */
 export const MemoryTrackedPosts = Layer.effectContext(
   Effect.gen(function* MemoryTrackedPosts() {
@@ -74,8 +82,8 @@ export const MemoryTrackedPosts = Layer.effectContext(
     const store = TrackedPosts.of({
       due: (at, limit) =>
         Ref.get(entries).pipe(
-          Effect.map((all) =>
-            [...all.values()]
+          Effect.map((all) => {
+            const due = [...all.values()]
               .flatMap(({ post }) =>
                 Option.exists(nextAtOf(post), (nextAt) =>
                   DateTime.isLessThanOrEqualTo(nextAt, at)
@@ -83,15 +91,27 @@ export const MemoryTrackedPosts = Layer.effectContext(
                   ? [post]
                   : []
               )
+              .toSorted(byDue);
+
+            // Each post's turn on its channel, as row_number() numbers it.
+            const seen = new Map<string, number>();
+            const turns = new Map<PostTargetId, number>();
+
+            for (const post of due) {
+              const turn = (seen.get(post.channelId) ?? 0) + 1;
+
+              seen.set(post.channelId, turn);
+              turns.set(post.targetId, turn);
+            }
+
+            return due
               .toSorted(
                 (left, right) =>
-                  DateTime.Order(
-                    Option.getOrElse(nextAtOf(left), () => at),
-                    Option.getOrElse(nextAtOf(right), () => at)
-                  ) || left.targetId.localeCompare(right.targetId)
+                  (turns.get(left.targetId) ?? 0) -
+                    (turns.get(right.targetId) ?? 0) || byDue(left, right)
               )
-              .slice(0, limit)
-          )
+              .slice(0, limit);
+          })
         ),
       latestPublication: (before) =>
         Ref.get(entries).pipe(

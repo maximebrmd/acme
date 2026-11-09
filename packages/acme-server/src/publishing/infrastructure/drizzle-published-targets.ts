@@ -1,4 +1,4 @@
-import { and, asc, eq, gt, gte, isNotNull, or } from "drizzle-orm";
+import { and, asc, eq, gte, isNotNull, sql } from "drizzle-orm";
 import { DateTime, Effect, Layer, Option, Schema } from "effect";
 
 import { PublishedTargets } from "#publishing/application/published-targets.ts";
@@ -61,16 +61,12 @@ export const DrizzlePublishedTargets = Layer.effect(
           and(
             eq(postTargets.status, "published"),
             isNotNull(postTargets.platformPostId),
+            // After a target: compared as a row, which the index's order
+            // starts from, where an OR of the two columns scans it all.
             Option.match(cursor.targetId, {
               onNone: () => gte(postTargets.finishedAt, since),
               onSome: (targetId) =>
-                or(
-                  gt(postTargets.finishedAt, since),
-                  and(
-                    eq(postTargets.finishedAt, since),
-                    gt(postTargets.id, targetId)
-                  )
-                ),
+                sql`(${postTargets.finishedAt}, ${postTargets.id}) > (${since.toISOString()}::timestamptz, ${targetId}::uuid)`,
             })
           )
         )

@@ -9,6 +9,7 @@ import {
   rangeEnding,
   readingRows,
   shownKeys,
+  summaryTimeZone,
 } from "#analytics/report.ts";
 
 const summaryWith = (quotes: number | null, posts = 1): AnalyticsSummary => ({
@@ -46,6 +47,18 @@ describe(rangeEnding, () => {
       timeZone: "America/New_York",
       to: "2028-03-01",
     });
+  });
+});
+
+describe(summaryTimeZone, () => {
+  it("takes the reader's zone, or UTC when the browser cannot tell it", () => {
+    expect(summaryTimeZone("Europe/Paris")).toBe("Europe/Paris");
+    expect(summaryTimeZone("America/Argentina/Buenos_Aires")).toBe(
+      "America/Argentina/Buenos_Aires"
+    );
+    // What engines answer when the system's zone is not one they know.
+    expect(summaryTimeZone("Etc/Unknown")).toBe("UTC");
+    expect(summaryTimeZone("")).toBe("UTC");
   });
 });
 

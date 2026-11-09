@@ -254,4 +254,50 @@ layer(ApiTest)("the analytics endpoints", (it) => {
       assert.instanceOf(offset, InvalidTimeZone);
     })
   );
+
+  // Days the contract takes, as they are on the calendar, but past the
+  // ends of the one Acme keeps: before 1970, and the last day of 9999,
+  // whose end is in year 10000.
+  it.effect("refuse a range off the calendar Acme keeps", () =>
+    Effect.gen(function* edges() {
+      const workspaceId = yield* freshWorkspace;
+      const client = yield* as(workspaceId);
+      const params = { workspaceId };
+
+      const refused = yield* Effect.forEach(
+        [
+          { from: "1969-12-01", timeZone: "UTC", to: "1969-12-31" },
+          { from: "1969-12-31", timeZone: "UTC", to: "1970-01-01" },
+          { from: "9999-12-01", timeZone: "UTC", to: "9999-12-31" },
+        ],
+        (query) =>
+          client.analytics.summary({ params, query }).pipe(Effect.flip),
+        { concurrency: 1 }
+      );
+
+      for (const failure of refused) {
+        assert.instanceOf(failure, InvalidDateRange);
+      }
+
+      // Its first and last days, otherwise, are days like any other.
+      const first = yield* client.analytics.summary({
+        params,
+        query: { from: "1970-01-01", timeZone: "Asia/Tokyo", to: "1970-01-02" },
+      });
+
+      const last = yield* client.analytics.summary({
+        params,
+        query: {
+          from: "9999-12-30",
+          timeZone: "America/New_York",
+          to: "9999-12-30",
+        },
+      });
+
+      assert.deepStrictEqual(
+        [first.days.length, last.days.length, last.totals.posts],
+        [2, 1, 0]
+      );
+    })
+  );
 });

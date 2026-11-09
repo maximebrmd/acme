@@ -707,8 +707,8 @@ and no socket, for tests.
 ### Analytics
 
 - Analytics follows the targets that publishing's `PublishedTargets`
-  (`publishing/application`) lists, from the latest one it follows less 15
-  minutes, in `analytics.tracked_posts`, and keeps each reading in
+  (`publishing/application`) lists, from the latest one it follows (see
+  below), in `analytics.tracked_posts`, and keeps each reading in
   `analytics.metric_snapshots`: ids and counts, never content. A workspace's
   go with it (`AnalyticsRecords`), and a reading saved after its post was
   erased keeps nothing (`saveReading` updates the post first).
@@ -720,7 +720,9 @@ and no socket, for tests.
   is 30 days old (`analytics/domain/collection-schedule.ts`), each next read
   counted from the run's scheduled time (`ClusterCron.CurrentScheduledTime`).
 - Counts are likes, reposts, replies, and quotes and impressions as Options:
-  none, where a platform does not give one, is not zero.
+  none, where a platform does not give one, is not zero. A count is at most
+  2^31 − 1 (`maxCount`), what its column holds: a server saying more fails
+  to decode, rather than fail the run's insert.
 - Reads go through the `MetricsReader` port. `GatedMetricsReader` sends each
   one, 25 posts at most, through the channel's `ChannelGate` (`ReadMetrics`),
   whose handler runs the readers in `analytics/infrastructure/platforms/`:
@@ -729,12 +731,22 @@ and no socket, for tests.
 - Mastodon reads one status at a time, with the channel's token from
   `ChannelAccess` when its scopes include `read:statuses` (asked since
   analytics; an app registered without it is registered again), without one
-  otherwise. A read stops at 429, a failure, 60 requests left or 30 seconds.
+  otherwise. A read stops at 429, 60 requests left or 30 seconds, or at a
+  post it failed on (an error, no answer, or one that does not decode). Only
+  a 401 or 403 with Mastodon's JSON error refuses the token: a proxy's page
+  must not mark the channel to reconnect, which stops its publishing.
   Bluesky reads the public AppView's `getPosts` without the session, whose
   scope stays what posting needs.
-- A halted read leaves the rest due for the next run; a missing post, or a
-  channel off or to reconnect, waits for its next turn; a disconnected
+- A halted read leaves the rest due for the next run; a missing post, one a
+  read `failed` on (so one the server cannot show never stays first due),
+  or a channel off or to reconnect, waits for its next turn; a disconnected
   channel's posts, and a post still unread a day past its window, end.
+- Each run follows the publications after the latest one it follows, then
+  looks back 15 minutes for those that settled late, 20 pages of 500 each
+  at most, so it moves on however many went live together. It reads 5000
+  due posts at most, taking turns between channels (`TrackedPosts.due`
+  numbers each channel's with `row_number()`), so posts put off on a
+  platform that is down never crowd the other channels out.
 - Summaries take the posts published over a range of days in an IANA zone:
   the domain computes each day's start with `fromWallClock`, and Postgres
   buckets snapshots with those instants (`width_bucket`), never its zones.

@@ -35,16 +35,19 @@ const daysBetween = (from: LocalDate, to: LocalDate): number =>
       Duration.toMillis(Duration.days(1))
   );
 
+const isLocalDate = Schema.is(LocalDateSchema);
+
 /**
  * The range, if it is one a report covers: it ends on or after the day it
- * starts, and spans `maxReportDays` at most.
+ * starts, spans `maxReportDays` at most, and ends on a day followed by
+ * another on the calendar Acme keeps, as its end is when that one starts.
  */
 export const reportRange = (
   range: Pick<ReportRange, "from" | "timeZone" | "to">
 ): Result.Result<ReportRange, InvalidReportRange> => {
   const days = daysBetween(range.from, range.to) + 1;
 
-  return days < 1 || days > maxReportDays
+  return days < 1 || days > maxReportDays || !isLocalDate(addDays(range.to, 1))
     ? Result.fail(new InvalidReportRange({ days }))
     : Result.succeed(new ReportRange(range));
 };

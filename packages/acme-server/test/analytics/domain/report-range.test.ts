@@ -1,7 +1,11 @@
 import { describe, expect, it } from "@effect/vitest";
-import { DateTime, Option, Result } from "effect";
+import { DateTime, Option, Result, Schema } from "effect";
 
-import { engagementOf, PostMetrics } from "#analytics/domain/post-metrics.ts";
+import {
+  engagementOf,
+  maxCount,
+  PostMetrics,
+} from "#analytics/domain/post-metrics.ts";
 import {
   dayStarts,
   reportDays,
@@ -57,6 +61,42 @@ describe(reportRange, () => {
         onSuccess: () => 0,
       })
     ).toBe(367);
+  });
+
+  it("refuses a range ending on the calendar's last day, whose end it has not", () => {
+    expect(
+      Result.isFailure(
+        rangeOf(
+          { day: 1, month: 12, year: 9999 },
+          { day: 31, month: 12, year: 9999 }
+        )
+      )
+    ).toBeTruthy();
+
+    expect(
+      Result.isSuccess(
+        rangeOf(
+          { day: 1, month: 12, year: 9999 },
+          { day: 30, month: 12, year: 9999 }
+        )
+      )
+    ).toBeTruthy();
+  });
+});
+
+const counts = (likes: number) =>
+  Schema.decodeUnknownOption(PostMetrics)({
+    impressions: null,
+    likes,
+    quotes: null,
+    replies: 0,
+    reposts: 0,
+  });
+
+describe(PostMetrics, () => {
+  it("refuses a count past what Acme keeps", () => {
+    expect(Option.isSome(counts(maxCount))).toBeTruthy();
+    expect(Option.isNone(counts(maxCount + 1))).toBeTruthy();
   });
 });
 
