@@ -444,6 +444,7 @@ export const Composer = ({
               canBrowse={permissions.includes("media:read")}
               canUpload={permissions.includes("media:upload")}
               disabled={locked}
+              editable={canWrite}
               platforms={selected.map(({ platform }) => platform)}
               workspaceId={workspaceId}
               onChange={setMedia}

@@ -205,7 +205,14 @@ interface MediaAttachmentsProps {
   readonly canBrowse: boolean;
   /** The member may upload (media:upload). */
   readonly canUpload: boolean;
+  /** Nothing changes for now, as while the post is being saved. */
   readonly disabled: boolean;
+  /**
+   * The post can still take media: a draft the member may write, possibly
+   * disabled for a moment. Without it, the section only shows the post's
+   * media. Defaults to `!disabled`.
+   */
+  readonly editable?: boolean;
   readonly onChange: Dispatch<SetStateAction<readonly MediaAttachment[]>>;
   /** The platforms of the channels the post goes to. */
   readonly platforms: readonly Platform[];
@@ -218,12 +225,17 @@ interface MediaAttachmentsProps {
  * it, warns about while it is missing. Media comes from the library or
  * from files uploaded here, which join the post once ready. Every action
  * is a button, and what moving or removing did is announced.
+ *
+ * The uploader stays on the page while the post is editable, disabled when
+ * the section is or the post is full: taking it off would cancel the files
+ * it is still sending.
  */
 export const MediaAttachments = ({
   attached,
   canBrowse,
   canUpload,
   disabled,
+  editable = !disabled,
   onChange,
   platforms,
   workspaceId,
@@ -342,7 +354,7 @@ export const MediaAttachments = ({
         </ol>
       )}
       <output className="sr-only">{announcement}</output>
-      {disabled || room === 0 ? null : (
+      {editable ? (
         <div className="flex flex-col gap-3">
           {canBrowse ? (
             <div>
@@ -357,12 +369,13 @@ export const MediaAttachments = ({
           ) : null}
           {canUpload ? (
             <MediaUploader
+              disabled={disabled || room === 0}
               workspaceId={workspaceId}
               onUploaded={handleUploaded}
             />
           ) : null}
         </div>
-      )}
+      ) : null}
     </div>
   );
 };

@@ -2,6 +2,7 @@ import { RegistryProvider } from "@effect/atom-react";
 import { describe, expect, it } from "@effect/vitest";
 import { PostContentInvalid } from "acme-contract";
 import type { Channel, Media, Platform } from "acme-contract";
+import { maxMediaPerPost } from "acme-contract/post-text";
 import { DateTime, Option } from "effect";
 import { AsyncResult } from "effect/reactivity";
 import { NextIntlClientProvider } from "next-intl";
@@ -66,13 +67,22 @@ const channel = (platform: Platform): Channel => ({
   tokenExpiresAt: null,
 });
 
+// As many photos as a post holds.
+const album: readonly Media[] = Array.from(
+  { length: maxMediaPerPost },
+  (_, index) => ({
+    ...photo,
+    id: `00000000-0000-7000-8000-00000000b${String(index).padStart(3, "0")}`,
+  })
+);
+
 // Renders with the media already loaded, so nothing is fetched.
 const render = async (locale: Locale, children: ReactNode) => {
   const messages = await loadMessages(locale);
 
   return renderToStaticMarkup(
     <RegistryProvider
-      initialValues={[photo, clip].map((media) => [
+      initialValues={[photo, clip, ...album].map((media) => [
         mediaItem(workspaceId, media.id),
         AsyncResult.success(media),
       ])}
@@ -91,6 +101,33 @@ const list = (platforms: readonly Platform[], disabled = false) => (
     canUpload={false}
     disabled={disabled}
     platforms={platforms}
+    workspaceId={workspaceId}
+    onChange={() => {
+      // Rendered once: nothing changes.
+    }}
+  />
+);
+
+// The file input of the uploader, if the section shows one.
+const fileInput = (html: string) =>
+  /<input[^>]*type="file"[^>]*>/u.exec(html)?.at(0);
+
+const uploading = ({
+  disabled,
+  editable,
+  media = attached,
+}: {
+  readonly disabled: boolean;
+  readonly editable: boolean;
+  readonly media?: readonly AttachedMedia[];
+}) => (
+  <MediaAttachments
+    attached={media}
+    canBrowse
+    canUpload
+    disabled={disabled}
+    editable={editable}
+    platforms={["mastodon"]}
     workspaceId={workspaceId}
     onChange={() => {
       // Rendered once: nothing changes.
@@ -138,6 +175,50 @@ describe(MediaAttachments, () => {
     expect(html).not.toContain("Move image 1 earlier");
     expect(html).not.toContain("Choose from the library");
     expect(html).toMatch(/<textarea[^>]*disabled/u);
+  });
+
+  it("keeps the uploader while the draft is saved, so its files go on", async () => {
+    const open = await render(
+      "en",
+      uploading({ disabled: false, editable: true })
+    );
+
+    expect(fileInput(open)).toBeDefined();
+    expect(fileInput(open)).not.toContain('disabled=""');
+
+    // Saving disables the section for a moment: taking the uploader off
+    // the page would cancel the files it is still sending.
+    const saving = await render(
+      "en",
+      uploading({ disabled: true, editable: true })
+    );
+
+    expect(fileInput(saving)).toContain('disabled=""');
+
+    const scheduled = await render(
+      "en",
+      uploading({ disabled: true, editable: false })
+    );
+
+    expect(fileInput(scheduled)).toBeUndefined();
+  });
+
+  it("keeps the uploader once the post is full, taking no new file", async () => {
+    const full = await render(
+      "en",
+      uploading({
+        disabled: false,
+        editable: true,
+        media: album.map((media) => ({
+          altText: "A synthetic photo",
+          media: Option.some(media),
+          mediaId: media.id,
+        })),
+      })
+    );
+
+    expect(full).toContain("20 images or videos, at most 20.");
+    expect(fileInput(full)).toContain('disabled=""');
   });
 
   it("speaks the reader's language", async () => {

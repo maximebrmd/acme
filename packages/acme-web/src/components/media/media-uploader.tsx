@@ -348,11 +348,16 @@ const UploadItem = ({
  * With `onUploaded`, each file is handed over once uploaded, ready or not:
  * it leaves the list, and is described where it goes, so the list shows
  * no description field.
+ *
+ * `disabled` takes no new file, and lets the files on the list finish:
+ * only leaving the page cancels them.
  */
 export const MediaUploader = ({
+  disabled = false,
   onUploaded,
   workspaceId,
 }: {
+  readonly disabled?: boolean;
   readonly onUploaded?: (media: Media) => void;
   readonly workspaceId: string;
 }) => {
@@ -450,7 +455,7 @@ export const MediaUploader = ({
         <div className="flex flex-col gap-4">
           <div
             data-dragging={dragging}
-            className="border-input has-focus-visible:border-ring has-focus-visible:ring-ring data-[dragging=true]:border-ring data-[dragging=true]:bg-muted relative flex flex-col items-center gap-2 rounded-lg border border-dashed p-6 text-center has-focus-visible:ring-3"
+            className="border-input has-focus-visible:border-ring has-focus-visible:ring-ring data-[dragging=true]:border-ring data-[dragging=true]:bg-muted relative flex flex-col items-center gap-2 rounded-lg border border-dashed p-6 text-center has-focus-visible:ring-3 has-disabled:opacity-60"
           >
             <UploadIcon aria-hidden className="text-muted-foreground size-6" />
             <p className="text-sm">
@@ -463,9 +468,10 @@ export const MediaUploader = ({
               type="file"
               accept={accept}
               multiple
+              disabled={disabled}
               aria-label={t("choose")}
               aria-describedby={acceptedId}
-              className="absolute inset-0 cursor-pointer opacity-0"
+              className="absolute inset-0 cursor-pointer opacity-0 disabled:cursor-not-allowed"
               onChange={handlePick}
               onDragEnter={handleDragEnter}
               onDragLeave={handleDragEnd}
