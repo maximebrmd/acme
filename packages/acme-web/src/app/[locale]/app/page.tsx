@@ -38,6 +38,7 @@ const AppPage = async ({ params }: PageProps<"/[locale]/app">) => {
   const channels = await getTranslations("ChannelsPage");
   const tPosts = await getTranslations("Posts.nav");
   const media = await getTranslations("Media.page");
+  const analytics = await getTranslations("Analytics");
 
   return (
     <div className="flex flex-col gap-8">
@@ -70,7 +71,7 @@ const AppPage = async ({ params }: PageProps<"/[locale]/app">) => {
                     aria-label={tPosts("workspaceLinks", {
                       workspace: workspace.name,
                     })}
-                    className="flex gap-4 text-sm"
+                    className="flex flex-wrap gap-x-4 gap-y-1 text-sm"
                   >
                     <Link
                       href={`/app/${workspace.id}/calendar`}
@@ -101,6 +102,17 @@ const AppPage = async ({ params }: PageProps<"/[locale]/app">) => {
                         className="underline-offset-4 hover:underline"
                       >
                         {media("open")}
+                      </Link>
+                    ) : null}
+                    {workspace.permissions.includes("analytics:read") ? (
+                      <Link
+                        href={`/app/${workspace.id}/analytics`}
+                        aria-label={analytics("openLabel", {
+                          workspace: workspace.name,
+                        })}
+                        className="underline-offset-4 hover:underline"
+                      >
+                        {analytics("open")}
                       </Link>
                     ) : null}
                   </nav>

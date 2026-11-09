@@ -3,6 +3,60 @@
     "title": "Acme",
     "description": "Rédigez vos publications une fois, planifiez-les sur toutes les plateformes et suivez leurs résultats."
   },
+  "Analytics": {
+    "open": "Statistiques",
+    "openLabel": "Statistiques de {workspace}",
+    "metric": "{metric, select, posts {Publications} likes {J’aime} reposts {Partages} replies {Réponses} quotes {Citations} impressions {Impressions} other {{metric}}}",
+    "page": {
+      "title": "Statistiques",
+      "description": "Ce qu’ont donné, sur leurs plateformes, les publications parues sur une période. Les jours suivent votre fuseau horaire, {zone}.",
+      "rangeLabel": "Période",
+      "range": "{days, plural, one {Aujourd’hui} other {# derniers jours}}",
+      "loading": "Chargement des statistiques…",
+      "loadFailed": "Les statistiques n’ont pas pu être chargées.",
+      "retry": "Réessayer",
+      "empty": "Aucune publication n’est encore parue sur cette période. Les chiffres d’une publication arrivent dans l’heure qui suit sa parution.",
+      "collection": "Acme relève les chiffres de chaque publication toutes les heures pendant les 48 heures qui suivent sa parution, puis chaque jour jusqu’à ses 30 jours.",
+      "noImpressions": "Mastodon et Bluesky ne disent pas combien de personnes ont vu une publication : il n’y a donc pas d’impressions."
+    },
+    "totals": {
+      "title": "Totaux",
+      "caption": "Les derniers chiffres des publications de la période, par canal",
+      "channel": "Canal",
+      "all": "Tous les canaux",
+      "notGiven": "Non fourni par la plateforme"
+    },
+    "chart": {
+      "title": "Engagement au fil du temps",
+      "description": "Les j’aime, partages, réponses et citations gagnés chaque jour par les publications de la période.",
+      "views": "Afficher l’engagement en",
+      "chart": "Graphique",
+      "table": "Tableau",
+      "caption": "Engagement gagné chaque jour, du {from} au {to}. Le tableau donne les mêmes chiffres.",
+      "tableCaption": "Engagement gagné chaque jour",
+      "day": "Jour"
+    },
+    "top": {
+      "title": "Meilleures publications",
+      "description": "Les publications de la période qui ont le plus fait réagir.",
+      "empty": "Aucune publication de cette période n’a encore été relevée.",
+      "publishedAt": "Parue le {at}",
+      "engagement": "{count, plural, =0 {Aucune interaction pour l’instant} one {# interaction} other {# interactions}}",
+      "open": "Ouvrir la publication",
+      "view": "Voir sur {platform, select, x {X} linkedin {LinkedIn} bluesky {Bluesky} mastodon {Mastodon} threads {Threads} instagram {Instagram} facebook {Facebook} tiktok {TikTok} youtube {YouTube} pinterest {Pinterest} other {la plateforme}}"
+    },
+    "post": {
+      "title": "Ce qu’elle a donné",
+      "loading": "Chargement des chiffres de la publication…",
+      "loadFailed": "Les chiffres de la publication n’ont pas pu être chargés.",
+      "notYet": "Les chiffres sont relevés dans l’heure qui suit la parution.",
+      "notRead": "Pas encore relevée",
+      "readAt": "Relevée le {at}",
+      "stopped": "Plus relevée : les publications sont suivies pendant 30 jours.",
+      "tableCaption": "Chiffres de la publication sur {handle}, à chaque relevé",
+      "readAtColumn": "Relevé"
+    }
+  },
   "Assistant": {
     "trigger": "Assistant",
     "worksOn": "L’assistant de rédaction travaille sur le texte pour tous les canaux.",

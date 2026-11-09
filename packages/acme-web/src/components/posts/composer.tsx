@@ -25,6 +25,7 @@ import { useFormatter, useLocale, useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 
+import { PostMetrics } from "#components/analytics/post-metrics.tsx";
 import { AssistantMenu } from "#components/posts/assistant-menu.tsx";
 import { ChannelPicker } from "#components/posts/channel-picker.tsx";
 import { CharacterCounters } from "#components/posts/character-counters.tsx";
@@ -479,6 +480,15 @@ export const Composer = ({
           {post === undefined || status === "draft" ? null : (
             <TargetStatuses channels={channels} post={post} />
           )}
+          {post !== undefined &&
+          permissions.includes("analytics:read") &&
+          post.targets.some((target) => target.status === "published") ? (
+            <PostMetrics
+              channels={channels}
+              post={post}
+              workspaceId={workspaceId}
+            />
+          ) : null}
           <ComposerErrors
             channels={channels}
             failure={requests.failure}

@@ -3,6 +3,60 @@
     "title": "Acme",
     "description": "Write posts once, schedule them across platforms and see how they perform."
   },
+  "Analytics": {
+    "open": "Analytics",
+    "openLabel": "Analytics of {workspace}",
+    "metric": "{metric, select, posts {Posts} likes {Likes} reposts {Reposts} replies {Replies} quotes {Quotes} impressions {Impressions} other {{metric}}}",
+    "page": {
+      "title": "Analytics",
+      "description": "How the posts published over a range of days did on their platforms. Days run in your time zone, {zone}.",
+      "rangeLabel": "Range",
+      "range": "{days, plural, one {Today} other {Last # days}}",
+      "loading": "Loading the analytics…",
+      "loadFailed": "The analytics could not be loaded.",
+      "retry": "Try again",
+      "empty": "No post went out in this range yet. A post’s counts appear within the hour after it goes live.",
+      "collection": "Acme reads each post’s counts every hour for 48 hours after it goes live, then every day until it is 30 days old.",
+      "noImpressions": "Mastodon and Bluesky do not tell how many people saw a post, so there are no impressions."
+    },
+    "totals": {
+      "title": "Totals",
+      "caption": "The latest counts of the range’s posts, by channel",
+      "channel": "Channel",
+      "all": "All channels",
+      "notGiven": "Not given by the platform"
+    },
+    "chart": {
+      "title": "Engagement over time",
+      "description": "The likes, reposts, replies and quotes the range’s posts gained each day.",
+      "views": "Show the engagement as",
+      "chart": "Chart",
+      "table": "Table",
+      "caption": "Engagement gained each day, from {from} to {to}. The table gives the same figures.",
+      "tableCaption": "Engagement gained each day",
+      "day": "Day"
+    },
+    "top": {
+      "title": "Top posts",
+      "description": "The posts of the range people did the most with.",
+      "empty": "No post of this range has been read yet.",
+      "publishedAt": "Published {at}",
+      "engagement": "{count, plural, =0 {No interaction yet} one {# interaction} other {# interactions}}",
+      "open": "Open the post",
+      "view": "View on {platform, select, x {X} linkedin {LinkedIn} bluesky {Bluesky} mastodon {Mastodon} threads {Threads} instagram {Instagram} facebook {Facebook} tiktok {TikTok} youtube {YouTube} pinterest {Pinterest} other {the platform}}"
+    },
+    "post": {
+      "title": "How it did",
+      "loading": "Loading the post’s counts…",
+      "loadFailed": "The post’s counts could not be loaded.",
+      "notYet": "Counts are read within the hour after a post goes live.",
+      "notRead": "Not read yet",
+      "readAt": "Read {at}",
+      "stopped": "No longer read: posts are followed for 30 days.",
+      "tableCaption": "Counts of the post on {handle}, each time they were read",
+      "readAtColumn": "Read"
+    }
+  },
   "Assistant": {
     "trigger": "Assistant",
     "worksOn": "The writing assistant works on the text for all channels.",
