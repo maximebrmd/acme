@@ -155,6 +155,18 @@ export const countHashtags = (text: string): number =>
 export const countMentions = (text: string): number =>
   [...text.matchAll(mentions)].length;
 
+/**
+ * How many different links the text holds, each as X finds them: starting
+ * with a scheme or "www.", without the punctuation that ends a sentence.
+ * The same link twice counts once.
+ */
+export const countLinks = (text: string): number =>
+  new Set(
+    Array.from(text.matchAll(links), ([link]) =>
+      link.replace(trailingPunctuation, "")
+    )
+  ).size;
+
 /** At most `maximum` of `unit`. */
 export interface TextLimit {
   readonly maximum: number;
@@ -196,6 +208,8 @@ export interface MediaRules {
  */
 export interface PlatformRules {
   readonly maxHashtags?: number;
+  /** Different links, counted by `countLinks`. */
+  readonly maxLinks?: number;
   readonly maxMedia?: number;
   readonly maxMentions?: number;
   readonly media?: MediaRules;
@@ -351,6 +365,7 @@ export const platformRules: Readonly<Record<Platform, PlatformRules>> = {
   },
   pinterest: { mediaRequired: false, textLimits: [] },
   threads: {
+    maxLinks: 5,
     maxMedia: 20,
     media: {
       formats: {

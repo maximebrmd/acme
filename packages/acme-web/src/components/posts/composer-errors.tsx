@@ -84,6 +84,12 @@ export const ComposerErrors = ({
           count,
           maximum,
         }),
+      tooManyLinks: ({ channelId, count, maximum }) =>
+        t("violation.tooManyLinks", {
+          channel: channelName(channelId),
+          count,
+          maximum,
+        }),
       tooManyMedia: ({ channelId, count, maximum }) =>
         t("violation.tooManyMedia", {
           channel: channelName(channelId),

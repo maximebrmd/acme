@@ -14,6 +14,7 @@ import {
 import { maxPostTextLength } from "#publishing/domain/post-text.ts";
 import {
   countHashtags,
+  countLinks,
   countMentions,
   measureText,
   TextUnitSchema,
@@ -95,6 +96,13 @@ const violations: Record<ContractViolation["_tag"], ContentViolation> = {
     maximum: 30,
     platform: "instagram",
   },
+  tooManyLinks: {
+    _tag: "tooManyLinks",
+    channelId,
+    count: 6,
+    maximum: 5,
+    platform: "threads",
+  },
   tooManyMedia: {
     _tag: "tooManyMedia",
     channelId,
@@ -155,6 +163,7 @@ const contractTags: Record<ContentViolation["_tag"], true> = {
   overrideWithoutChannel: true,
   textTooLong: true,
   tooManyHashtags: true,
+  tooManyLinks: true,
   tooManyMedia: true,
   tooManyMentions: true,
   tooManyPixels: true,
@@ -183,6 +192,7 @@ describe("the contract's post text rules", () => {
 
     expect(ContractText.countHashtags(text)).toBe(countHashtags(text));
     expect(ContractText.countMentions(text)).toBe(countMentions(text));
+    expect(ContractText.countLinks(text)).toBe(countLinks(text));
   });
 
   it("describe every violation the server reports", () => {

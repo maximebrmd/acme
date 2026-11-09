@@ -33,6 +33,13 @@ const facebook = channel("5", "facebook");
 
 const threads = channel("6", "threads");
 
+// Different links, one per path.
+const links = (count: number) =>
+  Array.from(
+    { length: count },
+    (_, index) => `https://example.com/${index}`
+  ).join(" ");
+
 const media = (count: number) =>
   Array.from({ length: count }, (_, index) =>
     MediaAssetIdSchema.make(
@@ -114,6 +121,24 @@ describe(violationsOn, () => {
         unit: "emojiBytes",
       },
     ]);
+  });
+
+  // The same page: "Threads posts containing more than 5 links will fail to
+  // post", where "All unique URLs found in the text field are counted".
+  it("takes Threads posts with 5 different links at most", () => {
+    expect(
+      violationsOn(
+        contentOf(`${links(5)} and again https://example.com/0.`),
+        threads
+      )
+    ).toStrictEqual([]);
+
+    expect(violationsOn(contentOf(links(6)), threads)).toStrictEqual([
+      { _tag: "tooManyLinks", ...threads, count: 6, maximum: 5 },
+    ]);
+
+    // Other platforms set no such limit.
+    expect(violationsOn(contentOf(links(6)), mastodon)).toStrictEqual([]);
   });
 
   it("counts Mastodon characters as code points", () => {

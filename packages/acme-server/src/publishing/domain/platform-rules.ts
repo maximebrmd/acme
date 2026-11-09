@@ -46,6 +46,8 @@ export interface MediaRules {
  */
 export interface PlatformRules {
   readonly maxHashtags?: number;
+  /** Different links, counted by `countLinks`. */
+  readonly maxLinks?: number;
   readonly maxMedia?: number;
   readonly maxMentions?: number;
   readonly media?: MediaRules;
@@ -71,7 +73,8 @@ const minute = 60 * second;
 // - LinkedIn: 3,000 characters of commentary (not confirmed by LinkedIn's
 //   reference, which only names FIELD_LENGTH_TOO_LONG); 20 images.
 // - X: 280 by the weighted count; 4 images.
-// - Threads: 500 characters; carousels of up to 20 items.
+// - Threads: 500 characters, each emoji counting its UTF-8 bytes, and 5
+//   different links at most; carousels of up to 20 items.
 // - Instagram: captions of 2,200 characters, 30 hashtags and 20 mentions;
 //   no post without an image or a video; carousels of up to 20 items.
 // - Facebook Pages: 63,206 characters, the figure commonly reported (Meta's
@@ -249,6 +252,7 @@ export const platformRules: Readonly<Record<Platform, PlatformRules>> = {
   },
   pinterest: { mediaRequired: false, textLimits: [] },
   threads: {
+    maxLinks: 5,
     maxMedia: 20,
     media: {
       formats: {

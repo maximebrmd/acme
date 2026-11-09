@@ -51,6 +51,18 @@ describe(fitOn, () => {
     ).toBeFalsy();
   });
 
+  it("takes 5 different links on Threads", () => {
+    const links = Array.from(
+      { length: 6 },
+      (_, index) => `https://example.com/${index}`
+    );
+
+    expect(fits(fitOn("threads", links.slice(0, 5).join(" "), 0))).toBeTruthy();
+    expect(fitOn("threads", links.join(" "), 0).problems).toStrictEqual([
+      { _tag: "tooManyLinks", count: 6, maximum: 5 },
+    ]);
+  });
+
   it("asks Instagram for media, and counts its tags", () => {
     const tags = Array.from({ length: 31 }, (_, index) => `#tag${index}`);
 

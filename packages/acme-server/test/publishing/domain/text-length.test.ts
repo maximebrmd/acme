@@ -2,6 +2,7 @@ import { describe, expect, it } from "@effect/vitest";
 
 import {
   countHashtags,
+  countLinks,
   countMentions,
   measureText,
 } from "#publishing/domain/text-length.ts";
@@ -171,5 +172,16 @@ describe(countMentions, () => {
     { count: 0, text: "@ alone" },
   ])("finds $count in $text", ({ count, text }) => {
     expect(countMentions(text)).toBe(count);
+  });
+});
+
+describe(countLinks, () => {
+  it.each([
+    { count: 2, text: "Read https://example.com/one and www.example.org/two." },
+    // The same link twice is one, its sentence's full stop left out.
+    { count: 1, text: "https://example.com/a, then https://example.com/a." },
+    { count: 0, text: "No links, nor team@example.com" },
+  ])("finds $count different in $text", ({ count, text }) => {
+    expect(countLinks(text)).toBe(count);
   });
 });

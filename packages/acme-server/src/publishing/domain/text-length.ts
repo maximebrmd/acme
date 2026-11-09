@@ -152,3 +152,15 @@ export const countHashtags = (text: string): number =>
 /** How many accounts the text mentions, such as "@acme_example". */
 export const countMentions = (text: string): number =>
   [...text.matchAll(mentions)].length;
+
+/**
+ * How many different links the text holds, each as X finds them: starting
+ * with a scheme or "www.", without the punctuation that ends a sentence.
+ * The same link twice counts once.
+ */
+export const countLinks = (text: string): number =>
+  new Set(
+    Array.from(text.matchAll(links), ([link]) =>
+      link.replace(trailingPunctuation, "")
+    )
+  ).size;
