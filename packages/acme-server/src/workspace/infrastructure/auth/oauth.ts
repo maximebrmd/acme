@@ -1,11 +1,11 @@
 import { WorkspaceScopeSchema } from "#workspace/domain/oauth-grant.ts";
 
 /**
- * The command line's OAuth client. Every Acme server has it, under this id:
- * a public client (it keeps no secret) that signs in with the device
- * authorization grant and renews its tokens.
+ * The command line's OAuth client. Every Acme server has it, under the id
+ * the contract gives it: a public client (it keeps no secret) that signs in
+ * with the device authorization grant and renews its tokens.
  */
-export const cliClientId = "acme-cli";
+export { cliClientId } from "acme-contract";
 
 /** The access token claim naming the workspace a token is bound to. */
 export const workspaceClaim = "workspace_id";

@@ -47,7 +47,7 @@ export {
 
 export type { Member, OAuthGrant, Principal } from "./principal.ts";
 
-export { OAuthApi } from "./oauth.ts";
+export { cliClientId, OAuthApi } from "./oauth.ts";
 
 export {
   AuthorizationServerSchema,
