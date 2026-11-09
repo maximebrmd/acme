@@ -11,7 +11,8 @@ is gone from the repository and must not come back, in any case or form; the
 one `acme` left is Caddy's ACME certificate issuer, a protocol, in the uptime
 role's `Caddyfile.j2`.
 
-Nx projects live directly under `packages/`:
+Nx projects live directly under `packages/`, but for the SDKs, which have one
+per language under `packages/peal-sdk/`:
 
 - `peal-contract`: the HTTP API definition (`Api`: Effect `HttpApi` groups,
   Schemas and the `Authentication` and `WorkspaceAccess` middlewares),
@@ -43,6 +44,11 @@ Nx projects live directly under `packages/`:
   build itself (`scripts/serve.ts`).
 - `peal-infra`: Ansible for Peal's servers, production and the sandbox, and
   their releases. Python, managed with uv.
+- `peal-sdk`: the API's clients in eight languages (`node`, `python`, `go`,
+  `ruby`, `java`, `php`, `dotnet`, `rust`), generated from the contract by
+  openapi-generator and committed. Each language's folder is an Nx project
+  (`peal-sdk-<language>`, tagged `sdk`). Apache-2.0, unlike the rest of the
+  repository (see [SDKs](#sdks)).
 
 Work from the repository root unless a command names another directory.
 
@@ -87,7 +93,11 @@ Work from the repository root unless a command names another directory.
   Compile through a script that deletes it, like
   `packages/peal-cli/scripts/build.ts`.
 - Pin every dependency to the exact latest release, and commit `bun.lock` with
-  dependency changes, `packages/peal-infra/uv.lock` with Python ones.
+  dependency changes, `packages/peal-infra/uv.lock` with Python ones. The
+  SDKs' manifests are the exception (see [SDKs](#sdks)).
+- A change to the contract regenerates the SDKs in the same change:
+  `bun run sdk:generate` (Docker), then `bun run sdk:build`. CI's `sdks` job
+  fails while they are stale.
 - `bun run test` also runs ansible-lint (production profile),
   `ansible-playbook --syntax-check` and the pytest suite in `tests/` on
   `packages/peal-infra`, through uv (`nx run peal-infra:test`). Its release
@@ -1189,6 +1199,50 @@ self-hoster needs only Postgres and an S3-compatible store:
   running server. The workspace groups answer from the synthetic studio in
   `test/studio.ts`, which checks the member's permissions and records each
   change; `signedIn` (`test/signed-in.ts`) signs the command line in to it.
+
+## SDKs
+
+- Every SDK is generated from `packages/peal-sdk/openapi.json`, which
+  `peal-sdk:spec` (`scripts/spec.ts`) writes from the contract's: the
+  operations a bearer token can call (an API key or an OAuth access token),
+  and the health checks, with the schemas they use. It leaves out the groups
+  that answer only the person in their own session (`ownSession`: `account`,
+  `connectedApps`, `workspaces`); add a group like those to `ownSessionTags`.
+  It names Effect's encoding of non-finite numbers `NonFiniteNumber`, and
+  stops on any other enum inline in an `anyOf` or `oneOf`: give it a schema
+  of its own in the contract.
+- Never edit a generated file: change the contract, the scripts or the
+  generator's options, then `bun run sdk:generate`. Each language's
+  `sdk:generate` deletes what its previous run wrote (`.openapi-generator/FILES`)
+  before writing, so nothing stale stays. The files a folder's
+  `.openapi-generator-ignore` names are ours: `LICENSE`, `project.json`, and
+  Node's `package.json` and `tsconfig.json` (ES modules, compiled by the
+  workspace's TypeScript); the rest of that list keeps CI templates, Gradle
+  files, test stubs and copies of the document out.
+- `scripts/languages.ts` holds each language's generator options, version and
+  build, and pins openapi-generator and every toolchain image by digest, as
+  `compose.yaml` does. A release bumps that language's version there. Keep
+  generation deterministic (`hideGenerationTimestamp`, the fixed
+  `packageGuid` of .NET): `sdk:check` compares two runs' output through Git.
+- `scripts/finish.ts` fills what the templates leave as placeholders in each
+  manifest (PyPI's `peal-sdk` name, .NET's authors, Rust's links). Each
+  replacement fails when its text is missing, so a generator upgrade that
+  changes a template stops there: update the replacement.
+- The SDKs' manifests keep the generator's dependency ranges, and their lock
+  files (`Gemfile.lock`, `composer.lock`, `Cargo.lock`) stay out of Git: a
+  library leaves its dependencies' versions to the projects that install it.
+- `sdk:build` builds each SDK as its registry would get it, then loads it:
+  TypeScript and Python with the workspace's tools, the others in their image
+  (`scripts/container.ts`: as the calling user, with their downloads cached in
+  `.cache/sdk`). Ruby uses Faraday, which needs no libcurl; Rust uses rustls,
+  which needs no OpenSSL. Go's module is
+  `github.com/peal-social/peal/packages/peal-sdk/go`; as Go names each model's
+  constructor `New<Model>`, its SDK calls a schema `New<X>` next to `<X>`
+  `Create<X>Request`.
+- The SDKs are Apache-2.0 (`packages/peal-sdk/LICENSE`, copied into each
+  language's folder: Go would otherwise take the repository's FSL), and every
+  manifest says so. What they call is public API: renaming or removing an
+  operation, a field or a schema in the contract breaks their users.
 
 ## End-to-end tests
 
