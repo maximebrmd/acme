@@ -1,4 +1,4 @@
-import { DateTime, Effect, Match, Option, Result } from "effect";
+import { DateTime, Effect, Match, Option, Result, Schedule } from "effect";
 
 import type { PostOutcome } from "#publishing/domain/post-status.ts";
 import type { PostTargetId } from "#publishing/domain/post-target-id.ts";
@@ -241,6 +241,41 @@ export interface PublishAttempt {
   readonly targetId: PostTargetId;
 }
 
+// How the call ended lives only in memory until the journal has it: the step
+// run again would find the call begun and not ended, and mark it unconfirmed.
+// So that one write is retried on its own, backing off up to a minute, for as
+// long as the database refuses it.
+const outcomeWriteRetry = Schedule.min([
+  Schedule.exponential("200 millis", 2),
+  Schedule.spaced("1 minute"),
+]);
+
+const writeOutcome = (
+  attempt: PublishAttempt,
+  outcome: AttemptOutcome,
+  finishedAt: DateTime.Utc
+) =>
+  PublicationJournal.use((journal) =>
+    journal.finish(attempt.idempotencyKey, outcome, finishedAt)
+  ).pipe(
+    // The outcome holds the platform's ids and codes, never content: logged,
+    // a post that went live can still be found if the write never lands.
+    Effect.tapError((failure) =>
+      Effect.logWarning(
+        "Could not record how a publishing call ended; retrying",
+        failure
+      ).pipe(
+        Effect.annotateLogs({
+          attempt: attempt.attempt,
+          outcome,
+          round: attempt.round,
+          targetId: attempt.targetId,
+        })
+      )
+    ),
+    Effect.retry(outcomeWriteRetry)
+  );
+
 // The journal row is written, and committed, before the call: a run that
 // finds it begun and not ended does not call again. A row that ended returns
 // what it recorded, so a run after a crash decides as the first one did.
@@ -275,7 +310,7 @@ const callPlatform = Effect.fn("Publishing.callPlatform")(
 
     const finishedAt = yield* DateTime.now;
 
-    yield* journal.finish(attempt.idempotencyKey, outcome, finishedAt);
+    yield* writeOutcome(attempt, outcome, finishedAt);
 
     return { finishedAt, outcome };
   }
@@ -284,7 +319,8 @@ const callPlatform = Effect.fn("Publishing.callPlatform")(
 /**
  * Makes one attempt and decides what follows: retry after a delay, or
  * settle the target. It is not a transaction: the journal commits before the
- * platform is called.
+ * platform is called. Run again after a database failure, it finds the call
+ * in the journal and decides from what the journal holds.
  */
 export const publishAttemptRun = Effect.fn("Publishing.publishAttempt")(
   function* publishAttemptRun(attempt: PublishAttempt) {

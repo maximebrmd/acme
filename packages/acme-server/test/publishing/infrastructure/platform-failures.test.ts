@@ -1,8 +1,10 @@
 import { assert, describe, it } from "@effect/vitest";
-import { DateTime, Duration, Effect, Option } from "effect";
+import { DateTime, Duration, Effect, Option, Ref } from "effect";
 import { TestClock } from "effect/testing";
 
+import { PublicationJournal } from "#publishing/application/publication-journal.ts";
 import { FakePlatform } from "#publishing/infrastructure/fake-platform-publisher.ts";
+import { DatabaseError } from "#shared/application/database-error.ts";
 import { BadRequest } from "#shared/domain/bad-request.ts";
 import { MediaRejected } from "#shared/domain/media-rejected.ts";
 import { PlatformUnavailable } from "#shared/domain/platform-unavailable.ts";
@@ -17,9 +19,11 @@ import {
   isSuspended,
   isTargetWaiting,
   journalOf,
+  journalWith,
   newChannel,
   onServerAt,
   outcomeOf,
+  publishingTestWith,
   Reconnects,
   scheduleIn,
   schedulePost,
@@ -314,6 +318,56 @@ describe("PublishTargetV1 when the outcome is unknown", () => {
           assert(target.status._tag === "unconfirmed");
           assert.strictEqual(target.status.reason, "noResponse");
         })
+      ),
+    timeout
+  );
+});
+
+// A journal whose first write of how a call ended fails, as when the
+// connection drops just after the platform answered.
+const FinishFailingOnce = journalWith((journal) =>
+  Ref.make(1).pipe(
+    Effect.map((failures) =>
+      PublicationJournal.of({
+        ...journal,
+        finish: (...call) =>
+          Ref.getAndUpdate(failures, (left) => Math.max(0, left - 1)).pipe(
+            Effect.flatMap((left) =>
+              left > 0
+                ? Effect.fail(new DatabaseError({ cause: "connection lost" }))
+                : journal.finish(...call)
+            )
+          ),
+      })
+    )
+  )
+);
+
+describe("PublishTargetV1 when the database fails", () => {
+  it.effect(
+    "keeps a published answer when recording it fails once",
+    () =>
+      onServerAt(
+        "2026-06-15T07:00:00Z",
+        Effect.gen(function* keepsPublished() {
+          const { channel, post } = yield* scriptedPost([{ _tag: "succeed" }]);
+
+          yield* setTime(scheduledAt);
+          yield* eventually("the post finishes", isFinished(post.id));
+
+          assert.lengthOf(yield* callsOn(channel), 1);
+          assert.strictEqual(yield* outcomeOf(post.id), "published");
+
+          const target = yield* onlyTarget(post.id);
+
+          assert(target.status._tag === "published");
+          assert.isTrue(Option.isSome(target.status.platformPostId));
+          assert.deepStrictEqual(
+            (yield* attemptsOf(target.id)).map((attempt) => attempt.outcome),
+            ["published"]
+          );
+        }),
+        publishingTestWith(FinishFailingOnce)
       ),
     timeout
   );
