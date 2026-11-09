@@ -26,12 +26,14 @@ import { Ids } from "#shared/application/ids.ts";
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
 import {
+  damagedPng,
   DatabaseTest,
   fetchBytes,
   mebibytes,
   sendSigned,
   storageSettings,
   syntheticBytes,
+  syntheticSvg,
 } from "#test/media/support.ts";
 
 // The container's layer, plus the ports themselves so tests can look behind
@@ -511,7 +513,7 @@ layer(LibraryTest)("the media library", (it) => {
   it.effect("keeps an asset uploaded when its file cannot be probed", () =>
     Effect.gen(function* unreadable() {
       const workspaceId = yield* freshWorkspace;
-      const body = syntheticBytes(64);
+      const body = damagedPng(64);
       const prepared = yield* prepare(workspaceId, "image/png", body.length);
       const library = yield* MediaLibrary;
       const target = { assetId: prepared.asset.id, workspaceId };
@@ -519,14 +521,47 @@ layer(LibraryTest)("the media library", (it) => {
       yield* sendSigned(yield* singleRequest(prepared), body);
       yield* complete(prepared);
 
-      // Not a PNG: the probe fails and the asset stays uploaded.
+      // A damaged PNG: the probe fails and the asset stays uploaded.
       const failed = yield* Effect.flip(library.probeMedia(target));
 
-      assert.strictEqual(failed._tag, "MediaProbeFailed");
+      assert.include(failed, {
+        _tag: "MediaProbeFailed",
+        reason: "unreadable",
+      });
       assert.strictEqual(
         Option.getOrUndefined(yield* recorded(prepared))?.status._tag,
         "uploaded"
       );
+    })
+  );
+
+  it.effect("rejects an image that is not in the declared format", () =>
+    Effect.gen(function* notDeclared() {
+      const workspaceId = yield* freshWorkspace;
+      const body = syntheticSvg();
+      const prepared = yield* prepare(workspaceId, "image/png", body.length);
+      const library = yield* MediaLibrary;
+      const target = { assetId: prepared.asset.id, workspaceId };
+
+      yield* sendSigned(yield* singleRequest(prepared), body);
+      yield* complete(prepared);
+
+      // The store took it as a PNG of the declared size, but it is an SVG.
+      const rejected = yield* Effect.flip(library.probeMedia(target));
+
+      assert.include(rejected, {
+        _tag: "UploadRejected",
+        reason: "typeMismatch",
+      });
+      assert.deepStrictEqual(
+        Option.getOrUndefined(yield* recorded(prepared))?.status,
+        { _tag: "rejected", reason: "typeMismatch" }
+      );
+      assert.deepStrictEqual(yield* storedObject(prepared), Option.none());
+      assert.include(yield* Effect.flip(complete(prepared)), {
+        _tag: "UploadRejected",
+        reason: "typeMismatch",
+      });
     })
   );
 });

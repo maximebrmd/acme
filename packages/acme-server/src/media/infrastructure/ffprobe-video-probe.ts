@@ -1,8 +1,10 @@
 import { Duration, Effect, Option, Schema, Stream } from "effect";
 import type { PlatformError } from "effect";
+import { HttpClient } from "effect/http";
 import { ChildProcess, ChildProcessSpawner } from "effect/process";
 
 import { MediaProbeFailed } from "#media/application/media-probe-failed.ts";
+import { MediaStorageFailed } from "#media/application/media-storage-failed.ts";
 import type {
   MediaSource,
   ProbeOutcome,
@@ -104,11 +106,28 @@ const isMissingProgram = (failure: PlatformError.PlatformError): boolean =>
 /**
  * Reads a video's dimensions, duration and codec by running ffprobe on its
  * URL. When the program is not installed, probing is skipped rather than
- * failed, so a server without ffprobe still takes videos.
+ * failed, so a server without ffprobe still takes videos. When ffprobe
+ * fails, what it printed goes to the log, and a request for the file's
+ * first byte tells a store that cannot serve it from a damaged file.
  */
 export const makeFfprobeVideoProbe = Effect.fn("FfprobeVideoProbe.make")(
   function* makeFfprobeVideoProbe(program: string) {
     const spawner = yield* ChildProcessSpawner.ChildProcessSpawner;
+
+    // Scoped, so the request ends with the check whatever the store sends.
+    const client = HttpClient.withScope(
+      HttpClient.filterStatusOk(yield* HttpClient.HttpClient)
+    );
+
+    const servesFile = (url: string) =>
+      Effect.scoped(client.get(url, { headers: { range: "bytes=0-0" } })).pipe(
+        Effect.asVoid,
+        Effect.catchTag("HttpClientError", (cause) =>
+          Effect.fail(
+            new MediaStorageFailed({ cause, operation: "read a file to probe" })
+          )
+        )
+      );
 
     const run = (url: string) =>
       Effect.scoped(
@@ -138,10 +157,8 @@ export const makeFfprobeVideoProbe = Effect.fn("FfprobeVideoProbe.make")(
         Effect.mapError(
           (failure) =>
             new MediaProbeFailed({
-              detail:
-                failure._tag === "TimeoutError"
-                  ? "ffprobe did not finish in time"
-                  : "ffprobe could not be run",
+              reason:
+                failure._tag === "TimeoutError" ? "timedOut" : "toolFailed",
             })
         )
       );
@@ -158,19 +175,19 @@ export const makeFfprobeVideoProbe = Effect.fn("FfprobeVideoProbe.make")(
       const { exitCode, stderr, stdout } = ran.value;
 
       if (exitCode !== 0) {
-        // The URL is presigned: keep it out of errors and logs.
-        const detail = stderr.replaceAll(source.url, "<url>").trim();
-
-        return yield* new MediaProbeFailed({
-          detail:
-            detail.length > 0 ? detail : `ffprobe exited with ${exitCode}`,
+        // The URL is presigned: keep it out of the log.
+        yield* Effect.logWarning("ffprobe could not read a video", {
+          exitCode,
+          stderr: stderr.replaceAll(source.url, "<url>").trim(),
         });
+
+        yield* servesFile(source.url);
+
+        return yield* new MediaProbeFailed({ reason: "unreadable" });
       }
 
       const output = yield* decodeOutput(stdout).pipe(
-        Effect.mapError(
-          () => new MediaProbeFailed({ detail: "ffprobe printed no metadata" })
-        )
+        Effect.mapError(() => new MediaProbeFailed({ reason: "toolFailed" }))
       );
 
       const probed: ProbeOutcome = {

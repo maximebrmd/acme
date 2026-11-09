@@ -35,6 +35,21 @@ export const syntheticBytes = (size: number): Uint8Array<ArrayBuffer> =>
 
 export const mebibytes = (count: number): number => count * mebibyte;
 
+const pngSignature = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
+
+/** `size` bytes that start like a PNG and go on as nothing a PNG holds. */
+export const damagedPng = (size: number): Uint8Array<ArrayBuffer> =>
+  Uint8Array.from(
+    syntheticBytes(size),
+    (byte, index) => pngSignature[index] ?? byte
+  );
+
+/** An SVG of 4000×3000, which image decoders read but acme does not take. */
+export const syntheticSvg = (): Uint8Array<ArrayBuffer> =>
+  new TextEncoder().encode(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="4000" height="3000"/>'
+  );
+
 /** Sends a signed request with plain fetch, as a browser would. */
 export const sendSigned = (
   request: {

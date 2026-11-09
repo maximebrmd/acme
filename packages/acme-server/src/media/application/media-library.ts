@@ -64,6 +64,7 @@ export class MediaLibrary extends Context.Service<
       | MediaAssetNotFound
       | MediaProbeFailed
       | MediaStorageFailed
+      | UploadRejected
     >;
   }
 >()("acme-server/media/application/MediaLibrary") {

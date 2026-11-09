@@ -18,7 +18,12 @@ import { S3MediaStorageLive } from "#media/infrastructure/s3-media-storage.ts";
 import { Ids } from "#shared/application/ids.ts";
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import { IdsLive } from "#shared/infrastructure/secure-random-ids.ts";
-import { sendSigned, storageSettings } from "#test/media/support.ts";
+import {
+  damagedPng,
+  sendSigned,
+  storageSettings,
+  syntheticSvg,
+} from "#test/media/support.ts";
 
 const expiresIn = Duration.minutes(5);
 
@@ -67,6 +72,18 @@ const sidewaysJpeg = Effect.promise(
       })
         .jpeg()
         .withMetadata({ orientation: 6 })
+        .toBuffer()
+    )
+);
+
+// A 4×3 TIFF, a format sharp reads and acme does not take.
+const tiff = Effect.promise(
+  async () =>
+    new Uint8Array(
+      await sharp({
+        create: { background: "#336699", channels: 3, height: 3, width: 4 },
+      })
+        .tiff()
         .toBuffer()
     )
 );
@@ -129,13 +146,62 @@ layer(probeWith("ffprobe"))("the media probe", (it) => {
 
   it.effect("refuses an image it cannot read", () =>
     Effect.gen(function* unreadable() {
-      const source = yield* stored(new Uint8Array(64), "image/png");
+      const source = yield* stored(damagedPng(64), "image/png");
 
       const error = yield* Effect.flip(
         MediaProbe.use((probe) => probe.probe(source))
       );
 
-      assert.strictEqual(error._tag, "MediaProbeFailed");
+      assert.include(error, { _tag: "MediaProbeFailed", reason: "unreadable" });
+    })
+  );
+
+  it.effect.each([
+    { body: syntheticSvg, format: "an SVG" },
+    { body: () => new Uint8Array(64), format: "unknown bytes" },
+  ])("refuses $format declared as a PNG", ({ body }) =>
+    Effect.gen(function* notDeclared() {
+      const source = yield* stored(body(), "image/png");
+
+      const error = yield* Effect.flip(
+        MediaProbe.use((probe) => probe.probe(source))
+      );
+
+      assert.include(error, {
+        _tag: "MediaTypeMismatch",
+        declared: "image/png",
+      });
+    })
+  );
+
+  it.effect("refuses an image in another format sharp reads", () =>
+    Effect.gen(function* otherFormat() {
+      const source = yield* stored(yield* tiff, "image/jpeg");
+
+      const error = yield* Effect.flip(
+        MediaProbe.use((probe) => probe.probe(source))
+      );
+
+      assert.include(error, {
+        _tag: "MediaTypeMismatch",
+        declared: "image/jpeg",
+      });
+    })
+  );
+
+  it.effect("reports a store that cannot serve an image", () =>
+    Effect.gen(function* unreachableImage() {
+      // Nothing listens on port 1.
+      const error = yield* Effect.flip(
+        MediaProbe.use((probe) =>
+          probe.probe({
+            contentType: "image/png",
+            url: "http://127.0.0.1:1/unreachable.png",
+          })
+        )
+      );
+
+      assert.strictEqual(error._tag, "MediaStorageFailed");
     })
   );
 
@@ -173,8 +239,27 @@ layer(probeWith("ffprobe"))("the media probe", (it) => {
           MediaProbe.use((probe) => probe.probe(source))
         );
 
-        assert.strictEqual(error._tag, "MediaProbeFailed");
-        assert.notInclude(error.detail, "X-Amz-Signature");
+        assert.include(error, {
+          _tag: "MediaProbeFailed",
+          reason: "unreadable",
+        });
+      })
+  );
+
+  it.effect.skipIf(!hasFfmpeg)(
+    "reports a store that cannot serve a video",
+    () =>
+      Effect.gen(function* unreachableVideo() {
+        const error = yield* Effect.flip(
+          MediaProbe.use((probe) =>
+            probe.probe({
+              contentType: "video/mp4",
+              url: "http://127.0.0.1:1/unreachable.mp4",
+            })
+          )
+        );
+
+        assert.strictEqual(error._tag, "MediaStorageFailed");
       })
   );
 });
