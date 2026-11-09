@@ -103,7 +103,14 @@ def _spellings(path: str) -> list[str]:
     ]
 
 
-ADMIN_PATHS = ["/api/auth/admin/list-users", "/api/auth/admin", "/admin", "/fr/admin/x"]
+ADMIN_PATHS = [
+    "/api/auth/admin/list-users",
+    "/api/auth/admin",
+    "/api/admin/users",
+    "/api/admin",
+    "/admin",
+    "/fr/admin/x",
+]
 
 
 @pytest.mark.parametrize("path", [s for p in ADMIN_PATHS for s in _spellings(p)])

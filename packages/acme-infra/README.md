@@ -24,15 +24,15 @@ self-hosting page, and [`acme-docker`](../acme-docker)).
 
 The tunnel's routes, for production (`roles/cloudflared/templates/config.yml.j2`):
 
-| Host name             | Path                                       | Goes to                     | Access    |
-| --------------------- | ------------------------------------------ | --------------------------- | --------- |
-| `grafana.example.com` | any                                        | Grafana, 127.0.0.1:13000    | team only |
-| `ssh.example.com`     | any                                        | sshd, 127.0.0.1:22          | team only |
-| `app.example.com`     | `/api/auth/admin/*`, `/admin`, `/fr/admin` | the server or the web app   | team only |
-| `app.example.com`     | `/api/*`, `/.well-known/oauth-*`           | the server, 127.0.0.1:3000  | public    |
-| `app.example.com`     | anything else                              | the web app, 127.0.0.1:3001 | public    |
-| `example.com`         | any                                        | the site, 127.0.0.1:4321    | public    |
-| `docs.example.com`    | any                                        | the docs, 127.0.0.1:4322    | public    |
+| Host name             | Path                                                       | Goes to                     | Access    |
+| --------------------- | ---------------------------------------------------------- | --------------------------- | --------- |
+| `grafana.example.com` | any                                                        | Grafana, 127.0.0.1:13000    | team only |
+| `ssh.example.com`     | any                                                        | sshd, 127.0.0.1:22          | team only |
+| `app.example.com`     | `/api/auth/admin/*`, `/api/admin/*`, `/admin`, `/fr/admin` | the server or the web app   | team only |
+| `app.example.com`     | `/api/*`, `/.well-known/oauth-*`                           | the server, 127.0.0.1:3000  | public    |
+| `app.example.com`     | anything else                                              | the web app, 127.0.0.1:3001 | public    |
+| `example.com`         | any                                                        | the site, 127.0.0.1:4321    | public    |
+| `docs.example.com`    | any                                                        | the docs, 127.0.0.1:4322    | public    |
 
 The sandbox has the same routes on its own names (`sandbox.example.com`,
 `grafana-sandbox.example.com`…), all behind Access but for what outside
@@ -148,7 +148,8 @@ the owner's approval.
    application's audience tag (AUD) into `cloudflare_access_aud`.
    - Grafana: `grafana.example.com`.
    - SSH: `ssh.example.com`.
-   - Admin: `app.example.com/api/auth/admin`, `app.example.com/admin` and
+   - Admin: `app.example.com/api/auth/admin`, `app.example.com/api/admin`
+     (the staff console's API), `app.example.com/admin` and
      `app.example.com/fr/admin`.
    - Sandbox: its app, site and docs names; an application with a Bypass
      policy for everyone on each path outside services call,
