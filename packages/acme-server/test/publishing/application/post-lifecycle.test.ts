@@ -1,14 +1,17 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Duration, Effect, Option } from "effect";
+import { DateTime, Duration, Effect, Option, Result } from "effect";
 
 import { PostDrafts } from "#publishing/application/post-drafts.ts";
 import { PostFollowUp } from "#publishing/application/post-follow-up.ts";
 import { PostNotFound } from "#publishing/application/post-not-found.ts";
 import { PostQueries } from "#publishing/application/post-queries.ts";
+import { PostRepository } from "#publishing/application/post-repository.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
 import { InvalidPostTransition } from "#publishing/domain/invalid-post-transition.ts";
 import { InvalidTargetTransition } from "#publishing/domain/invalid-target-transition.ts";
 import { PostTargetIdSchema } from "#publishing/domain/post-target-id.ts";
+import { repostTarget } from "#publishing/domain/post-target.ts";
+import { reopenPost } from "#publishing/domain/post.ts";
 import { FakePlatform } from "#publishing/infrastructure/fake-platform-publisher.ts";
 import { newId } from "#shared/application/ids.ts";
 import { BadRequest } from "#shared/domain/bad-request.ts";
@@ -530,6 +533,70 @@ describe(PostFollowUp, () => {
               .pipe(Effect.flip),
             new PostNotFound({ postId })
           );
+        })
+      ),
+    timeout
+  );
+
+  it.effect(
+    "finishes a reopened post cancelled before its repost starts",
+    () =>
+      onPostsServerAt(
+        start,
+        Effect.gen(function* cancelsRepost() {
+          const posts = yield* PostRepository;
+          const workspaceId = yield* freshWorkspace;
+          const editor = actorAs(yield* freshUser, workspaceId);
+          const fine = yield* connect(workspaceId, "mastodon");
+          const refused = yield* connect(workspaceId, "bluesky");
+
+          yield* FakePlatform.use((platform) =>
+            platform.script(refused, [
+              {
+                _tag: "fail",
+                failure: new BadRequest({ code: "duplicate" }),
+              },
+            ])
+          );
+
+          const postId = yield* publishedAt8(workspaceId, [fine, refused]);
+          const failed = yield* targetOn(postId, refused);
+          const { post: finished } = yield* storedPost(postId);
+
+          // As a repost leaves them, before its job claims the target: the
+          // post publishing again, the target pending in its next round.
+          const pending = Result.getOrThrow(repostTarget(failed));
+
+          const reopened = Result.getOrThrow(
+            reopenPost(finished, DateTime.makeUnsafe("2026-06-15T09:00:00Z"))
+          );
+
+          assert(yield* posts.updateTarget(pending, failed));
+          assert(yield* posts.update(reopened, finished));
+
+          const cancelled = yield* PostScheduling.use((scheduling) =>
+            scheduling.cancel(editor, postId)
+          );
+
+          // No post job is left to finish it: cancelling does.
+          assert(cancelled.post.status._tag === "finished");
+          assert.strictEqual(
+            cancelled.post.status.outcome,
+            "partiallyPublished"
+          );
+          assert.strictEqual(
+            (yield* targetOn(postId, fine)).status._tag,
+            "published"
+          );
+          assert.strictEqual(
+            (yield* targetOn(postId, refused)).status._tag,
+            "cancelled"
+          );
+
+          const { post } = yield* storedPost(postId);
+
+          assert(post.status._tag === "finished");
+          assert.strictEqual(post.status.outcome, "partiallyPublished");
         })
       ),
     timeout

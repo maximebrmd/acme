@@ -4,12 +4,13 @@ import { checkPublishable } from "#publishing/domain/content-rules.ts";
 import { InvalidPostTransition } from "#publishing/domain/invalid-post-transition.ts";
 import type { PostContentRejected } from "#publishing/domain/post-content-rejected.ts";
 import type { PostContent } from "#publishing/domain/post-content.ts";
-import { cancelTarget } from "#publishing/domain/post-target.ts";
+import { cancelTarget, isSettled } from "#publishing/domain/post-target.ts";
 import type { PostTarget } from "#publishing/domain/post-target.ts";
 import {
   authorOf,
   cancelPost,
   createDraft,
+  finishPost,
   moveToDraft,
   schedulePost,
 } from "#publishing/domain/post.ts";
@@ -377,10 +378,23 @@ export class PostScheduling extends Context.Service<
             const now = yield* DateTime.now;
 
             // The job already woke: it finishes with the targets it sent.
+            // Once every target has settled, as when only a repost that had
+            // not started yet was left, no job remains to finish the post:
+            // it finishes here.
             if (current.post.status._tag === "publishing") {
               const targets = yield* cancelTargets(postId, now);
 
-              return { post: current.post, targets };
+              if (!targets.every(isSettled)) {
+                return { post: current.post, targets };
+              }
+
+              const finished = yield* Effect.fromResult(
+                finishPost(current.post, targets, now)
+              ).pipe(Effect.orDie);
+
+              yield* applied(yield* posts.update(finished, current.post));
+
+              return { post: finished, targets };
             }
 
             const cancelled = yield* Effect.fromResult(

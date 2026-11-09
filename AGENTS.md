@@ -363,9 +363,10 @@ and no socket, for tests.
 - `PostFollowUp` reposts a failed or unconfirmed target, in its next round:
   a `PublishTargetV1` with no parent (`PublicationScheduler.repost`), which
   reopens a finished post; the last target to settle finishes its post, in
-  `recordTargetRun`. A repost's rate-limit deadline counts from the repost.
-  `confirm` records what a member found for an unconfirmed target and
-  revises the outcome. Both call `PublicationOutcomes.resolved`.
+  `recordTargetRun`, or cancelling it does when nothing is left to send. A
+  repost's rate-limit deadline counts from the repost. `confirm` records
+  what a member found for an unconfirmed target and revises the outcome.
+  Both call `PublicationOutcomes.resolved`.
 - Refusals Acme makes itself, before any platform call (a channel
   disconnected or turned off, media deleted), carry the codes of
   `#publishing/domain/own-refusals.ts`; the policy maps them to their own
