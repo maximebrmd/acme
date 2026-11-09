@@ -1081,7 +1081,7 @@ self-hoster needs only Postgres and an S3-compatible store:
 - Production runs on a Hetzner server managed with Ansible from `acme-infra`,
   reachable only through a Cloudflare Tunnel: no inbound ports, SSH included.
   Cloudflare Zero Trust Access guards Grafana, the admin (`/api/auth/admin`,
-  the staff console's `/api/admin`, `/admin` and `/fr/admin`) and the
+  the staff console's `/api/admin`, `/admin`, `/en/admin` and `/fr/admin`) and the
   sandbox, and cloudflared checks the Access token on those routes too. Caddy fronts the
   stack for self-hosters.
 - Change the servers only through the playbooks in `packages/acme-infra`; SSH

@@ -110,6 +110,10 @@ ADMIN_PATHS = [
     "/api/admin",
     "/admin",
     "/fr/admin/x",
+    # English pages are unprefixed, but Next serves them under /en too
+    # wherever next-intl's proxy does not redirect, as on paths with a dot.
+    "/en/admin",
+    "/en/admin/users/x.y",
 ]
 
 
