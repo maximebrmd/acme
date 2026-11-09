@@ -31,7 +31,11 @@ import {
   ChannelsLive,
   DataDeletionApiLive,
 } from "#channels/container.ts";
-import { LegalApiLive, LegalLive } from "#legal/container.ts";
+import {
+  LegalApiLive,
+  LegalLive,
+  LegalRequestsLive,
+} from "#legal/container.ts";
 import { MediaApiLive, MediaLive } from "#media/container.ts";
 import {
   NoticesApiLive,
@@ -54,6 +58,7 @@ import { IdsLive } from "#shared/infrastructure/secure-random-ids.ts";
 import { TransactionRunnerLive } from "#shared/infrastructure/transaction-runner-live.ts";
 import {
   ImpersonationAuditLive,
+  LegalDisclosureAuditLive,
   StaffApiLive,
   StaffLive,
   StaffRecordsLive,
@@ -165,6 +170,14 @@ const StaffContextLive = StaffLive.pipe(
   Layer.provide(Layer.mergeAll(ChannelsWithNoticesLive, PublishingContextLive))
 );
 
+// Legal requests, for staff holding the legal role, as the workspace
+// context tells, each answer shown in the staff audit log.
+const LegalRequestsContextLive = LegalRequestsLive.pipe(
+  Layer.provide(
+    Layer.mergeAll(ChannelsWithNoticesLive, LegalDisclosureAuditLive)
+  )
+);
+
 // The billing page, which counts what each context holds, and its
 // orders, cancellations and withdrawals, which tell members through the
 // notices.
@@ -208,7 +221,8 @@ const ServicesLive = Layer.mergeAll(
   SettingsContextLive,
   BillingContextLive,
   AnalyticsLive,
-  StaffContextLive
+  StaffContextLive,
+  LegalRequestsContextLive
 ).pipe(
   Layer.provide(Layer.mergeAll(JobsWithoutWorkersLive, BunDns.layer)),
   Layer.provideMerge(MigrationsLive),
@@ -250,7 +264,8 @@ const ContextsLive = Layer.mergeAll(
   SettingsContextLive,
   BillingContextLive,
   AnalyticsContextLive,
-  StaffContextLive
+  StaffContextLive,
+  LegalRequestsContextLive
 ).pipe(
   Layer.provideMerge(
     Layer.mergeAll(IdsLive, TransactionRunnerLive, BunDns.layer)

@@ -3,12 +3,15 @@ import { Context, DateTime, Effect, Layer } from "effect";
 import { LegalRecordIdSchema } from "#legal/domain/legal-record-id.ts";
 import type { LegalRecordId } from "#legal/domain/legal-record-id.ts";
 import type { LegalSubject } from "#legal/domain/legal-subject.ts";
+import { NotLegalOfficer } from "#legal/domain/not-legal-officer.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import { newId } from "#shared/application/ids.ts";
 import type { Ids } from "#shared/application/ids.ts";
 import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 import type { UserId } from "#shared/domain/ids.ts";
 
+import { DisclosureReview } from "./ports/disclosure-review.ts";
+import { LegalOfficers } from "./ports/legal-officers.ts";
 import { LegalStore } from "./ports/legal-store.ts";
 import type { ConnectionEntry, HeldAccount } from "./ports/legal-store.ts";
 
@@ -38,15 +41,17 @@ export interface LegalAnswer {
  * content of those accounts, of the account named, or in the workspace
  * named. The answer, with the staff member, the authority, its reference
  * and what was asked, is recorded in the same transaction as it is read, so
- * no one reads these records unrecorded. The only reader of what closed
- * accounts left.
+ * no one reads these records unrecorded, and shows in the staff audit log,
+ * so the rest of staff see it. Only staff holding the legal role answer
+ * (`LegalOfficers`), not every staff member who helps users. The only
+ * reader of what closed accounts left.
  */
 export class LegalRequests extends Context.Service<
   LegalRequests,
   {
     readonly answer: (
       request: LegalRequest
-    ) => Effect.Effect<LegalAnswer, DatabaseError>;
+    ) => Effect.Effect<LegalAnswer, DatabaseError | NotLegalOfficer>;
   }
 >()("peal-server/legal/application/LegalRequests") {
   static readonly layer = Layer.effect(
@@ -54,11 +59,17 @@ export class LegalRequests extends Context.Service<
     Effect.gen(function* LegalRequestsLive() {
       const ports = yield* Effect.context<Ids | TransactionRunner>();
       const store = yield* LegalStore;
+      const officers = yield* LegalOfficers;
+      const review = yield* DisclosureReview;
       const { transaction } = yield* TransactionRunner;
 
       const answer = Effect.fn("LegalRequests.answer")(function* answer(
         request: LegalRequest
       ) {
+        if (!(yield* officers.mayAnswer(request.staffId))) {
+          return yield* new NotLegalOfficer();
+        }
+
         const id = yield* newId(LegalRecordIdSchema);
         const at = yield* DateTime.now;
 
@@ -85,6 +96,14 @@ export class LegalRequests extends Context.Service<
               connections: connections.length,
               held: held.length,
               id,
+              reference: request.reference,
+              staffId: request.staffId,
+              subject: request.subject,
+            });
+
+            yield* review.answered({
+              at,
+              authority: request.authority,
               reference: request.reference,
               staffId: request.staffId,
               subject: request.subject,

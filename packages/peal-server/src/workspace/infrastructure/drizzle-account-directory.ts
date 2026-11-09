@@ -26,7 +26,7 @@ import type {
 } from "#workspace/application/account-directory.ts";
 import { DirectoryUnavailable } from "#workspace/application/directory-unavailable.ts";
 import type { Ban } from "#workspace/domain/ban.ts";
-import { isStaffRole } from "#workspace/domain/staff-role.ts";
+import { isLegalRole, isStaffRole } from "#workspace/domain/staff-role.ts";
 
 import {
   member,
@@ -336,6 +336,7 @@ export const AccountDirectoryLive = Layer.effect(
       return Option.fromNullishOr(found).pipe(
         Option.map((row) => ({
           ban: banOf(row.banned, row.banExpires),
+          legal: isLegalRole(Option.fromNullOr(row.role)),
           staff: isStaffRole(Option.fromNullOr(row.role)),
         }))
       );

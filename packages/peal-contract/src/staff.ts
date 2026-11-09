@@ -55,7 +55,9 @@ export const StaffReasonSchema = Schema.Trim.check(
  * change made while acting as it (`impersonatedChange`), and the end of an
  * impersonation, by staff (`stopImpersonating`) or by the server, as its
  * staff member or the account was banned or signed out everywhere, or the
- * staff member lost the role (`impersonationEnded`).
+ * staff member lost the role (`impersonationEnded`); and a legal request a
+ * staff member answered (`legalDisclosure`), with the authority and its
+ * reference as the reason.
  */
 export const StaffActionSchema = Schema.Literals([
   "ban",
@@ -66,6 +68,7 @@ export const StaffActionSchema = Schema.Literals([
   "impersonatedChange",
   "stopImpersonating",
   "impersonationEnded",
+  "legalDisclosure",
 ]).annotate({ identifier: "StaffAction" });
 
 /**

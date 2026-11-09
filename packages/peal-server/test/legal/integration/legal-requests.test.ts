@@ -153,6 +153,20 @@ layer(IntegrationLive, { excludeTestServices: true, timeout: "120 seconds" })(
 
           yield* makeAdmin(staff.id);
 
+          // Staff who help users, without the legal role, find nothing
+          // there either.
+          const helperCookies = yield* signIn(staff.email);
+
+          assert.strictEqual(
+            (yield* app.request("/api/admin/legal-requests", {
+              body: request,
+              headers: { cookie: helperCookies },
+            })).status,
+            404
+          );
+
+          yield* sql`UPDATE auth."user" SET role = 'admin,legal' WHERE id = ${staff.id}`;
+
           const staffCookies = yield* signIn(staff.email);
 
           const answered = yield* app.request("/api/admin/legal-requests", {
@@ -194,6 +208,29 @@ layer(IntegrationLive, { excludeTestServices: true, timeout: "120 seconds" })(
               authority: request.authority,
               held: 1,
               reference: request.reference,
+              staff_id: staff.id,
+            },
+          ]);
+
+          // The rest of staff see it in the audit log.
+          const audited =
+            yield* sql`SELECT reason, staff_id FROM staff.audit_events WHERE action = 'legalDisclosure' AND staff_id = ${staff.id}`.pipe(
+              Effect.flatMap(
+                Schema.decodeUnknownEffect(
+                  Schema.Array(
+                    Schema.Struct({
+                      reason: Schema.String,
+                      staff_id: Schema.String,
+                    })
+                  )
+                )
+              ),
+              Effect.orDie
+            );
+
+          assert.deepStrictEqual(audited, [
+            {
+              reason: `${request.authority}: ${request.reference}`,
               staff_id: staff.id,
             },
           ]);

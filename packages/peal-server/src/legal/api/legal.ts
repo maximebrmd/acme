@@ -1,11 +1,14 @@
 import { Effect } from "effect";
-import { HttpApiBuilder } from "effect/http-api";
+import { HttpApiBuilder, HttpApiError } from "effect/http-api";
 import { Api, CurrentStaff } from "peal-contract";
 
 import { LegalRequests } from "#legal/application/legal-requests.ts";
 import { UserIdSchema } from "#shared/domain/ids.ts";
 
-/** The legal requests endpoint, for staff (StaffAccess). */
+/**
+ * The legal requests endpoint, for staff (StaffAccess) holding the legal
+ * role: other staff get 404 too.
+ */
 export const LegalHandlers = HttpApiBuilder.group(
   Api,
   "legal",
@@ -23,7 +26,14 @@ export const LegalHandlers = HttpApiBuilder.group(
             staffId: UserIdSchema.make(userId),
             subject: payload.subject,
           })
-          .pipe(Effect.orDie);
+          .pipe(
+            // Staff without the legal role find nothing there either.
+            Effect.catchTags({
+              DatabaseError: Effect.die,
+              // Staff without the legal role find nothing there either.
+              NotLegalOfficer: () => Effect.fail(new HttpApiError.NotFound()),
+            })
+          );
 
         return {
           at: answered.at,

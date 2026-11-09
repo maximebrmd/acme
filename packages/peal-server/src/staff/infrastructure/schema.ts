@@ -18,7 +18,10 @@ const instant = (name: string) => timestamp(name, { withTimezone: true });
  * only (Better Auth's user ids, without foreign keys, so an entry outlives
  * its accounts), the action, the reason staff gave and when; never what
  * anyone wrote. Closing an account sets the target id of the events about
- * it to null, with their reason; the events its user made as staff keep
+ * it to null, with their reason, but for a ban or an unban, which keeps its
+ * reason and, instead of the id, a keyed pseudonym of the account's email
+ * address (`target_pseudonym`) until it expires; the events its user made
+ * as staff keep
  * their id (StaffRecords). `action` is a StaffAction: add values, never
  * rename one. A change staff made while acting as an account also keeps
  * its operation (an endpoint or route name), the workspace it was in and
@@ -40,9 +43,11 @@ export const auditEvents = staffSchema.table(
     reason: text("reason"),
     staffId: uuid("staff_id"),
     targetId: uuid("target_id"),
+    targetPseudonym: text("target_pseudonym"),
     workspaceId: uuid("workspace_id"),
   },
   (table) => [
+    index("audit_events_pseudonym").on(table.targetPseudonym),
     index("audit_events_at").on(table.at, table.id),
     index("audit_events_target").on(table.targetId, table.at),
     index("audit_events_staff").on(table.staffId),

@@ -9,8 +9,10 @@ import { DateTime, Option } from "effect";
  * it did and why. A ban that lasted longer is kept 12 months past its end,
  * whichever is later; a ban until lifted ends when it is lifted, and is
  * kept while it holds. Events about a closed account lose its id and
- * reason at once (StaffRecords.forgetUser); this is the limit for every
- * event.
+ * reason at once (StaffRecords.forgetUser), but a ban's or an unban's,
+ * which keeps its reason, and a keyed pseudonym of the account's email
+ * address instead of its id, so the purpose holds once the account is
+ * closed too, until the same cutoff; this is the limit for every event.
  */
 export const auditRetention = {
   bans: { years: 5 },
