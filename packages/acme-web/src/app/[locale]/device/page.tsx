@@ -23,6 +23,7 @@ const DevicePage = async ({ searchParams }: PageProps<"/[locale]/device">) => {
     return (
       <SignInToContinue
         title={t("title")}
+        description={t("signedOut")}
         query={{ next: `/device?${back.toString()}` }}
       />
     );

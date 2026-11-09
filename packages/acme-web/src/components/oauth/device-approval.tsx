@@ -4,7 +4,7 @@ import { Alert, AlertDescription } from "acme-ui/components/alert";
 import { Button } from "acme-ui/components/button";
 import { Option, Schema } from "effect";
 import { useTranslations } from "next-intl";
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import type { SubmitEvent } from "react";
 
 import { authClient } from "#auth/client.ts";
@@ -51,6 +51,15 @@ export const DeviceApproval = ({
   const [step, setStep] = useState<Step>({ _tag: "entering" });
   const [problem, setProblem] = useState<Problem | null>(null);
   const [isPending, startTransition] = useTransition();
+  const reviewHeading = useRef<HTMLHeadingElement>(null);
+
+  // The form that had focus is gone once the code is checked: focus moves to
+  // what replaced it, which screen readers then read out.
+  useEffect(() => {
+    if (step._tag === "reviewing") {
+      reviewHeading.current?.focus();
+    }
+  }, [step._tag]);
 
   const handleCheck = (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -128,7 +137,9 @@ export const DeviceApproval = ({
     return (
       <div className="flex flex-col gap-4">
         {alert}
-        <h2 className="font-medium">{t("reviewTitle", { client })}</h2>
+        <h2 ref={reviewHeading} tabIndex={-1} className="font-medium">
+          {t("reviewTitle", { client })}
+        </h2>
         <p className="text-muted-foreground text-sm">
           {t("reviewDescription")}
         </p>
