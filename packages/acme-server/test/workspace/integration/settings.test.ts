@@ -34,6 +34,7 @@ import {
   seedNotice,
   seedOAuthGrant,
   seedPost,
+  seedSubscription,
   seedUsage,
 } from "./seed.ts";
 
@@ -136,6 +137,9 @@ const rowsIn = Effect.fn("rowsIn")(function* rowsIn(workspaceId: string) {
     posts: yield* countOf(
       yield* sql`SELECT count(*)::int AS count FROM publishing.posts WHERE workspace_id = ${workspaceId}`
     ),
+    subscriptions: yield* countOf(
+      yield* sql`SELECT ((SELECT count(*) FROM billing.subscriptions WHERE workspace_id = ${workspaceId}) + (SELECT count(*) FROM auth.subscription WHERE reference_id = ${workspaceId}))::int AS count`
+    ),
     targets: yield* countOf(
       yield* sql`SELECT count(*)::int AS count FROM publishing.post_targets t JOIN publishing.posts p ON p.id = t.post_id WHERE p.workspace_id = ${workspaceId}`
     ),
@@ -156,6 +160,7 @@ const nothing = {
   members: 0,
   notices: 0,
   posts: 0,
+  subscriptions: 0,
   targets: 0,
   usage: 0,
   workspaces: 0,
@@ -166,7 +171,7 @@ layer(Layer.mergeAll(IntegrationLive, StoreLive), {
   timeout: "180 seconds",
 })("workspace and account settings", (it) => {
   it.effect(
-    "delete a workspace with its channels, posts, media, notices, usage, members and keys",
+    "delete a workspace with its channels, posts, media, notices, usage, subscriptions, members and keys",
     () =>
       Effect.gen(function* deletesWorkspace() {
         const app = yield* TestApp;
@@ -190,6 +195,8 @@ layer(Layer.mergeAll(IntegrationLive, StoreLive), {
         yield* seedPost(workspaceId, channelId, "A synthetic draft.");
         yield* seedNotice(owner.id, workspaceId, "@harbour@social.example");
         yield* seedUsage(workspaceId, 3);
+        // Ended: Stripe bills it no more.
+        yield* seedSubscription(workspaceId, "canceled");
 
         yield* app.request("/api/auth/organization/invite-member", {
           body: {
@@ -210,6 +217,7 @@ layer(Layer.mergeAll(IntegrationLive, StoreLive), {
           members: 2,
           notices: 1,
           posts: 1,
+          subscriptions: 2,
           targets: 1,
           usage: 1,
           workspaces: 1,
@@ -300,10 +308,21 @@ layer(Layer.mergeAll(IntegrationLive, StoreLive), {
         yield* seedNotice(alex.id, team, "@team@social.example");
         yield* join(sam, team, alex, "editor");
 
+        // Alex wrote a post in Team, which stays with Sam.
+        const teamChannel = yield* seedChannel(team, "@team@social.example");
+
+        const alexInTeam = yield* seedPost(
+          team,
+          teamChannel,
+          "A synthetic post Alex wrote in Team.",
+          "finished",
+          alex.id
+        );
+
         const samInShared = yield* join(alex, shared, sam, "viewer");
 
         yield* app.request("/api/me/notification-preferences", {
-          body: { email: { postPublished: true } },
+          body: { email: { postPublished: true }, everyPost: true },
           headers: { cookie: alex.cookies },
           method: "PATCH",
         });
@@ -380,6 +399,12 @@ layer(Layer.mergeAll(IntegrationLive, StoreLive), {
           sessions: 0,
           users: 0,
         });
+
+        // The post stays in Team, without an author: nothing names Alex.
+        assert.deepStrictEqual(
+          yield* sql`SELECT text, author_id AS author FROM publishing.posts WHERE id = ${alexInTeam}`,
+          [{ author: null, text: "A synthetic post Alex wrote in Team." }]
+        );
 
         const afterwards = yield* app.request("/api/me", { headers: asAlex });
 
@@ -470,7 +495,7 @@ layer(Layer.mergeAll(IntegrationLive, StoreLive), {
   );
 
   it.effect(
-    "export what is tied to the user, and the content of the workspaces they alone belong to",
+    "export what is tied to the user, the posts they wrote, and the content of the workspaces they alone belong to",
     () =>
       Effect.gen(function* exportsData() {
         const app = yield* TestApp;
@@ -498,7 +523,22 @@ layer(Layer.mergeAll(IntegrationLive, StoreLive), {
           "@studio@social.example"
         );
 
-        yield* seedPost(studio, studioChannel, "A synthetic draft of Studio.");
+        yield* seedPost(
+          studio,
+          studioChannel,
+          "A synthetic draft of Studio.",
+          "draft",
+          kim.id
+        );
+
+        // Lee's own post in Studio is Lee's to copy, though Studio is not.
+        yield* seedPost(
+          studio,
+          studioChannel,
+          "A synthetic post Lee wrote in Studio.",
+          "finished",
+          lee.id
+        );
 
         const reply = yield* app.request("/api/me/export", {
           headers: { cookie: lee.cookies },
@@ -576,7 +616,21 @@ layer(Layer.mergeAll(IntegrationLive, StoreLive), {
         assert.deepStrictEqual(own?.assistantUsage, [
           { day: "2026-11-09", requests: 7 },
         ]);
+        // This server does not bill: no plan, no subscription.
+        assert.deepStrictEqual(own?.billing, { plan: null, subscriptions: [] });
         assert.notInclude(text, "A synthetic draft of Studio.");
+        assert.deepStrictEqual(
+          exported.authoredPosts.map(({ text: postText, workspaceId }) => ({
+            text: postText,
+            workspaceId,
+          })),
+          [
+            {
+              text: "A synthetic post Lee wrote in Studio.",
+              workspaceId: studio,
+            },
+          ]
+        );
 
         // No secret: not the API key, nor the session's token.
         assert.notInclude(text, key);

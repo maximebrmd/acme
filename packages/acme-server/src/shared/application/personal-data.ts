@@ -39,6 +39,14 @@ export interface PostRecord {
   readonly timeZone: string | null;
 }
 
+/**
+ * A post a user wrote in a workspace they share with others: its content is
+ * theirs, though the post belongs to the workspace.
+ */
+export interface AuthoredPostRecord extends PostRecord {
+  readonly workspaceId: string;
+}
+
 /** A media asset of a workspace: what is known of the file, not the file. */
 export interface MediaRecord {
   readonly altText: string | null;
@@ -57,6 +65,21 @@ export interface UsageRecord {
   /** YYYY-MM-DD. */
   readonly day: string;
   readonly requests: number;
+}
+
+/**
+ * A workspace's plan and its Stripe subscriptions as their last events left
+ * them: no card, invoice, customer or subscription id. The plan is null on
+ * a server that does not bill.
+ */
+export interface BillingRecord {
+  readonly plan: string | null;
+  readonly subscriptions: readonly {
+    readonly cancelAtPeriodEnd: boolean;
+    readonly currentPeriodEnd: DateTime.Utc | null;
+    readonly plan: string;
+    readonly status: string;
+  }[];
 }
 
 /** The account a notice is about, as it was then. */

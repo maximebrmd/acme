@@ -182,7 +182,7 @@ Posts count in the calendar month (UTC) they go out in; cancelled ones do not. M
 2. Add a webhook endpoint for `PUBLIC_URL/api/auth/stripe/webhook` with the `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted` and `checkout.session.completed` events, and set `STRIPE_WEBHOOK_SECRET` to its signing secret. Leave this path open to Stripe if something guards the rest of `/api/auth`.
 3. Turn on the customer portal, where members update their payment method and cancel. For EU VAT, turn on Stripe Tax and set `STRIPE_AUTOMATIC_TAX=true`.
 
-Owners and admins open checkout and the portal from the workspace's billing page; staff impersonating them cannot. A subscription's state comes only from its webhook events, checked against the signing secret: an event sent twice is recorded once, and an older one never replaces a newer one. A subscription stays paid for while Stripe retries a failed payment; unpaid, paused or cancelled, the workspace is back on the free plan.
+Owners and admins open checkout and the portal from the workspace's billing page; staff impersonating them cannot. A subscription's state comes only from its webhook events, checked against the signing secret: an event sent twice is recorded once, and an older one never replaces a newer one. A subscription stays paid for while Stripe retries a failed payment; unpaid, paused or cancelled, the workspace is back on the free plan. A workspace with a subscription Stripe may still bill, unpaid and paused ones included, cannot be deleted, nor the account of its only member, until the subscription is cancelled.
 
 ## Captcha [#captcha]
 

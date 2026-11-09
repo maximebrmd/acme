@@ -17,6 +17,7 @@ import {
   apiKeyOf,
   bodyOf,
   newEmail,
+  password,
   signedUp,
   TestApp,
   workspaceOf,
@@ -169,6 +170,20 @@ const recordedEvents = Effect.fn("recordedEvents")(function* recordedEvents(
 });
 
 const ErrorSchema = Schema.Struct({ code: Schema.String });
+
+// What an account's export says of its workspaces' billing.
+const ExportedBillingSchema = Schema.Struct({
+  workspaces: Schema.Array(
+    Schema.Struct({
+      billing: Schema.Struct({
+        plan: Schema.NullOr(Schema.String),
+        subscriptions: Schema.Array(
+          Schema.Struct({ plan: Schema.String, status: Schema.String })
+        ),
+      }),
+    })
+  ),
+});
 
 const CheckoutSchema = Schema.Struct({
   redirect: Schema.Boolean,
@@ -378,9 +393,10 @@ layer(BillingIntegration, {
     })
   );
 
-  // Unpaid, a subscription buys no plan, but Stripe still has it.
+  // Unpaid, a subscription buys no plan, but Stripe still has it: neither
+  // the workspace nor the account it is the only workspace of may go.
   it.effect.each(["active", "unpaid"])(
-    "keeps a workspace a subscription %s is on, with its API keys",
+    "keeps a workspace a subscription %s is on, with its API keys, and its owner's account",
     (status) =>
       Effect.gen(function* deleting() {
         const app = yield* TestApp;
@@ -400,16 +416,29 @@ layer(BillingIntegration, {
 
         assert.strictEqual(yield* deliver(created), 200);
 
-        const refused = yield* app.request("/api/auth/organization/delete", {
-          body: { organizationId: workspaceId },
+        const refused = yield* app.request(`/api/workspaces/${workspaceId}`, {
+          body: { name: "deleting" },
           headers: { cookie: owner.cookies },
+          method: "DELETE",
         });
 
-        assert.strictEqual(refused.status, 400);
-        assert.strictEqual(
-          (yield* bodyOf(ErrorSchema, refused)).code,
-          "ORGANIZATION_HAS_ACTIVE_SUBSCRIPTION"
-        );
+        assert.strictEqual(refused.status, 409);
+        assert.deepInclude(refused.body, {
+          _tag: "WorkspaceSubscribed",
+          workspaceId,
+        });
+
+        const closing = yield* app.request("/api/me", {
+          body: { password },
+          headers: { cookie: owner.cookies },
+          method: "DELETE",
+        });
+
+        assert.strictEqual(closing.status, 409);
+        assert.deepInclude(closing.body, {
+          _tag: "WorkspaceSubscribed",
+          workspaceId,
+        });
 
         const keys = yield* app.request(
           `/api/workspaces/${workspaceId}/api-keys`,
@@ -417,6 +446,78 @@ layer(BillingIntegration, {
         );
 
         assert.lengthOf(yield* bodyOf(Schema.Array(Schema.Unknown), keys), 1);
+
+        // The sign-in service's own route stays off.
+        const throughAuth = yield* app.request(
+          "/api/auth/organization/delete",
+          {
+            body: { organizationId: workspaceId },
+            headers: { cookie: owner.cookies },
+          }
+        );
+
+        assert.strictEqual(throughAuth.status, 404);
+      })
+  );
+
+  it.effect(
+    "deletes a workspace once its subscription ended, with what billing recorded of it",
+    () =>
+      Effect.gen(function* deletingEnded() {
+        const app = yield* TestApp;
+        const sql = yield* SqlClient.SqlClient;
+        const delivery = newDelivery();
+
+        const { owner, workspaceId } = yield* billedWorkspace(
+          "ended",
+          delivery.customerId
+        );
+
+        assert.strictEqual(
+          yield* deliver(payloadOf("customer.subscription.created", delivery)),
+          200
+        );
+        assert.strictEqual(
+          yield* deliver(payloadOf("customer.subscription.deleted", delivery)),
+          200
+        );
+
+        // A copy of the account's data shows the plan and how its
+        // subscription ended, and none of Stripe's ids.
+        const exported = yield* app.request("/api/me/export", {
+          headers: { cookie: owner.cookies },
+        });
+
+        assert.strictEqual(exported.status, 200);
+
+        const { workspaces } = yield* bodyOf(ExportedBillingSchema, exported);
+
+        assert.deepStrictEqual(
+          workspaces.map(({ billing }) => billing),
+          [
+            {
+              plan: "free",
+              subscriptions: [{ plan: "pro", status: "canceled" }],
+            },
+          ]
+        );
+
+        const text = JSON.stringify(exported.body);
+
+        assert.notInclude(text, delivery.customerId);
+        assert.notInclude(text, delivery.subscriptionId);
+
+        const deleted = yield* app.request(`/api/workspaces/${workspaceId}`, {
+          body: { name: "ended" },
+          headers: { cookie: owner.cookies },
+          method: "DELETE",
+        });
+
+        assert.strictEqual(deleted.status, 204);
+        assert.deepStrictEqual(
+          yield* sql`SELECT count(*)::int AS count FROM billing.subscriptions WHERE workspace_id = ${workspaceId}`,
+          [{ count: 0 }]
+        );
       })
   );
 

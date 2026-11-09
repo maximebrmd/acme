@@ -777,10 +777,12 @@
       "impersonating": "L’équipe qui agit à la place d’un membre ne peut pas modifier ceci.",
       "incorrectPassword": "Le mot de passe est incorrect.",
       "lastOwner": "Un espace de travail a besoin d’un propriétaire : nommez d’abord un autre membre propriétaire.",
+      "memberLimit": "L’abonnement de l’espace de travail ne permet pas d’autre membre. Un propriétaire ou un administrateur peut passer à un abonnement supérieur.",
       "nameMismatch": "Le nom ne correspond pas à celui de l’espace de travail.",
       "notFound": "Cet élément n’existe déjà plus.",
       "passwordTooLong": "Le mot de passe est trop long.",
       "passwordTooShort": "Le mot de passe doit compter au moins 12 caractères.",
+      "subscribed": "Un espace de travail que ceci supprimerait a encore un abonnement susceptible d’être facturé. Résiliez-le d’abord depuis la page de facturation de l’espace de travail : il pourra être supprimé une fois l’abonnement terminé.",
       "tooManyRequests": "Trop de tentatives. Patientez une minute, puis réessayez.",
       "unknown": "Une erreur est survenue. Réessayez."
     }

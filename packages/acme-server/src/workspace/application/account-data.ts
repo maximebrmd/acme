@@ -1,6 +1,7 @@
 import { Context, DateTime, Effect, Layer, Option } from "effect";
 
 import type { DatabaseError } from "#shared/application/database-error.ts";
+import type { AuthoredPostRecord } from "#shared/application/personal-data.ts";
 import type { ApiKey } from "#workspace/domain/api-key.ts";
 import { ownSession } from "#workspace/domain/own-session.ts";
 import type { SessionRequired } from "#workspace/domain/session-required.ts";
@@ -24,6 +25,8 @@ export interface OwnWorkspace extends WorkspaceContent, WorkspaceSummary {
 /** A copy of what Acme keeps about a user. */
 export interface AccountExport extends UserContent {
   readonly account: AccountRecords;
+  /** The posts the user wrote in the workspaces they share. */
+  readonly authoredPosts: readonly AuthoredPostRecord[];
   readonly connectedApps: readonly ConnectedAppRecord[];
   readonly exportedAt: DateTime.Utc;
   readonly workspaces: readonly OwnWorkspace[];
@@ -31,10 +34,10 @@ export interface AccountExport extends UserContent {
 
 /**
  * The right of access: a copy of everything tied to the user, for them in
- * person. Workspaces they share hold the team's work, which no column ties
- * to anyone, so only their memberships of those are part of it; the
- * workspaces where they are the only member are theirs, and come whole, as
- * deleting the account would delete them.
+ * person. Workspaces they share hold the team's work: of those, only their
+ * memberships and the posts they wrote are part of it. The workspaces where
+ * they are the only member are theirs, and come whole, as deleting the
+ * account would delete them.
  */
 export class AccountData extends Context.Service<
   AccountData,
@@ -80,8 +83,14 @@ export class AccountData extends Context.Service<
 
           const now = yield* DateTime.now;
 
-          const alone = (yield* store.standings(userId)).filter(
+          const standings = yield* store.standings(userId);
+
+          const alone = standings.filter(
             ({ memberRoles }) => memberRoles.length <= 1
+          );
+
+          const shared = standings.flatMap(({ memberRoles, workspaceId }) =>
+            memberRoles.length > 1 ? [workspaceId] : []
           );
 
           const summaries = yield* Effect.all(
@@ -97,6 +106,7 @@ export class AccountData extends Context.Service<
           const exported: AccountExport = {
             ...(yield* records.exportUser(userId)),
             account,
+            authoredPosts: yield* records.exportAuthoredPosts(userId, shared),
             connectedApps: yield* apps.list(userId, now),
             exportedAt: now,
             workspaces,

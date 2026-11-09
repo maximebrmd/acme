@@ -15,11 +15,13 @@ import { AccountStore } from "./account-store.ts";
 import type { ContextRecords } from "./context-records.ts";
 import type { WorkspaceBusy } from "./workspace-busy.ts";
 import { eraseWorkspace, removeWorkspaceFiles } from "./workspace-erasure.ts";
+import type { WorkspaceSubscribed } from "./workspace-subscribed.ts";
 
 /**
  * Deletes the actor's workspace, for good, with everything in it. Needs
  * organization:delete (owners), the owner in person (`ownSession`), and the
  * workspace's name, typed again, which spaces around it aside must match.
+ * Refused while Stripe may still bill it, or one of its posts is going out.
  */
 export class DeleteWorkspace extends Context.Service<
   DeleteWorkspace,
@@ -36,6 +38,7 @@ export class DeleteWorkspace extends Context.Service<
       | SessionRequired
       | WorkspaceBusy
       | WorkspaceNameMismatch
+      | WorkspaceSubscribed
     >;
   }
 >()("acme-server/workspace/application/DeleteWorkspace") {

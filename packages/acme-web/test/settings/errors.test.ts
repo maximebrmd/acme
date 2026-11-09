@@ -16,6 +16,12 @@ describe(settingsErrorKey, () => {
     expect(settingsErrorKey({ code, status: 400 })).toBe(key);
   });
 
+  it("explains a plan with no room for one more member", () => {
+    expect(
+      settingsErrorKey({ code: "MEMBER_LIMIT_REACHED", status: 402 })
+    ).toBe("memberLimit");
+  });
+
   it("asks to wait when Better Auth limits the rate", () => {
     expect(settingsErrorKey({ status: 429 })).toBe("tooManyRequests");
   });
@@ -29,6 +35,7 @@ describe(apiErrorKey, () => {
   it.each([
     ["WorkspaceNameMismatch", "nameMismatch"],
     ["WorkspaceBusy", "busy"],
+    ["WorkspaceSubscribed", "subscribed"],
     ["LastOwner", "lastOwner"],
     ["IncorrectPassword", "incorrectPassword"],
     ["TooManyPasswordAttempts", "tooManyRequests"],

@@ -3,8 +3,11 @@ import type { Effect, Option } from "effect";
 
 import type { PostStatusName } from "#publishing/domain/post-status.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
-import type { PostRecord } from "#shared/application/personal-data.ts";
-import type { PostId, WorkspaceId } from "#shared/domain/ids.ts";
+import type {
+  AuthoredPostRecord,
+  PostRecord,
+} from "#shared/application/personal-data.ts";
+import type { PostId, UserId, WorkspaceId } from "#shared/domain/ids.ts";
 
 import type { ExecutionId } from "./publication-scheduler.ts";
 
@@ -15,7 +18,10 @@ export interface PostStanding {
   readonly status: PostStatusName;
 }
 
-/** A workspace's posts as a whole, for exporting or erasing them. */
+/**
+ * A workspace's posts as a whole, for exporting or erasing them, and a
+ * user's, wherever they wrote them.
+ */
 export class WorkspacePostStore extends Context.Service<
   WorkspacePostStore,
   {
@@ -34,6 +40,18 @@ export class WorkspacePostStore extends Context.Service<
     /** Deletes the workspace's posts, their targets and their history. */
     readonly deleteAll: (
       workspaceId: WorkspaceId
+    ) => Effect.Effect<void, DatabaseError>;
+    /**
+     * The posts the user wrote in these workspaces, with their targets,
+     * oldest first.
+     */
+    readonly exportAuthored: (
+      userId: UserId,
+      workspaceIds: readonly WorkspaceId[]
+    ) => Effect.Effect<readonly AuthoredPostRecord[], DatabaseError>;
+    /** Leaves the user's posts, in every workspace, without an author. */
+    readonly clearAuthor: (
+      userId: UserId
     ) => Effect.Effect<void, DatabaseError>;
   }
 >()("acme-server/publishing/application/WorkspacePostStore") {}

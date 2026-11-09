@@ -1,7 +1,7 @@
 // Synthetic rows of the other contexts, written straight to their tables, so
 // tests of what a workspace or an account holds need no platform, job or
-// file: a channel, posts and their targets, a notice, assistant usage, and
-// an OAuth client's grant.
+// file: a channel, posts and their targets, a notice, assistant usage, a
+// subscription as Stripe's webhook records it, and an OAuth client's grant.
 import { randomUUID } from "node:crypto";
 
 import { Effect, Schema } from "effect";
@@ -46,18 +46,19 @@ export const seedChannel = Effect.fn("seedChannel")(function* seedChannel(
   );
 });
 
-/** A post in `status`, with a target on the channel. */
+/** A post in `status`, with a target on the channel, by `authorId` if any. */
 export const seedPost = Effect.fn("seedPost")(function* seedPost(
   workspaceId: string,
   channelId: string,
   text: string,
-  status: "draft" | "finished" | "publishing" = "draft"
+  status: "draft" | "finished" | "publishing" = "draft",
+  authorId: string | null = null
 ) {
   const sql = yield* SqlClient.SqlClient;
 
   const postId = yield* firstId(
-    yield* sql`INSERT INTO publishing.posts (id, workspace_id, status, text)
-      VALUES (${newUuid7()}, ${workspaceId}, ${status}, ${text})
+    yield* sql`INSERT INTO publishing.posts (id, workspace_id, status, text, author_id)
+      VALUES (${newUuid7()}, ${workspaceId}, ${status}, ${text}, ${authorId})
       RETURNING id`
   );
 
@@ -97,6 +98,23 @@ export const seedUsage = Effect.fn("seedUsage")(function* seedUsage(
   yield* sql`INSERT INTO assistant.daily_usage (workspace_id, day, requests)
     VALUES (${workspaceId}, '2026-11-09', ${requests})`;
 });
+
+/**
+ * A Stripe subscription of the workspace in `status`, as billing and Better
+ * Auth's Stripe plugin each record it, with synthetic Stripe ids.
+ */
+export const seedSubscription = Effect.fn("seedSubscription")(
+  function* seedSubscription(workspaceId: string, status: string) {
+    const sql = yield* SqlClient.SqlClient;
+    const run = randomUUID().replaceAll("-", "");
+
+    yield* sql`INSERT INTO billing.subscriptions (stripe_subscription_id, stripe_customer_id, workspace_id, plan, status, cancel_at_period_end, last_event_at, last_event_id, updated_at)
+      VALUES (${`sub_${run}`}, ${`cus_${run}`}, ${workspaceId}, 'pro', ${status}, false, now(), ${`evt_${run}`}, now())`;
+
+    yield* sql`INSERT INTO auth.subscription (plan, reference_id, stripe_customer_id, stripe_subscription_id, status)
+      VALUES ('pro', ${workspaceId}, ${`cus_${run}`}, ${`sub_${run}`}, ${status})`;
+  }
+);
 
 /**
  * An OAuth client the user let read the workspace, and a refresh token it

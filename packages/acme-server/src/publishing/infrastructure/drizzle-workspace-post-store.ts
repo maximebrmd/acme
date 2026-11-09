@@ -1,11 +1,14 @@
-import { asc, eq, inArray } from "drizzle-orm";
+import { and, asc, eq, inArray } from "drizzle-orm";
 import { DateTime, Effect, Layer, Schema } from "effect";
 
 import { ExecutionIdSchema } from "#publishing/application/publication-scheduler.ts";
 import { WorkspacePostStore } from "#publishing/application/workspace-post-store.ts";
 import { PostStatusNameSchema } from "#publishing/domain/post-status.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
-import type { PostRecord } from "#shared/application/personal-data.ts";
+import type {
+  AuthoredPostRecord,
+  PostRecord,
+} from "#shared/application/personal-data.ts";
 import { PostIdSchema } from "#shared/domain/ids.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 
@@ -34,6 +37,49 @@ const decodeOverrides = Schema.decodeUnknownEffect(
 
 const utcOrNull = (date: Date | null) =>
   date === null ? null : DateTime.fromDateUnsafe(date);
+
+type PostRow = typeof posts.$inferSelect;
+
+type TargetRow = typeof postTargets.$inferSelect;
+
+// A post as an export holds it, with its targets among `targetRows`.
+const recordOf = Effect.fnUntraced(function* recordOf(
+  row: PostRow,
+  targetRows: readonly TargetRow[]
+) {
+  const media = yield* decodeMedia(row.media).pipe(Effect.orDie);
+
+  const overrides = yield* decodeOverrides(row.textOverrides).pipe(
+    Effect.orDie
+  );
+
+  const record: PostRecord = {
+    id: row.id,
+    media: media.map(({ altText, mediaId }) => ({
+      altText: altText === "" ? null : altText,
+      mediaId,
+    })),
+    scheduledAt: utcOrNull(row.scheduledAt),
+    status: row.status,
+    targets: targetRows.flatMap((target) =>
+      target.postId === row.id
+        ? [
+            {
+              channelId: target.channelId,
+              finishedAt: utcOrNull(target.finishedAt),
+              permalink: target.permalink,
+              status: target.status,
+            },
+          ]
+        : []
+    ),
+    text: row.text,
+    textOverrides: overrides,
+    timeZone: row.scheduleZone,
+  };
+
+  return record;
+});
 
 /**
  * WorkspacePostStore on the publishing schema. Deleting a post deletes its
@@ -65,6 +111,22 @@ export const DrizzleWorkspacePostStore = Layer.effect(
       );
     });
 
+    // The targets of these posts, in the order they came.
+    const targetsOf = (postRows: readonly PostRow[]) =>
+      postRows.length === 0
+        ? Effect.succeed<readonly TargetRow[]>([])
+        : db
+            .select()
+            .from(postTargets)
+            .where(
+              inArray(
+                postTargets.postId,
+                postRows.map(({ id }) => id)
+              )
+            )
+            .orderBy(asc(postTargets.id))
+            .pipe(Effect.mapError(failed));
+
     const exportAll = Effect.fn("WorkspacePostStore.exportAll")(
       function* exportAll(workspaceId: string) {
         const postRows = yield* db
@@ -74,55 +136,59 @@ export const DrizzleWorkspacePostStore = Layer.effect(
           .orderBy(asc(posts.id))
           .pipe(Effect.mapError(failed));
 
-        const targetRows =
-          postRows.length === 0
-            ? []
-            : yield* db
-                .select()
-                .from(postTargets)
-                .where(
-                  inArray(
-                    postTargets.postId,
-                    postRows.map(({ id }) => id)
-                  )
-                )
-                .orderBy(asc(postTargets.id))
-                .pipe(Effect.mapError(failed));
+        const targetRows = yield* targetsOf(postRows);
 
         return yield* Effect.all(
-          postRows.map(
-            Effect.fnUntraced(function* recordOf(row) {
-              const media = yield* decodeMedia(row.media).pipe(Effect.orDie);
+          postRows.map((row) => recordOf(row, targetRows))
+        );
+      }
+    );
 
-              const overrides = yield* decodeOverrides(row.textOverrides).pipe(
-                Effect.orDie
-              );
+    const exportAuthored = Effect.fn("WorkspacePostStore.exportAuthored")(
+      function* exportAuthored(
+        userId: string,
+        workspaceIds: readonly string[]
+      ) {
+        if (workspaceIds.length === 0) {
+          const none: readonly AuthoredPostRecord[] = [];
 
-              const record: PostRecord = {
-                id: row.id,
-                media: media.map(({ altText, mediaId }) => ({
-                  altText: altText === "" ? null : altText,
-                  mediaId,
-                })),
-                scheduledAt: utcOrNull(row.scheduledAt),
-                status: row.status,
-                targets: targetRows
-                  .filter(({ postId }) => postId === row.id)
-                  .map((target) => ({
-                    channelId: target.channelId,
-                    finishedAt: utcOrNull(target.finishedAt),
-                    permalink: target.permalink,
-                    status: target.status,
-                  })),
-                text: row.text,
-                textOverrides: overrides,
-                timeZone: row.scheduleZone,
-              };
+          return none;
+        }
 
-              return record;
-            })
+        const postRows = yield* db
+          .select()
+          .from(posts)
+          .where(
+            and(
+              eq(posts.authorId, userId),
+              inArray(posts.workspaceId, [...workspaceIds])
+            )
+          )
+          .orderBy(asc(posts.id))
+          .pipe(Effect.mapError(failed));
+
+        const targetRows = yield* targetsOf(postRows);
+
+        return yield* Effect.all(
+          postRows.map((row) =>
+            recordOf(row, targetRows).pipe(
+              Effect.map((record): AuthoredPostRecord => ({
+                ...record,
+                workspaceId: row.workspaceId,
+              }))
+            )
           )
         );
+      }
+    );
+
+    const clearAuthor = Effect.fn("WorkspacePostStore.clearAuthor")(
+      function* clearAuthor(userId: string) {
+        yield* db
+          .update(posts)
+          .set({ authorId: null })
+          .where(eq(posts.authorId, userId))
+          .pipe(Effect.mapError(failed));
       }
     );
 
@@ -135,6 +201,12 @@ export const DrizzleWorkspacePostStore = Layer.effect(
       }
     );
 
-    return WorkspacePostStore.of({ deleteAll, exportAll, lockAll });
+    return WorkspacePostStore.of({
+      clearAuthor,
+      deleteAll,
+      exportAll,
+      exportAuthored,
+      lockAll,
+    });
   })
 );

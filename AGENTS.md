@@ -304,18 +304,28 @@ and no socket, for tests.
   before deciding, so closures, joins and deletions take turns. Each context
   hands its records of a workspace or a user to the workspace context
   through an application port (`ChannelRecords`, `PostRecords`,
-  `MediaRecords`, `NoticeRecords`, `UsageRecords`, in the shapes of
-  `#shared/application/personal-data.ts`), which `ContextRecords` reaches.
-  The rows go in one TransactionRunner transaction, Better Auth's included
-  (the server's Drizzle on the `auth` tables), and the workspace's media
-  folder once it commits. A context that keeps new data about a workspace
-  or a user adds it to its records.
-- `AccountData` exports what is tied to the user, and the content of the
-  workspaces where they are the only member: those `CloseAccount` deletes.
-  Sessions staff opened to impersonate the user are left out, as Better
-  Auth's own list leaves them out: their browser and address are staff's.
-  Closing an account is refused while its user alone owns a workspace others
-  use (`planClosure`), and its confirmation is emailed in their language.
+  `MediaRecords`, `NoticeRecords`, `UsageRecords`, `BillingRecords`, in the
+  shapes of `#shared/application/personal-data.ts`), which `ContextRecords`
+  reaches. The rows go in one TransactionRunner transaction, Better Auth's
+  included (the server's Drizzle on the `auth` tables, the Stripe plugin's
+  `subscription` too), and the workspace's media folder once it commits. A
+  context that keeps new data about a workspace or a user adds it to its
+  records.
+- `ContextRecords.eraseWorkspace` asks billing first: `BillingRecords`
+  refuses a workspace Stripe may still bill (`stillBills`), before anything
+  goes, and `DeleteWorkspace` and `CloseAccount`, for the workspaces it
+  deletes, answer `WorkspaceSubscribed` (409). Closing an account leaves the
+  posts its user wrote in the workspaces that remain without an author
+  (`PostRecords.forgetAuthor`: `author_id` has no foreign key).
+- `AccountData` exports what is tied to the user, the posts they wrote in
+  the workspaces they share (`exportAuthored`), and the content of the
+  workspaces where they are the only member, with their billing state (plan
+  and subscription statuses, never a card or Stripe's ids): those
+  `CloseAccount` deletes. Sessions staff opened to impersonate the user are
+  left out, as Better Auth's own list leaves them out: their browser and
+  address are staff's. Closing an account is refused while its user alone
+  owns a workspace others use (`planClosure`), and its confirmation is
+  emailed in their language.
   `PasswordCheck` checks a password three times within 10 seconds per
   account at most, as Better Auth's own routes do.
 - Better Auth is also the OAuth authorization server for the CLI (device
@@ -634,9 +644,11 @@ and no socket, for tests.
   the workspace as `referenceId` only, for members with `billing:manage`,
   never staff impersonating them. Checkout sends Stripe Tax's parameters
   when `STRIPE_AUTOMATIC_TAX` is on. A workspace Stripe may still bill
-  (`BilledWorkspaces`: any subscription not cancelled or incomplete, unpaid
-  and paused included) is not deleted: the refusal comes before its API
-  keys go.
+  (`stillBills`: any subscription not cancelled or incomplete, unpaid and
+  paused included) is not deleted: Acme's own deletions ask
+  `BillingRecords` first (see Accounts and access), and the hook on Better
+  Auth's disabled `/organization/delete` asks `BilledWorkspaces` before its
+  API keys go.
 - Never call Stripe in tests: checkout and the portal run against
   stripe-mock, and webhooks post the payloads in
   `test/billing/fixtures/webhooks`, signed in the test.

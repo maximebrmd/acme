@@ -3,6 +3,7 @@ import { DateTime, Effect, Layer, Option, Ref } from "effect";
 
 import { BilledWorkspaces } from "#billing/application/billed-workspaces.ts";
 import { BillingOverview } from "#billing/application/billing-overview.ts";
+import { BillingRecords } from "#billing/application/billing-records.ts";
 import { BillingMode } from "#billing/application/ports/billing-mode.ts";
 import { Subscriptions } from "#billing/application/ports/subscriptions.ts";
 import { WorkspaceUsage } from "#billing/application/ports/workspace-usage.ts";
@@ -38,6 +39,7 @@ const SubscriptionsInMemory = Layer.effect(
     const saved = yield* Ref.make<readonly Subscription[]>([]);
 
     return Subscriptions.of({
+      eraseWorkspace: () => Ref.set(saved, []),
       ofWorkspace: () => Ref.get(saved),
       record: (change) =>
         Ref.update(saved, (all) => [...all, change.subscription]).pipe(
@@ -192,6 +194,103 @@ layer(BilledTest)("a workspace Stripe may still bill", (it) => {
   );
 });
 
+// What billing keeps of a workspace, for its exports and erasures, on a
+// server that bills or not.
+const recordsWith = (enabled: boolean) =>
+  Layer.mergeAll(BillingRecords.layer, RecordSubscription.layer).pipe(
+    Layer.provide(SubscriptionsInMemory),
+    Layer.provide(Layer.succeed(BillingMode, BillingMode.of({ enabled })))
+  );
+
+const periodEnd = DateTime.makeUnsafe("2026-12-09T10:00:00Z");
+
+layer(recordsWith(true))("billing's records of a billed workspace", (it) => {
+  it.effect(
+    "hold its plan and subscriptions, and refuse to go while Stripe may bill it",
+    () =>
+      Effect.gen(function* billed() {
+        const records = yield* BillingRecords;
+
+        yield* RecordSubscription.use((record) =>
+          record.record(event("active"))
+        );
+
+        assert.deepStrictEqual(yield* records.exportWorkspace(workspaceId), {
+          plan: "business",
+          subscriptions: [
+            {
+              cancelAtPeriodEnd: false,
+              currentPeriodEnd: periodEnd,
+              plan: "business",
+              status: "active",
+            },
+          ],
+        });
+
+        const refused = yield* records
+          .eraseWorkspace(workspaceId)
+          .pipe(Effect.flip);
+
+        assert.strictEqual(refused._tag, "WorkspaceStillBilled");
+        assert.lengthOf(
+          (yield* records.exportWorkspace(workspaceId)).subscriptions,
+          1
+        );
+      })
+  );
+});
+
+layer(recordsWith(true))(
+  "billing's records of a workspace that ended",
+  (it) => {
+    it.effect("go once no subscription may bill it", () =>
+      Effect.gen(function* ended() {
+        const records = yield* BillingRecords;
+
+        yield* RecordSubscription.use((record) =>
+          record.record(event("canceled"))
+        );
+
+        assert.strictEqual(
+          (yield* records.exportWorkspace(workspaceId)).plan,
+          "free"
+        );
+
+        yield* records.eraseWorkspace(workspaceId);
+
+        assert.deepStrictEqual(yield* records.exportWorkspace(workspaceId), {
+          plan: "free",
+          subscriptions: [],
+        });
+      })
+    );
+  }
+);
+
+layer(recordsWith(false))(
+  "billing's records on a server that does not bill",
+  (it) => {
+    it.effect("hold no plan, and never refuse to go", () =>
+      Effect.gen(function* off() {
+        const records = yield* BillingRecords;
+
+        yield* RecordSubscription.use((record) =>
+          record.record(event("active"))
+        );
+
+        assert.isNull((yield* records.exportWorkspace(workspaceId)).plan);
+
+        yield* records.eraseWorkspace(workspaceId);
+
+        assert.lengthOf(
+          (yield* records.exportWorkspace(workspaceId)).subscriptions,
+          0
+        );
+      })
+    );
+  }
+);
+
 // Billing off, with subscriptions that may not be read.
 const UnreadTest = Layer.mergeAll(
   WorkspaceEntitlements.layer,
@@ -203,6 +302,7 @@ const UnreadTest = Layer.mergeAll(
       Layer.succeed(
         Subscriptions,
         Subscriptions.of({
+          eraseWorkspace: () => Effect.die("not used"),
           ofWorkspace: () => Effect.die("read while billing is off"),
           record: () => Effect.die("not used"),
         })

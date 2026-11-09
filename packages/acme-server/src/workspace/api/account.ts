@@ -7,6 +7,7 @@ import {
   TooManyPasswordAttempts,
   Unauthenticated,
   WorkspaceBusy,
+  WorkspaceSubscribed,
 } from "acme-contract";
 import type { AccountExport as AccountExportView } from "acme-contract";
 import { DateTime, Effect, Option, Redacted, Schema } from "effect";
@@ -37,6 +38,7 @@ const viewOf = Effect.fn("AccountExport.view")(function* viewOf(
   );
 
   const view: AccountExportView = {
+    authoredPosts: exported.authoredPosts,
     connectedApps: exported.connectedApps,
     exportedAt: exported.exportedAt,
     invitations: {
@@ -59,6 +61,7 @@ const viewOf = Effect.fn("AccountExport.view")(function* viewOf(
         start: Option.getOrNull(apiKey.start),
       })),
       assistantUsage: workspace.assistantUsage,
+      billing: workspace.billing,
       channels: workspace.channels,
       createdAt: workspace.createdAt,
       id: workspace.id,
@@ -101,6 +104,8 @@ export const AccountHandlers = HttpApiBuilder.group(
                   Effect.fail(new TooManyPasswordAttempts()),
                 WorkspaceBusy: ({ workspaceId }) =>
                   Effect.fail(new WorkspaceBusy({ workspaceId })),
+                WorkspaceSubscribed: ({ workspaceId }) =>
+                  Effect.fail(new WorkspaceSubscribed({ workspaceId })),
               })
             );
         }),

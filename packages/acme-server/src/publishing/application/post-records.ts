@@ -1,17 +1,21 @@
 import { Context, Effect, Layer, Option } from "effect";
 
 import type { DatabaseError } from "#shared/application/database-error.ts";
-import type { PostRecord } from "#shared/application/personal-data.ts";
+import type {
+  AuthoredPostRecord,
+  PostRecord,
+} from "#shared/application/personal-data.ts";
 import { TransactionRunner } from "#shared/application/transaction-runner.ts";
-import type { WorkspaceId } from "#shared/domain/ids.ts";
+import type { UserId, WorkspaceId } from "#shared/domain/ids.ts";
 
 import { PostsPublishing } from "./posts-publishing.ts";
 import { PublicationScheduler } from "./publication-scheduler.ts";
 import { WorkspacePostStore } from "./workspace-post-store.ts";
 
 /**
- * A workspace's posts as a whole, for the workspace context when a
- * workspace's data is exported or erased.
+ * A workspace's posts as a whole, and the posts a user wrote, for the
+ * workspace context when a workspace's or a user's data is exported or
+ * erased.
  */
 export class PostRecords extends Context.Service<
   PostRecords,
@@ -27,6 +31,19 @@ export class PostRecords extends Context.Service<
     readonly eraseWorkspace: (
       workspaceId: WorkspaceId
     ) => Effect.Effect<void, DatabaseError | PostsPublishing>;
+    /** The posts the user wrote in these workspaces, oldest first. */
+    readonly exportAuthored: (
+      userId: UserId,
+      workspaceIds: readonly WorkspaceId[]
+    ) => Effect.Effect<readonly AuthoredPostRecord[], DatabaseError>;
+    /**
+     * Forgets that the user wrote their posts, in the caller's transaction
+     * if any: the posts stay with their workspaces, without an author, as
+     * those an API key wrote.
+     */
+    readonly forgetAuthor: (
+      userId: UserId
+    ) => Effect.Effect<void, DatabaseError>;
   }
 >()("acme-server/publishing/application/PostRecords") {
   static readonly layer = Layer.effect(
@@ -67,7 +84,10 @@ export class PostRecords extends Context.Service<
 
       return PostRecords.of({
         eraseWorkspace,
+        exportAuthored: (userId, workspaceIds) =>
+          store.exportAuthored(userId, workspaceIds),
         exportWorkspace: (workspaceId) => store.exportAll(workspaceId),
+        forgetAuthor: (userId) => store.clearAuthor(userId),
       });
     })
   );

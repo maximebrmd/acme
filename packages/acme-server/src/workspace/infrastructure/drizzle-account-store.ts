@@ -23,6 +23,7 @@ import {
   oauthRefreshToken,
   organization,
   session,
+  subscription,
   user,
   verification,
 } from "./auth-schema.generated.ts";
@@ -58,7 +59,7 @@ const invitationOf = (row: {
  * workspace with a foreign key goes with it (sessions, sign-in methods,
  * memberships, invitations, OAuth tokens and consents), and what refers to
  * them by id alone (API keys, device codes, password reset tokens, grants
- * bound to a workspace) is deleted here.
+ * bound to a workspace, the Stripe plugin's subscriptions) is deleted here.
  */
 export const DrizzleAccountStore = Layer.effect(
   AccountStore,
@@ -279,6 +280,14 @@ export const DrizzleAccountStore = Layer.effect(
           .where(eq(session.activeOrganizationId, workspaceId))
           .pipe(Effect.mapError(failed));
 
+        // The Stripe plugin's copy of the workspace's subscriptions, which
+        // refer to it by id alone; deleting is refused while one may still
+        // bill it, and Stripe keeps the customer and its invoices.
+        yield* db
+          .delete(subscription)
+          .where(eq(subscription.referenceId, workspaceId))
+          .pipe(Effect.mapError(failed));
+
         // Members and invitations go with it.
         yield* db
           .delete(organization)
@@ -308,6 +317,13 @@ export const DrizzleAccountStore = Layer.effect(
         yield* db
           .delete(deviceCode)
           .where(eq(deviceCode.userId, userId))
+          .pipe(Effect.mapError(failed));
+
+        // Subscriptions belong to workspaces, but one made for the user
+        // would refer to them by id alone.
+        yield* db
+          .delete(subscription)
+          .where(eq(subscription.referenceId, userId))
           .pipe(Effect.mapError(failed));
 
         // Password reset tokens hold the user's id as their value.

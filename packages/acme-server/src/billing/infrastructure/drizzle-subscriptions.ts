@@ -70,6 +70,16 @@ export const DrizzleSubscriptionsLive = Layer.effect(
           Effect.withSpan("Subscriptions.ofWorkspace")
         );
 
+    const eraseWorkspace = (workspaceId: WorkspaceId) =>
+      db
+        .delete(subscriptions)
+        .where(eq(subscriptions.workspaceId, workspaceId))
+        .pipe(
+          Effect.mapError(failed),
+          Effect.asVoid,
+          Effect.withSpan("Subscriptions.eraseWorkspace")
+        );
+
     const save = Effect.fn("Subscriptions.save")(function* save(
       change: SubscriptionChange
     ) {
@@ -141,6 +151,6 @@ export const DrizzleSubscriptionsLive = Layer.effect(
         .withTransaction(save(change))
         .pipe(Effect.mapError(failed), Effect.withSpan("Subscriptions.record"));
 
-    return Subscriptions.of({ ofWorkspace, record });
+    return Subscriptions.of({ eraseWorkspace, ofWorkspace, record });
   })
 );

@@ -22,6 +22,13 @@ export class Subscriptions extends Context.Service<
       workspaceId: WorkspaceId
     ) => Effect.Effect<readonly Subscription[], DatabaseError>;
     /**
+     * Deletes every subscription of the workspace, in the caller's
+     * transaction, if any. The events recorded stay: ids alone.
+     */
+    readonly eraseWorkspace: (
+      workspaceId: WorkspaceId
+    ) => Effect.Effect<void, DatabaseError>;
+    /**
      * Saves what an event says of a subscription, once per event, and only
      * when no later event was saved for it: events come in any order.
      * Events delivered together take turns.

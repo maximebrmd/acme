@@ -36,6 +36,7 @@ import { DeleteWorkspace } from "#workspace/application/delete-workspace.ts";
 import { PasswordCheck } from "#workspace/application/password-check.ts";
 import { TooManyPasswordAttempts } from "#workspace/application/too-many-password-attempts.ts";
 import { WorkspaceBusy } from "#workspace/application/workspace-busy.ts";
+import { WorkspaceSubscribed } from "#workspace/application/workspace-subscribed.ts";
 import type { MembershipStanding } from "#workspace/domain/account-closure.ts";
 import { permissionsFor } from "#workspace/domain/roles.ts";
 
@@ -55,10 +56,15 @@ const busy = WorkspaceIdSchema.make("3e9b5c7d-6f4a-4b82-9dce-4f5a6b7c8d9e");
 
 const shared = WorkspaceIdSchema.make("4fac6d8e-7a5b-4c93-8edf-5a6b7c8d9eaf");
 
+const subscribed = WorkspaceIdSchema.make(
+  "6b1c8d0e-9f7a-4eb5-8a21-7c8d9eafb0c1"
+);
+
 const names: ReadonlyMap<WorkspaceId, string> = new Map([
   [harbour, "Harbour"],
   [busy, "Busy"],
   [shared, "Shared"],
+  [subscribed, "Subscribed"],
 ]);
 
 const records: AccountRecords = {
@@ -148,10 +154,35 @@ const PortsLive = Layer.mergeAll(
 
       return ContextRecords.of({
         eraseUser: (id) => record(`eraseUser:${id}`).pipe(provide),
-        eraseWorkspace: (id) =>
-          id === busy
-            ? Effect.fail(new WorkspaceBusy({ workspaceId: id }))
-            : record(`eraseWorkspace:${id}`).pipe(provide),
+        eraseWorkspace: (id) => {
+          if (id === busy) {
+            return Effect.fail(new WorkspaceBusy({ workspaceId: id }));
+          }
+
+          // Stripe may still bill it.
+          if (id === subscribed) {
+            return Effect.fail(new WorkspaceSubscribed({ workspaceId: id }));
+          }
+
+          return record(`eraseWorkspace:${id}`).pipe(provide);
+        },
+        exportAuthoredPosts: (id, workspaceIds) =>
+          record(`exportAuthored:${id}:${workspaceIds.join(",")}`).pipe(
+            provide,
+            Effect.as(
+              workspaceIds.map((workspaceId) => ({
+                id: "019a6f10-0000-7000-8000-000000000001",
+                media: [],
+                scheduledAt: null,
+                status: "draft",
+                targets: [],
+                text: "A synthetic post of Ana's.",
+                textOverrides: [],
+                timeZone: null,
+                workspaceId,
+              }))
+            )
+          ),
         exportUser: () =>
           Effect.succeed({
             notices: [],
@@ -168,6 +199,17 @@ const PortsLive = Layer.mergeAll(
         exportWorkspace: () =>
           Effect.succeed({
             assistantUsage: [{ day: "2026-11-09", requests: 3 }],
+            billing: {
+              plan: "pro",
+              subscriptions: [
+                {
+                  cancelAtPeriodEnd: false,
+                  currentPeriodEnd: at,
+                  plan: "pro",
+                  status: "active",
+                },
+              ],
+            },
             channels: [],
             media: [],
             posts: [],
@@ -394,6 +436,23 @@ layer(Fakes.layer)("the settings endpoints", (it) => {
     })
   );
 
+  it.effect("refuse to delete a workspace Stripe may still bill", () =>
+    Effect.gen(function* refusesSubscribed() {
+      const client = yield* as(user(), subscribed);
+
+      assert.strictEqual(
+        yield* failureOf(
+          client.workspaces.delete({
+            params: { workspaceId: subscribed },
+            payload: { name: "Subscribed" },
+          })
+        ),
+        "WorkspaceSubscribed"
+      );
+      assert.notInclude(yield* calls, `deleteWorkspace:${subscribed}`);
+    })
+  );
+
   it.effect("export the user's data as a file, to them in person only", () =>
     Effect.gen(function* exports() {
       const { standings } = yield* Fakes;
@@ -430,16 +489,29 @@ layer(Fakes.layer)("the settings endpoints", (it) => {
       );
       assert.strictEqual(body.user.email, "ana@example.test");
       assert.deepStrictEqual(
-        body.workspaces.map(({ assistantUsage, name }) => ({
+        body.workspaces.map(({ assistantUsage, billing, name }) => ({
           assistantUsage,
           name,
+          plan: billing.plan,
+          statuses: billing.subscriptions.map(({ status }) => status),
         })),
         [
           {
             assistantUsage: [{ day: "2026-11-09", requests: 3 }],
             name: "Harbour",
+            plan: "pro",
+            statuses: ["active"],
           },
         ]
+      );
+      // Of Shared, only the posts Ana wrote.
+      assert.include(yield* calls, `exportAuthored:${userId}:${shared}`);
+      assert.deepStrictEqual(
+        body.authoredPosts.map(({ text, workspaceId }) => ({
+          text,
+          workspaceId,
+        })),
+        [{ text: "A synthetic post of Ana's.", workspaceId: shared }]
       );
       assert.deepStrictEqual(
         body.connectedApps.map(({ clientId }) => clientId),
@@ -543,6 +615,46 @@ layer(Fakes.layer)("the settings endpoints", (it) => {
           ]
         );
         assert.notInclude(done, `eraseWorkspace:${shared}`);
+      })
+  );
+
+  it.effect(
+    "refuse to delete the account while Stripe may still bill a workspace it would delete",
+    () =>
+      Effect.gen(function* refusesClosing() {
+        const { standings } = yield* Fakes;
+        const client = yield* as(user());
+
+        yield* Ref.set(
+          standings,
+          new Map([
+            [
+              userId,
+              [
+                {
+                  memberRoles: ["owner"],
+                  role: "owner",
+                  workspaceId: subscribed,
+                  workspaceName: "Subscribed",
+                },
+              ],
+            ],
+          ])
+        );
+
+        const before = yield* calls;
+
+        assert.strictEqual(
+          yield* failureOf(
+            client.account.delete({ payload: { password: "correct horse" } })
+          ),
+          "WorkspaceSubscribed"
+        );
+
+        const after = (yield* calls).slice(before.length);
+
+        assert.notInclude(after, `eraseUser:${userId}`);
+        assert.notInclude(after, `deleteUser:${userId}`);
       })
   );
 

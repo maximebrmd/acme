@@ -777,10 +777,12 @@
       "impersonating": "Staff acting as a member cannot change this.",
       "incorrectPassword": "The password is incorrect.",
       "lastOwner": "A workspace needs an owner: make another member an owner first.",
+      "memberLimit": "The workspace’s plan allows no more members. An owner or an admin can move it to a larger plan.",
       "nameMismatch": "The name does not match the workspace’s.",
       "notFound": "It is already gone.",
       "passwordTooLong": "The password is too long.",
       "passwordTooShort": "The password needs at least 12 characters.",
+      "subscribed": "A workspace this would delete still has a subscription that may be billed. Cancel it from the workspace’s billing page first: the workspace can be deleted once the subscription has ended.",
       "tooManyRequests": "Too many attempts. Wait a minute, then try again.",
       "unknown": "Something went wrong. Try again."
     }

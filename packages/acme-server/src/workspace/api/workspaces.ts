@@ -5,6 +5,7 @@ import {
   WorkspaceBusy,
   WorkspaceNameMismatch,
   WorkspaceNotFound,
+  WorkspaceSubscribed,
 } from "acme-contract";
 import { Effect } from "effect";
 import { HttpApiBuilder } from "effect/http-api";
@@ -43,6 +44,8 @@ export const WorkspacesHandlers = HttpApiBuilder.group(
                 Effect.fail(new WorkspaceBusy({ workspaceId })),
               WorkspaceNameMismatch: () =>
                 Effect.fail(new WorkspaceNameMismatch()),
+              WorkspaceSubscribed: ({ workspaceId }) =>
+                Effect.fail(new WorkspaceSubscribed({ workspaceId })),
             })
           );
         }),

@@ -19,15 +19,18 @@ import { PasswordCheck } from "./password-check.ts";
 import type { TooManyPasswordAttempts } from "./too-many-password-attempts.ts";
 import type { WorkspaceBusy } from "./workspace-busy.ts";
 import { eraseWorkspace, removeWorkspaceFiles } from "./workspace-erasure.ts";
+import type { WorkspaceSubscribed } from "./workspace-subscribed.ts";
 
 /**
  * The right to erasure: deletes the account of the user, in person, once
  * their password confirms it is them. The workspaces where they are the only
- * member go with everything in them, they leave the others, and their
- * notices, preferences, sessions and OAuth grants go too, in one
- * transaction. It is refused while they are the only owner of a workspace
- * others still use (`planClosure`). A confirmation is emailed to the address
- * the account had, in its language.
+ * member go with everything in them, they leave the others, where the posts
+ * they wrote stay without an author, and their notices, preferences,
+ * sessions and OAuth grants go too, in one transaction. It is refused while
+ * they are the only owner of a workspace others still use (`planClosure`),
+ * and while one of the workspaces it would delete has a subscription Stripe
+ * may still bill. A confirmation is emailed to the address the account had,
+ * in its language.
  */
 export class CloseAccount extends Context.Service<
   CloseAccount,
@@ -45,6 +48,7 @@ export class CloseAccount extends Context.Service<
       | SessionRequired
       | TooManyPasswordAttempts
       | WorkspaceBusy
+      | WorkspaceSubscribed
     >;
   }
 >()("acme-server/workspace/application/CloseAccount") {

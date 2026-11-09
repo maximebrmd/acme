@@ -92,7 +92,8 @@ export class AccountStore extends Context.Service<
     ) => Effect.Effect<Option.Option<WorkspaceSummary>, DatabaseError>;
     /**
      * Deletes the workspace with its members and invitations, its API keys,
-     * which stop working, and the OAuth grants bound to it.
+     * which stop working, the OAuth grants bound to it, and the sign-in
+     * service's copy of its subscriptions.
      */
     readonly deleteWorkspace: (
       workspaceId: WorkspaceId

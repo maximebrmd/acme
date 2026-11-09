@@ -17,8 +17,9 @@ const instant = (name: string) => timestamp(name, { withTimezone: true });
 /**
  * Each Stripe subscription a workspace has had, as the latest webhook event
  * about it left it: `last_event_at` is that event's time, so an older event
- * arriving late changes nothing. A workspace keeps its rows when it is
- * deleted, as Stripe keeps the customer.
+ * arriving late changes nothing. Deleting a workspace, which is refused
+ * while one may still bill it, deletes its rows; Stripe keeps the customer
+ * and its invoices.
  */
 export const subscriptions = billing.table(
   "subscriptions",

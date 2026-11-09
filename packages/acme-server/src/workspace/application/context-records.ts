@@ -3,6 +3,8 @@ import type { Effect } from "effect";
 
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import type {
+  AuthoredPostRecord,
+  BillingRecord,
   ChannelRecord,
   MediaRecord,
   NoticeRecord,
@@ -14,10 +16,12 @@ import type { UserId, WorkspaceId } from "#shared/domain/ids.ts";
 
 import type { WorkspaceBusy } from "./workspace-busy.ts";
 import type { WorkspaceFilesRemain } from "./workspace-files-remain.ts";
+import type { WorkspaceSubscribed } from "./workspace-subscribed.ts";
 
 /** What the other contexts keep in a workspace. */
 export interface WorkspaceContent {
   readonly assistantUsage: readonly UsageRecord[];
+  readonly billing: BillingRecord;
   readonly channels: readonly ChannelRecord[];
   readonly media: readonly MediaRecord[];
   readonly posts: readonly PostRecord[];
@@ -31,9 +35,10 @@ export interface UserContent {
 
 /**
  * The data the other contexts keep about workspaces and users: channels,
- * posts, media, assistant usage, notices and preferences. Erasures run in
- * the caller's transaction, except the media files, which the store holds
- * outside the database: remove them once the rest is committed.
+ * posts and their authors, media, assistant usage, billing, notices and
+ * preferences. Erasures run in the caller's transaction, except the media
+ * files, which the store holds outside the database: remove them once the
+ * rest is committed.
  */
 export class ContextRecords extends Context.Service<
   ContextRecords,
@@ -44,14 +49,26 @@ export class ContextRecords extends Context.Service<
     readonly exportUser: (
       userId: UserId
     ) => Effect.Effect<UserContent, DatabaseError>;
+    /** The posts the user wrote in these workspaces, oldest first. */
+    readonly exportAuthoredPosts: (
+      userId: UserId,
+      workspaceIds: readonly WorkspaceId[]
+    ) => Effect.Effect<readonly AuthoredPostRecord[], DatabaseError>;
     /**
      * Deletes everything of the workspace, stopping its scheduled posts.
-     * Refused while one of its posts is being published.
+     * Refused, before anything is deleted, while Stripe may still bill it,
+     * and while one of its posts is being published.
      */
     readonly eraseWorkspace: (
       workspaceId: WorkspaceId
-    ) => Effect.Effect<void, DatabaseError | WorkspaceBusy>;
-    /** Deletes the user's notices and preferences. */
+    ) => Effect.Effect<
+      void,
+      DatabaseError | WorkspaceBusy | WorkspaceSubscribed
+    >;
+    /**
+     * Deletes the user's notices and preferences, and forgets them as the
+     * author of posts in the workspaces that remain.
+     */
     readonly eraseUser: (userId: UserId) => Effect.Effect<void, DatabaseError>;
     readonly removeWorkspaceFiles: (
       workspaceId: WorkspaceId
