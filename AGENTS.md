@@ -651,9 +651,10 @@ Billing and captcha are not built yet.
   `MediaUsageNotice`).
 - Show dates in the reader's time zone. next-intl's server provider hands the
   client the server's zone (UTC in the image): `ViewerTimeZone`
-  (`components/in-time-zone.tsx`), in the locale layout, sets the browser's
-  on the shared provider once the page has hydrated, so every page's dates
-  follow it.
+  (`components/viewer-time-zone.tsx`), in the locale layout, sets the
+  browser's on the shared provider once the page has hydrated, so every
+  page's dates follow it. `InTimeZone` (`components/notices/in-time-zone.tsx`)
+  sets a given zone on part of a page.
 - The header's `NotificationBell`, beside the account menu, polls
   `GET /api/me/notices/unread` every 30 seconds while the tab is visible and
   when it is shown again (`useRefreshWhileVisible`), and announces arrivals

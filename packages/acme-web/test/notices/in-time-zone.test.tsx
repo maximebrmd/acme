@@ -5,7 +5,8 @@ import { NextIntlClientProvider, useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
-import { InTimeZone, ViewerTimeZone } from "#components/in-time-zone.tsx";
+import { InTimeZone } from "#components/notices/in-time-zone.tsx";
+import { ViewerTimeZone } from "#components/viewer-time-zone.tsx";
 import { loadMessages } from "#i18n/messages.ts";
 import { useNoticeText } from "#notices/notice-text.ts";
 
