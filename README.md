@@ -17,13 +17,16 @@ It is not released yet. Today you can:
 - have it published to Mastodon and Bluesky at its time, with its media;
 - hear how each post ended, and which channels need reconnecting, under a
   bell in the app and by email, as each member chooses;
+- see how posts did on Mastodon and Bluesky: their likes, reposts, replies
+  and quotes, read back every hour for two days then daily for a month, by
+  channel and day, and on each post's page;
 - ask a writing assistant to rewrite, shorten or translate a post, or to
   suggest hashtags, when the server has an AI provider;
 - sign in from the command line, and let MCP clients read a workspace.
 
-Analytics, billing, the other platforms, and managing members, invitations
-and API keys from the app are still to come. Saved drafts are not listed
-anywhere yet: keep a draft's address to come back to it.
+Billing, the other platforms, and managing members, invitations and API
+keys from the app are still to come. Saved drafts are not listed anywhere
+yet: keep a draft's address to come back to it.
 
 ## Set up
 
@@ -170,6 +173,14 @@ Emails about posts that failed, or may have gone out unconfirmed, land in
 Mailpit. A published post is not emailed until you turn it on in the
 notifications' **Email preferences**.
 
+### Analytics
+
+Keep the server running after a post goes out: every hour, at minute 7, it
+reads back the counts of the posts due, and **Analytics** on the workspace's
+card shows them, as does the post's page. Mastodon accounts connected before
+analytics are read without their token, which shows public and unlisted
+posts only: reconnect them to let Acme read the others.
+
 ### Writing assistant
 
 The composer's **Assistant** menu appears once the server has a language
@@ -204,9 +215,9 @@ bun nx run acme-server:db:migrate    # apply pending migrations without starting
 bun nx run acme-server:auth-schema   # regenerate Better Auth's tables after changing its options
 ```
 
-Each context keeps its tables in a Postgres schema of its own (`assistant`,
-`auth`, `channels`, `media`, `notifications`, `publishing`); the job runner's
-`cluster_*` tables are in `public`. The server keeps finished jobs for 30 days
+Each context keeps its tables in a Postgres schema of its own (`analytics`,
+`assistant`, `auth`, `channels`, `media`, `notifications`, `publishing`); the
+job runner's `cluster_*` tables are in `public`. The server keeps finished jobs for 30 days
 (`ACME_CLUSTER_RETENTION` changes it), and names itself among the job runners
 with `HOSTNAME`.
 

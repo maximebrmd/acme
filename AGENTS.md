@@ -146,7 +146,7 @@ them:
 | `notifications` | account emails, in-app notices, their emails, notification preferences      |
 | `assistant`     | the writing assistant: prompts, language models, the daily quota            |
 | `shared`        | the kernel the others build on                                              |
-| `analytics`     | per-platform metrics (planned: in the lint rules, no code)                  |
+| `analytics`     | the posts it follows, snapshots of their counts, the hourly collection      |
 | `billing`       | plans, subscriptions, entitlements (planned, likewise)                      |
 
 - `domain`: entities and rules on Effect's core (`effect`: Schema, DateTime,
@@ -181,7 +181,8 @@ and no socket, for tests.
   `NODE_ENV=production`, which the image sets, decides. Read settings when the
   server starts, so a malformed value stops it there.
 - The shared kernel holds the ids several contexts use (`ChannelIdSchema`,
-  `PostIdSchema`, `MediaAssetIdSchema`: branded lowercase UUIDv7s;
+  `PostIdSchema`, `PostTargetIdSchema`, `MediaAssetIdSchema`: branded
+  lowercase UUIDv7s;
   `UserIdSchema`, `WorkspaceIdSchema`: the random lowercase UUIDs Better Auth
   issues), the platform list (`PlatformSchema`), the permission vocabulary
   (`access.ts`, `authorize.ts`), locales (`LocaleSchema`: en, fr), IANA zones
@@ -511,6 +512,40 @@ and no socket, for tests.
   languages are listed in its domain and copied in the contract, kept equal
   by `test/assistant/api/contract.test.ts`.
 
+### Analytics
+
+- Analytics follows the targets that publishing's `PublishedTargets`
+  (`publishing/application`) lists, from the latest one it follows less 15
+  minutes, in `analytics.tracked_posts`, and keeps each reading in
+  `analytics.metric_snapshots`: ids and counts, never content.
+- `CollectMetrics` runs on the `analytics.collect-metrics` cron, hourly at
+  minute 7: a post is read every hour for 48 hours, then every day until it
+  is 30 days old (`analytics/domain/collection-schedule.ts`), each next read
+  counted from the run's scheduled time (`ClusterCron.CurrentScheduledTime`).
+- Counts are likes, reposts, replies, and quotes and impressions as Options:
+  none, where a platform does not give one, is not zero.
+- Reads go through the `MetricsReader` port. `GatedMetricsReader` sends each
+  one, 25 posts at most, through the channel's `ChannelGate` (`ReadMetrics`),
+  whose handler runs the readers in `analytics/infrastructure/platforms/`:
+  reads take turns with publishing. `publishingWorkers` takes the readers;
+  publishing's tests get `UnreadMetrics`.
+- Mastodon reads one status at a time, with the channel's token from
+  `ChannelAccess` when its scopes include `read:statuses` (asked since
+  analytics; an app registered without it is registered again), without one
+  otherwise. A read stops at 429, a failure, 60 requests left or 30 seconds.
+  Bluesky reads the public AppView's `getPosts` without the session, whose
+  scope stays what posting needs.
+- A halted read leaves the rest due for the next run; a missing post, or a
+  channel off or to reconnect, waits for its next turn; a disconnected
+  channel's posts, and a post still unread a day past its window, end.
+- Summaries take the posts published over a range of days in an IANA zone:
+  the domain computes each day's start with `fromWallClock`, and Postgres
+  buckets snapshots with those instants (`width_bucket`), never its zones.
+- Test `CollectMetrics` on the in-memory store
+  (`test/analytics/fakes/memory-tracked-posts.ts`). Postgres tests write under
+  a workspace of their own, at instants no other suite uses, and delete it
+  after (`forgetWorkspace`): the collection reads every row that is due.
+
 ### MCP endpoint
 
 - `src/app/mcp/` serves effect/ai's `McpServer.layerHttp` at `/api/mcp`
@@ -587,8 +622,8 @@ Billing and captcha are not built yet.
   the OAuth pages (`device`, `oauth/workspace`, `oauth/consent`), the
   platforms' redirect URI `connect/[platform]/callback`, and the signed-in
   app: `app` (workspaces), `app/notices`, `app/notices/preferences`,
-  `app/[workspaceId]/channels`, `…/media`, `…/calendar`, `…/posts/new` and
-  `…/posts/[postId]`.
+  `app/[workspaceId]/channels`, `…/media`, `…/calendar`, `…/analytics`,
+  `…/posts/new` and `…/posts/[postId]`.
 - Pages fetch through the client derived from `acme-contract`, with
   `@effect/atom-react`: query atoms come from `AcmeApi` in `src/api/client.ts`.
   Browsers call `/api`; server code calls `ACME_API_URL`.
@@ -629,6 +664,10 @@ Billing and captcha are not built yet.
   nothing would be refused. Keep `MediaUploader` mounted while the post is
   editable and pass `disabled` while it is busy: unmounting it cancels the
   uploads in flight.
+- Charts use acme-ui's `chart` (recharts) and come with the same figures as
+  a table, behind **Chart** and **Table** tabs; the chart itself is
+  `aria-hidden`. Write calendar days, such as a summary's, in UTC
+  (`#analytics/report.ts` `dayDate`), and instants in the reader's zone.
 - `AssistantMenu` sits in the composer's text section and works on the text
   for all channels. Render it only for members with `assistant:use`, and
   only while `GET …/assistant` answers `available`; refresh that status after
