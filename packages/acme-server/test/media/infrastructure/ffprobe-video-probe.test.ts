@@ -43,6 +43,21 @@ describe(metadataFromFfprobe, () => {
     }
   );
 
+  it.each([
+    { duration: 86_400, known: true },
+    { duration: 86_400.001, known: false },
+    // Over 2^31 milliseconds, more than the column holds.
+    { duration: 3_000_000, known: false },
+    { duration: Number.MAX_VALUE, known: false },
+  ])(
+    "believes a container's duration of $duration s: $known",
+    ({ duration, known }) => {
+      const metadata = metadataFromFfprobe({ format: { duration } });
+
+      expect(Option.isSome(metadata.duration)).toBe(known);
+    }
+  );
+
   it("knows nothing about a file without a video stream", () => {
     expect(
       metadataFromFfprobe({ streams: [{ codec_type: "audio", width: 0 }] })

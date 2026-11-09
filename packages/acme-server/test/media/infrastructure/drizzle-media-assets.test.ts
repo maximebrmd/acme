@@ -4,7 +4,7 @@ import { DateTime, Duration, Effect, Layer, Option } from "effect";
 import { MediaAssets } from "#media/application/ports/media-assets.ts";
 import { MediaAssetIdSchema } from "#media/domain/media-asset-id.ts";
 import { MediaAsset, startUpload } from "#media/domain/media-asset.ts";
-import { MediaMetadata } from "#media/domain/media-metadata.ts";
+import { maxDuration, MediaMetadata } from "#media/domain/media-metadata.ts";
 import type { MediaStatus } from "#media/domain/media-status.ts";
 import { MultipartUploadIdSchema } from "#media/domain/media-status.ts";
 import { DrizzleMediaAssetsLive } from "#media/infrastructure/drizzle-media-assets.ts";
@@ -116,6 +116,30 @@ layer(RepositoryTest)("the Drizzle media assets", (it) => {
       const stale = changed(asset, { _tag: "uploaded" });
 
       assert.deepStrictEqual(yield* assets.update(stale, "pending"), ready);
+      assert.deepStrictEqual(
+        yield* assets.findById(asset.workspaceId, asset.id),
+        Option.some(ready)
+      );
+    })
+  );
+
+  it.effect("keeps the longest duration a probe records", () =>
+    Effect.gen(function* longest() {
+      const assets = yield* MediaAssets;
+      const asset = yield* freshAsset;
+
+      const ready = changed(
+        asset,
+        { _tag: "ready" },
+        new MediaMetadata({
+          codec: probed.codec,
+          dimensions: probed.dimensions,
+          duration: Option.some(maxDuration),
+        })
+      );
+
+      yield* assets.insert(ready);
+
       assert.deepStrictEqual(
         yield* assets.findById(asset.workspaceId, asset.id),
         Option.some(ready)

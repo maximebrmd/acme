@@ -9,7 +9,7 @@ import type {
   MediaSource,
   ProbeOutcome,
 } from "#media/application/ports/media-probe.ts";
-import { MediaMetadata } from "#media/domain/media-metadata.ts";
+import { maxDuration, MediaMetadata } from "#media/domain/media-metadata.ts";
 
 // What `ffprobe -print_format json` prints for the entries asked for below.
 const FfprobeStreamSchema = Schema.Struct({
@@ -41,7 +41,7 @@ const positive = (value: number | undefined): Option.Option<number> =>
 /**
  * The metadata of the first video stream. A rotation of a quarter turn,
  * which phones record instead of turning the pixels, swaps the displayed
- * width and height.
+ * width and height. A duration longer than acme records is left unknown.
  */
 export const metadataFromFfprobe = (output: FfprobeOutput): MediaMetadata => {
   const video = output.streams?.find((stream) => stream.codec_type === "video");
@@ -71,7 +71,8 @@ export const metadataFromFfprobe = (output: FfprobeOutput): MediaMetadata => {
       Option.fromUndefinedOr(output.format?.duration),
       (seconds) => seconds >= 0
     ).pipe(
-      Option.map((seconds) => Duration.millis(Math.round(seconds * 1000)))
+      Option.map((seconds) => Duration.millis(Math.round(seconds * 1000))),
+      Option.filter(Duration.isLessThanOrEqualTo(maxDuration))
     ),
   });
 };

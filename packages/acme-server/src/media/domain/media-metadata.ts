@@ -1,6 +1,16 @@
-import { Option, Schema } from "effect";
+import { Duration, Option, Schema } from "effect";
 
 const PixelsSchema = Schema.Int.check(Schema.isGreaterThan(0));
+
+/**
+ * The longest duration acme records: a day, far beyond what any platform
+ * takes. A container can claim any duration, so a longer one is not known.
+ */
+export const maxDuration = Duration.hours(24);
+
+const MediaDurationSchema = Schema.Duration.check(
+  Schema.makeIsLessThanOrEqualTo({ order: Duration.Order })(maxDuration)
+);
 
 /** Width and height in pixels, as the media is displayed. */
 export const DimensionsSchema = Schema.Struct({
@@ -20,7 +30,7 @@ export class MediaMetadata extends Schema.Class<MediaMetadata>(
   // The video codec, as ffprobe names it (h264, hevc…).
   codec: Schema.Option(Schema.NonEmptyString),
   dimensions: Schema.Option(DimensionsSchema),
-  duration: Schema.Option(Schema.Duration),
+  duration: Schema.Option(MediaDurationSchema),
 }) {
   /** Nothing known yet. */
   static readonly unknown = new MediaMetadata({
