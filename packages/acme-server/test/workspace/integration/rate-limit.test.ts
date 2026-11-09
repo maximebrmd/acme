@@ -6,6 +6,7 @@ import { randomBytes } from "node:crypto";
 import { assert, describe, it } from "@effect/vitest";
 import { ConfigProvider, Effect, Layer } from "effect";
 
+import { BillingLive } from "#billing/container.ts";
 import { SendAuthEmail } from "#notifications/application/send-auth-email.ts";
 import { DatabaseLive } from "#shared/infrastructure/database.ts";
 import { MigrationsLive } from "#shared/infrastructure/migrations.ts";
@@ -42,7 +43,11 @@ const authWith = (env: Record<string, string>) =>
         SendAuthEmail.of({ send: () => Effect.void })
       )
     ),
-    Layer.provide(MigrationsLive.pipe(Layer.provide(DatabaseLive)))
+    Layer.provide(
+      Layer.mergeAll(BillingLive, MigrationsLive).pipe(
+        Layer.provide(DatabaseLive)
+      )
+    )
   );
 
 const hex = () => randomBytes(2).toString("hex");

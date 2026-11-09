@@ -1,6 +1,7 @@
 import { Layer } from "effect";
 
 import { ApiKeysHandlers } from "#workspace/api/api-keys.ts";
+import { CaptchaHandlers } from "#workspace/api/captcha.ts";
 import {
   AuthenticationLive,
   WorkspaceAccessLive,
@@ -12,8 +13,10 @@ import { ApiKeys } from "#workspace/application/api-keys.ts";
 import { Authenticate } from "#workspace/application/authenticate.ts";
 import { ResolveMember } from "#workspace/application/resolve-member.ts";
 import { WorkspaceContacts } from "#workspace/application/workspace-contacts.ts";
+import { WorkspaceSeats } from "#workspace/application/workspace-seats.ts";
 import { ApiKeyIssuerLive } from "#workspace/infrastructure/auth/api-key-issuer.ts";
 import { BetterAuthLive } from "#workspace/infrastructure/auth/better-auth.ts";
+import { CaptchaChallengeLive } from "#workspace/infrastructure/auth/captcha-challenge.ts";
 import { CliClientLive } from "#workspace/infrastructure/auth/cli-client.ts";
 import { AuthGatewayLive } from "#workspace/infrastructure/auth/gateway.ts";
 import { AuthSettings } from "#workspace/infrastructure/auth/settings.ts";
@@ -34,16 +37,21 @@ const UseCasesLive = Layer.mergeAll(
   ApiKeys.layer,
   Authenticate.layer,
   ResolveMember.layer,
-  WorkspaceContacts.layer
+  WorkspaceContacts.layer,
+  WorkspaceSeats.layer
 );
 
 /**
  * The workspace context's services: Better Auth, configured from the
  * environment, with the command line's OAuth client registered, and the use
  * cases behind the API and the MCP endpoint. It needs the database,
- * migrated, and the notifications context's SendAuthEmail.
+ * migrated, the notifications context's SendAuthEmail, and the billing
+ * context's WorkspaceEntitlements and RecordSubscription.
  */
-export const WorkspaceLive = UseCasesLive.pipe(
+export const WorkspaceLive = Layer.merge(
+  UseCasesLive,
+  CaptchaChallengeLive
+).pipe(
   Layer.provide(AdaptersLive),
   Layer.provideMerge(BetterAuthLive),
   Layer.provideMerge(AuthSettings.layer)
@@ -55,7 +63,8 @@ export const WorkspaceLive = UseCasesLive.pipe(
  */
 export const WorkspaceApiLive = Layer.mergeAll(
   SessionHandlers,
-  ApiKeysHandlers
+  ApiKeysHandlers,
+  CaptchaHandlers
 ).pipe(
   Layer.provideMerge(Layer.mergeAll(AuthenticationLive, WorkspaceAccessLive))
 );

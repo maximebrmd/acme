@@ -13,6 +13,11 @@ import { ObservabilityLive } from "#app/observability.ts";
 import { SystemHandlers } from "#app/system.ts";
 import { AssistantApiLive, AssistantLive } from "#assistant/container.ts";
 import {
+  BillingApiLive,
+  BillingLive,
+  BillingOverviewLive,
+} from "#billing/container.ts";
+import {
   ChannelOAuthApiLive,
   ChannelsApiLive,
   ChannelsLive,
@@ -49,7 +54,8 @@ const WorkspaceGroupsLive = Layer.mergeAll(
   MediaApiLive,
   NoticesApiLive,
   NotificationPreferencesApiLive,
-  AssistantApiLive
+  AssistantApiLive,
+  BillingApiLive
 ).pipe(Layer.provideMerge(WorkspaceApiLive));
 
 const ApiLive = HttpApiBuilder.layer(Api, {
@@ -64,18 +70,39 @@ const ApiLive = HttpApiBuilder.layer(Api, {
  */
 export const RoutesLive = Layer.mergeAll(ApiLive, AuthRoutesLive, McpLive);
 
-// The workspace context with the notifications it sends, then the notices,
-// which read the workspace's members, then the channels context, which
-// sends them, as publishing does.
+// The workspace context with the notifications it sends and the plans that
+// limit it, then the notices, which read the workspace's members, then the
+// channels context, which sends them, as publishing does.
 const ChannelsWithNoticesLive = ChannelsLive.pipe(
   Layer.provideMerge(NoticesLive),
-  Layer.provideMerge(WorkspaceLive.pipe(Layer.provideMerge(NotificationsLive)))
+  Layer.provideMerge(
+    WorkspaceLive.pipe(
+      Layer.provideMerge(NotificationsLive),
+      Layer.provideMerge(BillingLive)
+    )
+  )
 );
 
 // Publishing posts to the channels the channels context lists, with the
 // media the media context holds.
 const PublishingContextLive = PublishingLive.pipe(
   Layer.provide(Layer.mergeAll(ChannelsWithNoticesLive, MediaLive))
+);
+
+// The assistant, whose daily quota is the workspace plan's.
+const AssistantContextLive = AssistantLive.pipe(
+  Layer.provideMerge(BillingLive)
+);
+
+// The billing page, which counts what each context holds.
+const BillingContextLive = BillingOverviewLive.pipe(
+  Layer.provide(
+    Layer.mergeAll(
+      ChannelsWithNoticesLive,
+      PublishingContextLive,
+      AssistantContextLive
+    )
+  )
 );
 
 // Durable jobs as AppLive runs them, for tests that write and read posts and
@@ -103,7 +130,8 @@ const ServicesLive = Layer.mergeAll(
   ChannelsWithNoticesLive,
   PublishingContextLive,
   MediaLive,
-  AssistantLive
+  AssistantContextLive,
+  BillingContextLive
 ).pipe(
   Layer.provide(Layer.mergeAll(JobsWithoutWorkersLive, BunDns.layer)),
   Layer.provideMerge(MigrationsLive),
@@ -133,7 +161,8 @@ const ContextsLive = Layer.mergeAll(
   ChannelsWithNoticesLive,
   PublishingContextLive,
   MediaLive,
-  AssistantLive
+  AssistantContextLive,
+  BillingContextLive
 ).pipe(
   Layer.provideMerge(
     Layer.mergeAll(IdsLive, TransactionRunnerLive, BunDns.layer)

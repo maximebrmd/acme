@@ -10,6 +10,7 @@ import { Authentication } from "./authentication.ts";
 import { ChannelNotFound } from "./channel-not-found.ts";
 import { ConnectFailed } from "./connect-failed.ts";
 import { Forbidden } from "./forbidden.ts";
+import { PlanLimitReached } from "./plan-limit-reached.ts";
 import { PlatformUnreachable } from "./platform-unreachable.ts";
 import { PlatformSchema } from "./platform.ts";
 import { WorkspaceAccess } from "./workspace-access.ts";
@@ -90,7 +91,12 @@ export type ConnectCallback = typeof ConnectCallbackSchema.Type;
 
 const workspace = { workspaceId: Schema.String };
 
-const connectErrors = [Forbidden, ConnectFailed, PlatformUnreachable] as const;
+const connectErrors = [
+  Forbidden,
+  ConnectFailed,
+  PlatformUnreachable,
+  PlanLimitReached,
+] as const;
 
 /** The social accounts connected to a workspace. */
 export class ChannelsApi extends HttpApiGroup.make("channels")
@@ -114,7 +120,7 @@ export class ChannelsApi extends HttpApiGroup.make("channels")
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Starts connecting an account of the platform: answers with the platform's sign-in page, where the browser goes next. The connection is tied to the caller and the workspace, and must be completed within 15 minutes. Needs channel:connect.",
+          "Starts connecting an account of the platform: answers with the platform's sign-in page, where the browser goes next. The connection is tied to the caller and the workspace, and must be completed within 15 minutes. On a server that bills, a workspace whose plan allows no more channels gets PlanLimitReached. Needs channel:connect.",
         summary: "Start connecting an account",
       })
     ),
@@ -126,7 +132,7 @@ export class ChannelsApi extends HttpApiGroup.make("channels")
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Completes a connection with what the platform sent back: the account becomes a channel of the workspace, or the channel it reconnects takes its new tokens. Only the member who started the connection can complete it, once. Needs channel:connect.",
+          "Completes a connection with what the platform sent back: the account becomes a channel of the workspace, or the channel it reconnects takes its new tokens. Only the member who started the connection can complete it, once. A new account needs room in the workspace's plan (PlanLimitReached). Needs channel:connect.",
         summary: "Complete connecting an account",
       })
     ),

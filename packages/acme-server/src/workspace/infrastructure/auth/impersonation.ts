@@ -1,8 +1,5 @@
-import {
-  APIError,
-  createAuthMiddleware,
-  getSessionFromCtx,
-} from "better-auth/api";
+import type { GenericEndpointContext } from "better-auth";
+import { APIError, getSessionFromCtx } from "better-auth/api";
 import { Schema } from "effect";
 
 // Better Auth's workspace routes that read, or change only the session that
@@ -40,17 +37,26 @@ const grantsAccess: ReadonlySet<string> = new Set([
   "/oauth2/update-consent",
 ]);
 
+// The Stripe plugin's routes that only read, or that Stripe sends the
+// browser back to.
+const billingReads: ReadonlySet<string> = new Set([
+  "/subscription/list",
+  "/subscription/success",
+]);
+
 /**
  * Whether staff impersonating a member are refused a Better Auth route: every
- * workspace route but those that only read, and those that give an OAuth
- * client access. Creating, inviting, accepting, changing roles, removing,
- * deleting and granting access all outlive the impersonation, as what
+ * workspace route but those that only read, those that give an OAuth
+ * client access, and those that subscribe, cancel or open the billing
+ * portal. Creating, inviting, accepting, changing roles, removing, deleting,
+ * granting access and paying all outlive the impersonation, as what
  * `withheldWhileImpersonating` lists does, and these routes never reach
  * Acme's API, which applies that list.
  */
 export const refusedWhileImpersonating = (path: string): boolean =>
   grantsAccess.has(path) ||
-  (path.startsWith("/organization/") && !allowedWhileImpersonating.has(path));
+  (path.startsWith("/organization/") && !allowedWhileImpersonating.has(path)) ||
+  (path.startsWith("/subscription/") && !billingReads.has(path));
 
 const isImpersonation = Schema.is(
   Schema.Struct({
@@ -58,8 +64,10 @@ const isImpersonation = Schema.is(
   })
 );
 
-/** Better Auth's before hook: refuses those routes to an impersonation. */
-export const refuseImpersonatedChanges = createAuthMiddleware(async (ctx) => {
+/** Part of Better Auth's before hook: refuses those routes to an impersonation. */
+export const refuseImpersonatedChanges = async (
+  ctx: GenericEndpointContext
+): Promise<void> => {
   if (!refusedWhileImpersonating(ctx.path)) {
     return;
   }
@@ -71,4 +79,4 @@ export const refuseImpersonatedChanges = createAuthMiddleware(async (ctx) => {
         "Staff impersonating a member cannot change workspaces or give access to them",
     });
   }
-});
+};

@@ -45,6 +45,7 @@ import { connect } from "#test/publishing/posts-server.ts";
 import {
   actorIn,
   attachableMedia,
+  postAllowance,
   syntheticContent,
 } from "#test/publishing/support.ts";
 import { permissionsFor } from "#workspace/domain/roles.ts";
@@ -64,7 +65,13 @@ import {
 // carry none, so the media context's library is not needed.
 const PublishingTest = NotifiedPublicationOutcomes.pipe(
   Layer.provideMerge(
-    publishingWith(Layer.mergeAll(ListedWorkspaceChannels, attachableMedia()))
+    publishingWith(
+      Layer.mergeAll(
+        ListedWorkspaceChannels,
+        attachableMedia(),
+        postAllowance()
+      )
+    )
   )
 );
 

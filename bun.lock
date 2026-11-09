@@ -85,6 +85,7 @@
         "@better-auth/drizzle-adapter": "1.7.18",
         "@better-auth/mcp": "1.7.18",
         "@better-auth/oauth-provider": "1.7.18",
+        "@better-auth/stripe": "1.7.18",
         "@better-auth/utils": "0.5.1",
         "@better-fetch/fetch": "1.3.3",
         "@effect/ai-anthropic": "4.1.2",
@@ -99,6 +100,7 @@
         "nodemailer": "10.4.0",
         "pg": "8.23.1",
         "sharp": "0.35.5",
+        "stripe": "23.1.0",
       },
       "devDependencies": {
         "@effect/vitest": "4.1.2",
@@ -161,8 +163,10 @@
       "name": "acme-web",
       "dependencies": {
         "@better-auth/oauth-provider": "1.7.18",
+        "@better-auth/stripe": "1.7.18",
         "@dnd-kit/react": "0.5.3",
         "@effect/atom-react": "4.1.2",
+        "@marsidev/react-turnstile": "1.6.3",
         "@tiptap/core": "3.33.0",
         "@tiptap/extension-document": "3.33.0",
         "@tiptap/extension-paragraph": "3.33.0",
@@ -417,6 +421,8 @@
 
     "@better-auth/prisma-adapter": ["@better-auth/prisma-adapter@1.7.18", "", { "peerDependencies": { "@better-auth/core": "^1.7.18", "@better-auth/utils": "^0.4.2 || ^0.5.0", "@prisma/client": "^5.0.0 || ^6.0.0 || ^7.0.0", "prisma": "^5.0.0 || ^6.0.0 || ^7.0.0" }, "optionalPeers": ["@prisma/client", "prisma"] }, "sha512-NbGtY+WU5vV5M1wYTypNQRSJS45QafK5JkFkcWggshoSIAypI8/5sj5ilrO4T+vqfubNISi2Z6LPNIscVBg3Pg=="],
 
+    "@better-auth/stripe": ["@better-auth/stripe@1.7.18", "", { "dependencies": { "defu": "^6.1.5", "zod": "^4.5.4" }, "peerDependencies": { "@better-auth/core": "^1.7.18", "better-auth": "^1.7.18", "better-call": "1.4.5", "stripe": "^18 || ^19 || ^20 || ^21 || ^22 || ^23" } }, "sha512-jp0gvcQbAYCIQRq8gPqBtSBxJZx+MwwBx+ZJ5Hlkp2KP6LuZu/rOvSCj3nF0jGE4T40wvTeRPLiTGz3GGWHdUw=="],
+
     "@better-auth/telemetry": ["@better-auth/telemetry@1.7.18", "", { "peerDependencies": { "@better-auth/core": "^1.7.18", "@better-auth/utils": "^0.4.2 || ^0.5.0", "@better-fetch/fetch": "1.3.3" } }, "sha512-mhZxFhzG28dQLdSBVXZp0v5P3gTCylu5q5U/XmV8UVucN449+9JLzktO41Z89pAV/mt4Q1mooNC7w0Vax9B4vA=="],
 
     "@better-auth/utils": ["@better-auth/utils@0.5.1", "", { "dependencies": { "@noble/hashes": "^2.0.1" } }, "sha512-WETqw5vQ52uQ/xwWR4E8rTgT6fDEr/wnS+otDNkBCa/69281FCF32OKDdQUcahMCnjsvqXBNiEvAQHFB0EVRRg=="],
@@ -618,6 +624,8 @@
     "@jridgewell/trace-mapping": ["@jridgewell/trace-mapping@0.3.31", "", { "dependencies": { "@jridgewell/resolve-uri": "^3.1.0", "@jridgewell/sourcemap-codec": "^1.4.14" } }, "sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw=="],
 
     "@mapbox/node-pre-gyp": ["@mapbox/node-pre-gyp@2.0.3", "", { "dependencies": { "consola": "^3.2.3", "detect-libc": "^2.0.0", "https-proxy-agent": "^7.0.5", "node-fetch": "^2.6.7", "nopt": "^8.0.0", "semver": "^7.5.3", "tar": "^7.4.0" }, "bin": { "node-pre-gyp": "bin/node-pre-gyp" } }, "sha512-uwPAhccfFJlsfCxMYTwOdVfOz3xqyj8xYL3zJj8f0pb30tLohnnFPhLuqp4/qoEz8sNxe4SESZedcBojRefIzg=="],
+
+    "@marsidev/react-turnstile": ["@marsidev/react-turnstile@1.6.3", "", { "peerDependencies": { "react": "^17.0.2 || ^18.0.0 || ^19.0", "react-dom": "^17.0.2 || ^18.0.0 || ^19.0" } }, "sha512-JdMMArjEVDMs5jnGMBeXl3y6dkMuIXPG4Tu88Uo2Rkf8ujEw/iJ2Yp/3n4kDF3BjJ+bJB9WC19LPWc5a7/4srA=="],
 
     "@mermaid-js/parser": ["@mermaid-js/parser@2.0.1", "", { "dependencies": { "@chevrotain/types": "~13.2.0" } }, "sha512-j37dj/h6p6pots1L7pLPPNuABEEu9WP4OYg9pW1g+nYG331j0+3canE9OagtYdytYvdSAMG+2fKU5cxep6LgjA=="],
 
@@ -2592,6 +2600,8 @@
     "strip-bom-string": ["strip-bom-string@1.0.0", "", {}, "sha512-uCC2VHvQRYu+lMh4My/sFNmF2klFymLX1wHJeXnbEJERpV/ZsVuonzerjfrGpIGF7LBVa1O7i9kjiWvJiFck8g=="],
 
     "strip-final-newline": ["strip-final-newline@4.0.0", "", {}, "sha512-aulFJcD6YK8V1G7iRB5tigAP4TsHBZZrOV8pjV++zdUwmeV8uzbY7yn6h9MswN62adStNZFuCIx4haBnRuMDaw=="],
+
+    "stripe": ["stripe@23.1.0", "", { "peerDependencies": { "@types/node": ">=20" }, "optionalPeers": ["@types/node"] }, "sha512-fVUfMSfTPoukfoV//MUKAx2+YxyKmYaYtnAL9VkfnHfaPNQylFdWZMD+zgUFerI8rjbaiER8Vzj2XEUQ2AhAsQ=="],
 
     "strnum": ["strnum@2.5.1", "", { "dependencies": { "anynum": "^1.0.1" } }, "sha512-UM4nTLWzQiDBseVxUGxN0wJzIk0UU89Qi7pKXz9qISo+lhviJikTuikBsK/oFRlpvYHvSdz0TVoLyQ+sEpYwxA=="],
 

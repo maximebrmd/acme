@@ -5,6 +5,7 @@ import {
   CurrentMember,
   Forbidden,
   OAuthClientNotPublished,
+  PlanLimitReached,
   PlatformUnreachable,
 } from "acme-contract";
 import type { ConnectCallback, ConnectFailureReason } from "acme-contract";
@@ -55,6 +56,8 @@ const startFailure = (failure: StartFailure) =>
       Effect.logError(
         "A channel was not connected: ACME_TOKEN_KEYS is not set"
       ).pipe(Effect.andThen(refused("notConfigured"))),
+    PlanLimitReached: ({ allowed, limit }) =>
+      Effect.fail(new PlanLimitReached({ allowed, limit })),
     PlatformNotConnectable: ({ reason }) =>
       refused(
         reason === "notConfigured" ? "notConfigured" : "platformNotSupported"
@@ -64,7 +67,11 @@ const startFailure = (failure: StartFailure) =>
 
 type Refusal = Effect.Effect<
   never,
-  ChannelNotFound | ConnectFailed | Forbidden | PlatformUnreachable
+  | ChannelNotFound
+  | ConnectFailed
+  | Forbidden
+  | PlanLimitReached
+  | PlatformUnreachable
 >;
 
 const reconnectFailure = (failure: MissingChannel | StartFailure): Refusal =>
@@ -83,6 +90,7 @@ const completeFailure = (failure: CompleteConnectFailure): Refusal =>
     InvalidConnectState: () => refused("invalidState"),
     MissingPermission: startFailure,
     MissingTokenKey: startFailure,
+    PlanLimitReached: startFailure,
     PlatformNotConnectable: startFailure,
     PlatformUnavailable: startFailure,
     ReconnectAccountMismatch: () => refused("accountMismatch"),

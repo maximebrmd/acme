@@ -1,10 +1,19 @@
-import { Config, Context, Effect, Layer, Redacted, Schema } from "effect";
+import {
+  Config,
+  Context,
+  Effect,
+  Layer,
+  Option,
+  Redacted,
+  Schema,
+} from "effect";
 
 import {
   isProduction,
   publicUrlConfig,
   requiredInProduction,
 } from "#shared/infrastructure/environment.ts";
+import { stripeSettingsConfig } from "#shared/infrastructure/stripe-settings.ts";
 
 // Used only outside production, so `bun nx run acme-server:dev` signs people
 // in without any setup. Production refuses to start without its own secret:
@@ -21,6 +30,63 @@ const trimmed = (entries: readonly string[]): readonly string[] =>
     return value === "" ? [] : [value];
   });
 
+/** Cloudflare Turnstile, which signing up and password resets then need. */
+export interface CaptchaSettings {
+  readonly secretKey: Redacted.Redacted;
+  /** The key the web app shows the widget with. */
+  readonly siteKey: string;
+  /**
+   * Where tokens are checked: Cloudflare's siteverify unless
+   * TURNSTILE_VERIFY_URL names another, such as a fake in tests.
+   */
+  readonly verifyUrl: Option.Option<string>;
+}
+
+// A setting that is set: unset and empty both read as none.
+const optionalString = (name: string) =>
+  Config.option(Config.String(name)).pipe(
+    Config.map(Option.filter((value) => value.trim() !== ""))
+  );
+
+/**
+ * Turnstile, when TURNSTILE_SECRET_KEY and TURNSTILE_SITE_KEY are both set;
+ * off when neither is. One without the other stops the server: sign-ups
+ * would need a token the web app cannot get, or show a widget the server
+ * never checks.
+ */
+export const captchaConfig = Config.all({
+  secretKey: optionalString("TURNSTILE_SECRET_KEY"),
+  siteKey: optionalString("TURNSTILE_SITE_KEY"),
+}).pipe(
+  Config.flatMap(({ secretKey, siteKey }) => {
+    if (Option.isSome(secretKey) && Option.isSome(siteKey)) {
+      return Config.option(Config.URL("TURNSTILE_VERIFY_URL")).pipe(
+        Config.map((verifyUrl) =>
+          Option.some<CaptchaSettings>({
+            secretKey: Redacted.make(secretKey.value),
+            siteKey: siteKey.value,
+            verifyUrl: verifyUrl.pipe(Option.map((url) => url.href)),
+          })
+        )
+      );
+    }
+
+    if (Option.isSome(secretKey)) {
+      return Config.NonEmptyString("TURNSTILE_SITE_KEY").pipe(
+        Config.map(() => Option.none<CaptchaSettings>())
+      );
+    }
+
+    if (Option.isSome(siteKey)) {
+      return Config.NonEmptyString("TURNSTILE_SECRET_KEY").pipe(
+        Config.map(() => Option.none<CaptchaSettings>())
+      );
+    }
+
+    return Config.succeed(Option.none<CaptchaSettings>());
+  })
+);
+
 /**
  * How Better Auth runs, read from the environment:
  *
@@ -34,8 +100,11 @@ const trimmed = (entries: readonly string[]): readonly string[] =>
  * | `AUTH_REQUIRE_EMAIL_VERIFICATION` | `true`                           |
  * | `AUTH_DB_POOL_MAX`                | `5`                              |
  * | `MCP_DYNAMIC_REGISTRATION`        | `false`                          |
+ * | `TURNSTILE_SECRET_KEY`, `TURNSTILE_SITE_KEY` | none: no captcha      |
+ * | `STRIPE_SECRET_KEY` and the rest  | none: no billing (see `#shared/infrastructure/stripe-settings.ts`) |
  */
 export const authSettingsConfig = Config.all({
+  captcha: captchaConfig,
   databasePoolMax: Config.Int("AUTH_DB_POOL_MAX").pipe(Config.withDefault(5)),
   // Whether MCP clients may register themselves (OAuth dynamic client
   // registration), which most of them need before they can sign in. Anyone
@@ -66,6 +135,8 @@ export const authSettingsConfig = Config.all({
     Config.Redacted("BETTER_AUTH_SECRET"),
     developmentSecret
   ),
+  // Billing through Stripe's plugin, with organization subscriptions.
+  stripe: stripeSettingsConfig,
   // Other origins allowed to send authenticated requests, besides PUBLIC_URL.
   trustedOrigins: Config.Array(Schema.String, "TRUSTED_ORIGINS").pipe(
     Config.withDefault([]),

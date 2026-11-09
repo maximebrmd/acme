@@ -23,11 +23,22 @@ describe(refusedWhileImpersonating, () => {
   });
 
   it.each([
+    "/subscription/billing-portal",
+    "/subscription/cancel",
+    "/subscription/restore",
+    "/subscription/upgrade",
+  ])("refuses %s, which pays or stops paying", (path) => {
+    expect(refusedWhileImpersonating(path)).toBeTruthy();
+  });
+
+  it.each([
     "/device",
     "/get-session",
     "/oauth2/public-client",
     "/organization/list-members",
     "/organization/set-active",
+    "/subscription/list",
+    "/subscription/success",
   ])("allows %s, which only reads", (path) => {
     expect(refusedWhileImpersonating(path)).toBeFalsy();
   });

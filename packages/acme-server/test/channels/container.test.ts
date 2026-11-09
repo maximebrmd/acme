@@ -12,6 +12,7 @@ import { PlatformAuthorizers } from "#channels/application/platform-authorizer.t
 import { TokenCipher } from "#channels/application/token-cipher.ts";
 import { ChannelsLive } from "#channels/container.ts";
 import { Notify } from "#notifications/application/notify.ts";
+import { UnmeteredTest } from "#test/billing/support.ts";
 import {
   actorIn,
   DatabaseTest,
@@ -20,11 +21,12 @@ import {
   syntheticKeyring,
 } from "#test/channels/support.ts";
 
-// What the context needs from the rest of the server: names to resolve, and
-// notices to send, which nothing here sends.
+// What the context needs from the rest of the server: names to resolve,
+// notices to send, which nothing here sends, and plans, which limit nothing.
 const Neighbours = Layer.mergeAll(
   Dns.layerStatic({}),
-  Layer.succeed(Notify, Notify.of({ notify: () => Effect.void }))
+  Layer.succeed(Notify, Notify.of({ notify: () => Effect.void })),
+  UnmeteredTest
 );
 
 // The channels context as the server builds it, with these settings. A blank

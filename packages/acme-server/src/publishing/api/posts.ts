@@ -3,6 +3,7 @@ import {
   CurrentMember,
   Forbidden,
   InvalidTimeRange,
+  PlanLimitReached,
   PostContentInvalid,
   PostNotFound,
   PostStatusConflict,
@@ -50,6 +51,14 @@ const unknownMedia = ({ mediaIds }: { readonly mediaIds: readonly string[] }) =>
   Effect.fail(new UnknownMedia({ mediaIds }));
 
 const inPast = () => Effect.fail(new ScheduleInPast());
+
+const limitReached = ({
+  allowed,
+  limit,
+}: {
+  readonly allowed: number;
+  readonly limit: PlanLimitReached["limit"];
+}) => Effect.fail(new PlanLimitReached({ allowed, limit }));
 
 export const PostsHandlers = HttpApiBuilder.group(
   Api,
@@ -136,6 +145,7 @@ export const PostsHandlers = HttpApiBuilder.group(
               DatabaseError: Effect.die,
               InvalidPostTransition: conflict,
               MissingPermission: forbidden,
+              PlanLimitReached: limitReached,
               PostContentRejected: contentInvalid,
               PostNotFound: notFound,
               ScheduleInPast: inPast,
@@ -160,6 +170,7 @@ export const PostsHandlers = HttpApiBuilder.group(
                 DatabaseError: Effect.die,
                 InvalidPostTransition: conflict,
                 MissingPermission: forbidden,
+                PlanLimitReached: limitReached,
                 PostContentRejected: contentInvalid,
                 PostNotFound: notFound,
                 ScheduleInPast: inPast,

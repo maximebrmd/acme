@@ -25,10 +25,12 @@ import {
 import type { Channel } from "#channels/domain/channel.ts";
 import { DrizzleChannelRepository } from "#channels/infrastructure/drizzle-channel-repository.ts";
 import { DrizzleConnectAttempts } from "#channels/infrastructure/drizzle-connect-attempts.ts";
+import { PlanChannelAllowanceLive } from "#channels/infrastructure/plan-channel-allowance.ts";
 import { blueskyAuthorizer } from "#channels/infrastructure/platforms/bluesky/bluesky-authorizer.ts";
 import { SqlChannelLocks } from "#channels/infrastructure/sql-channel-locks.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
 import { publicFetch } from "#shared/infrastructure/platforms/public-http.ts";
+import { UnmeteredTest } from "#test/billing/support.ts";
 import {
   authorizersOf,
   testPublicUrl,
@@ -92,6 +94,7 @@ const BlueskyTest = Layer.mergeAll(
       DrizzleChannelRepository,
       DrizzleConnectAttempts,
       SqlChannelLocks,
+      PlanChannelAllowanceLive.pipe(Layer.provide(UnmeteredTest)),
       BlueskyAuthorizersTest,
       RecordedNotices.layer
     )

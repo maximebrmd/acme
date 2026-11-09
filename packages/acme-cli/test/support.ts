@@ -202,6 +202,9 @@ const signedInGroupsLive = (authorization: AuthorizationServer) =>
         status: () => refusing,
         suggest: () => refusing,
       })
+    ),
+    HttpApiBuilder.group(Api, "billing", (handlers) =>
+      handlers.handleAll({ get: () => refusing })
     )
   ).pipe(Layer.provideMerge(securityLive(authorization)));
 
@@ -211,6 +214,13 @@ const ChannelOAuthLive = HttpApiBuilder.group(Api, "channelOAuth", (handlers) =>
   handlers.handleAll({
     blueskyClientMetadata: () => notPublished,
     blueskyJwks: () => notPublished,
+  })
+);
+
+// A server without a captcha.
+const CaptchaLive = HttpApiBuilder.group(Api, "captcha", (handlers) =>
+  handlers.handleAll({
+    get: () => Effect.succeed({ turnstileSiteKey: null }),
   })
 );
 
@@ -239,7 +249,8 @@ export const inMemoryServer = (
                   )
                 ),
                 Layer.provide(signedInGroupsLive(server)),
-                Layer.provide(ChannelOAuthLive)
+                Layer.provide(ChannelOAuthLive),
+                Layer.provide(CaptchaLive)
               ),
               HttpApiBuilder.layer(OAuthApi).pipe(
                 Layer.provide(server.handlers)

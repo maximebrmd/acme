@@ -1,6 +1,8 @@
 import { Context, Effect, FiberSet, Layer } from "effect";
 import type { LogLevel } from "effect";
 
+import { RecordSubscription } from "#billing/application/record-subscription.ts";
+import { WorkspaceEntitlements } from "#billing/application/workspace-entitlements.ts";
 import { SendAuthEmail } from "#notifications/application/send-auth-email.ts";
 
 import { AuthStartFailed } from "./auth-start-failed.ts";
@@ -34,12 +36,17 @@ export const BetterAuthLive = Layer.effect(
     const settings = yield* AuthSettings;
     const database = yield* makeAuthDatabase(settings.databasePoolMax);
     const emails = yield* SendAuthEmail;
+    const entitlements = yield* WorkspaceEntitlements;
+    const subscriptions = yield* RecordSubscription;
 
     // Better Auth calls back outside any fiber. Work it starts runs on fibers
     // of this layer, with its logger and tracer, and is waited for, then
     // interrupted, when the layer closes.
     const fibers = yield* FiberSet.make();
     const run = yield* FiberSet.runtime(fibers)();
+
+    // What Better Auth awaits runs with this layer's logger and tracer too.
+    const runPromise = Effect.runPromiseWith(yield* Effect.context());
 
     yield* Effect.addFinalizer(() =>
       FiberSet.awaitEmpty(fibers).pipe(Effect.timeoutOption(drainTimeout))
@@ -56,8 +63,21 @@ export const BetterAuthLive = Layer.effect(
           )
         );
       },
+      // A plan's allowance, read while a member is invited or joins. A
+      // database failure refuses the request.
+      memberAllowance: async (workspaceId) =>
+        await runPromise(
+          entitlements
+            .of(workspaceId)
+            .pipe(Effect.map(({ allowances }) => allowances.members))
+        ),
       resetPassword: (link) => {
         run(emails.send({ _tag: "ResetPassword", ...link }));
+      },
+      // Awaited: the webhook answers an error until the event is recorded,
+      // so Stripe sends it again.
+      subscriptionChanged: async (event) => {
+        await runPromise(subscriptions.record(event).pipe(Effect.asVoid));
       },
       verifyEmail: (link) => {
         run(emails.send({ _tag: "VerifyEmail", ...link }));

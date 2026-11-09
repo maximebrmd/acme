@@ -13,7 +13,7 @@ import {
 import type { OAuthOptions, Scope } from "@better-auth/oauth-provider";
 import { betterAuth } from "better-auth";
 import type { Session, User } from "better-auth";
-import { APIError } from "better-auth/api";
+import { APIError, createAuthMiddleware } from "better-auth/api";
 import { admin, jwt, organization } from "better-auth/plugins";
 import { Option, Redacted, Schema } from "effect";
 
@@ -24,6 +24,13 @@ import type { Locale } from "#shared/domain/locale.ts";
 import { RoleSchema } from "#workspace/domain/roles.ts";
 
 import { accessControl, roles } from "./access-control.ts";
+import {
+  checkMemberRoom,
+  refusePersonalSubscriptions,
+  stripeBilling,
+  turnstile,
+} from "./billing.ts";
+import type { BillingHooks } from "./billing.ts";
 import { refuseImpersonatedChanges } from "./impersonation.ts";
 import {
   apiResourceOf,
@@ -52,11 +59,12 @@ export interface InvitationLink extends AuthLink {
 export type AuthLogLevel = "debug" | "error" | "info" | "warn";
 
 /**
- * What Better Auth calls back into the rest of the server for. Each returns at
- * once: Better Auth awaits its email callbacks, and sending inside the request
- * would make the reply slower for known emails than for unknown ones.
+ * What Better Auth calls back into the rest of the server for. The email
+ * hooks return at once: Better Auth awaits its email callbacks, and sending
+ * inside the request would make the reply slower for known emails than for
+ * unknown ones. The billing hooks are awaited.
  */
-export interface AuthHooks {
+export interface AuthHooks extends BillingHooks {
   readonly invitation: (link: InvitationLink) => void;
   readonly log: (level: AuthLogLevel, message: string) => void;
   readonly resetPassword: (link: AuthLink) => void;
@@ -251,15 +259,25 @@ const oauthServer = (settings: AuthConfiguration) => {
     : oauthProvider(provider);
 };
 
+// Every route's before hook.
+const beforeEveryRoute = createAuthMiddleware(async (ctx) => {
+  await refuseImpersonatedChanges(ctx);
+  refusePersonalSubscriptions(ctx);
+});
+
 /**
  * The Better Auth instance: email and password with verification, workspaces
  * (the organization plugin), staff tools (the admin plugin), API keys owned
  * by workspaces, and the OAuth authorization server that MCP clients and the
  * command line sign in with (the MCP and device authorization plugins, which
- * sign their tokens with the JWT plugin's keys).
+ * sign their tokens with the JWT plugin's keys). On a server configured for
+ * them, Cloudflare Turnstile on sign-ups and password resets (the captcha
+ * plugin) and workspace subscriptions through Stripe (the Stripe plugin).
  *
- * Every plugin is always on, and options that shape tables are constants, so
- * `scripts/auth-schema.ts` generates the same tables for every deployment.
+ * Every other plugin is always on, and options that shape tables are
+ * constants. The captcha plugin has no table, and `scripts/auth-schema.ts`
+ * generates the tables with the Stripe plugin on, which Better Auth runs
+ * without when billing is off, so every deployment has the same tables.
  */
 export const makeAuth = ({ database, hooks, settings }: AuthDependencies) =>
   betterAuth({
@@ -337,7 +355,7 @@ export const makeAuth = ({ database, hooks, settings }: AuthDependencies) =>
         await Promise.resolve();
       },
     },
-    hooks: { before: refuseImpersonatedChanges },
+    hooks: { before: beforeEveryRoute },
     logger: {
       level: "warn",
       // Messages only: Better Auth passes request details as further
@@ -354,11 +372,26 @@ export const makeAuth = ({ database, hooks, settings }: AuthDependencies) =>
         creatorRole: "owner",
         invitationExpiresIn: oneWeek,
         organizationHooks: {
+          // An invitation is accepted, or a member added, only while the
+          // workspace's plan has room for one more.
+          beforeAcceptInvitation: async ({ invitation }) => {
+            await checkMemberRoom(
+              hooks,
+              invitation.organizationId,
+              Option.none()
+            );
+          },
           beforeAddMember: async ({ member }) => {
             await oneRole(member.role);
+            await checkMemberRoom(hooks, member.organizationId, Option.none());
           },
           beforeCreateInvitation: async ({ invitation }) => {
             await oneRole(invitation.role);
+            await checkMemberRoom(
+              hooks,
+              invitation.organizationId,
+              Option.some(invitation.email)
+            );
           },
           // A workspace's API keys go with it: they refer to it by id alone,
           // with no foreign key, and would otherwise outlive it. They go
@@ -429,8 +462,25 @@ export const makeAuth = ({ database, hooks, settings }: AuthDependencies) =>
         interval: "5s",
         verificationUri: oauthPages.device,
       }),
+      ...Option.match(settings.captcha, {
+        onNone: () => [],
+        onSome: (captcha) => [turnstile(captcha)],
+      }),
+      ...Option.match(settings.stripe, {
+        onNone: () => [],
+        onSome: (billing) => [
+          stripeBilling(billing, hooks, (message) => {
+            hooks.log("warn", message);
+          }),
+        ],
+      }),
     ],
-    rateLimit: { enabled: settings.production, storage: "database" },
+    rateLimit: {
+      // Stripe retries its webhooks, whose signature is their guard.
+      customRules: { "/stripe/webhook": false },
+      enabled: settings.production,
+      storage: "database",
+    },
     secret: Redacted.value(settings.secret),
     session: {
       cookieCache: { enabled: true, maxAge: fiveMinutes },

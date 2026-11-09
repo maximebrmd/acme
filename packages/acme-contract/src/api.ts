@@ -2,6 +2,8 @@ import { HttpApi, OpenApi } from "effect/http-api";
 
 import { ApiKeysApi } from "./api-keys.ts";
 import { AssistantApi } from "./assistant.ts";
+import { BillingApi } from "./billing.ts";
+import { CaptchaApi } from "./captcha.ts";
 import { ChannelOAuthApi } from "./channel-oauth.ts";
 import { ChannelsApi } from "./channels.ts";
 import { MediaApi } from "./media.ts";
@@ -52,6 +54,39 @@ export { AssistantQuotaExceeded } from "./assistant-quota-exceeded.ts";
 export { AssistantUnavailable } from "./assistant-unavailable.ts";
 
 export { Authentication } from "./authentication.ts";
+
+export {
+  BillingApi,
+  BillingSchema,
+  BillingSubscriptionSchema,
+  PeriodUsageSchema,
+  PlanAllowancesSchema,
+  PlanOfferSchema,
+  SubscriptionStatusSchema,
+  UsageSchema,
+} from "./billing.ts";
+
+export type {
+  Billing,
+  BillingSubscription,
+  PeriodUsage,
+  PlanAllowances,
+  PlanOffer,
+  SubscriptionStatus,
+  Usage,
+} from "./billing.ts";
+
+export {
+  PaidPlanSchema,
+  PlanLimitSchema,
+  PlanSchema,
+} from "./billing-plans.ts";
+
+export type { PaidPlan, Plan, PlanLimit } from "./billing-plans.ts";
+
+export { CaptchaApi, CaptchaSchema } from "./captcha.ts";
+
+export type { Captcha } from "./captcha.ts";
 
 export { ChannelNotFound } from "./channel-not-found.ts";
 
@@ -178,6 +213,8 @@ export { MediaTooLarge } from "./media-too-large.ts";
 export { PermissionSchema } from "./permission.ts";
 
 export type { Permission } from "./permission.ts";
+
+export { PlanLimitReached } from "./plan-limit-reached.ts";
 
 export { PlatformSchema } from "./platform.ts";
 
@@ -308,4 +345,6 @@ export class Api extends HttpApi.make("acme")
   .add(NoticesApi)
   .add(NotificationPreferencesApi)
   .add(AssistantApi)
+  .add(BillingApi)
+  .add(CaptchaApi)
   .annotateMerge(OpenApi.annotations({ title: "Acme API" })) {}

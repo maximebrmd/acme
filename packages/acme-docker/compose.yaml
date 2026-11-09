@@ -11,6 +11,7 @@
 #   SeaweedFS filer 127.0.0.1:18888   browse the stored files
 #   SMTP (Mailpit)  127.0.0.1:11025   any user and password
 #   Mailpit UI      127.0.0.1:18025
+#   stripe-mock     127.0.0.1:12111   STRIPE_API_URL=http://127.0.0.1:12111, for tests
 #   OTLP gRPC       127.0.0.1:14317   the OpenTelemetry Collector
 #   OTLP HTTP       127.0.0.1:14318   OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:14318
 #   Grafana         127.0.0.1:13000   anonymous admin
@@ -96,6 +97,17 @@ services:
     healthcheck:
       <<: *healthcheck
       test: [CMD, /mailpit, readyz]
+
+  # Stripe's API as its OpenAPI document describes it, with fixed answers:
+  # the server's billing tests check checkout and the customer portal
+  # against it, and never reach Stripe. It keeps nothing.
+  stripe-mock:
+    image: stripe/stripe-mock:v0.206.0
+    ports:
+      - 127.0.0.1:${ACME_STRIPE_MOCK_PORT:-12111}:12111
+    healthcheck:
+      <<: *healthcheck
+      test: [CMD, nc, -z, 127.0.0.1, "12111"]
 
   otel-collector:
     image: otel/opentelemetry-collector-contrib:0.165.0
