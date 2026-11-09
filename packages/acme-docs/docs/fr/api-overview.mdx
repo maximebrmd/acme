@@ -2,7 +2,7 @@
 title: Présentation de l’API
 description: L’organisation de l’API HTTP d’Acme, comment s’y authentifier, l’emplacement de son document OpenAPI et la référence de chaque point d’accès.
 sidebar:
-  order: 6
+  order: 8
 ---
 
 L’application web, la ligne de commande et le point d’accès MCP reposent sur la même API HTTP : tout ce qu’ils font, votre propre code peut le faire aussi.
@@ -36,7 +36,7 @@ Avec une session ou un jeton OAuth, `GET /api/me` dit qui vous êtes, et liste v
 
 ## Espaces de travail [#workspaces]
 
-Les ressources d’un espace de travail se trouvent sous `/api/workspaces/{workspaceId}/` : `channels`, `posts`, `media` et `api-keys`. La référence de chaque point d’accès nomme la permission qu’il demande, comme `post:schedule` ou `channel:connect`.
+Les ressources d’un espace de travail se trouvent sous `/api/workspaces/{workspaceId}/` : `channels`, `posts`, `media`, `assistant` et `api-keys`. La référence de chaque point d’accès nomme la permission qu’il demande, comme `post:schedule` ou `channel:connect`.
 
 | Code | Signification                                                                                |
 | ---- | -------------------------------------------------------------------------------------------- |
@@ -44,7 +44,11 @@ Les ressources d’un espace de travail se trouvent sous `/api/workspaces/{works
 | 403  | Les identifiants fonctionnent, mais ne permettent pas cette requête, ou le compte est banni. |
 | 404  | Aucune ressource de ce nom, ou un espace de travail auquel l’appelant n’appartient pas.      |
 
-Les erreurs répondent par un corps JSON dont `_tag` nomme l’erreur, comme `PostContentInvalid` ou `ConnectFailed`, avec les détails que liste la référence.
+Les erreurs répondent par un corps JSON dont `_tag` nomme l’erreur, comme `PostContentInvalid` ou `ConnectFailed`, avec les détails que liste la référence. Les points d’accès de l’assistant de rédaction répondent aussi 429 une fois que l’espace de travail a utilisé ses demandes du jour, 503 quand l’instance n’a pas de fournisseur d’IA, et 502 quand le fournisseur n’a donné aucune réponse que l’assistant puisse utiliser.
+
+## Votre compte [#me]
+
+Ce qui vous appartient, plutôt qu’à un espace de travail, se trouve sous `/api/me` : qui vous êtes (`GET /api/me`), vos [notifications](/notifications#api) sous `/api/me/notices`, et celles qui partent par e-mail, sous `/api/me/notification-preferences`. Les points d’accès des notifications répondent 403 aux clés d’API, qui appartiennent à un espace de travail, et aux jetons OAuth liés à un seul espace de travail, comme celui d’un client MCP.
 
 ## Document OpenAPI [#openapi]
 

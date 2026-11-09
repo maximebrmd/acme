@@ -9,10 +9,10 @@ Acme is a social media scheduling platform. "Acme" is a working name.
 
 <Callout type="warning" title="Early development">
   Acme is being built in the open and has not been released yet. You can already
-  create workspaces, connect Mastodon and Bluesky accounts, upload media, and
-  write and schedule posts on a calendar, but posts do not go out yet: no
-  platform publishes them, so a scheduled post ends as failed when its time
-  comes. These pages describe what works today, and grow as features land.
+  create workspaces, connect Mastodon and Bluesky accounts, write posts with
+  images and videos, schedule them on a calendar and have them published, hear
+  how each one went, and ask a writing assistant for help. These pages describe
+  what works today, and grow as features land.
 </Callout>
 
 ## What Acme does [#what-it-does]
@@ -22,12 +22,14 @@ Acme is a social media scheduling platform. "Acme" is a working name.
 - **See results.** Acme will collect each platform's metrics for your posts, so you can see what worked in one place.
 - **Work as a team.** Workspaces have members and roles, so several people can write, review and schedule together.
 
-Acme never retries a post blindly: when a platform does not confirm whether a post went out, Acme marks it unconfirmed and asks you to check the platform before posting again.
+Acme never retries a post blindly: when a platform does not confirm whether a post went out, Acme asks again only in ways that cannot post it twice. If that still settles nothing, it marks the post unconfirmed and asks you to check the platform before posting again.
 
 ## Guides [#guides]
 
 - [Connect channels](/channels): add the social accounts a workspace posts to.
-- [Schedule posts](/scheduling): write a post, pick its channels and its time, and move it on the calendar.
+- [Schedule posts](/scheduling): write a post, pick its channels and its time, move it on the calendar, and ask the writing assistant for help.
+- [Images and videos](/media): attach media to a post, and see what each platform accepts.
+- [Notifications](/notifications): hear how posts went and which channels need reconnecting, in the app and by email.
 - [Command line](/cli): sign in from a terminal with `acme login`, and check who you are with `acme whoami`.
 - [Connect an MCP client](/mcp): let an AI assistant read your workspace.
 

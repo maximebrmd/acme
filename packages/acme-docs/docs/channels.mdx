@@ -42,13 +42,20 @@ Each channel shows one of these:
 | Reconnect needed | The platform no longer accepts Acme's access. Nothing goes out on the channel until you reconnect it. |
 | Turned off       | Nothing goes out on the channel.                                                                      |
 
-A channel whose access cannot be renewed also shows the date by which it must be reconnected.
+A channel whose access cannot be renewed also shows the date by which it must be reconnected, and its workspace's owners and admins are told ahead of that date.
 
 ## Keep channels connected [#keep-connected]
 
 Acme renews each account's access on its own before it runs out: it refreshes a Bluesky session a month before it would lapse. Mastodon access does not expire until someone revokes it.
 
-When a platform refuses Acme's access, for example because the account's owner revoked it, the channel turns to **Reconnect needed**, and the workspace's owners and admins get an email, once. When a platform does not answer, Acme tries again later and leaves the channel as it is.
+When a platform refuses Acme's access while Acme posts, Acme renews the access where the platform allows it, and tries once more. When the platform refuses again, or the access cannot be renewed, for example because the account's owner revoked it, the channel turns to **Reconnect needed**, and the workspace's owners and admins are told once, under the bell and by email unless they turned that email off (see [Notifications](/notifications)). When a platform does not answer, Acme tries again later and leaves the channel as it is.
+
+## What Acme posts [#posting]
+
+At a post's time, Acme posts it as the channel's account, with its text on that channel and its images and videos, each with its alt text when it has one. [Images and videos](/media#platforms) lists what each platform accepts.
+
+- **Mastodon**: Acme posts on the account's server, with the account's default visibility. The server turns mentions, hashtags and links into links itself, and may process a video before the post can show it.
+- **Bluesky**: Acme posts on the server that holds the account. Links and hashtags become links; mentions stay plain text for now. Videos go through Bluesky's video service, which processes them before the post goes out.
 
 ## Reconnect [#reconnect]
 

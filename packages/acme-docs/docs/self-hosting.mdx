@@ -1,8 +1,8 @@
 ---
 title: Self-hosting
-description: The services a self-hosted Acme instance needs, how to run the server and the web app behind one address, and how to set up email, media, channels and MCP.
+description: The services a self-hosted Acme instance needs, how to run the server and the web app behind one address, and how to set up email, media, channels, the writing assistant and MCP.
 sidebar:
-  order: 7
+  order: 9
 ---
 
 Acme reaches every outside service through a port with a self-hostable default. A self-hosted instance runs two programs of its own, the server and the web app, and needs Postgres, an S3-compatible object store and a way to send email. Everything else is optional and stays off until you configure it.
@@ -16,21 +16,21 @@ Acme reaches every outside service through a port with a self-hostable default. 
 
 ## Services [#services]
 
-| Service        | Needed   | What Acme uses it for                                                                                 | Options                                                                            |
-| -------------- | -------- | ----------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| Postgres       | Yes      | All data, and the durable jobs that publish posts and refresh platform tokens. Acme needs no Redis.   | Any Postgres server                                                                |
-| Object storage | Yes      | Uploaded media                                                                                        | Any S3-compatible API                                                              |
-| Email          | Yes      | Confirming email addresses, resetting passwords, invitations, and notices about channels to reconnect | Resend, or any SMTP server                                                         |
-| Billing        | Optional | Plans and subscriptions (not built yet)                                                               | Stripe. Without a key, billing is off and no plan limits apply.                    |
-| Captcha        | Optional | Bot protection (not built yet)                                                                        | Cloudflare Turnstile. Without a key, the captcha is off.                           |
-| AI             | Optional | AI features (not built yet)                                                                           | Any OpenAI-compatible endpoint, or an Anthropic API key                            |
-| Telemetry      | Optional | Logs, metrics and traces                                                                              | Any OpenTelemetry (OTLP) collector. Nothing is exported unless an endpoint is set. |
+| Service        | Needed   | What Acme uses it for                                                                                    | Options                                                                                |
+| -------------- | -------- | -------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| Postgres       | Yes      | All data, and the durable jobs that publish posts and refresh platform tokens. Acme needs no Redis.      | Any Postgres server                                                                    |
+| Object storage | Yes      | Uploaded media                                                                                           | Any S3-compatible API                                                                  |
+| Email          | Yes      | Confirming email addresses, resetting passwords, invitations, and notifications about posts and channels | Resend, or any SMTP server                                                             |
+| Billing        | Optional | Plans and subscriptions (not built yet)                                                                  | Stripe. Without a key, billing is off and no plan limits apply.                        |
+| Captcha        | Optional | Bot protection (not built yet)                                                                           | Cloudflare Turnstile. Without a key, the captcha is off.                               |
+| AI             | Optional | The writing assistant in the composer                                                                    | Anthropic's API, or any OpenAI-compatible endpoint. Without one, the assistant is off. |
+| Telemetry      | Optional | Logs, metrics and traces                                                                                 | Any OpenTelemetry (OTLP) collector. Nothing is exported unless an endpoint is set.     |
 
 Acme's own deployment stores media on Cloudflare R2, and its development stack runs SeaweedFS for storage and Mailpit for email. A self-hosted instance can use any of these, or any other store and mail server that speaks the same protocols.
 
 ## What to run [#run]
 
-- **The server** (`acme-server`): the HTTP API under `/api`, sign-in under `/api/auth`, the MCP endpoint at `/api/mcp`, and the jobs that publish posts and refresh tokens. Its image listens on port 3000 and runs as an unprivileged user.
+- **The server** (`acme-server`): the HTTP API under `/api`, sign-in under `/api/auth`, the MCP endpoint at `/api/mcp`, and the jobs that publish posts, email notifications and refresh tokens. Its image listens on port 3000 and runs as an unprivileged user.
 - **The web app** (`acme-web`): every page, on Node. It forwards `/api/*` and the OAuth discovery documents (`/.well-known/oauth-*`) to the server at `ACME_API_URL`, so people, the command line and MCP clients all use one address: `PUBLIC_URL`.
 
 Run one server process per instance: MCP clients on older protocol revisions keep their sessions in its memory. Each process that runs needs its own `HOSTNAME`.
@@ -60,6 +60,8 @@ Sign-in is rate limited by the client's address, which the server reads from the
 
 The web app passes these headers on as they come, so with no proxy in front of it there is no address to trust, and rate limits cannot tell clients apart.
 
+Let requests last at least 90 seconds through everything between browsers and the server, a tunnel included: the writing assistant waits that long for its AI provider. The web app's own forwarding of `/api/*` waits up to 120 seconds.
+
 The server answers two probes:
 
 - `GET /api/health` answers `204 No Content` as soon as the server is up, whatever the state of its database, which suits a container health check. The server's image checks it.
@@ -67,7 +69,7 @@ The server answers two probes:
 
 ## Database [#database]
 
-At startup, the server applies the database migrations it has not applied yet, one server at a time, and only listens once they are done. Each part of Acme keeps its tables in a Postgres schema of its own (`auth`, `channels`, `media`, `notifications`, `publishing`); the job runner's tables (`cluster_*`) are in `public`.
+At startup, the server applies the database migrations it has not applied yet, one server at a time, and only listens once they are done. Each part of Acme keeps its tables in a Postgres schema of its own (`assistant`, `auth`, `channels`, `media`, `notifications`, `publishing`); the job runner's tables (`cluster_*`) are in `public`.
 
 The server runs its durable jobs from the same database, and holds them with session advisory locks for as long as it runs. Connect it to Postgres directly, or through a pooler in session mode: a pooler in transaction mode gives each statement another connection, which loses those locks. Each server process opens up to 10 connections, and up to 5 more for sign-in (`AUTH_DB_POOL_MAX`).
 
@@ -75,7 +77,7 @@ A daily cleanup deletes the records of jobs that finished more than 30 days ago 
 
 ## Stopping [#stopping]
 
-When it stops, the server waits up to 60 seconds for the calls to the platforms in flight to answer. Give it at least 75 seconds before it is killed, with `docker stop --time 75` or `stop_grace_period: 75s` in Compose: a call cut short is marked unconfirmed, and its post has to be checked on the platform by hand.
+When it stops, the server waits up to 60 seconds for the calls to the platforms in flight to answer. Give it at least 75 seconds before it is killed, with `docker stop --time 75` or `stop_grace_period: 75s` in Compose. A call cut short is checked when the server starts again: on Bluesky by reading the post back, on Mastodon by sending it again under the same key, which Mastodon keeps for an hour. When that cannot settle it, the post is marked to check, and someone has to look on the platform.
 
 ## Email [#email]
 
@@ -84,7 +86,7 @@ Set `MAIL_FROM` to the sender, as `Acme <noreply@example.com>` or an address you
 - `RESEND_API_KEY`, to send through Resend's API;
 - otherwise `SMTP_URL`, such as `smtp://user:password@mail.example.com:587`, or `smtps://…:465` for TLS from the first byte.
 
-Acme sends the email that confirms an address, password resets, invitations to a workspace, and notices about channels that must be reconnected, each in the reader's language. With `AUTH_REQUIRE_EMAIL_VERIFICATION=false`, people can sign in before they confirm their address.
+Acme sends the email that confirms an address, password resets, invitations to a workspace, and [notifications](/notifications) about posts and channels, each in the reader's language. Members choose which notifications also reach them by email. When the mail service turns an email away for now, an account email is tried again for a few seconds, then dropped, as people can ask for another; a notification's email is tried again for about five hours. With `AUTH_REQUIRE_EMAIL_VERIFICATION=false`, people can sign in before they confirm their address.
 
 ## Media storage [#media-storage]
 
@@ -112,7 +114,9 @@ echo "k1:$(openssl rand -base64 32)"
 
 The value lists `keyId:key` entries separated by commas, such as `k2:<key>,k1:<key>`. The first key encrypts and every listed key decrypts: to rotate, put a new key first and keep the old ones. A malformed value stops the server at startup. Keep the keys secret, and keep a copy: without them, every channel must be reconnected.
 
-The server reaches the platforms itself, over HTTPS, so it needs to reach the internet. It only calls servers on public addresses, on the default HTTPS port, which keeps people from pointing it at your private network. The platforms send people back to `PUBLIC_URL/connect/<platform>/callback`.
+The server reaches the platforms itself, over HTTPS, so it needs to reach the internet: to connect accounts, and to publish, on each account's Mastodon server, on the Bluesky server that holds each account, and through Bluesky's video service, `https://video.bsky.app`, for videos. It only calls servers on public addresses, on the default HTTPS port, which keeps people from pointing it at your private network. The platforms send people back to `PUBLIC_URL/connect/<platform>/callback`, through their browser: they never call the server themselves, apart from Bluesky reading Acme's client description, below.
+
+To publish an image or a video, the server reads it from the media store, whole, into memory, then uploads it: a Bluesky video can take up to 300 MB. Give the server the memory for the largest files your members post.
 
 ### Bluesky [#bluesky]
 
@@ -125,6 +129,19 @@ bun nx run acme-server:bluesky-key
 Put the line it prints in `BLUESKY_CLIENT_KEYS`. Entries are separated by commas: to rotate, put a new key first, and keep the old ones until the sessions they signed for have been refreshed. Bluesky reads Acme's client description at `PUBLIC_URL/api/channels/oauth/bluesky/client-metadata.json`, and its public keys beside it.
 
 Without keys, a server running from source on `localhost` uses Bluesky's development client, whose sessions last two weeks, and any other server cannot connect Bluesky.
+
+## Writing assistant [#ai]
+
+The composer's writing assistant rewrites a post in a tone, shortens it to fit a platform, translates it, or suggests hashtags. It is off until `ACME_AI_PROVIDER` names a provider: until then, the web app hides it, and its endpoints answer `AssistantUnavailable`.
+
+- **Anthropic**: set `ACME_AI_PROVIDER=anthropic` and `ACME_AI_API_KEY`. The assistant asks `claude-opus-5-5` unless `ACME_AI_MODEL` names another model, on Anthropic's API unless `ACME_AI_BASE_URL` names a proxy.
+- **Any OpenAI-compatible endpoint**, such as a model server you run: set `ACME_AI_PROVIDER=openai-compatible`, `ACME_AI_BASE_URL` to the address `/chat/completions` follows, such as `http://127.0.0.1:8000/v1`, and `ACME_AI_MODEL` to one of its models. Add `ACME_AI_API_KEY` if it asks for one.
+
+A provider named without the settings it needs stops the server at startup, and the error names the variable missing. The server calls the provider directly, not through the guard that keeps platform calls on public addresses, so the endpoint may run on the same machine or your private network.
+
+Each workspace may send the assistant `ACME_AI_DAILY_REQUESTS` requests per UTC day, 100 unless set; `0` lets none through. Every workspace gets that many: on an instance where anyone may sign up, each new workspace adds to what your provider can bill. A request the provider could not be reached for does not count. One that gets no answer within 90 seconds fails and counts, as the provider may have run it.
+
+What members send is the post's text, up to 5,000 characters, and answers are capped at 4,096 tokens. The text is sent as data, with instructions the text cannot change. The server never logs or traces the text or the answer, saves neither, and sends the provider no trace context: its logs and traces name the provider, the model, the token counts and the kind of failure only.
 
 ## The command line and MCP clients [#mcp]
 
@@ -142,7 +159,7 @@ Staff, Better Auth's admin role, may impersonate members for an hour and ban acc
 UPDATE auth."user" SET role = 'admin' WHERE email = 'you@example.com';
 ```
 
-While impersonating, staff cannot connect channels, publish, manage API keys or billing, change workspaces, or let an application act for the member.
+While impersonating, staff cannot connect channels, publish, manage API keys or billing, change workspaces, or let an application act for the member. They can read the member's notifications, but not mark them read or change the member's email preferences. They can ask the writing assistant in the member's workspaces, which counts toward those workspaces' daily requests.
 
 ## Telemetry [#telemetry]
 

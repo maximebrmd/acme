@@ -1,17 +1,11 @@
 ---
 title: Schedule posts
-description: Write a post, give it its own text on some channels, schedule it in your time zone, and move or cancel it from the composer or the calendar.
+description: Write a post, give it its own text on some channels, ask the writing assistant for help, schedule it in your time zone, and move or cancel it from the composer or the calendar.
 sidebar:
   order: 3
 ---
 
 A post has one text, which each of its channels may replace with its own, and a time it goes out, kept in the time zone you scheduled it in. Write it in the composer, then find it on the calendar.
-
-<Callout type="warning" title="Posts do not go out yet">
-  Acme does not publish to any platform yet. A scheduled post comes due like any
-  other, then ends as failed on each channel, which the composer shows.
-  Scheduling, moving and cancelling already work as described here.
-</Callout>
 
 ## Who can do what [#roles]
 
@@ -23,7 +17,7 @@ A post has one text, which each of its channels may replace with its own, and a 
 | Contributor | Write and save drafts; cannot schedule |
 | Viewer      | Read                                   |
 
-Cancelling a post, a draft included, takes the same right as scheduling it.
+Cancelling a post, a draft included, takes the same right as scheduling it. Every role but Viewer may also ask the [writing assistant](#assistant).
 
 ## Write a post [#write]
 
@@ -32,9 +26,10 @@ From a workspace's card on **Workspaces**, choose **New post**.
 1. Under **Channels**, tick the accounts the post goes to. The list holds the workspace's [channels](/channels).
 2. Write in **Text for all channels**. Mentions, hashtags and links stand out as you type, and are kept as plain text.
 3. To say something else on one channel, open its tab and write its own text there. Left empty, a channel uses the text for all channels.
-4. Choose **Save as draft** to keep the post without a time. The composer's address then names the post: keep it to come back to the draft, which the calendar does not show.
+4. Under **Images and videos**, attach images or videos from the media library, or upload them there: see [Images and videos](/media).
+5. Choose **Save as draft** to keep the post without a time. The composer's address then names the post: keep it to come back to the draft, which the calendar does not show.
 
-Below the text, a counter per platform shows how much room is left. Platforms count differently, so the same text can fit on one and not on another:
+Under **Length on each channel**, each channel the post goes to shows how much room its platform leaves, and what else the platform would refuse, its images and videos included. Platforms count differently, so the same text can fit on one and not on another:
 
 | Platform  | Text limit                                                                                                      | Images and videos |
 | --------- | --------------------------------------------------------------------------------------------------------------- | ----------------- |
@@ -66,7 +61,22 @@ Once a post is scheduled, its text is locked; its time is not.
 - On the calendar, drag the post by its handle to another hour or day. It keeps the time zone it was scheduled in.
 - To stop it, choose **Cancel the post** in the composer and confirm. It goes out on no channel, and cannot be scheduled again.
 
-Moving a post does not check its text against its channels again.
+Moving a post does not check its text or its media against its channels again.
+
+## Ask the writing assistant [#assistant]
+
+When the Acme instance has an AI provider, the composer's **Text** section has an **Assistant** menu. It works on the text for all channels, and offers:
+
+- **Rewrite in a tone**: professional, friendly, casual, enthusiastic or witty, keeping the meaning, the language and about the length;
+- **Shorten to fit**: one of the platforms of the channels you picked, or, before you pick any, each platform whose limit Acme knows;
+- **Translate into**: English, French, German, Spanish, Italian, Portuguese, Dutch, Polish, Japanese or Chinese (simplified);
+- **Suggest hashtags**: up to 8 that the text does not have yet.
+
+The suggestion opens in a preview, and nothing changes until you choose **Use this text** or **Add these hashtags**, which adds them on a line of their own; **Discard** drops it. Read it before you use it: the assistant keeps mentions, hashtags and links, and is told not to add facts, but it can still get things wrong.
+
+The assistant takes texts of up to 5,000 characters. Each workspace may send it a number of requests per day, 100 unless the instance sets another, counted from midnight UTC; the menu shows how many are left today. A request that could not reach the AI provider does not count. One that took more than 90 seconds does, as the provider may have worked on it.
+
+Your text goes to the AI provider the instance's administrator chose, and nowhere else. Acme saves neither the text you send nor the suggestion, and never writes them to its logs.
 
 ## The calendar [#calendar]
 
@@ -76,14 +86,16 @@ From a workspace's card, choose **Calendar**. It shows the scheduled posts by **
 
 At its time, Acme sends the post to each of its channels on its own, one post at a time per account, and records how each one ended:
 
-| On a channel | What happened                                                                                                    |
-| ------------ | ---------------------------------------------------------------------------------------------------------------- |
-| Published    | The platform took the post, and gave its address when it has one.                                                |
-| Failed       | The platform refused the post, the account needs reconnecting, or the post went out too late, as below.          |
-| To check     | Acme cannot tell whether the platform published it. Check the platform before posting again: Acme never retries. |
-| Cancelled    | The post was cancelled before it went out there.                                                                 |
+| On a channel | What happened                                                                                           |
+| ------------ | ------------------------------------------------------------------------------------------------------- |
+| Published    | The platform took the post, and gave its address when it has one.                                       |
+| Failed       | The platform refused the post, the account needs reconnecting, or the post went out too late, as below. |
+| To check     | Acme cannot tell whether the platform published it. Check the platform before posting again.            |
+| Cancelled    | The post was cancelled before it went out there.                                                        |
 
-The post as a whole then reads **Published**, **Partly published**, **To check**, **Failed** or **Cancelled**.
+The post as a whole then reads **Published**, **Partly published**, **To check**, **Failed** or **Cancelled**. The members who may schedule posts are told how it went on each channel: see [Notifications](/notifications).
+
+When a platform does not answer the request that publishes the post, Acme asks again only in ways that cannot post it twice: it reads the post back on Bluesky, and sends it to Mastodon again under the same key, which Mastodon answers with the post it already made. It tries three times, over about two and a half minutes. If the server stops in the middle of a post, it checks the same way when it starts again. Only when none of that settles it does the post read **To check**: Acme never posts it again on its own.
 
 Acme waits rather than gives up when a platform is busy:
 
@@ -93,15 +105,8 @@ Acme waits rather than gives up when a platform is busy:
 
 A post that could not start within an hour of its time, for example because the server was down, is marked missed and does not go out.
 
+An image or video is sent as the platform needs it, and some platforms process videos first: Acme waits up to 15 minutes for them, then tries again later, as for a platform that does not answer.
+
 ## Media [#media]
 
-From a workspace's card, **Media library** holds the workspace's images and videos. Drop files there, or choose them; large videos go up in parts, and an upload can be cancelled or tried again. Give each file a description for people who cannot see it, of up to 2,000 characters.
-
-| Kind   | Formats               | Largest file |
-| ------ | --------------------- | ------------ |
-| Images | JPEG, PNG, GIF, WebP  | 16 MiB       |
-| Videos | MP4, QuickTime (.mov) | 1 GiB        |
-
-Acme reads each file once it is stored: an image's dimensions, a video's dimensions, duration and codec. An image whose content is not of the type it was uploaded as is refused, and deleted. Contributors and above upload; editors and above delete.
-
-Posts cannot show media yet: the composer marks the place where they will go.
+A post can show images and videos from the workspace's media library. [Images and videos](/media) explains how to upload and attach them, how to describe them, and what each platform accepts.

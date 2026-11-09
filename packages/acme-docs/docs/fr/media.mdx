@@ -1,0 +1,68 @@
+---
+title: Images et vidéos
+description: Importez des images et des vidéos dans la médiathèque d’un espace de travail, ajoutez-les aux publications avec un texte alternatif, et voyez ce que Mastodon et Bluesky acceptent avant qu’une publication parte.
+sidebar:
+  order: 4
+---
+
+Une publication peut montrer des images et des vidéos de la médiathèque de son espace de travail, dans l’ordre que vous choisissez, chacune avec un texte alternatif pour les personnes qui ne peuvent pas la voir. Acme les vérifie auprès de la plateforme de chaque canal quand vous programmez la publication, et les envoie avec elle à son heure.
+
+## La médiathèque [#library]
+
+Sur la carte d’un espace de travail, **Médiathèque** regroupe les images et vidéos de l’espace de travail. Déposez-y des fichiers, ou choisissez-les ; les grandes vidéos partent en plusieurs morceaux, et un import peut être annulé ou relancé. Donnez à chaque fichier une description pour les personnes qui ne peuvent pas le voir, de 2 000 caractères au plus.
+
+| Type   | Formats               | Fichier le plus lourd |
+| ------ | --------------------- | --------------------- |
+| Images | JPEG, PNG, GIF, WebP  | 16 Mio                |
+| Vidéos | MP4, QuickTime (.mov) | 1 Gio                 |
+
+Acme lit chaque fichier une fois stocké : les dimensions d’une image, les dimensions, la durée et le codec d’une vidéo. Une image dont le contenu n’est pas du type sous lequel elle a été importée est refusée, et supprimée. Les contributeurs et au-delà importent ; les éditeurs et au-delà suppriment.
+
+## Ajouter des médias à une publication [#attach]
+
+Dans l’éditeur, sous **Images et vidéos** :
+
+- **Choisir dans la médiathèque** ouvre les médias de l’espace de travail. Choisissez les fichiers dans l’ordre où la publication les montre, chacun numéroté au fur et à mesure, puis choisissez **Ajouter**. Les fichiers encore en traitement sont marqués **Pas encore prête**, et ne peuvent pas être choisis.
+- Ou déposez des fichiers sur la zone d’import en dessous, ou cliquez dessus pour les choisir. Chaque fichier rejoint la publication une fois importé et lu ; un fichier importé mais pas encore lisible, comme une vidéo sur un serveur sans ffprobe, reste dans la médiathèque et n’est pas ajouté.
+- Avancez ou reculez un fichier dans la publication avec ses flèches, ou retirez-le de la publication. Le retirer le laisse dans la médiathèque.
+
+Une publication montre jusqu’à 20 images et vidéos, et chaque plateforme en accepte moins, comme ci-dessous. Enregistrer le brouillon les garde.
+
+## Texte alternatif [#alt-text]
+
+Chaque image ou vidéo d’une publication a son propre texte alternatif, qui part de sa description dans la médiathèque. Le modifier dans l’éditeur ne le change que pour cette publication. Le texte alternatif d’une publication peut faire jusqu’à 5 000 caractères, mais les plateformes en gardent moins, comme ci-dessous.
+
+Écrivez un texte alternatif pour chaque fichier. Quand l’un n’en a pas, l’éditeur nomme les plateformes des canaux de la publication qui montrent le texte alternatif, et chacun de ces canaux indique combien de fichiers n’en ont pas. C’est un rappel : il ne vous empêche pas de programmer.
+
+## Ce que chaque plateforme accepte [#platforms]
+
+Acme publie sur Mastodon et Bluesky. Quand vous programmez une publication, il vérifie ses images et vidéos selon ces limites :
+
+| Limite                           | Bluesky                                                  | Mastodon                                                                  |
+| -------------------------------- | -------------------------------------------------------- | ------------------------------------------------------------------------- |
+| Images et vidéos par publication | 4                                                        | 4                                                                         |
+| Images                           | JPEG, PNG, GIF et WebP, jusqu’à 2 000 000 octets chacune | JPEG, PNG, GIF et WebP, jusqu’à 16 Mio et 33 177 600 pixels (7680 × 4320) |
+| Vidéos                           | Une MP4, jusqu’à 300 000 000 octets et 3 minutes         | Une MP4 ou QuickTime, jusqu’à 99 Mio et 8 294 400 pixels (3840 × 2160)    |
+| Images et vidéo ensemble         | Non                                                      | Non                                                                       |
+| Texte alternatif                 | Montré aux personnes qui en ont besoin                   | Montré aux personnes qui en ont besoin, jusqu’à 1 500 caractères          |
+
+Les limites de Mastodon sont celles d’un serveur Mastodon tel qu’il est livré. Quand la publication part, Acme lit aussi les limites du serveur du compte, les types de fichiers qu’il accepte et sa plus grande image et vidéo, et n’envoie pas un fichier que le serveur refuserait : la publication échoue alors sur ce canal.
+
+Acme connaît aussi les limites de X, LinkedIn, Threads et Instagram, et les vérifiera dès que leurs comptes pourront être connectés. Il ne vérifie que ce qu’il a lu de chaque fichier : un fait qu’il n’a pas pu lire, comme la durée d’une vidéo, n’est pas vérifié, et la plateforme peut encore refuser le fichier.
+
+## Quand vous programmez [#schedule]
+
+À côté du compteur de chaque canal, l’éditeur liste ce que sa plateforme refuserait : trop de vidéos, des images avec une vidéo, un type de fichier qu’elle n’accepte pas, un fichier trop lourd, une vidéo trop longue ou trop courte, trop de pixels, des proportions qu’elle n’accepte pas, ou un texte alternatif trop long. **Programmer** reste inactif tant que chaque point n’est pas corrigé, et l’éditeur nomme le canal et l’image ou la vidéo en cause.
+
+Un brouillon peut contenir n’importe quel média prêt de son espace de travail : les limites des plateformes attendent que vous le programmiez. Déplacer une publication programmée ne revérifie pas ses médias. Sur le calendrier, les publications avec images ou vidéos portent une marque.
+
+## Quand la publication part [#publishing]
+
+À l’heure de la publication, Acme envoie chaque fichier de la médiathèque à la plateforme, puis publie :
+
+- **Mastodon** : chaque fichier va au serveur du compte, qui peut le traiter avant que la publication puisse le montrer.
+- **Bluesky** : les images vont au serveur qui héberge le compte, et une vidéo au service vidéo de Bluesky, qui la traite.
+
+Acme attend jusqu’à 15 minutes qu’une plateforme traite un fichier. Au-delà, il réessaie la publication plus tard, comme pour une plateforme qui ne répond pas.
+
+Gardez les images et vidéos dans la médiathèque jusqu’à ce que les publications qui les montrent soient parties. En supprimer une ne la retire pas de ces publications : une publication programmée qui la montre échoue sur ses canaux à son heure, et un brouillon qui la montre ne peut pas être programmé tant que vous ne l’avez pas retirée.

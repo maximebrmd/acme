@@ -43,13 +43,20 @@ Chaque canal affiche l’un de ces états :
 | À reconnecter | La plateforme n’accepte plus l’accès d’Acme. Rien ne part sur le canal tant que vous ne l’avez pas reconnecté. |
 | Désactivé     | Rien ne part sur le canal.                                                                                     |
 
-Un canal dont l’accès ne peut pas être renouvelé affiche aussi la date avant laquelle le reconnecter.
+Un canal dont l’accès ne peut pas être renouvelé affiche aussi la date avant laquelle le reconnecter, et les propriétaires et administrateurs de son espace de travail en sont prévenus avant cette date.
 
 ## Garder les canaux connectés [#keep-connected]
 
 Acme renouvelle de lui-même l’accès de chaque compte avant qu’il n’expire : il rafraîchit une session Bluesky un mois avant qu’elle ne tombe. L’accès à Mastodon n’expire pas, tant que personne ne le révoque.
 
-Quand une plateforme refuse l’accès d’Acme, par exemple parce que le titulaire du compte l’a révoqué, le canal passe à **À reconnecter**, et les propriétaires et administrateurs de l’espace de travail reçoivent un e-mail, une seule fois. Quand une plateforme ne répond pas, Acme réessaie plus tard et laisse le canal tel quel.
+Quand une plateforme refuse l’accès d’Acme pendant qu’il publie, Acme renouvelle l’accès quand la plateforme le permet, et réessaie une fois. Quand la plateforme refuse encore, ou que l’accès ne peut pas être renouvelé, par exemple parce que le titulaire du compte l’a révoqué, le canal passe à **À reconnecter**, et les propriétaires et administrateurs de l’espace de travail en sont prévenus une fois, sous la cloche et par e-mail, sauf s’ils ont désactivé cet e-mail (voir [Notifications](/notifications)). Quand une plateforme ne répond pas, Acme réessaie plus tard et laisse le canal tel quel.
+
+## Ce qu’Acme publie [#posting]
+
+À l’heure d’une publication, Acme la publie au nom du compte du canal, avec son texte sur ce canal et ses images et vidéos, chacune avec son texte alternatif quand elle en a un. [Images et vidéos](/media#platforms) liste ce que chaque plateforme accepte.
+
+- **Mastodon** : Acme publie sur le serveur du compte, avec la visibilité par défaut du compte. Le serveur transforme lui-même mentions, hashtags et liens en liens, et peut traiter une vidéo avant que la publication puisse la montrer.
+- **Bluesky** : Acme publie sur le serveur qui héberge le compte. Les liens et les hashtags deviennent des liens ; les mentions restent du texte brut pour l’instant. Les vidéos passent par le service vidéo de Bluesky, qui les traite avant que la publication parte.
 
 ## Reconnecter [#reconnect]
 

@@ -1,18 +1,11 @@
 ---
 title: Programmer des publications
-description: Rédigez une publication, donnez-lui un texte propre sur certains canaux, programmez-la dans votre fuseau horaire, et déplacez-la ou annulez-la depuis l’éditeur ou le calendrier.
+description: Rédigez une publication, donnez-lui un texte propre sur certains canaux, demandez de l’aide à l’assistant de rédaction, programmez-la dans votre fuseau horaire, et déplacez-la ou annulez-la depuis l’éditeur ou le calendrier.
 sidebar:
   order: 3
 ---
 
 Une publication a un texte, que chacun de ses canaux peut remplacer par le sien, et une heure de départ, gardée dans le fuseau horaire où vous l’avez programmée. Rédigez-la dans l’éditeur, puis retrouvez-la sur le calendrier.
-
-<Callout type="warning" title="Les publications ne partent pas encore">
-  Acme ne publie encore sur aucune plateforme. Une publication programmée arrive
-  à son heure comme les autres, puis finit en échec sur chaque canal, ce que
-  l’éditeur affiche. Programmer, déplacer et annuler fonctionnent déjà comme
-  décrit ici.
-</Callout>
 
 ## Qui peut faire quoi [#roles]
 
@@ -24,7 +17,7 @@ Une publication a un texte, que chacun de ses canaux peut remplacer par le sien,
 | Contributeur   | Rédiger et enregistrer des brouillons ; pas programmer |
 | Lecteur        | Lire                                                   |
 
-Annuler une publication, brouillon compris, demande le même droit que la programmer.
+Annuler une publication, brouillon compris, demande le même droit que la programmer. Tous les rôles sauf Lecteur peuvent aussi demander de l’aide à l’[assistant de rédaction](#assistant).
 
 ## Rédiger une publication [#write]
 
@@ -33,9 +26,10 @@ Sur la carte d’un espace de travail, dans **Espaces de travail**, choisissez *
 1. Sous **Canaux**, cochez les comptes où part la publication. La liste reprend les [canaux](/channels) de l’espace de travail.
 2. Écrivez dans **Texte pour tous les canaux**. Les mentions, les hashtags et les liens ressortent pendant la saisie, et sont gardés en texte brut.
 3. Pour dire autre chose sur un canal, ouvrez son onglet et écrivez-y son propre texte. Laissé vide, un canal reprend le texte de tous les canaux.
-4. Choisissez **Enregistrer le brouillon** pour garder la publication sans heure. L’adresse de l’éditeur nomme alors la publication : gardez-la pour revenir au brouillon, que le calendrier n’affiche pas.
+4. Sous **Images et vidéos**, ajoutez des images ou des vidéos de la médiathèque, ou importez-les là : voyez [Images et vidéos](/media).
+5. Choisissez **Enregistrer le brouillon** pour garder la publication sans heure. L’adresse de l’éditeur nomme alors la publication : gardez-la pour revenir au brouillon, que le calendrier n’affiche pas.
 
-Sous le texte, un compteur par plateforme montre la place qui reste. Les plateformes ne comptent pas de la même façon : un même texte peut tenir sur l’une et pas sur l’autre.
+Sous **Longueur sur chaque canal**, chaque canal où part la publication montre la place que laisse sa plateforme, et ce qu’elle refuserait d’autre, images et vidéos comprises. Les plateformes ne comptent pas de la même façon : un même texte peut tenir sur l’une et pas sur l’autre.
 
 | Plateforme | Limite du texte                                                                                              | Images et vidéos |
 | ---------- | ------------------------------------------------------------------------------------------------------------ | ---------------- |
@@ -67,7 +61,22 @@ Une fois une publication programmée, son texte est verrouillé ; son heure ne l
 - Sur le calendrier, faites glisser la publication par sa poignée vers une autre heure ou un autre jour. Elle garde le fuseau horaire où elle a été programmée.
 - Pour l’arrêter, choisissez **Annuler la publication** dans l’éditeur et confirmez. Elle ne part sur aucun canal, et ne peut plus être programmée.
 
-Déplacer une publication ne revérifie pas son texte auprès de ses canaux.
+Déplacer une publication ne revérifie ni son texte ni ses médias auprès de ses canaux.
+
+## Demander de l’aide à l’assistant de rédaction [#assistant]
+
+Quand l’instance Acme dispose d’un fournisseur d’IA, la section **Texte** de l’éditeur propose un menu **Assistant**. Il travaille sur le texte pour tous les canaux, et propose :
+
+- **Réécrire sur un ton** : professionnel, chaleureux, décontracté, enthousiaste ou spirituel, en gardant le sens, la langue et à peu près la longueur ;
+- **Raccourcir pour** : l’une des plateformes des canaux choisis ou, tant qu’aucun ne l’est, chaque plateforme dont Acme connaît la limite ;
+- **Traduire en** : anglais, français, allemand, espagnol, italien, portugais, néerlandais, polonais, japonais ou chinois (simplifié) ;
+- **Suggérer des hashtags** : jusqu’à 8, que le texte n’a pas encore.
+
+La suggestion s’ouvre dans un aperçu, et rien ne change tant que vous ne choisissez pas **Utiliser ce texte** ou **Ajouter ces hashtags**, qui les ajoute sur une ligne à part ; **Ignorer** l’écarte. Relisez-la avant de l’utiliser : l’assistant garde les mentions, les hashtags et les liens, et a pour consigne de n’ajouter aucun fait, mais il peut encore se tromper.
+
+L’assistant accepte des textes de 5 000 caractères au plus. Chaque espace de travail peut lui envoyer un certain nombre de demandes par jour, 100 sauf si l’instance en fixe un autre, comptées depuis minuit UTC ; le menu indique combien il en reste aujourd’hui. Une demande qui n’a pas pu joindre le fournisseur d’IA ne compte pas. Une demande restée plus de 90 secondes sans réponse compte, car le fournisseur a pu la traiter.
+
+Votre texte part chez le fournisseur d’IA qu’a choisi l’administrateur de l’instance, et nulle part ailleurs. Acme n’enregistre ni le texte envoyé ni la suggestion, et ne les écrit jamais dans ses journaux.
 
 ## Le calendrier [#calendar]
 
@@ -77,14 +86,16 @@ Sur la carte d’un espace de travail, choisissez **Calendrier**. Il montre les 
 
 À l’heure prévue, Acme envoie la publication à chacun de ses canaux séparément, une publication à la fois par compte, et note comment chacun s’est terminé :
 
-| Sur un canal | Ce qui s’est passé                                                                                                             |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------------ |
-| Publié       | La plateforme a pris la publication, et a donné son adresse quand elle en a une.                                               |
-| Échec        | La plateforme a refusé la publication, le compte est à reconnecter, ou la publication est partie trop tard, comme ci-dessous.  |
-| À vérifier   | Acme ne peut pas savoir si la plateforme l’a publiée. Vérifiez sur la plateforme avant de republier : Acme ne réessaie jamais. |
-| Annulé       | La publication a été annulée avant de partir sur ce canal.                                                                     |
+| Sur un canal | Ce qui s’est passé                                                                                                            |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------- |
+| Publié       | La plateforme a pris la publication, et a donné son adresse quand elle en a une.                                              |
+| Échec        | La plateforme a refusé la publication, le compte est à reconnecter, ou la publication est partie trop tard, comme ci-dessous. |
+| À vérifier   | Acme ne peut pas savoir si la plateforme l’a publiée. Vérifiez sur la plateforme avant de republier.                          |
+| Annulé       | La publication a été annulée avant de partir sur ce canal.                                                                    |
 
-La publication dans son ensemble indique alors **Publié**, **Publié en partie**, **À vérifier**, **Échec** ou **Annulé**.
+La publication dans son ensemble indique alors **Publié**, **Publié en partie**, **À vérifier**, **Échec** ou **Annulé**. Les membres qui peuvent programmer des publications apprennent comment elle s’est passée sur chaque canal : voyez [Notifications](/notifications).
+
+Quand une plateforme ne répond pas à la requête qui publie, Acme ne redemande que de façons qui ne peuvent pas publier deux fois : il relit la publication sur Bluesky, et la renvoie à Mastodon sous la même clé, ce à quoi Mastodon répond avec la publication qu’il a déjà faite. Il essaie trois fois, sur environ deux minutes et demie. Si le serveur s’arrête au milieu d’une publication, il vérifie de la même façon à son redémarrage. Ce n’est que si rien de cela ne tranche que la publication indique **À vérifier** : Acme ne la republie jamais de lui-même.
 
 Acme patiente plutôt que d’abandonner quand une plateforme est occupée :
 
@@ -94,15 +105,8 @@ Acme patiente plutôt que d’abandonner quand une plateforme est occupée :
 
 Une publication qui n’a pas pu partir dans l’heure qui suit son heure prévue, par exemple parce que le serveur était arrêté, est marquée manquée et ne part pas.
 
+Chaque image ou vidéo est envoyée comme la plateforme le demande, et certaines plateformes traitent d’abord les vidéos : Acme les attend jusqu’à 15 minutes, puis réessaie plus tard, comme pour une plateforme qui ne répond pas.
+
 ## Médias [#media]
 
-Sur la carte d’un espace de travail, **Médiathèque** regroupe les images et vidéos de l’espace de travail. Déposez-y des fichiers, ou choisissez-les ; les grandes vidéos partent en plusieurs morceaux, et un import peut être annulé ou relancé. Donnez à chaque fichier une description pour les personnes qui ne peuvent pas le voir, de 2 000 caractères au plus.
-
-| Type   | Formats               | Fichier le plus lourd |
-| ------ | --------------------- | --------------------- |
-| Images | JPEG, PNG, GIF, WebP  | 16 Mio                |
-| Vidéos | MP4, QuickTime (.mov) | 1 Gio                 |
-
-Acme lit chaque fichier une fois stocké : les dimensions d’une image, les dimensions, la durée et le codec d’une vidéo. Une image dont le contenu n’est pas du type sous lequel elle a été importée est refusée, et supprimée. Les contributeurs et au-delà importent ; les éditeurs et au-delà suppriment.
-
-Les publications ne peuvent pas encore montrer de médias : l’éditeur marque la place où ils iront.
+Une publication peut montrer des images et des vidéos de la médiathèque de l’espace de travail. [Images et vidéos](/media) explique comment les importer et les ajouter, comment les décrire, et ce que chaque plateforme accepte.

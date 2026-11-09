@@ -1,8 +1,8 @@
 ---
 title: Auto-hébergement
-description: Les services nécessaires à une instance Acme auto-hébergée, comment faire tourner le serveur et l’application web derrière une seule adresse, et comment configurer l’e-mail, les médias, les canaux et MCP.
+description: Les services nécessaires à une instance Acme auto-hébergée, comment faire tourner le serveur et l’application web derrière une seule adresse, et comment configurer l’e-mail, les médias, les canaux, l’assistant de rédaction et MCP.
 sidebar:
-  order: 7
+  order: 9
 ---
 
 Acme accède à chaque service extérieur par un port doté d’une option par défaut auto-hébergeable. Une instance auto-hébergée fait tourner deux programmes à elle, le serveur et l’application web, et a besoin de Postgres, d’un stockage objet compatible S3 et d’un moyen d’envoyer des e-mails. Tout le reste est facultatif et reste désactivé tant que vous ne le configurez pas.
@@ -16,21 +16,21 @@ Acme accède à chaque service extérieur par un port doté d’une option par d
 
 ## Services [#services]
 
-| Service        | Requis     | Usage dans Acme                                                                                                                                     | Options                                                                                          |
-| -------------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| Postgres       | Oui        | Toutes les données, et les tâches durables qui diffusent les publications et renouvellent les jetons des plateformes. Acme n’a pas besoin de Redis. | N’importe quel serveur Postgres                                                                  |
-| Stockage objet | Oui        | Médias importés                                                                                                                                     | N’importe quelle API compatible S3                                                               |
-| E-mail         | Oui        | Confirmer les adresses e-mail, réinitialiser les mots de passe, inviter, et prévenir des canaux à reconnecter                                       | Resend, ou n’importe quel serveur SMTP                                                           |
-| Facturation    | Facultatif | Offres et abonnements (pas encore développés)                                                                                                       | Stripe. Sans clé, la facturation est désactivée et aucune limite d’offre ne s’applique.          |
-| Captcha        | Facultatif | Protection contre les robots (pas encore développée)                                                                                                | Cloudflare Turnstile. Sans clé, le captcha est désactivé.                                        |
-| IA             | Facultatif | Fonctionnalités d’IA (pas encore développées)                                                                                                       | N’importe quel point d’accès compatible OpenAI, ou une clé d’API Anthropic                       |
-| Télémétrie     | Facultatif | Journaux, métriques et traces                                                                                                                       | N’importe quel collecteur OpenTelemetry (OTLP). Rien n’est exporté sans point d’accès configuré. |
+| Service        | Requis     | Usage dans Acme                                                                                                                                     | Options                                                                                                            |
+| -------------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| Postgres       | Oui        | Toutes les données, et les tâches durables qui diffusent les publications et renouvellent les jetons des plateformes. Acme n’a pas besoin de Redis. | N’importe quel serveur Postgres                                                                                    |
+| Stockage objet | Oui        | Médias importés                                                                                                                                     | N’importe quelle API compatible S3                                                                                 |
+| E-mail         | Oui        | Confirmer les adresses e-mail, réinitialiser les mots de passe, inviter, et envoyer les notifications sur les publications et les canaux            | Resend, ou n’importe quel serveur SMTP                                                                             |
+| Facturation    | Facultatif | Offres et abonnements (pas encore développés)                                                                                                       | Stripe. Sans clé, la facturation est désactivée et aucune limite d’offre ne s’applique.                            |
+| Captcha        | Facultatif | Protection contre les robots (pas encore développée)                                                                                                | Cloudflare Turnstile. Sans clé, le captcha est désactivé.                                                          |
+| IA             | Facultatif | L’assistant de rédaction de l’éditeur                                                                                                               | L’API d’Anthropic, ou n’importe quel point d’accès compatible OpenAI. Sans fournisseur, l’assistant est désactivé. |
+| Télémétrie     | Facultatif | Journaux, métriques et traces                                                                                                                       | N’importe quel collecteur OpenTelemetry (OTLP). Rien n’est exporté sans point d’accès configuré.                   |
 
 Le déploiement d’Acme stocke les médias sur Cloudflare R2, et son environnement de développement utilise SeaweedFS pour le stockage et Mailpit pour l’e-mail. Une instance auto-hébergée peut utiliser ceux-ci, ou tout autre stockage et serveur de messagerie qui parle les mêmes protocoles.
 
 ## Ce qu’il faut faire tourner [#run]
 
-- **Le serveur** (`acme-server`) : l’API HTTP sous `/api`, la connexion sous `/api/auth`, le point d’accès MCP à `/api/mcp`, et les tâches qui diffusent les publications et renouvellent les jetons. Son image écoute sur le port 3000 et tourne sous un utilisateur sans privilèges.
+- **Le serveur** (`acme-server`) : l’API HTTP sous `/api`, la connexion sous `/api/auth`, le point d’accès MCP à `/api/mcp`, et les tâches qui diffusent les publications, envoient les notifications par e-mail et renouvellent les jetons. Son image écoute sur le port 3000 et tourne sous un utilisateur sans privilèges.
 - **L’application web** (`acme-web`) : toutes les pages, sur Node. Elle transmet `/api/*` et les documents de découverte OAuth (`/.well-known/oauth-*`) au serveur, à `ACME_API_URL` : les personnes, la ligne de commande et les clients MCP utilisent tous une seule adresse, `PUBLIC_URL`.
 
 Faites tourner un seul processus serveur par instance : les clients MCP des anciennes révisions du protocole gardent leurs sessions dans sa mémoire. Chaque processus qui tourne a besoin de son propre `HOSTNAME`.
@@ -60,6 +60,8 @@ La connexion est limitée en débit par adresse du client, que le serveur lit da
 
 L’application web transmet ces en-têtes tels qu’ils arrivent : sans proxy devant elle, aucune adresse n’est fiable, et les limites ne distinguent pas les clients.
 
+Laissez les requêtes durer au moins 90 secondes à travers tout ce qui sépare les navigateurs du serveur, tunnel compris : l’assistant de rédaction attend jusque-là son fournisseur d’IA. L’application web, quand elle transmet `/api/*`, attend jusqu’à 120 secondes.
+
 Le serveur répond à deux sondes :
 
 - `GET /api/health` répond `204 No Content` dès que le serveur a démarré, quel que soit l’état de sa base de données, ce qui convient à un contrôle de santé de conteneur. L’image du serveur l’utilise.
@@ -67,7 +69,7 @@ Le serveur répond à deux sondes :
 
 ## Base de données [#database]
 
-Au démarrage, le serveur applique les migrations de la base de données qu’il n’a pas encore appliquées, un serveur à la fois, et n’écoute qu’une fois qu’elles sont terminées. Chaque partie d’Acme range ses tables dans un schéma Postgres à elle (`auth`, `channels`, `media`, `notifications`, `publishing`) ; les tables de l’exécuteur de tâches (`cluster_*`) sont dans `public`.
+Au démarrage, le serveur applique les migrations de la base de données qu’il n’a pas encore appliquées, un serveur à la fois, et n’écoute qu’une fois qu’elles sont terminées. Chaque partie d’Acme range ses tables dans un schéma Postgres à elle (`assistant`, `auth`, `channels`, `media`, `notifications`, `publishing`) ; les tables de l’exécuteur de tâches (`cluster_*`) sont dans `public`.
 
 Le serveur exécute ses tâches durables depuis la même base, et les garde par des verrous consultatifs de session tant qu’il tourne. Connectez-le à Postgres directement, ou par un pooler en mode session : un pooler en mode transaction donne une autre connexion à chaque requête, ce qui perd ces verrous. Chaque processus serveur ouvre jusqu’à 10 connexions, et jusqu’à 5 de plus pour la connexion des utilisateurs (`AUTH_DB_POOL_MAX`).
 
@@ -75,7 +77,7 @@ Un nettoyage quotidien supprime les traces des tâches terminées depuis plus de
 
 ## Arrêt [#stopping]
 
-À l’arrêt, le serveur attend jusqu’à 60 secondes que les appels en cours aux plateformes répondent. Laissez-lui au moins 75 secondes avant de l’interrompre, avec `docker stop --time 75` ou `stop_grace_period: 75s` dans Compose : un appel coupé est marqué non confirmé, et sa publication doit être vérifiée à la main sur la plateforme.
+À l’arrêt, le serveur attend jusqu’à 60 secondes que les appels en cours aux plateformes répondent. Laissez-lui au moins 75 secondes avant de l’interrompre, avec `docker stop --time 75` ou `stop_grace_period: 75s` dans Compose. Un appel coupé est vérifié au redémarrage du serveur : sur Bluesky en relisant la publication, sur Mastodon en la renvoyant sous la même clé, que Mastodon garde une heure. Quand cela ne tranche pas, la publication est marquée à vérifier, et quelqu’un doit regarder sur la plateforme.
 
 ## E-mail [#email]
 
@@ -84,7 +86,7 @@ Définissez `MAIL_FROM`, l’expéditeur, comme `Acme <noreply@example.com>` ou 
 - `RESEND_API_KEY`, pour envoyer par l’API de Resend ;
 - sinon `SMTP_URL`, comme `smtp://utilisateur:motdepasse@mail.example.com:587`, ou `smtps://…:465` pour du TLS dès le premier octet.
 
-Acme envoie l’e-mail qui confirme une adresse, les réinitialisations de mot de passe, les invitations à un espace de travail, et les avis sur les canaux à reconnecter, chacun dans la langue du lecteur. Avec `AUTH_REQUIRE_EMAIL_VERIFICATION=false`, on peut se connecter avant d’avoir confirmé son adresse.
+Acme envoie l’e-mail qui confirme une adresse, les réinitialisations de mot de passe, les invitations à un espace de travail, et les [notifications](/notifications) sur les publications et les canaux, chacun dans la langue du lecteur. Les membres choisissent quelles notifications leur arrivent aussi par e-mail. Quand le service de messagerie refuse un e-mail pour le moment, un e-mail de compte est réessayé quelques secondes, puis abandonné, car on peut en demander un autre ; l’e-mail d’une notification est réessayé pendant environ cinq heures. Avec `AUTH_REQUIRE_EMAIL_VERIFICATION=false`, on peut se connecter avant d’avoir confirmé son adresse.
 
 ## Stockage des médias [#media-storage]
 
@@ -112,7 +114,9 @@ echo "k1:$(openssl rand -base64 32)"
 
 La valeur liste des entrées `idDeClé:clé` séparées par des virgules, comme `k2:<clé>,k1:<clé>`. La première clé chiffre et toutes les clés listées déchiffrent : pour en changer, placez une nouvelle clé en tête et gardez les anciennes. Une valeur mal formée arrête le serveur au démarrage. Gardez les clés secrètes, et gardez-en une copie : sans elles, chaque canal doit être reconnecté.
 
-Le serveur joint lui-même les plateformes, en HTTPS : il doit donc accéder à Internet. Il n’appelle que des serveurs aux adresses publiques, sur le port HTTPS par défaut, ce qui empêche de le diriger vers votre réseau privé. Les plateformes renvoient les personnes vers `PUBLIC_URL/connect/<plateforme>/callback`.
+Le serveur joint lui-même les plateformes, en HTTPS : il doit donc accéder à Internet, pour connecter des comptes et pour publier, sur le serveur Mastodon de chaque compte, sur le serveur Bluesky qui héberge chaque compte, et par le service vidéo de Bluesky, `https://video.bsky.app`, pour les vidéos. Il n’appelle que des serveurs aux adresses publiques, sur le port HTTPS par défaut, ce qui empêche de le diriger vers votre réseau privé. Les plateformes renvoient les personnes vers `PUBLIC_URL/connect/<plateforme>/callback`, par leur navigateur : elles n’appellent jamais le serveur elles-mêmes, sauf Bluesky, qui lit la description du client d’Acme, ci-dessous.
+
+Pour publier une image ou une vidéo, le serveur la lit dans le stockage des médias, en entier, en mémoire, puis l’envoie : une vidéo Bluesky peut prendre jusqu’à 300 Mo. Donnez au serveur la mémoire nécessaire aux plus gros fichiers que publient vos membres.
 
 ### Bluesky [#bluesky]
 
@@ -125,6 +129,19 @@ bun nx run acme-server:bluesky-key
 Mettez la ligne qu’elle affiche dans `BLUESKY_CLIENT_KEYS`. Les entrées sont séparées par des virgules : pour en changer, placez une nouvelle clé en tête, et gardez les anciennes jusqu’à ce que les sessions qu’elles ont signées aient été rafraîchies. Bluesky lit la description du client d’Acme à `PUBLIC_URL/api/channels/oauth/bluesky/client-metadata.json`, et ses clés publiques à côté.
 
 Sans clés, un serveur lancé depuis les sources sur `localhost` utilise le client de développement de Bluesky, dont les sessions durent deux semaines, et tout autre serveur ne peut pas connecter Bluesky.
+
+## Assistant de rédaction [#ai]
+
+L’assistant de rédaction de l’éditeur réécrit une publication sur un ton, la raccourcit pour une plateforme, la traduit ou suggère des hashtags. Il est désactivé tant que `ACME_AI_PROVIDER` ne nomme pas de fournisseur : d’ici là, l’application web le masque, et ses points d’accès répondent `AssistantUnavailable`.
+
+- **Anthropic** : définissez `ACME_AI_PROVIDER=anthropic` et `ACME_AI_API_KEY`. L’assistant interroge `claude-opus-5-5`, sauf si `ACME_AI_MODEL` nomme un autre modèle, sur l’API d’Anthropic, sauf si `ACME_AI_BASE_URL` nomme un proxy.
+- **N’importe quel point d’accès compatible OpenAI**, comme un serveur de modèles que vous faites tourner : définissez `ACME_AI_PROVIDER=openai-compatible`, `ACME_AI_BASE_URL` à l’adresse que suit `/chat/completions`, comme `http://127.0.0.1:8000/v1`, et `ACME_AI_MODEL` à l’un de ses modèles. Ajoutez `ACME_AI_API_KEY` s’il en demande une.
+
+Un fournisseur nommé sans les réglages qu’il demande arrête le serveur au démarrage, et l’erreur nomme la variable manquante. Le serveur appelle le fournisseur directement, sans passer par la garde qui limite les appels aux plateformes aux adresses publiques : le point d’accès peut tourner sur la même machine ou sur votre réseau privé.
+
+Chaque espace de travail peut envoyer à l’assistant `ACME_AI_DAILY_REQUESTS` demandes par jour UTC, 100 sans réglage ; `0` n’en laisse passer aucune. Chaque espace de travail en a autant : sur une instance où tout le monde peut s’inscrire, chaque nouvel espace de travail s’ajoute à ce que votre fournisseur peut facturer. Une demande pour laquelle le fournisseur n’a pas pu être joint ne compte pas. Une demande sans réponse au bout de 90 secondes échoue et compte, car le fournisseur a pu la traiter.
+
+Ce que les membres envoient, c’est le texte de la publication, jusqu’à 5 000 caractères, et les réponses sont limitées à 4 096 tokens. Le texte est envoyé comme une donnée, avec des consignes que le texte ne peut pas changer. Le serveur n’écrit jamais le texte ni la réponse dans ses journaux ou ses traces, n’enregistre ni l’un ni l’autre, et n’envoie au fournisseur aucun contexte de trace : ses journaux et ses traces ne nomment que le fournisseur, le modèle, le nombre de tokens et le type d’échec.
 
 ## La ligne de commande et les clients MCP [#mcp]
 
@@ -142,7 +159,7 @@ L’équipe, le rôle d’administrateur de Better Auth, peut se faire passer po
 UPDATE auth."user" SET role = 'admin' WHERE email = 'vous@example.com';
 ```
 
-En se faisant passer pour un membre, l’équipe ne peut ni connecter de canaux, ni publier, ni gérer les clés d’API ou la facturation, ni modifier les espaces de travail, ni laisser une application agir pour le membre.
+En se faisant passer pour un membre, l’équipe ne peut ni connecter de canaux, ni publier, ni gérer les clés d’API ou la facturation, ni modifier les espaces de travail, ni laisser une application agir pour le membre. Elle peut lire les notifications du membre, mais pas les marquer comme lues ni changer ses préférences d’e-mail. Elle peut demander de l’aide à l’assistant de rédaction dans les espaces de travail du membre, ce qui compte dans les demandes du jour de ces espaces.
 
 ## Télémétrie [#telemetry]
 

@@ -2,7 +2,7 @@
 title: Environment variables
 description: Every environment variable the Acme server, the web app and the command line read, whether it is required, its default, and what it does.
 sidebar:
-  order: 8
+  order: 10
 ---
 
 The server, the web app and the command line read plain environment variables, so they run on any host. This page lists every one they read. Values shown are examples.
@@ -65,6 +65,18 @@ Better Auth also reads `BETTER_AUTH_TRUSTED_ORIGINS`, which adds origins as `TRU
 | `ACME_S3_KEY_PREFIX`         | none                                             | A folder every key goes under, such as `staging/`, so instances can share a bucket. It ends with `/`.                                                                                 |
 | `ACME_MEDIA_PUBLIC_BASE_URL` | unset                                            | Where the bucket is served publicly, if it is, such as `https://media.example.com`. Unset, pages read media through short-lived signed links.                                         |
 | `ACME_FFPROBE_PATH`          | `ffprobe`                                        | The ffprobe program that reads a video's dimensions, duration and codec. The server's image ships one at `/usr/local/bin/ffprobe`. Without it, videos stay uploaded and are not read. |
+
+### Writing assistant [#ai]
+
+| Variable                 | Default                            | What it does                                                                                                                                                                                                                                                                            |
+| ------------------------ | ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ACME_AI_PROVIDER`       | unset: the assistant is off        | `anthropic` for Anthropic's API, or `openai-compatible` for any endpoint that serves `/chat/completions`, such as a model server you run. Unset or empty, the web app hides the assistant and its endpoints answer `AssistantUnavailable`. Any other value stops the server at startup. |
+| `ACME_AI_API_KEY`        | unset                              | The provider's key. Required with `anthropic`; with `openai-compatible`, only for an endpoint that asks for one. Keep it secret.                                                                                                                                                        |
+| `ACME_AI_MODEL`          | `claude-opus-5-5` with `anthropic` | The model the assistant asks. Required with `openai-compatible`.                                                                                                                                                                                                                        |
+| `ACME_AI_BASE_URL`       | Anthropic's API                    | The API's base URL, which `/chat/completions` follows, such as `http://127.0.0.1:8000/v1`. Required with `openai-compatible`; with `anthropic`, only to go through a proxy. The server calls it directly, so it may be on a private network.                                            |
+| `ACME_AI_DAILY_REQUESTS` | `100`                              | How many requests each workspace may send the assistant per UTC day. `0` lets none through. A negative or malformed value stops the server at startup.                                                                                                                                  |
+
+A provider named without the settings it needs stops the server at startup, and the error names the variable missing. [Writing assistant](/self-hosting#ai) explains the rest.
 
 ### Telemetry [#telemetry]
 

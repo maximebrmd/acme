@@ -2,7 +2,7 @@
 title: Variables d’environnement
 description: Chaque variable d’environnement que lisent le serveur Acme, l’application web et la ligne de commande, si elle est obligatoire, sa valeur par défaut et son rôle.
 sidebar:
-  order: 8
+  order: 10
 ---
 
 Le serveur, l’application web et la ligne de commande lisent de simples variables d’environnement : ils tournent sur n’importe quel hôte. Cette page liste chacune de celles qu’ils lisent. Les valeurs indiquées sont des exemples.
@@ -65,6 +65,18 @@ Better Auth lit aussi `BETTER_AUTH_TRUSTED_ORIGINS`, qui ajoute des origines com
 | `ACME_S3_KEY_PREFIX`         | aucune                                                 | Un dossier sous lequel va chaque clé, comme `staging/`, pour que des instances partagent un bucket. Il finit par `/`.                                                                                     |
 | `ACME_MEDIA_PUBLIC_BASE_URL` | non définie                                            | L’adresse où le bucket est servi publiquement, s’il l’est, comme `https://media.example.com`. Non définie, les pages lisent les médias par des liens signés de courte durée.                              |
 | `ACME_FFPROBE_PATH`          | `ffprobe`                                              | Le programme ffprobe qui lit les dimensions, la durée et le codec d’une vidéo. L’image du serveur en contient un, à `/usr/local/bin/ffprobe`. Sans lui, les vidéos restent importées et ne sont pas lues. |
+
+### Assistant de rédaction [#ai]
+
+| Variable                 | Par défaut                              | Rôle                                                                                                                                                                                                                                                                                                                                                 |
+| ------------------------ | --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ACME_AI_PROVIDER`       | non définie : l’assistant est désactivé | `anthropic` pour l’API d’Anthropic, ou `openai-compatible` pour n’importe quel point d’accès qui sert `/chat/completions`, comme un serveur de modèles que vous faites tourner. Non définie ou vide, l’application web masque l’assistant et ses points d’accès répondent `AssistantUnavailable`. Toute autre valeur arrête le serveur au démarrage. |
+| `ACME_AI_API_KEY`        | non définie                             | La clé du fournisseur. Obligatoire avec `anthropic` ; avec `openai-compatible`, seulement pour un point d’accès qui en demande une. Gardez-la secrète.                                                                                                                                                                                               |
+| `ACME_AI_MODEL`          | `claude-opus-5-5` avec `anthropic`      | Le modèle qu’interroge l’assistant. Obligatoire avec `openai-compatible`.                                                                                                                                                                                                                                                                            |
+| `ACME_AI_BASE_URL`       | l’API d’Anthropic                       | L’URL de base de l’API, que suit `/chat/completions`, comme `http://127.0.0.1:8000/v1`. Obligatoire avec `openai-compatible` ; avec `anthropic`, seulement pour passer par un proxy. Le serveur l’appelle directement : elle peut se trouver sur un réseau privé.                                                                                    |
+| `ACME_AI_DAILY_REQUESTS` | `100`                                   | Combien de demandes chaque espace de travail peut envoyer à l’assistant par jour UTC. `0` n’en laisse passer aucune. Une valeur négative ou mal formée arrête le serveur au démarrage.                                                                                                                                                               |
+
+Un fournisseur nommé sans les réglages qu’il demande arrête le serveur au démarrage, et l’erreur nomme la variable manquante. [Assistant de rédaction](/self-hosting#ai) explique le reste.
 
 ### Télémétrie [#telemetry]
 
