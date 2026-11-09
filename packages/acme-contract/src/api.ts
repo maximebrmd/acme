@@ -1,17 +1,46 @@
 import { HttpApi, OpenApi } from "effect/http-api";
 
+import { AccountApi } from "./account.ts";
 import { ApiKeysApi } from "./api-keys.ts";
 import { AssistantApi } from "./assistant.ts";
 import { ChannelOAuthApi } from "./channel-oauth.ts";
 import { ChannelsApi } from "./channels.ts";
+import { ConnectedAppsApi } from "./connected-apps.ts";
 import { MediaApi } from "./media.ts";
 import { NoticesApi } from "./notices.ts";
 import { NotificationPreferencesApi } from "./notification-preferences.ts";
 import { PostsApi } from "./posts.ts";
 import { SessionApi } from "./session.ts";
 import { SystemApi } from "./system.ts";
+import { WorkspacesApi } from "./workspaces.ts";
 
 export { DatabaseUnavailable } from "./database-unavailable.ts";
+
+export {
+  AccountApi,
+  AccountExportSchema,
+  DeleteAccountSchema,
+} from "./account.ts";
+
+export type { AccountExport, DeleteAccount } from "./account.ts";
+
+export { ConnectedAppNotFound } from "./connected-app-not-found.ts";
+
+export { ConnectedAppSchema, ConnectedAppsApi } from "./connected-apps.ts";
+
+export type { ConnectedApp } from "./connected-apps.ts";
+
+export { IncorrectPassword } from "./incorrect-password.ts";
+
+export { LastOwner } from "./last-owner.ts";
+
+export { DeleteWorkspaceSchema, WorkspacesApi } from "./workspaces.ts";
+
+export type { DeleteWorkspace } from "./workspaces.ts";
+
+export { WorkspaceBusy } from "./workspace-busy.ts";
+
+export { WorkspaceNameMismatch } from "./workspace-name-mismatch.ts";
 
 export { AltTextTooLong } from "./alt-text-too-long.ts";
 
@@ -308,4 +337,7 @@ export class Api extends HttpApi.make("acme")
   .add(NoticesApi)
   .add(NotificationPreferencesApi)
   .add(AssistantApi)
+  .add(WorkspacesApi)
+  .add(AccountApi)
+  .add(ConnectedAppsApi)
   .annotateMerge(OpenApi.annotations({ title: "Acme API" })) {}

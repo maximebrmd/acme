@@ -5,6 +5,8 @@ import type { PostFailureReason } from "./notice-event.ts";
  * email fills in, HTML-escaped where it appears in HTML.
  */
 export interface EmailCatalog {
+  /** An account was deleted with its data, as its owner asked. */
+  readonly accountDeleted: EmailMessages;
   /**
    * The channel a post notice names, as `{channel}`: `{platform}` and
    * `{handle}`.

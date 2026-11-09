@@ -38,6 +38,7 @@ import {
   AuthRoutesLive,
   WorkspaceApiLive,
   WorkspaceLive,
+  WorkspaceSettingsLive,
 } from "#workspace/container.ts";
 
 // The groups of the workspace endpoints, and the signed-in user's notices,
@@ -78,6 +79,19 @@ const PublishingContextLive = PublishingLive.pipe(
   Layer.provide(Layer.mergeAll(ChannelsWithNoticesLive, MediaLive))
 );
 
+// Workspace and account settings, which erase and export what every context
+// keeps.
+const SettingsContextLive = WorkspaceSettingsLive.pipe(
+  Layer.provide(
+    Layer.mergeAll(
+      ChannelsWithNoticesLive,
+      PublishingContextLive,
+      MediaLive,
+      AssistantLive
+    )
+  )
+);
+
 // Durable jobs as AppLive runs them, for tests that write and read posts and
 // notices: the engine in memory has no workflow registered, so scheduling a
 // post, or emailing a notice, through AppLive fails. Tests that schedule use
@@ -103,7 +117,8 @@ const ServicesLive = Layer.mergeAll(
   ChannelsWithNoticesLive,
   PublishingContextLive,
   MediaLive,
-  AssistantLive
+  AssistantLive,
+  SettingsContextLive
 ).pipe(
   Layer.provide(Layer.mergeAll(JobsWithoutWorkersLive, BunDns.layer)),
   Layer.provideMerge(MigrationsLive),
@@ -133,7 +148,8 @@ const ContextsLive = Layer.mergeAll(
   ChannelsWithNoticesLive,
   PublishingContextLive,
   MediaLive,
-  AssistantLive
+  AssistantLive,
+  SettingsContextLive
 ).pipe(
   Layer.provideMerge(
     Layer.mergeAll(IdsLive, TransactionRunnerLive, BunDns.layer)

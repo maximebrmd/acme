@@ -1,3 +1,5 @@
+import { Match } from "effect";
+
 import type { AuthEmail } from "./auth-email.ts";
 import type { EmailCatalog, EmailMessages } from "./email-catalog.ts";
 import { catalogs, escapeHtml, fill, keep, layout } from "./email-layout.ts";
@@ -8,30 +10,35 @@ interface Content {
   readonly values: ReadonlyMap<string, string>;
 }
 
-const contentOf = (email: AuthEmail, catalog: EmailCatalog): Content => {
-  if (email._tag !== "Invitation") {
-    return {
-      messages:
-        email._tag === "ResetPassword"
-          ? catalog.resetPassword
-          : catalog.verifyEmail,
+const contentOf = (email: AuthEmail, catalog: EmailCatalog): Content =>
+  Match.valueTags(email, {
+    AccountDeleted: (): Content => ({
+      messages: catalog.accountDeleted,
       values: new Map(),
-    };
-  }
+    }),
+    Invitation: (invitation): Content => {
+      const roles: ReadonlyMap<string, string> = new Map(
+        Object.entries(catalog.roles)
+      );
 
-  const roles: ReadonlyMap<string, string> = new Map(
-    Object.entries(catalog.roles)
-  );
-
-  return {
-    messages: catalog.invitation,
-    values: new Map([
-      ["inviterName", email.inviterName],
-      ["role", roles.get(email.role) ?? email.role],
-      ["workspaceName", email.workspaceName],
-    ]),
-  };
-};
+      return {
+        messages: catalog.invitation,
+        values: new Map([
+          ["inviterName", invitation.inviterName],
+          ["role", roles.get(invitation.role) ?? invitation.role],
+          ["workspaceName", invitation.workspaceName],
+        ]),
+      };
+    },
+    ResetPassword: (): Content => ({
+      messages: catalog.resetPassword,
+      values: new Map(),
+    }),
+    VerifyEmail: (): Content => ({
+      messages: catalog.verifyEmail,
+      values: new Map(),
+    }),
+  });
 
 /** An account email in its reader's language. */
 export const renderAuthEmail = (email: AuthEmail): RenderedEmail => {

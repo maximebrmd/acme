@@ -202,6 +202,15 @@ const signedInGroupsLive = (authorization: AuthorizationServer) =>
         status: () => refusing,
         suggest: () => refusing,
       })
+    ),
+    HttpApiBuilder.group(Api, "workspaces", (handlers) =>
+      handlers.handleAll({ delete: () => refusing })
+    ),
+    HttpApiBuilder.group(Api, "account", (handlers) =>
+      handlers.handleAll({ delete: () => refusing, export: () => refusing })
+    ),
+    HttpApiBuilder.group(Api, "connectedApps", (handlers) =>
+      handlers.handleAll({ list: () => refusing, revoke: () => refusing })
     )
   ).pipe(Layer.provideMerge(securityLive(authorization)));
 

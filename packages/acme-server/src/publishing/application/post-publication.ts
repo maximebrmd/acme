@@ -41,7 +41,8 @@ import { PublicationOutcomes } from "./publication-outcomes.ts";
 // (#publishing/infrastructure/workflows). Each reads and writes the post as it
 // is now, so a step run again after a crash, or for a post that changed, does
 // the right thing. A row missing, or in a state no step leaves it in, is a
-// bug, and dies.
+// bug, and dies, but for a post deleted with its workspace before its job
+// claimed it.
 
 const found = <A>(row: Option.Option<A>, what: string) =>
   Option.match(row, {
@@ -81,7 +82,15 @@ export const claimPostRun = Effect.fn("Publishing.claimPost")(
 
     return yield* transaction(
       Effect.gen(function* claimInTransaction() {
-        const { post } = yield* found(yield* posts.lock(postId), "The post");
+        const stored = yield* posts.lock(postId);
+
+        // Deleted with its workspace, which stopped the job in the same
+        // transaction: a job that woke just before reads as stopped.
+        if (Option.isNone(stored)) {
+          return { _tag: "cancelled" } satisfies PostClaim;
+        }
+
+        const { post } = stored.value;
         const now = yield* DateTime.now;
 
         const decision = yield* Effect.fromResult(

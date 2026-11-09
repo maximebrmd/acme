@@ -5,6 +5,8 @@ import {
   DeleteObjectCommand,
   GetObjectCommand,
   HeadObjectCommand,
+  ListMultipartUploadsCommand,
+  ListObjectsV2Command,
   ListPartsCommand,
   PutObjectCommand,
   S3Client,
@@ -26,6 +28,7 @@ import {
 
 import { MediaStorageFailed } from "#media/application/media-storage-failed.ts";
 import { MultipartUploadNotFound } from "#media/application/multipart-upload-not-found.ts";
+import { MediaFolders } from "#media/application/ports/media-folders.ts";
 import { MediaStorage } from "#media/application/ports/media-storage.ts";
 import type {
   MultipartUpload,
@@ -38,6 +41,7 @@ import type { MediaContentType } from "#media/domain/media-format.ts";
 import { MultipartUploadIdSchema } from "#media/domain/media-status.ts";
 import type { StorageKey } from "#media/domain/storage-key.ts";
 import { PartNumberSchema } from "#media/domain/upload-plan.ts";
+import type { WorkspaceId } from "#shared/domain/ids.ts";
 import {
   isProduction,
   requiredInProduction,
@@ -172,35 +176,38 @@ const multipartNotFound =
 const readFailed = (cause: unknown) =>
   new MediaStorageFailed({ cause, operation: "read a file" });
 
+// An SDK client for the store, destroyed when the scope closes.
+const acquireClient = (settings: S3StorageSettings) =>
+  Effect.acquireRelease(
+    Effect.sync(
+      () =>
+        new S3Client({
+          credentials: {
+            accessKeyId: Redacted.value(settings.accessKeyId),
+            secretAccessKey: Redacted.value(settings.secretAccessKey),
+          },
+          endpoint: settings.endpoint.href,
+          forcePathStyle: settings.forcePathStyle,
+          region: settings.region,
+          // By default the SDK adds a CRC32 checksum to uploads. In a
+          // presigned URL it is the checksum of an empty body, so the store
+          // refuses the real one (SeaweedFS answers BadDigest): keep to the
+          // checksums an operation requires.
+          requestChecksumCalculation: "WHEN_REQUIRED",
+          responseChecksumValidation: "WHEN_REQUIRED",
+        })
+    ),
+    (opened) =>
+      Effect.sync(() => {
+        opened.destroy();
+      })
+  );
+
 /** Builds the store from settings, closing the client with the layer. */
 export const makeS3MediaStorage = Effect.fn("S3MediaStorage.make")(
   function* makeS3MediaStorage(settings: S3StorageSettings) {
     const { bucket, keyPrefix, publicBaseUrl } = settings;
-
-    const client = yield* Effect.acquireRelease(
-      Effect.sync(
-        () =>
-          new S3Client({
-            credentials: {
-              accessKeyId: Redacted.value(settings.accessKeyId),
-              secretAccessKey: Redacted.value(settings.secretAccessKey),
-            },
-            endpoint: settings.endpoint.href,
-            forcePathStyle: settings.forcePathStyle,
-            region: settings.region,
-            // By default the SDK adds a CRC32 checksum to uploads. In a
-            // presigned URL it is the checksum of an empty body, so the store
-            // refuses the real one (SeaweedFS answers BadDigest): keep to the
-            // checksums an operation requires.
-            requestChecksumCalculation: "WHEN_REQUIRED",
-            responseChecksumValidation: "WHEN_REQUIRED",
-          })
-      ),
-      (opened) =>
-        Effect.sync(() => {
-          opened.destroy();
-        })
-    );
+    const client = yield* acquireClient(settings);
 
     const objectKey = (key: StorageKey): string => `${keyPrefix}${key}`;
 
@@ -519,4 +526,156 @@ export const makeS3MediaStorage = Effect.fn("S3MediaStorage.make")(
 export const S3MediaStorageLive = Layer.effect(
   MediaStorage,
   S3StorageConfig.pipe(Effect.flatMap(makeS3MediaStorage))
+);
+
+// Objects and uploads are deleted a few at a time: a workspace's folder can
+// hold thousands of files, and stores rate-limit bursts.
+const removals = 8;
+
+/**
+ * The store's workspace folders, from settings. Objects are listed and
+ * deleted one by one rather than with DeleteObjects, which needs a checksum
+ * some S3-compatible stores compute differently.
+ */
+export const makeS3MediaFolders = Effect.fn("S3MediaFolders.make")(
+  function* makeS3MediaFolders(settings: S3StorageSettings) {
+    const { bucket, keyPrefix } = settings;
+    const client = yield* acquireClient(settings);
+
+    const deleteObject = (key: string) =>
+      request(
+        "delete a file",
+        async (signal) =>
+          await client.send(
+            new DeleteObjectCommand({ Bucket: bucket, Key: key }),
+            {
+              abortSignal: signal,
+            }
+          )
+      );
+
+    const abortUpload = (key: string, uploadId: string) =>
+      request(
+        "abort a multipart upload",
+        async (signal) =>
+          await client.send(
+            new AbortMultipartUploadCommand({
+              Bucket: bucket,
+              Key: key,
+              UploadId: uploadId,
+            }),
+            { abortSignal: signal }
+          )
+      ).pipe(
+        Effect.catchIf(
+          (failure) => isS3Error(failure.cause, noSuchUpload),
+          () => Effect.void
+        )
+      );
+
+    // One page of the folder's files, from `token`.
+    const listObjects = (prefix: string, token: string | undefined) =>
+      request(
+        "list a folder",
+        async (signal) =>
+          await client.send(
+            new ListObjectsV2Command({
+              Bucket: bucket,
+              ContinuationToken: token,
+              Prefix: prefix,
+            }),
+            { abortSignal: signal }
+          )
+      );
+
+    // One page of the folder's multipart uploads, after the markers.
+    const listUploads = (
+      prefix: string,
+      keyMarker: string | undefined,
+      uploadIdMarker: string | undefined
+    ) =>
+      request(
+        "list a folder's uploads",
+        async (signal) =>
+          await client.send(
+            new ListMultipartUploadsCommand({
+              Bucket: bucket,
+              KeyMarker: keyMarker,
+              Prefix: prefix,
+              UploadIdMarker: uploadIdMarker,
+            }),
+            { abortSignal: signal }
+          )
+      );
+
+    const removeObjects = Effect.fn("S3MediaFolders.removeObjects")(
+      function* removeObjects(prefix: string) {
+        let token: string | undefined;
+        let more = true;
+
+        while (more) {
+          const page = yield* listObjects(prefix, token);
+
+          const keys = (page.Contents ?? []).flatMap(({ Key: key }) =>
+            key === undefined ? [] : [key]
+          );
+
+          yield* Effect.forEach(keys, deleteObject, {
+            concurrency: removals,
+            discard: true,
+          });
+
+          token = page.NextContinuationToken;
+          more = page.IsTruncated === true && token !== undefined;
+        }
+      }
+    );
+
+    const abortUploads = Effect.fn("S3MediaFolders.abortUploads")(
+      function* abortUploads(prefix: string) {
+        let keyMarker: string | undefined;
+        let uploadIdMarker: string | undefined;
+        let more = true;
+
+        while (more) {
+          const page = yield* listUploads(prefix, keyMarker, uploadIdMarker);
+
+          const uploads = (page.Uploads ?? []).flatMap(
+            ({ Key: key, UploadId: uploadId }) =>
+              key === undefined || uploadId === undefined
+                ? []
+                : [{ key, uploadId }]
+          );
+
+          yield* Effect.forEach(
+            uploads,
+            ({ key, uploadId }) => abortUpload(key, uploadId),
+            { concurrency: removals, discard: true }
+          );
+
+          keyMarker = page.NextKeyMarker;
+          uploadIdMarker = page.NextUploadIdMarker;
+          more = page.IsTruncated === true && keyMarker !== undefined;
+        }
+      }
+    );
+
+    const removeWorkspace = Effect.fn("S3MediaFolders.removeWorkspace")(
+      function* removeWorkspace(workspaceId: WorkspaceId) {
+        const prefix = `${keyPrefix}media/${workspaceId}/`;
+
+        // Uploads first: completing one would add a file to the folder.
+        yield* abortUploads(prefix);
+        yield* removeObjects(prefix);
+      }
+    );
+
+    return MediaFolders.of({ removeWorkspace });
+  }
+);
+
+/** The store's workspace folders, configured from the environment. */
+export const S3MediaFoldersLive = Layer.effect(
+  MediaFolders,
+  S3StorageConfig.pipe(Effect.flatMap(makeS3MediaFolders))
 );

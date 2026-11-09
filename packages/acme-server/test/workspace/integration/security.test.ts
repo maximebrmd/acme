@@ -398,7 +398,6 @@ layer(MatrixLive, { excludeTestServices: true, timeout: "180 seconds" })(
               "update",
               { data: { name: "Renamed" }, organizationId: workspaceId },
             ],
-            ["delete", { organizationId: workspaceId }],
             ["create", { name: "Mine", slug: `mine-${randomUUID()}` }],
           ] as const;
 
@@ -410,6 +409,22 @@ layer(MatrixLive, { excludeTestServices: true, timeout: "180 seconds" })(
 
             assert.strictEqual(changed.status, 403, route);
           }
+
+          // Nor deleting it, which goes through Acme's API.
+          const workspaceDeleted = yield* app.request(
+            `/api/workspaces/${workspaceId}`,
+            { body: { name: "Shop" }, headers: { cookie }, method: "DELETE" }
+          );
+
+          assert.strictEqual(workspaceDeleted.status, 403);
+
+          // Nor changing the member's account.
+          const renamed = yield* app.request("/api/auth/update-user", {
+            body: { name: "Staff was here" },
+            headers: { cookie },
+          });
+
+          assert.strictEqual(renamed.status, 403);
 
           // The key, and the member's place in the workspace, are untouched.
           const stillWorks = yield* app.request(apiKeys(workspaceId), {

@@ -467,12 +467,13 @@ layer(McpFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           assert.include(results.whoami.workspace.permissions, "post:publish");
           assert.deepStrictEqual(results.channels.channels, []);
 
-          const deleted = yield* app.request("/api/auth/organization/delete", {
-            body: { organizationId: workspace },
+          const deleted = yield* app.request(`/api/workspaces/${workspace}`, {
+            body: { name: "Pop-up" },
             headers: { cookie: fixture.owner.cookies },
+            method: "DELETE",
           });
 
-          assert.strictEqual(deleted.status, 200);
+          assert.strictEqual(deleted.status, 204);
 
           const refused = yield* refusedConnection(
             Option.some(token),

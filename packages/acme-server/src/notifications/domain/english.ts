@@ -1,6 +1,13 @@
 import type { EmailCatalog } from "./email-catalog.ts";
 
 export const english: EmailCatalog = {
+  accountDeleted: {
+    action: "Open Acme",
+    body: "Your Acme account was deleted, as you asked, with the data tied to it: your profile, your sessions, your memberships, your notifications, and the workspaces where you were the only member, with everything in them.",
+    ignore:
+      "If you did not ask for this, tell whoever runs this Acme server. Acme sends no more email to this address.",
+    subject: "Your Acme account is deleted",
+  },
   channel: "{platform} ({handle})",
   channelReconnectRequired: {
     action: "Reconnect the account",

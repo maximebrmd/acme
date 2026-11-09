@@ -6,6 +6,7 @@ import type { AttachableMedia } from "#publishing/application/attachable-media.t
 import type { PlatformPublisher } from "#publishing/application/platform-publisher.ts";
 import { PostDrafts } from "#publishing/application/post-drafts.ts";
 import { PostQueries } from "#publishing/application/post-queries.ts";
+import { PostRecords } from "#publishing/application/post-records.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
 import { RoutedPlatformPublisher } from "#publishing/application/routed-platform-publisher.ts";
 import type { WorkspaceChannels } from "#publishing/application/workspace-channels.ts";
@@ -16,6 +17,7 @@ import {
 } from "#publishing/infrastructure/channel-gate.ts";
 import { DrizzlePostRepository } from "#publishing/infrastructure/drizzle-post-repository.ts";
 import { DrizzlePublicationJournal } from "#publishing/infrastructure/drizzle-publication-journal.ts";
+import { DrizzleWorkspacePostStore } from "#publishing/infrastructure/drizzle-workspace-post-store.ts";
 import { LibraryAttachableMedia } from "#publishing/infrastructure/library-attachable-media.ts";
 import { LibraryMediaForPublishing } from "#publishing/infrastructure/library-media-for-publishing.ts";
 import { ListedWorkspaceChannels } from "#publishing/infrastructure/listed-workspace-channels.ts";
@@ -29,7 +31,8 @@ import { OutboundGuard } from "#shared/infrastructure/platforms/outbound-guard.t
 
 /**
  * The publishing context's use cases (`PostDrafts`, `PostQueries`,
- * `PostScheduling`, for the handlers) and the adapters behind its ports,
+ * `PostScheduling`, for the handlers, and `PostRecords`, for the workspace
+ * context's exports and erasures) and the adapters behind its ports,
  * with `references` for the channels and media posts refer to. Needs the
  * database (Drizzle), the workflow engine, a TransactionRunner and Ids.
  */
@@ -39,12 +42,14 @@ export const publishingWith = <E, R>(
   Layer.mergeAll(
     PostDrafts.layer,
     PostQueries.layer,
+    PostRecords.layer,
     PostScheduling.layer
   ).pipe(
     Layer.provideMerge(
       Layer.mergeAll(
         DrizzlePostRepository,
         DrizzlePublicationJournal,
+        DrizzleWorkspacePostStore,
         LoggedChannelHealth,
         WorkflowPublicationScheduler,
         references
