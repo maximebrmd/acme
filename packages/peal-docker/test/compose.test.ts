@@ -191,6 +191,17 @@ describe("compose.production.yaml", () => {
     expect(server?.stop_grace_period).toBe("75s");
   });
 
+  // Cloudflare Access lets the staff alone through to Grafana, and they get
+  // full access there, set again at each sign-in.
+  it("signs the people Access lets through into Grafana as admins", () => {
+    const grafana = production.find(([name]) => name === "grafana")?.[1];
+    const environment = grafana?.environment ?? {};
+
+    expect(environment["GF_AUTH_JWT_ROLE_ATTRIBUTE_PATH"]).toBe("'Admin'");
+    expect(environment["GF_AUTH_JWT_AUTO_SIGN_UP"]).toBe("true");
+    expect(environment["GF_AUTH_JWT_SKIP_ORG_ROLE_SYNC"]).toBeUndefined();
+  });
+
   // Compose hands a container only the variables its service names, so a
   // setting left out here cannot be set at all, from an env file or
   // otherwise. The image sets NODE_ENV, the port mapping fixes PORT, and

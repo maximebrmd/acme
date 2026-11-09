@@ -1,7 +1,8 @@
 """The uptime server (roles/uptime, group_vars/uptime): what it checks and
 holds, as Ansible renders it, then its stack run in Docker on a network that
 reaches nothing outside: Gatus loads the configuration, takes a heartbeat
-with its token alone, and Caddy shows the world nothing else."""
+with its token alone, and Caddy shows the world nothing else on the
+heartbeats' name, and the status page, read-only, on its own."""
 
 from __future__ import annotations
 
@@ -89,6 +90,25 @@ def test_every_check_of_every_environment_runs(rendered: Path) -> None:
             expected |= {_key(name, f"certificate of {host}"), _key(name, f"dns of {host}")}
         assert expected <= keys
     assert _key("uptime", f"certificate of {UPTIME['uptime_hostname']}") in keys
+    assert _key("uptime", f"certificate of {UPTIME['uptime_status_hostname']}") in keys
+
+
+def test_the_status_page_is_public_on_a_name_of_its_own() -> None:
+    """The owner's decision: status.peal.social, apart from the name
+    production's heartbeat goes to."""
+    assert UPTIME["uptime_public_status"] is True
+    assert UPTIME["uptime_status_hostname"] == "status.peal.social"
+    assert UPTIME["uptime_status_hostname"] != UPTIME["uptime_hostname"]
+    assert "uptime_status_hostname" in UPTIME["peal_preflight_names"]
+
+
+def test_caddy_serves_the_status_page_on_its_own_name(rendered: Path) -> None:
+    caddyfile = (rendered / "peal-uptime" / "caddy" / "Caddyfile").read_text()
+
+    assert f"\n{UPTIME['uptime_hostname']} {{\n" in caddyfile
+    assert f"\n{UPTIME['uptime_status_hostname']} {{\n" in caddyfile
+    assert caddyfile.count("import /etc/caddy/routes.caddy") == 1
+    assert caddyfile.count("import /etc/caddy/status.caddy") == 1
 
 
 def test_checks_refuse_redirects_and_slow_answers(rendered: Path) -> None:
@@ -303,8 +323,12 @@ def stack(rendered: Path, tmp_path_factory: pytest.TempPathFactory) -> Iterator[
     # Caddy's routes as the server has them, served over plain HTTP: the
     # certificate is the server's business, and caddy validate checks it.
     edge = tmp_path_factory.mktemp("caddy")
-    shutil.copy(rendered / "peal-uptime" / "caddy" / "routes.caddy", edge / "routes.caddy")
-    (edge / "Caddyfile").write_text("http://:8080 {\n\timport /etc/caddy/routes.caddy\n}\n")
+    for routes in ("routes.caddy", "status.caddy"):
+        shutil.copy(rendered / "peal-uptime" / "caddy" / routes, edge / routes)
+    (edge / "Caddyfile").write_text(
+        "http://:8080 {\n\timport /etc/caddy/routes.caddy\n}\n"
+        "http://:8081 {\n\timport /etc/caddy/status.caddy\n}\n"
+    )
     # Gatus runs as nobody and Caddy as root without capabilities, and Linux
     # keeps pytest's folders to their owner, so both read copies anyone may
     # read; on the server, their groups read them.
@@ -339,10 +363,15 @@ def stack(rendered: Path, tmp_path_factory: pytest.TempPathFactory) -> Iterator[
         _run(["docker", "network", "rm", stack.network])
 
 
-def _heartbeat(stack: Stack, token: str, key: str = "production_grafana-heartbeat") -> int:
+# Where the test's Caddy serves each name's routes.
+HEARTBEATS = "http://caddy:8080"
+STATUS_PAGE = "http://caddy:8081"
+
+
+def _heartbeat(stack: Stack, token: str, key: str = "production_grafana-heartbeat", origin: str = HEARTBEATS) -> int:
     status, _ = _request(
         stack,
-        f"http://caddy:8080/api/v1/endpoints/{key}/external?success=true",
+        f"{origin}/api/v1/endpoints/{key}/external?success=true",
         "--post-data=",
         "--header",
         f"Authorization: Bearer {token}",
@@ -398,14 +427,38 @@ def test_caddy_takes_heartbeats_by_post_only(stack: Stack) -> None:
 
 
 @needs_docker
+@pytest.mark.parametrize(
+    "path",
+    ["/", "/api/v1/endpoints/statuses", "/api/v1/endpoints/production_api/statuses"],
+)
+def test_the_status_page_shows_the_dashboard(stack: Stack, path: str) -> None:
+    assert _request(stack, f"{STATUS_PAGE}{path}")[0] == 200
+
+
+@needs_docker
+def test_the_status_page_takes_no_heartbeat(stack: Stack) -> None:
+    """Even with the right token: heartbeats go to the uptime server's own
+    name."""
+    assert _heartbeat(stack, TOKEN, origin=STATUS_PAGE) == 405
+
+
+@needs_docker
 @pytest.mark.parametrize("public_status", [False, True])
 def test_caddy_validates_the_configuration(rendered: Path, tmp_path: Path, public_status: bool) -> None:
-    """The server's Caddyfile, with its certificate's settings, and the
-    routes either way the owner decides on the status page."""
+    """The server's Caddyfile, with its certificates' settings, and its
+    routes, either way the owner decides on the status page."""
     caddy = rendered / "peal-uptime" / "caddy"
-    shutil.copy(caddy / "Caddyfile", tmp_path / "Caddyfile")
-    routes = (INFRA / "roles" / "uptime" / "templates" / "routes.caddy.j2").read_text()
-    (tmp_path / "routes.caddy").write_text(render(routes, uptime_public_status=public_status))
+    caddyfile = (INFRA / "roles" / "uptime" / "templates" / "Caddyfile.j2").read_text()
+    (tmp_path / "Caddyfile").write_text(
+        render(
+            caddyfile,
+            uptime_hostname=UPTIME["uptime_hostname"],
+            uptime_status_hostname=UPTIME["uptime_status_hostname"],
+            uptime_public_status=public_status,
+        )
+    )
+    for routes in ("routes.caddy", "status.caddy"):
+        shutil.copy(caddy / routes, tmp_path / routes)
     image = _compose(rendered)["services"]["caddy"]["image"]
 
     validated = _run(["docker", "run", "--rm", "--network", "none", "--volume", f"{tmp_path}:/etc/caddy:ro",

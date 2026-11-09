@@ -1,0 +1,16 @@
+# Managed by Ansible (peal-infra). The public status page, on
+# uptime_status_hostname when uptime_public_status is on: Gatus's dashboard
+# and its API, read-only. Gatus takes writes only through the heartbeats,
+# which stay on {{ uptime_hostname }}: any method but GET and HEAD gets a 405
+# here.
+header -Server
+
+@read method GET HEAD
+handle @read {
+	reverse_proxy gatus:8080
+}
+
+handle {
+	header Allow "GET, HEAD"
+	respond 405
+}

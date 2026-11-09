@@ -19,6 +19,19 @@
       letters and digits, and its host names.
     quiet: true
 
+# The status page has a name of its own, so the heartbeats' name shows the
+# world nothing but them.
+- name: Refuse a status page without a name of its own
+  ansible.builtin.assert:
+    that:
+      - uptime_status_hostname | default('') | length > 0
+      - uptime_status_hostname != uptime_hostname
+    fail_msg: >-
+      Give the public status page its own name, uptime_status_hostname, apart
+      from uptime_hostname, or turn uptime_public_status off.
+    quiet: true
+  when: uptime_public_status
+
 - name: Look for the uptime folder
   ansible.builtin.stat:
     path: "{{ uptime_root }}"
@@ -142,6 +155,7 @@
     uptime_gatus_config: "{{ lookup('ansible.builtin.template', 'config.yaml.j2') }}"
     uptime_caddyfile: "{{ lookup('ansible.builtin.template', 'Caddyfile.j2') }}"
     uptime_caddy_routes: "{{ lookup('ansible.builtin.template', 'routes.caddy.j2') }}"
+    uptime_caddy_status: "{{ lookup('ansible.builtin.template', 'status.caddy.j2') }}"
 
 - name: Write Gatus's configuration
   ansible.builtin.copy:
@@ -162,6 +176,8 @@
   loop:
     - { name: Caddyfile, content: "{{ uptime_caddyfile }}" }
     - { name: routes.caddy, content: "{{ uptime_caddy_routes }}" }
+    # Written either way; the Caddyfile imports it when the page is public.
+    - { name: status.caddy, content: "{{ uptime_caddy_status }}" }
   loop_control:
     label: "{{ item.name }}"
   when: not ansible_check_mode or uptime_root_folder.stat.exists
