@@ -107,16 +107,30 @@ export const publicationAttempts = publishing.table(
  * The journal of calls to the platforms. A row is written, and committed,
  * before the call; `finished_at` and `outcome` once it answered. A row with
  * no `finished_at` is a call whose fate is unknown.
+ *
+ * One row per attempt of a round, whatever its key: a second job for the same
+ * attempt, as after a change to how keys are made, finds the first one's call
+ * instead of sending again.
  */
-export const publicationCalls = publishing.table("publication_calls", {
-  attempt: integer("attempt").notNull(),
-  finishedAt: instant("finished_at"),
-  idempotencyKey: text("idempotency_key").primaryKey(),
-  operation: text("operation").notNull(),
-  outcome: jsonb("outcome"),
-  round: integer("round").notNull(),
-  startedAt: instant("started_at").notNull(),
-  targetId: uuid("target_id")
-    .notNull()
-    .references(() => postTargets.id, { onDelete: "cascade" }),
-});
+export const publicationCalls = publishing.table(
+  "publication_calls",
+  {
+    attempt: integer("attempt").notNull(),
+    finishedAt: instant("finished_at"),
+    idempotencyKey: text("idempotency_key").primaryKey(),
+    operation: text("operation").notNull(),
+    outcome: jsonb("outcome"),
+    round: integer("round").notNull(),
+    startedAt: instant("started_at").notNull(),
+    targetId: uuid("target_id")
+      .notNull()
+      .references(() => postTargets.id, { onDelete: "cascade" }),
+  },
+  (table) => [
+    unique("publication_calls_target_round_attempt").on(
+      table.targetId,
+      table.round,
+      table.attempt
+    ),
+  ]
+);

@@ -110,17 +110,15 @@ export const DrizzlePublicationJournal = Layer.effect(
         return start;
       }
 
-      const [row] = yield* db
-        .select()
-        .from(publicationCalls)
-        .where(eq(publicationCalls.idempotencyKey, call.idempotencyKey))
-        .pipe(Effect.mapError(failed));
+      // The key, or this attempt of the round, is taken: some run began the
+      // call, under this key or another.
+      const begun = yield* find(call);
 
-      if (row === undefined) {
+      if (Option.isNone(begun)) {
         return yield* Effect.die("A journal row vanished after a conflict");
       }
 
-      const start: CallStart = yield* begunCall(row);
+      const start: CallStart = begun.value;
 
       return start;
     });

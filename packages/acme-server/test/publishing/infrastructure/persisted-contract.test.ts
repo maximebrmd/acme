@@ -2,9 +2,12 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 
 import { assert, describe, it } from "@effect/vitest";
-import { Effect, Schema } from "effect";
+import { Duration, Effect, Option, Schema } from "effect";
 import { MessageStorage } from "effect/cluster";
+import { TestClock } from "effect/testing";
+import { Activity, WorkflowEngine } from "effect/workflow";
 
+import { PublicationJournal } from "#publishing/application/publication-journal.ts";
 import { PostOutcomeSchema } from "#publishing/domain/post-status.ts";
 import {
   PostClaimSchema,
@@ -13,21 +16,28 @@ import {
   TargetOutcomeSchema,
 } from "#publishing/domain/publication-claims.ts";
 import { PublicationDecisionSchema } from "#publishing/domain/publication-policy.ts";
+import { FakePlatform } from "#publishing/infrastructure/fake-platform-publisher.ts";
 import {
   persistedWorkflowTags,
   PublishPostV1,
 } from "#publishing/infrastructure/workflows/publish-post.ts";
 import { PublishTargetV1 } from "#publishing/infrastructure/workflows/publish-target.ts";
+import { PlatformPostIdSchema } from "#shared/domain/publish-result.ts";
+import { RateLimited } from "#shared/domain/rate-limited.ts";
 
 import {
+  callsOn,
   eventually,
   isFinished,
   isSuspended,
+  isTargetWaiting,
   newChannel,
   onServerAt,
   scheduleIn,
   schedulePost,
   setTime,
+  targetsOf,
+  utc,
 } from "./harness.ts";
 
 // Every workflow history ever stored must still decode with the current
@@ -74,6 +84,19 @@ const ActivityNameSchema = Schema.Literals([
 
 const ActivityPayloadSchema = Schema.Struct({ name: Schema.String });
 
+// What a durable clock stores: its name and the workflow it wakes.
+const ClockPayloadSchema = Schema.Struct({
+  name: Schema.String,
+  workflowName: Schema.String,
+});
+
+const PostKeysSchema = Schema.Struct({ executionId: Schema.String });
+
+const TargetKeysSchema = Schema.Struct({
+  executionId: Schema.String,
+  "publish/1": Schema.String,
+});
+
 const StoredSuccessSchema = Schema.Struct({
   exit: Schema.Struct({
     _tag: Schema.Literal("Success"),
@@ -115,6 +138,56 @@ describe("the persisted contract", () => {
       assert.strictEqual(current.codeVersion, 1);
       assert.strictEqual(older.codeVersion, 1);
       assert.deepStrictEqual({ ...older }, { ...current });
+    })
+  );
+
+  // The execution ids, and the attempt keys sent to the platforms and kept in
+  // the journal, come from the payloads. Changed, a parent replaying after a
+  // deploy starts a second child for the same target, and that child sends.
+  it.effect("derives the same execution ids and keys from a payload", () =>
+    Effect.gen(function* derivesTheSameKeys() {
+      const post = yield* fixture(
+        "PublishPostV1",
+        "payload.json",
+        PublishPostV1.payloadSchema
+      );
+
+      const postKeys = yield* fixture(
+        "PublishPostV1",
+        "keys.json",
+        PostKeysSchema
+      );
+
+      assert.strictEqual(
+        yield* PublishPostV1.executionId(post),
+        postKeys.executionId
+      );
+
+      const target = yield* fixture(
+        "PublishTargetV1",
+        "payload.json",
+        PublishTargetV1.payloadSchema
+      );
+
+      const targetKeys = yield* fixture(
+        "PublishTargetV1",
+        "keys.json",
+        TargetKeysSchema
+      );
+
+      const executionId = yield* PublishTargetV1.executionId(target);
+
+      assert.strictEqual(executionId, targetKeys.executionId);
+
+      // As the `publish/1` activity computes it, in that execution.
+      const attemptKey = yield* Activity.idempotencyKey("publish/1").pipe(
+        Effect.provideService(
+          WorkflowEngine.WorkflowInstance,
+          WorkflowEngine.WorkflowInstance.initial(PublishTargetV1, executionId)
+        )
+      );
+
+      assert.strictEqual(attemptKey, targetKeys["publish/1"]);
     })
   );
 
@@ -176,18 +249,39 @@ describe("the persisted contract", () => {
   );
 
   it.effect(
-    "decodes what a real run stores with the same schemas",
+    "decodes what a real run stores with the same schemas, under the same names",
     () =>
       onServerAt(
         "2026-06-15T07:00:00Z",
         Effect.gen(function* decodesARealRun() {
+          const platform = yield* FakePlatform;
+          const channel = yield* newChannel;
+
+          // Refused once, so the run waits on a retry clock.
+          yield* platform.script(channel, [
+            {
+              _tag: "fail",
+              failure: new RateLimited({ retryAfter: Duration.minutes(1) }),
+            },
+          ]);
+
           const post = yield* schedulePost(
-            [yield* newChannel],
+            [channel],
             scheduleIn("2026-06-15T08:00:00Z")
           );
 
+          const [target] = yield* targetsOf(post.id);
+
+          assert(target !== undefined);
+
           yield* eventually("the job sleeps", isSuspended(post.id));
           yield* setTime("2026-06-15T08:00:00Z");
+          yield* eventually(
+            "the first call is refused",
+            callsOn(channel).pipe(Effect.map((calls) => calls.length === 1))
+          );
+          yield* eventually("the job waits", isTargetWaiting(target.id));
+          yield* TestClock.adjust(Duration.minutes(1));
           yield* eventually("the post finishes", isFinished(post.id));
 
           const driver = yield* MessageStorage.MemoryDriver;
@@ -196,6 +290,14 @@ describe("the persisted contract", () => {
           for (const { envelope, replies } of driver.requests.values()) {
             if (envelope._tag !== "Request") {
               continue;
+            }
+
+            if (envelope.address.entityType === "Workflow/-/DurableClock") {
+              const clock = yield* Schema.decodeUnknownEffect(
+                ClockPayloadSchema
+              )(envelope.payload);
+
+              decoded.push(`${clock.workflowName} clock ${clock.name}`);
             }
 
             const workflow = workflows.find(
@@ -234,13 +336,75 @@ describe("the persisted contract", () => {
 
           assert.sameMembers(decoded, [
             "PublishPostV1 payload",
+            "PublishPostV1 clock publish-at",
             "claim-post",
             "PublishTargetV1 payload",
             "claim-target",
             "publish/1",
+            "PublishTargetV1 clock retry/1",
+            "publish/2",
             "record-outcome",
             "complete-post",
           ]);
+        })
+      ),
+    60_000
+  );
+
+  it.effect(
+    "never begins one attempt twice, whatever its key",
+    () =>
+      onServerAt(
+        "2026-06-15T07:00:00Z",
+        Effect.gen(function* beginsOnce() {
+          const journal = yield* PublicationJournal;
+
+          const post = yield* schedulePost(
+            [yield* newChannel],
+            scheduleIn("2026-06-15T08:00:00Z")
+          );
+
+          const [target] = yield* targetsOf(post.id);
+
+          assert(target !== undefined);
+
+          const startedAt = utc("2026-06-15T08:00:00Z");
+          const call = { attempt: 1, round: 1, startedAt, targetId: target.id };
+
+          // As if the key had changed between two deploys.
+          const keyed = (key: string) => ({
+            ...call,
+            idempotencyKey: `${target.id}:${key}`,
+          });
+
+          assert.deepStrictEqual(yield* journal.begin(keyed("first")), {
+            _tag: "started",
+          });
+          assert.deepStrictEqual(yield* journal.begin(keyed("second")), {
+            _tag: "inFlight",
+            startedAt,
+          });
+
+          const published = {
+            _tag: "published",
+            platformPostId: PlatformPostIdSchema.make("1"),
+          } as const;
+
+          const finishedAt = utc("2026-06-15T08:00:01Z");
+
+          yield* journal.finish(
+            keyed("first").idempotencyKey,
+            published,
+            finishedAt
+          );
+
+          assert.deepStrictEqual(yield* journal.begin(keyed("third")), {
+            _tag: "completed",
+            finishedAt,
+            outcome: published,
+            startedAt,
+          });
+          assert.isTrue(Option.isSome(yield* journal.find(call)));
         })
       ),
     60_000
