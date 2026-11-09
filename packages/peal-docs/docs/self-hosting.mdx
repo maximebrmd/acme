@@ -122,6 +122,8 @@ Peal sends the email that confirms an address, password resets, invitations to a
 
 ## Media storage [#media-storage]
 
+To keep media in the EU on Cloudflare R2, create the bucket in R2's EU jurisdiction (in the dashboard, or `wrangler r2 bucket create <name> --jurisdiction eu`), which cannot be changed later, and reach it at the `.eu.` endpoint, `https://<account>.eu.r2.cloudflarestorage.com`, in `PEAL_S3_ENDPOINT`. Wrangler's other bucket commands need `--jurisdiction eu` too. The same goes for a backup bucket, whose endpoint is a host without a scheme.
+
 Browsers send media straight to the bucket, with requests the server signs, so the bucket must let the web app's origin send them: a CORS rule that allows `PUT` from that origin with the `Content-Type` and `If-None-Match` headers. With the server's variables set, and `PUBLIC_URL` and `TRUSTED_ORIGINS` naming the web app's origins, this command puts the rule on the bucket, keeping its other rules, and prints the same policy for Cloudflare R2's dashboard (R2 › the bucket › Settings › CORS policy):
 
 ```sh

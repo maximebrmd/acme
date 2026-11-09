@@ -122,6 +122,8 @@ Peal envoie l’e-mail qui confirme une adresse, les réinitialisations de mot d
 
 ## Stockage des médias [#media-storage]
 
+Pour garder les médias dans l’UE sur Cloudflare R2, créez le bucket dans la juridiction UE de R2 (depuis le tableau de bord, ou `wrangler r2 bucket create <nom> --jurisdiction eu`), qui ne peut plus changer ensuite, et joignez-le par le point d’accès `.eu.`, `https://<compte>.eu.r2.cloudflarestorage.com`, dans `PEAL_S3_ENDPOINT`. Les autres commandes de bucket de Wrangler demandent aussi `--jurisdiction eu`. Il en va de même pour un bucket de sauvegardes, dont le point d’accès est un hôte sans schéma.
+
 Les navigateurs envoient les médias directement au bucket, avec des requêtes que le serveur signe : le bucket doit donc laisser l’origine de l’application web les envoyer. Il lui faut une règle CORS qui autorise `PUT` depuis cette origine, avec les en-têtes `Content-Type` et `If-None-Match`. Avec les variables du serveur définies, et `PUBLIC_URL` et `TRUSTED_ORIGINS` nommant les origines de l’application web, cette commande pose la règle sur le bucket, en gardant ses autres règles, puis affiche la même politique pour le tableau de bord de Cloudflare R2 (R2 › le bucket › Settings › CORS policy) :
 
 ```sh
