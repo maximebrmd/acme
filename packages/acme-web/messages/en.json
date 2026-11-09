@@ -17,7 +17,7 @@
       "retry": "Try again",
       "empty": "No post went out on Mastodon or Bluesky in this range yet, the platforms Acme reads counts on so far. A post’s counts appear within the hour after it goes live.",
       "collection": "Acme reads each post’s counts every hour for 48 hours after it goes live, then every day until it is 30 days old.",
-      "noImpressions": "Mastodon and Bluesky do not tell how many people saw a post, so there are no impressions."
+      "noImpressions": "Mastodon and Bluesky do not tell how many people saw a post, so there are no impressions; YouTube's are its views."
     },
     "totals": {
       "title": "Totals",

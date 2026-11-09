@@ -17,7 +17,7 @@
       "retry": "Réessayer",
       "empty": "Aucune publication n’est encore parue sur Mastodon ou Bluesky sur cette période, les plateformes dont Acme relève les chiffres pour l’instant. Les chiffres d’une publication arrivent dans l’heure qui suit sa parution.",
       "collection": "Acme relève les chiffres de chaque publication toutes les heures pendant les 48 heures qui suivent sa parution, puis chaque jour jusqu’à ses 30 jours.",
-      "noImpressions": "Mastodon et Bluesky ne disent pas combien de personnes ont vu une publication : il n’y a donc pas d’impressions."
+      "noImpressions": "Mastodon et Bluesky ne disent pas combien de personnes ont vu une publication : il n’y a donc pas d’impressions ; celles de YouTube sont ses vues."
     },
     "totals": {
       "title": "Totaux",

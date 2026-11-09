@@ -800,7 +800,10 @@ and no socket, for tests.
   a 401 or 403 with Mastodon's JSON error refuses the token: a proxy's page
   must not mark the channel to reconnect, which stops its publishing.
   Bluesky reads the public AppView's `getPosts` without the session, whose
-  scope stays what posting needs.
+  scope stays what posting needs. YouTube reads `videos.list` statistics,
+  50 ids a call, with the channel's token (`youtube.readonly`): views are
+  impressions, comments replies, reposts 0; only a 401 with Google's JSON
+  error refuses the token, and a 403 (quota) or 429 halts the read.
 - A halted read leaves the rest due for the next run; a missing post, one a
   read `failed` on (so one the server cannot show never stays first due),
   or a channel off or to reconnect, waits for its next turn; a disconnected

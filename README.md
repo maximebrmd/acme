@@ -22,8 +22,8 @@ It is not released yet. Today you can:
   whether one Acme could not confirm went out;
 - hear how your posts ended, or every post if you choose, and which
   channels need reconnecting, under a bell in the app and by email;
-- see how posts did on Mastodon and Bluesky: their likes, reposts, replies
-  and quotes, read back every hour for two days then daily for a month, by
+- see how posts did on Mastodon, Bluesky and YouTube: their likes, reposts,
+  replies and quotes, and a YouTube video's views, read back every hour for two days then daily for a month, by
   channel and day, and on each post's page;
 - ask a writing assistant to rewrite, shorten or translate a post, or to
   suggest hashtags, when the server has an AI provider;
@@ -38,7 +38,7 @@ It is not released yet. Today you can:
 - sign in from the command line, and let MCP clients read a workspace.
 
 Analytics on LinkedIn, X and Meta's platforms, and the other platforms Acme
-knows (TikTok, YouTube, Pinterest), are still to come.
+knows (TikTok, Pinterest), are still to come.
 
 ## Set up
 

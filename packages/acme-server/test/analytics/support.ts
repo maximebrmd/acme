@@ -65,12 +65,17 @@ export const newChannelId = newId(ChannelIdSchema);
 
 /**
  * The platforms' readers over plain HTTP, against fakes: Mastodon servers
- * at the host the account names, Bluesky's AppView at `appView`.
+ * at the host the account names, Bluesky's AppView at `appView`, the
+ * YouTube Data API at `youtubeApi`.
  */
-export const readersWith = (appView = "http://127.0.0.1:9") =>
+export const readersWith = (
+  appView = "http://127.0.0.1:9",
+  youtubeApi = "http://127.0.0.1:9"
+) =>
   platformMetricsReaderWith({
     blueskyAppView: new URL(appView),
     mastodonScheme: "http:",
+    youtubeApi: new URL(youtubeApi),
   }).pipe(
     Layer.provide(Layer.mergeAll(FetchHttpClient.layer, OpenOutboundGuard))
   );

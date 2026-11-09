@@ -1,6 +1,6 @@
 ---
 title: Statistiques
-description: Voyez ce qu’ont donné vos publications sur Mastodon et Bluesky, par canal et par jour, lesquelles ont le mieux marché, et les chiffres de chacune au fil du temps.
+description: Voyez ce qu’ont donné vos publications sur Mastodon, Bluesky et YouTube, par canal et par jour, lesquelles ont le mieux marché, et les chiffres de chacune au fil du temps.
 sidebar:
   order: 6
 ---
@@ -9,15 +9,15 @@ Une fois une publication parue, Acme relève ses chiffres sur la plateforme pend
 
 ## Ce qu’Acme compte [#counts]
 
-| Chiffre     | Mastodon                 | Bluesky        |
-| ----------- | ------------------------ | -------------- |
-| J’aime      | Favoris                  | J’aime         |
-| Partages    | Partages (boosts)        | Republications |
-| Réponses    | Réponses                 | Réponses       |
-| Citations   | À partir de Mastodon 4.5 | Citations      |
-| Impressions | Non fournies             | Non fournies   |
+| Chiffre     | Mastodon                 | Bluesky        | YouTube           |
+| ----------- | ------------------------ | -------------- | ----------------- |
+| J’aime      | Favoris                  | J’aime         | J’aime            |
+| Partages    | Partages (boosts)        | Republications | Aucun, toujours 0 |
+| Réponses    | Réponses                 | Réponses       | Commentaires      |
+| Citations   | À partir de Mastodon 4.5 | Citations      | Non fournies      |
+| Impressions | Non fournies             | Non fournies   | Vues              |
 
-Aucune des deux plateformes ne dit combien de personnes ont vu une publication : Acme n’affiche donc pas d’impressions pour elles. Un chiffre qu’une plateforme ne donne pas apparaît comme manquant, jamais comme zéro. L’**engagement**, ce sont les j’aime, partages, réponses et citations réunis.
+Mastodon et Bluesky ne disent pas combien de personnes ont vu une publication : Acme n’affiche donc pas d’impressions pour elles ; sur YouTube, les impressions sont les vues de la vidéo. Un chiffre qu’une plateforme ne donne pas apparaît comme manquant, jamais comme zéro. L’**engagement**, ce sont les j’aime, partages, réponses et citations réunis.
 
 ## Quand les chiffres sont relevés [#schedule]
 
@@ -27,6 +27,7 @@ Les relevés passent à tour de rôle avec les publications du canal : Acme fait
 
 - **Mastodon** : Acme lit chaque publication sur le serveur du compte, avec l’accès du compte quand celui-ci a autorisé Acme à lire ses publications. Les comptes connectés avant qu’Acme le demande sont lus sans cet accès, ce qui montre les publications publiques et non listées ; [reconnectez](/channels#reconnect)-en un pour relever aussi ses publications réservées aux abonnés.
 - **Bluesky** : Acme lit les publications sur le service public de Bluesky, 25 à la fois, sans la session du compte : les chiffres d’une publication sont publics sur Bluesky.
+- **YouTube** : Acme lit les vidéos de la chaîne avec son accès, 50 à la fois, si bien que les vidéos privées et non répertoriées sont lues aussi. Un chiffre que la chaîne masque, comme ses j’aime, vaut 0.
 
 Acme ne relève encore aucun chiffre sur LinkedIn, X, Threads, Instagram ni les Pages Facebook. Il le constate au premier tour d’une publication, s’arrête là, et laisse la publication hors des **Statistiques**, plutôt que de la montrer sans chiffres.
 
