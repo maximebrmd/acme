@@ -157,14 +157,23 @@ export const connectChoices = channelsSchema.table(
  * request came through (`facebook` or `threads`), when it came and was done,
  * and how many channels it deleted. `code` is the confirmation code Meta
  * shows the user.
+ *
+ * `request_digest` is the SHA-256, in hex, of the signed request as Meta
+ * sent it, which only the app's secret could have made: the same request
+ * sent again finds its row, and deletes nothing more.
  */
-export const dataDeletions = channelsSchema.table("data_deletions", {
-  app: text("app").notNull(),
-  channelsDeleted: integer("channels_deleted").notNull(),
-  code: text("code").primaryKey(),
-  completedAt: instant("completed_at").notNull(),
-  requestedAt: instant("requested_at").notNull(),
-});
+export const dataDeletions = channelsSchema.table(
+  "data_deletions",
+  {
+    app: text("app").notNull(),
+    channelsDeleted: integer("channels_deleted").notNull(),
+    code: text("code").primaryKey(),
+    completedAt: instant("completed_at").notNull(),
+    requestDigest: text("request_digest").notNull(),
+    requestedAt: instant("requested_at").notNull(),
+  },
+  (table) => [unique("data_deletions_request_digest").on(table.requestDigest)]
+);
 
 /**
  * Acme's app on each Mastodon instance, registered with the instance the

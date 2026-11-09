@@ -110,12 +110,16 @@ const channelIdsIn = (workspaceId: WorkspaceId) =>
     Effect.map((channels) => channels.map(({ id }) => id))
   );
 
-const request = (userId: string, secret: Redacted.Redacted) =>
+const request = (
+  userId: string,
+  secret: Redacted.Redacted,
+  issuedAt = 1_780_990_000
+) =>
   signedRequest(
     {
       algorithm: "HMAC-SHA256",
-      expires: 1_781_000_000,
-      issued_at: 1_780_990_000,
+      expires: issuedAt + 10_000,
+      issued_at: issuedAt,
       user_id: userId,
     },
     secret
@@ -196,6 +200,75 @@ layer(deletionsWith({ threads: true }))(
 
         assert.strictEqual(receipt.deletion.channelsDeleted, 1);
         assert.deepStrictEqual(yield* channelIdsIn(workspaceId), [page.id]);
+      })
+    );
+
+    it.effect(
+      "answer a request sent again with its receipt, deleting nothing more",
+      () =>
+        Effect.gen(function* replayed() {
+          const workspaceId = yield* freshWorkspace;
+          const userId = userIdOf(workspaceId);
+          const signed = request(userId, metaApp.appSecret);
+
+          yield* seeded(workspaceId, "facebook", { grantedBy: userId });
+
+          const first = yield* DeletePlatformUserData.use((deletions) =>
+            deletions.request("facebook", signed)
+          );
+
+          assert.strictEqual(first.deletion.channelsDeleted, 1);
+
+          // The user connects a Page again, after asking.
+          const reconnected = yield* seeded(workspaceId, "facebook", {
+            grantedBy: userId,
+          });
+
+          // The same request, as Meta retries it or anyone who kept it sends
+          // it: the receipt it had, and the new Page stays.
+          const again = yield* DeletePlatformUserData.use((deletions) =>
+            deletions.request("facebook", signed)
+          );
+
+          assert.deepStrictEqual(again, first);
+          assert.deepStrictEqual(yield* channelIdsIn(workspaceId), [
+            reconnected.id,
+          ]);
+
+          // A new request of theirs deletes it.
+          const next = yield* DeletePlatformUserData.use((deletions) =>
+            deletions.request(
+              "facebook",
+              request(userId, metaApp.appSecret, 1_780_990_600)
+            )
+          );
+
+          assert.notStrictEqual(next.deletion.code, first.deletion.code);
+          assert.strictEqual(next.deletion.channelsDeleted, 1);
+          assert.deepStrictEqual(yield* channelIdsIn(workspaceId), []);
+        })
+    );
+
+    it.effect("carry out once the same request sent twice at once", () =>
+      Effect.gen(function* together() {
+        const workspaceId = yield* freshWorkspace;
+        const userId = userIdOf(workspaceId);
+        const signed = request(userId, metaApp.appSecret);
+
+        yield* seeded(workspaceId, "facebook", { grantedBy: userId });
+        yield* seeded(workspaceId, "instagram", { grantedBy: userId });
+
+        const [one, other] = yield* Effect.all(
+          [signed, signed].map((sent) =>
+            DeletePlatformUserData.use((deletions) =>
+              deletions.request("facebook", sent)
+            )
+          ),
+          { concurrency: 2 }
+        );
+
+        assert.deepStrictEqual(one, other);
+        assert.strictEqual(one?.deletion.channelsDeleted, 2);
       })
     );
 

@@ -126,6 +126,7 @@ CREATE TABLE "channels"."data_deletions" (
 	"channels_deleted" integer NOT NULL,
 	"code" text PRIMARY KEY,
 	"completed_at" timestamp with time zone NOT NULL,
+	"request_digest" text NOT NULL CONSTRAINT "data_deletions_request_digest" UNIQUE,
 	"requested_at" timestamp with time zone NOT NULL
 );
 --> statement-breakpoint
