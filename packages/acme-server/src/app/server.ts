@@ -36,8 +36,9 @@ const WorkspaceGroupsLive = Layer.mergeAll(ChannelsApiLive, PostsApiLive).pipe(
 // Publishing posts to the channels the channels context lists.
 const PublishingContextLive = PublishingLive.pipe(Layer.provide(ChannelsLive));
 
-// Publishing as AppLive runs it: jobs go to an engine in memory that runs
-// none of them, since tests through AppLive publish nothing.
+// Publishing as AppLive runs it, for tests that write and read posts: the
+// engine in memory has no workflow registered, so scheduling a post through
+// AppLive fails. Tests that schedule use test/publishing/posts-server.ts.
 const PublishingWithoutJobsLive = PublishingContextLive.pipe(
   Layer.provide(Layer.mergeAll(IdsLive, TransactionRunnerLive)),
   Layer.provide(
