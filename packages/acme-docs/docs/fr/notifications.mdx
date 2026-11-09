@@ -5,30 +5,35 @@ sidebar:
   order: 5
 ---
 
-Acme prévient les membres qui peuvent agir quand il arrive quelque chose à une publication ou à un canal. Chaque notification s’affiche dans Acme, sous la cloche de l’en-tête, et certaines arrivent aussi par e-mail.
+Acme prévient les membres concernés quand il arrive quelque chose à une publication ou à un canal. Chaque notification s’affiche dans Acme, sous la cloche de l’en-tête, et certaines arrivent aussi par e-mail.
 
 ## Ce dont vous êtes prévenu [#events]
 
-| Notification                          | Quand                                                                                                        | Qui est prévenu                                                                                  |
-| ------------------------------------- | ------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------ |
-| Une publication est partie            | La publication est en ligne sur l’un de ses canaux.                                                          | Les membres qui peuvent programmer des publications : propriétaires, administrateurs et éditeurs |
-| Une publication n’est pas partie      | La publication a échoué sur l’un de ses canaux, pour la raison ci-dessous.                                   | Les mêmes                                                                                        |
-| Une publication est peut-être partie  | Acme n’a pas pu savoir si un canal l’a publiée. Vérifiez sur la plateforme avant de la republier.            | Les mêmes                                                                                        |
-| Un canal doit être reconnecté         | La plateforme n’accepte plus l’accès d’Acme : rien ne part sur le canal tant que personne ne l’a reconnecté. | Les membres qui peuvent connecter des canaux : propriétaires et administrateurs                  |
-| Un canal doit être reconnecté bientôt | L’accès du canal ne peut pas être renouvelé, et prend fin à la date qu’indique la notification.              | Les mêmes                                                                                        |
+| Notification                          | Quand                                                                                                        | Qui est prévenu                                                                            |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------ |
+| Une publication est partie            | La publication est en ligne sur l’un de ses canaux.                                                          | L’auteur de la publication, et les membres qui suivent toutes les publications, ci-dessous |
+| Une publication n’est pas partie      | La publication a échoué sur l’un de ses canaux, pour la raison ci-dessous.                                   | Les mêmes                                                                                  |
+| Une publication est peut-être partie  | Acme n’a pas pu savoir si un canal l’a publiée. Vérifiez sur la plateforme avant de la republier.            | Les mêmes                                                                                  |
+| Un canal doit être reconnecté         | La plateforme n’accepte plus l’accès d’Acme : rien ne part sur le canal tant que personne ne l’a reconnecté. | Les membres qui peuvent connecter des canaux : propriétaires et administrateurs            |
+| Un canal doit être reconnecté bientôt | L’accès du canal ne peut pas être renouvelé, et prend fin à la date qu’indique la notification.              | Les mêmes                                                                                  |
 
-Chaque notification sur une publication nomme un canal : une publication sur trois canaux peut en amener trois. Une publication annulée n’en amène aucune.
+Les notifications d’une publication vont à son auteur, le membre qui l’a créée, quel que soit son rôle, et aux membres qui peuvent programmer des publications (propriétaires, administrateurs et éditeurs) et ont choisi d’être prévenus pour toutes les publications dans leurs [préférences](#email). Une publication créée avec une clé d’API n’a pas d’auteur : ses notifications vont à tous les membres qui peuvent programmer des publications. Un membre qui a quitté l’espace de travail n’en est plus prévenu.
+
+Chaque notification sur une publication nomme un canal : une publication sur trois canaux peut en amener trois, et une publication renvoyée en amène de nouvelles. Une publication annulée n’en amène aucune. Dès que quelqu’un indique si une publication à vérifier est partie, ou la renvoie, ses notifications sont marquées comme lues pour tous, et leurs e-mails pas encore envoyés sont abandonnés.
 
 Pourquoi une publication n’est pas partie :
 
-| Raison                                                                                        | Que faire                                                                                                                             |
-| --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| La plateforme a refusé son texte ou son format                                                | Vérifiez le texte selon les règles de la plateforme, et que le canal est toujours connecté et actif, puis programmez-en une nouvelle. |
-| La plateforme a refusé l’une de ses images ou vidéos                                          | Vérifiez les médias selon [ce que la plateforme accepte](/media#platforms).                                                           |
-| Acme était indisponible à l’heure prévue, et la publication est arrivée trop tard pour partir | Le serveur était arrêté après l’heure de la publication. Programmez-en une nouvelle.                                                  |
-| La plateforme a refusé les requêtes trop longtemps, et Acme a cessé d’essayer                 | La plateforme a limité le rythme des publications d’Acme. Programmez-en une nouvelle, plus tard.                                      |
-| L’autorisation du compte ne fonctionne plus                                                   | [Reconnectez](/channels#reconnect) le canal, puis programmez-en une nouvelle.                                                         |
-| La plateforme était injoignable                                                               | Acme a essayé pendant plus de deux heures. Programmez-en une nouvelle quand la plateforme répond.                                     |
+| Raison                                                                                        | Que faire                                                                                                                      |
+| --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| La plateforme a refusé son texte ou son format                                                | Vérifiez le texte selon les règles de la plateforme, puis programmez-en une nouvelle.                                          |
+| Son canal a été déconnecté de l’espace de travail avant son départ                            | [Connectez](/channels) à nouveau le compte, puis programmez-en une nouvelle.                                                   |
+| Son canal a été désactivé avant son départ                                                    | Réactivez le canal, puis [republiez-la](/scheduling#follow-up).                                                                |
+| L’une de ses images ou vidéos a été supprimée de la médiathèque                               | Programmez-en une nouvelle, avec des médias de la médiathèque.                                                                 |
+| La plateforme a refusé l’une de ses images ou vidéos                                          | Vérifiez les médias selon [ce que la plateforme accepte](/media#platforms).                                                    |
+| Acme était indisponible à l’heure prévue, et la publication est arrivée trop tard pour partir | Le serveur était arrêté après l’heure de la publication. [Republiez-la](/scheduling#follow-up), ou programmez-en une nouvelle. |
+| La plateforme a refusé les requêtes trop longtemps, et Acme a cessé d’essayer                 | La plateforme a limité le rythme des publications d’Acme. [Republiez-la](/scheduling#follow-up) plus tard.                     |
+| L’autorisation du compte ne fonctionne plus                                                   | [Reconnectez](/channels#reconnect) le canal, puis [republiez-la](/scheduling#follow-up).                                       |
+| La plateforme était injoignable                                                               | Acme a essayé pendant plus de deux heures. [Republiez-la](/scheduling#follow-up) quand la plateforme répond.                   |
 
 ## La cloche et la page des notifications [#inbox]
 
@@ -40,7 +45,7 @@ Vous voyez aussi les notifications des espaces de travail que vous avez quittés
 
 ## Par e-mail [#email]
 
-Depuis **Notifications**, choisissez **Préférences d’e-mail** pour choisir quelles notifications vous arrivent aussi par e-mail. Chaque choix est enregistré dès que vous le changez, et vaut dans tous vos espaces de travail.
+Depuis **Notifications**, choisissez **Préférences d’e-mail** pour choisir quelles notifications vous arrivent aussi par e-mail, et sous **Me prévenir pour**, si vous êtes prévenu pour toutes les publications de vos espaces de travail, pas seulement les vôtres (désactivé tant que vous ne l’activez pas). Chaque choix est enregistré dès que vous le changez, et vaut dans tous vos espaces de travail.
 
 | M’envoyer un e-mail quand                                                     | Tant que vous n’y touchez pas |
 | ----------------------------------------------------------------------------- | ----------------------------- |
@@ -57,6 +62,6 @@ Vos notifications et vos préférences vous appartiennent, et non à un espace d
 
 - `GET /api/me/notices` les liste, les plus récentes d’abord, 20 par page, et `GET /api/me/notices/unread` compte celles qui ne sont pas lues ;
 - `POST /api/me/notices/read` en marque jusqu’à 100 comme lues, et `POST /api/me/notices/read-all` les marque toutes ;
-- `GET` et `PATCH /api/me/notification-preferences` lisent et changent celles qui partent par e-mail.
+- `GET` et `PATCH /api/me/notification-preferences` lisent et changent celles qui partent par e-mail, et `everyPost`, si vous êtes prévenu pour toutes les publications.
 
 Chaque notification est une donnée, comme l’identifiant d’une publication, un canal et une raison, que le client écrit dans la langue de son lecteur. Ces points d’accès acceptent une session ou un jeton OAuth qui n’est pas lié à un seul espace de travail, comme celui de la ligne de commande. Les clés d’API, qui appartiennent à un espace de travail, et les clients MCP, qui agissent dans un seul espace de travail, reçoivent 403. La [référence de l’API](/reference) liste leurs paramètres.

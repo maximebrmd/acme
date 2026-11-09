@@ -13,17 +13,19 @@ It is not released yet. Today you can:
   accounts to them;
 - upload images and videos to a workspace's media library;
 - write a post, with its own text on some channels and images or videos
-  with alt text, then schedule it, move it on a calendar or cancel it;
-- have it published to Mastodon and Bluesky at its time, with its media;
-- hear how each post ended, and which channels need reconnecting, under a
-  bell in the app and by email, as each member chooses;
+  with alt text, keep it with the workspace's drafts or discard it, then
+  schedule it, move it on a calendar, take it back to draft or cancel it;
+- have it published to Mastodon and Bluesky at its time, with its media,
+  then follow each channel's attempts, post it again where it failed, and
+  say whether one Acme could not confirm went out;
+- hear how your posts ended, or every post if you choose, and which
+  channels need reconnecting, under a bell in the app and by email;
 - ask a writing assistant to rewrite, shorten or translate a post, or to
   suggest hashtags, when the server has an AI provider;
 - sign in from the command line, and let MCP clients read a workspace.
 
 Analytics, billing, the other platforms, and managing members, invitations
-and API keys from the app are still to come. Saved drafts are not listed
-anywhere yet: keep a draft's address to come back to it.
+and API keys from the app are still to come.
 
 ## Set up
 
@@ -112,7 +114,7 @@ that hostname only, so on `127.0.0.1` pages never hydrate.
 3. On <http://localhost:3001/app>, create a workspace. You own it.
 
 Each workspace's card links to its **Calendar**, **New post** (the composer),
-**Channels** and **Media library**. Password reset and invitation emails land
+**Drafts**, **Channels** and **Media library**. Password reset and invitation emails land
 in Mailpit too.
 
 To make an account staff (Better Auth's admin role, which may impersonate
@@ -161,10 +163,11 @@ Posts really go out, so use an account you can post test messages from.
    library** to attach the image; its description becomes its alt text.
 4. Under **When**, pick a time a few minutes ahead, then **Schedule**. The
    post appears on the **Calendar**.
-5. Keep the server running: at that time it publishes the post. Reload the
-   post's page, which then shows **Published** for the channel. The bell in
-   the header counts a new notification within 30 seconds, and
-   <http://localhost:3001/app/notices> lists it.
+5. Keep the server running: at that time it publishes the post. The post's
+   page then shows **Published** for the channel, with its attempts, and
+   **Post again** where it failed. The bell in the header counts a new
+   notification within 30 seconds, and <http://localhost:3001/app/notices>
+   lists it.
 
 Emails about posts that failed, or may have gone out unconfirmed, land in
 Mailpit. A published post is not emailed until you turn it on in the
@@ -297,9 +300,10 @@ behind.
 ### End-to-end tests
 
 `packages/acme-e2e` drives a new member's first steps in Chromium: signing
-up through the emailed link, creating a workspace, writing a draft,
-scheduling it on a synthetic channel, finding it on the calendar and
-cancelling it, then switching to French and signing out. Each run builds
+up through the emailed link, creating a workspace, writing a draft and
+finding it on the drafts page, scheduling it on a synthetic channel,
+finding it on the calendar, taking it back to draft to edit and schedule
+it again, cancelling it, then switching to French and signing out. Each run builds
 the web app, starts the server and the web app's production build on free
 ports, and writes to the database you give it, so give it one of its own:
 

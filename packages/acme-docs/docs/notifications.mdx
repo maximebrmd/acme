@@ -5,30 +5,35 @@ sidebar:
   order: 5
 ---
 
-Acme tells the members who can act on it when something happens to a post or a channel. Every notification appears in Acme, under the bell in the header, and some also come by email.
+Acme tells the members it concerns when something happens to a post or a channel. Every notification appears in Acme, under the bell in the header, and some also come by email.
 
 ## What you hear about [#events]
 
-| Notification                       | When                                                                                                       | Who hears it                                               |
-| ---------------------------------- | ---------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
-| A post went out                    | The post is live on one of its channels.                                                                   | Members who may schedule posts: owners, admins and editors |
-| A post did not go out              | The post failed on one of its channels, for the reason below.                                              | The same                                                   |
-| A post may have gone out           | Acme could not tell whether a channel published it. Check the platform before you post it again.           | The same                                                   |
-| A channel must be reconnected      | The platform no longer accepts Acme's access: nothing goes out on the channel until someone reconnects it. | Members who may connect channels: owners and admins        |
-| A channel must be reconnected soon | The channel's access cannot be renewed, and ends on the date the notification gives.                       | The same                                                   |
+| Notification                       | When                                                                                                       | Who hears it                                                |
+| ---------------------------------- | ---------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| A post went out                    | The post is live on one of its channels.                                                                   | The post's author, and members who follow every post, below |
+| A post did not go out              | The post failed on one of its channels, for the reason below.                                              | The same                                                    |
+| A post may have gone out           | Acme could not tell whether a channel published it. Check the platform before you post it again.           | The same                                                    |
+| A channel must be reconnected      | The platform no longer accepts Acme's access: nothing goes out on the channel until someone reconnects it. | Members who may connect channels: owners and admins         |
+| A channel must be reconnected soon | The channel's access cannot be renewed, and ends on the date the notification gives.                       | The same                                                    |
 
-Each notification about a post names one channel, so a post on three channels can bring three. A cancelled post brings none.
+A post's notifications go to its author, the member who created it, whatever their role, and to the members who may schedule posts (owners, admins and editors) and chose to hear about every post in their [preferences](#email). A post created with an API key has no author: its notifications go to every member who may schedule posts. A member who left the workspace hears nothing more about it.
+
+Each notification about a post names one channel, so a post on three channels can bring three, and a post sent again brings new ones. A cancelled post brings none. Once someone says whether a post to check went out, or sends it again, its notifications are marked read for everyone, and their emails not sent yet are dropped.
 
 Why a post did not go out:
 
-| Reason                                                                         | What to do                                                                                                                   |
-| ------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
-| The platform refused its text or its format                                    | Check the text against the platform's rules, and that the channel is still connected and on, then schedule it in a new post. |
-| The platform refused one of its images or videos                               | Check the media against [what the platform accepts](/media#platforms).                                                       |
-| Acme was unavailable at the scheduled time, and the post came too late to send | The server was down past the post's time. Schedule it in a new post.                                                         |
-| The platform kept turning requests away, and Acme stopped trying               | The platform limited how often Acme posts. Schedule it later, in a new post.                                                 |
-| The account's authorization stopped working                                    | [Reconnect](/channels#reconnect) the channel, then schedule it in a new post.                                                |
-| The platform could not be reached                                              | Acme tried for over two hours. Schedule it in a new post once the platform answers.                                          |
+| Reason                                                                         | What to do                                                                                                      |
+| ------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------- |
+| The platform refused its text or its format                                    | Check the text against the platform's rules, then schedule it in a new post.                                    |
+| Its channel was disconnected from the workspace before it went out             | [Connect](/channels) the account again, then schedule it in a new post.                                         |
+| Its channel was turned off before it went out                                  | Turn the channel back on, then [post it again](/scheduling#follow-up).                                          |
+| One of its images or videos was deleted from the media library                 | Schedule it in a new post, with media from the library.                                                         |
+| The platform refused one of its images or videos                               | Check the media against [what the platform accepts](/media#platforms).                                          |
+| Acme was unavailable at the scheduled time, and the post came too late to send | The server was down past the post's time. [Post it again](/scheduling#follow-up), or schedule it in a new post. |
+| The platform kept turning requests away, and Acme stopped trying               | The platform limited how often Acme posts. [Post it again](/scheduling#follow-up) later.                        |
+| The account's authorization stopped working                                    | [Reconnect](/channels#reconnect) the channel, then [post it again](/scheduling#follow-up).                      |
+| The platform could not be reached                                              | Acme tried for over two hours. [Post it again](/scheduling#follow-up) once the platform answers.                |
 
 ## The bell and the notifications page [#inbox]
 
@@ -40,7 +45,7 @@ You see the notifications of workspaces you have left too, under "a workspace yo
 
 ## By email [#email]
 
-From **Notifications**, choose **Email preferences** to pick which notifications also reach you by email. Each choice is saved as you change it, and applies in all your workspaces.
+From **Notifications**, choose **Email preferences** to pick which notifications also reach you by email, and under **Tell me about**, whether you hear about every post of your workspaces, not only the ones you wrote (off until you turn it on). Each choice is saved as you change it, and applies in all your workspaces.
 
 | Email me when                                                | Until you change it |
 | ------------------------------------------------------------ | ------------------- |
@@ -57,6 +62,6 @@ Your notifications and preferences belong to you, not to a workspace, so they li
 
 - `GET /api/me/notices` lists them, newest first, 20 a page, and `GET /api/me/notices/unread` counts the unread ones;
 - `POST /api/me/notices/read` marks up to 100 of them read, and `POST /api/me/notices/read-all` marks them all;
-- `GET` and `PATCH /api/me/notification-preferences` read and change which ones are emailed.
+- `GET` and `PATCH /api/me/notification-preferences` read and change which ones are emailed, and `everyPost`, whether you hear about every post.
 
 Each notification is data, such as a post's id, a channel and a reason, for the client to write in its reader's language. These endpoints take a session or an OAuth token that is not bound to one workspace, such as the command line's. API keys, which belong to a workspace, and MCP clients, which act in one workspace, get 403. The [API reference](/reference) lists their parameters.
