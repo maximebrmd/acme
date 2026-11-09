@@ -285,6 +285,32 @@ layer(DeviceGrantLive, { excludeTestServices: true, timeout: "180 seconds" })(
       })
     );
 
+    it.effect("refuses a token that grants no workspace scope", () =>
+      Effect.gen(function* identityOnly() {
+        const app = yield* TestApp;
+        const oauth = yield* OAuth;
+        const owner = yield* signedUp("identity-only");
+
+        // Anyone may start a sign-in as the command line, asking for less.
+        const device = yield* oauth.tokens.deviceAuthorization({
+          payload: {
+            client_id: "acme-cli",
+            resource: apiResource,
+            scope: "offline_access",
+          },
+        });
+
+        yield* review(owner, device.user_code);
+        yield* decide(owner, "approve", device.user_code);
+
+        const { access_token: token } = yield* poll(device.device_code);
+
+        const me = yield* app.request("/api/me", { headers: bearer(token) });
+
+        assert.strictEqual(me.status, 401);
+      })
+    );
+
     it.effect("refuses a code its user denied", () =>
       Effect.gen(function* denied() {
         const owner = yield* signedUp("denier");

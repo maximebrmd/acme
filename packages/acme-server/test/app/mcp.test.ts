@@ -362,6 +362,32 @@ layer(McpFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
       })
     );
 
+    it.effect(
+      "asks a token that grants no workspace scope to step up, telling nothing of the user",
+      () =>
+        Effect.gen(function* identityOnly() {
+          const fixture = yield* McpFixture;
+
+          // The user agreed to the client knowing who they are, nothing more.
+          const token = yield* authorize(
+            fixture.owner,
+            fixture.clientId,
+            fixture.shop,
+            "openid"
+          );
+
+          const refused = yield* refusedConnection(Option.some(token));
+
+          assert.strictEqual(refused.status, 403);
+          assert.include(refused.challenge, 'error="insufficient_scope"');
+          assert.include(refused.challenge, 'scope="workspace:read"');
+          assert.include(
+            refused.challenge,
+            `resource_metadata="${origin}/.well-known/oauth-protected-resource/api/mcp"`
+          );
+        })
+    );
+
     it.effect("acts in the workspace the user picked, reading only", () =>
       Effect.gen(function* picked() {
         const fixture = yield* McpFixture;

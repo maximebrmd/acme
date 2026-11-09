@@ -2,6 +2,7 @@ import { createResourceServerChallenge } from "@better-auth/oauth-provider";
 import { APIError } from "better-auth/api";
 import {
   createDpopReplayStore,
+  createInsufficientScopeError,
   enforceDpopBinding,
   isDpopBindingError,
   parseAccessTokenAuthorization,
@@ -12,6 +13,7 @@ import { Effect, Option, Redacted, Schema } from "effect";
 import type { AccessTokenRequest } from "#workspace/application/auth-gateway.ts";
 import { AuthUnavailable } from "#workspace/application/auth-unavailable.ts";
 import { InvalidAccessToken } from "#workspace/application/invalid-access-token.ts";
+import { WorkspaceScopeSchema } from "#workspace/domain/oauth-grant.ts";
 
 import { BetterAuth } from "./better-auth.ts";
 import { issuerOf } from "./oauth.ts";
@@ -32,6 +34,20 @@ const decodeChallenge = Schema.decodeUnknownOption(
   Schema.Struct({ "WWW-Authenticate": Schema.String })
 );
 
+const decodeScope = Schema.decodeUnknownOption(
+  Schema.Struct({ scope: Schema.String })
+);
+
+const isWorkspaceScope = Schema.is(WorkspaceScopeSchema);
+
+// RFC 6750 §3.1: a token that is valid but grants no workspace scope, asked
+// to step up to reading at least.
+const noWorkspaceScope = () =>
+  createInsufficientScopeError(
+    ["workspace:read"],
+    "access token grants no workspace scope"
+  );
+
 const unauthorized = (
   message: string,
   error?: "invalid_dpop_proof" | "invalid_token"
@@ -48,7 +64,9 @@ const unauthorized = (
 // resource's metadata.
 const invalidFor =
   (resource: string) =>
-  (error: APIError): AuthUnavailable | InvalidAccessToken => {
+  (
+    error: APIError | ReturnType<typeof noWorkspaceScope>
+  ): AuthUnavailable | InvalidAccessToken => {
     const challenge = createResourceServerChallenge(error, resource);
 
     if (challenge === undefined) {
@@ -73,7 +91,8 @@ const invalidFor =
  * fetched from /api/auth/jwks over the public URL: the signature, issuer,
  * audience, expiry and client (`azp`, which only OAuth access tokens carry),
  * and the DPoP proof of tokens bound to the client's key, whose replays are
- * refused across servers through the database.
+ * refused across servers through the database. A token must also grant a
+ * workspace scope, or it gets a 403 that asks for one.
  */
 export const makeAccessTokens = Effect.gen(function* makeAccessTokens() {
   const auth = yield* BetterAuth;
@@ -181,6 +200,20 @@ export const makeAccessTokens = Effect.gen(function* makeAccessTokens() {
           });
         },
       });
+
+      // A token that grants no workspace scope was agreed to for nothing in
+      // Acme (its user's identity, say), so its client gets nothing from
+      // Acme's tools or API either, the user's email and workspaces
+      // included.
+      const workspaceScoped = decodeScope(payload).pipe(
+        Option.exists(({ scope }) =>
+          scope.split(" ").some((granted) => isWorkspaceScope(granted))
+        )
+      );
+
+      if (!workspaceScoped) {
+        return yield* invalid(noWorkspaceScope());
+      }
 
       return yield* Schema.decodeUnknownEffect(claims)(payload).pipe(
         Effect.mapError(() => invalid(unauthorized("invalid access token")))
