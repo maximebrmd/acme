@@ -14,12 +14,15 @@ const parts =
     tag
   )?.groups;
 
-if (parts?.["language"] === undefined || parts["version"] === undefined) {
-  throw new Error(`A release tag reads sdk-<language>-v<version>, not "${tag}".`);
+const { language: name, version } = parts ?? {};
+
+if (name === undefined || version === undefined) {
+  throw new Error(
+    `A release tag reads sdk-<language>-v<version>, not "${tag}".`
+  );
 }
 
-const language = languageNamed(parts["language"]);
-const version = parts["version"];
+const language = languageNamed(name);
 
 if (language.version !== version) {
   throw new Error(
