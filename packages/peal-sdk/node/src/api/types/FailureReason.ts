@@ -13,6 +13,7 @@ export const FailureReason = {
         Unavailable: "unavailable",
         AppNotAudited: "appNotAudited",
         QuotaExceeded: "quotaExceeded",
-        AppBillingLimit: "appBillingLimit"
+        AppBillingLimit: "appBillingLimit",
+        PlanLimit: "planLimit"
     } as const;
 export type FailureReason = typeof FailureReason[keyof typeof FailureReason];

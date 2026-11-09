@@ -5792,6 +5792,7 @@ const (
 	FailureReasonAppNotAudited       FailureReason = "appNotAudited"
 	FailureReasonQuotaExceeded       FailureReason = "quotaExceeded"
 	FailureReasonAppBillingLimit     FailureReason = "appBillingLimit"
+	FailureReasonPlanLimit           FailureReason = "planLimit"
 )
 
 func NewFailureReasonFromString(s string) (FailureReason, error) {
@@ -5822,6 +5823,8 @@ func NewFailureReasonFromString(s string) (FailureReason, error) {
 		return FailureReasonQuotaExceeded, nil
 	case "appBillingLimit":
 		return FailureReasonAppBillingLimit, nil
+	case "planLimit":
+		return FailureReasonPlanLimit, nil
 	}
 	var t FailureReason
 	return "", fmt.Errorf("%s is not a valid %T", s, t)

@@ -25,6 +25,8 @@ public final class FailureReason {
 
     public static final FailureReason CHANNEL_DISABLED = new FailureReason(Value.CHANNEL_DISABLED, "channelDisabled");
 
+    public static final FailureReason PLAN_LIMIT = new FailureReason(Value.PLAN_LIMIT, "planLimit");
+
     public static final FailureReason CHANNEL_DISCONNECTED =
             new FailureReason(Value.CHANNEL_DISCONNECTED, "channelDisconnected");
 
@@ -84,6 +86,8 @@ public final class FailureReason {
                 return visitor.visitAppNotAudited();
             case CHANNEL_DISABLED:
                 return visitor.visitChannelDisabled();
+            case PLAN_LIMIT:
+                return visitor.visitPlanLimit();
             case CHANNEL_DISCONNECTED:
                 return visitor.visitChannelDisconnected();
             case QUOTA_EXCEEDED:
@@ -119,6 +123,8 @@ public final class FailureReason {
                 return APP_NOT_AUDITED;
             case "channelDisabled":
                 return CHANNEL_DISABLED;
+            case "planLimit":
+                return PLAN_LIMIT;
             case "channelDisconnected":
                 return CHANNEL_DISCONNECTED;
             case "quotaExceeded":
@@ -159,6 +165,8 @@ public final class FailureReason {
 
         APP_BILLING_LIMIT,
 
+        PLAN_LIMIT,
+
         UNKNOWN
     }
 
@@ -188,6 +196,8 @@ public final class FailureReason {
         T visitQuotaExceeded();
 
         T visitAppBillingLimit();
+
+        T visitPlanLimit();
 
         T visitUnknown(String unknownType);
     }

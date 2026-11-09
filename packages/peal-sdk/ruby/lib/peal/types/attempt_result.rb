@@ -20,6 +20,7 @@ module Peal
       APP_NOT_AUDITED = "appNotAudited"
       QUOTA_EXCEEDED = "quotaExceeded"
       APP_BILLING_LIMIT = "appBillingLimit"
+      PLAN_LIMIT = "planLimit"
     end
   end
 end

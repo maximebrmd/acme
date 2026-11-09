@@ -21,6 +21,8 @@ public final class AttemptResult {
 
     public static final AttemptResult CHANNEL_DISABLED = new AttemptResult(Value.CHANNEL_DISABLED, "channelDisabled");
 
+    public static final AttemptResult PLAN_LIMIT = new AttemptResult(Value.PLAN_LIMIT, "planLimit");
+
     public static final AttemptResult UNCONFIRMED = new AttemptResult(Value.UNCONFIRMED, "unconfirmed");
 
     public static final AttemptResult PUBLISHED = new AttemptResult(Value.PUBLISHED, "published");
@@ -80,6 +82,8 @@ public final class AttemptResult {
                 return visitor.visitAppNotAudited();
             case CHANNEL_DISABLED:
                 return visitor.visitChannelDisabled();
+            case PLAN_LIMIT:
+                return visitor.visitPlanLimit();
             case UNCONFIRMED:
                 return visitor.visitUnconfirmed();
             case PUBLISHED:
@@ -115,6 +119,8 @@ public final class AttemptResult {
                 return APP_NOT_AUDITED;
             case "channelDisabled":
                 return CHANNEL_DISABLED;
+            case "planLimit":
+                return PLAN_LIMIT;
             case "unconfirmed":
                 return UNCONFIRMED;
             case "published":
@@ -159,6 +165,8 @@ public final class AttemptResult {
 
         APP_BILLING_LIMIT,
 
+        PLAN_LIMIT,
+
         UNKNOWN
     }
 
@@ -188,6 +196,8 @@ public final class AttemptResult {
         T visitQuotaExceeded();
 
         T visitAppBillingLimit();
+
+        T visitPlanLimit();
 
         T visitUnknown(String unknownType);
     }

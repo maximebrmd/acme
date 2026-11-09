@@ -17,6 +17,7 @@ FailureReason = typing.Union[
         "appNotAudited",
         "quotaExceeded",
         "appBillingLimit",
+        "planLimit",
     ],
     typing.Any,
 ]
