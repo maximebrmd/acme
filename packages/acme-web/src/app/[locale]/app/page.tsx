@@ -4,6 +4,7 @@ import {
   CardAction,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from "acme-ui/components/card";
@@ -14,7 +15,7 @@ import { notFound } from "next/navigation";
 
 import { currentUser } from "#auth/session.ts";
 import { CreateWorkspaceForm } from "#components/create-workspace-form.tsx";
-import { redirect } from "#i18n/navigation.ts";
+import { Link, redirect } from "#i18n/navigation.ts";
 import { routing } from "#i18n/routing.ts";
 
 // The signed-in home: the user's workspaces, read from GET /api/me with the
@@ -34,6 +35,7 @@ const AppPage = async ({ params }: PageProps<"/[locale]/app">) => {
 
   const { user, workspaces } = me.value;
   const t = await getTranslations("AppPage");
+  const tPosts = await getTranslations("Posts.nav");
 
   return (
     <div className="flex flex-col gap-8">
@@ -61,6 +63,22 @@ const AppPage = async ({ params }: PageProps<"/[locale]/app">) => {
                     </Badge>
                   </CardAction>
                 </CardHeader>
+                <CardFooter>
+                  <nav className="flex gap-4 text-sm">
+                    <Link
+                      href={`/app/${workspace.id}/calendar`}
+                      className="underline-offset-4 hover:underline"
+                    >
+                      {tPosts("calendar")}
+                    </Link>
+                    <Link
+                      href={`/app/${workspace.id}/posts/new`}
+                      className="underline-offset-4 hover:underline"
+                    >
+                      {tPosts("newPost")}
+                    </Link>
+                  </nav>
+                </CardFooter>
               </Card>
             </li>
           ))}
