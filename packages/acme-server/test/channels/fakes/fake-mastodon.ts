@@ -24,6 +24,8 @@ export interface FakeMastodonOptions {
   readonly modern?: boolean;
 }
 
+const isText = Schema.is(Schema.String);
+
 const base64Url = (bytes: Buffer) => bytes.toString("base64url");
 
 /** The member refuses on the authorization page: back with `access_denied`. */
@@ -33,7 +35,12 @@ const deny = (authorizationUrl: string) => ({
 });
 
 const decodeApp = Schema.decodeUnknownSync(
-  Schema.fromJsonString(Schema.Struct({ scopes: Schema.String }))
+  Schema.fromJsonString(
+    Schema.Struct({
+      redirect_uris: Schema.Unknown,
+      scopes: Schema.String,
+    })
+  )
 );
 
 /**
@@ -68,7 +75,17 @@ export const fakeMastodon = Effect.fnUntraced(function* fakeMastodon(
     }
 
     if (route === "POST /api/v1/apps") {
-      const { scopes } = decodeApp(request.body);
+      const { redirect_uris: redirectUris, scopes } = decodeApp(request.body);
+
+      // Before 4.3, Mastodon took one redirect URI as a string and dropped
+      // a list, then refused the app for lacking one.
+      if (options.modern === false && !isText(redirectUris)) {
+        return json(
+          { error: "Validation failed: Redirect URI can't be blank" },
+          422
+        );
+      }
+
       const id = String(apps.size + 1);
 
       apps.set(`client-${id}`, { scopes, secret: `secret-${id}` });

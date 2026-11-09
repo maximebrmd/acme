@@ -181,9 +181,10 @@ export const mastodonAuthorizer = Effect.fn("MastodonAuthorizer.make")(
         const registered = yield* HttpClientRequest.post(
           new URL("/api/v1/apps", instance)
         ).pipe(
+          // One redirect URI, as a string: instances before 4.3 drop a list.
           HttpClientRequest.bodyJsonUnsafe({
             client_name: "Acme",
-            redirect_uris: [redirectUri],
+            redirect_uris: redirectUri,
             scopes,
             website: options.publicUrl,
           }),
