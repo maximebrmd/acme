@@ -1,5 +1,6 @@
 import { assert, layer } from "@effect/vitest";
 import { DateTime, Effect, Layer, Option, Result } from "effect";
+import { SqlClient } from "effect/sql";
 
 import { AnalyticsRecords } from "#analytics/application/analytics-records.ts";
 import { AnalyticsReports } from "#analytics/application/analytics-reports.ts";
@@ -404,6 +405,60 @@ layer(StoreTest)("the analytics store", (it) => {
         assert.deepStrictEqual(
           rows.channels.map(({ likes, reposts }) => likes + reposts),
           [4_000_000_000]
+        );
+      }).pipe(Effect.ensuring(forgetWorkspace(workspaceId)));
+    })
+  );
+
+  it.effect("exports a workspace past the parameters one query takes", () =>
+    Effect.gen(function* many() {
+      const workspaceId = yield* freshWorkspace;
+      const sql = yield* SqlClient.SqlClient;
+
+      yield* Effect.gen(function* checks() {
+        // More posts than Postgres takes parameters in one query, no longer
+        // read, so no collection picks them up.
+        yield* sql`
+          INSERT INTO analytics.tracked_posts (
+            target_id, channel_id, post_id, workspace_id, platform_post_id,
+            published_at, ended_at, end_reason
+          )
+          SELECT
+            gen_random_uuid(), gen_random_uuid(), gen_random_uuid(),
+            ${workspaceId}, i::text,
+            '2045-01-01T00:00:00Z'::timestamptz + i * interval '1 second',
+            '2045-03-01T00:00:00Z', 'window'
+          FROM generate_series(1, 70000) AS i
+        `;
+
+        const read = yield* seedPost(
+          yield* publicationOf(
+            workspaceId,
+            yield* newChannelId,
+            "2045-02-01T00:00:00Z"
+          ),
+          [
+            { at: "2045-02-01T01:07:00Z", metrics: countsOf(1, 0, 0) },
+            { at: "2045-02-01T02:07:00Z", metrics: countsOf(3, 1, 0) },
+          ]
+        );
+
+        const exported = yield* AnalyticsRecords.use((records) =>
+          records.exportWorkspace(workspaceId)
+        );
+
+        assert.lengthOf(exported, 70_001);
+        assert.deepStrictEqual(
+          exported
+            .find(({ targetId }) => targetId === read.targetId)
+            ?.snapshots.map(({ likes }) => likes),
+          [1, 3]
+        );
+        assert.isTrue(
+          exported.every(
+            ({ snapshots, targetId }) =>
+              targetId === read.targetId || snapshots.length === 0
+          )
         );
       }).pipe(Effect.ensuring(forgetWorkspace(workspaceId)));
     })

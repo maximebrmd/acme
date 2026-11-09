@@ -1,4 +1,4 @@
-import { asc, eq, inArray } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 import { DateTime, Effect, Layer } from "effect";
 
 import { AnalyticsRecords } from "#analytics/application/analytics-records.ts";
@@ -39,39 +39,51 @@ export const DrizzleAnalyticsRecords = Layer.effect(
           .orderBy(asc(trackedPosts.publishedAt), asc(trackedPosts.targetId))
           .pipe(Effect.mapError(failed));
 
-        const snapshots =
-          posts.length === 0
-            ? []
-            : yield* db
-                .select()
-                .from(metricSnapshots)
-                .where(
-                  inArray(
-                    metricSnapshots.targetId,
-                    posts.map(({ targetId }) => targetId)
-                  )
-                )
-                .orderBy(asc(metricSnapshots.collectedAt))
-                .pipe(Effect.mapError(failed));
+        // Every snapshot of the workspace's posts, through the posts: a
+        // list of their ids would pass the parameters one query takes.
+        const snapshots = yield* db
+          .select({
+            collectedAt: metricSnapshots.collectedAt,
+            impressions: metricSnapshots.impressions,
+            likes: metricSnapshots.likes,
+            quotes: metricSnapshots.quotes,
+            replies: metricSnapshots.replies,
+            reposts: metricSnapshots.reposts,
+            targetId: metricSnapshots.targetId,
+          })
+          .from(metricSnapshots)
+          .innerJoin(
+            trackedPosts,
+            eq(trackedPosts.targetId, metricSnapshots.targetId)
+          )
+          .where(eq(trackedPosts.workspaceId, workspaceId))
+          .orderBy(
+            asc(metricSnapshots.targetId),
+            asc(metricSnapshots.collectedAt)
+          )
+          .pipe(Effect.mapError(failed));
+
+        const byTarget = new Map<string, MetricsSnapshotRecord[]>();
+
+        for (const { collectedAt, targetId, ...counts } of snapshots) {
+          const record: MetricsSnapshotRecord = {
+            ...counts,
+            collectedAt: utc(collectedAt),
+          };
+
+          const kept = byTarget.get(targetId);
+
+          if (kept === undefined) {
+            byTarget.set(targetId, [record]);
+          } else {
+            kept.push(record);
+          }
+        }
 
         return posts.map((post): AnalyticsRecord => ({
           ...post,
           publishedAt: utc(post.publishedAt),
-          snapshots: snapshots.flatMap(
-            (snapshot): readonly MetricsSnapshotRecord[] =>
-              snapshot.targetId === post.targetId
-                ? [
-                    {
-                      collectedAt: utc(snapshot.collectedAt),
-                      impressions: snapshot.impressions,
-                      likes: snapshot.likes,
-                      quotes: snapshot.quotes,
-                      replies: snapshot.replies,
-                      reposts: snapshot.reposts,
-                    },
-                  ]
-                : []
-          ),
+          snapshots: byTarget.get(post.targetId) ?? [],
         }));
       }
     );
