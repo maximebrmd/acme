@@ -539,7 +539,12 @@ and no socket, for tests.
   reconnect warnings follow: LinkedIn's tokens are not renewed and expire
   after 60 days, X's last two hours and rotate on refresh, as TikTok's do
   (`expires_in` decides; refresh tokens end 180 days after sign-in),
-  Google's last an hour and do not rotate.
+  Google's last an hour and do not rotate. A refreshable policy's `sweep`
+  renews tokens `beforeExpiry` (`ahead` of it) or keeps them alive
+  (`keepAlive`: only once `unused` that long past their expiry, the access
+  being renewed when a call needs it, through `ChannelAccess`). X's keep
+  alive after 30 days, rather than rotating every two hours: its refresh
+  tokens have no stated lifetime.
 - TikTok's Login Kit for Web takes no PKCE (TikTok asks it of desktop and
   mobile apps only): the state, bound to member and workspace, guards the
   callback, and a token answer naming an `error` is a refusal whatever its
@@ -611,6 +616,14 @@ and no socket, for tests.
 - A platform failure is temporary (`PlatformUnavailable`) when any server on
   the way answered 5xx or 429; only the platform's own refusal marks a channel
   `refreshNeeded`.
+- A platform that refuses the server's app until its operator pays (X: 402
+  once its pay-per-use credits are used up, `usage-capped` at its spending
+  cap) is the operator's problem, never the post's or the account's: the
+  adapter fails with `PlatformUnavailable` and a code of
+  `operatorRefusalCodes` (`#publishing/domain/own-refusals.ts`) and logs an
+  error, which the error-log alert reports; the attempt is retried as an
+  outage, and a target that gave up fails as `appBillingLimit`. A refresh
+  answered so leaves the channel's token alone.
 
 ### Publishing and the cluster
 
@@ -759,6 +772,19 @@ and no socket, for tests.
   `peal-contract/post-text` is the clients' copy, kept equal by
   `test/publishing/api/contract.test.ts`: change both together. Compare video
   durations in whole milliseconds, as the media API shows them.
+- X's weighted count, `countLinks` and X's search for a lost post find links
+  as twitter-text's `extractUrlsWithIndices` does, ported in
+  `#publishing/domain/x-links.ts` (copied, identical, in
+  `peal-contract/src/x-links.ts`): with or without a scheme, on a top-level
+  domain of its list, so `peal.social` is a link and `localhost` is not. Its
+  patterns are Unicode-aware, so it reads the long s and the Kelvin sign as
+  letters that fold onto no ASCII one, and starts a bare domain after a
+  character outside the Basic Multilingual Plane as twitter-text's UTF-16
+  units do. `test/publishing/domain/x-links.test.ts` runs twitter-text's
+  conformance cases (`x-conformance.ts`); an emoji counts 2 by Unicode's
+  current list (`RGI_Emoji`), longest first. The twitter-text package is not
+  a dependency: the domain cannot import it, and it pulls core-js 2 and a
+  2019 emoji list.
 - A post's target carries options only its channel's platform knows
   (`TargetOptionsSchema`, `#publishing/domain/target-options.ts`), tagged by
   `platform`, in `publishing.post_targets.options` (JSON the domain decodes;
@@ -931,6 +957,17 @@ and no socket, for tests.
   plan's limits keeps what it has. Each context also counts for the billing
   page (`ChannelUsage`, `PostUsage`, `WorkspaceSeats`, `AssistantRequests`),
   so `BillingOverviewLive` is built after the contexts it reads.
+- Billing counts the posts each workspace makes on platforms that bill the
+  server per post (`meteredPlatforms` in `billing/domain/metered-posts.ts`:
+  X, where a post with a link costs about 13 times more), and those with a
+  link, by calendar month (UTC), in `billing.metered_posts` (`MeteredPosts`),
+  on a server that does not bill too. Publishing reports each target that
+  went out through `meteredOutcomes`
+  (`publishing/infrastructure/metered-publication-outcomes.ts`), which wraps
+  `PublicationOutcomes` in the transaction that settles it, with whether its
+  text on the channel holds a link (`countLinks`); an unconfirmed post found
+  later is not counted. No plan limits them yet; the counts go with the
+  workspace's export and erasure (`BillingRecords`).
 - Entitlements come only from `billing.subscriptions`, which
   `RecordSubscription` keeps from Stripe's `customer.subscription.*` events:
   Better Auth's webhook checks their signature, then its `onEvent` finds the
