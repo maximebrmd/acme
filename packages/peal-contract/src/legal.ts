@@ -8,8 +8,14 @@ import {
 
 import { StaffAccess } from "./staff-access.ts";
 
-/** The longest authority or reference staff may write for a legal request. */
+/**
+ * The longest authority, reference or legal basis staff may write for a
+ * legal request.
+ */
 export const maxLegalTextLength = 300;
+
+/** How many years the record of each answer to a legal request is kept. */
+export const legalDisclosureYears = 5;
 
 const LegalTextSchema = Schema.Trim.check(
   Schema.isNonEmpty(),

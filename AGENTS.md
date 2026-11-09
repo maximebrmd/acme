@@ -501,10 +501,16 @@ and no socket, for tests.
   for staff who also hold the legal role (`legal` beside `admin` in Better
   Auth's comma-separated `role`, `LegalOfficers` from `StaffStanding`;
   other staff get 404 too) (`POST /api/admin/legal-requests`, `LegalApi`,
-  StaffAccess), recording the answer (staff, authority, reference,
-  subject, counts) in the transaction that reads it, and in the staff
-  audit log (`legalDisclosure`, through the staff context's
-  `LegalDisclosureAudit`), so the rest of staff see it. The export carries the user's connections
+  StaffAccess), recording the answer (staff, authority, reference, legal
+  basis, subject, what it covers, counts) in the transaction that reads
+  it, and in the staff audit log (`legalDisclosure`, through the staff
+  context's `LegalDisclosureAudit`), so the rest of staff see it. A
+  request names what it asks for (`covers`: identity, signIn, payments,
+  connections, and the connections' period), and the answer holds nothing
+  else (`disclosedOf`, `legal/domain/legal-scope.ts`): a category not
+  covered is null. `GET …/legal-requests` lists the answers given, never
+  what was handed over, and `…/standing` tells the console who answers
+  them. The export carries the user's connections
   and what closing would leave (`legalHold`). The software keeps none of
   it unless `PEAL_LEGAL_RETENTION=true`: only an operator the law obliges
   may hold it (GDPR minimisation), so the default is off
@@ -1378,10 +1384,17 @@ self-hoster needs only Postgres and an S3-compatible store:
   repost and confirm, and its analytics), `…/settings` (with `members`,
   `invitations` and `api-keys`) and `…/billing`. The staff console is
   `admin` (the system's health), `admin/users`, `admin/users/[userId]`,
-  `admin/workspaces`, `admin/workspaces/[workspaceId]` and `admin/audit`:
-  its layout and pages read the staff endpoints with the visitor's cookies
-  through `staffRead` (`#staff/server.ts`), which shows the not-found page
-  for any 404, and its actions are mutations from `#staff/atoms.ts`.
+  `admin/workspaces`, `admin/workspaces/[workspaceId]`, `admin/audit` and
+  `admin/legal`: its layout and pages read the staff endpoints with the
+  visitor's cookies through `staffRead` (`#staff/server.ts`), which shows
+  the not-found page for any 404, and its actions are mutations from
+  `#staff/atoms.ts`. `admin/legal` (legal requests, `legalRead`) is linked
+  and served for staff with the legal role only (`answersLegalRequests`):
+  its form (`LegalRequestForm`, `#staff/legal-request.ts`) sends nothing
+  without the authority, the reference, the legal basis and what the
+  request covers, `LegalAnswerView` shows what came back, and the page
+  says before anything is entered that each answer is recorded, as staff
+  must be told (Code du travail, art. L1222-4): keep that notice.
   `ImpersonationBanner`, in `AppShell`, shows while staff act as someone.
 - The web app reports its errors to `POST /api/client-errors`:
   `src/instrumentation-client.ts` (uncaught errors, unhandled rejections),

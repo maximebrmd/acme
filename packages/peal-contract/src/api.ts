@@ -610,6 +610,7 @@ export {
   LegalCoverSchema,
   LegalDisclosurePageSchema,
   LegalDisclosureSchema,
+  legalDisclosureYears,
   LegalHeldAccountSchema,
   LegalRequestSchema,
   LegalSubjectSchema,

@@ -34,9 +34,12 @@ export const confirmedAccount = async (
  * Makes an account staff (Better Auth's admin role), straight in the
  * database the run's server uses, as self-hosters do: no page grants it. The
  * account signs in again afterwards, as a session keeps the role it started
- * with.
+ * with. `legal` gives it the legal role too, which answers legal requests.
  */
-export const makeStaff = async (email: string): Promise<void> => {
+export const makeStaff = async (
+  email: string,
+  { legal = false }: { readonly legal?: boolean } = {}
+): Promise<void> => {
   const client = new Client({
     connectionString: process.env["DATABASE_URL"],
   });
@@ -44,10 +47,10 @@ export const makeStaff = async (email: string): Promise<void> => {
   await client.connect();
 
   try {
-    await client.query(
-      `UPDATE auth."user" SET role = 'admin' WHERE email = $1`,
-      [email.toLowerCase()]
-    );
+    await client.query(`UPDATE auth."user" SET role = $2 WHERE email = $1`, [
+      email.toLowerCase(),
+      legal ? "admin,legal" : "admin",
+    ]);
   } finally {
     await client.end();
   }

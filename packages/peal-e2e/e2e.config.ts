@@ -44,6 +44,9 @@ export default {
             BETTER_AUTH_SECRET: authSecret,
             DATABASE_URL: databaseUrl,
             MAIL_FROM: "Peal <noreply@peal.test>",
+            // As on a server French law obliges, so legal requests have
+            // records to answer from.
+            PEAL_LEGAL_RETENTION: "true",
             PEAL_S3_ACCESS_KEY_ID: setting("PEAL_S3_ACCESS_KEY_ID", "peal"),
             PEAL_S3_BUCKET: setting("PEAL_S3_BUCKET", "peal-media"),
             PEAL_S3_ENDPOINT: setting(

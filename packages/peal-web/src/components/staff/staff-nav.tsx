@@ -11,6 +11,9 @@ const sections = [
   { href: "/admin/audit", key: "audit" },
 ] as const;
 
+// For staff who hold the legal role only: the page answers 404 to others.
+const legalSection = { href: "/admin/legal", key: "legal" } as const;
+
 // Whether a section holds the page open: the system page alone, the
 // others with the pages below them.
 const isOpen = (href: string, pathname: string): boolean =>
@@ -18,15 +21,17 @@ const isOpen = (href: string, pathname: string): boolean =>
     ? pathname === href
     : pathname === href || pathname.startsWith(`${href}/`);
 
-// The staff console's sections, the one open marked as current.
-export const StaffNav = () => {
+// The staff console's sections, the one open marked as current, with the
+// legal requests for those who answer them.
+export const StaffNav = ({ legal }: { readonly legal: boolean }) => {
   const t = useTranslations("Staff.nav");
   const pathname = usePathname();
+  const shown = legal ? [...sections, legalSection] : sections;
 
   return (
     <nav aria-label={t("label")} className="border-b">
       <ul className="flex flex-wrap gap-6 text-sm">
-        {sections.map(({ href, key }) => (
+        {shown.map(({ href, key }) => (
           <li key={key}>
             <Link
               href={href}

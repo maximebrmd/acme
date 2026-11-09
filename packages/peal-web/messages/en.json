@@ -1238,7 +1238,8 @@
       "system": "System",
       "users": "Accounts",
       "workspaces": "Workspaces",
-      "audit": "Audit log"
+      "audit": "Audit log",
+      "legal": "Legal requests"
     },
     "search": {
       "submit": "Search",
@@ -1451,7 +1452,89 @@
       "disabledToReconnect": "Turned off, to reconnect"
     },
     "troubleStatus": "{status, select, failed {Failed} other {Unconfirmed}}",
-    "reason": "{reason, select, contentRejected {Content refused} channelDisconnected {Channel disconnected} channelDisabled {Channel turned off} mediaRemoved {Media deleted} mediaRejected {Media refused} missed {Missed} notPublished {Not found after a check} rateLimited {Rate limited} tokenExpired {Authorization stopped working} unavailable {Platform unreachable} appNotAudited {Private posts only, app not audited} quotaExceeded {Daily upload allowance spent} appBillingLimit {Server’s app not paid for} planLimit {Plan limit reached} noResponse {No answer} unreadableResponse {Unreadable answer} interrupted {Interrupted} adapterFailure {Failed during the call} other {{reason}}}"
+    "reason": "{reason, select, contentRejected {Content refused} channelDisconnected {Channel disconnected} channelDisabled {Channel turned off} mediaRemoved {Media deleted} mediaRejected {Media refused} missed {Missed} notPublished {Not found after a check} rateLimited {Rate limited} tokenExpired {Authorization stopped working} unavailable {Platform unreachable} appNotAudited {Private posts only, app not audited} quotaExceeded {Daily upload allowance spent} appBillingLimit {Server’s app not paid for} planLimit {Plan limit reached} noResponse {No answer} unreadableResponse {Unreadable answer} interrupted {Interrupted} adapterFailure {Failed during the call} other {{reason}}}",
+    "legal": {
+      "title": "Legal requests",
+      "description": "A judicial authority, or another authority the law empowers, may ask in writing for the data that identifies who contributed content. This page is the only way to read what a closed account left and the connections that created content.",
+      "recordedTitle": "Each answer is recorded",
+      "recorded": "Everything you submit here is recorded under your name before anything is shown, even when nothing is found: the authority, its reference, the legal basis, what was asked about and for, and how many records were returned. The record is kept {years, plural, one {# year} other {# years}}, shows in the audit log to the rest of staff, and can be reviewed by whoever answers for Peal’s compliance. Enter only a request an authority made in writing.",
+      "form": {
+        "title": "Answer a request",
+        "kind": "The request names",
+        "kinds": {
+          "email": "An email address",
+          "userId": "An account id",
+          "workspaceId": "A workspace id"
+        },
+        "identifier": "Identifier",
+        "identifierHint": "An email address finds the closed accounts that had it. An account id finds the account, closed or not. A workspace id finds the connections made in it.",
+        "authority": "Authority",
+        "authorityHint": "The court, prosecutor or service that asked, as its document names it.",
+        "reference": "Reference",
+        "referenceHint": "The request’s number, the procedure and its date.",
+        "legalBasis": "Legal basis",
+        "legalBasisHint": "The text that gives the authority the power to ask, as its document cites it.",
+        "covers": "What the request asks for",
+        "coversHint": "Tick only what the document asks for: nothing else is read or shown.",
+        "cover": {
+          "identity": "Who held the account: name, email address, creation date",
+          "signIn": "How it signed in: each sign-in method’s identifier, never a password",
+          "payments": "Payment references: the payment provider’s customer ids",
+          "connections": "Connections that created, changed or deleted content: time, IP address, protocol"
+        },
+        "since": "Connections from (UTC day)",
+        "until": "Connections to (UTC day)",
+        "periodHint": "Leave both empty when the request names no period.",
+        "submit": "Record the request and show the answer",
+        "pending": "Recording…",
+        "incomplete": "Fill in the authority, the reference, the legal basis and the identifier, and tick what the request asks for.",
+        "clear": "Clear the answer"
+      },
+      "answer": {
+        "recorded": "Answer recorded as",
+        "held": "Closed accounts",
+        "noHeld": "No closed account is held for this subject.",
+        "connections": "Connections",
+        "noConnections": "No connection is held for this subject in this period.",
+        "notCovered": "Not covered by this request",
+        "noneKept": "None kept",
+        "userId": "Account id",
+        "closedAt": "Closed",
+        "identity": "Who held it",
+        "createdAt": "Created",
+        "signIn": "How it signed in",
+        "payments": "Payment references",
+        "columns": {
+          "at": "When",
+          "ipAddress": "IP address",
+          "protocol": "Protocol",
+          "access": "Signed in with",
+          "userId": "Account id",
+          "apiKeyId": "API key id",
+          "workspaceId": "Workspace id"
+        }
+      },
+      "past": {
+        "title": "Answers given",
+        "description": "Newest first. What was handed over is never kept here, only what was asked and how many records it returned.",
+        "empty": "No legal request has been answered yet.",
+        "columns": {
+          "at": "When",
+          "staff": "Answered by",
+          "authority": "Authority and reference",
+          "legalBasis": "Legal basis",
+          "subject": "About",
+          "covers": "Covered",
+          "returned": "Returned"
+        },
+        "subject": "{kind, select, email {Email address} userId {Account} workspaceId {Workspace} other {{kind}}}",
+        "cover": "{cover, select, identity {Identity} signIn {Sign-in} payments {Payments} connections {Connections} other {{cover}}}",
+        "period": "Connections from {since} to {until}",
+        "open": "the start",
+        "now": "the answer",
+        "returned": "{held, plural, =0 {No closed account} one {# closed account} other {# closed accounts}}, {connections, plural, =0 {no connection} one {# connection} other {# connections}}"
+      }
+    }
   },
   "Impersonation": {
     "label": "Acting as another account",

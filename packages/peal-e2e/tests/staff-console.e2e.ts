@@ -215,4 +215,106 @@ describe("the staff console", { serial: true }, () => {
       )
     ).toBeVisible();
   });
+
+  test("keeps legal requests from staff without the legal role", async ({
+    app,
+    browser,
+    screen,
+  }) => {
+    await expect(
+      screen
+        .getByRole("navigation", "Staff console")
+        .getByRole("link", "Legal requests")
+    ).toBeHidden();
+
+    const answer = browser.waitForResponse(/\/admin\/legal$/u);
+
+    await app.open("/admin/legal");
+
+    const page = await answer;
+
+    expect(page.status).toBe(404);
+    await expect(screen.getByRole("heading", "Page not found")).toBeVisible();
+  });
+
+  test("answers a legal request once recorded, showing only what it covers", async ({
+    app,
+    browser,
+    screen,
+  }) => {
+    await makeStaff(staffAddress(), { legal: true });
+    await signIn(app, browser, screen, staffAddress());
+    await expect(
+      screen.getByRole("heading", `Hello, ${staffName}`)
+    ).toBeVisible();
+
+    await app.open("/admin");
+    await screen
+      .getByRole("navigation", "Staff console")
+      .getByRole("link", "Legal requests")
+      .tap();
+
+    await expect(
+      screen.getByRole("heading", "Legal requests", { level: 1 })
+    ).toBeVisible();
+    // Staff are told, before they enter anything, that it is recorded.
+    await expect(screen.getByText("Each answer is recorded")).toBeVisible();
+    await expect(
+      screen.getByText("No legal request has been answered yet.")
+    ).toBeVisible();
+
+    const send = screen.getByRole(
+      "button",
+      "Record the request and show the answer"
+    );
+
+    await expect(send).toBeDisabled();
+
+    await screen.getByLabel("Identifier").fill(memberAddress());
+    await screen.getByLabel("Authority").fill("Synthetic public prosecutor");
+    await screen.getByLabel("Reference").fill("Synthetic requisition 0001");
+    await screen
+      .getByLabel("Legal basis")
+      .fill("Synthetic code of criminal procedure, article 60-1");
+    await screen
+      .getByRole(
+        "checkbox",
+        "Who held the account: name, email address, creation date"
+      )
+      .tap();
+    await send.tap();
+
+    // The member's account is open: no closed account bears the address.
+    await expect(screen.getByText("Answer recorded as")).toBeVisible();
+    await expect(
+      screen.getByText("No closed account is held for this subject.")
+    ).toBeVisible();
+    // The request did not ask for connections, so none are shown.
+    await expect(screen.getByText("Not covered by this request")).toBeVisible();
+
+    // The answer is listed, with its grounds, and in the audit log.
+    await expect(
+      screen.getByRole(
+        "cell",
+        "Synthetic public prosecutor Synthetic requisition 0001"
+      )
+    ).toBeVisible();
+    await expect(
+      screen.getByRole(
+        "cell",
+        "Synthetic code of criminal procedure, article 60-1"
+      )
+    ).toBeVisible();
+
+    await screen
+      .getByRole("navigation", "Staff console")
+      .getByRole("link", "Audit log")
+      .tap();
+    await expect(
+      screen.getByRole(
+        "cell",
+        "Synthetic public prosecutor: Synthetic requisition 0001"
+      )
+    ).toBeVisible();
+  });
 });

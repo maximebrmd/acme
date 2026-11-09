@@ -17,10 +17,13 @@ const makeClient = (cookie: string) =>
     });
   });
 
+type ConsoleClient = Effect.Success<ReturnType<typeof makeClient>>;
+
 /** The staff console's endpoints, as the typed client has them. */
-export type StaffClient = Effect.Success<
-  ReturnType<typeof makeClient>
->["staff"];
+export type StaffClient = ConsoleClient["staff"];
+
+/** The legal requests' endpoints, for staff who hold the legal role. */
+export type LegalClient = ConsoleClient["legal"];
 
 // What the API answers with 404: anyone but staff, and an account or a
 // workspace that is not there.
@@ -30,25 +33,21 @@ const missing: ReadonlySet<string> = new Set([
   "WorkspaceNotFound",
 ]);
 
-/**
- * For the console's Server Components: what a staff endpoint answers, read
- * with the visitor's cookies from the server at PEAL_API_URL. Anyone but
- * staff, and anything the API does not find, gets the not-found page; any
- * other failure goes to the error page.
- */
-export const staffRead = async <A, E extends { readonly _tag: string }>(
-  read: (staff: StaffClient) => Effect.Effect<A, E>
-): Promise<A> => {
+// What a console endpoint answers, read with the visitor's cookies from
+// the server at PEAL_API_URL, or none when the API answers 404.
+const consoleRead = async <A, E extends { readonly _tag: string }>(
+  read: (client: ConsoleClient) => Effect.Effect<A, E>
+): Promise<Option.Option<A>> => {
   const incoming = await headers();
   const cookie = incoming.get("cookie");
 
   if (cookie === null) {
-    notFound();
+    return Option.none();
   }
 
-  const answer = await Effect.runPromise(
+  return await Effect.runPromise(
     makeClient(cookie).pipe(
-      Effect.flatMap((client) => read(client.staff)),
+      Effect.flatMap(read),
       Effect.map(Option.some),
       Effect.catchIf(
         ({ _tag }) => missing.has(_tag),
@@ -58,6 +57,35 @@ export const staffRead = async <A, E extends { readonly _tag: string }>(
       Effect.provide(FetchHttpClient.layer)
     )
   );
-
-  return Option.getOrElse(answer, () => notFound());
 };
+
+/**
+ * For the console's Server Components: what a staff endpoint answers, read
+ * with the visitor's cookies from the server at PEAL_API_URL. Anyone but
+ * staff, and anything the API does not find, gets the not-found page; any
+ * other failure goes to the error page.
+ */
+export const staffRead = async <A, E extends { readonly _tag: string }>(
+  read: (staff: StaffClient) => Effect.Effect<A, E>
+): Promise<A> =>
+  Option.getOrElse(await consoleRead(({ staff }) => read(staff)), () =>
+    notFound()
+  );
+
+/**
+ * The same for the legal requests' endpoints, which answer staff who hold
+ * the legal role: other staff get the not-found page too, as anyone does.
+ */
+export const legalRead = async <A, E extends { readonly _tag: string }>(
+  read: (legal: LegalClient) => Effect.Effect<A, E>
+): Promise<A> =>
+  Option.getOrElse(await consoleRead(({ legal }) => read(legal)), () =>
+    notFound()
+  );
+
+/**
+ * Whether the visitor answers legal requests, so the console links their
+ * page for them alone.
+ */
+export const answersLegalRequests = async (): Promise<boolean> =>
+  Option.isSome(await consoleRead(({ legal }) => legal.standing()));

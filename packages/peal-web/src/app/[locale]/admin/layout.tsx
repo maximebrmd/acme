@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
 
 import { StaffNav } from "#components/staff/staff-nav.tsx";
 import { routing } from "#i18n/routing.ts";
-import { staffRead } from "#staff/server.ts";
+import { answersLegalRequests, staffRead } from "#staff/server.ts";
 
 export const generateMetadata = async ({
   params,
@@ -35,6 +35,7 @@ const StaffLayout = async ({
   }
 
   const staff = await staffRead((client) => client.session());
+  const legal = await answersLegalRequests();
   const t = await getTranslations("Staff");
 
   return (
@@ -45,7 +46,7 @@ const StaffLayout = async ({
           {t("signedInAs", { email: staff.email })}
         </p>
       </div>
-      <StaffNav />
+      <StaffNav legal={legal} />
       {children}
     </div>
   );
