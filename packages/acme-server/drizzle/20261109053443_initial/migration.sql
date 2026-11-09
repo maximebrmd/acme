@@ -1,3 +1,5 @@
+CREATE SCHEMA "assistant";
+--> statement-breakpoint
 CREATE SCHEMA "channels";
 --> statement-breakpoint
 CREATE SCHEMA "media";
@@ -7,6 +9,14 @@ CREATE SCHEMA "notifications";
 CREATE SCHEMA "publishing";
 --> statement-breakpoint
 CREATE SCHEMA "auth";
+--> statement-breakpoint
+CREATE TABLE "assistant"."daily_usage" (
+	"day" date,
+	"requests" integer NOT NULL,
+	"workspace_id" uuid,
+	CONSTRAINT "daily_usage_pkey" PRIMARY KEY("workspace_id","day"),
+	CONSTRAINT "daily_usage_requests" CHECK ("requests" >= 0)
+);
 --> statement-breakpoint
 CREATE TABLE "channels"."channels" (
 	"access_token" text NOT NULL,
@@ -79,6 +89,29 @@ CREATE TABLE "media"."media_assets" (
 	CONSTRAINT "media_assets_probe_state" CHECK ("probe_state" IS NULL OR "status" = 'uploaded'),
 	CONSTRAINT "media_assets_rejection_reason" CHECK (("rejection_reason" IS NULL) = ("status" <> 'rejected')),
 	CONSTRAINT "media_assets_dimensions" CHECK (("width" IS NULL) = ("height" IS NULL))
+);
+--> statement-breakpoint
+CREATE TABLE "notifications"."notices" (
+	"created_at" timestamp with time zone NOT NULL,
+	"email_settled_at" timestamp with time zone,
+	"email_status" text NOT NULL,
+	"event" jsonb NOT NULL,
+	"event_key" text NOT NULL,
+	"id" uuid PRIMARY KEY,
+	"kind" text NOT NULL,
+	"read_at" timestamp with time zone,
+	"user_id" uuid NOT NULL,
+	"workspace_id" uuid NOT NULL,
+	CONSTRAINT "notices_event_user" UNIQUE("event_key","user_id")
+);
+--> statement-breakpoint
+CREATE TABLE "notifications"."notification_preferences" (
+	"email_channel_reconnect" boolean NOT NULL,
+	"email_post_failed" boolean NOT NULL,
+	"email_post_published" boolean NOT NULL,
+	"email_post_unconfirmed" boolean NOT NULL,
+	"updated_at" timestamp with time zone NOT NULL,
+	"user_id" uuid PRIMARY KEY
 );
 --> statement-breakpoint
 CREATE TABLE "notifications"."sent_notices" (
@@ -407,6 +440,8 @@ CREATE TABLE "auth"."verification" (
 CREATE INDEX "channels_token_expiry" ON "channels"."channels" ("token_expires_at") WHERE "status" = 'active' AND "token_kind" <> 'nonExpiring';--> statement-breakpoint
 CREATE INDEX "connect_attempts_expires_at" ON "channels"."connect_attempts" ("expires_at");--> statement-breakpoint
 CREATE INDEX "media_assets_workspace_id_id_index" ON "media"."media_assets" ("workspace_id","id" DESC NULLS LAST);--> statement-breakpoint
+CREATE INDEX "notices_user" ON "notifications"."notices" ("user_id","id");--> statement-breakpoint
+CREATE INDEX "notices_user_unread" ON "notifications"."notices" ("user_id") WHERE "read_at" IS NULL;--> statement-breakpoint
 CREATE INDEX "posts_workspace_scheduled_at" ON "publishing"."posts" ("workspace_id","scheduled_at");--> statement-breakpoint
 CREATE INDEX "account_userId_idx" ON "auth"."account" ("user_id");--> statement-breakpoint
 CREATE INDEX "apikey_configId_idx" ON "auth"."apikey" ("config_id");--> statement-breakpoint

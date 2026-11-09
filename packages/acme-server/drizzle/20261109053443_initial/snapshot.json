@@ -2,11 +2,23 @@
   "type": "base",
   "version": "9",
   "dialect": "postgres",
-  "id": "837e598f-6a65-4a89-81ab-af4faf00eac4",
+  "id": "51e69631-2d0e-4008-add2-de9feff8c358",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
   "footprints": [
+    {
+      "statementType": "create_schema",
+      "statementTarget": [
+        "schema",
+        "assistant"
+      ],
+      "writes": [
+        "s|sch|assistant",
+        "n|sch|assistant",
+        "e|sch|assistant"
+      ]
+    },
     {
       "statementType": "create_schema",
       "statementTarget": [
@@ -65,6 +77,25 @@
         "s|sch|auth",
         "n|sch|auth",
         "e|sch|auth"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "assistant",
+        "daily_usage"
+      ],
+      "writes": [
+        "s|tbl|assistant.daily_usage",
+        "n|tbl|assistant.daily_usage",
+        "e|tbl|assistant.daily_usage",
+        "n|rel|assistant.daily_usage",
+        "n|type|assistant.daily_usage",
+        "n|rel|assistant.daily_usage_pkey"
+      ],
+      "reads": [
+        "n|sch|assistant"
       ]
     },
     {
@@ -143,6 +174,45 @@
       ],
       "reads": [
         "n|sch|media"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "notifications",
+        "notices"
+      ],
+      "writes": [
+        "s|tbl|notifications.notices",
+        "n|tbl|notifications.notices",
+        "e|tbl|notifications.notices",
+        "n|rel|notifications.notices",
+        "n|type|notifications.notices",
+        "n|rel|notifications.notices_pkey",
+        "n|rel|notifications.notices_event_user"
+      ],
+      "reads": [
+        "n|sch|notifications"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "notifications",
+        "notification_preferences"
+      ],
+      "writes": [
+        "s|tbl|notifications.notification_preferences",
+        "n|tbl|notifications.notification_preferences",
+        "e|tbl|notifications.notification_preferences",
+        "n|rel|notifications.notification_preferences",
+        "n|type|notifications.notification_preferences",
+        "n|rel|notifications.notification_preferences_pkey"
+      ],
+      "reads": [
+        "n|sch|notifications"
       ]
     },
     {
@@ -651,6 +721,47 @@
         "n|sch|media",
         "n|col|media.media_assets.workspace_id",
         "n|col|media.media_assets.id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "notifications",
+        "notices",
+        "notices_user"
+      ],
+      "writes": [
+        "s|idx|notifications.notices_user",
+        "n|idx|notifications.notices_user",
+        "e|idx|notifications.notices_user",
+        "n|rel|notifications.notices_user"
+      ],
+      "reads": [
+        "n|tbl|notifications.notices",
+        "n|sch|notifications",
+        "n|col|notifications.notices.user_id",
+        "n|col|notifications.notices.id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "notifications",
+        "notices",
+        "notices_user_unread"
+      ],
+      "writes": [
+        "s|idx|notifications.notices_user_unread",
+        "n|idx|notifications.notices_user_unread",
+        "e|idx|notifications.notices_user_unread",
+        "n|rel|notifications.notices_user_unread"
+      ],
+      "reads": [
+        "n|tbl|notifications.notices",
+        "n|sch|notifications",
+        "n|col|notifications.notices.user_id"
       ]
     },
     {
@@ -1721,6 +1832,10 @@
   ],
   "ddl": [
     {
+      "name": "assistant",
+      "entityType": "schemas"
+    },
+    {
       "name": "channels",
       "entityType": "schemas"
     },
@@ -1739,6 +1854,12 @@
     {
       "name": "auth",
       "entityType": "schemas"
+    },
+    {
+      "schema": "assistant",
+      "name": "daily_usage",
+      "isRlsEnabled": false,
+      "entityType": "tables"
     },
     {
       "schema": "channels",
@@ -1761,6 +1882,18 @@
     {
       "schema": "media",
       "name": "media_assets",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "notifications",
+      "name": "notices",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "notifications",
+      "name": "notification_preferences",
       "isRlsEnabled": false,
       "entityType": "tables"
     },
@@ -1901,6 +2034,45 @@
       "name": "verification",
       "isRlsEnabled": false,
       "entityType": "tables"
+    },
+    {
+      "schema": "assistant",
+      "table": "daily_usage",
+      "name": "day",
+      "type": "date",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "assistant",
+      "table": "daily_usage",
+      "name": "requests",
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "assistant",
+      "table": "daily_usage",
+      "name": "workspace_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
     },
     {
       "schema": "channels",
@@ -2543,6 +2715,214 @@
       "schema": "media",
       "table": "media_assets",
       "name": "workspace_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "notifications",
+      "table": "notices",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "notifications",
+      "table": "notices",
+      "name": "email_settled_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "notifications",
+      "table": "notices",
+      "name": "email_status",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "notifications",
+      "table": "notices",
+      "name": "event",
+      "type": "jsonb",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "notifications",
+      "table": "notices",
+      "name": "event_key",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "notifications",
+      "table": "notices",
+      "name": "id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "notifications",
+      "table": "notices",
+      "name": "kind",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "notifications",
+      "table": "notices",
+      "name": "read_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "notifications",
+      "table": "notices",
+      "name": "user_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "notifications",
+      "table": "notices",
+      "name": "workspace_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "notifications",
+      "table": "notification_preferences",
+      "name": "email_channel_reconnect",
+      "type": "boolean",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "notifications",
+      "table": "notification_preferences",
+      "name": "email_post_failed",
+      "type": "boolean",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "notifications",
+      "table": "notification_preferences",
+      "name": "email_post_published",
+      "type": "boolean",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "notifications",
+      "table": "notification_preferences",
+      "name": "email_post_unconfirmed",
+      "type": "boolean",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "notifications",
+      "table": "notification_preferences",
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "notifications",
+      "table": "notification_preferences",
+      "name": "user_id",
       "type": "uuid",
       "typeSchema": null,
       "notNull": true,
@@ -5886,6 +6266,55 @@
       "entityType": "indexes"
     },
     {
+      "schema": "notifications",
+      "table": "notices",
+      "name": "notices_user",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "user_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "notifications",
+      "table": "notices",
+      "name": "notices_user_unread",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "user_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": "\"read_at\" IS NULL",
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
       "schema": "publishing",
       "table": "posts",
       "name": "posts_workspace_scheduled_at",
@@ -6866,6 +7295,17 @@
       "entityType": "fks"
     },
     {
+      "schema": "assistant",
+      "table": "daily_usage",
+      "name": "daily_usage_pkey",
+      "columns": [
+        "workspace_id",
+        "day"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
       "schema": "channels",
       "table": "mastodon_apps",
       "name": "mastodon_apps_pkey",
@@ -6914,6 +7354,26 @@
       "name": "media_assets_pkey",
       "columns": [
         "id"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "notifications",
+      "table": "notices",
+      "name": "notices_pkey",
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "notifications",
+      "table": "notification_preferences",
+      "name": "notification_preferences_pkey",
+      "columns": [
+        "user_id"
       ],
       "nameExplicit": false,
       "entityType": "pks"
@@ -7152,6 +7612,18 @@
       "entityType": "uniques"
     },
     {
+      "schema": "notifications",
+      "table": "notices",
+      "name": "notices_event_user",
+      "nameExplicit": true,
+      "columns": [
+        "event_key",
+        "user_id"
+      ],
+      "nullsNotDistinct": false,
+      "entityType": "uniques"
+    },
+    {
       "schema": "publishing",
       "table": "post_targets",
       "name": "post_targets_post_channel",
@@ -7274,6 +7746,13 @@
       ],
       "nullsNotDistinct": false,
       "entityType": "uniques"
+    },
+    {
+      "schema": "assistant",
+      "table": "daily_usage",
+      "name": "daily_usage_requests",
+      "value": "\"requests\" >= 0",
+      "entityType": "checks"
     },
     {
       "schema": "channels",
