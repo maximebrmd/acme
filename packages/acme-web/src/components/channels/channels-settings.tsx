@@ -161,7 +161,9 @@ export const ChannelsSettings = ({
             {canConnect ? t("connectDescription") : t("noPermission")}
           </p>
         </div>
-        {canConnect ? <ConnectForms workspaceId={workspaceId} /> : null}
+        {canConnect && hydrated ? (
+          <ConnectForms workspaceId={workspaceId} />
+        ) : null}
       </section>
     </div>
   );

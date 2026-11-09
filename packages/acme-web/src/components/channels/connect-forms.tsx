@@ -1,6 +1,6 @@
 "use client";
 
-import { useAtomSet } from "@effect/atom-react";
+import { useAtomRefresh, useAtomSet, useAtomValue } from "@effect/atom-react";
 import type { Platform } from "acme-contract";
 import { Alert, AlertDescription } from "acme-ui/components/alert";
 import { Button } from "acme-ui/components/button";
@@ -13,14 +13,25 @@ import {
 } from "acme-ui/components/card";
 import { Input } from "acme-ui/components/input";
 import { Label } from "acme-ui/components/label";
+import { Skeleton } from "acme-ui/components/skeleton";
 import { Option } from "effect";
+import { AsyncResult } from "effect/reactivity";
 import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import type { ChangeEvent, SubmitEvent } from "react";
 
-import { connectChannel, failureOf } from "#channels/channels-api.ts";
+import {
+  connectablePlatformsOf,
+  connectChannel,
+  failureOf,
+} from "#channels/channels-api.ts";
 import type { ChannelErrorKey } from "#channels/channels-api.ts";
 import { rememberConnection } from "#channels/pending-connection.ts";
+import {
+  ConnectMeta,
+  metaPlatforms,
+} from "#components/channels/connect-meta.tsx";
+import type { MetaPlatform } from "#components/channels/connect-meta.tsx";
 
 // Starts a connection, then leaves for the platform's sign-in page.
 const useConnect = (workspaceId: string, platform: Platform) => {
@@ -179,14 +190,79 @@ const ConnectBluesky = ({ workspaceId }: { readonly workspaceId: string }) => {
   );
 };
 
-/** Where a member starts connecting a Mastodon or Bluesky account. */
+const ConnectWithMeta = ({
+  platform,
+  workspaceId,
+}: {
+  readonly platform: MetaPlatform;
+  readonly workspaceId: string;
+}) => {
+  const { error, isPending, start } = useConnect(workspaceId, platform);
+
+  const handleConnect = () => {
+    start({});
+  };
+
+  return (
+    <ConnectMeta
+      platform={platform}
+      error={error}
+      isPending={isPending}
+      onConnect={handleConnect}
+    />
+  );
+};
+
+/**
+ * Where a member starts connecting an account, for each platform this
+ * server connects: a platform it lacks the settings for is not offered.
+ */
 export const ConnectForms = ({
   workspaceId,
 }: {
   readonly workspaceId: string;
-}) => (
-  <div className="grid gap-4 sm:grid-cols-2">
-    <ConnectMastodon workspaceId={workspaceId} />
-    <ConnectBluesky workspaceId={workspaceId} />
-  </div>
-);
+}) => {
+  const t = useTranslations("ChannelsPage");
+  const meta = useTranslations("MetaChannels");
+  const connectable = useAtomValue(connectablePlatformsOf(workspaceId));
+  const handleRetry = useAtomRefresh(connectablePlatformsOf(workspaceId));
+
+  if (AsyncResult.isFailure(connectable)) {
+    return (
+      <div className="flex flex-col gap-4">
+        <Alert variant="destructive">
+          <AlertDescription>{meta("platformsFailed")}</AlertDescription>
+        </Alert>
+        <Button variant="outline" size="sm" onClick={handleRetry}>
+          {t("retry")}
+        </Button>
+      </div>
+    );
+  }
+
+  if (!AsyncResult.isSuccess(connectable)) {
+    return <Skeleton className="h-40 w-full" aria-busy />;
+  }
+
+  const offered = new Set(connectable.value.platforms);
+
+  return (
+    <div className="grid gap-4 sm:grid-cols-2">
+      {offered.has("mastodon") ? (
+        <ConnectMastodon workspaceId={workspaceId} />
+      ) : null}
+      {offered.has("bluesky") ? (
+        <ConnectBluesky workspaceId={workspaceId} />
+      ) : null}
+      {metaPlatforms
+        .filter((platform) => offered.has(platform))
+        .map((platform) => (
+          <ConnectWithMeta
+            key={platform}
+            platform={platform}
+            workspaceId={workspaceId}
+          />
+        ))}
+    </div>
+  );
+};

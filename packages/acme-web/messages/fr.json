@@ -199,7 +199,7 @@
     "disconnectAccount": "Déconnecter {handle}",
     "disconnecting": "Déconnexion…",
     "disconnectTitle": "Déconnecter {handle} ?",
-    "disconnectDescription": "Acme supprime les jetons qu’il détient pour ce compte {platform, select, bluesky {Bluesky} mastodon {Mastodon} other {{platform}}} et n’y publie plus rien. Vous pourrez le reconnecter plus tard.",
+    "disconnectDescription": "Acme supprime les jetons qu’il détient pour ce compte {platform, select, bluesky {Bluesky} facebook {Facebook} instagram {Instagram} mastodon {Mastodon} threads {Threads} other {{platform}}} et n’y publie plus rien. Vous pourrez le reconnecter plus tard.",
     "cancel": "Annuler",
     "disconnected": "{handle} est déconnecté.",
     "connectTitle": "Connecter un compte",
@@ -229,7 +229,8 @@
       "unreachable": "La plateforme n’a pas répondu. Réessayez dans un instant.",
       "forbidden": "Vous ne pouvez pas faire cela dans cet espace de travail.",
       "notFound": "Ce canal n’est plus connecté.",
-      "unknown": "Une erreur est survenue. Réessayez."
+      "unknown": "Une erreur est survenue. Réessayez.",
+      "noAccounts": "La connexion n’a atteint aucun compte à connecter : vous ne gérez aucune Page Facebook, ou aucun compte professionnel Instagram n’est lié à vos Pages."
     }
   },
   "ConnectCallbackPage": {
@@ -241,6 +242,29 @@
     "connected": "{handle} est connecté.",
     "toChannels": "Retour aux canaux",
     "toWorkspaces": "Retour à vos espaces de travail"
+  },
+  "MetaChannels": {
+    "title": "{platform, select, facebook {Pages Facebook} instagram {Instagram} threads {Threads} other {{platform}}}",
+    "description": "{platform, select, facebook {Connectez-vous avec Facebook, puis choisissez les Pages où cet espace de travail publie.} instagram {Comptes professionnels liés à une Page Facebook : connectez-vous avec Facebook, puis choisissez les comptes.} threads {Connectez-vous avec votre compte Threads.} other {Connectez-vous sur la plateforme.}}",
+    "connect": "{platform, select, facebook {Connecter des Pages Facebook} instagram {Connecter Instagram} threads {Connecter Threads} other {Connecter}}",
+    "connecting": "Ouverture…",
+    "platformsFailed": "Les plateformes que ce serveur connecte n’ont pas pu être chargées. Réessayez.",
+    "chooseTitle": "{platform, select, facebook {Les Pages à connecter} instagram {Les comptes Instagram à connecter} other {Les comptes à connecter}}",
+    "chooseDescription": "{platform, select, facebook {Votre connexion a atteint ces Pages.} instagram {Votre connexion a atteint ces comptes Instagram.} other {Votre connexion a atteint ces comptes.}} Choisissez ceux où cet espace de travail publie, dans le quart d’heure.",
+    "alreadyConnected": "Connecté : le choisir le reconnecte",
+    "connectChosen": "{count, plural, =0 {Connecter} one {Connecter # compte} other {Connecter # comptes}}",
+    "connectingChosen": "Connexion…",
+    "connected": "{count, plural, one {# compte est connecté.} other {# comptes sont connectés.}}",
+    "cancel": "Retour aux canaux"
+  },
+  "DataDeletionPage": {
+    "title": "Demande de suppression des données",
+    "description": "Où en est une demande de suppression des données qu’Acme détient sur vous.",
+    "code": "Code de confirmation : {code}",
+    "done": "Terminé : Acme a supprimé les comptes connectés via {app, select, facebook {Facebook} threads {Threads} other {{app}}}, et leurs jetons.",
+    "completed": "Terminé le {date, date, long} : Acme a supprimé {count, plural, =0 {aucun compte connecté, faute d’en avoir} one {# compte connecté} other {# comptes connectés}} venant de {app, select, facebook {Facebook} threads {Threads} other {{app}}}, avec {count, plural, =0 {rien d’autre} one {ses jetons} other {leurs jetons}}.",
+    "notFound": "Aucune demande n’a ce code de confirmation.",
+    "unavailable": "L’état de la demande n’a pas pu être lu. Réessayez plus tard."
   },
   "Posts": {
     "platform": "{platform, select, x {X} linkedin {LinkedIn} bluesky {Bluesky} mastodon {Mastodon} threads {Threads} instagram {Instagram} facebook {Facebook} tiktok {TikTok} youtube {YouTube} pinterest {Pinterest} other {{platform}}}",
