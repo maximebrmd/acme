@@ -14,7 +14,7 @@ import { notFound } from "next/navigation";
 
 import { currentUser } from "#auth/session.ts";
 import { CreateWorkspaceForm } from "#components/create-workspace-form.tsx";
-import { redirect } from "#i18n/navigation.ts";
+import { Link, redirect } from "#i18n/navigation.ts";
 import { routing } from "#i18n/routing.ts";
 
 // The signed-in home: the user's workspaces, read from GET /api/me with the
@@ -34,6 +34,7 @@ const AppPage = async ({ params }: PageProps<"/[locale]/app">) => {
 
   const { user, workspaces } = me.value;
   const t = await getTranslations("AppPage");
+  const media = await getTranslations("Media.page");
 
   return (
     <div className="flex flex-col gap-8">
@@ -61,6 +62,19 @@ const AppPage = async ({ params }: PageProps<"/[locale]/app">) => {
                     </Badge>
                   </CardAction>
                 </CardHeader>
+                {workspace.permissions.includes("media:read") ? (
+                  <CardContent>
+                    <Link
+                      href={`/app/workspaces/${workspace.id}/media`}
+                      aria-label={media("openLabel", {
+                        workspace: workspace.name,
+                      })}
+                      className="text-sm font-medium underline-offset-4 hover:underline"
+                    >
+                      {media("open")}
+                    </Link>
+                  </CardContent>
+                ) : null}
               </Card>
             </li>
           ))}

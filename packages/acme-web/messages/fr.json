@@ -137,5 +137,99 @@
     "signIn": "Se connecter",
     "signUp": "Créer un compte",
     "failed": "Cette invitation n’est plus valide, ou elle a été envoyée à une autre adresse."
+  },
+  "Media": {
+    "page": {
+      "title": "Médias",
+      "description": "Les images et vidéos de {workspace}, à mettre dans les publications.",
+      "open": "Médiathèque",
+      "openLabel": "Médiathèque de {workspace}"
+    },
+    "uploader": {
+      "title": "Importer des médias",
+      "description": "Les images et les vidéos vont directement dans le stockage. Décrivez chacune pour les personnes qui ne peuvent pas la voir.",
+      "dropzone": "Déposez des images ou des vidéos ici, ou cliquez pour les choisir.",
+      "choose": "Choisir des images ou des vidéos à importer",
+      "accepted": "Images JPEG, PNG, GIF et WebP jusqu’à 16 Mo, vidéos MP4 et QuickTime jusqu’à 1 Go.",
+      "dropping": "Déposez pour importer",
+      "uploads": "Imports",
+      "phase": {
+        "preparing": "Préparation",
+        "sending": "Envoi",
+        "completing": "Vérification du fichier",
+        "done": "Importé",
+        "canceled": "Annulé",
+        "failed": "Échec"
+      },
+      "altText": "Description",
+      "altTextHint": "Ce qu’il montre, pour les personnes qui ne peuvent pas le voir. Les plateformes l’affichent avec le média.",
+      "altTextWaiting": "Vous pourrez l’écrire dès que l’envoi aura commencé.",
+      "altTextSaving": "Enregistrement de la description…",
+      "altTextSaved": "Description enregistrée.",
+      "altTextFailed": "La description n’a pas pu être enregistrée. Réessayez.",
+      "cancel": "Annuler",
+      "cancelLabel": "Annuler l’import de {name}",
+      "retry": "Réessayer",
+      "retryLabel": "Importer {name} à nouveau",
+      "remove": "Retirer",
+      "removeLabel": "Retirer {name} de la liste",
+      "errors": {
+        "unsupportedType": "Acme ne prend pas ce type de fichier. Importez une image JPEG, PNG, GIF ou WebP, ou une vidéo MP4 ou QuickTime.",
+        "tooLarge": "Ce fichier dépasse les {limit, number} Mo qu’Acme accepte pour ce type de média.",
+        "altTextTooLong": "La description dépasse {limit, number} caractères.",
+        "forbidden": "Vous ne pouvez pas importer de médias dans cet espace de travail.",
+        "signedOut": "Vous êtes déconnecté. Connectez-vous, puis importez le fichier à nouveau.",
+        "workspaceNotFound": "Cet espace de travail n’existe plus, ou vous n’en faites plus partie.",
+        "network": "La connexion a été coupée pendant l’envoi du fichier. Vérifiez-la, puis réessayez.",
+        "linkExpired": "L’envoi a pris trop de temps et son lien a expiré. Réessayez.",
+        "storeRefused": "Le stockage des médias a refusé le fichier. Réessayez.",
+        "storeUnavailable": "Le stockage des médias est injoignable pour le moment. Réessayez dans un instant.",
+        "incomplete": "Une partie du fichier n’est pas arrivée. Réessayez.",
+        "rejectedSize": "Le fichier arrivé n’a pas la taille avec laquelle il a été envoyé. Réessayez.",
+        "rejectedType": "Le contenu du fichier ne correspond pas à son type : il a peut-être été renommé, ou il est endommagé.",
+        "unexpected": "Une erreur est survenue. Réessayez."
+      }
+    },
+    "status": {
+      "pending": "Envoi en cours",
+      "uploaded": "Traitement",
+      "ready": "Prêt",
+      "rejected": "Refusé"
+    },
+    "probe": {
+      "pending": "Importé, en attente de lecture.",
+      "unavailable": "Importé, mais ce serveur ne sait pas lire les vidéos : il n’est pas encore prêt pour les publications.",
+      "unreadable": "Importé, mais le fichier n’a pas pu être lu : il est peut-être endommagé.",
+      "timedOut": "Importé, mais la lecture du fichier a pris trop de temps.",
+      "tooLarge": "Importé, mais le fichier stocké est plus gros que déclaré.",
+      "toolFailed": "Importé, mais le serveur n’a pas réussi à le lire."
+    },
+    "rejected": {
+      "sizeMismatch": "Le fichier n’avait pas la taille déclarée, et a été supprimé.",
+      "typeMismatch": "Le fichier n’était pas du type déclaré, et a été supprimé."
+    },
+    "library": {
+      "title": "Médiathèque",
+      "empty": "Aucun média pour l’instant. Importez des images ou des vidéos pour les utiliser dans vos publications.",
+      "loading": "Chargement des médias…",
+      "loadFailed": "Les médias n’ont pas pu être chargés.",
+      "reload": "Réessayer",
+      "loadMore": "Afficher plus",
+      "kind": "{kind, select, image {Image} other {Vidéo}}",
+      "size": "{size, number} Mo",
+      "dimensions": "{width} × {height}",
+      "duration": "{seconds, number} s",
+      "noAltText": "Aucune description",
+      "added": "Ajouté le {date, date, medium}",
+      "delete": "Supprimer",
+      "deleteLabel": "Supprimer {kind, select, image {cette image} other {cette vidéo}}",
+      "deleteTitle": "Supprimer {kind, select, image {cette image} other {cette vidéo}} ?",
+      "deleteDescription": "Son fichier est supprimé du stockage, et le média ne peut plus aller dans des publications. Les publications déjà parues le gardent sur leurs plateformes. Cette action est définitive.",
+      "deleteConfirm": "Supprimer",
+      "deleting": "Suppression…",
+      "keep": "Le garder",
+      "deleteFailed": "Le média n’a pas pu être supprimé. Réessayez.",
+      "deleted": "Le média a été supprimé."
+    }
   }
 }
