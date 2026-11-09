@@ -11,6 +11,11 @@ const KnownErrorSchema = Schema.Literals([
   "PASSWORD_TOO_LONG",
   "PASSWORD_TOO_SHORT",
   "USER_ALREADY_EXISTS",
+  // The workspace's plan has no room for another member.
+  "MEMBER_LIMIT_REACHED",
+  // The captcha's token was missing, or Turnstile refused it.
+  "MISSING_RESPONSE",
+  "VERIFICATION_FAILED",
 ]);
 
 export type AuthErrorKey =

@@ -99,6 +99,9 @@
       "PASSWORD_TOO_LONG": "Le mot de passe est trop long.",
       "PASSWORD_TOO_SHORT": "Le mot de passe doit compter au moins 12 caractères.",
       "USER_ALREADY_EXISTS": "Un compte utilise déjà cette adresse e-mail.",
+      "MEMBER_LIMIT_REACHED": "L’abonnement de l’espace de travail ne permet pas d’autre membre. Un propriétaire ou un administrateur peut passer à un abonnement plus grand.",
+      "MISSING_RESPONSE": "Faites d’abord la vérification ci-dessus.",
+      "VERIFICATION_FAILED": "La vérification n’a pas abouti. Recommencez-la.",
       "TOO_MANY_REQUESTS": "Trop de tentatives. Patientez une minute, puis réessayez.",
       "UNKNOWN": "Une erreur est survenue. Réessayez."
     }
@@ -622,5 +625,61 @@
       "loadFailed": "Vos préférences n’ont pas pu être chargées.",
       "reload": "Réessayer"
     }
+  },
+  "Billing": {
+    "open": "Facturation",
+    "openLabel": "Facturation de {workspace}",
+    "back": "Tous les espaces de travail",
+    "title": "Facturation",
+    "description": "L’abonnement de {workspace}, et ce que l’espace de travail en utilise.",
+    "loadFailed": "La facturation n’a pas pu être chargée.",
+    "retry": "Réessayer",
+    "plan": "{plan, select, free {Gratuit} pro {Pro} business {Business} other {{plan}}}",
+    "off": {
+      "title": "Rien n’est limité",
+      "description": "Ce serveur ne facture pas les espaces de travail : il n’y a pas d’abonnement, et tout est disponible sans limite."
+    },
+    "current": {
+      "title": "Abonnement actuel",
+      "free": "L’espace de travail n’a pas d’abonnement payant.",
+      "status": "{status, select, active {Actif} trialing {Essai} past_due {Paiement en retard} canceled {Résilié} unpaid {Impayé} paused {Suspendu} incomplete {Incomplet} incomplete_expired {Expiré} other {{status}}}",
+      "renews": "Renouvelé le {date}",
+      "ends": "Prend fin le {date}",
+      "pastDue": "Le dernier paiement n’est pas passé. Mettez à jour le moyen de paiement dans l’espace de facturation pour garder l’abonnement.",
+      "manage": "Gérer la facturation",
+      "managing": "Ouverture de l’espace de facturation…",
+      "manageHint": "Changez de moyen de paiement, d’adresse de facturation ou de numéro de TVA, téléchargez les factures, ou résiliez l’abonnement."
+    },
+    "usage": {
+      "title": "Utilisation",
+      "limit": "{limit, select, channels {Canaux connectés} members {Membres} scheduledPosts {Publications prévues ce mois-ci} assistantRequests {Demandes à l’assistant de rédaction aujourd’hui} other {{limit}}}",
+      "of": "{used, number} sur {allowed, number}",
+      "unlimited": "{used, number}, sans limite",
+      "resets": "Remis à zéro le {date}"
+    },
+    "plans": {
+      "title": "Abonnements",
+      "description": "Les prix, TVA comprise quand elle s’applique, sont indiqués au paiement.",
+      "allowance": "{limit, select, channels {{count, plural, one {# canal} other {# canaux}}} members {{count, plural, one {# membre} other {# membres}}} scheduledPosts {{count, plural, one {# publication par mois} other {# publications par mois}}} assistantRequests {{count, plural, one {# demande à l’assistant par jour} other {# demandes à l’assistant par jour}}} other {{count}}}",
+      "unlimited": "{limit, select, channels {Canaux illimités} members {Membres illimités} scheduledPosts {Publications illimitées} assistantRequests {Demandes à l’assistant illimitées} other {Illimité}}",
+      "yours": "Votre abonnement",
+      "choose": "Passer à {plan}",
+      "choosing": "Ouverture du paiement…",
+      "inPortal": "Pour passer à un abonnement plus petit, utilisez l’espace de facturation.",
+      "askAdmin": "Les propriétaires et les administrateurs de l’espace de travail changent son abonnement."
+    },
+    "checkout": {
+      "done": "Merci. L’abonnement change dès que Stripe confirme le paiement, en général en quelques secondes.",
+      "refresh": "Actualiser"
+    },
+    "errors": {
+      "forbidden": "Seuls les propriétaires et les administrateurs de l’espace de travail peuvent changer sa facturation.",
+      "generic": "Stripe n’a pas pu être joint. Réessayez dans un instant."
+    },
+    "limitReached": "{limit, select, channels {L’abonnement de l’espace de travail ne permet pas d’autre canal. Passez à un abonnement plus grand, ou déconnectez d’abord un canal.} members {L’abonnement de l’espace de travail ne permet pas d’autre membre. Un propriétaire ou un administrateur peut passer à un abonnement plus grand.} scheduledPosts {L’abonnement de l’espace de travail ne permet pas d’autre publication ce mois-là. Choisissez un autre mois, annulez une publication, ou passez à un abonnement plus grand.} assistantRequests {L’abonnement de l’espace de travail ne permet plus de demande à l’assistant aujourd’hui.} other {L’abonnement de l’espace de travail ne permet pas d’en ajouter.}}",
+    "seePlans": "Voir les abonnements"
+  },
+  "Captcha": {
+    "label": "Vérifiez que vous êtes une personne"
   }
 }

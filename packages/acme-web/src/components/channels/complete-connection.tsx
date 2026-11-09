@@ -10,6 +10,7 @@ import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { toast } from "sonner";
 
+import { useChannelErrorText } from "#channels/channel-error-text.ts";
 import { completeConnection, failureOf } from "#channels/channels-api.ts";
 import type { ChannelErrorKey } from "#channels/channels-api.ts";
 import {
@@ -75,7 +76,7 @@ export const CompleteConnection = ({
   platform,
 }: CompleteConnectionProps) => {
   const t = useTranslations("ConnectCallbackPage");
-  const errors = useTranslations("ChannelsPage.errors");
+  const errors = useChannelErrorText();
   const router = useRouter();
   const complete = useAtomSet(completeConnection, { mode: "promiseExit" });
 

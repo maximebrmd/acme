@@ -30,11 +30,15 @@ export const reconnectChannel = AcmeApi.mutation("channels", "reconnect");
 
 export const disconnectChannel = AcmeApi.mutation("channels", "disconnect");
 
-/** The message explaining why a channel action failed. */
+/**
+ * The message explaining why a channel action failed: a ChannelsPage error,
+ * or `planLimit`, which Billing explains.
+ */
 export type ChannelErrorKey =
   | ConnectFailureReason
   | "forbidden"
   | "notFound"
+  | "planLimit"
   | "unknown"
   | "unreachable";
 
@@ -61,6 +65,10 @@ const keyOf = (error: Tagged): ChannelErrorKey => {
 
     case "ChannelNotFound": {
       return "notFound";
+    }
+
+    case "PlanLimitReached": {
+      return "planLimit";
     }
 
     default: {

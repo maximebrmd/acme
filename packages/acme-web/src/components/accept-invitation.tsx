@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 
 import { authClient } from "#auth/client.ts";
+import { authErrorKey } from "#auth/errors.ts";
 import { useRouter } from "#i18n/navigation.ts";
 
 // Joins the workspace with the role the invitation offers.
@@ -15,8 +16,10 @@ export const AcceptInvitation = ({
   readonly invitationId: string;
 }) => {
   const t = useTranslations("InvitationPage");
+  const errors = useTranslations("Auth.errors");
   const router = useRouter();
-  const [failed, setFailed] = useState(false);
+  // Why joining failed: the plan has no room, or the invitation is not valid.
+  const [failed, setFailed] = useState<"invalid" | "planLimit" | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const handleAccept = () => {
@@ -29,18 +32,26 @@ export const AcceptInvitation = ({
         router.push("/app");
         router.refresh();
       } else {
-        setFailed(true);
+        setFailed(
+          authErrorKey(result.error) === "MEMBER_LIMIT_REACHED"
+            ? "planLimit"
+            : "invalid"
+        );
       }
     });
   };
 
   return (
     <div className="flex flex-col gap-4">
-      {failed ? (
+      {failed === null ? null : (
         <Alert variant="destructive">
-          <AlertDescription>{t("failed")}</AlertDescription>
+          <AlertDescription>
+            {failed === "planLimit"
+              ? errors("MEMBER_LIMIT_REACHED")
+              : t("failed")}
+          </AlertDescription>
         </Alert>
-      ) : null}
+      )}
       <Button disabled={isPending} focusableWhenDisabled onClick={handleAccept}>
         {isPending ? t("accepting") : t("accept")}
       </Button>

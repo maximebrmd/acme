@@ -3,6 +3,7 @@ import {
   ChannelNotFound,
   ConnectFailed,
   Forbidden,
+  PlanLimitReached,
   PlatformUnreachable,
 } from "acme-contract";
 import { Exit, Option } from "effect";
@@ -20,6 +21,7 @@ describe(failureOf, () => {
     [new PlatformUnreachable(), "unreachable"],
     [new Forbidden(), "forbidden"],
     [new ChannelNotFound(), "notFound"],
+    [new PlanLimitReached({ allowed: 3, limit: "channels" }), "planLimit"],
   ])("explains %o", (failure, key) => {
     expect(failureOf(Exit.fail(failure))).toStrictEqual(Option.some(key));
   });

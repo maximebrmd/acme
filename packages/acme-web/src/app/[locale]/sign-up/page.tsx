@@ -1,11 +1,19 @@
-import { useTranslations } from "next-intl";
+import { Option } from "effect";
+import { getTranslations } from "next-intl/server";
+import { connection } from "next/server";
 
+import { captchaSiteKey } from "#auth/captcha.ts";
 import { AuthCard } from "#components/auth/auth-card.tsx";
 import { SignUpForm } from "#components/auth/sign-up-form.tsx";
 import { Link } from "#i18n/navigation.ts";
 
-const SignUpPage = () => {
-  const t = useTranslations("SignUpPage");
+// Read at request time: whether the server wants a captcha is its setting,
+// not the build's.
+const SignUpPage = async () => {
+  await connection();
+
+  const t = await getTranslations("SignUpPage");
+  const siteKey = await captchaSiteKey();
 
   return (
     <AuthCard
@@ -20,7 +28,7 @@ const SignUpPage = () => {
         </p>
       }
     >
-      <SignUpForm />
+      <SignUpForm captchaSiteKey={Option.getOrNull(siteKey)} />
     </AuthCard>
   );
 };

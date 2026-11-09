@@ -1,5 +1,5 @@
 import { describe, expect, it } from "@effect/vitest";
-import { PostContentInvalid } from "acme-contract";
+import { PlanLimitReached, PostContentInvalid } from "acme-contract";
 import type { Channel, ContentViolation } from "acme-contract";
 import { NextIntlClientProvider } from "next-intl";
 import type { Locale } from "next-intl";
@@ -78,6 +78,23 @@ describe(ComposerErrors, () => {
     expect(html).toContain(
       "Un canal déconnecté\u00A0: il n’y a rien à publier."
     );
+  });
+
+  it("explains a month the plan has no room in", async () => {
+    const messages = await loadMessages("fr");
+
+    const html = renderToStaticMarkup(
+      <NextIntlClientProvider locale="fr" messages={messages}>
+        <ComposerErrors
+          channels={[bluesky]}
+          failure={
+            new PlanLimitReached({ allowed: 30, limit: "scheduledPosts" })
+          }
+        />
+      </NextIntlClientProvider>
+    );
+
+    expect(html).toContain("ne permet pas d’autre publication ce mois-là");
   });
 
   it("tells apart two limits broken on one channel", () => {

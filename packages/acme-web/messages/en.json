@@ -99,6 +99,9 @@
       "PASSWORD_TOO_LONG": "The password is too long.",
       "PASSWORD_TOO_SHORT": "The password needs at least 12 characters.",
       "USER_ALREADY_EXISTS": "An account already uses this email address.",
+      "MEMBER_LIMIT_REACHED": "The workspace’s plan allows no more members. An owner or an admin can move it to a larger plan.",
+      "MISSING_RESPONSE": "Complete the check above first.",
+      "VERIFICATION_FAILED": "The check did not go through. Try it again.",
       "TOO_MANY_REQUESTS": "Too many attempts. Wait a minute, then try again.",
       "UNKNOWN": "Something went wrong. Try again."
     }
@@ -622,5 +625,61 @@
       "loadFailed": "Your preferences could not be loaded.",
       "reload": "Try again"
     }
+  },
+  "Billing": {
+    "open": "Billing",
+    "openLabel": "Billing of {workspace}",
+    "back": "All workspaces",
+    "title": "Billing",
+    "description": "The plan of {workspace}, and how much of it the workspace uses.",
+    "loadFailed": "The billing could not be loaded.",
+    "retry": "Try again",
+    "plan": "{plan, select, free {Free} pro {Pro} business {Business} other {{plan}}}",
+    "off": {
+      "title": "Nothing is limited",
+      "description": "This server does not bill workspaces: there is no plan, and every feature is available without limits."
+    },
+    "current": {
+      "title": "Current plan",
+      "free": "The workspace has no subscription.",
+      "status": "{status, select, active {Active} trialing {Trial} past_due {Payment due} canceled {Cancelled} unpaid {Unpaid} paused {Paused} incomplete {Incomplete} incomplete_expired {Expired} other {{status}}}",
+      "renews": "Renews on {date}",
+      "ends": "Ends on {date}",
+      "pastDue": "The last payment did not go through. Update the payment method in the billing portal to keep the plan.",
+      "manage": "Manage billing",
+      "managing": "Opening the billing portal…",
+      "manageHint": "Change the payment method, the billing address or the VAT number, download invoices, or cancel the subscription."
+    },
+    "usage": {
+      "title": "Usage",
+      "limit": "{limit, select, channels {Connected channels} members {Members} scheduledPosts {Posts going out this month} assistantRequests {Writing assistant requests today} other {{limit}}}",
+      "of": "{used, number} of {allowed, number}",
+      "unlimited": "{used, number}, no limit",
+      "resets": "Starts again on {date}"
+    },
+    "plans": {
+      "title": "Plans",
+      "description": "Prices, with VAT where it applies, are shown at checkout.",
+      "allowance": "{limit, select, channels {{count, plural, one {# channel} other {# channels}}} members {{count, plural, one {# member} other {# members}}} scheduledPosts {{count, plural, one {# post a month} other {# posts a month}}} assistantRequests {{count, plural, one {# assistant request a day} other {# assistant requests a day}}} other {{count}}}",
+      "unlimited": "{limit, select, channels {Unlimited channels} members {Unlimited members} scheduledPosts {Unlimited posts} assistantRequests {Unlimited assistant requests} other {Unlimited}}",
+      "yours": "Your plan",
+      "choose": "Move to {plan}",
+      "choosing": "Opening checkout…",
+      "inPortal": "To move to a smaller plan, use the billing portal.",
+      "askAdmin": "Owners and admins of the workspace change its plan."
+    },
+    "checkout": {
+      "done": "Thank you. The plan changes as soon as Stripe confirms the payment, usually within seconds.",
+      "refresh": "Refresh"
+    },
+    "errors": {
+      "forbidden": "Only owners and admins of the workspace can change its billing.",
+      "generic": "Stripe could not be reached. Try again in a moment."
+    },
+    "limitReached": "{limit, select, channels {The workspace’s plan allows no more channels. Move to a larger plan, or disconnect a channel first.} members {The workspace’s plan allows no more members. An owner or an admin can move it to a larger plan.} scheduledPosts {The workspace’s plan allows no more posts going out that month. Pick another month, cancel a post, or move to a larger plan.} assistantRequests {The workspace’s plan allows no more writing assistant requests today.} other {The workspace’s plan allows no more of this.}}",
+    "seePlans": "See the plans"
+  },
+  "Captcha": {
+    "label": "Check that you are a person"
   }
 }

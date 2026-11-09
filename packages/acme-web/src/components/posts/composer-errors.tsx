@@ -43,6 +43,7 @@ export const ComposerErrors = ({
 }: ComposerErrorsProps) => {
   const t = useTranslations("Posts.Composer");
   const tPosts = useTranslations("Posts");
+  const billing = useTranslations("Billing");
 
   const channelName = (channelId: string) => {
     const channel = channels.find(({ id }) => id === channelId);
@@ -103,6 +104,7 @@ export const ComposerErrors = ({
     Forbidden: () => t("errors.forbidden"),
     InvalidTime: () => t("invalidTime"),
     InvalidTimeZone: () => t("errors.timeZone"),
+    PlanLimitReached: ({ limit }) => billing("limitReached", { limit }),
     PostContentInvalid: () => t("errors.content"),
     PostNotFound: () => t("errors.notFound"),
     PostStatusConflict: ({ status }) => t("errors.conflict", { status }),

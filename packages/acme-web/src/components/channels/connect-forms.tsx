@@ -18,6 +18,7 @@ import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import type { ChangeEvent, SubmitEvent } from "react";
 
+import { useChannelErrorText } from "#channels/channel-error-text.ts";
 import { connectChannel, failureOf } from "#channels/channels-api.ts";
 import type { ChannelErrorKey } from "#channels/channels-api.ts";
 import { rememberConnection } from "#channels/pending-connection.ts";
@@ -58,11 +59,11 @@ const ErrorMessage = ({
 }: {
   readonly error: ChannelErrorKey | null;
 }) => {
-  const t = useTranslations("ChannelsPage");
+  const errorText = useChannelErrorText();
 
   return error === null ? null : (
     <Alert variant="destructive">
-      <AlertDescription>{t(`errors.${error}`)}</AlertDescription>
+      <AlertDescription>{errorText(error)}</AlertDescription>
     </Alert>
   );
 };
