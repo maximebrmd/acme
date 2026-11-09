@@ -1,9 +1,11 @@
 import { Badge } from "acme-ui/components/badge";
+import { Button } from "acme-ui/components/button";
 import {
   Card,
   CardAction,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from "acme-ui/components/card";
@@ -14,7 +16,7 @@ import { notFound } from "next/navigation";
 
 import { currentUser } from "#auth/session.ts";
 import { CreateWorkspaceForm } from "#components/create-workspace-form.tsx";
-import { redirect } from "#i18n/navigation.ts";
+import { Link, redirect } from "#i18n/navigation.ts";
 import { routing } from "#i18n/routing.ts";
 
 // The signed-in home: the user's workspaces, read from GET /api/me with the
@@ -34,6 +36,7 @@ const AppPage = async ({ params }: PageProps<"/[locale]/app">) => {
 
   const { user, workspaces } = me.value;
   const t = await getTranslations("AppPage");
+  const channels = await getTranslations("ChannelsPage");
 
   return (
     <div className="flex flex-col gap-8">
@@ -61,6 +64,16 @@ const AppPage = async ({ params }: PageProps<"/[locale]/app">) => {
                     </Badge>
                   </CardAction>
                 </CardHeader>
+                <CardFooter>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    render={<Link href={`/app/${workspace.id}/channels`} />}
+                    nativeButton={false}
+                  >
+                    {channels("open")}
+                  </Button>
+                </CardFooter>
               </Card>
             </li>
           ))}
