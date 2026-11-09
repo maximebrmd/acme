@@ -17,10 +17,14 @@ export const mcpPath = "/api/mcp";
  *
  * It speaks the stateless 2026-07-28 revision and, for clients that do not
  * yet, the sessionful 2025-11-25 and 2025-06-18 ones, whose sessions live in
- * this server's memory: Acme runs one server per deployment. Requests with an
- * Origin header are refused, as no browser page calls it.
+ * this server's memory: Acme runs one server per deployment. Sessions do not
+ * expire, so clients may end theirs with DELETE, as those revisions ask them
+ * to, rather than leave it in memory until the server restarts; ending one
+ * takes its id and a token that works, like any other request. Requests with
+ * an Origin header are refused, as no browser page calls it.
  */
 export const McpLive = McpServer.layerHttp({
+  allowSessionTermination: true,
   instructions:
     "Acme schedules social media posts for teams. These tools act in the one workspace the user picked when they connected; call whoami to see which, and what this connection may do there.",
   name: "Acme",

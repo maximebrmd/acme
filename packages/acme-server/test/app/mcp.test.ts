@@ -241,6 +241,14 @@ const connect = (
     version: "1.0.0",
   }).pipe(Layer.provideMerge(inProcessHttpClient));
 
+// A JSON-RPC request, as MCP clients send them.
+interface JsonRpcRequest {
+  readonly id: number;
+  readonly jsonrpc: "2.0";
+  readonly method: string;
+  readonly params?: object;
+}
+
 const toolNamed = (tools: readonly McpSchema.Tool[], name: string) => {
   const found = tools.find((tool) => tool.name === name);
 
@@ -475,6 +483,79 @@ layer(McpFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           assert.strictEqual(refused.status, 403);
           assert.strictEqual(refused.challenge, "");
         })
+    );
+
+    it.effect("lets a client end its session, with its token only", () =>
+      Effect.gen(function* endSession() {
+        const app = yield* TestApp;
+        const fixture = yield* McpFixture;
+        const workspace = yield* workspaceOf(fixture.owner, "Kiosk");
+
+        const token = yield* authorize(
+          fixture.owner,
+          fixture.clientId,
+          workspace,
+          "workspace:read"
+        );
+
+        // As an MCP client sends them: with no Origin header.
+        const send = (
+          method: "DELETE" | "POST",
+          headers: Readonly<Record<string, string>>,
+          body?: JsonRpcRequest
+        ) =>
+          Effect.promise(
+            async () =>
+              await app.handler(
+                new Request(mcpResource, {
+                  body: body === undefined ? undefined : JSON.stringify(body),
+                  headers: {
+                    accept: "application/json, text/event-stream",
+                    "content-type": "application/json",
+                    ...headers,
+                  },
+                  method,
+                })
+              )
+          );
+
+        const authorization = { authorization: `Bearer ${token}` };
+
+        const initialized = yield* send("POST", authorization, {
+          id: 1,
+          jsonrpc: "2.0",
+          method: "initialize",
+          params: {
+            capabilities: {},
+            clientInfo: { name: "acme-test", version: "1.0.0" },
+            protocolVersion: "2025-11-25",
+          },
+        });
+
+        assert.strictEqual(initialized.status, 200);
+
+        const session = {
+          "mcp-protocol-version": "2025-11-25",
+          "mcp-session-id": initialized.headers.get("mcp-session-id") ?? "",
+        };
+
+        assert.notStrictEqual(session["mcp-session-id"], "");
+
+        // Without a token, the session stays.
+        assert.strictEqual((yield* send("DELETE", session)).status, 401);
+        assert.strictEqual(
+          (yield* send("DELETE", { ...authorization, ...session })).status,
+          204
+        );
+
+        const listed = yield* send(
+          "POST",
+          { ...authorization, ...session },
+          { id: 2, jsonrpc: "2.0", method: "tools/list" }
+        );
+
+        assert.strictEqual(listed.status, 404);
+      })
     );
   }
 );
