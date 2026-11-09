@@ -2,7 +2,7 @@ import { assert, describe, it } from "@effect/vitest";
 import { ConfigProvider, Effect } from "effect";
 import { NextRequest } from "next/server";
 
-import { forwardedHeader, forwardToApi } from "#api/forward.ts";
+import { forwardedHeader, forwardToApi, servedByApi } from "#api/forward.ts";
 import { serverUrl } from "#api/server-url.ts";
 
 const withEnv =
@@ -74,6 +74,43 @@ describe("forwarding /api/* to the server", () => {
 
       assert.strictEqual(response.status, 502);
       assert.isNull(rewriteOf(response));
+    })
+  );
+});
+
+describe("what the server answers", () => {
+  it.each([
+    "/api/health",
+    "/api/mcp",
+    "/.well-known/oauth-authorization-server/api/auth",
+    "/.well-known/oauth-protected-resource",
+    "/.well-known/oauth-protected-resource/api/mcp",
+  ])("%s goes to the server", (pathname) => {
+    assert.isTrue(servedByApi(pathname));
+  });
+
+  it.each([
+    "/",
+    "/device",
+    "/oauth/consent",
+    "/apis",
+    "/.well-known/oauth-protected-resources",
+    "/.well-known/security.txt",
+  ])("%s is the web app's", (pathname) => {
+    assert.isFalse(servedByApi(pathname));
+  });
+
+  it.effect("forwards discovery documents with their path", () =>
+    Effect.gen(function* discovery() {
+      const response = yield* forward(
+        "http://localhost:3001/.well-known/oauth-protected-resource/api/mcp",
+        { ACME_API_URL: "http://api.test:3000" }
+      );
+
+      assert.strictEqual(
+        rewriteOf(response),
+        "http://api.test:3000/.well-known/oauth-protected-resource/api/mcp"
+      );
     })
   );
 });

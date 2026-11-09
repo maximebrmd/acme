@@ -8,6 +8,7 @@ import type { WorkspaceId } from "#shared/domain/ids.ts";
 import { BanSchema, isBanned } from "./ban.ts";
 import { BannedUser } from "./banned-user.ts";
 import { NotAMember } from "./not-a-member.ts";
+import { grantedPermissions } from "./oauth-grant.ts";
 import type { Principal } from "./principal.ts";
 import { permissionsFor } from "./roles.ts";
 import type { UserPrincipal } from "./user-principal.ts";
@@ -39,26 +40,44 @@ export const withheldWhileImpersonating: ReadonlySet<Permission> = new Set([
 export type AccessDenied = BannedUser | NotAMember | WorkspaceMismatch;
 
 /**
- * What a signed-in user may do in a workspace where they hold `role`: what
- * the role allows, less what staff impersonating them may not do.
+ * What a user may do in a workspace where they hold `role`: what the role
+ * allows, less what staff impersonating them may not do, and, through an
+ * OAuth client, less what its grant leaves out.
  */
 export const userPermissions = (
   principal: UserPrincipal,
+  workspaceId: WorkspaceId,
   role: string
 ): readonly Permission[] => {
-  const permissions = permissionsFor(role);
+  const allowed = permissionsFor(role);
 
-  return Option.isSome(principal.impersonatedBy)
-    ? permissions.filter(
+  const permissions = Option.isSome(principal.impersonatedBy)
+    ? allowed.filter(
         (permission) => !withheldWhileImpersonating.has(permission)
       )
-    : permissions;
+    : allowed;
+
+  return Option.match(principal.oauth, {
+    onNone: () => permissions,
+    onSome: (grant) => grantedPermissions(grant, workspaceId, permissions),
+  });
 };
+
+// The workspace a token is bound to, when it names another than `requested`.
+const boundElsewhere = (
+  principal: UserPrincipal,
+  requested: WorkspaceId
+): Option.Option<WorkspaceId> =>
+  principal.oauth.pipe(
+    Option.flatMap((grant) => grant.workspaceId),
+    Option.filter((bound) => bound !== requested)
+  );
 
 /**
  * The actor a principal is in a workspace. An API key acts only in the
  * workspace that owns it, with the permissions it was given. A user acts in a
- * workspace they are a member of, unless banned, with what their roles allow.
+ * workspace they are a member of, unless banned, with what their roles allow;
+ * through an OAuth client bound to a workspace, in that workspace only.
  */
 export const actorFor = (
   principal: Principal,
@@ -83,6 +102,14 @@ export const actorFor = (
         );
   }
 
+  const bound = boundElsewhere(principal, workspaceId);
+
+  if (Option.isSome(bound)) {
+    return Result.fail(
+      new WorkspaceMismatch({ owner: bound.value, requested: workspaceId })
+    );
+  }
+
   if (Option.isNone(membership)) {
     return Result.fail(new NotAMember({ workspaceId }));
   }
@@ -93,7 +120,11 @@ export const actorFor = (
 
   return Result.succeed(
     new Actor({
-      permissions: userPermissions(principal, membership.value.role),
+      permissions: userPermissions(
+        principal,
+        workspaceId,
+        membership.value.role
+      ),
       subject: {
         _tag: "user",
         impersonatedBy: principal.impersonatedBy,

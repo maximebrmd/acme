@@ -8,6 +8,7 @@ import { WorkflowEngine } from "effect/workflow";
 
 import { ClusterLive } from "#app/cluster.ts";
 import { CronsLive } from "#app/crons.ts";
+import { McpLive } from "#app/mcp/server.ts";
 import { ObservabilityLive } from "#app/observability.ts";
 import { SystemHandlers } from "#app/system.ts";
 import {
@@ -49,8 +50,11 @@ const ApiLive = HttpApiBuilder.layer(Api, {
   Layer.provide([SystemHandlers, ChannelOAuthApiLive, WorkspaceGroupsLive])
 );
 
-/** Every route the server answers: the HTTP API and Better Auth's. */
-export const RoutesLive = Layer.mergeAll(ApiLive, AuthRoutesLive);
+/**
+ * Every route the server answers: the HTTP API, Better Auth's, and the MCP
+ * endpoint.
+ */
+export const RoutesLive = Layer.mergeAll(ApiLive, AuthRoutesLive, McpLive);
 
 // The workspace context with the notifications it sends, then the channel
 // notices, which read the workspace's members, then the channels context,

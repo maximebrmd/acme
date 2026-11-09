@@ -2,11 +2,29 @@ import { Schema } from "effect";
 
 import { PermissionSchema } from "./permission.ts";
 
-/** Whoever a request authenticates as: a signed-in user, or an API key. */
+/**
+ * What an OAuth client may do on a user's behalf: the scopes the user agreed
+ * to, and the workspace its token is bound to (MCP clients), if any.
+ */
+export const OAuthGrantSchema = Schema.Struct({
+  clientId: Schema.String,
+  scopes: Schema.Array(Schema.String),
+  workspaceId: Schema.NullOr(Schema.String),
+}).annotate({ identifier: "OAuthGrant" });
+
+export type OAuthGrant = typeof OAuthGrantSchema.Type;
+
+/**
+ * Whoever a request authenticates as: a user, signed in or through an OAuth
+ * client, or an API key.
+ */
 export const PrincipalSchema = Schema.Union([
   Schema.TaggedStruct("user", {
     // Staff acting as this user, when they impersonate them.
     impersonatedBy: Schema.NullOr(Schema.String),
+    // The OAuth client acting for the user, when the request carries its
+    // access token rather than a session.
+    oauth: Schema.optionalKey(OAuthGrantSchema),
     userId: Schema.String,
   }),
   Schema.TaggedStruct("apiKey", {

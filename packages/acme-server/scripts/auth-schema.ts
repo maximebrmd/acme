@@ -39,6 +39,7 @@ const auth = makeAuth({
   },
   settings: {
     databasePoolMax: 1,
+    dynamicClientRegistration: true,
     ipAddressHeaders: ["x-forwarded-for"],
     production: false,
     publicUrl: "http://localhost:3001",

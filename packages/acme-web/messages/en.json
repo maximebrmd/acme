@@ -418,5 +418,59 @@
       "deleteFailed": "The media could not be deleted. Try again.",
       "deleted": "The media was deleted."
     }
+  },
+  "OAuth": {
+    "signedOut": "Sign in to Acme to continue.",
+    "signIn": "Sign in",
+    "failed": "Something went wrong. Try again.",
+    "unknownClient": "An application",
+    "role": "{role, select, owner {Owner} admin {Admin} editor {Editor} contributor {Contributor} viewer {Viewer} other {{role}}}",
+    "scopes": {
+      "openid": "Know that it is you",
+      "profile": "See your name and picture",
+      "email": "See your email address",
+      "offlineAccess": "Stay connected while you are away, until you disconnect it",
+      "workspaceRead": "Read the workspace: posts, channels, media and analytics",
+      "workspaceWrite": "Do what your role allows in the workspace, such as writing, scheduling and publishing posts",
+      "other": "Use the permission “{scope}”"
+    },
+    "device": {
+      "title": "Connect the command line",
+      "description": "Enter the code your terminal shows to let the Acme command line act as you.",
+      "signedOut": "Sign in first, then enter the code your terminal shows.",
+      "code": "Code",
+      "codeHint": "Eight letters and digits, such as WDJB-MJHT.",
+      "continue": "Continue",
+      "checking": "Checking…",
+      "invalid": "This code is wrong, or it expired. Run acme login again for a new one.",
+      "used": "This code was already used. Run acme login again for a new one.",
+      "reviewTitle": "Allow {client} to act as you?",
+      "reviewDescription": "It will be able to:",
+      "onlyYours": "Allow it only if you started this sign-in yourself, by running acme login in your own terminal a moment ago. Someone who sent you this code would get access as you.",
+      "approve": "Allow",
+      "approving": "Allowing…",
+      "deny": "Deny",
+      "approved": "Done. You can go back to your terminal.",
+      "denied": "You denied the sign-in. Nothing was given access."
+    },
+    "workspace": {
+      "title": "Pick a workspace",
+      "description": "The application you are connecting acts in the one workspace you pick. To use it in another, connect it again.",
+      "use": "Use {name}",
+      "picking": "Continuing…",
+      "empty": "You do not belong to any workspace yet. Create one, then connect the application again.",
+      "create": "Create a workspace"
+    },
+    "consent": {
+      "title": "Allow {client} to use Acme?",
+      "description": "Check what it asks for before you answer.",
+      "workspace": "It will act as you in {workspace}, and will be able to:",
+      "workspaceUnknown": "It will act as you in the workspace you picked, and will be able to:",
+      "redirect": "Afterwards, you will go back to {host}.",
+      "unverified": "Acme has not checked this application. Allow it only if you trust it and started this connection yourself.",
+      "allow": "Allow",
+      "allowing": "Allowing…",
+      "deny": "Deny"
+    }
   }
 }

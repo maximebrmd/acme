@@ -2,15 +2,22 @@ import { Command } from "effect/cli";
 
 import { AcmeApi } from "#api.ts";
 import { health } from "#commands/health.ts";
+import { login } from "#commands/login.ts";
+import { logout } from "#commands/logout.ts";
+import { mcp } from "#commands/mcp.ts";
+import { whoami } from "#commands/whoami.ts";
+import { CredentialStore } from "#credentials.ts";
 import manifest from "#package.json" with { type: "json" };
 import { acme } from "#root.ts";
 
 // The command tree. Every subcommand gets the API client for the URL that
-// --api-url or ACME_API_URL names; the transport (HttpClient) comes from the
-// caller, so main.ts uses fetch and tests use an in-memory server.
+// --api-url or ACME_API_URL names, and the saved sign-ins; the transport
+// (HttpClient) and the file system come from the caller, so main.ts uses
+// fetch and the disk, and tests an in-memory server.
 export const cli = acme.pipe(
-  Command.withSubcommands([health]),
-  Command.provide(({ apiUrl }) => AcmeApi.layer(apiUrl))
+  Command.withSubcommands([health, login, logout, whoami, mcp]),
+  Command.provide(({ apiUrl }) => AcmeApi.layer(apiUrl)),
+  Command.provide(CredentialStore.layer)
 );
 
 export const { version } = manifest;

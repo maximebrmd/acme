@@ -32,8 +32,9 @@ const as = (principal: Principal) =>
   Effect.provideService(CurrentPrincipal, toContractPrincipal(principal));
 
 /**
- * Authentication: an API key as a bearer token, or the session cookies.
- * Better Auth failing is a server error, not a reason to refuse.
+ * Authentication: a bearer token (an OAuth access token issued for the API,
+ * or an API key), or the session cookies. Better Auth failing is a server
+ * error, not a reason to refuse.
  */
 export const AuthenticationLive = Layer.effect(
   Authentication,
@@ -42,13 +43,24 @@ export const AuthenticationLive = Layer.effect(
 
     return Authentication.of({
       bearer: (httpEffect, { credential }) =>
-        authenticate.apiKey(credential).pipe(
-          Effect.catchTags({
-            AuthUnavailable: Effect.die,
-            NotSignedIn: unauthenticated,
-          }),
-          Effect.flatMap((principal) => httpEffect.pipe(as(principal)))
-        ),
+        Effect.gen(function* bearer() {
+          const request = yield* HttpServerRequest.HttpServerRequest;
+
+          const principal = yield* authenticate
+            .bearer(credential, {
+              dpopProof: Option.fromNullishOr(request.headers["dpop"]),
+              method: request.method,
+              path: request.url,
+            })
+            .pipe(
+              Effect.catchTags({
+                AuthUnavailable: Effect.die,
+                NotSignedIn: unauthenticated,
+              })
+            );
+
+          return yield* httpEffect.pipe(as(principal));
+        }),
       session: (httpEffect) =>
         Effect.gen(function* session() {
           const request = yield* HttpServerRequest.HttpServerRequest;

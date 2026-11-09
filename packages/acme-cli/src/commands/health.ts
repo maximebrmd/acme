@@ -3,6 +3,7 @@ import { CliError, Command } from "effect/cli";
 import type { HttpClientError } from "effect/http";
 
 import { AcmeApi } from "#api.ts";
+import { display } from "#display.ts";
 
 // A health check that hangs is as useless as one that fails.
 export const healthTimeout = Duration.seconds(5);
@@ -39,9 +40,6 @@ const transportDetail = (error: HttpClientError.HttpClientError) =>
     onNone: () => error.message,
     onSome: ({ message }) => message,
   });
-
-// "http://localhost:3000/" reads better without its trailing slash.
-const display = (url: URL) => url.href.replace(/\/$/u, "");
 
 export const health = Command.make(
   "health",

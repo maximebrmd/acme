@@ -1,4 +1,8 @@
 import {
+  oauthDeviceAuthorizationClient,
+  oauthProviderClient,
+} from "@better-auth/oauth-provider/client";
+import {
   adminClient,
   inferAdditionalFields,
   organizationClient,
@@ -16,5 +20,21 @@ export const authClient = createAuthClient({
     }),
     organizationClient(),
     adminClient(),
+    // During an OAuth authorization, sends the page's signed query with
+    // each request (sign-in, workspace picker, consent), so Better Auth
+    // resumes it; its answers then redirect the browser onwards.
+    oauthProviderClient(),
+    // The /device page, where the command line's code is approved.
+    oauthDeviceAuthorizationClient(),
   ],
+});
+
+/**
+ * Better Auth's client without the OAuth plugins, for the calls an
+ * authorization's pages make that must not resume it. Sent with the signed
+ * query, any call that renews the session cookie, as picking a workspace
+ * does, would resume the authorization at the workspace picker again.
+ */
+export const workspaceClient = createAuthClient({
+  plugins: [organizationClient()],
 });

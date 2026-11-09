@@ -418,5 +418,59 @@
       "deleteFailed": "Le média n’a pas pu être supprimé. Réessayez.",
       "deleted": "Le média a été supprimé."
     }
+  },
+  "OAuth": {
+    "signedOut": "Connectez-vous à Acme pour continuer.",
+    "signIn": "Se connecter",
+    "failed": "Un problème est survenu. Réessayez.",
+    "unknownClient": "Une application",
+    "role": "{role, select, owner {Propriétaire} admin {Administrateur} editor {Éditeur} contributor {Contributeur} viewer {Lecteur} other {{role}}}",
+    "scopes": {
+      "openid": "Savoir que c’est vous",
+      "profile": "Voir votre nom et votre photo",
+      "email": "Voir votre adresse e-mail",
+      "offlineAccess": "Rester connectée en votre absence, jusqu’à ce que vous la déconnectiez",
+      "workspaceRead": "Lire l’espace de travail : publications, canaux, médias et statistiques",
+      "workspaceWrite": "Faire ce que votre rôle permet dans l’espace de travail, comme rédiger, programmer et publier",
+      "other": "Utiliser la permission « {scope} »"
+    },
+    "device": {
+      "title": "Connecter la ligne de commande",
+      "description": "Saisissez le code affiché par votre terminal pour que la ligne de commande Acme agisse en votre nom.",
+      "signedOut": "Connectez-vous d’abord, puis saisissez le code affiché par votre terminal.",
+      "code": "Code",
+      "codeHint": "Huit lettres et chiffres, comme WDJB-MJHT.",
+      "continue": "Continuer",
+      "checking": "Vérification…",
+      "invalid": "Ce code est erroné ou a expiré. Relancez acme login pour en obtenir un nouveau.",
+      "used": "Ce code a déjà servi. Relancez acme login pour en obtenir un nouveau.",
+      "reviewTitle": "Autoriser {client} à agir en votre nom ?",
+      "reviewDescription": "Elle pourra :",
+      "onlyYours": "Ne l’autorisez que si vous avez lancé cette connexion vous-même, avec acme login dans votre propre terminal, il y a un instant. Quelqu’un qui vous aurait envoyé ce code obtiendrait un accès en votre nom.",
+      "approve": "Autoriser",
+      "approving": "Autorisation…",
+      "deny": "Refuser",
+      "approved": "C’est fait. Vous pouvez revenir à votre terminal.",
+      "denied": "Vous avez refusé la connexion. Aucun accès n’a été donné."
+    },
+    "workspace": {
+      "title": "Choisissez un espace de travail",
+      "description": "L’application que vous connectez agit dans le seul espace de travail que vous choisissez. Pour l’utiliser dans un autre, connectez-la de nouveau.",
+      "use": "Utiliser {name}",
+      "picking": "Un instant…",
+      "empty": "Vous n’appartenez encore à aucun espace de travail. Créez-en un, puis connectez de nouveau l’application.",
+      "create": "Créer un espace de travail"
+    },
+    "consent": {
+      "title": "Autoriser {client} à utiliser Acme ?",
+      "description": "Vérifiez ce qu’elle demande avant de répondre.",
+      "workspace": "Elle agira en votre nom dans {workspace}, et pourra :",
+      "workspaceUnknown": "Elle agira en votre nom dans l’espace de travail choisi, et pourra :",
+      "redirect": "Ensuite, vous reviendrez sur {host}.",
+      "unverified": "Acme n’a pas vérifié cette application. Ne l’autorisez que si vous lui faites confiance et avez lancé cette connexion vous-même.",
+      "allow": "Autoriser",
+      "allowing": "Autorisation…",
+      "deny": "Refuser"
+    }
   }
 }

@@ -68,6 +68,10 @@ describe("acme", () => {
       assert.include(help, "acme <subcommand> [flags]");
       assert.include(help, "--api-url <url>");
       assert.match(help, /health\s+Check that the Acme API answers/u);
+      assert.match(help, /login\s+Sign in to the Acme server/u);
+      assert.match(help, /logout\s+Sign out of the Acme server/u);
+      assert.match(help, /whoami\s+Show who the command line is signed in as/u);
+      assert.match(help, /mcp\s+Show how to connect an MCP client/u);
     })
   );
 

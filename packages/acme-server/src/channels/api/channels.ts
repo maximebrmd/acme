@@ -7,11 +7,7 @@ import {
   OAuthClientNotPublished,
   PlatformUnreachable,
 } from "acme-contract";
-import type {
-  Channel as ChannelView,
-  ConnectCallback,
-  ConnectFailureReason,
-} from "acme-contract";
+import type { ConnectCallback, ConnectFailureReason } from "acme-contract";
 import { Effect, Match, Option } from "effect";
 import { HttpApiBuilder } from "effect/http-api";
 
@@ -25,21 +21,9 @@ import { DisconnectChannel } from "#channels/application/disconnect-channel.ts";
 import { ListChannels } from "#channels/application/list-channels.ts";
 import { OAuthClientDocuments } from "#channels/application/oauth-client-documents.ts";
 import type { AuthorizationCallback } from "#channels/application/platform-authorizer.ts";
-import type { Channel } from "#channels/domain/channel.ts";
 import { actorOf } from "#shared/api/actor.ts";
 
-// What clients see of a channel: never its tokens. The expiry shown is the
-// one the user must reconnect by; a token that renews itself has none.
-const toView = (channel: Channel): ChannelView => ({
-  avatarUrl: Option.getOrNull(channel.avatarUrl),
-  displayName: Option.getOrNull(channel.displayName),
-  handle: channel.handle,
-  id: channel.id,
-  platform: channel.platform,
-  status: channel.status,
-  tokenExpiresAt:
-    channel.token._tag === "nonRefreshable" ? channel.token.expiresAt : null,
-});
+import { toChannelView } from "./channel-view.ts";
 
 const forbidden = () => Effect.fail(new Forbidden());
 
@@ -121,7 +105,7 @@ export const ChannelsHandlers = HttpApiBuilder.group(
             .complete(actor, params.platform, callbackOf(payload))
             .pipe(Effect.catch(completeFailure));
 
-          return toView(channel);
+          return toChannelView(channel);
         }),
       connect: ({ params, payload }) =>
         Effect.gen(function* connect() {
@@ -159,7 +143,7 @@ export const ChannelsHandlers = HttpApiBuilder.group(
             })
           );
 
-          return channels.map(toView);
+          return channels.map(toChannelView);
         }),
       reconnect: ({ params }) =>
         Effect.gen(function* reconnect() {

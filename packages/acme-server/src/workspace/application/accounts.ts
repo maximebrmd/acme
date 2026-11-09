@@ -14,7 +14,11 @@ import type { DirectoryUnavailable } from "./directory-unavailable.ts";
 import { MemberDirectory } from "./member-directory.ts";
 import { NotSignedIn } from "./not-signed-in.ts";
 
-/** The signed-in user's account, and what they may do in each workspace. */
+/**
+ * The signed-in user's account, and what they may do in each workspace with
+ * the credentials they used: nothing outside the workspace an OAuth token is
+ * bound to.
+ */
 export interface CurrentAccount {
   readonly account: Account;
   readonly principal: UserPrincipal;
@@ -63,7 +67,11 @@ export class Accounts extends Context.Service<
           principal,
           workspaces: account.workspaces.map((membership) => ({
             membership,
-            permissions: userPermissions(principal, membership.role),
+            permissions: userPermissions(
+              principal,
+              membership.id,
+              membership.role
+            ),
           })),
         };
       });

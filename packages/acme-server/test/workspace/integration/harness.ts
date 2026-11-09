@@ -6,6 +6,7 @@ import { randomUUID } from "node:crypto";
 
 import {
   Config,
+  ConfigProvider,
   Context,
   Duration,
   Effect,
@@ -14,7 +15,7 @@ import {
   Schedule,
   Schema,
 } from "effect";
-import { HttpRouter, HttpServer } from "effect/http";
+import { FetchHttpClient, HttpRouter, HttpServer } from "effect/http";
 import { SqlClient } from "effect/sql";
 
 import { AppLive } from "#app/server.ts";
@@ -52,69 +53,126 @@ const decodeJson = Schema.decodeUnknownOption(
   Schema.fromJsonString(Schema.Unknown)
 );
 
+// A request's body: a URL-encoded form, JSON, or none.
+const requestBody = (init: {
+  readonly body?: unknown;
+  readonly form?: Readonly<Record<string, string>>;
+}) => {
+  if (init.form !== undefined) {
+    return new URLSearchParams(init.form);
+  }
+
+  return init.body === undefined ? undefined : JSON.stringify(init.body);
+};
+
 export class TestApp extends Context.Service<
   TestApp,
   {
+    /** The app's web handler, for clients that bring their own requests. */
+    readonly handler: (request: Request) => Promise<Response>;
+    /**
+     * Sends a request from the web app's origin, with a JSON `body` or a
+     * URL-encoded `form`.
+     */
     readonly request: (
       path: string,
       init?: {
         readonly body?: unknown;
+        readonly form?: Readonly<Record<string, string>>;
         readonly headers?: Readonly<Record<string, string>>;
         readonly method?: string;
       }
     ) => Effect.Effect<Reply>;
   }
 >()("acme-server/test/TestApp") {
-  static readonly layer = Layer.effect(
-    TestApp,
-    Effect.gen(function* testApp() {
-      const app = yield* Effect.acquireRelease(
-        Effect.sync(() =>
-          HttpRouter.toWebHandler(
-            AppLive.pipe(
-              Layer.provide(HttpServer.layerServices),
-              Layer.provide(storageSettings)
-            ),
-            { disableLogger: true }
-          )
-        ),
-        ({ dispose }) => Effect.promise(dispose)
-      );
+  /** The app, reading `env` before the environment. */
+  static readonly layerWith = (env: Readonly<Record<string, string>>) =>
+    Layer.effect(
+      TestApp,
+      Effect.gen(function* testApp() {
+        const app = yield* Effect.acquireRelease(
+          Effect.sync(() =>
+            HttpRouter.toWebHandler(
+              AppLive.pipe(
+                Layer.provide(HttpServer.layerServices),
+                Layer.provide(storageSettings),
+                Layer.provide(
+                  ConfigProvider.layerAdd(ConfigProvider.fromUnknown(env), {
+                    asPrimary: true,
+                  })
+                )
+              ),
+              { disableLogger: true }
+            )
+          ),
+          ({ dispose }) => Effect.promise(dispose)
+        );
 
-      return TestApp.of({
-        request: (path, init = {}) =>
-          Effect.promise(async () => {
-            const headers = new Headers({ origin, ...init.headers });
+        return TestApp.of({
+          handler: app.handler,
+          request: (path, init = {}) =>
+            Effect.promise(async () => {
+              const headers = new Headers({ origin, ...init.headers });
+              const body = requestBody(init);
 
-            if (init.body !== undefined) {
-              headers.set("content-type", "application/json");
-            }
+              if (init.body !== undefined) {
+                headers.set("content-type", "application/json");
+              }
 
-            const response = await app.handler(
-              new Request(new URL(path, origin).href, {
-                body:
-                  init.body === undefined
-                    ? undefined
-                    : JSON.stringify(init.body),
-                headers,
-                method:
-                  init.method ?? (init.body === undefined ? "GET" : "POST"),
-                redirect: "manual",
-              })
-            );
+              const response = await app.handler(
+                new Request(new URL(path, origin).href, {
+                  body,
+                  headers,
+                  method: init.method ?? (body === undefined ? "GET" : "POST"),
+                  redirect: "manual",
+                })
+              );
 
-            const text = await response.text();
+              const text = await response.text();
 
-            return {
-              body: Option.getOrElse(decodeJson(text), () => text),
-              headers: response.headers,
-              status: response.status,
-            };
-          }),
-      });
-    })
-  );
+              return {
+                body: Option.getOrElse(decodeJson(text), () => text),
+                headers: response.headers,
+                status: response.status,
+              };
+            }),
+        });
+      })
+    );
+
+  static readonly layer = TestApp.layerWith({});
 }
+
+/**
+ * An HttpClient whose requests reach the app in process, as clients of the
+ * server (the command line, MCP clients) send them: without the web app's
+ * Origin header. The fetch client reads Fetch when each request runs, so keep
+ * this layer in the context the requests run in (Layer.provideMerge).
+ */
+export const inProcessHttpClient = Layer.unwrap(
+  Effect.gen(function* inProcess() {
+    const app = yield* TestApp;
+
+    const fetch = Object.assign(
+      async (input: string | URL | Request, init?: RequestInit) =>
+        await app.handler(
+          input instanceof Request
+            ? new Request(input, init)
+            : new Request(input.toString(), init)
+        ),
+      {
+        preconnect: () => {
+          // Nothing to warm up: these requests never leave the process.
+        },
+      }
+    );
+
+    return Layer.mergeAll(
+      FetchHttpClient.layer,
+      Layer.succeed(FetchHttpClient.Fetch, fetch)
+    );
+  })
+);
 
 const MailpitSearchSchema = Schema.Struct({
   messages: Schema.Array(Schema.Struct({ ID: Schema.String })),
@@ -250,6 +308,29 @@ export const confirmedAccount = Effect.fn("confirmedAccount")(
     return { email, id: user.id };
   }
 );
+
+/**
+ * Someone who signed up on an app that does not ask to confirm emails
+ * (`unconfirmedEmails`), and is signed in at once. For tests about anything
+ * but email, which then need no mail server.
+ */
+export const signedUpUnconfirmed = Effect.fn("signedUpUnconfirmed")(
+  function* signedUpUnconfirmed(label: string) {
+    const app = yield* TestApp;
+    const email = newEmail(label);
+
+    const created = yield* app.request("/api/auth/sign-up/email", {
+      body: { email, locale: "en", name: label, password },
+    });
+
+    const { user } = yield* bodyOf(SignedUpSchema, created);
+
+    return { cookies: cookiesOf(created), email, id: user.id };
+  }
+);
+
+/** Settings for an app whose accounts work before their email is confirmed. */
+export const unconfirmedEmails = { AUTH_REQUIRE_EMAIL_VERIFICATION: "false" };
 
 /** Someone who signed up, confirmed their email and signed in. */
 export const signedUp = Effect.fn("signedUp")(function* signedUp(

@@ -33,9 +33,17 @@ const trimmed = (entries: readonly string[]): readonly string[] =>
  * | `AUTH_TRUSTED_PROXIES`            | none                             |
  * | `AUTH_REQUIRE_EMAIL_VERIFICATION` | `true`                           |
  * | `AUTH_DB_POOL_MAX`                | `5`                              |
+ * | `MCP_DYNAMIC_REGISTRATION`        | `false`                          |
  */
 export const authSettingsConfig = Config.all({
   databasePoolMax: Config.Int("AUTH_DB_POOL_MAX").pipe(Config.withDefault(5)),
+  // Whether MCP clients may register themselves (OAuth dynamic client
+  // registration), which most of them need before they can sign in. Anyone
+  // may then register a client under any name, so the consent page tells
+  // that the client is unverified and where it sends the user back to.
+  dynamicClientRegistration: Config.Boolean("MCP_DYNAMIC_REGISTRATION").pipe(
+    Config.withDefault(false)
+  ),
   // The headers that carry the client's address, which sign-in rate limits
   // count by. Name only headers the edge in front of Acme sets, replacing any
   // value the client sent: cf-connecting-ip behind Cloudflare, or

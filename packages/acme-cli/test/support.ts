@@ -1,17 +1,22 @@
 import {
   Api,
   Authentication,
+  CurrentPrincipal,
+  OAuthApi,
   OAuthClientNotPublished,
   Unauthenticated,
   WorkspaceAccess,
   WorkspaceNotFound,
 } from "acme-contract";
+import type { Me } from "acme-contract";
 import {
   ConfigProvider,
   Effect,
   FileSystem,
   Layer,
+  Option,
   Path,
+  Redacted,
   Schema,
   Stdio,
   Terminal,
@@ -22,13 +27,20 @@ import { HttpApiBuilder } from "effect/http-api";
 import { ChildProcessSpawner } from "effect/process";
 import { TestConsole } from "effect/testing";
 
+import { makeAuthorizationServer } from "./authorization-server.ts";
+import type { AuthorizationServer } from "./authorization-server.ts";
+
 const unused = Effect.die("not used by the CLI tests");
 
-// What a run needs besides the network: no terminal, file system or child
-// processes, plain output, and only the environment variables a test names.
-export const cliEnvironment = (env: Record<string, string> = {}) =>
+// What a run needs besides the network: no terminal or child processes,
+// plain output, only the environment variables a test names, and a file
+// system that does nothing unless a test brings a real one.
+export const cliEnvironment = (
+  env: Record<string, string> = {},
+  fileSystem: Layer.Layer<FileSystem.FileSystem> = FileSystem.layerNoop({})
+) =>
   Layer.mergeAll(
-    FileSystem.layerNoop({}),
+    fileSystem,
     Path.layer,
     Stdio.layerTest({}),
     Layer.succeed(
@@ -76,65 +88,106 @@ export const fetching = (
     )
   );
 
-// The commands under test call no endpoint that needs credentials. Those
-// refuse anyone, as the server does a request without any.
+/** The user the in-memory server's access tokens sign in. */
+export const syntheticMe: Me = {
+  impersonatedBy: null,
+  user: {
+    email: "synthetic@example.test",
+    emailVerified: true,
+    id: "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+    image: null,
+    locale: "en",
+    name: "Synthetic User",
+  },
+  workspaces: [
+    {
+      id: "5b0c6e64-5d0f-4a7e-9a52-3f1c2d4e5f60",
+      name: "Studio",
+      permissions: ["post:read"],
+      role: "owner",
+      slug: "studio",
+    },
+  ],
+};
+
 const refusing = Effect.fail(new Unauthenticated());
 
-const SecurityLive = Layer.mergeAll(
-  Layer.succeed(
-    Authentication,
-    Authentication.of({ bearer: () => refusing, session: () => refusing })
-  ),
-  Layer.succeed(
-    WorkspaceAccess,
-    WorkspaceAccess.of(() => Effect.fail(new WorkspaceNotFound()))
-  )
-);
+// Bearer tokens work when they are the authorization server's latest access
+// token; nothing else signs in.
+const securityLive = (authorization: AuthorizationServer) =>
+  Layer.mergeAll(
+    Layer.succeed(
+      Authentication,
+      Authentication.of({
+        bearer: (httpEffect, { credential }) =>
+          Effect.gen(function* bearer() {
+            const accepted = yield* authorization.acceptedToken;
 
-const SignedInGroupsLive = Layer.mergeAll(
-  HttpApiBuilder.group(Api, "session", (handlers) =>
-    handlers.handleAll({ me: () => refusing })
-  ),
-  HttpApiBuilder.group(Api, "apiKeys", (handlers) =>
-    handlers.handleAll({
-      create: () => refusing,
-      list: () => refusing,
-      revoke: () => refusing,
-    })
-  ),
-  HttpApiBuilder.group(Api, "channels", (handlers) =>
-    handlers.handleAll({
-      completeConnect: () => refusing,
-      connect: () => refusing,
-      disconnect: () => refusing,
-      list: () => refusing,
-      reconnect: () => refusing,
-    })
-  ),
-  HttpApiBuilder.group(Api, "posts", (handlers) =>
-    handlers.handleAll({
-      cancel: () => refusing,
-      create: () => refusing,
-      get: () => refusing,
-      list: () => refusing,
-      reschedule: () => refusing,
-      schedule: () => refusing,
-      update: () => refusing,
-    })
-  ),
-  HttpApiBuilder.group(Api, "media", (handlers) =>
-    handlers.handleAll({
-      complete: () => refusing,
-      create: () => refusing,
-      delete: () => refusing,
-      describe: () => refusing,
-      get: () => refusing,
-      list: () => refusing,
-    })
-  )
-).pipe(Layer.provideMerge(SecurityLive));
+            if (!Option.contains(accepted, Redacted.value(credential))) {
+              return yield* new Unauthenticated();
+            }
 
-// Public, like the server's: this one runs no Bluesky client.
+            return yield* httpEffect.pipe(
+              Effect.provideService(CurrentPrincipal, {
+                _tag: "user",
+                impersonatedBy: null,
+                userId: syntheticMe.user.id,
+              })
+            );
+          }),
+        session: () => refusing,
+      })
+    ),
+    Layer.succeed(
+      WorkspaceAccess,
+      WorkspaceAccess.of(() => Effect.fail(new WorkspaceNotFound()))
+    )
+  );
+
+const signedInGroupsLive = (authorization: AuthorizationServer) =>
+  Layer.mergeAll(
+    HttpApiBuilder.group(Api, "session", (handlers) =>
+      handlers.handleAll({ me: () => Effect.succeed(syntheticMe) })
+    ),
+    HttpApiBuilder.group(Api, "apiKeys", (handlers) =>
+      handlers.handleAll({
+        create: () => refusing,
+        list: () => refusing,
+        revoke: () => refusing,
+      })
+    ),
+    HttpApiBuilder.group(Api, "channels", (handlers) =>
+      handlers.handleAll({
+        completeConnect: () => refusing,
+        connect: () => refusing,
+        disconnect: () => refusing,
+        list: () => refusing,
+        reconnect: () => refusing,
+      })
+    ),
+    HttpApiBuilder.group(Api, "posts", (handlers) =>
+      handlers.handleAll({
+        cancel: () => refusing,
+        create: () => refusing,
+        get: () => refusing,
+        list: () => refusing,
+        reschedule: () => refusing,
+        schedule: () => refusing,
+        update: () => refusing,
+      })
+    ),
+    HttpApiBuilder.group(Api, "media", (handlers) =>
+      handlers.handleAll({
+        complete: () => refusing,
+        create: () => refusing,
+        delete: () => refusing,
+        describe: () => refusing,
+        get: () => refusing,
+        list: () => refusing,
+      })
+    )
+  ).pipe(Layer.provideMerge(securityLive(authorization)));
+
 const notPublished = Effect.fail(new OAuthClientNotPublished());
 
 const ChannelOAuthLive = HttpApiBuilder.group(Api, "channelOAuth", (handlers) =>
@@ -145,36 +198,47 @@ const ChannelOAuthLive = HttpApiBuilder.group(Api, "channelOAuth", (handlers) =>
 );
 
 // An Acme server in memory: acme-contract served by test handlers, without
-// a socket. The CLI never imports acme-server, so its tests answer for it.
-export const inMemoryServer = (health: Effect.Effect<void>) =>
+// a socket, with an OAuth authorization server. The CLI never imports
+// acme-server, so its tests answer for it.
+export const inMemoryServer = (
+  health: Effect.Effect<void>,
+  authorization?: AuthorizationServer
+) =>
   Layer.unwrap(
-    Effect.map(
-      Effect.acquireRelease(
+    Effect.gen(function* inMemory() {
+      const server = authorization ?? (yield* makeAuthorizationServer());
+
+      const app = yield* Effect.acquireRelease(
         Effect.sync(() =>
           HttpRouter.toWebHandler(
-            HttpApiBuilder.layer(Api).pipe(
-              Layer.provide(
-                HttpApiBuilder.group(Api, "system", (handlers) =>
-                  handlers.handleAll({
-                    health: () => health,
-                    ready: () => health,
-                  })
-                )
+            Layer.mergeAll(
+              HttpApiBuilder.layer(Api).pipe(
+                Layer.provide(
+                  HttpApiBuilder.group(Api, "system", (handlers) =>
+                    handlers.handleAll({
+                      health: () => health,
+                      ready: () => health,
+                    })
+                  )
+                ),
+                Layer.provide(signedInGroupsLive(server)),
+                Layer.provide(ChannelOAuthLive)
               ),
-              Layer.provide(SignedInGroupsLive),
-              Layer.provide(ChannelOAuthLive),
-              Layer.provide(HttpServer.layerServices)
-            ),
+              HttpApiBuilder.layer(OAuthApi).pipe(
+                Layer.provide(server.handlers)
+              )
+            ).pipe(Layer.provide(HttpServer.layerServices)),
             { disableLogger: true }
           )
         ),
-        (app) =>
+        (handler) =>
           Effect.promise(async () => {
-            await app.dispose();
+            await handler.dispose();
           })
-      ),
-      (app) => fetching(async (request) => await app.handler(request))
-    )
+      );
+
+      return fetching(async (request) => await app.handler(request));
+    })
   );
 
 const decodeLines = Schema.decodeUnknownSync(Schema.Array(Schema.String));

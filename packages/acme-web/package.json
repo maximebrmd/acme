@@ -8,6 +8,7 @@
     "#*": "./src/*"
   },
   "dependencies": {
+    "@better-auth/oauth-provider": "1.7.18",
     "@dnd-kit/react": "0.5.3",
     "@effect/atom-react": "4.1.2",
     "@tiptap/core": "3.33.0",
