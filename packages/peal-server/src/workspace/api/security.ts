@@ -1,5 +1,6 @@
 import { Effect, Layer, Option, Redacted, Schema } from "effect";
 import { HttpRouter, HttpServerRequest } from "effect/http";
+import type { HttpServerResponse } from "effect/http";
 import { HttpApiError } from "effect/http-api";
 import {
   Authentication,
@@ -18,6 +19,8 @@ import type { Member } from "peal-contract";
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import type { UserId } from "#shared/domain/ids.ts";
 import { Authenticate } from "#workspace/application/authenticate.ts";
+import { ConnectionJournal } from "#workspace/application/connection-journal.ts";
+import type { ContentChange } from "#workspace/application/connection-journal.ts";
 import { ImpersonationGuard } from "#workspace/application/impersonation-guard.ts";
 import { ResolveMember } from "#workspace/application/resolve-member.ts";
 import { StaffStanding } from "#workspace/application/staff-standing.ts";
@@ -47,6 +50,70 @@ const objectIdsOf = (
     Object.entries(params).filter(([name]) => name !== "workspaceId")
   );
 
+// The groups whose writes create, change or delete content: the law has
+// Peal keep each such connection a year (ConnectionJournal).
+const contentGroups: ReadonlySet<string> = new Set(["media", "posts"]);
+
+// Whether the request changes content.
+const changesContent = (
+  request: HttpServerRequest.HttpServerRequest,
+  group: { readonly identifier: string }
+) => !safeMethods.has(request.method) && contentGroups.has(group.identifier);
+
+/** Who made a change to content, and how, as the journal keeps it. */
+export const contentChangeOf = (
+  principal: Principal,
+  access: ContentChange["access"],
+  request: HttpServerRequest.HttpServerRequest,
+  workspaceId: Option.Option<string>
+): ContentChange => {
+  const origin = {
+    headers: request.headers,
+    remoteAddress: request.remoteAddress,
+  };
+
+  if (principal._tag === "ApiKeyPrincipal") {
+    return {
+      access,
+      apiKeyId: Option.some(principal.apiKeyId),
+      origin,
+      userId: Option.none(),
+      workspaceId: Option.some(principal.workspaceId),
+    };
+  }
+
+  return {
+    access,
+    apiKeyId: Option.none(),
+    origin,
+    // Staff acting as the account made it.
+    userId: Option.some(
+      Option.getOrElse(principal.impersonatedBy, () => principal.userId)
+    ),
+    workspaceId: workspaceId.pipe(Option.flatMap(decodeWorkspaceId)),
+  };
+};
+
+/**
+ * Keeps the connection of a request that changed content, once its handler
+ * answered without an error. A failure to keep it is logged: the change
+ * was made, and the client is told so.
+ */
+export const journalled =
+  (journal: ConnectionJournal["Service"], change: () => ContentChange) =>
+  (response: HttpServerResponse.HttpServerResponse) =>
+    response.status >= 400
+      ? Effect.succeed(response)
+      : journal.contentChanged(change()).pipe(
+          Effect.catchCause((cause) =>
+            Effect.logError(
+              "Keeping the connection that changed content failed",
+              cause
+            )
+          ),
+          Effect.as(response)
+        );
+
 /**
  * Authentication: a bearer token (an OAuth access token issued for the API,
  * or an API key), or the session cookies. Better Auth failing is a server
@@ -58,15 +125,20 @@ const objectIdsOf = (
  * staff member's name, with the endpoint and the ids its path names. Bearer
  * tokens never act for staff: OAuth tokens carry no impersonation, and
  * staff acting as someone may not grant a client access or create a key.
+ *
+ * A write to posts or media that succeeds is kept in the ConnectionJournal,
+ * whatever authenticated it: the address and protocol it came over, never
+ * what it carried.
  */
 export const AuthenticationLive = Layer.effect(
   Authentication,
   Effect.gen(function* authentication() {
     const authenticate = yield* Authenticate;
     const guard = yield* ImpersonationGuard;
+    const journal = yield* ConnectionJournal;
 
     return Authentication.of({
-      bearer: (httpEffect, { credential }) =>
+      bearer: (httpEffect, { credential, group }) =>
         Effect.gen(function* bearer() {
           const request = yield* HttpServerRequest.HttpServerRequest;
 
@@ -83,7 +155,25 @@ export const AuthenticationLive = Layer.effect(
               })
             );
 
-          return yield* httpEffect.pipe(as(principal));
+          if (!changesContent(request, group)) {
+            return yield* httpEffect.pipe(as(principal));
+          }
+
+          const params = yield* HttpRouter.params;
+
+          return yield* httpEffect.pipe(
+            as(principal),
+            Effect.flatMap(
+              journalled(journal, () =>
+                contentChangeOf(
+                  principal,
+                  principal._tag === "ApiKeyPrincipal" ? "apiKey" : "oauth",
+                  request,
+                  Option.fromNullishOr(params["workspaceId"])
+                )
+              )
+            )
+          );
         }),
       session: (httpEffect, { endpoint, group }) =>
         Effect.gen(function* session() {
@@ -125,9 +215,9 @@ export const AuthenticationLive = Layer.effect(
             })
           );
 
-          if (write) {
-            const params = yield* HttpRouter.params;
+          const params = yield* HttpRouter.params;
 
+          if (write) {
             yield* guard
               .changed(principal, {
                 objectIds: objectIdsOf(params),
@@ -137,7 +227,23 @@ export const AuthenticationLive = Layer.effect(
               .pipe(Effect.orDie);
           }
 
-          return yield* httpEffect.pipe(as(principal));
+          if (!changesContent(request, group)) {
+            return yield* httpEffect.pipe(as(principal));
+          }
+
+          return yield* httpEffect.pipe(
+            as(principal),
+            Effect.flatMap(
+              journalled(journal, () =>
+                contentChangeOf(
+                  principal,
+                  "session",
+                  request,
+                  Option.fromNullishOr(params["workspaceId"])
+                )
+              )
+            )
+          );
         }),
     });
   })

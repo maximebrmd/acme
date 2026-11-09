@@ -85,6 +85,7 @@ const viewOf = Effect.fn("AccountExport.view")(function* viewOf(
       received: account.invitationsReceived,
       sent: account.invitationsSent,
     },
+    legalHold: exported.legalHold,
     memberships: account.memberships,
     notices,
     notificationPreferences: exported.preferences,

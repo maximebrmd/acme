@@ -31,6 +31,7 @@ import {
   ChannelsLive,
   DataDeletionApiLive,
 } from "#channels/container.ts";
+import { LegalApiLive, LegalLive } from "#legal/container.ts";
 import { MediaApiLive, MediaLive } from "#media/container.ts";
 import {
   NoticesApiLive,
@@ -79,7 +80,8 @@ const WorkspaceGroupsLive = Layer.mergeAll(
   BillingActionsApiLive,
   AnalyticsApiLive,
   TikTokApiLive,
-  StaffApiLive
+  StaffApiLive,
+  LegalApiLive
 ).pipe(Layer.provideMerge(WorkspaceApiLive));
 
 const ApiLive = HttpApiBuilder.layer(Api, {
@@ -107,7 +109,8 @@ const BillingContextsLive = BillingLive.pipe(
 );
 
 // The workspace context with the notifications it sends, the plans that
-// limit it and the audit log of staff's impersonations it records, then the
+// limit it, the audit log of staff's impersonations it records and the
+// legal records of the connections that change content, then the
 // notices, which read the workspace's members, then the channels context,
 // which sends them, as publishing does.
 const ChannelsWithNoticesLive = ChannelsLive.pipe(
@@ -116,7 +119,8 @@ const ChannelsWithNoticesLive = ChannelsLive.pipe(
     WorkspaceLive.pipe(
       Layer.provideMerge(NotificationsLive),
       Layer.provideMerge(BillingContextsLive),
-      Layer.provide(ImpersonationAuditLive)
+      Layer.provide(ImpersonationAuditLive),
+      Layer.provideMerge(LegalLive)
     )
   )
 );
@@ -139,8 +143,8 @@ const AssistantContextLive = AssistantLive.pipe(
 );
 
 // Workspace and account settings, which erase and export what every context
-// keeps, billing's included, which the workspace context brings, and the
-// staff audit log's.
+// keeps, billing's included, which the workspace context brings, the staff
+// audit log's, and the legal records, which keep who held a closed account.
 const SettingsContextLive = WorkspaceSettingsLive.pipe(
   Layer.provide(
     Layer.mergeAll(

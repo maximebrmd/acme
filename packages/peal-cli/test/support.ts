@@ -241,6 +241,15 @@ const StaffLive = HttpApiBuilder.group(Api, "staff", (handlers) =>
   )
 );
 
+// Nor are legal requests answered.
+const LegalLive = HttpApiBuilder.group(Api, "legal", (handlers) =>
+  handlers.handleAll({ answer: () => notStaff })
+).pipe(
+  Layer.provideMerge(
+    Layer.succeed(StaffAccess, StaffAccess.of({ session: () => notStaff }))
+  )
+);
+
 // Error reports are taken, and dropped.
 const ClientErrorsLive = HttpApiBuilder.group(Api, "clientErrors", (handlers) =>
   handlers.handleAll({ reportClientError: () => Effect.void })
@@ -295,6 +304,7 @@ export const inMemoryServer = (
                 Layer.provide(CaptchaLive),
                 Layer.provide(DataDeletionLive),
                 Layer.provide(StaffLive),
+                Layer.provide(LegalLive),
                 Layer.provide(ClientErrorsLive)
               ),
               HttpApiBuilder.layer(OAuthApi).pipe(

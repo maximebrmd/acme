@@ -28,7 +28,7 @@ const unbans = alias(auditEvents, "unbans");
 
 /**
  * The audit log's expired events, in SQL as `isExpired` decides them:
- * older than 12 months, or, for bans and unbans, older than 3 years and
+ * older than 12 months, or, for bans and unbans, older than 5 years and
  * ended more than 12 months ago. A ban until lifted ends when a later unban
  * lifts it, or when its account is closed (its target forgotten); until
  * then it is kept.

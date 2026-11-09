@@ -1,9 +1,18 @@
-import { Layer } from "effect";
-import { McpProtocol, McpServer } from "effect/ai";
+import { Context, Layer } from "effect";
+import { McpProtocol, McpServer, Tool } from "effect/ai";
 
 import { PealToolsLive } from "#app/mcp/handlers.ts";
+import { PostTools } from "#app/mcp/posts-tools.ts";
 import { PealTools } from "#app/mcp/tools.ts";
-import { McpAuthenticationLive } from "#workspace/container.ts";
+import { mcpAuthentication } from "#workspace/container.ts";
+
+// The tools that create, change or delete posts: the law has Peal keep the
+// connection of each call a year, as it keeps the API's writes to posts.
+const contentTools: ReadonlySet<string> = new Set(
+  Object.values(PostTools.tools)
+    .filter((tool) => !Context.get(tool.annotations, Tool.Readonly))
+    .map((tool) => tool.name)
+);
 
 /** Where the MCP endpoint answers, under PUBLIC_URL. */
 export const mcpPath = "/api/mcp";
@@ -38,4 +47,4 @@ export const McpLive = McpServer.layerHttp({
     Layer.provide(PealToolsLive)
   ),
   version: "0.1.0",
-}).pipe(Layer.provide(McpAuthenticationLive));
+}).pipe(Layer.provide(mcpAuthentication(contentTools)));

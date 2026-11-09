@@ -13,6 +13,7 @@ import { ClientErrorsApi } from "./client-errors.ts";
 import { ConnectedAppsApi } from "./connected-apps.ts";
 import { DataDeletionApi } from "./data-deletion.ts";
 import { InvitationsApi } from "./invitations.ts";
+import { LegalApi } from "./legal.ts";
 import { MediaApi } from "./media.ts";
 import { MembersApi } from "./members.ts";
 import { NoticesApi } from "./notices.ts";
@@ -597,6 +598,18 @@ export type {
   StaffWorkspaceSummary,
 } from "./staff.ts";
 
+export {
+  LegalAnswerSchema,
+  LegalApi,
+  LegalConnectionSchema,
+  LegalHeldAccountSchema,
+  LegalRequestSchema,
+  LegalSubjectSchema,
+  maxLegalTextLength,
+} from "./legal.ts";
+
+export type { LegalAnswer, LegalRequest, LegalSubject } from "./legal.ts";
+
 export { StaffAccess } from "./staff-access.ts";
 
 export {
@@ -652,6 +665,7 @@ export class Api extends HttpApi.make("peal")
   .add(AnalyticsApi)
   .add(TikTokApi)
   .add(StaffApi)
+  .add(LegalApi)
   .add(ClientErrorsApi)
   // The contract is Apache-2.0, unlike the rest of Peal, so the clients
   // generated from this document may be too.

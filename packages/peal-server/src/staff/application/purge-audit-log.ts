@@ -10,7 +10,7 @@ const batchSize = 500;
 
 /**
  * Deletes the audit log's events once their retention ends
- * (`#staff/domain/audit-retention.ts`): 12 months, 3 years for bans. The
+ * (`#staff/domain/audit-retention.ts`): 12 months, 5 years for bans. The
  * only deletion of the log besides forgetting a closed account.
  */
 export class PurgeAuditLog extends Context.Service<

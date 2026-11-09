@@ -183,6 +183,7 @@ services:
       OTEL_METRICS_EXPORTER:
       OTEL_LOGS_EXPORTER:
       PEAL_CLUSTER_RETENTION:
+      PEAL_LEGAL_RETENTION:
     ports:
       - 127.0.0.1:${PEAL_SERVER_PORT:-3000}:3000
     depends_on:

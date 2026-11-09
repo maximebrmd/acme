@@ -19,7 +19,7 @@ const RetentionTest = DrizzleExpiredAuditEvents.pipe(
 
 layer(RetentionTest)("the audit log's retention", (it) => {
   it.effect(
-    "deletes events past 12 months, and bans past 3 years once ended or lifted a year ago, never one that holds",
+    "deletes events past 12 months, and bans past 5 years once ended or lifted a year ago, never one that holds",
     () =>
       Effect.gen(function* purges() {
         const sql = yield* SqlClient.SqlClient;
@@ -35,20 +35,20 @@ layer(RetentionTest)("the audit log's retention", (it) => {
 
         // Action, time, ban's end, account (none once it was closed).
         const rows = {
-          banEnded: ["ban", "1895-06-01", "1897-06-01", null],
-          banHeld: ["ban", "1895-06-01", null, held],
-          banLifted: ["ban", "1895-06-01", null, lifted],
-          banLiftedRecently: ["ban", "1895-06-01", null, liftedRecently],
-          banOfClosedAccount: ["ban", "1895-06-01", null, null],
-          banRecent: ["ban", "1897-01-01", null, null],
-          banStillRecent: ["ban", "1895-06-01", "1898-06-01", null],
+          banEnded: ["ban", "1893-06-01", "1897-06-01", null],
+          banHeld: ["ban", "1893-06-01", null, held],
+          banLifted: ["ban", "1893-06-01", null, lifted],
+          banLiftedRecently: ["ban", "1893-06-01", null, liftedRecently],
+          banOfClosedAccount: ["ban", "1893-06-01", null, null],
+          banRecent: ["ban", "1895-01-01", null, null],
+          banStillRecent: ["ban", "1893-06-01", "1898-06-01", null],
           changedAsMember: ["impersonatedChange", "1897-12-01", null, null],
           changedRecently: ["impersonatedChange", "1898-06-01", null, null],
           impersonated: ["impersonate", "1898-06-01", null, null],
           lift: ["unban", "1897-06-01", null, lifted],
           liftRecent: ["unban", "1898-06-01", null, liftedRecently],
           revoked: ["revokeSessions", "1897-12-01", null, null],
-          unbanned: ["unban", "1895-06-01", null, null],
+          unbanned: ["unban", "1893-06-01", null, null],
         } as const;
 
         const ids = new Map(

@@ -21,6 +21,7 @@ import { SendBillingReminders } from "#billing/application/send-billing-reminder
 import { ConnectChannel } from "#channels/application/connect-channel.ts";
 import { RefreshChannelTokens } from "#channels/application/refresh-channel-tokens.ts";
 import { WarnChannelsNeedingReconnect } from "#channels/application/warn-channels-needing-reconnect.ts";
+import { PurgeLegalRecords } from "#legal/application/purge-legal-records.ts";
 import { PostRepository } from "#publishing/application/post-repository.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
 import { PublicationScheduler } from "#publishing/application/publication-scheduler.ts";
@@ -93,6 +94,10 @@ const ChannelJobsTest = Layer.mergeAll(
   Layer.succeed(
     SendBillingReminders,
     SendBillingReminders.of({ run: Effect.succeed(0) })
+  ),
+  Layer.succeed(
+    PurgeLegalRecords,
+    PurgeLegalRecords.of({ purge: Effect.succeed(0) })
   ),
   Layer.succeed(
     CollectMetrics,

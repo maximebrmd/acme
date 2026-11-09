@@ -7,6 +7,14 @@ const now = DateTime.makeUnsafe("2026-11-09T03:00:00Z");
 
 const at = (iso: string) => DateTime.makeUnsafe(iso);
 
+const ban = (start: string, end: Option.Option<string>) => ({
+  action: "ban" as const,
+  at: at(start),
+  banExpiresAt: end.pipe(Option.map(at)),
+  hasTarget: true,
+  liftedAt: Option.none(),
+});
+
 describe(isExpired, () => {
   it("keeps staff actions 12 months, impersonations' records included", () => {
     for (const action of [
@@ -44,28 +52,37 @@ describe(isExpired, () => {
     }
   });
 
-  it("keeps bans 3 years, and 12 months past a ban's end when that is later", () => {
-    const ban = (start: string, end: Option.Option<string>) => ({
-      action: "ban" as const,
-      at: at(start),
-      banExpiresAt: end.pipe(Option.map(at)),
-      hasTarget: true,
-      liftedAt: Option.none(),
-    });
-
+  it("keeps bans 5 years, and 12 months past a ban's end when that is later", () => {
     expect(
-      isExpired(ban("2024-01-01T00:00:00Z", Option.none()), now)
+      isExpired(ban("2022-01-01T00:00:00Z", Option.none()), now)
     ).toBeFalsy();
-    // A ban that ended less than a year ago stays, however old.
+    // A short ban stays 5 years, the time its user has to sue over it
+    // (art. 2224 of the Code civil).
     expect(
       isExpired(
-        ban("2022-01-01T00:00:00Z", Option.some("2026-01-01T00:00:00Z")),
+        ban("2022-01-01T00:00:00Z", Option.some("2022-02-01T00:00:00Z")),
         now
       )
     ).toBeFalsy();
     expect(
       isExpired(
-        ban("2022-01-01T00:00:00Z", Option.some("2025-06-01T00:00:00Z")),
+        ban("2021-11-01T00:00:00Z", Option.some("2021-12-01T00:00:00Z")),
+        now
+      )
+    ).toBeTruthy();
+  });
+
+  it("keeps a ban that lasted longer 12 months past its end", () => {
+    // A ban that ended less than a year ago stays, however old.
+    expect(
+      isExpired(
+        ban("2020-01-01T00:00:00Z", Option.some("2026-01-01T00:00:00Z")),
+        now
+      )
+    ).toBeFalsy();
+    expect(
+      isExpired(
+        ban("2020-01-01T00:00:00Z", Option.some("2025-06-01T00:00:00Z")),
         now
       )
     ).toBeTruthy();
@@ -73,7 +90,7 @@ describe(isExpired, () => {
       isExpired(
         {
           action: "unban",
-          at: at("2024-01-01T00:00:00Z"),
+          at: at("2022-01-01T00:00:00Z"),
           banExpiresAt: Option.none(),
           hasTarget: true,
           liftedAt: Option.none(),
@@ -86,7 +103,7 @@ describe(isExpired, () => {
   it("keeps a ban until lifted while it holds, and 12 months past its lifting", () => {
     const forGood = {
       action: "ban" as const,
-      at: at("2022-01-01T00:00:00Z"),
+      at: at("2020-01-01T00:00:00Z"),
       banExpiresAt: Option.none(),
       hasTarget: true,
       liftedAt: Option.none(),
@@ -112,7 +129,7 @@ describe(isExpired, () => {
       isExpired(
         {
           ...forGood,
-          at: at("2024-01-01T00:00:00Z"),
+          at: at("2022-01-01T00:00:00Z"),
           hasTarget: false,
         },
         now
@@ -122,7 +139,7 @@ describe(isExpired, () => {
 
   it("names the instants the purge compares with", () => {
     expect(auditCutoffs(now)).toStrictEqual({
-      bans: at("2023-11-09T03:00:00Z"),
+      bans: at("2021-11-09T03:00:00Z"),
       general: at("2025-11-09T03:00:00Z"),
     });
   });

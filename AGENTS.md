@@ -192,6 +192,7 @@ them:
 | `analytics`     | the posts it follows, snapshots of their counts, the hourly collection      |
 | `billing`       | plans, subscriptions, entitlements, the billing page's usage                |
 | `staff`         | the staff console: what staff read and do, and the audit log of it          |
+| `legal`         | what French law has a host keep, and the legal requests that read it        |
 
 - `domain`: entities and rules on Effect's core (`effect`: Schema, DateTime,
   Data). No HTTP, SQL, cluster, workflow, AI, Drizzle or Better Auth.
@@ -464,13 +465,40 @@ and no socket, for tests.
   their id, a legitimate interest: the operator answers for what staff did
   to other people's accounts; their workspace, operation and object ids
   stay too. The log keeps an event 12 months, impersonation records
-  included, a ban or unban 3 years or 12 months past a longer ban's end, a
+  included, a ban or unban 5 years (art. 2224 Code civil: the time to sue over it) or 12 months past a longer ban's end, a
   ban until lifted as long as it holds: 12 months past a later unban, or
   once its account is closed (`staff/domain/audit-retention.ts`); the `staff.audit-retention` cron
   (`PurgeAuditLog`) deletes the rest daily, the log's one deletion besides
   `forgetUser`. YouTube's upload journal goes with its
   publication calls, and `publishing.quota_usage`, the server's daily
   units, names nobody.
+- Peal Cloud is a host under French law (loi n° 2004-575, art. 6, I, 2
+  now names the DSA's hosting services, which store what users give them,
+  public or not), so it keeps what identifies whoever contributed content
+  (art. 6, V, A; décret n° 2021-1362), in the `legal` context and its own
+  Postgres schema, which no other code reads. `ConnectionJournal`
+  (`workspace/application`, backed by `LegalRecords`) keeps each request
+  that changes posts or media and succeeds, whatever authenticated it
+  (`Authentication`, both paths, and `mcpAuthentication` for the MCP tools
+  that change posts, which `app/mcp/server.ts` names from their
+  annotations): when, the address as Better Auth reads it (full IPv6), the
+  protocol of `PUBLIC_URL` and how it signed in, never what it carried, 1
+  year. `CloseAccount` reads `AccountStore.identification` (name, email,
+  each sign-in method's account id, never a password or its hash, the Stripe
+  customers of the account and of the workspaces it deletes) before it
+  erases anything, and keeps it (`ContextRecords.holdIdentification`) in
+  the same transaction, last: no account closes without it, and nothing
+  else of it stays. The `legal.retention` cron (`PurgeLegalRecords`) empties
+  how they signed in and paid after 1 year, deletes the rest after 5, each
+  connection after 1, and each answer to a legal request after 5
+  (`legal/domain/legal-retention.ts`). Only `LegalRequests` reads them,
+  for staff (`POST /api/admin/legal-requests`, `LegalApi`, StaffAccess),
+  recording the answer (staff, authority, reference, subject, counts) in
+  the transaction that reads it. The export carries the user's connections
+  and what closing would leave (`legalHold`). `PEAL_LEGAL_RETENTION=false`
+  (`LegalRecords.layerOff`) keeps nothing, for an operator outside France;
+  `legalHold` is then null. A new way to change content (a group, a tool)
+  goes through the journal too.
 - `AccountData` exports what is tied to the user, the posts they wrote in
   the workspaces they share (`exportAuthored`), and the content of the
   workspaces where they are the only member, with their analytics and
@@ -1226,7 +1254,7 @@ and no socket, for tests.
   SQL.
 - Each context keeps its tables in a Postgres schema named after it
   (`publishing`, `channels`, `media`, `notifications`, `assistant`,
-  `analytics`, `billing`, `staff`; the workspace context's are Better
+  `analytics`, `billing`, `staff`, `legal`; the workspace context's are Better
   Auth's, in `auth`). Effect creates its `cluster_*` tables in `public`; drizzle-kit
   never manages them.
 - Declare a context's tables in `src/<context>/infrastructure/schema.ts`, then

@@ -2,7 +2,7 @@
   "type": "base",
   "version": "9",
   "dialect": "postgres",
-  "id": "c8fd279a-0c61-482e-91e9-924180e03473",
+  "id": "d51dccba-2779-4e86-80e8-0b95a32788d1",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
@@ -53,6 +53,18 @@
         "s|sch|channels",
         "n|sch|channels",
         "e|sch|channels"
+      ]
+    },
+    {
+      "statementType": "create_schema",
+      "statementTarget": [
+        "schema",
+        "legal"
+      ],
+      "writes": [
+        "s|sch|legal",
+        "n|sch|legal",
+        "e|sch|legal"
       ]
     },
     {
@@ -400,6 +412,63 @@
       ],
       "reads": [
         "n|sch|channels"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "legal",
+        "connections"
+      ],
+      "writes": [
+        "s|tbl|legal.connections",
+        "n|tbl|legal.connections",
+        "e|tbl|legal.connections",
+        "n|rel|legal.connections",
+        "n|type|legal.connections",
+        "n|rel|legal.connections_pkey"
+      ],
+      "reads": [
+        "n|sch|legal"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "legal",
+        "disclosures"
+      ],
+      "writes": [
+        "s|tbl|legal.disclosures",
+        "n|tbl|legal.disclosures",
+        "e|tbl|legal.disclosures",
+        "n|rel|legal.disclosures",
+        "n|type|legal.disclosures",
+        "n|rel|legal.disclosures_pkey"
+      ],
+      "reads": [
+        "n|sch|legal"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "legal",
+        "identification_holds"
+      ],
+      "writes": [
+        "s|tbl|legal.identification_holds",
+        "n|tbl|legal.identification_holds",
+        "e|tbl|legal.identification_holds",
+        "n|rel|legal.identification_holds",
+        "n|type|legal.identification_holds",
+        "n|rel|legal.identification_holds_pkey"
+      ],
+      "reads": [
+        "n|sch|legal"
       ]
     },
     {
@@ -1286,6 +1355,128 @@
         "n|tbl|channels.connect_choices",
         "n|sch|channels",
         "n|col|channels.connect_choices.granted_by"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "legal",
+        "connections",
+        "connections_at"
+      ],
+      "writes": [
+        "s|idx|legal.connections_at",
+        "n|idx|legal.connections_at",
+        "e|idx|legal.connections_at",
+        "n|rel|legal.connections_at"
+      ],
+      "reads": [
+        "n|tbl|legal.connections",
+        "n|sch|legal",
+        "n|col|legal.connections.at"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "legal",
+        "connections",
+        "connections_user"
+      ],
+      "writes": [
+        "s|idx|legal.connections_user",
+        "n|idx|legal.connections_user",
+        "e|idx|legal.connections_user",
+        "n|rel|legal.connections_user"
+      ],
+      "reads": [
+        "n|tbl|legal.connections",
+        "n|sch|legal",
+        "n|col|legal.connections.user_id",
+        "n|col|legal.connections.at"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "legal",
+        "connections",
+        "connections_workspace"
+      ],
+      "writes": [
+        "s|idx|legal.connections_workspace",
+        "n|idx|legal.connections_workspace",
+        "e|idx|legal.connections_workspace",
+        "n|rel|legal.connections_workspace"
+      ],
+      "reads": [
+        "n|tbl|legal.connections",
+        "n|sch|legal",
+        "n|col|legal.connections.workspace_id",
+        "n|col|legal.connections.at"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "legal",
+        "disclosures",
+        "disclosures_at"
+      ],
+      "writes": [
+        "s|idx|legal.disclosures_at",
+        "n|idx|legal.disclosures_at",
+        "e|idx|legal.disclosures_at",
+        "n|rel|legal.disclosures_at"
+      ],
+      "reads": [
+        "n|tbl|legal.disclosures",
+        "n|sch|legal",
+        "n|col|legal.disclosures.at"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "legal",
+        "identification_holds",
+        "identification_holds_closed_at"
+      ],
+      "writes": [
+        "s|idx|legal.identification_holds_closed_at",
+        "n|idx|legal.identification_holds_closed_at",
+        "e|idx|legal.identification_holds_closed_at",
+        "n|rel|legal.identification_holds_closed_at"
+      ],
+      "reads": [
+        "n|tbl|legal.identification_holds",
+        "n|sch|legal",
+        "n|col|legal.identification_holds.closed_at"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "legal",
+        "identification_holds",
+        "identification_holds_user"
+      ],
+      "writes": [
+        "s|idx|legal.identification_holds_user",
+        "n|idx|legal.identification_holds_user",
+        "e|idx|legal.identification_holds_user",
+        "n|rel|legal.identification_holds_user"
+      ],
+      "reads": [
+        "n|tbl|legal.identification_holds",
+        "n|sch|legal",
+        "n|col|legal.identification_holds.user_id"
       ]
     },
     {
@@ -2605,6 +2796,10 @@
       "entityType": "schemas"
     },
     {
+      "name": "legal",
+      "entityType": "schemas"
+    },
+    {
       "name": "media",
       "entityType": "schemas"
     },
@@ -2711,6 +2906,24 @@
     {
       "schema": "channels",
       "name": "mastodon_apps",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "legal",
+      "name": "connections",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "legal",
+      "name": "disclosures",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "legal",
+      "name": "identification_holds",
       "isRlsEnabled": false,
       "entityType": "tables"
     },
@@ -4446,6 +4659,318 @@
       "table": "mastodon_apps",
       "name": "scopes",
       "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "legal",
+      "table": "connections",
+      "name": "access",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "legal",
+      "table": "connections",
+      "name": "api_key_id",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "legal",
+      "table": "connections",
+      "name": "at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "legal",
+      "table": "connections",
+      "name": "id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "legal",
+      "table": "connections",
+      "name": "ip_address",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "legal",
+      "table": "connections",
+      "name": "protocol",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "legal",
+      "table": "connections",
+      "name": "user_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "legal",
+      "table": "connections",
+      "name": "workspace_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "legal",
+      "table": "disclosures",
+      "name": "at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "legal",
+      "table": "disclosures",
+      "name": "authority",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "legal",
+      "table": "disclosures",
+      "name": "connections",
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "legal",
+      "table": "disclosures",
+      "name": "held",
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "legal",
+      "table": "disclosures",
+      "name": "id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "legal",
+      "table": "disclosures",
+      "name": "reference",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "legal",
+      "table": "disclosures",
+      "name": "staff_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "legal",
+      "table": "disclosures",
+      "name": "subject",
+      "type": "jsonb",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "legal",
+      "table": "identification_holds",
+      "name": "account_created_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "legal",
+      "table": "identification_holds",
+      "name": "closed_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "legal",
+      "table": "identification_holds",
+      "name": "email",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "legal",
+      "table": "identification_holds",
+      "name": "id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "legal",
+      "table": "identification_holds",
+      "name": "name",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "legal",
+      "table": "identification_holds",
+      "name": "sign_in_methods",
+      "type": "jsonb",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "'[]'",
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "legal",
+      "table": "identification_holds",
+      "name": "stripe_customer_ids",
+      "type": "jsonb",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "'[]'",
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "legal",
+      "table": "identification_holds",
+      "name": "user_id",
+      "type": "uuid",
       "typeSchema": null,
       "notNull": true,
       "dimensions": 0,
@@ -9049,6 +9574,146 @@
       "entityType": "indexes"
     },
     {
+      "schema": "legal",
+      "table": "connections",
+      "name": "connections_at",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "at",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "legal",
+      "table": "connections",
+      "name": "connections_user",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "user_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "at",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "legal",
+      "table": "connections",
+      "name": "connections_workspace",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "workspace_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "at",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "legal",
+      "table": "disclosures",
+      "name": "disclosures_at",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "at",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "legal",
+      "table": "identification_holds",
+      "name": "identification_holds_closed_at",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "closed_at",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "legal",
+      "table": "identification_holds",
+      "name": "identification_holds_user",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "user_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
       "schema": "media",
       "table": "media_assets",
       "name": "media_assets_workspace_id_id_index",
@@ -10474,6 +11139,36 @@
       "name": "data_deletions_pkey",
       "columns": [
         "code"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "legal",
+      "table": "connections",
+      "name": "connections_pkey",
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "legal",
+      "table": "disclosures",
+      "name": "disclosures_pkey",
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "legal",
+      "table": "identification_holds",
+      "name": "identification_holds_pkey",
+      "columns": [
+        "id"
       ],
       "nameExplicit": false,
       "entityType": "pks"

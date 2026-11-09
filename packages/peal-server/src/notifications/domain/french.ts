@@ -3,7 +3,7 @@ import type { EmailCatalog } from "./email-catalog.ts";
 export const french: EmailCatalog = {
   accountDeleted: {
     action: "Ouvrir Peal",
-    body: "Votre compte Peal a été supprimé à votre demande, avec les données qui s’y rattachent : votre profil, vos sessions, vos adhésions, vos notifications, et les espaces de travail dont vous étiez le seul membre, avec tout leur contenu.",
+    body: "Votre compte Peal a été supprimé à votre demande, avec les données qui s’y rattachent : votre profil, vos sessions, vos adhésions, vos notifications, et les espaces de travail dont vous étiez le seul membre, avec tout leur contenu. Comme la loi française l’impose à un hébergeur, Peal conserve à part, pour les seules autorités judiciaires, vos nom et adresse e-mail pendant 5 ans, et vos moyens de connexion ainsi que les connexions ayant créé du contenu pendant 1 an, puis les supprime.",
     ignore:
       "Si vous n’êtes pas à l’origine de cette demande, prévenez la personne qui gère ce serveur Peal. Peal n’envoie plus d’e-mail à cette adresse.",
     subject: "Votre compte Peal est supprimé",
