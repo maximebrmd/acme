@@ -75,6 +75,14 @@
   {
     "_tag": "settle",
     "settlement": {
+      "_tag": "failed",
+      "code": "creditsDepleted",
+      "reason": "appBillingLimit"
+    }
+  },
+  {
+    "_tag": "settle",
+    "settlement": {
       "_tag": "cancelled"
     }
   }

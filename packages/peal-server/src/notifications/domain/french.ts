@@ -41,6 +41,8 @@ export const french: EmailCatalog = {
     web: "depuis l’application web",
   },
   failureReasons: {
+    appBillingLimit:
+      "la plateforme refuse l’application de ce serveur Peal tant que son compte auprès d’elle n’est pas réglé (sur X : crédits épuisés ou plafond de dépenses atteint). Votre publication n’y est pour rien : une fois le problème réglé par l’opérateur du serveur, publiez-la à nouveau.",
     appNotAudited:
       "la plateforme n’accepte que des publications privées de l’application de ce serveur tant qu’elle ne l’a pas approuvée. Rendez le compte privé et la publication visible par son seul propriétaire, ou contactez l’opérateur du serveur.",
     channelDisabled:

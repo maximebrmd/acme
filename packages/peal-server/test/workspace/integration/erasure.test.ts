@@ -82,6 +82,8 @@ const workspaceRows = {
     sql`SELECT count(*)::int AS count FROM auth.session WHERE active_organization_id = ${id}`,
   "auth.subscription": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM auth.subscription WHERE reference_id = ${id}`,
+  "billing.metered_posts": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM billing.metered_posts WHERE workspace_id = ${id}`,
   "billing.subscriptions": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM billing.subscriptions WHERE workspace_id = ${id}`,
   "channels.channels": (sql, id) =>
@@ -260,6 +262,9 @@ const fill = Effect.fn("fill")(function* fill(
   yield* seedTrackedPost(workspaceId, channelId, postId);
   yield* seedUsage(workspaceId, 2);
   yield* seedSubscription(workspaceId, "canceled");
+
+  yield* sql`INSERT INTO billing.metered_posts (workspace_id, platform, month, posts, posts_with_links)
+    VALUES (${workspaceId}, 'x', date_trunc('month', now())::date, 2, 1)`;
 
   yield* sql`INSERT INTO media.media_assets (id, workspace_id, storage_key, content_type, byte_size, status, created_at, updated_at)
     VALUES (${randomUUID()}, ${workspaceId}, ${`media/${workspaceId}/${randomUUID()}.png`}, 'image/png', 128, 'pending', now(), now())`;

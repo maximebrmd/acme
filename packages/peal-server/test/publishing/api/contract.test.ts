@@ -37,6 +37,10 @@ import {
   youTubeTagsLength,
 } from "#publishing/domain/youtube-options.ts";
 import { ChannelIdSchema, MediaAssetIdSchema } from "#shared/domain/ids.ts";
+import {
+  linkCases,
+  weightedCases,
+} from "#test/publishing/domain/x-conformance.ts";
 
 // Clients count text with the contract's copy of the rules, so a composer
 // shows what the server will accept. These keep the copy equal to the
@@ -49,6 +53,11 @@ const texts = [
   "Read https://example.com/one and www.example.org/two. (see https://example.com).",
   "#launch day, #été, #2026 and issue#42 with @peal_example and team@example.com",
   "a".repeat(3001),
+  "Read peal.social now, or example.co.uk/path?x=1.",
+  `${"x".repeat(268)} example.com`,
+  "https://localhost/x, https://t.co/abc/more and 1\u20E3",
+  ...linkCases.map(({ text }) => text),
+  ...weightedCases.map(({ text }) => text),
 ];
 
 const channelId = ChannelIdSchema.make("00000000-0000-7000-8000-000000000001");

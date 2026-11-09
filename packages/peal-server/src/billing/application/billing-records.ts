@@ -13,6 +13,7 @@ import type { WorkspaceId } from "#shared/domain/ids.ts";
 
 import { BillingMode } from "./ports/billing-mode.ts";
 import { Checkouts } from "./ports/checkouts.ts";
+import { MeteredPostLedger } from "./ports/metered-post-ledger.ts";
 import { Subscriptions } from "./ports/subscriptions.ts";
 import type { StripeUnreachable } from "./stripe-unreachable.ts";
 import { WorkspaceStillBilled } from "./workspace-still-billed.ts";
@@ -68,9 +69,9 @@ const refuseBilled: ErasureOptions = { cancelSubscriptions: false };
 
 /**
  * What billing keeps of a workspace as a whole, for the workspace context
- * when a workspace's data is exported or erased: its plan and the state of
- * its subscriptions, never a card, an invoice or Stripe's ids, which stay
- * with Stripe.
+ * when a workspace's data is exported or erased: its plan, the state of
+ * its subscriptions and its counts of metered posts, never a card, an
+ * invoice or Stripe's ids, which stay with Stripe.
  *
  * Erasing takes two steps. Stripe's side goes first, outside the erasure's
  * transaction, as it cannot be rolled back (`settleWorkspace`): Stripe may
@@ -96,7 +97,10 @@ const refuseBilled: ErasureOptions = { cancelSubscriptions: false };
 export class BillingRecords extends Context.Service<
   BillingRecords,
   {
-    /** The workspace's plan and every subscription it has had. */
+    /**
+     * The workspace's plan, every subscription it has had, and how many
+     * posts it made each month on platforms that bill per post.
+     */
     readonly exportWorkspace: (
       workspaceId: WorkspaceId
     ) => Effect.Effect<BillingRecord, DatabaseError>;
@@ -123,8 +127,8 @@ export class BillingRecords extends Context.Service<
       DatabaseError | StripeUnreachable | WorkspaceStillBilled
     >;
     /**
-     * Deletes the workspace's subscriptions, in the caller's transaction,
-     * once Stripe says none may still bill it: settle it first.
+     * Deletes the workspace's subscriptions and counts, in the caller's
+     * transaction, once Stripe says none may still bill it: settle it first.
      */
     readonly eraseWorkspace: (
       workspaceId: WorkspaceId
@@ -140,12 +144,20 @@ export class BillingRecords extends Context.Service<
       const { enabled } = yield* BillingMode;
       const subscriptions = yield* Subscriptions;
       const checkouts = yield* Checkouts;
+      const metered = yield* MeteredPostLedger;
 
       const exportWorkspace = Effect.fn("BillingRecords.exportWorkspace")(
         function* exportWorkspace(workspaceId: WorkspaceId) {
           const held = yield* subscriptions.ofWorkspace(workspaceId);
+          const counted = yield* metered.ofWorkspace(workspaceId);
 
           const record: BillingRecord = {
+            meteredPosts: counted.map((count) => ({
+              month: count.month,
+              platform: count.platform,
+              posts: count.posts,
+              postsWithLinks: count.postsWithLinks,
+            })),
             plan: enabled ? Option.getOrNull(entitlementsOf(held).plan) : null,
             subscriptions: held.map((subscription) => ({
               cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
@@ -255,6 +267,7 @@ export class BillingRecords extends Context.Service<
           }
 
           yield* subscriptions.eraseWorkspace(workspaceId);
+          yield* metered.eraseWorkspace(workspaceId);
         }
       );
 

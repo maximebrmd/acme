@@ -156,6 +156,39 @@ describe(measureText, () => {
     expect(measureText("xhttps://example.com", "weighted")).toBe(20);
   });
 
+  it("counts a link without a scheme as 23 for X, on a domain X knows", () => {
+    expect(measureText("Read peal.social now", "weighted")).toBe(5 + 23 + 4);
+    expect(measureText(`see example.com/${"a".repeat(60)}`, "weighted")).toBe(
+      4 + 23
+    );
+    // localhost has no top-level domain: X counts it as text.
+    expect(measureText("https://localhost/x", "weighted")).toBe(19);
+  });
+
+  it("puts a bare domain over X's 280 when its letters fit", () => {
+    expect(measureText(`${"x".repeat(268)} example.com`, "weighted")).toBe(
+      268 + 1 + 23
+    );
+  });
+
+  it("stops a t.co link after its slug", () => {
+    expect(measureText("https://t.co/abc/more", "weighted")).toBe(23 + 5);
+  });
+
+  it.each([
+    { length: 6, text: "日本語" },
+    { length: 3, text: "Мир" },
+    // General punctuation in X's ranges counts once, the rest twice.
+    { length: 3, text: "‐′ " },
+    { length: 2, text: "‰" },
+    // A joiner left over after an emoji is a character of its own.
+    { length: 4, text: "👨‍👩‍👧‍a" },
+    { length: 5, text: "1⃣ 1️⃣" },
+    { length: 280, text: "😀".repeat(140) },
+  ])("weighs $text as $length on X", ({ length, text }) => {
+    expect(measureText(text, "weighted")).toBe(length);
+  });
+
   it("counts graphemes in long texts as readers see them", () => {
     expect(measureText(family.repeat(300), "graphemes")).toBe(300);
     expect(measureText(family.repeat(300), "utf8Bytes")).toBe(5400);
@@ -190,6 +223,8 @@ describe(countLinks, () => {
     // The same link twice is one, its sentence's full stop left out.
     { count: 1, text: "https://example.com/a, then https://example.com/a." },
     { count: 0, text: "No links, nor team@example.com" },
+    // Without a scheme, on a top-level domain X knows.
+    { count: 2, text: "peal.social and example.co.uk/path, not peal.example" },
   ])("finds $count different in $text", ({ count, text }) => {
     expect(countLinks(text)).toBe(count);
   });

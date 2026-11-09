@@ -180,7 +180,11 @@ Un serveur connecte des comptes X une fois que vous lui avez enregistré une app
 2. Ajoutez `PUBLIC_URL/connect/x/callback` comme URI de rappel, exactement, comme `https://peal.example.com/connect/x/callback`. X refuse `localhost` : en développement, utilisez `http://127.0.0.1` et son port.
 3. Mettez l’identifiant client OAuth 2.0 dans `X_CLIENT_ID` et son secret client dans `X_CLIENT_SECRET`.
 
-X facture chaque requête de l’API à l’application, et une publication avec un lien coûte plus. Fixez une limite de dépenses dans la console de X : une fois atteinte, X refuse les publications, qui échouent avec leur raison, jusqu’à ce que vous la releviez. Peal renouvelle l’accès de chaque compte toutes les deux heures, et le garde valable tant qu’il est renouvelé.
+X facture chaque requête de l’API à l’application, sur des crédits achetés d’avance ([tarifs](https://docs.x.com/x-api/getting-started/pricing)), et une publication avec un lien coûte environ 13 fois plus qu’une sans. Achetez des crédits et fixez une limite de dépenses dans la console de X. Une fois les crédits épuisés (X répond `402`) ou la limite atteinte (`usage-capped`), X refuse toutes les publications de l’application jusqu’à ce que vous ajoutiez des crédits ou releviez la limite : les publications n’y sont pour rien, alors Peal journalise une erreur, que l’alerte du serveur sur les journaux d’erreurs signale, et attend comme pour une panne, plus de deux heures, avant qu’une publication échoue avec la raison « la plateforme refuse l’application de ce serveur tant que son opérateur ne l’a pas réglée ».
+
+Peal compte les publications de chaque espace de travail sur X, et combien contenaient un lien, par mois civil (UTC), dans `billing.metered_posts`, pour que vous voyiez qui dépense quoi ; les offres ne les limitent pas encore. Les comptes suivent l’export de l’espace de travail et sa suppression.
+
+L’accès à X dure deux heures. Peal le renouvelle quand il publie, et renouvelle celui d’un compte qui n’a pas publié depuis 30 jours, pour que X le garde connecté sans rotation toutes les deux heures.
 
 Pour LinkedIn comme pour X, l’un des deux réglages sans l’autre arrête le serveur au démarrage ; sans les deux, **Canaux** ne propose pas la plateforme.
 

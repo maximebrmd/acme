@@ -153,10 +153,20 @@ const ExportedAuthoredPostSchema = Schema.Struct({
   workspaceId: Schema.String,
 });
 
-// The workspace's plan, null on a server that does not bill, and its
+// The workspace's plan, null on a server that does not bill, its
 // subscriptions as Stripe last described them: no card, invoice or Stripe
-// id, which stay with Stripe.
+// id, which stay with Stripe; and how many posts it made each month (from
+// its first instant, UTC) on platforms that bill the server per post (X),
+// and how many of them held a link.
 const ExportedBillingSchema = Schema.Struct({
+  meteredPosts: Schema.Array(
+    Schema.Struct({
+      month: instant,
+      platform: Schema.String,
+      posts: Schema.Int,
+      postsWithLinks: Schema.Int,
+    })
+  ),
   plan: nullable(Schema.String),
   subscriptions: Schema.Array(
     Schema.Struct({

@@ -2,7 +2,7 @@
   "type": "base",
   "version": "9",
   "dialect": "postgres",
-  "id": "111df661-b9d5-44eb-8a5c-c3c05cd033e0",
+  "id": "949b8e7a-edf5-48f7-9a62-96f0edd1aedc",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
@@ -189,6 +189,25 @@
       ],
       "reads": [
         "n|sch|assistant"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "billing",
+        "metered_posts"
+      ],
+      "writes": [
+        "s|tbl|billing.metered_posts",
+        "n|tbl|billing.metered_posts",
+        "e|tbl|billing.metered_posts",
+        "n|rel|billing.metered_posts",
+        "n|type|billing.metered_posts",
+        "n|rel|billing.metered_posts_pkey"
+      ],
+      "reads": [
+        "n|sch|billing"
       ]
     },
     {
@@ -2473,6 +2492,12 @@
     },
     {
       "schema": "billing",
+      "name": "metered_posts",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "billing",
       "name": "stripe_events",
       "isRlsEnabled": false,
       "entityType": "tables"
@@ -3047,6 +3072,71 @@
     {
       "schema": "assistant",
       "table": "daily_usage",
+      "name": "workspace_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "billing",
+      "table": "metered_posts",
+      "name": "month",
+      "type": "date",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "billing",
+      "table": "metered_posts",
+      "name": "platform",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "billing",
+      "table": "metered_posts",
+      "name": "posts",
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "billing",
+      "table": "metered_posts",
+      "name": "posts_with_links",
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "billing",
+      "table": "metered_posts",
       "name": "workspace_id",
       "type": "uuid",
       "typeSchema": null,
@@ -9594,6 +9684,18 @@
       "entityType": "pks"
     },
     {
+      "schema": "billing",
+      "table": "metered_posts",
+      "name": "metered_posts_pkey",
+      "columns": [
+        "workspace_id",
+        "platform",
+        "month"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
       "schema": "channels",
       "table": "mastodon_apps",
       "name": "mastodon_apps_pkey",
@@ -10166,6 +10268,13 @@
       "table": "daily_usage",
       "name": "daily_usage_requests",
       "value": "\"requests\" >= 0",
+      "entityType": "checks"
+    },
+    {
+      "schema": "billing",
+      "table": "metered_posts",
+      "name": "metered_posts_counts",
+      "value": "\"posts_with_links\" >= 0 AND \"posts_with_links\" <= \"posts\"",
       "entityType": "checks"
     },
     {

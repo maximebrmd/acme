@@ -1,5 +1,7 @@
 import { Schema } from "effect";
 
+import { xLinksIn } from "./x-links.ts";
+
 /**
  * How a platform measures the length of a post's text:
  *
@@ -15,8 +17,10 @@ import { Schema } from "effect";
  *   "Posts" page says "Emojis are counted as the number of UTF-8 bytes").
  * - `utf16Units`: UTF-16 code units, as JavaScript counts a string's
  *   length, so most emoji count 2 (TikTok's "UTF-16 runes").
- * - `weighted`: X's open text-counting rules. The text is normalized to NFC;
- *   a link counts as 23, whatever its length; an emoji counts as 2; a code
+ * - `weighted`: X's open text-counting rules (twitter-text's `parseTweet`).
+ *   The text is normalized to NFC; a link counts as 23, whatever its length,
+ *   with or without a scheme (`peal.social` too, see `./x-links.ts`); an
+ *   emoji counts as 2, sequences of several code points included; a code
  *   point counts as 1 in the ranges that hold Latin, Greek, Cyrillic and most
  *   punctuation, and as 2 elsewhere, as in Chinese, Japanese and Korean.
  */
@@ -76,42 +80,40 @@ const emojiWeight = 2;
 
 const emoji = /^\p{RGI_Emoji}$/v;
 
-// A link starts with a scheme or "www.", after a space or punctuation, and
-// runs to the next space. Punctuation that ends a sentence is not part of it.
-const links = /(?<![\p{L}\p{N}@])(?:https?:\/\/|www\.)[^\s<>"]+/giu;
+// The emoji X counts as 2 each, whatever they are built of, found as
+// twitter-text finds them: the longest at each place, a keycap without its
+// variation selector too ("1⃣").
+const emojis = /\p{RGI_Emoji}|[#*0-9]\u20E3/gv;
 
-const trailingPunctuation = /[.,;:!?'")\]}]+$/u;
+const codePointsWeight = (text: string): number =>
+  codePointsOf(text).reduce(
+    (weight, codePoint) => weight + codePointWeight(codePoint),
+    0
+  );
 
-const withoutLinks = (text: string) => {
-  let rest = "";
-  let count = 0;
+const weightOf = (text: string): number => {
+  let length = 0;
   let from = 0;
 
-  for (const match of text.matchAll(links)) {
-    const link = match[0].replace(trailingPunctuation, "");
-
-    rest += text.slice(from, match.index);
-    count += 1;
-    from = match.index + link.length;
+  for (const match of text.matchAll(emojis)) {
+    length += codePointsWeight(text.slice(from, match.index)) + emojiWeight;
+    from = match.index + match[0].length;
   }
 
-  return { links: count, rest: rest + text.slice(from) };
+  return length + codePointsWeight(text.slice(from));
 };
 
 const weightedLength = (text: string): number => {
-  const { links: linkCount, rest } = withoutLinks(text.normalize("NFC"));
+  const normalized = text.normalize("NFC");
+  let length = 0;
+  let from = 0;
 
-  return segmentsOf(rest).reduce(
-    (length, segment) =>
-      length +
-      (emoji.test(segment)
-        ? emojiWeight
-        : codePointsOf(segment).reduce(
-            (weight, codePoint) => weight + codePointWeight(codePoint),
-            0
-          )),
-    linkCount * weightedLinkLength
-  );
+  for (const link of xLinksIn(normalized)) {
+    length += weightOf(normalized.slice(from, link.start)) + weightedLinkLength;
+    from = link.end;
+  }
+
+  return length + weightOf(normalized.slice(from));
 };
 
 const utf8BytesOf = (text: string): number =>
@@ -158,13 +160,10 @@ export const countMentions = (text: string): number =>
   [...text.matchAll(mentions)].length;
 
 /**
- * How many different links the text holds, each as X finds them: starting
- * with a scheme or "www.", without the punctuation that ends a sentence.
- * The same link twice counts once.
+ * How many different links the text holds, each as X finds them (see
+ * `./x-links.ts`): with or without a scheme, on a known top-level domain,
+ * without the punctuation that ends a sentence. The same link twice counts
+ * once.
  */
 export const countLinks = (text: string): number =>
-  new Set(
-    Array.from(text.matchAll(links), ([link]) =>
-      link.replace(trailingPunctuation, "")
-    )
-  ).size;
+  new Set(xLinksIn(text).map(({ url }) => url)).size;
