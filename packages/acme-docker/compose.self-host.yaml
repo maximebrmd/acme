@@ -14,6 +14,10 @@ services:
   caddy:
     image: caddy:2.11.9-alpine@sha256:0bbb055bda6793c999bde78b1b5ce3e89f829fb031af2cf50056ea1246559fee
     restart: unless-stopped
+    # Caddy writes only its certificates and state, in the volumes below.
+    read_only: true
+    security_opt: [no-new-privileges:true]
+    tmpfs: [/tmp:size=64m]
     environment:
       ACME_DOMAIN: ${ACME_DOMAIN:?Set ACME_DOMAIN, the host name of PUBLIC_URL}
       ACME_SITE_DOMAIN: ${ACME_SITE_DOMAIN:-}

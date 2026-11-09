@@ -451,7 +451,8 @@ a target of `acme-docker`.
 runs the whole stack: Postgres with pgBackRest, the server, the web app, the
 site and docs (profile `static`), the OpenTelemetry Collector, Loki, Tempo,
 Prometheus and Grafana with its alert rules. Every port listens on 127.0.0.1,
-every service restarts when it stops, and the server gets 75 seconds to stop.
+every service restarts when it stops and runs on a read-only file system, and
+the server gets 75 seconds to stop.
 
 ### Production, behind Cloudflare
 

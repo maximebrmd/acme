@@ -1,8 +1,9 @@
 # Restore the database
 
 pgBackRest restores Postgres from the backup bucket: to its latest state,
-which loses at most the last 5 minutes, or to a time within the last four
-weeks, such as just before a bad migration or a mistaken deletion. Restoring
+which loses at most the last 5 minutes, or to a time since the oldest full
+backup kept, three to four weeks back (`pgbackrest info` below shows it),
+such as just before a bad migration or a mistaken deletion. Restoring
 to a time also rewinds everything after it, so prefer the latest state unless
 what happened after the time is the damage.
 

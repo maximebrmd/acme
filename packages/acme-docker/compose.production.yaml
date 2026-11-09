@@ -23,6 +23,12 @@
 
 x-service: &service
   restart: unless-stopped
+  # Containers write only to their volumes and to the tmpfs mounts listed,
+  # and nothing they run gains privileges it was not started with. A service
+  # with more tmpfs mounts lists /tmp again: a merge replaces the list.
+  read_only: true
+  security_opt: [no-new-privileges:true]
+  tmpfs: [/tmp:size=64m]
   logging:
     driver: local
     options:
@@ -80,7 +86,8 @@ services:
       PGBACKREST_REPO1_CIPHER_TYPE: aes-256-cbc
       PGBACKREST_REPO1_CIPHER_PASS:
       # Four weekly full backups, with the daily differential ones and the
-      # write-ahead log between them: four weeks of point-in-time recovery.
+      # write-ahead log between them: point-in-time recovery over three to
+      # four weeks, as each full backup expires the oldest.
       PGBACKREST_REPO1_RETENTION_FULL: "4"
       PGBACKREST_REPO1_BUNDLE: "y"
       PGBACKREST_REPO1_BLOCK: "y"
@@ -89,6 +96,8 @@ services:
       PGBACKREST_LOG_LEVEL_CONSOLE: info
       PGBACKREST_LOG_LEVEL_FILE: "off"
     shm_size: 256m
+    # The socket folder, and /tmp, where pgBackRest keeps its locks.
+    tmpfs: [/tmp:size=64m, /var/run/postgresql:size=1m]
     volumes:
       # Postgres 18 images keep PGDATA in a versioned folder below this one.
       - postgres:/var/lib/postgresql
@@ -122,8 +131,19 @@ services:
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
       OTEL_SERVICE_VERSION: ${ACME_VERSION:-local}
       # Optional: the docs' environment variables page says what each does.
+      # The container sees no other variable, so each setting the server
+      # reads is named here (test/compose.test.ts checks it against the docs).
       ACME_TOKEN_KEYS:
       BLUESKY_CLIENT_KEYS:
+      LINKEDIN_CLIENT_ID:
+      LINKEDIN_CLIENT_SECRET:
+      LINKEDIN_API_VERSION:
+      META_APP_ID:
+      META_APP_SECRET:
+      THREADS_APP_ID:
+      THREADS_APP_SECRET:
+      X_CLIENT_ID:
+      X_CLIENT_SECRET:
       RESEND_API_KEY:
       SMTP_URL:
       TRUSTED_ORIGINS:
@@ -136,11 +156,25 @@ services:
       ACME_S3_FORCE_PATH_STYLE:
       ACME_S3_KEY_PREFIX:
       ACME_MEDIA_PUBLIC_BASE_URL:
+      ACME_FFPROBE_PATH:
       ACME_AI_PROVIDER:
       ACME_AI_API_KEY:
       ACME_AI_MODEL:
       ACME_AI_BASE_URL:
       ACME_AI_DAILY_REQUESTS:
+      STRIPE_SECRET_KEY:
+      STRIPE_WEBHOOK_SECRET:
+      STRIPE_PRICE_PRO:
+      STRIPE_PRICE_BUSINESS:
+      STRIPE_AUTOMATIC_TAX:
+      STRIPE_API_URL:
+      TURNSTILE_SITE_KEY:
+      TURNSTILE_SECRET_KEY:
+      TURNSTILE_VERIFY_URL:
+      OTEL_SERVICE_NAME:
+      OTEL_TRACES_EXPORTER:
+      OTEL_METRICS_EXPORTER:
+      OTEL_LOGS_EXPORTER:
       ACME_CLUSTER_RETENTION:
     ports:
       - 127.0.0.1:${ACME_SERVER_PORT:-3000}:3000
@@ -166,6 +200,8 @@ services:
       dockerfile: packages/acme-docker/web.Dockerfile
     # Node runs as PID 2 under an init, so it stops on SIGTERM.
     init: true
+    # Next's cache of optimised images and fetches, rebuilt after a restart.
+    tmpfs: [/tmp:size=64m, /app/packages/acme-web/.next/cache:size=256m]
     environment:
       ACME_API_URL: http://server:3000
       # Longer than the edge keeps idle connections (90 s for the tunnel, 2
@@ -296,6 +332,10 @@ services:
       GF_ANALYTICS_REPORTING_ENABLED: "false"
       GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
       GF_ANALYTICS_CHECK_FOR_PLUGIN_UPDATES: "false"
+      # Grafana would otherwise replace the data source plugins its image
+      # ships, Prometheus's and Loki's that the alerts query included, with
+      # their latest release each time it starts: the image decides them.
+      GF_PLUGINS_PREINSTALL_AUTO_UPDATE: "false"
       GF_NEWS_NEWS_FEED_ENABLED: "false"
       # Read by the Telegram contact point, when it is mounted.
       TELEGRAM_BOT_TOKEN:

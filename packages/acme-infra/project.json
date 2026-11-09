@@ -24,9 +24,14 @@
       "cache": true,
       "inputs": ["default"]
     },
+    "pytest": {
+      "command": "uv run --locked pytest",
+      "options": { "cwd": "{projectRoot}" },
+      "cache": false
+    },
     "test": {
       "executor": "nx:noop",
-      "dependsOn": ["lint", "syntax-check"]
+      "dependsOn": ["lint", "syntax-check", "pytest"]
     }
   }
 }

@@ -83,9 +83,10 @@ Work from the repository root unless a command names another directory.
   `packages/acme-cli/scripts/build.ts`.
 - Pin every dependency to the exact latest release, and commit `bun.lock` with
   dependency changes, `packages/acme-infra/uv.lock` with Python ones.
-- `bun run test` also runs ansible-lint (production profile) and
-  `ansible-playbook --syntax-check` on `packages/acme-infra`, through uv
-  (`nx run acme-infra:test`).
+- `bun run test` also runs ansible-lint (production profile),
+  `ansible-playbook --syntax-check` and the pytest suite in `tests/` on
+  `packages/acme-infra`, through uv (`nx run acme-infra:test`). Its release
+  tests run Postgres's base image in Docker, and skip without Docker.
 - Define Nx target defaults in [`nx.json`](nx.json) and package targets in
   `project.json`. Declare build dependencies and cache outputs there. Keep
   tests uncached.
@@ -140,7 +141,10 @@ and Next.js ships its docs in `packages/acme-web/node_modules/next/dist/docs`.
   the images it builds `${ACME_VERSION:-local}` (`ACME_POSTGRES_VERSION` for
   Postgres). It passes optional settings through by name (`NAME:` with no
   value), so one that is unset stays unset rather than empty, which the
-  server would read as set. The same test covers it, the web, static and
+  server would read as set, and names every server setting the docs'
+  environment variables page lists: a container sees no other. Every service
+  runs `read_only` with `no-new-privileges`, writing to its volumes and tmpfs
+  mounts only. The same test covers it, the web, static and
   Postgres images (CI's Node, the workspace's Bun, digests, nonroot) and
   `compose.self-host.yaml`, where Caddy alone publishes ports to the world.
 - Keep `MP_SMTP_DISABLE_RDNS` on Mailpit, in compose and CI: its reverse DNS
