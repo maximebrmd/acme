@@ -2,6 +2,14 @@ import { describe, expect, it } from "@effect/vitest";
 
 import { facetsOf } from "#publishing/infrastructure/platforms/bluesky/facets.ts";
 
+// The links a text's facets mark, in order.
+const linked = (text: string) =>
+  facetsOf(text).flatMap(({ features }) =>
+    features.flatMap((feature) =>
+      feature.$type === "app.bsky.richtext.facet#link" ? [feature.uri] : []
+    )
+  );
+
 describe("Bluesky facets", () => {
   it("marks links over their UTF-8 bytes, without the punctuation after", () => {
     expect(
@@ -42,6 +50,18 @@ describe("Bluesky facets", () => {
         index: { byteEnd: 49, byteStart: 44 },
       },
     ]);
+  });
+
+  it("keeps a link's own closing parenthesis, not one that wraps it", () => {
+    expect(
+      linked("Read https://en.wikipedia.org/wiki/Mastodon_(software).")
+    ).toStrictEqual(["https://en.wikipedia.org/wiki/Mastodon_(software)"]);
+    expect(linked("(see https://example.com/notes).")).toStrictEqual([
+      "https://example.com/notes",
+    ]);
+    expect(
+      linked("(see https://en.wikipedia.org/wiki/Mastodon_(software))")
+    ).toStrictEqual(["https://en.wikipedia.org/wiki/Mastodon_(software)"]);
   });
 
   it("marks nothing in plain text", () => {

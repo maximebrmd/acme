@@ -37,7 +37,21 @@ const indexOf = (text: string, start: number, end: number) => ({
 // A URL ends at whitespace, and does not keep the punctuation after it.
 const linkPattern = /\bhttps?:\/\/[^\s<>"]+/gu;
 
-const trailingPunctuation = /[!"'),.:;?\]}]+$/u;
+const trailingPunctuation = /[!"',.:;?\]}]+$/u;
+
+const countOf = (text: string, character: string) =>
+  text.split(character).length - 1;
+
+// The link without the punctuation after it. A closing parenthesis is the
+// link's own when it opened one, as in Wikipedia's addresses, and the
+// sentence's otherwise.
+const trimmedLink = (found: string): string => {
+  const trimmed = found.replace(trailingPunctuation, "");
+
+  return trimmed.endsWith(")") && countOf(trimmed, ")") > countOf(trimmed, "(")
+    ? trimmedLink(trimmed.slice(0, -1))
+    : trimmed;
+};
 
 // A tag is `#` after whitespace or at the start, up to the next whitespace,
 // and is not only digits.
@@ -54,7 +68,7 @@ const graphemeCount = (text: string) => [...graphemes.segment(text)].length;
 
 const links = (text: string): readonly Facet[] =>
   [...text.matchAll(linkPattern)].flatMap((match) => {
-    const uri = match[0].replace(trailingPunctuation, "");
+    const uri = trimmedLink(match[0]);
     const start = match.index;
 
     return URL.canParse(uri)
