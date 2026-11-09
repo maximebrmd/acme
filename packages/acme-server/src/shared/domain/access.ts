@@ -95,7 +95,7 @@ export const permissionsOf = (
 /** The grant that lists these permissions, grouped by resource. */
 export const grantOf = (
   permissions: Iterable<Permission>
-): Readonly<Record<string, readonly string[]>> => {
+): Record<string, string[]> => {
   const grant = new Map<string, string[]>();
 
   for (const permission of permissions) {

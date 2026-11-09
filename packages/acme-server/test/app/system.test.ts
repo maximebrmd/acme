@@ -10,13 +10,18 @@ import type { SqlClient } from "effect/sql";
 
 import { SystemHandlers } from "#app/system.ts";
 import { SqlLive } from "#shared/infrastructure/database.ts";
+import { anonymousSecurityTest } from "#workspace/api/security.ts";
 
 const makeClient = HttpApiTest.groups(Api, ["system"]);
 
+// The system endpoints need no credentials; the API's security middleware is
+// there for the other groups.
 const handlersWith = <E>(database: Layer.Layer<SqlClient.SqlClient, E>) =>
-  Layer.mergeAll(SystemHandlers, HttpServer.layerServices).pipe(
-    Layer.provide(database)
-  );
+  Layer.mergeAll(
+    SystemHandlers,
+    HttpServer.layerServices,
+    anonymousSecurityTest
+  ).pipe(Layer.provide(database));
 
 const sqlAt = (url: string) =>
   SqlLive.pipe(

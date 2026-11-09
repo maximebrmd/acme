@@ -1,4 +1,10 @@
-import { Api } from "acme-contract";
+import {
+  Api,
+  Authentication,
+  Unauthenticated,
+  WorkspaceAccess,
+  WorkspaceNotFound,
+} from "acme-contract";
 import {
   ConfigProvider,
   Effect,
@@ -69,6 +75,34 @@ export const fetching = (
     )
   );
 
+// The commands under test call no endpoint that needs credentials. Those
+// refuse anyone, as the server does a request without any.
+const refusing = Effect.fail(new Unauthenticated());
+
+const SecurityLive = Layer.mergeAll(
+  Layer.succeed(
+    Authentication,
+    Authentication.of({ bearer: () => refusing, session: () => refusing })
+  ),
+  Layer.succeed(
+    WorkspaceAccess,
+    WorkspaceAccess.of(() => Effect.fail(new WorkspaceNotFound()))
+  )
+);
+
+const SignedInGroupsLive = Layer.mergeAll(
+  HttpApiBuilder.group(Api, "session", (handlers) =>
+    handlers.handleAll({ me: () => refusing })
+  ),
+  HttpApiBuilder.group(Api, "apiKeys", (handlers) =>
+    handlers.handleAll({
+      create: () => refusing,
+      list: () => refusing,
+      revoke: () => refusing,
+    })
+  )
+).pipe(Layer.provideMerge(SecurityLive));
+
 // An Acme server in memory: acme-contract served by test handlers, without
 // a socket. The CLI never imports acme-server, so its tests answer for it.
 export const inMemoryServer = (health: Effect.Effect<void>) =>
@@ -86,6 +120,7 @@ export const inMemoryServer = (health: Effect.Effect<void>) =>
                   })
                 )
               ),
+              Layer.provide(SignedInGroupsLive),
               Layer.provide(HttpServer.layerServices)
             ),
             { disableLogger: true }

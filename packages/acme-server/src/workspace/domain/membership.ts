@@ -10,6 +10,7 @@ import { BannedUser } from "./banned-user.ts";
 import { NotAMember } from "./not-a-member.ts";
 import type { Principal } from "./principal.ts";
 import { permissionsFor } from "./roles.ts";
+import type { UserPrincipal } from "./user-principal.ts";
 import { WorkspaceMismatch } from "./workspace-mismatch.ts";
 
 /** A user's place in one workspace, and whether staff banned the user. */
@@ -36,6 +37,23 @@ export const withheldWhileImpersonating: ReadonlySet<Permission> = new Set([
 ]);
 
 export type AccessDenied = BannedUser | NotAMember | WorkspaceMismatch;
+
+/**
+ * What a signed-in user may do in a workspace where they hold `role`: what
+ * the role allows, less what staff impersonating them may not do.
+ */
+export const userPermissions = (
+  principal: UserPrincipal,
+  role: string
+): readonly Permission[] => {
+  const permissions = permissionsFor(role);
+
+  return Option.isSome(principal.impersonatedBy)
+    ? permissions.filter(
+        (permission) => !withheldWhileImpersonating.has(permission)
+      )
+    : permissions;
+};
 
 /**
  * The actor a principal is in a workspace. An API key acts only in the
@@ -73,15 +91,9 @@ export const actorFor = (
     return Result.fail(new BannedUser({ userId: principal.userId }));
   }
 
-  const permissions = permissionsFor(membership.value.role);
-
   return Result.succeed(
     new Actor({
-      permissions: Option.isSome(principal.impersonatedBy)
-        ? permissions.filter(
-            (permission) => !withheldWhileImpersonating.has(permission)
-          )
-        : permissions,
+      permissions: userPermissions(principal, membership.value.role),
       subject: {
         _tag: "user",
         impersonatedBy: principal.impersonatedBy,

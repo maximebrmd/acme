@@ -9,11 +9,15 @@ import { SystemHandlers } from "#app/system.ts";
 import { NotificationsLive } from "#notifications/container.ts";
 import { DatabaseLive } from "#shared/infrastructure/database.ts";
 import { MigrationsLive } from "#shared/infrastructure/migrations.ts";
-import { AuthRoutesLive, WorkspaceLive } from "#workspace/container.ts";
+import {
+  AuthRoutesLive,
+  WorkspaceApiLive,
+  WorkspaceLive,
+} from "#workspace/container.ts";
 
 const ApiLive = HttpApiBuilder.layer(Api, {
   openapiPath: "/openapi.json",
-}).pipe(Layer.provide(SystemHandlers));
+}).pipe(Layer.provide([SystemHandlers, WorkspaceApiLive]));
 
 /** Every route the server answers: the HTTP API and Better Auth's. */
 export const RoutesLive = Layer.mergeAll(ApiLive, AuthRoutesLive);

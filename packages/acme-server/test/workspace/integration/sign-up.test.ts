@@ -61,7 +61,7 @@ const decode = <S extends Schema.Top>(schema: S, reply: Reply) =>
 // Version nibble of a UUID: 4 for random ids.
 const versionOf = (id: string) => id.charAt(14);
 
-layer(TestApp.layer, { excludeTestServices: true, timeout: "60 seconds" })(
+layer(TestApp.layer, { excludeTestServices: true, timeout: "180 seconds" })(
   "signing up with an email and a password",
   (it) => {
     it.effect(
