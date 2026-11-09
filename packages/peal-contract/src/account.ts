@@ -208,6 +208,31 @@ const ExportedBillingSchema = Schema.Struct({
   ),
 });
 
+// The orders and withdrawals the user made, kept as the proof of each
+// contract: the workspace is null once it is erased.
+const ExportedContractsSchema = Schema.Struct({
+  orders: Schema.Array(
+    Schema.Struct({
+      // The version of the words they agreed to when ordering.
+      consentVersion: Schema.String,
+      createdAt: instant,
+      interval: Schema.String,
+      plan: Schema.String,
+      trial: Schema.Boolean,
+      // When a checkout took it.
+      usedAt: nullable(instant),
+      workspaceId: nullable(Schema.String),
+    })
+  ),
+  withdrawals: Schema.Array(
+    Schema.Struct({
+      refunded: Schema.Struct({ amount: Schema.Int, currency: Schema.String }),
+      requestedAt: instant,
+      workspaceId: nullable(Schema.String),
+    })
+  ),
+});
+
 const ExportedUsageSchema = Schema.Struct({
   // A UTC day, as YYYY-MM-DD.
   day: Schema.String,
@@ -251,7 +276,8 @@ const ExportedWorkspaceSchema = Schema.Struct({
 /**
  * Everything Peal keeps about the user: their account, how they sign in,
  * their sessions, workspaces, invitations, connected applications, notices
- * and preferences, what staff did to their account, the posts they wrote in the workspaces they share, the
+ * and preferences, what staff did to their account, the orders and
+ * withdrawals they made, the posts they wrote in the workspaces they share, the
  * connections that made content and what the law has Peal keep once the
  * account closes, and
  * the content of the workspaces where they are the only member, which
@@ -262,6 +288,8 @@ export const AccountExportSchema = Schema.Struct({
   // The posts the user wrote in the workspaces they share with others.
   authoredPosts: Schema.Array(ExportedAuthoredPostSchema),
   connectedApps: Schema.Array(ConnectedAppSchema),
+  // The orders and withdrawals the user made, in any workspace.
+  contracts: ExportedContractsSchema,
   exportedAt: instant,
   invitations: Schema.Struct({
     // Sent to the user's address.

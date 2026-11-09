@@ -16,11 +16,6 @@ export interface StripeSettings {
    */
   readonly apiUrl: Option.Option<URL>;
   /**
-   * Whether checkout computes and collects tax (Stripe Tax), such as EU VAT
-   * from the customer's address and VAT number.
-   */
-  readonly automaticTax: boolean;
-  /**
    * The lookup keys of the Stripe prices each paid plan is sold at, monthly
    * and yearly: `<prefix>_<plan>_monthly` and `<prefix>_<plan>_yearly`, the
    * prefix being STRIPE_LOOKUP_KEY_PREFIX (`peal` unless set). Lookup keys
@@ -68,9 +63,6 @@ export const lookupKeysOf = (
 const billing = (secretKey: Redacted.Redacted) =>
   Config.all({
     apiUrl: Config.option(Config.URL("STRIPE_API_URL")),
-    automaticTax: Config.Boolean("STRIPE_AUTOMATIC_TAX").pipe(
-      Config.withDefault(false)
-    ),
     prices: Config.schema(
       LookupKeyPrefixSchema,
       "STRIPE_LOOKUP_KEY_PREFIX"
@@ -90,10 +82,11 @@ const billing = (secretKey: Redacted.Redacted) =>
  *   events;
  *
  * and reads `STRIPE_LOOKUP_KEY_PREFIX` (the prices' lookup keys,
- * `peal_<plan>_monthly` and `peal_<plan>_yearly` unless set),
- * `STRIPE_AUTOMATIC_TAX` (`false` unless set: Stripe Tax must be set up in
- * the account first) and `STRIPE_API_URL`. A webhook secret
- * without a key stops the server: one of the two is a mistake.
+ * `peal_<plan>_monthly` and `peal_<plan>_yearly` unless set) and
+ * `STRIPE_API_URL`. Checkout always has Stripe Tax compute the VAT, as the
+ * prices are tax-exclusive and every page shows them VAT included: the
+ * Stripe account needs Stripe Tax set up. A webhook secret without a key
+ * stops the server: one of the two is a mistake.
  */
 export const stripeSettingsConfig = Config.all({
   secretKey: optionalSecret("STRIPE_SECRET_KEY"),

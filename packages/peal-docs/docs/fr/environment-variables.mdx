@@ -103,7 +103,6 @@ Un fournisseur nommé sans les réglages qu’il demande arrête le serveur au d
 | `STRIPE_SECRET_KEY`        | non définie : pas de facturation | La clé d’API Stripe qui facture les espaces de travail, comme `sk_live_…`. Non définie ou vide, il n’y a pas d’abonnement et rien n’est limité. Gardez-la secrète.                                                    |
 | `STRIPE_WEBHOOK_SECRET`    | obligatoire avec une clé         | Le secret de signature du webhook qui envoie à `PUBLIC_URL/api/auth/stripe/webhook` les événements `customer.subscription.*`, comme `whsec_…`. Définie sans clé, elle arrête le serveur. Gardez-la secrète.           |
 | `STRIPE_LOOKUP_KEY_PREFIX` | `peal`                           | Le début des clés de recherche des prix Stripe des abonnements : `<prefix>_<plan>_monthly` et `<prefix>_<plan>_yearly`. Lettres minuscules, chiffres et tirets bas ; une autre valeur arrête le serveur au démarrage. |
-| `STRIPE_AUTOMATIC_TAX`     | `false`                          | `true` fait calculer la taxe par Stripe Tax au paiement, comme la TVA européenne, d’après l’adresse et le numéro de TVA du client, que le paiement demande alors. Activez d’abord Stripe Tax dans le compte Stripe.   |
 | `STRIPE_API_URL`           | l’API de Stripe                  | Une autre adresse pour l’API de Stripe, comme `http://127.0.0.1:12111` pour stripe-mock dans les tests.                                                                                                               |
 
 [Facturation](/self-hosting#billing) explique les abonnements et ce qu’ils limitent.

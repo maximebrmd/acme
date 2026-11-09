@@ -18,7 +18,11 @@ import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 import { Actor } from "#shared/domain/access.ts";
 import type { Permission } from "#shared/domain/access.ts";
 import { UserIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
-import { NoTrialsTest } from "#test/billing/support.ts";
+import {
+  NoContractsTest,
+  NoTrialsTest,
+  StripeUncalledTest,
+} from "#test/billing/support.ts";
 
 const workspaceId = WorkspaceIdSchema.make(
   "3c4d5e6f-7a8b-4c9d-8e0f-1a2b3c4d5e6f"
@@ -92,12 +96,15 @@ const billingWith = (enabled: boolean) =>
     Layer.provideMerge(
       Layer.mergeAll(WorkspaceEntitlements.layer, RecordSubscription.layer)
     ),
-    Layer.provide(Layer.mergeAll(SubscriptionsInMemory, NoTrialsTest)),
+    Layer.provide(
+      Layer.mergeAll(SubscriptionsInMemory, NoTrialsTest, StripeUncalledTest)
+    ),
     Layer.provide(Layer.mergeAll(TransactionsTest, WorkspacesTest)),
     Layer.provide(Layer.succeed(BillingMode, BillingMode.of({ enabled })))
   );
 
 const event = (status: string): SubscriptionEvent => ({
+  cancelAt: Option.none(),
   cancelAtPeriodEnd: false,
   currentPeriodEnd: Option.some(DateTime.makeUnsafe("2026-12-09T10:00:00Z")),
   currentPeriodStart: Option.some(DateTime.makeUnsafe("2026-11-09T10:00:00Z")),
@@ -308,7 +315,14 @@ const recordsWith = (enabled: boolean) =>
     RecordSubscription.layer,
     MeteredPosts.layer
   ).pipe(
-    Layer.provide(Layer.mergeAll(SubscriptionsInMemory, NoTrialsTest)),
+    Layer.provide(
+      Layer.mergeAll(
+        SubscriptionsInMemory,
+        NoTrialsTest,
+        StripeUncalledTest,
+        NoContractsTest
+      )
+    ),
     Layer.provide(MeteredPostsInMemory),
     Layer.provide(TransactionsTest),
     Layer.provideMerge(CheckoutsInMemory),
@@ -637,6 +651,7 @@ const UnreadTest = Layer.mergeAll(
   Layer.provide(
     Layer.mergeAll(
       MeteredPostsInMemory,
+      NoContractsTest,
       Layer.succeed(BillingMode, BillingMode.of({ enabled: false })),
       Layer.succeed(
         Checkouts,

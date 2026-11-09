@@ -301,8 +301,8 @@ const fill = Effect.fn("fill")(function* fill(
   yield* sql`INSERT INTO billing.orders (id, workspace_id, user_id, plan, interval, trial, consent_version, created_at)
     VALUES (${uuid7()}, ${workspaceId}, ${person.id}, 'pro', 'month', true, '2026-11-09', now())`;
 
-  yield* sql`INSERT INTO billing.trials (stripe_subscription_id, workspace_id, user_id, plan, started_at)
-    VALUES (${`sub_${randomUUID()}`}, ${workspaceId}, (SELECT CASE WHEN EXISTS (SELECT 1 FROM billing.trials WHERE user_id = ${person.id}) THEN NULL ELSE ${person.id} END), 'pro', now())`;
+  yield* sql`INSERT INTO billing.trials (stripe_subscription_id, workspace_id, user_id, plan, started_at, reserved_at)
+    VALUES (${`sub_${randomUUID()}`}, ${workspaceId}, (SELECT CASE WHEN EXISTS (SELECT 1 FROM billing.trials WHERE user_id = ${person.id}) THEN NULL ELSE ${person.id} END), 'pro', now(), now())`;
 
   yield* sql`INSERT INTO billing.withdrawals (stripe_subscription_id, workspace_id, user_id, refunded, currency, requested_at)
     VALUES (${`sub_${randomUUID()}`}, ${workspaceId}, ${person.id}, 0, 'eur', now())`;
@@ -523,12 +523,28 @@ layer(IntegrationLive, {
 
         assert.strictEqual(posts, 1);
 
-        // The reason staff gave about her went with her id.
+        // The reason staff gave about her went with her id, but a ban's,
+        // which stays with a keyed pseudonym of her address instead, so
+        // Peal can show a court what it did and why.
         const reasons = yield* count(
-          sql`SELECT count(*)::int AS count FROM staff.audit_events WHERE target_id IS NULL AND reason IS NOT NULL`
+          sql`SELECT count(*)::int AS count FROM staff.audit_events WHERE target_id IS NULL AND reason IS NOT NULL AND action NOT IN ('ban', 'unban', 'legalDisclosure')`
         );
 
         assert.strictEqual(reasons, 0);
+
+        const bans = yield* count(
+          sql`SELECT count(*)::int AS count FROM staff.audit_events WHERE target_id IS NULL AND action = 'ban' AND reason = 'Synthetic reason naming the user' AND target_pseudonym IS NOT NULL`
+        );
+
+        assert.isAbove(bans, 0);
+
+        // Her trial stays, by the same pseudonym, so her address gets no
+        // second one.
+        const trials = yield* count(
+          sql`SELECT count(*)::int AS count FROM billing.trials WHERE user_id IS NULL AND user_pseudonym IS NOT NULL AND forgotten_at IS NOT NULL`
+        );
+
+        assert.isAbove(trials, 0);
 
         // So did the workspace and the ids of what staff changed as her,
         // which would tie the events back to her.

@@ -58,7 +58,7 @@ describe(renderNoticeEmail, () => {
         _tag: "SubscriptionStarted",
         interval: "month",
         plan: "pro",
-        price: { amount: 1250, currency: "eur" },
+        price: { amount: 1500, currency: "eur" },
         startedAt: DateTime.makeUnsafe("2026-11-09T10:00:00Z"),
         trialEnd: Option.none(),
       },
@@ -66,16 +66,16 @@ describe(renderNoticeEmail, () => {
     );
 
     expect(email.subject).toBe("Your Pro subscription has started");
-    expect(email.text).toContain("for €12.50 excluding VAT a month");
+    expect(email.text).toContain("for €15.00 a month, VAT included");
     expect(email.text).toContain("Withdraw from contract here");
   });
 
-  it("reminds a yearly renewal with its price excluding VAT", () => {
+  it("reminds a yearly renewal with what it will charge, VAT included", () => {
     const email = render(
       {
         _tag: "SubscriptionRenewing",
         plan: "business",
-        price: { amount: 25_000, currency: "eur" },
+        price: { amount: 30_000, currency: "eur" },
         renewsAt: DateTime.makeUnsafe("2027-01-31T00:00:00Z"),
       },
       "fr"
@@ -84,7 +84,7 @@ describe(renderNoticeEmail, () => {
     expect(email.subject).toBe(
       "Votre abonnement annuel Business se renouvelle le 31 janvier 2027 à 00:00 UTC"
     );
-    expect(email.text).toContain("250,00\u00A0€ HT");
+    expect(email.text).toContain("300,00\u00A0€ TTC");
   });
 
   it("tells a trial's end and a cancellation's", () => {

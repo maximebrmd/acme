@@ -134,5 +134,15 @@ export class PostRepository extends Context.Service<
       month: PostingMonth,
       except: Option.Option<PostId>
     ) => Effect.Effect<number, DatabaseError>;
+    /**
+     * How many of the workspace's posts go out in the month before the
+     * post, scheduled at `at`: earlier, or at the same instant with a
+     * smaller id. Counted as `countGoingOut` counts.
+     */
+    readonly countGoingOutBefore: (
+      workspaceId: WorkspaceId,
+      month: PostingMonth,
+      post: { readonly at: DateTime.Utc; readonly postId: PostId }
+    ) => Effect.Effect<number, DatabaseError>;
   }
 >()("peal-server/publishing/application/PostRepository") {}

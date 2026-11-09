@@ -1,5 +1,6 @@
 import { Layer } from "effect";
 
+import { KeyedPseudonymsLive } from "#shared/infrastructure/keyed-pseudonyms.ts";
 import { AccountHandlers } from "#workspace/api/account.ts";
 import { ApiKeysHandlers } from "#workspace/api/api-keys.ts";
 import { CaptchaHandlers } from "#workspace/api/captcha.ts";
@@ -131,7 +132,7 @@ export const WorkspaceSettingsLive = Layer.mergeAll(
   Layer.provide(
     Layer.mergeAll(
       ApiKeyIssuerLive,
-      ContextRecordsLive,
+      ContextRecordsLive.pipe(Layer.provide(KeyedPseudonymsLive)),
       DrizzleAccountStore,
       DrizzleConnectedAppStore,
       EmailedAccountMail,

@@ -18,7 +18,7 @@ import { currentSubscription } from "./current-subscription.ts";
 import { BillingMode } from "./ports/billing-mode.ts";
 import { BillingNotices } from "./ports/billing-notices.ts";
 import { StripeContracts } from "./ports/stripe-contracts.ts";
-import type { PeriodPayment } from "./ports/stripe-contracts.ts";
+import type { InvoiceCredit, PaidInvoice } from "./ports/stripe-contracts.ts";
 import type { Subscriptions } from "./ports/subscriptions.ts";
 import { Withdrawals } from "./ports/withdrawals.ts";
 import type { StripeUnreachable } from "./stripe-unreachable.ts";
@@ -48,15 +48,54 @@ type WithdrawalFailure =
   | StripeUnreachable
   | WithdrawalUnavailable;
 
-const nothing: Money = { amount: 0, currency };
+// What goes back of each paid invoice at `at`: the part of the period it
+// paid for not supplied yet, that period read from its lines, or else the
+// subscription's current one. Without either, all of it goes back.
+const creditsAt = (
+  invoices: readonly PaidInvoice[],
+  subscription: Subscription,
+  at: DateTime.Utc
+): readonly InvoiceCredit[] =>
+  invoices.map((invoice) => {
+    const period = Option.all({
+      end: invoice.periodEnd,
+      start: invoice.periodStart,
+    }).pipe(
+      Option.orElse(() =>
+        Option.all({
+          end: subscription.currentPeriodEnd,
+          start: subscription.currentPeriodStart,
+        })
+      )
+    );
+
+    return {
+      amount: Option.match(period, {
+        onNone: () => invoice.paid.amount,
+        onSome: ({ end, start }) =>
+          refundOf({ end, paid: invoice.paid.amount, start }, at),
+      }),
+      invoiceId: invoice.invoiceId,
+    };
+  });
+
+const totalOf = (
+  invoices: readonly PaidInvoice[],
+  credits: readonly InvoiceCredit[]
+): Money => ({
+  amount: credits.reduce((sum, { amount }) => sum + amount, 0),
+  currency: invoices[0]?.paid.currency ?? currency,
+});
 
 /**
  * A consumer's withdrawal from the workspace's subscription within 14
  * days of the contract (EU Consumer Rights Directive art. 9 and 11a; Code
  * de la consommation L221-18 and following), in two steps: what it would
  * do (`preview`), then doing it (`confirm`). It ends the subscription at
- * once and refunds what was paid for the rest of the period, to the second,
- * within the 14 days the law gives. A customer who gave a VAT number
+ * once and refunds, through a credit note on each invoice paid since the
+ * contract started, what each paid for the part of its period not supplied
+ * yet, to the second, within the 14 days the law gives. A subscription
+ * already cancelled can still be withdrawn from. A customer who gave a VAT number
  * Stripe verified buys as a business and cannot. Needs billing:manage and
  * the member in person.
  */
@@ -114,34 +153,22 @@ export class Withdraw extends Context.Service<
             return yield* new WithdrawalUnavailable({ reason: "business" });
           }
 
-          const payment: Option.Option<PeriodPayment> =
+          // Every payment since the contract started, a change of plan's
+          // included, each less the part of its period already supplied.
+          const invoices: readonly PaidInvoice[] =
             subscription.status === "trialing"
-              ? Option.none()
-              : yield* stripe.latestPayment(
+              ? []
+              : yield* stripe.paidInvoices(
                   workspaceId,
                   subscription.stripeSubscriptionId
                 );
 
-          const refund = Option.match(payment, {
-            onNone: () => nothing,
-            onSome: ({ paid }): Money => ({
-              amount: Option.match(
-                Option.all({
-                  end: subscription.currentPeriodEnd,
-                  start: subscription.currentPeriodStart,
-                }),
-                {
-                  // Without its period, the whole payment goes back.
-                  onNone: () => paid.amount,
-                  onSome: ({ end, start }) =>
-                    refundOf({ end, paid: paid.amount, start }, now),
-                }
-              ),
-              currency: paid.currency,
-            }),
-          });
+          const refund = totalOf(
+            invoices,
+            creditsAt(invoices, subscription, now)
+          );
 
-          return { endsAt, now, payment, refund, subscription, userId };
+          return { endsAt, invoices, now, refund, subscription, userId };
         },
         Effect.provide(context)
       );
@@ -182,12 +209,13 @@ export class Withdraw extends Context.Service<
           workspaceId,
         });
 
-        if (Option.isSome(found.payment) && recorded.refunded.amount > 0) {
-          yield* stripe.refund(
+        // Computed at the time recorded: tried again, each invoice gets the
+        // same credit, under the same key.
+        if (recorded.refunded.amount > 0) {
+          yield* stripe.credit(
             workspaceId,
             id,
-            found.payment.value,
-            recorded.refunded.amount
+            creditsAt(found.invoices, subscription, recorded.requestedAt)
           );
         }
 

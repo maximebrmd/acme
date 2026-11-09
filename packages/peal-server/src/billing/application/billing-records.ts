@@ -8,11 +8,15 @@ import {
 } from "#billing/domain/subscription.ts";
 import type { Subscription } from "#billing/domain/subscription.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
-import type { BillingRecord } from "#shared/application/personal-data.ts";
+import type {
+  BillingRecord,
+  ContractsRecord,
+} from "#shared/application/personal-data.ts";
 import type { UserId, WorkspaceId } from "#shared/domain/ids.ts";
 
 import { BillingMode } from "./ports/billing-mode.ts";
 import { Checkouts } from "./ports/checkouts.ts";
+import { ContractRecords } from "./ports/contract-records.ts";
 import { MeteredPostLedger } from "./ports/metered-post-ledger.ts";
 import { Subscriptions } from "./ports/subscriptions.ts";
 import type { StripeUnreachable } from "./stripe-unreachable.ts";
@@ -136,12 +140,20 @@ export class BillingRecords extends Context.Service<
       void,
       DatabaseError | StripeUnreachable | WorkspaceStillBilled
     >;
+    /** The orders and withdrawals the user made, in any workspace. */
+    readonly exportUser: (
+      userId: UserId
+    ) => Effect.Effect<ContractsRecord, DatabaseError>;
     /**
      * Leaves billing's records without the user, in the caller's
      * transaction, as their account closes: the orders and withdrawals
-     * they made, the trial they started, which stays the workspace's.
+     * they made, the trial they started, which stays the workspace's, and
+     * by `pseudonym`, their email address's, for `trialMemory`.
      */
-    readonly forgetUser: (userId: UserId) => Effect.Effect<void, DatabaseError>;
+    readonly forgetUser: (
+      userId: UserId,
+      pseudonym: string
+    ) => Effect.Effect<void, DatabaseError>;
   }
 >()("peal-server/billing/application/BillingRecords") {
   static readonly layer = Layer.effect(
@@ -151,6 +163,32 @@ export class BillingRecords extends Context.Service<
       const subscriptions = yield* Subscriptions;
       const checkouts = yield* Checkouts;
       const metered = yield* MeteredPostLedger;
+      const contracts = yield* ContractRecords;
+
+      const exportUser = Effect.fn("BillingRecords.exportUser")(
+        function* exportUser(userId: UserId) {
+          const made = yield* contracts.ofUser(userId);
+
+          const record: ContractsRecord = {
+            orders: made.orders.map((order) => ({
+              consentVersion: order.consentVersion,
+              createdAt: order.createdAt,
+              interval: order.interval,
+              plan: order.plan,
+              trial: order.trial,
+              usedAt: Option.getOrNull(order.usedAt),
+              workspaceId: Option.getOrNull(order.workspaceId),
+            })),
+            withdrawals: made.withdrawals.map((withdrawal) => ({
+              refunded: withdrawal.refunded,
+              requestedAt: withdrawal.requestedAt,
+              workspaceId: Option.getOrNull(withdrawal.workspaceId),
+            })),
+          };
+
+          return record;
+        }
+      );
 
       const exportWorkspace = Effect.fn("BillingRecords.exportWorkspace")(
         function* exportWorkspace(workspaceId: WorkspaceId) {
@@ -280,6 +318,7 @@ export class BillingRecords extends Context.Service<
       return BillingRecords.of({
         billedBy,
         eraseWorkspace,
+        exportUser,
         exportWorkspace,
         forgetUser: subscriptions.forgetUser,
         settleWorkspace,

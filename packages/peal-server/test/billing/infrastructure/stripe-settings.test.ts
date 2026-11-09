@@ -53,31 +53,24 @@ describe("the Stripe settings", () => {
             year: "peal_starter_yearly",
           },
         });
-        assert.isFalse(settings.value.automaticTax);
         assert.isTrue(Option.isNone(settings.value.apiUrl));
       }
     })
   );
 
-  it.effect("turn on Stripe Tax and another API when asked", () =>
-    Effect.gen(function* tax() {
+  it.effect("call another API when asked", () =>
+    Effect.gen(function* api() {
       const settings = yield* settingsFrom({
         ...billing,
         STRIPE_API_URL: "http://127.0.0.1:12111",
-        STRIPE_AUTOMATIC_TAX: "true",
       });
 
       assert.deepStrictEqual(
         settings.pipe(
-          Option.map(({ apiUrl, automaticTax }) => ({
-            apiUrl: apiUrl.pipe(Option.map((url) => url.href)),
-            automaticTax,
-          }))
+          Option.flatMap(({ apiUrl }) => apiUrl),
+          Option.map((url) => url.href)
         ),
-        Option.some({
-          apiUrl: Option.some("http://127.0.0.1:12111/"),
-          automaticTax: true,
-        })
+        Option.some("http://127.0.0.1:12111/")
       );
     })
   );

@@ -30,15 +30,16 @@ const stripeMockUrl = Config.String("STRIPE_MOCK_URL").pipe(
 
 const webhookSecret = "whsec_synthetic_billing_test_secret";
 
-// What the server runs with: billing on, against stripe-mock, with Stripe
-// Tax on checkout.
+// The live subscription stripe-mock lists for any customer.
+const stripeMockSubscription = "sub_1Pgc6rB7WZ01zgkWNy0Cn5nw";
+
+// What the server runs with: billing on, against stripe-mock.
 const billingApp = Layer.unwrap(
   Effect.gen(function* billingApp() {
     const apiUrl = yield* stripeMockUrl;
 
     return TestApp.layerWith({
       STRIPE_API_URL: apiUrl,
-      STRIPE_AUTOMATIC_TAX: "true",
       STRIPE_SECRET_KEY: "sk_test_0123456789syntheticbilling",
       STRIPE_WEBHOOK_SECRET: webhookSecret,
     });
@@ -994,8 +995,25 @@ layer(BillingIntegration, {
         assert.isNotNull(trying.subscription?.trialEnd);
         assert.isFalse(trying.trial?.available);
 
-        // The same account, in another workspace: no second trial.
-        const second = yield* workspaceOf(owner, "Second");
+        // A workspace in its trial is free once it ends: the account owns
+        // no second free workspace.
+        const another = yield* app.request("/api/auth/organization/create", {
+          body: { name: "Another", slug: `another-${randomUUID()}` },
+          headers: { cookie: owner.cookies },
+        });
+
+        assert.strictEqual(another.status, 402);
+        assert.strictEqual(
+          (yield* bodyOf(ErrorSchema, another)).code,
+          "FREE_WORKSPACE_LIMIT_REACHED"
+        );
+
+        // The same account, admin of another workspace: no second trial.
+        const colleague = yield* signedUp("trial-colleague");
+        const second = yield* workspaceOf(colleague, "Second");
+        const sql = yield* SqlClient.SqlClient;
+
+        yield* sql`INSERT INTO auth.member (organization_id, user_id, role, created_at) VALUES (${second}, ${owner.id}, 'admin', now())`;
 
         const refused = yield* post(
           owner,
@@ -1019,6 +1037,91 @@ layer(BillingIntegration, {
 
         assert.strictEqual(after.plan, "free");
         assert.isFalse(after.trial?.available);
+      })
+  );
+
+  it.effect(
+    "changes a workspace's subscription only for an order, and opens a checkout of its own for a paid plan during the trial",
+    () =>
+      Effect.gen(function* inPlace() {
+        const app = yield* TestApp;
+        const sql = yield* SqlClient.SqlClient;
+        const delivery = newDelivery();
+
+        const { owner, workspaceId } = yield* billedWorkspace(
+          "in-place",
+          delivery.customerId
+        );
+
+        // The workspace in its trial, as Better Auth's plugin holds it,
+        // under the id of the live subscription stripe-mock lists for every
+        // customer: the plugin would change it in place, without a
+        // checkout.
+        yield* sql`INSERT INTO auth.subscription (plan, reference_id, stripe_customer_id, stripe_subscription_id, status)
+          VALUES ('pro', ${workspaceId}, ${delivery.customerId}, ${stripeMockSubscription}, 'trialing')`;
+
+        const upgrade = (body: {
+          readonly metadata?: { readonly orderId: string };
+          readonly subscriptionId?: string;
+        }) =>
+          app.request("/api/auth/subscription/upgrade", {
+            body: {
+              cancelUrl: `/app/${workspaceId}/billing`,
+              customerType: "organization",
+              disableRedirect: true,
+              plan: "agency",
+              referenceId: workspaceId,
+              successUrl: `/app/${workspaceId}/billing?checkout=done`,
+              ...body,
+            },
+            headers: { cookie: owner.cookies },
+          });
+
+        // Agency for the trial's price, without an order: refused.
+        const unordered = yield* upgrade({});
+
+        assert.strictEqual(unordered.status, 400);
+        assert.strictEqual(
+          (yield* bodyOf(ErrorSchema, unordered)).code,
+          "CHECKOUT_ORDER_REQUIRED"
+        );
+
+        const named = yield* upgrade({
+          subscriptionId: stripeMockSubscription,
+        });
+
+        assert.strictEqual(named.status, 400);
+        assert.strictEqual(
+          (yield* bodyOf(ErrorSchema, named)).code,
+          "SUBSCRIPTION_CHOICE_REFUSED"
+        );
+
+        const order = yield* ordered(owner, workspaceId, {
+          interval: "month",
+          plan: "agency",
+          trial: false,
+        });
+
+        const checkout = yield* upgrade({ metadata: { orderId: order.id } });
+
+        assert.strictEqual(checkout.status, 200);
+        assert.match((yield* bodyOf(CheckoutSchema, checkout)).url, /^https:/u);
+
+        // The order was taken: once.
+        const again = yield* upgrade({ metadata: { orderId: order.id } });
+
+        assert.strictEqual(again.status, 400);
+
+        // A paid plan changes in place for an order only, too.
+        yield* sql`UPDATE auth.subscription SET status = 'active' WHERE reference_id = ${workspaceId}`;
+
+        const paidUnordered = yield* upgrade({});
+
+        assert.strictEqual(paidUnordered.status, 400);
+        assert.strictEqual(
+          (yield* bodyOf(ErrorSchema, paidUnordered)).code,
+          "CHECKOUT_ORDER_REQUIRED"
+        );
       })
   );
 

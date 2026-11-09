@@ -75,7 +75,10 @@ export interface EmailCatalog {
   readonly intervals: { readonly month: string; readonly year: string };
   /** A trial of `{plan}` in `{workspaceName}` ends at `{endsAt}`. */
   readonly trialEnding: EmailMessages;
-  /** A yearly `{plan}` renews at `{renewsAt}` for `{price}` excluding VAT. */
+  /**
+   * A yearly `{plan}` renews at `{renewsAt}` for `{price}`, what Stripe
+   * will charge, VAT included.
+   */
   readonly subscriptionRenewing: EmailMessages;
   /** The `{plan}` subscription was cancelled, and ends at `{endsAt}`. */
   readonly subscriptionCancelled: EmailMessages;

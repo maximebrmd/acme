@@ -4,6 +4,7 @@ import {
   eq,
   gt,
   inArray,
+  isNotNull,
   isNull,
   lt,
   lte,
@@ -145,26 +146,57 @@ export const DrizzleSubscriptionsLive = Layer.effect(
         );
 
     const eraseWorkspace = (workspaceId: WorkspaceId) =>
-      Effect.all([
-        db
+      Effect.gen(function* eraseWorkspaceRows() {
+        const erasedAt = date(yield* DateTime.now);
+
+        // The customer whose invoices the kept orders go with.
+        const [billed] = yield* db
+          .select({ customer: subscriptions.stripeCustomerId })
+          .from(subscriptions)
+          .where(eq(subscriptions.workspaceId, workspaceId))
+          .orderBy(asc(subscriptions.stripeSubscriptionId))
+          .limit(1);
+
+        yield* billed === undefined
+          ? db.delete(orders).where(eq(orders.workspaceId, workspaceId))
+          : db
+              .update(orders)
+              .set({
+                erasedAt,
+                stripeCustomerId: billed.customer,
+                workspaceId: null,
+              })
+              .where(eq(orders.workspaceId, workspaceId));
+
+        yield* db
+          .update(withdrawals)
+          .set({ erasedAt, workspaceId: null })
+          .where(eq(withdrawals.workspaceId, workspaceId));
+
+        yield* db
           .delete(subscriptions)
-          .where(eq(subscriptions.workspaceId, workspaceId)),
-        db.delete(orders).where(eq(orders.workspaceId, workspaceId)),
-        db.delete(withdrawals).where(eq(withdrawals.workspaceId, workspaceId)),
-        db
+          .where(eq(subscriptions.workspaceId, workspaceId));
+
+        yield* db
           .update(trials)
           .set({ workspaceId: null })
-          .where(eq(trials.workspaceId, workspaceId)),
-        db
+          .where(eq(trials.workspaceId, workspaceId));
+
+        yield* db
           .delete(trials)
-          .where(and(isNull(trials.userId), isNull(trials.workspaceId))),
-      ]).pipe(
+          .where(
+            and(
+              isNull(trials.userId),
+              isNull(trials.workspaceId),
+              isNull(trials.userPseudonym)
+            )
+          );
+      }).pipe(
         Effect.mapError(failed),
-        Effect.asVoid,
         Effect.withSpan("Subscriptions.eraseWorkspace")
       );
 
-    const forgetUser = (userId: UserId) =>
+    const forgetUser = (userId: UserId, pseudonym: string) =>
       Effect.all([
         db
           .update(orders)
@@ -174,13 +206,29 @@ export const DrizzleSubscriptionsLive = Layer.effect(
           .update(withdrawals)
           .set({ userId: null })
           .where(eq(withdrawals.userId, userId)),
-        db
-          .update(trials)
-          .set({ userId: null })
-          .where(eq(trials.userId, userId)),
+        DateTime.now.pipe(
+          Effect.flatMap((now) =>
+            db
+              .update(trials)
+              .set({
+                forgottenAt: date(now),
+                userId: null,
+                userPseudonym: pseudonym,
+              })
+              .where(
+                and(
+                  eq(trials.userId, userId),
+                  isNotNull(trials.stripeSubscriptionId)
+                )
+              )
+          )
+        ),
+        // A hold no checkout took is no trial.
         db
           .delete(trials)
-          .where(and(isNull(trials.userId), isNull(trials.workspaceId))),
+          .where(
+            and(eq(trials.userId, userId), isNull(trials.stripeSubscriptionId))
+          ),
       ]).pipe(
         Effect.mapError(failed),
         Effect.asVoid,

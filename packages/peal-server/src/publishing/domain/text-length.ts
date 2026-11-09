@@ -82,7 +82,12 @@ const emoji = /^\p{RGI_Emoji}$/v;
 
 // The emoji X counts as 2 each, whatever they are built of, found as
 // twitter-text finds them: the longest at each place, a keycap without its
-// variation selector too ("1⃣").
+// variation selector too ("1⃣"). The list is Unicode's current one
+// (`RGI_Emoji`), on purpose: twitter-text 3.1.0 carries a 2019 list, which
+// lacks some ZWJ sequences and counts them by code point (🧑🏽‍💻 and 👁️‍🗨️ as
+// 5, where Peal counts 2), and X's own composer counts by a newer one. A
+// post near 280 made of such sequences is the only text the two can tell
+// apart; X's answer then wins, as for any refusal.
 const emojis = /\p{RGI_Emoji}|[#*0-9]\u20E3/gv;
 
 const codePointsWeight = (text: string): number =>

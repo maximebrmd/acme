@@ -76,13 +76,15 @@ CREATE TABLE "billing"."metered_posts" (
 CREATE TABLE "billing"."orders" (
 	"consent_version" text NOT NULL,
 	"created_at" timestamp with time zone NOT NULL,
+	"erased_at" timestamp with time zone,
 	"id" uuid PRIMARY KEY,
 	"interval" text NOT NULL,
 	"plan" text NOT NULL,
+	"stripe_customer_id" text,
 	"trial" boolean NOT NULL,
 	"used_at" timestamp with time zone,
 	"user_id" text,
-	"workspace_id" uuid NOT NULL
+	"workspace_id" uuid
 );
 --> statement-breakpoint
 CREATE TABLE "billing"."stripe_events" (
@@ -108,20 +110,25 @@ CREATE TABLE "billing"."subscriptions" (
 );
 --> statement-breakpoint
 CREATE TABLE "billing"."trials" (
-	"plan" text NOT NULL,
-	"started_at" timestamp with time zone NOT NULL,
-	"stripe_subscription_id" text PRIMARY KEY,
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+	"plan" text,
+	"reserved_at" timestamp with time zone NOT NULL,
+	"started_at" timestamp with time zone,
+	"forgotten_at" timestamp with time zone,
+	"stripe_subscription_id" text,
 	"user_id" text,
+	"user_pseudonym" text,
 	"workspace_id" uuid
 );
 --> statement-breakpoint
 CREATE TABLE "billing"."withdrawals" (
 	"currency" text NOT NULL,
+	"erased_at" timestamp with time zone,
 	"refunded" bigint NOT NULL,
 	"requested_at" timestamp with time zone NOT NULL,
 	"stripe_subscription_id" text PRIMARY KEY,
 	"user_id" text,
-	"workspace_id" uuid NOT NULL
+	"workspace_id" uuid
 );
 --> statement-breakpoint
 CREATE TABLE "channels"."channels" (
@@ -373,6 +380,7 @@ CREATE TABLE "staff"."audit_events" (
 	"reason" text,
 	"staff_id" uuid,
 	"target_id" uuid,
+	"target_pseudonym" text,
 	"workspace_id" uuid
 );
 --> statement-breakpoint
@@ -662,11 +670,17 @@ CREATE INDEX "tracked_posts_workspace_published" ON "analytics"."tracked_posts" 
 CREATE INDEX "tracked_posts_post" ON "analytics"."tracked_posts" ("post_id");--> statement-breakpoint
 CREATE INDEX "tracked_posts_published" ON "analytics"."tracked_posts" ("published_at","target_id");--> statement-breakpoint
 CREATE INDEX "orders_workspace" ON "billing"."orders" ("workspace_id");--> statement-breakpoint
+CREATE INDEX "orders_user" ON "billing"."orders" ("user_id");--> statement-breakpoint
+CREATE INDEX "orders_erased" ON "billing"."orders" ("erased_at");--> statement-breakpoint
 CREATE INDEX "subscriptions_workspace" ON "billing"."subscriptions" ("workspace_id");--> statement-breakpoint
 CREATE INDEX "subscriptions_reminders" ON "billing"."subscriptions" ("status","current_period_end");--> statement-breakpoint
+CREATE INDEX "trials_pseudonym" ON "billing"."trials" ("user_pseudonym");--> statement-breakpoint
+CREATE UNIQUE INDEX "trials_subscription" ON "billing"."trials" ("stripe_subscription_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "trials_user" ON "billing"."trials" ("user_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "trials_workspace" ON "billing"."trials" ("workspace_id");--> statement-breakpoint
 CREATE INDEX "withdrawals_workspace" ON "billing"."withdrawals" ("workspace_id");--> statement-breakpoint
+CREATE INDEX "withdrawals_user" ON "billing"."withdrawals" ("user_id");--> statement-breakpoint
+CREATE INDEX "withdrawals_erased" ON "billing"."withdrawals" ("erased_at");--> statement-breakpoint
 CREATE INDEX "channels_token_expiry" ON "channels"."channels" ("token_expires_at") WHERE "status" = 'active' AND "token_kind" <> 'nonExpiring';--> statement-breakpoint
 CREATE INDEX "channels_granted_by" ON "channels"."channels" ("granted_by") WHERE "granted_by" IS NOT NULL;--> statement-breakpoint
 CREATE INDEX "connect_attempts_expires_at" ON "channels"."connect_attempts" ("expires_at");--> statement-breakpoint
@@ -684,6 +698,7 @@ CREATE INDEX "notices_user_unread" ON "notifications"."notices" ("user_id") WHER
 CREATE INDEX "post_targets_published" ON "publishing"."post_targets" ("finished_at","id") WHERE "status" = 'published';--> statement-breakpoint
 CREATE INDEX "posts_workspace_scheduled_at" ON "publishing"."posts" ("workspace_id","scheduled_at");--> statement-breakpoint
 CREATE INDEX "posts_workspace_drafts" ON "publishing"."posts" ("workspace_id","id") WHERE "status" = 'draft';--> statement-breakpoint
+CREATE INDEX "audit_events_pseudonym" ON "staff"."audit_events" ("target_pseudonym");--> statement-breakpoint
 CREATE INDEX "audit_events_at" ON "staff"."audit_events" ("at","id");--> statement-breakpoint
 CREATE INDEX "audit_events_target" ON "staff"."audit_events" ("target_id","at");--> statement-breakpoint
 CREATE INDEX "audit_events_staff" ON "staff"."audit_events" ("staff_id");--> statement-breakpoint

@@ -131,7 +131,7 @@ export class CloseAccount extends Context.Service<
               discard: true,
             });
 
-            yield* records.eraseUser(userId);
+            yield* records.eraseUser(userId, user.email);
             yield* store.deleteUser(userId);
 
             yield* Effect.forEach(

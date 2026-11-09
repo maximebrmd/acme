@@ -1,7 +1,14 @@
 // Billing's calls to Stripe, against a stand-in for Stripe's API: what each
 // call asks, under which idempotency key, and how its answers are read.
 import { assert, layer } from "@effect/vitest";
-import { ConfigProvider, Context, Effect, Layer, Option } from "effect";
+import {
+  ConfigProvider,
+  Context,
+  DateTime,
+  Effect,
+  Layer,
+  Option,
+} from "effect";
 
 import { StripeContracts } from "#billing/application/ports/stripe-contracts.ts";
 import { StripeContractsLive } from "#billing/infrastructure/stripe-contracts-live.ts";
@@ -26,9 +33,10 @@ const list = (data: readonly JsonValue[], url: string) =>
   json({ data: [...data], has_more: false, object: "list", url });
 
 // Stripe as billing calls it: `cus_business` gave a verified VAT number,
-// `cus_consumer` one VIES has not verified; `sub_paid` has a paid invoice
-// of 900 cents through `pi_synthetic`, `sub_free` none; `sub_missing` is
-// no subscription Stripe knows. `failing` answers every request an error.
+// `cus_consumer` one VIES has not verified; `sub_paid` has paid invoices of
+// 1500 (a change of plan's) and 900 cents, and one of nothing, `sub_free`
+// none; `sub_missing` is no subscription Stripe knows. `failing` answers
+// every request an error.
 const fakeStripe = (options: { readonly failing?: boolean } = {}) =>
   platformServer((request): PlatformAnswer => {
     if (options.failing === true) {
@@ -62,9 +70,33 @@ const fakeStripe = (options: { readonly failing?: boolean } = {}) =>
         query.get("subscription") === "sub_paid"
           ? [
               {
+                amount_paid: 1500,
+                currency: "eur",
+                id: "in_proration",
+                lines: {
+                  data: [
+                    { period: { end: 1_796_083_200, start: 1_794_009_600 } },
+                  ],
+                },
+                object: "invoice",
+                status: "paid",
+              },
+              {
                 amount_paid: 900,
                 currency: "eur",
                 id: "in_synthetic",
+                lines: {
+                  data: [
+                    { period: { end: 1_796_083_200, start: 1_793_491_200 } },
+                  ],
+                },
+                object: "invoice",
+                status: "paid",
+              },
+              {
+                amount_paid: 0,
+                currency: "eur",
+                id: "in_nothing",
                 object: "invoice",
                 status: "paid",
               },
@@ -74,21 +106,12 @@ const fakeStripe = (options: { readonly failing?: boolean } = {}) =>
       );
     }
 
-    if (method === "GET" && path === "/v1/invoice_payments") {
-      return list(
-        [
-          {
-            id: "inpay_synthetic",
-            object: "invoice_payment",
-            payment: { payment_intent: "pi_synthetic", type: "payment_intent" },
-          },
-        ],
-        path
-      );
+    if (method === "POST" && path === "/v1/invoices/create_preview") {
+      return json({ currency: "eur", object: "invoice", total: 9000 });
     }
 
-    if (method === "POST" && path === "/v1/refunds") {
-      return json({ amount: 810, id: "re_synthetic", object: "refund" });
+    if (method === "POST" && path === "/v1/credit_notes") {
+      return json({ id: "cn_synthetic", object: "credit_note" });
     }
 
     const subscription = /^\/v1\/subscriptions\/(?<id>[^/]+)$/u.exec(path)
@@ -145,46 +168,98 @@ layer(Layer.empty)("billing's calls to Stripe", (it) => {
   );
 
   it.effect(
-    "find what the latest paid invoice took, and refund part of it once",
+    "find each paid invoice and its period, and credit each once, refunded",
     () =>
       Effect.gen(function* refunds() {
         const stripe = yield* fakeStripe();
         const contracts = yield* contractsOn(stripe.url);
 
-        assert.isTrue(
-          Option.isNone(yield* contracts.latestPayment(workspaceId, "sub_free"))
-        );
-
-        const payment = yield* contracts.latestPayment(workspaceId, "sub_paid");
-
         assert.deepStrictEqual(
-          payment,
-          Option.some({
-            paid: { amount: 900, currency: "eur" },
-            paymentIntentId: "pi_synthetic",
-          })
+          yield* contracts.paidInvoices(workspaceId, "sub_free"),
+          []
         );
 
-        if (Option.isSome(payment)) {
-          yield* contracts.refund(workspaceId, "sub_paid", payment.value, 810);
-        }
+        const invoices = yield* contracts.paidInvoices(workspaceId, "sub_paid");
 
-        const refund = stripe
+        assert.deepStrictEqual(invoices, [
+          {
+            invoiceId: "in_proration",
+            paid: { amount: 1500, currency: "eur" },
+            periodEnd: Option.some(DateTime.makeUnsafe(1_796_083_200_000)),
+            periodStart: Option.some(DateTime.makeUnsafe(1_794_009_600_000)),
+          },
+          {
+            invoiceId: "in_synthetic",
+            paid: { amount: 900, currency: "eur" },
+            periodEnd: Option.some(DateTime.makeUnsafe(1_796_083_200_000)),
+            periodStart: Option.some(DateTime.makeUnsafe(1_793_491_200_000)),
+          },
+        ]);
+
+        yield* contracts.credit(workspaceId, "sub_paid", [
+          { amount: 1250, invoiceId: "in_proration" },
+          { amount: 0, invoiceId: "in_synthetic" },
+        ]);
+
+        const credits = stripe
           .requests()
-          .find(({ path }) => path === "/v1/refunds");
+          .filter(({ path }) => path === "/v1/credit_notes");
 
-        assert.isDefined(refund);
+        // Nothing to credit, no credit note.
+        assert.strictEqual(credits.length, 1);
 
-        if (refund !== undefined) {
-          const form = new URLSearchParams(textOf(refund));
+        const [creditNote] = credits;
 
-          assert.strictEqual(form.get("amount"), "810");
-          assert.strictEqual(form.get("payment_intent"), "pi_synthetic");
+        if (creditNote !== undefined) {
+          const form = new URLSearchParams(textOf(creditNote));
+
+          assert.strictEqual(form.get("invoice"), "in_proration");
+          assert.strictEqual(form.get("amount"), "1250");
+          assert.strictEqual(form.get("refund_amount"), "1250");
           assert.strictEqual(
-            headerOf(refund, "idempotency-key"),
-            "withdrawal-refund-sub_paid"
+            headerOf(creditNote, "idempotency-key"),
+            "withdrawal-credit-sub_paid-in_proration"
           );
         }
+      }).pipe(Effect.scoped)
+  );
+
+  it.effect(
+    "set a trial to end with its trial, and read the next invoice's total",
+    () =>
+      Effect.gen(function* trial() {
+        const stripe = yield* fakeStripe();
+        const contracts = yield* contractsOn(stripe.url);
+
+        yield* contracts.endAtTrialEnd(
+          workspaceId,
+          "sub_trial",
+          DateTime.makeUnsafe(1_796_083_200_000)
+        );
+        // One Stripe no longer has is left alone.
+        yield* contracts.endAtTrialEnd(
+          workspaceId,
+          "sub_missing",
+          DateTime.makeUnsafe(1_796_083_200_000)
+        );
+
+        const [update] = stripe.requests();
+
+        const form = new URLSearchParams(
+          update === undefined ? "" : textOf(update)
+        );
+
+        assert.strictEqual(form.get("cancel_at"), "1796083200");
+        assert.strictEqual(form.get("proration_behavior"), "none");
+        assert.strictEqual(
+          update === undefined ? "" : headerOf(update, "idempotency-key"),
+          "trial-end-sub_trial-1796083200"
+        );
+
+        assert.deepStrictEqual(
+          yield* contracts.upcomingTotal(workspaceId, "sub_paid"),
+          Option.some({ amount: 9000, currency: "eur" })
+        );
       }).pipe(Effect.scoped)
   );
 

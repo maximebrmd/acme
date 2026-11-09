@@ -23,25 +23,25 @@ The workspace's **Billing** page shows the same prices, its plan, and how much o
 
 ## The free plan and the trial [#trial]
 
-A new workspace is on the free plan. An account owns one workspace on the free plan at most: creating a second answers 402 `FREE_WORKSPACE_LIMIT_REACHED` until the first is subscribed. A workspace that falls back to the free plan, after a trial or a cancellation, stays.
+A new workspace is on the free plan. An account owns one workspace on the free plan at most: creating a second answers 402 `FREE_WORKSPACE_LIMIT_REACHED` until the first is subscribed. A workspace in its trial counts as free, as it is once the trial ends. A workspace that falls back to the free plan, after a trial or a cancellation, stays.
 
-Once per account and per workspace, a workspace that never had a subscription may try Pro free for {{trial-days}} days, without a payment method: nothing is charged, and three days before the end the members who manage billing are reminded, in the app and by email. When the trial ends, the workspace is back on the free plan, with its content. Ordering a plan during the trial ends it at once, and the paid plan starts that day.
+Once per account and per workspace, a workspace that never had a subscription may try Pro free for {{trial-days}} days, without a payment method: nothing is charged, and three days before the end the members who manage billing are reminded, in the app and by email. When the trial ends, the workspace is back on the free plan, with its content, even if a payment method was added meanwhile: a trial never turns into a charge. A plan ordered during the trial starts once it is paid for, and the trial ends then; a checkout left unfinished leaves the trial running. An account closed after its trial leaves a keyed pseudonym of its email address for 2 years, so the same address signing up again gets no second trial.
 
 ## What a plan limits [#limits]
 
 Each limit is checked when something is added, and a workspace over a smaller plan's limits, as after its trial, keeps what it has:
 
-- **Channels**: connecting an account the plan has no room for is refused. An Instagram account is one channel whichever way it is connected: moving it from a Facebook Page to Instagram, or back, adds none, even on a full plan. A workspace with more channels than its plan allows schedules nothing until it disconnects some.
+- **Channels**: connecting an account the plan has no room for is refused. An Instagram account is one channel whichever way it is connected: moving it from a Facebook Page to Instagram, or back, adds none, even on a full plan. A workspace with more channels than its plan allows schedules nothing until it disconnects some, and its scheduled posts do not go out either.
 - **Members**, pending invitations included.
-- **Posts** going out in a calendar month (UTC), on the free plan.
+- **Posts** going out in a calendar month (UTC), on the free plan. Checked again when each post is due: once a trial or a larger plan ends, only the month's first posts the plan allows go out, by their time.
 - **Writing assistant** requests per UTC day.
 - **Media**: the bytes of images and videos stored, uploads in progress included. An upload the plan has no room for is refused before anything is sent; delete media to make room.
 
-Each refusal answers 402 `PlanLimitReached`, naming the `limit` and what the plan `allowed`.
+Each refusal answers 402 `PlanLimitReached`, naming the `limit` and what the plan `allowed`. A scheduled post the plan has no room for when it is due fails on its channels as `planLimit`, nothing sent: make room or move to a larger plan, then post it again.
 
 ## Ordering [#ordering]
 
-Owners and admins order on the workspace's **Billing** page, in their own session. Before anything is paid, they tick a box that is never ticked for them: "I ask Peal to start my subscription now. I know that, as a consumer, I may withdraw within 14 days and then pay only for the days used." Peal records it with the order, then opens Stripe's checkout from the **Order with obligation to pay** button. Stripe asks for the billing address and, for a business, the VAT number, and computes the VAT. A confirmation of the subscription comes by email.
+Owners and admins order on the workspace's **Billing** page, in their own session. Before anything is paid, they tick a box that is never ticked for them: "I ask Peal to start my subscription now. I know that, as a consumer, I may withdraw within 14 days and then pay only for the days used." Peal records it with the order, then opens Stripe's checkout from the **Order with obligation to pay** button. Stripe asks for the billing address and, for a business, the VAT number, and computes the VAT. A confirmation of the subscription comes by email, with what Stripe charged, VAT included. A plan changes on the billing page only, with an order each time; Stripe's portal changes the payment method and gives the invoices.
 
 ## Cancelling [#cancelling]
 
@@ -49,8 +49,8 @@ Cancel online at any time, from the **Billing** page: **Cancel the subscription*
 
 ## Withdrawing within 14 days [#withdrawal]
 
-As a consumer, you may withdraw from the contract within 14 days of subscribing, without giving a reason. While the 14 days run, the **Billing** page shows **Withdraw from contract here**; it says what is refunded, then **Confirm withdrawal** ends the subscription at once and refunds the part of the period not used, to the second, to your payment method within 14 days. An acknowledgement, with its date and time, comes by email. A business that gave a VAT number Stripe verified has no right to withdraw, and can cancel instead.
+As a consumer, you may withdraw from the contract within 14 days of subscribing, without giving a reason. While the 14 days run, the **Billing** page shows **Withdraw from contract here**, even after cancelling; it says what is refunded, then **Confirm withdrawal** ends the subscription at once and refunds, for each payment since you subscribed, the part of the period it paid for not used, to the second, to your payment method within 14 days, through a credit note on each invoice. An acknowledgement, with its date and time, comes by email. A business that gave a VAT number Stripe verified has no right to withdraw, and can cancel instead.
 
 ## Yearly plans [#renewal]
 
-A yearly plan renews each year until cancelled. 45 days before it renews, the members who manage billing are reminded, in the app and by email, with its price and how to cancel. A price change is announced by email 30 days ahead, and applies from the next renewal.
+A yearly plan renews each year until cancelled. 45 days before it renews, the members who manage billing are reminded, in the app and by email, with what Stripe will charge, VAT included, and how to cancel. A price change is announced by email 30 days ahead, and applies from the next renewal.

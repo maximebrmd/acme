@@ -18,6 +18,7 @@ import { PostsPublishing } from "#publishing/application/posts-publishing.ts";
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
 import { StaffRecords } from "#staff/application/staff-records.ts";
+import { PlainPseudonymsTest } from "#test/billing/support.ts";
 import { ContextRecords } from "#workspace/application/context-records.ts";
 import { ContextRecordsLive } from "#workspace/infrastructure/context-records.ts";
 
@@ -85,7 +86,7 @@ const RecordsTest = Layer.unwrap(
       )
     );
   })
-).pipe(Layer.provideMerge(Calls.layer));
+).pipe(Layer.provide(PlainPseudonymsTest), Layer.provideMerge(Calls.layer));
 
 const made = Calls.use(({ made: calls }) => Ref.getAndSet(calls, []));
 

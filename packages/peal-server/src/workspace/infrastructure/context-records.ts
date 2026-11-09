@@ -9,6 +9,7 @@ import { LegalRecords } from "#legal/application/legal-records.ts";
 import { MediaRecords } from "#media/application/media-records.ts";
 import { NoticeRecords } from "#notifications/application/notice-records.ts";
 import { PostRecords } from "#publishing/application/post-records.ts";
+import { Pseudonyms } from "#shared/application/pseudonyms.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
 import { StaffRecords } from "#staff/application/staff-records.ts";
 import { BillingUnavailable } from "#workspace/application/billing-unavailable.ts";
@@ -54,15 +55,18 @@ export const ContextRecordsLive = Layer.effect(
     const analytics = yield* AnalyticsRecords;
     const staff = yield* StaffRecords;
     const legal = yield* LegalRecords;
+    const pseudonyms = yield* Pseudonyms;
 
     return ContextRecords.of({
       eraseUser: Effect.fn("ContextRecords.eraseUser")(
-        function* eraseUser(userId) {
+        function* eraseUser(userId, email) {
+          const pseudonym = yield* pseudonyms.ofEmail(email);
+
           yield* notices.eraseUser(userId);
           yield* posts.forgetAuthor(userId);
           yield* channels.eraseUser(userId);
-          yield* staff.forgetUser(userId);
-          yield* billing.forgetUser(userId);
+          yield* staff.forgetUser(userId, pseudonym);
+          yield* billing.forgetUser(userId, pseudonym);
         }
       ),
       eraseWorkspace: Effect.fn("ContextRecords.eraseWorkspace")(
@@ -90,12 +94,14 @@ export const ContextRecordsLive = Layer.effect(
         posts.exportAuthored(userId, workspaceIds),
       exportUser: (userId) =>
         Effect.all({
+          contracts: billing.exportUser(userId),
           legalHold: legal.exportUser(userId),
           staffActions: staff.exportUser(userId),
           user: notices.exportUser(userId),
         }).pipe(
-          Effect.map(({ legalHold, staffActions, user }) => ({
+          Effect.map(({ contracts, legalHold, staffActions, user }) => ({
             ...user,
+            contracts,
             legalHold,
             staffActions,
           }))

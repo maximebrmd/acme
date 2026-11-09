@@ -1,6 +1,7 @@
 /**
  * The codes of the refusals Peal makes itself, before any platform is
- * called: the post's channel or one of its media can no longer be used.
+ * called: the post's channel or one of its media can no longer be used, or
+ * the workspace's plan has no room for it.
  * They are stored in the publication journal, so never change one. The
  * publication policy tells them apart from the platforms' own codes.
  */
@@ -11,6 +12,9 @@ export const ownRefusalCodes = {
   channelDisconnected: "channelDisconnected",
   // A MediaRejected: the media was deleted, or is no longer ready.
   mediaRemoved: "mediaUnavailable",
+  // A BadRequest: the workspace's plan has no room for the post when it is
+  // due, as after a trial or on a smaller plan.
+  planLimit: "planLimit",
 } as const;
 
 /**

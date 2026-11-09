@@ -19,7 +19,7 @@ import { BillingMode } from "#billing/application/ports/billing-mode.ts";
 import { BillingNotices } from "#billing/application/ports/billing-notices.ts";
 import { Orders } from "#billing/application/ports/orders.ts";
 import { StripeContracts } from "#billing/application/ports/stripe-contracts.ts";
-import type { PeriodPayment } from "#billing/application/ports/stripe-contracts.ts";
+import type { PaidInvoice } from "#billing/application/ports/stripe-contracts.ts";
 import { Subscriptions } from "#billing/application/ports/subscriptions.ts";
 import { Trials } from "#billing/application/ports/trials.ts";
 import type { StartedTrial } from "#billing/application/ports/trials.ts";
@@ -34,7 +34,7 @@ import { Ids } from "#shared/application/ids.ts";
 import { Actor } from "#shared/domain/access.ts";
 import type { Permission } from "#shared/domain/access.ts";
 import { UserIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
-import { subscriptionOf } from "#test/billing/support.ts";
+import { PlainPseudonymsTest, subscriptionOf } from "#test/billing/support.ts";
 import { permissionsFor } from "#workspace/domain/roles.ts";
 
 const workspaceId = WorkspaceIdSchema.make(
@@ -75,7 +75,7 @@ class BillingLog extends Context.Service<
       readonly { readonly key: string; readonly notice: BillingNotice }[]
     >;
     readonly orders: Ref.Ref<readonly PlacedOrder[]>;
-    readonly payment: Ref.Ref<Option.Option<PeriodPayment>>;
+    readonly invoices: Ref.Ref<readonly PaidInvoice[]>;
     readonly stripe: Ref.Ref<readonly string[]>;
     readonly trials: Ref.Ref<readonly StartedTrial[]>;
     readonly withdrawals: Ref.Ref<readonly Withdrawal[]>;
@@ -87,11 +87,11 @@ const LogLive = Layer.effect(
   Effect.all({
     business: Ref.make(false),
     held: Ref.make<readonly Subscription[]>([]),
+    invoices: Ref.make<readonly PaidInvoice[]>([]),
     notices: Ref.make<
       readonly { readonly key: string; readonly notice: BillingNotice }[]
     >([]),
     orders: Ref.make<readonly PlacedOrder[]>([]),
-    payment: Ref.make(Option.none<PeriodPayment>()),
     stripe: Ref.make<readonly string[]>([]),
     trials: Ref.make<readonly StartedTrial[]>([]),
     withdrawals: Ref.make<readonly Withdrawal[]>([]),
@@ -152,7 +152,10 @@ const PortsInMemory = Layer.mergeAll(
     BillingLog.use(({ trials }) =>
       Effect.succeed(
         Trials.of({
-          record: (trial) => Ref.update(trials, (all) => [...all, trial]),
+          forgetPseudonyms: () => Effect.succeed(0),
+          record: (trial) =>
+            Ref.update(trials, (all) => [...all, trial]).pipe(Effect.as(true)),
+          reserve: () => Effect.succeed(true),
           used: (user, workspace) =>
             Ref.get(trials).pipe(
               Effect.map((all) =>
@@ -162,6 +165,8 @@ const PortsInMemory = Layer.mergeAll(
                 )
               )
             ),
+          usedByPseudonym: (pseudonym) =>
+            Effect.succeed(pseudonym === "pseudonym:closed@example.com"),
         })
       )
     )
@@ -188,7 +193,7 @@ const PortsInMemory = Layer.mergeAll(
   ),
   Layer.effect(
     StripeContracts,
-    BillingLog.use(({ business, payment, stripe }) => {
+    BillingLog.use(({ business, invoices, stripe }) => {
       const asked = (call: string) =>
         Ref.update(stripe, (all) => [...all, call]);
 
@@ -196,11 +201,17 @@ const PortsInMemory = Layer.mergeAll(
         StripeContracts.of({
           cancelAtPeriodEnd: (_workspace, id) =>
             asked(`cancelAtPeriodEnd ${id}`),
+          credit: (_workspace, id, credits) =>
+            asked(
+              `credit ${id} ${credits.map(({ amount, invoiceId }) => `${invoiceId}:${amount}`).join(" ")}`
+            ),
+          endAtTrialEnd: (_workspace, id) => asked(`endAtTrialEnd ${id}`),
           endNow: (_workspace, id, reason) => asked(`endNow ${id} ${reason}`),
           isBusiness: () => Ref.get(business),
-          latestPayment: () => Ref.get(payment),
-          refund: (_workspace, id, _payment, amount) =>
-            asked(`refund ${id} ${amount}`),
+          paidInvoices: () => Ref.get(invoices),
+          // A yearly business plan, VAT included.
+          upcomingTotal: () =>
+            Effect.succeed(Option.some({ amount: 30_000, currency: "eur" })),
         })
       );
     })
@@ -227,6 +238,7 @@ const ActionsTest = Layer.mergeAll(
 ).pipe(
   Layer.provideMerge(PortsInMemory),
   Layer.provide(Ids.layerTest),
+  Layer.provide(PlainPseudonymsTest),
   Layer.provide(Layer.succeed(BillingMode, BillingMode.of({ enabled: true }))),
   Layer.provideMerge(LogLive)
 );
@@ -238,7 +250,7 @@ const reset = BillingLog.use((log) =>
     Ref.set(log.held, []),
     Ref.set(log.notices, []),
     Ref.set(log.orders, []),
-    Ref.set(log.payment, Option.none()),
+    Ref.set(log.invoices, []),
     Ref.set(log.stripe, []),
     Ref.set(log.trials, []),
     Ref.set(log.withdrawals, []),
@@ -249,6 +261,9 @@ const holding = (...subscriptions: readonly Subscription[]) =>
   BillingLog.use(({ held }) => Ref.set(held, subscriptions));
 
 const askedOfStripe = BillingLog.use(({ stripe }) => Ref.get(stripe));
+
+const paying = (...paidInvoices: readonly PaidInvoice[]) =>
+  BillingLog.use(({ invoices }) => Ref.set(invoices, paidInvoices));
 
 const told = BillingLog.use(({ notices }) => Ref.get(notices));
 
@@ -355,27 +370,27 @@ layer(ActionsTest)("billing's actions", (it) => {
       })
   );
 
-  it.effect("ends the trial at once when a paid plan is ordered", () =>
-    Effect.gen(function* duringTrial() {
-      yield* setNow("2026-11-09T10:00:00Z");
-      yield* holding(
-        paid({
+  it.effect(
+    "keeps the trial running when a paid plan is ordered, until it is paid",
+    () =>
+      Effect.gen(function* duringTrial() {
+        yield* setNow("2026-11-09T10:00:00Z");
+        yield* holding(
+          paid({
+            plan: "pro",
+            status: "trialing",
+            stripeSubscriptionId: "sub_synthetic_trialing",
+          })
+        );
+
+        yield* (yield* PlaceOrder).place(actorAs(), {
+          interval: "month",
           plan: "pro",
-          status: "trialing",
-          stripeSubscriptionId: "sub_synthetic_trialing",
-        })
-      );
+          trial: false,
+        });
 
-      yield* (yield* PlaceOrder).place(actorAs(), {
-        interval: "month",
-        plan: "pro",
-        trial: false,
-      });
-
-      assert.deepStrictEqual(yield* askedOfStripe, [
-        "endNow sub_synthetic_trialing orderedDuringTrial",
-      ]);
-    })
+        assert.deepStrictEqual(yield* askedOfStripe, []);
+      })
   );
 
   it.effect(
@@ -394,6 +409,7 @@ layer(ActionsTest)("billing's actions", (it) => {
         });
 
         const claim = {
+          email: "member@example.com",
           interval: "year",
           orderId: order.id,
           plan: "business",
@@ -448,6 +464,28 @@ layer(ActionsTest)("billing's actions", (it) => {
         });
 
         assert.deepStrictEqual(trialTerms.trialDays, Option.some(14));
+
+        // An account closed with the same address had its trial.
+        const again = yield* orders.place(actorAs(), {
+          interval: "month",
+          plan: "pro",
+          trial: true,
+        });
+
+        const closed = yield* checkouts
+          .take({
+            ...claim,
+            email: "Closed@Example.com",
+            interval: "month",
+            orderId: again.id,
+            plan: "pro",
+          })
+          .pipe(Effect.flip);
+
+        assert.deepInclude(closed, {
+          _tag: "TrialUnavailable",
+          reason: "used",
+        });
       })
   );
 
@@ -518,15 +556,12 @@ layer(ActionsTest)("billing's actions", (it) => {
         // Three days into a 30-day period paid 900 cents.
         yield* setNow("2026-11-04T00:00:00Z");
         yield* holding(paid());
-        yield* BillingLog.use(({ payment }) =>
-          Ref.set(
-            payment,
-            Option.some({
-              paid: { amount: 900, currency: "eur" },
-              paymentIntentId: "pi_synthetic",
-            })
-          )
-        );
+        yield* paying({
+          invoiceId: "in_synthetic",
+          paid: { amount: 900, currency: "eur" },
+          periodEnd: Option.none(),
+          periodStart: Option.none(),
+        });
 
         const withdrawals = yield* Withdraw;
         const preview = yield* withdrawals.preview(actorAs());
@@ -548,7 +583,7 @@ layer(ActionsTest)("billing's actions", (it) => {
         // The refund before the end: one tried again refunds what was
         // recorded, under the same key.
         assert.deepStrictEqual(yield* askedOfStripe, [
-          "refund sub_synthetic_paid 810",
+          "credit sub_synthetic_paid in_synthetic:810",
           "endNow sub_synthetic_paid withdrawn",
         ]);
         assert.deepStrictEqual(
@@ -564,6 +599,75 @@ layer(ActionsTest)("billing's actions", (it) => {
           amount: 810,
           currency: "eur",
         });
+      })
+  );
+
+  it.effect(
+    "lets a consumer who cancelled still withdraw within 14 days, refunded",
+    () =>
+      Effect.gen(function* cancelledThenWithdrawn() {
+        yield* setNow("2026-11-02T00:00:00Z");
+        yield* holding(paid());
+        yield* paying({
+          invoiceId: "in_synthetic",
+          paid: { amount: 900, currency: "eur" },
+          periodEnd: Option.none(),
+          periodStart: Option.none(),
+        });
+
+        yield* (yield* CancelSubscription).cancel(actorAs());
+        // Stripe's event then says it ends with its period.
+        yield* holding(paid({ cancelAtPeriodEnd: true }));
+        yield* TestClock.setTime(at("2026-11-04T00:00:00Z").epochMilliseconds);
+
+        const done = yield* (yield* Withdraw).confirm(actorAs());
+
+        assert.deepStrictEqual(done.refunded, { amount: 810, currency: "eur" });
+        assert.deepStrictEqual(yield* askedOfStripe, [
+          "cancelAtPeriodEnd sub_synthetic_paid",
+          "credit sub_synthetic_paid in_synthetic:810",
+          "endNow sub_synthetic_paid withdrawn",
+        ]);
+      })
+  );
+
+  it.effect(
+    "refunds every payment since the contract started, each for the unused part of its own period",
+    () =>
+      Effect.gen(function* everyPayment() {
+        // A starter plan paid 900 on the 1st; on the 6th, a change of plan
+        // charged 1500 more for the 24 days left of the period.
+        yield* setNow("2026-11-11T00:00:00Z");
+        yield* holding(paid());
+        yield* paying(
+          {
+            invoiceId: "in_proration",
+            paid: { amount: 1500, currency: "eur" },
+            periodEnd: Option.some(at("2026-12-01T00:00:00Z")),
+            periodStart: Option.some(at("2026-11-07T00:00:00Z")),
+          },
+          {
+            invoiceId: "in_first",
+            paid: { amount: 900, currency: "eur" },
+            periodEnd: Option.some(at("2026-12-01T00:00:00Z")),
+            periodStart: Option.some(at("2026-11-01T00:00:00Z")),
+          }
+        );
+
+        const preview = yield* (yield* Withdraw).preview(actorAs());
+
+        // 20 of 24 days of 1500, and 20 of 30 days of 900.
+        assert.deepStrictEqual(preview.refund, {
+          amount: 1250 + 600,
+          currency: "eur",
+        });
+
+        yield* (yield* Withdraw).confirm(actorAs());
+
+        assert.deepStrictEqual(yield* askedOfStripe, [
+          "credit sub_synthetic_paid in_proration:1250 in_first:600",
+          "endNow sub_synthetic_paid withdrawn",
+        ]);
       })
   );
 
@@ -622,7 +726,7 @@ layer(ActionsTest)("billing's actions", (it) => {
           notice: {
             _tag: "SubscriptionRenewing",
             plan: "business",
-            price: { amount: 25_000, currency: "eur" },
+            price: { amount: 30_000, currency: "eur" },
             renewsAt: at("2027-01-31T00:00:00Z"),
           },
         },
@@ -638,32 +742,57 @@ layer(ActionsTest)("billing's actions", (it) => {
     })
   );
 
-  it.effect("confirms a subscription that started, once", () =>
-    Effect.gen(function* confirms() {
-      yield* setNow("2026-11-09T11:00:00Z");
-      yield* holding(
-        paid({
-          interval: "year",
-          plan: "business",
-          startedAt: Option.some(at("2026-11-09T10:30:00Z")),
-          stripeSubscriptionId: "sub_new",
-        })
-      );
+  it.effect(
+    "waits to confirm a subscription until Stripe says what it charged",
+    () =>
+      Effect.gen(function* waits() {
+        yield* setNow("2026-11-09T11:00:00Z");
+        yield* holding(
+          paid({
+            startedAt: Option.some(at("2026-11-09T10:30:00Z")),
+            stripeSubscriptionId: "sub_unpaid",
+          })
+        );
 
-      assert.strictEqual(yield* (yield* SendBillingReminders).run, 1);
-      assert.deepStrictEqual(yield* told, [
-        {
-          key: "subscription:sub_new:started",
-          notice: {
-            _tag: "SubscriptionStarted",
+        assert.strictEqual(yield* (yield* SendBillingReminders).run, 0);
+        assert.deepStrictEqual(yield* told, []);
+      })
+  );
+
+  it.effect(
+    "confirms a subscription that started, with what Stripe charged",
+    () =>
+      Effect.gen(function* confirms() {
+        yield* setNow("2026-11-09T11:00:00Z");
+        yield* paying({
+          invoiceId: "in_synthetic",
+          paid: { amount: 30_000, currency: "eur" },
+          periodEnd: Option.none(),
+          periodStart: Option.none(),
+        });
+        yield* holding(
+          paid({
             interval: "year",
             plan: "business",
-            price: { amount: 25_000, currency: "eur" },
-            startedAt: at("2026-11-09T10:30:00Z"),
-            trialEnd: Option.none(),
+            startedAt: Option.some(at("2026-11-09T10:30:00Z")),
+            stripeSubscriptionId: "sub_new",
+          })
+        );
+
+        assert.strictEqual(yield* (yield* SendBillingReminders).run, 1);
+        assert.deepStrictEqual(yield* told, [
+          {
+            key: "subscription:sub_new:started",
+            notice: {
+              _tag: "SubscriptionStarted",
+              interval: "year",
+              plan: "business",
+              price: { amount: 30_000, currency: "eur" },
+              startedAt: at("2026-11-09T10:30:00Z"),
+              trialEnd: Option.none(),
+            },
           },
-        },
-      ]);
-    })
+        ]);
+      })
   );
 });

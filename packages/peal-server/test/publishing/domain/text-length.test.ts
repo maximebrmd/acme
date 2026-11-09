@@ -130,6 +130,13 @@ describe(measureText, () => {
     expect(lengths(text)).toStrictEqual(expected);
   });
 
+  it.each(["🧑🏽‍💻", "👁️‍🗨️"])(
+    "counts %s as one emoji for X, by Unicode's current list",
+    (sequence) => {
+      expect(measureText(sequence, "weighted")).toBe(2);
+    }
+  );
+
   it("counts a link as 23 for X, whatever its length", () => {
     const link = "https://example.com/a/rather/long/path?with=query&and=more";
 

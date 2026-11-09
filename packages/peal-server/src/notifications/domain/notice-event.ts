@@ -38,6 +38,7 @@ export const PostFailureReasonSchema = Schema.Literals([
   "appNotAudited",
   "quotaExceeded",
   "appBillingLimit",
+  "planLimit",
 ]);
 
 export type PostFailureReason = typeof PostFailureReasonSchema.Type;
@@ -81,8 +82,9 @@ export const NoticeEventSchema = Schema.Union([
     channel: NoticeChannelSchema,
     expiresAt: Schema.DateTimeUtc,
   }),
-  // A subscription started at `startedAt`, paid each `interval` at `price`
-  // excluding VAT, or in its trial until `trialEnd`.
+  // A subscription started at `startedAt`, paid each `interval` at `price`,
+  // VAT included, or in its trial until `trialEnd` (`price` then the
+  // plan's, excluding VAT).
   Schema.TaggedStruct("SubscriptionStarted", {
     interval: Schema.Literals(["month", "year"]),
     plan: PaidPlanSchema,
@@ -96,7 +98,7 @@ export const NoticeEventSchema = Schema.Union([
     endsAt: Schema.DateTimeUtc,
     plan: PaidPlanSchema,
   }),
-  // A yearly plan renews at `renewsAt`, for `price` excluding VAT.
+  // A yearly plan renews at `renewsAt`, for `price`, VAT included.
   Schema.TaggedStruct("SubscriptionRenewing", {
     plan: PaidPlanSchema,
     price: NoticeMoneySchema,

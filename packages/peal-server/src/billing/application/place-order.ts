@@ -1,8 +1,7 @@
-import { Context, DateTime, Effect, Layer, Option } from "effect";
+import { Context, DateTime, Duration, Effect, Layer } from "effect";
 
 import type { BillingInterval } from "#billing/domain/billing-interval.ts";
 import { BillingOff } from "#billing/domain/billing-off.ts";
-import { entitlementsOf } from "#billing/domain/entitlements.ts";
 import { inPerson } from "#billing/domain/in-person.ts";
 import { consentVersion, Order, OrderIdSchema } from "#billing/domain/order.ts";
 import type { PersonRequired } from "#billing/domain/person-required.ts";
@@ -19,9 +18,8 @@ import type { PaidPlan } from "#shared/domain/plan.ts";
 
 import { BillingMode } from "./ports/billing-mode.ts";
 import { Orders } from "./ports/orders.ts";
-import { StripeContracts } from "./ports/stripe-contracts.ts";
 import { Subscriptions } from "./ports/subscriptions.ts";
-import { Trials } from "./ports/trials.ts";
+import { trialReservationMinutes, Trials } from "./ports/trials.ts";
 import type { StripeUnreachable } from "./stripe-unreachable.ts";
 
 /** What a member orders. */
@@ -31,6 +29,10 @@ export interface OrderRequest {
   /** The trial of `trialPlan`, monthly, rather than a paid order. */
   readonly trial: boolean;
 }
+
+/** The oldest hold of a trial checkout that still holds the trial at `now`. */
+export const holdsSince = (now: DateTime.Utc): DateTime.Utc =>
+  DateTime.subtractDuration(now, Duration.minutes(trialReservationMinutes));
 
 /**
  * Whether the workspace and the account may still start a trial: neither
@@ -48,7 +50,11 @@ export const trialOpen = Effect.fn("Billing.trialOpen")(function* trialOpen(
     return false;
   }
 
-  return !(yield* Trials.use((trials) => trials.used(userId, workspaceId)));
+  const since = holdsSince(yield* DateTime.now);
+
+  return !(yield* Trials.use((trials) =>
+    trials.used(userId, workspaceId, since)
+  ));
 });
 
 /**
@@ -56,9 +62,10 @@ export const trialOpen = Effect.fn("Billing.trialOpen")(function* trialOpen(
  * checkout: the plan and interval, or the trial, with the consent they
  * gave to start at once, knowing their right to withdraw (the API refuses
  * an order without it). Checkout then requires it. Ordering a paid plan
- * while the workspace is in its trial ends the trial at once, nothing
- * charged: the paid contract starts with the checkout. Needs billing:manage
- * and the member in person.
+ * while the workspace is in its trial leaves the trial running: it ends
+ * once the paid subscription is recorded (`RecordSubscription`), so a
+ * checkout left unfinished loses nothing. Needs billing:manage and the
+ * member in person.
  */
 export class PlaceOrder extends Context.Service<
   PlaceOrder,
@@ -82,7 +89,6 @@ export class PlaceOrder extends Context.Service<
     Effect.gen(function* PlaceOrderLive() {
       const { enabled } = yield* BillingMode;
       const orders = yield* Orders;
-      const stripe = yield* StripeContracts;
       const context = yield* Effect.context<Ids | Subscriptions | Trials>();
 
       const place = Effect.fn("PlaceOrder.place")(function* place(
@@ -105,22 +111,6 @@ export class PlaceOrder extends Context.Service<
 
           if (!(yield* trialOpen(userId, workspaceId))) {
             return yield* new TrialUnavailable({ reason: "used" });
-          }
-        } else {
-          const held = yield* Subscriptions.use((subscriptions) =>
-            subscriptions.ofWorkspace(workspaceId)
-          );
-
-          const current = entitlementsOf(held).subscription.pipe(
-            Option.filter(({ status }) => status === "trialing")
-          );
-
-          if (Option.isSome(current)) {
-            yield* stripe.endNow(
-              workspaceId,
-              current.value.stripeSubscriptionId,
-              "orderedDuringTrial"
-            );
           }
         }
 

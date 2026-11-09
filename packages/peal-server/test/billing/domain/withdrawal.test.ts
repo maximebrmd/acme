@@ -48,12 +48,19 @@ describe(mayWithdraw, () => {
     ).toBeTruthy();
   });
 
-  it.each([
-    { cancelAtPeriodEnd: false, status: "canceled" as const },
-    { cancelAtPeriodEnd: false, status: "unpaid" as const },
-    { cancelAtPeriodEnd: true, status: "active" as const },
-  ])(
-    "refuses a subscription $status, cancelling $cancelAtPeriodEnd",
+  it("allows a withdrawal from a subscription already cancelled", () => {
+    const cancelled = subscriptionOf({
+      ...startedFields,
+      cancelAtPeriodEnd: true,
+    });
+
+    expect(
+      Result.isSuccess(mayWithdraw(cancelled, at("2026-11-02T00:00:00Z")))
+    ).toBeTruthy();
+  });
+
+  it.each([{ status: "canceled" as const }, { status: "unpaid" as const }])(
+    "refuses a subscription $status",
     (fields) => {
       expect(
         mayWithdraw(

@@ -296,6 +296,7 @@ const cli: ConnectedApp = {
 const exported = (exportedAt: DateTime.Utc): AccountExport => ({
   authoredPosts: [],
   connectedApps: [cli],
+  contracts: { orders: [], withdrawals: [] },
   exportedAt,
   invitations: { received: [], sent: [] },
   legalHold: null,

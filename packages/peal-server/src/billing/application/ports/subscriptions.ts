@@ -30,9 +30,11 @@ export class Subscriptions extends Context.Service<
     ) => Effect.Effect<readonly Subscription[], DatabaseError>;
     /**
      * Deletes billing's records of the workspace, in the caller's
-     * transaction: its subscriptions, orders and withdrawals; its trial
-     * stays, without the workspace, if an account started it. The events
-     * recorded stay: ids alone.
+     * transaction: its subscriptions, and the orders no contract followed.
+     * The orders and withdrawals of its contracts stay without it, by
+     * their Stripe customer and subscription, for `contractRetention`; its
+     * trial stays, without the workspace, if an account started it. The
+     * events recorded stay: ids alone.
      */
     readonly eraseWorkspace: (
       workspaceId: WorkspaceId
@@ -40,9 +42,13 @@ export class Subscriptions extends Context.Service<
     /**
      * Leaves billing's records without the user, in the caller's
      * transaction: the orders and withdrawals they made, and the trial they
-     * started, which stays the workspace's.
+     * started, which stays the workspace's, and keeps `pseudonym`, their
+     * email address's, instead (`trialMemory`).
      */
-    readonly forgetUser: (userId: UserId) => Effect.Effect<void, DatabaseError>;
+    readonly forgetUser: (
+      userId: UserId,
+      pseudonym: string
+    ) => Effect.Effect<void, DatabaseError>;
     /**
      * Saves what an event says of a subscription, once per event, and only
      * when no later event was saved for it: events come in any order.

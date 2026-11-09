@@ -195,6 +195,10 @@ const badRequestReason = (code: string): RefusalReason => {
     return "appNotAudited";
   }
 
+  if (code === ownRefusalCodes.planLimit) {
+    return "planLimit";
+  }
+
   return code === ownRefusalCodes.channelDisabled
     ? "channelDisabled"
     : "contentRejected";

@@ -1,20 +1,24 @@
-import { Context, Effect, Layer, Option, Schema } from "effect";
-import type { DateTime } from "effect";
+import { Context, DateTime, Effect, Layer, Option, Schema } from "effect";
 
 import type { BillingInterval } from "#billing/domain/billing-interval.ts";
 import { SubscriptionChange } from "#billing/domain/subscription-change.ts";
+import type { SubscriptionStatus } from "#billing/domain/subscription.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 import type { UserId, WorkspaceId } from "#shared/domain/ids.ts";
 import type { PaidPlan } from "#shared/domain/plan.ts";
 
 import { Checkouts } from "./ports/checkouts.ts";
+import { StripeContracts } from "./ports/stripe-contracts.ts";
 import { Subscriptions } from "./ports/subscriptions.ts";
 import type { RecordOutcome } from "./ports/subscriptions.ts";
 import { Trials } from "./ports/trials.ts";
+import type { StripeUnreachable } from "./stripe-unreachable.ts";
 
 /** What a Stripe webhook event says of a workspace's subscription. */
 export interface SubscriptionEvent {
+  /** When Stripe is set to cancel it, if it is. */
+  readonly cancelAt: Option.Option<DateTime.Utc>;
   readonly cancelAtPeriodEnd: boolean;
   readonly currentPeriodEnd: Option.Option<DateTime.Utc>;
   readonly currentPeriodStart: Option.Option<DateTime.Utc>;
@@ -38,6 +42,16 @@ export type RecordedEvent = RecordOutcome | "ignored";
 
 const decodeChange = Schema.decodeUnknownOption(SubscriptionChange);
 
+// Whether Stripe already ends the trial, cancelled, when it ends.
+const endsWithTrial = (event: SubscriptionEvent, trialEnd: DateTime.Utc) =>
+  Option.exists(event.cancelAt, (at) =>
+    DateTime.isLessThanOrEqualTo(at, trialEnd)
+  );
+
+// A paid subscription that gives its plan, as one ordered during a trial.
+const paidFor = (status: SubscriptionStatus) =>
+  status === "active" || status === "past_due";
+
 /**
  * Keeps a workspace's subscriptions as Stripe's webhook events describe
  * them: what the workspace's entitlements follow. Better Auth's Stripe
@@ -47,14 +61,18 @@ const decodeChange = Schema.decodeUnknownOption(SubscriptionChange);
  * Stripe added since, is logged and ignored, since sending it again would
  * change nothing. An event about a workspace deleted meanwhile is ignored.
  * A subscription in its trial records the trial too, so neither the
- * workspace nor the member who started it gets another.
+ * workspace nor the member who started it gets another: a second trial of
+ * either, as from two checkouts started together, is ended at once. A
+ * trial is set first to end, cancelled, with its trial, so a payment method
+ * added in Stripe's portal never turns it into a charge. A paid
+ * subscription that starts ends the trial the workspace was in.
  */
 export class RecordSubscription extends Context.Service<
   RecordSubscription,
   {
     readonly record: (
       event: SubscriptionEvent
-    ) => Effect.Effect<RecordedEvent, DatabaseError>;
+    ) => Effect.Effect<RecordedEvent, DatabaseError | StripeUnreachable>;
   }
 >()("peal-server/billing/application/RecordSubscription") {
   static readonly layer = Layer.effect(
@@ -63,6 +81,7 @@ export class RecordSubscription extends Context.Service<
       const subscriptions = yield* Subscriptions;
       const checkouts = yield* Checkouts;
       const trials = yield* Trials;
+      const stripe = yield* StripeContracts;
       const { transaction } = yield* TransactionRunner;
 
       const record = Effect.fn("RecordSubscription.record")(function* record(
@@ -82,40 +101,89 @@ export class RecordSubscription extends Context.Service<
           return ignored;
         }
 
+        const { value } = change;
+        const { subscription: recorded } = value;
+
+        // Before it is recorded: Stripe sends the event again until this
+        // is done. A trial cannot turn into a charge.
+        if (recorded.status === "trialing") {
+          yield* Option.match(recorded.trialEnd, {
+            onNone: () => Effect.void,
+            onSome: (trialEnd) =>
+              endsWithTrial(event, trialEnd)
+                ? Effect.void
+                : stripe.endAtTrialEnd(
+                    recorded.workspaceId,
+                    recorded.stripeSubscriptionId,
+                    trialEnd
+                  ),
+          });
+        }
+
         // Under the workspace's row: an event that comes while the
         // workspace is being deleted, as the one its cancellation sends,
         // waits, then finds it gone, and leaves no record behind.
-        const outcome: RecordedEvent = yield* transaction(
+        const { duplicateTrial, outcome } = yield* transaction(
           Effect.gen(function* recordHeld() {
             if (!(yield* checkouts.holdWorkspace(event.workspaceId))) {
               const gone: RecordedEvent = "ignored";
 
-              return gone;
+              return { duplicateTrial: false, outcome: gone };
             }
 
-            const recorded = yield* subscriptions.record(change.value);
-            const { value } = change;
+            const saved: RecordedEvent = yield* subscriptions.record(value);
 
-            if (
-              value.subscription.status === "trialing" &&
-              Option.isSome(value.subscription.trialEnd) &&
+            const accepted =
+              recorded.status === "trialing" &&
+              Option.isSome(recorded.trialEnd) &&
               Option.isSome(startedBy)
-            ) {
-              yield* trials.record({
-                plan: value.subscription.plan,
-                startedAt: Option.getOrElse(
-                  value.subscription.startedAt,
-                  () => occurredAt
-                ),
-                stripeSubscriptionId: value.subscription.stripeSubscriptionId,
-                userId: startedBy.value,
-                workspaceId: value.subscription.workspaceId,
-              });
-            }
+                ? yield* trials.record({
+                    plan: recorded.plan,
+                    startedAt: Option.getOrElse(
+                      recorded.startedAt,
+                      () => occurredAt
+                    ),
+                    stripeSubscriptionId: recorded.stripeSubscriptionId,
+                    userId: startedBy.value,
+                    workspaceId: recorded.workspaceId,
+                  })
+                : true;
 
-            return recorded;
+            return { duplicateTrial: !accepted, outcome: saved };
           })
         );
+
+        if (duplicateTrial) {
+          yield* stripe.endNow(
+            recorded.workspaceId,
+            recorded.stripeSubscriptionId,
+            "duplicateTrial"
+          );
+
+          yield* Effect.logWarning("Ended a second trial").pipe(
+            Effect.annotateLogs({ workspaceId: recorded.workspaceId })
+          );
+        }
+
+        // The paid plan ordered during the trial now runs: the trial ends.
+        if (outcome !== "ignored" && paidFor(recorded.status)) {
+          const held = yield* subscriptions.ofWorkspace(recorded.workspaceId);
+
+          yield* Effect.forEach(
+            held.filter(
+              ({ status, stripeSubscriptionId }) =>
+                status === "trialing" &&
+                stripeSubscriptionId !== recorded.stripeSubscriptionId
+            ),
+            ({ stripeSubscriptionId }) =>
+              stripe.endNow(
+                recorded.workspaceId,
+                stripeSubscriptionId,
+                "orderedDuringTrial"
+              ),
+            { discard: true }
+          );
+        }
 
         yield* Effect.logInfo("Recorded a subscription event").pipe(
           Effect.annotateLogs({

@@ -2,7 +2,7 @@
   "type": "base",
   "version": "9",
   "dialect": "postgres",
-  "id": "d51dccba-2779-4e86-80e8-0b95a32788d1",
+  "id": "a59e45b5-c1dd-4287-a95c-3085afd5f4ea",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
@@ -1161,6 +1161,46 @@
       "statementTarget": [
         "index",
         "billing",
+        "orders",
+        "orders_user"
+      ],
+      "writes": [
+        "s|idx|billing.orders_user",
+        "n|idx|billing.orders_user",
+        "e|idx|billing.orders_user",
+        "n|rel|billing.orders_user"
+      ],
+      "reads": [
+        "n|tbl|billing.orders",
+        "n|sch|billing",
+        "n|col|billing.orders.user_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "billing",
+        "orders",
+        "orders_erased"
+      ],
+      "writes": [
+        "s|idx|billing.orders_erased",
+        "n|idx|billing.orders_erased",
+        "e|idx|billing.orders_erased",
+        "n|rel|billing.orders_erased"
+      ],
+      "reads": [
+        "n|tbl|billing.orders",
+        "n|sch|billing",
+        "n|col|billing.orders.erased_at"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "billing",
         "subscriptions",
         "subscriptions_workspace"
       ],
@@ -1195,6 +1235,46 @@
         "n|sch|billing",
         "n|col|billing.subscriptions.status",
         "n|col|billing.subscriptions.current_period_end"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "billing",
+        "trials",
+        "trials_pseudonym"
+      ],
+      "writes": [
+        "s|idx|billing.trials_pseudonym",
+        "n|idx|billing.trials_pseudonym",
+        "e|idx|billing.trials_pseudonym",
+        "n|rel|billing.trials_pseudonym"
+      ],
+      "reads": [
+        "n|tbl|billing.trials",
+        "n|sch|billing",
+        "n|col|billing.trials.user_pseudonym"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "billing",
+        "trials",
+        "trials_subscription"
+      ],
+      "writes": [
+        "s|idx|billing.trials_subscription",
+        "n|idx|billing.trials_subscription",
+        "e|idx|billing.trials_subscription",
+        "n|rel|billing.trials_subscription"
+      ],
+      "reads": [
+        "n|tbl|billing.trials",
+        "n|sch|billing",
+        "n|col|billing.trials.stripe_subscription_id"
       ]
     },
     {
@@ -1255,6 +1335,46 @@
         "n|tbl|billing.withdrawals",
         "n|sch|billing",
         "n|col|billing.withdrawals.workspace_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "billing",
+        "withdrawals",
+        "withdrawals_user"
+      ],
+      "writes": [
+        "s|idx|billing.withdrawals_user",
+        "n|idx|billing.withdrawals_user",
+        "e|idx|billing.withdrawals_user",
+        "n|rel|billing.withdrawals_user"
+      ],
+      "reads": [
+        "n|tbl|billing.withdrawals",
+        "n|sch|billing",
+        "n|col|billing.withdrawals.user_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "billing",
+        "withdrawals",
+        "withdrawals_erased"
+      ],
+      "writes": [
+        "s|idx|billing.withdrawals_erased",
+        "n|idx|billing.withdrawals_erased",
+        "e|idx|billing.withdrawals_erased",
+        "n|rel|billing.withdrawals_erased"
+      ],
+      "reads": [
+        "n|tbl|billing.withdrawals",
+        "n|sch|billing",
+        "n|col|billing.withdrawals.erased_at"
       ]
     },
     {
@@ -1602,6 +1722,26 @@
         "n|sch|publishing",
         "n|col|publishing.posts.workspace_id",
         "n|col|publishing.posts.id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "staff",
+        "audit_events",
+        "audit_events_pseudonym"
+      ],
+      "writes": [
+        "s|idx|staff.audit_events_pseudonym",
+        "n|idx|staff.audit_events_pseudonym",
+        "e|idx|staff.audit_events_pseudonym",
+        "n|rel|staff.audit_events_pseudonym"
+      ],
+      "reads": [
+        "n|tbl|staff.audit_events",
+        "n|sch|staff",
+        "n|col|staff.audit_events.target_pseudonym"
       ]
     },
     {
@@ -3565,6 +3705,19 @@
     {
       "schema": "billing",
       "table": "orders",
+      "name": "erased_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "billing",
+      "table": "orders",
       "name": "id",
       "type": "uuid",
       "typeSchema": null,
@@ -3595,6 +3748,19 @@
       "type": "text",
       "typeSchema": null,
       "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "billing",
+      "table": "orders",
+      "name": "stripe_customer_id",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
       "dimensions": 0,
       "default": null,
       "generated": null,
@@ -3646,7 +3812,7 @@
       "name": "workspace_id",
       "type": "uuid",
       "typeSchema": null,
-      "notNull": true,
+      "notNull": false,
       "dimensions": 0,
       "default": null,
       "generated": null,
@@ -3864,8 +4030,34 @@
     {
       "schema": "billing",
       "table": "trials",
+      "name": "id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "gen_random_uuid()",
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "billing",
+      "table": "trials",
       "name": "plan",
       "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "billing",
+      "table": "trials",
+      "name": "reserved_at",
+      "type": "timestamp with time zone",
       "typeSchema": null,
       "notNull": true,
       "dimensions": 0,
@@ -3880,7 +4072,20 @@
       "name": "started_at",
       "type": "timestamp with time zone",
       "typeSchema": null,
-      "notNull": true,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "billing",
+      "table": "trials",
+      "name": "forgotten_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
       "dimensions": 0,
       "default": null,
       "generated": null,
@@ -3893,7 +4098,7 @@
       "name": "stripe_subscription_id",
       "type": "text",
       "typeSchema": null,
-      "notNull": true,
+      "notNull": false,
       "dimensions": 0,
       "default": null,
       "generated": null,
@@ -3904,6 +4109,19 @@
       "schema": "billing",
       "table": "trials",
       "name": "user_id",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "billing",
+      "table": "trials",
+      "name": "user_pseudonym",
       "type": "text",
       "typeSchema": null,
       "notNull": false,
@@ -3933,6 +4151,19 @@
       "type": "text",
       "typeSchema": null,
       "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "billing",
+      "table": "withdrawals",
+      "name": "erased_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
       "dimensions": 0,
       "default": null,
       "generated": null,
@@ -3997,7 +4228,7 @@
       "name": "workspace_id",
       "type": "uuid",
       "typeSchema": null,
-      "notNull": true,
+      "notNull": false,
       "dimensions": 0,
       "default": null,
       "generated": null,
@@ -6297,6 +6528,19 @@
       "table": "audit_events",
       "name": "target_id",
       "type": "uuid",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "staff",
+      "table": "audit_events",
+      "name": "target_pseudonym",
+      "type": "text",
       "typeSchema": null,
       "notNull": false,
       "dimensions": 0,
@@ -9358,6 +9602,48 @@
     },
     {
       "schema": "billing",
+      "table": "orders",
+      "name": "orders_user",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "user_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "billing",
+      "table": "orders",
+      "name": "orders_erased",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "erased_at",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "billing",
       "table": "subscriptions",
       "name": "subscriptions_workspace",
       "nameExplicit": true,
@@ -9399,6 +9685,48 @@
         }
       ],
       "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "billing",
+      "table": "trials",
+      "name": "trials_pseudonym",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "user_pseudonym",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "billing",
+      "table": "trials",
+      "name": "trials_subscription",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "stripe_subscription_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": true,
       "where": null,
       "with": "",
       "method": "btree",
@@ -9455,6 +9783,48 @@
       "columns": [
         {
           "value": "workspace_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "billing",
+      "table": "withdrawals",
+      "name": "withdrawals_user",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "user_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "billing",
+      "table": "withdrawals",
+      "name": "withdrawals_erased",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "erased_at",
           "isExpression": false,
           "asc": true,
           "nullsFirst": false,
@@ -9869,6 +10239,27 @@
       ],
       "isUnique": false,
       "where": "\"status\" = 'draft'",
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "staff",
+      "table": "audit_events",
+      "name": "audit_events_pseudonym",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "target_pseudonym",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
       "with": "",
       "method": "btree",
       "concurrently": false,
@@ -11088,7 +11479,7 @@
       "table": "trials",
       "name": "trials_pkey",
       "columns": [
-        "stripe_subscription_id"
+        "id"
       ],
       "nameExplicit": false,
       "entityType": "pks"

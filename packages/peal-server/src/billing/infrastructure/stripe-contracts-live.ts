@@ -1,12 +1,14 @@
-import { Effect, Layer, Option, Schema, SchemaGetter } from "effect";
+import { DateTime, Effect, Layer, Option, Schema } from "effect";
 import type { Stripe } from "stripe";
 
 import { StripeContracts } from "#billing/application/ports/stripe-contracts.ts";
 import type {
   EndReason,
-  PeriodPayment,
+  InvoiceCredit,
+  PaidInvoice,
 } from "#billing/application/ports/stripe-contracts.ts";
 import { StripeUnreachable } from "#billing/application/stripe-unreachable.ts";
+import type { Money } from "#billing/domain/billing-notice.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
 import { stripeClientOf } from "#shared/infrastructure/stripe-client.ts";
 import { stripeSettingsConfig } from "#shared/infrastructure/stripe-settings.ts";
@@ -14,13 +16,9 @@ import { stripeSettingsConfig } from "#shared/infrastructure/stripe-settings.ts"
 // A member waits on these calls: Stripe gets this long to answer each one.
 const requestTimeout = 10_000;
 
-// Stripe's answer to a subscription it no longer has: nothing to end.
-const isSettled = Schema.is(
-  Schema.Struct({ code: Schema.Literal("resource_missing") })
-);
-
 // Why Stripe ended it, in its dashboard and its events.
 const comments: Readonly<Record<EndReason, string>> = {
+  duplicateTrial: "Second trial of the same account or workspace",
   orderedDuringTrial: "Trial ended on Peal: a paid plan was ordered",
   trialCancelled: "Trial cancelled on Peal",
   withdrawn: "Consumer withdrawal on Peal",
@@ -35,30 +33,59 @@ const TaxIdsSchema = Schema.Array(
 
 const decodeTaxIds = Schema.decodeUnknownOption(TaxIdsSchema);
 
+const PeriodSchema = Schema.Struct({ end: Schema.Int, start: Schema.Int });
+
 const PaidInvoiceSchema = Schema.Struct({
   amount_paid: Schema.Int,
   currency: Schema.NonEmptyString,
   id: Schema.NonEmptyString,
+  lines: Schema.optionalKey(
+    Schema.Struct({
+      data: Schema.Array(
+        Schema.Struct({ period: Schema.optionalKey(PeriodSchema) })
+      ),
+    })
+  ),
 });
 
 const decodeInvoice = Schema.decodeUnknownOption(PaidInvoiceSchema);
 
-// The payment intent an invoice payment names, as an id or expanded.
-const IntentSchema = Schema.Union([
-  Schema.NonEmptyString,
-  Schema.Struct({ id: Schema.NonEmptyString }).pipe(
-    Schema.decodeTo(Schema.NonEmptyString, {
-      decode: SchemaGetter.transform(({ id }) => id),
-      encode: SchemaGetter.transform((id) => ({ id })),
-    })
-  ),
-]);
-
-const InvoicePaymentSchema = Schema.Struct({
-  payment: Schema.Struct({ payment_intent: Schema.optionalKey(IntentSchema) }),
+const UpcomingSchema = Schema.Struct({
+  currency: Schema.NonEmptyString,
+  total: Schema.Int,
 });
 
-const decodePayment = Schema.decodeUnknownOption(InvoicePaymentSchema);
+const decodeUpcoming = Schema.decodeUnknownOption(UpcomingSchema);
+
+// Stripe refusing the request itself, as for a subscription it no longer
+// has or no longer lets change: asking again changes nothing.
+const isRefused = Schema.is(
+  Schema.Struct({ type: Schema.Literal("StripeInvalidRequestError") })
+);
+
+const fromStripeTime = (seconds: number): DateTime.Utc =>
+  DateTime.makeUnsafe(seconds * 1000);
+
+// The period an invoice paid for: from its lines' first start to their
+// last end.
+const periodOf = (
+  lines: readonly { readonly period?: typeof PeriodSchema.Type }[]
+) => {
+  const periods = lines.flatMap(({ period }) =>
+    period === undefined ? [] : [period]
+  );
+
+  return periods.length === 0
+    ? { periodEnd: Option.none(), periodStart: Option.none() }
+    : {
+        periodEnd: Option.some(
+          fromStripeTime(Math.max(...periods.map(({ end }) => end)))
+        ),
+        periodStart: Option.some(
+          fromStripeTime(Math.min(...periods.map(({ start }) => start)))
+        ),
+      };
+};
 
 /**
  * Billing's calls to Stripe through the server's key: each one bounded in
@@ -107,7 +134,9 @@ export const StripeContractsLive = Layer.effect(
         onNone: () => Effect.die("Billing is off: Stripe has no key"),
         onSome: (stripe) =>
           Effect.tryPromise({
-            catch: (cause) => isSettled(cause),
+            // A subscription Stripe no longer has, or has already ended:
+            // nothing to end.
+            catch: (cause) => isRefused(cause),
             try: async () =>
               await stripe.subscriptions.cancel(
                 id,
@@ -150,86 +179,124 @@ export const StripeContractsLive = Layer.effect(
         Effect.withSpan("StripeContracts.isBusiness")
       );
 
-    const latestPayment = Effect.fn("StripeContracts.latestPayment")(
-      function* latestPayment(workspaceId: WorkspaceId, id: string) {
-        const invoices = yield* call(
-          workspaceId,
-          async (stripe) =>
-            await stripe.invoices.list({
-              limit: 1,
-              status: "paid",
-              subscription: id,
-            })
-        );
-
-        const invoice = Option.fromUndefinedOr(invoices.data[0]).pipe(
-          Option.flatMap(decodeInvoice),
-          Option.filter(({ amount_paid: paid }) => paid > 0)
-        );
-
-        if (Option.isNone(invoice)) {
-          return Option.none<PeriodPayment>();
-        }
-
-        const { amount_paid: paid, currency, id: invoiceId } = invoice.value;
-
-        const payments = yield* call(
-          workspaceId,
-          async (stripe) =>
-            await stripe.invoicePayments.list({
-              invoice: invoiceId,
-              limit: 10,
-              status: "paid",
-            })
-        );
-
-        return Option.fromUndefinedOr(
-          payments.data
-            .flatMap((payment) =>
-              Option.toArray(
-                decodePayment(payment).pipe(
-                  Option.flatMap(({ payment: paidBy }) =>
-                    Option.fromUndefinedOr(paidBy.payment_intent)
-                  )
-                )
-              )
-            )
-            .at(0)
-        ).pipe(
-          Option.map((paymentIntentId): PeriodPayment => ({
-            paid: { amount: paid, currency },
-            paymentIntentId,
-          }))
-        );
-      }
-    );
-
-    const refund = (
-      workspaceId: WorkspaceId,
-      id: string,
-      payment: PeriodPayment,
-      amount: number
-    ) =>
+    const paidInvoices = (workspaceId: WorkspaceId, id: string) =>
       call(
         workspaceId,
         async (stripe) =>
-          await stripe.refunds.create(
-            {
-              amount,
-              metadata: { reason: "withdrawal", subscription: id },
-              payment_intent: payment.paymentIntentId,
-              reason: "requested_by_customer",
-            },
-            { idempotencyKey: `withdrawal-refund-${id}` }
+          await stripe.invoices
+            .list({ limit: 100, status: "paid", subscription: id })
+            .autoPagingToArray({ limit: 1000 })
+      ).pipe(
+        Effect.map((found) =>
+          found.flatMap((invoice) =>
+            Option.toArray(
+              decodeInvoice(invoice).pipe(
+                Option.filter(({ amount_paid: paid }) => paid > 0),
+                Option.map((paid): PaidInvoice => ({
+                  invoiceId: paid.id,
+                  paid: { amount: paid.amount_paid, currency: paid.currency },
+                  ...periodOf(paid.lines?.data ?? []),
+                }))
+              )
+            )
           )
-      ).pipe(Effect.asVoid, Effect.withSpan("StripeContracts.refund"));
+        ),
+        Effect.withSpan("StripeContracts.paidInvoices")
+      );
+
+    const credit = (
+      workspaceId: WorkspaceId,
+      id: string,
+      credits: readonly InvoiceCredit[]
+    ) =>
+      Effect.forEach(
+        credits.filter(({ amount }) => amount > 0),
+        ({ amount, invoiceId }) =>
+          call(
+            workspaceId,
+            async (stripe) =>
+              await stripe.creditNotes.create(
+                {
+                  amount,
+                  invoice: invoiceId,
+                  memo: "Consumer withdrawal",
+                  metadata: { reason: "withdrawal", subscription: id },
+                  refund_amount: amount,
+                },
+                { idempotencyKey: `withdrawal-credit-${id}-${invoiceId}` }
+              )
+          ),
+        { discard: true }
+      ).pipe(Effect.withSpan("StripeContracts.credit"));
+
+    const endAtTrialEnd = (
+      workspaceId: WorkspaceId,
+      id: string,
+      trialEnd: DateTime.Utc
+    ) => {
+      const cancelAt = Math.floor(DateTime.toEpochMillis(trialEnd) / 1000);
+
+      return Option.match(client, {
+        onNone: () => Effect.die("Billing is off: Stripe has no key"),
+        onSome: (stripe) =>
+          Effect.tryPromise({
+            catch: (cause) => isRefused(cause),
+            try: async () =>
+              await stripe.subscriptions.update(
+                id,
+                { cancel_at: cancelAt, proration_behavior: "none" },
+                { idempotencyKey: `trial-end-${id}-${cancelAt}` }
+              ),
+          }).pipe(
+            Effect.matchEffect({
+              onFailure: (refused) =>
+                refused
+                  ? Effect.logWarning(
+                      "Stripe refused to end a trial at its end"
+                    ).pipe(Effect.annotateLogs({ subscription: id }))
+                  : Effect.fail(new StripeUnreachable({ workspaceId })),
+              onSuccess: () => Effect.void,
+            })
+          ),
+      }).pipe(Effect.withSpan("StripeContracts.endAtTrialEnd"));
+    };
+
+    const upcomingTotal = (workspaceId: WorkspaceId, id: string) =>
+      Option.match(client, {
+        onNone: () => Effect.die("Billing is off: Stripe has no key"),
+        onSome: (stripe) =>
+          Effect.tryPromise({
+            catch: (cause) => isRefused(cause),
+            try: async () =>
+              await stripe.invoices.createPreview({ subscription: id }),
+          }).pipe(
+            Effect.matchEffect({
+              // No next invoice, as for one that ends.
+              onFailure: (refused) =>
+                refused
+                  ? Effect.succeed(Option.none<Money>())
+                  : Effect.fail(new StripeUnreachable({ workspaceId })),
+              onSuccess: (invoice) =>
+                Effect.succeed(
+                  decodeUpcoming(invoice).pipe(
+                    Option.map(({ currency, total }): Money => ({
+                      amount: total,
+                      currency,
+                    }))
+                  )
+                ),
+            })
+          ),
+      }).pipe(Effect.withSpan("StripeContracts.upcomingTotal"));
 
     return StripeContracts.of({
       cancelAtPeriodEnd,
+      credit,
+      endAtTrialEnd,
       endNow,
       isBusiness,
-      latestPayment,
-      refund,
+      paidInvoices,
+      upcomingTotal,
     });
   })
 );

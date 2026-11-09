@@ -57,6 +57,8 @@ export const french: EmailCatalog = {
       "Peal était indisponible à l’heure prévue, et la publication est arrivée trop tard pour partir.",
     notPublished:
       "quelqu’un a vérifié sur la plateforme et ne l’a pas trouvée.",
+    planLimit:
+      "l’abonnement de l’espace de travail n’avait plus de place pour elle à son heure : il a plus de canaux connectés que l’abonnement n’en permet, ou les publications du mois étaient épuisées. Rien n’a été envoyé. Déconnectez des canaux ou passez à un abonnement supérieur, puis publiez-la à nouveau.",
     quotaExceeded:
       "l’allocation quotidienne de mises en ligne de la plateforme est restée épuisée, pour ce serveur Peal ou pour le compte, et Peal a cessé d’attendre.",
     rateLimited:
@@ -140,14 +142,14 @@ export const french: EmailCatalog = {
   },
   subscriptionRenewing: {
     action: "Ouvrir la facturation",
-    body: "L’abonnement annuel {plan} de {workspaceName} se renouvelle le {renewsAt} pour {price} HT, TVA de votre pays en sus. Pour l’arrêter, résiliez l’abonnement depuis la page de facturation avant cette date : il prend alors fin le {renewsAt} et plus rien n’est facturé.",
+    body: "L’abonnement annuel {plan} de {workspaceName} se renouvelle le {renewsAt} pour {price} TTC. Pour l’arrêter, résiliez l’abonnement depuis la page de facturation avant cette date : il prend alors fin le {renewsAt} et plus rien n’est facturé.",
     ignore:
       "Vous recevez cet e-mail parce que vous gérez la facturation de {workspaceName} sur Peal. Les e-mails de facturation sont toujours envoyés : conservez celui-ci, il vous sert de preuve.",
     subject: "Votre abonnement annuel {plan} se renouvelle le {renewsAt}",
   },
   subscriptionStarted: {
     action: "Ouvrir la facturation",
-    body: "Merci : {workspaceName} est abonné à {plan} depuis le {startedAt}, pour {price} HT par {interval}, TVA de votre pays en sus, renouvelé jusqu’à résiliation. Vous avez demandé qu’il commence immédiatement : en tant que consommateur, vous pouvez encore vous rétracter dans les 14 jours, depuis la page de facturation (Se rétracter du contrat ici), et ne payer alors que les jours utilisés. Vous pouvez y résilier à tout moment ; les conditions d’utilisation s’appliquent.",
+    body: "Merci : {workspaceName} est abonné à {plan} depuis le {startedAt}, pour {price} TTC par {interval}, renouvelé jusqu’à résiliation. Vous avez demandé qu’il commence immédiatement : en tant que consommateur, vous pouvez encore vous rétracter dans les 14 jours, depuis la page de facturation (Se rétracter du contrat ici), et ne payer alors que les jours utilisés. Vous pouvez y résilier à tout moment ; les conditions d’utilisation s’appliquent.",
     ignore:
       "Vous recevez cet e-mail parce que vous gérez la facturation de {workspaceName} sur Peal. Les e-mails de facturation sont toujours envoyés : conservez celui-ci, il vous sert de preuve.",
     subject: "Votre abonnement {plan} a commencé",

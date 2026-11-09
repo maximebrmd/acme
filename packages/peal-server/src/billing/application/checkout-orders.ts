@@ -14,18 +14,21 @@ import { orderLifetimeMinutes, OrderIdSchema } from "#billing/domain/order.ts";
 import { trialDays } from "#billing/domain/plans.ts";
 import { TrialUnavailable } from "#billing/domain/trial-unavailable.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
+import { Pseudonyms } from "#shared/application/pseudonyms.ts";
 import type { UserId, WorkspaceId } from "#shared/domain/ids.ts";
 import type { PaidPlan } from "#shared/domain/plan.ts";
 
-import { trialOpen } from "./place-order.ts";
+import { holdsSince, trialOpen } from "./place-order.ts";
 import { Orders } from "./ports/orders.ts";
 import type { Subscriptions } from "./ports/subscriptions.ts";
-import type { Trials } from "./ports/trials.ts";
+import { Trials } from "./ports/trials.ts";
 
 const decodeOrderId = Schema.decodeUnknownOption(OrderIdSchema);
 
 /** What a checkout is about to start. */
 export interface CheckoutRequest {
+  /** The member's email address, as their session has it. */
+  readonly email: string;
   readonly interval: BillingInterval;
   /** As the checkout's metadata names it: no order has another shape. */
   readonly orderId: string;
@@ -44,7 +47,10 @@ export interface CheckoutTerms {
  * billing page for the same workspace, plan and interval, within 30
  * minutes, once: the order records their consent and what they were shown.
  * An order for the trial starts the checkout with its days, if the
- * workspace and the account still have it.
+ * workspace and the account still have it, and holds the trial for them
+ * until the checkout expires (`Trials.reserve`); an account closed with the
+ * same email address that had a trial counts as the same account
+ * (`trialMemory`).
  */
 export class CheckoutOrders extends Context.Service<
   CheckoutOrders,
@@ -61,6 +67,7 @@ export class CheckoutOrders extends Context.Service<
     CheckoutOrders,
     Effect.gen(function* CheckoutOrdersLive() {
       const orders = yield* Orders;
+      const pseudonyms = yield* Pseudonyms;
       const context = yield* Effect.context<Subscriptions | Trials>();
 
       const take = Effect.fn("CheckoutOrders.take")(function* take(
@@ -102,6 +109,28 @@ export class CheckoutOrders extends Context.Service<
         }
 
         if (!(yield* trialOpen(request.userId, request.workspaceId))) {
+          return yield* new TrialUnavailable({ reason: "used" });
+        }
+
+        // An account closed with the same address had it.
+        const pseudonym = yield* pseudonyms.ofEmail(request.email);
+
+        if (yield* Trials.use((trials) => trials.usedByPseudonym(pseudonym))) {
+          return yield* new TrialUnavailable({ reason: "used" });
+        }
+
+        // Held at once: a checkout of another workspace or account started
+        // meanwhile finds it taken.
+        const held = yield* Trials.use((trials) =>
+          trials.reserve(
+            request.userId,
+            request.workspaceId,
+            now,
+            holdsSince(now)
+          )
+        );
+
+        if (!held) {
           return yield* new TrialUnavailable({ reason: "used" });
         }
 

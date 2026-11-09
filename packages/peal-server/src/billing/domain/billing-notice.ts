@@ -18,9 +18,10 @@ export type Money = typeof MoneySchema.Type;
  * confirmations consumer law asks for.
  */
 export const BillingNoticeSchema = Schema.Union([
-  // A subscription started at `startedAt`, paid each `interval` at `price`
-  // excluding VAT, or in its trial until `trialEnd`: the confirmation of
-  // the contract.
+  // A subscription started at `startedAt`, paid each `interval` at `price`,
+  // what Stripe charged, VAT included; or in its trial until `trialEnd`,
+  // `price` then the plan's, excluding VAT: the confirmation of the
+  // contract.
   Schema.TaggedStruct("SubscriptionStarted", {
     interval: BillingIntervalSchema,
     plan: PaidPlanSchema,
@@ -34,7 +35,8 @@ export const BillingNoticeSchema = Schema.Union([
     endsAt: Schema.DateTimeUtc,
     plan: PaidPlanSchema,
   }),
-  // A yearly plan renews at `renewsAt`, for `price` excluding VAT.
+  // A yearly plan renews at `renewsAt`, for `price`, what Stripe will
+  // charge, VAT included.
   Schema.TaggedStruct("SubscriptionRenewing", {
     plan: PaidPlanSchema,
     price: MoneySchema,

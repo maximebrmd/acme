@@ -7,6 +7,7 @@ import type {
   AuthoredPostRecord,
   BillingRecord,
   ChannelRecord,
+  ContractsRecord,
   IdentificationRecord,
   LegalHoldRecord,
   MediaRecord,
@@ -50,6 +51,8 @@ export interface WorkspaceContent {
 
 /** What the other contexts keep about a user, wherever they are a member. */
 export interface UserContent {
+  /** The orders and withdrawals they made. */
+  readonly contracts: ContractsRecord;
   /**
    * What the law has Peal keep beyond the account: the connections that
    * made content, and what closing it leaves; null on a server that keeps
@@ -118,9 +121,13 @@ export class ContextRecords extends Context.Service<
      * Deletes the user's notices and preferences, and the connections they
      * have in progress, and forgets them as the author of posts in the
      * workspaces that remain, and as the account staff acted on in the
-     * audit log.
+     * audit log; what is kept beyond the account (a ban's reason, the
+     * trial it had) is kept by a keyed pseudonym of `email`.
      */
-    readonly eraseUser: (userId: UserId) => Effect.Effect<void, DatabaseError>;
+    readonly eraseUser: (
+      userId: UserId,
+      email: string
+    ) => Effect.Effect<void, DatabaseError>;
     /**
      * Keeps who held an account that closes, apart from everything else,
      * as the law requires of a host (loi n° 2004-575, art. 6, V, A; décret

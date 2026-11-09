@@ -2,11 +2,14 @@
 // one plan, or on none, as on a server that does not bill.
 import { Effect, Layer, Option } from "effect";
 
+import { ContractRecords } from "#billing/application/ports/contract-records.ts";
+import { StripeContracts } from "#billing/application/ports/stripe-contracts.ts";
 import { Subscriptions } from "#billing/application/ports/subscriptions.ts";
 import { Trials } from "#billing/application/ports/trials.ts";
 import { WorkspaceEntitlements } from "#billing/application/workspace-entitlements.ts";
 import { Entitlements, unmetered } from "#billing/domain/entitlements.ts";
 import { Subscription } from "#billing/domain/subscription.ts";
+import { Pseudonyms } from "#shared/application/pseudonyms.ts";
 import type { Plan } from "#shared/domain/plan.ts";
 
 /** Every workspace on `plan`, without a subscription. */
@@ -58,10 +61,25 @@ export const subscriptionOf = (fields: SubscriptionFields): Subscription =>
 export const NoTrialsTest = Layer.succeed(
   Trials,
   Trials.of({
-    record: () => Effect.void,
+    forgetPseudonyms: () => Effect.succeed(0),
+    record: () => Effect.succeed(true),
+    reserve: () => Effect.succeed(true),
     used: () => Effect.succeed(false),
+    usedByPseudonym: () => Effect.succeed(false),
   })
 );
+
+/** No order or withdrawal kept. */
+export const NoContractsTest = Layer.succeed(
+  ContractRecords,
+  ContractRecords.of({
+    ofUser: () => Effect.succeed({ orders: [], withdrawals: [] }),
+    purge: () => Effect.succeed(0),
+  })
+);
+
+/** Stripe for tests that never call it: any call dies. */
+export const StripeUncalledTest = Layer.mock(StripeContracts, {});
 
 /** The subscriptions given, in memory, which erasing and forgetting skip. */
 export const subscriptionsHolding = (held: readonly Subscription[]) =>
@@ -80,3 +98,11 @@ export const subscriptionsHolding = (held: readonly Subscription[]) =>
       remindable: () => Effect.succeed(held),
     })
   );
+
+/** Pseudonyms that spell the address out, for tests to read. */
+export const PlainPseudonymsTest = Layer.succeed(
+  Pseudonyms,
+  Pseudonyms.of({
+    ofEmail: (email) => Effect.succeed(`pseudonym:${email.toLowerCase()}`),
+  })
+);

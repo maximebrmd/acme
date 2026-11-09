@@ -61,7 +61,6 @@ const auth = makeAuth({
     secret: Redacted.make("auth-schema-generator-only-0123456789abcdef"),
     stripe: Option.some({
       apiUrl: Option.none(),
-      automaticTax: false,
       prices: lookupKeysOf("schema_only"),
       secretKey: Redacted.make("sk_test_schema_only"),
       webhookSecret: Redacted.make("whsec_schema_only"),

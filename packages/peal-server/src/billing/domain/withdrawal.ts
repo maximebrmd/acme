@@ -21,14 +21,15 @@ export const withdrawalEndsAt = (
 
 /**
  * Whether the subscription can still be withdrawn from at `now`: one that
- * gives its plan, started less than 14 days ago. Whether the customer is a
- * consumer is Stripe's to say, and checked apart.
+ * gives its plan, started less than 14 days ago, whether or not it is set to
+ * end with its period, as cancelling waives no right to withdraw. Whether
+ * the customer is a consumer is Stripe's to say, and checked apart.
  */
 export const mayWithdraw = (
   subscription: Subscription,
   now: DateTime.Utc
 ): Result.Result<DateTime.Utc, WithdrawalUnavailable> => {
-  if (!entitles(subscription) || subscription.cancelAtPeriodEnd) {
+  if (!entitles(subscription)) {
     return Result.fail(new WithdrawalUnavailable({ reason: "notSubscribed" }));
   }
 

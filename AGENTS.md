@@ -460,7 +460,9 @@ and no socket, for tests.
   Page's token rests on (`granted_by`), stay with their workspaces, which
   erasing deletes. `data_deletions` names nobody, and stays. In the staff
   audit log (`StaffRecords.forgetUser`), the events about the account lose
-  its id, the reason given, their workspace and object ids, and its id
+  its id, the reason given (a ban's or unban's keeps it, with a keyed
+  pseudonym of the account's email instead of its id, `target_pseudonym`,
+  until the same 5-year cutoff), their workspace and object ids, and its id
   leaves the object ids of every other event; the events its user made as staff keep
   their id, a legitimate interest: the operator answers for what staff did
   to other people's accounts; their workspace, operation and object ids
@@ -492,9 +494,13 @@ and no socket, for tests.
   how they signed in and paid after 1 year, deletes the rest after 5, each
   connection after 1, and each answer to a legal request after 5
   (`legal/domain/legal-retention.ts`). Only `LegalRequests` reads them,
-  for staff (`POST /api/admin/legal-requests`, `LegalApi`, StaffAccess),
-  recording the answer (staff, authority, reference, subject, counts) in
-  the transaction that reads it. The export carries the user's connections
+  for staff who also hold the legal role (`legal` beside `admin` in Better
+  Auth's comma-separated `role`, `LegalOfficers` from `StaffStanding`;
+  other staff get 404 too) (`POST /api/admin/legal-requests`, `LegalApi`,
+  StaffAccess), recording the answer (staff, authority, reference,
+  subject, counts) in the transaction that reads it, and in the staff
+  audit log (`legalDisclosure`, through the staff context's
+  `LegalDisclosureAudit`), so the rest of staff see it. The export carries the user's connections
   and what closing would leave (`legalHold`). `PEAL_LEGAL_RETENTION=false`
   (`LegalRecords.layerOff`) keeps nothing, for an operator outside France;
   `legalHold` is then null. A new way to change content (a group, a tool)
@@ -1044,7 +1050,12 @@ and no socket, for tests.
   repost adds nothing, as `countGoingOut` counts posts, not rounds; and a
   workspace with more channels than its plan allows, as after a trial,
   schedules nothing: `PostAllowance.channels`, with the channels context's
-  `ChannelUsage`), `AssistantAllowance`, `StorageAllowance` (an upload's
+  `ChannelUsage`; both are checked again when a target is about to go out,
+  in `RoutedPlatformPublisher.publish`, as a trial or a larger plan may have
+  ended since: over its channels, nothing goes out, and of a month's posts
+  only the first the plan allows, by time then id
+  (`PostRepository.countGoingOutBefore`); the others fail as `planLimit`,
+  nothing sent; a resumed run is not checked), `AssistantAllowance`, `StorageAllowance` (an upload's
   declared size against the bytes stored, pending uploads younger than
   their URLs included: `MediaAssets.insertWithin`, under the workspace's
   advisory lock), and members in Better Auth's organization hooks
@@ -1058,7 +1069,8 @@ and no socket, for tests.
   contexts it reads.
 - An account owns one workspace on the free plan at most: Better Auth's
   `beforeCreateOrganization` (`checkFreeWorkspace`) refuses another with
-  402 `FREE_WORKSPACE_LIMIT_REACHED` while one it owns is on the free plan.
+  402 `FREE_WORKSPACE_LIMIT_REACHED` while one it owns is on the free plan
+  or in its trial, which ends on it.
 - Billing counts the posts each workspace makes on platforms that bill the
   server per post (`meteredPlatforms` in `billing/domain/metered-posts.ts`:
   X, where a post with a link costs about 13 times more), and those with a
@@ -1089,15 +1101,35 @@ and no socket, for tests.
   Auth's `/subscription/upgrade` with `metadata.orderId`: its
   `getCheckoutSessionParams` (`checkoutParams`) takes the order once,
   within 30 minutes, for the same member, plan and interval
-  (`CheckoutOrders`), or refuses `CHECKOUT_ORDER_REQUIRED`. Ordering a paid
-  plan during the trial ends the trial at once (`StripeContracts.endNow`).
+  (`CheckoutOrders`), or refuses `CHECKOUT_ORDER_REQUIRED`. That hook runs
+  only when Better Auth opens a Checkout Session: for a workspace with an
+  active or trialing subscription, which it would change in place (Stripe's
+  API or a portal `subscription_update_confirm`), the plugin's before hook
+  on `/subscription/upgrade` (`orderedChange`) takes the order first, refuses
+  a request naming a `subscriptionId`, and, during the trial, opens a
+  Checkout Session of its own for the paid plan (`checkoutDuringTrial`), as
+  the trial must not change in place. The trial runs until the paid
+  subscription is recorded: `RecordSubscription` then ends it
+  (`orderedDuringTrial`). The Stripe portal has plan switching and
+  cancellation turned off (the self-hosting docs say so): plans change and
+  end on the billing page only.
 - The trial: Pro for 14 days (`trialPlan`, `trialDays`), once per account
-  and per workspace (`billing.trials`, recorded from the trialing event;
-  a workspace that ever had a subscription has none), through Checkout
-  with `payment_method_collection: "if_required"` and
-  `trial_settings.end_behavior.missing_payment_method: "cancel"`: it never
-  turns into a charge, and its end puts the workspace on the free plan.
-  Pause would leave a subscription that may still bill.
+  and per workspace (`billing.trials`; a workspace that ever had a
+  subscription has none), through Checkout with
+  `payment_method_collection: "if_required"`,
+  `trial_settings.end_behavior.missing_payment_method: "cancel"` and a
+  35-minute `expires_at`. `CheckoutOrders.take` holds the trial at once
+  (`Trials.reserve`, a row without a subscription the unique indexes keep
+  to one, for `trialReservationMinutes`), and the trialing event takes the
+  hold; a second trial of the account or the workspace that still gets
+  through is ended (`duplicateTrial`). Before recording a trialing event,
+  `RecordSubscription` sets `cancel_at` to the trial's end
+  (`StripeContracts.endAtTrialEnd`), so a card added in the portal never
+  turns it into a charge; such a trial is not "cancelled" for the billing
+  page. Closing the account keeps a keyed pseudonym of its email address on
+  its trial (`Pseudonyms`, HMAC under `BETTER_AUTH_SECRET`) for
+  `trialMemory` (2 years), which checkout refuses a trial to. Pause would
+  leave a subscription that may still bill.
 - `billingActions` (`/orders`, `/cancellation`, `/withdrawal`) answer only
   members with billing:manage in their own session: never an API key, an
   OAuth client or staff impersonating them (403; the use cases refuse an
@@ -1107,11 +1139,14 @@ and no socket, for tests.
   then the confirmation) sets `cancel_at_period_end`, or ends a trial at
   once. Withdrawing (`Withdraw`, CRD art. 11a: **Withdraw from contract
   here**, then **Confirm withdrawal**) is open 14 days from the contract's
-  start (`mayWithdraw`), refused to a customer with a verified `eu_vat` id
-  (`StripeContracts.isBusiness`), and refunds the rest of the latest paid
-  period to the second (`refundOf`): the withdrawal is recorded first
-  (`billing.withdrawals`), then refunded and ended under idempotency keys,
-  so trying again refunds the same amount once.
+  start (`mayWithdraw`), cancelled or not, refused to a customer with a
+  verified `eu_vat` id (`StripeContracts.isBusiness`), and refunds each
+  paid invoice since the start for the part of its own period not
+  supplied, to the second (`refundOf`), through a credit note on each
+  (`StripeContracts.credit`), so the invoice and Stripe Tax's report match:
+  the withdrawal is recorded first (`billing.withdrawals`), then credited,
+  computed at the time recorded, and ended under idempotency keys, so
+  trying again refunds the same amounts once.
 - Billing tells the members with billing:manage through `BillingNotices`
   (`Notify`), in the app and by email whatever their email choices
   (`emailKindOf` is none for these): `SubscriptionStarted`, the contract's
@@ -1119,20 +1154,31 @@ and no socket, for tests.
   date and time; and, from the hourly `billing.reminders` cron
   (`SendBillingReminders`), `TrialEnding` three days before and
   `SubscriptionRenewing` 45 days before a yearly plan renews (Code de la
-  consommation L215-1). Each once, by key.
+  consommation L215-1). Each once, by key. A confirmation and a renewal
+  quote what Stripe charges, VAT included (the first paid invoice, the
+  next invoice's preview, `StripeContracts.upcomingTotal`), never the
+  catalogue: one Stripe cannot price yet waits for the next run.
 - Better Auth's subscription routes take `customerType: "organization"` and
   the workspace as `referenceId` only, for members with `billing:manage`,
-  never staff impersonating them. Checkout sends Stripe Tax's parameters
-  when `STRIPE_AUTOMATIC_TAX` is on. A workspace Stripe may still bill
+  never staff impersonating them. Checkout always sends Stripe Tax's
+  parameters: prices are tax-exclusive at Stripe and shown VAT included
+  everywhere, so a server that bills needs Stripe Tax. A workspace Stripe may still bill
   (`billsAt`: any status but cancelled or incomplete, unpaid and paused
   included, in `billing.subscriptions` or the plugin's `auth.subscription`)
   is deleted only once the person agrees to cancel its subscriptions, which
   `BillingRecords` then does at Stripe at once, without proration (see
   Accounts and access); it also expires its open checkouts. Better Auth's
   `/organization/delete` is disabled, so its hook refuses nothing. Erasing
-  a workspace deletes its orders and withdrawals and leaves its trial to
-  the account; closing an account leaves orders, trials and withdrawals
-  without the user (`Subscriptions.forgetUser`).
+  a workspace deletes the orders no contract followed; those of a
+  workspace that had a subscription, and its withdrawals, stay without
+  it, by their Stripe customer and subscription (`erased_at`), for
+  `contractRetention` (5 years, Code civil art. 2224), then the daily
+  `billing.contract-retention` cron (`PurgeContractRecords`) deletes them,
+  and the trial pseudonyms past `trialMemory`. A user's orders and
+  withdrawals are in their export (`contracts`, `ContractRecords`).
+  Erasing leaves the trial to the account; closing an account leaves
+  orders, trials and withdrawals without the user
+  (`Subscriptions.forgetUser`).
 - Never call Stripe in tests: checkout and the portal run against
   stripe-mock, billing's own calls (`StripeContractsLive`) against a
   stand-in server, and webhooks post the payloads in

@@ -45,6 +45,11 @@ export const FailureReasonSchema = Schema.Literals([
   // as X does once the app's credits or spending cap are used up: only the
   // server's operator can fix it, and nothing was sent.
   "appBillingLimit",
+  // The workspace's plan had no room for it when it was due: more channels
+  // connected than the plan allows, or the month's posts used up, as after
+  // a trial or a smaller plan. Nothing was sent; the member can make room
+  // or move to a larger plan, then post it again.
+  "planLimit",
 ]);
 
 export type FailureReason = typeof FailureReasonSchema.Type;

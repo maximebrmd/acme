@@ -43,6 +43,8 @@ const failureReasons: Readonly<Record<FailureReason, string>> = {
   mediaRemoved: "one of its images or videos was deleted before it went out",
   missed: "Peal was down at its time, and it came too late to send",
   notPublished: "someone checked the platform and did not find it",
+  planLimit:
+    "the workspace's plan had no room for it when it was due: disconnect channels or move to a larger plan, then post it again",
   quotaExceeded:
     "the platform's daily upload allowance stayed spent: post it again after it resets",
   rateLimited: "the platform kept limiting Peal, which stopped trying",

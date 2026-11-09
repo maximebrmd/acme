@@ -201,6 +201,7 @@ const PortsLive = Layer.mergeAll(
           ),
         exportUser: () =>
           Effect.succeed({
+            contracts: { orders: [], withdrawals: [] },
             legalHold: {
               basis: "Synthetic basis",
               connectionYears: 1,

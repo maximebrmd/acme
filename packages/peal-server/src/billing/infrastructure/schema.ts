@@ -93,41 +93,60 @@ export const meteredPosts = billing.table(
  * and interval, whether it is the trial, and the consent they gave, the
  * version of its words and when, which checkout then requires (used once,
  * within 30 minutes). The proof of the request to start at once and of the
- * withdrawal information (CRD art. 7(3), 8(8)). Deleting the workspace
- * deletes them; closing the account leaves them without the user.
+ * withdrawal information (CRD art. 7(3), 8(8)). Closing the account leaves
+ * them without the user. Erasing the workspace leaves those of a workspace
+ * that had a subscription without it, by the Stripe customer that holds its
+ * invoices, from `erased_at`, for 5 years (`contractRetention`), and
+ * deletes the others, which no contract followed.
  */
 export const orders = billing.table(
   "orders",
   {
     consentVersion: text("consent_version").notNull(),
     createdAt: instant("created_at").notNull(),
+    erasedAt: instant("erased_at"),
     id: uuid("id").primaryKey(),
     interval: text("interval").notNull(),
     plan: text("plan").notNull(),
+    stripeCustomerId: text("stripe_customer_id"),
     trial: boolean("trial").notNull(),
     usedAt: instant("used_at"),
     userId: text("user_id"),
-    workspaceId: uuid("workspace_id").notNull(),
+    workspaceId: uuid("workspace_id"),
   },
-  (table) => [index("orders_workspace").on(table.workspaceId)]
+  (table) => [
+    index("orders_workspace").on(table.workspaceId),
+    index("orders_user").on(table.userId),
+    index("orders_erased").on(table.erasedAt),
+  ]
 );
 
 /**
- * The trials started, one per workspace and one per account. Deleting the
- * workspace leaves the account's row without it, and closing the account
- * leaves the workspace's without the user, so neither starts a second
+ * The trials started, one per workspace and one per account, and the holds
+ * of trial checkouts under way (no subscription yet), which the unique
+ * indexes keep to one too. Deleting the workspace leaves the account's row
+ * without it, and closing the account leaves the workspace's without the
+ * user, with a keyed pseudonym of its email address instead
+ * (`user_pseudonym`, from `forgotten_at`, for `trialMemory`), so neither
+ * the workspace nor the same address signing up again starts a second
  * trial; a row left with neither is deleted.
  */
 export const trials = billing.table(
   "trials",
   {
-    plan: text("plan").notNull(),
-    startedAt: instant("started_at").notNull(),
-    stripeSubscriptionId: text("stripe_subscription_id").primaryKey(),
+    forgottenAt: instant("forgotten_at"),
+    id: uuid("id").primaryKey().defaultRandom(),
+    plan: text("plan"),
+    reservedAt: instant("reserved_at").notNull(),
+    startedAt: instant("started_at"),
+    stripeSubscriptionId: text("stripe_subscription_id"),
     userId: text("user_id"),
+    userPseudonym: text("user_pseudonym"),
     workspaceId: uuid("workspace_id"),
   },
   (table) => [
+    index("trials_pseudonym").on(table.userPseudonym),
+    uniqueIndex("trials_subscription").on(table.stripeSubscriptionId),
     uniqueIndex("trials_user").on(table.userId),
     uniqueIndex("trials_workspace").on(table.workspaceId),
   ]
@@ -135,19 +154,25 @@ export const trials = billing.table(
 
 /**
  * Each withdrawal a consumer made from a subscription within its 14 days:
- * when, by whom, and what was refunded, in cents of `currency`. Deleting the
- * workspace deletes them (Stripe keeps the refund); closing the account
- * leaves them without the user.
+ * when, by whom, and what was refunded, in cents of `currency`. Closing the
+ * account leaves them without the user; erasing the workspace leaves them
+ * without it, by their Stripe subscription, from `erased_at`, for 5 years
+ * (`contractRetention`).
  */
 export const withdrawals = billing.table(
   "withdrawals",
   {
     currency: text("currency").notNull(),
+    erasedAt: instant("erased_at"),
     refunded: bigint("refunded", { mode: "number" }).notNull(),
     requestedAt: instant("requested_at").notNull(),
     stripeSubscriptionId: text("stripe_subscription_id").primaryKey(),
     userId: text("user_id"),
-    workspaceId: uuid("workspace_id").notNull(),
+    workspaceId: uuid("workspace_id"),
   },
-  (table) => [index("withdrawals_workspace").on(table.workspaceId)]
+  (table) => [
+    index("withdrawals_workspace").on(table.workspaceId),
+    index("withdrawals_user").on(table.userId),
+    index("withdrawals_erased").on(table.erasedAt),
+  ]
 );

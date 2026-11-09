@@ -17,6 +17,7 @@ import { SqlClient } from "effect/sql";
 import { CollectMetrics } from "#analytics/application/collect-metrics.ts";
 import { clusterLayer } from "#app/cluster.ts";
 import { CronsLive } from "#app/crons.ts";
+import { PurgeContractRecords } from "#billing/application/purge-contract-records.ts";
 import { SendBillingReminders } from "#billing/application/send-billing-reminders.ts";
 import { ConnectChannel } from "#channels/application/connect-channel.ts";
 import { RefreshChannelTokens } from "#channels/application/refresh-channel-tokens.ts";
@@ -94,6 +95,10 @@ const ChannelJobsTest = Layer.mergeAll(
   Layer.succeed(
     SendBillingReminders,
     SendBillingReminders.of({ run: Effect.succeed(0) })
+  ),
+  Layer.succeed(
+    PurgeContractRecords,
+    PurgeContractRecords.of({ run: Effect.succeed(0) })
   ),
   Layer.succeed(
     PurgeLegalRecords,

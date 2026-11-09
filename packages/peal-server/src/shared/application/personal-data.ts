@@ -125,6 +125,27 @@ export interface BillingRecord {
   }[];
 }
 
+/**
+ * The orders and withdrawals a user made, kept as the proof of each
+ * contract; the workspace is null once it is erased. No Stripe id.
+ */
+export interface ContractsRecord {
+  readonly orders: readonly {
+    readonly consentVersion: string;
+    readonly createdAt: DateTime.Utc;
+    readonly interval: string;
+    readonly plan: string;
+    readonly trial: boolean;
+    readonly usedAt: DateTime.Utc | null;
+    readonly workspaceId: string | null;
+  }[];
+  readonly withdrawals: readonly {
+    readonly refunded: { readonly amount: number; readonly currency: string };
+    readonly requestedAt: DateTime.Utc;
+    readonly workspaceId: string | null;
+  }[];
+}
+
 /** The account a notice is about, as it was then. */
 export interface NoticeChannelRecord {
   readonly handle: string;

@@ -8,19 +8,13 @@ import {
   Schema,
 } from "effect";
 
+import { authSecretConfig } from "#shared/infrastructure/auth-secret.ts";
 import {
   isProduction,
   publicUrlConfig,
   requiredInProduction,
 } from "#shared/infrastructure/environment.ts";
 import { stripeSettingsConfig } from "#shared/infrastructure/stripe-settings.ts";
-
-// Used only outside production, so `bun nx run peal-server:dev` signs people
-// in without any setup. Production refuses to start without its own secret:
-// whoever knows the secret can forge session cookies.
-const developmentSecret = Redacted.make(
-  "peal-development-secret-9f3c1e7a4b2d8f6e0a5c3b1d7e9f2a4c"
-);
 
 // A comma-separated list, without the spaces around its entries or empty ones.
 const trimmed = (entries: readonly string[]): readonly string[] =>
@@ -131,10 +125,7 @@ export const authSettingsConfig = Config.all({
   requireEmailVerification: Config.Boolean(
     "AUTH_REQUIRE_EMAIL_VERIFICATION"
   ).pipe(Config.withDefault(true)),
-  secret: requiredInProduction(
-    Config.Redacted("BETTER_AUTH_SECRET"),
-    developmentSecret
-  ),
+  secret: authSecretConfig,
   // Billing through Stripe's plugin, with organization subscriptions.
   stripe: stripeSettingsConfig,
   // Other origins allowed to send authenticated requests, besides PUBLIC_URL.

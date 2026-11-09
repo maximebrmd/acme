@@ -132,13 +132,19 @@ export const BetterAuthLive = Layer.effect(
           )
         ),
       // Read while a workspace is created. A database failure refuses it.
+      // A workspace in its trial counts as free: it is, once the trial ends.
       freeWorkspace: async (workspaceId) =>
         await runPromise(
           entitlements
             .of(workspaceId)
             .pipe(
-              Effect.map(({ plan }) =>
-                Option.exists(plan, (current) => current === "free")
+              Effect.map(
+                ({ plan, subscription }) =>
+                  Option.exists(plan, (current) => current === "free") ||
+                  Option.exists(
+                    subscription,
+                    ({ status }) => status === "trialing"
+                  )
               )
             )
         ),

@@ -56,6 +56,8 @@ export const english: EmailCatalog = {
     missed:
       "Peal was unavailable at the scheduled time, and the post came too late to send.",
     notPublished: "someone checked the platform and did not find it.",
+    planLimit:
+      "the workspace’s plan had no room for it when it was due: it has more channels connected than the plan allows, or the month’s posts were used up. Nothing was sent. Disconnect channels or move to a larger plan, then post it again.",
     quotaExceeded:
       "the platform's daily allowance of uploads stayed used up, for this Peal server or for the account, and Peal stopped waiting.",
     rateLimited:
@@ -139,14 +141,14 @@ export const english: EmailCatalog = {
   },
   subscriptionRenewing: {
     action: "Open billing",
-    body: "The yearly {plan} plan of {workspaceName} renews on {renewsAt} for {price} excluding VAT, with the VAT of your country added. To stop it, cancel the subscription on the billing page before that date: it then ends on {renewsAt} and nothing more is charged.",
+    body: "The yearly {plan} plan of {workspaceName} renews on {renewsAt} for {price}, VAT included. To stop it, cancel the subscription on the billing page before that date: it then ends on {renewsAt} and nothing more is charged.",
     ignore:
       "You receive this email because you manage billing for {workspaceName} on Peal. Billing emails are always sent: keep this one, it is your record.",
     subject: "Your yearly {plan} plan renews on {renewsAt}",
   },
   subscriptionStarted: {
     action: "Open billing",
-    body: "Thank you: {workspaceName} is subscribed to {plan} since {startedAt}, for {price} excluding VAT a {interval}, with the VAT of your country added, renewed until cancelled. You asked for it to start at once: as a consumer you may still withdraw within 14 days, from the billing page (Withdraw from contract here), and then pay only for the days used. You can cancel it there at any time; the terms of service apply.",
+    body: "Thank you: {workspaceName} is subscribed to {plan} since {startedAt}, for {price} a {interval}, VAT included, renewed until cancelled. You asked for it to start at once: as a consumer you may still withdraw within 14 days, from the billing page (Withdraw from contract here), and then pay only for the days used. You can cancel it there at any time; the terms of service apply.",
     ignore:
       "You receive this email because you manage billing for {workspaceName} on Peal. Billing emails are always sent: keep this one, it is your record.",
     subject: "Your {plan} subscription has started",

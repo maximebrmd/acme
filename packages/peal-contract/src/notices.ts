@@ -57,8 +57,9 @@ export const NoticeEventSchema = Schema.Union([
     channel: NoticeChannelSchema,
     expiresAt: Schema.DateTimeUtc,
   }),
-  // A subscription started at `startedAt`, paid each `interval` at `price`
-  // excluding VAT, or in its trial until `trialEnd` (null for a paid one).
+  // A subscription started at `startedAt`, paid each `interval` at `price`,
+  // what Stripe charged, VAT included; or in its trial until `trialEnd`
+  // (null for a paid one), `price` then the plan's, excluding VAT.
   Schema.TaggedStruct("SubscriptionStarted", {
     interval: BillingIntervalSchema,
     plan: PaidPlanSchema,
@@ -72,8 +73,8 @@ export const NoticeEventSchema = Schema.Union([
     endsAt: Schema.DateTimeUtc,
     plan: PaidPlanSchema,
   }),
-  // A yearly plan renews at `renewsAt`, for `price` excluding VAT, unless it
-  // is cancelled before.
+  // A yearly plan renews at `renewsAt`, for `price`, what Stripe will
+  // charge, VAT included, unless it is cancelled before.
   Schema.TaggedStruct("SubscriptionRenewing", {
     plan: PaidPlanSchema,
     price: MoneySchema,
