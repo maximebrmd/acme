@@ -48,6 +48,7 @@ import { DatabaseLive } from "#shared/infrastructure/database.ts";
 import { MigrationsLive } from "#shared/infrastructure/migrations.ts";
 import { IdsLive } from "#shared/infrastructure/secure-random-ids.ts";
 import { TransactionRunnerLive } from "#shared/infrastructure/transaction-runner-live.ts";
+import { StaffApiLive, StaffLive, StaffRecordsLive } from "#staff/container.ts";
 import {
   AuthRoutesLive,
   WorkspaceApiLive,
@@ -55,9 +56,9 @@ import {
   WorkspaceSettingsLive,
 } from "#workspace/container.ts";
 
-// The groups of the workspace endpoints, and the signed-in user's notices,
-// behind the Authentication and WorkspaceAccess middleware that
-// WorkspaceApiLive provides.
+// The groups of the workspace endpoints, the signed-in user's notices and
+// the staff console, behind the Authentication, WorkspaceAccess and
+// StaffAccess middleware that WorkspaceApiLive provides.
 const WorkspaceGroupsLive = Layer.mergeAll(
   ChannelsApiLive,
   PostsApiLive,
@@ -66,7 +67,8 @@ const WorkspaceGroupsLive = Layer.mergeAll(
   NotificationPreferencesApiLive,
   AssistantApiLive,
   BillingApiLive,
-  AnalyticsApiLive
+  AnalyticsApiLive,
+  StaffApiLive
 ).pipe(Layer.provideMerge(WorkspaceApiLive));
 
 const ApiLive = HttpApiBuilder.layer(Api, {
@@ -115,7 +117,8 @@ const AssistantContextLive = AssistantLive.pipe(
 );
 
 // Workspace and account settings, which erase and export what every context
-// keeps, billing's included, which the workspace context brings.
+// keeps, billing's included, which the workspace context brings, and the
+// staff audit log's.
 const SettingsContextLive = WorkspaceSettingsLive.pipe(
   Layer.provide(
     Layer.mergeAll(
@@ -123,9 +126,17 @@ const SettingsContextLive = WorkspaceSettingsLive.pipe(
       PublishingContextLive,
       MediaContextLive,
       AssistantContextLive,
-      AnalyticsLive
+      AnalyticsLive,
+      StaffRecordsLive
     )
   )
+);
+
+// The staff console, which reads accounts and workspaces from the workspace
+// context, and each workspace's plan, channels and posts from billing, the
+// channels context and publishing.
+const StaffContextLive = StaffLive.pipe(
+  Layer.provide(Layer.mergeAll(ChannelsWithNoticesLive, PublishingContextLive))
 );
 
 // The billing page, which counts what each context holds.
@@ -167,7 +178,8 @@ const ServicesLive = Layer.mergeAll(
   AssistantContextLive,
   SettingsContextLive,
   BillingContextLive,
-  AnalyticsLive
+  AnalyticsLive,
+  StaffContextLive
 ).pipe(
   Layer.provide(Layer.mergeAll(JobsWithoutWorkersLive, BunDns.layer)),
   Layer.provideMerge(MigrationsLive),
@@ -208,7 +220,8 @@ const ContextsLive = Layer.mergeAll(
   AssistantContextLive,
   SettingsContextLive,
   BillingContextLive,
-  AnalyticsContextLive
+  AnalyticsContextLive,
+  StaffContextLive
 ).pipe(
   Layer.provideMerge(
     Layer.mergeAll(IdsLive, TransactionRunnerLive, BunDns.layer)

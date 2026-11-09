@@ -2,7 +2,9 @@ import {
   Authentication,
   CurrentMember,
   CurrentPrincipal,
+  CurrentStaff,
   Forbidden,
+  StaffAccess,
   Unauthenticated,
   WorkspaceAccess,
   WorkspaceNotFound,
@@ -10,10 +12,13 @@ import {
 import type { Member } from "acme-contract";
 import { Effect, Layer, Option, Redacted, Schema } from "effect";
 import { HttpRouter, HttpServerRequest } from "effect/http";
+import { HttpApiError } from "effect/http-api";
 
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
+import type { UserId } from "#shared/domain/ids.ts";
 import { Authenticate } from "#workspace/application/authenticate.ts";
 import { ResolveMember } from "#workspace/application/resolve-member.ts";
+import { StaffStanding } from "#workspace/application/staff-standing.ts";
 import type { Principal } from "#workspace/domain/principal.ts";
 
 import { memberOf, principalOf, toContractPrincipal } from "./principal.ts";
@@ -134,12 +139,77 @@ export const WorkspaceAccessLive = Layer.effect(
   })
 );
 
+const notFound = () => Effect.fail(new HttpApiError.NotFound());
+
+/**
+ * StaffAccess: staff in their own session, from the session cookie alone,
+ * read fresh from the database, so staff signed out, banned or no longer
+ * staff a moment ago are refused at once. Anyone else gets 404, a cookie sent
+ * from another site included, so the console never tells it is there.
+ */
+export const StaffAccessLive = Layer.effect(
+  StaffAccess,
+  Effect.gen(function* staffAccess() {
+    const authenticate = yield* Authenticate;
+    const standing = yield* StaffStanding;
+
+    return StaffAccess.of({
+      session: (httpEffect) =>
+        Effect.gen(function* staffSession() {
+          const request = yield* HttpServerRequest.HttpServerRequest;
+          const cookies = request.headers["cookie"];
+
+          if (cookies === undefined) {
+            return yield* notFound();
+          }
+
+          if (
+            !safeMethods.has(request.method) &&
+            !authenticate.isTrustedOrigin(
+              Option.fromNullishOr(request.headers["origin"])
+            )
+          ) {
+            return yield* notFound();
+          }
+
+          const principal = yield* authenticate
+            .session(Redacted.make(cookies), { fresh: true })
+            .pipe(
+              Effect.catchTags({
+                AuthUnavailable: Effect.die,
+                NotSignedIn: notFound,
+              })
+            );
+
+          const userId = yield* standing.staffOf(principal).pipe(
+            Effect.catchTags({
+              DirectoryUnavailable: Effect.die,
+              NotStaff: notFound,
+            })
+          );
+
+          return yield* httpEffect.pipe(
+            Effect.provideService(CurrentStaff, { userId })
+          );
+        }),
+    });
+  })
+);
+
+// For tests: nobody is staff. HttpApiTest serves every group of the API, so
+// tests provide every middleware, whichever groups they exercise.
+const noStaffTest = Layer.succeed(
+  StaffAccess,
+  StaffAccess.of({ session: notFound })
+);
+
 /**
  * For tests of workspace handlers: every request authenticates as the
  * member's principal and acts as the member, without Better Auth.
  */
 export const securityTest = (member: Member) =>
   Layer.mergeAll(
+    noStaffTest,
     Layer.succeed(
       Authentication,
       Authentication.of({
@@ -166,6 +236,7 @@ export const securityTest = (member: Member) =>
  * Authentication answers 401, as it would to a request without any.
  */
 export const anonymousSecurityTest = Layer.mergeAll(
+  noStaffTest,
   Layer.succeed(
     Authentication,
     Authentication.of({
@@ -178,3 +249,29 @@ export const anonymousSecurityTest = Layer.mergeAll(
     WorkspaceAccess.of(() => Effect.fail(new WorkspaceNotFound()))
   )
 );
+
+/**
+ * For tests of the staff console's handlers: every request to it is the
+ * staff member's, and anything behind Authentication answers 401.
+ */
+export const staffSecurityTest = (userId: UserId) =>
+  Layer.mergeAll(
+    Layer.succeed(
+      StaffAccess,
+      StaffAccess.of({
+        session: (httpEffect) =>
+          httpEffect.pipe(Effect.provideService(CurrentStaff, { userId })),
+      })
+    ),
+    Layer.succeed(
+      Authentication,
+      Authentication.of({
+        bearer: unauthenticated,
+        session: unauthenticated,
+      })
+    ),
+    Layer.succeed(
+      WorkspaceAccess,
+      WorkspaceAccess.of(() => Effect.fail(new WorkspaceNotFound()))
+    )
+  );

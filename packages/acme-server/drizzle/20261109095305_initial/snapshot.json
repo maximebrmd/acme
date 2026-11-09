@@ -2,7 +2,7 @@
   "type": "base",
   "version": "9",
   "dialect": "postgres",
-  "id": "a6d3c3d2-94a0-4aac-b783-cd7fb6fd3e99",
+  "id": "dd8aa10d-004c-4f94-9db7-d77114a2d218",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
@@ -89,6 +89,18 @@
         "s|sch|publishing",
         "n|sch|publishing",
         "e|sch|publishing"
+      ]
+    },
+    {
+      "statementType": "create_schema",
+      "statementTarget": [
+        "schema",
+        "staff"
+      ],
+      "writes": [
+        "s|sch|staff",
+        "n|sch|staff",
+        "e|sch|staff"
       ]
     },
     {
@@ -449,6 +461,25 @@
       ],
       "reads": [
         "n|sch|publishing"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "staff",
+        "audit_events"
+      ],
+      "writes": [
+        "s|tbl|staff.audit_events",
+        "n|tbl|staff.audit_events",
+        "e|tbl|staff.audit_events",
+        "n|rel|staff.audit_events",
+        "n|type|staff.audit_events",
+        "n|rel|staff.audit_events_pkey"
+      ],
+      "reads": [
+        "n|sch|staff"
       ]
     },
     {
@@ -1126,6 +1157,68 @@
         "n|sch|publishing",
         "n|col|publishing.posts.workspace_id",
         "n|col|publishing.posts.id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "staff",
+        "audit_events",
+        "audit_events_at"
+      ],
+      "writes": [
+        "s|idx|staff.audit_events_at",
+        "n|idx|staff.audit_events_at",
+        "e|idx|staff.audit_events_at",
+        "n|rel|staff.audit_events_at"
+      ],
+      "reads": [
+        "n|tbl|staff.audit_events",
+        "n|sch|staff",
+        "n|col|staff.audit_events.at",
+        "n|col|staff.audit_events.id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "staff",
+        "audit_events",
+        "audit_events_target"
+      ],
+      "writes": [
+        "s|idx|staff.audit_events_target",
+        "n|idx|staff.audit_events_target",
+        "e|idx|staff.audit_events_target",
+        "n|rel|staff.audit_events_target"
+      ],
+      "reads": [
+        "n|tbl|staff.audit_events",
+        "n|sch|staff",
+        "n|col|staff.audit_events.target_id",
+        "n|col|staff.audit_events.at"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "staff",
+        "audit_events",
+        "audit_events_staff"
+      ],
+      "writes": [
+        "s|idx|staff.audit_events_staff",
+        "n|idx|staff.audit_events_staff",
+        "e|idx|staff.audit_events_staff",
+        "n|rel|staff.audit_events_staff"
+      ],
+      "reads": [
+        "n|tbl|staff.audit_events",
+        "n|sch|staff",
+        "n|col|staff.audit_events.staff_id"
       ]
     },
     {
@@ -2226,6 +2319,10 @@
       "entityType": "schemas"
     },
     {
+      "name": "staff",
+      "entityType": "schemas"
+    },
+    {
       "name": "auth",
       "entityType": "schemas"
     },
@@ -2334,6 +2431,12 @@
     {
       "schema": "publishing",
       "name": "publication_calls",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "staff",
+      "name": "audit_events",
       "isRlsEnabled": false,
       "entityType": "tables"
     },
@@ -4603,6 +4706,97 @@
       "type": "uuid",
       "typeSchema": null,
       "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "staff",
+      "table": "audit_events",
+      "name": "action",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "staff",
+      "table": "audit_events",
+      "name": "at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "staff",
+      "table": "audit_events",
+      "name": "ban_expires_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "staff",
+      "table": "audit_events",
+      "name": "id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "staff",
+      "table": "audit_events",
+      "name": "reason",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "staff",
+      "table": "audit_events",
+      "name": "staff_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "staff",
+      "table": "audit_events",
+      "name": "target_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": false,
       "dimensions": 0,
       "default": null,
       "generated": null,
@@ -7893,6 +8087,83 @@
       "entityType": "indexes"
     },
     {
+      "schema": "staff",
+      "table": "audit_events",
+      "name": "audit_events_at",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "at",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "staff",
+      "table": "audit_events",
+      "name": "audit_events_target",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "target_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "at",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "staff",
+      "table": "audit_events",
+      "name": "audit_events_staff",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "staff_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
       "schema": "auth",
       "table": "account",
       "name": "account_userId_idx",
@@ -9042,6 +9313,16 @@
       "name": "publication_calls_pkey",
       "columns": [
         "idempotency_key"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "staff",
+      "table": "audit_events",
+      "name": "audit_events_pkey",
+      "columns": [
+        "id"
       ],
       "nameExplicit": false,
       "entityType": "pks"

@@ -20,6 +20,7 @@ import {
   GatedPlatformPublisher,
   UnreadMetrics,
 } from "#publishing/infrastructure/channel-gate.ts";
+import { DrizzlePostOversight } from "#publishing/infrastructure/drizzle-post-oversight.ts";
 import { DrizzlePostRepository } from "#publishing/infrastructure/drizzle-post-repository.ts";
 import { DrizzlePublicationJournal } from "#publishing/infrastructure/drizzle-publication-journal.ts";
 import { DrizzlePublishedTargets } from "#publishing/infrastructure/drizzle-published-targets.ts";
@@ -40,7 +41,8 @@ import { OutboundGuard } from "#shared/infrastructure/platforms/outbound-guard.t
  * The publishing context's use cases (`PostDrafts`, `PostQueries`,
  * `PostScheduling`, `PostFollowUp`, for the handlers; `PostRecords`, for the
  * workspace context's exports and erasures; `PostUsage`, for billing;
- * `PublishedTargets`, which analytics follows) and the adapters behind its
+ * `PublishedTargets`, which analytics follows; `PostOversight`, for the
+ * staff console) and the adapters behind its
  * ports, with `references` for the channels and media posts refer to and the
  * posts a month allows. Needs the database (Drizzle), the workflow engine, a
  * TransactionRunner and Ids, and PublicationOutcomes for PostFollowUp.
@@ -62,6 +64,7 @@ export const publishingWith = <E, R>(
   ).pipe(
     Layer.provideMerge(
       Layer.mergeAll(
+        DrizzlePostOversight,
         DrizzlePostRepository,
         DrizzlePublicationJournal,
         DrizzlePublishedTargets,

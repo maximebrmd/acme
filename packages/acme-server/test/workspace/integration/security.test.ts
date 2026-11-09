@@ -66,12 +66,12 @@ const MatrixLive = Layer.effect(
 
     const staffCookies = yield* signIn(staff.email);
 
-    const ban = yield* app.request("/api/auth/admin/ban-user", {
-      body: { userId: banned.id },
+    const ban = yield* app.request(`/api/admin/users/${banned.id}/ban`, {
+      body: { expiresAt: null, reason: "Synthetic test of a ban" },
       headers: { cookie: staffCookies },
     });
 
-    assert.strictEqual(ban.status, 200);
+    assert.strictEqual(ban.status, 204);
 
     return {
       bannedCookies: banned.cookies,
@@ -341,15 +341,27 @@ layer(MatrixLive, { excludeTestServices: true, timeout: "180 seconds" })(
 
           assert.strictEqual(removed.status, 404);
 
-          const started = yield* app.request(
+          // Nor act through Better Auth's own admin routes, which the audit
+          // log would not see: the staff console records each action.
+          const unrecorded = yield* app.request(
             "/api/auth/admin/impersonate-user",
             {
               body: { userId: member.id },
+              headers: { cookie: staffCookies },
+            }
+          );
+
+          assert.strictEqual(unrecorded.status, 404);
+
+          const started = yield* app.request(
+            `/api/admin/users/${member.id}/impersonate`,
+            {
+              body: { reason: "Synthetic support request" },
               headers: { cookie: staffCookies, "user-agent": staffBrowser },
             }
           );
 
-          assert.strictEqual(started.status, 200);
+          assert.strictEqual(started.status, 204);
 
           const cookie = cookiesOf(started);
 
@@ -491,8 +503,8 @@ layer(MatrixLive, { excludeTestServices: true, timeout: "180 seconds" })(
 
         yield* makeAdmin(staff.id);
 
-        yield* app.request("/api/auth/admin/ban-user", {
-          body: { userId: banned.id },
+        yield* app.request(`/api/admin/users/${banned.id}/ban`, {
+          body: { expiresAt: null, reason: "Synthetic test of a ban" },
           headers: { cookie: yield* signIn(staff.email) },
         });
 

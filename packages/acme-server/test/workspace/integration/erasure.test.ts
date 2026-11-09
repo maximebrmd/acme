@@ -51,6 +51,7 @@ const schemas = [
   "media",
   "notifications",
   "publishing",
+  "staff",
 ];
 
 // The rows of each table that name a workspace: none may be left once it is
@@ -142,6 +143,10 @@ const userRows = {
     sql`SELECT count(*)::int AS count FROM notifications.notification_preferences WHERE user_id = ${id}`,
   "publishing.posts": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM publishing.posts WHERE author_id = ${id}`,
+  // What staff did to them, or did as staff: the events stay, without them
+  // and without the reason given about them.
+  "staff.audit_events": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM staff.audit_events WHERE target_id = ${id} OR staff_id = ${id}`,
 } satisfies Readonly<Record<string, Count>>;
 
 // Tables that name neither a workspace nor a user, and why they stay.
@@ -167,6 +172,13 @@ const kept = {
 } satisfies Readonly<Record<string, string>>;
 
 const TablesSchema = Schema.Array(Schema.Struct({ name: Schema.String }));
+
+// A random UUID with the version digit of v7 reads as one.
+const uuid7 = (): string => {
+  const random = randomUUID();
+
+  return `${random.slice(0, 14)}7${random.slice(15)}`;
+};
 
 const IdsSchema = Schema.Array(Schema.Struct({ id: Schema.String }));
 
@@ -286,6 +298,12 @@ const fillPerson = Effect.fn("fillPerson")(function* fillPerson(
   yield* sql`INSERT INTO auth.oauth_client (client_id, name, user_id, redirect_uris, created_at, updated_at)
     VALUES (${`synthetic-${randomUUID()}`}, 'Synthetic client of the user', ${person.id}, ARRAY['https://client.example.test/callback'], now(), now())`;
 
+  // What staff did to the user, and what the user did as staff. Entries
+  // have UUIDv7 ids.
+  yield* sql`INSERT INTO staff.audit_events (id, action, at, reason, staff_id, target_id)
+    VALUES (${uuid7()}, 'ban', now(), 'Synthetic reason naming the user', ${randomUUID()}, ${person.id}),
+      (${uuid7()}, 'unban', now(), 'Synthetic reason', ${person.id}, ${randomUUID()})`;
+
   // A subscription made for the user rather than a workspace, as Better
   // Auth's Stripe plugin would without Acme's guard.
   yield* sql`INSERT INTO auth.subscription (plan, reference_id, status)
@@ -403,6 +421,13 @@ layer(IntegrationLive, {
         );
 
         assert.strictEqual(posts, 1);
+
+        // The reason staff gave about her went with her id.
+        const reasons = yield* count(
+          sql`SELECT count(*)::int AS count FROM staff.audit_events WHERE target_id IS NULL AND reason IS NOT NULL`
+        );
+
+        assert.strictEqual(reasons, 0);
 
         // A staff member closing theirs ends the sessions they act as
         // others in.
