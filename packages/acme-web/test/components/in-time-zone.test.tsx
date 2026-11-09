@@ -5,7 +5,7 @@ import { NextIntlClientProvider, useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
-import { InTimeZone } from "#components/notices/in-time-zone.tsx";
+import { InTimeZone, ViewerTimeZone } from "#components/in-time-zone.tsx";
 import { loadMessages } from "#i18n/messages.ts";
 import { useNoticeText } from "#notices/notice-text.ts";
 
@@ -75,5 +75,30 @@ describe(InTimeZone, () => {
         </InTimeZone>
       )
     ).resolves.toContain("must be reconnected by November 10, 2026");
+  });
+});
+
+describe(ViewerTimeZone, () => {
+  it("keeps the server's zone until the page has hydrated", async () => {
+    // On the server, and in the browser's first render, which must agree.
+    await expect(
+      onServerInUtc(
+        "en",
+        <ViewerTimeZone>
+          <Received />
+        </ViewerTimeZone>
+      )
+    ).resolves.toContain("Nov 9, 2026 at 11:30 PM");
+  });
+
+  it("keeps the zone above when given none", async () => {
+    await expect(
+      onServerInUtc(
+        "fr",
+        <InTimeZone timeZone={undefined}>
+          <Received />
+        </InTimeZone>
+      )
+    ).resolves.toContain("9 nov. 2026 à 23:30");
   });
 });

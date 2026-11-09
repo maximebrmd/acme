@@ -8,6 +8,7 @@ import { AsyncResult } from "effect/reactivity";
 import { useTranslations } from "next-intl";
 
 import { Composer } from "#components/posts/composer.tsx";
+import { PostDetail } from "#components/posts/post-detail.tsx";
 import { Link } from "#i18n/navigation.ts";
 import { workspaceChannels, workspacePost } from "#posts/api.ts";
 import { useMounted } from "#posts/use-mounted.ts";
@@ -16,6 +17,8 @@ interface ComposerScreenProps {
   readonly permissions: readonly Permission[];
   /** None for a new post. */
   readonly postId: string | undefined;
+  /** The signed-in user. */
+  readonly userId: string;
   readonly workspaceId: string;
 }
 
@@ -51,6 +54,7 @@ const ExistingPost = ({
   channels,
   permissions,
   postId,
+  userId,
   workspaceId,
 }: ComposerScreenProps & {
   readonly channels: readonly Channel[];
@@ -62,12 +66,23 @@ const ExistingPost = ({
   const retry = useAtomRefresh(query);
 
   if (AsyncResult.isSuccess(result)) {
-    return (
+    const post = result.value;
+
+    // Once it went out, or was cancelled, the page tells how it went.
+    return post.status === "draft" || post.status === "scheduled" ? (
       <Composer
-        key={result.value.id}
+        key={post.id}
         channels={channels}
         permissions={permissions}
-        post={result.value}
+        post={post}
+        userId={userId}
+        workspaceId={workspaceId}
+      />
+    ) : (
+      <PostDetail
+        channels={channels}
+        permissions={permissions}
+        post={post}
         workspaceId={workspaceId}
       />
     );
@@ -80,11 +95,13 @@ const ExistingPost = ({
   );
 };
 
-// The composer, once the workspace's channels and the post are loaded. It
-// renders in the browser only, where the user's time zone is known.
+// The composer, once the workspace's channels and the post are loaded, or
+// for a post that went out, how it went. It renders in the browser only,
+// where the user's time zone is known.
 export const ComposerScreen = ({
   permissions,
   postId,
+  userId,
   workspaceId,
 }: ComposerScreenProps) => {
   const t = useTranslations("Posts.Composer");
@@ -107,6 +124,7 @@ export const ComposerScreen = ({
         channels={channels.value}
         permissions={permissions}
         post={undefined}
+        userId={userId}
         workspaceId={workspaceId}
       />
     ) : (
@@ -114,6 +132,7 @@ export const ComposerScreen = ({
         channels={channels.value}
         permissions={permissions}
         postId={postId}
+        userId={userId}
         workspaceId={workspaceId}
       />
     );
@@ -121,12 +140,20 @@ export const ComposerScreen = ({
 
   return (
     <div className="flex flex-col gap-4">
-      <Link
-        href={`/app/${workspaceId}/calendar`}
-        className="text-muted-foreground text-sm underline-offset-4 hover:underline"
-      >
-        {t("backToCalendar")}
-      </Link>
+      <div className="flex flex-wrap gap-4">
+        <Link
+          href={`/app/${workspaceId}/calendar`}
+          className="text-muted-foreground text-sm underline-offset-4 hover:underline"
+        >
+          {t("backToCalendar")}
+        </Link>
+        <Link
+          href={`/app/${workspaceId}/drafts`}
+          className="text-muted-foreground text-sm underline-offset-4 hover:underline"
+        >
+          {t("backToDrafts")}
+        </Link>
+      </div>
       {body}
     </div>
   );

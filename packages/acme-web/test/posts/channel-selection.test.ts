@@ -14,6 +14,7 @@ const channel = (id: string): Channel => ({
 });
 
 const draftFor = (...channelIds: readonly string[]): Post => ({
+  authorId: null,
   content: { media: [], overrides: [], text: "A synthetic draft" },
   id: "00000000-0000-7000-8000-000000000001",
   outcome: null,
@@ -25,7 +26,9 @@ const draftFor = (...channelIds: readonly string[]): Post => ({
     id: `00000000-0000-7000-8000-00000000010${index}`,
     permalink: null,
     publishedAt: null,
+    round: 1,
     status: "pending",
+    unconfirmedReason: null,
   })),
 });
 

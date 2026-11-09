@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 
 import { ComposerScreen } from "#components/posts/composer-screen.tsx";
 import { routing } from "#i18n/routing.ts";
-import { membershipOf } from "#posts/membership.ts";
+import { viewerOf } from "#posts/membership.ts";
 
 // Writes a new post for the workspace.
 const NewPostPage = async ({
@@ -15,11 +15,12 @@ const NewPostPage = async ({
     notFound();
   }
 
-  const membership = await membershipOf(locale, workspaceId);
+  const { membership, userId } = await viewerOf(locale, workspaceId);
 
   return (
     <ComposerScreen
       permissions={membership.permissions}
+      userId={userId}
       postId={undefined}
       workspaceId={membership.id}
     />

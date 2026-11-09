@@ -43,6 +43,7 @@ import { getPathname, useRouter } from "#i18n/navigation.ts";
 import { useAttachedMedia } from "#posts/attached-media.ts";
 import { connectedTargets } from "#posts/channel-selection.ts";
 import { fitOn, fits } from "#posts/character-count.ts";
+import { capabilitiesOf } from "#posts/composer-capabilities.ts";
 import { mediaFitOn, mediaFits } from "#posts/media-fit.ts";
 import { usePostRequests } from "#posts/use-post-requests.ts";
 import {
@@ -119,30 +120,6 @@ const contentOf = (
   text,
 });
 
-/**
- * What the member may do with the post, as it is. A new post is created by
- * its first save, and updated by the next ones.
- */
-const capabilitiesOf = (
-  permissions: readonly Permission[],
-  post: Post | undefined,
-  saved: boolean
-) => {
-  const status = post?.status ?? "draft";
-  const can = (permission: Permission) => permissions.includes(permission);
-
-  const canSchedule =
-    can("post:schedule") && (status === "draft" || status === "scheduled");
-
-  return {
-    canCancel: post !== undefined && canSchedule,
-    canReschedule: status === "scheduled" && canSchedule,
-    canSchedule,
-    canWrite: status === "draft" && can(saved ? "post:update" : "post:create"),
-    status,
-  };
-};
-
 type Translate = ReturnType<typeof useTranslations<"Posts.Composer">>;
 
 const titleOf = (t: Translate, post: Post | undefined) => {
@@ -185,17 +162,21 @@ interface ComposerProps {
   readonly permissions: readonly Permission[];
   /** None for a new post. */
   readonly post: Post | undefined;
+  /** The signed-in user. */
+  readonly userId: string;
   readonly workspaceId: string;
 }
 
 // Writes a post: its text, a text of its own on some channels, its images
-// and videos, where it goes and when. A draft is saved as it is; scheduling
-// checks it against each platform's limits, which the counters show as the
-// user types. A scheduled post keeps its text and can be moved or cancelled.
+// and videos, where it goes and when. A draft is saved as it is, or
+// discarded; scheduling checks it against each platform's limits, which the
+// counters show as the user types. A scheduled post keeps its text and can
+// be moved, cancelled, or taken back to draft to change it.
 export const Composer = ({
   channels,
   permissions,
   post,
+  userId,
   workspaceId,
 }: ComposerProps) => {
   const t = useTranslations("Posts.Composer");
@@ -228,8 +209,20 @@ export const Composer = ({
   // leaving the page, so what the composer shows, errors included, stays.
   const [postId, setPostId] = useState(post?.id);
 
-  const { canCancel, canReschedule, canSchedule, canWrite, status } =
-    capabilitiesOf(permissions, post, postId !== undefined);
+  const {
+    canCancel,
+    canDiscard,
+    canReschedule,
+    canSchedule,
+    canUnschedule,
+    canWrite,
+    status,
+  } = capabilitiesOf({
+    permissions,
+    post,
+    saved: postId !== undefined,
+    userId,
+  });
 
   const busy = isPending ? action : null;
   const locked = !canWrite || busy !== null;
@@ -352,10 +345,30 @@ export const Composer = ({
     }
   };
 
+  const unschedule = async (id: string) => {
+    const draft = await requests.unschedule(id);
+
+    if (Option.isSome(draft)) {
+      toast.success(t("unscheduled"));
+    }
+  };
+
+  const discard = async (id: string) => {
+    if (await requests.discard(id)) {
+      toast.success(t("discarded"));
+      router.push(`/app/${workspaceId}/drafts`);
+    }
+  };
+
   const work: Record<ComposerAction, () => Promise<void>> = {
     cancel: async () => {
       if (post !== undefined) {
         await cancel(post.id);
+      }
+    },
+    discard: async () => {
+      if (postId !== undefined) {
+        await discard(postId);
       }
     },
     reschedule: async () => {
@@ -365,6 +378,11 @@ export const Composer = ({
     },
     save: saveDraft,
     schedule: scheduleDraft,
+    unschedule: async () => {
+      if (post !== undefined) {
+        await unschedule(post.id);
+      }
+    },
   };
 
   const perform = (next: ComposerAction) => {
@@ -492,6 +510,8 @@ export const Composer = ({
           canSave={canWrite}
           canSchedule={canWrite && canSchedule}
           canReschedule={canReschedule}
+          canUnschedule={canUnschedule}
+          canDiscard={canDiscard}
           canCancel={canCancel}
           publishable={channelFits.every(
             ({ fit, media: mediaFit }) => fits(fit) && mediaFits(mediaFit)

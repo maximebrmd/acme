@@ -70,7 +70,7 @@ const AppPage = async ({ params }: PageProps<"/[locale]/app">) => {
                     aria-label={tPosts("workspaceLinks", {
                       workspace: workspace.name,
                     })}
-                    className="flex gap-4 text-sm"
+                    className="flex flex-wrap gap-4 text-sm"
                   >
                     <Link
                       href={`/app/${workspace.id}/calendar`}
@@ -86,6 +86,12 @@ const AppPage = async ({ params }: PageProps<"/[locale]/app">) => {
                         {tPosts("newPost")}
                       </Link>
                     ) : null}
+                    <Link
+                      href={`/app/${workspace.id}/drafts`}
+                      className="underline-offset-4 hover:underline"
+                    >
+                      {tPosts("drafts")}
+                    </Link>
                     <Link
                       href={`/app/${workspace.id}/channels`}
                       className="underline-offset-4 hover:underline"

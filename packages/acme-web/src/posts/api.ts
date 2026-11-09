@@ -1,4 +1,6 @@
 import type { DateTime } from "effect";
+import { Option } from "effect";
+import { Atom } from "effect/reactivity";
 
 import { AcmeApi } from "#api/client.ts";
 
@@ -33,6 +35,31 @@ export const scheduledPosts = (
     reactivityKeys: postsKeys,
   });
 
+/** What a post's attempts were, refreshed with the other posts queries. */
+export const postAttempts = (workspaceId: string, postId: string) =>
+  AcmeApi.query("posts", "attempts", {
+    params: { postId, workspaceId },
+    reactivityKeys: postsKeys,
+  });
+
+// Post ids and cursors are UUIDs, so a slash cannot appear in either.
+const draftPageKey = (workspaceId: string, cursor: Option.Option<string>) =>
+  `${workspaceId}/${Option.getOrElse(cursor, () => "")}`;
+
+const draftPages = Atom.family((key: string) => {
+  const [workspaceId = "", cursor = ""] = key.split("/");
+
+  return AcmeApi.query("posts", "drafts", {
+    params: { workspaceId },
+    query: cursor === "" ? {} : { cursor },
+    reactivityKeys: postsKeys,
+  });
+});
+
+/** A page of the workspace's drafts, newest first: the first, or the one at `cursor`. */
+export const draftPage = (workspaceId: string, cursor: Option.Option<string>) =>
+  draftPages(draftPageKey(workspaceId, cursor));
+
 export const createPost = AcmeApi.mutation("posts", "create");
 
 export const updatePost = AcmeApi.mutation("posts", "update");
@@ -42,3 +69,11 @@ export const schedulePost = AcmeApi.mutation("posts", "schedule");
 export const reschedulePost = AcmeApi.mutation("posts", "reschedule");
 
 export const cancelPost = AcmeApi.mutation("posts", "cancel");
+
+export const unschedulePost = AcmeApi.mutation("posts", "unschedule");
+
+export const discardPost = AcmeApi.mutation("posts", "discard");
+
+export const repostTarget = AcmeApi.mutation("posts", "repost");
+
+export const confirmTarget = AcmeApi.mutation("posts", "confirm");

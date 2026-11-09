@@ -31,6 +31,20 @@ export const mediaPage = (workspaceId: string, cursor: Option.Option<string>) =>
 /** Deletes media, then lists the workspace's media again. */
 export const deleteMedia = AcmeApi.mutation("media", "delete");
 
+/** Which posts show the media: what deleting it would do to them. */
+export const mediaUsage = Atom.family((key: string) => {
+  const [workspaceId = "", mediaId = ""] = key.split("/");
+
+  return AcmeApi.query("media", "usage", {
+    params: { mediaId, workspaceId },
+    reactivityKeys: [mediaKey(workspaceId)],
+  });
+});
+
+/** The usage query of one media of the workspace. */
+export const usageOf = (workspaceId: string, mediaId: string) =>
+  mediaUsage(`${workspaceId}/${mediaId}`);
+
 /** Where an upload stands while it runs. */
 export interface UploadProgress {
   readonly phase: "preparing" | "sending" | "completing";

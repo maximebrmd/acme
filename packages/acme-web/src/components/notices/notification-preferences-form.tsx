@@ -1,7 +1,10 @@
 "use client";
 
 import { useAtomRefresh, useAtomSet, useAtomValue } from "@effect/atom-react";
-import type { NotificationPreferences } from "acme-contract";
+import type {
+  NotificationPreferences,
+  NotificationPreferencesChange,
+} from "acme-contract";
 import { Alert, AlertDescription } from "acme-ui/components/alert";
 import { Button } from "acme-ui/components/button";
 import { Checkbox } from "acme-ui/components/checkbox";
@@ -33,62 +36,83 @@ const kinds: readonly EmailKind[] = [
 const PreferenceRow = ({
   checked,
   disabled,
-  kind,
+  hint,
+  label,
   onChange,
 }: {
   readonly checked: boolean;
   readonly disabled: boolean;
-  readonly kind: EmailKind;
-  readonly onChange: (kind: EmailKind, checked: boolean) => void;
+  readonly hint?: string;
+  readonly label: string;
+  readonly onChange: (checked: boolean) => void;
 }) => {
-  const t = useTranslations("Notices.preferences");
   const id = useId();
-
-  const handleCheckedChange = (next: boolean) => {
-    onChange(kind, next);
-  };
+  const hintId = useId();
 
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
       <Checkbox
         id={id}
         checked={checked}
         disabled={disabled}
-        onCheckedChange={handleCheckedChange}
+        {...(hint === undefined ? {} : { "aria-describedby": hintId })}
+        onCheckedChange={onChange}
       />
-      <Label htmlFor={id}>{t(kind)}</Label>
+      <Label htmlFor={id}>{label}</Label>
+      {hint === undefined ? null : (
+        <p id={hintId} className="text-muted-foreground basis-full text-xs">
+          {hint}
+        </p>
+      )}
     </div>
   );
 };
 
 /**
- * The email choices, one box per kind of notice. Each change is saved at
- * once, alone, so two changed in quick succession both stay.
+ * The email choices, one box per kind of notice, then whether the user
+ * hears about every post or only theirs. Each change is saved at once,
+ * alone, so two changed in quick succession both stay.
  */
 export const PreferencesFields = ({
   onChange,
   preferences,
   saving,
 }: {
-  readonly onChange: (kind: EmailKind, checked: boolean) => void;
+  readonly onChange: (change: NotificationPreferencesChange) => void;
   readonly preferences: NotificationPreferences;
   readonly saving: boolean;
 }) => {
   const t = useTranslations("Notices.preferences");
 
   return (
-    <fieldset className="flex flex-col gap-4" aria-busy={saving}>
-      <legend className="mb-2 font-medium">{t("legend")}</legend>
-      {kinds.map((kind) => (
+    <div className="flex flex-col gap-8" aria-busy={saving}>
+      <fieldset className="flex flex-col gap-4">
+        <legend className="mb-2 font-medium">{t("legend")}</legend>
+        {kinds.map((kind) => (
+          <PreferenceRow
+            key={kind}
+            label={t(kind)}
+            checked={preferences.email[kind]}
+            disabled={saving}
+            onChange={(checked) => {
+              onChange({ email: { [kind]: checked } });
+            }}
+          />
+        ))}
+      </fieldset>
+      <fieldset className="flex flex-col gap-4">
+        <legend className="mb-2 font-medium">{t("postsLegend")}</legend>
         <PreferenceRow
-          key={kind}
-          kind={kind}
-          checked={preferences.email[kind]}
+          label={t("everyPost")}
+          hint={t("everyPostHint")}
+          checked={preferences.everyPost}
           disabled={saving}
-          onChange={onChange}
+          onChange={(checked) => {
+            onChange({ everyPost: checked });
+          }}
         />
-      ))}
-    </fieldset>
+      </fieldset>
+    </div>
   );
 };
 
@@ -103,10 +127,10 @@ const LoadedPreferences = () => {
 
   const [saving, startSaving] = useTransition();
 
-  const handleChange = (kind: EmailKind, checked: boolean) => {
+  const handleChange = (payload: NotificationPreferencesChange) => {
     startSaving(async () => {
       const exit = await change({
-        payload: { email: { [kind]: checked } },
+        payload,
         reactivityKeys: preferencesKeys,
       });
 
