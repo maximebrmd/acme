@@ -1,0 +1,64 @@
+import { Schema } from "effect";
+import { HttpApiEndpoint, HttpApiGroup, OpenApi } from "effect/http-api";
+
+import { Authentication } from "./authentication.ts";
+import { Forbidden } from "./forbidden.ts";
+
+/**
+ * Which notices the user also receives by email. Every notice reaches the
+ * app; these say which kinds are emailed too.
+ */
+export const NotificationPreferencesSchema = Schema.Struct({
+  email: Schema.Struct({
+    // A channel to reconnect, now or soon.
+    channelReconnect: Schema.Boolean,
+    postFailed: Schema.Boolean,
+    postPublished: Schema.Boolean,
+    postUnconfirmed: Schema.Boolean,
+  }),
+}).annotate({ identifier: "NotificationPreferences" });
+
+export type NotificationPreferences = typeof NotificationPreferencesSchema.Type;
+
+/** The preferences to change; those left out stay as they are. */
+export const NotificationPreferencesChangeSchema = Schema.Struct({
+  email: Schema.Struct({
+    channelReconnect: Schema.optionalKey(Schema.Boolean),
+    postFailed: Schema.optionalKey(Schema.Boolean),
+    postPublished: Schema.optionalKey(Schema.Boolean),
+    postUnconfirmed: Schema.optionalKey(Schema.Boolean),
+  }),
+}).annotate({ identifier: "NotificationPreferencesChange" });
+
+export type NotificationPreferencesChange =
+  typeof NotificationPreferencesChangeSchema.Type;
+
+/** The signed-in user's notification preferences. */
+export class NotificationPreferencesApi extends HttpApiGroup.make(
+  "notificationPreferences"
+)
+  .add(
+    HttpApiEndpoint.get("get", "/", {
+      error: [Forbidden],
+      success: NotificationPreferencesSchema,
+    }).annotateMerge(
+      OpenApi.annotations({
+        description:
+          "Answers with which notices the user receives by email. Until they change it: failed and unconfirmed posts, and channels to reconnect, but not published posts.",
+        summary: "Get notification preferences",
+      })
+    ),
+    HttpApiEndpoint.patch("update", "/", {
+      error: [Forbidden],
+      payload: NotificationPreferencesChangeSchema,
+      success: NotificationPreferencesSchema,
+    }).annotateMerge(
+      OpenApi.annotations({
+        description:
+          "Changes the preferences given, keeps the others, and answers with them all. Staff impersonating the user may not change them.",
+        summary: "Change notification preferences",
+      })
+    )
+  )
+  .middleware(Authentication)
+  .prefix("/api/me/notification-preferences") {}

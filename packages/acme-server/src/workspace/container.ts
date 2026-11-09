@@ -6,6 +6,7 @@ import {
   WorkspaceAccessLive,
 } from "#workspace/api/security.ts";
 import { SessionHandlers } from "#workspace/api/session.ts";
+import { AccountStanding } from "#workspace/application/account-standing.ts";
 import { Accounts } from "#workspace/application/accounts.ts";
 import { ApiKeys } from "#workspace/application/api-keys.ts";
 import { Authenticate } from "#workspace/application/authenticate.ts";
@@ -29,6 +30,7 @@ const AdaptersLive = Layer.mergeAll(
 
 const UseCasesLive = Layer.mergeAll(
   Accounts.layer,
+  AccountStanding.layer,
   ApiKeys.layer,
   Authenticate.layer,
   ResolveMember.layer,

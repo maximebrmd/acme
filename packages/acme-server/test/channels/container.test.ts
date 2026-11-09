@@ -11,7 +11,7 @@ import { OAuthClientDocuments } from "#channels/application/oauth-client-documen
 import { PlatformAuthorizers } from "#channels/application/platform-authorizer.ts";
 import { TokenCipher } from "#channels/application/token-cipher.ts";
 import { ChannelsLive } from "#channels/container.ts";
-import { SendChannelNotice } from "#notifications/application/send-channel-notice.ts";
+import { Notify } from "#notifications/application/notify.ts";
 import {
   actorIn,
   DatabaseTest,
@@ -24,10 +24,7 @@ import {
 // notices to send, which nothing here sends.
 const Neighbours = Layer.mergeAll(
   Dns.layerStatic({}),
-  Layer.succeed(
-    SendChannelNotice,
-    SendChannelNotice.of({ send: () => Effect.void })
-  )
+  Layer.succeed(Notify, Notify.of({ notify: () => Effect.void }))
 );
 
 // The channels context as the server builds it, with these settings. A blank

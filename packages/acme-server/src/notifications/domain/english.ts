@@ -1,6 +1,7 @@
 import type { EmailCatalog } from "./email-catalog.ts";
 
 export const english: EmailCatalog = {
+  channel: "{platform} ({handle})",
   channelReconnectRequired: {
     action: "Reconnect the account",
     body: "Acme can no longer post as {handle} on {platform} in {workspaceName}: the account’s authorization stopped working. Nothing is posted there until someone reconnects it.",
@@ -14,6 +15,18 @@ export const english: EmailCatalog = {
     ignore:
       "You receive this email because you manage the channels of {workspaceName} on Acme.",
     subject: "Reconnect {handle} on {platform} by {expiresAt}",
+  },
+  failureReasons: {
+    contentRejected: "the platform refused its text or its format.",
+    mediaRejected: "the platform refused one of its images or videos.",
+    missed:
+      "Acme was unavailable at the scheduled time, and the post came too late to send.",
+    notPublished: "someone checked the platform and did not find it.",
+    rateLimited:
+      "the platform kept turning requests away, and Acme stopped trying.",
+    tokenExpired:
+      "the account’s authorization stopped working. Reconnect it, then post again.",
+    unavailable: "the platform could not be reached.",
   },
   invitation: {
     action: "Accept the invitation",
@@ -39,6 +52,27 @@ export const english: EmailCatalog = {
     x: "X",
     youtube: "YouTube",
   },
+  postFailed: {
+    action: "Open the post",
+    body: "A post of {workspaceName} did not go out on {channel}: {reason}",
+    ignore:
+      "You receive this email because you schedule posts in {workspaceName} on Acme. Choose which notices you receive by email in your notification preferences.",
+    subject: "A post did not go out on {channel}",
+  },
+  postPublished: {
+    action: "See the post",
+    body: "A post of {workspaceName} is live on {channel}.",
+    ignore:
+      "You receive this email because you schedule posts in {workspaceName} on Acme. Choose which notices you receive by email in your notification preferences.",
+    subject: "Published on {channel}",
+  },
+  postUnconfirmed: {
+    action: "Open the post",
+    body: "Acme sent a post of {workspaceName} to {channel} but got no answer, so it may or may not be live. Check the platform before you post it again, then tell Acme what you found.",
+    ignore:
+      "You receive this email because you schedule posts in {workspaceName} on Acme. Choose which notices you receive by email in your notification preferences.",
+    subject: "Check {channel}: a post may have gone out",
+  },
   resetPassword: {
     action: "Choose a new password",
     body: "Someone asked to reset the password of your Acme account. Choose a new one with the link below.",
@@ -53,6 +87,7 @@ export const english: EmailCatalog = {
     owner: "as an owner",
     viewer: "as a viewer",
   },
+  unknownChannel: "a disconnected channel",
   verifyEmail: {
     action: "Confirm my email",
     body: "Welcome to Acme. Confirm your email address to finish creating your account.",

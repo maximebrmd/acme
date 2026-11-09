@@ -18,8 +18,11 @@ import {
 } from "#channels/container.ts";
 import { MediaApiLive, MediaLive } from "#media/container.ts";
 import {
-  ChannelNoticesLive,
+  NoticesApiLive,
+  NoticesLive,
+  NotificationPreferencesApiLive,
   NotificationsLive,
+  NotificationsWorkersLive,
 } from "#notifications/container.ts";
 import {
   PostsApiLive,
@@ -36,12 +39,15 @@ import {
   WorkspaceLive,
 } from "#workspace/container.ts";
 
-// The groups of the workspace endpoints, behind the Authentication and
-// WorkspaceAccess middleware that WorkspaceApiLive provides.
+// The groups of the workspace endpoints, and the signed-in user's notices,
+// behind the Authentication and WorkspaceAccess middleware that
+// WorkspaceApiLive provides.
 const WorkspaceGroupsLive = Layer.mergeAll(
   ChannelsApiLive,
   PostsApiLive,
-  MediaApiLive
+  MediaApiLive,
+  NoticesApiLive,
+  NotificationPreferencesApiLive
 ).pipe(Layer.provideMerge(WorkspaceApiLive));
 
 const ApiLive = HttpApiBuilder.layer(Api, {
@@ -56,11 +62,11 @@ const ApiLive = HttpApiBuilder.layer(Api, {
  */
 export const RoutesLive = Layer.mergeAll(ApiLive, AuthRoutesLive, McpLive);
 
-// The workspace context with the notifications it sends, then the channel
-// notices, which read the workspace's members, then the channels context,
-// which sends them.
+// The workspace context with the notifications it sends, then the notices,
+// which read the workspace's members, then the channels context, which
+// sends them, as publishing does.
 const ChannelsWithNoticesLive = ChannelsLive.pipe(
-  Layer.provide(ChannelNoticesLive),
+  Layer.provideMerge(NoticesLive),
   Layer.provideMerge(WorkspaceLive.pipe(Layer.provideMerge(NotificationsLive)))
 );
 
@@ -69,12 +75,15 @@ const PublishingContextLive = PublishingLive.pipe(
   Layer.provide(ChannelsWithNoticesLive)
 );
 
-// Publishing as AppLive runs it, for tests that write and read posts: the
-// engine in memory has no workflow registered, so scheduling a post through
-// AppLive fails. Tests that schedule use test/publishing/posts-server.ts.
-const PublishingWithoutJobsLive = PublishingContextLive.pipe(
-  Layer.provide(Layer.mergeAll(IdsLive, TransactionRunnerLive)),
-  Layer.provide(
+// Durable jobs as AppLive runs them, for tests that write and read posts and
+// notices: the engine in memory has no workflow registered, so scheduling a
+// post, or emailing a notice, through AppLive fails. Tests that schedule use
+// test/publishing/posts-server.ts.
+const JobsWithoutWorkersLive = Layer.mergeAll(
+  IdsLive,
+  TransactionRunnerLive
+).pipe(
+  Layer.provideMerge(
     Layer.mergeAll(
       WorkflowEngine.layerMemory,
       MessageStorage.layerMemory.pipe(Layer.provide(ShardingConfig.layer()))
@@ -89,10 +98,10 @@ const PublishingWithoutJobsLive = PublishingContextLive.pipe(
 // them does not start (see src/media/infrastructure/s3-media-storage.ts).
 const ServicesLive = Layer.mergeAll(
   ChannelsWithNoticesLive,
-  PublishingWithoutJobsLive,
+  PublishingContextLive,
   MediaLive
 ).pipe(
-  Layer.provide(Layer.mergeAll(IdsLive, BunDns.layer)),
+  Layer.provide(Layer.mergeAll(JobsWithoutWorkersLive, BunDns.layer)),
   Layer.provideMerge(MigrationsLive),
   Layer.provideMerge(DatabaseLive)
 );
@@ -109,7 +118,11 @@ const HttpServerLive = Layer.unwrap(
 );
 
 // The durable jobs: workflows, cluster entities and crons.
-const WorkersLive = Layer.mergeAll(PublishingWorkersLive, CronsLive);
+const WorkersLive = Layer.mergeAll(
+  PublishingWorkersLive,
+  NotificationsWorkersLive,
+  CronsLive
+);
 
 // The contexts' use cases and adapters, which handlers and workers share.
 const ContextsLive = Layer.mergeAll(

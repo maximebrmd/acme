@@ -230,6 +230,35 @@ const cases: readonly Case[] = [
     name: "a banned user's cached session on /api/me",
     path: () => "/api/me",
   },
+  {
+    expected: 401,
+    name: "no credentials on the user's notices",
+    path: () => "/api/me/notices",
+  },
+  {
+    expected: 200,
+    headers: (fixture) => ({ cookie: fixture.ownerCookies }),
+    name: "a session on the user's notices",
+    path: () => "/api/me/notices",
+  },
+  {
+    expected: 403,
+    headers: (fixture) => bearer(fixture.key),
+    name: "an API key on the user's notices",
+    path: () => "/api/me/notices/unread",
+  },
+  {
+    expected: 403,
+    headers: (fixture) => ({ cookie: fixture.bannedCookies }),
+    name: "a banned user's cached session on the user's notices",
+    path: () => "/api/me/notices/unread",
+  },
+  {
+    expected: 200,
+    headers: (fixture) => ({ cookie: fixture.ownerCookies }),
+    name: "a session on the user's notification preferences",
+    path: () => "/api/me/notification-preferences",
+  },
 ];
 
 layer(MatrixLive, { excludeTestServices: true, timeout: "180 seconds" })(

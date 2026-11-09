@@ -4,6 +4,8 @@ import { ApiKeysApi } from "./api-keys.ts";
 import { ChannelOAuthApi } from "./channel-oauth.ts";
 import { ChannelsApi } from "./channels.ts";
 import { MediaApi } from "./media.ts";
+import { NoticesApi } from "./notices.ts";
+import { NotificationPreferencesApi } from "./notification-preferences.ts";
 import { PostsApi } from "./posts.ts";
 import { SessionApi } from "./session.ts";
 import { SystemApi } from "./system.ts";
@@ -97,6 +99,38 @@ export type {
 } from "./media.ts";
 
 export { MediaNotFound } from "./media-not-found.ts";
+
+export {
+  defaultNoticePageSize,
+  MarkNoticesReadSchema,
+  maxNoticePageSize,
+  NoticeChannelSchema,
+  NoticeEventSchema,
+  NoticePageSchema,
+  NoticeSchema,
+  NoticesApi,
+  UnreadNoticesSchema,
+} from "./notices.ts";
+
+export type {
+  MarkNoticesRead,
+  Notice,
+  NoticeChannel,
+  NoticeEvent,
+  NoticePage,
+  UnreadNotices,
+} from "./notices.ts";
+
+export {
+  NotificationPreferencesApi,
+  NotificationPreferencesChangeSchema,
+  NotificationPreferencesSchema,
+} from "./notification-preferences.ts";
+
+export type {
+  NotificationPreferences,
+  NotificationPreferencesChange,
+} from "./notification-preferences.ts";
 
 export {
   MediaStatusSchema,
@@ -244,4 +278,6 @@ export class Api extends HttpApi.make("acme")
   .add(ChannelOAuthApi)
   .add(PostsApi)
   .add(MediaApi)
+  .add(NoticesApi)
+  .add(NotificationPreferencesApi)
   .annotateMerge(OpenApi.annotations({ title: "Acme API" })) {}
