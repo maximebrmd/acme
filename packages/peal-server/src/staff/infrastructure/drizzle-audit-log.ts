@@ -1,4 +1,4 @@
-import { asc, count, desc, eq } from "drizzle-orm";
+import { asc, count, desc, eq, sql } from "drizzle-orm";
 import { DateTime, Effect, Layer, Option, Schema } from "effect";
 
 import { DatabaseError } from "#shared/application/database-error.ts";
@@ -141,10 +141,29 @@ export const DrizzleStaffRecords = Layer.effect(
       // What the user did as staff keeps their id: see the port.
       forgetUser: Effect.fn("StaffRecords.forgetUser")(
         function* forgetUser(userId) {
+          // The events about them, with what would tie them back: the
+          // workspace and the ids staff's changes named.
           yield* db
             .update(auditEvents)
-            .set({ reason: null, targetId: null })
+            .set({
+              objectIds: {},
+              reason: null,
+              targetId: null,
+              workspaceId: null,
+            })
             .where(eq(auditEvents.targetId, userId))
+            .pipe(Effect.mapError(failed));
+
+          // Their id wherever another event names it, as a member staff
+          // removed while acting as someone else.
+          const named = sql`select name, value from jsonb_each_text(${auditEvents.objectIds}) as named(name, value)`;
+
+          yield* db
+            .update(auditEvents)
+            .set({
+              objectIds: sql`coalesce((select jsonb_object_agg(name, value) from (${named}) as kept where value <> ${userId}), '{}'::jsonb)`,
+            })
+            .where(sql`exists (select 1 from (${named}) as found where value = ${userId})`)
             .pipe(Effect.mapError(failed));
         }
       ),

@@ -438,7 +438,8 @@ and no socket, for tests.
   Page's token rests on (`granted_by`), stay with their workspaces, which
   erasing deletes. `data_deletions` names nobody, and stays. In the staff
   audit log (`StaffRecords.forgetUser`), the events about the account lose
-  its id and the reason given; the events its user made as staff keep
+  its id, the reason given, their workspace and object ids, and its id
+  leaves the object ids of every other event; the events its user made as staff keep
   their id, a legitimate interest: the operator answers for what staff did
   to other people's accounts; their workspace, operation and object ids
   stay too. The log keeps an event 12 months, impersonation records

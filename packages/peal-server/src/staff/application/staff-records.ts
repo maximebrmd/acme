@@ -18,8 +18,10 @@ export class StaffRecords extends Context.Service<
       userId: UserId
     ) => Effect.Effect<readonly StaffActionRecord[], DatabaseError>;
     /**
-     * Forgets the user in the audit log: events about them lose its id and
-     * the reason given. Events they made as staff keep their id, as a
+     * Forgets the user in the audit log: events about them lose its id,
+     * the reason given, the workspace and the ids a change named, and
+     * their id leaves the ids other events name. Events they made as staff
+     * keep their id, as a
      * legitimate interest: the server's operator answers for what staff did
      * to other people's accounts, after staff leave too. What was done, and
      * when, stays.
