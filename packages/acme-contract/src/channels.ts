@@ -145,12 +145,10 @@ export type ChooseAccounts = typeof ChooseAccountsSchema.Type;
 
 const workspace = { workspaceId: Schema.String };
 
-const connectErrors = [
-  Forbidden,
-  ConnectFailed,
-  PlatformUnreachable,
-  PlanLimitReached,
-] as const;
+// Reconnecting adds no channel, so no plan limit refuses it.
+const reconnectErrors = [Forbidden, ConnectFailed, PlatformUnreachable] as const;
+
+const connectErrors = [...reconnectErrors, PlanLimitReached] as const;
 
 /** The social accounts connected to a workspace. */
 export class ChannelsApi extends HttpApiGroup.make("channels")
@@ -214,13 +212,13 @@ export class ChannelsApi extends HttpApiGroup.make("channels")
       })
     ),
     HttpApiEndpoint.post("reconnect", "/:channelId/reconnect", {
-      error: [...connectErrors, ChannelNotFound],
+      error: [...reconnectErrors, ChannelNotFound],
       params: { ...workspace, channelId: Schema.String },
       success: AuthorizationSchema,
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Starts reconnecting a channel whose token stopped working or is about to: answers with the platform's sign-in page. Completing it must sign in to the same account. Needs channel:connect.",
+          "Starts reconnecting a channel whose token stopped working or is about to: answers with the platform's sign-in page. Completing it must sign in to the same account. A channel the workspace has takes no room in its plan, so no plan limit refuses it. Needs channel:connect.",
         summary: "Start reconnecting a channel",
       })
     ),

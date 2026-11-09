@@ -67,13 +67,18 @@ const denials: ReadonlySet<string> = new Set([
   "user_cancelled_login",
 ]);
 
-export type StartFailure =
+/** How starting to reconnect a channel fails: as starting, but for the plan. */
+export type ReconnectFailure =
   | BeginFailure
+  | ChannelNotFound
   | DatabaseError
   | MissingPermission
   | MissingTokenKey
-  | PlanLimitReached
   | PlatformNotConnectable;
+
+export type StartFailure =
+  | Exclude<ReconnectFailure, ChannelNotFound>
+  | PlanLimitReached;
 
 export type CompleteConnectFailure =
   | ChannelNotFound
@@ -177,7 +182,7 @@ export class ConnectChannel extends Context.Service<
     readonly reconnect: (
       actor: Actor,
       channelId: string
-    ) => Effect.Effect<string, ChannelNotFound | StartFailure>;
+    ) => Effect.Effect<string, ReconnectFailure>;
     /**
      * The channel the account became, or the one it reconnected, or the
      * accounts to choose from. An account the workspace already has is

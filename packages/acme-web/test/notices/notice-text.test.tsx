@@ -75,9 +75,9 @@ describe(useNoticeText, () => {
     },
     {
       english:
-        "its channel was turned off before it went out. Turn it back on, then post again.",
+        "its channel was turned off before it went out. Disconnect the channel and connect the account again, then schedule it in a new post.",
       french:
-        "son canal a été désactivé avant son départ. Réactivez-le, puis publiez à nouveau.",
+        "son canal a été désactivé avant son départ. Déconnectez le canal et connectez à nouveau le compte, puis programmez-la dans une nouvelle publication.",
       reason: "channelDisabled",
     },
     {

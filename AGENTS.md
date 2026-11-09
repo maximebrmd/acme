@@ -411,7 +411,11 @@ and no socket, for tests.
 - `ConnectChannel` stores each attempt under the SHA-256 of its state, bound
   to the member, the workspace and the platform, for 15 minutes, completed
   once. One channel per platform account per workspace: connecting an account
-  again reconnects its channel.
+  again reconnects its channel. Reconnecting adds no channel, so no plan
+  limit refuses it, and its contract lists none.
+- No route turns a channel off or back on (`disable` and `enable` are domain
+  rules only), and reconnecting leaves a channel turned off as it is: notices
+  and docs tell members to disconnect it and connect the account again.
 - Any request to a host a user chose (a Mastodon instance, the servers a
   Bluesky DID names) goes through `publicHttpClient` or `publicFetch` from
   `#shared/infrastructure/platforms`: HTTPS on the default port only,

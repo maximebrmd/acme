@@ -25,7 +25,7 @@ export const french: EmailCatalog = {
   },
   failureReasons: {
     channelDisabled:
-      "son canal a été désactivé avant son départ. Réactivez-le, puis publiez à nouveau.",
+      "son canal a été désactivé avant son départ. Déconnectez le canal et connectez à nouveau le compte, puis programmez-la dans une nouvelle publication.",
     channelDisconnected:
       "son canal a été déconnecté de l’espace de travail avant son départ.",
     contentRejected: "la plateforme a refusé son texte ou son format.",
