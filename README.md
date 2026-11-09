@@ -7,6 +7,11 @@ Acme is fair source: you may use, modify and self-host it under the
 [Functional Source License](LICENSE.md), and each release becomes Apache-2.0
 two years after it ships.
 
+It is not released yet. Today you can create an account and workspaces,
+connect Mastodon and Bluesky accounts, upload media, and write, schedule and
+move posts on a calendar. Posts do not go out yet: no platform adapter
+publishes them, so a scheduled post ends as failed when its time comes.
+
 ## Set up
 
 You need Git, Bun (the version in [`.bun-version`](.bun-version)), Node 26.13
@@ -15,9 +20,15 @@ the development stack uses an image mount.
 
 ```sh
 bun install --frozen-lockfile
-bun run references          # clone framework sources into .local/references
-bun nx run acme-docker:up   # start the development stack, wait until healthy
+bun run references                  # clone framework sources into .local/references
+bun nx run acme-docker:up           # start the development stack, wait until healthy
+bun nx run acme-server:media-cors   # let browsers upload to the stack's bucket
 ```
+
+`media-cors` puts a CORS rule on the bucket for the web app's origin,
+`http://localhost:3001`, and any origins in `TRUSTED_ORIGINS`, and keeps the
+bucket's other rules. Run it once per bucket; running it again changes
+nothing.
 
 ## Development stack
 
@@ -35,7 +46,8 @@ bun nx run acme-docker:up   # start the development stack, wait until healthy
 | Tempo                          | <http://127.0.0.1:13200>                              |                                                                   |
 
 Every port listens on 127.0.0.1 only. To change one, copy
-`packages/acme-docker/.env.example` to `packages/acme-docker/.env`.
+`packages/acme-docker/.env.example` to `packages/acme-docker/.env`; to run a
+second stack beside the first, also set `COMPOSE_PROJECT_NAME`.
 
 ```sh
 bun nx run acme-docker:logs               # follow the logs
@@ -43,27 +55,86 @@ bun nx run acme-docker:down               # stop
 bun nx run acme-docker:down -- --volumes  # stop and delete the data
 ```
 
+The apps you run from source listen on these ports:
+
+| App               | Address                 | Command                      |
+| ----------------- | ----------------------- | ---------------------------- |
+| Server (API, MCP) | <http://localhost:3000> | `bun nx run acme-server:dev` |
+| Web app           | <http://localhost:3001> | `bun nx run acme-web:dev`    |
+| Marketing site    | <http://localhost:4321> | `bun nx run acme-site:dev`   |
+| Docs              | <http://localhost:4322> | `bun nx run acme-docs:dev`   |
+
 ## Develop
 
-Point the server at the stack's Postgres, then run the API and the web app
-side by side:
+Point the server at the stack's Postgres, give it a key for channel tokens,
+then run the API and the web app side by side:
 
 ```sh
 export DATABASE_URL=postgres://acme:acme@127.0.0.1:15432/acme
+export ACME_TOKEN_KEYS="dev:$(openssl rand -base64 32)"   # needed to connect channels
 bun nx run acme-server:dev   # http://localhost:3000
 bun nx run acme-web:dev      # http://localhost:3001, French under /fr
 ```
 
-The server applies pending database migrations when it starts, then listens on
-port 3000 (`PORT` changes it). It serves its OpenAPI document at
-`/openapi.json`, `GET /api/health` (liveness) and `GET /api/ready`
-(readiness: 503 while the database is unreachable). It keeps finished jobs in
-the database for 30 days (`ACME_CLUSTER_RETENTION` changes it), and names
-itself among the job runners with `HOSTNAME`.
+Outside production the server needs nothing else: it sends email to Mailpit,
+stores media in SeaweedFS, and takes `http://localhost:3001` as its public
+address (`PUBLIC_URL`), which links in emails and the platforms' redirects
+point to. It applies pending database migrations when it starts, then listens
+on port 3000 (`PORT` changes it). It answers `GET /api/health` (liveness) and
+`GET /api/ready` (readiness: 503 while the database is unreachable), and
+serves its OpenAPI document at `/openapi.json`.
 
-The web app forwards `/api/*` to `ACME_API_URL` (default
-`http://localhost:3000`), read at request time. Open it on `localhost`: Next's
-dev server blocks its dev resources for other hostnames, `127.0.0.1` included.
+The web app forwards `/api/*` and the OAuth discovery documents
+(`/.well-known/oauth-*`) to `ACME_API_URL` (default `http://localhost:3000`),
+read at request time, so browsers, the command line and MCP clients all use
+one origin. Open it on `localhost`: Next's dev server serves its scripts to
+that hostname only, so on `127.0.0.1` pages never hydrate.
+
+### A first account
+
+1. Open <http://localhost:3001/sign-up> and create an account, with a password
+   of at least 12 characters.
+2. Open the confirmation email in Mailpit, <http://127.0.0.1:18025>, and follow
+   its link, which signs you in.
+3. On <http://localhost:3001/app>, create a workspace. You own it.
+
+Each workspace's card links to its **Calendar**, **New post** (the composer),
+**Channels** and **Media library**. Password reset and invitation emails land
+in Mailpit too.
+
+To make an account staff (Better Auth's admin role, which may impersonate
+members and ban accounts), set its role in the database, then sign in again:
+
+```sh
+docker compose --file packages/acme-docker/compose.yaml exec postgres \
+  psql --username acme --dbname acme \
+  --command "UPDATE auth.\"user\" SET role = 'admin' WHERE email = 'you@example.test'"
+```
+
+### Channels
+
+Connecting a channel needs `ACME_TOKEN_KEYS`, the keys that encrypt the
+accounts' tokens. Without it the server starts, and connecting answers "This
+server is not set up to connect accounts of this platform". Keep the same keys
+from one run to the next: tokens encrypted with a key you drop can no longer
+be read, and their channels must be reconnected.
+
+- **Mastodon** works with any instance on the public internet, over HTTPS. The
+  server registers itself on each instance the first time a member connects
+  an account there.
+- **Bluesky**, without `BLUESKY_CLIENT_KEYS`, runs the AT Protocol's
+  development (loopback) client, whose sessions last two weeks. That client
+  sends the browser back to `http://127.0.0.1:3001/connect/bluesky/callback`
+  rather than `localhost`, so a connection started on `localhost` cannot
+  finish there, and `next dev` does not hydrate pages on `127.0.0.1`. The
+  confidential client needs `PUBLIC_URL` on HTTPS without a port, and keys
+  from `bun nx run acme-server:bluesky-key`.
+
+The server refreshes tokens due for it every 10 minutes and, daily at 08:00
+UTC, emails a workspace's owners and admins about accounts that must be
+reconnected.
+
+### Telemetry
 
 To send the server's telemetry to the stack, and see it in Grafana:
 
@@ -76,20 +147,40 @@ OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:14318 bun nx run acme-server:dev
 ```sh
 bun nx run acme-server:db:generate   # write a migration from src/*/infrastructure/schema.ts
 bun nx run acme-server:db:migrate    # apply pending migrations without starting the server
+bun nx run acme-server:auth-schema   # regenerate Better Auth's tables after changing its options
 ```
+
+Each context keeps its tables in a Postgres schema of its own (`auth`,
+`channels`, `media`, `notifications`, `publishing`); the job runner's
+`cluster_*` tables are in `public`. The server keeps finished jobs for 30 days
+(`ACME_CLUSTER_RETENTION` changes it), and names itself among the job runners
+with `HOSTNAME`.
 
 ### Command line
 
 ```sh
 bun nx run acme-cli:run -- health   # from source, against http://localhost:3000
+bun nx run acme-cli:run -- login    # sign in: approve the code at http://localhost:3001/device
+bun nx run acme-cli:run -- whoami   # who you are signed in as, and your workspaces
+bun nx run acme-cli:run -- mcp      # how to connect an MCP client
+bun nx run acme-cli:run -- logout
 bun nx run acme-cli:build           # compile packages/acme-cli/dist/acme
-packages/acme-cli/dist/acme health --api-url http://localhost:3000
 packages/acme-cli/dist/acme --help
 ```
 
-`ACME_API_URL` also sets the URL. `acme health` exits with 0 when the API
-answers, and with 1 when it is unreachable (5-second timeout) or answers with
-an error.
+`--api-url`, then `ACME_API_URL`, sets the server's URL. `acme health` exits
+with 0 when the API answers, and with 1 when it is unreachable (5-second
+timeout) or answers with an error. `acme login` saves the sign-in in
+`credentials.json`, which only you may read, in `ACME_CONFIG_DIR`, else
+`$XDG_CONFIG_HOME/acme`, `%APPDATA%\acme` or `~/.config/acme`.
+
+### MCP clients
+
+The server answers MCP clients at `/api/mcp` on the web app's origin:
+`http://localhost:3001/api/mcp` in development. Most MCP clients register
+themselves before they sign in, which the server allows only with
+`MCP_DYNAMIC_REGISTRATION=true`. The client then opens a browser, where you
+sign in, pick the workspace it may use, and allow it.
 
 ### Docs and marketing site
 
@@ -108,6 +199,24 @@ environment:
 - `DOCS_PLAUSIBLE_HOST` and `SITE_PLAUSIBLE_HOST`: point Plausible at a
   self-hosted instance.
 
+## Settings
+
+The docs' [environment variables](packages/acme-docs/docs/environment-variables.mdx)
+page lists every variable the server, the web app and the command line read.
+In development, these are the ones you may want:
+
+| Variable                      | Default                        | What it does                                                   |
+| ----------------------------- | ------------------------------ | -------------------------------------------------------------- |
+| `DATABASE_URL`                | none: required                 | The Postgres database                                          |
+| `ACME_TOKEN_KEYS`             | unset: channels cannot connect | `keyId:base64key` entries that encrypt channel tokens          |
+| `BLUESKY_CLIENT_KEYS`         | unset: the loopback client     | Keys of the confidential Bluesky client                        |
+| `MCP_DYNAMIC_REGISTRATION`    | `false`                        | Lets MCP clients register themselves                           |
+| `PUBLIC_URL`                  | `http://localhost:3001`        | The origin people open Acme at                                 |
+| `TRUSTED_ORIGINS`             | none                           | More origins allowed to send signed-in requests and uploads    |
+| `ACME_API_URL`                | `http://localhost:3000`        | Where the web app and the command line reach the server        |
+| `ACME_S3_KEY_PREFIX`          | none                           | A folder for this checkout's media in a shared bucket (`dev/`) |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | unset                          | Exports logs, metrics and traces                               |
+
 ## Verify
 
 With the development stack up:
@@ -119,6 +228,12 @@ bun run typecheck
 bun run test        # the server's tests write to DATABASE_URL
 bun run build
 ```
+
+The server's tests also read the emails they send from Mailpit, and store
+media in SeaweedFS under `tests/media/`. `SMTP_URL` and `MAILPIT_URL`, and the
+`ACME_S3_*` variables, point them elsewhere. Run the tests on a database of
+their own when a dev server uses the stack's: it would run the jobs they leave
+behind.
 
 ## Build for production
 
@@ -133,11 +248,16 @@ To run the web app, copy `packages/acme-web/.next/static` to
 PORT=3001 ACME_API_URL=http://localhost:3000 node packages/acme-web/server.js
 ```
 
-The server image runs the sources with Bun as an unprivileged user, and reads
-`PORT` (default 3000) and plain environment variables. It runs in production
-mode, which has no defaults for its address, secret, mail or client-address
-header. To build it and run it against the development stack, with 75 seconds
-to stop (`--stop-timeout`) so calls to the platforms in flight can answer:
+It listens on `HOSTNAME`, `0.0.0.0` by default. In a container, where Docker
+sets `HOSTNAME` to the container id, set `HOSTNAME=0.0.0.0`.
+
+The server image runs the sources with Bun as an unprivileged user, ships the
+C++ runtime sharp needs and a static ffprobe (9.0.2) in `/usr/local/bin`, and
+reads `PORT` (default 3000) and plain environment variables. It runs in
+production mode, which has no defaults for its public address, secret, mail,
+client-address header or media store. To build it and run it against the
+development stack, with 75 seconds to stop (`--stop-timeout`) so calls to the
+platforms in flight can answer:
 
 ```sh
 bun nx run acme-docker:build-server-image   # tags acme-server:local
@@ -148,20 +268,26 @@ docker run --rm --network acme_default -p 127.0.0.1:3000:3000 --stop-timeout 75 
   -e MAIL_FROM="Acme <noreply@acme.localhost>" \
   -e SMTP_URL=smtp://mailpit:1025 \
   -e AUTH_IP_HEADERS=x-forwarded-for \
+  -e ACME_S3_ENDPOINT=http://seaweedfs:8333 \
+  -e ACME_S3_BUCKET=acme-media \
+  -e ACME_S3_ACCESS_KEY_ID=acme \
+  -e ACME_S3_SECRET_ACCESS_KEY=acme-development-secret \
+  -e ACME_S3_FORCE_PATH_STYLE=true \
   -e OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318 \
   acme-server:local
 ```
 
 `AUTH_IP_HEADERS` names the header sign-in rate limits read the client's
 address from. Behind a real edge, name the one it sets and overwrites, such
-as `cf-connecting-ip` behind Cloudflare.
+as `cf-connecting-ip` behind Cloudflare. Add `ACME_TOKEN_KEYS` to connect
+channels.
 
 ## Layout
 
 | Package                                   | What it is                                                                     |
 | ----------------------------------------- | ------------------------------------------------------------------------------ |
 | [`acme-contract`](packages/acme-contract) | The HTTP API definition shared by the server and its clients                   |
-| [`acme-server`](packages/acme-server)     | The Effect server                                                              |
+| [`acme-server`](packages/acme-server)     | The Effect server: the API, Better Auth, the MCP endpoint and the job runner   |
 | [`acme-ui`](packages/acme-ui)             | The design system: shadcn/ui and the Tailwind CSS v4 theme, shipped as sources |
 | [`acme-web`](packages/acme-web)           | The web app (Next.js)                                                          |
 | [`acme-cli`](packages/acme-cli)           | The `acme` command line, a client of the API                                   |
