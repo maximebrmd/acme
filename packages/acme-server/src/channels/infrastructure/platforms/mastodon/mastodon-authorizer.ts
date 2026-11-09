@@ -23,10 +23,16 @@ import type { MastodonApp } from "./mastodon-apps.ts";
 
 // Mastodon 4.3 added the `profile` scope, which reads only the account's
 // own profile; older servers need `read:accounts` for that. Posting needs
-// statuses and media either way.
-const profileScopes = "profile write:statuses write:media";
+// statuses and media either way, and reading the posts back, for their
+// counts in analytics, `read:statuses`.
+const profileScopes = "profile read:statuses write:statuses write:media";
 
-const legacyScopes = "read:accounts write:statuses write:media";
+const legacyScopes = "read:accounts read:statuses write:statuses write:media";
+
+// An app grants only the scopes it was registered with: one Acme registered
+// before it read statuses is replaced by a new registration.
+const readsStatuses = (app: MastodonApp) =>
+  app.scopes.split(" ").includes("read:statuses");
 
 export const mastodonCallbackPath = "/connect/mastodon/callback";
 
@@ -175,7 +181,7 @@ export const mastodonAuthorizer = Effect.fn("MastodonAuthorizer.make")(
         );
 
     const register = Effect.fn("MastodonAuthorizer.register")(
-      function* register(instance: URL) {
+      function* register(instance: URL, replacing: boolean) {
         const scopes = yield* scopesOf(instance);
 
         const registered = yield* HttpClientRequest.post(
@@ -198,13 +204,15 @@ export const mastodonAuthorizer = Effect.fn("MastodonAuthorizer.make")(
           sent
         );
 
-        return yield* apps.save({
+        const app: MastodonApp = {
           clientId: registered.client_id,
           clientSecret: Redacted.make(registered.client_secret),
           instance: instance.origin,
           redirectUri,
           scopes,
-        });
+        };
+
+        return yield* replacing ? apps.replace(app) : apps.save(app);
       }
     );
 
@@ -212,8 +220,11 @@ export const mastodonAuthorizer = Effect.fn("MastodonAuthorizer.make")(
       apps.registered(instance.origin, redirectUri).pipe(
         Effect.flatMap(
           Option.match({
-            onNone: () => register(instance),
-            onSome: (app) => Effect.succeed<MastodonApp>(app),
+            onNone: () => register(instance, false),
+            onSome: (app) =>
+              readsStatuses(app)
+                ? Effect.succeed<MastodonApp>(app)
+                : register(instance, true),
           })
         )
       );

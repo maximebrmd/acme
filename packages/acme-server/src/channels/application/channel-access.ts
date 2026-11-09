@@ -40,6 +40,11 @@ export interface ChannelAccount {
   readonly accountId: string;
   readonly channelId: ChannelId;
   readonly platform: Platform;
+  /**
+   * What the account allowed Acme to do, in the platform's own words: a
+   * call that needs more is better made without the token.
+   */
+  readonly scopes: readonly string[];
 }
 
 /** A channel's token, decrypted for the platform calls about to be made. */
@@ -93,10 +98,11 @@ const tokenOf = (channel: Channel, tokens: StoredTokens): ChannelToken => ({
   accountId: channel.accountId,
   channelId: channel.id,
   platform: channel.platform,
+  scopes: channel.scopes,
 });
 
 /**
- * Hands publishing a token that works: decrypted, renewed through the
+ * Hands publishing and analytics a token that works: decrypted, renewed through the
  * platform's authorizer when it has expired or the platform refused it once,
  * under the channel's lock so a rotating refresh token is never used twice.
  * When renewing fails for good, or a renewed token is refused too, the
@@ -105,7 +111,7 @@ const tokenOf = (channel: Channel, tokens: StoredTokens): ChannelToken => ({
 export class ChannelAccess extends Context.Service<
   ChannelAccess,
   {
-    /** Who the channel posts as, if it can post. */
+    /** Who the channel posts as, and what it allowed, if it can post. */
     readonly account: (
       channelId: ChannelId
     ) => Effect.Effect<
@@ -385,6 +391,7 @@ export class ChannelAccess extends Context.Service<
           accountId: channel.accountId,
           channelId: channel.id,
           platform: channel.platform,
+          scopes: channel.scopes,
         };
 
         return found;

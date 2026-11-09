@@ -44,6 +44,14 @@ export class MastodonApps extends Context.Service<
     readonly save: (
       app: MastodonApp
     ) => Effect.Effect<MastodonApp, DatabaseError | MissingTokenKey>;
+    /**
+     * Keeps a newly registered app in place of the one registered before,
+     * whose scopes no longer cover what Acme asks for. A sign-in begun with
+     * the old app a moment before cannot complete, and is started again.
+     */
+    readonly replace: (
+      app: MastodonApp
+    ) => Effect.Effect<MastodonApp, DatabaseError | MissingTokenKey>;
   }
 >()("acme-server/channels/infrastructure/MastodonApps") {
   static readonly layer = Layer.effect(
@@ -88,7 +96,8 @@ export class MastodonApps extends Context.Service<
         }
       );
 
-      const save = Effect.fn("MastodonApps.save")(function* save(
+      // The app's row, its secret encrypted for the instance.
+      const rowOf = Effect.fn("MastodonApps.rowOf")(function* rowOf(
         app: MastodonApp
       ) {
         const clientSecret = yield* cipher.encryptSecret(
@@ -98,16 +107,22 @@ export class MastodonApps extends Context.Service<
 
         const now = yield* DateTime.now;
 
+        return {
+          clientId: app.clientId,
+          clientSecret,
+          createdAt: DateTime.toDateUtc(now),
+          instance: app.instance,
+          redirectUri: app.redirectUri,
+          scopes: app.scopes,
+        };
+      });
+
+      const save = Effect.fn("MastodonApps.save")(function* save(
+        app: MastodonApp
+      ) {
         yield* db
           .insert(mastodonApps)
-          .values({
-            clientId: app.clientId,
-            clientSecret,
-            createdAt: DateTime.toDateUtc(now),
-            instance: app.instance,
-            redirectUri: app.redirectUri,
-            scopes: app.scopes,
-          })
+          .values(yield* rowOf(app))
           .onConflictDoNothing()
           .pipe(Effect.mapError(failed));
 
@@ -116,7 +131,29 @@ export class MastodonApps extends Context.Service<
         return Option.getOrElse(kept, () => app);
       });
 
-      return MastodonApps.of({ registered, save });
+      const replace = Effect.fn("MastodonApps.replace")(function* replace(
+        app: MastodonApp
+      ) {
+        const row = yield* rowOf(app);
+
+        yield* db
+          .insert(mastodonApps)
+          .values(row)
+          .onConflictDoUpdate({
+            set: {
+              clientId: row.clientId,
+              clientSecret: row.clientSecret,
+              createdAt: row.createdAt,
+              scopes: row.scopes,
+            },
+            target: [mastodonApps.instance, mastodonApps.redirectUri],
+          })
+          .pipe(Effect.mapError(failed));
+
+        return app;
+      });
+
+      return MastodonApps.of({ registered, replace, save });
     })
   );
 }

@@ -77,7 +77,7 @@ layer(MastodonConnectTest)("connecting a Mastodon account", (it) => {
       assert.strictEqual(url.searchParams.get("code_challenge_method"), "S256");
       assert.strictEqual(
         url.searchParams.get("scope"),
-        "profile write:statuses write:media"
+        "profile read:statuses write:statuses write:media"
       );
       assert.strictEqual(
         url.searchParams.get("redirect_uri"),
@@ -103,6 +103,7 @@ layer(MastodonConnectTest)("connecting a Mastodon account", (it) => {
       assert.deepStrictEqual(channel.token, { _tag: "nonExpiring" });
       assert.deepStrictEqual(channel.scopes, [
         "profile",
+        "read:statuses",
         "write:statuses",
         "write:media",
       ]);
@@ -193,6 +194,41 @@ layer(MastodonConnectTest)("connecting a Mastodon account", (it) => {
     }).pipe(Effect.scoped)
   );
 
+  it.effect("registers again where its app cannot read statuses", () =>
+    Effect.gen(function* registersAgain() {
+      const instance = yield* fakeMastodon();
+      const workspaceId = yield* freshWorkspace;
+      const connect = yield* ConnectChannel;
+      const sql = yield* SqlClient.SqlClient;
+
+      const start = connect.start(manager(workspaceId), "mastodon", {
+        handle: Option.none(),
+        instance: Option.some(instance.url),
+      });
+
+      yield* start;
+
+      // As an app Acme registered before it asked to read statuses.
+      yield* sql`UPDATE channels.mastodon_apps SET scopes = 'profile write:statuses write:media' WHERE instance = ${instance.url}`;
+
+      const authorizationUrl = yield* start;
+
+      assert.strictEqual(instance.registeredApps(), 2);
+      assert.strictEqual(
+        new URL(authorizationUrl).searchParams.get("scope"),
+        "profile read:statuses write:statuses write:media"
+      );
+
+      const channel = yield* connect.complete(
+        manager(workspaceId),
+        "mastodon",
+        callbackOf(instance.approve(authorizationUrl))
+      );
+
+      assert.include(channel.scopes, "read:statuses");
+    }).pipe(Effect.scoped)
+  );
+
   it.effect("asks older instances for read:accounts instead of profile", () =>
     Effect.gen(function* legacyScopes() {
       const instance = yield* fakeMastodon({ modern: false });
@@ -207,7 +243,7 @@ layer(MastodonConnectTest)("connecting a Mastodon account", (it) => {
 
       assert.strictEqual(
         new URL(authorizationUrl).searchParams.get("scope"),
-        "read:accounts write:statuses write:media"
+        "read:accounts read:statuses write:statuses write:media"
       );
     }).pipe(Effect.scoped)
   );

@@ -61,6 +61,7 @@ const account: ChannelAccount = {
   accountId: "synthetic@mastodon.test",
   channelId,
   platform: "mastodon",
+  scopes: ["profile", "write:statuses", "write:media"],
 };
 
 // Hands out one token; a refused one needs reconnecting.
