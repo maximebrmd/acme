@@ -13,24 +13,23 @@
 	}
 }
 
-{{ uptime_hostname }} {
+# Each name's certificate, through the TLS-ALPN challenge alone.
+(certificate) {
 	tls {
 		issuer acme {
 			disable_http_challenge
 		}
 	}
+}
 
+{{ uptime_hostname }} {
+	import certificate
 	import /etc/caddy/routes.caddy
 }
 {% if uptime_public_status %}
 
 {{ uptime_status_hostname }} {
-	tls {
-		issuer acme {
-			disable_http_challenge
-		}
-	}
-
+	import certificate
 	import /etc/caddy/status.caddy
 }
 {% endif %}

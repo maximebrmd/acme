@@ -31,9 +31,12 @@ peal_preflight_names:
 # sends its heartbeat to it.
 uptime_hostname: uptime.peal.social
 
-# Whether Caddy also serves Gatus's dashboard, read-only, as the public
-# status page at https://<uptime_status_hostname>/, a name of its own that
-# reads and nothing else: the heartbeats keep uptime_hostname. The owner
+# Whether Caddy also serves a public status page, read-only, at
+# https://<uptime_status_hostname>/, a name of its own that reads and nothing
+# else: the heartbeats keep uptime_hostname. The page is a Gatus of its own
+# that checks the customer-facing endpoints of the environments marked
+# public, and shows no URL or error; the sandbox, the certificates, DNS and
+# the heartbeats stay on the private dashboard. The owner
 # chose to publish it (README.md, "Uptime"). It needs a DNS record of its
 # own, a CNAME to uptime_hostname that Cloudflare does not proxy, before
 # uptime.yml runs, or Caddy gets no certificate for it. Off, the dashboard is
@@ -53,6 +56,8 @@ uptime_environments:
     # Its Grafana sends a heartbeat (peal_heartbeat_url), with the token
     # PRODUCTION_HEARTBEAT_TOKEN generated here.
     heartbeat: true
+    # The public status page shows its customer-facing checks.
+    public: true
   - name: sandbox
     hostnames:
       app: sandbox.peal.social

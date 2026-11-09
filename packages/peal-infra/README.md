@@ -424,12 +424,17 @@ On `uptime_hostname`, Caddy answers the heartbeats' path and nothing else:
 The owner chose to publish the dashboard as Peal's status page, at
 <https://status.peal.social>: `uptime_public_status: true` and
 `uptime_status_hostname: status.peal.social` in `group_vars/uptime/main.yml`.
-On that name, Caddy serves Gatus's dashboard and its API by GET and HEAD
-alone, and answers 405 to any other method (`status.caddy`): the page takes
-no heartbeat, and the heartbeats keep `uptime_hostname`, so production's
-`peal_heartbeat_url` does not change. Anyone can see what is checked, every
-host name included, the sandbox's too, and when it failed. Gatus checks the
-page's certificate hourly, as it does `uptime_hostname`'s.
+On that name, Caddy serves the dashboard and API of a Gatus of its own,
+`status`, by GET and HEAD alone, and answers 405 to any other method
+(`status.caddy`): the page takes no heartbeat, and the heartbeats keep
+`uptime_hostname`, so production's `peal_heartbeat_url` does not change.
+That Gatus checks the customer-facing endpoints (site, docs, web app, API)
+of the environments `uptime_environments` marks `public` (production
+alone; one behind Access cannot be), with no alert and no secret, and shows
+no URL, condition or error (`status-config.yaml.j2`). The sandbox, the
+certificate and DNS checks and the heartbeats stay on the private
+dashboard. The uptime Gatus checks the page's certificate hourly, as it
+does `uptime_hostname`'s.
 
 It needs one DNS record in the `peal.social` zone, made before `uptime.yml`
 runs, or Caddy gets no certificate for it:
@@ -453,6 +458,8 @@ record can go.
 | `/srv/uptime/gatus/`          | Gatus's configuration, which holds no secret: Gatus reads them from its settings |
 | `/srv/uptime/caddy/`          | Caddy's configuration: the heartbeats' routes, and the status page's             |
 | `/srv/uptime/data/`           | Gatus's history, a SQLite database the `gatus` user owns                         |
+| `/srv/uptime/status/`         | The status page's Gatus's configuration: public checks alone, no secret          |
+| `/srv/uptime/status-data/`    | The status page's history, which the `gatus` user owns                           |
 | `/srv/uptime/secrets.env`     | The heartbeat tokens, generated there                                            |
 | `/srv/uptime/credentials.env` | What outside services issued: the Telegram bot and the Access service token      |
 

@@ -44,6 +44,22 @@ services:
     ports:
       - 127.0.0.1:{{ uptime_gatus_port }}:8080
 
+{% if uptime_public_status %}
+  # The status page's own Gatus: the public environments' customer-facing
+  # checks, no alert and no secret. Caddy alone reaches it.
+  status:
+    <<: *service
+    image: {{ uptime_gatus_image }}
+    user: "{{ uptime_gatus_user.uid }}:{{ uptime_gatus_user.group }}"
+    environment:
+      GATUS_CONFIG_PATH: /config/config.yaml
+    labels:
+      peal.config: "{{ uptime_status_config | hash('sha256') }}"
+    volumes:
+      - ./status:/config:ro
+      - ./status-data:/data
+
+{% endif %}
   caddy:
     <<: *service
     image: {{ uptime_caddy_image }}
@@ -57,7 +73,7 @@ services:
       - caddy-config:/config
     ports:
       - 443:443
-    depends_on: [gatus]
+    depends_on: [gatus{{ ', status' if uptime_public_status else '' }}]
     healthcheck:
       interval: 10s
       timeout: 5s

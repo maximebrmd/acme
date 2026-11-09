@@ -19,6 +19,18 @@
       letters and digits, and its host names.
     quiet: true
 
+# The status page shows the world the public environments alone, and an
+# environment behind Access is never one.
+- name: Refuse a public environment behind Access
+  ansible.builtin.assert:
+    that:
+      - uptime_environments | selectattr('public', 'defined') | selectattr('public')
+        | selectattr('access', 'defined') | selectattr('access') | list | length == 0
+    fail_msg: >-
+      An environment behind Cloudflare Access cannot be public on the status
+      page: set public to false for it.
+    quiet: true
+
 # The status page has a name of its own, so the heartbeats' name shows the
 # world nothing but them.
 - name: Refuse a status page without a name of its own
@@ -58,6 +70,9 @@
     - { path: "{{ uptime_root }}/gatus", owner: root, group: gatus, mode: "0750" }
     - { path: "{{ uptime_root }}/caddy", owner: root, group: root, mode: "0755" }
     - { path: "{{ uptime_root }}/data", owner: gatus, group: gatus, mode: "0700" }
+    # The status page's own Gatus, whether or not the page is public.
+    - { path: "{{ uptime_root }}/status", owner: root, group: gatus, mode: "0750" }
+    - { path: "{{ uptime_root }}/status-data", owner: gatus, group: gatus, mode: "0700" }
   loop_control:
     label: "{{ item.path }}"
 
@@ -153,17 +168,24 @@
 - name: Render the configuration
   ansible.builtin.set_fact:
     uptime_gatus_config: "{{ lookup('ansible.builtin.template', 'config.yaml.j2') }}"
+    uptime_status_config: "{{ lookup('ansible.builtin.template', 'status-config.yaml.j2') }}"
     uptime_caddyfile: "{{ lookup('ansible.builtin.template', 'Caddyfile.j2') }}"
     uptime_caddy_routes: "{{ lookup('ansible.builtin.template', 'routes.caddy.j2') }}"
     uptime_caddy_status: "{{ lookup('ansible.builtin.template', 'status.caddy.j2') }}"
 
-- name: Write Gatus's configuration
+- name: Write Gatus's configurations
   ansible.builtin.copy:
-    dest: "{{ uptime_root }}/gatus/config.yaml"
-    content: "{{ uptime_gatus_config }}"
+    dest: "{{ uptime_root }}/{{ item.folder }}/config.yaml"
+    content: "{{ item.content }}"
     owner: root
     group: gatus
     mode: "0640"
+  loop:
+    - { folder: gatus, content: "{{ uptime_gatus_config }}" }
+    # Written either way; Compose runs it when the page is public.
+    - { folder: status, content: "{{ uptime_status_config }}" }
+  loop_control:
+    label: "{{ item.folder }}"
   when: not ansible_check_mode or uptime_root_folder.stat.exists
 
 - name: Write Caddy's configuration

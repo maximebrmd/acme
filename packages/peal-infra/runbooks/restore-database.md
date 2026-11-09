@@ -132,7 +132,13 @@ again by itself. Until it does:
    ```
 
    Loki keeps 31 days of logs, which covers a restore to the latest state and
-   most restores to a time.
+   most restores to a time, but not all of them: the backups keep deleted
+   data up to 5 weeks, so a restore to a point 32 to 35 days back brings
+   back deletions no log lists any more. Loki runs on the same server, so a
+   server lost with its disk, the likeliest reason to restore, takes the
+   list with it: there is then no list at all. In either case, tell the
+   owner before the server takes requests: the deletions cannot be found
+   again, and the incident's record must say so.
 
 3. Each must be deleted again before the server takes requests, and noted
    in the incident's record. No command does it yet: tell the owner, with
