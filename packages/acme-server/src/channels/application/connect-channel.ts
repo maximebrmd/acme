@@ -11,6 +11,7 @@ import {
   starterOf,
 } from "#channels/domain/connect-attempt.ts";
 import { InvalidConnectState } from "#channels/domain/invalid-connect-state.ts";
+import { platforms } from "#channels/domain/platform.ts";
 import type { Platform } from "#channels/domain/platform.ts";
 import { tokenLifetimeOf } from "#channels/domain/token-policy.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
@@ -44,8 +45,14 @@ import { connectAttemptContext, TokenCipher } from "./token-cipher.ts";
 
 const decodeChannelId = Schema.decodeUnknownOption(ChannelIdSchema);
 
-// The error OAuth servers send back when the user refuses (RFC 6749, 4.1.2.1).
-const accessDenied = "access_denied";
+// The errors platforms send back when the user refuses: OAuth's own
+// (RFC 6749, 4.1.2.1), and LinkedIn's, for a member who cancelled signing
+// in or refused the permissions.
+const denials: ReadonlySet<string> = new Set([
+  "access_denied",
+  "user_cancelled_authorize",
+  "user_cancelled_login",
+]);
 
 export type StartFailure =
   | BeginFailure
@@ -103,6 +110,13 @@ export class ConnectChannel extends Context.Service<
       platform: Platform,
       callback: AuthorizationCallback
     ) => Effect.Effect<Channel, CompleteConnectFailure>;
+    /**
+     * The platforms this server can connect, in Acme's order: those with a
+     * sign-in flow and the settings it needs. Needs channel:read.
+     */
+    readonly connectable: (
+      actor: Actor
+    ) => Effect.Effect<readonly Platform[], MissingPermission>;
     /** Forgets the attempts nobody completed in time, and says how many. */
     readonly purgeExpired: Effect.Effect<number, DatabaseError>;
   }
@@ -323,7 +337,7 @@ export class ConnectChannel extends Context.Service<
         const authorizer = yield* authorizerFor(platform);
 
         if (Option.isSome(returned.error)) {
-          return yield* returned.error.value === accessDenied
+          return yield* denials.has(returned.error.value)
             ? new AuthorizationDenied()
             : new AuthorizationFailed({ reason: returned.error.value });
         }
@@ -408,7 +422,23 @@ export class ConnectChannel extends Context.Service<
         Effect.withSpan("ConnectChannel.purgeExpired")
       );
 
-      return ConnectChannel.of({ complete, purgeExpired, reconnect, start });
+      const connectable = Effect.fn("ConnectChannel.connectable")(
+        function* connectable(actor: Actor) {
+          yield* Effect.fromResult(authorize(actor, "channel:read"));
+
+          return platforms.filter((platform) =>
+            Option.isSome(authorizers.for(platform))
+          );
+        }
+      );
+
+      return ConnectChannel.of({
+        complete,
+        connectable,
+        purgeExpired,
+        reconnect,
+        start,
+      });
     })
   );
 }

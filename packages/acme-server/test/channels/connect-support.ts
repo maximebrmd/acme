@@ -1,4 +1,4 @@
-import { Effect, Layer, Option } from "effect";
+import { Context, Effect, Layer, Option, Redacted } from "effect";
 import { Digest, SecureRandom } from "effect/crypto";
 import { FetchHttpClient } from "effect/http";
 
@@ -8,10 +8,16 @@ import type { PlatformAuthorizer } from "#channels/application/platform-authoriz
 import type { Platform } from "#channels/domain/platform.ts";
 import { DrizzleChannelRepository } from "#channels/infrastructure/drizzle-channel-repository.ts";
 import { DrizzleConnectAttempts } from "#channels/infrastructure/drizzle-connect-attempts.ts";
+import { linkedinAuthorizer } from "#channels/infrastructure/platforms/linkedin/linkedin-authorizer.ts";
+import type { LinkedInEndpoints } from "#channels/infrastructure/platforms/linkedin/linkedin-authorizer.ts";
 import { MastodonApps } from "#channels/infrastructure/platforms/mastodon/mastodon-apps.ts";
 import { mastodonAuthorizer } from "#channels/infrastructure/platforms/mastodon/mastodon-authorizer.ts";
+import { xAuthorizer } from "#channels/infrastructure/platforms/x/x-authorizer.ts";
+import type { XEndpoints } from "#channels/infrastructure/platforms/x/x-authorizer.ts";
 import { SqlChannelLocks } from "#channels/infrastructure/sql-channel-locks.ts";
 import { publicHttpClient } from "#shared/infrastructure/platforms/public-http.ts";
+import { linkedinClient } from "#test/channels/fakes/fake-linkedin.ts";
+import { xClient } from "#test/channels/fakes/fake-x.ts";
 import {
   DatabaseTest,
   OpenOutboundGuard,
@@ -83,3 +89,72 @@ export const connectChannelWith = <E, R>(
 export const MastodonConnectTest = connectChannelWith(
   MastodonAuthorizersTest.pipe(Layer.provide(OpenOutboundGuard))
 );
+
+/**
+ * What the authorizers of platforms on hosts of their own need, against
+ * fakes on loopback: HTTP through the public client with an open guard,
+ * randomness and digests.
+ */
+export const AuthorizerServicesTest = Layer.mergeAll(
+  FetchHttpClient.layer,
+  OpenOutboundGuard,
+  SecureRandom.layerWebCrypto,
+  Digest.layerWebCrypto
+);
+
+/** The LinkedIn authorizer with the synthetic app, on the fake's hosts. */
+export const linkedinAuthorizerOn = (endpoints: LinkedInEndpoints) =>
+  publicHttpClient.pipe(
+    Effect.flatMap((http) =>
+      linkedinAuthorizer({
+        client: {
+          clientId: linkedinClient.clientId,
+          clientSecret: Redacted.make(linkedinClient.clientSecret),
+        },
+        endpoints,
+        http,
+        publicUrl: testPublicUrl,
+      })
+    ),
+    Effect.provide(AuthorizerServicesTest)
+  );
+
+/** The X authorizer with the synthetic app, on the fake's hosts. */
+export const xAuthorizerOn = (endpoints: XEndpoints) =>
+  publicHttpClient.pipe(
+    Effect.flatMap((http) =>
+      xAuthorizer({
+        client: {
+          clientId: xClient.clientId,
+          clientSecret: Redacted.make(xClient.clientSecret),
+        },
+        endpoints,
+        http,
+        publicUrl: testPublicUrl,
+      })
+    ),
+    Effect.provide(AuthorizerServicesTest)
+  );
+
+/**
+ * ConnectChannel's adapters on the test database, with the synthetic
+ * keyring and no authorizer: a test builds the use case with its own
+ * (`connectChannelOver`), for a fake it started.
+ */
+export const ConnectAdaptersTest = Layer.mergeAll(
+  DrizzleChannelRepository,
+  DrizzleConnectAttempts,
+  SqlChannelLocks
+).pipe(Layer.provideMerge(TokenCipherTest), Layer.provideMerge(DatabaseTest));
+
+/** ConnectChannel with these authorizers, over the adapters in context. */
+export const connectChannelOver = (
+  ...authorizers: readonly PlatformAuthorizer[]
+) =>
+  Layer.build(
+    ConnectChannel.layer.pipe(
+      Layer.provide(
+        Layer.succeed(PlatformAuthorizers, authorizersOf(...authorizers))
+      )
+    )
+  ).pipe(Effect.map(Context.get(ConnectChannel)));

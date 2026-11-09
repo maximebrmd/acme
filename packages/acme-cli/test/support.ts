@@ -162,6 +162,7 @@ const signedInGroupsLive = (authorization: AuthorizationServer) =>
         connect: () => refusing,
         disconnect: () => refusing,
         list: () => refusing,
+        platforms: () => refusing,
         reconnect: () => refusing,
       })
     ),

@@ -133,6 +133,30 @@ layer(UseCasesTest)("the channels endpoints", (it) => {
     })
   );
 
+  it.effect("list the platforms this server connects", () =>
+    Effect.gen(function* platforms() {
+      const workspaceId = yield* freshWorkspace;
+      const params = { workspaceId };
+
+      // This server has Mastodon's flow only; its others lack settings.
+      const viewerClient = yield* clientAs(viewer(workspaceId));
+
+      assert.deepStrictEqual(
+        yield* viewerClient.channels.platforms({ params }),
+        {
+          platforms: ["mastodon"],
+        }
+      );
+
+      const stranger = yield* clientAs(postReader(workspaceId));
+
+      assert.instanceOf(
+        yield* Effect.flip(stranger.channels.platforms({ params })),
+        Forbidden
+      );
+    })
+  );
+
   it.effect("let a viewer read the channels", () =>
     Effect.gen(function* viewerLists() {
       const workspaceId = yield* freshWorkspace;
