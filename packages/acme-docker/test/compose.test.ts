@@ -107,14 +107,17 @@ describe("compose.production.yaml", () => {
   });
 
   // Acme's own images are built from this repository, and tagged with the
-  // release (acme-infra) or `local`.
+  // release (acme-infra) or `local`; Postgres's changes only with its image.
   it.each(production)(
     "%s builds its image here or pins it by digest",
     (name, service) => {
+      const version =
+        name === "postgres" ? "ACME_POSTGRES_VERSION" : "ACME_VERSION";
+
       expect(
         service.build === undefined
           ? isPinnedByDigest(service.image)
-          : service.image === `acme-${name}:\${ACME_VERSION:-local}`
+          : service.image === `acme-${name}:\${${version}:-local}`
       ).toBeTruthy();
     }
   );

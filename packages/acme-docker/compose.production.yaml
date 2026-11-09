@@ -19,7 +19,7 @@
 # missing; the others are passed through by name, so one that is unset stays
 # unset in the container rather than empty. The images are built from the
 # repository (`docker compose build`, or the release playbook) and tagged
-# ACME_VERSION, `local` unless set.
+# ACME_VERSION (ACME_POSTGRES_VERSION for Postgres), `local` unless set.
 
 x-service: &service
   restart: unless-stopped
@@ -41,10 +41,12 @@ x-healthcheck: &healthcheck
 services:
   # Postgres with pgBackRest. ACME_POSTGRES_ARCHIVE_MODE=on archives the
   # write-ahead log to the bucket the PGBACKREST_REPO1_* settings name;
-  # backups run from the host (acme-infra's acme_backup role).
+  # backups run from the host (acme-infra's acme_backup role). Its image has
+  # a tag of its own, which changes only with postgres.Dockerfile, so a
+  # release restarts Postgres only when its image changes.
   postgres:
     <<: *service
-    image: acme-postgres:${ACME_VERSION:-local}
+    image: acme-postgres:${ACME_POSTGRES_VERSION:-local}
     build:
       context: ../..
       dockerfile: packages/acme-docker/postgres.Dockerfile
