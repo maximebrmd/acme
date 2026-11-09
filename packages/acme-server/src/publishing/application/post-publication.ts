@@ -35,6 +35,7 @@ import { ChannelHealth } from "./channel-health.ts";
 import { PlatformPublisher } from "./platform-publisher.ts";
 import { PostRepository } from "./post-repository.ts";
 import { PublicationJournal } from "./publication-journal.ts";
+import { PublicationOutcomes } from "./publication-outcomes.ts";
 
 // The steps of publishing a post, one use case per step of the durable job
 // (#publishing/infrastructure/workflows). Each reads and writes the post as it
@@ -378,8 +379,9 @@ export const publishAttemptRun = Effect.fn("Publishing.publishAttempt")(
 );
 
 /**
- * Settles a target with how its attempts ended, and tells the channels
- * context when its token is gone for good.
+ * Settles a target with how its attempts ended, tells the channels context
+ * when its token is gone for good, and tells PublicationOutcomes how it
+ * ended.
  */
 export const recordTargetRun = Effect.fn("Publishing.recordTarget")(
   function* recordTargetRun(
@@ -389,6 +391,7 @@ export const recordTargetRun = Effect.fn("Publishing.recordTarget")(
   ) {
     const posts = yield* PostRepository;
     const health = yield* ChannelHealth;
+    const outcomes = yield* PublicationOutcomes;
     const { transaction } = yield* TransactionRunner;
 
     return yield* transaction(
@@ -419,6 +422,8 @@ export const recordTargetRun = Effect.fn("Publishing.recordTarget")(
         if (needsReconnect(settlement)) {
           yield* health.reconnectRequired(target.channelId);
         }
+
+        yield* outcomes.settled(settled);
 
         return yield* settledOutcome(settled);
       })

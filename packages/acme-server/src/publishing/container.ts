@@ -14,6 +14,7 @@ import { DrizzlePostRepository } from "#publishing/infrastructure/drizzle-post-r
 import { DrizzlePublicationJournal } from "#publishing/infrastructure/drizzle-publication-journal.ts";
 import { ListedWorkspaceChannels } from "#publishing/infrastructure/listed-workspace-channels.ts";
 import { LoggedChannelHealth } from "#publishing/infrastructure/logged-channel-health.ts";
+import { NotifiedPublicationOutcomes } from "#publishing/infrastructure/notified-publication-outcomes.ts";
 import { UnavailableAttachableMedia } from "#publishing/infrastructure/unavailable-attachable-media.ts";
 import { UnsupportedPlatformPublisher } from "#publishing/infrastructure/unsupported-platform-publisher.ts";
 import { WorkflowPublicationScheduler } from "#publishing/infrastructure/workflow-publication-scheduler.ts";
@@ -48,10 +49,16 @@ export const publishingWith = <E, R>(
 /**
  * The use cases as the server runs them: channels are those the channels
  * context lists, which the composition root provides (ListChannels), and no
- * media can be attached until the media context can look assets up.
+ * media can be attached until the media context can look assets up. How
+ * each target ends is told through the notifications context (Notify),
+ * naming channels as the channels context has them (ChannelRepository).
  */
-export const PublishingLive = publishingWith(
-  Layer.mergeAll(ListedWorkspaceChannels, UnavailableAttachableMedia)
+export const PublishingLive = NotifiedPublicationOutcomes.pipe(
+  Layer.provideMerge(
+    publishingWith(
+      Layer.mergeAll(ListedWorkspaceChannels, UnavailableAttachableMedia)
+    )
+  )
 );
 
 // The posts endpoints. They need the use cases PublishingLive provides, and
@@ -62,7 +69,7 @@ export { PostsHandlers as PostsApiLive } from "#publishing/api/posts.ts";
 /**
  * Registers the publishing workflows and the channel gates, which call the
  * platforms through `platforms`. Needs the cluster and what PublishingLive
- * provides.
+ * provides, PublicationOutcomes included.
  */
 export const publishingWorkers = <E, R>(
   platforms: Layer.Layer<PlatformPublisher, E, R>
