@@ -33,8 +33,10 @@ const mayBill = (status: string): boolean =>
  * one a checkout started that the Stripe plugin holds in such a status,
  * since its events may not have come yet. Then the workspace's Checkout
  * Sessions still open are expired at Stripe, so a checkout left open in
- * another tab cannot complete for a workspace that is gone; Stripe not
- * answering refuses the erasure. On a server that does not bill, a
+ * another tab cannot complete for a workspace that is gone, and the erasure
+ * is refused if Stripe holds a subscription that may bill it, as one a
+ * checkout completed just before would; Stripe not answering refuses the
+ * erasure. On a server that does not bill, a
  * workspace has no plan, and erasing it is never refused.
  */
 export class BillingRecords extends Context.Service<
@@ -92,7 +94,13 @@ export class BillingRecords extends Context.Service<
               yield* new WorkspaceStillBilled({ workspaceId });
             }
 
+            // None can complete now: whatever completed before started a
+            // subscription that Stripe holds, its events or not.
             yield* checkouts.expireOpen(workspaceId);
+
+            if ((yield* checkouts.atStripe(workspaceId)).some(mayBill)) {
+              yield* new WorkspaceStillBilled({ workspaceId });
+            }
           }
 
           yield* subscriptions.eraseWorkspace(workspaceId);

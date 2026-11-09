@@ -16,8 +16,9 @@ import type { PlatformAnswer } from "#test/publishing/fakes/platform-server.ts";
 import { StripeCheckoutsLive } from "#workspace/infrastructure/auth/stripe-checkouts.ts";
 
 // Stripe's API as the adapter calls it: each customer has two Checkout
-// Sessions open, and expiring one answers it expired. `failing` answers
-// every request a server error.
+// Sessions open, and expiring one answers it expired; its subscriptions are
+// one active and one canceled, beside one of another customer's that a
+// list should not hold. `failing` answers every request a server error.
 const fakeStripe = (options: { readonly failing?: boolean } = {}) =>
   platformServer((request): PlatformAnswer => {
     if (options.failing === true) {
@@ -37,6 +38,28 @@ const fakeStripe = (options: { readonly failing?: boolean } = {}) =>
         has_more: false,
         object: "list",
         url: "/v1/checkout/sessions",
+      });
+    }
+
+    if (request.method === "GET" && request.path === "/v1/subscriptions") {
+      const customer = request.query.get("customer") ?? "";
+
+      return json({
+        data: (
+          [
+            [customer, "active"],
+            [customer, "canceled"],
+            ["cus_someone_else", "past_due"],
+          ] as const
+        ).map(([owner, status], index) => ({
+          customer: owner,
+          id: `sub_test_${customer}_${String(index)}`,
+          object: "subscription",
+          status,
+        })),
+        has_more: false,
+        object: "list",
+        url: "/v1/subscriptions",
       });
     }
 
@@ -140,6 +163,35 @@ layer(DatabaseTest)("the Stripe plugin's checkouts", (it) => {
       }).pipe(Effect.scoped)
   );
 
+  it.effect(
+    "list the subscriptions Stripe holds for each of the workspace's customers",
+    () =>
+      Effect.gen(function* held() {
+        const stripe = yield* fakeStripe();
+        const checkouts = yield* checkoutsOn(stripe.url);
+        const { customer, workspaceId } = yield* seeded;
+
+        assert.sameMembers(
+          [...(yield* checkouts.atStripe(workspaceId))],
+          ["active", "canceled", "active", "canceled"]
+        );
+        assert.sameDeepMembers(
+          stripe
+            .requests()
+            .map(({ path, query }) => [
+              path,
+              query.get("customer"),
+              query.get("status"),
+            ]),
+          [customer, `${customer}b`].map((owner) => [
+            "/v1/subscriptions",
+            owner,
+            "all",
+          ])
+        );
+      }).pipe(Effect.scoped)
+  );
+
   it.effect("say Stripe is unreachable when it fails", () =>
     Effect.gen(function* unreachable() {
       const stripe = yield* fakeStripe({ failing: true });
@@ -149,6 +201,10 @@ layer(DatabaseTest)("the Stripe plugin's checkouts", (it) => {
       const failure = yield* Effect.flip(checkouts.expireOpen(workspaceId));
 
       assert.strictEqual(failure._tag, "StripeUnreachable");
+      assert.strictEqual(
+        (yield* Effect.flip(checkouts.atStripe(workspaceId)))._tag,
+        "StripeUnreachable"
+      );
     }).pipe(Effect.scoped)
   );
 
@@ -160,6 +216,7 @@ layer(DatabaseTest)("the Stripe plugin's checkouts", (it) => {
         const { workspaceId } = yield* seeded;
 
         assert.strictEqual(yield* checkouts.expireOpen(workspaceId), 0);
+        assert.deepStrictEqual(yield* checkouts.atStripe(workspaceId), []);
       }).pipe(Effect.scoped)
   );
 });

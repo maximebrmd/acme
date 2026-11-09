@@ -10,7 +10,8 @@ import type { WorkspaceId } from "#shared/domain/ids.ts";
  * checkouts, ahead of the subscription events billing records: the status
  * of each subscription a checkout started, which it writes as soon as
  * Stripe sends the member back, and the Checkout Sessions still open at
- * Stripe for the workspace's customer.
+ * Stripe for the workspace's customer, and the subscriptions Stripe holds
+ * for it.
  */
 export class Checkouts extends Context.Service<
   Checkouts,
@@ -29,5 +30,14 @@ export class Checkouts extends Context.Service<
     readonly expireOpen: (
       workspaceId: WorkspaceId
     ) => Effect.Effect<number, DatabaseError | StripeUnreachable>;
+    /**
+     * The status, in Stripe's words, of every subscription Stripe holds
+     * for the workspace's customers: a checkout that completed before its
+     * events came, and before the member came back, started one that
+     * nothing else tells of yet.
+     */
+    readonly atStripe: (
+      workspaceId: WorkspaceId
+    ) => Effect.Effect<readonly string[], DatabaseError | StripeUnreachable>;
   }
 >()("acme-server/billing/application/Checkouts") {}

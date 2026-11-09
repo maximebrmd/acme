@@ -162,10 +162,12 @@ layer(billingWith(false))("billing on a server that does not bill", (it) => {
 });
 
 // What the Stripe plugin holds of the workspace's checkouts: the statuses
-// a test sets, and the open Checkout Sessions, which expiring empties.
+// a test sets, the open Checkout Sessions, which expiring empties, and the
+// statuses of the subscriptions Stripe holds.
 class CheckoutsLog extends Context.Service<
   CheckoutsLog,
   {
+    readonly atStripe: Ref.Ref<readonly string[]>;
     readonly expired: Ref.Ref<number>;
     readonly open: Ref.Ref<number>;
     readonly statuses: Ref.Ref<readonly string[]>;
@@ -175,9 +177,10 @@ class CheckoutsLog extends Context.Service<
 const CheckoutsInMemory = Layer.effect(
   Checkouts,
   Effect.gen(function* inMemory() {
-    const { expired, open, statuses } = yield* CheckoutsLog;
+    const { atStripe, expired, open, statuses } = yield* CheckoutsLog;
 
     return Checkouts.of({
+      atStripe: () => Ref.get(atStripe),
       expireOpen: () =>
         Ref.getAndSet(open, 0).pipe(
           Effect.tap((count) => Ref.update(expired, (all) => all + count))
@@ -190,6 +193,7 @@ const CheckoutsInMemory = Layer.effect(
     Layer.effect(
       CheckoutsLog,
       Effect.all({
+        atStripe: Ref.make<readonly string[]>([]),
         expired: Ref.make(0),
         open: Ref.make(0),
         statuses: Ref.make<readonly string[]>([]),
@@ -314,6 +318,36 @@ layer(recordsWith(true))(
   }
 );
 
+// A checkout completed at Stripe, the member never came back, and no event
+// came yet: only Stripe tells.
+layer(recordsWith(true))(
+  "billing's records of a workspace whose checkout completed unseen",
+  (it) => {
+    it.effect(
+      "refuse to go while Stripe holds a subscription that may bill it",
+      () =>
+        Effect.gen(function* unseen() {
+          const log = yield* CheckoutsLog;
+
+          const erase = BillingRecords.use((records) =>
+            records.eraseWorkspace(workspaceId)
+          );
+
+          yield* Ref.set(log.statuses, ["incomplete"]);
+          yield* Ref.set(log.atStripe, ["canceled", "active"]);
+
+          const refused = yield* Effect.flip(erase);
+
+          assert.strictEqual(refused._tag, "WorkspaceStillBilled");
+
+          yield* Ref.set(log.atStripe, ["canceled", "incomplete_expired"]);
+
+          yield* erase;
+        })
+    );
+  }
+);
+
 layer(recordsWith(true))(
   "billing's records of a workspace with a checkout left open",
   (it) => {
@@ -396,6 +430,7 @@ const UnreadTest = Layer.mergeAll(
       Layer.succeed(
         Checkouts,
         Checkouts.of({
+          atStripe: () => Effect.die("Stripe called while billing is off"),
           expireOpen: () => Effect.die("Stripe called while billing is off"),
           statuses: () => Effect.die("read while billing is off"),
         })
