@@ -332,6 +332,31 @@ describe("the outcome endpoints", () => {
             new Forbidden()
           );
 
+          // An editor of another workspace finds nothing of the post there.
+          const elsewhere = yield* freshId;
+          const stranger = yield* clientAs(yield* freshId, elsewhere, "editor");
+          const strangerParams = { postId: draft.id, workspaceId: elsewhere };
+
+          assert.deepStrictEqual(
+            yield* Effect.all([
+              stranger.posts
+                .attempts({ params: strangerParams })
+                .pipe(Effect.flip),
+              stranger.posts
+                .repost({
+                  params: { ...strangerParams, targetId: onRefused.id },
+                })
+                .pipe(Effect.flip),
+              stranger.posts
+                .confirm({
+                  params: { ...strangerParams, targetId: onLost.id },
+                  payload: { _tag: "notPublished" },
+                })
+                .pipe(Effect.flip),
+            ]),
+            [new PostNotFound(), new PostNotFound(), new PostNotFound()]
+          );
+
           const reposted = yield* editor.posts.repost({
             params: { ...params, targetId: onRefused.id },
           });
