@@ -30,6 +30,9 @@ Nx projects live directly under `packages/`:
   from the contract's `openapi.json`.
 - `acme-site`: the static marketing site (Astro), with the legal pages that
   platforms ask for during app review.
+- `acme-e2e`: end-to-end browser tests with the e2e runner (`e2e`,
+  `@e2e-dev/web`). Each run starts the server and the web app's production
+  build itself (`scripts/serve.ts`).
 
 Planned: `acme-infra` (Ansible).
 
@@ -44,7 +47,9 @@ Work from the repository root unless a command names another directory.
   and `bun run build`, as CI does. Fix lint findings without inline
   suppressions; `bun run fix` applies what it can. `bun run test` needs the
   development stack's Postgres, Mailpit and SeaweedFS (see
-  [Development stack](#development-stack)).
+  [Development stack](#development-stack)). It does not run the end-to-end
+  tests: run `nx run acme-e2e:e2e` too when a change touches the pages they
+  visit (see [End-to-end tests](#end-to-end-tests)).
 - Linters and formatters are as strict as they go: Ultracite's oxlint presets
   (core and anti-slop everywhere, plus the preset for each package's framework)
   with type-aware rules, and oxfmt. Each package has its own
@@ -132,16 +137,17 @@ The server follows DDD and Clean Architecture. Each bounded context in
 `packages/acme-server/src/` has four layers, plus a `container.ts` that wires
 them:
 
-| Context         | Holds                                                      |
-| --------------- | ---------------------------------------------------------- |
-| `publishing`    | posts, their channels, schedules, publication attempts     |
-| `channels`      | connected accounts, connect flows, encrypted tokens        |
-| `media`         | uploads, storage, probing, alt text                        |
-| `workspace`     | accounts, workspaces, members, roles, API keys, OAuth      |
-| `notifications` | account emails and channel notices                         |
-| `shared`        | the kernel the others build on                             |
-| `analytics`     | per-platform metrics (planned: in the lint rules, no code) |
-| `billing`       | plans, subscriptions, entitlements (planned, likewise)     |
+| Context         | Holds                                                                       |
+| --------------- | --------------------------------------------------------------------------- |
+| `publishing`    | posts, their channels and media, schedules, attempts, the platform adapters |
+| `channels`      | connected accounts, connect flows, encrypted tokens and their renewal       |
+| `media`         | uploads, storage, probing, alt text, files handed to platforms              |
+| `workspace`     | accounts, workspaces, members, roles, API keys, OAuth                       |
+| `notifications` | account emails, in-app notices, their emails, notification preferences      |
+| `assistant`     | the writing assistant: prompts, language models, the daily quota            |
+| `shared`        | the kernel the others build on                                              |
+| `analytics`     | per-platform metrics (planned: in the lint rules, no code)                  |
+| `billing`       | plans, subscriptions, entitlements (planned, likewise)                      |
 
 - `domain`: entities and rules on Effect's core (`effect`: Schema, DateTime,
   Data). No HTTP, SQL, cluster, workflow, AI, Drizzle or Better Auth.
@@ -181,7 +187,8 @@ and no socket, for tests.
   (`access.ts`, `authorize.ts`), locales (`LocaleSchema`: en, fr), IANA zones
   (`TimeZoneIdSchema`), wall-clock time (`LocalDateSchema`, `LocalTimeSchema`,
   `WeekdaySchema`, `fromWallClock`), and how a platform call can end
-  (`PublishResult`, `PublishFailure`).
+  (`PublishResult`, `PublishFailure`, and `TokenRejected` for a token the
+  platform refused before doing anything).
 - Take ids from the `Ids` port: `yield* newId(PostIdSchema)`. Tests provide
   `Ids.layerTest`, which issues `00000000-0000-7000-8000-000000000001`, then
   `…002`, from each build of the layer.
@@ -224,6 +231,10 @@ and no socket, for tests.
 - Put workspace groups under `/api/workspaces/:workspaceId/…`, with
   `.middleware(WorkspaceAccess).middleware(Authentication)` (Authentication
   runs first), and add them to `WorkspaceGroupsLive` in `src/app/server.ts`.
+- Put the signed-in user's own groups, which span workspaces (notices,
+  notification preferences), under `/api/me/…` with `Authentication` alone,
+  in `WorkspaceGroupsLive` too. They answer 403 to API keys, which belong to
+  a workspace, and to OAuth tokens bound to one workspace.
 - Handlers turn `CurrentMember` into an `Actor` with `actorOf`
   (`#shared/api/actor.ts`). Use cases that act for someone take that `Actor`
   and check it with `authorize`: permissions are `resource:action`
@@ -309,12 +320,16 @@ and no socket, for tests.
   advisory locks). A process holds at most four at once, each on a pool
   connection, so never nest `withLock`. Bluesky and X refresh tokens work
   once.
+- Other contexts get a working token only from `ChannelAccess`
+  (`channels/application/channel-access.ts`). `withToken` decrypts it,
+  renews it under the channel's lock when it is due or the platform refused
+  it once (reusing a token another call renewed meanwhile), and runs the call
+  outside the lock, so never call it inside `withLock`. When renewing fails
+  for good, or the renewed token is refused too, it marks the channel
+  `refreshNeeded` and tells the workspace through `ChannelNotices`.
 - A platform failure is temporary (`PlatformUnavailable`) when any server on
   the way answered 5xx or 429; only the platform's own refusal marks a channel
   `refreshNeeded`.
-- `ChannelGate` stays in `publishing/infrastructure` until the publishing
-  adapters move to channels: moving it alone would make the two contexts
-  depend on each other.
 
 ### Publishing and the cluster
 
@@ -331,7 +346,8 @@ and no socket, for tests.
   contract: add a payload field with a decoding default or a union member,
   never rename or remove one, and for a breaking change add a V2 beside V1 and
   drain it. Keep the fixtures in
-  `test/publishing/infrastructure/fixtures/persisted` decoding.
+  `test/publishing/infrastructure/fixtures/persisted` and
+  `test/notifications/infrastructure/fixtures/persisted` decoding.
 - `PublishPostV1` sleeps durably until the instant, claims the post for its
   schedule revision, runs one `PublishTargetV1` per channel, then finishes the
   post. Each attempt writes and commits its journal row
@@ -339,14 +355,53 @@ and no socket, for tests.
 - A post whose outcome is unknown is marked unconfirmed, never retried blindly:
   the user checks the platform before reposting.
 - Platform calls go through the `PlatformPublisher` port, one at a time per
-  channel through `ChannelGate`. The server runs
-  `UnsupportedPlatformPublisher`, which refuses every call, until real
-  adapters exist; tests use `FakePlatformPublisher`.
-- A post's text is checked against each platform with
-  `#publishing/domain/text-length.ts` and `platform-rules.ts` when it is
-  scheduled, never while it is a draft. `acme-contract/post-text` is the
-  clients' copy, kept equal by `test/publishing/api/contract.test.ts`: change
-  both together.
+  channel through `ChannelGate`, whose calls are volatile: post content never
+  lands in the cluster tables. The gates run `RoutedPlatformPublisher`, which
+  reads the post, takes its text on the channel and hands it to the
+  platform's `PlatformClient`; tests use `FakePlatformPublisher`. A whole
+  publish runs inside the gate: uploads, processing waits, token renewal,
+  the post and its confirmation.
+- Platform adapters live in `publishing/infrastructure/platforms/<platform>/`
+  (Mastodon and Bluesky), beside `ChannelGate`, and implement the steps of
+  `publishing/application/publication-steps.ts`, which `sequenced` runs:
+  `prepare` uploads the media (safe to repeat: media alone shows nowhere),
+  `poll` waits while the platform processes it (15 minutes at most),
+  `commit` is the one request that makes the post live (fail with
+  `OutcomeUnknown` when it may have), and `confirmation` says how to read the
+  post back: `lookUp` by a key chosen before the commit (Bluesky's record
+  key), or `resend` with the attempt's idempotency key within the window the
+  platform keeps it (Mastodon: 50 minutes of its hour).
+- Derive whatever an adapter sends from the request's `idempotencyKey` and
+  `startedAt`, which every run of an attempt shares.
+- Adapters get tokens only through `PlatformCredentials`, which
+  `ChannelAccess` backs (`ChannelAccessCredentials`), and media only through
+  `MediaForPublishing`, which the media context's `MediaForPlatforms` backs:
+  ready assets of the post's workspace. Fail with `TokenRejected` only when
+  the platform refused the token before doing anything: the token is renewed
+  and the call made once more.
+- Adapters reach platforms only through `publicHttpClient`, or
+  `publicHttpClientWith({ timeout })` for uploads. Test them against the
+  loopback fakes in `test/publishing/fakes/`.
+- A journal row found in flight is resumed (`PlatformPublisher.resume`, the
+  gate's `Resume`), never sent again blindly: Bluesky looks the record up and
+  creates it only when absent, Mastodon resends under the same key while its
+  window holds, checked again just before the post goes out, and an adapter
+  that cannot tell answers unconfirmed. A resume refuses a post only when
+  nothing can have gone live, and a target whose cancel was requested is
+  never resumed.
+- Tell how each target ended through `PublicationOutcomes`, once, in the
+  transaction that settles it (`recordTargetRun`, and `claimPostRun` for
+  missed targets). `NotifiedPublicationOutcomes` keys the notice by target and
+  round, and a bug in telling is logged, never stops publishing.
+- A post's text and media are checked against each platform with
+  `#publishing/domain/text-length.ts`, `content-rules.ts` and
+  `platform-rules.ts` when it is scheduled, never while it is a draft.
+  `acme-contract/post-text` is the clients' copy, kept equal by
+  `test/publishing/api/contract.test.ts`: change both together. Compare video
+  durations in whole milliseconds, as the media API shows them.
+- Posts show only ready media of the workspace: `LibraryAttachableMedia`
+  reads each asset through the media context's `MediaLibrary`, and anything
+  else answers `UnknownMedia` when a draft is saved or scheduled.
 - Workflow tests (`test/publishing/infrastructure/harness.ts`): set `TestClock`
   before building a cluster (`onServerAt`); wait until a job is parked
   (`isSuspended`, `isTargetWaiting`) before moving time; count calls with
@@ -375,6 +430,10 @@ and no socket, for tests.
 - The S3 adapter uses the AWS SDK v3 (Bun's client cannot presign parts).
   Keep its checksums at `WHEN_REQUIRED`: the default puts an empty-body CRC32
   in presigned URLs, which stores refuse.
+- Members reach media through `MediaLibrary`, which checks their
+  permissions; publishing jobs through `MediaForPlatforms`, which checks
+  none, as they act for the workspace once a post is scheduled, and hands out
+  only ready assets of that workspace (`MediaNotPublishable` otherwise).
 
 ### Notifications
 
@@ -382,9 +441,75 @@ and no socket, for tests.
   otherwise SMTP at `SMTP_URL`, from `MAIL_FROM`. Requests never wait for
   them.
 - Render every email from `notifications/domain/english.ts` and `french.ts`,
-  in the reader's locale. Account emails go through `SendAuthEmail`; channel
-  notices through `SendChannelNotice`, once per event key
-  (`notifications.sent_notices`), to members who hold `channel:connect`.
+  in the reader's locale. Account emails go through `SendAuthEmail`.
+- Notices are events, not sentences: the context stores what happened as
+  typed data (`NoticeEventSchema`: a post published, failed with its reason,
+  or unconfirmed; a channel to reconnect now or soon), the web app writes it
+  from its catalogues, and emails are rendered when they go out. Add members
+  and fields to an event; never rename or remove one, since notices are
+  stored with it.
+- Other contexts tell people through `Notify`, with a key that names the
+  event, such as `post-target:<id>:<round>`: a key seen before
+  (`notifications.sent_notices`) notifies nobody. Keys hold ids and instants,
+  never content. Notify runs in a TransactionRunner transaction that joins
+  the caller's, so the key, the notices and the start of `DeliverNoticeV1`,
+  which emails them after the commit, go together. Publishing calls it
+  through `PublicationOutcomes`, the channels context through
+  `ChannelNotices`.
+- A notice goes to the members who can act on it (`audienceOf`): those with
+  `post:schedule` for a post, `channel:connect` for a channel. Every notice
+  reaches the app; `NotificationPreferences` say which are also emailed
+  (failed and unconfirmed posts and channels to reconnect by default, not
+  published posts). A preferences change writes only the kinds it names.
+- `DeliverNoticeV1` is persisted contract: its tag, its payload (`key`), its
+  activities `send/<n>` and `abandon`, its clocks `retry/<n>`. It retries a
+  transport that refuses for now over about five hours, and skips readers who
+  left the workspace or turned the email off meanwhile.
+- The inbox belongs to a user, and `authorizeInbox` decides who acts on it:
+  the user, or an OAuth client not bound to a workspace, with
+  `workspace:read` to read and `workspace:write` to change; staff
+  impersonating the user only read.
+
+### Writing assistant
+
+- The assistant suggests a change to a post's text (rewrite in a tone,
+  shorten to fit a platform, translate, suggest hashtags) through the
+  `WritingModel` port: Anthropic (`@effect/ai-anthropic`) or any
+  OpenAI-compatible endpoint that serves `/chat/completions`
+  (`@effect/ai-openai-compat`: `@effect/ai-openai` calls `/responses`
+  only), as `ACME_AI_PROVIDER` says. It calls the provider directly, not
+  through the outbound guard: the operator, not a member, names it. Unset,
+  `UnavailableWritingModelLive` turns it off, and the status answers
+  `available: false`.
+- Drafts are data, never instructions. The system message depends on the
+  action alone (`assistant/domain/writing-prompt.ts`); the draft goes in the
+  user message as the single field of a JSON document. Never put a draft's
+  text, or anything a member typed, in the instructions.
+- The model answers in a shape Schema decodes, and the domain checks it
+  (`suggestion.ts`) before anyone sees it. Answers are returned whole, never
+  streamed, so nobody reads unchecked text.
+- Never log or trace a prompt, a draft or an answer, nor a provider's error,
+  which can quote them. The adapter turns effect/ai's and the HTTP client's
+  spans off around the call, sends the provider no trace context, and
+  records only the provider, the model, token counts and the kind of
+  failure; `WritingFailed` carries no cause. `assistant.daily_usage` holds
+  counts only.
+- Every use case checks `assistant:use` (owners, admins, editors and
+  contributors; not viewers, nor read-only OAuth clients) and works in the
+  actor's workspace only.
+- The quota is per workspace and UTC day: `AssistantAllowance` gives the
+  limit (`ACME_AI_DAILY_REQUESTS`, 100; billing will replace it behind that
+  port), and `AssistantUsage.claim` counts a request in one conditional
+  upsert before the call, so requests sent together never pass it. Give a
+  request back only when the provider never ran it (`unreachable`); a
+  timeout, a refusal or an unusable answer counts.
+- The model has 90 seconds to answer (`answerTimeout`). Anything between the
+  browser and the server must wait longer: the web app's `/api` proxy waits
+  120 seconds (`experimental.proxyTimeout` in `next.config.ts`).
+- The assistant reads platforms' text limits through its `PlatformLimits`
+  port, from `publishing/application/platform-text-limits.ts`. Its tones and
+  languages are listed in its domain and copied in the contract, kept equal
+  by `test/assistant/api/contract.test.ts`.
 
 ### MCP endpoint
 
@@ -406,9 +531,9 @@ and no socket, for tests.
   (`AUTH_DB_POOL_MAX`). Repositories use `Drizzle`, or `SqlClient` for raw
   SQL.
 - Each context keeps its tables in a Postgres schema named after it
-  (`publishing`, `channels`, `media`, `notifications`; the workspace context's
-  are Better Auth's, in `auth`). Effect creates its `cluster_*` tables in
-  `public`; drizzle-kit never manages them.
+  (`publishing`, `channels`, `media`, `notifications`, `assistant`; the
+  workspace context's are Better Auth's, in `auth`). Effect creates its
+  `cluster_*` tables in `public`; drizzle-kit never manages them.
 - Declare a context's tables in `src/<context>/infrastructure/schema.ts`, then
   run `nx run acme-server:db:generate`, which writes a migration folder under
   `packages/acme-server/drizzle/`. Commit the folder as drizzle-kit wrote it;
@@ -427,13 +552,15 @@ self-hoster needs only Postgres and an S3-compatible store:
 - email: Resend or SMTP (Mailpit in development);
 - billing: Stripe, off when no key is set (no plan limits);
 - captcha: Turnstile, off when no key is set;
-- AI: any OpenAI-compatible endpoint, or an Anthropic key;
+- AI: an Anthropic key, or any OpenAI-compatible endpoint that serves
+  `/chat/completions`; the writing assistant is off until `ACME_AI_PROVIDER`
+  is set;
 - telemetry: OTLP export of logs, metrics and traces only when
   `OTEL_EXPORTER_OTLP_ENDPOINT` is set (`src/app/observability.ts` defaults
   each `OTEL_<SIGNAL>_EXPORTER` to `otlp`; set one to `none` to turn that
   signal off).
 
-Billing, captcha and AI are not built yet.
+Billing and captcha are not built yet.
 
 - Images read `PORT` and plain environment variables and run anywhere.
 - Route `/api/*` and `/.well-known/oauth-*` to the server, or let the web app
@@ -459,8 +586,9 @@ Billing, captcha and AI are not built yet.
   `verify-email`, `forgot-password`, `reset-password`, `invitations/[id]`),
   the OAuth pages (`device`, `oauth/workspace`, `oauth/consent`), the
   platforms' redirect URI `connect/[platform]/callback`, and the signed-in
-  app: `app` (workspaces), `app/[workspaceId]/channels`, `…/media`,
-  `…/calendar`, `…/posts/new` and `…/posts/[postId]`.
+  app: `app` (workspaces), `app/notices`, `app/notices/preferences`,
+  `app/[workspaceId]/channels`, `…/media`, `…/calendar`, `…/posts/new` and
+  `…/posts/[postId]`.
 - Pages fetch through the client derived from `acme-contract`, with
   `@effect/atom-react`: query atoms come from `AcmeApi` in `src/api/client.ts`.
   Browsers call `/api`; server code calls `ACME_API_URL`.
@@ -484,6 +612,28 @@ Billing, captcha and AI are not built yet.
   to `Auth.errors` in the catalogues.
 - Keep the OAuth pages' views (`WorkspacePickerView`) apart from their state,
   so tests render each state: acme-web has no DOM test environment.
+- Show dates in the reader's time zone. next-intl's server provider hands the
+  client the server's zone (UTC in the image) unless told otherwise:
+  `InTimeZone` (`components/notices/in-time-zone.tsx`) sets the browser's.
+- The header's `NotificationBell`, beside the account menu, polls
+  `GET /api/me/notices/unread` every 30 seconds while the tab is visible and
+  when it is shown again (`useRefreshWhileVisible`), and announces arrivals
+  in a status region. Polling works through any proxy and needs nothing
+  shared between servers; keep it. Write notices from their events with
+  `src/notices/notice-text.ts`.
+- The composer's attachments come from `MediaPicker` (ready media of the
+  workspace) or `MediaUploader` (`onUploaded` attaches ready uploads).
+  `#posts/attachments.ts` keeps the list: order, alt text seeded from the
+  library description, `maxMediaPerPost` at most. `#posts/media-fit.ts`
+  checks it against the contract's platform rules, so Schedule waits until
+  nothing would be refused. Keep `MediaUploader` mounted while the post is
+  editable and pass `disabled` while it is busy: unmounting it cancels the
+  uploads in flight.
+- `AssistantMenu` sits in the composer's text section and works on the text
+  for all channels. Render it only for members with `assistant:use`, and
+  only while `GET …/assistant` answers `available`; refresh that status after
+  every request, which can change the requests left. Show each suggestion in
+  a preview the person accepts or discards: never apply one unasked.
 - `src/proxy.ts` rewrites `/api/*` and `/.well-known/oauth-*` to
   `ACME_API_URL`, read per request. Keep it there, not in `next.config.ts`:
   Next resolves config rewrites at build time and writes the URL into the
@@ -520,6 +670,36 @@ Billing, captcha and AI are not built yet.
   in `test/support.ts` (the contract served by test handlers) and the
   authorization server in `test/authorization-server.ts`, never against a
   running server.
+
+## End-to-end tests
+
+- Run them with the development stack up and a database of their own:
+  `DATABASE_URL=postgres://acme:acme@127.0.0.1:15432/acme_e2e bun nx run acme-e2e:e2e`.
+  The target builds the web app first and is never cached. Like the
+  server's tests, a run writes to the database `DATABASE_URL` names; Mailpit,
+  SMTP and SeaweedFS (under `e2e/`) default to the stack, and `MAILPIT_URL`,
+  `SMTP_URL` and `ACME_S3_*` override them.
+- `scripts/serve.ts` starts the server and `next start` on free ports, with
+  the synthetic secrets in `e2e.config.ts`, and stops both when either exits.
+  It passes `next start` no `--hostname`: bound to 127.0.0.1, every page
+  redirects to itself.
+- Install Chromium with `e2e-web install chromium`, from
+  `packages/acme-e2e/node_modules/.bin`; CI adds `--with-deps` for the
+  system libraries it needs.
+- Write steps with exact locators (`screen`, `expect`) only, so tests need no
+  model and run in CI. Find elements by role and label, and scope to `main`,
+  `banner` or a named `navigation` when a name repeats.
+- Sign up a new synthetic user each run (`member+<uuid>@example.test`, from
+  `credentials.member`), and read its emails through Mailpit's API
+  (`tests/support/mailpit.ts`).
+- No platform can be connected in a run, so a test that needs a channel
+  inserts a synthetic one with `seedChannel` (`tests/support/channels.ts`).
+  Update it when `channels.channels` changes. Publish nothing, and cancel any
+  post a test schedules, through the UI.
+- CI's `e2e` job runs after `verify`, with its own Postgres and Mailpit and
+  SeaweedFS from `compose.yaml`. After a failure, read the report, traces and
+  screenshots under `packages/acme-e2e/.e2e/` (CI uploads it for 7 days), and
+  the server's and the web app's output in `.e2e/logs/app.log`.
 
 ## Docs and marketing site
 
