@@ -55,14 +55,37 @@ const freshWorkspace: Effect.Effect<WorkspaceId, never, Ids> = Ids.use(
   (ids) => ids.next
 ).pipe(Effect.map((uuid) => WorkspaceIdSchema.make(uuid)));
 
+// Creates an upload, whose file and multipart upload go with the test.
 const prepare = Effect.fn("prepare")(function* prepare(
   workspaceId: WorkspaceId,
   contentType: string,
   byteSize: number
 ) {
   const library = yield* MediaLibrary;
+  const storage = yield* MediaStorage;
 
-  return yield* library.createUpload({ byteSize, contentType, workspaceId });
+  const prepared = yield* library.createUpload({
+    byteSize,
+    contentType,
+    workspaceId,
+  });
+
+  const { status, storageKey } = prepared.asset;
+
+  yield* Effect.addFinalizer(() =>
+    Effect.gen(function* cleanUp() {
+      if (status._tag === "pending" && status.upload._tag === "multipart") {
+        yield* storage.abortMultipartUpload({
+          key: storageKey,
+          uploadId: status.upload.uploadId,
+        });
+      }
+
+      yield* storage.remove(storageKey);
+    }).pipe(Effect.orDie)
+  );
+
+  return prepared;
 });
 
 const singleRequest = (prepared: PreparedUpload) =>
