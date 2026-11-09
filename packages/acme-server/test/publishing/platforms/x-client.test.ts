@@ -427,6 +427,33 @@ describe("publishing on X", () => {
       }).pipe(Effect.scoped)
   );
 
+  it.live(
+    "never takes a recent post of other pictures for the one it lost",
+    () =>
+      Effect.gen(function* otherPictures() {
+        const first = testFile("image", 512, "image/png");
+        const second = testFile("image", 768, "image/png");
+        const { client, x } = yield* onX({ files: [first, second] });
+
+        yield* client.publish(
+          yield* post({ media: [attached(first)], text: "" })
+        );
+
+        x.script("POST /2/tweets", [dropped]);
+
+        // Pictures alone too, but others: X made nothing of it.
+        const result = yield* client.publish(
+          yield* post({ media: [attached(second)], text: "" })
+        );
+
+        assert.deepStrictEqual(result, {
+          _tag: "unconfirmed",
+          reason: "noResponse",
+        });
+        assert.lengthOf(x.posts(), 1);
+      }).pipe(Effect.scoped)
+  );
+
   it.live("finds the lost post by its links, however X writes them", () =>
     Effect.gen(function* sameLinks() {
       const { client, x } = yield* onX();

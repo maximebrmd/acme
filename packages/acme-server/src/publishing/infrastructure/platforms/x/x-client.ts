@@ -169,6 +169,8 @@ interface Pending {
 /** The media of a post on X: every id, and those still processing. */
 interface XMedia {
   readonly mediaIds: readonly string[];
+  /** The files' keys, as X lists a post's, when X gave every one. */
+  readonly mediaKeys: Option.Option<readonly string[]>;
   readonly pending: readonly Pending[];
 }
 
@@ -260,7 +262,8 @@ const publishedAs = (id: string): Published => ({
  *
  * X has no idempotency key. A post whose answer was lost is looked for among
  * the account's recent posts since the attempt started, by its text, the
- * addresses it links to and its number of files: found, it is published;
+ * addresses it links to and its files (by key, or by number when a resumed
+ * run has none): found, it is published;
  * not found proves nothing, as X may not list it yet, so it is never sent
  * again and ends unconfirmed.
  */
@@ -402,6 +405,9 @@ export const xClient = Effect.fn("XClient.make")(function* xClient(
 
     return {
       mediaId,
+      mediaKey: Option.fromUndefinedOr(initialized.media_key).pipe(
+        Option.filter((key) => key !== "")
+      ),
       pending: yield* pendingOf(
         mediaId,
         Option.fromUndefinedOr(finalized.processing_info)
@@ -413,7 +419,11 @@ export const xClient = Effect.fn("XClient.make")(function* xClient(
     post: OutgoingPost
   ) {
     if (post.media.length === 0) {
-      return readinessOf({ mediaIds: [], pending: [] });
+      return readinessOf({
+        mediaIds: [],
+        mediaKeys: Option.some([]),
+        pending: [],
+      });
     }
 
     const described = yield* Effect.forEach(
@@ -442,8 +452,16 @@ export const xClient = Effect.fn("XClient.make")(function* xClient(
       { concurrency: 1 }
     );
 
+    const mediaKeys = uploaded.flatMap(({ mediaKey }) =>
+      Option.toArray(mediaKey)
+    );
+
     return readinessOf({
       mediaIds: uploaded.map(({ mediaId }) => mediaId),
+      mediaKeys:
+        mediaKeys.length === uploaded.length
+          ? Option.some(mediaKeys)
+          : Option.none(),
       pending: uploaded.flatMap(({ pending }) => Option.toArray(pending)),
     });
   });
@@ -530,10 +548,26 @@ export const xClient = Effect.fn("XClient.make")(function* xClient(
   });
 
   // Looks for the attempt's post among the account's recent ones: the same
-  // text, as X shows it, linking to the same addresses, with as many files.
-  // Not finding it settles nothing.
-  const lookUp = (post: OutgoingPost): Effect.Effect<LookUp, PublishFailure> =>
-    mediaCall(
+  // text, as X shows it, linking to the same addresses, with the files this
+  // run uploaded, or as many. Not finding it settles nothing.
+  const lookUp = (
+    post: OutgoingPost,
+    prepared: Option.Option<XMedia>
+  ): Effect.Effect<LookUp, PublishFailure> => {
+    // The files the post shows: their keys when this run uploaded them,
+    // otherwise only how many there are, as when resuming a run.
+    const sameFiles = Option.match(
+      prepared.pipe(Option.flatMap(({ mediaKeys }) => mediaKeys)),
+      {
+        onNone: () => (listed: readonly string[]) =>
+          listed.length === post.media.length,
+        onSome: (keys) => (listed: readonly string[]) =>
+          listed.length === keys.length &&
+          listed.every((key, index) => key === keys[index]),
+      }
+    );
+
+    return mediaCall(
       post,
       api,
       (token) =>
@@ -561,7 +595,7 @@ export const xClient = Effect.fn("XClient.make")(function* xClient(
             isSamePost(post.text, {
               linksTo: linksOf(entities?.urls ?? []),
               text,
-            }) && (attachments?.media_keys?.length ?? 0) === post.media.length
+            }) && sameFiles(attachments?.media_keys ?? [])
         );
 
         return found === undefined
@@ -570,6 +604,7 @@ export const xClient = Effect.fn("XClient.make")(function* xClient(
       }),
       Effect.orElseSucceed((): LookUp => ({ _tag: "unknown" }))
     );
+  };
 
   const steps: PublicationSteps<XMedia> = {
     commit,
