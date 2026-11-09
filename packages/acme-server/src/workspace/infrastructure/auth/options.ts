@@ -126,7 +126,10 @@ export const makeAuth = ({ database, hooks, settings }: AuthDependencies) =>
     advanced: {
       cookiePrefix,
       database: { generateId: "uuid" },
-      ipAddress: { ipAddressHeaders: [...settings.ipAddressHeaders] },
+      ipAddress: {
+        ipAddressHeaders: [...settings.ipAddressHeaders],
+        trustedProxies: [...settings.trustedProxies],
+      },
     },
     appName: "Acme",
     basePath: authBasePath,

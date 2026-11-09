@@ -45,6 +45,7 @@ const auth = makeAuth({
     requireEmailVerification: true,
     secret: Redacted.make("auth-schema-generator-only-0123456789abcdef"),
     trustedOrigins: [],
+    trustedProxies: [],
   },
 });
 
