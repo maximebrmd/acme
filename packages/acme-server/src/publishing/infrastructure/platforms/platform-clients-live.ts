@@ -12,6 +12,7 @@ import {
   publicHttpClient,
   publicHttpClientWith,
 } from "#shared/infrastructure/platforms/public-http.ts";
+import { tiktokHosts } from "#shared/infrastructure/platforms/tiktok-api.ts";
 
 import { blueskyClient } from "./bluesky/bluesky-client.ts";
 import { linkedinClient } from "./linkedin/linkedin-client.ts";
@@ -20,6 +21,8 @@ import { mastodonClient } from "./mastodon/mastodon-client.ts";
 import { facebookClient } from "./meta/facebook-client.ts";
 import { instagramClient } from "./meta/instagram-client.ts";
 import { threadsClient } from "./meta/threads-client.ts";
+import { tiktokClient } from "./tiktok/tiktok-client.ts";
+import { tiktokMediaUrlConfig } from "./tiktok/tiktok-settings.ts";
 import { xClient } from "./x/x-client.ts";
 
 /** Where the platforms are, and how long their steps wait. */
@@ -35,6 +38,13 @@ export interface PlatformClientSettings {
   readonly metaAppSecret: Option.Option<Redacted.Redacted>;
   /** Where Meta's services are. */
   readonly metaHosts: MetaHosts;
+  /** TikTok's API, which takes media uploads too. */
+  readonly tiktokApi: URL;
+  /**
+   * The URL prefix verified for the app at TikTok under which the media
+   * store serves files, which TikTok then pulls; none when there is none.
+   */
+  readonly tiktokPullFrom: Option.Option<URL>;
   readonly timing?: StepTiming;
   /** Bluesky's video processing service. */
   readonly videoService: URL;
@@ -47,11 +57,12 @@ const uploadTimeout = Duration.minutes(10);
 
 /**
  * The platforms Acme publishes to: Mastodon, Bluesky, LinkedIn, X, Threads,
- * Instagram and Facebook Pages. Every request goes through the public HTTP
- * client, so the outbound guard checks the servers users chose. Needs an
- * HttpClient, the OutboundGuard, SecureRandom and Digest (for DPoP proofs),
- * Mac (for Meta's proofs), PlatformCredentials and MediaForPublishing.
- * Reads LINKEDIN_API_VERSION when it is built.
+ * Instagram, Facebook Pages and TikTok. Every request goes through the
+ * public HTTP client, so the outbound guard checks the servers users chose.
+ * Needs an HttpClient, the OutboundGuard, SecureRandom and Digest (for DPoP
+ * proofs), Mac (for Meta's proofs), PlatformCredentials, MediaForPublishing
+ * and PublicationProgress (for TikTok's steps). Reads LINKEDIN_API_VERSION
+ * when it is built.
  */
 export const platformClientsWith = (settings: PlatformClientSettings) =>
   Layer.effect(
@@ -98,6 +109,13 @@ export const platformClientsWith = (settings: PlatformClientSettings) =>
           uploads,
           ...timing,
         }),
+        yield* tiktokClient({
+          api,
+          apiUrl: settings.tiktokApi,
+          pullFrom: settings.tiktokPullFrom,
+          uploads,
+          ...timing,
+        }),
       ];
 
       const byPlatform: ReadonlyMap<Platform, PlatformClient> = new Map(
@@ -111,19 +129,23 @@ export const platformClientsWith = (settings: PlatformClientSettings) =>
   );
 
 /**
- * The platforms, as production reaches them, with Meta's app secret read
- * when the server starts. Channels connected while Meta's app was set keep
- * publishing without its proof if it is unset later.
+ * The platforms, as production reaches them, with Meta's app secret and
+ * TikTok's verified media prefix read when the server starts. Channels
+ * connected while Meta's app was set keep publishing without its proof if
+ * it is unset later.
  */
 export const PlatformClientsLive = Layer.unwrap(
   Effect.gen(function* PlatformClientsLive() {
     const meta = yield* metaAppConfig;
+    const tiktokPullFrom = yield* tiktokMediaUrlConfig;
 
     return platformClientsWith({
       linkedinApi: new URL("https://api.linkedin.com"),
       mastodonScheme: "https:",
       metaAppSecret: meta.pipe(Option.map(({ appSecret }) => appSecret)),
       metaHosts,
+      tiktokApi: tiktokHosts.api,
+      tiktokPullFrom,
       videoService: new URL("https://video.bsky.app"),
       xApi: new URL("https://api.x.com"),
     });

@@ -22,6 +22,7 @@ import {
 import { SqlClient } from "effect/sql";
 import { TestClock } from "effect/testing";
 
+import { AccountRules } from "#publishing/application/account-rules.ts";
 import { ChannelHealth } from "#publishing/application/channel-health.ts";
 import type { PlatformPublisher } from "#publishing/application/platform-publisher.ts";
 import { PostRepository } from "#publishing/application/post-repository.ts";
@@ -139,7 +140,8 @@ export const deployWith = <S, E, R, EP, RP, RJ>(
         RecordingChannelHealth,
         RecordingPublicationOutcomes,
         WorkflowPublicationScheduler,
-        ReferencesTest
+        ReferencesTest,
+        AccountRules.none
       )
     ),
     Layer.provideMerge(Layer.mergeAll(IdsLive, TransactionRunnerLive)),

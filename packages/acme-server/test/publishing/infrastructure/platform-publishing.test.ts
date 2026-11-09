@@ -6,6 +6,7 @@ import { FetchHttpClient } from "effect/http";
 
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
 import { RoutedPlatformPublisher } from "#publishing/application/routed-platform-publisher.ts";
+import { DrizzlePublicationProgress } from "#publishing/infrastructure/drizzle-publication-progress.ts";
 import { platformClientsWith } from "#publishing/infrastructure/platforms/platform-clients-live.ts";
 import { OpenOutboundGuard } from "#test/channels/support.ts";
 import {
@@ -53,6 +54,8 @@ const platformsOn = (instanceUrl: string) =>
           threadsAuthorize: new URL(instanceUrl),
           threadsGraph: new URL(instanceUrl),
         },
+        tiktokApi: new URL(instanceUrl),
+        tiktokPullFrom: Option.none(),
         timing: testTiming,
         videoService: new URL(instanceUrl),
         xApi: new URL(instanceUrl),
@@ -64,7 +67,8 @@ const platformsOn = (instanceUrl: string) =>
           { accountId: mastodonAccountId(instanceUrl), platform: "mastodon" },
           ["token-1"]
         ),
-        mediaOf([])
+        mediaOf([]),
+        DrizzlePublicationProgress
       )
     ),
     Layer.provide(

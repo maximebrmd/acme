@@ -18,6 +18,7 @@ import type { PublishableMedia } from "#publishing/application/media-for-publish
 import type { OutgoingPost } from "#publishing/application/platform-client.ts";
 import { PlatformCredentials } from "#publishing/application/platform-credentials.ts";
 import type { CredentialFailure } from "#publishing/application/platform-credentials.ts";
+import type { PublicationProgress } from "#publishing/application/publication-progress.ts";
 import type { StepTiming } from "#publishing/application/publication-steps.ts";
 import { MediaAttachment } from "#publishing/domain/media-attachment.ts";
 import { blueskyClient } from "#publishing/infrastructure/platforms/bluesky/bluesky-client.ts";
@@ -26,6 +27,7 @@ import { mastodonClient } from "#publishing/infrastructure/platforms/mastodon/ma
 import { facebookClient } from "#publishing/infrastructure/platforms/meta/facebook-client.ts";
 import { instagramClient } from "#publishing/infrastructure/platforms/meta/instagram-client.ts";
 import { threadsClient } from "#publishing/infrastructure/platforms/meta/threads-client.ts";
+import { tiktokClient } from "#publishing/infrastructure/platforms/tiktok/tiktok-client.ts";
 import { xClient } from "#publishing/infrastructure/platforms/x/x-client.ts";
 import {
   ChannelIdSchema,
@@ -421,5 +423,39 @@ export const metaClientWith = Effect.fn("test.metaClient")(
       timing: testTiming,
       uploads: api,
     }).pipe(Effect.provide(services));
+  }
+);
+
+/**
+ * The TikTok client, with the fake as API, the credentials, the files and
+ * the progress given, pulling from `pullFrom` when it is set.
+ */
+export const tiktokClientWith = Effect.fn("test.tiktokClient")(
+  function* tiktokClientWith(options: {
+    readonly api: string;
+    readonly credentials: Layer.Layer<CredentialLog | PlatformCredentials>;
+    readonly files?: readonly TestFile[];
+    readonly progress: Context.Context<PublicationProgress>;
+    readonly pullFrom: string | undefined;
+  }) {
+    const api = yield* httpClient;
+
+    return yield* tiktokClient({
+      api,
+      apiUrl: new URL(options.api),
+      pullFrom: Option.fromUndefinedOr(options.pullFrom).pipe(
+        Option.map((prefix) => new URL(prefix))
+      ),
+      timing: testTiming,
+      uploads: api,
+    }).pipe(
+      Effect.provide(
+        Layer.mergeAll(
+          options.credentials,
+          mediaOf(options.files ?? []),
+          Layer.succeedContext(options.progress)
+        )
+      )
+    );
   }
 );

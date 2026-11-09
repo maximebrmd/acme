@@ -228,6 +228,9 @@ const signedInGroupsLive = (authorization: AuthorizationServer) =>
     ),
     HttpApiBuilder.group(Api, "analytics", (handlers) =>
       handlers.handleAll({ post: () => refusing, summary: () => refusing })
+    ),
+    HttpApiBuilder.group(Api, "tiktok", (handlers) =>
+      handlers.handleAll({ creator: () => refusing })
     )
   ).pipe(Layer.provideMerge(securityLive(authorization)));
 

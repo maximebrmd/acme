@@ -1,9 +1,18 @@
-import { Context, DateTime, Effect, Layer, Option, Result } from "effect";
+import {
+  Array as Arr,
+  Context,
+  DateTime,
+  Effect,
+  Layer,
+  Option,
+  Result,
+} from "effect";
 
 import type { ChannelOptions } from "#publishing/domain/channel-options.ts";
+import { optionsOn } from "#publishing/domain/channel-options.ts";
 import { checkPublishable } from "#publishing/domain/content-rules.ts";
 import { InvalidPostTransition } from "#publishing/domain/invalid-post-transition.ts";
-import type { PostContentRejected } from "#publishing/domain/post-content-rejected.ts";
+import { PostContentRejected } from "#publishing/domain/post-content-rejected.ts";
 import type { PostContent } from "#publishing/domain/post-content.ts";
 import { cancelTarget, isSettled } from "#publishing/domain/post-target.ts";
 import type { PostTarget } from "#publishing/domain/post-target.ts";
@@ -31,6 +40,7 @@ import type { ChannelId, PostId } from "#shared/domain/ids.ts";
 import type { MissingPermission } from "#shared/domain/missing-permission.ts";
 import type { PlanLimitReached } from "#shared/domain/plan-limit-reached.ts";
 
+import { AccountRules } from "./account-rules.ts";
 import type { AttachableMedia } from "./attachable-media.ts";
 import { PostAllowance } from "./post-allowance.ts";
 import type { PostNotFound } from "./post-not-found.ts";
@@ -85,6 +95,7 @@ type Unpublishable =
   | UnknownMedia;
 
 type Ports =
+  | AccountRules
   | AttachableMedia
   | Ids
   | PostAllowance
@@ -210,6 +221,27 @@ export class PostScheduling extends Context.Service<
           yield* Effect.fromResult(
             checkPublishable(content, channels, files, options)
           );
+
+          // Then what each account's own settings refuse, which only its
+          // platform tells.
+          const rules = yield* AccountRules;
+
+          const refused = yield* Effect.forEach(
+            channels,
+            (channel) =>
+              rules.violationsOn({
+                channel,
+                files,
+                options: optionsOn(options, channel.channelId),
+              }),
+            { concurrency: 4 }
+          );
+
+          const violations = refused.flat();
+
+          if (Arr.isReadonlyArrayNonEmpty(violations)) {
+            return yield* new PostContentRejected({ violations });
+          }
 
           return channels.map(({ channelId }) => channelId);
         },

@@ -1,5 +1,8 @@
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+
 import { assert, layer } from "@effect/vitest";
-import { DateTime, Effect, Exit, Layer, Option } from "effect";
+import { DateTime, Effect, Exit, Layer, Option, Schema } from "effect";
 import { SqlClient } from "effect/sql";
 
 import { PublicationJournal } from "#publishing/application/publication-journal.ts";
@@ -7,6 +10,7 @@ import { PublicationProgress } from "#publishing/application/publication-progres
 import { PostTargetIdSchema } from "#publishing/domain/post-target-id.ts";
 import { DrizzlePublicationJournal } from "#publishing/infrastructure/drizzle-publication-journal.ts";
 import { DrizzlePublicationProgress } from "#publishing/infrastructure/drizzle-publication-progress.ts";
+import { TikTokProgressSchema } from "#publishing/infrastructure/platforms/tiktok/tiktok-client.ts";
 import { newId } from "#shared/application/ids.ts";
 import { ChannelIdSchema, PostIdSchema } from "#shared/domain/ids.ts";
 import type { PostId } from "#shared/domain/ids.ts";
@@ -98,6 +102,35 @@ layer(StorageTest)("a call's recorded progress", (it) => {
         .pipe(Effect.exit);
 
       assert.isTrue(Exit.isFailure(recorded));
+    })
+  );
+
+  it.effect("keeps TikTok's steps decoding as this release writes them", () =>
+    Effect.gen(function* tiktokSteps() {
+      const stored = yield* Effect.promise(
+        async () =>
+          await readFile(
+            path.join(
+              import.meta.dirname,
+              "fixtures",
+              "persisted",
+              "publication-calls",
+              "tiktok-progress.json"
+            ),
+            "utf-8"
+          )
+      );
+
+      const steps = yield* Schema.decodeUnknownEffect(
+        Schema.fromJsonString(
+          Schema.Array(Schema.toCodecJson(TikTokProgressSchema))
+        )
+      )(stored);
+
+      assert.deepStrictEqual(
+        steps.map(({ _tag }) => _tag),
+        ["pulling", "pulling", "pulled", "uploading", "finishing"]
+      );
     })
   );
 });
