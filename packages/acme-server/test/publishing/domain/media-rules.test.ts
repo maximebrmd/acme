@@ -76,6 +76,7 @@ describe(mediaViolationsOn, () => {
       "linkedin",
       "mastodon",
       "threads",
+      "tiktok",
       "x",
     ]);
 
@@ -347,8 +348,60 @@ describe(mediaViolationsOn, () => {
       duration: Option.some(Duration.hours(2)),
     });
 
-    for (const platform of ["pinterest", "tiktok", "youtube"] as const) {
+    for (const platform of ["pinterest", "youtube"] as const) {
       expect(violations(platform, huge, mediaFile(second))).toStrictEqual([]);
     }
+  });
+
+  it("holds TikTok's photos to JPEG and WebP of 1080p at most", () => {
+    const png = mediaFile(first, { contentType: "image/png" });
+    const large = mediaFile(second, { dimensions: sized(2160, 3840) });
+    const webp = mediaFile(third, { contentType: "image/webp" });
+
+    expect(violations("tiktok", png, large, webp)).toStrictEqual([
+      {
+        _tag: "mediaTypeUnsupported",
+        ...on("tiktok"),
+        contentType: "image/png",
+        mediaId: first,
+      },
+      {
+        _tag: "tooManyPixels",
+        ...on("tiktok"),
+        height: 3840,
+        maximum: 2_073_600,
+        mediaId: second,
+        width: 2160,
+      },
+    ]);
+  });
+
+  it("holds a TikTok video to 10 minutes, each side 360 to 4096 pixels", () => {
+    const small = video(first, { dimensions: sized(320, 568) });
+    const long = video(second, { duration: Option.some(Duration.minutes(11)) });
+
+    expect(violations("tiktok", small)).toStrictEqual([
+      {
+        _tag: "sideOutOfRange",
+        ...on("tiktok"),
+        height: 568,
+        maximum: 4096,
+        mediaId: first,
+        minimum: 360,
+        width: 320,
+      },
+    ]);
+    expect(violations("tiktok", long)).toStrictEqual([
+      {
+        _tag: "videoTooLong",
+        ...on("tiktok"),
+        durationMs: 660_000,
+        maximumMs: 600_000,
+        mediaId: second,
+      },
+    ]);
+    expect(violations("tiktok", video(first), mediaFile(second))).toStrictEqual(
+      [{ _tag: "mixedMedia", ...on("tiktok") }]
+    );
   });
 });

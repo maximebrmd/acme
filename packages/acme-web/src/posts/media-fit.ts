@@ -62,6 +62,13 @@ export type MediaProblem =
             readonly width: number;
           }
         | {
+            readonly _tag: "sideOutOfRange";
+            readonly height: number;
+            readonly maximum: number;
+            readonly minimum: number;
+            readonly width: number;
+          }
+        | {
             readonly _tag: "aspectRatioUnsupported";
             readonly height: number;
             readonly maximum: number;
@@ -114,13 +121,28 @@ const durationProblems = (
 ];
 
 const dimensionProblems = (
-  { aspectRatio, maxPixels }: FormatLimits,
+  { aspectRatio, maxPixels, sideRange }: FormatLimits,
   place: MediaPlace,
   { height, width }: { readonly height: number; readonly width: number }
 ): readonly MediaProblem[] => {
   const ratio = width / height;
 
   return [
+    ...(sideRange !== undefined &&
+    [width, height].some(
+      (side) => side < sideRange.minimum || side > sideRange.maximum
+    )
+      ? [
+          {
+            ...place,
+            _tag: "sideOutOfRange" as const,
+            height,
+            maximum: sideRange.maximum,
+            minimum: sideRange.minimum,
+            width,
+          },
+        ]
+      : []),
     ...(maxPixels !== undefined && width * height > maxPixels
       ? [
           {

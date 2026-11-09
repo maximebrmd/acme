@@ -110,7 +110,10 @@ export type PostOutcome = typeof PostOutcomeSchema.Type;
  * one of its media deleted (`mediaRemoved`), before it went out; Acme was
  * down at its time (`missed`); a member found it missing (`notPublished`);
  * the platform kept limiting Acme (`rateLimited`), refused the account's
- * token (`tokenExpired`) or could not be reached (`unavailable`).
+ * token (`tokenExpired`) or could not be reached (`unavailable`); or the
+ * platform takes only some posts from the server's app until it approves
+ * it (`appNotAudited`: TikTok takes only private posts, from private
+ * accounts, from an app it has not audited).
  */
 export const FailureReasonSchema = Schema.Literals([
   "contentRejected",
@@ -123,6 +126,7 @@ export const FailureReasonSchema = Schema.Literals([
   "rateLimited",
   "tokenExpired",
   "unavailable",
+  "appNotAudited",
 ]).annotate({ identifier: "FailureReason" });
 
 export type FailureReason = typeof FailureReasonSchema.Type;
@@ -251,6 +255,7 @@ export const AttemptResultSchema = Schema.Literals([
   "rateLimited",
   "tokenExpired",
   "unavailable",
+  "appNotAudited",
 ]).annotate({ identifier: "AttemptResult" });
 
 export type AttemptResult = typeof AttemptResultSchema.Type;

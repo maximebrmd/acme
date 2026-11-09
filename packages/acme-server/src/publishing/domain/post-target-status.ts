@@ -34,6 +34,10 @@ export const FailureReasonSchema = Schema.Literals([
   "tokenExpired",
   // The platform could not be reached, and nothing was sent.
   "unavailable",
+  // The platform takes only some posts from this server's app until it
+  // approves it, as TikTok takes only private posts from an app it has
+  // not audited: nothing was sent.
+  "appNotAudited",
 ]);
 
 export type FailureReason = typeof FailureReasonSchema.Type;

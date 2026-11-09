@@ -25,6 +25,14 @@ export interface FormatLimits {
   /** Width times height. */
   readonly maxPixels?: number;
   readonly minDurationMs?: number;
+  /** Each of width and height, in pixels, both bounds included. */
+  readonly sideRange?: SideRange;
+}
+
+/** The fewest and most pixels a side may have. */
+export interface SideRange {
+  readonly maximum: number;
+  readonly minimum: number;
 }
 
 /** What a platform takes of a post's images and videos. */
@@ -82,7 +90,11 @@ const minute = 60 * second;
 // - Facebook Pages: 63,206 characters, the figure commonly reported (Meta's
 //   reference names no limit for `message`); how many photos one post
 //   attaches is not known yet.
-// - TikTok, YouTube and Pinterest: no limit known yet.
+// - TikTok: a video's caption takes 2,200 UTF-16 code units (Direct
+//   Post's `title`). A photo post's description takes 4,000, but Acme holds
+//   it to the caption's 2,200, so a post's text fits whichever it becomes;
+//   up to 35 photos. TikTok publishes nothing without media.
+// - YouTube and Pinterest: no limit known yet.
 //
 // "Characters" with no other word count code points, the stricter reading.
 //
@@ -113,7 +125,15 @@ const minute = 60 * second;
 //   which also lists BMP and TIFF, formats Acme does not take), with alt
 //   text; one MP4 or QuickTime video, never with photos, whose limits
 //   Meta's reference does not give.
-// - TikTok, YouTube and Pinterest: no media rule known yet.
+// - TikTok (Media Transfer Guide): one MP4 or QuickTime video (WebM too,
+//   which Acme does not take) of up to 4 GB and 10 minutes, each side from
+//   360 to 4,096 pixels, at 23 to 60 frames a second (which Acme does not
+//   probe: TikTok checks it); or up to 35 JPEG and WebP photos of up to
+//   20 MB, at most 1080p, read as 1920 × 1080 pixels; never both. TikTok
+//   keeps no alt text. How long a creator's videos may be is theirs
+//   (`max_video_post_duration_sec`), checked against TikTok when the post
+//   is scheduled.
+// - YouTube and Pinterest: no media rule known yet.
 const blueskyImage: FormatLimits = { maxByteSize: 2_000_000 };
 
 const mastodonImage: FormatLimits = {
@@ -154,6 +174,17 @@ const instagramVideo: FormatLimits = {
   maxByteSize: 300 * mebibyte,
   maxDurationMs: 15 * minute,
   minDurationMs: 3 * second,
+};
+
+const tiktokImage: FormatLimits = {
+  maxByteSize: 20 * mebibyte,
+  maxPixels: 1920 * 1080,
+};
+
+const tiktokVideo: FormatLimits = {
+  maxByteSize: 4096 * mebibyte,
+  maxDurationMs: 10 * minute,
+  sideRange: { maximum: 4096, minimum: 360 },
 };
 
 export const platformRules: Readonly<Record<Platform, PlatformRules>> = {
@@ -270,7 +301,22 @@ export const platformRules: Readonly<Record<Platform, PlatformRules>> = {
     mediaRequired: false,
     textLimits: [{ maximum: 500, unit: "emojiBytes" }],
   },
-  tiktok: { mediaRequired: false, textLimits: [] },
+  tiktok: {
+    maxMedia: 35,
+    media: {
+      formats: {
+        "image/jpeg": tiktokImage,
+        "image/webp": tiktokImage,
+        "video/mp4": tiktokVideo,
+        "video/quicktime": tiktokVideo,
+      },
+      maxVideos: 1,
+      mixesKinds: false,
+      showsAltText: false,
+    },
+    mediaRequired: true,
+    textLimits: [{ maximum: 2200, unit: "utf16Units" }],
+  },
   x: {
     maxMedia: 4,
     media: {

@@ -48,6 +48,8 @@ export const useMediaProblemText = () => {
           position,
         }),
       mixedMedia: () => t("problem.mixedMedia"),
+      sideOutOfRange: ({ kind, maximum, minimum, position }) =>
+        t("problem.sideOutOfRange", { kind, maximum, minimum, position }),
       tooManyMedia: ({ count, maximum }) =>
         t("problem.tooManyMedia", { count, maximum }),
       tooManyPixels: ({ kind, maximum, position }) =>
@@ -75,6 +77,7 @@ type MediaViolationTag =
   | "mediaTooLarge"
   | "mediaTypeUnsupported"
   | "mixedMedia"
+  | "sideOutOfRange"
   | "tooManyPixels"
   | "tooManyVideos"
   | "videoTooLong"
@@ -149,6 +152,14 @@ export const useMediaViolationTexts = (
       }),
     mixedMedia: ({ channelId }: Of<"mixedMedia">) =>
       t("violation.mixedMedia", { channel: channelName(channelId) }),
+    sideOutOfRange: (violation: Of<"sideOutOfRange">) =>
+      t("violation.sideOutOfRange", {
+        ...named(violation),
+        height: violation.height,
+        maximum: violation.maximum,
+        minimum: violation.minimum,
+        width: violation.width,
+      }),
     tooManyPixels: (violation: Of<"tooManyPixels">) =>
       t("violation.tooManyPixels", {
         ...named(violation),
