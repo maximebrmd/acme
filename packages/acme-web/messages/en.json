@@ -515,7 +515,7 @@
         "postingAs": "Posting as {nickname} (@{username}).",
         "postingAsNickname": "Posting as {nickname}.",
         "blocked": "{reason, select, postLimit {This account has made as many posts today as TikTok allows: try again later.} banned {TikTok has banned this account from posting.} clientLimit {Today, TikTok takes no more accounts posting through this server: try again later.} other {This account cannot post right now: try again later.}}",
-        "creatorFailed": "{reason, select, reconnect {Reconnect this account to read its settings on TikTok.} disabled {This channel is turned off.} other {The account’s settings could not be read from TikTok. Try again later: scheduling checks them too.}}",
+        "creatorFailed": "{reason, select, reconnect {Reconnect this account to read its settings on TikTok.} disabled {This channel is turned off: disconnect it and connect the account again to post to it.} other {The account’s settings could not be read from TikTok. Try again later: scheduling checks them too.}}",
         "turnedOff": "Turned off in the account’s TikTok settings.",
         "brandedNotPrivate": "Branded content visibility cannot be set to private.",
         "labelPromotional": "Your {kind, select, photo {photo} other {video}} will be labeled “Promotional content”.",
