@@ -2,11 +2,23 @@
   "type": "base",
   "version": "9",
   "dialect": "postgres",
-  "id": "51e69631-2d0e-4008-add2-de9feff8c358",
+  "id": "a6d3c3d2-94a0-4aac-b783-cd7fb6fd3e99",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
   "footprints": [
+    {
+      "statementType": "create_schema",
+      "statementTarget": [
+        "schema",
+        "analytics"
+      ],
+      "writes": [
+        "s|sch|analytics",
+        "n|sch|analytics",
+        "e|sch|analytics"
+      ]
+    },
     {
       "statementType": "create_schema",
       "statementTarget": [
@@ -17,6 +29,18 @@
         "s|sch|assistant",
         "n|sch|assistant",
         "e|sch|assistant"
+      ]
+    },
+    {
+      "statementType": "create_schema",
+      "statementTarget": [
+        "schema",
+        "billing"
+      ],
+      "writes": [
+        "s|sch|billing",
+        "n|sch|billing",
+        "e|sch|billing"
       ]
     },
     {
@@ -83,6 +107,44 @@
       "statementType": "create_table",
       "statementTarget": [
         "table",
+        "analytics",
+        "metric_snapshots"
+      ],
+      "writes": [
+        "s|tbl|analytics.metric_snapshots",
+        "n|tbl|analytics.metric_snapshots",
+        "e|tbl|analytics.metric_snapshots",
+        "n|rel|analytics.metric_snapshots",
+        "n|type|analytics.metric_snapshots",
+        "n|rel|analytics.metric_snapshots_pkey"
+      ],
+      "reads": [
+        "n|sch|analytics"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "analytics",
+        "tracked_posts"
+      ],
+      "writes": [
+        "s|tbl|analytics.tracked_posts",
+        "n|tbl|analytics.tracked_posts",
+        "e|tbl|analytics.tracked_posts",
+        "n|rel|analytics.tracked_posts",
+        "n|type|analytics.tracked_posts",
+        "n|rel|analytics.tracked_posts_pkey"
+      ],
+      "reads": [
+        "n|sch|analytics"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
         "assistant",
         "daily_usage"
       ],
@@ -96,6 +158,44 @@
       ],
       "reads": [
         "n|sch|assistant"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "billing",
+        "stripe_events"
+      ],
+      "writes": [
+        "s|tbl|billing.stripe_events",
+        "n|tbl|billing.stripe_events",
+        "e|tbl|billing.stripe_events",
+        "n|rel|billing.stripe_events",
+        "n|type|billing.stripe_events",
+        "n|rel|billing.stripe_events_pkey"
+      ],
+      "reads": [
+        "n|sch|billing"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "billing",
+        "subscriptions"
+      ],
+      "writes": [
+        "s|tbl|billing.subscriptions",
+        "n|tbl|billing.subscriptions",
+        "e|tbl|billing.subscriptions",
+        "n|rel|billing.subscriptions",
+        "n|type|billing.subscriptions",
+        "n|rel|billing.subscriptions_pkey"
+      ],
+      "reads": [
+        "n|sch|billing"
       ]
     },
     {
@@ -132,6 +232,44 @@
         "n|rel|channels.connect_attempts",
         "n|type|channels.connect_attempts",
         "n|rel|channels.connect_attempts_pkey"
+      ],
+      "reads": [
+        "n|sch|channels"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "channels",
+        "connect_choices"
+      ],
+      "writes": [
+        "s|tbl|channels.connect_choices",
+        "n|tbl|channels.connect_choices",
+        "e|tbl|channels.connect_choices",
+        "n|rel|channels.connect_choices",
+        "n|type|channels.connect_choices",
+        "n|rel|channels.connect_choices_pkey"
+      ],
+      "reads": [
+        "n|sch|channels"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "channels",
+        "data_deletions"
+      ],
+      "writes": [
+        "s|tbl|channels.data_deletions",
+        "n|tbl|channels.data_deletions",
+        "e|tbl|channels.data_deletions",
+        "n|rel|channels.data_deletions",
+        "n|type|channels.data_deletions",
+        "n|rel|channels.data_deletions_pkey"
       ],
       "reads": [
         "n|sch|channels"
@@ -628,6 +766,25 @@
       "statementTarget": [
         "table",
         "auth",
+        "subscription"
+      ],
+      "writes": [
+        "s|tbl|auth.subscription",
+        "n|tbl|auth.subscription",
+        "e|tbl|auth.subscription",
+        "n|rel|auth.subscription",
+        "n|type|auth.subscription",
+        "n|rel|auth.subscription_pkey"
+      ],
+      "reads": [
+        "n|sch|auth"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "auth",
         "user"
       ],
       "writes": [
@@ -666,6 +823,109 @@
       "statementType": "create_index",
       "statementTarget": [
         "index",
+        "analytics",
+        "tracked_posts",
+        "tracked_posts_due"
+      ],
+      "writes": [
+        "s|idx|analytics.tracked_posts_due",
+        "n|idx|analytics.tracked_posts_due",
+        "e|idx|analytics.tracked_posts_due",
+        "n|rel|analytics.tracked_posts_due"
+      ],
+      "reads": [
+        "n|tbl|analytics.tracked_posts",
+        "n|sch|analytics",
+        "n|col|analytics.tracked_posts.next_collection_at",
+        "n|col|analytics.tracked_posts.target_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "analytics",
+        "tracked_posts",
+        "tracked_posts_workspace_published"
+      ],
+      "writes": [
+        "s|idx|analytics.tracked_posts_workspace_published",
+        "n|idx|analytics.tracked_posts_workspace_published",
+        "e|idx|analytics.tracked_posts_workspace_published",
+        "n|rel|analytics.tracked_posts_workspace_published"
+      ],
+      "reads": [
+        "n|tbl|analytics.tracked_posts",
+        "n|sch|analytics",
+        "n|col|analytics.tracked_posts.workspace_id",
+        "n|col|analytics.tracked_posts.published_at"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "analytics",
+        "tracked_posts",
+        "tracked_posts_post"
+      ],
+      "writes": [
+        "s|idx|analytics.tracked_posts_post",
+        "n|idx|analytics.tracked_posts_post",
+        "e|idx|analytics.tracked_posts_post",
+        "n|rel|analytics.tracked_posts_post"
+      ],
+      "reads": [
+        "n|tbl|analytics.tracked_posts",
+        "n|sch|analytics",
+        "n|col|analytics.tracked_posts.post_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "analytics",
+        "tracked_posts",
+        "tracked_posts_published"
+      ],
+      "writes": [
+        "s|idx|analytics.tracked_posts_published",
+        "n|idx|analytics.tracked_posts_published",
+        "e|idx|analytics.tracked_posts_published",
+        "n|rel|analytics.tracked_posts_published"
+      ],
+      "reads": [
+        "n|tbl|analytics.tracked_posts",
+        "n|sch|analytics",
+        "n|col|analytics.tracked_posts.published_at",
+        "n|col|analytics.tracked_posts.target_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "billing",
+        "subscriptions",
+        "subscriptions_workspace"
+      ],
+      "writes": [
+        "s|idx|billing.subscriptions_workspace",
+        "n|idx|billing.subscriptions_workspace",
+        "e|idx|billing.subscriptions_workspace",
+        "n|rel|billing.subscriptions_workspace"
+      ],
+      "reads": [
+        "n|tbl|billing.subscriptions",
+        "n|sch|billing",
+        "n|col|billing.subscriptions.workspace_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
         "channels",
         "channels",
         "channels_token_expiry"
@@ -687,6 +947,26 @@
       "statementTarget": [
         "index",
         "channels",
+        "channels",
+        "channels_granted_by"
+      ],
+      "writes": [
+        "s|idx|channels.channels_granted_by",
+        "n|idx|channels.channels_granted_by",
+        "e|idx|channels.channels_granted_by",
+        "n|rel|channels.channels_granted_by"
+      ],
+      "reads": [
+        "n|tbl|channels.channels",
+        "n|sch|channels",
+        "n|col|channels.channels.granted_by"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "channels",
         "connect_attempts",
         "connect_attempts_expires_at"
       ],
@@ -700,6 +980,26 @@
         "n|tbl|channels.connect_attempts",
         "n|sch|channels",
         "n|col|channels.connect_attempts.expires_at"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "channels",
+        "connect_choices",
+        "connect_choices_expires_at"
+      ],
+      "writes": [
+        "s|idx|channels.connect_choices_expires_at",
+        "n|idx|channels.connect_choices_expires_at",
+        "e|idx|channels.connect_choices_expires_at",
+        "n|rel|channels.connect_choices_expires_at"
+      ],
+      "reads": [
+        "n|tbl|channels.connect_choices",
+        "n|sch|channels",
+        "n|col|channels.connect_choices.expires_at"
       ]
     },
     {
@@ -769,6 +1069,27 @@
       "statementTarget": [
         "index",
         "publishing",
+        "post_targets",
+        "post_targets_published"
+      ],
+      "writes": [
+        "s|idx|publishing.post_targets_published",
+        "n|idx|publishing.post_targets_published",
+        "e|idx|publishing.post_targets_published",
+        "n|rel|publishing.post_targets_published"
+      ],
+      "reads": [
+        "n|tbl|publishing.post_targets",
+        "n|sch|publishing",
+        "n|col|publishing.post_targets.finished_at",
+        "n|col|publishing.post_targets.id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "publishing",
         "posts",
         "posts_workspace_scheduled_at"
       ],
@@ -783,6 +1104,27 @@
         "n|sch|publishing",
         "n|col|publishing.posts.workspace_id",
         "n|col|publishing.posts.scheduled_at"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "publishing",
+        "posts",
+        "posts_workspace_drafts"
+      ],
+      "writes": [
+        "s|idx|publishing.posts_workspace_drafts",
+        "n|idx|publishing.posts_workspace_drafts",
+        "e|idx|publishing.posts_workspace_drafts",
+        "n|rel|publishing.posts_workspace_drafts"
+      ],
+      "reads": [
+        "n|tbl|publishing.posts",
+        "n|sch|publishing",
+        "n|col|publishing.posts.workspace_id",
+        "n|col|publishing.posts.id"
       ]
     },
     {
@@ -1350,6 +1692,29 @@
       "statementType": "create_fk",
       "statementTarget": [
         "table",
+        "analytics",
+        "metric_snapshots"
+      ],
+      "writes": [
+        "s|fk|analytics.metric_snapshots.metric_snapshots_target_id_tracked_posts_target_id_fkey",
+        "n|fk|analytics.metric_snapshots.metric_snapshots_target_id_tracked_posts_target_id_fkey",
+        "e|fk|analytics.metric_snapshots.metric_snapshots_target_id_tracked_posts_target_id_fkey",
+        "n|con|analytics.metric_snapshots.metric_snapshots_target_id_tracked_posts_target_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|analytics.metric_snapshots",
+        "n|sch|analytics",
+        "n|tbl|analytics.tracked_posts",
+        "n|sch|analytics",
+        "n|col|analytics.metric_snapshots.target_id",
+        "n|col|analytics.tracked_posts.target_id",
+        "e|uniqueness|analytics.tracked_posts.target_id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
         "publishing",
         "post_targets"
       ],
@@ -1832,7 +2197,15 @@
   ],
   "ddl": [
     {
+      "name": "analytics",
+      "entityType": "schemas"
+    },
+    {
       "name": "assistant",
+      "entityType": "schemas"
+    },
+    {
+      "name": "billing",
       "entityType": "schemas"
     },
     {
@@ -1856,8 +2229,32 @@
       "entityType": "schemas"
     },
     {
+      "schema": "analytics",
+      "name": "metric_snapshots",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "analytics",
+      "name": "tracked_posts",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
       "schema": "assistant",
       "name": "daily_usage",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "billing",
+      "name": "stripe_events",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "billing",
+      "name": "subscriptions",
       "isRlsEnabled": false,
       "entityType": "tables"
     },
@@ -1870,6 +2267,18 @@
     {
       "schema": "channels",
       "name": "connect_attempts",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "channels",
+      "name": "connect_choices",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "channels",
+      "name": "data_deletions",
       "isRlsEnabled": false,
       "entityType": "tables"
     },
@@ -2025,6 +2434,12 @@
     },
     {
       "schema": "auth",
+      "name": "subscription",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "auth",
       "name": "user",
       "isRlsEnabled": false,
       "entityType": "tables"
@@ -2034,6 +2449,305 @@
       "name": "verification",
       "isRlsEnabled": false,
       "entityType": "tables"
+    },
+    {
+      "schema": "analytics",
+      "table": "metric_snapshots",
+      "name": "collected_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "analytics",
+      "table": "metric_snapshots",
+      "name": "impressions",
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "analytics",
+      "table": "metric_snapshots",
+      "name": "likes",
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "analytics",
+      "table": "metric_snapshots",
+      "name": "quotes",
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "analytics",
+      "table": "metric_snapshots",
+      "name": "replies",
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "analytics",
+      "table": "metric_snapshots",
+      "name": "reposts",
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "analytics",
+      "table": "metric_snapshots",
+      "name": "target_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "analytics",
+      "table": "tracked_posts",
+      "name": "channel_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "analytics",
+      "table": "tracked_posts",
+      "name": "end_reason",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "analytics",
+      "table": "tracked_posts",
+      "name": "ended_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "analytics",
+      "table": "tracked_posts",
+      "name": "impressions",
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "analytics",
+      "table": "tracked_posts",
+      "name": "last_collected_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "analytics",
+      "table": "tracked_posts",
+      "name": "likes",
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "analytics",
+      "table": "tracked_posts",
+      "name": "next_collection_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "analytics",
+      "table": "tracked_posts",
+      "name": "permalink",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "analytics",
+      "table": "tracked_posts",
+      "name": "platform_post_id",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "analytics",
+      "table": "tracked_posts",
+      "name": "post_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "analytics",
+      "table": "tracked_posts",
+      "name": "published_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "analytics",
+      "table": "tracked_posts",
+      "name": "quotes",
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "analytics",
+      "table": "tracked_posts",
+      "name": "replies",
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "analytics",
+      "table": "tracked_posts",
+      "name": "reposts",
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "analytics",
+      "table": "tracked_posts",
+      "name": "target_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "analytics",
+      "table": "tracked_posts",
+      "name": "workspace_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
     },
     {
       "schema": "assistant",
@@ -2064,6 +2778,162 @@
     {
       "schema": "assistant",
       "table": "daily_usage",
+      "name": "workspace_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "billing",
+      "table": "stripe_events",
+      "name": "id",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "billing",
+      "table": "stripe_events",
+      "name": "received_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "billing",
+      "table": "subscriptions",
+      "name": "cancel_at_period_end",
+      "type": "boolean",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "billing",
+      "table": "subscriptions",
+      "name": "current_period_end",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "billing",
+      "table": "subscriptions",
+      "name": "last_event_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "billing",
+      "table": "subscriptions",
+      "name": "last_event_id",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "billing",
+      "table": "subscriptions",
+      "name": "plan",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "billing",
+      "table": "subscriptions",
+      "name": "status",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "billing",
+      "table": "subscriptions",
+      "name": "stripe_customer_id",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "billing",
+      "table": "subscriptions",
+      "name": "stripe_subscription_id",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "billing",
+      "table": "subscriptions",
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "billing",
+      "table": "subscriptions",
       "name": "workspace_id",
       "type": "uuid",
       "typeSchema": null,
@@ -2130,6 +3000,19 @@
       "schema": "channels",
       "table": "channels",
       "name": "display_name",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "channels",
+      "table": "channels",
+      "name": "granted_by",
       "type": "text",
       "typeSchema": null,
       "notNull": false,
@@ -2417,6 +3300,162 @@
       "table": "connect_attempts",
       "name": "workspace_id",
       "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "channels",
+      "table": "connect_choices",
+      "name": "accounts",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "channels",
+      "table": "connect_choices",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "channels",
+      "table": "connect_choices",
+      "name": "expires_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "channels",
+      "table": "connect_choices",
+      "name": "platform",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "channels",
+      "table": "connect_choices",
+      "name": "selection_hash",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "channels",
+      "table": "connect_choices",
+      "name": "started_by",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "channels",
+      "table": "connect_choices",
+      "name": "workspace_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "channels",
+      "table": "data_deletions",
+      "name": "app",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "channels",
+      "table": "data_deletions",
+      "name": "channels_deleted",
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "channels",
+      "table": "data_deletions",
+      "name": "code",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "channels",
+      "table": "data_deletions",
+      "name": "completed_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "channels",
+      "table": "data_deletions",
+      "name": "requested_at",
+      "type": "timestamp with time zone",
       "typeSchema": null,
       "notNull": true,
       "dimensions": 0,
@@ -2909,6 +3948,19 @@
     {
       "schema": "notifications",
       "table": "notification_preferences",
+      "name": "every_post",
+      "type": "boolean",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "false",
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "notifications",
+      "table": "notification_preferences",
       "name": "updated_at",
       "type": "timestamp with time zone",
       "typeSchema": null,
@@ -3119,6 +4171,19 @@
       "table": "post_targets",
       "name": "unconfirmed_reason",
       "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "posts",
+      "name": "author_id",
+      "type": "uuid",
       "typeSchema": null,
       "notNull": false,
       "dimensions": 0,
@@ -5781,6 +6846,19 @@
     },
     {
       "schema": "auth",
+      "table": "organization",
+      "name": "stripe_customer_id",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "auth",
       "table": "rate_limit",
       "name": "id",
       "type": "uuid",
@@ -5963,6 +7041,227 @@
     },
     {
       "schema": "auth",
+      "table": "subscription",
+      "name": "id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "pg_catalog.gen_random_uuid()",
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "auth",
+      "table": "subscription",
+      "name": "plan",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "auth",
+      "table": "subscription",
+      "name": "reference_id",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "auth",
+      "table": "subscription",
+      "name": "stripe_customer_id",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "auth",
+      "table": "subscription",
+      "name": "stripe_subscription_id",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "auth",
+      "table": "subscription",
+      "name": "status",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": "'incomplete'",
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "auth",
+      "table": "subscription",
+      "name": "period_start",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "auth",
+      "table": "subscription",
+      "name": "period_end",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "auth",
+      "table": "subscription",
+      "name": "trial_start",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "auth",
+      "table": "subscription",
+      "name": "trial_end",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "auth",
+      "table": "subscription",
+      "name": "cancel_at_period_end",
+      "type": "boolean",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": "false",
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "auth",
+      "table": "subscription",
+      "name": "cancel_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "auth",
+      "table": "subscription",
+      "name": "canceled_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "auth",
+      "table": "subscription",
+      "name": "ended_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "auth",
+      "table": "subscription",
+      "name": "seats",
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "auth",
+      "table": "subscription",
+      "name": "billing_interval",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "auth",
+      "table": "subscription",
+      "name": "stripe_schedule_id",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "auth",
       "table": "user",
       "name": "id",
       "type": "uuid",
@@ -6107,6 +7406,19 @@
     {
       "schema": "auth",
       "table": "user",
+      "name": "stripe_customer_id",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "auth",
+      "table": "user",
       "name": "locale",
       "type": "text",
       "typeSchema": null,
@@ -6196,6 +7508,132 @@
       "entityType": "columns"
     },
     {
+      "schema": "analytics",
+      "table": "tracked_posts",
+      "name": "tracked_posts_due",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "next_collection_at",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "target_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": "\"next_collection_at\" IS NOT NULL",
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "analytics",
+      "table": "tracked_posts",
+      "name": "tracked_posts_workspace_published",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "workspace_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "published_at",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "analytics",
+      "table": "tracked_posts",
+      "name": "tracked_posts_post",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "post_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "analytics",
+      "table": "tracked_posts",
+      "name": "tracked_posts_published",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "published_at",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "target_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "billing",
+      "table": "subscriptions",
+      "name": "subscriptions_workspace",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "workspace_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
       "schema": "channels",
       "table": "channels",
       "name": "channels_token_expiry",
@@ -6218,8 +7656,50 @@
     },
     {
       "schema": "channels",
+      "table": "channels",
+      "name": "channels_granted_by",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "granted_by",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": "\"granted_by\" IS NOT NULL",
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "channels",
       "table": "connect_attempts",
       "name": "connect_attempts_expires_at",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "expires_at",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "channels",
+      "table": "connect_choices",
+      "name": "connect_choices_expires_at",
       "nameExplicit": true,
       "columns": [
         {
@@ -6316,6 +7796,34 @@
     },
     {
       "schema": "publishing",
+      "table": "post_targets",
+      "name": "post_targets_published",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "finished_at",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": "\"status\" = 'published'",
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "publishing",
       "table": "posts",
       "name": "posts_workspace_scheduled_at",
       "nameExplicit": true,
@@ -6337,6 +7845,34 @@
       ],
       "isUnique": false,
       "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "publishing",
+      "table": "posts",
+      "name": "posts_workspace_drafts",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "workspace_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": "\"status\" = 'draft'",
       "with": "",
       "method": "btree",
       "concurrently": false,
@@ -6938,6 +8474,23 @@
       "entityType": "indexes"
     },
     {
+      "schema": "analytics",
+      "table": "metric_snapshots",
+      "name": "metric_snapshots_target_id_tracked_posts_target_id_fkey",
+      "nameExplicit": false,
+      "columns": [
+        "target_id"
+      ],
+      "schemaTo": "analytics",
+      "tableTo": "tracked_posts",
+      "columnsTo": [
+        "target_id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "entityType": "fks"
+    },
+    {
       "schema": "publishing",
       "table": "post_targets",
       "name": "post_targets_post_id_posts_id_fkey",
@@ -7295,6 +8848,17 @@
       "entityType": "fks"
     },
     {
+      "schema": "analytics",
+      "table": "metric_snapshots",
+      "name": "metric_snapshots_pkey",
+      "columns": [
+        "target_id",
+        "collected_at"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
       "schema": "assistant",
       "table": "daily_usage",
       "name": "daily_usage_pkey",
@@ -7329,6 +8893,36 @@
       "entityType": "pks"
     },
     {
+      "schema": "analytics",
+      "table": "tracked_posts",
+      "name": "tracked_posts_pkey",
+      "columns": [
+        "target_id"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "billing",
+      "table": "stripe_events",
+      "name": "stripe_events_pkey",
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "billing",
+      "table": "subscriptions",
+      "name": "subscriptions_pkey",
+      "columns": [
+        "stripe_subscription_id"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
       "schema": "channels",
       "table": "channels",
       "name": "channels_pkey",
@@ -7344,6 +8938,26 @@
       "name": "connect_attempts_pkey",
       "columns": [
         "state_hash"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "channels",
+      "table": "connect_choices",
+      "name": "connect_choices_pkey",
+      "columns": [
+        "selection_hash"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "channels",
+      "table": "data_deletions",
+      "name": "data_deletions_pkey",
+      "columns": [
+        "code"
       ],
       "nameExplicit": false,
       "entityType": "pks"
@@ -7580,6 +9194,16 @@
     },
     {
       "schema": "auth",
+      "table": "subscription",
+      "name": "subscription_pkey",
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "auth",
       "table": "user",
       "name": "user_pkey",
       "columns": [
@@ -7746,6 +9370,20 @@
       ],
       "nullsNotDistinct": false,
       "entityType": "uniques"
+    },
+    {
+      "schema": "analytics",
+      "table": "metric_snapshots",
+      "name": "metric_snapshots_counts",
+      "value": "\"likes\" >= 0 AND \"reposts\" >= 0 AND \"replies\" >= 0 AND coalesce(\"quotes\", 0) >= 0 AND coalesce(\"impressions\", 0) >= 0",
+      "entityType": "checks"
+    },
+    {
+      "schema": "analytics",
+      "table": "tracked_posts",
+      "name": "tracked_posts_collection",
+      "value": "(\"next_collection_at\" IS NULL) <> (\"ended_at\" IS NULL)",
+      "entityType": "checks"
     },
     {
       "schema": "assistant",

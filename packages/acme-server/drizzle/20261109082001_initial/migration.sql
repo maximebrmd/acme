@@ -1,4 +1,8 @@
+CREATE SCHEMA "analytics";
+--> statement-breakpoint
 CREATE SCHEMA "assistant";
+--> statement-breakpoint
+CREATE SCHEMA "billing";
 --> statement-breakpoint
 CREATE SCHEMA "channels";
 --> statement-breakpoint
@@ -10,6 +14,38 @@ CREATE SCHEMA "publishing";
 --> statement-breakpoint
 CREATE SCHEMA "auth";
 --> statement-breakpoint
+CREATE TABLE "analytics"."metric_snapshots" (
+	"collected_at" timestamp with time zone,
+	"impressions" integer,
+	"likes" integer NOT NULL,
+	"quotes" integer,
+	"replies" integer NOT NULL,
+	"reposts" integer NOT NULL,
+	"target_id" uuid,
+	CONSTRAINT "metric_snapshots_pkey" PRIMARY KEY("target_id","collected_at"),
+	CONSTRAINT "metric_snapshots_counts" CHECK ("likes" >= 0 AND "reposts" >= 0 AND "replies" >= 0 AND coalesce("quotes", 0) >= 0 AND coalesce("impressions", 0) >= 0)
+);
+--> statement-breakpoint
+CREATE TABLE "analytics"."tracked_posts" (
+	"channel_id" uuid NOT NULL,
+	"end_reason" text,
+	"ended_at" timestamp with time zone,
+	"impressions" integer,
+	"last_collected_at" timestamp with time zone,
+	"likes" integer,
+	"next_collection_at" timestamp with time zone,
+	"permalink" text,
+	"platform_post_id" text NOT NULL,
+	"post_id" uuid NOT NULL,
+	"published_at" timestamp with time zone NOT NULL,
+	"quotes" integer,
+	"replies" integer,
+	"reposts" integer,
+	"target_id" uuid PRIMARY KEY,
+	"workspace_id" uuid NOT NULL,
+	CONSTRAINT "tracked_posts_collection" CHECK (("next_collection_at" IS NULL) <> ("ended_at" IS NULL))
+);
+--> statement-breakpoint
 CREATE TABLE "assistant"."daily_usage" (
 	"day" date,
 	"requests" integer NOT NULL,
@@ -18,12 +54,31 @@ CREATE TABLE "assistant"."daily_usage" (
 	CONSTRAINT "daily_usage_requests" CHECK ("requests" >= 0)
 );
 --> statement-breakpoint
+CREATE TABLE "billing"."stripe_events" (
+	"id" text PRIMARY KEY,
+	"received_at" timestamp with time zone NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "billing"."subscriptions" (
+	"cancel_at_period_end" boolean NOT NULL,
+	"current_period_end" timestamp with time zone,
+	"last_event_at" timestamp with time zone NOT NULL,
+	"last_event_id" text NOT NULL,
+	"plan" text NOT NULL,
+	"status" text NOT NULL,
+	"stripe_customer_id" text NOT NULL,
+	"stripe_subscription_id" text PRIMARY KEY,
+	"updated_at" timestamp with time zone NOT NULL,
+	"workspace_id" uuid NOT NULL
+);
+--> statement-breakpoint
 CREATE TABLE "channels"."channels" (
 	"access_token" text NOT NULL,
 	"account_id" text NOT NULL,
 	"avatar_url" text,
 	"created_at" timestamp with time zone NOT NULL,
 	"display_name" text,
+	"granted_by" text,
 	"handle" text NOT NULL,
 	"id" uuid PRIMARY KEY,
 	"platform" text NOT NULL,
@@ -54,6 +109,24 @@ CREATE TABLE "channels"."connect_attempts" (
 	"started_by" text NOT NULL,
 	"state_hash" text PRIMARY KEY,
 	"workspace_id" uuid NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "channels"."connect_choices" (
+	"accounts" text NOT NULL,
+	"created_at" timestamp with time zone NOT NULL,
+	"expires_at" timestamp with time zone NOT NULL,
+	"platform" text NOT NULL,
+	"selection_hash" text PRIMARY KEY,
+	"started_by" text NOT NULL,
+	"workspace_id" uuid NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "channels"."data_deletions" (
+	"app" text NOT NULL,
+	"channels_deleted" integer NOT NULL,
+	"code" text PRIMARY KEY,
+	"completed_at" timestamp with time zone NOT NULL,
+	"requested_at" timestamp with time zone NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "channels"."mastodon_apps" (
@@ -110,6 +183,7 @@ CREATE TABLE "notifications"."notification_preferences" (
 	"email_post_failed" boolean NOT NULL,
 	"email_post_published" boolean NOT NULL,
 	"email_post_unconfirmed" boolean NOT NULL,
+	"every_post" boolean DEFAULT false NOT NULL,
 	"updated_at" timestamp with time zone NOT NULL,
 	"user_id" uuid PRIMARY KEY
 );
@@ -137,6 +211,7 @@ CREATE TABLE "publishing"."post_targets" (
 );
 --> statement-breakpoint
 CREATE TABLE "publishing"."posts" (
+	"author_id" uuid,
 	"cancelled_at" timestamp with time zone,
 	"execution_id" text,
 	"finished_at" timestamp with time zone,
@@ -390,7 +465,8 @@ CREATE TABLE "auth"."organization" (
 	"slug" text NOT NULL UNIQUE,
 	"logo" text,
 	"created_at" timestamp with time zone NOT NULL,
-	"metadata" text
+	"metadata" text,
+	"stripe_customer_id" text
 );
 --> statement-breakpoint
 CREATE TABLE "auth"."rate_limit" (
@@ -413,6 +489,26 @@ CREATE TABLE "auth"."session" (
 	"impersonated_by" text
 );
 --> statement-breakpoint
+CREATE TABLE "auth"."subscription" (
+	"id" uuid PRIMARY KEY DEFAULT pg_catalog.gen_random_uuid(),
+	"plan" text NOT NULL,
+	"reference_id" text NOT NULL,
+	"stripe_customer_id" text,
+	"stripe_subscription_id" text,
+	"status" text DEFAULT 'incomplete',
+	"period_start" timestamp with time zone,
+	"period_end" timestamp with time zone,
+	"trial_start" timestamp with time zone,
+	"trial_end" timestamp with time zone,
+	"cancel_at_period_end" boolean DEFAULT false,
+	"cancel_at" timestamp with time zone,
+	"canceled_at" timestamp with time zone,
+	"ended_at" timestamp with time zone,
+	"seats" integer,
+	"billing_interval" text,
+	"stripe_schedule_id" text
+);
+--> statement-breakpoint
 CREATE TABLE "auth"."user" (
 	"id" uuid PRIMARY KEY DEFAULT pg_catalog.gen_random_uuid(),
 	"name" text NOT NULL,
@@ -425,6 +521,7 @@ CREATE TABLE "auth"."user" (
 	"banned" boolean DEFAULT false,
 	"ban_reason" text,
 	"ban_expires" timestamp with time zone,
+	"stripe_customer_id" text,
 	"locale" text DEFAULT 'en'
 );
 --> statement-breakpoint
@@ -437,12 +534,21 @@ CREATE TABLE "auth"."verification" (
 	"updated_at" timestamp with time zone NOT NULL
 );
 --> statement-breakpoint
+CREATE INDEX "tracked_posts_due" ON "analytics"."tracked_posts" ("next_collection_at","target_id") WHERE "next_collection_at" IS NOT NULL;--> statement-breakpoint
+CREATE INDEX "tracked_posts_workspace_published" ON "analytics"."tracked_posts" ("workspace_id","published_at");--> statement-breakpoint
+CREATE INDEX "tracked_posts_post" ON "analytics"."tracked_posts" ("post_id");--> statement-breakpoint
+CREATE INDEX "tracked_posts_published" ON "analytics"."tracked_posts" ("published_at","target_id");--> statement-breakpoint
+CREATE INDEX "subscriptions_workspace" ON "billing"."subscriptions" ("workspace_id");--> statement-breakpoint
 CREATE INDEX "channels_token_expiry" ON "channels"."channels" ("token_expires_at") WHERE "status" = 'active' AND "token_kind" <> 'nonExpiring';--> statement-breakpoint
+CREATE INDEX "channels_granted_by" ON "channels"."channels" ("granted_by") WHERE "granted_by" IS NOT NULL;--> statement-breakpoint
 CREATE INDEX "connect_attempts_expires_at" ON "channels"."connect_attempts" ("expires_at");--> statement-breakpoint
+CREATE INDEX "connect_choices_expires_at" ON "channels"."connect_choices" ("expires_at");--> statement-breakpoint
 CREATE INDEX "media_assets_workspace_id_id_index" ON "media"."media_assets" ("workspace_id","id" DESC NULLS LAST);--> statement-breakpoint
 CREATE INDEX "notices_user" ON "notifications"."notices" ("user_id","id");--> statement-breakpoint
 CREATE INDEX "notices_user_unread" ON "notifications"."notices" ("user_id") WHERE "read_at" IS NULL;--> statement-breakpoint
+CREATE INDEX "post_targets_published" ON "publishing"."post_targets" ("finished_at","id") WHERE "status" = 'published';--> statement-breakpoint
 CREATE INDEX "posts_workspace_scheduled_at" ON "publishing"."posts" ("workspace_id","scheduled_at");--> statement-breakpoint
+CREATE INDEX "posts_workspace_drafts" ON "publishing"."posts" ("workspace_id","id") WHERE "status" = 'draft';--> statement-breakpoint
 CREATE INDEX "account_userId_idx" ON "auth"."account" ("user_id");--> statement-breakpoint
 CREATE INDEX "apikey_configId_idx" ON "auth"."apikey" ("config_id");--> statement-breakpoint
 CREATE INDEX "apikey_referenceId_idx" ON "auth"."apikey" ("reference_id");--> statement-breakpoint
@@ -471,6 +577,7 @@ CREATE INDEX "oauthRefreshToken_authorizationCodeId_idx" ON "auth"."oauth_refres
 CREATE UNIQUE INDEX "organization_slug_uidx" ON "auth"."organization" ("slug");--> statement-breakpoint
 CREATE INDEX "session_userId_idx" ON "auth"."session" ("user_id");--> statement-breakpoint
 CREATE INDEX "verification_identifier_idx" ON "auth"."verification" ("identifier");--> statement-breakpoint
+ALTER TABLE "analytics"."metric_snapshots" ADD CONSTRAINT "metric_snapshots_target_id_tracked_posts_target_id_fkey" FOREIGN KEY ("target_id") REFERENCES "analytics"."tracked_posts"("target_id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "publishing"."post_targets" ADD CONSTRAINT "post_targets_post_id_posts_id_fkey" FOREIGN KEY ("post_id") REFERENCES "publishing"."posts"("id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "publishing"."publication_attempts" ADD CONSTRAINT "publication_attempts_target_id_post_targets_id_fkey" FOREIGN KEY ("target_id") REFERENCES "publishing"."post_targets"("id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "publishing"."publication_calls" ADD CONSTRAINT "publication_calls_target_id_post_targets_id_fkey" FOREIGN KEY ("target_id") REFERENCES "publishing"."post_targets"("id") ON DELETE CASCADE;--> statement-breakpoint
