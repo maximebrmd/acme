@@ -1,8 +1,12 @@
 import { and, eq, isNull } from "drizzle-orm";
-import { DateTime, Duration, Effect, Layer, Schema } from "effect";
+import { DateTime, Duration, Effect, Layer, Option, Schema } from "effect";
 
 import { PublicationJournal } from "#publishing/application/publication-journal.ts";
-import type { CallStart } from "#publishing/application/publication-journal.ts";
+import type {
+  BegunCall,
+  CallId,
+  CallStart,
+} from "#publishing/application/publication-journal.ts";
 import { AttemptOutcomeSchema } from "#publishing/domain/publication-policy.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
@@ -21,11 +25,53 @@ const failed = (cause: unknown) => new DatabaseError({ cause });
 
 const date = (instant: DateTime.Utc) => DateTime.toDateUtc(instant);
 
+type CallRow = typeof publicationCalls.$inferSelect;
+
+const begunCall = (row: CallRow) =>
+  Effect.gen(function* decodingCall() {
+    const startedAt = DateTime.fromDateUnsafe(row.startedAt);
+
+    if (row.finishedAt === null || row.outcome === null) {
+      const inFlight: BegunCall = { _tag: "inFlight", startedAt };
+
+      return inFlight;
+    }
+
+    const completed: BegunCall = {
+      _tag: "completed",
+      finishedAt: DateTime.fromDateUnsafe(row.finishedAt),
+      outcome: yield* decodeOutcome(row.outcome).pipe(Effect.orDie),
+      startedAt,
+    };
+
+    return completed;
+  });
+
 /** The journal and the attempt history in the publishing schema. */
 export const DrizzlePublicationJournal = Layer.effect(
   PublicationJournal,
   Effect.gen(function* DrizzlePublicationJournal() {
     const db = yield* Drizzle;
+
+    const find = Effect.fn("PublicationJournal.find")(function* find(
+      call: CallId
+    ) {
+      const [row] = yield* db
+        .select()
+        .from(publicationCalls)
+        .where(
+          and(
+            eq(publicationCalls.targetId, call.targetId),
+            eq(publicationCalls.round, call.round),
+            eq(publicationCalls.attempt, call.attempt)
+          )
+        )
+        .pipe(Effect.mapError(failed));
+
+      return row === undefined
+        ? Option.none<BegunCall>()
+        : Option.some(yield* begunCall(row));
+    });
 
     const begin = Effect.fn("PublicationJournal.begin")(function* begin(
       call: Parameters<PublicationJournal["Service"]["begin"]>[0]
@@ -60,26 +106,14 @@ export const DrizzlePublicationJournal = Layer.effect(
         return yield* Effect.die("A journal row vanished after a conflict");
       }
 
-      if (row.finishedAt === null || row.outcome === null) {
-        const start: CallStart = {
-          _tag: "inFlight",
-          startedAt: DateTime.fromDateUnsafe(row.startedAt),
-        };
-
-        return start;
-      }
-
-      const start: CallStart = {
-        _tag: "completed",
-        finishedAt: DateTime.fromDateUnsafe(row.finishedAt),
-        outcome: yield* decodeOutcome(row.outcome).pipe(Effect.orDie),
-      };
+      const start: CallStart = yield* begunCall(row);
 
       return start;
     });
 
     return PublicationJournal.of({
       begin,
+      find,
       finish: (idempotencyKey, outcome, finishedAt) =>
         Effect.gen(function* finish() {
           const encoded = yield* encodeOutcome(outcome).pipe(Effect.orDie);

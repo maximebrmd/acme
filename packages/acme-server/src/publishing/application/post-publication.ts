@@ -296,8 +296,13 @@ export const publishAttemptRun = Effect.fn("Publishing.publishAttempt")(
       "The target"
     );
 
-    // Cancelled since the last attempt: nothing more is sent.
-    if (isCancelRequested(target)) {
+    // Cancelled since the last attempt: nothing more is sent. A run of this
+    // attempt that began its call before the cancel still counts, in flight
+    // or answered, so only an attempt the journal has never seen is cancelled.
+    if (
+      isCancelRequested(target) &&
+      Option.isNone(yield* journal.find(attempt))
+    ) {
       const cancelled: PublicationDecision = {
         _tag: "settle",
         settlement: { _tag: "cancelled" },

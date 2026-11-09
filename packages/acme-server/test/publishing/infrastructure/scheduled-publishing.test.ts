@@ -1,6 +1,8 @@
 import { assert, describe, it } from "@effect/vitest";
 import { DateTime, Effect, Layer, Option, Scope } from "effect";
 
+import { PostScheduling } from "#publishing/application/post-scheduling.ts";
+import { PublicationJournal } from "#publishing/application/publication-journal.ts";
 import { FakePlatform } from "#publishing/infrastructure/fake-platform-publisher.ts";
 
 import {
@@ -8,6 +10,8 @@ import {
   eventually,
   isFinished,
   isSuspended,
+  journalOf,
+  journalWith,
   newChannel,
   onServerAt,
   outcomeOf,
@@ -305,6 +309,149 @@ describe("restarts", () => {
 
         assert(target?.status._tag === "unconfirmed");
         assert.strictEqual(target.status.reason, "interrupted");
+
+        yield* shutDown(after);
+      }).pipe(Effect.scoped),
+    timeout
+  );
+
+  it.effect(
+    "keeps a call in flight when the post is cancelled, and marks it unconfirmed after a restart",
+    () =>
+      Effect.gen(function* cancelledInFlight() {
+        yield* setTime("2026-06-15T07:00:00Z");
+
+        const { platform, server } = yield* restartable;
+        const before = yield* Scope.make();
+        const first = yield* Layer.buildWithScope(server, before);
+        const channel = yield* newChannel;
+
+        // The post goes live and the answer never comes back.
+        yield* platform.script(channel, [{ _tag: "hang" }]);
+
+        const post = yield* schedulePost(
+          [channel],
+          scheduleIn("2026-06-15T08:00:00Z")
+        ).pipe(Effect.provideContext(first));
+
+        yield* eventually("the job sleeps", isSuspended(post.id)).pipe(
+          Effect.provideContext(first)
+        );
+        yield* setTime("2026-06-15T08:00:00Z");
+        yield* eventually(
+          "the call is in flight",
+          platform.calls.pipe(Effect.map((calls) => calls.length === 1))
+        ).pipe(Effect.provideContext(first));
+
+        const cancelled = yield* PostScheduling.use((scheduling) =>
+          scheduling.cancel(post.id)
+        ).pipe(Effect.provideContext(first));
+
+        assert.strictEqual(cancelled.status._tag, "publishing");
+
+        yield* shutDown(before);
+
+        const after = yield* Scope.make();
+        const second = yield* Layer.buildWithScope(server, after);
+
+        yield* eventually("the post finishes", isFinished(post.id)).pipe(
+          Effect.provideContext(second)
+        );
+
+        assert.lengthOf(yield* platform.calls, 1);
+        assert.lengthOf(yield* platform.live, 1);
+        assert.strictEqual(
+          yield* outcomeOf(post.id).pipe(Effect.provideContext(second)),
+          "unconfirmed"
+        );
+
+        const [target] = yield* targetsOf(post.id).pipe(
+          Effect.provideContext(second)
+        );
+
+        assert(target?.status._tag === "unconfirmed");
+        assert.strictEqual(target.status.reason, "interrupted");
+
+        yield* shutDown(after);
+      }).pipe(Effect.scoped),
+    timeout
+  );
+
+  it.effect(
+    "keeps a call that was answered when the post is cancelled before the attempt is recorded",
+    () =>
+      Effect.gen(function* cancelledAfterAnswer() {
+        yield* setTime("2026-06-15T07:00:00Z");
+
+        const { platform, server, serverWith } = yield* restartable;
+
+        // The call is answered and journaled, then the server stops before
+        // the attempt is recorded, as in a crash: the step runs again.
+        const stopsBeforeRecording = serverWith(
+          journalWith((journal) =>
+            Effect.succeed(
+              PublicationJournal.of({
+                ...journal,
+                recordAttempt: () => Effect.never,
+              })
+            )
+          )
+        );
+
+        const before = yield* Scope.make();
+        const first = yield* Layer.buildWithScope(stopsBeforeRecording, before);
+        const channel = yield* newChannel;
+
+        const post = yield* schedulePost(
+          [channel],
+          scheduleIn("2026-06-15T08:00:00Z")
+        ).pipe(Effect.provideContext(first));
+
+        yield* eventually("the job sleeps", isSuspended(post.id)).pipe(
+          Effect.provideContext(first)
+        );
+
+        const [pending] = yield* targetsOf(post.id).pipe(
+          Effect.provideContext(first)
+        );
+
+        assert(pending !== undefined);
+
+        yield* setTime("2026-06-15T08:00:00Z");
+        yield* eventually(
+          "the call is answered",
+          journalOf(pending.id).pipe(
+            Effect.map((calls) => calls.some((call) => call.finished))
+          )
+        ).pipe(Effect.provideContext(first));
+
+        const cancelled = yield* PostScheduling.use((scheduling) =>
+          scheduling.cancel(post.id)
+        ).pipe(Effect.provideContext(first));
+
+        assert.strictEqual(cancelled.status._tag, "publishing");
+
+        yield* shutDown(before);
+
+        const after = yield* Scope.make();
+        const second = yield* Layer.buildWithScope(server, after);
+
+        yield* eventually("the post finishes", isFinished(post.id)).pipe(
+          Effect.provideContext(second)
+        );
+
+        assert.lengthOf(yield* platform.calls, 1);
+        assert.strictEqual(
+          yield* outcomeOf(post.id).pipe(Effect.provideContext(second)),
+          "published"
+        );
+
+        const [target] = yield* targetsOf(post.id).pipe(
+          Effect.provideContext(second)
+        );
+
+        assert(target?.status._tag === "published");
+        assert.isTrue(Option.isSome(target.status.platformPostId));
 
         yield* shutDown(after);
       }).pipe(Effect.scoped),

@@ -1,5 +1,5 @@
 import { Context } from "effect";
-import type { DateTime, Effect } from "effect";
+import type { DateTime, Effect, Option } from "effect";
 
 import type { PostTargetId } from "#publishing/domain/post-target-id.ts";
 import type {
@@ -8,19 +8,21 @@ import type {
 } from "#publishing/domain/publication-policy.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 
-/** A publishing call about to be made, as the journal records it. */
-export interface PublishCall {
+/** Which call: one attempt at a target, in one round. */
+export interface CallId {
   readonly attempt: number;
-  readonly idempotencyKey: string;
   readonly round: number;
-  readonly startedAt: DateTime.Utc;
   readonly targetId: PostTargetId;
 }
 
-/** What the journal knew of a call when it was about to be made. */
-export type CallStart =
-  // No run made it yet: make it.
-  | { readonly _tag: "started" }
+/** A publishing call about to be made, as the journal records it. */
+export interface PublishCall extends CallId {
+  readonly idempotencyKey: string;
+  readonly startedAt: DateTime.Utc;
+}
+
+/** A call that some run began, and how far it got. */
+export type BegunCall =
   // A run began it and never wrote how it ended: it may have gone out.
   | { readonly _tag: "inFlight"; readonly startedAt: DateTime.Utc }
   // A run made it and wrote how it ended.
@@ -28,7 +30,13 @@ export type CallStart =
       readonly _tag: "completed";
       readonly finishedAt: DateTime.Utc;
       readonly outcome: AttemptOutcome;
+      readonly startedAt: DateTime.Utc;
     };
+
+/** What the journal knew of a call when it was about to be made. */
+export type CallStart =
+  // No run made it yet: make it.
+  { readonly _tag: "started" } | BegunCall;
 
 /** One attempt at publishing a target, once decided. */
 export interface AttemptRecord {
@@ -55,6 +63,10 @@ export class PublicationJournal extends Context.Service<
     readonly begin: (
       call: PublishCall
     ) => Effect.Effect<CallStart, DatabaseError>;
+    /** The call, if a run began it. */
+    readonly find: (
+      call: CallId
+    ) => Effect.Effect<Option.Option<BegunCall>, DatabaseError>;
     readonly finish: (
       idempotencyKey: string,
       outcome: AttemptOutcome,

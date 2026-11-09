@@ -27,6 +27,7 @@ import type { PlatformPublisher } from "#publishing/application/platform-publish
 import { PostRepository } from "#publishing/application/post-repository.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
 import type { SchedulePostRequest } from "#publishing/application/post-scheduling.ts";
+import { PublicationJournal } from "#publishing/application/publication-journal.ts";
 import { PublicationScheduler } from "#publishing/application/publication-scheduler.ts";
 import { publishingWorkers } from "#publishing/container.ts";
 import type { PostTargetId } from "#publishing/domain/post-target-id.ts";
@@ -100,21 +101,35 @@ const clusterOver = <S, E, R>(storage: Layer.Layer<S, E, R>) =>
     )
   );
 
+type Journal = PublicationJournal["Service"];
+
+/**
+ * The journal in Postgres, as `change` turns it: a test's way to make one of
+ * its writes fail or never answer.
+ */
+export const journalWith = (
+  change: (journal: Journal) => Effect.Effect<Journal>
+) =>
+  Layer.effect(PublicationJournal, PublicationJournal.use(change)).pipe(
+    Layer.provide(DrizzlePublicationJournal)
+  );
+
 /**
  * One server: the publishing use cases, workflows and gates on a fresh
- * Sharding over `storage`, calling `platforms`. Several deploys over one
- * storage are restarts.
+ * Sharding over `storage`, calling `platforms`, with `journal`. Several
+ * deploys over one storage are restarts.
  */
-export const deploy = <S, E, R, EP, RP>(
+export const deployWith = <S, E, R, EP, RP, RJ>(
   storage: Layer.Layer<S, E, R>,
-  platforms: Layer.Layer<PlatformPublisher, EP, RP>
+  platforms: Layer.Layer<PlatformPublisher, EP, RP>,
+  journal: Layer.Layer<PublicationJournal, never, RJ>
 ) =>
   publishingWorkers(platforms).pipe(
     Layer.provideMerge(PostScheduling.layer),
     Layer.provideMerge(
       Layer.mergeAll(
         DrizzlePostRepository,
-        DrizzlePublicationJournal,
+        journal,
         RecordingChannelHealth,
         WorkflowPublicationScheduler
       )
@@ -123,14 +138,25 @@ export const deploy = <S, E, R, EP, RP>(
     Layer.provideMerge(clusterOver(storage))
   );
 
+/** One server with the journal in Postgres (see `deployWith`). */
+export const deploy = <S, E, R, EP, RP>(
+  storage: Layer.Layer<S, E, R>,
+  platforms: Layer.Layer<PlatformPublisher, EP, RP>
+) => deployWith(storage, platforms, DrizzlePublicationJournal);
+
+/**
+ * A server with its own in-memory storage and fake platform, and `journal`.
+ */
+export const publishingTestWith = <RJ>(
+  journal: Layer.Layer<PublicationJournal, never, RJ>
+) =>
+  deployWith(MessageStorage.layerMemory, FakePlatformPublisher, journal).pipe(
+    Layer.provideMerge(FakePlatformPublisher),
+    Layer.provideMerge(DatabaseTest)
+  );
+
 /** A server with its own in-memory storage and fake platform. */
-export const PublishingTest = deploy(
-  MessageStorage.layerMemory,
-  FakePlatformPublisher
-).pipe(
-  Layer.provideMerge(FakePlatformPublisher),
-  Layer.provideMerge(DatabaseTest)
-);
+export const PublishingTest = publishingTestWith(DrizzlePublicationJournal);
 
 // Starts jobs as usual and never stops one, as if every interrupt were lost.
 const SchedulerLosingInterrupts = Layer.effect(
@@ -291,7 +317,8 @@ export const outcomeOf = (postId: PostId) =>
 
 /**
  * Storage, a platform and a database that outlive servers, and the server to
- * deploy over them: building `server` twice is a restart.
+ * deploy over them: building `server` twice is a restart. `serverWith` is the
+ * same server with another journal.
  */
 export const restartable = Effect.gen(function* restartable() {
   const storage = yield* Layer.build(MessageStorage.MemoryDriver.layer);
@@ -300,15 +327,23 @@ export const restartable = Effect.gen(function* restartable() {
 
   const driver = Context.get(storage, MessageStorage.MemoryDriver);
 
-  const server = deploy(
-    Layer.succeed(MessageStorage.MessageStorage, driver.storage),
-    Layer.succeedContext(platforms)
-  ).pipe(
-    Layer.provideMerge(Layer.succeedContext(platforms)),
-    Layer.provideMerge(Layer.succeedContext(database))
-  );
+  const serverWith = <RJ>(
+    journal: Layer.Layer<PublicationJournal, never, RJ>
+  ) =>
+    deployWith(
+      Layer.succeed(MessageStorage.MessageStorage, driver.storage),
+      Layer.succeedContext(platforms),
+      journal
+    ).pipe(
+      Layer.provideMerge(Layer.succeedContext(platforms)),
+      Layer.provideMerge(Layer.succeedContext(database))
+    );
 
-  return { platform: Context.get(platforms, FakePlatform), server };
+  return {
+    platform: Context.get(platforms, FakePlatform),
+    server: serverWith(DrizzlePublicationJournal),
+    serverWith,
+  };
 });
 
 /**
@@ -340,8 +375,9 @@ export const journalOf = (targetId: string) =>
 
     return yield* sql<{
       readonly attempt: number;
+      readonly finished: boolean;
       readonly idempotency_key: string;
-    }>`SELECT attempt, idempotency_key FROM publishing.publication_calls WHERE target_id = ${targetId} ORDER BY attempt`;
+    }>`SELECT attempt, finished_at IS NOT NULL AS finished, idempotency_key FROM publishing.publication_calls WHERE target_id = ${targetId} ORDER BY attempt`;
   });
 
 /** The attempts recorded for a target, in order. */
