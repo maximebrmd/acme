@@ -505,6 +505,7 @@
         "aiGenerated": "Contenu généré par IA",
         "loadingCreator": "Lecture des réglages du compte sur TikTok…",
         "postingAs": "Publication en tant que {nickname} (@{username}).",
+        "postingAsNickname": "Publication en tant que {nickname}.",
         "blocked": "{reason, select, postLimit {Ce compte a publié aujourd’hui autant que TikTok le permet : réessayez plus tard.} banned {TikTok a interdit à ce compte de publier.} clientLimit {Aujourd’hui, TikTok n’accepte plus de comptes publiant par ce serveur : réessayez plus tard.} other {Ce compte ne peut pas publier pour le moment : réessayez plus tard.}}",
         "creatorFailed": "{reason, select, reconnect {Reconnectez ce compte pour lire ses réglages sur TikTok.} disabled {Ce canal est désactivé.} other {Les réglages du compte n’ont pas pu être lus sur TikTok. Réessayez plus tard : la programmation les vérifie aussi.}}",
         "turnedOff": "Désactivé dans les réglages TikTok du compte.",
@@ -513,8 +514,8 @@
         "labelPaidPartnership": "Votre {kind, select, photo {photo} other {vidéo}} portera la mention « Partenariat rémunéré ».",
         "noPhotos": "Ce serveur ne peut pas publier de photos sur TikTok : joignez plutôt une vidéo.",
         "processing": "Une fois publiée, la publication peut mettre quelques minutes à être traitée avant d’apparaître sur le profil.",
-        "consentMusic": "En publiant, vous acceptez la Confirmation d’utilisation de la musique de TikTok.",
-        "consentBranded": "En publiant, vous acceptez la Politique relative au contenu de marque et la Confirmation d’utilisation de la musique de TikTok."
+        "consentMusic": "En publiant, vous acceptez la <music>Confirmation d’utilisation de la musique</music> de TikTok.",
+        "consentBranded": "En publiant, vous acceptez la <brand>Politique relative au contenu de marque</brand> et la <music>Confirmation d’utilisation de la musique</music> de TikTok."
       }
     },
     "Calendar": {

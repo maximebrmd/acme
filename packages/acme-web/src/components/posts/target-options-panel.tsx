@@ -1,7 +1,12 @@
 "use client";
 
 import { useAtomValue } from "@effect/atom-react";
-import type { Channel, ContentViolation, TikTokAccount } from "acme-contract";
+import type {
+  Channel,
+  ContentViolation,
+  TikTokAccount,
+  TikTokCreator,
+} from "acme-contract";
 import { Checkbox } from "acme-ui/components/checkbox";
 import { Input } from "acme-ui/components/input";
 import { Label } from "acme-ui/components/label";
@@ -431,6 +436,44 @@ export type TikTokAccountState =
 /** Why a creator's settings could not be read. */
 export type TikTokFailure = "disabled" | "reconnect" | "unreachable";
 
+// Who posts: their nickname, with their username when TikTok gives one.
+const postingAs = (t: Translate, { nickname, username }: TikTokCreator) =>
+  username === ""
+    ? t("tiktok.postingAsNickname", { nickname })
+    : t("tiktok.postingAs", { nickname, username });
+
+// TikTok's policies the consent names, which its guidelines ask to link.
+const tiktokPolicies = {
+  brand: "https://www.tiktok.com/legal/page/global/bc-policy/en",
+  music: "https://www.tiktok.com/legal/page/global/music-usage-confirmation/en",
+} as const;
+
+const PolicyLink = ({
+  children,
+  href,
+}: {
+  readonly children: ReactNode;
+  readonly href: string;
+}) => (
+  <a
+    href={href}
+    target="_blank"
+    rel="noreferrer noopener"
+    className="underline underline-offset-4"
+  >
+    {children}
+  </a>
+);
+
+// The consent's tags, each the policy it names.
+const BrandedContentPolicy = (chunks: ReactNode) => (
+  <PolicyLink href={tiktokPolicies.brand}>{chunks}</PolicyLink>
+);
+
+const MusicUsageConfirmation = (chunks: ReactNode) => (
+  <PolicyLink href={tiktokPolicies.music}>{chunks}</PolicyLink>
+);
+
 // Who posts, or why the creator cannot post, or why TikTok could not say.
 const CreatorNotice = ({ state }: { readonly state: TikTokAccountState }) => {
   const t = useTranslations("Posts.Options");
@@ -440,10 +483,7 @@ const CreatorNotice = ({ state }: { readonly state: TikTokAccountState }) => {
     loaded: ({ account: { posting } }) =>
       posting._tag === "blocked"
         ? t("tiktok.blocked", { reason: posting.reason })
-        : t("tiktok.postingAs", {
-            nickname: posting.creator.nickname,
-            username: posting.creator.username,
-          }),
+        : postingAs(t, posting.creator),
     loading: () => t("tiktok.loadingCreator"),
   });
 
@@ -476,7 +516,12 @@ const TikTokFooter = ({
         <p className="text-destructive-text text-xs">{t("tiktok.noPhotos")}</p>
       ) : null}
       <p className="text-muted-foreground text-xs">{t("tiktok.processing")}</p>
-      <p className="text-sm">{t(limits.consent)}</p>
+      <p className="text-sm">
+        {t.rich(limits.consent, {
+          brand: BrandedContentPolicy,
+          music: MusicUsageConfirmation,
+        })}
+      </p>
     </div>
   );
 };
