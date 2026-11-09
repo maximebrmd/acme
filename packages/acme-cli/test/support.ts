@@ -217,6 +217,16 @@ const signedInGroupsLive = (authorization: AuthorizationServer) =>
     HttpApiBuilder.group(Api, "workspaces", (handlers) =>
       handlers.handleAll({ delete: () => refusing })
     ),
+    HttpApiBuilder.group(Api, "members", (handlers) =>
+      handlers.handleAll({ list: () => refusing })
+    ),
+    HttpApiBuilder.group(Api, "invitations", (handlers) =>
+      handlers.handleAll({
+        create: () => refusing,
+        list: () => refusing,
+        revoke: () => refusing,
+      })
+    ),
     HttpApiBuilder.group(Api, "account", (handlers) =>
       handlers.handleAll({ delete: () => refusing, export: () => refusing })
     ),

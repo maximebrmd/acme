@@ -5,6 +5,10 @@ import { ApiKeysHandlers } from "#workspace/api/api-keys.ts";
 import { CaptchaHandlers } from "#workspace/api/captcha.ts";
 import { ConnectedAppsHandlers } from "#workspace/api/connected-apps.ts";
 import {
+  InvitationsHandlers,
+  MembersHandlers,
+} from "#workspace/api/members.ts";
+import {
   AuthenticationLive,
   WorkspaceAccessLive,
 } from "#workspace/api/security.ts";
@@ -20,6 +24,7 @@ import { ConnectedApps } from "#workspace/application/connected-apps.ts";
 import { DeleteWorkspace } from "#workspace/application/delete-workspace.ts";
 import { ResolveMember } from "#workspace/application/resolve-member.ts";
 import { WorkspaceContacts } from "#workspace/application/workspace-contacts.ts";
+import { WorkspaceMembers } from "#workspace/application/workspace-members.ts";
 import { WorkspaceSeats } from "#workspace/application/workspace-seats.ts";
 import { ApiKeyIssuerLive } from "#workspace/infrastructure/auth/api-key-issuer.ts";
 import { BetterAuthLive } from "#workspace/infrastructure/auth/better-auth.ts";
@@ -28,6 +33,7 @@ import { CliClientLive } from "#workspace/infrastructure/auth/cli-client.ts";
 import { AuthGatewayLive } from "#workspace/infrastructure/auth/gateway.ts";
 import { PasswordCheckLive } from "#workspace/infrastructure/auth/password-check.ts";
 import { AuthSettings } from "#workspace/infrastructure/auth/settings.ts";
+import { WorkspacePeopleLive } from "#workspace/infrastructure/auth/workspace-people.ts";
 import { ContextRecordsLive } from "#workspace/infrastructure/context-records.ts";
 import { DrizzleAccountStore } from "#workspace/infrastructure/drizzle-account-store.ts";
 import { DrizzleConnectedAppStore } from "#workspace/infrastructure/drizzle-connected-app-store.ts";
@@ -40,7 +46,8 @@ const AdaptersLive = Layer.mergeAll(
   MemberDirectoryLive,
   WorkspaceRosterLive,
   ApiKeyIssuerLive,
-  CliClientLive
+  CliClientLive,
+  WorkspacePeopleLive
 );
 
 const UseCasesLive = Layer.mergeAll(
@@ -50,6 +57,7 @@ const UseCasesLive = Layer.mergeAll(
   Authenticate.layer,
   ResolveMember.layer,
   WorkspaceContacts.layer,
+  WorkspaceMembers.layer,
   WorkspaceSeats.layer
 );
 
@@ -107,7 +115,9 @@ export const WorkspaceApiLive = Layer.mergeAll(
   WorkspacesHandlers,
   AccountHandlers,
   ConnectedAppsHandlers,
-  CaptchaHandlers
+  CaptchaHandlers,
+  MembersHandlers,
+  InvitationsHandlers
 ).pipe(
   Layer.provideMerge(Layer.mergeAll(AuthenticationLive, WorkspaceAccessLive))
 );
