@@ -1,11 +1,15 @@
-import { Effect, Layer } from "effect";
-import { MessageStorage } from "effect/cluster";
+import { Effect, Layer, Schema } from "effect";
+import { ClusterError, MessageStorage } from "effect/cluster";
 import { SqlClient, SqlError } from "effect/sql";
 
 import { DatabaseError } from "#shared/application/database-error.ts";
 import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 
 const asDatabaseError = (cause: unknown) => new DatabaseError({ cause });
+
+// The cluster's storage failing to save a message, as when a workflow is
+// started or stopped.
+const isPersistenceError = Schema.is(ClusterError.PersistenceError);
 
 /**
  * Transactions that the cluster's message storage takes part in, so a use case
@@ -18,8 +22,9 @@ const asDatabaseError = (cause: unknown) => new DatabaseError({ cause });
  * a savepoint in the same transaction. Both must use the same SqlClient, which
  * the composition root guarantees by building one pool.
  *
- * The storage turns a failed BEGIN or COMMIT into a defect; it is reported as
- * a DatabaseError, which callers can retry.
+ * The storage turns a failed BEGIN or COMMIT into a defect, and the workflow
+ * engine a message it could not save, when starting or stopping a workflow;
+ * both are reported as a DatabaseError, which callers can retry.
  */
 export const TransactionRunnerLive = Layer.effect(
   TransactionRunner,
@@ -34,7 +39,7 @@ export const TransactionRunnerLive = Layer.effect(
             Effect.fail(asDatabaseError(failure))
           ),
           Effect.catchDefect((defect) =>
-            SqlError.isSqlError(defect)
+            SqlError.isSqlError(defect) || isPersistenceError(defect)
               ? Effect.fail(asDatabaseError(defect))
               : Effect.die(defect)
           )
