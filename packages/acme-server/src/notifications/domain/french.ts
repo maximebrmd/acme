@@ -63,21 +63,21 @@ export const french: EmailCatalog = {
     action: "Ouvrir la publication",
     body: "Une publication de {workspaceName} n’est pas partie sur {channel} : {reason}",
     ignore:
-      "Vous recevez cet e-mail parce que vous avez écrit cette publication dans {workspaceName} sur Acme, ou en suivez les publications. Choisissez les notifications que vous recevez par e-mail dans vos préférences de notification.",
+      "Vous recevez cet e-mail parce que vous avez écrit cette publication dans {workspaceName} sur Acme, ou y programmez des publications. Choisissez les notifications que vous recevez par e-mail dans vos préférences de notification.",
     subject: "Une publication n’est pas partie sur {channel}",
   },
   postPublished: {
     action: "Voir la publication",
     body: "Une publication de {workspaceName} est en ligne sur {channel}.",
     ignore:
-      "Vous recevez cet e-mail parce que vous avez écrit cette publication dans {workspaceName} sur Acme, ou en suivez les publications. Choisissez les notifications que vous recevez par e-mail dans vos préférences de notification.",
+      "Vous recevez cet e-mail parce que vous avez écrit cette publication dans {workspaceName} sur Acme, ou y programmez des publications. Choisissez les notifications que vous recevez par e-mail dans vos préférences de notification.",
     subject: "Publié sur {channel}",
   },
   postUnconfirmed: {
     action: "Ouvrir la publication",
     body: "Acme a envoyé une publication de {workspaceName} sur {channel} sans recevoir de réponse : elle est peut-être en ligne, peut-être pas. Vérifiez sur la plateforme avant de la republier, puis indiquez à Acme ce que vous avez trouvé.",
     ignore:
-      "Vous recevez cet e-mail parce que vous avez écrit cette publication dans {workspaceName} sur Acme, ou en suivez les publications. Choisissez les notifications que vous recevez par e-mail dans vos préférences de notification.",
+      "Vous recevez cet e-mail parce que vous avez écrit cette publication dans {workspaceName} sur Acme, ou y programmez des publications. Choisissez les notifications que vous recevez par e-mail dans vos préférences de notification.",
     subject: "Vérifiez {channel} : une publication est peut-être partie",
   },
   resetPassword: {

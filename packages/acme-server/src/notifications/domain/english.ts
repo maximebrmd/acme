@@ -62,21 +62,21 @@ export const english: EmailCatalog = {
     action: "Open the post",
     body: "A post of {workspaceName} did not go out on {channel}: {reason}",
     ignore:
-      "You receive this email because you wrote this post in {workspaceName} on Acme, or follow its posts. Choose which notifications you receive by email in your notification preferences.",
+      "You receive this email because you wrote this post in {workspaceName} on Acme, or schedule posts there. Choose which notifications you receive by email in your notification preferences.",
     subject: "A post did not go out on {channel}",
   },
   postPublished: {
     action: "See the post",
     body: "A post of {workspaceName} is live on {channel}.",
     ignore:
-      "You receive this email because you wrote this post in {workspaceName} on Acme, or follow its posts. Choose which notifications you receive by email in your notification preferences.",
+      "You receive this email because you wrote this post in {workspaceName} on Acme, or schedule posts there. Choose which notifications you receive by email in your notification preferences.",
     subject: "Published on {channel}",
   },
   postUnconfirmed: {
     action: "Open the post",
     body: "Acme sent a post of {workspaceName} to {channel} but got no answer, so it may or may not be live. Check the platform before you post it again, then tell Acme what you found.",
     ignore:
-      "You receive this email because you wrote this post in {workspaceName} on Acme, or follow its posts. Choose which notifications you receive by email in your notification preferences.",
+      "You receive this email because you wrote this post in {workspaceName} on Acme, or schedule posts there. Choose which notifications you receive by email in your notification preferences.",
     subject: "Check {channel}: a post may have gone out",
   },
   resetPassword: {
