@@ -86,7 +86,7 @@ describe("X's text, as it shows it back", () => {
   it("matches the text sent despite its short links and entities", () => {
     expect(
       isSameText(
-        "Read https://peal.example/launch & share <3",
+        "Read https://peal.social/launch & share <3",
         "Read https://t.co/aBcDeF1234 &amp; share &lt;3 https://t.co/MeDiA56789"
       )
     ).toBeTruthy();
@@ -97,17 +97,17 @@ describe("X's text, as it shows it back", () => {
   });
 
   it("takes a post for the one sent only when it links to the same places", () => {
-    const sent = "Read (https://Peal.example) and www.peal.example/two.";
+    const sent = "Read (https://Peal.social) and www.peal.social/two.";
 
     expect(
       isSamePost(sent, {
-        linksTo: ["https://peal.example/", "http://www.peal.example/two"],
+        linksTo: ["https://peal.social/", "http://www.peal.social/two"],
         text: "Read (https://t.co/a) and https://t.co/b.",
       })
     ).toBeTruthy();
     expect(
       isSamePost(sent, {
-        linksTo: ["https://peal.example/", "http://www.peal.example/one"],
+        linksTo: ["https://peal.social/", "http://www.peal.social/one"],
         text: "Read (https://t.co/a) and https://t.co/b.",
       })
     ).toBeFalsy();
@@ -117,6 +117,15 @@ describe("X's text, as it shows it back", () => {
         text: "Read (https://t.co/a) and https://t.co/b.",
       })
     ).toBeFalsy();
+  });
+
+  it("takes a domain without a scheme for a link, as X does", () => {
+    expect(
+      isSamePost("Read peal.social/docs now", {
+        linksTo: ["http://peal.social/docs"],
+        text: "Read https://t.co/a now",
+      })
+    ).toBeTruthy();
   });
 
   it("reads back entities in X's text only, not in the text sent", () => {
