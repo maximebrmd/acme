@@ -154,6 +154,12 @@ server:
 The tests that need Docker skip when it is not running. `bun run test`
 includes them.
 
+Each of these commands reads stdin from `/dev/null`. Nx gives every task it
+runs the same stdin, which a Node task reading it makes non-blocking for all
+of them while it runs; Ansible then refuses to start ("Ansible requires
+blocking IO on stdin/stdout/stderr"), and ansible-lint reports it as "Unable
+to find a working copy of ansible executable".
+
 ### Before the first run
 
 These are made by hand, by the owner, on free plans. Anything that costs
