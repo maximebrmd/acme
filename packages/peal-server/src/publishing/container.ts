@@ -34,6 +34,7 @@ import { LibraryAttachableMedia } from "#publishing/infrastructure/library-attac
 import { LibraryMediaForPublishing } from "#publishing/infrastructure/library-media-for-publishing.ts";
 import { ListedWorkspaceChannels } from "#publishing/infrastructure/listed-workspace-channels.ts";
 import { LoggedChannelHealth } from "#publishing/infrastructure/logged-channel-health.ts";
+import { LoggedOperatorAlerts } from "#publishing/infrastructure/logged-operator-alerts.ts";
 import { meteredOutcomes } from "#publishing/infrastructure/metered-publication-outcomes.ts";
 import { NotifiedPublicationOutcomes } from "#publishing/infrastructure/notified-publication-outcomes.ts";
 import { PlanPostAllowanceLive } from "#publishing/infrastructure/plan-post-allowance.ts";
@@ -78,6 +79,7 @@ export const publishingWith = <E, R, E2 = never, R2 = never>(
         DrizzlePublishedTargets,
         DrizzleWorkspacePostStore,
         LoggedChannelHealth,
+        LoggedOperatorAlerts,
         WorkflowPublicationScheduler,
         references,
         accounts

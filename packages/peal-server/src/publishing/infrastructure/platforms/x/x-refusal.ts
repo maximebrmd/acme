@@ -2,10 +2,7 @@ import { DateTime, Duration, Effect, Option, Schema } from "effect";
 import { Headers, HttpClientResponse } from "effect/http";
 
 import { OutcomeUnknown } from "#publishing/application/outcome-unknown.ts";
-import {
-  isOperatorRefusal,
-  operatorRefusalCodes,
-} from "#publishing/domain/own-refusals.ts";
+import { operatorRefusalCodes } from "#publishing/domain/own-refusals.ts";
 import { codeOf } from "#publishing/infrastructure/platforms/platform-exchange.ts";
 import { BadRequest } from "#shared/domain/bad-request.ts";
 import { MediaRejected } from "#shared/domain/media-rejected.ts";
@@ -137,8 +134,9 @@ const refusal = (
 
   // The app reached the spending cap of its X account, or used up its
   // pay-per-use credits (402): X takes nothing from the server's app until
-  // the operator pays. The post is not at fault: it waits as for an
-  // unavailable platform, and fails as appBillingLimit if X still refuses.
+  // the operator pays. The post is not at fault: publishing keeps it
+  // waiting, tells the operator, and fails it as appBillingLimit only if X
+  // still refuses a day after its time.
   if (Option.contains(kind, "usage-capped")) {
     return new PlatformUnavailable({ code: operatorRefusalCodes.usageCapped });
   }
@@ -182,22 +180,12 @@ const refusal = (
   return rejected(call, codeOf(kind, `http${status}`));
 };
 
-// A refusal of the server's app is the operator's to fix: logged as an
-// error, it reaches the operator's alerts.
-const toldToOperator = (found: XRefusal) =>
-  found._tag === "PlatformUnavailable" && isOperatorRefusal(found.code)
-    ? Effect.logError(
-        "X refuses this server's app until its account is paid for: add credits or raise its spending cap in X's developer console"
-      ).pipe(Effect.annotateLogs({ code: found.code }))
-    : Effect.void;
-
 const refused = (
   call: XCall,
   response: HttpClientResponse.HttpClientResponse
 ) =>
   Effect.all([problemOf(response), DateTime.now]).pipe(
-    Effect.map(([problem, now]) => refusal(call, response, problem, now)),
-    Effect.tap(toldToOperator)
+    Effect.map(([problem, now]) => refusal(call, response, problem, now))
   );
 
 /**

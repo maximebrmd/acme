@@ -692,10 +692,15 @@ and no socket, for tests.
   once its pay-per-use credits are used up, `usage-capped` at its spending
   cap) is the operator's problem, never the post's or the account's: the
   adapter fails with `PlatformUnavailable` and a code of
-  `operatorRefusalCodes` (`#publishing/domain/own-refusals.ts`) and logs an
-  error, which the error-log alert reports; the attempt is retried as an
-  outage, and a target that gave up fails as `appBillingLimit`. A refresh
-  answered so leaves the channel's token alone.
+  `operatorRefusalCodes` (`#publishing/domain/own-refusals.ts`), and the
+  policy keeps the target waiting, retried every 30 minutes until 24 hours
+  after its scheduled time (`operatorRefusal`), then fails it as
+  `appBillingLimit`. These attempts use none of an outage's retries
+  (`earlierRefusalsOf`). `publishAttemptRun` tells `OperatorAlerts` of
+  each: `LoggedOperatorAlerts` counts it (`peal.publishing.app_refusals`)
+  and logs an error (`event.name` `peal.app_refused`) at the first, then
+  once an hour per code, never per post, which Grafana's `peal-app-refused`
+  rule reports. A refresh answered so leaves the channel's token alone.
 
 ### Publishing and the cluster
 
