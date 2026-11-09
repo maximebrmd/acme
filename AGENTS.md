@@ -272,17 +272,22 @@ and no socket, for tests.
   (`impersonation.ts`).
 - Workspaces and accounts are deleted through Acme's API only
   (`DeleteWorkspace`, `CloseAccount`): Better Auth's `/organization/delete`
-  is disabled and its `/delete-user` stays off, as they would leave the other
-  contexts' data. Each context hands its records of a workspace or a user to
-  the workspace context through an application port (`ChannelRecords`,
-  `PostRecords`, `MediaRecords`, `NoticeRecords`, `UsageRecords`, in the
-  shapes of `#shared/application/personal-data.ts`), which `ContextRecords`
-  reaches. The rows go in one TransactionRunner transaction, Better Auth's
-  included (the server's Drizzle on the `auth` tables), and the workspace's
-  media folder once it commits. A context that keeps new data about a
-  workspace or a user adds it to its records.
+  and the admin plugin's `/admin/remove-user` are disabled and its
+  `/delete-user` stays off, as they would leave the other contexts' data.
+  Both lock the workspaces they read (`AccountStore.standings`, `workspace`)
+  before deciding, so closures, joins and deletions take turns. Each context
+  hands its records of a workspace or a user to the workspace context
+  through an application port (`ChannelRecords`, `PostRecords`,
+  `MediaRecords`, `NoticeRecords`, `UsageRecords`, in the shapes of
+  `#shared/application/personal-data.ts`), which `ContextRecords` reaches.
+  The rows go in one TransactionRunner transaction, Better Auth's included
+  (the server's Drizzle on the `auth` tables), and the workspace's media
+  folder once it commits. A context that keeps new data about a workspace
+  or a user adds it to its records.
 - `AccountData` exports what is tied to the user, and the content of the
   workspaces where they are the only member: those `CloseAccount` deletes.
+  Sessions staff opened to impersonate the user are left out, as Better
+  Auth's own list leaves them out: their browser and address are staff's.
   Closing an account is refused while its user alone owns a workspace others
   use (`planClosure`), and its confirmation is emailed in their language.
 - Better Auth is also the OAuth authorization server for the CLI (device

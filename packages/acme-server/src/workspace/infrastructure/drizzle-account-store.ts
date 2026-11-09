@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { DateTime, Effect, Layer, Option } from "effect";
 
 import { DatabaseError } from "#shared/application/database-error.ts";
@@ -109,7 +109,10 @@ export const DrizzleAccountStore = Layer.effect(
           userAgent: session.userAgent,
         })
         .from(session)
-        .where(eq(session.userId, userId))
+        // Not those staff opened to act as the user: their address and
+        // browser are the staff member's, and Better Auth lists them to
+        // nobody but staff.
+        .where(and(eq(session.userId, userId), isNull(session.impersonatedBy)))
         .orderBy(asc(session.createdAt))
         .pipe(Effect.mapError(failed));
 
@@ -188,6 +191,10 @@ export const DrizzleAccountStore = Layer.effect(
         .innerJoin(organization, eq(organization.id, member.organizationId))
         .where(eq(member.userId, userId))
         .orderBy(asc(organization.name), asc(organization.id))
+        // Joining a workspace checks its row, which this lock holds back,
+        // as it holds back another account's closure reading the same
+        // workspace: two owners closing at once cannot both leave it.
+        .for("update", { of: organization })
         .pipe(Effect.mapError(failed));
 
       const everyone =
@@ -229,6 +236,7 @@ export const DrizzleAccountStore = Layer.effect(
         .from(organization)
         .where(eq(organization.id, workspaceId))
         .limit(1)
+        .for("update")
         .pipe(Effect.mapError(failed));
 
       return Option.fromUndefinedOr(found).pipe(

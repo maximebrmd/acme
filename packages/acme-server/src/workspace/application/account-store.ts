@@ -75,10 +75,18 @@ export class AccountStore extends Context.Service<
     readonly records: (
       userId: UserId
     ) => Effect.Effect<Option.Option<AccountRecords>, DatabaseError>;
-    /** Each workspace the user belongs to, with its members' roles. */
+    /**
+     * Each workspace the user belongs to, with its members' roles. In a
+     * transaction, those workspaces stay locked until it ends: nobody joins
+     * them, and no other account's closure reads them, meanwhile.
+     */
     readonly standings: (
       userId: UserId
     ) => Effect.Effect<readonly MembershipStanding[], DatabaseError>;
+    /**
+     * The workspace, if it exists. In a transaction, it stays locked until
+     * it ends, as `standings` locks it.
+     */
     readonly workspace: (
       workspaceId: WorkspaceId
     ) => Effect.Effect<Option.Option<WorkspaceSummary>, DatabaseError>;

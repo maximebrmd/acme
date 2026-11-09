@@ -153,7 +153,7 @@ La plupart des clients MCP s’enregistrent eux-mêmes avant de se connecter, ce
 
 ## Comptes d’équipe [#staff]
 
-L’équipe, le rôle d’administrateur de Better Auth, peut se faire passer pour un membre pendant une heure et bannir des comptes, par les points d’accès d’administration de Better Auth sous `/api/auth/admin/`. Donnez ce rôle à un compte dans la base de données, puis reconnectez-vous :
+L’équipe, le rôle d’administrateur de Better Auth, peut se faire passer pour un membre pendant une heure et bannir des comptes, par les points d’accès d’administration de Better Auth sous `/api/auth/admin/`. Elle ne peut pas supprimer un compte : seul son titulaire le peut, depuis [ses paramètres de compte](/settings#delete-account), ce qui supprime ce qu’Acme conserve à son sujet. Donnez ce rôle à un compte dans la base de données, puis reconnectez-vous :
 
 ```sql
 UPDATE auth."user" SET role = 'admin' WHERE email = 'vous@example.com';

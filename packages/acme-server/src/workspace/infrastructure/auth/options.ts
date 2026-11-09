@@ -290,9 +290,13 @@ export const makeAuth = ({ database, hooks, settings }: AuthDependencies) =>
     // OAuth clients are registered by the server (the command line's) or by
     // MCP clients themselves, never by signed-in users.
     //
-    // Workspaces are deleted through Acme's API too
-    // (DELETE /api/workspaces/:id), which deletes everything in them.
+    // Workspaces and accounts are deleted through Acme's API too
+    // (DELETE /api/workspaces/:id and DELETE /api/me), which delete what
+    // every context keeps: the admin plugin's removal of a user would leave
+    // their notices, preferences and the workspaces they alone belonged to.
+    // Staff ban accounts instead.
     disabledPaths: [
+      "/admin/remove-user",
       "/api-key/create",
       "/api-key/delete",
       "/api-key/get",

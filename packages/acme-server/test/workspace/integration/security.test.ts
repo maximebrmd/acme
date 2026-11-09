@@ -103,6 +103,15 @@ interface Case {
 
 const newKey = { name: "deploy", permissions: ["post:read"] };
 
+// The browser staff impersonate a member from.
+const staffBrowser = "Synthetic staff browser";
+
+const ExportedSessionsSchema = Schema.Struct({
+  sessions: Schema.Array(
+    Schema.Struct({ userAgent: Schema.NullOr(Schema.String) })
+  ),
+});
+
 const MembersSchema = Schema.Struct({
   members: Schema.Array(Schema.Struct({ id: Schema.String })),
 });
@@ -320,11 +329,23 @@ layer(MatrixLive, { excludeTestServices: true, timeout: "180 seconds" })(
 
           yield* makeAdmin(staff.id);
 
+          const staffCookies = yield* signIn(staff.email);
+
+          // Staff ban accounts, and never remove one: removing it is its
+          // owner's to do, through Acme's API, which erases what every
+          // context keeps.
+          const removed = yield* app.request("/api/auth/admin/remove-user", {
+            body: { userId: member.id },
+            headers: { cookie: staffCookies },
+          });
+
+          assert.strictEqual(removed.status, 404);
+
           const started = yield* app.request(
             "/api/auth/admin/impersonate-user",
             {
               body: { userId: member.id },
-              headers: { cookie: yield* signIn(staff.email) },
+              headers: { cookie: staffCookies, "user-agent": staffBrowser },
             }
           );
 
@@ -443,6 +464,21 @@ layer(MatrixLive, { excludeTestServices: true, timeout: "180 seconds" })(
           assert.deepStrictEqual(
             ownerMe.workspaces.map(({ id, role }) => ({ id, role })),
             [{ id: workspaceId, role: "owner" }]
+          );
+
+          // The member's copy of their data leaves out the session staff
+          // opened, whose browser and address are the staff member's.
+          const exported = yield* bodyOf(
+            ExportedSessionsSchema,
+            yield* app.request("/api/me/export", {
+              headers: { cookie: member.cookies },
+            })
+          );
+
+          assert.isNotEmpty(exported.sessions);
+          assert.notInclude(
+            exported.sessions.map(({ userAgent }) => userAgent),
+            staffBrowser
           );
         })
     );

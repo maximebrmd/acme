@@ -153,7 +153,7 @@ Most MCP clients register themselves before they sign in, which the server allow
 
 ## Staff accounts [#staff]
 
-Staff, Better Auth's admin role, may impersonate members for an hour and ban accounts, through Better Auth's admin endpoints under `/api/auth/admin/`. Make an account staff in the database, then sign in again:
+Staff, Better Auth's admin role, may impersonate members for an hour and ban accounts, through Better Auth's admin endpoints under `/api/auth/admin/`. They cannot delete an account: only its owner can, from [their account settings](/settings#delete-account), which deletes what Acme keeps about them. Make an account staff in the database, then sign in again:
 
 ```sql
 UPDATE auth."user" SET role = 'admin' WHERE email = 'you@example.com';

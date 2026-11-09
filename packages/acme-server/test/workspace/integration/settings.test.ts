@@ -396,6 +396,46 @@ layer(Layer.mergeAll(IntegrationLive, StoreLive), {
   );
 
   it.effect(
+    "close one at a time the accounts of two owners who leave together",
+    () =>
+      Effect.gen(function* closesInTurn() {
+        const app = yield* TestApp;
+        const sql = yield* SqlClient.SqlClient;
+        const ida = yield* signedUp("ida");
+        const jon = yield* signedUp("jon");
+        const kai = yield* signedUp("kai");
+        const workspaceId = yield* workspaceOf(ida, "Co-owned");
+
+        yield* join(ida, workspaceId, jon, "owner");
+        yield* join(ida, workspaceId, kai, "viewer");
+
+        const close = (person: Person) =>
+          app.request("/api/me", {
+            body: { password },
+            headers: { cookie: person.cookies },
+            method: "DELETE",
+          });
+
+        // Each would leave the workspace to the other: the second to go
+        // finds itself its only owner.
+        const replies = yield* Effect.all([close(ida), close(jon)], {
+          concurrency: "unbounded",
+        });
+
+        assert.deepStrictEqual(
+          replies.map(({ status }) => status).toSorted((a, b) => a - b),
+          [204, 409]
+        );
+
+        const owners = yield* countOf(
+          yield* sql`SELECT count(*)::int AS count FROM auth.member WHERE organization_id = ${workspaceId} AND role = 'owner'`
+        );
+
+        assert.strictEqual(owners, 1);
+      })
+  );
+
+  it.effect(
     "export what is tied to the user, and the content of the workspaces they alone belong to",
     () =>
       Effect.gen(function* exportsData() {

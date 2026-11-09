@@ -59,20 +59,28 @@ export class DeleteWorkspace extends Context.Service<
 
         const { workspaceId } = actor;
 
-        const { name } = yield* store.workspace(workspaceId).pipe(
-          Effect.flatMap(
-            Option.match({
-              onNone: () => Effect.fail(new NotAMember({ workspaceId })),
-              onSome: Effect.succeed,
-            })
-          )
+        yield* transaction(
+          Effect.gen(function* deleteInTransaction() {
+            // Locked first, as closing an account locks its workspaces
+            // before erasing them: the two wait for each other, never
+            // deadlock, and the name checked is the one deleted.
+            const { name } = yield* store.workspace(workspaceId).pipe(
+              Effect.flatMap(
+                Option.match({
+                  onNone: () => Effect.fail(new NotAMember({ workspaceId })),
+                  onSome: Effect.succeed,
+                })
+              )
+            );
+
+            if (confirmation.trim() !== name.trim()) {
+              yield* new WorkspaceNameMismatch({ workspaceId });
+            }
+
+            yield* eraseWorkspace(workspaceId);
+          })
         );
 
-        if (confirmation.trim() !== name.trim()) {
-          yield* new WorkspaceNameMismatch({ workspaceId });
-        }
-
-        yield* transaction(eraseWorkspace(workspaceId));
         yield* removeWorkspaceFiles(workspaceId);
       }, Effect.provideContext(ports));
 
