@@ -199,6 +199,7 @@
       "cancelDescription": "It will not go out on any channel. This cannot be undone.",
       "keepPost": "Keep it",
       "confirmCancel": "Cancel the post",
+      "closeDialog": "Close",
       "saved": "Draft saved.",
       "scheduled": "Post scheduled for {at}.",
       "rescheduled": "Post moved to {at}.",

@@ -199,6 +199,7 @@
       "cancelDescription": "Elle ne partira sur aucun canal. C’est définitif.",
       "keepPost": "La garder",
       "confirmCancel": "Annuler la publication",
+      "closeDialog": "Fermer",
       "saved": "Brouillon enregistré.",
       "scheduled": "Publication programmée pour {at}.",
       "rescheduled": "Publication déplacée à {at}.",

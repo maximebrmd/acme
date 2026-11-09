@@ -85,7 +85,7 @@ export const ComposerActions = ({
           >
             {busy === "cancel" ? t("cancelling") : t("cancelPost")}
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent closeLabel={t("closeDialog")}>
             <DialogHeader>
               <DialogTitle>{t("cancelTitle")}</DialogTitle>
               <DialogDescription>{t("cancelDescription")}</DialogDescription>

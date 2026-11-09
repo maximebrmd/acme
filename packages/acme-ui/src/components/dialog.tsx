@@ -40,10 +40,14 @@ const DialogOverlay = ({
 const DialogContent = ({
   className,
   children,
-  showCloseButton = true,
+  closeLabel,
   ...props
 }: DialogPrimitive.Popup.Props & {
-  showCloseButton?: boolean;
+  /**
+   * The name of the close button in the corner, in the reader's language.
+   * Without one, the dialog has no such button.
+   */
+  closeLabel?: string;
 }) => (
   <DialogPortal>
     <DialogOverlay />
@@ -56,7 +60,7 @@ const DialogContent = ({
       {...props}
     >
       {children}
-      {showCloseButton && (
+      {closeLabel === undefined ? null : (
         <DialogPrimitive.Close
           data-slot="dialog-close"
           render={
@@ -68,7 +72,7 @@ const DialogContent = ({
           }
         >
           <XIcon />
-          <span className="sr-only">Close</span>
+          <span className="sr-only">{closeLabel}</span>
         </DialogPrimitive.Close>
       )}
     </DialogPrimitive.Popup>
@@ -85,11 +89,12 @@ const DialogHeader = ({ className, ...props }: React.ComponentProps<"div">) => (
 
 const DialogFooter = ({
   className,
-  showCloseButton = false,
+  closeLabel,
   children,
   ...props
 }: React.ComponentProps<"div"> & {
-  showCloseButton?: boolean;
+  /** The text of a close button after the children, if the footer has one. */
+  closeLabel?: string;
 }) => (
   <div
     data-slot="dialog-footer"
@@ -100,9 +105,9 @@ const DialogFooter = ({
     {...props}
   >
     {children}
-    {showCloseButton && (
+    {closeLabel === undefined ? null : (
       <DialogPrimitive.Close render={<Button variant="outline" />}>
-        Close
+        {closeLabel}
       </DialogPrimitive.Close>
     )}
   </div>
