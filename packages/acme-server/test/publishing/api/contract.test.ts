@@ -7,7 +7,10 @@ import { Schema } from "effect";
 import type { ContentViolation } from "#publishing/domain/content-violation.ts";
 import { maxAltTextLength } from "#publishing/domain/media-attachment.ts";
 import { platformRules } from "#publishing/domain/platform-rules.ts";
-import { maxMediaPerPost } from "#publishing/domain/post-content.ts";
+import {
+  maxMediaPerPost,
+  PostContent,
+} from "#publishing/domain/post-content.ts";
 import { maxPostTextLength } from "#publishing/domain/post-text.ts";
 import {
   countHashtags,
@@ -15,7 +18,7 @@ import {
   measureText,
   TextUnitSchema,
 } from "#publishing/domain/text-length.ts";
-import { ChannelIdSchema } from "#shared/domain/ids.ts";
+import { ChannelIdSchema, MediaAssetIdSchema } from "#shared/domain/ids.ts";
 
 // Clients count text with the contract's copy of the rules, so a composer
 // shows what the server will accept. These keep the copy equal to the
@@ -31,6 +34,10 @@ const texts = [
 ];
 
 const channelId = ChannelIdSchema.make("00000000-0000-7000-8000-000000000001");
+
+const mediaAssetId = MediaAssetIdSchema.make(
+  "00000000-0000-7000-8000-00000000a001"
+);
 
 // One violation of each kind. Both records are typed by the other's tags, so
 // a kind added on one side only fails to compile.
@@ -131,5 +138,48 @@ describe("the contract's post text rules", () => {
         text: "a".repeat(maxPostTextLength + 1),
       })._tag
     ).toBe("Failure");
+  });
+
+  // Postgres refuses NUL in text and JSON strings: a post holding one would
+  // fail as it is saved, a server error, instead of answering 400.
+  it.each([
+    {
+      content: { media: [], overrides: [], text: "a\u0000b" },
+      label: "its text",
+    },
+    {
+      content: {
+        media: [],
+        overrides: [{ channelId, text: "\u0000" }],
+        text: "Hi",
+      },
+      label: "a channel's own text",
+    },
+    {
+      content: {
+        media: [{ altText: "a\u0000", mediaId: mediaAssetId }],
+        overrides: [],
+        text: "Hi",
+      },
+      label: "alt text",
+    },
+  ])("refuse a NUL character in $label, as the server does", ({ content }) => {
+    expect(Schema.decodeUnknownExit(PostContentSchema)(content)._tag).toBe(
+      "Failure"
+    );
+    expect(Schema.decodeUnknownExit(PostContent)(content)._tag).toBe("Failure");
+  });
+
+  it("take the same content without it", () => {
+    const content = {
+      media: [{ altText: "A chart", mediaId: mediaAssetId }],
+      overrides: [{ channelId, text: "For one channel" }],
+      text: "Hi",
+    };
+
+    expect(Schema.decodeUnknownExit(PostContentSchema)(content)._tag).toBe(
+      "Success"
+    );
+    expect(Schema.decodeUnknownExit(PostContent)(content)._tag).toBe("Success");
   });
 });

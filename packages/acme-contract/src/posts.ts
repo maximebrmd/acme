@@ -30,14 +30,25 @@ const uniqueBy = <A>(key: (item: A) => string, expected: string) =>
     { expected }
   );
 
+const nul = String.fromCodePoint(0);
+
+// Postgres keeps no NUL character in text, and no platform publishes one.
+const isWithoutNul = Schema.makeFilter((text: string) => !text.includes(nul), {
+  expected: "text without NUL characters",
+});
+
 const PostTextSchema = Schema.String.check(
-  Schema.isMaxLength(maxPostTextLength)
+  Schema.isMaxLength(maxPostTextLength),
+  isWithoutNul
 );
 
 /** An image or a video of the workspace's media, shown with the post. */
 export const MediaAttachmentSchema = Schema.Struct({
   // Describes the media to people who cannot see it; empty if none.
-  altText: Schema.String.check(Schema.isMaxLength(maxAltTextLength)),
+  altText: Schema.String.check(
+    Schema.isMaxLength(maxAltTextLength),
+    isWithoutNul
+  ),
   mediaId: Schema.String,
 }).annotate({ identifier: "MediaAttachment" });
 

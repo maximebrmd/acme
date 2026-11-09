@@ -2,6 +2,8 @@ import { Schema } from "effect";
 
 import { MediaAssetIdSchema } from "#shared/domain/ids.ts";
 
+import { isWithoutNul } from "./post-text.ts";
+
 /** The most alt text an attachment keeps, far above what platforms show. */
 export const maxAltTextLength = 5000;
 
@@ -13,6 +15,9 @@ export const maxAltTextLength = 5000;
 export class MediaAttachment extends Schema.Class<MediaAttachment>(
   "acme-server/publishing/domain/MediaAttachment"
 )({
-  altText: Schema.String.check(Schema.isMaxLength(maxAltTextLength)),
+  altText: Schema.String.check(
+    Schema.isMaxLength(maxAltTextLength),
+    isWithoutNul
+  ),
   mediaId: MediaAssetIdSchema,
 }) {}
