@@ -584,6 +584,8 @@ describe("reading counts on YouTube", () => {
         [50, 5]
       );
       assert.strictEqual(server.requests()[0]?.query.get("part"), "statistics");
+      // videos.list does not take maxResults with id.
+      assert.isFalse(server.requests()[0]?.query.has("maxResults"));
       assert.deepStrictEqual(handed, ["token-1"]);
     })
   );

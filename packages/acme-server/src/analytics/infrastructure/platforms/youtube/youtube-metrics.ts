@@ -25,7 +25,7 @@ export interface YouTubeMetricsOptions {
   readonly api: URL;
 }
 
-// videos.list takes 50 ids at most.
+// videos.list takes 50 ids at most, and no maxResults beside them.
 const idsPerCall = 50;
 
 // The API writes counts as strings; one hidden by the owner is left out.
@@ -103,7 +103,6 @@ export const youtubeMetrics = Effect.fn("YouTubeMetrics.make")(
       ).pipe(
         HttpClientRequest.setUrlParams({
           id: posts.map(({ platformPostId }) => platformPostId).join(","),
-          maxResults: String(idsPerCall),
           part: "statistics",
         }),
         HttpClientRequest.bearerToken(token)
