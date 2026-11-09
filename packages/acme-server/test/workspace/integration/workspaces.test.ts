@@ -1,6 +1,7 @@
 import { assert, layer } from "@effect/vitest";
 import { MeSchema, PermissionSchema } from "acme-contract";
 import { DateTime, Duration, Effect, Schema } from "effect";
+import { SqlClient } from "effect/sql";
 
 import {
   apiKeyOf,
@@ -259,6 +260,55 @@ layer(IntegrationLive, { excludeTestServices: true, timeout: "180 seconds" })(
         });
 
         assert.strictEqual(unknown.status, 404);
+      })
+    );
+
+    it.effect("delete a workspace's API keys with it", () =>
+      Effect.gen(function* deletesKeys() {
+        const app = yield* TestApp;
+        const sql = yield* SqlClient.SqlClient;
+        const owner = yield* signedUp("sasha");
+        const workspaceId = yield* workspaceOf(owner, "Closing");
+        const { key } = yield* apiKeyOf(owner, workspaceId, ["apiKey:read"]);
+
+        const deleted = yield* app.request("/api/auth/organization/delete", {
+          body: { organizationId: workspaceId },
+          headers: { cookie: owner.cookies },
+        });
+
+        assert.strictEqual(deleted.status, 200);
+
+        const keys =
+          yield* sql`SELECT id FROM auth.apikey WHERE reference_id = ${workspaceId}`;
+
+        assert.lengthOf(keys, 0);
+
+        const after = yield* app.request(
+          `/api/workspaces/${workspaceId}/api-keys`,
+          { headers: { authorization: `Bearer ${key}` } }
+        );
+
+        assert.strictEqual(after.status, 401);
+      })
+    );
+
+    it.effect("refuse an API key whose workspace is gone", () =>
+      Effect.gen(function* orphanedKey() {
+        const app = yield* TestApp;
+        const sql = yield* SqlClient.SqlClient;
+        const owner = yield* signedUp("tomas");
+        const workspaceId = yield* workspaceOf(owner, "Vanished");
+        const { key } = yield* apiKeyOf(owner, workspaceId, ["apiKey:read"]);
+
+        // Gone without Better Auth, so its key is left behind.
+        yield* sql`DELETE FROM auth.organization WHERE id = ${workspaceId}`;
+
+        const after = yield* app.request(
+          `/api/workspaces/${workspaceId}/api-keys`,
+          { headers: { authorization: `Bearer ${key}` } }
+        );
+
+        assert.strictEqual(after.status, 401);
       })
     );
 

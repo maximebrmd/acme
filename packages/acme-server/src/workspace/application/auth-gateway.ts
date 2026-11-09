@@ -10,7 +10,10 @@ import type { AuthUnavailable } from "./auth-unavailable.ts";
 export class AuthGateway extends Context.Service<
   AuthGateway,
   {
-    /** The API key's principal, if the key is valid. */
+    /**
+     * The API key's principal, if the key is valid and the workspace that
+     * owns it still exists.
+     */
     readonly apiKey: (
       key: Redacted.Redacted
     ) => Effect.Effect<Option.Option<ApiKeyPrincipal>, AuthUnavailable>;

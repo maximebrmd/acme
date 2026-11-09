@@ -2,6 +2,7 @@ import { Effect, Layer, Option, Redacted, Schema } from "effect";
 
 import { permissionsOf } from "#shared/domain/access.ts";
 import { UserIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
+import type { WorkspaceId } from "#shared/domain/ids.ts";
 import { AuthGateway } from "#workspace/application/auth-gateway.ts";
 import { ApiKeyPrincipal } from "#workspace/domain/api-key-principal.ts";
 import { UserPrincipal } from "#workspace/domain/user-principal.ts";
@@ -40,7 +41,20 @@ export const AuthGatewayLive = Layer.effect(
   AuthGateway,
   Effect.gen(function* authGateway() {
     const auth = yield* BetterAuth;
+    const { adapter } = yield* Effect.promise(async () => await auth.$context);
     const trusted = trustedOriginsOf(yield* AuthSettings);
+
+    // A workspace's keys are deleted with it. One that remains, however the
+    // workspace went, is no credential.
+    const workspaceExists = (workspaceId: WorkspaceId) =>
+      attempt(
+        async () =>
+          await adapter.findOne({
+            model: "organization",
+            select: ["id"],
+            where: [{ field: "id", value: workspaceId }],
+          })
+      ).pipe(Effect.map((found) => found !== null));
 
     return AuthGateway.of({
       apiKey: (key) =>
@@ -48,17 +62,27 @@ export const AuthGatewayLive = Layer.effect(
           async () =>
             await auth.api.verifyApiKey({ body: { key: Redacted.value(key) } })
         ).pipe(
-          Effect.map((answer) =>
-            decodeVerifiedKey(answer).pipe(
-              Option.map(
-                ({ key: verified }) =>
-                  new ApiKeyPrincipal({
-                    apiKeyId: verified.id,
-                    permissions: permissionsOf(verified.permissions ?? {}),
-                    workspaceId: verified.referenceId,
-                  })
-              )
-            )
+          Effect.map(decodeVerifiedKey),
+          Effect.flatMap(
+            Option.match({
+              onNone: () => Effect.succeedNone,
+              onSome: ({ key: verified }) =>
+                workspaceExists(verified.referenceId).pipe(
+                  Effect.map((exists) =>
+                    exists
+                      ? Option.some(
+                          new ApiKeyPrincipal({
+                            apiKeyId: verified.id,
+                            permissions: permissionsOf(
+                              verified.permissions ?? {}
+                            ),
+                            workspaceId: verified.referenceId,
+                          })
+                        )
+                      : Option.none()
+                  )
+                ),
+            })
           ),
           Effect.withSpan("AuthGateway.apiKey")
         ),

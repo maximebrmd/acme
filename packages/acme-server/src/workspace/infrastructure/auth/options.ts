@@ -1,4 +1,5 @@
 import { apiKey } from "@better-auth/api-key";
+import { getCurrentAuthEndpointContext } from "@better-auth/core/context";
 import { drizzleAdapter } from "@better-auth/drizzle-adapter/relations-v2";
 import type { DrizzleAdapterConfig } from "@better-auth/drizzle-adapter/relations-v2";
 import { betterAuth } from "better-auth";
@@ -175,6 +176,24 @@ export const makeAuth = ({ database, hooks, settings }: AuthDependencies) =>
         cancelPendingInvitationsOnReInvite: true,
         creatorRole: "owner",
         invitationExpiresIn: oneWeek,
+        organizationHooks: {
+          // A workspace's API keys go with it: they refer to it by id alone,
+          // with no foreign key, and would otherwise outlive it. They go
+          // first, so that a failure may leave a workspace without its keys,
+          // never keys without their workspace.
+          beforeDeleteOrganization: async (
+            { organization: workspace },
+            ctx
+          ) => {
+            const { adapter } = (ctx ?? getCurrentAuthEndpointContext())
+              .context;
+
+            await adapter.deleteMany({
+              model: "apikey",
+              where: [{ field: "referenceId", value: workspace.id }],
+            });
+          },
+        },
         requireEmailVerificationOnInvitation: true,
         roles,
         sendInvitationEmail: async ({
