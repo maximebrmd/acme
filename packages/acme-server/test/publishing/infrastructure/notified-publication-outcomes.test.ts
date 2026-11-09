@@ -19,13 +19,15 @@ import { WorkflowNoticeDelivery } from "#notifications/infrastructure/workflow-n
 import { PostRepository } from "#publishing/application/post-repository.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
 import { PublicationOutcomes } from "#publishing/application/publication-outcomes.ts";
-import { PublishingLive, publishingWorkers } from "#publishing/container.ts";
+import { publishingWith, publishingWorkers } from "#publishing/container.ts";
 import type { PostTargetStatus } from "#publishing/domain/post-target-status.ts";
 import { PostTarget } from "#publishing/domain/post-target.ts";
 import {
   FakePlatform,
   FakePlatformPublisher,
 } from "#publishing/infrastructure/fake-platform-publisher.ts";
+import { ListedWorkspaceChannels } from "#publishing/infrastructure/listed-workspace-channels.ts";
+import { NotifiedPublicationOutcomes } from "#publishing/infrastructure/notified-publication-outcomes.ts";
 import type { ChannelId, UserId, WorkspaceId } from "#shared/domain/ids.ts";
 import { MediaRejected } from "#shared/domain/media-rejected.ts";
 import { IdsLive } from "#shared/infrastructure/secure-random-ids.ts";
@@ -40,7 +42,11 @@ import {
 } from "#test/notifications/support.ts";
 import { TestDirectory } from "#test/notifications/test-directory.ts";
 import { connect } from "#test/publishing/posts-server.ts";
-import { actorIn, syntheticContent } from "#test/publishing/support.ts";
+import {
+  actorIn,
+  attachableMedia,
+  syntheticContent,
+} from "#test/publishing/support.ts";
 import { permissionsFor } from "#workspace/domain/roles.ts";
 
 import {
@@ -54,6 +60,14 @@ import {
   targetsOf,
 } from "./harness.ts";
 
+// Publishing as the server runs it, with no media to attach: these posts
+// carry none, so the media context's library is not needed.
+const PublishingTest = NotifiedPublicationOutcomes.pipe(
+  Layer.provideMerge(
+    publishingWith(Layer.mergeAll(ListedWorkspaceChannels, attachableMedia()))
+  )
+);
+
 // Publishing and notices as the server wires them, on an in-memory cluster
 // driven by TestClock: posts go to channels stored in Postgres, a fake
 // platform publishes them, and the notices' emails go out through their own
@@ -62,7 +76,7 @@ const ServerTest = Layer.mergeAll(
   publishingWorkers(FakePlatformPublisher),
   NotificationsWorkersLive
 ).pipe(
-  Layer.provideMerge(PublishingLive),
+  Layer.provideMerge(PublishingTest),
   Layer.provideMerge(noticesWith(WorkflowNoticeDelivery)),
   Layer.provideMerge(ListChannels.layer),
   Layer.provideMerge(DrizzleChannelRepository),
@@ -93,7 +107,7 @@ const DyingNoticeStore = Layer.effect(
 
 // The same server, telling through a Notify with that bug.
 const BuggyServerTest = publishingWorkers(FakePlatformPublisher).pipe(
-  Layer.provideMerge(PublishingLive),
+  Layer.provideMerge(PublishingTest),
   Layer.provideMerge(
     Notify.layer.pipe(
       Layer.provideMerge(
