@@ -74,15 +74,24 @@ acme_settings: {}
 
 # Paths of the app's host name that Cloudflare Access guards in production:
 # Better Auth's admin endpoints on the server, and the admin pages on the web
-# app. Each is a regular expression cloudflared matches against the path.
+# app. Each is a regular expression cloudflared matches against the path,
+# once it has resolved dot segments, backslashes and repeated slashes
+# (tests/test_cloudflared.py), in any letter case.
 acme_access_paths:
-  - path: ^/+api/+auth/+admin(/|$)
+  - path: (?i)^/+api/+auth/+admin(/|$)
     to: server
-  - path: ^/+(fr/+)?admin(/|$)
+  - path: (?i)^/+(fr/+)?admin(/|$)
     to: web
 # On an environment behind Access throughout (the sandbox), the paths that
-# outside services fetch, which stay open: Bluesky reads the client metadata
-# and keys under /api/channels/oauth/. Add platforms' webhooks here.
+# outside services call, which stay open, each with an Access application of
+# its own that bypasses Access (README.md): Bluesky reads the client metadata
+# and keys under /api/channels/oauth/, Stripe posts its events to the
+# webhook, and Meta its data deletion requests. Each request to the last two
+# is signed, and the server checks the signature.
 acme_access_bypass_paths:
   - path: ^/+api/+channels/+oauth/
+    to: server
+  - path: ^/+api/+auth/+stripe/+webhook/*$
+    to: server
+  - path: ^/+api/+data-deletion/+(facebook|threads)/*$
     to: server

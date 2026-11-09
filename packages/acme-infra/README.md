@@ -35,16 +35,22 @@ The tunnel's routes, for production (`roles/cloudflared/templates/config.yml.j2`
 | `docs.example.com`    | any                                        | the docs, 127.0.0.1:4322    | public    |
 
 The sandbox has the same routes on its own names (`sandbox.example.com`,
-`grafana-sandbox.example.com`…), all behind Access but for
-`/api/channels/oauth/*`, which Bluesky's servers fetch. Cloudflare's free
-certificate covers the zone and its first-level subdomains only, so no name
-goes deeper than that.
+`grafana-sandbox.example.com`…), all behind Access but for what outside
+services call: `/api/channels/oauth/*`, which Bluesky's servers fetch, and
+Stripe's webhook (`/api/auth/stripe/webhook`) and Meta's data deletion
+requests (`/api/data-deletion/facebook` and `/threads`), which the server
+checks the signature of. Cloudflare's free certificate covers the zone and
+its first-level subdomains only, so no name goes deeper than that.
 
 A rule with Access needs an Access application at Cloudflare's edge, and
 cloudflared checks the token Access adds too, so a route left without an
-application refuses every request rather than opening. Grafana signs people in
-from that token as editors; its `admin` account, whose password is generated
-on the server, is the way in when Access is down.
+application refuses every request rather than opening. cloudflared matches a
+rule's path after resolving dot segments, backslashes and repeated slashes
+(since 2026.10.0), and the admin paths in any letter case, so no way of
+writing a path reaches the admin without the token;
+[`tests/test_cloudflared.py`](tests/test_cloudflared.py) tries them. Grafana
+signs people in from that token as editors; its `admin` account, whose
+password is generated on the server, is the way in when Access is down.
 
 Cloudflare's edge waits up to 100 seconds for an answer, and the writing
 assistant answers within 90, so the tunnel needs no timeout of its own.
@@ -135,9 +141,12 @@ the owner's approval.
    - SSH: `ssh.example.com`.
    - Admin: `app.example.com/api/auth/admin`, `app.example.com/admin` and
      `app.example.com/fr/admin`.
-   - Sandbox: its app, site and docs names, plus a Bypass policy on
-     `sandbox.example.com/api/channels/oauth` for Bluesky; and its own Grafana
-     and SSH applications.
+   - Sandbox: its app, site and docs names; an application with a Bypass
+     policy for everyone on each path outside services call,
+     `sandbox.example.com/api/channels/oauth` for Bluesky,
+     `sandbox.example.com/api/auth/stripe/webhook` for Stripe, and
+     `sandbox.example.com/api/data-deletion` for Meta; and its own Grafana and
+     SSH applications.
 3. **A tunnel per environment**, locally managed so `config.yml` holds its
    routes, from your own machine:
 
