@@ -37,6 +37,10 @@ WORKDIR /app
 ENV NODE_ENV=production
 
 COPY --from=dependencies /cc-runtime/ /
+# ffprobe, which reads a video's dimensions, duration and codec: a static
+# build (no shared libraries, so it runs on the distroless base), pinned by
+# digest for amd64 and arm64. Without it, videos stay uploaded and unprobed.
+COPY --from=mwader/static-ffmpeg:9.0.2-1@sha256:f5d100184884eb3e82b0eb14bb5ebf98da99826ac824989720297fb9ef21c822 /ffprobe /usr/local/bin/ffprobe
 COPY --from=dependencies /app/node_modules node_modules
 COPY --from=dependencies /app/packages/acme-contract/node_modules packages/acme-contract/node_modules
 COPY --from=dependencies /app/packages/acme-server/node_modules packages/acme-server/node_modules

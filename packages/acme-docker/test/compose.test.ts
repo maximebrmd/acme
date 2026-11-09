@@ -109,6 +109,35 @@ describe("server.Dockerfile", () => {
     expect(bases.filter((base) => !isPinnedByDigest(base))).toStrictEqual([]);
   });
 
+  // COPY --from=<image> brings files from an image, as FROM does.
+  it("pins the images it copies from by digest", () => {
+    const stages = new Set(
+      instructions("FROM").flatMap((from) => {
+        const alias = / AS (?<alias>\S+)$/iu.exec(from)?.groups?.["alias"];
+
+        return alias === undefined ? [] : [alias];
+      })
+    );
+
+    const copied = instructions("COPY").flatMap((copy) => {
+      const source = /--from=(?<source>\S+)/u.exec(copy)?.groups?.["source"];
+
+      return source === undefined || stages.has(source) ? [] : [source];
+    });
+
+    expect(copied.filter((image) => !isPinnedByDigest(image))).toStrictEqual(
+      []
+    );
+  });
+
+  it("ships ffprobe, which probes videos", () => {
+    expect(
+      instructions("COPY").some((copy) =>
+        copy.endsWith(" /usr/local/bin/ffprobe")
+      )
+    ).toBeTruthy();
+  });
+
   it("pins its BuildKit frontend by digest", () => {
     const syntax = dockerfile.split("\n").at(0) ?? "";
 
