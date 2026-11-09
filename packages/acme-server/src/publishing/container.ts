@@ -18,9 +18,11 @@ import { ChannelAccessCredentials } from "#publishing/infrastructure/channel-acc
 import {
   ChannelGateLive,
   GatedPlatformPublisher,
+  UnreadMetrics,
 } from "#publishing/infrastructure/channel-gate.ts";
 import { DrizzlePostRepository } from "#publishing/infrastructure/drizzle-post-repository.ts";
 import { DrizzlePublicationJournal } from "#publishing/infrastructure/drizzle-publication-journal.ts";
+import { DrizzlePublishedTargets } from "#publishing/infrastructure/drizzle-published-targets.ts";
 import { DrizzleWorkspacePostStore } from "#publishing/infrastructure/drizzle-workspace-post-store.ts";
 import { LibraryAttachableMedia } from "#publishing/infrastructure/library-attachable-media.ts";
 import { LibraryMediaForPublishing } from "#publishing/infrastructure/library-media-for-publishing.ts";
@@ -36,12 +38,12 @@ import { OutboundGuard } from "#shared/infrastructure/platforms/outbound-guard.t
 
 /**
  * The publishing context's use cases (`PostDrafts`, `PostQueries`,
- * `PostScheduling`, `PostFollowUp`, for the handlers, `PostRecords`, for the
- * workspace context's exports and erasures, and `PostUsage`, for billing) and
- * the adapters behind its ports, with `references` for the channels and media
- * posts refer to and the posts a month allows. Needs the database (Drizzle),
- * the workflow engine, a TransactionRunner and Ids, and PublicationOutcomes
- * for PostFollowUp.
+ * `PostScheduling`, `PostFollowUp`, for the handlers; `PostRecords`, for the
+ * workspace context's exports and erasures; `PostUsage`, for billing;
+ * `PublishedTargets`, which analytics follows) and the adapters behind its
+ * ports, with `references` for the channels and media posts refer to and the
+ * posts a month allows. Needs the database (Drizzle), the workflow engine, a
+ * TransactionRunner and Ids, and PublicationOutcomes for PostFollowUp.
  */
 export const publishingWith = <E, R>(
   references: Layer.Layer<
@@ -62,6 +64,7 @@ export const publishingWith = <E, R>(
       Layer.mergeAll(
         DrizzlePostRepository,
         DrizzlePublicationJournal,
+        DrizzlePublishedTargets,
         DrizzleWorkspacePostStore,
         LoggedChannelHealth,
         WorkflowPublicationScheduler,
@@ -104,17 +107,25 @@ export const MediaInPostsLive = MediaInPosts.layer.pipe(
 // which the composition root brings.
 export { PostsHandlers as PostsApiLive } from "#publishing/api/posts.ts";
 
+// What the gates read analytics' counts with (MetricsReader): the readers
+// the composition root brings, or none.
+type GateReaders<E, R> = Layer.Layer<Layer.Success<typeof UnreadMetrics>, E, R>;
+
 /**
  * Registers the publishing workflows and the channel gates, which call the
- * platforms through `platforms`. Needs the cluster and what PublishingLive
+ * platforms through `platforms`, and read counts for analytics with
+ * `readers` (by default, none). Needs the cluster and what PublishingLive
  * provides, PublicationOutcomes included.
  */
-export const publishingWorkers = <E, R>(
-  platforms: Layer.Layer<PlatformPublisher, E, R>
+export const publishingWorkers = <E, R, E2 = never, R2 = never>(
+  platforms: Layer.Layer<PlatformPublisher, E, R>,
+  readers: GateReaders<E2, R2> = UnreadMetrics
 ) =>
   Layer.mergeAll(PublishPostV1Live, PublishTargetV1Live).pipe(
     Layer.provide(GatedPlatformPublisher),
-    Layer.merge(ChannelGateLive.pipe(Layer.provide(platforms)))
+    Layer.merge(
+      ChannelGateLive.pipe(Layer.provide(Layer.merge(platforms, readers)))
+    )
   );
 
 /**
@@ -138,5 +149,16 @@ export const PlatformsLive = RoutedPlatformPublisher.pipe(
   )
 );
 
-/** The workers as the server runs them, publishing to the platforms. */
-export const PublishingWorkersLive = publishingWorkers(PlatformsLive);
+/**
+ * The workers as the server runs them, publishing to the platforms, with
+ * the readers analytics' counts come from (MetricsReader), which the
+ * composition root provides.
+ */
+export const publishingWorkersReading = <E, R>(readers: GateReaders<E, R>) =>
+  publishingWorkers(PlatformsLive, readers);
+
+/**
+ * The MetricsReader that sends each read through its channel's gate, for
+ * analytics' collection.
+ */
+export { GatedMetricsReader } from "#publishing/infrastructure/channel-gate.ts";

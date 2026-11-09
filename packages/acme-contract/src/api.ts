@@ -1,6 +1,7 @@
 import { HttpApi, OpenApi } from "effect/http-api";
 
 import { AccountApi } from "./account.ts";
+import { AnalyticsApi } from "./analytics.ts";
 import { ApiKeysApi } from "./api-keys.ts";
 import { AssistantApi } from "./assistant.ts";
 import { BillingApi } from "./billing.ts";
@@ -49,6 +50,33 @@ export { WorkspaceSubscribed } from "./workspace-subscribed.ts";
 export { WorkspaceNameMismatch } from "./workspace-name-mismatch.ts";
 
 export { AltTextTooLong } from "./alt-text-too-long.ts";
+
+export {
+  AnalyticsApi,
+  AnalyticsSummarySchema,
+  CalendarDaySchema,
+  ChannelMetricsSchema,
+  EngagementDaySchema,
+  MetricsSnapshotSchema,
+  MetricTotalsSchema,
+  PostAnalyticsSchema,
+  PostMetricsSchema,
+  TargetMetricsSchema,
+  TopPostSchema,
+} from "./analytics.ts";
+
+export type {
+  AnalyticsSummary,
+  CalendarDay,
+  ChannelMetrics,
+  EngagementDay,
+  MetricsSnapshot,
+  MetricTotals,
+  PostAnalytics,
+  PostMetrics,
+  TargetMetrics,
+  TopPost,
+} from "./analytics.ts";
 
 export { ApiKeyNotFound } from "./api-key-not-found.ts";
 
@@ -160,6 +188,8 @@ export { CurrentMember } from "./current-member.ts";
 export { CurrentPrincipal } from "./current-principal.ts";
 
 export { Forbidden } from "./forbidden.ts";
+
+export { InvalidDateRange } from "./invalid-date-range.ts";
 
 export { InvalidTimeRange } from "./invalid-time-range.ts";
 
@@ -403,4 +433,5 @@ export class Api extends HttpApi.make("acme")
   .add(ConnectedAppsApi)
   .add(BillingApi)
   .add(CaptchaApi)
+  .add(AnalyticsApi)
   .annotateMerge(OpenApi.annotations({ title: "Acme API" })) {}

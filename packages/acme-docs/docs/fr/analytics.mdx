@@ -1,0 +1,45 @@
+---
+title: Statistiques
+description: Voyez ce qu’ont donné vos publications sur Mastodon et Bluesky, par canal et par jour, lesquelles ont le mieux marché, et les chiffres de chacune au fil du temps.
+sidebar:
+  order: 6
+---
+
+Une fois une publication parue, Acme relève ses chiffres sur la plateforme pendant un mois : j’aime, partages et réponses, et citations là où la plateforme les compte. Ouvrez un espace de travail depuis **Espaces de travail**, puis **Statistiques**, pour les voir. Tous les membres le peuvent, quel que soit leur rôle.
+
+## Ce qu’Acme compte [#counts]
+
+| Chiffre     | Mastodon                 | Bluesky        |
+| ----------- | ------------------------ | -------------- |
+| J’aime      | Favoris                  | J’aime         |
+| Partages    | Partages (boosts)        | Republications |
+| Réponses    | Réponses                 | Réponses       |
+| Citations   | À partir de Mastodon 4.5 | Citations      |
+| Impressions | Non fournies             | Non fournies   |
+
+Aucune des deux plateformes ne dit combien de personnes ont vu une publication : Acme n’affiche donc pas d’impressions pour elles. Un chiffre qu’une plateforme ne donne pas apparaît comme manquant, jamais comme zéro. L’**engagement**, ce sont les j’aime, partages, réponses et citations réunis.
+
+## Quand les chiffres sont relevés [#schedule]
+
+Acme relève les chiffres d’une publication toutes les heures pendant les 48 heures qui suivent sa parution, quand ils bougent le plus, puis chaque jour jusqu’à ses 30 jours, puis s’arrête. Le premier relevé arrive dans l’heure qui suit la parution.
+
+Les relevés passent à tour de rôle avec les publications du canal : Acme fait un appel à la fois par compte, si bien qu’un relevé ne double jamais une publication en cours. Quand une plateforme demande à Acme de ralentir, ou qu’il reste peu de requêtes au compte, Acme arrête de relever ce canal et reprend à l’heure suivante. Une publication que la plateforme ne montre plus, supprimée ou non publique, attend son prochain tour ; un canal désactivé ou à reconnecter est laissé de côté jusqu’à ce qu’il refonctionne, et les publications d’un canal déconnecté ne sont plus relevées.
+
+- **Mastodon** : Acme lit chaque publication sur le serveur du compte, avec l’accès du compte quand celui-ci a autorisé Acme à lire ses publications. Les comptes connectés avant qu’Acme le demande sont lus sans cet accès, ce qui montre les publications publiques et non listées ; [reconnectez](/channels#reconnect)-en un pour relever aussi ses publications réservées aux abonnés.
+- **Bluesky** : Acme lit les publications sur le service public de Bluesky, 25 à la fois, sans la session du compte : les chiffres d’une publication sont publics sur Bluesky.
+
+## La page des statistiques [#page]
+
+Choisissez les 7, 30 ou 90 derniers jours. Les jours suivent le fuseau horaire de votre navigateur, et la période retient les publications parues pendant ces jours :
+
+- **Totaux** : combien de publications sont parues, en comptant chaque canal où une publication est parue, et leurs derniers chiffres, en tout et par canal.
+- **Engagement au fil du temps** : ce que ces publications ont gagné chaque jour, en graphique. Choisissez **Tableau** pour avoir les mêmes chiffres en tableau, c’est aussi ce que lisent les lecteurs d’écran.
+- **Meilleures publications** : les cinq publications au plus fort engagement, chacune avec un lien vers elle dans Acme et sur la plateforme.
+
+## Les chiffres d’une publication [#post]
+
+La page d’une publication montre ce qu’elle a donné sur chaque canal où elle est parue : ses derniers chiffres, quand ils ont été relevés, et un graphique de chaque relevé, avec les mêmes chiffres en tableau. Une publication parue il y a moins d’une heure dit quand ses chiffres arrivent.
+
+## Par l’API [#api]
+
+`GET /api/workspaces/{workspaceId}/analytics/summary?from=2026-11-01&to=2026-11-30&timeZone=Europe/Paris` résume les publications parues sur une période d’au plus 366 jours, selon les jours d’un fuseau horaire IANA. `GET /api/workspaces/{workspaceId}/analytics/posts/{postId}` donne les chiffres d’une publication au fil du temps. Les deux demandent la permission `analytics:read`. Voir la [référence de l’API](/reference).

@@ -68,6 +68,7 @@ export const fakeMastodon = Effect.fnUntraced(function* fakeMastodon(
               "read",
               "profile",
               "read:accounts",
+              "read:statuses",
               "write:statuses",
               "write:media",
             ],

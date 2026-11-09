@@ -47,3 +47,11 @@ export const MediaAssetIdSchema = Uuid7Schema.pipe(
 );
 
 export type MediaAssetId = typeof MediaAssetIdSchema.Type;
+
+// The publication of one post on one channel: publishing's, and the post on
+// a channel whose counts analytics follows.
+export const PostTargetIdSchema = Uuid7Schema.pipe(
+  Schema.brand("PostTargetId")
+);
+
+export type PostTargetId = typeof PostTargetIdSchema.Type;

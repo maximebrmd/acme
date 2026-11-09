@@ -1,10 +1,5 @@
-import { Schema } from "effect";
+// The publication of one post on one channel. Analytics refers to it too, so
+// the id lives in the shared kernel.
+export { PostTargetIdSchema } from "#shared/domain/ids.ts";
 
-import { Uuid7Schema } from "#shared/domain/ids.ts";
-
-/** The publication of one post on one channel. */
-export const PostTargetIdSchema = Uuid7Schema.pipe(
-  Schema.brand("PostTargetId")
-);
-
-export type PostTargetId = typeof PostTargetIdSchema.Type;
+export type { PostTargetId } from "#shared/domain/ids.ts";

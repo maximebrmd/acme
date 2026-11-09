@@ -1,0 +1,45 @@
+---
+title: Analytics
+description: See how your posts did on Mastodon and Bluesky, by channel and day, which posts did best, and each post's counts over time.
+sidebar:
+  order: 6
+---
+
+Once a post goes live, Acme reads its counts back from the platform for a month: likes, reposts and replies, and quotes where the platform counts them. Open a workspace from **Workspaces**, then **Analytics**, to see them. Every member may, whatever their role.
+
+## What Acme counts [#counts]
+
+| Count       | Mastodon               | Bluesky   |
+| ----------- | ---------------------- | --------- |
+| Likes       | Favourites             | Likes     |
+| Reposts     | Boosts                 | Reposts   |
+| Replies     | Replies                | Replies   |
+| Quotes      | From Mastodon 4.5 only | Quotes    |
+| Impressions | Not given              | Not given |
+
+Neither platform tells how many people saw a post, so Acme shows no impressions for them. A count a platform does not give is shown as missing, never as zero. **Engagement** is likes, reposts, replies and quotes together.
+
+## When counts are read [#schedule]
+
+Acme reads a post's counts every hour for 48 hours after it goes live, when they move most, then every day until the post is 30 days old, then stops. The first reading comes within the hour after the post goes live.
+
+Readings take turns with the channel's publishing: Acme makes one call at a time per account, so a reading never races a post going out. When a platform asks Acme to slow down, or keeps few requests for the account, Acme stops reading that channel and goes on at the next hour. A post the platform no longer shows, deleted or not public, waits for its next turn; a channel that is turned off or needs reconnecting is passed over until it works again, and a disconnected channel's posts are no longer read.
+
+- **Mastodon**: Acme reads each post on the account's server, with the account's access when the account allowed Acme to read its posts. Accounts connected before Acme asked for that are read without it, which shows public and unlisted posts; [reconnect](/channels#reconnect) one to read its followers-only posts too.
+- **Bluesky**: Acme reads posts from Bluesky's public service, 25 at a time, without the account's session: a post's counts are public on Bluesky.
+
+## The analytics page [#page]
+
+Pick the last 7, 30 or 90 days. Days run in your browser's time zone, and the range takes the posts published in it:
+
+- **Totals**: how many posts went out, counting each channel a post went out on, and their latest counts, in all and by channel.
+- **Engagement over time**: what those posts gained each day, as a chart. Choose **Table** for the same figures as a table, which is also what screen readers read.
+- **Top posts**: the five posts with the most engagement, each with a link to it in Acme and on the platform.
+
+## A post's counts [#post]
+
+A post's page shows how it did on each channel it went out on: its latest counts, when they were read, and a chart of each reading, with the same figures as a table. A post that went out less than an hour ago says when its counts come.
+
+## Through the API [#api]
+
+`GET /api/workspaces/{workspaceId}/analytics/summary?from=2026-11-01&to=2026-11-30&timeZone=Europe/Paris` sums up the posts published over a range of days, at most 366, as days run in an IANA time zone. `GET /api/workspaces/{workspaceId}/analytics/posts/{postId}` answers with a post's counts over time. Both need the `analytics:read` permission. See the [API reference](/reference).

@@ -14,6 +14,7 @@ import { ClusterCron, RunnerAddress } from "effect/cluster";
 import type { Sharding } from "effect/cluster";
 import { SqlClient } from "effect/sql";
 
+import { CollectMetrics } from "#analytics/application/collect-metrics.ts";
 import { clusterLayer } from "#app/cluster.ts";
 import { CronsLive } from "#app/crons.ts";
 import { ConnectChannel } from "#channels/application/connect-channel.ts";
@@ -81,9 +82,23 @@ const Ticks = ClusterCron.make({
   name: tickName,
 });
 
-// The channels jobs the server's crons call, doing nothing: a real sweep
-// would refresh, or mark, the channels other suites keep in this database.
+// The jobs the server's crons call, doing nothing: a real sweep would
+// refresh, or mark, the channels other suites keep in this database, and a
+// real collection read their posts.
 const ChannelJobsTest = Layer.mergeAll(
+  Layer.succeed(
+    CollectMetrics,
+    CollectMetrics.of({
+      run: () =>
+        Effect.succeed({
+          deferred: 0,
+          discovered: 0,
+          ended: 0,
+          read: 0,
+          skipped: 0,
+        }),
+    })
+  ),
   Layer.succeed(
     RefreshChannelTokens,
     RefreshChannelTokens.of({

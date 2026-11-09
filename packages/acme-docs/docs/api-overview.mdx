@@ -2,7 +2,7 @@
 title: API overview
 description: How the Acme HTTP API is organised, how to authenticate to it, where its OpenAPI document lives, and where to find the reference for every endpoint.
 sidebar:
-  order: 8
+  order: 10
 ---
 
 The web app, the command line and the MCP endpoint are built on the same HTTP API, so anything they do, your own code can do too.
@@ -36,7 +36,7 @@ With a session or an OAuth token, `GET /api/me` tells who you are, and lists you
 
 ## Workspaces [#workspaces]
 
-A workspace's resources live under `/api/workspaces/{workspaceId}/`: `channels`, `posts`, `media`, `assistant` and `api-keys`; `DELETE /api/workspaces/{workspaceId}` deletes the workspace itself, with everything in it ([Workspaces and your account](/settings#delete-workspace)). Each endpoint's reference names the permission it needs, such as `post:schedule` or `channel:connect`.
+A workspace's resources live under `/api/workspaces/{workspaceId}/`: `channels`, `posts`, `media`, `assistant`, `analytics`, `billing` and `api-keys`; `DELETE /api/workspaces/{workspaceId}` deletes the workspace itself, with everything in it ([Workspaces and your account](/settings#delete-workspace)). Each endpoint's reference names the permission it needs, such as `post:schedule` or `channel:connect`.
 
 | Status | Meaning                                                                        |
 | ------ | ------------------------------------------------------------------------------ |
