@@ -1,0 +1,103 @@
+---
+title: Command line
+description: Build the acme command line, point it at your instance, sign in with acme login, and check who you are with acme whoami.
+sidebar:
+  order: 4
+---
+
+`acme` works with an Acme instance from a terminal. It signs in as you, in a browser, and then acts with your role in each of your workspaces.
+
+## Get it [#install]
+
+There are no released builds yet. Build it from a clone of the repository, with Bun installed:
+
+```sh
+bun install --frozen-lockfile
+bun nx run acme-cli:build
+packages/acme-cli/dist/acme --help
+```
+
+`packages/acme-cli/dist/acme` is one file with Bun inside: copy it anywhere on your `PATH`.
+
+## Choose the instance [#instance]
+
+Point `acme` at the address you open Acme at, such as `https://acme.example.com`, with `--api-url` or `ACME_API_URL`. The flag wins; without either, `acme` uses `http://localhost:3000`, a server running from source.
+
+```sh
+export ACME_API_URL=https://acme.example.com
+acme health
+```
+
+`acme health` says whether the instance answers. It exits with 0 when it does, and with 1 when it is unreachable (after 5 seconds) or answers with an error, so scripts can wait on it.
+
+## Sign in [#login]
+
+```sh
+acme login
+```
+
+`acme login` prints an address and a code of eight letters and digits:
+
+```text
+To sign in to https://acme.example.com, open https://acme.example.com/device in a browser and enter the code WDJB-MJHT.
+Or open https://acme.example.com/device?user_code=WDJBMJHT, where the code is filled in.
+Waiting for you to approve the sign-in (the code works for 10m)…
+```
+
+1. Open the address. Sign in to Acme there if you are not signed in yet.
+2. Check that the code matches the one in your terminal, then choose **Allow**. Approve only a code you asked for yourself: whoever started the sign-in gets your access.
+3. Back in the terminal, `acme login` says where it saved the sign-in.
+
+The code works for 10 minutes. **Deny** refuses the sign-in, and `acme login` stops.
+
+`acme` asks to do what your role allows in your workspaces, and to stay signed in. It saves the sign-in for that instance in `credentials.json`, which only you may read, in the first of these folders that is set:
+
+- `ACME_CONFIG_DIR`;
+- `$XDG_CONFIG_HOME/acme`;
+- `%APPDATA%\acme`, on Windows;
+- `~/.config/acme`.
+
+Each instance has its own sign-in, keyed by its address, so you can be signed in to several. `acme` renews its access on its own; it never prints its tokens.
+
+## Who am I [#whoami]
+
+```sh
+acme whoami
+```
+
+```text
+Signed in to https://acme.example.com as Sam Example <sam@example.com>.
+Workspaces:
+  Studio (owner)
+  Clients (editor)
+```
+
+When the sign-in no longer works, because it was revoked or your account was banned, `acme whoami` says so and asks you to run `acme login` again. Before you sign in at all, it answers that you are not signed in.
+
+## Sign out [#logout]
+
+```sh
+acme logout
+```
+
+`acme logout` tells the instance to revoke the sign-in, then forgets it, even when the instance does not answer within 5 seconds.
+
+## Connect an MCP client [#mcp]
+
+```sh
+acme mcp
+```
+
+`acme mcp` prints the instance's MCP endpoint and a configuration most MCP clients take, and warns when the instance does not let MCP clients register themselves. [Connect an MCP client](/mcp) explains the rest.
+
+## Settings [#settings]
+
+| Variable          | What it does                                                                           |
+| ----------------- | -------------------------------------------------------------------------------------- |
+| `ACME_API_URL`    | The instance's address, unless `--api-url` is given. Default: `http://localhost:3000`. |
+| `ACME_CONFIG_DIR` | The folder `credentials.json` is saved in.                                             |
+| `XDG_CONFIG_HOME` | Without `ACME_CONFIG_DIR`, the sign-in goes in its `acme` folder.                      |
+| `APPDATA`         | Without either, on Windows, the sign-in goes in its `acme` folder.                     |
+| `HOME`            | Otherwise, the sign-in goes in `~/.config/acme`.                                       |
+
+`acme --help` lists the commands, and `acme <command> --help` describes one.

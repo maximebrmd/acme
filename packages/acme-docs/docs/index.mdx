@@ -8,22 +8,32 @@ sidebar:
 Acme is a social media scheduling platform. "Acme" is a working name.
 
 <Callout type="warning" title="Early development">
-  Acme is being built in the open and has not been released yet. These pages
-  describe how it is meant to work and will grow as features land.
+  Acme is being built in the open and has not been released yet. You can already
+  create workspaces, connect Mastodon and Bluesky accounts, upload media, and
+  write and schedule posts on a calendar, but posts do not go out yet: no
+  platform publishes them, so a scheduled post ends as failed when its time
+  comes. These pages describe what works today, and grow as features land.
 </Callout>
 
 ## What Acme does [#what-it-does]
 
-- **Write once.** Draft a post in one editor, then adapt it for each platform where it needs to differ.
+- **Write once.** Draft a post in one editor, then give it its own text on each channel where it needs to differ. Counters show how much room each platform leaves.
 - **Schedule across platforms.** Pick the accounts and the time. Acme publishes each post when it is due, in the time zone you scheduled it in, daylight saving included.
-- **See results.** Acme collects each platform's metrics for your posts, so you can see what worked in one place.
-- **Work as a team.** Organisations have members and roles, so several people can write, review and schedule together.
+- **See results.** Acme will collect each platform's metrics for your posts, so you can see what worked in one place.
+- **Work as a team.** Workspaces have members and roles, so several people can write, review and schedule together.
 
 Acme never retries a post blindly: when a platform does not confirm whether a post went out, Acme marks it unconfirmed and asks you to check the platform before posting again.
 
+## Guides [#guides]
+
+- [Connect channels](/channels): add the social accounts a workspace posts to.
+- [Schedule posts](/scheduling): write a post, pick its channels and its time, and move it on the calendar.
+- [Command line](/cli): sign in from a terminal with `acme login`, and check who you are with `acme whoami`.
+- [Connect an MCP client](/mcp): let an AI assistant read your workspace.
+
 ## Self-hostable [#self-hostable]
 
-Every outside service Acme relies on has a self-hostable default. A self-hosted instance needs only Postgres and an S3-compatible store; email, billing, captcha, AI and telemetry are optional. [Self-hosting](/self-hosting) lists the services and the settings they read.
+Every outside service Acme relies on has a self-hostable default. A self-hosted instance needs Postgres, an S3-compatible store and a way to send email; billing, captcha, AI and telemetry are optional. [Self-hosting](/self-hosting) explains how to run it, and [Environment variables](/environment-variables) lists every setting.
 
 ## Fair source [#fair-source]
 
@@ -31,4 +41,4 @@ The source is public under the Functional Source License (FSL-1.1-ALv2). You may
 
 ## Build on the API [#api]
 
-Everything the web app does goes through the same HTTP API. [The API overview](/api-overview) explains how it is organised, and the [API reference](/reference) lists every endpoint.
+Everything the web app does goes through the same HTTP API. [The API overview](/api-overview) explains how it is organised and how to authenticate, and the [API reference](/reference) lists every endpoint.

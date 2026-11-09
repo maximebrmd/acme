@@ -1,0 +1,75 @@
+---
+title: Connecter des canaux
+description: Connectez les comptes Mastodon et Bluesky sur lesquels publie un espace de travail, reconnectez-les quand une plateforme le demande, et déconnectez-les.
+sidebar:
+  order: 2
+---
+
+Un canal est un compte social connecté à un espace de travail : un compte Mastodon ou Bluesky aujourd’hui. Les publications partent sur des canaux : connectez-en au moins un avant de programmer quoi que ce soit.
+
+Ouvrez un espace de travail depuis **Espaces de travail**, puis **Canaux**. Chaque membre voit les canaux de l’espace de travail ; seuls les propriétaires et les administrateurs les connectent, les reconnectent et les déconnectent.
+
+<Callout type="note" title="Deux plateformes pour l’instant">
+  Acme connecte les comptes Mastodon et Bluesky. Les autres plateformes qu’il
+  connaît, comme X, LinkedIn, Threads, Instagram et Facebook, ne peuvent pas
+  encore être connectées.
+</Callout>
+
+## Connecter un compte [#connect]
+
+Vous vous connectez sur la plateforme, acceptez ce qu’Acme demande, et la plateforme vous renvoie vers Acme, qui termine la connexion. Terminez-la dans l’onglet du navigateur où vous l’avez commencée, dans les 15 minutes.
+
+Connecter un compte que l’espace de travail a déjà reconnecte son canal au lieu d’en ajouter un second. Plusieurs espaces de travail peuvent connecter le même compte.
+
+### Mastodon [#mastodon]
+
+Sous **Mastodon**, indiquez le serveur du compte, comme `mastodon.social`, ou l’adresse du compte lui-même, comme `@vous@mastodon.social`, puis choisissez **Connecter Mastodon**.
+
+Acme fonctionne avec n’importe quel serveur Mastodon accessible sur Internet en HTTPS. La première fois que quelqu’un connecte un compte d’un serveur, Acme s’y enregistre comme application. Il demande à lire le profil du compte, et à publier des messages et des médias.
+
+### Bluesky [#bluesky]
+
+Sous **Bluesky**, indiquez votre identifiant, comme `vous.bsky.social`, pour aller directement sur la page de connexion de votre serveur, ou laissez-le vide pour choisir le compte sur Bluesky. Choisissez ensuite **Connecter Bluesky**.
+
+Le serveur Acme doit être configuré pour Bluesky : sur une instance auto-hébergée, voyez [Bluesky](/self-hosting#bluesky). D’ici là, la connexion répond que le serveur n’est pas configuré pour cette plateforme.
+
+## États [#statuses]
+
+Chaque canal affiche l’un de ces états :
+
+| État          | Ce qu’il signifie                                                                                              |
+| ------------- | -------------------------------------------------------------------------------------------------------------- |
+| Connecté      | Acme peut publier sur le compte.                                                                               |
+| À reconnecter | La plateforme n’accepte plus l’accès d’Acme. Rien ne part sur le canal tant que vous ne l’avez pas reconnecté. |
+| Désactivé     | Rien ne part sur le canal.                                                                                     |
+
+Un canal dont l’accès ne peut pas être renouvelé affiche aussi la date avant laquelle le reconnecter.
+
+## Garder les canaux connectés [#keep-connected]
+
+Acme renouvelle de lui-même l’accès de chaque compte avant qu’il n’expire : il rafraîchit une session Bluesky un mois avant qu’elle ne tombe. L’accès à Mastodon n’expire pas, tant que personne ne le révoque.
+
+Quand une plateforme refuse l’accès d’Acme, par exemple parce que le titulaire du compte l’a révoqué, le canal passe à **À reconnecter**, et les propriétaires et administrateurs de l’espace de travail reçoivent un e-mail, une seule fois. Quand une plateforme ne répond pas, Acme réessaie plus tard et laisse le canal tel quel.
+
+## Reconnecter [#reconnect]
+
+Choisissez **Reconnecter** à côté du canal, puis connectez-vous sur la plateforme avec le même compte. La connexion avec un autre compte est refusée : pour publier dessus, connectez-le comme un nouveau canal.
+
+## Déconnecter [#disconnect]
+
+Choisissez **Déconnecter** à côté du canal et confirmez. Acme supprime les jetons qu’il détient pour le compte et n’y publie plus rien. Vous pourrez le connecter de nouveau plus tard.
+
+La déconnexion ne prévient pas la plateforme. Pour y retirer aussi l’accès d’Acme, révoquez-le dans les réglages du compte sur la plateforme.
+
+## Quand la connexion échoue [#errors]
+
+| Message                                                                       | Que faire                                                                                            |
+| ----------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| Ce serveur n’est pas configuré pour connecter des comptes de cette plateforme | Demandez à l’administrateur de l’instance : il manque au serveur un réglage que la plateforme exige. |
+| Ce n’est pas l’adresse d’un serveur                                           | Vérifiez l’adresse du serveur Mastodon, par exemple `mastodon.social`.                               |
+| Acme ne se connecte qu’à des serveurs publics, en HTTPS                       | Le serveur est privé, ou ne répond pas en HTTPS.                                                     |
+| Aucun compte ne correspond à cet identifiant                                  | Vérifiez l’identifiant Bluesky.                                                                      |
+| Cette connexion a expiré ou a été lancée ailleurs                             | Recommencez depuis les canaux de l’espace de travail, dans cet onglet.                               |
+| La connexion a été annulée sur la plateforme                                  | Vous, ou la plateforme, avez refusé. Recommencez si vous vouliez connecter le compte.                |
+| Vous vous êtes connecté à un autre compte que celui de ce canal               | Reconnectez-vous avec le compte du canal.                                                            |
+| La plateforme n’a pas répondu                                                 | Réessayez dans un instant.                                                                           |

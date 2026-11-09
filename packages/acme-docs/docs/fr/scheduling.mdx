@@ -1,0 +1,108 @@
+---
+title: Programmer des publications
+description: Rédigez une publication, donnez-lui un texte propre sur certains canaux, programmez-la dans votre fuseau horaire, et déplacez-la ou annulez-la depuis l’éditeur ou le calendrier.
+sidebar:
+  order: 3
+---
+
+Une publication a un texte, que chacun de ses canaux peut remplacer par le sien, et une heure de départ, gardée dans le fuseau horaire où vous l’avez programmée. Rédigez-la dans l’éditeur, puis retrouvez-la sur le calendrier.
+
+<Callout type="warning" title="Les publications ne partent pas encore">
+  Acme ne publie encore sur aucune plateforme. Une publication programmée arrive
+  à son heure comme les autres, puis finit en échec sur chaque canal, ce que
+  l’éditeur affiche. Programmer, déplacer et annuler fonctionnent déjà comme
+  décrit ici.
+</Callout>
+
+## Qui peut faire quoi [#roles]
+
+| Rôle           | Publications                                           |
+| -------------- | ------------------------------------------------------ |
+| Propriétaire   | Rédiger, programmer, déplacer et annuler               |
+| Administrateur | Rédiger, programmer, déplacer et annuler               |
+| Éditeur        | Rédiger, programmer, déplacer et annuler               |
+| Contributeur   | Rédiger et enregistrer des brouillons ; pas programmer |
+| Lecteur        | Lire                                                   |
+
+Annuler une publication, brouillon compris, demande le même droit que la programmer.
+
+## Rédiger une publication [#write]
+
+Sur la carte d’un espace de travail, dans **Espaces de travail**, choisissez **Nouvelle publication**.
+
+1. Sous **Canaux**, cochez les comptes où part la publication. La liste reprend les [canaux](/channels) de l’espace de travail.
+2. Écrivez dans **Texte pour tous les canaux**. Les mentions, les hashtags et les liens ressortent pendant la saisie, et sont gardés en texte brut.
+3. Pour dire autre chose sur un canal, ouvrez son onglet et écrivez-y son propre texte. Laissé vide, un canal reprend le texte de tous les canaux.
+4. Choisissez **Enregistrer le brouillon** pour garder la publication sans heure. L’adresse de l’éditeur nomme alors la publication : gardez-la pour revenir au brouillon, que le calendrier n’affiche pas.
+
+Sous le texte, un compteur par plateforme montre la place qui reste. Les plateformes ne comptent pas de la même façon : un même texte peut tenir sur l’une et pas sur l’autre.
+
+| Plateforme | Limite du texte                                                                                              | Images et vidéos |
+| ---------- | ------------------------------------------------------------------------------------------------------------ | ---------------- |
+| Bluesky    | 300 caractères, et 3 000 octets                                                                              | 4                |
+| Mastodon   | 500 caractères (la valeur par défaut d’un serveur)                                                           | 4                |
+| X          | 280, où un lien compte 23, et un emoji ou un caractère hors des alphabets latin, grec et cyrillique compte 2 | 4                |
+| Threads    | 500 caractères                                                                                               | 20               |
+| LinkedIn   | 3 000 caractères                                                                                             | 20               |
+| Instagram  | 2 200 caractères, 30 hashtags, 20 mentions ; une image ou une vidéo est obligatoire                          | 20               |
+
+Bluesky compte ce qu’un lecteur voit comme un seul caractère : un emoji fait de plusieurs points de code compte une fois. Facebook, TikTok, YouTube et Pinterest n’ont pas encore de limite dans Acme. Acme vérifie les limites quand vous programmez une publication, pas pendant que vous rédigez un brouillon.
+
+## La programmer [#schedule]
+
+Sous **Quand**, choisissez la **Date**, l’**Heure** et le **Fuseau horaire**, qui part de celui de votre navigateur. Choisissez ensuite **Programmer**. Le bouton reste inactif tant que la publication dépasse une limite sur l’un de ses canaux, et l’éditeur liste ce qu’il faut corriger.
+
+L’heure est celle de l’horloge dans ce fuseau, changements d’heure compris :
+
+- une heure que l’horloge saute, comme 02:30 la nuit où elle avance, passe au moment du saut, 03:00 ;
+- une heure qui revient deux fois, la nuit où l’horloge recule, est la première des deux : la publication part une seule fois.
+
+Une heure passée depuis moins d’une minute compte comme maintenant. Une heure plus ancienne est refusée : choisissez une heure à venir.
+
+## La déplacer ou l’annuler [#move-cancel]
+
+Une fois une publication programmée, son texte est verrouillé ; son heure ne l’est pas.
+
+- Dans l’éditeur, changez la date, l’heure ou le fuseau, puis choisissez **Déplacer à cette heure**.
+- Sur le calendrier, faites glisser la publication par sa poignée vers une autre heure ou un autre jour. Elle garde le fuseau horaire où elle a été programmée.
+- Pour l’arrêter, choisissez **Annuler la publication** dans l’éditeur et confirmez. Elle ne part sur aucun canal, et ne peut plus être programmée.
+
+Déplacer une publication ne revérifie pas son texte auprès de ses canaux.
+
+## Le calendrier [#calendar]
+
+Sur la carte d’un espace de travail, choisissez **Calendrier**. Il montre les publications programmées par **Semaine** ou par **Mois**, à leur heure dans le fuseau horaire de votre navigateur, avec l’état de chacune. Choisissez une publication pour l’ouvrir dans l’éditeur. Pour ouvrir le calendrier sur une semaine donnée, ajoutez à son adresse `?date=` suivi d’un jour de cette semaine, comme `?date=2026-11-09`.
+
+## À l’heure de la publication [#publishing]
+
+À l’heure prévue, Acme envoie la publication à chacun de ses canaux séparément, une publication à la fois par compte, et note comment chacun s’est terminé :
+
+| Sur un canal | Ce qui s’est passé                                                                                                             |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------ |
+| Publié       | La plateforme a pris la publication, et a donné son adresse quand elle en a une.                                               |
+| Échec        | La plateforme a refusé la publication, le compte est à reconnecter, ou la publication est partie trop tard, comme ci-dessous.  |
+| À vérifier   | Acme ne peut pas savoir si la plateforme l’a publiée. Vérifiez sur la plateforme avant de republier : Acme ne réessaie jamais. |
+| Annulé       | La publication a été annulée avant de partir sur ce canal.                                                                     |
+
+La publication dans son ensemble indique alors **Publié**, **Publié en partie**, **À vérifier**, **Échec** ou **Annulé**.
+
+Acme patiente plutôt que d’abandonner quand une plateforme est occupée :
+
+- une plateforme qui ne répond pas est relancée après 1, 5, 15, 60 et 60 minutes, puis la publication y échoue ;
+- une plateforme qui limite le rythme des publications d’Acme est relancée au moment qu’elle indique, jusqu’à 8 fois et au plus tard un jour après l’heure de la publication ;
+- une plateforme qui n’accepte plus l’accès du compte fait échouer la publication chez elle, et le canal est à [reconnecter](/channels#reconnect).
+
+Une publication qui n’a pas pu partir dans l’heure qui suit son heure prévue, par exemple parce que le serveur était arrêté, est marquée manquée et ne part pas.
+
+## Médias [#media]
+
+Sur la carte d’un espace de travail, **Médiathèque** regroupe les images et vidéos de l’espace de travail. Déposez-y des fichiers, ou choisissez-les ; les grandes vidéos partent en plusieurs morceaux, et un import peut être annulé ou relancé. Donnez à chaque fichier une description pour les personnes qui ne peuvent pas le voir, de 2 000 caractères au plus.
+
+| Type   | Formats               | Fichier le plus lourd |
+| ------ | --------------------- | --------------------- |
+| Images | JPEG, PNG, GIF, WebP  | 16 Mio                |
+| Vidéos | MP4, QuickTime (.mov) | 1 Gio                 |
+
+Acme lit chaque fichier une fois stocké : les dimensions d’une image, les dimensions, la durée et le codec d’une vidéo. Une image dont le contenu n’est pas du type sous lequel elle a été importée est refusée, et supprimée. Les contributeurs et au-delà importent ; les éditeurs et au-delà suppriment.
+
+Les publications ne peuvent pas encore montrer de médias : l’éditeur marque la place où ils iront.
