@@ -24,7 +24,7 @@ const url = "http://127.0.0.1:0";
 // Synthetic values, which sign and encrypt nothing outside these runs. The
 // token key is 32 bytes, for AES-256-GCM.
 const authSecret = "peal-e2e-synthetic-auth-secret-0f6b2d9e4a1c7e3b";
-const tokenKeys = "e2e:YWNtZS1lMmUtc3ludGhldGljLXRva2VuLWtleS0wMDE=";
+const tokenKeys = "e2e:cGVhbC1lMmUtc3ludGhldGljLXRva2VuLWtleS0wMDE=";
 
 export default {
   // The account each run signs up, under a new address every time (see

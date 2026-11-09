@@ -3,7 +3,7 @@ import { Option, Result, Schema } from "effect";
 import { AltTextTooLong } from "./alt-text-too-long.ts";
 
 /**
- * The most characters peal keeps in a description: more than platforms
+ * The most characters Peal keeps in a description: more than platforms
  * show, so no description is cut here. Each platform's own limit is checked
  * when a post is scheduled.
  */

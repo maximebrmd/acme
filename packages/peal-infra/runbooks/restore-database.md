@@ -8,7 +8,8 @@ to a time also rewinds everything after it, so prefer the latest state unless
 what happened after the time is the damage.
 
 Run every command on the server, as `ops`, through the tunnel
-(`ssh ops@ssh.example.com`). Times are UTC.
+(`ssh ops@ssh.peal.social`, or `ssh ops@sandbox-ssh.peal.social` for the
+sandbox). Times are UTC.
 
 ## On the same server
 

@@ -3,7 +3,7 @@ import { Duration, Option, Schema } from "effect";
 const PixelsSchema = Schema.Int.check(Schema.isGreaterThan(0));
 
 /**
- * The longest duration peal records: a day, far beyond what any platform
+ * The longest duration Peal records: a day, far beyond what any platform
  * takes. A container can claim any duration, so a longer one is not known.
  */
 export const maxDuration = Duration.hours(24);

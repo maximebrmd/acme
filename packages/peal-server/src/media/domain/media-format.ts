@@ -51,7 +51,7 @@ export const mediaFormats = {
 } as const satisfies Readonly<Record<MediaContentType, MediaFormat>>;
 
 /**
- * The largest file peal stores, per kind. Each is the largest limit any
+ * The largest file Peal stores, per kind. Each is the largest limit any
  * target platform documents, so nothing a platform could take is refused:
  *
  * - Images, 16 MiB: Mastodon's documented example limit, above X's 15 MB

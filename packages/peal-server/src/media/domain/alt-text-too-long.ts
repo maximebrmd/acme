@@ -1,6 +1,6 @@
 import { Schema } from "effect";
 
-/** A description longer than peal keeps. */
+/** A description longer than Peal keeps. */
 export class AltTextTooLong extends Schema.TaggedError<AltTextTooLong>()(
   "AltTextTooLong",
   { length: Schema.Int, maxLength: Schema.Int }
