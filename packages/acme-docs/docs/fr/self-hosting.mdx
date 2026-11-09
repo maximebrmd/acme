@@ -176,7 +176,7 @@ La facturation est désactivée tant que `STRIPE_SECRET_KEY` n’est pas défini
 | Pro        | 10     | 5       | 300                   | 100                             |
 | Business   | 30     | 20      | Illimitées            | 500                             |
 
-Les publications comptent dans le mois civil (UTC) où elles partent ; les publications annulées ne comptent pas. Les membres comptent avec les invitations encore en attente au moment d’inviter. Une limite s’applique quand on ajoute quelque chose : un espace de travail passé à un abonnement inférieur garde ce qu’il a déjà.
+Les publications comptent dans le mois civil (UTC) où elles partent, une fois programmées : les brouillons et les publications annulées ne comptent pas, une publication repassée en brouillon libère sa place, et une publication renvoyée sur un canal ne compte qu’une fois. Les membres comptent avec les invitations encore en attente au moment d’inviter. Une limite s’applique quand on ajoute quelque chose : un espace de travail passé à un abonnement inférieur garde ce qu’il a déjà.
 
 1. Dans Stripe, créez un produit pour chaque abonnement payant avec un prix mensuel, et définissez `STRIPE_PRICE_PRO` et `STRIPE_PRICE_BUSINESS` à leurs identifiants.
 2. Ajoutez un webhook vers `PUBLIC_URL/api/auth/stripe/webhook` avec les événements `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted` et `checkout.session.completed`, et définissez `STRIPE_WEBHOOK_SECRET` à son secret de signature. Laissez ce chemin ouvert à Stripe si quelque chose protège le reste de `/api/auth`.

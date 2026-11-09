@@ -116,7 +116,9 @@ export class PostRepository extends Context.Service<
     ) => Effect.Effect<readonly Post[], DatabaseError>;
     /**
      * How many of the workspace's posts go out in the month: scheduled,
-     * publishing or finished there, not cancelled, `except` left out.
+     * publishing or finished there, `except` left out. Drafts, which have
+     * no time, and cancelled posts take no room, and a post counts once,
+     * however many rounds its targets are sent in.
      */
     readonly countGoingOut: (
       workspaceId: WorkspaceId,

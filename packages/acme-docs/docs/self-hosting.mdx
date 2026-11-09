@@ -176,7 +176,7 @@ Billing is off until `STRIPE_SECRET_KEY` is set: there are no plans, nothing is 
 | Pro      | 10       | 5       | 300           | 100                      |
 | Business | 30       | 20      | Unlimited     | 500                      |
 
-Posts count in the calendar month (UTC) they go out in; cancelled ones do not. Members count with the invitations still pending when inviting. A limit applies when something is added, so a workspace on a smaller plan than it needs keeps what it has.
+Posts count in the calendar month (UTC) they go out in, once scheduled: drafts and cancelled posts do not, a post taken back to draft gives its place back, and one posted again on a channel counts once. Members count with the invitations still pending when inviting. A limit applies when something is added, so a workspace on a smaller plan than it needs keeps what it has.
 
 1. In Stripe, create a product for each paid plan with a monthly price, and set `STRIPE_PRICE_PRO` and `STRIPE_PRICE_BUSINESS` to their ids.
 2. Add a webhook endpoint for `PUBLIC_URL/api/auth/stripe/webhook` with the `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted` and `checkout.session.completed` events, and set `STRIPE_WEBHOOK_SECRET` to its signing secret. Leave this path open to Stripe if something guards the rest of `/api/auth`.

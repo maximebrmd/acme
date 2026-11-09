@@ -1,20 +1,28 @@
 // A workspace's plan limits the posts going out in each calendar month
-// (UTC). Here the plan allows two.
+// (UTC). Here the plan allows two. Drafts take no room, and a post counts
+// once, however often a channel of it is sent again.
 import { assert, describe, it } from "@effect/vitest";
 import { Effect, Layer, Option, Ref, Result } from "effect";
 import type { Scope } from "effect";
 
 import { PostAllowance } from "#publishing/application/post-allowance.ts";
 import { PostDrafts } from "#publishing/application/post-drafts.ts";
+import { PostFollowUp } from "#publishing/application/post-follow-up.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
 import { PostUsage } from "#publishing/application/post-usage.ts";
+import { FakePlatform } from "#publishing/infrastructure/fake-platform-publisher.ts";
 import { newId } from "#shared/application/ids.ts";
+import { BadRequest } from "#shared/domain/bad-request.ts";
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import type { ChannelId, WorkspaceId } from "#shared/domain/ids.ts";
 import { PlanLimitReached } from "#shared/domain/plan-limit-reached.ts";
 import {
+  eventually,
+  isFinished,
+  isSuspended,
   scheduleIn,
   setTime,
+  targetsOf,
   utc,
 } from "#test/publishing/infrastructure/harness.ts";
 import { connect, postsServerWith } from "#test/publishing/posts-server.ts";
@@ -178,6 +186,155 @@ describe("the monthly post limit", () => {
 
           yield* scheduling.cancel(actor, first.postId);
           yield* scheduling.cancel(actor, refused.postId);
+        })
+      ),
+    60_000
+  );
+
+  it.effect(
+    "leaves drafts out until they are scheduled, and frees a post's room when it goes back to draft",
+    () =>
+      onServerAt(
+        "2026-06-10T07:00:00Z",
+        Effect.gen(function* drafts() {
+          const scheduling = yield* PostScheduling;
+          const workspaceId = yield* freshWorkspace;
+          const actor = actorIn(workspaceId);
+          const channel = yield* connect(workspaceId, "mastodon");
+
+          const goingOut = PostUsage.use((posts) =>
+            posts.thisMonth(workspaceId)
+          ).pipe(Effect.map(({ scheduled }) => scheduled));
+
+          // Drafts take no room, however many there are.
+          for (const text of ["One", "Two", "Three"]) {
+            yield* PostDrafts.use((saved) =>
+              saved.create(actor, {
+                channelIds: [channel],
+                content: contentOf(text),
+              })
+            );
+          }
+
+          assert.strictEqual(yield* goingOut, 0);
+
+          const first = yield* scheduledAt(
+            workspaceId,
+            channel,
+            "2026-06-20T08:00:00Z"
+          );
+
+          const second = yield* scheduledAt(
+            workspaceId,
+            channel,
+            "2026-06-21T08:00:00Z"
+          );
+
+          const third = yield* scheduledAt(
+            workspaceId,
+            channel,
+            "2026-06-22T08:00:00Z"
+          );
+
+          assert.deepStrictEqual(
+            [first.failure, second.failure, third.failure],
+            [Option.none(), Option.none(), Option.some(limitReached)]
+          );
+          assert.strictEqual(yield* goingOut, allowed);
+
+          // Back to draft, a post gives its room back, and needs it again
+          // to be scheduled.
+          yield* scheduling.unschedule(actor, first.postId);
+
+          assert.strictEqual(yield* goingOut, 1);
+
+          yield* scheduling.reschedule(
+            actor,
+            third.postId,
+            scheduleIn("2026-06-22T08:00:00Z")
+          );
+
+          const again = yield* scheduling
+            .reschedule(actor, first.postId, scheduleIn("2026-06-20T08:00:00Z"))
+            .pipe(Effect.flip);
+
+          assert.deepStrictEqual(again, limitReached);
+
+          for (const { postId } of [second, third]) {
+            yield* scheduling.cancel(actor, postId);
+          }
+        })
+      ),
+    60_000
+  );
+
+  it.effect(
+    "counts a post once when a channel of it is sent again",
+    () =>
+      onServerAt(
+        "2026-06-10T07:00:00Z",
+        Effect.gen(function* reposted() {
+          const scheduling = yield* PostScheduling;
+          const followUp = yield* PostFollowUp;
+          const workspaceId = yield* freshWorkspace;
+          const actor = actorIn(workspaceId);
+          const channel = yield* connect(workspaceId, "mastodon");
+
+          const goingOut = PostUsage.use((posts) =>
+            posts.thisMonth(workspaceId)
+          ).pipe(Effect.map(({ scheduled }) => scheduled));
+
+          yield* FakePlatform.use((platform) =>
+            platform.script(channel, [
+              {
+                _tag: "fail",
+                failure: new BadRequest({ code: "duplicate" }),
+              },
+            ])
+          );
+
+          const failing = yield* scheduledAt(
+            workspaceId,
+            channel,
+            "2026-06-10T08:00:00Z"
+          );
+
+          yield* eventually("the job sleeps", isSuspended(failing.postId));
+          yield* setTime("2026-06-10T08:00:00Z");
+          yield* eventually("the post fails", isFinished(failing.postId));
+
+          const other = yield* scheduledAt(
+            workspaceId,
+            channel,
+            "2026-06-20T08:00:00Z"
+          );
+
+          const refused = yield* scheduledAt(
+            workspaceId,
+            channel,
+            "2026-06-21T08:00:00Z"
+          );
+
+          assert.deepStrictEqual(
+            [other.failure, refused.failure],
+            [Option.none(), Option.some(limitReached)]
+          );
+
+          // The month is full, yet sending the failed channel again takes no
+          // more room: the post already counts.
+          const [target] = yield* targetsOf(failing.postId);
+
+          assert(target !== undefined);
+
+          yield* followUp.repost(actor, failing.postId, target.id);
+
+          assert.strictEqual(yield* goingOut, allowed);
+
+          yield* eventually("the repost finishes", isFinished(failing.postId));
+
+          assert.strictEqual(yield* goingOut, allowed);
+
+          yield* scheduling.cancel(actor, other.postId);
         })
       ),
     60_000

@@ -98,7 +98,8 @@ const mayPublish = (actor: Actor) =>
  * the workspace, and with content their platforms take, its media included
  * (`#publishing/domain/content-rules.ts`). Its month (UTC) must have room
  * for it in the workspace's plan (`PostAllowance`): a scheduled post moved
- * within its month takes no more room.
+ * within its month takes no more room, and a draft takes none until it is
+ * scheduled, nor once it is taken back to draft.
  *
  * A post is only found in the workspace that owns it: another workspace's
  * post is PostNotFound, whatever its id.
