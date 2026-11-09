@@ -3,17 +3,44 @@ import type { ClientErrorKind, ClientErrorReport } from "acme-contract";
 import { Option, Schema } from "effect";
 
 // What could name someone in an error's text, which the server replaces
-// too: an email address, an id, an API key.
-const emails = /[^\s@"'<>()[\]]+@[^\s@"'<>()[\]]+\.[a-z]{2,}/giu;
+// too: an email address, an id, an API key, a token (a JWT, such as an
+// email confirmation's), and the query or fragment of a link, which can
+// carry tokens (a password reset link's).
+const emails = /[^\s@"'<>()[\]/]+@[^\s@"'<>()[\]/]+\.[a-z]{2,}/giu;
 
-// Addresses are looked for word by word, in the words that hold an @, so a
-// long text without one costs one pass.
+// Addresses and links are looked for word by word, in the words that may
+// hold one, so a long text without any costs one pass.
 const words = /\S+/gu;
 
 const uuids =
   /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/giu;
 
 const apiKeys = /\bacme_[\w-]+/gu;
+
+const jwts = /\beyJ[\w-]*\.[\w-]+\.[\w-]*/gu;
+
+// A word that is, or holds, a link: an absolute address, or a path.
+const isLink = (word: string): boolean =>
+  word.includes("://") || /^[("'`[]?\//u.test(word);
+
+// What follows a link's query in a stack frame or a sentence, and stays: a
+// line and column, closing brackets and quotes, punctuation.
+const linkTail = /(?::\d+){1,2}[)\]"'`]*$|[)\]"'`.,;:!]+$/u;
+
+const withoutQuery = (word: string): string => {
+  const start = word.search(/[?#]/u);
+
+  if (start === -1) {
+    return word;
+  }
+
+  const rest = word.slice(start + 1);
+  const tail = linkTail.exec(rest)?.[0] ?? "";
+
+  return rest.length === tail.length
+    ? word
+    : `${word.slice(0, start + 1)}[redacted]${tail}`;
+};
 
 // A path segment that is an id: a UUID, or a long run of digits or of
 // letters and digits, such as a token in a link.
@@ -24,12 +51,17 @@ const idSegment =
 export const cut = (text: string, limit: number): string =>
   text.length <= limit ? text : text.slice(0, limit);
 
-/** Text with the addresses, ids and keys it quotes replaced. */
+/** Text with the addresses, ids, keys, tokens and queries it quotes replaced. */
 export const redactText = (text: string): string =>
   text
-    .replaceAll(words, (word) =>
-      word.includes("@") ? word.replaceAll(emails, "[email]") : word
-    )
+    .replaceAll(words, (word) => {
+      const unlinked = isLink(word) ? withoutQuery(word) : word;
+
+      return unlinked.includes("@")
+        ? unlinked.replaceAll(emails, "[email]")
+        : unlinked;
+    })
+    .replaceAll(jwts, "[token]")
     .replaceAll(uuids, "[id]")
     .replaceAll(apiKeys, "[key]");
 

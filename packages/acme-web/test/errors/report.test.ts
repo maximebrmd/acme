@@ -66,6 +66,28 @@ describe(reportOf, () => {
     expect(report.stack).not.toContain("sam@example.test");
   });
 
+  it("names nobody: no token, nor the query of a link it quotes", () => {
+    const error = new Error(
+      "Failed to fetch RSC payload for http://localhost:3001/reset-password?token=Synthetic0Reset1Token. Falling back to browser navigation."
+    );
+
+    error.stack =
+      "Error: Synthetic\n    at load (https://app.example.test/verify-email?token=eyJhbGciOiJIUzI1NiJ9.eyJlbWFpbCI6InN5bnRoZXRpYyJ9.c2ln:3:7)";
+
+    const report = reportOf(error, place);
+
+    expect(report.message).toBe(
+      "Failed to fetch RSC payload for http://localhost:3001/reset-password?[redacted]. Falling back to browser navigation."
+    );
+    expect(report.stack).toBe(
+      "Error: Synthetic\n    at load (https://app.example.test/verify-email?[redacted]:3:7)"
+    );
+    expect(
+      reportOf(new Error("Bad eyJhbGciOiJub25lIn0.eyJzdWIiOiJ4In0.c2ln"), place)
+        .message
+    ).toBe("Bad [token]");
+  });
+
   it("cuts every field to what the server reads", () => {
     const error = new Error("x".repeat(5000));
 
