@@ -30,6 +30,30 @@ const listLimit = 100;
 // Far more open sessions than a workspace can start.
 const sessionsAtMost = 10_000;
 
+// Expires the customer's open Checkout Sessions, and says how many.
+const expireFor = (
+  stripe: Stripe,
+  customer: string,
+  workspaceId: WorkspaceId
+) =>
+  Effect.tryPromise({
+    catch: () => new StripeUnreachable({ workspaceId }),
+    try: async () =>
+      await stripe.checkout.sessions
+        .list({ customer, limit: listLimit, status: "open" })
+        .autoPagingToArray({ limit: sessionsAtMost }),
+  }).pipe(
+    Effect.flatMap(
+      Effect.forEach(({ id }) =>
+        Effect.tryPromise({
+          catch: () => new StripeUnreachable({ workspaceId }),
+          try: async () => await stripe.checkout.sessions.expire(id),
+        })
+      )
+    ),
+    Effect.map((expired) => expired.length)
+  );
+
 /**
  * Checkouts through the Stripe plugin's rows, in the `auth` schema: the
  * subscriptions its checkouts started (`subscription`, by workspace as
@@ -86,29 +110,6 @@ export const StripeCheckoutsLive = Layer.effect(
         ])
       );
 
-    const expireFor = (
-      stripe: Stripe,
-      customer: string,
-      workspaceId: WorkspaceId
-    ) =>
-      Effect.tryPromise({
-        catch: () => new StripeUnreachable({ workspaceId }),
-        try: async () =>
-          await stripe.checkout.sessions
-            .list({ customer, limit: listLimit, status: "open" })
-            .autoPagingToArray({ limit: sessionsAtMost }),
-      }).pipe(
-        Effect.flatMap((open) =>
-          Effect.forEach(open, ({ id }) =>
-            Effect.tryPromise({
-              catch: () => new StripeUnreachable({ workspaceId }),
-              try: async () => await stripe.checkout.sessions.expire(id),
-            })
-          )
-        ),
-        Effect.map((expired) => expired.length)
-      );
-
     const expireOpen = Effect.fn("Checkouts.expireOpen")(function* expireOpen(
       workspaceId: WorkspaceId
     ) {
@@ -116,10 +117,12 @@ export const StripeCheckoutsLive = Layer.effect(
         return 0;
       }
 
-      const customers = yield* customersOf(workspaceId);
+      const stripe = client.value;
 
-      const counts = yield* Effect.forEach(customers, (customer) =>
-        expireFor(client.value, customer, workspaceId)
+      const counts = yield* customersOf(workspaceId).pipe(
+        Effect.flatMap(
+          Effect.forEach((customer) => expireFor(stripe, customer, workspaceId))
+        )
       );
 
       return counts.reduce((sum, count) => sum + count, 0);

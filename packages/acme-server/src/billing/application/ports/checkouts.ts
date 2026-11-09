@@ -1,10 +1,9 @@
 import { Context } from "effect";
 import type { Effect } from "effect";
 
+import type { StripeUnreachable } from "#billing/application/stripe-unreachable.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
-
-import type { StripeUnreachable } from "#billing/application/stripe-unreachable.ts";
 
 /**
  * What the sign-in service's Stripe plugin keeps of a workspace's

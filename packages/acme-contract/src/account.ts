@@ -8,6 +8,7 @@ import {
 
 import { ApiKeySchema } from "./api-keys.ts";
 import { Authentication } from "./authentication.ts";
+import { BillingUnavailable } from "./billing-unavailable.ts";
 import { ConnectedAppSchema } from "./connected-apps.ts";
 import { Forbidden } from "./forbidden.ts";
 import { IncorrectPassword } from "./incorrect-password.ts";
@@ -15,7 +16,6 @@ import { LastOwner } from "./last-owner.ts";
 import { NoticeEventSchema } from "./notices.ts";
 import { NotificationPreferencesSchema } from "./notification-preferences.ts";
 import { TooManyPasswordAttempts } from "./too-many-password-attempts.ts";
-import { BillingUnavailable } from "./billing-unavailable.ts";
 import { WorkspaceBusy } from "./workspace-busy.ts";
 import { WorkspaceSubscribed } from "./workspace-subscribed.ts";
 

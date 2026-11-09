@@ -765,74 +765,77 @@ const DowngradingMetaTest = connectChannelWith(
   DowngradingTest
 ).pipe(Layer.provideMerge(FakeMeta.layer));
 
-layer(DowngradingMetaTest)("choosing Meta accounts as the plan shrinks", (it) => {
-  it.effect(
-    "keeps a choice that connected nothing for another try, and spends one that connected an account",
-    () =>
-      Effect.gen(function* retried() {
-        const meta = yield* FakeMeta;
-        const workspaceId = yield* freshWorkspace;
-        const connect = yield* ConnectChannel;
-        const repository = yield* ChannelRepository;
+layer(DowngradingMetaTest)(
+  "choosing Meta accounts as the plan shrinks",
+  (it) => {
+    it.effect(
+      "keeps a choice that connected nothing for another try, and spends one that connected an account",
+      () =>
+        Effect.gen(function* retried() {
+          const meta = yield* FakeMeta;
+          const workspaceId = yield* freshWorkspace;
+          const connect = yield* ConnectChannel;
+          const repository = yield* ChannelRepository;
 
-        // As many channels as the free plan allows.
-        for (const added of [1, 2, 3]) {
-          const channel = yield* freshChannel(workspaceId, {
-            accountId: `synthetic-${added}`,
-          });
+          // As many channels as the free plan allows.
+          for (const added of [1, 2, 3]) {
+            const channel = yield* freshChannel(workspaceId, {
+              accountId: `synthetic-${added}`,
+            });
 
-          yield* repository.insert(channel, syntheticCredentials(channel));
-        }
+            yield* repository.insert(channel, syntheticCredentials(channel));
+          }
 
-        meta.setPages([page("1101"), page("1102"), page("1103")]);
+          meta.setPages([page("1101"), page("1102"), page("1103")]);
 
-        const offered = yield* signIn(workspaceId, "facebook").pipe(
-          Effect.flatMap(choiceOf)
-        );
+          const offered = yield* signIn(workspaceId, "facebook").pipe(
+            Effect.flatMap(choiceOf)
+          );
 
-        // The choice has room when it is checked, and none once taken.
-        yield* Ref.set(unmeteredReads, 1);
+          // The choice has room when it is checked, and none once taken.
+          yield* Ref.set(unmeteredReads, 1);
 
-        const refused = yield* Effect.flip(
-          connect.choose(manager(workspaceId), "facebook", {
-            accountIds: ["1101"],
-            selection: offered.selection,
-          })
-        );
+          const refused = yield* Effect.flip(
+            connect.choose(manager(workspaceId), "facebook", {
+              accountIds: ["1101"],
+              selection: offered.selection,
+            })
+          );
 
-        assert.deepStrictEqual(
-          refused,
-          new PlanLimitReached({ allowed: 3, limit: "channels" })
-        );
-        assert.lengthOf(yield* repository.list(workspaceId), 3);
+          assert.deepStrictEqual(
+            refused,
+            new PlanLimitReached({ allowed: 3, limit: "channels" })
+          );
+          assert.lengthOf(yield* repository.list(workspaceId), 3);
 
-        // Room for one more, then none: the first goes, and the choice with
-        // it.
-        yield* Ref.set(unmeteredReads, 2);
+          // Room for one more, then none: the first goes, and the choice with
+          // it.
+          yield* Ref.set(unmeteredReads, 2);
 
-        const partly = yield* Effect.flip(
-          connect.choose(manager(workspaceId), "facebook", {
-            accountIds: ["1101", "1102"],
-            selection: offered.selection,
-          })
-        );
+          const partly = yield* Effect.flip(
+            connect.choose(manager(workspaceId), "facebook", {
+              accountIds: ["1101", "1102"],
+              selection: offered.selection,
+            })
+          );
 
-        assert.strictEqual(partly._tag, "PlanLimitReached");
-        assert.lengthOf(yield* repository.list(workspaceId), 4);
+          assert.strictEqual(partly._tag, "PlanLimitReached");
+          assert.lengthOf(yield* repository.list(workspaceId), 4);
 
-        yield* Ref.set(unmeteredReads, Number.POSITIVE_INFINITY);
+          yield* Ref.set(unmeteredReads, Number.POSITIVE_INFINITY);
 
-        const spent = yield* Effect.flip(
-          connect.choose(manager(workspaceId), "facebook", {
-            accountIds: ["1103"],
-            selection: offered.selection,
-          })
-        );
+          const spent = yield* Effect.flip(
+            connect.choose(manager(workspaceId), "facebook", {
+              accountIds: ["1103"],
+              selection: offered.selection,
+            })
+          );
 
-        assert.strictEqual(spent._tag, "InvalidConnectState");
-      })
-  );
-});
+          assert.strictEqual(spent._tag, "InvalidConnectState");
+        })
+    );
+  }
+);
 
 // Connecting, with Meta's data deletion requests carried out meanwhile.
 const DeletionsMetaTest = DrizzleDataDeletions.pipe(

@@ -1,5 +1,5 @@
 import { assert, layer } from "@effect/vitest";
-import { DateTime, Deferred, Effect, Fiber, Layer, Option, Result } from "effect";
+import { DateTime, Effect, Fiber, Latch, Layer, Option, Result } from "effect";
 import { SqlClient } from "effect/sql";
 import { TestClock } from "effect/testing";
 
@@ -171,8 +171,8 @@ layer(StoreTest)("the analytics store", (it) => {
         const workspaceId = yield* freshWorkspace;
         const tracked = yield* TrackedPosts;
         const sql = yield* SqlClient.SqlClient;
-        const erased = yield* Deferred.make<void>();
-        const commit = yield* Deferred.make<void>();
+        const erased = yield* Latch.make();
+        const commit = yield* Latch.make();
 
         yield* Effect.gen(function* checks() {
           const listed = trackPublication(
@@ -187,14 +187,11 @@ layer(StoreTest)("the analytics store", (it) => {
             .withTransaction(
               AnalyticsRecords.use((records) =>
                 records.eraseWorkspace(workspaceId)
-              ).pipe(
-                Effect.andThen(Deferred.succeed(erased, undefined)),
-                Effect.andThen(Deferred.await(commit))
-              )
+              ).pipe(Effect.andThen(erased.open), Effect.andThen(commit.await))
             )
             .pipe(Effect.forkChild);
 
-          yield* Deferred.await(erased);
+          yield* erased.await;
 
           const following = yield* tracked
             .track([listed])
@@ -202,7 +199,7 @@ layer(StoreTest)("the analytics store", (it) => {
 
           // Long enough for the run to have reached the database.
           yield* TestClock.withLive(Effect.sleep("300 millis"));
-          yield* Deferred.succeed(commit, undefined);
+          yield* commit.open;
           yield* Fiber.join(eraser);
 
           assert.strictEqual(yield* Fiber.join(following), 0);

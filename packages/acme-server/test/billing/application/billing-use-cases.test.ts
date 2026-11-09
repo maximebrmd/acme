@@ -248,16 +248,20 @@ layer(recordsWith(true))("billing's records of a billed workspace", (it) => {
 layer(recordsWith(true))(
   "billing's records of a workspace whose subscription is unpaid",
   (it) => {
-    it.effect("refuse to go: unpaid gives no plan, but Stripe still has it", () =>
-      Effect.gen(function* unpaid() {
-        yield* RecordSubscription.use((record) => record.record(event("unpaid")));
+    it.effect(
+      "refuse to go: unpaid gives no plan, but Stripe still has it",
+      () =>
+        Effect.gen(function* unpaid() {
+          yield* RecordSubscription.use((record) =>
+            record.record(event("unpaid"))
+          );
 
-        const refused = yield* BillingRecords.use((records) =>
-          records.eraseWorkspace(workspaceId)
-        ).pipe(Effect.flip);
+          const refused = yield* BillingRecords.use((records) =>
+            records.eraseWorkspace(workspaceId)
+          ).pipe(Effect.flip);
 
-        assert.strictEqual(refused._tag, "WorkspaceStillBilled");
-      })
+          assert.strictEqual(refused._tag, "WorkspaceStillBilled");
+        })
     );
   }
 );
@@ -272,13 +276,20 @@ layer(recordsWith(true))(
       () =>
         Effect.gen(function* checkedOut() {
           const log = yield* CheckoutsLog;
+
           const erase = BillingRecords.use((records) =>
             records.eraseWorkspace(workspaceId)
           );
 
           yield* Ref.set(log.open, 1);
 
-          for (const status of ["active", "trialing", "past_due", "paused", "new_one"]) {
+          for (const status of [
+            "active",
+            "trialing",
+            "past_due",
+            "paused",
+            "new_one",
+          ]) {
             yield* Ref.set(log.statuses, ["incomplete", status]);
 
             const refused = yield* Effect.flip(erase);

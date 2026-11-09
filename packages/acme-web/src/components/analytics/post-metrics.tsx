@@ -85,47 +85,47 @@ export const PostMetricsView = ({
 
   return (
     <div className="flex flex-col gap-6">
-    <ul className="flex flex-col gap-6">
-      {analytics.targets.map((target) => {
-        const handle =
-          channels.find(({ id }) => id === target.channelId)?.handle ??
-          tPosts("disconnectedChannel");
+      <ul className="flex flex-col gap-6">
+        {analytics.targets.map((target) => {
+          const handle =
+            channels.find(({ id }) => id === target.channelId)?.handle ??
+            tPosts("disconnectedChannel");
 
-        return (
-          <li key={target.targetId} className="flex flex-col gap-2">
-            <div className="flex flex-wrap items-baseline justify-between gap-2 text-sm">
-              <span className="font-medium">{handle}</span>
-              <span className="text-muted-foreground">
-                {target.lastCollectedAt === null
-                  ? t("post.notRead")
-                  : t("post.readAt", {
-                      at: format.dateTime(
-                        DateTime.toDate(target.lastCollectedAt),
-                        { dateStyle: "medium", timeStyle: "short" }
-                      ),
-                    })}
-              </span>
-            </div>
-            {target.latest === null ? (
-              <p className="text-muted-foreground text-sm">
-                {t("post.notYet")}
-              </p>
-            ) : (
-              <MetricList counts={target.latest} />
-            )}
-            {target.snapshots.length > 1 ? (
-              <ReadingsChart handle={handle} snapshots={target.snapshots} />
-            ) : null}
-            {target.collecting ? null : (
-              <p className="text-muted-foreground text-sm">
-                {t("post.stopped")}
-              </p>
-            )}
-          </li>
-        );
-      })}
-    </ul>
-    {note}
+          return (
+            <li key={target.targetId} className="flex flex-col gap-2">
+              <div className="flex flex-wrap items-baseline justify-between gap-2 text-sm">
+                <span className="font-medium">{handle}</span>
+                <span className="text-muted-foreground">
+                  {target.lastCollectedAt === null
+                    ? t("post.notRead")
+                    : t("post.readAt", {
+                        at: format.dateTime(
+                          DateTime.toDate(target.lastCollectedAt),
+                          { dateStyle: "medium", timeStyle: "short" }
+                        ),
+                      })}
+                </span>
+              </div>
+              {target.latest === null ? (
+                <p className="text-muted-foreground text-sm">
+                  {t("post.notYet")}
+                </p>
+              ) : (
+                <MetricList counts={target.latest} />
+              )}
+              {target.snapshots.length > 1 ? (
+                <ReadingsChart handle={handle} snapshots={target.snapshots} />
+              ) : null}
+              {target.collecting ? null : (
+                <p className="text-muted-foreground text-sm">
+                  {t("post.stopped")}
+                </p>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+      {note}
     </div>
   );
 };

@@ -45,7 +45,10 @@ const callbackOf = (payload: ConnectCallback): AuthorizationCallback => ({
 });
 
 // How starting fails, whether to connect an account or to reconnect one.
-type BeginRefusal = Exclude<StartFailure, { readonly _tag: "PlanLimitReached" }>;
+type BeginRefusal = Exclude<
+  StartFailure,
+  { readonly _tag: "PlanLimitReached" }
+>;
 
 // Every way starting a connection can fail but the plan, as the contract
 // tells clients. A failure that is the server's own (the database, a bug)

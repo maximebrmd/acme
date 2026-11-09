@@ -89,7 +89,7 @@ export class BillingRecords extends Context.Service<
               held.some((subscription) => stillBills(subscription)) ||
               started.some(mayBill)
             ) {
-              return yield* new WorkspaceStillBilled({ workspaceId });
+              yield* new WorkspaceStillBilled({ workspaceId });
             }
 
             yield* checkouts.expireOpen(workspaceId);

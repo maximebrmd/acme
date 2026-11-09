@@ -146,7 +146,11 @@ export type ChooseAccounts = typeof ChooseAccountsSchema.Type;
 const workspace = { workspaceId: Schema.String };
 
 // Reconnecting adds no channel, so no plan limit refuses it.
-const reconnectErrors = [Forbidden, ConnectFailed, PlatformUnreachable] as const;
+const reconnectErrors = [
+  Forbidden,
+  ConnectFailed,
+  PlatformUnreachable,
+] as const;
 
 const connectErrors = [...reconnectErrors, PlanLimitReached] as const;
 

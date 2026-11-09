@@ -345,11 +345,13 @@ describe("the media violations the API reports", () => {
       />
     );
 
-    expect(await render("en", view)).toContain(
+    await expect(render("en", view)).resolves.toContain(
       "@acme_linkedin on LinkedIn: video 2 weighs 40 kB, at least 73.2 kB."
     );
     // French puts no-break spaces before a colon and a unit.
-    expect((await render("fr", view)).replaceAll(/\s/gu, " ")).toContain(
+    const french = await render("fr", view);
+
+    expect(french.replaceAll(/\s/gu, " ")).toContain(
       "@acme_linkedin sur LinkedIn : la vidéo 2 pèse 40 ko, 73,2 ko au moins."
     );
   });

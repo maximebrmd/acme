@@ -132,7 +132,8 @@ layer(DatabaseTest)("the Stripe plugin's checkouts", (it) => {
             .map(({ path }) => path),
           [customer, `${customer}b`].flatMap((owner) =>
             [1, 2].map(
-              (index) => `/v1/checkout/sessions/cs_test_${owner}_${index}/expire`
+              (index) =>
+                `/v1/checkout/sessions/cs_test_${owner}_${index}/expire`
             )
           )
         );
@@ -151,12 +152,14 @@ layer(DatabaseTest)("the Stripe plugin's checkouts", (it) => {
     }).pipe(Effect.scoped)
   );
 
-  it.effect("expire nothing, and call no Stripe, on a server that does not bill", () =>
-    Effect.gen(function* off() {
-      const checkouts = yield* checkoutsOn(undefined);
-      const { workspaceId } = yield* seeded;
+  it.effect(
+    "expire nothing, and call no Stripe, on a server that does not bill",
+    () =>
+      Effect.gen(function* off() {
+        const checkouts = yield* checkoutsOn(undefined);
+        const { workspaceId } = yield* seeded;
 
-      assert.strictEqual(yield* checkouts.expireOpen(workspaceId), 0);
-    }).pipe(Effect.scoped)
+        assert.strictEqual(yield* checkouts.expireOpen(workspaceId), 0);
+      }).pipe(Effect.scoped)
   );
 });

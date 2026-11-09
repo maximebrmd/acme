@@ -12,8 +12,8 @@ import type { UserPrincipal } from "#workspace/domain/user-principal.ts";
 import { WorkspaceNameMismatch } from "#workspace/domain/workspace-name-mismatch.ts";
 
 import { AccountStore } from "./account-store.ts";
-import type { ContextRecords } from "./context-records.ts";
 import type { BillingUnavailable } from "./billing-unavailable.ts";
+import type { ContextRecords } from "./context-records.ts";
 import type { WorkspaceBusy } from "./workspace-busy.ts";
 import { eraseWorkspace, removeWorkspaceFiles } from "./workspace-erasure.ts";
 import type { WorkspaceSubscribed } from "./workspace-subscribed.ts";

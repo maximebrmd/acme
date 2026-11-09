@@ -41,7 +41,7 @@ export const offerChoice = (
   new ConnectChoice({
     createdAt: now,
     expiresAt: DateTime.addDuration(now, connectAttemptLifetime),
-    grantedBy: Option.filter(choice.grantedBy, (user) => user !== ""),
+    grantedBy: choice.grantedBy.pipe(Option.filter((user) => user !== "")),
     platform: choice.platform,
     selection: choice.selection,
     startedBy: starterOf(choice.actor.subject),

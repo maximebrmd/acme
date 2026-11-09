@@ -134,8 +134,16 @@ describe(AccountPickerView, () => {
 
   // The server kept the choice: the member tries again, or signs in again.
   it.each([
-    ["en", "unreachable", "Choose again, or sign in with Facebook again for a new list."],
-    ["fr", "planLimit", "Choisissez à nouveau, ou reconnectez-vous avec Facebook pour une nouvelle liste."],
+    [
+      "en",
+      "unreachable",
+      "Choose again, or sign in with Facebook again for a new list.",
+    ],
+    [
+      "fr",
+      "planLimit",
+      "Choisissez à nouveau, ou reconnectez-vous avec Facebook pour une nouvelle liste.",
+    ],
   ] as const)(
     "lets the member try again after a failure that kept the choice (%s, %s)",
     async (locale, error, hint) => {
@@ -148,7 +156,7 @@ describe(AccountPickerView, () => {
   );
 
   it("offers no new sign-in before anything failed", async () => {
-    expect(await picker("en", { selected: ["101"] })).not.toContain(
+    await expect(picker("en", { selected: ["101"] })).resolves.not.toContain(
       "Start over"
     );
   });
