@@ -24,12 +24,20 @@ type Kernel = (typeof contexts)[number] | "shared";
 
 type Rules = NonNullable<OxlintOverride["rules"]>;
 
+// The server image ships src/ only, so production code that imported a test
+// helper would pass the checks and fail at startup. Every rule below repeats
+// this pattern, because an override replaces the options of the ones before.
+const testHelpers = {
+  group: ["#test/**"],
+  message: "Production code never imports test helpers.",
+};
+
 const restrict = (
   message: string,
   group: readonly string[]
 ): NonNullable<Rules["no-restricted-imports"]> => [
   "error",
-  { patterns: [{ group: [...group], message }] },
+  { patterns: [{ group: [...group], message }, testHelpers] },
 ];
 
 // Domain: entities and rules, built on Effect's core only.
@@ -182,6 +190,13 @@ export default defineConfig({
       // Folders import each other through `#…`, which the layer rules read.
       files: ["src/**", "test/**"],
       rules: { "import/no-relative-parent-imports": "error" },
+    },
+    {
+      // The composition root and entry point, which no layer rule covers.
+      files: ["src/**"],
+      rules: {
+        "no-restricted-imports": ["error", { patterns: [testHelpers] }],
+      },
     },
     ...layerOverrides,
   ],
