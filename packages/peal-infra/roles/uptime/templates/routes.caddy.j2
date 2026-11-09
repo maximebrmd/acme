@@ -1,7 +1,8 @@
-# Managed by Ansible (peal-infra). What the uptime server answers on its
-# public name: the heartbeats Grafana posts, the status page when
-# uptime_public_status is on, and 404 for anything else. Gatus's dashboard
-# otherwise stays on 127.0.0.1, for SSH port forwarding.
+# Managed by Ansible (peal-infra). What the uptime server answers on
+# {{ uptime_hostname }}: the heartbeats Grafana posts, and 404 for anything
+# else. The status page, when uptime_public_status is on, has a name of its
+# own (status.caddy); Gatus's dashboard otherwise stays on 127.0.0.1, for SSH
+# port forwarding.
 header -Server
 
 # A Grafana's heartbeat, which Gatus takes only with that environment's
@@ -16,14 +17,6 @@ handle @heartbeat {
 	}
 	reverse_proxy gatus:8080
 }
-{% if uptime_public_status %}
-
-# The status page: Gatus's dashboard and its read-only API.
-@status method GET HEAD
-handle @status {
-	reverse_proxy gatus:8080
-}
-{% endif %}
 
 handle {
 	respond 404

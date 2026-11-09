@@ -3,8 +3,15 @@
 Peal is a social media scheduling platform: teams write posts once, schedule
 them across platforms, and see how they perform, at [peal.social](https://peal.social). The
 source is public under the Functional Source License (FSL-1.1-ALv2, in
-[`LICENSE.md`](LICENSE.md)): anyone may self-host it, and each release becomes
-Apache-2.0 two years after it ships. Call it "fair source", not open source.
+[`LICENSE.md`](LICENSE.md)), with Peal as its licensor: anyone may self-host
+it, and each release becomes Apache-2.0 two years after it ships. Call it
+"fair source", not open source. The SDKs (`peal-sdk`) are Apache-2.0, and so
+is `peal-contract`, which they are generated from, each with its own
+`LICENSE`: keep anything an SDK user installs or generates from free of FSL
+code, so an SDK never depends on another workspace package but the contract.
+Every `package.json` names its licence (SPDX), the repository
+(https://github.com/peal-social/peal, with its folder), its homepage and where
+issues go; README.md's "Licensing" says which part is under which.
 
 Until its rename, the product carried the placeholder name "acme". That name
 is gone from the repository and must not come back, in any case or form; the
@@ -1268,6 +1275,12 @@ self-hoster needs only Postgres and an S3-compatible store:
   the staff console's `/api/admin`, `/admin`, `/en/admin` and `/fr/admin`) and the
   sandbox, and cloudflared checks the Access token on those routes too. Caddy fronts the
   stack for self-hosters.
+- Staff have full access to Grafana: in production, Grafana signs in whoever
+  its Access application lets through (the staff) as an organisation Admin,
+  from the Access token (`GF_AUTH_JWT_ROLE_ATTRIBUTE_PATH` in
+  `compose.production.yaml`), and sets the role again at each sign-in. Who
+  gets in is the Access policy's business; do not grant roles in Grafana by
+  hand.
 - Change the servers only through the playbooks in `packages/peal-infra`; SSH
   is for reading (`sudo peal-compose ps`). Run `site.yml` with `--check
   --diff` before applying it, and keep every task idempotent: a second run
@@ -1292,11 +1305,16 @@ self-hoster needs only Postgres and an S3-compatible store:
   `uptime`): Gatus, its configuration generated from the inventory, checks
   the public endpoints of production and the sandbox and alerts on a
   Telegram bot of its own; Caddy is its only public entry, for the heartbeat
-  production's Grafana posts every few minutes. It shares no secret, tunnel
-  or network with them: it generates the heartbeat token, which production
-  holds as a credential (`PEAL_HEARTBEAT_TOKEN`). Keep `uptime_environments`
-  equal to each environment's host names; Gatus's dashboard stays on
-  127.0.0.1, and a public status page is the owner's decision.
+  production's Grafana posts every few minutes, on `uptime_hostname`, and
+  for the public status page, on `uptime_status_hostname`
+  (status.peal.social, `uptime_public_status: true`). It shares no secret,
+  tunnel or network with them: it generates the heartbeat token, which
+  production holds as a credential (`PEAL_HEARTBEAT_TOKEN`). Keep
+  `uptime_environments` equal to each environment's host names. Gatus
+  publishes its dashboard on 127.0.0.1 only; the status page is that
+  dashboard through Caddy, by GET and HEAD alone (`status.caddy`), and the
+  heartbeats never go through the status page's name. Both names have DNS
+  records Cloudflare does not proxy (the infra README's "The status page").
 - Secrets are generated on the server and stay there. Do not copy them, print
   them, or give the server's credentials to other systems, GitHub included:
   `release.yml` builds the images on the machine running Ansible and uploads

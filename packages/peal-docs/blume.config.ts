@@ -49,6 +49,9 @@ export default defineConfig({
   deployment: site === undefined ? {} : { site },
   description:
     "Schedule social media posts across platforms, from one place. Guides, self-hosting and the HTTP API reference.",
+  // The public repository, which the footer links to, and each page's
+  // "Edit this page" link (dir is where the docs sit in it).
+  github: { dir: "packages/peal-docs", owner: "peal-social", repo: "peal" },
   i18n: {
     defaultLocale: "en",
     locales: [

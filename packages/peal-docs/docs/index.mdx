@@ -44,6 +44,17 @@ Every outside service Peal relies on has a self-hostable default. A self-hosted 
 
 The source is public under the Functional Source License (FSL-1.1-ALv2). You may use, modify and self-host Peal for any purpose except offering it to others as a competing commercial product or service, and each release also becomes available under the Apache License 2.0 two years after it ships. That is why Peal calls itself fair source rather than open source.
 
+## Licensing [#licensing]
+
+Peal, the licensor, publishes the source on [GitHub](https://github.com/peal-social/peal) under two licences:
+
+| Part                                                               | Licence                                                           |
+| ------------------------------------------------------------------ | ----------------------------------------------------------------- |
+| The server, the web app, the command line, these docs and the rest | FSL-1.1-ALv2, as above                                            |
+| The SDKs, and the API contract they are generated from             | [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0) |
+
+So an application that calls Peal through an SDK may use it for anything, a competing service included, under the Apache License's terms. A folder with a `LICENSE` file of its own is under that licence; the rest of the repository is under `LICENSE.md`.
+
 ## Build on the API [#api]
 
 Everything the web app does goes through the same HTTP API. [The API overview](/api-overview) explains how it is organised and how to authenticate, and the [API reference](/reference) lists every endpoint.

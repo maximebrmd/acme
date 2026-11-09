@@ -12,16 +12,16 @@ self-hosting page, and [`peal-docker`](../peal-docker)).
 
 ## How it fits together
 
-| Piece     | What it is                                                                                                                 |
-| --------- | -------------------------------------------------------------------------------------------------------------------------- |
-| Server    | Ubuntu LTS on Hetzner Cloud, security updates daily, the `ops` account with an SSH key                                     |
-| Edge      | `cloudflared` on the host dials out to Cloudflare; no inbound port is open, SSH included                                   |
-| Access    | Cloudflare Zero Trust Access guards Grafana, SSH, the admin and the whole sandbox                                          |
-| Stack     | [`compose.production.yaml`](../peal-docker/compose.production.yaml) as the Compose project `peal`, every port on 127.0.0.1 |
-| Telemetry | The OpenTelemetry Collector, Loki, Tempo, Prometheus and Grafana, in the stack                                             |
-| Alerts    | Grafana's alert rules, sent to a Telegram chat                                                                             |
-| Backups   | pgBackRest archives the write-ahead log and backs Postgres up to Cloudflare R2                                             |
-| Uptime    | Gatus on a server of its own checks the public endpoints and hears Grafana's heartbeat ([Uptime](#uptime))                 |
+| Piece     | What it is                                                                                                                         |
+| --------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| Server    | Ubuntu LTS on Hetzner Cloud, security updates daily, the `ops` account with an SSH key                                             |
+| Edge      | `cloudflared` on the host dials out to Cloudflare; no inbound port is open, SSH included                                           |
+| Access    | Cloudflare Zero Trust Access guards Grafana, SSH, the admin and the whole sandbox                                                  |
+| Stack     | [`compose.production.yaml`](../peal-docker/compose.production.yaml) as the Compose project `peal`, every port on 127.0.0.1         |
+| Telemetry | The OpenTelemetry Collector, Loki, Tempo, Prometheus and Grafana, in the stack                                                     |
+| Alerts    | Grafana's alert rules, sent to a Telegram chat                                                                                     |
+| Backups   | pgBackRest archives the write-ahead log and backs Postgres up to Cloudflare R2                                                     |
+| Uptime    | Gatus on a server of its own checks the public endpoints, hears Grafana's heartbeat and serves the status page ([Uptime](#uptime)) |
 
 The tunnel's routes, for production (`roles/cloudflared/templates/config.yml.j2`):
 
@@ -50,8 +50,11 @@ rule's path after resolving dot segments, backslashes and repeated slashes
 (since 2026.10.0), and the admin paths in any letter case, so no way of
 writing a path reaches the admin without the token;
 [`tests/test_cloudflared.py`](tests/test_cloudflared.py) tries them. Grafana
-signs people in from that token as editors; its `admin` account, whose
-password is generated on the server, is the way in when Access is down.
+signs people in from that token as Admins of its organisation, with full
+access: whoever Grafana's Access policy lets through, the staff, can change
+data sources, dashboards, alerting and users, and Grafana sets the role again
+at each sign-in. Its `admin` account, whose password is generated on the
+server, is the way in when Access is down.
 
 Cloudflare's edge waits up to 100 seconds for an answer, and the writing
 assistant answers within 90, so the tunnel needs no timeout of its own.
@@ -336,7 +339,9 @@ resource. Then:
    Hetzner firewall that lets in port 443 from anywhere and port 22 from the
    addresses you work from, and put its address in `inventory/hosts.yml`.
    Give it a name, `uptime_hostname`, with A and AAAA records that Cloudflare
-   does not proxy, so it answers even when Cloudflare does not.
+   does not proxy, so it answers even when Cloudflare does not, and the
+   status page its own, `uptime_status_hostname` ([The status
+   page](#the-status-page)).
 2. Make its credentials, which are its own:
    - a Telegram bot from @BotFather, and the chat it writes to, which may be
      the one production's alerts go to;
@@ -355,8 +360,9 @@ resource. Then:
 
 3. `uv run ansible-playbook playbooks/bootstrap.yml --limit uptime -e ansible_user=root`
 4. `uv run ansible-playbook playbooks/uptime.yml --check --diff`, then without
-   `--check`. Caddy gets a Let's Encrypt certificate for `uptime_hostname`
-   through the TLS-ALPN challenge, on port 443 alone.
+   `--check`. Caddy gets a Let's Encrypt certificate for `uptime_hostname`,
+   and `uptime_status_hostname`, through the TLS-ALPN challenge, on port 443
+   alone.
 5. Give production its heartbeat token, below.
 
 ### The heartbeat
@@ -402,15 +408,34 @@ Gatus's dashboard listens on the uptime server's 127.0.0.1 only. SSH lets
 ssh -N -L 8080:127.0.0.1:8080 ops@uptime.peal.social   # then open http://localhost:8080
 ```
 
-To the world, Caddy answers the heartbeats' path and nothing else:
+On `uptime_hostname`, Caddy answers the heartbeats' path and nothing else:
 `/api/v1/endpoints/<group>_<name>/external`, by POST, and 404 to the rest.
 
-A public status page is the owner's decision, and is off. Turned on with
-`uptime_public_status: true` in `group_vars/uptime/main.yml`, Caddy also
-serves the dashboard and Gatus's read-only API at `https://<uptime_hostname>/`:
-anyone could then see what is checked, every host name included, and when it
-failed. A name such as `status.peal.social` would suit it better, as
-`uptime_hostname`.
+### The status page
+
+The owner chose to publish the dashboard as Peal's status page, at
+<https://status.peal.social>: `uptime_public_status: true` and
+`uptime_status_hostname: status.peal.social` in `group_vars/uptime/main.yml`.
+On that name, Caddy serves Gatus's dashboard and its API by GET and HEAD
+alone, and answers 405 to any other method (`status.caddy`): the page takes
+no heartbeat, and the heartbeats keep `uptime_hostname`, so production's
+`peal_heartbeat_url` does not change. Anyone can see what is checked, every
+host name included, the sandbox's too, and when it failed. Gatus checks the
+page's certificate hourly, as it does `uptime_hostname`'s.
+
+It needs one DNS record in the `peal.social` zone, made before `uptime.yml`
+runs, or Caddy gets no certificate for it:
+
+| Type  | Name     | Content              | Proxy status                         |
+| ----- | -------- | -------------------- | ------------------------------------ |
+| CNAME | `status` | `uptime.peal.social` | DNS only (not proxied by Cloudflare) |
+
+Not proxied, as `uptime_hostname` is: the page then answers even when
+Cloudflare does not, and Caddy's TLS-ALPN challenge reaches the server. A
+CNAME follows the uptime server's A and AAAA records, so a new address
+changes one record. To take the page down, set `uptime_public_status: false`
+and run `uptime.yml`; Caddy then serves `uptime_hostname` alone, and the
+record can go.
 
 ### On the uptime server
 
@@ -418,7 +443,7 @@ failed. A name such as `status.peal.social` would suit it better, as
 | ----------------------------- | -------------------------------------------------------------------------------- |
 | `/srv/uptime/compose.yaml`    | The stack: Gatus on 127.0.0.1:8080, Caddy on port 443                            |
 | `/srv/uptime/gatus/`          | Gatus's configuration, which holds no secret: Gatus reads them from its settings |
-| `/srv/uptime/caddy/`          | Caddy's configuration                                                            |
+| `/srv/uptime/caddy/`          | Caddy's configuration: the heartbeats' routes, and the status page's             |
 | `/srv/uptime/data/`           | Gatus's history, a SQLite database the `gatus` user owns                         |
 | `/srv/uptime/secrets.env`     | The heartbeat tokens, generated there                                            |
 | `/srv/uptime/credentials.env` | What outside services issued: the Telegram bot and the Access service token      |

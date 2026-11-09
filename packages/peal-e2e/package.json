@@ -1,7 +1,14 @@
 {
   "name": "peal-e2e",
   "private": true,
+  "homepage": "https://peal.social",
+  "bugs": "https://github.com/peal-social/peal/issues",
   "license": "FSL-1.1-ALv2",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/peal-social/peal.git",
+    "directory": "packages/peal-e2e"
+  },
   "type": "module",
   "devDependencies": {
     "@e2e-dev/web": "0.15.5",

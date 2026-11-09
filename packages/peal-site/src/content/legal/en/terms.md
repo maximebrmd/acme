@@ -10,7 +10,7 @@ Effective date: [Date]
 
 These terms govern the use of the hosted Peal service at app.peal.social, provided by [Legal entity name] ("we"), [Registered address], [Company registration number]. [State how the terms are accepted, for example when an account is created.]
 
-They do not cover the Peal source code. The source code is licensed separately under the Functional Source License, Version 1.1, ALv2 Future License (FSL-1.1-ALv2), which governs self-hosting, modifying and redistributing it.
+They do not cover the Peal source code. The source code is licensed separately under the Functional Source License, Version 1.1, ALv2 Future License (FSL-1.1-ALv2), which governs self-hosting, modifying and redistributing it, except for the SDKs and the API contract they are generated from, which are licensed under the Apache License, Version 2.0.
 
 ## The service
 
