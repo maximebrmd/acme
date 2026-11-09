@@ -7,11 +7,13 @@ import { drizzleAdapter } from "@better-auth/drizzle-adapter/relations-v2";
 import type { DrizzleAdapterConfig } from "@better-auth/drizzle-adapter/relations-v2";
 import { betterAuth } from "better-auth";
 import type { User } from "better-auth";
+import { APIError } from "better-auth/api";
 import { admin, organization } from "better-auth/plugins";
 import { Option, Redacted, Schema } from "effect";
 
 import { defaultLocale, LocaleSchema } from "#shared/domain/locale.ts";
 import type { Locale } from "#shared/domain/locale.ts";
+import { RoleSchema } from "#workspace/domain/roles.ts";
 
 import { accessControl, roles } from "./access-control.ts";
 import { refuseImpersonatedChanges } from "./impersonation.ts";
@@ -84,6 +86,21 @@ const localeOf = (user: User): Locale =>
 
 const localePrefix = (locale: Locale): string =>
   locale === defaultLocale ? "" : `/${locale}`;
+
+const isRole = Schema.is(RoleSchema);
+
+// A member holds one role. Better Auth would store several, comma-separated,
+// which the emails and the web app would show as they are.
+const oneRole = async (role: string): Promise<void> => {
+  if (!isRole(role)) {
+    throw APIError.from("BAD_REQUEST", {
+      code: "ONE_ROLE_PER_MEMBER",
+      message: "A member holds exactly one role",
+    });
+  }
+
+  await Promise.resolve();
+};
 
 const thirtyDays = 60 * 60 * 24 * 30;
 
@@ -180,6 +197,12 @@ export const makeAuth = ({ database, hooks, settings }: AuthDependencies) =>
         creatorRole: "owner",
         invitationExpiresIn: oneWeek,
         organizationHooks: {
+          beforeAddMember: async ({ member }) => {
+            await oneRole(member.role);
+          },
+          beforeCreateInvitation: async ({ invitation }) => {
+            await oneRole(invitation.role);
+          },
           // A workspace's API keys go with it: they refer to it by id alone,
           // with no foreign key, and would otherwise outlive it. They go
           // first, so that a failure may leave a workspace without its keys,
@@ -195,6 +218,9 @@ export const makeAuth = ({ database, hooks, settings }: AuthDependencies) =>
               model: "apikey",
               where: [{ field: "referenceId", value: workspace.id }],
             });
+          },
+          beforeUpdateMemberRole: async ({ newRole }) => {
+            await oneRole(newRole);
           },
         },
         requireEmailVerificationOnInvitation: true,

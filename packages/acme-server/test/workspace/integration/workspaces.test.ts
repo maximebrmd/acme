@@ -19,6 +19,10 @@ import {
 
 const InvitationSchema = Schema.Struct({ id: Schema.String });
 
+const AcceptedSchema = Schema.Struct({
+  member: Schema.Struct({ id: Schema.String }),
+});
+
 const ApiKeySchema = Schema.Struct({
   createdAt: Schema.String,
   expiresAt: Schema.NullOr(Schema.String),
@@ -188,6 +192,75 @@ layer(IntegrationLive, { excludeTestServices: true, timeout: "180 seconds" })(
 
           assert.strictEqual(created.status, 403);
         })
+    );
+
+    it.effect("give each member one role", () =>
+      Effect.gen(function* oneRole() {
+        const app = yield* TestApp;
+        const owner = yield* signedUp("ines");
+        const workspaceId = yield* workspaceOf(owner, "Roles");
+        const asOwner = { cookie: owner.cookies };
+
+        const several = yield* app.request(
+          "/api/auth/organization/invite-member",
+          {
+            body: {
+              email: newEmail("several"),
+              organizationId: workspaceId,
+              role: ["editor", "viewer"],
+            },
+            headers: asOwner,
+          }
+        );
+
+        assert.strictEqual(several.status, 400);
+
+        const guest = yield* signedUp("member");
+
+        const invited = yield* app.request(
+          "/api/auth/organization/invite-member",
+          {
+            body: {
+              email: guest.email,
+              organizationId: workspaceId,
+              role: "viewer",
+            },
+            headers: asOwner,
+          }
+        );
+
+        const accepted = yield* app.request(
+          "/api/auth/organization/accept-invitation",
+          {
+            body: {
+              invitationId: (yield* bodyOf(InvitationSchema, invited)).id,
+            },
+            headers: { cookie: guest.cookies },
+          }
+        );
+
+        const { member } = yield* bodyOf(AcceptedSchema, accepted);
+
+        const changed = (role: string) =>
+          app.request("/api/auth/organization/update-member-role", {
+            body: { memberId: member.id, organizationId: workspaceId, role },
+            headers: asOwner,
+          });
+
+        assert.strictEqual((yield* changed("admin,viewer")).status, 400);
+        assert.strictEqual((yield* changed("editor")).status, 200);
+
+        const me = yield* decodeMe(
+          (yield* app.request("/api/me", {
+            headers: { cookie: guest.cookies },
+          })).body
+        );
+
+        assert.deepStrictEqual(
+          me.workspaces.map(({ role }) => role),
+          ["editor"]
+        );
+      })
     );
 
     it.effect("create, list and revoke API keys", () =>
