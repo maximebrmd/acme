@@ -486,6 +486,38 @@ describe("publishing on TikTok", () => {
     }).pipe(Effect.scoped)
   );
 
+  it.live(
+    "compares a video's length with the creator's in whole milliseconds, as scheduling did",
+    () =>
+      Effect.gen(function* wholeMilliseconds() {
+        const probed = video();
+
+        // A fraction of a millisecond past 4 seconds, which scheduling
+        // reads as 4,000 ms: within the creator's 4 seconds.
+        const file: TestFile = {
+          ...probed,
+          media: {
+            ...probed.media,
+            duration: Option.some(Duration.millis(4000.4)),
+          },
+        };
+
+        const { client, tiktok } = yield* onTikTok({
+          api: {
+            creator: { ...publicCreator, max_video_post_duration_sec: 4 },
+          },
+          files: [file],
+        });
+
+        const result = yield* client.publish(
+          yield* post({ media: [attached(file)] })
+        );
+
+        assert.strictEqual(result._tag, "published");
+        assert.lengthOf(tiktok.posts(), 1);
+      }).pipe(Effect.scoped)
+  );
+
   it.live("fails with appNotAudited when TikTok takes only private posts", () =>
     Effect.gen(function* unaudited() {
       const file = video();
@@ -529,6 +561,40 @@ describe("publishing on TikTok", () => {
         new MediaRejected({ code: "frame_rate_check_failed" })
       );
     }).pipe(Effect.scoped)
+  );
+
+  it.live.each([
+    { label: "fewer", served: 20_000_000 - 1 },
+    { label: "more", served: 20_000_000 + 10_000_000 },
+  ])(
+    "sends no last chunk when the store serves $label bytes than the file has",
+    ({ served }) =>
+      Effect.gen(function* mismatched() {
+        const stored = testFile("video", served, "video/mp4");
+
+        // The file's size as the media library recorded it.
+        const file: TestFile = {
+          ...stored,
+          media: { ...stored.media, byteSize: 20_000_000 },
+        };
+
+        const { client, journal, tiktok } = yield* onTikTok({ files: [file] });
+
+        const failure = yield* client
+          .publish(yield* post({ media: [attached(file)] }))
+          .pipe(Effect.flip);
+
+        assert.strictEqual(failure._tag, "PlatformUnavailable");
+
+        // Nothing that can make the post live was sent, nor journaled.
+        const steps = yield* stepsOf(journal);
+
+        assert.isFalse(steps.some(({ _tag }) => _tag === "finishing"));
+        assert.isBelow(
+          tiktok.posts().reduce((sum, made) => sum + made.bytes, 0),
+          20_000_000
+        );
+      }).pipe(Effect.scoped)
   );
 
   it.live("renews a token TikTok refused, then posts once", () =>

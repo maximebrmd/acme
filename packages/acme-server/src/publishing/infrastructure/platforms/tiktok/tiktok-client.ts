@@ -501,10 +501,13 @@ export const tiktokClient = Effect.fn("TikTokClient.make")(
         return yield* new BadRequest({ code: "privacy_level_option_mismatch" });
       }
 
+      // In whole milliseconds, as scheduling compared them.
       const tooLong = described.some(({ duration }) =>
         Option.exists(
           Option.all([duration, creator.maxVideoDuration]),
-          ([length, maximum]) => Duration.isGreaterThan(length, maximum)
+          ([length, maximum]) =>
+            Math.round(Duration.toMillis(length)) >
+            Math.round(Duration.toMillis(maximum))
         )
       );
 
@@ -724,12 +727,19 @@ export const tiktokClient = Effect.fn("TikTokClient.make")(
 
         const last = plan.count - 1;
 
-        // Each chunk but the last, in turn; the last one is kept.
+        // Each chunk but the last, in turn; the last one is kept. A store
+        // that sends more bytes than the file has stops the upload before
+        // its last chunk, as one that sends fewer does below.
         const lastChunk = yield* media
           .open(post.workspaceId, described.mediaId)
           .pipe(
             inParts((index) => (index < last ? plan.chunkSize : plan.lastSize)),
             Stream.zipWithIndex,
+            Stream.mapEffect(([bytes, index]) =>
+              index > last
+                ? Effect.fail(new PlatformUnavailable())
+                : Effect.succeed([bytes, index] as const)
+            ),
             Stream.mapEffect(([bytes, index]) =>
               index < last
                 ? putChunk(
@@ -755,8 +765,12 @@ export const tiktokClient = Effect.fn("TikTokClient.make")(
             )
           );
 
-        // The store sent fewer bytes than the file has.
-        if (Option.isNone(lastChunk)) {
+        // The store sent fewer bytes than the file has: the last chunk would
+        // not end the upload, nor match what TikTok was told.
+        if (
+          Option.isNone(lastChunk) ||
+          lastChunk.value.length !== plan.lastSize
+        ) {
           return yield* new PlatformUnavailable();
         }
 
