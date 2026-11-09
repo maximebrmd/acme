@@ -9,15 +9,15 @@ export const french: EmailCatalog = {
     subject: "{inviterName} vous invite à rejoindre {workspaceName} sur Acme",
   },
   layout: {
-    linkFallback: "Si le bouton ne fonctionne pas, ouvrez ce lien :",
+    linkFallback: "Si le bouton ne fonctionne pas, ouvrez ce lien :",
     signature: "L’équipe Acme",
-    textLink: "{action} : {url}",
+    textLink: "{action} : {url}",
   },
   resetPassword: {
     action: "Choisir un nouveau mot de passe",
     body: "Quelqu’un a demandé à réinitialiser le mot de passe de votre compte Acme. Choisissez-en un nouveau avec le lien ci-dessous.",
     ignore:
-      "Si vous n’êtes pas à l’origine de cette demande, ignorez cet e-mail : votre mot de passe reste inchangé. Le lien expire dans une heure.",
+      "Si vous n’êtes pas à l’origine de cette demande, ignorez cet e-mail : votre mot de passe reste inchangé. Le lien expire dans une heure.",
     subject: "Réinitialisez votre mot de passe Acme",
   },
   roles: {

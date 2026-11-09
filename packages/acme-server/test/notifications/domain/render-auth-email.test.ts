@@ -47,7 +47,7 @@ describe(renderAuthEmail, () => {
     });
 
     expect(email.subject).toBe("Réinitialisez votre mot de passe Acme");
-    expect(email.text).toContain(`Choisir un nouveau mot de passe : ${url}`);
+    expect(email.text).toContain(`Choisir un nouveau mot de passe : ${url}`);
     expect(email.html).toContain('<html lang="fr">');
   });
 

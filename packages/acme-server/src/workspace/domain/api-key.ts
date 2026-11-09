@@ -23,8 +23,9 @@ export class ApiKey extends Schema.Class<ApiKey>(
 }) {}
 
 /**
- * The permissions a member may give a new API key: only ones they hold
- * themselves, so a key never does more than its creator could.
+ * The permissions a member may give a new API key, once each and in
+ * vocabulary order: only ones they hold themselves, so a key never does
+ * more than its creator could.
  */
 export const grantableBy = (
   actor: Actor,
@@ -33,6 +34,10 @@ export const grantableBy = (
   const missing = requested.find((permission) => !can(actor, permission));
 
   return missing === undefined
-    ? Result.succeed(requested)
+    ? Result.succeed(
+        PermissionSchema.literals.filter((permission) =>
+          requested.includes(permission)
+        )
+      )
     : Result.fail(new MissingPermission({ permission: missing }));
 };
