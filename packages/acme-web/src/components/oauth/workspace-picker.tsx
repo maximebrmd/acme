@@ -6,7 +6,7 @@ import { Button } from "acme-ui/components/button";
 import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 
-import { authClient } from "#auth/client.ts";
+import { authClient, workspaceClient } from "#auth/client.ts";
 import { isOAuthRedirect } from "#auth/oauth-redirect.ts";
 
 interface Workspace {
@@ -30,7 +30,7 @@ export const WorkspacePicker = ({
 
   const handlePick = (organizationId: string) => () => {
     startTransition(async () => {
-      const picked = await authClient.organization.setActive({
+      const picked = await workspaceClient.organization.setActive({
         organizationId,
       });
 

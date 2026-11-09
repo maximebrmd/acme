@@ -28,3 +28,13 @@ export const authClient = createAuthClient({
     oauthDeviceAuthorizationClient(),
   ],
 });
+
+/**
+ * Better Auth's client without the OAuth plugins, for the calls an
+ * authorization's pages make that must not resume it. Sent with the signed
+ * query, any call that renews the session cookie, as picking a workspace
+ * does, would resume the authorization at the workspace picker again.
+ */
+export const workspaceClient = createAuthClient({
+  plugins: [organizationClient()],
+});
