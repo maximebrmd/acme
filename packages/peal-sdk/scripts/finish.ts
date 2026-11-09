@@ -408,6 +408,25 @@ const ruby = async (_language: Language, folder: string): Promise<void> => {
   await addInstallation(folder, "```sh\ngem install peal\n```");
 };
 
+/**
+ * Fern's record of what wrote the folder, without what changes from one run
+ * to the next (the repository's commit, whether it was clean, who ran Fern):
+ * the SDKs regenerate identically, which sdk:check relies on.
+ */
+const keepStableMetadata = async (folder: string): Promise<void> => {
+  const file = path.join(folder, ".fern", "metadata.json");
+
+  const {
+    ciProvider: _ciProvider,
+    invokedBy: _invokedBy,
+    originGitCommit: _originGitCommit,
+    originGitCommitIsDirty: _originGitCommitIsDirty,
+    ...metadata
+  } = decodeManifest(await Bun.file(file).text());
+
+  await writeManifest(file, metadata);
+};
+
 type Finisher = (language: Language, folder: string) => Promise<void>;
 
 const finishers = {
@@ -429,6 +448,7 @@ export const finish = async (
   // workflows build the SDKs, and the PHP mirror, whose root this folder
   // becomes, should run none.
   await rm(path.join(folder, ".github"), { force: true, recursive: true });
+  await keepStableMetadata(folder);
   await removeBadge(folder);
   await finishers[language.name]?.(language, folder);
 };

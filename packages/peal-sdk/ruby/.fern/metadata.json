@@ -3,8 +3,5 @@
   "generatorName": "fernapi/fern-ruby-sdk",
   "generatorVersion": "1.41.3",
   "generatorConfig": {},
-  "originGitCommit": "481c513edbbedc16b1f5c2e747ca06ba92c4414c",
-  "originGitCommitIsDirty": true,
-  "invokedBy": "manual",
   "requestedVersion": "0.3.0"
 }
