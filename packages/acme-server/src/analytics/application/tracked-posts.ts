@@ -32,7 +32,12 @@ export class TrackedPosts extends Context.Service<
     readonly track: (
       posts: readonly TrackedPost[]
     ) => Effect.Effect<number, DatabaseError>;
-    /** The posts due to be read by `at`, the longest due first. */
+    /**
+     * `limit` of the posts due to be read by `at`, taking turns between
+     * channels: every channel's longest due before any channel's second,
+     * and so on, so posts put off on one channel, or on a platform that was
+     * down, never crowd the other channels out.
+     */
     readonly due: (
       at: DateTime.Utc,
       limit: number

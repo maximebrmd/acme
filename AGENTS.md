@@ -743,7 +743,10 @@ and no socket, for tests.
   channel's posts, and a post still unread a day past its window, end.
 - Each run follows the publications after the latest one it follows, then
   looks back 15 minutes for those that settled late, 20 pages of 500 each
-  at most, so it moves on however many went live together.
+  at most, so it moves on however many went live together. It reads 5000
+  due posts at most, taking turns between channels (`TrackedPosts.due`
+  numbers each channel's with `row_number()`), so posts put off on a
+  platform that is down never crowd the other channels out.
 - Summaries take the posts published over a range of days in an IANA zone:
   the domain computes each day's start with `fromWallClock`, and Postgres
   buckets snapshots with those instants (`width_bucket`), never its zones.

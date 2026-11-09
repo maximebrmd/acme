@@ -581,6 +581,53 @@ describe("collecting post metrics", () => {
       )
   );
 
+  it.effect("reads other channels while one's posts, put off, fill a run", () =>
+    Effect.gen(function* crowdedOut() {
+      const down = yield* newChannelId;
+      const other = yield* newChannelId;
+      const start = utc("2026-11-02T10:00:00.000Z");
+
+      // As many posts as a run reads, on a channel whose platform is down,
+      // all due before the other channel's one.
+      const putOff = yield* Effect.forEach(
+        Array.from({ length: 5000 }, (_, index) => index),
+        (index) =>
+          publicationOf(
+            workspaceId,
+            down,
+            DateTime.formatIso(
+              DateTime.addDuration(start, Duration.millis(index * 100))
+            )
+          ),
+        { concurrency: 1 }
+      );
+
+      const waiting = yield* publicationOf(
+        workspaceId,
+        other,
+        "2026-11-02T10:20:00.000Z",
+        "110000000000000002"
+      );
+
+      yield* published(...putOff, waiting);
+
+      const report = yield* runAt("2026-11-02T11:07:00.000Z");
+
+      assert.strictEqual(report.read, 1);
+      assert.lengthOf(yield* snapshotsOf(waiting), 1);
+    }).pipe(
+      Effect.provide(
+        collectionWith((request) =>
+          request.posts.some(
+            ({ platformPostId }) => platformPostId === "110000000000000002"
+          )
+            ? countingAll(request)
+            : Effect.fail(new PlatformUnavailable())
+        )
+      )
+    )
+  );
+
   it.effect("follows only posts young enough to be read, the first time", () =>
     Effect.gen(function* firstRun() {
       const channelId = yield* newChannelId;

@@ -113,6 +113,41 @@ layer(StoreTest)("the analytics store", (it) => {
     })
   );
 
+  it.effect("hands out due posts taking turns between channels", () =>
+    Effect.gen(function* turns() {
+      const workspaceId = yield* freshWorkspace;
+      const tracked = yield* TrackedPosts;
+      const busy = yield* newChannelId;
+      const quiet = yield* newChannelId;
+
+      yield* Effect.gen(function* checks() {
+        // Instants no other suite uses, so only these posts are due.
+        const posts = yield* Effect.forEach(
+          [
+            [busy, "1990-01-01T10:00:00.000Z"],
+            [busy, "1990-01-01T10:01:00.000Z"],
+            [busy, "1990-01-01T10:02:00.000Z"],
+            [quiet, "1990-01-01T10:03:00.000Z"],
+          ] as const,
+          ([channelId, publishedAt]) =>
+            publicationOf(workspaceId, channelId, publishedAt).pipe(
+              Effect.map(trackPublication)
+            ),
+          { concurrency: 1 }
+        );
+
+        yield* tracked.track(posts);
+
+        const due = yield* tracked.due(utc("1990-01-01T11:07:00.000Z"), 3);
+
+        assert.deepStrictEqual(
+          due.map(({ targetId }) => targetId),
+          [posts[0], posts[3], posts[1]].map((post) => post?.targetId)
+        );
+      }).pipe(Effect.ensuring(forgetWorkspace(workspaceId)));
+    })
+  );
+
   it.effect("reports totals by channel, gains by day and top posts", () =>
     Effect.gen(function* reportsByChannelAndDay() {
       const workspaceId = yield* freshWorkspace;
