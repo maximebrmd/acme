@@ -310,8 +310,11 @@ layer(StorageTest)("the S3 media store", (it) => {
         const body = syntheticBytes(64);
 
         // The same store, as a server that serves the bucket publicly
-        // sees it.
-        const settings = yield* S3StorageConfig;
+        // sees it: its settings read as the store's are, not from the
+        // environment alone.
+        const settings = yield* Effect.gen(function* read() {
+          return yield* S3StorageConfig;
+        }).pipe(Effect.provide(storageSettings));
 
         const served = yield* makeS3MediaStorage({
           ...settings,
