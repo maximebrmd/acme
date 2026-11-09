@@ -9,12 +9,13 @@ two years after it ships.
 
 It is not released yet. Today you can:
 
-- create an account and workspaces, and connect Mastodon and Bluesky
-  accounts to them;
+- create an account and workspaces, and connect Mastodon, Bluesky, LinkedIn
+  and X accounts to them;
 - upload images and videos to a workspace's media library;
 - write a post, with its own text on some channels and images or videos
   with alt text, then schedule it, move it on a calendar or cancel it;
-- have it published to Mastodon and Bluesky at its time, with its media;
+- have it published to Mastodon, Bluesky, LinkedIn and X at its time, with
+  its media;
 - hear how each post ended, and which channels need reconnecting, under a
   bell in the app and by email, as each member chooses;
 - ask a writing assistant to rewrite, shorten or translate a post, or to
@@ -145,6 +146,13 @@ be read, and their channels must be reconnected.
   finish there, and `next dev` does not hydrate pages on `127.0.0.1`. The
   confidential client needs `PUBLIC_URL` on HTTPS without a port, and keys
   from `bun nx run acme-server:bluesky-key`.
+- **LinkedIn** and **X** need an app you register on each platform, whose
+  redirect is `PUBLIC_URL/connect/<platform>/callback`: set
+  `LINKEDIN_CLIENT_ID` and `LINKEDIN_CLIENT_SECRET`, `X_CLIENT_ID` and
+  `X_CLIENT_SECRET`. The docs' self-hosting page says how. Until then,
+  **Channels** does not offer them. X refuses `localhost` in redirects: try it
+  with `PUBLIC_URL` on `http://127.0.0.1:3001` and the web app's production
+  build, or through an HTTPS tunnel. LinkedIn members reconnect every 60 days.
 
 The server refreshes tokens due for it every 10 minutes and, daily at 08:00
 UTC, tells a workspace's owners and admins about accounts that must be
@@ -264,6 +272,8 @@ In development, these are the ones you may want:
 | `DATABASE_URL`                | none: required                   | The Postgres database                                          |
 | `ACME_TOKEN_KEYS`             | unset: channels cannot connect   | `keyId:base64key` entries that encrypt channel tokens          |
 | `BLUESKY_CLIENT_KEYS`         | unset: the loopback client       | Keys of the confidential Bluesky client                        |
+| `LINKEDIN_CLIENT_ID`          | unset: LinkedIn is not offered   | The LinkedIn app's client id, with `LINKEDIN_CLIENT_SECRET`    |
+| `X_CLIENT_ID`                 | unset: X is not offered          | The X app's OAuth 2.0 client id, with `X_CLIENT_SECRET`        |
 | `ACME_AI_PROVIDER`            | unset: no writing assistant      | `anthropic` or `openai-compatible`                             |
 | `ACME_AI_API_KEY`             | unset                            | The provider's key: required for Anthropic                     |
 | `ACME_AI_BASE_URL`            | Anthropic's API                  | The API's base URL: required for an OpenAI-compatible server   |

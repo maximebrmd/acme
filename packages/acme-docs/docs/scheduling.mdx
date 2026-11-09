@@ -95,7 +95,7 @@ At its time, Acme sends the post to each of its channels on its own, one post at
 
 The post as a whole then reads **Published**, **Partly published**, **To check**, **Failed** or **Cancelled**. The members who may schedule posts are told how it went on each channel: see [Notifications](/notifications).
 
-When a platform does not answer the request that publishes the post, Acme asks again only in ways that cannot post it twice: it reads the post back on Bluesky, and sends it to Mastodon again under the same key, which Mastodon answers with the post it already made. It tries three times, over about two and a half minutes. If the server stops in the middle of a post, it checks the same way when it starts again. Only when none of that settles it does the post read **To check**: Acme never posts it again on its own.
+When a platform does not answer the request that publishes the post, Acme asks again only in ways that cannot post it twice: it reads the post back on Bluesky, sends it to Mastodon again under the same key, which Mastodon answers with the post it already made, and looks for it among the X account's recent posts, by its text, without ever sending it to X again. It tries three times, over about two and a half minutes. LinkedIn lets Acme neither read a member's posts nor send one twice safely: there, the post reads **To check** at once. If the server stops in the middle of a post, it checks the same way when it starts again. Only when none of that settles it does the post read **To check**: Acme never posts it again on its own.
 
 Acme waits rather than gives up when a platform is busy:
 

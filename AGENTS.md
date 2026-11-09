@@ -301,9 +301,16 @@ and no socket, for tests.
   providers are for signing in only.
 - Platform sign-in goes through one `PlatformAuthorizer` per platform
   (`channels/application/platform-authorizer.ts`); Mastodon always, Bluesky
-  when the server has a client for it. Each declares its `TokenPolicy`, data
-  in `channels/domain/token-policy.ts`, which the refresh sweep and the
-  reconnect warnings follow.
+  when the server has a client for it, LinkedIn and X when the operator set
+  their app (`<PLATFORM>_CLIENT_ID` and `_CLIENT_SECRET`, read by
+  `oauthClientConfig`; one half alone stops the server). Each declares its
+  `TokenPolicy`, data in `channels/domain/token-policy.ts`, which the refresh
+  sweep and the reconnect warnings follow: LinkedIn's tokens are not renewed
+  and expire after 60 days, X's last two hours and rotate on refresh.
+- `GET …/channels/platforms` (`ConnectChannel.connectable`) lists the
+  platforms the server has an authorizer for; the web app offers only those.
+  Map a platform's own denial codes (LinkedIn's `user_cancelled_*`) to
+  `AuthorizationDenied` in `connect-channel.ts`.
 - `ConnectChannel` stores each attempt under the SHA-256 of its state, bound
   to the member, the workspace and the platform, for 15 minutes, completed
   once. One channel per platform account per workspace: connecting an account
@@ -362,15 +369,24 @@ and no socket, for tests.
   publish runs inside the gate: uploads, processing waits, token renewal,
   the post and its confirmation.
 - Platform adapters live in `publishing/infrastructure/platforms/<platform>/`
-  (Mastodon and Bluesky), beside `ChannelGate`, and implement the steps of
-  `publishing/application/publication-steps.ts`, which `sequenced` runs:
+  (Mastodon, Bluesky, LinkedIn and X), beside `ChannelGate`, and implement
+  the steps of `publishing/application/publication-steps.ts`, which
+  `sequenced` runs:
   `prepare` uploads the media (safe to repeat: media alone shows nowhere),
   `poll` waits while the platform processes it (15 minutes at most),
   `commit` is the one request that makes the post live (fail with
   `OutcomeUnknown` when it may have), and `confirmation` says how to read the
   post back: `lookUp` by a key chosen before the commit (Bluesky's record
-  key), or `resend` with the attempt's idempotency key within the window the
-  platform keeps it (Mastodon: 50 minutes of its hour).
+  key), or by a search that answers `found` or `unknown`, never `absent`, so
+  the post is never sent again (X's recent posts, by text and file count);
+  `resend` with the attempt's idempotency key within the window the platform
+  keeps it (Mastodon: 50 minutes of its hour); or `none`, unconfirmed at once
+  (LinkedIn members' posts cannot be read back).
+- Large uploads go in parts read one at a time from the media stream
+  (`inParts` in `platforms/byte-parts.ts`): LinkedIn's video parts, X's
+  4 MiB appends. LinkedIn calls name `Linkedin-Version`
+  (`LINKEDIN_API_VERSION`, a default a test keeps within ten months), and
+  send the member's token to LinkedIn's hosts only.
 - Derive whatever an adapter sends from the request's `idempotencyKey` and
   `startedAt`, which every run of an attempt shares.
 - Adapters get tokens only through `PlatformCredentials`, which
@@ -381,14 +397,15 @@ and no socket, for tests.
   and the call made once more.
 - Adapters reach platforms only through `publicHttpClient`, or
   `publicHttpClientWith({ timeout })` for uploads. Test them against the
-  loopback fakes in `test/publishing/fakes/`.
+  loopback fakes in `test/publishing/fakes/` (and the sign-in flows against
+  `test/channels/fakes/`).
 - A journal row found in flight is resumed (`PlatformPublisher.resume`, the
   gate's `Resume`), never sent again blindly: Bluesky looks the record up and
   creates it only when absent, Mastodon resends under the same key while its
-  window holds, checked again just before the post goes out, and an adapter
-  that cannot tell answers unconfirmed. A resume refuses a post only when
-  nothing can have gone live, and a target whose cancel was requested is
-  never resumed.
+  window holds, checked again just before the post goes out, X searches the
+  account's recent posts, and an adapter that cannot tell (LinkedIn) answers
+  unconfirmed. A resume refuses a post only when nothing can have gone live,
+  and a target whose cancel was requested is never resumed.
 - Tell how each target ended through `PublicationOutcomes`, once, in the
   transaction that settles it (`recordTargetRun`, and `claimPostRun` for
   missed targets). `NotifiedPublicationOutcomes` keys the notice by target and

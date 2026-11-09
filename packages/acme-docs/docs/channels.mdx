@@ -1,17 +1,18 @@
 ---
 title: Connect channels
-description: Connect the Mastodon and Bluesky accounts a workspace posts to, reconnect them when a platform asks, and disconnect them.
+description: Connect the Mastodon, Bluesky, LinkedIn and X accounts a workspace posts to, reconnect them when a platform asks, and disconnect them.
 sidebar:
   order: 2
 ---
 
-A channel is a social account connected to a workspace: a Mastodon or Bluesky account today. Posts go to channels, so connect at least one before you schedule anything.
+A channel is a social account connected to a workspace: a Mastodon, Bluesky, LinkedIn or X account today. Posts go to channels, so connect at least one before you schedule anything.
 
 Open a workspace from **Workspaces**, then **Channels**. Every member sees the workspace's channels; only owners and admins connect, reconnect and disconnect them.
 
-<Callout type="note" title="Two platforms so far">
-  Acme connects Mastodon and Bluesky accounts. The other platforms it knows,
-  such as X, LinkedIn, Threads, Instagram and Facebook, cannot be connected yet.
+<Callout type="note" title="Four platforms so far">
+  Acme connects Mastodon, Bluesky, LinkedIn and X accounts. The other platforms
+  it knows, such as Threads, Instagram and Facebook, cannot be connected yet.
+  **Channels** offers only the platforms the Acme server is set up for.
 </Callout>
 
 ## Connect an account [#connect]
@@ -30,7 +31,21 @@ Acme works with any Mastodon server on the public internet, reached over HTTPS. 
 
 Under **Bluesky**, give your handle, such as `you.bsky.social`, to go straight to your server's sign-in page, or leave it empty to pick the account on Bluesky. Then choose **Connect Bluesky**.
 
-The Acme server must be set up for Bluesky: on a self-hosted instance, see [Bluesky](/self-hosting#bluesky). Until then, connecting answers that the server is not set up for this platform.
+The Acme server must be set up for Bluesky: on a self-hosted instance, see [Bluesky](/self-hosting#bluesky). Until then, **Channels** does not offer it.
+
+### LinkedIn [#linkedin]
+
+Under **LinkedIn**, choose **Connect LinkedIn**, sign in on LinkedIn and allow Acme. Acme connects your own LinkedIn profile, and posts as you; company pages cannot be connected yet. It asks LinkedIn for your name and picture, and to publish posts.
+
+LinkedIn lets Acme post for 60 days, then asks you to sign in again: the channel shows the date, and its workspace's owners and admins are told a week before. Reconnect before then: when you are signed in on LinkedIn, it does not ask again.
+
+The Acme server must be set up for LinkedIn: on a self-hosted instance, see [LinkedIn](/self-hosting#linkedin). Until then, **Channels** does not offer it.
+
+### X [#x]
+
+Under **X**, choose **Connect X**, sign in on X and allow Acme. It asks to read and write posts, to upload media, and to stay connected, so it can renew its access without you.
+
+The Acme server must be set up for X: on a self-hosted instance, see [X](/self-hosting#x). Until then, **Channels** does not offer it.
 
 ## Statuses [#statuses]
 
@@ -46,7 +61,7 @@ A channel whose access cannot be renewed also shows the date by which it must be
 
 ## Keep channels connected [#keep-connected]
 
-Acme renews each account's access on its own before it runs out: it refreshes a Bluesky session a month before it would lapse. Mastodon access does not expire until someone revokes it.
+Acme renews each account's access on its own before it runs out: it refreshes a Bluesky session a month before it would lapse, and X access, which lasts two hours, before it ends. Mastodon access does not expire until someone revokes it. LinkedIn access cannot be renewed: reconnect the channel every 60 days, as above.
 
 When a platform refuses Acme's access while Acme posts, Acme renews the access where the platform allows it, and tries once more. When the platform refuses again, or the access cannot be renewed, for example because the account's owner revoked it, the channel turns to **Reconnect needed**, and the workspace's owners and admins are told once, under the bell and by email unless they turned that email off (see [Notifications](/notifications)). When a platform does not answer, Acme tries again later and leaves the channel as it is.
 
@@ -56,6 +71,8 @@ At a post's time, Acme posts it as the channel's account, with its text on that 
 
 - **Mastodon**: Acme posts on the account's server, with the account's default visibility. The server turns mentions, hashtags and links into links itself, and may process a video before the post can show it.
 - **Bluesky**: Acme posts on the server that holds the account. Links and hashtags become links; mentions stay plain text for now. Videos go through Bluesky's video service, which processes them before the post goes out.
+- **LinkedIn**: Acme posts publicly, as the member. Hashtags become LinkedIn hashtags; mentions stay plain text. LinkedIn processes a video before the post goes out.
+- **X**: Acme posts as the account. X turns mentions, hashtags and links into links itself, and processes a video before the post goes out.
 
 ## Reconnect [#reconnect]
 
