@@ -1,4 +1,4 @@
-import { Context, DateTime, Effect, Layer, Option, Schema } from "effect";
+import { Context, DateTime, Effect, Layer, Option, Ref, Schema } from "effect";
 import type { DateTime as DateTimeType } from "effect";
 
 import type { AvatarUrl } from "#channels/domain/avatar-url.ts";
@@ -167,7 +167,9 @@ const connectedTo = (channel: Channel): ConnectOutcome => ({
  * checked when the connection starts, and again before each channel is
  * added. Accounts chosen together need room for all of them, checked before
  * the choice is taken, so a choice too large connects none and can be made
- * again with fewer. Reconnecting adds nothing, so it needs none.
+ * again with fewer; a choice that fails for any other reason before an
+ * account is connected is kept for another try too. Reconnecting adds
+ * nothing, so it needs none.
  */
 export class ConnectChannel extends Context.Service<
   ConnectChannel,
@@ -195,7 +197,8 @@ export class ConnectChannel extends Context.Service<
     ) => Effect.Effect<ConnectOutcome, CompleteConnectFailure>;
     /**
      * Connects the accounts the member chose among those a sign-in
-     * reached, once: the channels they became or reconnected, in order.
+     * reached, once: the channels they became or reconnected, in order. A
+     * choice that fails before connecting any stays to make again.
      */
     readonly choose: (
       actor: Actor,
@@ -699,25 +702,52 @@ export class ConnectChannel extends Context.Service<
           choosableBy(taken.value.choice, actor, platform, yield* DateTime.now)
         );
 
-        const authorizer = yield* authorizerFor(platform);
+        const connected = yield* Ref.make(0);
 
-        // Sealed by this server a few minutes ago, as an attempt's secret.
-        const offered = yield* cipher
-          .decryptSecret(taken.value.accounts, choiceContext(choice.selection))
-          .pipe(Effect.orDie, Effect.flatMap(openOffered));
+        const connecting = Effect.gen(function* connecting() {
+          const authorizer = yield* authorizerFor(platform);
 
-        const chosen = [...new Set(request.accountIds)].map((accountId) =>
-          offered.find((account) => account.accountId === accountId)
-        );
+          // Sealed by this server a few minutes ago, as an attempt's secret.
+          const offered = yield* cipher
+            .decryptSecret(
+              taken.value.accounts,
+              choiceContext(choice.selection)
+            )
+            .pipe(Effect.orDie, Effect.flatMap(openOffered));
 
-        // Only accounts the choice offered: anything else is a forged choice.
-        if (chosen.length === 0 || chosen.includes(undefined)) {
-          return yield* new InvalidConnectState();
-        }
+          const chosen = [...new Set(request.accountIds)].map((accountId) =>
+            offered.find((account) => account.accountId === accountId)
+          );
 
-        return yield* Effect.forEach(
-          chosen.filter((account) => account !== undefined),
-          (account) => connectAccount(actor, platform, authorizer, account)
+          // Only accounts the choice offered: anything else is a forged
+          // choice.
+          if (chosen.length === 0 || chosen.includes(undefined)) {
+            return yield* new InvalidConnectState();
+          }
+
+          return yield* Effect.forEach(
+            chosen.filter((account) => account !== undefined),
+            (account) =>
+              connectAccount(actor, platform, authorizer, account).pipe(
+                Effect.tap(() => Ref.update(connected, (count) => count + 1))
+              )
+          );
+        });
+
+        // Taken, then failed before anything was connected, whatever the
+        // reason: the choice goes back as it was, to make again until it
+        // expires. Once an account is connected, it stays spent.
+        return yield* connecting.pipe(
+          Effect.onError(() =>
+            Ref.get(connected).pipe(
+              Effect.flatMap((count) =>
+                count === 0
+                  ? choices.save(taken.value.choice, taken.value.accounts)
+                  : Effect.void
+              ),
+              Effect.ignore
+            )
+          )
         );
       });
 

@@ -7,6 +7,7 @@ import {
   Layer,
   Option,
   Redacted,
+  Ref,
   Result,
   Schema,
 } from "effect";
@@ -15,6 +16,8 @@ import { FetchHttpClient } from "effect/http";
 import { SqlClient } from "effect/sql";
 import { TestClock } from "effect/testing";
 
+import { WorkspaceEntitlements } from "#billing/application/workspace-entitlements.ts";
+import { Entitlements, unmetered } from "#billing/domain/entitlements.ts";
 import { ChannelRepository } from "#channels/application/channel-repository.ts";
 import { ConnectChannel } from "#channels/application/connect-channel.ts";
 import type { ConnectOutcome } from "#channels/application/connect-channel.ts";
@@ -731,6 +734,102 @@ layer(FreePlanMetaTest)("choosing Meta accounts on the free plan", (it) => {
 
         assert.strictEqual(results.filter(Result.isSuccess).length, 1);
         assert.lengthOf(yield* repository.list(workspaceId), 3);
+      })
+  );
+});
+
+// How many more reads of the plan find it limiting nothing: after them, the
+// workspace is on the free plan, as when a smaller plan lands while a
+// member chooses.
+const unmeteredReads = Ref.makeUnsafe(Number.POSITIVE_INFINITY);
+
+const DowngradingTest = Layer.succeed(
+  WorkspaceEntitlements,
+  WorkspaceEntitlements.of({
+    of: () =>
+      Ref.getAndUpdate(unmeteredReads, (left) => left - 1).pipe(
+        Effect.map((left) =>
+          left > 0
+            ? unmetered
+            : new Entitlements({
+                plan: Option.some("free"),
+                subscription: Option.none(),
+              })
+        )
+      ),
+  })
+);
+
+const DowngradingMetaTest = connectChannelWith(
+  MetaAuthorizersTest,
+  DowngradingTest
+).pipe(Layer.provideMerge(FakeMeta.layer));
+
+layer(DowngradingMetaTest)("choosing Meta accounts as the plan shrinks", (it) => {
+  it.effect(
+    "keeps a choice that connected nothing for another try, and spends one that connected an account",
+    () =>
+      Effect.gen(function* retried() {
+        const meta = yield* FakeMeta;
+        const workspaceId = yield* freshWorkspace;
+        const connect = yield* ConnectChannel;
+        const repository = yield* ChannelRepository;
+
+        // As many channels as the free plan allows.
+        for (const added of [1, 2, 3]) {
+          const channel = yield* freshChannel(workspaceId, {
+            accountId: `synthetic-${added}`,
+          });
+
+          yield* repository.insert(channel, syntheticCredentials(channel));
+        }
+
+        meta.setPages([page("1101"), page("1102"), page("1103")]);
+
+        const offered = yield* signIn(workspaceId, "facebook").pipe(
+          Effect.flatMap(choiceOf)
+        );
+
+        // The choice has room when it is checked, and none once taken.
+        yield* Ref.set(unmeteredReads, 1);
+
+        const refused = yield* Effect.flip(
+          connect.choose(manager(workspaceId), "facebook", {
+            accountIds: ["1101"],
+            selection: offered.selection,
+          })
+        );
+
+        assert.deepStrictEqual(
+          refused,
+          new PlanLimitReached({ allowed: 3, limit: "channels" })
+        );
+        assert.lengthOf(yield* repository.list(workspaceId), 3);
+
+        // Room for one more, then none: the first goes, and the choice with
+        // it.
+        yield* Ref.set(unmeteredReads, 2);
+
+        const partly = yield* Effect.flip(
+          connect.choose(manager(workspaceId), "facebook", {
+            accountIds: ["1101", "1102"],
+            selection: offered.selection,
+          })
+        );
+
+        assert.strictEqual(partly._tag, "PlanLimitReached");
+        assert.lengthOf(yield* repository.list(workspaceId), 4);
+
+        yield* Ref.set(unmeteredReads, Number.POSITIVE_INFINITY);
+
+        const spent = yield* Effect.flip(
+          connect.choose(manager(workspaceId), "facebook", {
+            accountIds: ["1103"],
+            selection: offered.selection,
+          })
+        );
+
+        assert.strictEqual(spent._tag, "InvalidConnectState");
       })
   );
 });

@@ -397,7 +397,8 @@ and no socket, for tests.
   `complete` answers an `AccountChoice`: `ConnectChannel.complete` connects a
   single account at once, reconnects a channel's own, or keeps the accounts
   encrypted (`connect_choices`, `choice:<selection>`, 15 minutes, used once)
-  for `choose`. `IssuedTokens.grantedBy` keeps the Facebook user a Page token
+  for `choose`, which puts a choice back when it fails before connecting
+  any account. `IssuedTokens.grantedBy` keeps the Facebook user a Page token
   rests on, in `channels.granted_by`. Threads has its own OAuth: a 60-day
   long-lived token that renews itself. Every Graph call carries
   `appsecret_proof` (`#shared/infrastructure/platforms/meta-graph.ts`).
