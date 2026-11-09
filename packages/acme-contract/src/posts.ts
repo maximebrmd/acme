@@ -218,7 +218,7 @@ export class PostsApi extends HttpApiGroup.make("posts")
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Creates a draft for some of the workspace's channels, possibly none yet. Its text is checked against each platform's limits when it is scheduled, not before. Needs post:create and channel:read.",
+          "Creates a draft for some of the workspace's channels, possibly none yet. Its media must be the workspace's, and ready. Its text and media are checked against each platform's limits when it is scheduled, not before. Needs post:create, channel:read, and media:read when it shows media.",
         summary: "Create a draft",
       })
     ),
@@ -247,7 +247,7 @@ export class PostsApi extends HttpApiGroup.make("posts")
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Replaces a draft's content and channels. A post that is no longer a draft is a conflict. Needs post:update and channel:read.",
+          "Replaces a draft's content and channels. A post that is no longer a draft is a conflict. Needs post:update, channel:read, and media:read when it shows media.",
         summary: "Update a draft",
       })
     ),
@@ -259,7 +259,7 @@ export class PostsApi extends HttpApiGroup.make("posts")
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Schedules a draft on some of the workspace's channels at an instant, kept with the IANA time zone it was chosen in. The content must fit each platform's rules. A time up to a minute ago publishes now. Needs post:schedule and channel:read.",
+          "Schedules a draft on some of the workspace's channels at an instant, kept with the IANA time zone it was chosen in. The content must fit each platform's rules, its media included: file types, sizes, durations, dimensions, alt text, how many videos, and whether images and videos go together. A time up to a minute ago publishes now. Needs post:schedule and channel:read, and media:read when it shows media.",
         summary: "Schedule a draft",
       })
     ),

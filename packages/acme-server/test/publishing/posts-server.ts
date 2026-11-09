@@ -5,6 +5,7 @@ import { MessageStorage } from "effect/cluster";
 import { ChannelRepository } from "#channels/application/channel-repository.ts";
 import { ListChannels } from "#channels/application/list-channels.ts";
 import { DrizzleChannelRepository } from "#channels/infrastructure/drizzle-channel-repository.ts";
+import type { AttachableMedia } from "#publishing/application/attachable-media.ts";
 import { publishingWith, publishingWorkers } from "#publishing/container.ts";
 import { FakePlatformPublisher } from "#publishing/infrastructure/fake-platform-publisher.ts";
 import { ListedWorkspaceChannels } from "#publishing/infrastructure/listed-workspace-channels.ts";
@@ -19,7 +20,7 @@ import {
   DatabaseTest,
   setTime,
 } from "#test/publishing/infrastructure/harness.ts";
-import { attachableMedia } from "#test/publishing/support.ts";
+import { attachableMedia, mediaFile } from "#test/publishing/support.ts";
 
 // The publishing use cases as the server runs them, on an in-memory cluster
 // driven by TestClock: posts go to the channels the channels context lists
@@ -31,21 +32,24 @@ export const attachableImage: MediaAssetId = MediaAssetIdSchema.make(
   "00000000-0000-7000-8000-00000000a001"
 );
 
-export const PostsServerTest = publishingWorkers(FakePlatformPublisher).pipe(
-  Layer.provideMerge(
-    publishingWith(
-      Layer.mergeAll(
-        ListedWorkspaceChannels,
-        attachableMedia([attachableImage])
-      )
-    )
-  ),
-  Layer.provideMerge(ListChannels.layer),
-  Layer.provideMerge(DrizzleChannelRepository),
-  Layer.provideMerge(Layer.mergeAll(IdsLive, TransactionRunnerLive)),
-  Layer.provideMerge(clusterOver(MessageStorage.layerMemory)),
-  Layer.provideMerge(FakePlatformPublisher),
-  Layer.provideMerge(DatabaseTest)
+/** The server, with the media posts may show from `media`. */
+export const postsServerWith = <E, R>(
+  media: Layer.Layer<AttachableMedia, E, R>
+) =>
+  publishingWorkers(FakePlatformPublisher).pipe(
+    Layer.provideMerge(
+      publishingWith(Layer.mergeAll(ListedWorkspaceChannels, media))
+    ),
+    Layer.provideMerge(ListChannels.layer),
+    Layer.provideMerge(DrizzleChannelRepository),
+    Layer.provideMerge(Layer.mergeAll(IdsLive, TransactionRunnerLive)),
+    Layer.provideMerge(clusterOver(MessageStorage.layerMemory)),
+    Layer.provideMerge(FakePlatformPublisher),
+    Layer.provideMerge(DatabaseTest)
+  );
+
+export const PostsServerTest = postsServerWith(
+  attachableMedia([mediaFile(attachableImage)])
 );
 
 /** Runs `test` on a fresh server at virtual time `start`. */

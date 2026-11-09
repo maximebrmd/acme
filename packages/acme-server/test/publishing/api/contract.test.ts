@@ -42,8 +42,42 @@ const mediaAssetId = MediaAssetIdSchema.make(
 // One violation of each kind. Both records are typed by the other's tags, so
 // a kind added on one side only fails to compile.
 const violations: Record<ContractViolation["_tag"], ContentViolation> = {
+  altTextTooLong: {
+    _tag: "altTextTooLong",
+    channelId,
+    length: 1001,
+    maximum: 1000,
+    mediaId: mediaAssetId,
+    platform: "x",
+  },
+  aspectRatioUnsupported: {
+    _tag: "aspectRatioUnsupported",
+    channelId,
+    height: 1000,
+    maximum: 1.91,
+    mediaId: mediaAssetId,
+    minimum: 0.8,
+    platform: "instagram",
+    width: 3000,
+  },
   empty: { _tag: "empty", channelId, platform: "x" },
   mediaRequired: { _tag: "mediaRequired", channelId, platform: "instagram" },
+  mediaTooLarge: {
+    _tag: "mediaTooLarge",
+    byteSize: 6_000_000,
+    channelId,
+    maximum: 5_242_880,
+    mediaId: mediaAssetId,
+    platform: "x",
+  },
+  mediaTypeUnsupported: {
+    _tag: "mediaTypeUnsupported",
+    channelId,
+    contentType: "image/gif",
+    mediaId: mediaAssetId,
+    platform: "instagram",
+  },
+  mixedMedia: { _tag: "mixedMedia", channelId, platform: "mastodon" },
   noChannels: { _tag: "noChannels" },
   overrideWithoutChannel: { _tag: "overrideWithoutChannel", channelId },
   textTooLong: {
@@ -75,21 +109,62 @@ const violations: Record<ContractViolation["_tag"], ContentViolation> = {
     maximum: 20,
     platform: "instagram",
   },
+  tooManyPixels: {
+    _tag: "tooManyPixels",
+    channelId,
+    height: 4320,
+    maximum: 8_294_400,
+    mediaId: mediaAssetId,
+    platform: "mastodon",
+    width: 7680,
+  },
+  tooManyVideos: {
+    _tag: "tooManyVideos",
+    channelId,
+    count: 2,
+    maximum: 1,
+    platform: "x",
+  },
+  videoTooLong: {
+    _tag: "videoTooLong",
+    channelId,
+    durationMs: 150_000,
+    maximumMs: 140_000,
+    mediaId: mediaAssetId,
+    platform: "x",
+  },
+  videoTooShort: {
+    _tag: "videoTooShort",
+    channelId,
+    durationMs: 2000,
+    mediaId: mediaAssetId,
+    minimumMs: 3000,
+    platform: "linkedin",
+  },
 };
 
 const contractTags: Record<ContentViolation["_tag"], true> = {
+  altTextTooLong: true,
+  aspectRatioUnsupported: true,
   empty: true,
   mediaRequired: true,
+  mediaTooLarge: true,
+  mediaTypeUnsupported: true,
+  mixedMedia: true,
   noChannels: true,
   overrideWithoutChannel: true,
   textTooLong: true,
   tooManyHashtags: true,
   tooManyMedia: true,
   tooManyMentions: true,
+  tooManyPixels: true,
+  tooManyVideos: true,
+  videoTooLong: true,
+  videoTooShort: true,
 };
 
 describe("the contract's post text rules", () => {
-  it("hold the server's platform rules and limits", () => {
+  it("hold the server's platform rules, media rules included, and limits", () => {
     expect(ContractText.platformRules).toStrictEqual(platformRules);
     expect(ContractText.TextUnitSchema.literals).toStrictEqual(
       TextUnitSchema.literals

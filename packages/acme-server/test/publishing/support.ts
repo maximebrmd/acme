@@ -3,6 +3,7 @@ import { Effect, Layer, Option } from "effect";
 import { AttachableMedia } from "#publishing/application/attachable-media.ts";
 import { WorkspaceChannels } from "#publishing/application/workspace-channels.ts";
 import { MediaAttachment } from "#publishing/domain/media-attachment.ts";
+import { MediaFile } from "#publishing/domain/media-file.ts";
 import { PostContent } from "#publishing/domain/post-content.ts";
 import { TextOverride } from "#publishing/domain/text-override.ts";
 import { Actor } from "#shared/domain/access.ts";
@@ -30,15 +31,34 @@ export const anyChannelOn = (platform: Platform = "mastodon") =>
     })
   );
 
-/** Only these media may be attached. */
-export const attachableMedia = (mediaIds: readonly MediaAssetId[] = []) =>
+/** Only these files may be attached. */
+export const attachableMedia = (files: readonly MediaFile[] = []) =>
   Layer.succeed(
     AttachableMedia,
     AttachableMedia.of({
       lookUp: (_actor, requested) =>
-        Effect.succeed(requested.filter((id) => mediaIds.includes(id))),
+        Effect.succeed(
+          files.filter(({ mediaId }) => requested.includes(mediaId))
+        ),
     })
   );
+
+/**
+ * A synthetic file of the media context: by default a 200 kB JPEG of
+ * 1200×800, which every platform with media rules takes.
+ */
+export const mediaFile = (
+  mediaId: MediaAssetId,
+  {
+    byteSize = 200_000,
+    contentType = "image/jpeg",
+    dimensions = Option.some({ height: 800, width: 1200 }),
+    duration = Option.none(),
+  }: Partial<
+    Pick<MediaFile, "byteSize" | "contentType" | "dimensions" | "duration">
+  > = {}
+): MediaFile =>
+  new MediaFile({ byteSize, contentType, dimensions, duration, mediaId });
 
 /** Channels on Mastodon, and no media: what most tests need. */
 export const ReferencesTest = Layer.mergeAll(anyChannelOn(), attachableMedia());

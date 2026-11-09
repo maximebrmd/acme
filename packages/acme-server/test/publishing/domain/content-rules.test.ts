@@ -12,7 +12,7 @@ import { emptyContent, textOn } from "#publishing/domain/post-content.ts";
 import type { PostContent } from "#publishing/domain/post-content.ts";
 import { ChannelIdSchema, MediaAssetIdSchema } from "#shared/domain/ids.ts";
 import type { Platform } from "#shared/domain/platform.ts";
-import { contentOf } from "#test/publishing/support.ts";
+import { contentOf, mediaFile } from "#test/publishing/support.ts";
 
 const channel = (suffix: string, platform: Platform): ChannelOnPlatform => ({
   channelId: ChannelIdSchema.make(
@@ -169,7 +169,7 @@ describe(checkPublishable, () => {
   it("accepts content every channel takes", () => {
     const content = contentOf("Launch day");
 
-    expect(checkPublishable(content, [bluesky, x, mastodon])).toStrictEqual(
+    expect(checkPublishable(content, [bluesky, x, mastodon], [])).toStrictEqual(
       Result.succeed(content)
     );
   });
@@ -180,7 +180,7 @@ describe(checkPublishable, () => {
     });
 
     expect(
-      violationsOf(checkPublishable(content, [bluesky, instagram]))
+      violationsOf(checkPublishable(content, [bluesky, instagram], []))
     ).toStrictEqual([
       { _tag: "overrideWithoutChannel", channelId: facebook.channelId },
       {
@@ -195,8 +195,33 @@ describe(checkPublishable, () => {
   });
 
   it("refuses a post for no channel", () => {
-    expect(violationsOf(checkPublishable(contentOf("Hi"), []))).toStrictEqual([
-      { _tag: "noChannels" },
+    expect(
+      violationsOf(checkPublishable(contentOf("Hi"), [], []))
+    ).toStrictEqual([{ _tag: "noChannels" }]);
+  });
+
+  it("checks the media on each channel after its text", () => {
+    const gif = MediaAssetIdSchema.make("00000000-0000-7000-8000-0000000a0001");
+    const content = contentOf("a".repeat(301), { media: [gif] });
+
+    const files = [mediaFile(gif, { contentType: "image/gif" })];
+
+    expect(
+      violationsOf(checkPublishable(content, [bluesky, instagram], files))
+    ).toStrictEqual([
+      {
+        _tag: "textTooLong",
+        ...bluesky,
+        length: 301,
+        maximum: 300,
+        unit: "graphemes",
+      },
+      {
+        _tag: "mediaTypeUnsupported",
+        ...instagram,
+        contentType: "image/gif",
+        mediaId: gif,
+      },
     ]);
   });
 });

@@ -12,9 +12,9 @@ import {
 } from "#publishing/infrastructure/channel-gate.ts";
 import { DrizzlePostRepository } from "#publishing/infrastructure/drizzle-post-repository.ts";
 import { DrizzlePublicationJournal } from "#publishing/infrastructure/drizzle-publication-journal.ts";
+import { LibraryAttachableMedia } from "#publishing/infrastructure/library-attachable-media.ts";
 import { ListedWorkspaceChannels } from "#publishing/infrastructure/listed-workspace-channels.ts";
 import { LoggedChannelHealth } from "#publishing/infrastructure/logged-channel-health.ts";
-import { UnavailableAttachableMedia } from "#publishing/infrastructure/unavailable-attachable-media.ts";
 import { UnsupportedPlatformPublisher } from "#publishing/infrastructure/unsupported-platform-publisher.ts";
 import { WorkflowPublicationScheduler } from "#publishing/infrastructure/workflow-publication-scheduler.ts";
 import { PublishPostV1Live } from "#publishing/infrastructure/workflows/publish-post.ts";
@@ -47,11 +47,11 @@ export const publishingWith = <E, R>(
 
 /**
  * The use cases as the server runs them: channels are those the channels
- * context lists, which the composition root provides (ListChannels), and no
- * media can be attached until the media context can look assets up.
+ * context lists, and media the ready media its library holds, which the
+ * composition root provides (ListChannels, MediaLibrary).
  */
 export const PublishingLive = publishingWith(
-  Layer.mergeAll(ListedWorkspaceChannels, UnavailableAttachableMedia)
+  Layer.mergeAll(ListedWorkspaceChannels, LibraryAttachableMedia)
 );
 
 // The posts endpoints. They need the use cases PublishingLive provides, and
