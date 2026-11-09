@@ -305,11 +305,12 @@ def stack(rendered: Path, tmp_path_factory: pytest.TempPathFactory) -> Iterator[
     edge = tmp_path_factory.mktemp("caddy")
     shutil.copy(rendered / "peal-uptime" / "caddy" / "routes.caddy", edge / "routes.caddy")
     (edge / "Caddyfile").write_text("http://:8080 {\n\timport /etc/caddy/routes.caddy\n}\n")
-    # Gatus runs as nobody, and Linux keeps pytest's folders to their owner,
-    # so it reads a copy anyone may read; on the server, its group reads them.
+    # Gatus runs as nobody and Caddy as root without capabilities, and Linux
+    # keeps pytest's folders to their owner, so both read copies anyone may
+    # read; on the server, their groups read them.
     config = tmp_path_factory.mktemp("gatus")
     shutil.copytree(rendered / "peal-uptime" / "gatus", config, dirs_exist_ok=True)
-    for path in [config, *config.rglob("*")]:
+    for path in [config, *config.rglob("*"), edge, *edge.rglob("*")]:
         path.chmod(0o755 if path.is_dir() else 0o644)
     confined = ["--read-only", "--cap-drop", "ALL", "--security-opt", "no-new-privileges:true"]
     _run(["docker", "network", "create", "--internal", stack.network]).check_returncode()
@@ -330,7 +331,8 @@ def stack(rendered: Path, tmp_path_factory: pytest.TempPathFactory) -> Iterator[
                 break
             time.sleep(1)
         else:
-            pytest.fail(_run(["docker", "logs", stack.gatus]).stderr)
+            logs = {name: _run(["docker", "logs", "--tail", "20", name]) for name in (stack.gatus, stack.caddy)}
+            pytest.fail("\n".join(f"{name}:\n{log.stdout}{log.stderr}" for name, log in logs.items()))
         yield stack
     finally:
         _run(["docker", "rm", "--force", stack.gatus, stack.caddy])
