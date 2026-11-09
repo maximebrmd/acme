@@ -96,8 +96,14 @@ describe(tokenLifetimeOf, () => {
 
 describe(refreshDueBefore, () => {
   it("is the policy's lead time from now", () => {
-    expect(refreshDueBefore(tokenPolicies.x, now)).toStrictEqual(
+    expect(refreshDueBefore(tokenPolicies.tiktok, now)).toStrictEqual(
       Option.some(after("30 minutes"))
+    );
+  });
+
+  it("is a month ago for X, whose tokens are renewed as they are used", () => {
+    expect(refreshDueBefore(tokenPolicies.x, now)).toStrictEqual(
+      Option.some(after("-30 days"))
     );
   });
 
@@ -108,13 +114,18 @@ describe(refreshDueBefore, () => {
   });
 });
 
+const refreshable = (expiresAt: DateTime.Utc): TokenLifetime => ({
+  _tag: "refreshable",
+  expiresAt,
+});
+
 describe(isRefreshDue, () => {
   it("is due within the lead time, or past expiry", () => {
     for (const expiresAt of [after("29 minutes"), after("-1 hour")]) {
       expect(
         isRefreshDue(
-          channelWith({ _tag: "refreshable", expiresAt }),
-          tokenPolicies.x,
+          channelWith(refreshable(expiresAt)),
+          tokenPolicies.tiktok,
           now
         )
       ).toBeTruthy();
@@ -124,22 +135,33 @@ describe(isRefreshDue, () => {
   it("is not due before the lead time", () => {
     expect(
       isRefreshDue(
-        channelWith({ _tag: "refreshable", expiresAt: after("31 minutes") }),
-        tokenPolicies.x,
+        channelWith(refreshable(after("31 minutes"))),
+        tokenPolicies.tiktok,
         now
       )
     ).toBeFalsy();
   });
 
-  it("leaves channels that need reconnecting, or cannot renew, alone", () => {
-    const token: TokenLifetime = {
-      _tag: "refreshable",
-      expiresAt: after("1 minute"),
-    };
+  it("leaves an X token to be renewed when used, until a month unused", () => {
+    for (const expiresAt of [after("1 minute"), after("-29 days")]) {
+      expect(
+        isRefreshDue(channelWith(refreshable(expiresAt)), tokenPolicies.x, now)
+      ).toBeFalsy();
+    }
 
     expect(
       isRefreshDue(
-        markRefreshNeeded(channelWith(token), now),
+        channelWith(refreshable(after("-30 days"))),
+        tokenPolicies.x,
+        now
+      )
+    ).toBeTruthy();
+  });
+
+  it("leaves channels that need reconnecting, or cannot renew, alone", () => {
+    expect(
+      isRefreshDue(
+        markRefreshNeeded(channelWith(refreshable(after("-31 days"))), now),
         tokenPolicies.x,
         now
       )
@@ -151,7 +173,7 @@ describe(isRefreshDue, () => {
           expiresAt: after("1 minute"),
           issuedAt: now,
         }),
-        tokenPolicies.x,
+        tokenPolicies.tiktok,
         now
       )
     ).toBeFalsy();
