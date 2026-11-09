@@ -876,7 +876,8 @@ and no socket, for tests.
   with no warning, and the reports leave them out. The platforms with one
   are `countedPlatforms` (`analytics/domain/counted-platforms.ts`), which
   the contract copies, kept equal by `test/analytics/api/contract.test.ts`,
-  so a post's page says the others have no counts.
+  so a post's page says the others have no counts. A platform that gains a
+  reader joins that list in the same change, or the reader is never asked.
 - `CollectMetrics` runs on the `analytics.collect-metrics` cron, hourly at
   minute 7: a post is read every hour for 48 hours, then every day until it
   is 30 days old (`analytics/domain/collection-schedule.ts`), each next read

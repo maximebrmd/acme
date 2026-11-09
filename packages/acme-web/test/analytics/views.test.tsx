@@ -220,7 +220,7 @@ describe(PostMetricsView, () => {
     );
 
     expect(html).toContain(
-      "Acme relève pour l’instant les chiffres sur Mastodon et Bluesky, dans l’heure qui suit la parution."
+      "Acme relève pour l’instant les chiffres sur Mastodon, Bluesky, TikTok et YouTube, dans l’heure qui suit la parution."
     );
   });
 
@@ -251,13 +251,41 @@ describe(PostMetricsView, () => {
     const french = await render("fr", view);
 
     expect(english).toContain(
-      "Counts are not available on LinkedIn and X: Acme reads them on Mastodon and Bluesky only, so far."
+      "Counts are not available on LinkedIn and X: Acme reads them on Mastodon, Bluesky, TikTok, and YouTube only, so far."
     );
     expect(english).not.toContain("within the hour");
     expect(french).toContain(
-      "Les chiffres ne sont pas disponibles sur LinkedIn et X : Acme ne les relève pour l’instant que sur Mastodon et Bluesky."
+      "Les chiffres ne sont pas disponibles sur LinkedIn et X : Acme ne les relève pour l’instant que sur Mastodon, Bluesky, TikTok et YouTube."
     );
     expect(french).not.toContain("dans l’heure");
+  });
+
+  it("promises counts on TikTok and YouTube, which Acme reads", async () => {
+    const tiktok: Channel = {
+      ...channel,
+      handle: "@alice_example",
+      id: "01900000-0000-7000-8000-0000000000c5",
+      platform: "tiktok",
+    };
+
+    const youtube: Channel = {
+      ...channel,
+      handle: "Alice Example",
+      id: "01900000-0000-7000-8000-0000000000c6",
+      platform: "youtube",
+    };
+
+    const html = await render(
+      "en",
+      <PostMetricsView
+        analytics={{ postId: analytics.postId, targets: [] }}
+        channels={[tiktok, youtube]}
+        publishedOn={[tiktok.id, youtube.id]}
+      />
+    );
+
+    expect(html).toContain("within the hour after a post goes live");
+    expect(html).not.toContain("Counts are not available");
   });
 
   it("says so beside the counts of the channels Acme reads", async () => {

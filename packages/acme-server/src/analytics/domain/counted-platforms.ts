@@ -8,6 +8,8 @@ import type { Platform } from "#shared/domain/platform.ts";
 export const countedPlatforms = [
   "mastodon",
   "bluesky",
+  "tiktok",
+  "youtube",
 ] as const satisfies readonly Platform[];
 
 /** Whether Acme reads counts on the platform. */

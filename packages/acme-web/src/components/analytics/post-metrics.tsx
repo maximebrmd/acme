@@ -54,10 +54,17 @@ export const PostMetricsView = ({
     ),
   ];
 
+  // The platforms Acme reads counts on, as the reader's language lists them.
+  const counted = format.list(
+    countedPlatforms.map((platform) => tPosts("platform", { platform })),
+    { type: "conjunction" }
+  );
+
   const note =
     uncounted.length === 0 ? null : (
       <p className="text-muted-foreground text-sm">
         {t("post.uncounted", {
+          counted,
           platforms: format.list(
             uncounted.map((platform) => tPosts("platform", { platform })),
             { type: "conjunction" }
@@ -76,7 +83,9 @@ export const PostMetricsView = ({
     return (
       <div className="flex flex-col gap-2">
         {mayCome || note === null ? (
-          <p className="text-muted-foreground text-sm">{t("post.notYet")}</p>
+          <p className="text-muted-foreground text-sm">
+            {t("post.notYet", { counted })}
+          </p>
         ) : null}
         {note}
       </div>
@@ -108,7 +117,7 @@ export const PostMetricsView = ({
               </div>
               {target.latest === null ? (
                 <p className="text-muted-foreground text-sm">
-                  {t("post.notYet")}
+                  {t("post.notYet", { counted })}
                 </p>
               ) : (
                 <MetricList counts={target.latest} />

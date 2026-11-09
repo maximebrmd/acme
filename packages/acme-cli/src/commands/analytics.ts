@@ -1,4 +1,4 @@
-import { CalendarDaySchema } from "acme-contract";
+import { CalendarDaySchema, countedPlatforms } from "acme-contract";
 import type { AnalyticsSummary, MetricTotals } from "acme-contract";
 import { Config, Console, DateTime, Effect, Option } from "effect";
 import { Argument, Command, Flag } from "effect/cli";
@@ -164,7 +164,7 @@ const post = Command.make(
 
     if (found.targets.length === 0) {
       yield* Console.log(
-        `Acme has read no counts of post ${postId} yet: it reads them once a post went live, on Mastodon and Bluesky.`
+        `Acme has read no counts of post ${postId} yet: it reads them once a post went live, on ${countedPlatforms.join(", ")}.`
       );
 
       return;

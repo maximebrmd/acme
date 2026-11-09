@@ -17,7 +17,7 @@
       "retry": "Réessayer",
       "empty": "Aucune publication n’est encore parue sur Mastodon ou Bluesky sur cette période, les plateformes dont Acme relève les chiffres pour l’instant. Les chiffres d’une publication arrivent dans l’heure qui suit sa parution.",
       "collection": "Acme relève les chiffres de chaque publication toutes les heures pendant les 48 heures qui suivent sa parution, puis chaque jour jusqu’à ses 30 jours.",
-      "noImpressions": "Mastodon et Bluesky ne disent pas combien de personnes ont vu une publication : il n’y a donc pas d’impressions ; celles de YouTube sont ses vues."
+      "noImpressions": "Mastodon et Bluesky ne disent pas combien de personnes ont vu une publication : il n’y a donc pas d’impressions ; celles de TikTok et de YouTube sont leurs vues."
     },
     "totals": {
       "title": "Totaux",
@@ -49,13 +49,13 @@
       "title": "Ce qu’elle a donné",
       "loading": "Chargement des chiffres de la publication…",
       "loadFailed": "Les chiffres de la publication n’ont pas pu être chargés.",
-      "notYet": "Acme relève pour l’instant les chiffres sur Mastodon et Bluesky, dans l’heure qui suit la parution.",
+      "notYet": "Acme relève pour l’instant les chiffres sur {counted}, dans l’heure qui suit la parution.",
       "notRead": "Pas encore relevée",
       "readAt": "Relevée le {at}",
       "stopped": "Plus relevée : les publications sont suivies pendant 30 jours.",
       "tableCaption": "Chiffres de la publication sur {handle}, à chaque relevé",
       "readAtColumn": "Relevé",
-      "uncounted": "Les chiffres ne sont pas disponibles sur {platforms} : Acme ne les relève pour l’instant que sur Mastodon et Bluesky."
+      "uncounted": "Les chiffres ne sont pas disponibles sur {platforms} : Acme ne les relève pour l’instant que sur {counted}."
     }
   },
   "Assistant": {

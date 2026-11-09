@@ -35,6 +35,8 @@ const CountSchema = Schema.Int.check(Schema.isGreaterThanOrEqualTo(0));
 export const countedPlatforms = [
   "mastodon",
   "bluesky",
+  "tiktok",
+  "youtube",
 ] as const satisfies readonly Platform[];
 
 /**
