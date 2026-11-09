@@ -93,7 +93,8 @@ export const AuthGatewayLive = Layer.effect(
             await auth.api.getSession({
               headers: new Headers({ cookie: Redacted.value(cookies) }),
               // Refreshing would set a cookie on a reply this path does not
-              // send; the web app refreshes through /api/auth/get-session.
+              // send. The web app's account menu asks Better Auth for the
+              // session (GET /api/auth/get-session), which refreshes it.
               query: { disableCookieCache: fresh, disableRefresh: true },
             })
         ).pipe(

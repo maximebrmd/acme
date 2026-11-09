@@ -30,6 +30,11 @@ export const AccountMenuView = ({ email, name }: AccountMenuViewProps) => {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
+  // Asks Better Auth for the session as pages open and the tab regains
+  // focus. That is what extends the session, and renews the copy cached in
+  // a cookie: GET /api/me, which pages read, leaves both as they are.
+  authClient.useSession();
+
   const handleSignOut = () => {
     startTransition(async () => {
       const result = await authClient.signOut();
