@@ -33,6 +33,11 @@
       "options": { "cwd": "{projectRoot}" },
       "cache": false
     },
+    "media-cors": {
+      "command": "bun scripts/media-cors.ts",
+      "options": { "cwd": "{projectRoot}" },
+      "cache": false
+    },
     "db:migrate": {
       "command": "bun src/migrate.ts",
       "options": { "cwd": "{projectRoot}" },
