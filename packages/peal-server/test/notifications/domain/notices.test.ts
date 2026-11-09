@@ -69,6 +69,36 @@ const events: Readonly<Record<NoticeEvent["_tag"], NoticeEvent>> = {
     channel: Option.none(),
     postId,
   },
+  SubscriptionCancelled: {
+    _tag: "SubscriptionCancelled",
+    endsAt: DateTime.makeUnsafe("2026-12-09T10:00:00Z"),
+    plan: "pro",
+  },
+  SubscriptionRenewing: {
+    _tag: "SubscriptionRenewing",
+    plan: "business",
+    price: { amount: 25_000, currency: "eur" },
+    renewsAt: DateTime.makeUnsafe("2027-01-01T00:00:00Z"),
+  },
+  SubscriptionStarted: {
+    _tag: "SubscriptionStarted",
+    interval: "year",
+    plan: "business",
+    price: { amount: 25_000, currency: "eur" },
+    startedAt: DateTime.makeUnsafe("2026-11-09T10:00:00Z"),
+    trialEnd: Option.none(),
+  },
+  SubscriptionWithdrawn: {
+    _tag: "SubscriptionWithdrawn",
+    plan: "starter",
+    refunded: { amount: 642, currency: "eur" },
+    withdrawnAt: DateTime.makeUnsafe("2026-11-12T08:00:00Z"),
+  },
+  TrialEnding: {
+    _tag: "TrialEnding",
+    endsAt: DateTime.makeUnsafe("2026-11-23T10:00:00Z"),
+    plan: "pro",
+  },
 };
 
 describe("notice events", () => {
@@ -78,6 +108,31 @@ describe("notice events", () => {
     expect(audienceOf(events.PostFailed)).toBe("post:schedule");
     expect(audienceOf(events.PostPublished)).toBe("post:schedule");
     expect(audienceOf(events.PostUnconfirmed)).toBe("post:schedule");
+
+    for (const billing of [
+      events.SubscriptionCancelled,
+      events.SubscriptionRenewing,
+      events.SubscriptionWithdrawn,
+      events.TrialEnding,
+    ]) {
+      expect(audienceOf(billing)).toBe("billing:manage");
+      expect(pageOf(billing, workspaceId)).toBe(`/app/${workspaceId}/billing`);
+    }
+  });
+
+  it("email billing's always, whatever the reader chose", () => {
+    const nothing = changePreferences(defaultPreferences, {
+      email: {
+        channelReconnect: false,
+        postFailed: false,
+        postPublished: false,
+        postUnconfirmed: false,
+      },
+    });
+
+    expect(wantsEmail(nothing, events.TrialEnding)).toBeTruthy();
+    expect(wantsEmail(nothing, events.SubscriptionWithdrawn)).toBeTruthy();
+    expect(wantsEmail(nothing, events.PostFailed)).toBeFalsy();
   });
 
   it("need their readers to still read posts, or still act on a channel", () => {
@@ -155,10 +210,15 @@ describe("notification preferences", () => {
     );
 
     expect(emailed.map(emailKindOf)).toStrictEqual([
-      "channelReconnect",
-      "channelReconnect",
-      "postFailed",
-      "postUnconfirmed",
+      Option.some("channelReconnect"),
+      Option.some("channelReconnect"),
+      Option.some("postFailed"),
+      Option.some("postUnconfirmed"),
+      Option.none(),
+      Option.none(),
+      Option.none(),
+      Option.none(),
+      Option.none(),
     ]);
   });
 

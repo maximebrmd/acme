@@ -90,6 +90,46 @@ const eventView = (event: NoticeEvent): NoticeEventView =>
       channel: postChannelView(channel),
       postId,
     }),
+    SubscriptionCancelled: ({ endsAt, plan }): NoticeEventView => ({
+      _tag: "SubscriptionCancelled",
+      endsAt,
+      plan,
+    }),
+    SubscriptionRenewing: ({ plan, price, renewsAt }): NoticeEventView => ({
+      _tag: "SubscriptionRenewing",
+      plan,
+      price,
+      renewsAt,
+    }),
+    SubscriptionStarted: ({
+      interval,
+      plan,
+      price,
+      startedAt,
+      trialEnd,
+    }): NoticeEventView => ({
+      _tag: "SubscriptionStarted",
+      interval,
+      plan,
+      price,
+      startedAt,
+      trialEnd: Option.getOrNull(trialEnd),
+    }),
+    SubscriptionWithdrawn: ({
+      plan,
+      refunded,
+      withdrawnAt,
+    }): NoticeEventView => ({
+      _tag: "SubscriptionWithdrawn",
+      plan,
+      refunded,
+      withdrawnAt,
+    }),
+    TrialEnding: ({ endsAt, plan }): NoticeEventView => ({
+      _tag: "TrialEnding",
+      endsAt,
+      plan,
+    }),
   });
 
 const noticeView = (notice: Notice): NoticeView => ({

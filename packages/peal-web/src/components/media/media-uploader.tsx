@@ -99,6 +99,11 @@ const useErrorMessage = () => {
       return t(reason, { limit: Math.round((limit ?? 0) / mebibyte) });
     }
 
+    // The plan's storage in megabytes, as plans are sold.
+    if (reason === "storageFull") {
+      return t(reason, { limit: Math.round((limit ?? 0) / 1_000_000) });
+    }
+
     if (reason === "altTextTooLong") {
       return t(reason, { limit: limit ?? maxAltTextLength });
     }

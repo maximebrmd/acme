@@ -28,10 +28,15 @@ const publicTag = "system";
 
 /**
  * Groups whose every operation refuses API keys and OAuth clients: the
- * account's export and deletion, its connected applications, and deleting a
- * workspace.
+ * account's export and deletion, its connected applications, deleting a
+ * workspace, and ordering, cancelling or withdrawing from a plan.
  */
-const ownSessionTags = new Set(["account", "connectedApps", "workspaces"]);
+const ownSessionTags = new Set([
+  "account",
+  "billingActions",
+  "connectedApps",
+  "workspaces",
+]);
 
 const schemaPrefix = "#/components/schemas/";
 

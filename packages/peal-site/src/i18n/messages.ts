@@ -71,6 +71,57 @@ const en = {
     home: "Peal home page",
     main: "Main",
   },
+  pricing: {
+    description:
+      "Peal Cloud's plans, priced by connected accounts, with VAT included.",
+    excluded: "{price} excl. VAT",
+    freePrice: "Free",
+    lead: "Priced by connected accounts: the more you connect, the less each costs. Every plan has every platform, the calendar, analytics, the API, the MCP server and the command line.",
+    legal: {
+      cancel:
+        "Cancel online at any time, from the billing page, in a few clicks: the plan ends with the period paid for, and nothing more is charged.",
+      prices:
+        "A price change is announced by email 30 days ahead, and applies from the next renewal: you may cancel before it.",
+      renewal:
+        "Monthly plans renew each month and yearly plans each year until cancelled; we remind you 45 days before a yearly plan renews.",
+      terms: "Read the terms of service",
+      title: "Clear terms",
+      withdrawal:
+        "As a consumer, you may withdraw within 14 days of subscribing, with the “Withdraw from contract here” button: the plan ends at once and the unused part is refunded.",
+    },
+    limits: {
+      assistantRequests: "{count} writing assistant requests a day",
+      channels: "{count} connected channels",
+      mediaStorage: "{count} of media",
+      members: "{count} members",
+      scheduledPosts: "{count} posts a month",
+    },
+    monthly: "{price} a month",
+    nav: "Pricing",
+    perChannel: "{price} per channel a month",
+    plans: {
+      agency: "Agency",
+      business: "Business",
+      free: "Free",
+      pro: "Pro",
+      starter: "Starter",
+    },
+    selfHost:
+      "A server you run yourself bills nothing and limits nothing: these plans are Peal Cloud's.",
+    title: "Pricing",
+    trial:
+      "Try {plan} free for {days} days, without a payment card. When it ends, the workspace moves to the free plan unless you order. One free workspace per account.",
+    unlimited: {
+      assistantRequests: "Unlimited assistant requests",
+      channels: "Unlimited channels",
+      mediaStorage: "Unlimited media",
+      members: "Unlimited members",
+      scheduledPosts: "Unlimited posts",
+    },
+    vat: "Prices include {rate}% VAT, France's. In another EU country, its own VAT applies at checkout; a business with a valid VAT number pays the price excluding VAT.",
+    yearly: "or {price} a year",
+    yearlyMonthly: "that is {price} a month",
+  },
 };
 
 export type Messages = typeof en;
@@ -142,6 +193,57 @@ const fr: Messages = {
     docs: "Documentation",
     home: "Accueil de Peal",
     main: "Principal",
+  },
+  pricing: {
+    description:
+      "Les abonnements de Peal Cloud, au nombre de comptes connectés, TVA comprise.",
+    excluded: "{price} HT",
+    freePrice: "Gratuit",
+    lead: "Au nombre de comptes connectés : plus vous en connectez, moins chacun coûte. Chaque abonnement comprend toutes les plateformes, le calendrier, les statistiques, l’API, le serveur MCP et la ligne de commande.",
+    legal: {
+      cancel:
+        "Résiliez en ligne à tout moment, depuis la page de facturation, en quelques clics : l’abonnement prend fin avec la période payée, et plus rien n’est facturé.",
+      prices:
+        "Un changement de prix est annoncé par e-mail 30 jours à l’avance, et s’applique au renouvellement suivant : vous pouvez résilier avant.",
+      renewal:
+        "Les abonnements mensuels se renouvellent chaque mois et les annuels chaque année jusqu’à résiliation ; nous vous le rappelons 45 jours avant le renouvellement d’un abonnement annuel.",
+      terms: "Lire les conditions d’utilisation",
+      title: "Des conditions claires",
+      withdrawal:
+        "En tant que consommateur, vous pouvez vous rétracter dans les 14 jours suivant la souscription, avec le bouton « Se rétracter du contrat ici » : l’abonnement prend fin immédiatement et la part non utilisée vous est remboursée.",
+    },
+    limits: {
+      assistantRequests: "{count} demandes à l’assistant de rédaction par jour",
+      channels: "{count} canaux connectés",
+      mediaStorage: "{count} de médias",
+      members: "{count} membres",
+      scheduledPosts: "{count} publications par mois",
+    },
+    monthly: "{price} TTC par mois",
+    nav: "Tarifs",
+    perChannel: "{price} par canal et par mois",
+    plans: {
+      agency: "Agency",
+      business: "Business",
+      free: "Gratuit",
+      pro: "Pro",
+      starter: "Starter",
+    },
+    selfHost:
+      "Un serveur que vous hébergez vous-même ne facture rien et ne limite rien : ces abonnements sont ceux de Peal Cloud.",
+    title: "Tarifs",
+    trial:
+      "Essayez {plan} gratuitement pendant {days} jours, sans carte de paiement. À la fin de l’essai, l’espace de travail passe à l’offre gratuite, sauf si vous commandez. Un espace de travail gratuit par compte.",
+    unlimited: {
+      assistantRequests: "Demandes à l’assistant illimitées",
+      channels: "Canaux illimités",
+      mediaStorage: "Médias illimités",
+      members: "Membres illimités",
+      scheduledPosts: "Publications illimitées",
+    },
+    vat: "Prix TTC, TVA française de {rate} % comprise. Dans un autre pays de l’UE, sa propre TVA s’applique au paiement ; une entreprise avec un numéro de TVA valide paie le prix HT.",
+    yearly: "ou {price} TTC par an",
+    yearlyMonthly: "soit {price} par mois",
   },
 };
 

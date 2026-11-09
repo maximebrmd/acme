@@ -60,6 +60,7 @@ export const ContextRecordsLive = Layer.effect(
           yield* posts.forgetAuthor(userId);
           yield* channels.eraseUser(userId);
           yield* staff.forgetUser(userId);
+          yield* billing.forgetUser(userId);
         }
       ),
       eraseWorkspace: Effect.fn("ContextRecords.eraseWorkspace")(

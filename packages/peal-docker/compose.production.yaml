@@ -172,8 +172,7 @@ services:
       PEAL_AI_DAILY_REQUESTS:
       STRIPE_SECRET_KEY:
       STRIPE_WEBHOOK_SECRET:
-      STRIPE_PRICE_PRO:
-      STRIPE_PRICE_BUSINESS:
+      STRIPE_LOOKUP_KEY_PREFIX:
       STRIPE_AUTOMATIC_TAX:
       STRIPE_API_URL:
       TURNSTILE_SITE_KEY:
@@ -214,6 +213,8 @@ services:
       PEAL_API_URL: http://server:3000
       # Named in the web app's error reports.
       PEAL_RELEASE: ${PEAL_VERSION:-local}
+      # The terms of service the billing page links to before an order.
+      PEAL_TERMS_URL:
       # Longer than the edge keeps idle connections (90 s for the tunnel, 2
       # minutes for Caddy), so it never reuses one Node has closed.
       KEEP_ALIVE_TIMEOUT: "125000"

@@ -5,6 +5,7 @@ import {
   MediaNotFound,
   MediaStoreUnavailable,
   MediaTooLarge,
+  PlanLimitReached,
   Unauthenticated,
   UnsupportedMediaType,
   UploadIncomplete,
@@ -47,6 +48,13 @@ describe(failureOf, () => {
     );
     expect(failureOf(new AltTextTooLong({ maxLength: 2000 }))).toStrictEqual(
       new UploadFailed({ limit: 2000, reason: "altTextTooLong" })
+    );
+    expect(
+      failureOf(
+        new PlanLimitReached({ allowed: 500_000_000, limit: "mediaStorage" })
+      )
+    ).toStrictEqual(
+      new UploadFailed({ limit: 500_000_000, reason: "storageFull" })
     );
   });
 });

@@ -8,6 +8,8 @@ export const UploadFailureReasonSchema = Schema.Literals([
   // The API refused the file before it was sent.
   "unsupportedType",
   "tooLarge",
+  // The workspace's plan has no room left for it.
+  "storageFull",
   "altTextTooLong",
   "forbidden",
   "signedOut",
@@ -29,8 +31,8 @@ export type UploadFailureReason = typeof UploadFailureReasonSchema.Type;
 
 /**
  * An upload that did not go through. `limit` is the largest size of the
- * file's kind in bytes, or the longest description in characters, when
- * the reason is about one.
+ * file's kind in bytes, the plan's media storage in bytes, or the longest
+ * description in characters, when the reason is about one.
  */
 export class UploadFailed extends Schema.TaggedError<UploadFailed>()(
   "UploadFailed",

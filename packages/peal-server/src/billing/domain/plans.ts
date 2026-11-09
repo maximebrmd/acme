@@ -11,10 +11,15 @@ const upTo = (count: number): Allowance => Option.some(count);
 
 const noLimit: Allowance = Option.none();
 
+const megabytes = (count: number): Allowance => upTo(count * 1_000_000);
+
+const gigabytes = (count: number): Allowance => upTo(count * 1_000_000_000);
+
 /** No limit at all, as on a server that does not bill. */
 export const unlimited: Allowances = {
   assistantRequests: noLimit,
   channels: noLimit,
+  mediaStorage: noLimit,
   members: noLimit,
   scheduledPosts: noLimit,
 };
@@ -22,33 +27,67 @@ export const unlimited: Allowances = {
 /**
  * What each plan allows a workspace: channels connected, members (pending
  * invitations count when inviting), posts scheduled to go out in a calendar
- * month (UTC), and writing assistant requests per day (UTC). Every plan
- * limits the assistant, whose requests cost the server.
+ * month (UTC), writing assistant requests per day (UTC), and bytes of media
+ * stored (decimal units, as the pricing page writes them). Plans are priced
+ * by channels; every plan limits the assistant and storage, which cost the
+ * server, and the free plan is kept small.
  */
 export const planAllowances: Readonly<Record<Plan, Allowances>> = {
+  agency: {
+    assistantRequests: upTo(80),
+    channels: upTo(100),
+    mediaStorage: gigabytes(250),
+    members: noLimit,
+    scheduledPosts: noLimit,
+  },
   business: {
-    assistantRequests: upTo(500),
+    assistantRequests: upTo(40),
     channels: upTo(30),
-    members: upTo(20),
+    mediaStorage: gigabytes(75),
+    members: noLimit,
     scheduledPosts: noLimit,
   },
   free: {
-    assistantRequests: upTo(10),
+    assistantRequests: upTo(3),
     channels: upTo(3),
+    mediaStorage: megabytes(500),
     members: upTo(2),
     scheduledPosts: upTo(30),
   },
   pro: {
-    assistantRequests: upTo(100),
+    assistantRequests: upTo(20),
     channels: upTo(10),
-    members: upTo(5),
-    scheduledPosts: upTo(300),
+    mediaStorage: gigabytes(20),
+    members: noLimit,
+    scheduledPosts: noLimit,
+  },
+  starter: {
+    assistantRequests: upTo(10),
+    channels: upTo(5),
+    mediaStorage: gigabytes(5),
+    members: upTo(3),
+    scheduledPosts: noLimit,
   },
 };
 
 /** The plans a workspace can be on, from the smallest. */
-export const plans: readonly Plan[] = ["free", "pro", "business"];
+export const plans: readonly Plan[] = [
+  "free",
+  "starter",
+  "pro",
+  "business",
+  "agency",
+];
 
 /** The larger of two paid plans. */
 export const largerPlan = (left: PaidPlan, right: PaidPlan): PaidPlan =>
   plans.indexOf(right) > plans.indexOf(left) ? right : left;
+
+/**
+ * The plan a workspace may try for free, once: `trialDays` days, without a
+ * payment method, after which it is back on the free plan unless it ordered.
+ */
+export const trialPlan: PaidPlan = "pro";
+
+/** How long a trial lasts. */
+export const trialDays = 14;

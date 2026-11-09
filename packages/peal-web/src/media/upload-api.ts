@@ -4,6 +4,7 @@ import {
   Forbidden,
   MediaStoreUnavailable,
   MediaTooLarge,
+  PlanLimitReached,
   Unauthenticated,
   UnsupportedMediaType,
   UploadIncomplete,
@@ -51,6 +52,10 @@ export const failureOf = (error: ApiFailure): UploadFailed => {
 
   if (error instanceof MediaTooLarge) {
     return new UploadFailed({ limit: error.maxByteSize, reason: "tooLarge" });
+  }
+
+  if (error instanceof PlanLimitReached && error.limit === "mediaStorage") {
+    return new UploadFailed({ limit: error.allowed, reason: "storageFull" });
   }
 
   if (error instanceof UploadRejected) {

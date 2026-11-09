@@ -1,10 +1,10 @@
 import { Context } from "effect";
-import type { Effect } from "effect";
+import type { DateTime, Effect } from "effect";
 
 import type { SubscriptionChange } from "#billing/domain/subscription-change.ts";
 import type { Subscription } from "#billing/domain/subscription.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
-import type { WorkspaceId } from "#shared/domain/ids.ts";
+import type { UserId, WorkspaceId } from "#shared/domain/ids.ts";
 
 /**
  * What recording a change did: `recorded`, `duplicate` for an event
@@ -22,12 +22,27 @@ export class Subscriptions extends Context.Service<
       workspaceId: WorkspaceId
     ) => Effect.Effect<readonly Subscription[], DatabaseError>;
     /**
-     * Deletes every subscription of the workspace, in the caller's
-     * transaction, if any. The events recorded stay: ids alone.
+     * The subscriptions that may be due a reminder at `now`: trials ending
+     * within days, plans renewing within weeks (`reminderOf` decides).
+     */
+    readonly remindable: (
+      now: DateTime.Utc
+    ) => Effect.Effect<readonly Subscription[], DatabaseError>;
+    /**
+     * Deletes billing's records of the workspace, in the caller's
+     * transaction: its subscriptions, orders and withdrawals; its trial
+     * stays, without the workspace, if an account started it. The events
+     * recorded stay: ids alone.
      */
     readonly eraseWorkspace: (
       workspaceId: WorkspaceId
     ) => Effect.Effect<void, DatabaseError>;
+    /**
+     * Leaves billing's records without the user, in the caller's
+     * transaction: the orders and withdrawals they made, and the trial they
+     * started, which stays the workspace's.
+     */
+    readonly forgetUser: (userId: UserId) => Effect.Effect<void, DatabaseError>;
     /**
      * Saves what an event says of a subscription, once per event, and only
      * when no later event was saved for it: events come in any order.

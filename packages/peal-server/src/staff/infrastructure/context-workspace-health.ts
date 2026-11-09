@@ -27,8 +27,11 @@ export const ContextWorkspaceHealth = Layer.effect(
               Option.map((bought) => ({
                 cancelAtPeriodEnd: bought.cancelAtPeriodEnd,
                 currentPeriodEnd: bought.currentPeriodEnd,
+                interval: bought.interval,
                 plan: bought.plan,
+                startedAt: bought.startedAt,
                 status: bought.status,
+                trialEnd: bought.trialEnd,
               }))
             ),
           }))

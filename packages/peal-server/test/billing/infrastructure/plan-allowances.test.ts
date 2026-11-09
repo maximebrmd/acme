@@ -6,6 +6,7 @@ import { ConfigProvider, Effect, Layer, Option } from "effect";
 import { AssistantAllowance } from "#assistant/application/ports/assistant-allowance.ts";
 import { PlanAssistantAllowanceLive } from "#assistant/infrastructure/plan-assistant-allowance.ts";
 import { ChannelAllowance } from "#channels/application/channel-allowance.ts";
+import { ChannelUsage } from "#channels/application/channel-usage.ts";
 import { PlanChannelAllowanceLive } from "#channels/infrastructure/plan-channel-allowance.ts";
 import { PostAllowance } from "#publishing/application/post-allowance.ts";
 import { PlanPostAllowanceLive } from "#publishing/infrastructure/plan-post-allowance.ts";
@@ -27,6 +28,12 @@ const allowancesWith = (
     PlanPostAllowanceLive
   ).pipe(
     Layer.provide(entitlements),
+    Layer.provide(
+      Layer.succeed(
+        ChannelUsage,
+        ChannelUsage.of({ connected: () => Effect.succeed(4) })
+      )
+    ),
     Layer.provide(ConfigProvider.layer(ConfigProvider.fromUnknown(env)))
   );
 
@@ -39,6 +46,7 @@ const readAll = Effect.gen(function* readAll() {
     assistantRequests: yield* assistant.dailyRequests(workspaceId),
     channels: yield* channels.channels(workspaceId),
     scheduledPosts: yield* posts.scheduledPerMonth(workspaceId),
+    scheduling: yield* posts.channels(workspaceId),
   };
 });
 
@@ -49,15 +57,17 @@ describe("the plan allowances", () => {
   it.effect("follow the workspace's plan", () =>
     Effect.gen(function* plans() {
       assert.deepStrictEqual(yield* onPlan("free"), {
-        assistantRequests: 10,
+        assistantRequests: 3,
         channels: Option.some(3),
         scheduledPosts: Option.some(30),
+        scheduling: { allowed: Option.some(3), connected: 4 },
       });
 
       assert.deepStrictEqual(yield* onPlan("business"), {
-        assistantRequests: 500,
+        assistantRequests: 40,
         channels: Option.some(30),
         scheduledPosts: Option.none(),
+        scheduling: { allowed: Option.some(30), connected: 4 },
       });
     })
   );
@@ -72,6 +82,7 @@ describe("the plan allowances", () => {
             assistantRequests: 100,
             channels: Option.none(),
             scheduledPosts: Option.none(),
+            scheduling: { allowed: Option.none(), connected: 4 },
           }
         );
 

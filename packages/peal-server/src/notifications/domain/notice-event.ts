@@ -3,6 +3,7 @@ import { Match, Option, Schema } from "effect";
 import type { Permission } from "#shared/domain/access.ts";
 import { PostIdSchema } from "#shared/domain/ids.ts";
 import type { UserId, WorkspaceId } from "#shared/domain/ids.ts";
+import { PaidPlanSchema } from "#shared/domain/plan.ts";
 import { PlatformSchema } from "#shared/domain/platform.ts";
 
 /** The account a notice is about, as it was when the notice was made. */
@@ -13,6 +14,14 @@ export const NoticeChannelSchema = Schema.Struct({
 });
 
 export type NoticeChannel = typeof NoticeChannelSchema.Type;
+
+/** An amount of money, in the currency's smallest unit (cents). */
+export const NoticeMoneySchema = Schema.Struct({
+  amount: Schema.Int,
+  currency: Schema.NonEmptyString,
+});
+
+export type NoticeMoney = typeof NoticeMoneySchema.Type;
 
 /** Why a post did not go out on a channel, as publishing records it. */
 export const PostFailureReasonSchema = Schema.Literals([
@@ -72,6 +81,39 @@ export const NoticeEventSchema = Schema.Union([
     channel: NoticeChannelSchema,
     expiresAt: Schema.DateTimeUtc,
   }),
+  // A subscription started at `startedAt`, paid each `interval` at `price`
+  // excluding VAT, or in its trial until `trialEnd`.
+  Schema.TaggedStruct("SubscriptionStarted", {
+    interval: Schema.Literals(["month", "year"]),
+    plan: PaidPlanSchema,
+    price: NoticeMoneySchema,
+    startedAt: Schema.DateTimeUtc,
+    trialEnd: Schema.Option(Schema.DateTimeUtc),
+  }),
+  // The workspace's trial ends at `endsAt`; it then moves to the free plan
+  // unless someone orders a plan.
+  Schema.TaggedStruct("TrialEnding", {
+    endsAt: Schema.DateTimeUtc,
+    plan: PaidPlanSchema,
+  }),
+  // A yearly plan renews at `renewsAt`, for `price` excluding VAT.
+  Schema.TaggedStruct("SubscriptionRenewing", {
+    plan: PaidPlanSchema,
+    price: NoticeMoneySchema,
+    renewsAt: Schema.DateTimeUtc,
+  }),
+  // The subscription was cancelled, and ends at `endsAt`.
+  Schema.TaggedStruct("SubscriptionCancelled", {
+    endsAt: Schema.DateTimeUtc,
+    plan: PaidPlanSchema,
+  }),
+  // A consumer withdrew from the contract at `withdrawnAt`, which ended it
+  // then; `refunded` goes back to them.
+  Schema.TaggedStruct("SubscriptionWithdrawn", {
+    plan: PaidPlanSchema,
+    refunded: NoticeMoneySchema,
+    withdrawnAt: Schema.DateTimeUtc,
+  }),
 ]);
 
 export type NoticeEvent = typeof NoticeEventSchema.Type;
@@ -83,20 +125,30 @@ export type EmailKind =
   | "postPublished"
   | "postUnconfirmed";
 
-/** Which email preference covers the event. */
-export const emailKindOf = (event: NoticeEvent): EmailKind =>
+/**
+ * Which email preference covers the event: none for billing's reminders and
+ * confirmations, always emailed, as consumer law asks them on a durable
+ * medium.
+ */
+export const emailKindOf = (event: NoticeEvent): Option.Option<EmailKind> =>
   Match.valueTags(event, {
-    ChannelReconnectRequired: (): EmailKind => "channelReconnect",
-    ChannelReconnectSoon: (): EmailKind => "channelReconnect",
-    PostFailed: (): EmailKind => "postFailed",
-    PostPublished: (): EmailKind => "postPublished",
-    PostUnconfirmed: (): EmailKind => "postUnconfirmed",
+    ChannelReconnectRequired: () => Option.some<EmailKind>("channelReconnect"),
+    ChannelReconnectSoon: () => Option.some<EmailKind>("channelReconnect"),
+    PostFailed: () => Option.some<EmailKind>("postFailed"),
+    PostPublished: () => Option.some<EmailKind>("postPublished"),
+    PostUnconfirmed: () => Option.some<EmailKind>("postUnconfirmed"),
+    SubscriptionCancelled: () => Option.none<EmailKind>(),
+    SubscriptionRenewing: () => Option.none<EmailKind>(),
+    SubscriptionStarted: () => Option.none<EmailKind>(),
+    SubscriptionWithdrawn: () => Option.none<EmailKind>(),
+    TrialEnding: () => Option.none<EmailKind>(),
   });
 
 /**
  * Who may act on the event: those who may schedule posts can repost one, or
  * confirm whether it went out; those who may connect channels can reconnect
- * one. Who hears about it follows from it (`recipientsOf`).
+ * one; those who manage billing can order, cancel or withdraw. Who hears
+ * about it follows from it (`recipientsOf`).
  */
 export const audienceOf = (event: NoticeEvent): Permission =>
   Match.valueTags(event, {
@@ -105,9 +157,14 @@ export const audienceOf = (event: NoticeEvent): Permission =>
     PostFailed: (): Permission => "post:schedule",
     PostPublished: (): Permission => "post:schedule",
     PostUnconfirmed: (): Permission => "post:schedule",
+    SubscriptionCancelled: (): Permission => "billing:manage",
+    SubscriptionRenewing: (): Permission => "billing:manage",
+    SubscriptionStarted: (): Permission => "billing:manage",
+    SubscriptionWithdrawn: (): Permission => "billing:manage",
+    TrialEnding: (): Permission => "billing:manage",
   });
 
-/** Whether the event is about a post rather than a channel. */
+/** Whether the event is about a post rather than a channel or billing. */
 export const isAboutPost = (event: NoticeEvent): boolean =>
   Match.valueTags(event, {
     ChannelReconnectRequired: () => false,
@@ -115,12 +172,18 @@ export const isAboutPost = (event: NoticeEvent): boolean =>
     PostFailed: () => true,
     PostPublished: () => true,
     PostUnconfirmed: () => true,
+    SubscriptionCancelled: () => false,
+    SubscriptionRenewing: () => false,
+    SubscriptionStarted: () => false,
+    SubscriptionWithdrawn: () => false,
+    TrialEnding: () => false,
   });
 
 /**
  * What a reader must still be allowed when the notice's email goes out: to
  * read posts, for a post's notice, which went to its author whatever their
- * role; to act on the channel, for a channel's.
+ * role; to act on the channel, for a channel's; to manage billing, for
+ * billing's.
  */
 export const readerPermissionOf = (event: NoticeEvent): Permission =>
   isAboutPost(event) ? "post:read" : audienceOf(event);
@@ -179,4 +242,9 @@ export const pageOf = (event: NoticeEvent, workspaceId: WorkspaceId): string =>
     PostFailed: ({ postId }) => `/app/${workspaceId}/posts/${postId}`,
     PostPublished: ({ postId }) => `/app/${workspaceId}/posts/${postId}`,
     PostUnconfirmed: ({ postId }) => `/app/${workspaceId}/posts/${postId}`,
+    SubscriptionCancelled: () => `/app/${workspaceId}/billing`,
+    SubscriptionRenewing: () => `/app/${workspaceId}/billing`,
+    SubscriptionStarted: () => `/app/${workspaceId}/billing`,
+    SubscriptionWithdrawn: () => `/app/${workspaceId}/billing`,
+    TrialEnding: () => `/app/${workspaceId}/billing`,
   });

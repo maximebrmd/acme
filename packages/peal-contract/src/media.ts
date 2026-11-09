@@ -15,6 +15,7 @@ import { MediaNotFound } from "./media-not-found.ts";
 import { MediaStatusSchema } from "./media-status.ts";
 import { MediaStoreUnavailable } from "./media-store-unavailable.ts";
 import { MediaTooLarge } from "./media-too-large.ts";
+import { PlanLimitReached } from "./plan-limit-reached.ts";
 import { UnsupportedMediaType } from "./unsupported-media-type.ts";
 import { UploadIncomplete } from "./upload-incomplete.ts";
 import { UploadRejected } from "./upload-rejected.ts";
@@ -196,6 +197,7 @@ export class MediaApi extends HttpApiGroup.make("media")
         MediaTooLarge,
         AltTextTooLong,
         MediaStoreUnavailable,
+        PlanLimitReached,
       ],
       params: workspace,
       payload: NewUploadSchema,
@@ -203,7 +205,7 @@ export class MediaApi extends HttpApiGroup.make("media")
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Records pending media and signs the upload of its file: one PUT for an image or a video up to 16 MiB, one PUT per part for a larger video. Send the file with them, then complete the upload. The requests only take the declared size and content type. Needs media:upload.",
+          "Records pending media and signs the upload of its file: one PUT for an image or a video up to 16 MiB, one PUT per part for a larger video. Send the file with them, then complete the upload. The requests only take the declared size and content type. On a server that bills, the declared size must fit the plan's media storage with what the workspace stores (PlanLimitReached `mediaStorage`). Needs media:upload.",
         summary: "Start an upload",
       })
     ),

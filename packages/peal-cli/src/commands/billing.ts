@@ -9,6 +9,15 @@ import { inWorkspace, workspaceFlag } from "#workspace.ts";
 const allowed = (allowance: number | null) =>
   allowance === null ? "no limit" : String(allowance);
 
+// Bytes in decimal units, as the pricing page writes storage.
+const bytes = (count: number): string =>
+  count >= 1_000_000_000
+    ? `${(count / 1_000_000_000).toFixed(1)} GB`
+    : `${(count / 1_000_000).toFixed(1)} MB`;
+
+const storage = (used: number, allowance: number | null) =>
+  `${bytes(used)} of ${allowance === null ? "no limit" : bytes(allowance)}`;
+
 const periodic = (usage: PeriodUsage, allowance: number | null) =>
   `${String(usage.used)} of ${allowed(allowance)}, until ${instant(usage.resetsAt)}`;
 
@@ -29,6 +38,7 @@ const usageLines = (billing: Billing): string[] => {
       "  Assistant today",
       periodic(usage.assistantRequests, allowances.assistantRequests),
     ],
+    ["  Media stored", storage(usage.mediaStorage, allowances.mediaStorage)],
   ]);
 };
 
@@ -43,12 +53,16 @@ const planLine = (billing: Billing): string => {
     return `Plan: ${billing.plan}, with no subscription.`;
   }
 
+  if (subscription.status === "trialing" && subscription.trialEnd !== null) {
+    return `Plan: ${billing.plan}, on trial until ${instant(subscription.trialEnd)}, then free unless someone orders.`;
+  }
+
   const ends =
     subscription.currentPeriodEnd === null
       ? ""
       : `, ${subscription.cancelAtPeriodEnd ? "ending" : "renewing"} ${instant(subscription.currentPeriodEnd)}`;
 
-  return `Plan: ${billing.plan}, subscription ${subscription.status}${ends}.`;
+  return `Plan: ${billing.plan}, paid each ${subscription.interval}, subscription ${subscription.status}${ends}.`;
 };
 
 export const billing = Command.make(
@@ -69,9 +83,15 @@ export const billing = Command.make(
       yield* Console.log(line);
     }
 
+    if (found.trial?.available === true) {
+      yield* Console.log(
+        `This workspace may try the ${found.trial.plan} plan free for ${String(found.trial.days)} days, without a payment method.`
+      );
+    }
+
     if (found.enabled) {
       yield* Console.log(
-        "Owners and admins change the plan on the workspace's Billing page in the web app."
+        "Owners and admins order, cancel or withdraw on the workspace's Billing page in the web app."
       );
     }
   })

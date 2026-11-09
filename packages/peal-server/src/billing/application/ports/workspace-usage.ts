@@ -15,6 +15,8 @@ export interface Usage {
   /** The writing assistant's requests today (UTC). */
   readonly assistantRequests: PeriodCount;
   readonly channels: number;
+  /** The bytes of media stored, uploads in progress included. */
+  readonly mediaStorage: number;
   readonly members: number;
   /** The posts scheduled to go out this month (UTC). */
   readonly scheduledPosts: PeriodCount;

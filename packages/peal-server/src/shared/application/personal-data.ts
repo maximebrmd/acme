@@ -158,7 +158,43 @@ export type NoticeEventRecord =
       readonly _tag: "PostUnconfirmed";
       readonly channel: NoticeChannelRecord | null;
       readonly postId: string;
+    }
+  | {
+      readonly _tag: "SubscriptionCancelled";
+      readonly endsAt: DateTime.Utc;
+      readonly plan: string;
+    }
+  | {
+      readonly _tag: "SubscriptionRenewing";
+      readonly plan: string;
+      readonly price: MoneyRecord;
+      readonly renewsAt: DateTime.Utc;
+    }
+  | {
+      readonly _tag: "SubscriptionStarted";
+      readonly interval: string;
+      readonly plan: string;
+      readonly price: MoneyRecord;
+      readonly startedAt: DateTime.Utc;
+      readonly trialEnd: DateTime.Utc | null;
+    }
+  | {
+      readonly _tag: "SubscriptionWithdrawn";
+      readonly plan: string;
+      readonly refunded: MoneyRecord;
+      readonly withdrawnAt: DateTime.Utc;
+    }
+  | {
+      readonly _tag: "TrialEnding";
+      readonly endsAt: DateTime.Utc;
+      readonly plan: string;
     };
+
+/** An amount in cents of its currency. */
+export interface MoneyRecord {
+  readonly amount: number;
+  readonly currency: string;
+}
 
 /** A notice of a user. */
 export interface NoticeRecord {

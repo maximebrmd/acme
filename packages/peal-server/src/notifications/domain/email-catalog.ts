@@ -1,3 +1,5 @@
+import type { PaidPlan } from "#shared/domain/plan.ts";
+
 import type { PostFailureReason } from "./notice-event.ts";
 
 /**
@@ -58,6 +60,30 @@ export interface EmailCatalog {
   /** Whether a post of `{workspaceName}` went live on `{channel}` is unknown. */
   readonly postUnconfirmed: EmailMessages;
   readonly resetPassword: EmailMessages;
+  /**
+   * The paid plans' names, as `{plan}` in billing's emails.
+   */
+  readonly plans: Readonly<Record<PaidPlan, string>>;
+  /**
+   * A `{plan}` subscription started at `{startedAt}`, at `{price}` excluding
+   * VAT a `{interval}`: the confirmation of the contract.
+   */
+  readonly subscriptionStarted: EmailMessages;
+  /** The same, for a trial ending at `{endsAt}`. */
+  readonly trialStarted: EmailMessages;
+  /** "month" or "year", as `{interval}`. */
+  readonly intervals: { readonly month: string; readonly year: string };
+  /** A trial of `{plan}` in `{workspaceName}` ends at `{endsAt}`. */
+  readonly trialEnding: EmailMessages;
+  /** A yearly `{plan}` renews at `{renewsAt}` for `{price}` excluding VAT. */
+  readonly subscriptionRenewing: EmailMessages;
+  /** The `{plan}` subscription was cancelled, and ends at `{endsAt}`. */
+  readonly subscriptionCancelled: EmailMessages;
+  /**
+   * A consumer withdrew from `{plan}` at `{withdrawnAt}`; `{refunded}` goes
+   * back.
+   */
+  readonly subscriptionWithdrawn: EmailMessages;
   /**
    * The role an invitation offers, as `{role}` in its body: "as an editor".
    * The phrase includes its preposition, which in French depends on the role.

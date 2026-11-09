@@ -4,6 +4,7 @@ import { AccountApi } from "./account.ts";
 import { AnalyticsApi } from "./analytics.ts";
 import { ApiKeysApi } from "./api-keys.ts";
 import { AssistantApi } from "./assistant.ts";
+import { BillingActionsApi } from "./billing-actions.ts";
 import { BillingApi } from "./billing.ts";
 import { CaptchaApi } from "./captcha.ts";
 import { ChannelOAuthApi } from "./channel-oauth.ts";
@@ -82,6 +83,14 @@ export type { SubscriptionToCancel } from "./workspace-subscribed.ts";
 
 export { BillingUnavailable } from "./billing-unavailable.ts";
 
+export { BillingNotEnabled } from "./billing-not-enabled.ts";
+
+export { NothingToCancel } from "./nothing-to-cancel.ts";
+
+export { TrialUnavailable } from "./trial-unavailable.ts";
+
+export { WithdrawalUnavailable } from "./withdrawal-unavailable.ts";
+
 export { WorkspaceNameMismatch } from "./workspace-name-mismatch.ts";
 
 export { AltTextTooLong } from "./alt-text-too-long.ts";
@@ -152,34 +161,65 @@ export { AssistantUnavailable } from "./assistant-unavailable.ts";
 
 export { Authentication } from "./authentication.ts";
 
+export { BillingActionsApi } from "./billing-actions.ts";
+
 export {
   BillingApi,
   BillingSchema,
   BillingSubscriptionSchema,
+  CancellationSchema,
+  OrderPayloadSchema,
+  OrderSchema,
   PeriodUsageSchema,
   PlanAllowancesSchema,
   PlanOfferSchema,
+  PlanPriceSchema,
   SubscriptionStatusSchema,
+  TrialOfferSchema,
   UsageSchema,
+  WithdrawalPreviewSchema,
+  WithdrawalSchema,
 } from "./billing.ts";
 
 export type {
   Billing,
   BillingSubscription,
+  Cancellation,
+  Order,
+  OrderPayload,
   PeriodUsage,
   PlanAllowances,
   PlanOffer,
+  PlanPrice,
   SubscriptionStatus,
+  TrialOffer,
   Usage,
+  Withdrawal,
+  WithdrawalPreview,
 } from "./billing.ts";
 
 export {
+  billingCurrency,
+  BillingIntervalSchema,
+  displayVatRate,
+  MoneySchema,
   PaidPlanSchema,
+  planCatalogue,
   PlanLimitSchema,
   PlanSchema,
+  trialOffer,
+  withDisplayVat,
 } from "./billing-plans.ts";
 
-export type { PaidPlan, Plan, PlanLimit } from "./billing-plans.ts";
+export type {
+  BillingInterval,
+  Money,
+  PaidPlan,
+  Plan,
+  PlanLimit,
+  PlanLimits,
+  PlanPrices,
+} from "./billing-plans.ts";
 
 export { CaptchaApi, CaptchaSchema } from "./captcha.ts";
 
@@ -607,6 +647,7 @@ export class Api extends HttpApi.make("peal")
   .add(AccountApi)
   .add(ConnectedAppsApi)
   .add(BillingApi)
+  .add(BillingActionsApi)
   .add(CaptchaApi)
   .add(AnalyticsApi)
   .add(TikTokApi)

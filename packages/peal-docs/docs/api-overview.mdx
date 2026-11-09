@@ -44,7 +44,7 @@ A workspace's resources live under `/api/workspaces/{workspaceId}/`: `channels`,
 | 403    | The credentials work, but do not allow this request, or the account is banned. |
 | 404    | No such resource, or a workspace the caller does not belong to.                |
 
-Errors answer with a JSON body whose `_tag` names the error, such as `PostContentInvalid` or `ConnectFailed`, with the details the reference lists. The writing assistant's endpoints also answer 429 once the workspace has used its requests for the day, 503 when the instance has no AI provider, and 502 when the provider gave no answer the assistant could use. On an instance that bills, connecting a channel or scheduling a post the workspace's plan has no room for answers 402 `PlanLimitReached`, which names the `limit`; `GET /api/workspaces/:workspaceId/billing` shows the plan, its allowances and the workspace's usage.
+Errors answer with a JSON body whose `_tag` names the error, such as `PostContentInvalid` or `ConnectFailed`, with the details the reference lists. The writing assistant's endpoints also answer 429 once the workspace has used its requests for the day, 503 when the instance has no AI provider, and 502 when the provider gave no answer the assistant could use. On an instance that bills, connecting a channel, scheduling a post or starting an upload the workspace's plan has no room for answers 402 `PlanLimitReached`, which names the `limit` (`channels`, `members`, `scheduledPosts`, `assistantRequests` or `mediaStorage`, in bytes) and what the plan `allowed` ([Plans and billing](/billing#limits)); `GET /api/workspaces/:workspaceId/billing` shows the plan, its allowances and the workspace's usage.
 
 ## Your account [#me]
 

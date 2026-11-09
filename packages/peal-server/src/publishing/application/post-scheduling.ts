@@ -33,7 +33,7 @@ import { newId } from "#shared/application/ids.ts";
 import type { Ids } from "#shared/application/ids.ts";
 import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 import type { Actor } from "#shared/domain/access.ts";
-import { roomForOneMore } from "#shared/domain/allowance.ts";
+import { roomForOneMore, withinAllowance } from "#shared/domain/allowance.ts";
 import { authorize } from "#shared/domain/authorize.ts";
 import { PostIdSchema } from "#shared/domain/ids.ts";
 import type { ChannelId, PostId } from "#shared/domain/ids.ts";
@@ -253,6 +253,16 @@ export class PostScheduling extends Context.Service<
       // until it commits, so posts scheduled together are counted in turn.
       const roomInMonth = Effect.fn("PostScheduling.roomInMonth")(
         function* roomInMonth(post: Post) {
+          // A workspace with more channels than its plan allows, as after
+          // its trial, schedules nothing until it disconnects some.
+          const channels = yield* PostAllowance.use((allowance) =>
+            allowance.channels(post.workspaceId)
+          );
+
+          yield* Effect.fromResult(
+            withinAllowance("channels", channels.allowed, channels.connected)
+          );
+
           const allowed = yield* PostAllowance.use((allowance) =>
             allowance.scheduledPerMonth(post.workspaceId)
           );

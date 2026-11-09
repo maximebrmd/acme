@@ -12,6 +12,7 @@
   "type": "module",
   "exports": {
     ".": "./src/api.ts",
+    "./billing-plans": "./src/billing-plans.ts",
     "./post-text": "./src/post-text.ts"
   },
   "dependencies": {
