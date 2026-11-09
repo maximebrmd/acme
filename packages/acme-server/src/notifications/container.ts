@@ -1,15 +1,22 @@
 import { Effect, Layer } from "effect";
 import { FetchHttpClient } from "effect/http";
 
+import { DeliverNoticeEmails } from "#notifications/application/deliver-notice-emails.ts";
+import { NoticeInbox } from "#notifications/application/notice-inbox.ts";
+import { NotificationSettings } from "#notifications/application/notification-settings.ts";
+import { Notify } from "#notifications/application/notify.ts";
 import { SendAuthEmail } from "#notifications/application/send-auth-email.ts";
-import { SendChannelNotice } from "#notifications/application/send-channel-notice.ts";
 import { DrizzleNoticeLog } from "#notifications/infrastructure/drizzle-notice-log.ts";
+import { DrizzleNoticeStore } from "#notifications/infrastructure/drizzle-notice-store.ts";
+import { DrizzlePreferenceStore } from "#notifications/infrastructure/drizzle-preference-store.ts";
 import { mailSettingsConfig } from "#notifications/infrastructure/mail-settings.ts";
 import type { MailSettings } from "#notifications/infrastructure/mail-settings.ts";
 import { PublicAppLinks } from "#notifications/infrastructure/public-app-links.ts";
 import { resendMailer } from "#notifications/infrastructure/resend-mailer.ts";
 import { smtpMailer } from "#notifications/infrastructure/smtp-mailer.ts";
+import { WorkflowNoticeDelivery } from "#notifications/infrastructure/workflow-notice-delivery.ts";
 import { WorkspaceNoticeRecipients } from "#notifications/infrastructure/workspace-notice-recipients.ts";
+import { WorkspaceReaderStanding } from "#notifications/infrastructure/workspace-reader-standing.ts";
 import { IdsLive } from "#shared/infrastructure/secure-random-ids.ts";
 
 const mailerFor = ({ from, transport }: MailSettings) =>
@@ -35,14 +42,41 @@ export const NotificationsLive = SendAuthEmail.layer.pipe(
   Layer.provide(IdsLive)
 );
 
-/**
- * Channel notices, emailed once per event to the members who manage a
- * workspace's channels. Needs the Mailer (from NotificationsLive), the
- * database, migrated, and the workspace context's WorkspaceContacts, which
- * itself needs NotificationsLive: build the two apart, notices last.
- */
-export const ChannelNoticesLive = SendChannelNotice.layer.pipe(
-  Layer.provide(
-    Layer.mergeAll(DrizzleNoticeLog, PublicAppLinks, WorkspaceNoticeRecipients)
-  )
+// The adapters behind the notices' ports.
+const NoticeAdaptersLive = Layer.mergeAll(
+  DrizzleNoticeLog,
+  DrizzleNoticeStore,
+  DrizzlePreferenceStore,
+  PublicAppLinks,
+  WorkflowNoticeDelivery,
+  WorkspaceNoticeRecipients,
+  WorkspaceReaderStanding
 );
+
+/**
+ * Notices: what happened to posts and channels, told once per event to the
+ * members of a workspace who can act on it, in the app and by email, each in
+ * their language (Notify); each user's notices and preferences (NoticeInbox,
+ * NotificationSettings); and the emails' delivery (DeliverNoticeEmails), for
+ * the workers. Needs the Mailer (from NotificationsLive), the database,
+ * migrated, a TransactionRunner, Ids, the workflow engine, and the workspace
+ * context's WorkspaceContacts and AccountStanding, which themselves need
+ * NotificationsLive: build the two apart, notices last.
+ */
+export const NoticesLive = Layer.mergeAll(
+  Notify.layer,
+  DeliverNoticeEmails.layer,
+  NoticeInbox.layer,
+  NotificationSettings.layer
+).pipe(Layer.provide(NoticeAdaptersLive));
+
+/** Registers the workflow that sends notices' emails. Needs NoticesLive. */
+export { DeliverNoticeV1Live as NotificationsWorkersLive } from "#notifications/infrastructure/workflows/deliver-notice.ts";
+
+// The endpoints of the signed-in user's notices and preferences. They need
+// the use cases NoticesLive provides, and the Authentication middleware of
+// the workspace context, which the composition root brings.
+export {
+  NoticesHandlers as NoticesApiLive,
+  NotificationPreferencesHandlers as NotificationPreferencesApiLive,
+} from "#notifications/api/notices.ts";

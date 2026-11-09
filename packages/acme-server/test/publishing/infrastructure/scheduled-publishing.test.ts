@@ -27,6 +27,7 @@ import {
   targetStatuses,
   utc,
 } from "./harness.ts";
+import { Outcomes } from "./recorded-outcomes.ts";
 
 const timeout = 60_000;
 
@@ -215,6 +216,16 @@ describe("restarts", () => {
 
         assert(target?.status._tag === "failed");
         assert.strictEqual(target.status.reason, "missed");
+
+        // The members who schedule posts hear of it, as of any failure.
+        const told = yield* Outcomes.use(({ told: all }) => all).pipe(
+          Effect.provideContext(second)
+        );
+
+        assert.deepStrictEqual(
+          told.map(({ id, status }) => ({ id, status: status._tag })),
+          [{ id: target.id, status: "failed" }]
+        );
 
         yield* shutDown(after);
       }).pipe(Effect.scoped),

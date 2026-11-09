@@ -61,7 +61,7 @@ const UseCasesLive = Layer.mergeAll(
  * The channels context's use cases, and the adapters behind its ports
  * (ChannelRepository, TokenCipher, ...), which its other use cases and
  * workers share. Needs the database (Drizzle and SqlClient), migrated, Ids,
- * Dns, and the notifications context's SendChannelNotice.
+ * Dns, and the notifications context's Notify.
  */
 export const ChannelsLive = UseCasesLive.pipe(Layer.provideMerge(AdaptersLive));
 

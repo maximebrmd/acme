@@ -20,6 +20,7 @@ import {
   DatabaseTest,
   setTime,
 } from "#test/publishing/infrastructure/harness.ts";
+import { RecordingPublicationOutcomes } from "#test/publishing/infrastructure/recorded-outcomes.ts";
 import { attachableMedia, mediaFile } from "#test/publishing/support.ts";
 
 // The publishing use cases as the server runs them, on an in-memory cluster
@@ -40,6 +41,7 @@ export const postsServerWith = <E, R>(
     Layer.provideMerge(
       publishingWith(Layer.mergeAll(ListedWorkspaceChannels, media))
     ),
+    Layer.provideMerge(RecordingPublicationOutcomes),
     Layer.provideMerge(ListChannels.layer),
     Layer.provideMerge(DrizzleChannelRepository),
     Layer.provideMerge(Layer.mergeAll(IdsLive, TransactionRunnerLive)),

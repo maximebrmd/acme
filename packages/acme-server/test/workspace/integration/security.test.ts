@@ -230,6 +230,59 @@ const cases: readonly Case[] = [
     name: "a banned user's cached session on /api/me",
     path: () => "/api/me",
   },
+  {
+    expected: 401,
+    name: "no credentials on the user's notices",
+    path: () => "/api/me/notices",
+  },
+  {
+    expected: 200,
+    headers: (fixture) => ({ cookie: fixture.ownerCookies }),
+    name: "a session on the user's notices",
+    path: () => "/api/me/notices",
+  },
+  {
+    expected: 403,
+    headers: (fixture) => bearer(fixture.key),
+    name: "an API key on the user's notices",
+    path: () => "/api/me/notices/unread",
+  },
+  {
+    expected: 403,
+    headers: (fixture) => ({ cookie: fixture.bannedCookies }),
+    name: "a banned user's cached session on the user's notices",
+    path: () => "/api/me/notices/unread",
+  },
+  {
+    expected: 200,
+    headers: (fixture) => ({ cookie: fixture.ownerCookies }),
+    name: "a session on the user's notification preferences",
+    path: () => "/api/me/notification-preferences",
+  },
+  {
+    expected: 200,
+    headers: (fixture) => ({ cookie: fixture.ownerCookies }),
+    method: "POST",
+    name: "a session marking the user's notices read",
+    path: () => "/api/me/notices/read-all",
+  },
+  {
+    expected: 403,
+    headers: (fixture) => ({
+      cookie: fixture.ownerCookies,
+      origin: "https://elsewhere.example",
+    }),
+    method: "POST",
+    name: "a session sent by another site marking the user's notices read",
+    path: () => "/api/me/notices/read-all",
+  },
+  {
+    expected: 403,
+    headers: (fixture) => bearer(fixture.key),
+    method: "POST",
+    name: "an API key marking the user's notices read",
+    path: () => "/api/me/notices/read-all",
+  },
 ];
 
 layer(MatrixLive, { excludeTestServices: true, timeout: "180 seconds" })(

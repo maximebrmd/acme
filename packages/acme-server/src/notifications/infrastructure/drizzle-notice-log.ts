@@ -26,11 +26,16 @@ export const DrizzleNoticeLog = Layer.effect(
             Effect.mapError(failed),
             Effect.map((rows) => rows.length === 1)
           ),
-      release: (key) =>
+      isClaimed: (key) =>
         db
-          .delete(sentNotices)
+          .select({ key: sentNotices.key })
+          .from(sentNotices)
           .where(eq(sentNotices.key, key))
-          .pipe(Effect.mapError(failed), Effect.asVoid),
+          .limit(1)
+          .pipe(
+            Effect.mapError(failed),
+            Effect.map((rows) => rows.length === 1)
+          ),
     });
   })
 );

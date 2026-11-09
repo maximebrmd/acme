@@ -20,6 +20,7 @@ import { LibraryAttachableMedia } from "#publishing/infrastructure/library-attac
 import { LibraryMediaForPublishing } from "#publishing/infrastructure/library-media-for-publishing.ts";
 import { ListedWorkspaceChannels } from "#publishing/infrastructure/listed-workspace-channels.ts";
 import { LoggedChannelHealth } from "#publishing/infrastructure/logged-channel-health.ts";
+import { NotifiedPublicationOutcomes } from "#publishing/infrastructure/notified-publication-outcomes.ts";
 import { PlatformClientsLive } from "#publishing/infrastructure/platforms/platform-clients-live.ts";
 import { WorkflowPublicationScheduler } from "#publishing/infrastructure/workflow-publication-scheduler.ts";
 import { PublishPostV1Live } from "#publishing/infrastructure/workflows/publish-post.ts";
@@ -54,10 +55,16 @@ export const publishingWith = <E, R>(
 /**
  * The use cases as the server runs them: channels are those the channels
  * context lists, and media the ready media its library holds, which the
- * composition root provides (ListChannels, MediaLibrary).
+ * composition root provides (ListChannels, MediaLibrary). How each target
+ * ends is told through the notifications context (Notify), naming channels
+ * as the channels context has them (ChannelRepository).
  */
-export const PublishingLive = publishingWith(
-  Layer.mergeAll(ListedWorkspaceChannels, LibraryAttachableMedia)
+export const PublishingLive = NotifiedPublicationOutcomes.pipe(
+  Layer.provideMerge(
+    publishingWith(
+      Layer.mergeAll(ListedWorkspaceChannels, LibraryAttachableMedia)
+    )
+  )
 );
 
 // The posts endpoints. They need the use cases PublishingLive provides, and
@@ -68,7 +75,7 @@ export { PostsHandlers as PostsApiLive } from "#publishing/api/posts.ts";
 /**
  * Registers the publishing workflows and the channel gates, which call the
  * platforms through `platforms`. Needs the cluster and what PublishingLive
- * provides.
+ * provides, PublicationOutcomes included.
  */
 export const publishingWorkers = <E, R>(
   platforms: Layer.Layer<PlatformPublisher, E, R>

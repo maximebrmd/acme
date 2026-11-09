@@ -5,8 +5,8 @@ import { RecipientsUnavailable } from "#notifications/application/recipients-una
 import { WorkspaceContacts } from "#workspace/application/workspace-contacts.ts";
 
 /**
- * Recipients from the workspace context: the members who may connect
- * channels, since they are the ones who can reconnect one.
+ * Recipients from the workspace context: the members whose roles allow what
+ * a notice asks of them, leaving out banned users.
  */
 export const WorkspaceNoticeRecipients = Layer.effect(
   NoticeRecipients,
@@ -14,13 +14,13 @@ export const WorkspaceNoticeRecipients = Layer.effect(
     const contacts = yield* WorkspaceContacts;
 
     return NoticeRecipients.of({
-      channelManagers: (workspaceId) =>
-        contacts.withPermission(workspaceId, "channel:connect").pipe(
+      withPermission: (workspaceId, permission) =>
+        contacts.withPermission(workspaceId, permission).pipe(
           Effect.map(({ contacts: people, workspaceName }) => ({
             recipients: people.map(({ email, locale, userId }) => ({
               email,
-              id: userId,
               locale,
+              userId,
             })),
             workspaceName,
           })),

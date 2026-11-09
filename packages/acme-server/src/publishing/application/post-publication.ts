@@ -35,6 +35,7 @@ import { ChannelHealth } from "./channel-health.ts";
 import { PlatformPublisher } from "./platform-publisher.ts";
 import { PostRepository } from "./post-repository.ts";
 import { PublicationJournal } from "./publication-journal.ts";
+import { PublicationOutcomes } from "./publication-outcomes.ts";
 
 // The steps of publishing a post, one use case per step of the durable job
 // (#publishing/infrastructure/workflows). Each reads and writes the post as it
@@ -69,11 +70,13 @@ const scheduleOf = (post: Post) => {
 
 /**
  * The post's job woke for `revision`: start publishing if the post still has
- * that revision, mark it missed if it is too late, or stop.
+ * that revision, mark it missed if it is too late (telling
+ * PublicationOutcomes how each target ended), or stop.
  */
 export const claimPostRun = Effect.fn("Publishing.claimPost")(
   function* claimPostRun(postId: PostId, revision: number) {
     const posts = yield* PostRepository;
+    const outcomes = yield* PublicationOutcomes;
     const { transaction } = yield* TransactionRunner;
 
     return yield* transaction(
@@ -116,6 +119,12 @@ export const claimPostRun = Effect.fn("Publishing.claimPost")(
           ).pipe(Effect.orDie);
 
           yield* applied(yield* posts.update(finished, post));
+
+          // Each target settled here, never in recordTargetRun: told once,
+          // as a step run again finds the post finished and misses nothing.
+          yield* Effect.forEach(missed, (target) => outcomes.settled(target), {
+            discard: true,
+          });
 
           const claim: PostClaim = { _tag: "missed" };
 
@@ -395,8 +404,9 @@ export const publishAttemptRun = Effect.fn("Publishing.publishAttempt")(
 );
 
 /**
- * Settles a target with how its attempts ended, and tells the channels
- * context when its token is gone for good.
+ * Settles a target with how its attempts ended, tells the channels context
+ * when its token is gone for good, and tells PublicationOutcomes how it
+ * ended.
  */
 export const recordTargetRun = Effect.fn("Publishing.recordTarget")(
   function* recordTargetRun(
@@ -406,6 +416,7 @@ export const recordTargetRun = Effect.fn("Publishing.recordTarget")(
   ) {
     const posts = yield* PostRepository;
     const health = yield* ChannelHealth;
+    const outcomes = yield* PublicationOutcomes;
     const { transaction } = yield* TransactionRunner;
 
     return yield* transaction(
@@ -436,6 +447,8 @@ export const recordTargetRun = Effect.fn("Publishing.recordTarget")(
         if (needsReconnect(settlement)) {
           yield* health.reconnectRequired(target.channelId);
         }
+
+        yield* outcomes.settled(settled);
 
         return yield* settledOutcome(settled);
       })

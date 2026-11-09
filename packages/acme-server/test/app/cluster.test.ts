@@ -46,6 +46,7 @@ import { DatabaseLive } from "#shared/infrastructure/database.ts";
 import { MigrationsLive } from "#shared/infrastructure/migrations.ts";
 import { IdsLive } from "#shared/infrastructure/secure-random-ids.ts";
 import { TransactionRunnerLive } from "#shared/infrastructure/transaction-runner-live.ts";
+import { RecordingPublicationOutcomes } from "#test/publishing/infrastructure/recorded-outcomes.ts";
 import {
   actorIn,
   ReferencesTest,
@@ -129,6 +130,7 @@ const serverWith = <E, R>(
 ) =>
   Layer.mergeAll(publishingWorkers(platforms), crons).pipe(
     Layer.provideMerge(publishingWith(ReferencesTest)),
+    Layer.provideMerge(RecordingPublicationOutcomes),
     Layer.provideMerge(ChannelJobsTest),
     Layer.provideMerge(Layer.mergeAll(IdsLive, TransactionRunnerLive)),
     Layer.provideMerge(Cluster),
