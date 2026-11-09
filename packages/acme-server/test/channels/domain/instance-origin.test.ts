@@ -11,6 +11,8 @@ describe(parseInstance, () => {
     ["https://mastodon.social/@alice", "https://mastodon.social"],
     ["@alice@mastodon.social", "https://mastodon.social"],
     ["alice@mastodon.social", "https://mastodon.social"],
+    ["mastodon.social.", "https://mastodon.social"],
+    ["@alice@Mastodon.Social.", "https://mastodon.social"],
     ["http://localhost:3000", "http://localhost:3000"],
   ])("reads %j as %s", (input, origin) => {
     expect(Result.getOrThrow(parseInstance(input))).toBe(origin);
@@ -20,6 +22,7 @@ describe(parseInstance, () => {
     "",
     "not a server",
     "ftp://mastodon.social",
+    ".",
     "https://alice:secret@mastodon.social",
   ])("refuses %j", (input) => {
     expect(Result.isFailure(parseInstance(input))).toBeTruthy();

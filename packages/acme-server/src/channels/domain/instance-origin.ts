@@ -26,7 +26,8 @@ const schemePrefix = /^[a-z][\d+.a-z-]*:\/\//iu;
  * ("mastodon.social"), a URL on it, of which only the origin counts
  * ("https://mastodon.social/@alice"), or an account's address
  * ("@alice@mastodon.social"). Without a scheme, HTTPS is meant. A URL with a
- * user name or password is refused rather than stripped.
+ * user name or password is refused rather than stripped, and a host's
+ * final dot dropped.
  */
 export const parseInstance = (
   input: string
@@ -39,15 +40,21 @@ export const parseInstance = (
     schemePrefix.test(candidate) ? candidate : `https://${candidate}`
   );
 
+  // "mastodon.social." is the same server as "mastodon.social", and its
+  // accounts the same accounts.
+  const hostname = url?.hostname.replace(/\.$/u, "") ?? "";
+
   if (
     url === null ||
     !webProtocols.has(url.protocol) ||
-    url.hostname === "" ||
+    hostname === "" ||
     url.username !== "" ||
     url.password !== ""
   ) {
     return Result.fail(new InvalidInstance());
   }
+
+  url.hostname = hostname;
 
   return Result.succeed(InstanceOriginSchema.make(url.origin));
 };
