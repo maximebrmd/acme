@@ -5,7 +5,9 @@ import { Alert, AlertDescription, AlertTitle } from "acme-ui/components/alert";
 import { Match } from "effect";
 import { useTranslations } from "next-intl";
 
+import { useMediaViolationTexts } from "#components/posts/media-text.ts";
 import type { ComposerFailure } from "#posts/composer-failure.ts";
+import type { AttachedMedia } from "#posts/media-fit.ts";
 
 /**
  * What tells a violation from the others in the list: its kind and channel,
@@ -18,24 +20,29 @@ export const violationKey = (violation: ContentViolation): string => {
   }
 
   const unit = violation._tag === "textTooLong" ? `-${violation.unit}` : "";
+  const media = "mediaId" in violation ? `-${violation.mediaId}` : "";
 
-  return `${violation._tag}-${violation.channelId}${unit}`;
+  return `${violation._tag}-${violation.channelId}${unit}${media}`;
 };
 
 interface ComposerErrorsProps {
   readonly channels: readonly Channel[];
   readonly failure: ComposerFailure | null;
+  /** The post's images and videos, to tell which one a violation is about. */
+  readonly media?: readonly AttachedMedia[];
 }
 
+const noMedia: readonly AttachedMedia[] = [];
+
 // Why the last save or schedule failed, with each of the platforms' rules
-// the content breaks, channel by channel.
-export const ComposerErrors = ({ channels, failure }: ComposerErrorsProps) => {
+// the content breaks, channel by channel, and image by image.
+export const ComposerErrors = ({
+  channels,
+  failure,
+  media = noMedia,
+}: ComposerErrorsProps) => {
   const t = useTranslations("Posts.Composer");
   const tPosts = useTranslations("Posts");
-
-  if (failure === null) {
-    return null;
-  }
 
   const channelName = (channelId: string) => {
     const channel = channels.find(({ id }) => id === channelId);
@@ -48,8 +55,15 @@ export const ComposerErrors = ({ channels, failure }: ComposerErrorsProps) => {
         });
   };
 
+  const mediaTexts = useMediaViolationTexts(media, channelName);
+
+  if (failure === null) {
+    return null;
+  }
+
   const violationText = (violation: ContentViolation) =>
     Match.valueTags(violation, {
+      ...mediaTexts,
       empty: ({ channelId }) =>
         t("violation.empty", { channel: channelName(channelId) }),
       mediaRequired: ({ channelId }) =>

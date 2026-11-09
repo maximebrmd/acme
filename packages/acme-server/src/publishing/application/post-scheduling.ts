@@ -26,7 +26,7 @@ import type { MissingPermission } from "#shared/domain/missing-permission.ts";
 
 import type { AttachableMedia } from "./attachable-media.ts";
 import type { PostNotFound } from "./post-not-found.ts";
-import { channelsFor, checkMedia } from "./post-references.ts";
+import { channelsFor, mediaFor } from "./post-references.ts";
 import { PostRepository } from "./post-repository.ts";
 import type { PostWithTargets, StoredPost } from "./post-repository.ts";
 import { PublicationScheduler } from "./publication-scheduler.ts";
@@ -75,9 +75,9 @@ const mayPublish = (actor: Actor) =>
  * needs post:schedule, and scheduling reads the workspace's channels, which
  * needs channel:read.
  *
- * A post is scheduled only on channels of its workspace, with content their
- * platforms take (`#publishing/domain/content-rules.ts`) and media the
- * workspace may show.
+ * A post is scheduled only on channels of its workspace, with ready media of
+ * the workspace, and with content their platforms take, its media included
+ * (`#publishing/domain/content-rules.ts`).
  *
  * A post is only found in the workspace that owns it: another workspace's
  * post is PostNotFound, whatever its id.
@@ -162,9 +162,9 @@ export class PostScheduling extends Context.Service<
           channelIds: readonly ChannelId[]
         ) {
           const channels = yield* channelsFor(actor, channelIds);
+          const files = yield* mediaFor(actor, content);
 
-          yield* Effect.fromResult(checkPublishable(content, channels));
-          yield* checkMedia(actor, content);
+          yield* Effect.fromResult(checkPublishable(content, channels, files));
 
           return channels.map(({ channelId }) => channelId);
         },

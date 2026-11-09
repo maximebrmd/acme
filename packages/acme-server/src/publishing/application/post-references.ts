@@ -1,6 +1,7 @@
 import { Array as Arr, Effect } from "effect";
 
 import type { ChannelOnPlatform } from "#publishing/domain/content-rules.ts";
+import type { MediaFile } from "#publishing/domain/media-file.ts";
 import type { PostContent } from "#publishing/domain/post-content.ts";
 import type { Actor } from "#shared/domain/access.ts";
 import type { ChannelId } from "#shared/domain/ids.ts";
@@ -11,7 +12,8 @@ import { UnknownMedia } from "./unknown-media.ts";
 import { WorkspaceChannels } from "./workspace-channels.ts";
 
 // What a post refers to in other contexts, checked before it is saved: its
-// channels, which must be the workspace's, and its media.
+// channels, which must be the workspace's, and its media, which must be the
+// workspace's and ready.
 
 /**
  * The channels, each once and in the order asked, with their platforms.
@@ -46,21 +48,37 @@ export const channelsFor = Effect.fn("Publishing.channelsFor")(
   }
 );
 
-/** Fails with UnknownMedia when the content shows media it may not. */
-export const checkMedia = Effect.fn("Publishing.checkMedia")(
-  function* checkMedia(actor: Actor, content: PostContent) {
-    const requested = content.media.map(({ mediaId }) => mediaId);
+/**
+ * The files of the media the content shows, in its order. Fails with
+ * UnknownMedia when it shows media the actor's posts may not: another
+ * workspace's, or media that is not ready.
+ */
+export const mediaFor = Effect.fn("Publishing.mediaFor")(function* mediaFor(
+  actor: Actor,
+  content: PostContent
+) {
+  const requested = content.media.map(({ mediaId }) => mediaId);
 
-    const found = new Set(
-      requested.length === 0
-        ? []
-        : yield* AttachableMedia.use((media) => media.lookUp(actor, requested))
-    );
+  if (requested.length === 0) {
+    const none: readonly MediaFile[] = [];
 
-    const missing = requested.filter((mediaId) => !found.has(mediaId));
-
-    if (Arr.isReadonlyArrayNonEmpty(missing)) {
-      yield* new UnknownMedia({ mediaIds: missing });
-    }
+    return none;
   }
-);
+
+  const found = yield* AttachableMedia.use((media) =>
+    media.lookUp(actor, requested)
+  );
+
+  const byId = new Map(found.map((file) => [file.mediaId, file]));
+  const missing = requested.filter((mediaId) => !byId.has(mediaId));
+
+  if (Arr.isReadonlyArrayNonEmpty(missing)) {
+    return yield* new UnknownMedia({ mediaIds: missing });
+  }
+
+  return requested.flatMap((mediaId) => {
+    const file = byId.get(mediaId);
+
+    return file === undefined ? [] : [file];
+  });
+});

@@ -39,8 +39,10 @@ import type { ScheduleChoice } from "#components/posts/schedule-fields.tsx";
 import { TargetStatuses } from "#components/posts/target-statuses.tsx";
 import { TextTabs } from "#components/posts/text-tabs.tsx";
 import { getPathname, useRouter } from "#i18n/navigation.ts";
+import { useAttachedMedia } from "#posts/attached-media.ts";
 import { connectedTargets } from "#posts/channel-selection.ts";
 import { fitOn, fits } from "#posts/character-count.ts";
+import { mediaFitOn, mediaFits } from "#posts/media-fit.ts";
 import { usePostRequests } from "#posts/use-post-requests.ts";
 import {
   browserTimeZone,
@@ -185,10 +187,10 @@ interface ComposerProps {
   readonly workspaceId: string;
 }
 
-// Writes a post: its text, a text of its own on some channels, where it goes
-// and when. A draft is saved as it is; scheduling checks it against each
-// platform's limits, which the counters show as the user types. A scheduled
-// post keeps its text and can be moved or cancelled.
+// Writes a post: its text, a text of its own on some channels, its images
+// and videos, where it goes and when. A draft is saved as it is; scheduling
+// checks it against each platform's limits, which the counters show as the
+// user types. A scheduled post keeps its text and can be moved or cancelled.
 export const Composer = ({
   channels,
   permissions,
@@ -234,6 +236,7 @@ export const Composer = ({
   );
 
   const content = contentOf(text, overrides, channelIds, media);
+  const attached = useAttachedMedia(workspaceId, media);
 
   const channelFits = selected.map((channel) => {
     const own = content.overrides.find(
@@ -243,6 +246,7 @@ export const Composer = ({
     return {
       channel,
       fit: fitOn(channel.platform, own?.text ?? text, media.length),
+      media: mediaFitOn(channel.platform, attached),
     };
   });
 
@@ -436,8 +440,13 @@ export const Composer = ({
               {t("mediaLegend")}
             </legend>
             <MediaAttachments
-              media={media}
+              attached={attached}
+              canBrowse={permissions.includes("media:read")}
+              canUpload={permissions.includes("media:upload")}
               disabled={locked}
+              editable={canWrite}
+              platforms={selected.map(({ platform }) => platform)}
+              workspaceId={workspaceId}
               onChange={setMedia}
             />
           </fieldset>
@@ -455,7 +464,11 @@ export const Composer = ({
           {post === undefined || status === "draft" ? null : (
             <TargetStatuses channels={channels} post={post} />
           )}
-          <ComposerErrors channels={channels} failure={requests.failure} />
+          <ComposerErrors
+            channels={channels}
+            failure={requests.failure}
+            media={attached}
+          />
         </div>
       </CardContent>
       <CardFooter>
@@ -465,7 +478,9 @@ export const Composer = ({
           canSchedule={canWrite && canSchedule}
           canReschedule={canReschedule}
           canCancel={canCancel}
-          publishable={channelFits.every(({ fit }) => fits(fit))}
+          publishable={channelFits.every(
+            ({ fit, media: mediaFit }) => fits(fit) && mediaFits(mediaFit)
+          )}
           onAction={perform}
         />
       </CardFooter>

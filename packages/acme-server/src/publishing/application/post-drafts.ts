@@ -17,7 +17,7 @@ import type { MissingPermission } from "#shared/domain/missing-permission.ts";
 
 import type { AttachableMedia } from "./attachable-media.ts";
 import type { PostNotFound } from "./post-not-found.ts";
-import { channelsFor, checkMedia } from "./post-references.ts";
+import { channelsFor, mediaFor } from "./post-references.ts";
 import { PostRepository } from "./post-repository.ts";
 import type { PostWithTargets } from "./post-repository.ts";
 import type { UnknownChannels } from "./unknown-channels.ts";
@@ -93,7 +93,7 @@ export class PostDrafts extends Context.Service<
         );
 
         yield* Effect.fromResult(checkDraft(content, channels));
-        yield* checkMedia(actor, content);
+        yield* mediaFor(actor, content);
 
         return channels;
       }, withPorts);

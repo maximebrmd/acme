@@ -19,6 +19,7 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   GripVerticalIcon,
+  ImagesIcon,
 } from "lucide-react";
 import { useFormatter, useLocale, useTranslations } from "next-intl";
 import { useState } from "react";
@@ -113,8 +114,9 @@ interface PostChipProps {
   readonly workspaceId: string;
 }
 
-// A post on the calendar: a link to it in the composer, and a handle to drag
-// it to another time when it is still scheduled.
+// A post on the calendar: a link to it in the composer, a handle to drag it
+// to another time when it is still scheduled, and a mark when it shows
+// images or videos.
 const PostChip = ({
   movable,
   placed,
@@ -122,8 +124,10 @@ const PostChip = ({
   workspaceId,
 }: PostChipProps) => {
   const t = useTranslations("Posts");
+  const tMedia = useTranslations("PostMedia");
   const format = useFormatter();
   const [handle, setHandle] = useState<Element | null>(null);
+  const media = placed.post.content.media.length;
 
   const { isDragging, ref } = useDraggable({
     disabled: !movable,
@@ -171,6 +175,17 @@ const PostChip = ({
       >
         {t("Calendar.post", { text: shown, time })}
       </Link>
+      {media === 0 ? null : (
+        <span
+          title={tMedia("calendar", { count: media })}
+          className="text-muted-foreground shrink-0"
+        >
+          <ImagesIcon aria-hidden className="size-3" />
+          <span className="sr-only">
+            {tMedia("calendar", { count: media })}
+          </span>
+        </span>
+      )}
     </div>
   );
 };

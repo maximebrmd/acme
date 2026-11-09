@@ -19,14 +19,14 @@ import { Button } from "acme-ui/components/button";
 import { Skeleton } from "acme-ui/components/skeleton";
 import { DateTime, Option } from "effect";
 import { AsyncResult } from "effect/reactivity";
-import { FilmIcon, ImageIcon, Trash2Icon } from "lucide-react";
+import { Trash2Icon } from "lucide-react";
 import { useTranslations } from "next-intl";
-import Image from "next/image";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 
 import { deleteMedia, mediaKey, mediaPage } from "#media/atoms.ts";
 
+import { MediaThumbnail } from "./media-thumbnail.tsx";
 import { MediaUploader } from "./media-uploader.tsx";
 import { useFileSize } from "./use-file-size.ts";
 import { useHydrated } from "./use-hydrated.ts";
@@ -37,43 +37,6 @@ const badgeVariant = {
   rejected: "destructive",
   uploaded: "secondary",
 } as const satisfies Record<MediaStatus["_tag"], string>;
-
-// The file itself, shown small: images as they are, videos by their first
-// frame. Nothing is stored yet for pending media, nor any more for rejected.
-const Thumbnail = ({ media }: { readonly media: Media }) => {
-  const { url } = media;
-
-  if (url === null) {
-    const Icon = media.kind === "image" ? ImageIcon : FilmIcon;
-
-    return (
-      <div className="bg-muted flex size-full items-center justify-center">
-        <Icon aria-hidden className="text-muted-foreground size-8" />
-      </div>
-    );
-  }
-
-  return media.kind === "image" ? (
-    <Image
-      src={url}
-      alt={media.altText ?? ""}
-      fill
-      unoptimized
-      sizes="(min-width: 768px) 16rem, 50vw"
-      className="object-cover"
-    />
-  ) : (
-    <video
-      // Seeking a little in makes browsers fetch and show a first frame.
-      src={`${url}#t=0.1`}
-      muted
-      playsInline
-      preload="metadata"
-      aria-label={media.altText ?? undefined}
-      className="size-full object-cover"
-    />
-  );
-};
 
 // What the status means, when the badge alone does not say it.
 const StatusDetail = ({ status }: { readonly status: MediaStatus }) => {
@@ -195,7 +158,7 @@ const MediaCard = ({
   return (
     <li className="flex flex-col overflow-hidden rounded-lg border">
       <div className="relative aspect-square">
-        <Thumbnail media={media} />
+        <MediaThumbnail media={media} sizes="(min-width: 768px) 16rem, 50vw" />
       </div>
       <div className="flex flex-1 flex-col gap-2 p-3">
         <div className="flex items-center justify-between gap-2">

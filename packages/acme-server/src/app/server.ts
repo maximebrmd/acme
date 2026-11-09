@@ -64,9 +64,10 @@ const ChannelsWithNoticesLive = ChannelsLive.pipe(
   Layer.provideMerge(WorkspaceLive.pipe(Layer.provideMerge(NotificationsLive)))
 );
 
-// Publishing posts to the channels the channels context lists.
+// Publishing posts to the channels the channels context lists, with the
+// media the media context holds.
 const PublishingContextLive = PublishingLive.pipe(
-  Layer.provide(ChannelsWithNoticesLive)
+  Layer.provide(Layer.mergeAll(ChannelsWithNoticesLive, MediaLive))
 );
 
 // Publishing as AppLive runs it, for tests that write and read posts: the

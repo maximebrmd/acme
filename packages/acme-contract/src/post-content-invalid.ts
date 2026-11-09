@@ -1,11 +1,17 @@
 import { Schema } from "effect";
 
+import { MediaContentTypeSchema } from "./media.ts";
 import { PlatformSchema } from "./platform.ts";
 import { TextUnitSchema } from "./post-text.ts";
 
 const onChannel = { channelId: Schema.String, platform: PlatformSchema };
 
 const tooMany = { ...onChannel, count: Schema.Int, maximum: Schema.Int };
+
+// One of the post's images or videos, on one channel.
+const onMedia = { ...onChannel, mediaId: Schema.String };
+
+const sized = { ...onMedia, height: Schema.Int, width: Schema.Int };
 
 /**
  * Something about a post's content that keeps it from being saved or
@@ -31,6 +37,46 @@ export const ContentViolationSchema = Schema.Union([
   Schema.TaggedStruct("mediaRequired", onChannel),
   Schema.TaggedStruct("tooManyHashtags", tooMany),
   Schema.TaggedStruct("tooManyMentions", tooMany),
+  // More videos than the platform shows in one post.
+  Schema.TaggedStruct("tooManyVideos", tooMany),
+  // Images and videos together, which the platform never shows in one post.
+  Schema.TaggedStruct("mixedMedia", onChannel),
+  // The platform takes no file of this type.
+  Schema.TaggedStruct("mediaTypeUnsupported", {
+    ...onMedia,
+    contentType: MediaContentTypeSchema,
+  }),
+  // The file is larger than the platform takes, in bytes.
+  Schema.TaggedStruct("mediaTooLarge", {
+    ...onMedia,
+    byteSize: Schema.Int,
+    maximum: Schema.Int,
+  }),
+  // The video lasts longer than the platform takes, in milliseconds.
+  Schema.TaggedStruct("videoTooLong", {
+    ...onMedia,
+    durationMs: Schema.Int,
+    maximumMs: Schema.Int,
+  }),
+  Schema.TaggedStruct("videoTooShort", {
+    ...onMedia,
+    durationMs: Schema.Int,
+    minimumMs: Schema.Int,
+  }),
+  // Width times height is more than the platform takes.
+  Schema.TaggedStruct("tooManyPixels", { ...sized, maximum: Schema.Int }),
+  // Width over height is outside what the platform takes.
+  Schema.TaggedStruct("aspectRatioUnsupported", {
+    ...sized,
+    maximum: Schema.Number,
+    minimum: Schema.Number,
+  }),
+  // The alt text is longer than the platform keeps, in code points.
+  Schema.TaggedStruct("altTextTooLong", {
+    ...onMedia,
+    length: Schema.Int,
+    maximum: Schema.Int,
+  }),
 ]).annotate({ identifier: "ContentViolation" });
 
 export type ContentViolation = typeof ContentViolationSchema.Type;
@@ -41,7 +87,7 @@ export class PostContentInvalid extends Schema.TaggedError<PostContentInvalid>()
   { violations: Schema.Array(ContentViolationSchema) },
   {
     description:
-      "The post's content breaks the rules of its channels' platforms: `violations` says how, channel by channel.",
+      "The post's content breaks the rules of its channels' platforms: `violations` says how, channel by channel, and for its images and videos, media by media.",
     httpApiStatus: 422,
   }
 ) {}

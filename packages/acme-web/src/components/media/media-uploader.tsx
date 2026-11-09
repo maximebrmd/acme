@@ -2,6 +2,7 @@
 
 import { RegistryContext, useAtomSet, useAtomValue } from "@effect/atom-react";
 import { MediaContentTypeSchema } from "acme-contract";
+import type { Media } from "acme-contract";
 import { Button } from "acme-ui/components/button";
 import {
   Card,
@@ -20,6 +21,7 @@ import { useFormatter, useTranslations } from "next-intl";
 import {
   useContext,
   useEffect,
+  useEffectEvent,
   useId,
   useRef,
   useState,
@@ -201,22 +203,46 @@ const AltTextField = ({
 };
 
 // One file of the list: its progress, then how it ended, and what can be
-// done with it.
+// done with it. With `onUploaded`, the media it made is handed over once
+// uploaded, and its description is written where it goes.
 const UploadItem = ({
   entry,
   onCancel,
   onRemove,
   onRetry,
+  onUploaded,
   workspaceId,
 }: {
   readonly entry: Entry;
   readonly onCancel: (entry: Entry) => void;
   readonly onRemove: (entry: Entry) => void;
   readonly onRetry: (entry: Entry, altText: string) => void;
+  readonly onUploaded: ((entry: Entry, media: Media) => void) | undefined;
   readonly workspaceId: string;
 }) => {
   const t = useTranslations("Media.uploader");
   const format = useFormatter();
+  const registry = useContext(RegistryContext);
+
+  const handOver = useEffectEvent(
+    (result: AsyncResult.AsyncResult<Media, UploadFailed>) => {
+      if (AsyncResult.isSuccess(result) && !result.waiting) {
+        onUploaded?.(entry, result.value);
+      }
+    }
+  );
+
+  useEffect(
+    () =>
+      registry.subscribe(
+        upload(entry.id),
+        (result) => {
+          handOver(result);
+        },
+        { immediate: true }
+      ),
+    [registry, entry.id]
+  );
 
   const [description, setDescription] = useState<AltTextDraft>(emptyDraft);
 
@@ -299,7 +325,7 @@ const UploadItem = ({
           {errorMessage(outcome.failure)}
         </p>
       ) : null}
-      {outcome._tag === "canceled" ? null : (
+      {outcome._tag === "canceled" || onUploaded !== undefined ? null : (
         <AltTextField
           description={description}
           entryId={entry.id}
@@ -318,10 +344,21 @@ const UploadItem = ({
  * file goes at once, with its progress, a description to write meanwhile,
  * and a way to cancel it, try it again or take it off the list. Large
  * videos go in parts, several at once, each tried again on its own.
+ *
+ * With `onUploaded`, each file is handed over once uploaded, ready or not:
+ * it leaves the list, and is described where it goes, so the list shows
+ * no description field.
+ *
+ * `disabled` takes no new file, and lets the files on the list finish:
+ * only leaving the page cancels them.
  */
 export const MediaUploader = ({
+  disabled = false,
+  onUploaded,
   workspaceId,
 }: {
+  readonly disabled?: boolean;
+  readonly onUploaded?: (media: Media) => void;
   readonly workspaceId: string;
 }) => {
   const t = useTranslations("Media.uploader");
@@ -385,6 +422,11 @@ export const MediaUploader = ({
     setEntries(live.current);
   };
 
+  const handleUploaded = (entry: Entry, media: Media) => {
+    handleRemove(entry);
+    onUploaded?.(media);
+  };
+
   const handlePick = (event: ChangeEvent<HTMLInputElement>) => {
     add(event.target.files);
     // The same file can be picked again.
@@ -413,7 +455,7 @@ export const MediaUploader = ({
         <div className="flex flex-col gap-4">
           <div
             data-dragging={dragging}
-            className="border-input has-focus-visible:border-ring has-focus-visible:ring-ring data-[dragging=true]:border-ring data-[dragging=true]:bg-muted relative flex flex-col items-center gap-2 rounded-lg border border-dashed p-6 text-center has-focus-visible:ring-3"
+            className="border-input has-focus-visible:border-ring has-focus-visible:ring-ring data-[dragging=true]:border-ring data-[dragging=true]:bg-muted relative flex flex-col items-center gap-2 rounded-lg border border-dashed p-6 text-center has-focus-visible:ring-3 has-disabled:opacity-60"
           >
             <UploadIcon aria-hidden className="text-muted-foreground size-6" />
             <p className="text-sm">
@@ -426,9 +468,10 @@ export const MediaUploader = ({
               type="file"
               accept={accept}
               multiple
+              disabled={disabled}
               aria-label={t("choose")}
               aria-describedby={acceptedId}
-              className="absolute inset-0 cursor-pointer opacity-0"
+              className="absolute inset-0 cursor-pointer opacity-0 disabled:cursor-not-allowed"
               onChange={handlePick}
               onDragEnter={handleDragEnter}
               onDragLeave={handleDragEnd}
@@ -446,6 +489,9 @@ export const MediaUploader = ({
                     onCancel={handleCancel}
                     onRemove={handleRemove}
                     onRetry={start}
+                    onUploaded={
+                      onUploaded === undefined ? undefined : handleUploaded
+                    }
                   />
                 ))}
               </ul>

@@ -1,11 +1,13 @@
 import { Schema } from "effect";
 
+import type { MediaContentType } from "./media.ts";
 import type { Platform } from "./platform.ts";
 
-// The rules the API applies to a post's text before it schedules it, so
-// clients count as the server does: a composer shows how much room is left
-// on each platform. The server's rules (src/publishing/domain/text-length.ts
-// and platform-rules.ts) are the source; a test keeps the two equal.
+// The rules the API applies to a post's text and media before it schedules
+// it, so clients count as the server does: a composer shows how much room is
+// left on each platform, and which images or videos it would refuse. The
+// server's rules (src/publishing/domain/text-length.ts and platform-rules.ts)
+// are the source; a test keeps the two equal.
 
 /** The most text a post keeps, in UTF-16 code units. */
 export const maxPostTextLength = 65_536;
@@ -144,20 +146,111 @@ export interface TextLimit {
   readonly unit: TextUnit;
 }
 
-/** What a platform accepts in one post, as far as the API checks. */
+/** Width divided by height, both bounds included. */
+export interface AspectRatioRange {
+  readonly maximum: number;
+  readonly minimum: number;
+}
+
+/** What a platform takes of one file type. */
+export interface FormatLimits {
+  readonly aspectRatio?: AspectRatioRange;
+  readonly maxByteSize?: number;
+  readonly maxDurationMs?: number;
+  /** Width times height. */
+  readonly maxPixels?: number;
+  readonly minDurationMs?: number;
+}
+
+/** What a platform takes of a post's images and videos. */
+export interface MediaRules {
+  /** The file types it takes, each with its limits; it refuses the others. */
+  readonly formats: Readonly<Partial<Record<MediaContentType, FormatLimits>>>;
+  /** The longest alt text it keeps for one image or video, in code points. */
+  readonly maxAltTextLength?: number;
+  readonly maxVideos?: number;
+  /** One post can show images and videos together. */
+  readonly mixesKinds: boolean;
+  /** It shows the alt text of each image or video to people who need it. */
+  readonly showsAltText: boolean;
+}
+
+/**
+ * What a platform accepts in one post, as far as the API checks. A platform
+ * without `media` has no media rule the API knows.
+ */
 export interface PlatformRules {
   readonly maxHashtags?: number;
   readonly maxMedia?: number;
   readonly maxMentions?: number;
+  readonly media?: MediaRules;
   /** The platform publishes images and videos only, never text alone. */
   readonly mediaRequired: boolean;
   /** Every limit applies. */
   readonly textLimits: readonly TextLimit[];
 }
 
+const mebibyte = 1024 * 1024;
+
+const second = 1000;
+
+const minute = 60 * second;
+
+const blueskyImage: FormatLimits = { maxByteSize: 2_000_000 };
+
+const mastodonImage: FormatLimits = {
+  maxByteSize: 16 * mebibyte,
+  maxPixels: 33_177_600,
+};
+
+const mastodonVideo: FormatLimits = {
+  maxByteSize: 99 * mebibyte,
+  maxPixels: 8_294_400,
+};
+
+const linkedinImage: FormatLimits = { maxPixels: 36_152_320 };
+
+const xImage: FormatLimits = { maxByteSize: 5 * mebibyte };
+
+const xVideo: FormatLimits = {
+  maxByteSize: 512 * mebibyte,
+  maxDurationMs: 140 * second,
+  minDurationMs: 500,
+};
+
+const threadsImage: FormatLimits = {
+  aspectRatio: { maximum: 10, minimum: 0.1 },
+  maxByteSize: 8 * mebibyte,
+};
+
+const threadsVideo: FormatLimits = {
+  aspectRatio: { maximum: 10, minimum: 0.01 },
+  maxByteSize: 1024 * mebibyte,
+  maxDurationMs: 5 * minute,
+};
+
+const instagramVideo: FormatLimits = {
+  aspectRatio: { maximum: 10, minimum: 0.01 },
+  maxByteSize: 300 * mebibyte,
+  maxDurationMs: 15 * minute,
+  minDurationMs: 3 * second,
+};
+
 export const platformRules: Readonly<Record<Platform, PlatformRules>> = {
   bluesky: {
     maxMedia: 4,
+    media: {
+      formats: {
+        "image/gif": blueskyImage,
+        "image/jpeg": blueskyImage,
+        "image/png": blueskyImage,
+        "image/webp": blueskyImage,
+        "video/mp4": { maxByteSize: 300_000_000, maxDurationMs: 3 * minute },
+      },
+      maxVideos: 1,
+      mixesKinds: false,
+      showsAltText: true,
+    },
     mediaRequired: false,
     textLimits: [
       { maximum: 300, unit: "graphemes" },
@@ -169,28 +262,95 @@ export const platformRules: Readonly<Record<Platform, PlatformRules>> = {
     maxHashtags: 30,
     maxMedia: 20,
     maxMentions: 20,
+    media: {
+      formats: {
+        "image/jpeg": {
+          aspectRatio: { maximum: 1.91, minimum: 0.8 },
+          maxByteSize: 8 * mebibyte,
+        },
+        "video/mp4": instagramVideo,
+        "video/quicktime": instagramVideo,
+      },
+      mixesKinds: true,
+      showsAltText: false,
+    },
     mediaRequired: true,
     textLimits: [{ maximum: 2200, unit: "codePoints" }],
   },
   linkedin: {
     maxMedia: 20,
+    media: {
+      formats: {
+        "image/gif": linkedinImage,
+        "image/jpeg": linkedinImage,
+        "image/png": linkedinImage,
+        "video/mp4": {
+          maxByteSize: 500 * mebibyte,
+          maxDurationMs: 30 * minute,
+          minDurationMs: 3 * second,
+        },
+      },
+      maxAltTextLength: 4086,
+      maxVideos: 1,
+      mixesKinds: false,
+      showsAltText: true,
+    },
     mediaRequired: false,
     textLimits: [{ maximum: 3000, unit: "codePoints" }],
   },
   mastodon: {
     maxMedia: 4,
+    media: {
+      formats: {
+        "image/gif": mastodonImage,
+        "image/jpeg": mastodonImage,
+        "image/png": mastodonImage,
+        "image/webp": mastodonImage,
+        "video/mp4": mastodonVideo,
+        "video/quicktime": mastodonVideo,
+      },
+      maxAltTextLength: 1500,
+      maxVideos: 1,
+      mixesKinds: false,
+      showsAltText: true,
+    },
     mediaRequired: false,
     textLimits: [{ maximum: 500, unit: "codePoints" }],
   },
   pinterest: { mediaRequired: false, textLimits: [] },
   threads: {
     maxMedia: 20,
+    media: {
+      formats: {
+        "image/jpeg": threadsImage,
+        "image/png": threadsImage,
+        "video/mp4": threadsVideo,
+        "video/quicktime": threadsVideo,
+      },
+      maxAltTextLength: 1000,
+      mixesKinds: true,
+      showsAltText: true,
+    },
     mediaRequired: false,
     textLimits: [{ maximum: 500, unit: "codePoints" }],
   },
   tiktok: { mediaRequired: false, textLimits: [] },
   x: {
     maxMedia: 4,
+    media: {
+      formats: {
+        "image/gif": { maxByteSize: 15 * mebibyte },
+        "image/jpeg": xImage,
+        "image/png": xImage,
+        "image/webp": xImage,
+        "video/mp4": xVideo,
+        "video/quicktime": xVideo,
+      },
+      maxAltTextLength: 1000,
+      maxVideos: 1,
+      mixesKinds: false,
+      showsAltText: true,
+    },
     mediaRequired: false,
     textLimits: [{ maximum: 280, unit: "weighted" }],
   },
