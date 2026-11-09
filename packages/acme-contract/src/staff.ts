@@ -240,8 +240,9 @@ export const StaffSystemSchema = Schema.Struct({
 export type StaffSystem = typeof StaffSystemSchema.Type;
 
 /**
- * Something staff did, as the audit log keeps it. Ids are null once their
- * account was closed, and so is the reason given about it.
+ * Something staff did, as the audit log keeps it. The account acted on has
+ * a null id once it was closed, and so is the reason given about it; the
+ * staff member's id stays, as the server answers for what staff did.
  */
 export const StaffAuditEventSchema = Schema.Struct({
   action: StaffActionSchema,

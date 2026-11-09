@@ -5,6 +5,8 @@ import {
   IncorrectPassword,
   LastOwner,
   NoticeEventSchema,
+  StaffActionSchema,
+  TargetOptionsSchema,
   TooManyPasswordAttempts,
   Unauthenticated,
   WorkspaceBusy,
@@ -14,6 +16,7 @@ import type { AccountExport as AccountExportView } from "acme-contract";
 import { DateTime, Effect, Option, Redacted, Schema } from "effect";
 import { HttpApiBuilder, HttpApiSchema } from "effect/http-api";
 
+import type { PostRecord } from "#shared/application/personal-data.ts";
 import { AccountData } from "#workspace/application/account-data.ts";
 import type { AccountExport } from "#workspace/application/account-data.ts";
 import { CloseAccount } from "#workspace/application/close-account.ts";
@@ -23,6 +26,27 @@ import { currentUser } from "./connected-apps.ts";
 const forbidden = () => Effect.fail(new Forbidden());
 
 const decodeEvent = Schema.decodeUnknownEffect(NoticeEventSchema);
+
+const decodeOptions = Schema.decodeUnknownEffect(
+  Schema.NullOr(TargetOptionsSchema)
+);
+
+// A post with its targets' options as the contract describes them, decoded
+// from what publishing stored.
+const postOf = <P extends PostRecord>(post: P) =>
+  Effect.all(
+    post.targets.map((target) =>
+      decodeOptions(target.options).pipe(
+        Effect.orDie,
+        Effect.map((options) => ({ ...target, options }))
+      )
+    )
+  ).pipe(Effect.map((targets) => ({ ...post, targets })));
+
+const postsOf = <P extends PostRecord>(posts: readonly P[]) =>
+  Effect.all(posts.map(postOf));
+
+const decodeAction = Schema.decodeUnknownEffect(StaffActionSchema);
 
 const viewOf = Effect.fn("AccountExport.view")(function* viewOf(
   exported: AccountExport
@@ -38,8 +62,23 @@ const viewOf = Effect.fn("AccountExport.view")(function* viewOf(
     )
   );
 
+  const authoredPosts = yield* postsOf(exported.authoredPosts);
+
+  const staffActions = yield* Effect.all(
+    exported.staffActions.map((done) =>
+      decodeAction(done.action).pipe(
+        Effect.orDie,
+        Effect.map((action) => ({ ...done, action }))
+      )
+    )
+  );
+
+  const workspacePosts = yield* Effect.all(
+    exported.workspaces.map((workspace) => postsOf(workspace.posts))
+  );
+
   const view: AccountExportView = {
-    authoredPosts: exported.authoredPosts,
+    authoredPosts,
     connectedApps: exported.connectedApps,
     exportedAt: exported.exportedAt,
     invitations: {
@@ -51,8 +90,9 @@ const viewOf = Effect.fn("AccountExport.view")(function* viewOf(
     notificationPreferences: exported.preferences,
     sessions: account.sessions,
     signInMethods: account.signInMethods,
+    staffActions,
     user: account.user,
-    workspaces: exported.workspaces.map((workspace) => ({
+    workspaces: exported.workspaces.map((workspace, index) => ({
       analytics: workspace.analytics,
       apiKeys: workspace.apiKeys.map((apiKey) => ({
         createdAt: apiKey.createdAt,
@@ -69,7 +109,7 @@ const viewOf = Effect.fn("AccountExport.view")(function* viewOf(
       id: workspace.id,
       media: workspace.media,
       name: workspace.name,
-      posts: workspace.posts,
+      posts: workspacePosts[index] ?? [],
       slug: workspace.slug,
     })),
   };

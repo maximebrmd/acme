@@ -241,6 +241,7 @@ const exported = (exportedAt: DateTime.Utc): AccountExport => ({
   },
   sessions: [],
   signInMethods: [],
+  staffActions: [],
   user: {
     createdAt: at("2026-10-01T08:00:00Z"),
     email: "synthetic@example.test",

@@ -206,6 +206,7 @@ const PortsLive = Layer.mergeAll(
               },
               everyPost: false,
             },
+            staffActions: [],
           }),
         exportWorkspace: () =>
           Effect.succeed({

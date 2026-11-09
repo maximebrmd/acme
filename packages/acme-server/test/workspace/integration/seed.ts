@@ -67,6 +67,9 @@ export const seedChannel = Effect.fn("seedChannel")(function* seedChannel(
   );
 });
 
+/** A platform's options on a target, as the column stores them. */
+export type SeededOptions = Readonly<Record<string, boolean | string>>;
+
 /**
  * A post in `status`, with a target on the channel, by `authorId` if any,
  * and the target's `options` (a platform's, as JSON) when given.
@@ -77,7 +80,7 @@ export const seedPost = Effect.fn("seedPost")(function* seedPost(
   text: string,
   status: "draft" | "finished" | "publishing" = "draft",
   authorId: string | null = null,
-  options: object | null = null
+  options: SeededOptions | null = null
 ) {
   const sql = yield* SqlClient.SqlClient;
 

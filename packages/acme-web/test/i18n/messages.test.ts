@@ -49,9 +49,11 @@ describe("message catalogues", () => {
       const messages = new Map(entries(await loadMessages(locale)));
 
       const missing = (key: string, cases: readonly string[]) =>
-        cases
-          .filter((name) => !(messages.get(key) ?? "").includes(` ${name} {`))
-          .map((name) => `${key}: ${name}`);
+        cases.flatMap((name) =>
+          (messages.get(key) ?? "").includes(` ${name} {`)
+            ? []
+            : [`${key}: ${name}`]
+        );
 
       expect([
         ...missing("Notices.reason", FailureReasonSchema.literals),

@@ -1,7 +1,8 @@
-import { count, desc, eq } from "drizzle-orm";
+import { asc, count, desc, eq } from "drizzle-orm";
 import { DateTime, Effect, Layer, Option, Schema } from "effect";
 
 import { DatabaseError } from "#shared/application/database-error.ts";
+import type { StaffActionRecord } from "#shared/application/personal-data.ts";
 import type { UserId } from "#shared/domain/ids.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 import { AuditLog } from "#staff/application/ports/audit-log.ts";
@@ -108,18 +109,32 @@ export const DrizzleStaffRecords = Layer.effect(
     const db = yield* Drizzle;
 
     return StaffRecords.of({
+      exportUser: Effect.fn("StaffRecords.exportUser")(
+        function* exportUser(userId) {
+          const rows = yield* db
+            .select()
+            .from(auditEvents)
+            .where(eq(auditEvents.targetId, userId))
+            .orderBy(asc(auditEvents.at), asc(auditEvents.id))
+            .pipe(Effect.mapError(failed));
+
+          const events = yield* Effect.all(rows.map(eventOf));
+
+          return events.map((event): StaffActionRecord => ({
+            action: event.action,
+            at: event.at,
+            banExpiresAt: Option.getOrNull(event.banExpiresAt),
+            reason: Option.getOrNull(event.reason),
+          }));
+        }
+      ),
+      // What the user did as staff keeps their id: see the port.
       forgetUser: Effect.fn("StaffRecords.forgetUser")(
         function* forgetUser(userId) {
           yield* db
             .update(auditEvents)
             .set({ reason: null, targetId: null })
             .where(eq(auditEvents.targetId, userId))
-            .pipe(Effect.mapError(failed));
-
-          yield* db
-            .update(auditEvents)
-            .set({ staffId: null })
-            .where(eq(auditEvents.staffId, userId))
             .pipe(Effect.mapError(failed));
         }
       ),

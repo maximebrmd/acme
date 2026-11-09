@@ -67,6 +67,8 @@ const recordOf = Effect.fnUntraced(function* recordOf(
             {
               channelId: target.channelId,
               finishedAt: utcOrNull(target.finishedAt),
+              keptPrivate: target.keptPrivate,
+              options: target.options,
               permalink: target.permalink,
               status: target.status,
             },

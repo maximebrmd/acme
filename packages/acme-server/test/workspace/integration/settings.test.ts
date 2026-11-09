@@ -524,6 +524,7 @@ layer(Layer.mergeAll(IntegrationLive, StoreLive), {
     () =>
       Effect.gen(function* exportsData() {
         const app = yield* TestApp;
+        const sql = yield* SqlClient.SqlClient;
         const lee = yield* signedUp("lee", "fr");
         const kim = yield* signedUp("kim");
         const atelier = yield* workspaceOf(lee, "Atelier");
@@ -544,6 +545,35 @@ layer(Layer.mergeAll(IntegrationLive, StoreLive), {
           "A synthetic post of Atelier.",
           "finished"
         );
+
+        // A video Atelier sent to YouTube with its options, which YouTube
+        // kept private.
+        const videos = yield* seedChannel(atelier, "Atelier videos", {
+          platform: "youtube",
+        });
+
+        const options = {
+          madeForKids: false,
+          platform: "youtube",
+          privacy: "public",
+          title: "A synthetic video title of Atelier",
+        };
+
+        const videoPost = yield* seedPost(
+          atelier,
+          videos,
+          "A synthetic video of Atelier.",
+          "finished",
+          null,
+          options
+        );
+
+        yield* sql`UPDATE publishing.post_targets SET kept_private = true WHERE post_id = ${videoPost}`;
+
+        // What staff did to Lee's account, and what they did to another.
+        yield* sql`INSERT INTO staff.audit_events (id, action, at, reason, staff_id, target_id)
+          VALUES (uuidv7(), 'resendVerification', '2026-11-08T10:00:00Z', 'Synthetic: asked for it again', ${kim.id}, ${lee.id}),
+            (uuidv7(), 'ban', '2026-11-08T11:00:00Z', 'Synthetic reason about someone else', ${kim.id}, ${kim.id})`;
 
         yield* seedTrackedPost(atelier, channelId, atelierPost);
         yield* uploadedFile(lee, atelier);
@@ -624,16 +654,57 @@ layer(Layer.mergeAll(IntegrationLive, StoreLive), {
         const [own] = exported.workspaces;
 
         assert.deepStrictEqual(
-          own?.channels.map(({ handle }) => handle),
-          ["@atelier@social.example"]
+          own?.channels.map(({ handle }) => handle).toSorted(),
+          ["@atelier@social.example", "Atelier videos"]
         );
         assert.deepStrictEqual(
-          own?.posts.map(({ targets, text: postText }) => ({
-            channels: targets.map((target) => target.channelId),
-            text: postText,
-          })),
-          [{ channels: [channelId], text: "A synthetic post of Atelier." }]
+          own?.posts
+            .map(({ targets, text: postText }) => ({
+              targets: targets.map((target) => ({
+                channelId: target.channelId,
+                keptPrivate: target.keptPrivate,
+                options: target.options,
+              })),
+              text: postText,
+            }))
+            .toSorted((a, b) => a.text.localeCompare(b.text)),
+          [
+            {
+              targets: [{ channelId, keptPrivate: false, options: null }],
+              text: "A synthetic post of Atelier.",
+            },
+            {
+              targets: [
+                {
+                  channelId: videos,
+                  keptPrivate: true,
+                  options: {
+                    madeForKids: false,
+                    platform: "youtube",
+                    privacy: "public",
+                    title: "A synthetic video title of Atelier",
+                  },
+                },
+              ],
+              text: "A synthetic video of Atelier.",
+            },
+          ]
         );
+        // What staff did to Lee, without who did it; not what they did to
+        // others.
+        assert.deepStrictEqual(
+          exported.staffActions.map(({ action, reason }) => ({
+            action,
+            reason,
+          })),
+          [
+            {
+              action: "resendVerification",
+              reason: "Synthetic: asked for it again",
+            },
+          ]
+        );
+        assert.notInclude(text, "Synthetic reason about someone else");
         assert.deepStrictEqual(
           own?.media.map(({ contentType, status }) => ({
             contentType,

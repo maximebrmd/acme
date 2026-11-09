@@ -73,7 +73,13 @@ export const ContextRecordsLive = Layer.effect(
       ),
       exportAuthoredPosts: (userId, workspaceIds) =>
         posts.exportAuthored(userId, workspaceIds),
-      exportUser: (userId) => notices.exportUser(userId),
+      exportUser: (userId) =>
+        Effect.all({
+          staffActions: staff.exportUser(userId),
+          user: notices.exportUser(userId),
+        }).pipe(
+          Effect.map(({ staffActions, user }) => ({ ...user, staffActions }))
+        ),
       exportWorkspace: (workspaceId) =>
         Effect.all({
           analytics: analytics.exportWorkspace(workspaceId),

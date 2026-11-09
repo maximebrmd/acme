@@ -11,6 +11,7 @@ import type {
   NoticeRecord,
   PostRecord,
   PreferencesRecord,
+  StaffActionRecord,
   UsageRecord,
 } from "#shared/application/personal-data.ts";
 import type { UserId, WorkspaceId } from "#shared/domain/ids.ts";
@@ -34,12 +35,14 @@ export interface WorkspaceContent {
 export interface UserContent {
   readonly notices: readonly NoticeRecord[];
   readonly preferences: PreferencesRecord;
+  /** What staff did to their account, from the audit log. */
+  readonly staffActions: readonly StaffActionRecord[];
 }
 
 /**
  * The data the other contexts keep about workspaces and users: channels,
  * posts and their authors, media, analytics, assistant usage, billing,
- * notices and preferences. Erasures run in the caller's transaction, except the media
+ * notices and preferences, and the staff audit log. Erasures run in the caller's transaction, except the media
  * files, which the store holds outside the database: remove them once the
  * rest is committed.
  */
@@ -72,7 +75,8 @@ export class ContextRecords extends Context.Service<
     /**
      * Deletes the user's notices and preferences, and the connections they
      * have in progress, and forgets them as the author of posts in the
-     * workspaces that remain, and in the staff audit log.
+     * workspaces that remain, and as the account staff acted on in the
+     * audit log.
      */
     readonly eraseUser: (userId: UserId) => Effect.Effect<void, DatabaseError>;
     readonly removeWorkspaceFiles: (

@@ -145,10 +145,10 @@ const userRows = {
     sql`SELECT count(*)::int AS count FROM notifications.notification_preferences WHERE user_id = ${id}`,
   "publishing.posts": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM publishing.posts WHERE author_id = ${id}`,
-  // What staff did to them, or did as staff: the events stay, without them
-  // and without the reason given about them.
+  // What staff did to them: the events stay, without them and without the
+  // reason given about them. What they did as staff keeps their id (below).
   "staff.audit_events": (sql, id) =>
-    sql`SELECT count(*)::int AS count FROM staff.audit_events WHERE target_id = ${id} OR staff_id = ${id}`,
+    sql`SELECT count(*)::int AS count FROM staff.audit_events WHERE target_id = ${id}`,
 } satisfies Readonly<Record<string, Count>>;
 
 // Tables that name neither a workspace nor a user, and why they stay.
@@ -439,6 +439,14 @@ layer(IntegrationLive, {
         );
 
         assert.strictEqual(reasons, 0);
+
+        // What she did as staff keeps her id: the server answers for what
+        // staff did to other people's accounts, a legitimate interest.
+        const actedAsStaff = yield* count(
+          sql`SELECT count(*)::int AS count FROM staff.audit_events WHERE staff_id = ${ana.id}`
+        );
+
+        assert.strictEqual(actedAsStaff, 1);
 
         // A staff member closing theirs ends the sessions they act as
         // others in.

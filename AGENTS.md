@@ -380,12 +380,21 @@ and no socket, for tests.
   (`ChannelRecords.eraseUser`), and the sessions they opened as staff to act
   as someone else. The channels they connected, with the Facebook user a
   Page's token rests on (`granted_by`), stay with their workspaces, which
-  erasing deletes. `data_deletions` names nobody, and stays.
+  erasing deletes. `data_deletions` names nobody, and stays. In the staff
+  audit log (`StaffRecords.forgetUser`), the events about the account lose
+  its id and the reason given; the events its user made as staff keep
+  their id, a legitimate interest: the operator answers for what staff did
+  to other people's accounts. YouTube's upload journal goes with its
+  publication calls, and `publishing.quota_usage`, the server's daily
+  units, names nobody.
 - `AccountData` exports what is tied to the user, the posts they wrote in
   the workspaces they share (`exportAuthored`), and the content of the
   workspaces where they are the only member, with their analytics and
   billing state (plan and subscription statuses, never a card or Stripe's
-  ids): those `CloseAccount` deletes. Sessions staff opened to impersonate
+  ids): those `CloseAccount` deletes. Posts come with each target's
+  platform options and whether YouTube kept the video private, and the
+  export lists what staff did to the account (action, time, reason),
+  without who did it. Sessions staff opened to impersonate
   the user are left out, as Better Auth's own list leaves them out: their
   browser and address are staff's. Closing an account is refused while its
   user alone owns a workspace others use (`planClosure`), and its

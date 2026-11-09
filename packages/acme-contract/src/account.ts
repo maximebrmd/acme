@@ -15,6 +15,8 @@ import { IncorrectPassword } from "./incorrect-password.ts";
 import { LastOwner } from "./last-owner.ts";
 import { NoticeEventSchema } from "./notices.ts";
 import { NotificationPreferencesSchema } from "./notification-preferences.ts";
+import { StaffActionSchema } from "./staff.ts";
+import { TargetOptionsSchema } from "./target-options.ts";
 import { TooManyPasswordAttempts } from "./too-many-password-attempts.ts";
 import { WorkspaceBusy } from "./workspace-busy.ts";
 import { WorkspaceSubscribed } from "./workspace-subscribed.ts";
@@ -97,6 +99,10 @@ const ExportedPostSchema = Schema.Struct({
     Schema.Struct({
       channelId: Schema.String,
       finishedAt: nullable(instant),
+      // The platform kept the video private although it was asked otherwise.
+      keptPrivate: Schema.Boolean,
+      // What the post set on that channel's platform, null when nothing.
+      options: nullable(TargetOptionsSchema),
       permalink: nullable(Schema.String),
       status: Schema.String,
     })
@@ -106,6 +112,16 @@ const ExportedPostSchema = Schema.Struct({
     Schema.Struct({ channelId: Schema.String, text: Schema.String })
   ),
   timeZone: nullable(Schema.String),
+});
+
+// Something staff did to the account, from the audit log: who did it is
+// left out, as it is staff's.
+const ExportedStaffActionSchema = Schema.Struct({
+  action: StaffActionSchema,
+  at: instant,
+  // When a ban was to end; null for any other action, or a ban for good.
+  banExpiresAt: nullable(instant),
+  reason: nullable(Schema.String),
 });
 
 const ExportedMediaSchema = Schema.Struct({
@@ -184,7 +200,7 @@ const ExportedWorkspaceSchema = Schema.Struct({
 /**
  * Everything Acme keeps about the user: their account, how they sign in,
  * their sessions, workspaces, invitations, connected applications, notices
- * and preferences, the posts they wrote in the workspaces they share, and
+ * and preferences, what staff did to their account, the posts they wrote in the workspaces they share, and
  * the content of the workspaces where they are the only member, which
  * belongs to them alone. The rest of the content of workspaces they share
  * belongs to the team, and is not part of it.
@@ -205,6 +221,8 @@ export const AccountExportSchema = Schema.Struct({
   notificationPreferences: NotificationPreferencesSchema,
   sessions: Schema.Array(ExportedSessionSchema),
   signInMethods: Schema.Array(ExportedSignInMethodSchema),
+  // What staff did to the account, oldest first.
+  staffActions: Schema.Array(ExportedStaffActionSchema),
   user: ExportedUserSchema,
   // The workspaces where the user is the only member, with their content.
   workspaces: Schema.Array(ExportedWorkspaceSchema),

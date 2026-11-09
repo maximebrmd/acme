@@ -113,8 +113,8 @@ const StaffedLive = Layer.effect(
       { madeForKids: false, platform: "youtube", title: secretTitle }
     );
 
-    const failedOn = (postId: string, reason: string) =>
-      sql`UPDATE publishing.post_targets SET status = 'failed', failure_reason = ${reason}, failure_code = ${reason}, finished_at = now() WHERE post_id = ${postId} RETURNING id`.pipe(
+    const failedOn = (failedPost: string, reason: string) =>
+      sql`UPDATE publishing.post_targets SET status = 'failed', failure_reason = ${reason}, failure_code = ${reason}, finished_at = now() WHERE post_id = ${failedPost} RETURNING id`.pipe(
         Effect.flatMap(Schema.decodeUnknownEffect(IdsSchema)),
         Effect.map(([row]) => row?.id ?? ""),
         Effect.orDie
@@ -446,7 +446,9 @@ layer(StaffedLive, { excludeTestServices: true, timeout: "180 seconds" })(
               status,
               targetId,
             }))
-            .toSorted((a, b) => a.targetId.localeCompare(b.targetId)),
+            .toSorted((a, b) =>
+              (a.platform ?? "").localeCompare(b.platform ?? "")
+            ),
           [
             {
               code: "synthetic_code",
@@ -469,7 +471,7 @@ layer(StaffedLive, { excludeTestServices: true, timeout: "180 seconds" })(
               status: "failed",
               targetId: fixture.youtubeTargetId,
             },
-          ].toSorted((a, b) => a.targetId.localeCompare(b.targetId))
+          ]
         );
         // Billing is off in tests: no plan, no limit.
         assert.deepStrictEqual(workspace.billing, {

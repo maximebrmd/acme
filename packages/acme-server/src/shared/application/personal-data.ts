@@ -28,6 +28,10 @@ export interface PostRecord {
   readonly targets: readonly {
     readonly channelId: string;
     readonly finishedAt: DateTime.Utc | null;
+    /** The platform kept the video private although it was asked otherwise. */
+    readonly keptPrivate: boolean;
+    /** What the post set on that channel's platform, as stored: plain JSON. */
+    readonly options: unknown;
     readonly permalink: string | null;
     readonly status: string;
   }[];
@@ -162,4 +166,16 @@ export interface PreferencesRecord {
     readonly postUnconfirmed: boolean;
   };
   readonly everyPost: boolean;
+}
+
+/**
+ * Something staff did to a user's account, as the audit log keeps it: the
+ * action, when, the ban's end and the reason given. Who did it is staff's,
+ * and stays out.
+ */
+export interface StaffActionRecord {
+  readonly action: string;
+  readonly at: DateTime.Utc;
+  readonly banExpiresAt: DateTime.Utc | null;
+  readonly reason: string | null;
 }

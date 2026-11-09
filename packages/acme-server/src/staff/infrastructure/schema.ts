@@ -10,9 +10,10 @@ const instant = (name: string) => timestamp(name, { withTimezone: true });
  * The audit log: what staff did, recorded before it was carried out. Ids
  * only (Better Auth's user ids, without foreign keys, so an entry outlives
  * its accounts), the action, the reason staff gave and when; never what
- * anyone wrote. Closing an account sets its ids to null, and the reason of
- * the events about it (StaffRecords). `action` is a StaffAction: add values,
- * never rename one.
+ * anyone wrote. Closing an account sets the target id of the events about
+ * it to null, with their reason; the events its user made as staff keep
+ * their id (StaffRecords). `action` is a StaffAction: add values, never
+ * rename one.
  */
 export const auditEvents = staffSchema.table(
   "audit_events",
