@@ -4,16 +4,16 @@
 //
 //   bun nx run acme-server:media-cors
 //
-// Without settings it targets the development stack's SeaweedFS
-// (packages/acme-docker/compose.yaml), with the web app's development origin,
-// http://localhost:3001. The server's variables point it elsewhere:
-// ACME_S3_* for the bucket (see src/media/infrastructure/s3-media-storage.ts),
-// PUBLIC_URL and TRUSTED_ORIGINS for the origins the web app runs at.
+// It reads the server's variables: ACME_S3_* for the bucket (see
+// src/media/infrastructure/s3-media-storage.ts), PUBLIC_URL and
+// TRUSTED_ORIGINS for the origins the web app runs at. Without them it
+// targets the development stack's SeaweedFS and the web app's development
+// origin, http://localhost:3001.
 //
 // It only changes the bucket's CORS configuration, never its objects, and
 // keeps the rules it did not write. Running it again changes nothing.
 import { BunRuntime } from "@effect/platform-bun";
-import { Config, ConfigProvider, Console, Effect, Schema } from "effect";
+import { Config, Console, Effect, Schema } from "effect";
 
 import {
   applyUploadRule,
@@ -21,17 +21,6 @@ import {
   uploadRule,
 } from "#media/infrastructure/bucket-cors.ts";
 import { S3StorageConfig } from "#media/infrastructure/s3-media-storage.ts";
-
-// The development stack's defaults, under whatever the environment sets.
-const developmentStack = ConfigProvider.layerAdd(
-  ConfigProvider.fromUnknown({
-    ACME_S3_ACCESS_KEY_ID: "acme",
-    ACME_S3_BUCKET: "acme-media",
-    ACME_S3_ENDPOINT: "http://127.0.0.1:18333",
-    ACME_S3_FORCE_PATH_STYLE: "true",
-    ACME_S3_SECRET_ACCESS_KEY: "acme-development-secret",
-  })
-);
 
 const OriginsConfig = Config.all({
   publicUrl: Config.URL("PUBLIC_URL").pipe(
@@ -76,6 +65,4 @@ const program = Effect.gen(function* mediaCors() {
   );
 });
 
-BunRuntime.runMain(
-  program.pipe(Effect.scoped, Effect.provide(developmentStack))
-);
+BunRuntime.runMain(program.pipe(Effect.scoped));

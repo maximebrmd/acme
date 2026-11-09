@@ -41,8 +41,8 @@ export const RoutesLive = Layer.mergeAll(ApiLive, AuthRoutesLive);
 // The services the routes need, each built after the ones below it: the
 // database pool, the migrations, then the contexts. Better Auth checks its
 // tables against the database, so it starts once they are migrated. The
-// media store's settings are read here, so a server without them does not
-// start (see src/media/infrastructure/s3-media-storage.ts).
+// media store's settings are read here: in production, a server without
+// them does not start (see src/media/infrastructure/s3-media-storage.ts).
 const ServicesLive = Layer.mergeAll(
   WorkspaceLive,
   ChannelsLive,
