@@ -26,6 +26,7 @@ const preferencesOf = (row: Row) =>
       postPublished: row.emailPostPublished,
       postUnconfirmed: row.emailPostUnconfirmed,
     },
+    everyPost: row.everyPost,
   });
 
 /** Preferences in the notifications schema, one row per user who chose. */
@@ -38,8 +39,8 @@ export const DrizzlePreferenceStore = Layer.effect(
       change: Effect.fn("PreferenceStore.change")(
         function* change(userId, requested, at) {
           const updatedAt = DateTime.toDateUtc(at);
-          const first = changePreferences(defaultPreferences, requested).email;
-          const { email } = requested;
+          const first = changePreferences(defaultPreferences, requested);
+          const email = requested.email ?? {};
 
           // Only the columns asked for change, in one statement, so changes
           // made at once never undo each other.
@@ -63,13 +64,18 @@ export const DrizzlePreferenceStore = Layer.effect(
             set.emailPostUnconfirmed = email.postUnconfirmed;
           }
 
+          if (requested.everyPost !== undefined) {
+            set.everyPost = requested.everyPost;
+          }
+
           const [row] = yield* db
             .insert(notificationPreferences)
             .values({
-              emailChannelReconnect: first.channelReconnect,
-              emailPostFailed: first.postFailed,
-              emailPostPublished: first.postPublished,
-              emailPostUnconfirmed: first.postUnconfirmed,
+              emailChannelReconnect: first.email.channelReconnect,
+              emailPostFailed: first.email.postFailed,
+              emailPostPublished: first.email.postPublished,
+              emailPostUnconfirmed: first.email.postUnconfirmed,
+              everyPost: first.everyPost,
               updatedAt,
               userId,
             })

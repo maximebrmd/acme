@@ -1,6 +1,6 @@
 ---
 title: Programmer des publications
-description: Rédigez une publication, donnez-lui un texte propre sur certains canaux, demandez de l’aide à l’assistant de rédaction, programmez-la dans votre fuseau horaire, et déplacez-la ou annulez-la depuis l’éditeur ou le calendrier.
+description: Rédigez une publication, donnez-lui un texte propre sur certains canaux, demandez de l’aide à l’assistant de rédaction, programmez-la dans votre fuseau horaire, déplacez-la, repassez-la en brouillon ou annulez-la, et suivez comment elle s’est passée sur chaque canal.
 sidebar:
   order: 3
 ---
@@ -9,15 +9,15 @@ Une publication a un texte, que chacun de ses canaux peut remplacer par le sien,
 
 ## Qui peut faire quoi [#roles]
 
-| Rôle           | Publications                                           |
-| -------------- | ------------------------------------------------------ |
-| Propriétaire   | Rédiger, programmer, déplacer et annuler               |
-| Administrateur | Rédiger, programmer, déplacer et annuler               |
-| Éditeur        | Rédiger, programmer, déplacer et annuler               |
-| Contributeur   | Rédiger et enregistrer des brouillons ; pas programmer |
-| Lecteur        | Lire                                                   |
+| Rôle           | Publications                                                                   |
+| -------------- | ------------------------------------------------------------------------------ |
+| Propriétaire   | Rédiger, programmer, déplacer, annuler, republier et supprimer tout brouillon  |
+| Administrateur | Rédiger, programmer, déplacer, annuler, republier et supprimer tout brouillon  |
+| Éditeur        | Rédiger, programmer, déplacer, annuler, republier et supprimer tout brouillon  |
+| Contributeur   | Rédiger et enregistrer des brouillons, et supprimer les siens ; pas programmer |
+| Lecteur        | Lire                                                                           |
 
-Annuler une publication, brouillon compris, demande le même droit que la programmer. Tous les rôles sauf Lecteur peuvent aussi demander de l’aide à l’[assistant de rédaction](#assistant).
+Annuler une publication, brouillon compris, la repasser en brouillon, la republier et indiquer si elle est partie demandent le même droit que la programmer. L’auteur d’une publication est le membre qui l’a créée. Tous les rôles sauf Lecteur peuvent aussi demander de l’aide à l’[assistant de rédaction](#assistant).
 
 ## Rédiger une publication [#write]
 
@@ -27,7 +27,7 @@ Sur la carte d’un espace de travail, dans **Espaces de travail**, choisissez *
 2. Écrivez dans **Texte pour tous les canaux**. Les mentions, les hashtags et les liens ressortent pendant la saisie, et sont gardés en texte brut.
 3. Pour dire autre chose sur un canal, ouvrez son onglet et écrivez-y son propre texte. Laissé vide, un canal reprend le texte de tous les canaux.
 4. Sous **Images et vidéos**, ajoutez des images ou des vidéos de la médiathèque, ou importez-les là : voyez [Images et vidéos](/media).
-5. Choisissez **Enregistrer le brouillon** pour garder la publication sans heure. L’adresse de l’éditeur nomme alors la publication : gardez-la pour revenir au brouillon, que le calendrier n’affiche pas.
+5. Choisissez **Enregistrer le brouillon** pour garder la publication sans heure. Elle rejoint les **Brouillons** de l’espace de travail, que le calendrier n’affiche pas.
 
 Sous **Longueur sur chaque canal**, chaque canal où part la publication montre la place que laisse sa plateforme, et ce qu’elle refuserait d’autre, images et vidéos comprises. Les plateformes ne comptent pas de la même façon : un même texte peut tenir sur l’une et pas sur l’autre.
 
@@ -53,12 +53,19 @@ L’heure est celle de l’horloge dans ce fuseau, changements d’heure compris
 
 Une heure passée depuis moins d’une minute compte comme maintenant. Une heure plus ancienne est refusée : choisissez une heure à venir.
 
-## La déplacer ou l’annuler [#move-cancel]
+## Brouillons [#drafts]
+
+Sur la carte d’un espace de travail, **Brouillons** liste les publications qui n’ont pas encore d’heure, les plus récentes d’abord, 20 à la fois : chacune montre le début de son texte, ses canaux et ses médias, et s’ouvre dans l’éditeur.
+
+Pour abandonner un brouillon, choisissez **Supprimer le brouillon** dans l’éditeur et confirmez. Il est supprimé, et ses images et vidéos restent dans la médiathèque. Les propriétaires, administrateurs et éditeurs suppriment tout brouillon ; un contributeur supprime ceux qu’il a écrits.
+
+## La déplacer, la repasser en brouillon ou l’annuler [#move-cancel]
 
 Une fois une publication programmée, son texte est verrouillé ; son heure ne l’est pas.
 
 - Dans l’éditeur, changez la date, l’heure ou le fuseau, puis choisissez **Déplacer à cette heure**.
 - Sur le calendrier, faites glisser la publication par sa poignée vers une autre heure ou un autre jour. Elle garde le fuseau horaire où elle a été programmée.
+- Pour changer ce qu’elle dit, choisissez **Repasser en brouillon**. Elle quitte le calendrier et ne part plus à aucune heure : modifiez-la, puis **Programmez**-la à nouveau, ce qui la revérifie auprès de ses canaux.
 - Pour l’arrêter, choisissez **Annuler la publication** dans l’éditeur et confirmez. Elle ne part sur aucun canal, et ne peut plus être programmée.
 
 Déplacer une publication ne revérifie ni son texte ni ses médias auprès de ses canaux.
@@ -93,7 +100,14 @@ Sur la carte d’un espace de travail, choisissez **Calendrier**. Il montre les 
 | À vérifier   | Acme ne peut pas savoir si la plateforme l’a publiée. Vérifiez sur la plateforme avant de republier.                          |
 | Annulé       | La publication a été annulée avant de partir sur ce canal.                                                                    |
 
-La publication dans son ensemble indique alors **Publié**, **Publié en partie**, **À vérifier**, **Échec** ou **Annulé**. Les membres qui peuvent programmer des publications apprennent comment elle s’est passée sur chaque canal : voyez [Notifications](/notifications).
+La publication dans son ensemble indique alors **Publié**, **Publié en partie**, **À vérifier**, **Échec** ou **Annulé**. Son auteur, et les membres qui ont choisi d’être prévenus pour toutes les publications, apprennent comment elle s’est passée sur chaque canal : voyez [Notifications](/notifications).
+
+## Suivre une publication [#follow-up]
+
+Ouvrez une publication partie, depuis le calendrier ou une notification : sa page montre son texte et, pour chaque canal, son état, pourquoi elle a échoué ou est à vérifier, l’adresse de la publication sur la plateforme, et chaque tentative d’Acme, avec l’heure du nouvel essai. Pendant l’envoi, la page se met à jour d’elle-même. Les membres qui peuvent programmer des publications peuvent alors :
+
+- **Republier** sur un canal où elle a échoué ou est à vérifier : Acme l’envoie maintenant, en un nouvel envoi avec ses propres tentatives, et la publication indique **En cours de publication** jusqu’à son départ. Quand elle est à vérifier, regardez d’abord sur la plateforme, car elle est peut-être déjà en ligne ;
+- **Indiquer ce que vous avez trouvé** sur un canal à vérifier : **Elle est en ligne**, avec l’adresse de la publication si vous l’avez, ou **Elle n’y est pas**, qui la fait échouer sur ce canal pour qu’elle puisse être republiée. Les deux réponses la retirent des publications à vérifier, et marquent ses notifications comme lues.
 
 Quand une plateforme ne répond pas à la requête qui publie, Acme ne redemande que de façons qui ne peuvent pas publier deux fois : il relit la publication sur Bluesky, et la renvoie à Mastodon sous la même clé, ce à quoi Mastodon répond avec la publication qu’il a déjà faite. Il essaie trois fois, sur environ deux minutes et demie. Si le serveur s’arrête au milieu d’une publication, il vérifie de la même façon à son redémarrage. Ce n’est que si rien de cela ne tranche que la publication indique **À vérifier** : Acme ne la republie jamais de lui-même.
 

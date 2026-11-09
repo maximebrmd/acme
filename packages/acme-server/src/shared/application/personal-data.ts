@@ -103,7 +103,10 @@ export interface NoticeRecord {
   readonly workspaceId: string;
 }
 
-/** Which notices a user also receives by email. */
+/**
+ * Which notices a user also receives by email, and whether they hear about
+ * every post of their workspaces or only their own.
+ */
 export interface PreferencesRecord {
   readonly email: {
     readonly channelReconnect: boolean;
@@ -111,4 +114,5 @@ export interface PreferencesRecord {
     readonly postPublished: boolean;
     readonly postUnconfirmed: boolean;
   };
+  readonly everyPost: boolean;
 }

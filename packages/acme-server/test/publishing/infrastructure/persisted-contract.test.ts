@@ -28,9 +28,11 @@ import { RateLimited } from "#shared/domain/rate-limited.ts";
 import {
   callsOn,
   eventually,
+  executionOf,
   isFinished,
   isSuspended,
   isTargetWaiting,
+  jobResult,
   newChannel,
   onServerAt,
   scheduleIn,
@@ -283,6 +285,14 @@ describe("the persisted contract", () => {
           yield* eventually("the job waits", isTargetWaiting(target.id));
           yield* TestClock.adjust(Duration.minutes(1));
           yield* eventually("the post finishes", isFinished(post.id));
+
+          // Its last target finished the post: the job ends after.
+          const job = yield* executionOf(post.id);
+
+          yield* eventually(
+            "the job ends",
+            jobResult(job).pipe(Effect.map(Option.isSome))
+          );
 
           const driver = yield* MessageStorage.MemoryDriver;
           const decoded: string[] = [];

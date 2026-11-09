@@ -22,9 +22,6 @@ import {
   unreadNotices,
 } from "#notices/atoms.ts";
 import { useNoticeText } from "#notices/notice-text.ts";
-import { browserTimeZone } from "#posts/zoned-time.ts";
-
-import { InTimeZone } from "./in-time-zone.tsx";
 
 /** One notice: what happened, when, and where to act on it. */
 export const NoticeItem = ({
@@ -239,16 +236,12 @@ export const NoticeList = ({
         {hydrated ? <MarkAllRead /> : null}
       </div>
       {hydrated ? (
-        // When each notice arrived, and when a channel's authorization ends,
-        // in the reader's own zone.
-        <InTimeZone timeZone={browserTimeZone()}>
-          <NoticePages
-            cursor={Option.none()}
-            more={more}
-            workspaces={names}
-            onMore={handleMore}
-          />
-        </InTimeZone>
+        <NoticePages
+          cursor={Option.none()}
+          more={more}
+          workspaces={names}
+          onMore={handleMore}
+        />
       ) : (
         <LoadingList />
       )}

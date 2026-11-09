@@ -293,7 +293,8 @@ describe("the cluster on Postgres", () => {
               createDraft(
                 postId,
                 yield* newId(WorkspaceIdSchema),
-                syntheticContent
+                syntheticContent,
+                Option.none()
               ),
               new Schedule({
                 at,

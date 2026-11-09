@@ -27,8 +27,8 @@ export interface PublishingToken extends PublishingAccount {
 /**
  * Why no token could be had. Each means nothing was sent: the channel needs
  * reconnecting (`TokenExpired`), it was disconnected or turned off
- * (`BadRequest`), or the token could not be renewed for now
- * (`PlatformUnavailable`).
+ * (`BadRequest` with a code of `#publishing/domain/own-refusals.ts`), or the
+ * token could not be renewed for now (`PlatformUnavailable`).
  */
 export type CredentialFailure = BadRequest | PlatformUnavailable | TokenExpired;
 

@@ -4,7 +4,10 @@ import os from "node:os";
 import path from "node:path";
 
 import { ConfigProvider, Effect, Layer, Option } from "effect";
+import { MessageStorage, ShardingConfig } from "effect/cluster";
 
+import { MediaLive } from "#media/container.ts";
+import { MediaInPostsLive } from "#publishing/container.ts";
 import { Actor } from "#shared/domain/access.ts";
 import type { Permission } from "#shared/domain/access.ts";
 import { UserIdSchema } from "#shared/domain/ids.ts";
@@ -12,6 +15,7 @@ import type { WorkspaceId } from "#shared/domain/ids.ts";
 import { DatabaseLive } from "#shared/infrastructure/database.ts";
 import { MigrationsLive } from "#shared/infrastructure/migrations.ts";
 import { IdsLive } from "#shared/infrastructure/secure-random-ids.ts";
+import { TransactionRunnerLive } from "#shared/infrastructure/transaction-runner-live.ts";
 
 // The development stack's SeaweedFS (packages/acme-docker/compose.yaml),
 // which CI starts too. The environment wins over these defaults, so another
@@ -35,6 +39,20 @@ export const storageSettings = ConfigProvider.layerAdd(
 export const DatabaseTest = Layer.mergeAll(MigrationsLive, IdsLive).pipe(
   Layer.provideMerge(DatabaseLive)
 );
+
+/**
+ * Which posts show media, as the publishing context tells, on the database
+ * the test gives, in transactions of its own: no job starts in them.
+ */
+export const MediaInPostsTest = MediaInPostsLive.pipe(
+  Layer.provide(TransactionRunnerLive),
+  Layer.provide(
+    MessageStorage.layerMemory.pipe(Layer.provide(ShardingConfig.layer()))
+  )
+);
+
+/** The media context as the server builds it, with MediaInPostsTest. */
+export const MediaTestLive = MediaLive.pipe(Layer.provide(MediaInPostsTest));
 
 const mebibyte = 1024 * 1024;
 

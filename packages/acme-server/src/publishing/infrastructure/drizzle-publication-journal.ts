@@ -1,4 +1,4 @@
-import { and, eq, isNull, lt } from "drizzle-orm";
+import { and, asc, eq, isNull, lt } from "drizzle-orm";
 import { DateTime, Duration, Effect, Layer, Option, Schema } from "effect";
 
 import { PublicationJournal } from "#publishing/application/publication-journal.ts";
@@ -6,7 +6,9 @@ import type {
   BegunCall,
   CallId,
   CallStart,
+  RecordedAttempt,
 } from "#publishing/application/publication-journal.ts";
+import { PostTargetIdSchema } from "#publishing/domain/post-target-id.ts";
 import { AttemptOutcomeSchema } from "#publishing/domain/publication-policy.ts";
 import type {
   AttemptOutcome,
@@ -15,7 +17,11 @@ import type {
 import { DatabaseError } from "#shared/application/database-error.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 
-import { publicationAttempts, publicationCalls } from "./schema.ts";
+import {
+  postTargets,
+  publicationAttempts,
+  publicationCalls,
+} from "./schema.ts";
 
 // Outcomes are stored as the JSON the workflow history uses: ids and codes,
 // never content.
@@ -30,6 +36,27 @@ const failed = (cause: unknown) => new DatabaseError({ cause });
 const date = (instant: DateTime.Utc) => DateTime.toDateUtc(instant);
 
 type CallRow = typeof publicationCalls.$inferSelect;
+
+type AttemptRow = typeof publicationAttempts.$inferSelect;
+
+const decodeTargetId = Schema.decodeUnknownEffect(PostTargetIdSchema);
+
+const recordedAttempt = (row: AttemptRow) =>
+  Effect.gen(function* decodingAttempt() {
+    const attempt: RecordedAttempt = {
+      attempt: row.attempt,
+      finishedAt: DateTime.fromDateUnsafe(row.finishedAt),
+      outcome: yield* decodeOutcome(row.detail),
+      retryAfter: Option.fromNullOr(row.retryDelayMillis).pipe(
+        Option.map(Duration.millis)
+      ),
+      round: row.round,
+      startedAt: DateTime.fromDateUnsafe(row.startedAt),
+      targetId: yield* decodeTargetId(row.targetId),
+    };
+
+    return attempt;
+  }).pipe(Effect.orDie);
 
 // publication_attempts.outcome holds the outcome's tag.
 const rateLimited: AttemptOutcome["_tag"] = "RateLimited";
@@ -124,6 +151,26 @@ export const DrizzlePublicationJournal = Layer.effect(
     });
 
     return PublicationJournal.of({
+      attemptsOf: (postId) =>
+        db
+          .select({ attempt: publicationAttempts })
+          .from(publicationAttempts)
+          .innerJoin(
+            postTargets,
+            eq(postTargets.id, publicationAttempts.targetId)
+          )
+          .where(eq(postTargets.postId, postId))
+          .orderBy(
+            asc(publicationAttempts.targetId),
+            asc(publicationAttempts.round),
+            asc(publicationAttempts.attempt)
+          )
+          .pipe(
+            Effect.mapError(failed),
+            Effect.flatMap(
+              Effect.forEach(({ attempt }) => recordedAttempt(attempt))
+            )
+          ),
       begin,
       earlierRefusals: (call) =>
         db

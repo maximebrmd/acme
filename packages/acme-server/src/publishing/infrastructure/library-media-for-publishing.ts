@@ -9,6 +9,7 @@ import type {
   MediaFailure,
   PublishableMedia,
 } from "#publishing/application/media-for-publishing.ts";
+import { ownRefusalCodes } from "#publishing/domain/own-refusals.ts";
 import { MediaRejected } from "#shared/domain/media-rejected.ts";
 import { PlatformUnavailable } from "#shared/domain/platform-unavailable.ts";
 
@@ -28,7 +29,7 @@ const failureOf = (
   failure: MediaNotPublishable | MediaStorageFailed
 ): MediaFailure =>
   failure._tag === "MediaNotPublishable"
-    ? new MediaRejected({ code: "mediaUnavailable" })
+    ? new MediaRejected({ code: ownRefusalCodes.mediaRemoved })
     : new PlatformUnavailable();
 
 const logged = (failure: MediaNotPublishable | MediaStorageFailed) =>

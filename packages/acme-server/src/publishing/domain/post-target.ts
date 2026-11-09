@@ -20,13 +20,14 @@ import type { TargetSettlement } from "./target-settlement.ts";
  * | ----------- | ---------------------------------------------- |
  * | pending     | publishing, cancelled, failed (missed)         |
  * | publishing  | published, failed, unconfirmed, cancelled      |
- * | unconfirmed | published or failed, once the user has checked |
+ * | unconfirmed | published or failed, once the user has checked; |
+ * |             | pending again, reposted                          |
  * | published   | nothing                                        |
- * | failed      | nothing                                        |
+ * | failed      | pending again, reposted                        |
  * | cancelled   | nothing                                        |
  *
  * `round` counts the times it was sent: a repost after an unconfirmed or
- * failed round will start the next one, so a job left from an earlier round
+ * failed round starts the next one, so a job left from an earlier round
  * cannot act on it.
  */
 export class PostTarget extends Schema.Class<PostTarget>(
@@ -180,11 +181,13 @@ export const cancelTarget = (
 /**
  * The user found an unconfirmed post on the platform. It went live during the
  * attempt, so it counts as published when the attempt was made, not when the
- * user checked. The platform's id for it is unknown unless the user gives it.
+ * user checked. The platform's id for it is unknown unless the user gives it,
+ * and its address unless they give that.
  */
 export const confirmPublished = (
   target: PostTarget,
-  platformPostId: Option.Option<PlatformPostId>
+  platformPostId: Option.Option<PlatformPostId>,
+  permalink: Option.Option<string> = Option.none()
 ): Transition => {
   const { status } = target;
 
@@ -195,12 +198,34 @@ export const confirmPublished = (
   return Result.succeed(
     withStatus(target, {
       _tag: "published",
-      permalink: Option.none(),
+      permalink,
       platformPostId,
       publishedAt: status.attemptedAt,
     })
   );
 };
+
+/** Whether a member may send the target again, in a new round. */
+export const isRepostable = (target: PostTarget): boolean =>
+  target.status._tag === "failed" || target.status._tag === "unconfirmed";
+
+/**
+ * Sends a failed or unconfirmed target again: it waits, pending, in the next
+ * round, which a new job sends. An unconfirmed one may be live already: the
+ * member chose to send it again anyway, as after checking the platform.
+ */
+export const repostTarget = (target: PostTarget): Transition =>
+  isRepostable(target)
+    ? Result.succeed(
+        new PostTarget({
+          channelId: target.channelId,
+          id: target.id,
+          postId: target.postId,
+          round: target.round + 1,
+          status: { _tag: "pending" },
+        })
+      )
+    : rejected(target, "repost");
 
 /**
  * The user found no trace of an unconfirmed post on the platform: it failed,

@@ -1,7 +1,13 @@
 import { DateTime, Duration, Option, Result, Schema } from "effect";
 
-import { PostIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
-import type { PostId, WorkspaceId } from "#shared/domain/ids.ts";
+import { can } from "#shared/domain/access.ts";
+import type { Actor } from "#shared/domain/access.ts";
+import {
+  PostIdSchema,
+  UserIdSchema,
+  WorkspaceIdSchema,
+} from "#shared/domain/ids.ts";
+import type { PostId, UserId, WorkspaceId } from "#shared/domain/ids.ts";
 
 import { InvalidPostTransition } from "./invalid-post-transition.ts";
 import type { PostAction } from "./invalid-post-transition.ts";
@@ -17,17 +23,20 @@ import { Schedule } from "./schedule.ts";
  * A post, sent to one or more channels (its targets, `./post-target.ts`), and
  * where it is in its life:
  *
- * | From       | To                                           |
- * | ---------- | -------------------------------------------- |
- * | draft      | draft (edited), scheduled, cancelled         |
- * | scheduled  | scheduled (moved), draft, publishing,        |
- * |            | cancelled                                    |
- * | publishing | finished                                     |
- * | finished   | nothing                                      |
- * | cancelled  | nothing                                      |
+ * | From       | To                                             |
+ * | ---------- | ---------------------------------------------- |
+ * | draft      | draft (edited), scheduled, cancelled,          |
+ * |            | discarded (deleted)                            |
+ * | scheduled  | scheduled (moved), draft, publishing,          |
+ * |            | cancelled                                      |
+ * | publishing | finished                                       |
+ * | finished   | finished (a target confirmed), publishing (a   |
+ * |            | target reposted)                               |
+ * | cancelled  | nothing                                        |
  *
  * What the post says is its content (`./post-content.ts`), which only a
- * draft may change.
+ * draft may change. Its author is the member who created it, none when an
+ * API key did.
  *
  * `scheduleRevision` counts the times the post was scheduled or taken back
  * to draft. The job that publishes a post is started for one revision, and
@@ -40,6 +49,7 @@ import { Schedule } from "./schedule.ts";
 export class Post extends Schema.Class<Post>(
   "acme-server/publishing/domain/Post"
 )({
+  authorId: Schema.Option(UserIdSchema),
   content: PostContent,
   id: PostIdSchema,
   scheduleRevision: Schema.Int.check(Schema.isGreaterThanOrEqualTo(0)),
@@ -55,6 +65,7 @@ const withStatus = (
   scheduleRevision = post.scheduleRevision
 ): Post =>
   new Post({
+    authorId: post.authorId,
     content: post.content,
     id: post.id,
     scheduleRevision,
@@ -74,12 +85,33 @@ const rejected = (
     })
   );
 
+/** The member an actor stands for, who authors what they create. */
+export const authorOf = (actor: Actor): Option.Option<UserId> =>
+  actor.subject._tag === "user"
+    ? Option.some(actor.subject.userId)
+    : Option.none();
+
+/** Whether the actor is the member who created the post. */
+export const isAuthor = (post: Post, actor: Actor): boolean =>
+  Option.isSome(post.authorId) &&
+  Option.contains(authorOf(actor), post.authorId.value);
+
+/**
+ * Who may discard a draft: members with post:delete, and its author while
+ * they may change drafts (post:update), as contributors may.
+ */
+export const mayDiscard = (actor: Actor, post: Post): boolean =>
+  can(actor, "post:delete") ||
+  (can(actor, "post:update") && isAuthor(post, actor));
+
 export const createDraft = (
   id: PostId,
   workspaceId: WorkspaceId,
-  content: PostContent
+  content: PostContent,
+  authorId: Option.Option<UserId>
 ): Post =>
   new Post({
+    authorId,
     content,
     id,
     scheduleRevision: 0,
@@ -95,6 +127,7 @@ export const editDraft = (post: Post, content: PostContent): Transition =>
   post.status._tag === "draft"
     ? Result.succeed(
         new Post({
+          authorId: post.authorId,
           content,
           id: post.id,
           scheduleRevision: post.scheduleRevision,
@@ -103,6 +136,16 @@ export const editDraft = (post: Post, content: PostContent): Transition =>
         })
       )
     : rejected(post, "edit");
+
+/**
+ * Discards a draft: it is deleted, as it never went out. A post scheduled
+ * once and taken back to draft is discarded too; anything else is cancelled
+ * or stays as it ended.
+ */
+export const discardDraft = (post: Post): Transition =>
+  post.status._tag === "draft"
+    ? Result.succeed(post)
+    : rejected(post, "discard");
 
 /**
  * How long before `now` a time may be and still mean now: a caller that
@@ -227,6 +270,50 @@ export const finishPost = (
       schedule: status.schedule,
       startedAt: status.startedAt,
     })
+  );
+};
+
+/**
+ * A target of a post that finished was sent again (a new round): the post
+ * is publishing again until that round settles. One still publishing goes
+ * on. A post that never went out has nothing to send again.
+ */
+export const reopenPost = (post: Post, now: DateTime.Utc): Transition => {
+  const { status } = post;
+
+  if (status._tag === "publishing") {
+    return Result.succeed(post);
+  }
+
+  if (status._tag !== "finished") {
+    return rejected(post, "reopen");
+  }
+
+  return Result.succeed(
+    withStatus(post, {
+      _tag: "publishing",
+      schedule: status.schedule,
+      startedAt: now,
+    })
+  );
+};
+
+/**
+ * A finished post's outcome once a member said how an unconfirmed target
+ * ended: what its targets add up to now. It keeps when it finished.
+ */
+export const reviseOutcome = (
+  post: Post,
+  targets: readonly PostTarget[]
+): Transition => {
+  const { status } = post;
+
+  if (status._tag !== "finished") {
+    return rejected(post, "finish");
+  }
+
+  return Result.succeed(
+    withStatus(post, { ...status, outcome: outcomeOf(targets) })
   );
 };
 

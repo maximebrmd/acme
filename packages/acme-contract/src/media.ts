@@ -10,6 +10,7 @@ import {
 import { AltTextTooLong } from "./alt-text-too-long.ts";
 import { Authentication } from "./authentication.ts";
 import { Forbidden } from "./forbidden.ts";
+import { MediaInUse } from "./media-in-use.ts";
 import { MediaNotFound } from "./media-not-found.ts";
 import { MediaStatusSchema } from "./media-status.ts";
 import { MediaStoreUnavailable } from "./media-store-unavailable.ts";
@@ -142,6 +143,16 @@ export const MediaPageSchema = Schema.Struct({
 
 export type MediaPage = typeof MediaPageSchema.Type;
 
+/** The posts that show a media, by what deleting it would do to them. */
+export const MediaUsageSchema = Schema.Struct({
+  // Drafts, which lose the media when it is deleted.
+  drafts: Schema.Array(Schema.String),
+  // Posts scheduled or publishing, which keep it from being deleted.
+  scheduled: Schema.Array(Schema.String),
+}).annotate({ identifier: "MediaUsage" });
+
+export type MediaUsage = typeof MediaUsageSchema.Type;
+
 /** How many media a page holds, unless `limit` says otherwise. */
 export const defaultMediaPageSize = 30;
 
@@ -235,14 +246,25 @@ export class MediaApi extends HttpApiGroup.make("media")
         summary: "Describe media",
       })
     ),
+    HttpApiEndpoint.get("usage", "/:mediaId/usage", {
+      error: [Forbidden, MediaNotFound],
+      params: media,
+      success: MediaUsageSchema,
+    }).annotateMerge(
+      OpenApi.annotations({
+        description:
+          "Lists the posts that show the media: drafts, which lose it if it is deleted, and posts scheduled or publishing, which keep it from being deleted. Needs media:read.",
+        summary: "Get where media is used",
+      })
+    ),
     HttpApiEndpoint.delete("delete", "/:mediaId", {
-      error: [Forbidden, MediaNotFound, MediaStoreUnavailable],
+      error: [Forbidden, MediaNotFound, MediaInUse, MediaStoreUnavailable],
       params: media,
       success: HttpApiSchema.NoContent,
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Deletes the media and its file, and cancels its upload if it is still pending. Needs media:delete.",
+          "Deletes the media and its file, and cancels its upload if it is still pending. Drafts that show it lose it. Posts scheduled or publishing that show it refuse the deletion (`MediaInUse`, listing them): take them back to draft first. Needs media:delete.",
         summary: "Delete media",
       })
     )

@@ -2,28 +2,52 @@ import { assert, layer } from "@effect/vitest";
 import {
   Api,
   Forbidden,
+  MediaInUse,
   MediaNotFound,
   MediaStoreUnavailable,
   UploadIncomplete,
   UploadRejected,
 } from "acme-contract";
 import type { Member, PreparedUpload } from "acme-contract";
-import { ConfigProvider, Effect, Layer, Logger } from "effect";
+import {
+  ConfigProvider,
+  DateTime,
+  Effect,
+  Layer,
+  Logger,
+  Option,
+} from "effect";
 import { HttpServer } from "effect/http";
 import { HttpApiError, HttpApiTest } from "effect/http-api";
 import sharp from "sharp";
 
-import { MediaApiLive, MediaLive } from "#media/container.ts";
+import { MediaApiLive } from "#media/container.ts";
 import { S3MediaStorageLive } from "#media/infrastructure/s3-media-storage.ts";
-import { Ids } from "#shared/application/ids.ts";
+import { PostRepository } from "#publishing/application/post-repository.ts";
+import { MediaAttachment } from "#publishing/domain/media-attachment.ts";
+import { PostContent } from "#publishing/domain/post-content.ts";
+import {
+  cancelPost,
+  createDraft,
+  schedulePost,
+} from "#publishing/domain/post.ts";
+import { Schedule } from "#publishing/domain/schedule.ts";
+import { DrizzlePostRepository } from "#publishing/infrastructure/drizzle-post-repository.ts";
+import { Ids, newId } from "#shared/application/ids.ts";
 import type { Permission } from "#shared/domain/access.ts";
-import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
+import {
+  MediaAssetIdSchema,
+  PostIdSchema,
+  WorkspaceIdSchema,
+} from "#shared/domain/ids.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
+import { TimeZoneIdSchema } from "#shared/domain/time-zone.ts";
 import { memberOf } from "#test/channels/support.ts";
 import {
   damagedPng,
   DatabaseTest,
   mebibytes,
+  MediaTestLive,
   sendSigned,
   storageSettings,
   syntheticSvg,
@@ -33,14 +57,14 @@ import { permissionsFor } from "#workspace/domain/roles.ts";
 
 // The media endpoints on the real use cases, Postgres and SeaweedFS. Each
 // request acts as a member, as the WorkspaceAccess middleware would.
-const UseCasesTest = Layer.mergeAll(MediaLive, S3MediaStorageLive).pipe(
+const UseCasesTest = Layer.mergeAll(MediaTestLive, S3MediaStorageLive).pipe(
   Layer.provideMerge(DatabaseTest),
   Layer.provide(storageSettings)
 );
 
 // The same, on a store that answers nothing: no server listens on the
 // loopback's port 9.
-const UnreachableStoreTest = MediaLive.pipe(
+const UnreachableStoreTest = MediaTestLive.pipe(
   Layer.provideMerge(DatabaseTest),
   Layer.provide(storageSettings),
   Layer.provide(
@@ -113,6 +137,50 @@ const started = Effect.fn("started")(function* started(
   return prepared;
 });
 
+// A post of the workspace showing the media, as publishing stores it: a
+// draft, or scheduled for tomorrow.
+const postShowing = Effect.fn("postShowing")(function* postShowing(
+  workspaceId: WorkspaceId,
+  mediaId: string,
+  scheduled: boolean
+) {
+  const posts = yield* PostRepository;
+  const now = yield* DateTime.now;
+
+  const draft = createDraft(
+    yield* newId(PostIdSchema),
+    workspaceId,
+    new PostContent({
+      media: [
+        new MediaAttachment({
+          altText: "A synthetic picture",
+          mediaId: MediaAssetIdSchema.make(mediaId),
+        }),
+      ],
+      overrides: [],
+      text: "A synthetic post",
+    }),
+    Option.none()
+  );
+
+  const post = scheduled
+    ? yield* Effect.fromResult(
+        schedulePost(
+          draft,
+          new Schedule({
+            at: DateTime.add(now, { days: 1 }),
+            timeZone: TimeZoneIdSchema.make("UTC"),
+          }),
+          now
+        )
+      ).pipe(Effect.orDie)
+    : draft;
+
+  yield* posts.insert(post, []);
+
+  return post;
+}, Effect.provide(DrizzlePostRepository));
+
 const singleRequest = (prepared: PreparedUpload) =>
   prepared.upload._tag === "single"
     ? Effect.succeed(prepared.upload.request)
@@ -172,6 +240,72 @@ layer(UseCasesTest)("the media endpoints", (it) => {
         MediaNotFound
       );
     })
+  );
+
+  it.effect(
+    "refuse deleting media a scheduled post shows, and take it off drafts",
+    () =>
+      Effect.gen(function* inUse() {
+        const { client, workspaceId } = yield* as("owner");
+
+        const prepared = yield* started(client, workspaceId, {
+          byteSize: 1024,
+          contentType: "image/png",
+        });
+
+        const mediaId = prepared.media.id;
+        const params = { mediaId, workspaceId };
+        const draft = yield* postShowing(workspaceId, mediaId, false);
+        const scheduled = yield* postShowing(workspaceId, mediaId, true);
+
+        assert.deepStrictEqual(yield* client.media.usage({ params }), {
+          drafts: [draft.id],
+          scheduled: [scheduled.id],
+        });
+
+        assert.deepStrictEqual(
+          yield* Effect.flip(client.media.delete({ params })),
+          new MediaInUse({ postIds: [scheduled.id] })
+        );
+
+        // Refused, it changed nothing: the draft still shows it.
+        const posts = yield* PostRepository.pipe(
+          Effect.provide(DrizzlePostRepository)
+        );
+
+        const kept = Option.getOrThrow(yield* posts.find(draft.id));
+
+        assert.lengthOf(kept.post.content.media, 1);
+
+        const cancelled = yield* Effect.fromResult(
+          cancelPost(scheduled, yield* DateTime.now)
+        ).pipe(Effect.orDie);
+
+        assert.isTrue(yield* posts.update(cancelled, scheduled));
+
+        const deleted = yield* client.media.delete({
+          params,
+          responseMode: "response-only",
+        });
+
+        assert.strictEqual(deleted.status, 204);
+
+        const edited = Option.getOrThrow(yield* posts.find(draft.id));
+
+        assert.deepStrictEqual(edited.post.content.media, []);
+        assert.strictEqual(edited.post.content.text, "A synthetic post");
+
+        // The cancelled post keeps what it showed.
+        const stillCancelled = Option.getOrThrow(
+          yield* posts.find(scheduled.id)
+        );
+
+        assert.lengthOf(stillCancelled.post.content.media, 1);
+        assert.instanceOf(
+          yield* Effect.flip(client.media.usage({ params })),
+          MediaNotFound
+        );
+      })
   );
 
   it.effect("answer 201 to a new upload, with no store internals", () =>

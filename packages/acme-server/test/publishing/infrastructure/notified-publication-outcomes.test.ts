@@ -11,24 +11,28 @@ import { NoticeLog } from "#notifications/application/notice-log.ts";
 import { NoticeStore } from "#notifications/application/notice-store.ts";
 import { Notify } from "#notifications/application/notify.ts";
 import type { NoticeRequest } from "#notifications/application/notify.ts";
+import { PreferenceStore } from "#notifications/application/preference-store.ts";
 import { NotificationsWorkersLive } from "#notifications/container.ts";
 import { DrizzleNoticeLog } from "#notifications/infrastructure/drizzle-notice-log.ts";
 import { DrizzleNoticeStore } from "#notifications/infrastructure/drizzle-notice-store.ts";
 import { DrizzlePreferenceStore } from "#notifications/infrastructure/drizzle-preference-store.ts";
 import { WorkflowNoticeDelivery } from "#notifications/infrastructure/workflow-notice-delivery.ts";
+import { PostDrafts } from "#publishing/application/post-drafts.ts";
 import { PostRepository } from "#publishing/application/post-repository.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
 import { PublicationOutcomes } from "#publishing/application/publication-outcomes.ts";
 import { publishingWith, publishingWorkers } from "#publishing/container.ts";
 import type { PostTargetStatus } from "#publishing/domain/post-target-status.ts";
 import { PostTarget } from "#publishing/domain/post-target.ts";
+import { DrizzlePostRepository } from "#publishing/infrastructure/drizzle-post-repository.ts";
 import {
   FakePlatform,
   FakePlatformPublisher,
 } from "#publishing/infrastructure/fake-platform-publisher.ts";
 import { ListedWorkspaceChannels } from "#publishing/infrastructure/listed-workspace-channels.ts";
 import { NotifiedPublicationOutcomes } from "#publishing/infrastructure/notified-publication-outcomes.ts";
-import type { ChannelId, UserId, WorkspaceId } from "#shared/domain/ids.ts";
+import type { Actor } from "#shared/domain/access.ts";
+import type { ChannelId, UserId } from "#shared/domain/ids.ts";
 import { MediaRejected } from "#shared/domain/media-rejected.ts";
 import { IdsLive } from "#shared/infrastructure/secure-random-ids.ts";
 import { TransactionRunnerLive } from "#shared/infrastructure/transaction-runner-live.ts";
@@ -41,13 +45,16 @@ import {
   sentTo,
 } from "#test/notifications/support.ts";
 import { TestDirectory } from "#test/notifications/test-directory.ts";
+import type { TestMember } from "#test/notifications/test-directory.ts";
 import { connect } from "#test/publishing/posts-server.ts";
 import {
-  actorIn,
+  actorAs,
+  apiKeyIn,
   attachableMedia,
   syntheticContent,
 } from "#test/publishing/support.ts";
 import { permissionsFor } from "#workspace/domain/roles.ts";
+import type { Role } from "#workspace/domain/roles.ts";
 
 import {
   clusterOver,
@@ -62,9 +69,11 @@ import {
 
 // Publishing as the server runs it, with no media to attach: these posts
 // carry none, so the media context's library is not needed.
-const PublishingTest = NotifiedPublicationOutcomes.pipe(
+const PublishingTest = publishingWith(
+  Layer.mergeAll(ListedWorkspaceChannels, attachableMedia())
+).pipe(
   Layer.provideMerge(
-    publishingWith(Layer.mergeAll(ListedWorkspaceChannels, attachableMedia()))
+    NotifiedPublicationOutcomes.pipe(Layer.provide(DrizzlePostRepository))
   )
 );
 
@@ -157,7 +166,15 @@ const workspaceWithEditor = Effect.gen(function* workspaceWithEditor() {
     ])
   );
 
-  return { email, userId, workspaceId };
+  return { actor: actorAs(userId, workspaceId), email, userId, workspaceId };
+});
+
+// A member of a test workspace with the role, reading English.
+const member = (userId: UserId, role: Role): TestMember => ({
+  email: `${role}+${userId}@example.test`,
+  locale: "en",
+  permissions: permissionsFor(role),
+  userId,
 });
 
 const noticesOf = (userId: UserId) =>
@@ -165,12 +182,13 @@ const noticesOf = (userId: UserId) =>
     inbox.page(readerOf(userId), { after: Option.none(), limit: 50 })
   ).pipe(Effect.map(({ items }) => items));
 
+// A post on the channels at 08:00, which `actor` writes and schedules.
 const schedule = (
-  workspaceId: WorkspaceId,
+  actor: Actor,
   channelIds: readonly [ChannelId, ...ChannelId[]]
 ) =>
   PostScheduling.use((scheduling) =>
-    scheduling.schedule(actorIn(workspaceId), {
+    scheduling.schedule(actor, {
       channelIds,
       content: syntheticContent,
       schedule: scheduleIn("2026-06-15T08:00:00Z"),
@@ -184,7 +202,9 @@ describe("the notices of a post's outcomes", () => {
       onServerAt(
         "2026-06-15T07:00:00Z",
         Effect.gen(function* tells() {
-          const { email, userId, workspaceId } = yield* workspaceWithEditor;
+          const { actor, email, userId, workspaceId } =
+            yield* workspaceWithEditor;
+
           const published = yield* connect(workspaceId, "mastodon");
           const failed = yield* connect(workspaceId, "bluesky");
 
@@ -197,7 +217,7 @@ describe("the notices of a post's outcomes", () => {
             ])
           );
 
-          const post = yield* schedule(workspaceId, [published, failed]);
+          const post = yield* schedule(actor, [published, failed]);
 
           yield* eventually("the job sleeps", isSuspended(post.id));
           yield* setTime("2026-06-15T08:00:00Z");
@@ -252,9 +272,9 @@ describe("the notices of a post's outcomes", () => {
       onServerAt(
         "2026-06-15T07:00:00Z",
         Effect.gen(function* perRound() {
-          const { userId, workspaceId } = yield* workspaceWithEditor;
+          const { actor, userId, workspaceId } = yield* workspaceWithEditor;
           const channelId = yield* connect(workspaceId, "mastodon");
-          const post = yield* schedule(workspaceId, [channelId]);
+          const post = yield* schedule(actor, [channelId]);
           const [target] = yield* targetsOf(post.id);
 
           assert(target !== undefined);
@@ -312,9 +332,9 @@ describe("the notices of a post's outcomes", () => {
       setTime("2026-06-15T07:00:00Z").pipe(
         Effect.andThen(
           Effect.gen(function* buggyTelling() {
-            const { workspaceId } = yield* workspaceWithEditor;
+            const { actor, workspaceId } = yield* workspaceWithEditor;
             const channelId = yield* connect(workspaceId, "mastodon");
-            const post = yield* schedule(workspaceId, [channelId]);
+            const post = yield* schedule(actor, [channelId]);
 
             yield* eventually("the job sleeps", isSuspended(post.id));
             yield* setTime("2026-06-15T08:00:00Z");
@@ -334,6 +354,129 @@ describe("the notices of a post's outcomes", () => {
             assert.isFalse(claimed);
           }).pipe(Effect.provide(BuggyServerTest))
         )
+      ),
+    timeout
+  );
+
+  it.effect(
+    "tell the post's author whatever their role, and the members who follow every post",
+    () =>
+      onServerAt(
+        "2026-06-15T07:00:00Z",
+        Effect.gen(function* audience() {
+          const workspaceId = yield* freshWorkspace;
+
+          const [author, follower, quiet, viewer] = yield* Effect.all(
+            [freshUser, freshUser, freshUser, freshUser],
+            { concurrency: 1 }
+          );
+
+          yield* TestDirectory.use((directory) =>
+            directory.setMembers(workspaceId, [
+              member(author, "contributor"),
+              member(follower, "editor"),
+              member(quiet, "editor"),
+              member(viewer, "viewer"),
+            ])
+          );
+
+          yield* PreferenceStore.use((store) =>
+            DateTime.now.pipe(
+              Effect.flatMap((now) =>
+                store.change(follower, { everyPost: true }, now)
+              )
+            )
+          );
+
+          const channelId = yield* connect(workspaceId, "mastodon");
+
+          // The contributor writes the draft; an editor schedules it.
+          const { post } = yield* PostDrafts.use((drafts) =>
+            drafts.create(
+              actorAs(author, workspaceId, permissionsFor("contributor")),
+              { channelIds: [channelId], content: syntheticContent }
+            )
+          );
+
+          yield* PostScheduling.use((scheduling) =>
+            scheduling.reschedule(
+              actorAs(quiet, workspaceId),
+              post.id,
+              scheduleIn("2026-06-15T08:00:00Z")
+            )
+          );
+
+          yield* eventually("the job sleeps", isSuspended(post.id));
+          yield* setTime("2026-06-15T08:00:00Z");
+          yield* eventually("the post finishes", isFinished(post.id));
+
+          const heard = yield* Effect.forEach(
+            [author, follower, quiet, viewer],
+            (userId) => noticesOf(userId).pipe(Effect.map((all) => all.length))
+          );
+
+          assert.deepStrictEqual(heard, [1, 1, 0, 0]);
+        })
+      ),
+    timeout
+  );
+
+  it.effect(
+    "tell every member who may schedule posts about a post an API key made",
+    () =>
+      onServerAt(
+        "2026-06-15T07:00:00Z",
+        Effect.gen(function* withoutAuthor() {
+          const { userId, workspaceId } = yield* workspaceWithEditor;
+          const channelId = yield* connect(workspaceId, "mastodon");
+          const post = yield* schedule(apiKeyIn(workspaceId), [channelId]);
+
+          assert.isTrue(Option.isNone(post.authorId));
+
+          yield* eventually("the job sleeps", isSuspended(post.id));
+          yield* setTime("2026-06-15T08:00:00Z");
+          yield* eventually("the post finishes", isFinished(post.id));
+
+          assert.lengthOf(yield* noticesOf(userId), 1);
+        })
+      ),
+    timeout
+  );
+
+  it.effect(
+    "mark a round's notices read once a member resolved it, and no other",
+    () =>
+      onServerAt(
+        "2026-06-15T07:00:00Z",
+        Effect.gen(function* resolves() {
+          const { actor, userId, workspaceId } = yield* workspaceWithEditor;
+          const channelId = yield* connect(workspaceId, "mastodon");
+          const post = yield* schedule(actor, [channelId]);
+          const [target] = yield* targetsOf(post.id);
+
+          assert(target !== undefined);
+
+          const outcomes = yield* PublicationOutcomes;
+          const now = yield* DateTime.now;
+
+          const unconfirmed: PostTargetStatus = {
+            _tag: "unconfirmed",
+            attemptedAt: now,
+            reason: "noResponse",
+          };
+
+          yield* outcomes.settled(settledAs(target, 1, unconfirmed));
+          yield* outcomes.settled(settledAs(target, 2, unconfirmed));
+          yield* outcomes.resolved(settledAs(target, 1, unconfirmed));
+
+          const notices = yield* noticesOf(userId);
+
+          // Newest first: the second round's notice is still to read.
+          assert.deepStrictEqual(
+            notices.map(({ readAt }) => Option.isSome(readAt)),
+            [false, true]
+          );
+        })
       ),
     timeout
   );

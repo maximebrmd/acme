@@ -9,9 +9,11 @@ import {
   confirmPublished,
   createTarget,
   isCancelRequested,
+  isRepostable,
   isSettled,
   missTarget,
   PostTarget,
+  repostTarget,
   settleTarget,
   startTarget,
 } from "#publishing/domain/post-target.ts";
@@ -251,6 +253,20 @@ describe("confirming an unconfirmed target", () => {
     });
   });
 
+  it("keeps the address the user gives", () => {
+    expect(
+      statusOf(
+        confirmPublished(
+          statuses.unconfirmed,
+          Option.none(),
+          Option.some("https://social.example/@acme/1")
+        )
+      )
+    ).toMatchObject({
+      permalink: Option.some("https://social.example/@acme/1"),
+    });
+  });
+
   it("keeps the platform's id when the user gives it", () => {
     expect(
       statusOf(
@@ -287,4 +303,33 @@ describe("confirming an unconfirmed target", () => {
       });
     }
   );
+});
+
+describe(repostTarget, () => {
+  it.each([{ from: statuses.failed }, { from: statuses.unconfirmed }])(
+    "sends a $from.status._tag target again, pending in the next round",
+    ({ from }) => {
+      const reposted = Option.getOrUndefined(
+        Result.getSuccess(repostTarget(from))
+      );
+
+      expect(isRepostable(from)).toBeTruthy();
+      expect(reposted?.status).toStrictEqual({ _tag: "pending" });
+      expect(reposted?.round).toBe(2);
+      expect(reposted?.id).toBe(from.id);
+    }
+  );
+
+  it.each([
+    { from: statuses.pending },
+    { from: statuses.publishing },
+    { from: statuses.published },
+    { from: statuses.cancelled },
+  ])("leaves a $from.status._tag target as it is", ({ from }) => {
+    expect(isRepostable(from)).toBeFalsy();
+    expect(failureOf(repostTarget(from))).toMatchObject({
+      action: "repost",
+      from: from.status._tag,
+    });
+  });
 });

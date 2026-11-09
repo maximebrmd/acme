@@ -124,7 +124,7 @@ describe("PostRecords.eraseWorkspace", () => {
           assert.isTrue(
             Option.isSome(ended) &&
               Exit.isSuccess(ended.value) &&
-              ended.value.value === "cancelled"
+              ended.value.value === "superseded"
           );
           assert.lengthOf(yield* platform.calls, 0);
         }).pipe(Effect.provide(PostRecordsLosingInterrupts))

@@ -16,5 +16,14 @@ export class PublicationOutcomes extends Context.Service<
     readonly settled: (
       target: PostTarget
     ) => Effect.Effect<void, DatabaseError>;
+    /**
+     * A member dealt with the round `target` ended in: they said whether an
+     * unconfirmed post went out, or sent the target again. What asked them
+     * to check it no longer needs anyone. Called in the transaction that
+     * changes the target, with the target as it was.
+     */
+    readonly resolved: (
+      target: PostTarget
+    ) => Effect.Effect<void, DatabaseError>;
   }
 >()("acme-server/publishing/application/PublicationOutcomes") {}

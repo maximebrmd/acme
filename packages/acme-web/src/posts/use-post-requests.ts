@@ -9,9 +9,11 @@ import { useState } from "react";
 import {
   cancelPost,
   createPost,
+  discardPost,
   postsKeys,
   reschedulePost,
   schedulePost,
+  unschedulePost,
   updatePost,
 } from "#posts/api.ts";
 import type { ComposerFailure } from "#posts/composer-failure.ts";
@@ -30,6 +32,16 @@ export const usePostRequests = (workspaceId: string) => {
   const schedule = useAtomSet(schedulePost, { mode: "promiseExit" });
   const reschedule = useAtomSet(reschedulePost, { mode: "promiseExit" });
   const cancel = useAtomSet(cancelPost, { mode: "promiseExit" });
+  const unschedule = useAtomSet(unschedulePost, { mode: "promiseExit" });
+  const discard = useAtomSet(discardPost, { mode: "promiseExit" });
+
+  const failed = <E extends ComposerFailure>(exit: Exit.Exit<unknown, E>) => {
+    setFailure(
+      Option.getOrElse(failureOf(exit), (): ComposerFailure => ({
+        _tag: "Unexpected",
+      }))
+    );
+  };
 
   const settled = <E extends ComposerFailure>(
     exit: Exit.Exit<Post, E>
@@ -40,11 +52,7 @@ export const usePostRequests = (workspaceId: string) => {
       return Option.some(exit.value);
     }
 
-    setFailure(
-      Option.getOrElse(failureOf(exit), (): ComposerFailure => ({
-        _tag: "Unexpected",
-      }))
-    );
+    failed(exit);
 
     return Option.none();
   };
@@ -56,6 +64,23 @@ export const usePostRequests = (workspaceId: string) => {
       settled(
         await cancel({ params: params(postId), reactivityKeys: postsKeys })
       ),
+    /** Deletes the draft, and says whether it is gone. */
+    discard: async (postId: string) => {
+      const exit = await discard({
+        params: params(postId),
+        reactivityKeys: postsKeys,
+      });
+
+      if (Exit.isSuccess(exit)) {
+        setFailure(null);
+
+        return true;
+      }
+
+      failed(exit);
+
+      return false;
+    },
     fail: setFailure,
     failure,
     reschedule: async (postId: string, payload: PostSchedule) =>
@@ -95,6 +120,10 @@ export const usePostRequests = (workspaceId: string) => {
           payload,
           reactivityKeys: postsKeys,
         })
+      ),
+    unschedule: async (postId: string) =>
+      settled(
+        await unschedule({ params: params(postId), reactivityKeys: postsKeys })
       ),
   };
 };

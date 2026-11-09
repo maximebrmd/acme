@@ -2,7 +2,6 @@ import { DateTime, Effect, Layer, Option } from "effect";
 import type { Duration, Scope } from "effect";
 
 import { MediaAssets } from "#media/application/ports/media-assets.ts";
-import { MediaLive } from "#media/container.ts";
 import type { InvalidMediaTransition } from "#media/domain/invalid-media-transition.ts";
 import { MediaAssetIdSchema } from "#media/domain/media-asset-id.ts";
 import type { MediaAsset } from "#media/domain/media-asset.ts";
@@ -20,17 +19,17 @@ import { DrizzleMediaAssetsLive } from "#media/infrastructure/drizzle-media-asse
 import { LibraryAttachableMedia } from "#publishing/infrastructure/library-attachable-media.ts";
 import { newId } from "#shared/application/ids.ts";
 import type { MediaAssetId, WorkspaceId } from "#shared/domain/ids.ts";
-import { storageSettings } from "#test/media/support.ts";
+import { MediaTestLive, storageSettings } from "#test/media/support.ts";
 import { setTime } from "#test/publishing/infrastructure/harness.ts";
 import { postsServerWith } from "#test/publishing/posts-server.ts";
 
 // Posts with the media the media context's library holds: the real adapter
-// over MediaLive, on Postgres and the development store's settings. Tests
+// over the media context, on Postgres and the development store's settings. Tests
 // write synthetic media of any status through the library's repository.
 
 /** The adapter as the server runs it, with the library it reads. */
 export const LibraryMediaTest = LibraryAttachableMedia.pipe(
-  Layer.provide(MediaLive),
+  Layer.provide(MediaTestLive),
   Layer.provide(storageSettings)
 );
 

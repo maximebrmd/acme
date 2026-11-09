@@ -1,8 +1,8 @@
-import { Match, Schema } from "effect";
+import { Match, Option, Schema } from "effect";
 
 import type { Permission } from "#shared/domain/access.ts";
 import { PostIdSchema } from "#shared/domain/ids.ts";
-import type { WorkspaceId } from "#shared/domain/ids.ts";
+import type { UserId, WorkspaceId } from "#shared/domain/ids.ts";
 import { PlatformSchema } from "#shared/domain/platform.ts";
 
 /** The account a notice is about, as it was when the notice was made. */
@@ -17,6 +17,9 @@ export type NoticeChannel = typeof NoticeChannelSchema.Type;
 /** Why a post did not go out on a channel, as publishing records it. */
 export const PostFailureReasonSchema = Schema.Literals([
   "contentRejected",
+  "channelDisconnected",
+  "channelDisabled",
+  "mediaRemoved",
   "mediaRejected",
   "missed",
   "notPublished",
@@ -88,9 +91,9 @@ export const emailKindOf = (event: NoticeEvent): EmailKind =>
   });
 
 /**
- * Who hears about the event: the members able to act on it. Those who may
- * schedule posts can repost one, or confirm whether it went out; those who
- * may connect channels can reconnect one.
+ * Who may act on the event: those who may schedule posts can repost one, or
+ * confirm whether it went out; those who may connect channels can reconnect
+ * one. Who hears about it follows from it (`recipientsOf`).
  */
 export const audienceOf = (event: NoticeEvent): Permission =>
   Match.valueTags(event, {
@@ -100,6 +103,61 @@ export const audienceOf = (event: NoticeEvent): Permission =>
     PostPublished: (): Permission => "post:schedule",
     PostUnconfirmed: (): Permission => "post:schedule",
   });
+
+/** Whether the event is about a post rather than a channel. */
+export const isAboutPost = (event: NoticeEvent): boolean =>
+  Match.valueTags(event, {
+    ChannelReconnectRequired: () => false,
+    ChannelReconnectSoon: () => false,
+    PostFailed: () => true,
+    PostPublished: () => true,
+    PostUnconfirmed: () => true,
+  });
+
+/**
+ * What a reader must still be allowed when the notice's email goes out: to
+ * read posts, for a post's notice, which went to its author whatever their
+ * role; to act on the channel, for a channel's.
+ */
+export const readerPermissionOf = (event: NoticeEvent): Permission =>
+  isAboutPost(event) ? "post:read" : audienceOf(event);
+
+/** A member who could hear about an event. */
+export interface Candidate {
+  /** Whether they chose to hear about every post, not only their own. */
+  readonly followsEveryPost: boolean;
+  /** Whether their role allows what the event asks (`audienceOf`). */
+  readonly mayAct: boolean;
+  readonly userId: UserId;
+}
+
+/**
+ * Who hears about the event, among the workspace's members:
+ *
+ * - about a channel: every member who may act on it (`audienceOf`);
+ * - about a post with an author: its author, whatever their role, and the
+ *   members who may schedule posts and chose to hear about every post;
+ * - about a post without one, made with an API key: every member who may
+ *   schedule posts, as nobody else would hear.
+ */
+export const recipientsOf = (
+  event: NoticeEvent,
+  author: Option.Option<UserId>,
+  members: readonly Candidate[]
+): readonly UserId[] => {
+  const hears = (member: Candidate): boolean => {
+    if (!isAboutPost(event) || Option.isNone(author)) {
+      return member.mayAct;
+    }
+
+    return (
+      member.userId === author.value ||
+      (member.mayAct && member.followsEveryPost)
+    );
+  };
+
+  return members.flatMap((member) => (hears(member) ? [member.userId] : []));
+};
 
 /** The web app's page for the event, where the reader acts on it. */
 export const pageOf = (event: NoticeEvent, workspaceId: WorkspaceId): string =>

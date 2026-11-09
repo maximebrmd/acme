@@ -17,17 +17,20 @@ import {
 import { Badge } from "acme-ui/components/badge";
 import { Button } from "acme-ui/components/button";
 import { Skeleton } from "acme-ui/components/skeleton";
-import { DateTime, Option } from "effect";
+import { DateTime, Exit, Option } from "effect";
 import { AsyncResult } from "effect/reactivity";
 import { Trash2Icon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 
-import { deleteMedia, mediaKey, mediaPage } from "#media/atoms.ts";
+import { Link } from "#i18n/navigation.ts";
+import { deleteMedia, mediaKey, mediaPage, usageOf } from "#media/atoms.ts";
+import { failureOf } from "#posts/outcome.ts";
 
 import { MediaThumbnail } from "./media-thumbnail.tsx";
 import { MediaUploader } from "./media-uploader.tsx";
+import { MediaUsageNotice } from "./media-usage-notice.tsx";
 import { useFileSize } from "./use-file-size.ts";
 import { useHydrated } from "./use-hydrated.ts";
 
@@ -61,6 +64,66 @@ const StatusDetail = ({ status }: { readonly status: MediaStatus }) => {
   return null;
 };
 
+// Which posts show the media, asked when the dialog opens, and the buttons:
+// deleting waits until the answer says no scheduled post needs it.
+const DeleteConfirmation = ({
+  deleting,
+  media,
+  onDelete,
+  workspaceId,
+}: {
+  readonly deleting: boolean;
+  readonly media: Media;
+  readonly onDelete: () => void;
+  readonly workspaceId: string;
+}) => {
+  const t = useTranslations("Media.library");
+  const result = useAtomValue(usageOf(workspaceId, media.id));
+
+  const blocked =
+    AsyncResult.isInitial(result) ||
+    (AsyncResult.isSuccess(result) && result.value.scheduled.length > 0);
+
+  const notice = AsyncResult.isSuccess(result) ? (
+    <MediaUsageNotice
+      usage={result.value}
+      postLinks={result.value.scheduled.map((postId, index) => (
+        <Link
+          key={postId}
+          href={`/app/${workspaceId}/posts/${postId}`}
+          className="underline underline-offset-4"
+        >
+          {t("inUsePost", { number: index + 1 })}
+        </Link>
+      ))}
+    />
+  ) : (
+    <p
+      className="text-muted-foreground text-sm"
+      aria-busy={AsyncResult.isInitial(result)}
+    >
+      {AsyncResult.isFailure(result) ? t("usageFailed") : t("usageLoading")}
+    </p>
+  );
+
+  return (
+    <>
+      {notice}
+      <AlertDialogFooter>
+        <AlertDialogCancel>{t("keep")}</AlertDialogCancel>
+        <AlertDialogAction
+          variant="destructive"
+          disabled={deleting || blocked}
+          focusableWhenDisabled
+          onClick={onDelete}
+        >
+          {deleting ? t("deleting") : t("deleteConfirm")}
+        </AlertDialogAction>
+      </AlertDialogFooter>
+    </>
+  );
+};
+
 const DeleteMedia = ({
   media,
   workspaceId,
@@ -82,11 +145,17 @@ const DeleteMedia = ({
 
       setOpen(false);
 
-      if (exit._tag === "Success") {
+      if (Exit.isSuccess(exit)) {
         toast.success(t("deleted"));
-      } else {
-        toast.error(t("deleteFailed"));
+
+        return;
       }
+
+      const inUse = failureOf(exit).pipe(
+        Option.exists(({ _tag }) => _tag === "MediaInUse")
+      );
+
+      toast.error(inUse ? t("inUseFailed") : t("deleteFailed"));
     });
   };
 
@@ -112,17 +181,14 @@ const DeleteMedia = ({
             {t("deleteDescription")}
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>{t("keep")}</AlertDialogCancel>
-          <AlertDialogAction
-            variant="destructive"
-            disabled={deleting}
-            focusableWhenDisabled
-            onClick={handleDelete}
-          >
-            {deleting ? t("deleting") : t("deleteConfirm")}
-          </AlertDialogAction>
-        </AlertDialogFooter>
+        {open ? (
+          <DeleteConfirmation
+            deleting={deleting}
+            media={media}
+            workspaceId={workspaceId}
+            onDelete={handleDelete}
+          />
+        ) : null}
       </AlertDialogContent>
     </AlertDialog>
   );

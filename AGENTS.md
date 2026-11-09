@@ -398,8 +398,27 @@ and no socket, for tests.
 - A post whose outcome is unknown is marked unconfirmed, never retried blindly:
   the user checks the platform before reposting.
 - Erasing a workspace's posts (`PostRecords`) stops its scheduled jobs in the
-  same transaction, and is refused while one of its posts is publishing; a
-  job that wakes for a post deleted that way stops.
+  same transaction, and is refused while one of its posts is publishing.
+- A post's author is the member who created it (`authorId`, none for an API
+  key). Drafts are listed newest first (`PostQueries.listDrafts`) and
+  discarded by deleting them, which needs post:delete, or post:update for
+  their author (`mayDiscard`). `PostScheduling.unschedule` takes a scheduled
+  post back to draft: its revision goes up and its job is interrupted. A job
+  that wakes for a post or target since deleted, by a member or by erasure, is
+  superseded.
+- `PostFollowUp` reposts a failed or unconfirmed target, in its next round:
+  a `PublishTargetV1` with no parent (`PublicationScheduler.repost`), which
+  reopens a finished post; the last target to settle finishes its post, in
+  `recordTargetRun`, or cancelling it does when nothing is left to send. A
+  repost's rate-limit deadline counts from the repost. `confirm` records
+  what a member found for an unconfirmed target and revises the outcome.
+  Both call `PublicationOutcomes.resolved`.
+- Refusals Acme makes itself, before any platform call (a channel
+  disconnected or turned off, media deleted), carry the codes of
+  `#publishing/domain/own-refusals.ts`; the policy maps them to their own
+  failure reasons (`failureReasonOf`). Add a reason to the domain, the
+  contract, the notices' events, the email catalogues and the web strings
+  together.
 - Platform calls go through the `PlatformPublisher` port, one at a time per
   channel through `ChannelGate`, whose calls are volatile: post content never
   lands in the cluster tables. The gates run `RoutedPlatformPublisher`, which
@@ -480,6 +499,12 @@ and no socket, for tests.
   permissions; publishing jobs through `MediaForPlatforms`, which checks
   none, as they act for the workspace once a post is scheduled, and hands out
   only ready assets of that workspace (`MediaNotPublishable` otherwise).
+- Deleting an asset asks the `MediaUsage` port first, which publishing's
+  `MediaInPosts` backs (`PublishingMediaUsage`; the composition root
+  provides `MediaInPostsLive`): a post scheduled or publishing that shows it
+  refuses the deletion (`MediaInUse`, listing the posts), and drafts lose
+  the attachment in one transaction. `GET …/media/:id/usage` tells clients
+  beforehand.
 
 ### Notifications
 
@@ -502,15 +527,22 @@ and no socket, for tests.
   which emails them after the commit, go together. Publishing calls it
   through `PublicationOutcomes`, the channels context through
   `ChannelNotices`.
-- A notice goes to the members who can act on it (`audienceOf`): those with
-  `post:schedule` for a post, `channel:connect` for a channel. Every notice
-  reaches the app; `NotificationPreferences` say which are also emailed
-  (failed and unconfirmed posts and channels to reconnect by default, not
-  published posts). A preferences change writes only the kinds it names.
+- Who hears about an event is `recipientsOf`: for a channel, the members who
+  can act on it (`audienceOf`: `channel:connect`); for a post, its author
+  (`NoticeRequest.author`), whatever their role, and the members with
+  `post:schedule` who chose `everyPost`, off by default; for a post without
+  an author, every member with `post:schedule`. Every notice reaches the
+  app; `NotificationPreferences` say which are also emailed (failed and
+  unconfirmed posts and channels to reconnect by default, not published
+  posts). A preferences change writes only what it names.
+- `Notify.resolve(key)` says an event was dealt with: its notices are marked
+  read for everyone and its pending emails skipped. Publishing resolves a
+  round once a member confirms or reposts it.
 - `DeliverNoticeV1` is persisted contract: its tag, its payload (`key`), its
   activities `send/<n>` and `abandon`, its clocks `retry/<n>`. It retries a
   transport that refuses for now over about five hours, and skips readers who
-  left the workspace or turned the email off meanwhile.
+  left the workspace (or, for a channel, may no longer connect channels:
+  `readerPermissionOf`) or turned the email off meanwhile.
 - The inbox belongs to a user, and `authorizeInbox` decides who acts on it:
   the user, or an OAuth client not bound to a workspace, with
   `workspace:read` to read and `workspace:write` to change; staff
@@ -637,8 +669,10 @@ Billing and captcha are not built yet.
   platforms' redirect URI `connect/[platform]/callback`, and the signed-in
   app: `app` (workspaces), `app/notices`, `app/notices/preferences`,
   `app/account`, `app/[workspaceId]/channels`, `…/media`, `…/calendar`,
-  `…/posts/new`, `…/posts/[postId]` and `…/settings` (with `members`,
-  `invitations` and `api-keys`).
+  `…/drafts`, `…/posts/new`, `…/posts/[postId]`, which opens a draft or a
+  scheduled post in the composer, and shows a post that went out in
+  `PostDetail` (each channel's status, attempts and reasons, with repost and
+  confirm), and `…/settings` (with `members`, `invitations` and `api-keys`).
 - Pages fetch through the client derived from `acme-contract`, with
   `@effect/atom-react`: query atoms come from `AcmeApi` in `src/api/client.ts`.
   Browsers call `/api`; server code calls `ACME_API_URL`.
@@ -668,10 +702,16 @@ Billing and captcha are not built yet.
   active workspace, go through `workspaceClient`. Better Auth error codes map
   to `Auth.errors` in the catalogues.
 - Keep the OAuth pages' views (`WorkspacePickerView`) apart from their state,
-  so tests render each state: acme-web has no DOM test environment.
+  so tests render each state: acme-web has no DOM test environment. A view
+  under test imports nothing from `#i18n/navigation.ts`, which needs Next to
+  run: take links as props or children (`DraftItemView`,
+  `MediaUsageNotice`).
 - Show dates in the reader's time zone. next-intl's server provider hands the
-  client the server's zone (UTC in the image) unless told otherwise:
-  `InTimeZone` (`components/notices/in-time-zone.tsx`) sets the browser's.
+  client the server's zone (UTC in the image): `ViewerTimeZone`
+  (`components/viewer-time-zone.tsx`), in the locale layout, sets the
+  browser's on the shared provider once the page has hydrated, so every
+  page's dates follow it. `InTimeZone` (`components/notices/in-time-zone.tsx`)
+  sets a given zone on part of a page.
 - The header's `NotificationBell`, beside the account menu, polls
   `GET /api/me/notices/unread` every 30 seconds while the tab is visible and
   when it is shown again (`useRefreshWhileVisible`), and announces arrivals

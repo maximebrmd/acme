@@ -1,5 +1,5 @@
 import { Context } from "effect";
-import type { DateTime, Effect, Option } from "effect";
+import type { DateTime, Duration, Effect, Option } from "effect";
 
 import type { PostTargetId } from "#publishing/domain/post-target-id.ts";
 import type {
@@ -8,6 +8,7 @@ import type {
   PublicationDecision,
 } from "#publishing/domain/publication-policy.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
+import type { PostId } from "#shared/domain/ids.ts";
 
 /** Which call: one attempt at a target, in one round. */
 export interface CallId {
@@ -50,6 +51,18 @@ export interface AttemptRecord {
   readonly targetId: PostTargetId;
 }
 
+/** An attempt as the history keeps it, for members to read. */
+export interface RecordedAttempt {
+  readonly attempt: number;
+  readonly finishedAt: DateTime.Utc;
+  readonly outcome: AttemptOutcome;
+  /** The wait before the next attempt, when one followed. */
+  readonly retryAfter: Option.Option<Duration.Duration>;
+  readonly round: number;
+  readonly startedAt: DateTime.Utc;
+  readonly targetId: PostTargetId;
+}
+
 /**
  * The record of every publishing call and attempt.
  *
@@ -84,5 +97,12 @@ export class PublicationJournal extends Context.Service<
     readonly recordAttempt: (
       attempt: AttemptRecord
     ) => Effect.Effect<void, DatabaseError>;
+    /**
+     * The attempts made at the post's targets, by target, round and
+     * attempt.
+     */
+    readonly attemptsOf: (
+      postId: PostId
+    ) => Effect.Effect<readonly RecordedAttempt[], DatabaseError>;
   }
 >()("acme-server/publishing/application/PublicationJournal") {}

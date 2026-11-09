@@ -1,4 +1,14 @@
-import { and, asc, eq, gte, inArray, lt, notInArray } from "drizzle-orm";
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  gte,
+  inArray,
+  lt,
+  notInArray,
+  sql,
+} from "drizzle-orm";
 import { DateTime, Effect, Layer, Match, Option, Schema } from "effect";
 
 import { PostRepository } from "#publishing/application/post-repository.ts";
@@ -15,7 +25,7 @@ import { PostTarget } from "#publishing/domain/post-target.ts";
 import { Post } from "#publishing/domain/post.ts";
 import type { Schedule } from "#publishing/domain/schedule.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
-import type { PostId, WorkspaceId } from "#shared/domain/ids.ts";
+import type { MediaAssetId, PostId, WorkspaceId } from "#shared/domain/ids.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 
 import { posts, postTargets } from "./schema.ts";
@@ -63,6 +73,7 @@ const toStored = (row: PostRow) =>
   Effect.all({
     execution: decodeExecution(row.executionId),
     post: decodePost({
+      authorId: Option.fromNullOr(row.authorId),
       content: {
         media: row.media,
         overrides: row.textOverrides,
@@ -248,6 +259,11 @@ const withTargets = (
 
 const statusName = (status: PostStatus | PostTargetStatus) => status._tag;
 
+// What a post's `media` column holds for one attachment, to find the posts
+// that show it.
+const showingMedia = (mediaId: MediaAssetId) =>
+  sql`${posts.media} @> ${JSON.stringify([{ mediaId }])}::jsonb`;
+
 /** Posts and targets in the publishing schema, through Drizzle. */
 export const DrizzlePostRepository = Layer.effect(
   PostRepository,
@@ -267,6 +283,29 @@ export const DrizzlePostRepository = Layer.effect(
     const selectTarget = (targetId: PostTargetId) =>
       db.select().from(postTargets).where(eq(postTargets.id, targetId));
 
+    // The posts with their targets, in the order the posts came.
+    const withTargetsOf = (postRows: readonly PostRow[]) =>
+      Effect.gen(function* postsWithTargets() {
+        if (postRows.length === 0) {
+          const none: readonly PostWithTargets[] = [];
+
+          return none;
+        }
+
+        const targetRows = yield* db
+          .select()
+          .from(postTargets)
+          .where(
+            inArray(
+              postTargets.postId,
+              postRows.map(({ id }) => id)
+            )
+          )
+          .orderBy(asc(postTargets.id));
+
+        return yield* withTargets(postRows, targetRows);
+      });
+
     return PostRepository.of({
       find: (postId) =>
         selectPost(postId).pipe(
@@ -282,6 +321,7 @@ export const DrizzlePostRepository = Layer.effect(
         Effect.gen(function* insert() {
           yield* db.insert(posts).values({
             ...postColumns(post),
+            authorId: Option.getOrNull(post.authorId),
             id: post.id,
             workspaceId: post.workspaceId,
           });
@@ -289,6 +329,37 @@ export const DrizzlePostRepository = Layer.effect(
           if (targets.length > 0) {
             yield* db.insert(postTargets).values(targets.map(targetRow));
           }
+        }).pipe(Effect.mapError(failed)),
+      listDrafts: (workspaceId, { after, limit }) =>
+        Effect.gen(function* listDrafts() {
+          // One more than asked tells whether another page follows.
+          const postRows = yield* db
+            .select()
+            .from(posts)
+            .where(
+              and(
+                eq(posts.workspaceId, workspaceId),
+                eq(posts.status, "draft"),
+                after.pipe(
+                  Option.map((last) => lt(posts.id, last)),
+                  Option.getOrUndefined
+                )
+              )
+            )
+            .orderBy(desc(posts.id))
+            .limit(limit + 1);
+
+          const page = postRows.slice(0, limit);
+          const items = yield* withTargetsOf(page);
+          const last = items.at(-1);
+
+          return {
+            items,
+            next:
+              postRows.length > limit && last !== undefined
+                ? Option.some(last.post.id)
+                : Option.none<PostId>(),
+          };
         }).pipe(Effect.mapError(failed)),
       listScheduled: (
         workspaceId: WorkspaceId,
@@ -308,24 +379,7 @@ export const DrizzlePostRepository = Layer.effect(
             )
             .orderBy(asc(posts.scheduledAt), asc(posts.id));
 
-          if (postRows.length === 0) {
-            const none: readonly PostWithTargets[] = [];
-
-            return none;
-          }
-
-          const targetRows = yield* db
-            .select()
-            .from(postTargets)
-            .where(
-              inArray(
-                postTargets.postId,
-                postRows.map(({ id }) => id)
-              )
-            )
-            .orderBy(asc(postTargets.id));
-
-          return yield* withTargets(postRows, targetRows);
+          return yield* withTargetsOf(postRows);
         }).pipe(Effect.mapError(failed)),
       lock: (postId) =>
         selectPost(postId)
@@ -342,6 +396,11 @@ export const DrizzlePostRepository = Layer.effect(
             Effect.mapError(failed),
             Effect.flatMap(Effect.forEach(toTarget))
           ),
+      remove: (postId) =>
+        db
+          .delete(posts)
+          .where(eq(posts.id, postId))
+          .pipe(Effect.mapError(failed), Effect.asVoid),
       setExecution: (post, executionId: ExecutionId) =>
         db
           .update(posts)
@@ -377,6 +436,26 @@ export const DrizzlePostRepository = Layer.effect(
               .onConflictDoNothing({ target: postTargets.id });
           }
         }).pipe(Effect.mapError(failed)),
+      showing: (workspaceId, mediaId, statuses) =>
+        db
+          .select()
+          .from(posts)
+          .where(
+            and(
+              eq(posts.workspaceId, workspaceId),
+              inArray(posts.status, [...statuses]),
+              showingMedia(mediaId)
+            )
+          )
+          .orderBy(asc(posts.id))
+          .pipe(
+            Effect.mapError(failed),
+            Effect.flatMap(
+              Effect.forEach((row) =>
+                toStored(row).pipe(Effect.map(({ post }) => post))
+              )
+            )
+          ),
       targets: (postId) =>
         selectTargets(postId).pipe(
           Effect.mapError(failed),

@@ -1,8 +1,10 @@
 import { DateTime, Duration, Match, Schema } from "effect";
 
 import { PublishFailureSchema } from "#shared/domain/publish-failure.ts";
+import type { PublishFailure } from "#shared/domain/publish-failure.ts";
 import { PublishResultSchema } from "#shared/domain/publish-result.ts";
 
+import { ownRefusalCodes } from "./own-refusals.ts";
 import type { FailureReason } from "./post-target-status.ts";
 import { TargetSettlementSchema } from "./target-settlement.ts";
 import type { TargetSettlement } from "./target-settlement.ts";
@@ -21,8 +23,11 @@ import type { TargetSettlement } from "./target-settlement.ts";
  * |                     | kept between 1 s and 6 h; give up after 8 attempts |
  * |                     | or past 24 h after the scheduled time: rateLimited |
  * | TokenExpired        | give up: tokenExpired, and reconnect the channel   |
- * | MediaRejected       | give up: mediaRejected                             |
- * | BadRequest          | give up: contentRejected                           |
+ * | MediaRejected       | give up: mediaRejected, or mediaRemoved when Acme  |
+ * |                     | could not read the media (`./own-refusals.ts`)     |
+ * | BadRequest          | give up: contentRejected, or channelDisconnected   |
+ * |                     | and channelDisabled when Acme refused to use the   |
+ * |                     | channel                                            |
  *
  * PlatformUnavailable and RateLimited each count only the attempts that
  * ended that way: a rate limit uses none of the unavailable retries, and the
@@ -159,6 +164,37 @@ const afterRateLimit = (
     : retry(delay);
 };
 
+/**
+ * The reasons a refused attempt gives: those of a target that failed after
+ * attempts, as no attempt is made when one is missed or found missing.
+ */
+export type RefusalReason = Exclude<FailureReason, "missed" | "notPublished">;
+
+const badRequestReason = (code: string): RefusalReason => {
+  if (code === ownRefusalCodes.channelDisconnected) {
+    return "channelDisconnected";
+  }
+
+  return code === ownRefusalCodes.channelDisabled
+    ? "channelDisabled"
+    : "contentRejected";
+};
+
+/**
+ * Why a target fails when an attempt is refused this way, once nothing is
+ * left to try: the platform's refusal, or Acme's own when it could not use
+ * the channel or the media (see `./own-refusals.ts`).
+ */
+export const failureReasonOf = (failure: PublishFailure): RefusalReason =>
+  Match.valueTags(failure, {
+    BadRequest: ({ code }): RefusalReason => badRequestReason(code),
+    MediaRejected: ({ code }): RefusalReason =>
+      code === ownRefusalCodes.mediaRemoved ? "mediaRemoved" : "mediaRejected",
+    PlatformUnavailable: (): RefusalReason => "unavailable",
+    RateLimited: (): RefusalReason => "rateLimited",
+    TokenExpired: (): RefusalReason => "tokenExpired",
+  });
+
 /** Decides what follows an attempt, from how it ended (see the table above). */
 export const decide = (
   outcome: AttemptOutcome,
@@ -166,8 +202,8 @@ export const decide = (
   policy: PublicationPolicy = defaultPublicationPolicy
 ): PublicationDecision =>
   Match.valueTags(outcome, {
-    BadRequest: ({ code }) => giveUp("contentRejected", code),
-    MediaRejected: ({ code }) => giveUp("mediaRejected", code),
+    BadRequest: (refusal) => giveUp(failureReasonOf(refusal), refusal.code),
+    MediaRejected: (refusal) => giveUp(failureReasonOf(refusal), refusal.code),
     PlatformUnavailable: () => afterUnavailable(context, policy),
     RateLimited: ({ retryAfter }) =>
       afterRateLimit(retryAfter, context, policy),

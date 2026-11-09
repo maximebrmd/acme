@@ -6,6 +6,7 @@ import { notFound } from "next/navigation";
 
 import { AppShell } from "#components/app-shell.tsx";
 import { Providers } from "#components/providers.tsx";
+import { ViewerTimeZone } from "#components/viewer-time-zone.tsx";
 import { routing } from "#i18n/routing.ts";
 
 import "#app/globals.css";
@@ -41,9 +42,11 @@ const LocaleLayout = async ({ children, params }: LayoutProps<"/[locale]">) => {
     >
       <body className="antialiased">
         <NextIntlClientProvider>
-          <Providers>
-            <AppShell>{children}</AppShell>
-          </Providers>
+          <ViewerTimeZone>
+            <Providers>
+              <AppShell>{children}</AppShell>
+            </Providers>
+          </ViewerTimeZone>
         </NextIntlClientProvider>
       </body>
     </html>

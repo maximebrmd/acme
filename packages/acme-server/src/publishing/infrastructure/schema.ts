@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import {
   boolean,
   index,
@@ -28,10 +29,13 @@ const instant = (name: string) => timestamp(name, { withTimezone: true });
  *
  * Its content: `text`, the `media` it shows in order (media ids with their
  * alt text) and `text_overrides`, the text it has instead on some channels.
+ * `author_id` is the member who created it (a Better Auth user id), null
+ * when an API key did, or for posts from before authors were kept.
  */
 export const posts = publishing.table(
   "posts",
   {
+    authorId: uuid("author_id"),
     cancelledAt: instant("cancelled_at"),
     executionId: text("execution_id"),
     finishedAt: instant("finished_at"),
@@ -52,6 +56,10 @@ export const posts = publishing.table(
       table.workspaceId,
       table.scheduledAt
     ),
+    // A workspace's drafts, newest first: ids are UUIDv7s.
+    index("posts_workspace_drafts")
+      .on(table.workspaceId, table.id)
+      .where(sql`${table.status} = 'draft'`),
   ]
 );
 

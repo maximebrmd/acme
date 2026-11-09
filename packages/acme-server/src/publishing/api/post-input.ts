@@ -9,6 +9,7 @@ import type { DateTime } from "effect";
 import { Array as Arr, Effect, Option, Schema } from "effect";
 
 import { PostContent } from "#publishing/domain/post-content.ts";
+import { PostTargetIdSchema } from "#publishing/domain/post-target-id.ts";
 import { Schedule } from "#publishing/domain/schedule.ts";
 import {
   ChannelIdSchema,
@@ -25,6 +26,8 @@ const decodeChannelId = Schema.decodeUnknownOption(ChannelIdSchema);
 const decodeMediaId = Schema.decodeUnknownOption(MediaAssetIdSchema);
 
 const decodePostId = Schema.decodeUnknownOption(PostIdSchema);
+
+const decodeTargetId = Schema.decodeUnknownOption(PostTargetIdSchema);
 
 const decodeTimeZone = Schema.decodeUnknownOption(TimeZoneIdSchema);
 
@@ -66,6 +69,19 @@ export const contentFrom = (input: ContentInput) =>
 /** The post a path names, or PostNotFound. */
 export const postIdFrom = (raw: string) =>
   Option.match(decodePostId(raw), {
+    onNone: () => Effect.fail(new PostNotFound()),
+    onSome: Effect.succeed,
+  });
+
+/** The post an id names, if it is a post id at all. */
+export const postIdOption = (raw: string) => decodePostId(raw);
+
+/**
+ * The target of a post a path names, or PostNotFound: one that names no
+ * target names nothing of the post.
+ */
+export const targetIdFrom = (raw: string) =>
+  Option.match(decodeTargetId(raw), {
     onNone: () => Effect.fail(new PostNotFound()),
     onSome: Effect.succeed,
   });

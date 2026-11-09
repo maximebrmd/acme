@@ -24,7 +24,10 @@ import {
 // notices to send, which nothing here sends.
 const Neighbours = Layer.mergeAll(
   Dns.layerStatic({}),
-  Layer.succeed(Notify, Notify.of({ notify: () => Effect.void }))
+  Layer.succeed(
+    Notify,
+    Notify.of({ notify: () => Effect.void, resolve: () => Effect.void })
+  )
 );
 
 // The channels context as the server builds it, with these settings. A blank

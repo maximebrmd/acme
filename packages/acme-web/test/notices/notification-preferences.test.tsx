@@ -12,6 +12,7 @@ const preferences = {
     postPublished: false,
     postUnconfirmed: true,
   },
+  everyPost: false,
 };
 
 const render = async (locale: "en" | "fr") => {
@@ -69,7 +70,25 @@ describe(PreferencesFields, () => {
           { checked: true, labelled: true },
         ],
         ["A post went out", { checked: false, labelled: true }],
+        [
+          "Every post of my workspaces, not only the ones I wrote",
+          { checked: false, labelled: true },
+        ],
       ])
     );
+  });
+
+  it("asks apart whether to hear about other members' posts", async () => {
+    const english = await render("en");
+    const french = await render("fr");
+
+    expect(english).toContain("Tell me about");
+    expect(english).toContain("You always hear about your own posts.");
+    expect(french).toContain("Me prévenir pour");
+    expect(
+      choices(french).get(
+        "Toutes les publications de mes espaces de travail, pas seulement les miennes"
+      )
+    ).toStrictEqual({ checked: false, labelled: true });
   });
 });

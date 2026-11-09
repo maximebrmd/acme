@@ -12,6 +12,7 @@ import { UserIdSchema } from "#shared/domain/ids.ts";
 import type {
   ChannelId,
   MediaAssetId,
+  UserId,
   WorkspaceId,
 } from "#shared/domain/ids.ts";
 import type { Platform } from "#shared/domain/platform.ts";
@@ -77,6 +78,29 @@ export const actorIn = (
       impersonatedBy: Option.none(),
       userId: syntheticUser,
     },
+    workspaceId,
+  });
+
+/** The member `userId`, signed in to the workspace with these permissions. */
+export const actorAs = (
+  userId: UserId,
+  workspaceId: WorkspaceId,
+  permissions: readonly Permission[] = permissionsFor("editor")
+): Actor =>
+  new Actor({
+    permissions,
+    subject: { _tag: "user", impersonatedBy: Option.none(), userId },
+    workspaceId,
+  });
+
+/** An API key of the workspace, with these permissions. */
+export const apiKeyIn = (
+  workspaceId: WorkspaceId,
+  permissions: readonly Permission[] = permissionsFor("editor")
+): Actor =>
+  new Actor({
+    permissions,
+    subject: { _tag: "apiKey", apiKeyId: "synthetic-key" },
     workspaceId,
   });
 

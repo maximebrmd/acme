@@ -1,9 +1,11 @@
 import { describe, expect, it } from "@effect/vitest";
 import { DateTime, Duration } from "effect";
 
+import { ownRefusalCodes } from "#publishing/domain/own-refusals.ts";
 import {
   decide,
   defaultPublicationPolicy,
+  failureReasonOf,
   isTooLate,
 } from "#publishing/domain/publication-policy.ts";
 import type {
@@ -11,6 +13,7 @@ import type {
   AttemptOutcome,
   EarlierRefusals,
   PublicationDecision,
+  RefusalReason,
 } from "#publishing/domain/publication-policy.ts";
 import { needsReconnect } from "#publishing/domain/target-settlement.ts";
 import { BadRequest } from "#shared/domain/bad-request.ts";
@@ -42,15 +45,7 @@ const retry = (delay: Duration.Duration): PublicationDecision => ({
   delay,
 });
 
-const giveUp = (
-  reason:
-    | "contentRejected"
-    | "mediaRejected"
-    | "rateLimited"
-    | "tokenExpired"
-    | "unavailable",
-  code?: string
-): PublicationDecision => ({
+const giveUp = (reason: RefusalReason, code?: string): PublicationDecision => ({
   _tag: "settle",
   settlement:
     code === undefined
@@ -221,6 +216,28 @@ describe(decide, () => {
     );
   });
 
+  it.each<{ outcome: BadRequest | MediaRejected; reason: RefusalReason }>([
+    {
+      outcome: new BadRequest({ code: ownRefusalCodes.channelDisconnected }),
+      reason: "channelDisconnected",
+    },
+    {
+      outcome: new BadRequest({ code: ownRefusalCodes.channelDisabled }),
+      reason: "channelDisabled",
+    },
+    {
+      outcome: new MediaRejected({ code: ownRefusalCodes.mediaRemoved }),
+      reason: "mediaRemoved",
+    },
+  ])(
+    "fails at once with $reason when Acme could not use the channel or media",
+    ({ outcome, reason }) => {
+      expect(decide(outcome, first)).toStrictEqual(
+        giveUp(reason, outcome.code)
+      );
+    }
+  );
+
   it.each<{ label: string; outcome: AttemptOutcome }>([
     { label: "published", outcome: published },
     {
@@ -254,6 +271,45 @@ describe(decide, () => {
     expect(
       decide(new PlatformUnavailable(), after({ unavailable: 1 }), policy)
     ).toStrictEqual(giveUp("unavailable"));
+  });
+});
+
+describe(failureReasonOf, () => {
+  it.each<{ outcome: Parameters<typeof failureReasonOf>[0]; reason: string }>([
+    {
+      outcome: new BadRequest({ code: "duplicate" }),
+      reason: "contentRejected",
+    },
+    {
+      outcome: new BadRequest({ code: ownRefusalCodes.channelDisconnected }),
+      reason: "channelDisconnected",
+    },
+    {
+      outcome: new BadRequest({ code: ownRefusalCodes.channelDisabled }),
+      reason: "channelDisabled",
+    },
+    {
+      outcome: new MediaRejected({ code: "too_large" }),
+      reason: "mediaRejected",
+    },
+    {
+      outcome: new MediaRejected({ code: ownRefusalCodes.mediaRemoved }),
+      reason: "mediaRemoved",
+    },
+    { outcome: new PlatformUnavailable(), reason: "unavailable" },
+    { outcome: new RateLimited({}), reason: "rateLimited" },
+    { outcome: new TokenExpired(), reason: "tokenExpired" },
+  ])("names $reason for a refusal", ({ outcome, reason }) => {
+    expect(failureReasonOf(outcome)).toBe(reason);
+  });
+
+  it("keeps a platform code that only looks like Acme's for another kind", () => {
+    // A platform's media code is never read as a channel Acme could not use.
+    expect(
+      failureReasonOf(
+        new MediaRejected({ code: ownRefusalCodes.channelDisconnected })
+      )
+    ).toBe("mediaRejected");
   });
 });
 

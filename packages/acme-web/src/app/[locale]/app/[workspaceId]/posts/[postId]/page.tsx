@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 
 import { ComposerScreen } from "#components/posts/composer-screen.tsx";
 import { routing } from "#i18n/routing.ts";
-import { membershipOf } from "#posts/membership.ts";
+import { viewerOf } from "#posts/membership.ts";
 
 // Opens a post of the workspace in the composer.
 const PostPage = async ({
@@ -15,11 +15,12 @@ const PostPage = async ({
     notFound();
   }
 
-  const membership = await membershipOf(locale, workspaceId);
+  const { membership, userId } = await viewerOf(locale, workspaceId);
 
   return (
     <ComposerScreen
       permissions={membership.permissions}
+      userId={userId}
       postId={postId}
       workspaceId={membership.id}
     />

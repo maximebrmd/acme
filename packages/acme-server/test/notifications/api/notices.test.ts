@@ -322,6 +322,7 @@ layer(NoticesTest)("the notification preferences endpoints", (it) => {
           postPublished: false,
           postUnconfirmed: true,
         },
+        everyPost: false,
       });
 
       yield* client.notificationPreferences.update({
@@ -339,12 +340,22 @@ layer(NoticesTest)("the notification preferences endpoints", (it) => {
             postPublished: true,
             postUnconfirmed: true,
           },
+          everyPost: false,
         }
       );
       assert.deepStrictEqual(
         (yield* client.notificationPreferences.get()).email.postPublished,
         true
       );
+
+      // Following every post leaves the emails as they are.
+      const following = yield* client.notificationPreferences.update({
+        payload: { everyPost: true },
+      });
+
+      assert.isTrue(following.everyPost);
+      assert.isFalse(following.email.postFailed);
+      assert.isTrue(following.email.postPublished);
     })
   );
 });

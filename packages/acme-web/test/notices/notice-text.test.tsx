@@ -65,6 +65,49 @@ describe(useNoticeText, () => {
     );
   });
 
+  it.each([
+    {
+      english:
+        "its channel was disconnected from the workspace before it went out.",
+      french:
+        "son canal a été déconnecté de l’espace de travail avant son départ.",
+      reason: "channelDisconnected",
+    },
+    {
+      english:
+        "its channel was turned off before it went out. Turn it back on, then post again.",
+      french:
+        "son canal a été désactivé avant son départ. Réactivez-le, puis publiez à nouveau.",
+      reason: "channelDisabled",
+    },
+    {
+      english:
+        "one of its images or videos was deleted from the media library before it went out.",
+      french:
+        "l’une de ses images ou vidéos a été supprimée de la médiathèque avant son départ.",
+      reason: "mediaRemoved",
+    },
+  ] as const)(
+    "names $reason rather than a refused text",
+    async ({ english, french, reason }) => {
+      const event: NoticeEvent = {
+        _tag: "PostFailed",
+        channel,
+        postId,
+        reason,
+      };
+
+      const [inEnglish, inFrench] = await Promise.all([
+        render("en", event),
+        render("fr", event),
+      ]);
+
+      expect(inEnglish).toContain(english);
+      expect(inEnglish).not.toContain("refused its text");
+      expect(inFrench).toContain(french);
+    }
+  );
+
   it("asks to check an unconfirmed post before reposting it", async () => {
     const event: NoticeEvent = {
       _tag: "PostUnconfirmed",

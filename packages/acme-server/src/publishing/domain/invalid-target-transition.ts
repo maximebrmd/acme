@@ -11,6 +11,7 @@ export const TargetActionSchema = Schema.Literals([
   "cancel",
   "confirmPublished",
   "confirmNotPublished",
+  "repost",
 ]);
 
 export type TargetAction = typeof TargetActionSchema.Type;

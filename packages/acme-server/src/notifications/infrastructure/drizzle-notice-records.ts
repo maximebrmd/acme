@@ -100,6 +100,7 @@ export const DrizzleNoticeRecords = Layer.effect(
                   postPublished: chosen.emailPostPublished,
                   postUnconfirmed: chosen.emailPostUnconfirmed,
                 },
+                everyPost: chosen.everyPost,
               };
 
         return { notices: records, preferences };

@@ -2,6 +2,7 @@ import { assert, describe, it } from "@effect/vitest";
 import { DateTime, Duration, Effect, Exit, Option } from "effect";
 import { TestClock } from "effect/testing";
 
+import { PostRepository } from "#publishing/application/post-repository.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
 import { PublicationScheduler } from "#publishing/application/publication-scheduler.ts";
 import { Schedule } from "#publishing/domain/schedule.ts";
@@ -433,6 +434,89 @@ describe("PostScheduling across workspaces", () => {
             "pending",
           ]);
         })
+      ),
+    timeout
+  );
+});
+
+describe("UnschedulePost", () => {
+  it.effect(
+    "stops the job, which publishes nothing even when it wakes",
+    () =>
+      onServerAt(
+        "2026-06-15T07:00:00Z",
+        Effect.gen(function* unschedules() {
+          const platform = yield* FakePlatform;
+          const scheduling = yield* PostScheduling;
+          const channel = yield* newChannel;
+
+          const post = yield* schedulePost(
+            [channel],
+            scheduleIn("2026-06-15T08:00:00Z")
+          );
+
+          yield* eventually("the job sleeps", isSuspended(post.id));
+
+          const job = yield* executionOf(post.id);
+
+          // This scheduler loses the interrupt: the job keeps sleeping.
+          const draft = yield* scheduling.unschedule(
+            actorIn(post.workspaceId),
+            post.id
+          );
+
+          assert.strictEqual(draft.post.status._tag, "draft");
+
+          yield* setTime("2026-06-15T08:00:00Z");
+          yield* eventually("the job wakes and stops", isComplete(job));
+
+          assert.deepStrictEqual(
+            yield* jobResult(job),
+            Option.some(Exit.succeed("superseded"))
+          );
+          assert.lengthOf(yield* platform.calls, 0);
+          assert.strictEqual(
+            (yield* storedPost(post.id)).post.status._tag,
+            "draft"
+          );
+        }),
+        PublishingLosingInterruptsTest
+      ),
+    timeout
+  );
+
+  it.effect(
+    "leaves a job nothing to publish once its draft was discarded",
+    () =>
+      onServerAt(
+        "2026-06-15T07:00:00Z",
+        Effect.gen(function* discarded() {
+          const platform = yield* FakePlatform;
+          const scheduling = yield* PostScheduling;
+          const channel = yield* newChannel;
+
+          const post = yield* schedulePost(
+            [channel],
+            scheduleIn("2026-06-15T08:00:00Z")
+          );
+
+          yield* eventually("the job sleeps", isSuspended(post.id));
+
+          const job = yield* executionOf(post.id);
+
+          yield* scheduling.unschedule(actorIn(post.workspaceId), post.id);
+          yield* PostRepository.use((posts) => posts.remove(post.id));
+
+          yield* setTime("2026-06-15T08:00:00Z");
+          yield* eventually("the job wakes and stops", isComplete(job));
+
+          assert.deepStrictEqual(
+            yield* jobResult(job),
+            Option.some(Exit.succeed("superseded"))
+          );
+          assert.lengthOf(yield* platform.calls, 0);
+        }),
+        PublishingLosingInterruptsTest
       ),
     timeout
   );

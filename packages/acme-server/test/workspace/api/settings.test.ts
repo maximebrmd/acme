@@ -162,6 +162,7 @@ const PortsLive = Layer.mergeAll(
                 postPublished: false,
                 postUnconfirmed: true,
               },
+              everyPost: false,
             },
           }),
         exportWorkspace: () =>

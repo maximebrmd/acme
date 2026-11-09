@@ -167,12 +167,18 @@ const signedInGroupsLive = (authorization: AuthorizationServer) =>
     ),
     HttpApiBuilder.group(Api, "posts", (handlers) =>
       handlers.handleAll({
+        attempts: () => refusing,
         cancel: () => refusing,
+        confirm: () => refusing,
         create: () => refusing,
+        discard: () => refusing,
+        drafts: () => refusing,
         get: () => refusing,
         list: () => refusing,
+        repost: () => refusing,
         reschedule: () => refusing,
         schedule: () => refusing,
+        unschedule: () => refusing,
         update: () => refusing,
       })
     ),
@@ -184,6 +190,7 @@ const signedInGroupsLive = (authorization: AuthorizationServer) =>
         describe: () => refusing,
         get: () => refusing,
         list: () => refusing,
+        usage: () => refusing,
       })
     ),
     HttpApiBuilder.group(Api, "notices", (handlers) =>

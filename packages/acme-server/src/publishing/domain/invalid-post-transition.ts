@@ -12,6 +12,8 @@ export const PostActionSchema = Schema.Literals([
   "startPublishing",
   "finish",
   "cancel",
+  "discard",
+  "reopen",
 ]);
 
 export type PostAction = typeof PostActionSchema.Type;
