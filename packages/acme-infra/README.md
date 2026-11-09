@@ -228,7 +228,9 @@ password manager: the backups cannot be read without it.
    and send a test alert from Grafana (Alerting › Contact points › Telegram ›
    Test).
 8. For production, once the uptime server runs: give it its heartbeat token
-   ([The heartbeat](#the-heartbeat)).
+   ([The heartbeat](#the-heartbeat)). Until then, set `acme_heartbeat_url` to
+   `""` in `group_vars/production/main.yml`: while it names the uptime
+   server, `site.yml` requires the credential `ACME_HEARTBEAT_TOKEN`.
 
 If the tunnel ever stops carrying SSH, use the Hetzner console.
 
@@ -342,10 +344,11 @@ resource. Then:
 
    Put them in `inventory/group_vars/uptime/vault.yml`, from
    `inventory/vault.uptime.example.yml` and encrypted like the others, or
-   write them on the server, as `NAME='value'` lines, after step 3:
+   write them on the server, as `NAME='value'` lines, after step 3 (the
+   folder is the one `uptime.yml` makes, with the same owner and mode):
 
    ```sh
-   ssh -t ops@uptime.example.com 'sudo install -m 600 /dev/null /srv/uptime/credentials.env && sudoedit /srv/uptime/credentials.env'
+   ssh -t ops@uptime.example.com 'sudo install -d -m 750 /srv/uptime && sudo install -m 600 /dev/null /srv/uptime/credentials.env && sudoedit /srv/uptime/credentials.env'
    ```
 
 3. `uv run ansible-playbook playbooks/bootstrap.yml --limit uptime -e ansible_user=root`
@@ -375,8 +378,13 @@ own machine:
   `ssh ops@uptime.example.com sudo grep PRODUCTION_HEARTBEAT_TOKEN /srv/uptime/secrets.env`,
   and put the value in `group_vars/production/vault.yml` as
   `ACME_HEARTBEAT_TOKEN`;
-- or on production's server: add `ACME_HEARTBEAT_TOKEN='<value>'` to
-  `/srv/acme/credentials.env` with `sudoedit`, as for the other credentials.
+- or on production's server, without showing it: once
+  `/srv/acme/credentials.env` lacks the line,
+
+  ```sh
+  ssh ops@uptime.example.com sudo sed -n "s/^PRODUCTION_HEARTBEAT_TOKEN=/ACME_HEARTBEAT_TOKEN=/p" /srv/uptime/secrets.env \
+    | ssh ops@ssh.example.com 'sudo tee -a /srv/acme/credentials.env > /dev/null'
+  ```
 
 Then run `site.yml` on production, which writes the heartbeat's settings to
 `host.env`, and `release.yml`, which restarts Grafana with them. To change
