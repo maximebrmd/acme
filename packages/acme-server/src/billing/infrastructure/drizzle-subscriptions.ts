@@ -1,11 +1,11 @@
-import { asc, eq, lte, sql } from "drizzle-orm";
+import { asc, eq, lt, sql } from "drizzle-orm";
 import { DateTime, Effect, Layer, Option, Schema } from "effect";
 import { SqlClient } from "effect/sql";
 
 import { Subscriptions } from "#billing/application/ports/subscriptions.ts";
 import type { RecordOutcome } from "#billing/application/ports/subscriptions.ts";
 import type { SubscriptionChange } from "#billing/domain/subscription-change.ts";
-import { Subscription } from "#billing/domain/subscription.ts";
+import { lifecycleStage, Subscription } from "#billing/domain/subscription.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
@@ -21,6 +21,15 @@ const decodeSubscription = Schema.decodeUnknownEffect(Subscription);
 const failed = (cause: unknown) => new DatabaseError({ cause });
 
 const date = (instant: DateTime.Utc) => DateTime.toDateUtc(instant);
+
+// The stage of the status a row holds, as `lifecycleStage` orders them; a
+// status the domain does not know yields to any event.
+const storedStage = sql`case ${subscriptions.status} ${sql.join(
+  Object.entries(lifecycleStage).map(
+    ([status, stage]) => sql`when ${status} then ${stage}::integer`
+  ),
+  sql` `
+)} else 0 end`;
 
 const toSubscription = (row: Row) =>
   decodeSubscription({
@@ -39,7 +48,7 @@ const toSubscription = (row: Row) =>
  * Subscriptions in the billing schema. Recording takes one transaction: the
  * event's id first, which a delivery of the same event running at once
  * waits on and then finds, then the subscription, written only over an
- * older event's.
+ * older event's, or one of the same second that is not further along.
  */
 export const DrizzleSubscriptionsLive = Layer.effect(
   Subscriptions,
@@ -95,7 +104,13 @@ export const DrizzleSubscriptionsLive = Layer.effect(
         return duplicate;
       }
 
-      // Events of the same second apply in the order they arrive.
+      // A later event wins. Of two events of the same second, the one
+      // further along the subscription's life wins (`lifecycleStage`), and
+      // otherwise the one that arrives last.
+      const later = lt(subscriptions.lastEventAt, values.lastEventAt);
+      const sameSecond = eq(subscriptions.lastEventAt, values.lastEventAt);
+      const notBehind = sql`${storedStage} <= ${lifecycleStage[subscription.status]}`;
+
       const written = yield* db
         .insert(subscriptions)
         .values(values)
@@ -111,7 +126,7 @@ export const DrizzleSubscriptionsLive = Layer.effect(
             updatedAt: sql`excluded.updated_at`,
             workspaceId: sql`excluded.workspace_id`,
           },
-          setWhere: lte(subscriptions.lastEventAt, values.lastEventAt),
+          setWhere: sql`${later} or (${sameSecond} and ${notBehind})`,
           target: subscriptions.stripeSubscriptionId,
         })
         .returning({ id: subscriptions.stripeSubscriptionId });

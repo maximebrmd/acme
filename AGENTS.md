@@ -547,9 +547,11 @@ and no socket, for tests.
   `RecordSubscription` keeps from Stripe's `customer.subscription.*` events:
   Better Auth's webhook checks their signature, then its `onEvent` finds the
   workspace by its Stripe customer and the plan by its price. An event is
-  recorded once (`billing.stripe_events`), never over a newer one, and a
-  failure answers the webhook an error, so Stripe sends it again. Active,
-  trialing and past due subscriptions give their plan.
+  recorded once (`billing.stripe_events`), never over a newer one; Stripe
+  dates events to the second, so of two in the same second the one further
+  along the subscription's life wins (`lifecycleStage`). A failure answers
+  the webhook an error, so Stripe sends it again. Active, trialing and past
+  due subscriptions give their plan.
 - Better Auth's subscription routes take `customerType: "organization"` and
   the workspace as `referenceId` only, for members with `billing:manage`,
   never staff impersonating them. Checkout sends Stripe Tax's parameters

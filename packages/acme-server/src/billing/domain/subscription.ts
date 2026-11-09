@@ -43,3 +43,23 @@ export class Subscription extends Schema.Class<Subscription>(
  */
 export const entitles = ({ status }: Subscription): boolean =>
   status === "active" || status === "trialing" || status === "past_due";
+
+/**
+ * How far along its life each status is: incomplete until the first
+ * payment, then live (in its trial, active, past due, unpaid or paused,
+ * back and forth), then ended for good. A subscription never goes back a
+ * stage. Stripe dates events to the second and delivers them in any order,
+ * so of two events of the same second, the one further along is the later:
+ * `customer.subscription.created` (incomplete) and `.updated` (active)
+ * often share theirs.
+ */
+export const lifecycleStage: Readonly<Record<SubscriptionStatus, number>> = {
+  active: 1,
+  canceled: 2,
+  incomplete: 0,
+  incomplete_expired: 2,
+  past_due: 1,
+  paused: 1,
+  trialing: 1,
+  unpaid: 1,
+};

@@ -126,6 +126,65 @@ layer(RepositoryTest)("the subscriptions in Postgres", (it) => {
     })
   );
 
+  it.effect(
+    "keep the event further along of two in the same second, in either order",
+    () =>
+      Effect.gen(function* sameSecond() {
+        const subscriptions = yield* Subscriptions;
+
+        // Stripe dates both to the second, and may deliver the update first.
+        const delivered = Effect.fn("delivered")(function* delivered(
+          first: SubscriptionStatus,
+          second: SubscriptionStatus
+        ) {
+          const workspaceId = yield* freshWorkspace;
+          const subscriptionId = yield* freshStripeId("sub");
+
+          const outcomes = [
+            yield* subscriptions.record(
+              changeOf(workspaceId, {
+                eventId: yield* freshStripeId("evt"),
+                occurredAt: "2026-11-09T10:00:00Z",
+                status: first,
+                subscriptionId,
+              })
+            ),
+            yield* subscriptions.record(
+              changeOf(workspaceId, {
+                eventId: yield* freshStripeId("evt"),
+                occurredAt: "2026-11-09T10:00:00Z",
+                status: second,
+                subscriptionId,
+              })
+            ),
+          ];
+
+          return { outcomes, statuses: yield* statusesOf(workspaceId) };
+        });
+
+        assert.deepStrictEqual(yield* delivered("active", "incomplete"), {
+          outcomes: ["recorded", "stale"],
+          statuses: ["active"],
+        });
+
+        assert.deepStrictEqual(yield* delivered("incomplete", "active"), {
+          outcomes: ["recorded", "recorded"],
+          statuses: ["active"],
+        });
+
+        assert.deepStrictEqual(yield* delivered("canceled", "active"), {
+          outcomes: ["recorded", "stale"],
+          statuses: ["canceled"],
+        });
+
+        // Two of the same stage apply in the order they arrive.
+        assert.deepStrictEqual(yield* delivered("active", "past_due"), {
+          outcomes: ["recorded", "recorded"],
+          statuses: ["past_due"],
+        });
+      })
+  );
+
   it.effect("list only the workspace's own subscriptions", () =>
     Effect.gen(function* own() {
       const subscriptions = yield* Subscriptions;
