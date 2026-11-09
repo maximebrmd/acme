@@ -175,6 +175,18 @@ X facture chaque requête de l’API à l’application, et une publication avec
 
 Pour LinkedIn comme pour X, l’un des deux réglages sans l’autre arrête le serveur au démarrage ; sans les deux, **Canaux** ne propose pas la plateforme.
 
+### TikTok [#tiktok]
+
+Un serveur connecte des créateurs TikTok une fois que vous lui avez enregistré une application sur TikTok for Developers :
+
+1. Ajoutez le produit **Login Kit**, avec `PUBLIC_URL/connect/tiktok/callback` comme URI de redirection pour le web, comme `https://acme.example.com/connect/tiktok/callback`. TikTok n’accepte que des URI de redirection en HTTPS : en développement, passez par un tunnel HTTPS.
+2. Ajoutez la **Content Posting API**, avec **Direct Post** activé, et la **Display API**, pour les statistiques. Ajoutez les scopes `user.info.basic`, `user.info.profile`, `video.publish` et `video.list`.
+3. Mettez la clé client de l’application dans `TIKTOK_CLIENT_KEY` et son secret client dans `TIKTOK_CLIENT_SECRET`.
+
+Tant que TikTok n’a pas audité l’application, il accepte jusqu’à cinq créateurs par jour, dont les comptes doivent être privés, et seulement des publications qu’ils sont seuls à voir : les autres échouent avec leur raison, « la plateforme n’accepte que des publications privées de l’application de ce serveur ». Demandez l’audit depuis la page de l’application une fois que vous l’avez essayée. Acme montre le pseudonyme du créateur, les audiences que propose son compte, les interactions qu’il permet et le consentement de TikTok avant la programmation, comme le demandent les règles de TikTok.
+
+TikTok ne va chercher des photos qu’à un préfixe d’URL ou un domaine vérifié pour l’application, sous **URL properties** : servez le stockage des médias à une adresse publique (`ACME_MEDIA_PUBLIC_BASE_URL`), vérifiez-la, et mettez-la dans `TIKTOK_MEDIA_URL_PREFIX`. TikTok va alors chercher aussi les vidéos, comme ses règles le préfèrent pour des médias déjà sur un serveur. Sans lui, Acme envoie les vidéos en morceaux de 10 Mo, un seul à la fois en mémoire, et refuse à la programmation les publications TikTok avec des photos. Le serveur appelle `open.tiktokapis.com` et les adresses d’envoi que donne TikTok.
+
 ### Threads, Instagram et Pages Facebook [#meta]
 
 Une application du tableau de bord des développeurs de Meta connecte les trois. Donnez-lui le cas d’usage Facebook Login, avec les autorisations `pages_show_list`, `pages_read_engagement` et `pages_manage_posts` pour les Pages Facebook, et `instagram_basic` et `instagram_content_publish` pour Instagram ; et le cas d’usage Threads, avec `threads_basic` et `threads_content_publish`. Définissez ensuite `META_APP_ID` et `META_APP_SECRET` d’après les paramètres de base de l’application, et `THREADS_APP_ID` et `THREADS_APP_SECRET` d’après ses paramètres Threads. Une plateforme dont les paramètres manquent n’est pas proposée.

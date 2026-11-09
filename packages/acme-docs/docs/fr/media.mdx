@@ -36,7 +36,7 @@ Chaque image ou vidéo d’une publication a son propre texte alternatif, qui pa
 
 ## Ce que chaque plateforme accepte [#platforms]
 
-Acme publie sur Mastodon, Bluesky, LinkedIn, X, Threads, Instagram et les Pages Facebook. Quand vous programmez une publication, il vérifie ses images et vidéos selon ces limites :
+Acme publie sur Mastodon, Bluesky, LinkedIn, X, Threads, Instagram, les Pages Facebook et TikTok. Quand vous programmez une publication, il vérifie ses images et vidéos selon ces limites :
 
 | Limite                           | Bluesky                                                  | Mastodon                                                                  |
 | -------------------------------- | -------------------------------------------------------- | ------------------------------------------------------------------------- |
@@ -68,6 +68,18 @@ Sur les plateformes de Meta :
 | Images et vidéo ensemble         | Oui                                                              | Oui                                                           | Non                              |
 | Texte alternatif                 | Montré à qui en a besoin, jusqu’à 1 000 caractères               | Pas envoyé                                                    | Montré à qui en a besoin         |
 
+Sur TikTok :
+
+| Limite                           | TikTok                                                                                                          |
+| -------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Images et vidéos par publication | Une vidéo, ou jusqu’à 35 photos ; au moins une                                                                  |
+| Images                           | JPEG et WebP, jusqu’à 20 Mio et 1080p (2 073 600 pixels)                                                        |
+| Vidéos                           | MP4 ou QuickTime, jusqu’à 4 Gio et 10 minutes, chaque côté de 360 à 4 096 pixels, de 23 à 60 images par seconde |
+| Images et vidéo ensemble         | Non                                                                                                             |
+| Texte alternatif                 | Non envoyé                                                                                                      |
+
+Un compte TikTok peut n’avoir droit qu’à des vidéos plus courtes, comme le disent ses réglages sur TikTok : Acme vérifie sa durée maximale quand vous programmez la publication, et de nouveau quand elle part. Acme ne lit pas la cadence d’une vidéo : TikTok refuse une vidéo hors de sa plage quand il traite la publication. Les photos demandent un serveur configuré pour que TikTok puisse aller les chercher (voyez [TikTok](/self-hosting#tiktok)) : ailleurs, une publication TikTok avec des photos est refusée quand vous la programmez.
+
 Acme ne vérifie que ce qu’il a lu de chaque fichier : un fait qu’il n’a pas pu lire, comme la durée d’une vidéo, n’est pas vérifié, et la plateforme peut encore refuser le fichier.
 
 ## Quand vous programmez [#schedule]
@@ -83,6 +95,7 @@ Un brouillon peut contenir n’importe quel média prêt de son espace de travai
 - **Mastodon** : chaque fichier va au serveur du compte, qui peut le traiter avant que la publication puisse le montrer.
 - **Bluesky** : les images vont au serveur qui héberge le compte, et une vidéo au service vidéo de Bluesky, qui la traite.
 - **Threads**, **Instagram** et **Pages Facebook** : Acme donne à Meta un lien vers chaque fichier du stockage des médias, valable deux heures, et Meta va le chercher. Sur Threads et Instagram, Meta traite ensuite les fichiers avant que la publication parte.
+- **TikTok** : une vidéo part en morceaux de 10 Mo, lus un à la fois dans le stockage des médias, sauf si le serveur laisse TikTok aller la chercher à l’adresse publique du stockage ; TikTok va toujours chercher les photos. TikTok traite ensuite la publication avant sa mise en ligne.
 
 Acme attend jusqu’à 15 minutes qu’une plateforme traite un fichier. Au-delà, il réessaie la publication plus tard, comme pour une plateforme qui ne répond pas.
 

@@ -137,9 +137,9 @@ echo "k1:$(openssl rand -base64 32)"
 
 The value lists `keyId:key` entries separated by commas, such as `k2:<key>,k1:<key>`. The first key encrypts and every listed key decrypts: to rotate, put a new key first and keep the old ones. A malformed value stops the server at startup. Keep the keys secret, and keep a copy: without them, every channel must be reconnected.
 
-The server reaches the platforms itself, over HTTPS, so it needs to reach the internet: to connect accounts, and to publish, on each account's Mastodon server, on the Bluesky server that holds each account, through Bluesky's video service, `https://video.bsky.app`, for videos, on LinkedIn (`www.linkedin.com`, `api.linkedin.com` and the upload addresses LinkedIn gives), on X (`api.x.com`) and on Meta's APIs. It only calls servers on public addresses, on the default HTTPS port, which keeps people from pointing it at your private network. The platforms send people back to `PUBLIC_URL/connect/<platform>/callback`, through their browser: they never call the server themselves, apart from Bluesky reading Acme's client description, and Meta's data deletion requests, below.
+The server reaches the platforms itself, over HTTPS, so it needs to reach the internet: to connect accounts, and to publish, on each account's Mastodon server, on the Bluesky server that holds each account, through Bluesky's video service, `https://video.bsky.app`, for videos, on LinkedIn (`www.linkedin.com`, `api.linkedin.com` and the upload addresses LinkedIn gives), on X (`api.x.com`), on TikTok (`open.tiktokapis.com`) and on Meta's APIs. It only calls servers on public addresses, on the default HTTPS port, which keeps people from pointing it at your private network. The platforms send people back to `PUBLIC_URL/connect/<platform>/callback`, through their browser: they never call the server themselves, apart from Bluesky reading Acme's client description, and Meta's data deletion requests, below.
 
-To publish an image or a video, the server reads it from the media store, whole, into memory, then uploads it: a Bluesky video can take up to 300 MB. LinkedIn and X take videos in parts of 4 MiB, so the server holds one part at a time. Give the server the memory for the largest files your members post.
+To publish an image or a video, the server reads it from the media store, whole, into memory, then uploads it: a Bluesky video can take up to 300 MB. LinkedIn and X take videos in parts of 4 MiB, and TikTok in parts of 10 MB, so the server holds one part at a time. Give the server the memory for the largest files your members post.
 
 ### Bluesky [#bluesky]
 
@@ -174,6 +174,18 @@ A server connects X accounts once you register an app for it in X's developer co
 X bills each request of the API to the app, and a post with a link costs more. Set a spending limit in X's console: once it is reached, X refuses posts, which fail with their reason, until you raise it. Acme renews each account's access every two hours, and keeps it working as long as it is renewed.
 
 For LinkedIn as for X, one of the two settings without the other stops the server at startup; without both, **Channels** does not offer the platform.
+
+### TikTok [#tiktok]
+
+A server connects TikTok creators once you register an app for it on TikTok for Developers:
+
+1. Add the **Login Kit** product, with `PUBLIC_URL/connect/tiktok/callback` as its redirect URI for the web, such as `https://acme.example.com/connect/tiktok/callback`. TikTok takes HTTPS redirect URIs only: in development, use an HTTPS tunnel.
+2. Add the **Content Posting API**, with **Direct Post** on, and the **Display API**, for analytics. Add the scopes `user.info.basic`, `user.info.profile`, `video.publish` and `video.list`.
+3. Put the app's client key in `TIKTOK_CLIENT_KEY` and its client secret in `TIKTOK_CLIENT_SECRET`.
+
+Until TikTok audits the app, it takes up to five creators a day, whose accounts must be private, and only posts they alone see: other posts fail with their reason, "the platform takes only private posts from this server's app". Ask for the audit from the app's page once you have tried it. Acme shows the creator's nickname, the audiences their account offers, the interactions they allow and TikTok's consent before scheduling, as TikTok's guidelines ask.
+
+TikTok fetches photos only from a URL prefix or a domain you verified for the app, under **URL properties**: serve the media store at a public address (`ACME_MEDIA_PUBLIC_BASE_URL`), verify it, and set `TIKTOK_MEDIA_URL_PREFIX` to it. TikTok then fetches videos too, as its guidelines prefer for media already on a server. Without it, Acme sends videos in parts of 10 MB, holding one part at a time, and refuses TikTok posts with photos when they are scheduled. The server calls `open.tiktokapis.com` and the upload addresses TikTok gives.
 
 ### Threads, Instagram and Facebook Pages [#meta]
 

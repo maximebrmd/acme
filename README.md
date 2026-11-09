@@ -10,7 +10,7 @@ two years after it ships.
 It is not released yet. Today you can:
 
 - create an account and workspaces, and connect Mastodon, Bluesky, LinkedIn,
-  X, Threads and Instagram accounts and Facebook Pages to them;
+  X, Threads, Instagram and TikTok accounts and Facebook Pages to them;
 - upload images and videos to a workspace's media library;
 - write a post, with its own text on some channels and images or videos
   with alt text, keep it with the workspace's drafts or discard it, then
@@ -20,7 +20,7 @@ It is not released yet. Today you can:
   whether one Acme could not confirm went out;
 - hear how your posts ended, or every post if you choose, and which
   channels need reconnecting, under a bell in the app and by email;
-- see how posts did on Mastodon and Bluesky: their likes, reposts, replies
+- see how posts did on Mastodon, Bluesky and TikTok: their likes, reposts, replies
   and quotes, read back every hour for two days then daily for a month, by
   channel and day, and on each post's page;
 - ask a writing assistant to rewrite, shorten or translate a post, or to
@@ -36,7 +36,7 @@ It is not released yet. Today you can:
 - sign in from the command line, and let MCP clients read a workspace.
 
 Analytics on LinkedIn, X and Meta's platforms, and the other platforms Acme
-knows (TikTok, YouTube, Pinterest), are still to come.
+knows (YouTube, Pinterest), are still to come.
 
 ## Set up
 
@@ -176,6 +176,14 @@ be read, and their channels must be reconnected.
   reached, to tick. Meta fetches the media it publishes from the store, which
   it cannot reach on this machine: text posts work, media needs a public
   store.
+- **TikTok** needs an app on TikTok for Developers with Login Kit, the
+  Content Posting API (Direct Post) and the Display API, its key and secret
+  in `TIKTOK_CLIENT_KEY` and `TIKTOK_CLIENT_SECRET`, and the redirect
+  `PUBLIC_URL/connect/tiktok/callback`, which TikTok takes on HTTPS only: use
+  an HTTPS tunnel. Until TikTok audits the app, posts go out only from
+  private accounts, visible to their owner only. Videos go up in chunks;
+  photos need `TIKTOK_MEDIA_URL_PREFIX`, a public store address verified
+  for the app.
 
 The server refreshes tokens due for it every 10 minutes and, daily at 08:00
 UTC, tells a workspace's owners and admins about accounts that must be
@@ -330,6 +338,7 @@ In development, these are the ones you may want:
 | `X_CLIENT_ID`                 | unset: X is not offered          | The X app's OAuth 2.0 client id, with `X_CLIENT_SECRET`        |
 | `META_APP_ID`                 | unset: no Facebook nor Instagram | Meta's app, with `META_APP_SECRET`                             |
 | `THREADS_APP_ID`              | unset: no Threads                | The app's Threads id, with `THREADS_APP_SECRET`                |
+| `TIKTOK_CLIENT_KEY`           | unset: TikTok is not offered     | The TikTok app's client key, with `TIKTOK_CLIENT_SECRET`       |
 | `ACME_AI_PROVIDER`            | unset: no writing assistant      | `anthropic` or `openai-compatible`                             |
 | `ACME_AI_API_KEY`             | unset                            | The provider's key: required for Anthropic                     |
 | `ACME_AI_BASE_URL`            | Anthropic's API                  | The API's base URL: required for an OpenAI-compatible server   |
