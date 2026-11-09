@@ -14,7 +14,7 @@ export interface UploadApi {
     upload: NewUpload
   ) => Effect.Effect<PreparedUpload, UploadFailed>;
   readonly complete: (mediaId: string) => Effect.Effect<Media, UploadFailed>;
-  /** Deletes media whose upload will not finish. */
+  /** Deletes media whose upload failed or was canceled. */
   readonly discard: (mediaId: string) => Effect.Effect<void>;
 }
 
@@ -47,7 +47,7 @@ const transferFailure = ({ status }: TransferFailed): UploadFailed => {
  * means an earlier one stored it.
  *
  * Interrupting it cancels it: the requests are aborted and the media
- * deleted, as it is when sending fails.
+ * deleted, as it is when sending fails or the API refuses what arrived.
  */
 export const uploadFile = Effect.fn("uploadFile")(function* uploadFile(
   api: UploadApi,
@@ -97,16 +97,23 @@ export const uploadFile = Effect.fn("uploadFile")(function* uploadFile(
       )
     );
 
-  yield* Option.match(slicesOf(prepared.upload, file.size), {
-    onNone: () => Effect.fail(new UploadFailed({ reason: "unexpected" })),
-    onSome: (slices) =>
-      Effect.forEach(slices, send, {
-        concurrency: partConcurrency,
-        discard: true,
-      }).pipe(Effect.mapError(transferFailure)),
-  }).pipe(Effect.onError(() => api.discard(mediaId)));
+  const sendAndCheck = Effect.gen(function* sendAndCheck() {
+    yield* Option.match(slicesOf(prepared.upload, file.size), {
+      onNone: () => Effect.fail(new UploadFailed({ reason: "unexpected" })),
+      onSome: (slices) =>
+        Effect.forEach(slices, send, {
+          concurrency: partConcurrency,
+          discard: true,
+        }).pipe(Effect.mapError(transferFailure)),
+    });
 
-  events.onCompleting();
+    events.onCompleting();
 
-  return yield* api.complete(mediaId);
+    return yield* api.complete(mediaId);
+  });
+
+  // Once the media exists, an upload that does not end with it uploaded
+  // deletes it, while sending or while the API checks the file: nothing is
+  // left pending or rejected, and trying again starts afresh.
+  return yield* sendAndCheck.pipe(Effect.onError(() => api.discard(mediaId)));
 });

@@ -346,6 +346,60 @@ describe(uploadFile, () => {
     })
   );
 
+  it.effect("cancels while the file is checked, and deletes the media", () =>
+    Effect.gen(function* cancelsWhileChecked() {
+      const store = yield* fakes(single);
+      const { completing, events } = yield* listening;
+      const checking = yield* Latch.make();
+
+      const api: UploadApi = {
+        ...store.api,
+        complete: () => checking.open.pipe(Effect.andThen(Effect.never)),
+      };
+
+      const fiber = yield* uploadFile(api, fileOf(4), {
+        altText: "",
+        events,
+      }).pipe(
+        Effect.provideService(Transfer, store.transfer),
+        Effect.forkChild
+      );
+
+      yield* checking.await;
+      yield* Fiber.interrupt(fiber);
+
+      assert.strictEqual(yield* Ref.get(completing), 1);
+      assert.deepStrictEqual(yield* Ref.get(store.discarded), [mediaId]);
+    })
+  );
+
+  it.effect.each([
+    { reason: "incomplete" },
+    { reason: "rejectedType" },
+    { reason: "storeUnavailable" },
+  ] as const)(
+    "deletes the media when checking the file fails ($reason), so a new try starts afresh",
+    ({ reason }) =>
+      Effect.gen(function* checkFails() {
+        const store = yield* fakes(single);
+        const { events } = yield* listening;
+
+        const api: UploadApi = {
+          ...store.api,
+          complete: () => Effect.fail(new UploadFailed({ reason })),
+        };
+
+        const failure = yield* Effect.flip(
+          uploadFile(api, fileOf(4), { altText: "", events }).pipe(
+            Effect.provideService(Transfer, store.transfer)
+          )
+        );
+
+        assert.deepStrictEqual(failure, new UploadFailed({ reason }));
+        assert.deepStrictEqual(yield* Ref.get(store.discarded), [mediaId]);
+      })
+  );
+
   it.effect("refuses a plan that does not cover the file", () =>
     Effect.gen(function* wrongPlan() {
       const store = yield* fakes(inParts(10));
