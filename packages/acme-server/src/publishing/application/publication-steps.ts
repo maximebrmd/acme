@@ -1,4 +1,4 @@
-import { DateTime, Duration, Effect, Result } from "effect";
+import { DateTime, Duration, Effect, Option, Result } from "effect";
 
 import { PlatformUnavailable } from "#shared/domain/platform-unavailable.ts";
 import type { Platform } from "#shared/domain/platform.ts";
@@ -34,17 +34,21 @@ export type LookUp =
  * How a platform tells whether an attempt's post went out:
  *
  * - `lookUp`: the post is read back by a key chosen before it was sent,
- *   which the platform never takes twice (Bluesky's record key). The answer
- *   is definite, and after `absent`, sending again posts at most once.
+ *   which the platform never takes twice (Bluesky's record key), or by what
+ *   `prepare` made of it when the run still has it (a Meta container, which
+ *   is published once at most). The answer `absent` must be definite:
+ *   sending again then posts at most once. Without a key, as when resuming
+ *   a run, an adapter that cannot tell answers `unknown`.
  * - `resend`: sending the post again with the attempt's idempotency key
  *   answers with the post that key made, or makes it once, for `window`
  *   after the attempt started (Mastodon keeps keys for an hour).
  */
-export type Confirmation =
+export type Confirmation<P = never> =
   | {
       readonly _tag: "lookUp";
       readonly lookUp: (
-        post: OutgoingPost
+        post: OutgoingPost,
+        prepared: Option.Option<P>
       ) => Effect.Effect<LookUp, PublishFailure>;
     }
   | { readonly _tag: "resend"; readonly window: Duration.Duration };
@@ -61,7 +65,7 @@ export interface PublicationSteps<P> {
     post: OutgoingPost,
     prepared: P
   ) => Effect.Effect<Published, OutcomeUnknown | PublishFailure>;
-  readonly confirmation: Confirmation;
+  readonly confirmation: Confirmation<P>;
   readonly platform: Platform;
   readonly poll: (
     post: OutgoingPost,
@@ -202,7 +206,7 @@ export const sequenced = <P>(
 
   const confirmOnce = (post: OutgoingPost, prepared: P): Effect.Effect<Round> =>
     confirmation._tag === "lookUp"
-      ? confirmation.lookUp(post).pipe(
+      ? confirmation.lookUp(post, Option.some(prepared)).pipe(
           Effect.orElseSucceed((): LookUp => ({ _tag: "unknown" })),
           Effect.flatMap((found) => {
             if (found._tag === "found") {
@@ -304,7 +308,7 @@ export const sequenced = <P>(
     post: OutgoingPost
   ): Effect.Effect<PublishResult, PublishFailure> =>
     (confirmation._tag === "lookUp"
-      ? confirmation.lookUp(post).pipe(
+      ? confirmation.lookUp(post, Option.none()).pipe(
           Effect.orElseSucceed((): LookUp => ({ _tag: "unknown" })),
           Effect.flatMap(
             (found): Effect.Effect<PublishResult, PublishFailure> => {

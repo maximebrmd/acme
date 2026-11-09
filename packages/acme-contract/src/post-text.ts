@@ -229,6 +229,8 @@ const threadsVideo: FormatLimits = {
   maxDurationMs: 5 * minute,
 };
 
+const facebookImage: FormatLimits = { maxByteSize: 10 * mebibyte };
+
 const instagramVideo: FormatLimits = {
   aspectRatio: { maximum: 10, minimum: 0.01 },
   maxByteSize: 300 * mebibyte,
@@ -257,7 +259,22 @@ export const platformRules: Readonly<Record<Platform, PlatformRules>> = {
       { maximum: 3000, unit: "utf8Bytes" },
     ],
   },
-  facebook: { mediaRequired: false, textLimits: [] },
+  facebook: {
+    media: {
+      formats: {
+        "image/gif": facebookImage,
+        "image/jpeg": facebookImage,
+        "image/png": facebookImage,
+        "video/mp4": {},
+        "video/quicktime": {},
+      },
+      maxVideos: 1,
+      mixesKinds: false,
+      showsAltText: true,
+    },
+    mediaRequired: false,
+    textLimits: [{ maximum: 63_206, unit: "codePoints" }],
+  },
   instagram: {
     maxHashtags: 30,
     maxMedia: 20,

@@ -67,6 +67,7 @@ describe(mediaViolationsOn, () => {
 
     expect(withRules.toSorted()).toStrictEqual([
       "bluesky",
+      "facebook",
       "instagram",
       "linkedin",
       "mastodon",
@@ -110,6 +111,39 @@ describe(mediaViolationsOn, () => {
       },
     ]);
     expect(violations("mastodon", gif, webp)).toStrictEqual([]);
+  });
+
+  it("takes photos of up to 10 MiB and a video alone on Facebook Pages", () => {
+    const webp = mediaFile(first, { contentType: "image/webp" });
+    const large = mediaFile(second, { byteSize: 11 * mebibyte });
+
+    expect(violations("facebook", webp, large)).toStrictEqual([
+      {
+        _tag: "mediaTypeUnsupported",
+        ...on("facebook"),
+        contentType: "image/webp",
+        mediaId: first,
+      },
+      {
+        _tag: "mediaTooLarge",
+        ...on("facebook"),
+        byteSize: 11 * mebibyte,
+        maximum: 10 * mebibyte,
+        mediaId: second,
+      },
+    ]);
+    expect(
+      violations("facebook", video(first), mediaFile(second))
+    ).toStrictEqual([{ _tag: "mixedMedia", ...on("facebook") }]);
+    expect(
+      violations(
+        "facebook",
+        video(first, { contentType: "video/quicktime" }),
+        video(second)
+      )
+    ).toStrictEqual([
+      { _tag: "tooManyVideos", ...on("facebook"), count: 2, maximum: 1 },
+    ]);
   });
 
   it("weighs each file against its own type's limit", () => {
@@ -280,12 +314,7 @@ describe(mediaViolationsOn, () => {
       duration: Option.some(Duration.hours(2)),
     });
 
-    for (const platform of [
-      "facebook",
-      "pinterest",
-      "tiktok",
-      "youtube",
-    ] as const) {
+    for (const platform of ["pinterest", "tiktok", "youtube"] as const) {
       expect(violations(platform, huge, mediaFile(second))).toStrictEqual([]);
     }
   });

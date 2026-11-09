@@ -1,5 +1,5 @@
 import { Layer } from "effect";
-import { Digest, SecureRandom } from "effect/crypto";
+import { Digest, Mac, SecureRandom } from "effect/crypto";
 import { FetchHttpClient } from "effect/http";
 
 import type { AttachableMedia } from "#publishing/application/attachable-media.ts";
@@ -86,7 +86,8 @@ export const publishingWorkers = <E, R>(
   );
 
 /**
- * The platforms the gates publish to, Mastodon and Bluesky, with the tokens
+ * The platforms the gates publish to, Mastodon, Bluesky, Threads, Instagram
+ * and Facebook Pages, with the tokens
  * the channels context hands out (ChannelAccess) and the files the media
  * context does (MediaForPlatforms), which the composition root provides
  * with Dns and the PostRepository.
@@ -100,9 +101,9 @@ export const PlatformsLive = RoutedPlatformPublisher.pipe(
   Layer.provide(
     Layer.mergeAll(
       FetchHttpClient.layer,
-      SecureRandom.layerWebCrypto,
+      Mac.layerWebCrypto,
       Digest.layerWebCrypto
-    )
+    ).pipe(Layer.provideMerge(SecureRandom.layerWebCrypto))
   )
 );
 
