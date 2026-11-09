@@ -3,6 +3,43 @@
     "title": "Acme",
     "description": "Rédigez vos publications une fois, planifiez-les sur toutes les plateformes et suivez leurs résultats."
   },
+  "Assistant": {
+    "trigger": "Assistant",
+    "worksOn": "L’assistant de rédaction travaille sur le texte pour tous les canaux.",
+    "remaining": "{remaining, plural, =0 {Plus aucune demande aujourd’hui} one {# demande restante aujourd’hui} other {# demandes restantes aujourd’hui}}",
+    "needsText": "Écrivez d’abord un texte.",
+    "textTooLong": "L’assistant accepte jusqu’à {maxLength} caractères.",
+    "rewrite": "Réécrire sur un ton",
+    "tone": "{tone, select, professional {Professionnel} friendly {Chaleureux} casual {Décontracté} enthusiastic {Enthousiaste} witty {Spirituel} other {{tone}}}",
+    "shorten": "Raccourcir pour",
+    "translate": "Traduire en",
+    "hashtags": "Suggérer des hashtags",
+    "rewriteTitle": "Réécriture : {tone}",
+    "shortenTitle": "Raccourcir pour {platform}",
+    "translateTitle": "Traduire en {language}",
+    "hashtagsTitle": "Hashtags suggérés",
+    "previewDescription": "Rien ne change tant que vous n’acceptez pas. Relisez la suggestion avant de l’utiliser.",
+    "writing": "Rédaction d’une suggestion…",
+    "suggestionLabel": "Suggestion",
+    "fit": "{length} sur {maximum} {unit, select, utf8Bytes {octets} other {caractères}} sur {platform}",
+    "accept": "Utiliser ce texte",
+    "acceptHashtags": "Ajouter ces hashtags",
+    "discard": "Ignorer",
+    "retry": "Réessayer",
+    "close": "Fermer",
+    "accepted": "Suggestion appliquée.",
+    "errors": {
+      "unavailable": "L’assistant de rédaction n’est pas disponible sur ce serveur.",
+      "quota": "Votre espace de travail a utilisé ses {dailyLimit} demandes à l’assistant du jour. Vous pourrez en refaire à partir du {resetsAt}.",
+      "empty": "Écrivez d’abord un texte.",
+      "tooLong": "Le texte dépasse les {maxLength} caractères que l’assistant accepte.",
+      "unreachable": "L’assistant est injoignable. Réessayez dans un instant.",
+      "declined": "L’assistant a refusé de travailler sur ce texte.",
+      "invalidAnswer": "La réponse de l’assistant est inutilisable. Réessayez.",
+      "forbidden": "Votre rôle ne vous permet pas d’utiliser l’assistant.",
+      "generic": "Une erreur est survenue. Réessayez."
+    }
+  },
   "AppShell": {
     "productName": "Acme"
   },

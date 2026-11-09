@@ -3,6 +3,43 @@
     "title": "Acme",
     "description": "Write posts once, schedule them across platforms and see how they perform."
   },
+  "Assistant": {
+    "trigger": "Assistant",
+    "worksOn": "The writing assistant works on the text for all channels.",
+    "remaining": "{remaining, plural, =0 {No requests left today} one {# request left today} other {# requests left today}}",
+    "needsText": "Write some text first.",
+    "textTooLong": "The assistant takes up to {maxLength} characters.",
+    "rewrite": "Rewrite in a tone",
+    "tone": "{tone, select, professional {Professional} friendly {Friendly} casual {Casual} enthusiastic {Enthusiastic} witty {Witty} other {{tone}}}",
+    "shorten": "Shorten to fit",
+    "translate": "Translate into",
+    "hashtags": "Suggest hashtags",
+    "rewriteTitle": "Rewrite: {tone}",
+    "shortenTitle": "Shorten for {platform}",
+    "translateTitle": "Translate into {language}",
+    "hashtagsTitle": "Suggested hashtags",
+    "previewDescription": "Nothing changes until you accept. Read the suggestion before you use it.",
+    "writing": "Writing a suggestion…",
+    "suggestionLabel": "Suggestion",
+    "fit": "{length} of {maximum} {unit, select, utf8Bytes {bytes} other {characters}} on {platform}",
+    "accept": "Use this text",
+    "acceptHashtags": "Add these hashtags",
+    "discard": "Discard",
+    "retry": "Try again",
+    "close": "Close",
+    "accepted": "Suggestion applied.",
+    "errors": {
+      "unavailable": "The writing assistant is not available on this server.",
+      "quota": "Your workspace has used today's {dailyLimit} assistant requests. You can ask again from {resetsAt}.",
+      "empty": "Write some text first.",
+      "tooLong": "The text is longer than the {maxLength} characters the assistant takes.",
+      "unreachable": "The assistant could not be reached. Try again in a moment.",
+      "declined": "The assistant declined to work on this text.",
+      "invalidAnswer": "The assistant's answer could not be used. Try again.",
+      "forbidden": "Your role does not let you use the assistant.",
+      "generic": "Something went wrong. Try again."
+    }
+  },
   "AppShell": {
     "productName": "Acme"
   },
