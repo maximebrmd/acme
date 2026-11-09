@@ -7,10 +7,12 @@ import { seedChannel } from "./support/channels.ts";
 import { emailedLink } from "./support/mailpit.ts";
 
 // One new member's first steps, in order, in one browser: each test starts
-// where the previous one left off. The module loads again for each attempt,
-// so a retry signs up under a new address.
+// where the previous one left off, ending with a second member Sam invites,
+// who signs up and joins. The module loads again for each attempt, so a
+// retry signs up under a new address.
 const run = randomUUID();
 const name = "Sam Example";
+const guestName = "Alex Example";
 const workspace = "Field Notes";
 const handle = "@notes@social.example";
 const text = "Our first field note, written once and scheduled from Acme.";
@@ -23,6 +25,13 @@ const address = () =>
   credentials.user("member").username.replace("@", `+${run}@`);
 
 const password = () => credentials.user("member").password;
+
+// The second member Sam invites, under an address of this run too.
+const guestAddress = () =>
+  credentials.user("member").username.replace("@", `+${run}-guest@`);
+
+// The invitation's link, which the guest opens once they have an account.
+let invitationLink = "";
 
 // The workspace's pages live under /app/<id>; the test that creates it reads
 // the id from its links.
@@ -143,13 +152,62 @@ describe("a new member's first post", { serial: true }, () => {
     await expect(screen.getByRole("heading", "Calendar")).toBeVisible();
   });
 
-  test("reads the calendar in French", async ({ browser, screen }) => {
+  test("invites a second member", async ({ app, screen }) => {
+    await app.open("/app");
+    await screen
+      .getByRole("navigation", `Posts of ${workspace}`)
+      .getByRole("link", `Settings of ${workspace}`)
+      .tap();
+
+    await expect(
+      screen.getByRole("heading", "Workspace settings", { level: 1 })
+    ).toBeVisible();
+
+    await screen
+      .getByRole("navigation", "Workspace settings")
+      .getByRole("link", "Invitations")
+      .tap();
+    await screen.getByLabel("Email").fill(guestAddress());
+    await screen.getByRole("button", "Send the invitation").tap();
+
+    await expect(
+      screen.getByRole("button", `Revoke the invitation to ${guestAddress()}`)
+    ).toBeVisible();
+
+    invitationLink = await emailedLink(
+      guestAddress(),
+      `${name} invited you to ${workspace} on Acme`
+    );
+    expect(new URL(invitationLink).pathname).toMatch(
+      /^\/invitations\/[0-9a-f-]+$/u
+    );
+  });
+
+  test("reads the calendar in French", async ({ app, browser, screen }) => {
+    await app.open(`/app/${workspaceId}/calendar`);
     await screen.getByRole("button", "Language: English").tap();
     await screen.getByRole("menuitemradio", "Français").tap();
 
     await expect(screen.getByRole("heading", "Calendrier")).toBeVisible();
     await expect(screen.getByRole("tab", "Semaine")).toBeVisible();
     await expect(browser).toHaveURL(`/fr/app/${workspaceId}/calendar`);
+  });
+
+  test("keeps French in the account settings", async ({ browser, screen }) => {
+    await screen.getByRole("button", `Compte de ${name}`).tap();
+    await screen.getByRole("menuitem", "Paramètres du compte").tap();
+
+    await expect(
+      screen.getByRole("heading", "Paramètres du compte", { level: 1 })
+    ).toBeVisible();
+    await expect(browser).toHaveURL("/fr/app/account");
+
+    // The account still keeps English, which it signed up in.
+    await screen.getByRole("combobox", "Langue").tap();
+    await screen.getByRole("option", "Français").tap();
+    await screen.getByRole("button", "Enregistrer la langue").tap();
+
+    await expect(screen.getByText("Langue enregistrée.")).toBeVisible();
   });
 
   test("signs out", async ({ app, browser, screen }) => {
@@ -164,5 +222,49 @@ describe("a new member's first post", { serial: true }, () => {
     ).toBeVisible();
     await app.open("/fr/app");
     await expect(browser).toHaveURL("/fr/sign-in");
+  });
+
+  test("signs in to the language the account keeps", async ({
+    app,
+    browser,
+    screen,
+  }) => {
+    // A browser that remembers no language, signing in from an English page.
+    await browser.clearCookies();
+    await app.open("/sign-in");
+    await screen.getByLabel("Email").fill(address());
+    await screen.getByLabel("Password").fill(password());
+    await screen.getByRole("main").getByRole("button", "Sign in").tap();
+
+    await expect(screen.getByRole("heading", `Bonjour, ${name}`)).toBeVisible();
+    await expect(browser).toHaveURL("/fr/app");
+  });
+
+  test("lets the invited member sign up and join", async ({
+    app,
+    browser,
+    screen,
+  }) => {
+    await browser.clearCookies();
+    await app.open("/sign-up");
+    await screen.getByLabel("Name").fill(guestName);
+    await screen.getByLabel("Email").fill(guestAddress());
+    await screen.getByLabel("Password").fill(password());
+    await screen.getByRole("button", "Create my account").tap();
+    await expect(screen.getByText("Check your inbox")).toBeVisible();
+
+    // The confirmation link signs the guest in.
+    await browser.goto(
+      await emailedLink(guestAddress(), "Confirm your email for Acme")
+    );
+    await expect(screen.getByRole("heading", "Email confirmed")).toBeVisible();
+
+    await browser.goto(invitationLink);
+    await screen.getByRole("button", "Accept the invitation").tap();
+
+    const links = screen.getByRole("navigation", `Posts of ${workspace}`);
+
+    await expect(links.getByRole("link", "New post")).toBeVisible();
+    await expect(browser).toHaveURL("/app");
   });
 });
