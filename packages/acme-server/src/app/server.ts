@@ -12,6 +12,7 @@ import {
   AnalyticsLive,
   PlatformMetricsReaderLive,
 } from "#analytics/container.ts";
+import { ClientErrorsLive } from "#app/client-errors/live.ts";
 import { ClusterLive } from "#app/cluster.ts";
 import { CronsLive } from "#app/crons.ts";
 import { McpLive } from "#app/mcp/server.ts";
@@ -76,6 +77,7 @@ const ApiLive = HttpApiBuilder.layer(Api, {
 }).pipe(
   Layer.provide([
     SystemHandlers,
+    ClientErrorsLive,
     ChannelOAuthApiLive,
     DataDeletionApiLive,
     WorkspaceGroupsLive,

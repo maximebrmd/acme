@@ -1,5 +1,6 @@
 import {
   Authentication,
+  ClientErrorIntake,
   CurrentMember,
   CurrentPrincipal,
   CurrentStaff,
@@ -196,11 +197,17 @@ export const StaffAccessLive = Layer.effect(
   })
 );
 
-// For tests: nobody is staff. HttpApiTest serves every group of the API, so
-// tests provide every middleware, whichever groups they exercise.
+// For tests: nobody is staff, and every error report passes the intake.
+// HttpApiTest serves every group of the API, so tests provide every
+// middleware, whichever groups they exercise.
 const noStaffTest = Layer.succeed(
   StaffAccess,
   StaffAccess.of({ session: notFound })
+);
+
+const openIntakeTest = Layer.succeed(
+  ClientErrorIntake,
+  ClientErrorIntake.of((httpEffect) => httpEffect)
 );
 
 /**
@@ -210,6 +217,7 @@ const noStaffTest = Layer.succeed(
 export const securityTest = (member: Member) =>
   Layer.mergeAll(
     noStaffTest,
+    openIntakeTest,
     Layer.succeed(
       Authentication,
       Authentication.of({
@@ -237,6 +245,7 @@ export const securityTest = (member: Member) =>
  */
 export const anonymousSecurityTest = Layer.mergeAll(
   noStaffTest,
+  openIntakeTest,
   Layer.succeed(
     Authentication,
     Authentication.of({
@@ -263,6 +272,7 @@ export const staffSecurityTest = (userId: UserId) =>
           httpEffect.pipe(Effect.provideService(CurrentStaff, { userId })),
       })
     ),
+    openIntakeTest,
     Layer.succeed(
       Authentication,
       Authentication.of({

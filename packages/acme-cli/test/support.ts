@@ -1,6 +1,7 @@
 import {
   Api,
   Authentication,
+  ClientErrorIntake,
   CurrentPrincipal,
   DataDeletionNotFound,
   MetaAppNotConfigured,
@@ -272,6 +273,18 @@ const StaffLive = HttpApiBuilder.group(Api, "staff", (handlers) =>
   )
 );
 
+// Error reports are taken, and dropped.
+const ClientErrorsLive = HttpApiBuilder.group(Api, "clientErrors", (handlers) =>
+  handlers.handleAll({ reportClientError: () => Effect.void })
+).pipe(
+  Layer.provideMerge(
+    Layer.succeed(
+      ClientErrorIntake,
+      ClientErrorIntake.of((httpEffect) => httpEffect)
+    )
+  )
+);
+
 const notConfigured = Effect.fail(new MetaAppNotConfigured());
 
 const DataDeletionLive = HttpApiBuilder.group(Api, "dataDeletion", (handlers) =>
@@ -309,7 +322,8 @@ export const inMemoryServer = (
                 Layer.provide(ChannelOAuthLive),
                 Layer.provide(CaptchaLive),
                 Layer.provide(DataDeletionLive),
-                Layer.provide(StaffLive)
+                Layer.provide(StaffLive),
+                Layer.provide(ClientErrorsLive)
               ),
               HttpApiBuilder.layer(OAuthApi).pipe(
                 Layer.provide(server.handlers)

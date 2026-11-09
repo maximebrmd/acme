@@ -8,6 +8,7 @@ import { BillingApi } from "./billing.ts";
 import { CaptchaApi } from "./captcha.ts";
 import { ChannelOAuthApi } from "./channel-oauth.ts";
 import { ChannelsApi } from "./channels.ts";
+import { ClientErrorsApi } from "./client-errors.ts";
 import { ConnectedAppsApi } from "./connected-apps.ts";
 import { DataDeletionApi } from "./data-deletion.ts";
 import { MediaApi } from "./media.ts";
@@ -213,6 +214,20 @@ export { SignedRequestRefused } from "./signed-request-refused.ts";
 export { ConnectFailed, ConnectFailureReasonSchema } from "./connect-failed.ts";
 
 export type { ConnectFailureReason } from "./connect-failed.ts";
+
+export { ClientErrorIntake } from "./client-error-intake.ts";
+
+export { ClientErrorTooLarge } from "./client-error-too-large.ts";
+
+export {
+  clientErrorLimits,
+  ClientErrorKindSchema,
+  ClientErrorReportSchema,
+  ClientErrorsApi,
+  maxClientErrorBytes,
+} from "./client-errors.ts";
+
+export type { ClientErrorKind, ClientErrorReport } from "./client-errors.ts";
 
 export { CurrentMember } from "./current-member.ts";
 
@@ -484,6 +499,8 @@ export {
 
 export type { StaffRefusal } from "./staff-action-refused.ts";
 
+export { TooManyClientErrors } from "./too-many-client-errors.ts";
+
 export { Unauthenticated } from "./unauthenticated.ts";
 
 export { UnknownChannels } from "./unknown-channels.ts";
@@ -524,4 +541,5 @@ export class Api extends HttpApi.make("acme")
   .add(CaptchaApi)
   .add(AnalyticsApi)
   .add(StaffApi)
+  .add(ClientErrorsApi)
   .annotateMerge(OpenApi.annotations({ title: "Acme API" })) {}
