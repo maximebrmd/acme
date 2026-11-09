@@ -7,10 +7,23 @@ Acme is fair source: you may use, modify and self-host it under the
 [Functional Source License](LICENSE.md), and each release becomes Apache-2.0
 two years after it ships.
 
-It is not released yet. Today you can create an account and workspaces,
-connect Mastodon and Bluesky accounts, upload media, and write, schedule and
-move posts on a calendar. Posts do not go out yet: no platform adapter
-publishes them, so a scheduled post ends as failed when its time comes.
+It is not released yet. Today you can:
+
+- create an account and workspaces, and connect Mastodon and Bluesky
+  accounts to them;
+- upload images and videos to a workspace's media library;
+- write a post, with its own text on some channels and images or videos
+  with alt text, then schedule it, move it on a calendar or cancel it;
+- have it published to Mastodon and Bluesky at its time, with its media;
+- hear how each post ended, and which channels need reconnecting, under a
+  bell in the app and by email, as each member chooses;
+- ask a writing assistant to rewrite, shorten or translate a post, or to
+  suggest hashtags, when the server has an AI provider;
+- sign in from the command line, and let MCP clients read a workspace.
+
+Analytics, billing, the other platforms, and managing members, invitations
+and API keys from the app are still to come. Saved drafts are not listed
+anywhere yet: keep a draft's address to come back to it.
 
 ## Set up
 
@@ -121,7 +134,10 @@ be read, and their channels must be reconnected.
 
 - **Mastodon** works with any instance on the public internet, over HTTPS. The
   server registers itself on each instance the first time a member connects
-  an account there.
+  an account there. A local server needs no public address for it: the
+  instance sends your browser back to
+  `http://localhost:3001/connect/mastodon/callback`, and never calls Acme
+  itself.
 - **Bluesky**, without `BLUESKY_CLIENT_KEYS`, runs the AT Protocol's
   development (loopback) client, whose sessions last two weeks. That client
   sends the browser back to `http://127.0.0.1:3001/connect/bluesky/callback`
@@ -131,8 +147,46 @@ be read, and their channels must be reconnected.
   from `bun nx run acme-server:bluesky-key`.
 
 The server refreshes tokens due for it every 10 minutes and, daily at 08:00
-UTC, emails a workspace's owners and admins about accounts that must be
-reconnected.
+UTC, tells a workspace's owners and admins about accounts that must be
+reconnected, in the app and by email.
+
+### Publish a first post
+
+Posts really go out, so use an account you can post test messages from.
+
+1. On the workspace's **Channels**, connect a Mastodon account.
+2. In **Media library**, upload an image, and describe it for people who
+   cannot see it.
+3. In **New post**, tick the channel, write the text, then **Choose from the
+   library** to attach the image; its description becomes its alt text.
+4. Under **When**, pick a time a few minutes ahead, then **Schedule**. The
+   post appears on the **Calendar**.
+5. Keep the server running: at that time it publishes the post. Reload the
+   post's page, which then shows **Published** for the channel. The bell in
+   the header counts a new notification within 30 seconds, and
+   <http://localhost:3001/app/notices> lists it.
+
+Emails about posts that failed, or may have gone out unconfirmed, land in
+Mailpit. A published post is not emailed until you turn it on in the
+notifications' **Email preferences**.
+
+### Writing assistant
+
+The composer's **Assistant** menu appears once the server has a language
+model. Give it one before starting it:
+
+```sh
+# Anthropic's API, with claude-opus-5-5 unless ACME_AI_MODEL names another
+export ACME_AI_PROVIDER=anthropic ACME_AI_API_KEY=<your key>
+# or any OpenAI-compatible server, such as one on this machine
+export ACME_AI_PROVIDER=openai-compatible \
+  ACME_AI_BASE_URL=http://127.0.0.1:8000/v1 ACME_AI_MODEL=<its model>
+```
+
+Each workspace may send it 100 requests per UTC day
+(`ACME_AI_DAILY_REQUESTS`). The text you ask about goes to that provider;
+Acme never logs it, nor the suggestion. The server calls the provider
+directly, so a model server on this machine or your network works.
 
 ### Telemetry
 
@@ -150,8 +204,8 @@ bun nx run acme-server:db:migrate    # apply pending migrations without starting
 bun nx run acme-server:auth-schema   # regenerate Better Auth's tables after changing its options
 ```
 
-Each context keeps its tables in a Postgres schema of its own (`auth`,
-`channels`, `media`, `notifications`, `publishing`); the job runner's
+Each context keeps its tables in a Postgres schema of its own (`assistant`,
+`auth`, `channels`, `media`, `notifications`, `publishing`); the job runner's
 `cluster_*` tables are in `public`. The server keeps finished jobs for 30 days
 (`ACME_CLUSTER_RETENTION` changes it), and names itself among the job runners
 with `HOSTNAME`.
@@ -205,17 +259,22 @@ The docs' [environment variables](packages/acme-docs/docs/environment-variables.
 page lists every variable the server, the web app and the command line read.
 In development, these are the ones you may want:
 
-| Variable                      | Default                        | What it does                                                   |
-| ----------------------------- | ------------------------------ | -------------------------------------------------------------- |
-| `DATABASE_URL`                | none: required                 | The Postgres database                                          |
-| `ACME_TOKEN_KEYS`             | unset: channels cannot connect | `keyId:base64key` entries that encrypt channel tokens          |
-| `BLUESKY_CLIENT_KEYS`         | unset: the loopback client     | Keys of the confidential Bluesky client                        |
-| `MCP_DYNAMIC_REGISTRATION`    | `false`                        | Lets MCP clients register themselves                           |
-| `PUBLIC_URL`                  | `http://localhost:3001`        | The origin people open Acme at                                 |
-| `TRUSTED_ORIGINS`             | none                           | More origins allowed to send signed-in requests and uploads    |
-| `ACME_API_URL`                | `http://localhost:3000`        | Where the web app and the command line reach the server        |
-| `ACME_S3_KEY_PREFIX`          | none                           | A folder for this checkout's media in a shared bucket (`dev/`) |
-| `OTEL_EXPORTER_OTLP_ENDPOINT` | unset                          | Exports logs, metrics and traces                               |
+| Variable                      | Default                          | What it does                                                   |
+| ----------------------------- | -------------------------------- | -------------------------------------------------------------- |
+| `DATABASE_URL`                | none: required                   | The Postgres database                                          |
+| `ACME_TOKEN_KEYS`             | unset: channels cannot connect   | `keyId:base64key` entries that encrypt channel tokens          |
+| `BLUESKY_CLIENT_KEYS`         | unset: the loopback client       | Keys of the confidential Bluesky client                        |
+| `ACME_AI_PROVIDER`            | unset: no writing assistant      | `anthropic` or `openai-compatible`                             |
+| `ACME_AI_API_KEY`             | unset                            | The provider's key: required for Anthropic                     |
+| `ACME_AI_BASE_URL`            | Anthropic's API                  | The API's base URL: required for an OpenAI-compatible server   |
+| `ACME_AI_MODEL`               | `claude-opus-5-5` with Anthropic | The model: required for an OpenAI-compatible server            |
+| `ACME_AI_DAILY_REQUESTS`      | `100`                            | Assistant requests each workspace may send per UTC day         |
+| `MCP_DYNAMIC_REGISTRATION`    | `false`                          | Lets MCP clients register themselves                           |
+| `PUBLIC_URL`                  | `http://localhost:3001`          | The origin people open Acme at                                 |
+| `TRUSTED_ORIGINS`             | none                             | More origins allowed to send signed-in requests and uploads    |
+| `ACME_API_URL`                | `http://localhost:3000`          | Where the web app and the command line reach the server        |
+| `ACME_S3_KEY_PREFIX`          | none                             | A folder for this checkout's media in a shared bucket (`dev/`) |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | unset                            | Exports logs, metrics and traces                               |
 
 ## Verify
 
@@ -234,6 +293,31 @@ media in SeaweedFS under `tests/media/`. `SMTP_URL` and `MAILPIT_URL`, and the
 `ACME_S3_*` variables, point them elsewhere. Run the tests on a database of
 their own when a dev server uses the stack's: it would run the jobs they leave
 behind.
+
+### End-to-end tests
+
+`packages/acme-e2e` drives a new member's first steps in Chromium: signing
+up through the emailed link, creating a workspace, writing a draft,
+scheduling it on a synthetic channel, finding it on the calendar and
+cancelling it, then switching to French and signing out. Each run builds
+the web app, starts the server and the web app's production build on free
+ports, and writes to the database you give it, so give it one of its own:
+
+```sh
+docker compose --file packages/acme-docker/compose.yaml exec postgres \
+  psql --username acme --dbname acme --command "CREATE DATABASE acme_e2e"
+DATABASE_URL=postgres://acme:acme@127.0.0.1:15432/acme_e2e bun nx run acme-e2e:e2e
+```
+
+It takes a few seconds once the web app is built. It reads emails from the
+stack's Mailpit and points the media store at its SeaweedFS, under `e2e/`
+(`MAILPIT_URL`, `SMTP_URL` and `ACME_S3_*` change them). If Chromium is
+missing, install it with
+`packages/acme-e2e/node_modules/.bin/e2e-web install chromium`. The report,
+and a trace and screenshots of each failed test, are in
+`packages/acme-e2e/.e2e/`, with the server's and the web app's output in
+`.e2e/logs/app.log`. CI runs the same tests in its `e2e` job, after the other
+checks pass.
 
 ## Build for production
 
@@ -294,6 +378,7 @@ channels.
 | [`acme-docker`](packages/acme-docker)     | The development stack and the server's production image                        |
 | [`acme-docs`](packages/acme-docs)         | The documentation site (Blume), with the API reference from the contract       |
 | [`acme-site`](packages/acme-site)         | The marketing site (Astro), with the privacy, terms and data deletion pages    |
+| [`acme-e2e`](packages/acme-e2e)           | End-to-end browser tests, run against the server and the web app's build       |
 
 How the code is organised, and the rules it follows, are in
 [AGENTS.md](AGENTS.md).
