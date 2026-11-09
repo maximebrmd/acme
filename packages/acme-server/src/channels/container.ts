@@ -2,6 +2,7 @@ import { Layer } from "effect";
 import { Digest, SecureRandom } from "effect/crypto";
 import { FetchHttpClient } from "effect/http";
 
+import { ChannelAccess } from "#channels/application/channel-access.ts";
 import { ConnectChannel } from "#channels/application/connect-channel.ts";
 import { DisconnectChannel } from "#channels/application/disconnect-channel.ts";
 import { ListChannels } from "#channels/application/list-channels.ts";
@@ -48,6 +49,7 @@ const AdaptersLive = Layer.mergeAll(
 ).pipe(Layer.provideMerge(TokenCipherLive));
 
 const UseCasesLive = Layer.mergeAll(
+  ChannelAccess.layer,
   ListChannels.layer,
   DisconnectChannel.layer,
   ConnectChannel.layer,

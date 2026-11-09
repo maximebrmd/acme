@@ -8,6 +8,7 @@ import {
 } from "#publishing/application/platform-publisher.ts";
 import { PlatformUnavailable } from "#shared/domain/platform-unavailable.ts";
 import { PublishFailureSchema } from "#shared/domain/publish-failure.ts";
+import type { PublishFailure } from "#shared/domain/publish-failure.ts";
 import { PublishResultSchema } from "#shared/domain/publish-result.ts";
 import type { PublishResult } from "#shared/domain/publish-result.ts";
 
@@ -21,11 +22,17 @@ import type { PublishResult } from "#shared/domain/publish-result.ts";
  * post content never lands there. The job calling through the gate is
  * durable, and the publication journal covers a call cut short.
  *
- * This skeleton gates publishing only. Token refresh, media uploads and the
- * account's rate limits join it with the channels context, which will own it.
+ * A publish runs whole inside its gate: the media uploads, the wait while
+ * the platform processes them, the token renewed on demand, the post and its
+ * confirmation. `Resume` checks a call an earlier run left in flight.
  */
 export const ChannelGate = Entity.make("ChannelGate", [
   Rpc.make("Publish", {
+    error: PublishFailureSchema,
+    payload: { request: PublishRequestSchema },
+    success: PublishResultSchema,
+  }),
+  Rpc.make("Resume", {
     error: PublishFailureSchema,
     payload: { request: PublishRequestSchema },
     success: PublishResultSchema,
@@ -43,6 +50,7 @@ export const ChannelGateLive = ChannelGate.toLayer(
 
     return ChannelGate.of({
       Publish: ({ payload }) => platforms.publish(payload.request),
+      Resume: ({ payload }) => platforms.resume(payload.request),
     });
   }),
   { disableFatalDefects: true, maxIdleTime: Duration.minutes(10) }
@@ -53,6 +61,14 @@ export const ChannelGateLive = ChannelGate.toLayer(
 const notTakenRetry = Schedule.exponential("100 millis", 2);
 
 const notSent = () => Effect.fail(new PlatformUnavailable());
+
+// A resume the gate did not take checked nothing: the earlier run may still
+// have posted, so it is not a refusal.
+const notChecked = () =>
+  Effect.succeed<PublishResult>({
+    _tag: "unconfirmed",
+    reason: "interrupted",
+  });
 
 const unknownOutcome = (cause: unknown) =>
   Effect.logError("A platform call failed in its adapter", cause).pipe(
@@ -68,33 +84,42 @@ export const GatedPlatformPublisher = Layer.effect(
   Effect.gen(function* GatedPlatformPublisher() {
     const gateFor = yield* ChannelGate.client;
 
+    // Publish and Resume answer alike.
+    type GateCall = ReturnType<ReturnType<typeof gateFor>["Publish"]>;
+
+    const gated = (
+      call: GateCall,
+      notTaken: () => Effect.Effect<PublishResult, PublishFailure>
+    ) =>
+      call.pipe(
+        Effect.retry({
+          schedule: notTakenRetry,
+          times: 4,
+          while: (error) =>
+            error._tag === "MailboxFull" ||
+            error._tag === "EntityNotAssignedToRunner",
+        }),
+        Effect.catchTags({
+          // A request with this id is being handled: it may have gone out.
+          AlreadyProcessingMessage: () =>
+            Effect.succeed<PublishResult>({
+              _tag: "unconfirmed",
+              reason: "noResponse",
+            }),
+          EntityNotAssignedToRunner: notTaken,
+          MailboxFull: notTaken,
+          PersistenceError: notTaken,
+        }),
+        // The adapter broke during the call, after the request may have
+        // left: never a reason to send it again.
+        Effect.catchDefect(unknownOutcome)
+      );
+
     return PlatformPublisher.of({
       publish: (request) =>
-        gateFor(request.channelId)
-          .Publish({ request })
-          .pipe(
-            Effect.retry({
-              schedule: notTakenRetry,
-              times: 4,
-              while: (error) =>
-                error._tag === "MailboxFull" ||
-                error._tag === "EntityNotAssignedToRunner",
-            }),
-            Effect.catchTags({
-              // A request with this id is being handled: it may have gone out.
-              AlreadyProcessingMessage: () =>
-                Effect.succeed<PublishResult>({
-                  _tag: "unconfirmed",
-                  reason: "noResponse",
-                }),
-              EntityNotAssignedToRunner: notSent,
-              MailboxFull: notSent,
-              PersistenceError: notSent,
-            }),
-            // The adapter broke during the call, after the request may have
-            // left: never a reason to send it again.
-            Effect.catchDefect(unknownOutcome)
-          ),
+        gated(gateFor(request.channelId).Publish({ request }), notSent),
+      resume: (request) =>
+        gated(gateFor(request.channelId).Resume({ request }), notChecked),
     });
   })
 );

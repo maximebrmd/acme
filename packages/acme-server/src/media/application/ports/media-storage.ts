@@ -1,5 +1,5 @@
 import { Context, Schema } from "effect";
-import type { Duration, Effect, Option } from "effect";
+import type { Duration, Effect, Option, Stream } from "effect";
 
 import type { MediaStorageFailed } from "#media/application/media-storage-failed.ts";
 import type { MultipartUploadNotFound } from "#media/application/multipart-upload-not-found.ts";
@@ -102,6 +102,13 @@ export class MediaStorage extends Context.Service<
       key: StorageKey,
       expiresIn: Duration.Duration
     ) => Effect.Effect<string, MediaStorageFailed>;
+    /**
+     * The stored file's bytes, read as they arrive, for platforms that take
+     * uploads: nothing is held in memory but the chunk in flight.
+     */
+    readonly read: (
+      key: StorageKey
+    ) => Stream.Stream<Uint8Array, MediaStorageFailed>;
     /** Deletes the stored file. Succeeds if it is gone. */
     readonly remove: (
       key: StorageKey

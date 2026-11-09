@@ -3,6 +3,7 @@ import { Context, DateTime, Effect, Latch, Layer, Match, Ref } from "effect";
 import { PlatformPublisher } from "#publishing/application/platform-publisher.ts";
 import type { PublishRequest } from "#publishing/application/platform-publisher.ts";
 import type { ChannelId } from "#shared/domain/ids.ts";
+import { PlatformUnavailable } from "#shared/domain/platform-unavailable.ts";
 import type { PublishFailure } from "#shared/domain/publish-failure.ts";
 import { PlatformPostIdSchema } from "#shared/domain/publish-result.ts";
 import type { PublishResult } from "#shared/domain/publish-result.ts";
@@ -16,6 +17,9 @@ export type FakeBehaviour =
   // The post goes live, and the answer only comes once the test calls
   // `release` for the channel, if ever.
   | { readonly _tag: "hang" }
+  // The call stalls before it reaches the platform: nothing goes live, and
+  // once the test calls `release`, if ever, the platform is unavailable.
+  | { readonly _tag: "stall" }
   // The post goes live and the answer is lost, as after a timeout: the
   // adapter can only say it does not know.
   | { readonly _tag: "loseResponse" };
@@ -33,7 +37,11 @@ interface FakeState {
   readonly inFlight: ReadonlyMap<ChannelId, number>;
   // Requests whose post went live, in order.
   readonly live: readonly PublishRequest[];
+  // Channels whose resumed calls look the post up by its key.
+  readonly lookUps: ReadonlySet<ChannelId>;
   readonly mostInFlight: number;
+  // Calls resumed after an earlier run left them in flight, in order.
+  readonly resumes: readonly PublishRequest[];
   readonly scripts: ReadonlyMap<ChannelId, readonly FakeBehaviour[]>;
 }
 
@@ -42,7 +50,9 @@ const initial: FakeState = {
   held: new Map(),
   inFlight: new Map(),
   live: [],
+  lookUps: new Set(),
   mostInFlight: 0,
+  resumes: [],
   scripts: new Map(),
 };
 
@@ -53,7 +63,9 @@ const withEntry = <K, V>(map: ReadonlyMap<K, V>, key: K, value: V) =>
  * A platform for tests and local runs, scripted per channel: each call takes
  * the next behaviour scripted for its channel, and succeeds once none is left.
  * It records every call, the posts that went live, and the most calls it
- * served at once on one channel.
+ * served at once on one channel. A resumed call answers that it cannot tell,
+ * unless the channel looks posts up by key (`lookUpOnResume`): then it finds
+ * the post the key made, or publishes it.
  */
 export class FakePlatform extends Context.Service<
   FakePlatform,
@@ -62,11 +74,15 @@ export class FakePlatform extends Context.Service<
     readonly calls: Effect.Effect<readonly FakeCall[]>;
     /** The posts that went live, in order, answered or not. */
     readonly live: Effect.Effect<readonly PublishRequest[]>;
+    /** Makes resumed calls on `channelId` look the post up by its key. */
+    readonly lookUpOnResume: (channelId: ChannelId) => Effect.Effect<void>;
     /** The most calls in flight at once on a single channel. */
     readonly mostInFlight: Effect.Effect<number>;
     readonly publisher: PlatformPublisher["Service"];
     /** Answers the calls hanging on `channelId`: published. */
     readonly release: (channelId: ChannelId) => Effect.Effect<void>;
+    /** The calls resumed, in order. */
+    readonly resumes: Effect.Effect<readonly PublishRequest[]>;
     /** Queues behaviours for the next calls on `channelId`. */
     readonly script: (
       channelId: ChannelId,
@@ -156,6 +172,10 @@ export class FakePlatform extends Context.Service<
                 reason: "noResponse",
               })
             ),
+          stall: () =>
+            holdUntilReleased(request.channelId).pipe(
+              Effect.andThen(Effect.fail(new PlatformUnavailable()))
+            ),
           succeed: () => goLive(request),
         });
 
@@ -167,6 +187,38 @@ export class FakePlatform extends Context.Service<
 
           return yield* answer(request, behaviour);
         }).pipe(Effect.ensuring(leave(request.channelId)));
+
+      const resume = (request: PublishRequest) =>
+        Effect.gen(function* resuming() {
+          const current = yield* Ref.updateAndGet(state, (before) => ({
+            ...before,
+            resumes: [...before.resumes, request],
+          }));
+
+          if (!current.lookUps.has(request.channelId)) {
+            const unknown: PublishResult = {
+              _tag: "unconfirmed",
+              reason: "interrupted",
+            };
+
+            return unknown;
+          }
+
+          const found = current.live.findIndex(
+            (live) => live.idempotencyKey === request.idempotencyKey
+          );
+
+          if (found === -1) {
+            return yield* publish(request);
+          }
+
+          const published: PublishResult = {
+            _tag: "published",
+            platformPostId: PlatformPostIdSchema.make(`fake-${found + 1}`),
+          };
+
+          return published;
+        });
 
       const release = (channelId: ChannelId) =>
         Ref.modify(state, (current): [readonly Latch.Latch[], FakeState] => [
@@ -182,11 +234,17 @@ export class FakePlatform extends Context.Service<
       return FakePlatform.of({
         calls: Ref.get(state).pipe(Effect.map(({ calls }) => calls)),
         live: Ref.get(state).pipe(Effect.map(({ live }) => live)),
+        lookUpOnResume: (channelId) =>
+          Ref.update(state, (current) => ({
+            ...current,
+            lookUps: new Set(current.lookUps).add(channelId),
+          })),
         mostInFlight: Ref.get(state).pipe(
           Effect.map(({ mostInFlight }) => mostInFlight)
         ),
-        publisher: PlatformPublisher.of({ publish }),
+        publisher: PlatformPublisher.of({ publish, resume }),
         release,
+        resumes: Ref.get(state).pipe(Effect.map(({ resumes }) => resumes)),
         script: (channelId, behaviours) =>
           Ref.update(state, (current) => ({
             ...current,

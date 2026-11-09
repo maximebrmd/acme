@@ -276,11 +276,21 @@ const writeOutcome = (
     Effect.retry(outcomeWriteRetry)
   );
 
+// An earlier run's call, left in flight, that this run does not check.
+const interrupted: AttemptOutcome = {
+  _tag: "unconfirmed",
+  reason: "interrupted",
+};
+
 // The journal row is written, and committed, before the call: a run that
-// finds it begun and not ended does not call again. A row that ended returns
-// what it recorded, so a run after a crash decides as the first one did.
+// finds it begun and not ended does not send it blindly again, but asks the
+// publisher to resume it, which looks for the post where the platform allows
+// and answers unconfirmed otherwise. A resume may send the post, so once the
+// member cancelled it, the call stays unconfirmed: what the earlier run sent
+// counts, nothing more is sent. A row that ended returns what it recorded,
+// so a run after a crash decides as the first one did.
 const callPlatform = Effect.fn("Publishing.callPlatform")(
-  function* callPlatform(attempt: PublishAttempt) {
+  function* callPlatform(attempt: PublishAttempt, cancelRequested: boolean) {
     const journal = yield* PublicationJournal;
     const publisher = yield* PlatformPublisher;
 
@@ -301,17 +311,21 @@ const callPlatform = Effect.fn("Publishing.callPlatform")(
     // When the call was made, by this run or the one that began it.
     const startedAt = start._tag === "inFlight" ? start.startedAt : now;
 
-    const outcome: AttemptOutcome =
-      start._tag === "inFlight"
-        ? { _tag: "unconfirmed", reason: "interrupted" }
-        : yield* publisher
-            .publish({
-              channelId: attempt.channelId,
-              idempotencyKey: attempt.idempotencyKey,
-              postId: attempt.postId,
-              targetId: attempt.targetId,
-            })
-            .pipe(Effect.catch((error) => Effect.succeed(error)));
+    const request = {
+      channelId: attempt.channelId,
+      idempotencyKey: attempt.idempotencyKey,
+      postId: attempt.postId,
+      startedAt,
+      targetId: attempt.targetId,
+    };
+
+    const resumed = cancelRequested
+      ? Effect.succeed(interrupted)
+      : publisher.resume(request);
+
+    const outcome: AttemptOutcome = yield* (
+      start._tag === "inFlight" ? resumed : publisher.publish(request)
+    ).pipe(Effect.catch((error) => Effect.succeed(error)));
 
     const finishedAt = yield* DateTime.now;
 
@@ -352,7 +366,10 @@ export const publishAttemptRun = Effect.fn("Publishing.publishAttempt")(
       return cancelled;
     }
 
-    const { finishedAt, outcome, startedAt } = yield* callPlatform(attempt);
+    const { finishedAt, outcome, startedAt } = yield* callPlatform(
+      attempt,
+      isCancelRequested(target)
+    );
 
     // Read from the journal, so a run after a crash decides as the first did.
     const earlier = yield* journal.earlierRefusals(attempt);
