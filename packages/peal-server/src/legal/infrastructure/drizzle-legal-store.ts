@@ -1,13 +1,29 @@
-import { and, asc, eq, inArray, lt, ne, or, sql } from "drizzle-orm";
-import { DateTime, Effect, Layer } from "effect";
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  gte,
+  inArray,
+  lt,
+  lte,
+  ne,
+  or,
+  sql,
+} from "drizzle-orm";
+import { DateTime, Effect, Layer, Schema } from "effect";
 
 import type {
   ConnectionEntry,
+  Disclosure,
   HeldAccount,
 } from "#legal/application/ports/legal-store.ts";
 import { LegalStore } from "#legal/application/ports/legal-store.ts";
 import { LegalRecordIdSchema } from "#legal/domain/legal-record-id.ts";
 import type { LegalCutoffs } from "#legal/domain/legal-retention.ts";
+import { LegalCoverSchema } from "#legal/domain/legal-scope.ts";
+import { LegalSubjectSchema } from "#legal/domain/legal-subject.ts";
 import type { LegalSubject } from "#legal/domain/legal-subject.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
@@ -46,6 +62,33 @@ const connectionOf = (
   userId: row.userId,
   workspaceId: row.workspaceId,
 });
+
+const decodeCovers = Schema.decodeUnknownEffect(Schema.Array(LegalCoverSchema));
+const decodeSubject = Schema.decodeUnknownEffect(LegalSubjectSchema);
+
+const utcOrNull = (value: Date | null) => (value === null ? null : utc(value));
+
+// A stored answer, its scope and subject decoded as the domain reads them.
+const disclosureOf = Effect.fn("LegalStore.disclosureOf")(
+  function* disclosureOf(row: typeof disclosures.$inferSelect) {
+    const disclosure: Disclosure = {
+      at: utc(row.at),
+      authority: row.authority,
+      connections: row.connections,
+      covers: yield* decodeCovers(row.covers),
+      held: row.held,
+      id: LegalRecordIdSchema.make(row.id),
+      legalBasis: row.legalBasis,
+      reference: row.reference,
+      since: utcOrNull(row.since),
+      staffId: row.staffId,
+      subject: yield* decodeSubject(row.subject),
+      until: utcOrNull(row.until),
+    };
+
+    return disclosure;
+  }
+);
 
 // Ids that are not UUIDs name nothing here, and Postgres would refuse them.
 const uuidPattern =
@@ -177,7 +220,7 @@ export const DrizzleLegalStore = Layer.effect(
             Effect.asVoid,
             Effect.withSpan("LegalStore.connect")
           ),
-      connections: ({ userIds, workspaceIds }) => {
+      connections: ({ since, until, userIds, workspaceIds }) => {
         const users = uuids(userIds);
         const workspaces = uuids(workspaceIds);
 
@@ -189,9 +232,17 @@ export const DrizzleLegalStore = Layer.effect(
           .select()
           .from(connections)
           .where(
-            or(
-              inArray(connections.userId, users),
-              inArray(connections.workspaceId, workspaces)
+            and(
+              or(
+                inArray(connections.userId, users),
+                inArray(connections.workspaceId, workspaces)
+              ),
+              since === undefined || since === null
+                ? undefined
+                : gte(connections.at, date(since)),
+              until === undefined || until === null
+                ? undefined
+                : lte(connections.at, date(until))
             )
           )
           .orderBy(asc(connections.at), asc(connections.id))
@@ -208,17 +259,45 @@ export const DrizzleLegalStore = Layer.effect(
             at: date(disclosure.at),
             authority: disclosure.authority,
             connections: disclosure.connections,
+            covers: [...disclosure.covers],
             held: disclosure.held,
             id: disclosure.id,
+            legalBasis: disclosure.legalBasis,
             reference: disclosure.reference,
+            since: disclosure.since === null ? null : date(disclosure.since),
             staffId: disclosure.staffId,
             subject: { ...disclosure.subject },
+            until: disclosure.until === null ? null : date(disclosure.until),
           })
           .pipe(
             Effect.mapError(failed),
             Effect.asVoid,
             Effect.withSpan("LegalStore.disclose")
           ),
+      disclosures: Effect.fn("LegalStore.disclosures")(function* list({
+        limit,
+        offset,
+      }) {
+        const rows = yield* db
+          .select()
+          .from(disclosures)
+          .orderBy(desc(disclosures.at), desc(disclosures.id))
+          .limit(limit)
+          .offset(offset)
+          .pipe(Effect.mapError(failed));
+
+        const [counted] = yield* db
+          .select({ total: count() })
+          .from(disclosures)
+          .pipe(Effect.mapError(failed));
+
+        return {
+          items: yield* Effect.all(rows.map(disclosureOf)).pipe(
+            Effect.mapError(failed)
+          ),
+          total: counted?.total ?? 0,
+        };
+      }),
       held: (subject) => {
         const where = holdsNamed(subject);
 

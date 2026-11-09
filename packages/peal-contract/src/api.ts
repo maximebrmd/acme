@@ -607,13 +607,23 @@ export {
   LegalAnswerSchema,
   LegalApi,
   LegalConnectionSchema,
+  LegalCoverSchema,
+  LegalDisclosurePageSchema,
+  LegalDisclosureSchema,
   LegalHeldAccountSchema,
   LegalRequestSchema,
   LegalSubjectSchema,
   maxLegalTextLength,
 } from "./legal.ts";
 
-export type { LegalAnswer, LegalRequest, LegalSubject } from "./legal.ts";
+export type {
+  LegalAnswer,
+  LegalCover,
+  LegalDisclosure,
+  LegalDisclosurePage,
+  LegalRequest,
+  LegalSubject,
+} from "./legal.ts";
 
 export { StaffAccess } from "./staff-access.ts";
 

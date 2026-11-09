@@ -57,20 +57,27 @@ const ClosureSchema = Schema.Struct({
   ),
 });
 
+// An answer: a category the request did not cover is null.
 const AnswerSchema = Schema.Struct({
-  connections: Schema.Array(
-    Schema.Struct({
-      ...ConnectionSchema.fields,
-      userId: Schema.NullOr(Schema.String),
-    })
+  connections: Schema.NullOr(
+    Schema.Array(
+      Schema.Struct({
+        ...ConnectionSchema.fields,
+        userId: Schema.NullOr(Schema.String),
+      })
+    )
   ),
   held: Schema.Array(
     Schema.Struct({
-      email: Schema.String,
-      name: Schema.String,
-      signInMethods: Schema.Array(
-        Schema.Struct({ accountId: Schema.String, provider: Schema.String })
+      identity: Schema.NullOr(
+        Schema.Struct({ email: Schema.String, name: Schema.String })
       ),
+      signInMethods: Schema.NullOr(
+        Schema.Array(
+          Schema.Struct({ accountId: Schema.String, provider: Schema.String })
+        )
+      ),
+      stripeCustomerIds: Schema.NullOr(Schema.Array(Schema.String)),
       userId: Schema.String,
     })
   ),
@@ -80,11 +87,31 @@ const AnswerSchema = Schema.Struct({
 const DisclosureSchema = Schema.Array(
   Schema.Struct({
     authority: Schema.String,
+    covers: Schema.Array(Schema.String),
     held: Schema.Number,
+    legal_basis: Schema.String,
     reference: Schema.String,
     staff_id: Schema.String,
   })
 );
+
+// The past answers, as the console lists them.
+const DisclosuresSchema = Schema.Struct({
+  items: Schema.Array(
+    Schema.Struct({
+      authority: Schema.String,
+      connections: Schema.Number,
+      covers: Schema.Array(Schema.String),
+      held: Schema.Number,
+      id: Schema.String,
+      legalBasis: Schema.String,
+      reference: Schema.String,
+      staffId: Schema.String,
+      subject: Schema.Struct({ email: Schema.String }),
+    })
+  ),
+  total: Schema.Number,
+});
 
 // A server whose operator the law obliges turns the retention on.
 const RetainingLive = Layer.mergeAll(
@@ -175,6 +202,8 @@ layer(RetainingLive, { excludeTestServices: true, timeout: "120 seconds" })(
 
           const request = {
             authority: "Synthetic public prosecutor",
+            covers: ["identity", "signIn", "connections"],
+            legalBasis: "Synthetic code of criminal procedure, article 60-1",
             reference: "Synthetic requisition 2026-0001",
             subject: { email: ana.email.toUpperCase() },
           };
@@ -195,7 +224,7 @@ layer(RetainingLive, { excludeTestServices: true, timeout: "120 seconds" })(
           yield* makeAdmin(staff.id);
 
           // Staff who help users, without the legal role, find nothing
-          // there either.
+          // there either: no answer, no list, no sign that it exists.
           const helperCookies = yield* signIn(staff.email);
 
           assert.strictEqual(
@@ -206,9 +235,43 @@ layer(RetainingLive, { excludeTestServices: true, timeout: "120 seconds" })(
             404
           );
 
+          for (const path of [
+            "/api/admin/legal-requests",
+            "/api/admin/legal-requests/standing",
+          ]) {
+            assert.strictEqual(
+              (yield* app.request(path, {
+                headers: { cookie: helperCookies },
+              })).status,
+              404
+            );
+          }
+
           yield* sql`UPDATE auth."user" SET role = 'admin,legal' WHERE id = ${staff.id}`;
 
           const staffCookies = yield* signIn(staff.email);
+
+          assert.strictEqual(
+            (yield* app.request("/api/admin/legal-requests/standing", {
+              headers: { cookie: staffCookies },
+            })).status,
+            204
+          );
+
+          // A request that says neither what it covers nor on what legal
+          // basis is refused, and reads nothing.
+          for (const incomplete of [
+            { ...request, legalBasis: " " },
+            { ...request, covers: [] },
+          ]) {
+            assert.strictEqual(
+              (yield* app.request("/api/admin/legal-requests", {
+                body: incomplete,
+                headers: { cookie: staffCookies },
+              })).status,
+              400
+            );
+          }
 
           const answered = yield* app.request("/api/admin/legal-requests", {
             body: request,
@@ -224,13 +287,15 @@ layer(RetainingLive, { excludeTestServices: true, timeout: "120 seconds" })(
 
           assert.strictEqual(answer.held.length, 1);
           assert.strictEqual(held?.userId, ana.id);
-          assert.strictEqual(held?.email, ana.email);
+          assert.strictEqual(held?.identity?.email, ana.email);
           assert.deepStrictEqual(
-            held?.signInMethods.map(({ provider }) => provider),
+            held?.signInMethods?.map(({ provider }) => provider),
             ["credential"]
           );
+          // The request did not ask how the account paid.
+          assert.isNull(held?.stripeCustomerIds);
           assert.deepStrictEqual(
-            answer.connections.map(({ ipAddress, userId }) => ({
+            answer.connections?.map(({ ipAddress, userId }) => ({
               ipAddress,
               userId,
             })),
@@ -239,7 +304,7 @@ layer(RetainingLive, { excludeTestServices: true, timeout: "120 seconds" })(
 
           // The answer was recorded, with who gave it and on what grounds.
           const disclosures =
-            yield* sql`SELECT authority, held, reference, staff_id FROM legal.disclosures WHERE id = ${answer.id}`.pipe(
+            yield* sql`SELECT authority, covers, held, legal_basis, reference, staff_id FROM legal.disclosures WHERE id = ${answer.id}`.pipe(
               Effect.flatMap(Schema.decodeUnknownEffect(DisclosureSchema)),
               Effect.orDie
             );
@@ -247,15 +312,76 @@ layer(RetainingLive, { excludeTestServices: true, timeout: "120 seconds" })(
           assert.deepStrictEqual(disclosures, [
             {
               authority: request.authority,
+              covers: request.covers,
               held: 1,
+              legal_basis: request.legalBasis,
               reference: request.reference,
               staff_id: staff.id,
             },
           ]);
 
+          // A request that covers the connections of a period only gets
+          // those, and nothing of who held the account.
+          const narrow = yield* bodyOf(
+            AnswerSchema,
+            yield* app.request("/api/admin/legal-requests", {
+              body: {
+                ...request,
+                covers: ["connections"],
+                reference: "Synthetic requisition 2026-0002",
+                until: "2020-01-01T00:00:00Z",
+              },
+              headers: { cookie: staffCookies },
+            })
+          );
+
+          assert.deepStrictEqual(narrow.connections, []);
+          assert.deepStrictEqual(
+            narrow.held.map(({ identity, signInMethods, userId }) => ({
+              identity,
+              signInMethods,
+              userId,
+            })),
+            [{ identity: null, signInMethods: null, userId: ana.id }]
+          );
+
+          // Past answers, newest first, for staff with the legal role.
+          const listed = yield* bodyOf(
+            DisclosuresSchema,
+            yield* app.request("/api/admin/legal-requests", {
+              headers: { cookie: staffCookies },
+            })
+          );
+
+          assert.deepStrictEqual(
+            listed.items
+              .filter(({ staffId }) => staffId === staff.id)
+              .map(({ connections, covers, held: accounts, reference }) => ({
+                accounts,
+                connections,
+                covers,
+                reference,
+              })),
+            [
+              {
+                accounts: 1,
+                connections: 0,
+                covers: ["connections"],
+                reference: "Synthetic requisition 2026-0002",
+              },
+              {
+                accounts: 1,
+                connections: 1,
+                covers: request.covers,
+                reference: request.reference,
+              },
+            ]
+          );
+          assert.isAtLeast(listed.total, 2);
+
           // The rest of staff see it in the audit log.
           const audited =
-            yield* sql`SELECT reason, staff_id FROM staff.audit_events WHERE action = 'legalDisclosure' AND staff_id = ${staff.id}`.pipe(
+            yield* sql`SELECT reason, staff_id FROM staff.audit_events WHERE action = 'legalDisclosure' AND staff_id = ${staff.id} ORDER BY at, id`.pipe(
               Effect.flatMap(
                 Schema.decodeUnknownEffect(
                   Schema.Array(
@@ -272,6 +398,10 @@ layer(RetainingLive, { excludeTestServices: true, timeout: "120 seconds" })(
           assert.deepStrictEqual(audited, [
             {
               reason: `${request.authority}: ${request.reference}`,
+              staff_id: staff.id,
+            },
+            {
+              reason: `${request.authority}: Synthetic requisition 2026-0002`,
               staff_id: staff.id,
             },
           ]);

@@ -18,6 +18,7 @@ import { LegalRecords } from "#legal/application/legal-records.ts";
 import { LegalStore } from "#legal/application/ports/legal-store.ts";
 import type {
   ConnectionEntry,
+  Disclosure,
   HeldAccount,
 } from "#legal/application/ports/legal-store.ts";
 import { PurgeLegalRecords } from "#legal/application/purge-legal-records.ts";
@@ -124,10 +125,68 @@ layer(StoreTest)("the legal records", (it) => {
           [own, keyed]
         );
 
+        // Within the period a request names, both ends included.
+        assert.deepStrictEqual(
+          yield* legal.connections({
+            since: at("1885-02-02T00:00:00Z"),
+            until: at("1885-02-02T00:00:00Z"),
+            userIds: [holder.userId],
+            workspaceIds: [keyed.workspaceId ?? ""],
+          }),
+          [keyed]
+        );
+
         const sql = yield* SqlClient.SqlClient;
 
         yield* sql`DELETE FROM legal.identification_holds WHERE id = ${holder.id}`;
         yield* sql`DELETE FROM legal.connections WHERE id IN (${own.id}, ${keyed.id}, ${other.id})`;
+      })
+  );
+
+  it.effect(
+    "list the answers given to legal requests, newest first, with their grounds and what each covered",
+    () =>
+      Effect.gen(function* lists() {
+        const legal = yield* store;
+        const sql = yield* SqlClient.SqlClient;
+        const staffId = randomUUID();
+
+        const answered = (made: string, reference: string): Disclosure => ({
+          at: at(made),
+          authority: "Synthetic court",
+          connections: 2,
+          covers: ["identity", "connections"],
+          held: 1,
+          id: uuid7(),
+          legalBasis: "Synthetic article 60-1",
+          reference,
+          since: at("1886-01-01T00:00:00Z"),
+          staffId,
+          subject: { email: "held@example.test" },
+          until: null,
+        });
+
+        // In 1887: after the purge test's cutoff, before any other suite.
+        const first = answered("1887-03-01T00:00:00Z", "Synthetic first");
+        const second = answered("1887-03-02T00:00:00Z", "Synthetic second");
+
+        yield* legal.disclose(first);
+        yield* legal.disclose(second);
+
+        const all = yield* legal.disclosures({ limit: 500, offset: 0 });
+
+        assert.deepStrictEqual(
+          all.items.filter((made) => made.staffId === staffId),
+          [second, first]
+        );
+        assert.isAtLeast(all.total, 2);
+
+        const page = yield* legal.disclosures({ limit: 1, offset: 0 });
+
+        assert.strictEqual(page.items.length, 1);
+        assert.strictEqual(page.total, all.total);
+
+        yield* sql`DELETE FROM legal.disclosures WHERE staff_id = ${staffId}`;
       })
   );
 
@@ -157,11 +216,15 @@ layer(StoreTest)("the legal records", (it) => {
           at: at(made),
           authority: "Synthetic court",
           connections: 0,
+          covers: ["identity" as const],
           held: 1,
           id: uuid7(),
+          legalBasis: "Synthetic article 60-1",
           reference: "Synthetic requisition 1",
+          since: null,
           staffId: randomUUID(),
           subject: { userId: whole.userId },
+          until: null,
         });
 
         const oldAnswer = answered("1884-12-01T00:00:00Z");
