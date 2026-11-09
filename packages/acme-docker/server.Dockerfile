@@ -50,6 +50,9 @@ COPY packages/acme-server/package.json packages/acme-server/
 COPY packages/acme-server/src packages/acme-server/src
 # The migrations the server applies when it starts.
 COPY packages/acme-server/drizzle packages/acme-server/drizzle
+# Prints a new key for the Bluesky client, so a deployment can create
+# BLUESKY_CLIENT_KEYS on its own host: acme-infra does.
+COPY packages/acme-server/scripts/bluesky-key.ts packages/acme-server/scripts/
 
 USER nonroot
 

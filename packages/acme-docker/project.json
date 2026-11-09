@@ -36,6 +36,15 @@
     },
     "build-server-image": {
       "command": "docker build --file packages/acme-docker/server.Dockerfile --tag acme-server:local ."
+    },
+    "build-web-image": {
+      "command": "docker build --file packages/acme-docker/web.Dockerfile --tag acme-web:local ."
+    },
+    "build-static-image": {
+      "command": "docker build --file packages/acme-docker/static.Dockerfile --tag acme-static:local ."
+    },
+    "build-postgres-image": {
+      "command": "docker build --file packages/acme-docker/postgres.Dockerfile --tag acme-postgres:local ."
     }
   }
 }

@@ -1,0 +1,322 @@
+# The production stack: Postgres with pgBackRest, the server, the web app, the
+# static site and docs, and the telemetry stack (the OpenTelemetry Collector,
+# Loki, Tempo, Prometheus and Grafana with its alerts). acme-infra runs it on
+# Acme's servers behind a Cloudflare Tunnel; self-hosters add Caddy in front
+# with compose.self-host.yaml.
+#
+# Every published port listens on 127.0.0.1 only: the tunnel or Caddy is the
+# only way in, and Docker's own firewall rules never open a port to the world.
+#
+#   Server (API)    127.0.0.1:3000    /api/* and /.well-known/oauth-*
+#   Web app         127.0.0.1:3001    everything else on the app's host name
+#   Marketing site  127.0.0.1:4321    profile "static"
+#   Docs            127.0.0.1:4322    profile "static"
+#   Grafana         127.0.0.1:13000
+#   OTLP HTTP       127.0.0.1:14318   where the backup timer reports
+#
+# Settings come from the environment Compose runs in, or from --env-file
+# files. Settings marked `:?` are required, and Compose names the one
+# missing; the others are passed through by name, so one that is unset stays
+# unset in the container rather than empty. The images are built from the
+# repository (`docker compose build`, or the release playbook) and tagged
+# ACME_VERSION, `local` unless set.
+
+x-service: &service
+  restart: unless-stopped
+  logging:
+    driver: local
+    options:
+      max-size: 10m
+      max-file: "3"
+
+# Health checks probe often while a service starts, so `up --wait` returns as
+# soon as everything is ready, then settle to every 10 seconds.
+x-healthcheck: &healthcheck
+  interval: 10s
+  timeout: 5s
+  retries: 5
+  start_period: 60s
+  start_interval: 1s
+
+services:
+  # Postgres with pgBackRest. ACME_POSTGRES_ARCHIVE_MODE=on archives the
+  # write-ahead log to the bucket the PGBACKREST_REPO1_* settings name;
+  # backups run from the host (acme-infra's acme_backup role).
+  postgres:
+    <<: *service
+    image: acme-postgres:${ACME_VERSION:-local}
+    build:
+      context: ../..
+      dockerfile: packages/acme-docker/postgres.Dockerfile
+    command:
+      - postgres
+      - -c
+      - archive_mode=${ACME_POSTGRES_ARCHIVE_MODE:-off}
+      - -c
+      - archive_command=pgbackrest archive-push %p
+      # A write-ahead log segment is archived at least every 5 minutes, which
+      # bounds what a restore can lose.
+      - -c
+      - archive_timeout=300
+    environment:
+      POSTGRES_USER: acme
+      POSTGRES_DB: acme
+      # Part of DATABASE_URL below: keep it URL-safe (openssl rand -hex 32).
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+      PGBACKREST_STANZA: acme
+      PGBACKREST_PG1_PATH: /var/lib/postgresql/18/docker
+      PGBACKREST_PG1_USER: acme
+      PGBACKREST_REPO1_TYPE: ${PGBACKREST_REPO1_TYPE:-s3}
+      PGBACKREST_REPO1_PATH: ${PGBACKREST_REPO1_PATH:-/acme}
+      PGBACKREST_REPO1_S3_ENDPOINT:
+      PGBACKREST_REPO1_S3_BUCKET:
+      PGBACKREST_REPO1_S3_REGION: ${PGBACKREST_REPO1_S3_REGION:-auto}
+      PGBACKREST_REPO1_S3_URI_STYLE: ${PGBACKREST_REPO1_S3_URI_STYLE:-path}
+      PGBACKREST_REPO1_S3_KEY:
+      PGBACKREST_REPO1_S3_KEY_SECRET:
+      # Backups are encrypted before they leave the host.
+      PGBACKREST_REPO1_CIPHER_TYPE: aes-256-cbc
+      PGBACKREST_REPO1_CIPHER_PASS:
+      # Four weekly full backups, with the daily differential ones and the
+      # write-ahead log between them: four weeks of point-in-time recovery.
+      PGBACKREST_REPO1_RETENTION_FULL: "4"
+      PGBACKREST_REPO1_BUNDLE: "y"
+      PGBACKREST_REPO1_BLOCK: "y"
+      PGBACKREST_COMPRESS_TYPE: zst
+      PGBACKREST_START_FAST: "y"
+      PGBACKREST_LOG_LEVEL_CONSOLE: info
+      PGBACKREST_LOG_LEVEL_FILE: "off"
+    shm_size: 256m
+    volumes:
+      # Postgres 18 images keep PGDATA in a versioned folder below this one.
+      - postgres:/var/lib/postgresql
+    # A clean shutdown spares the next start a crash recovery.
+    stop_grace_period: 60s
+    healthcheck:
+      <<: *healthcheck
+      test: [CMD, pg_isready, --username=acme, --dbname=acme]
+
+  # Applies pending migrations before it listens, so starting a new release
+  # migrates the database.
+  server:
+    <<: *service
+    image: acme-server:${ACME_VERSION:-local}
+    build:
+      context: ../..
+      dockerfile: packages/acme-docker/server.Dockerfile
+    environment:
+      DATABASE_URL: postgres://acme:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}@postgres:5432/acme
+      PUBLIC_URL: ${PUBLIC_URL:?Set PUBLIC_URL, the address people open Acme at}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:?Set BETTER_AUTH_SECRET}
+      # cf-connecting-ip behind Cloudflare, x-forwarded-for behind Caddy.
+      AUTH_IP_HEADERS: ${AUTH_IP_HEADERS:?Set AUTH_IP_HEADERS}
+      MAIL_FROM: ${MAIL_FROM:?Set MAIL_FROM}
+      ACME_S3_ENDPOINT: ${ACME_S3_ENDPOINT:?Set ACME_S3_ENDPOINT}
+      ACME_S3_BUCKET: ${ACME_S3_BUCKET:?Set ACME_S3_BUCKET}
+      ACME_S3_ACCESS_KEY_ID: ${ACME_S3_ACCESS_KEY_ID:?Set ACME_S3_ACCESS_KEY_ID}
+      ACME_S3_SECRET_ACCESS_KEY: ${ACME_S3_SECRET_ACCESS_KEY:?Set ACME_S3_SECRET_ACCESS_KEY}
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_SERVICE_VERSION: ${ACME_VERSION:-local}
+      # Optional: the docs' environment variables page says what each does.
+      ACME_TOKEN_KEYS:
+      BLUESKY_CLIENT_KEYS:
+      RESEND_API_KEY:
+      SMTP_URL:
+      TRUSTED_ORIGINS:
+      AUTH_TRUSTED_PROXIES:
+      AUTH_REQUIRE_EMAIL_VERIFICATION:
+      AUTH_DB_POOL_MAX:
+      BETTER_AUTH_SECRETS:
+      MCP_DYNAMIC_REGISTRATION:
+      ACME_S3_REGION:
+      ACME_S3_FORCE_PATH_STYLE:
+      ACME_S3_KEY_PREFIX:
+      ACME_MEDIA_PUBLIC_BASE_URL:
+      ACME_AI_PROVIDER:
+      ACME_AI_API_KEY:
+      ACME_AI_MODEL:
+      ACME_AI_BASE_URL:
+      ACME_AI_DAILY_REQUESTS:
+      ACME_CLUSTER_RETENTION:
+    ports:
+      - 127.0.0.1:${ACME_SERVER_PORT:-3000}:3000
+    depends_on:
+      postgres:
+        condition: service_healthy
+    # The server waits up to 60 seconds for calls to the platforms in flight
+    # before it stops; Docker's default 10 seconds would cut them short.
+    stop_grace_period: 75s
+    healthcheck:
+      <<: *healthcheck
+      test:
+        - CMD
+        - bun
+        - --eval
+        - 'const response = await fetch("http://127.0.0.1:3000/api/health"); process.exit(response.ok ? 0 : 1);'
+
+  web:
+    <<: *service
+    image: acme-web:${ACME_VERSION:-local}
+    build:
+      context: ../..
+      dockerfile: packages/acme-docker/web.Dockerfile
+    # Node runs as PID 2 under an init, so it stops on SIGTERM.
+    init: true
+    environment:
+      ACME_API_URL: http://server:3000
+      # Longer than the edge keeps idle connections (90 s for the tunnel, 2
+      # minutes for Caddy), so it never reuses one Node has closed.
+      KEEP_ALIVE_TIMEOUT: "125000"
+    ports:
+      - 127.0.0.1:${ACME_WEB_PORT:-3001}:3001
+    depends_on:
+      server:
+        condition: service_healthy
+    healthcheck:
+      <<: *healthcheck
+      test:
+        - CMD
+        - node
+        - --eval
+        - 'fetch("http://127.0.0.1:3001/sign-in", { redirect: "manual" }).then((response) => process.exit(response.status < 500 ? 0 : 1), () => process.exit(1));'
+
+  # The marketing site and the docs, built with the settings below.
+  static:
+    <<: *service
+    profiles: [static]
+    image: acme-static:${ACME_VERSION:-local}
+    build:
+      context: ../..
+      dockerfile: packages/acme-docker/static.Dockerfile
+      args:
+        SITE_URL: ${SITE_URL:-}
+        SITE_DOCS_URL: ${SITE_DOCS_URL:-}
+        SITE_PLAUSIBLE_DOMAIN: ${SITE_PLAUSIBLE_DOMAIN:-}
+        SITE_PLAUSIBLE_HOST: ${SITE_PLAUSIBLE_HOST:-}
+        DOCS_SITE_URL: ${DOCS_SITE_URL:-}
+        DOCS_PLAUSIBLE_DOMAIN: ${DOCS_PLAUSIBLE_DOMAIN:-}
+        DOCS_PLAUSIBLE_HOST: ${DOCS_PLAUSIBLE_HOST:-}
+    ports:
+      - 127.0.0.1:${ACME_SITE_PORT:-4321}:8080
+      - 127.0.0.1:${ACME_DOCS_PORT:-4322}:8081
+    healthcheck:
+      <<: *healthcheck
+      test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1:8080/, http://127.0.0.1:8081/]
+
+  otel-collector:
+    <<: *service
+    image: otel/opentelemetry-collector-contrib:0.165.0@sha256:e40d61f10c9a617cca1ffd1be4d7e2b3a4b0f0001798ff07e58cabe82e618cea
+    volumes:
+      - ./config/production/otel-collector.yaml:/etc/otelcol-contrib/config.yaml:ro
+      # The host's filesystem, read-only, for its disk, memory and load.
+      - /:/hostfs:ro,rslave
+      # The collector image has no shell or HTTP client, so the health check
+      # borrows busybox's static wget from an image mount.
+      - type: image
+        source: busybox:1.38.0-musl@sha256:80e38f9a1b39188b8bdb28879178edb322a4402b081a9aedda1924609decd6f6
+        target: /busybox
+    ports:
+      - 127.0.0.1:${ACME_OTLP_HTTP_PORT:-14318}:4318
+    depends_on:
+      loki:
+        condition: service_healthy
+      tempo:
+        condition: service_healthy
+      prometheus:
+        condition: service_healthy
+    healthcheck:
+      <<: *healthcheck
+      test: [CMD, /busybox/bin/wget, -q, -O, /dev/null, http://127.0.0.1:13133/]
+
+  loki:
+    <<: *service
+    image: grafana/loki:3.7.9@sha256:0db216b630ae1f348a1584c67f3cead8b4c1fc839169a39501db664744158e28
+    command: [-config.file=/etc/loki/config.yaml]
+    volumes:
+      - ./config/production/loki.yaml:/etc/loki/config.yaml:ro
+      - loki:/loki
+    healthcheck:
+      <<: *healthcheck
+      test: [CMD, /usr/bin/loki, -health]
+
+  # The development configuration: Tempo keeps traces for 14 days by default.
+  tempo:
+    <<: *service
+    image: grafana/tempo:3.1.1@sha256:64e2fbd56d9c2b3412a4b430a58ea59e91a670b1e75f920a0c702213ad145044
+    command: [-target=all, -config.file=/etc/tempo/config.yaml]
+    volumes:
+      - ./config/tempo.yaml:/etc/tempo/config.yaml:ro
+      - tempo:/var/tempo
+    healthcheck:
+      <<: *healthcheck
+      test: [CMD, /tempo, -health]
+
+  prometheus:
+    <<: *service
+    image: prom/prometheus:v3.16.0@sha256:e04987641b57704f408e31f6373ba4138ecf27cb4a165d24aabb6c38fddd0f06
+    command:
+      - --config.file=/etc/prometheus/prometheus.yaml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=30d
+      - --storage.tsdb.retention.size=5GB
+      - --web.enable-remote-write-receiver
+      - --enable-feature=exemplar-storage
+    volumes:
+      - ./config/prometheus.yaml:/etc/prometheus/prometheus.yaml:ro
+      - prometheus:/prometheus
+    healthcheck:
+      <<: *healthcheck
+      test: [CMD, promtool, check, ready]
+
+  # Signed in through Cloudflare Access when ACME_GRAFANA_ACCESS_TEAM is set:
+  # Grafana checks the token Access adds to each request, and signs its
+  # email in as an editor. Otherwise, the admin account and its password.
+  grafana:
+    <<: *service
+    image: grafana/grafana:13.3.0@sha256:488984b716c0862639f91a698adbe2862677a5a07bad42da5f03f3030883b205
+    environment:
+      GF_SERVER_ROOT_URL: ${ACME_GRAFANA_URL:-http://localhost:13000}
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?Set GRAFANA_ADMIN_PASSWORD}
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_AUTH_JWT_ENABLED: ${ACME_GRAFANA_ACCESS_TEAM:+true}
+      GF_AUTH_JWT_HEADER_NAME: Cf-Access-Jwt-Assertion
+      GF_AUTH_JWT_EMAIL_CLAIM: email
+      GF_AUTH_JWT_USERNAME_CLAIM: email
+      GF_AUTH_JWT_JWK_SET_URL: https://${ACME_GRAFANA_ACCESS_TEAM:-}.cloudflareaccess.com/cdn-cgi/access/certs
+      GF_AUTH_JWT_EXPECT_CLAIMS: '{"aud": "${ACME_GRAFANA_ACCESS_AUD:-}", "iss": "https://${ACME_GRAFANA_ACCESS_TEAM:-}.cloudflareaccess.com"}'
+      GF_AUTH_JWT_CACHE_TTL: 60m
+      GF_AUTH_JWT_AUTO_SIGN_UP: "true"
+      GF_AUTH_JWT_ROLE_ATTRIBUTE_PATH: "'Editor'"
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+      GF_ANALYTICS_CHECK_FOR_PLUGIN_UPDATES: "false"
+      GF_NEWS_NEWS_FEED_ENABLED: "false"
+      # Read by the Telegram contact point, when it is mounted.
+      TELEGRAM_BOT_TOKEN:
+      TELEGRAM_CHAT_ID:
+    volumes:
+      - ./config/grafana/datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml:ro
+      - ./config/production/grafana/alerting/rules.yaml:/etc/grafana/provisioning/alerting/rules.yaml:ro
+      - ${ACME_GRAFANA_CONTACT_POINTS:-./config/production/grafana/alerting/none.yaml}:/etc/grafana/provisioning/alerting/contact-points.yaml:ro
+      - grafana:/var/lib/grafana
+    ports:
+      - 127.0.0.1:${ACME_GRAFANA_PORT:-13000}:3000
+    depends_on:
+      loki:
+        condition: service_healthy
+      tempo:
+        condition: service_healthy
+      prometheus:
+        condition: service_healthy
+    healthcheck:
+      <<: *healthcheck
+      test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1:3000/api/health]
+
+volumes:
+  postgres:
+  loki:
+  tempo:
+  prometheus:
+  grafana:

@@ -1,0 +1,52 @@
+# Caddy in front of a self-hosted Acme (compose.self-host.yaml). It gets and
+# renews a certificate for ACME_DOMAIN from Let's Encrypt, which needs the
+# domain's DNS pointing at this host and ports 80 and 443 open to the world.
+#
+# The server answers /api/* (the HTTP API, sign-in and the MCP endpoint) and
+# the OAuth discovery documents under /.well-known/oauth-*; the web app
+# answers everything else. Caddy replaces any X-Forwarded-For the client
+# sent with the address it sees, so set AUTH_IP_HEADERS=x-forwarded-for.
+
+{$ACME_DOMAIN} {
+	encode zstd gzip
+
+	# The web app sets the security headers, HSTS included.
+	header -Server
+
+	@server path /api/* /.well-known/oauth-*
+	handle @server {
+		reverse_proxy server:3000 {
+			# Caddy sets no time limit on a request by default; this one
+			# says it outright. The writing assistant answers within 90
+			# seconds, and the web app's own forwarding waits 120, so Caddy
+			# waits longer than both before it gives up on an answer.
+			transport http {
+				dial_timeout 10s
+				response_header_timeout 150s
+			}
+		}
+	}
+
+	handle {
+		reverse_proxy web:3001 {
+			transport http {
+				dial_timeout 10s
+				response_header_timeout 150s
+			}
+		}
+	}
+}
+
+# The marketing site and the docs, if you serve them too: start the stack with
+# `--profile static`, set the domains in compose.self-host.yaml's caddy
+# service, and uncomment.
+#
+# {$ACME_SITE_DOMAIN} {
+# 	encode zstd gzip
+# 	reverse_proxy static:8080
+# }
+#
+# {$ACME_DOCS_DOMAIN} {
+# 	encode zstd gzip
+# 	reverse_proxy static:8081
+# }

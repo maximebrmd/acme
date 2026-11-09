@@ -1,0 +1,70 @@
+# The production collector: the development pipelines (config/otel-collector.yaml)
+# plus the host's own metrics (disk, memory, load), read from the host's root
+# filesystem mounted read-only at /hostfs, which the disk space alert uses.
+
+extensions:
+  # Probed by the compose health check from inside the container only.
+  health_check:
+    endpoint: 127.0.0.1:13133
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+  host_metrics:
+    root_path: /hostfs
+    collection_interval: 60s
+    scrapers:
+      filesystem:
+        include_mount_points:
+          match_type: strict
+          mount_points: [/]
+      memory: {}
+      load: {}
+
+processors:
+  memory_limiter:
+    check_interval: 1s
+    limit_percentage: 80
+    spike_limit_percentage: 25
+  batch: {}
+
+exporters:
+  otlp_grpc/tempo:
+    endpoint: tempo:4317
+    tls:
+      insecure: true
+  otlp_http/loki:
+    endpoint: http://loki:3100/otlp
+  prometheus_remote_write:
+    http:
+      endpoint: http://prometheus:9090/api/v1/write
+      tls:
+        insecure: true
+
+service:
+  extensions: [health_check]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [otlp_grpc/tempo]
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [otlp_http/loki]
+    metrics:
+      receivers: [otlp, host_metrics]
+      processors: [memory_limiter, batch]
+      exporters: [prometheus_remote_write]
+  telemetry:
+    metrics:
+      readers:
+        - pull:
+            exporter:
+              prometheus:
+                host: 0.0.0.0
+                port: 8888
