@@ -59,7 +59,7 @@ describe(actorFor, () => {
     assert.strictEqual(failureOf(result), "BannedUser");
   });
 
-  it("withholds publishing, accounts, billing and API keys from staff impersonating a member", () => {
+  it("withholds accounts, billing and API keys from staff impersonating a member, not publishing", () => {
     const impersonated = new UserPrincipal({
       impersonatedBy: Option.some(staffId),
       userId,
@@ -79,6 +79,7 @@ describe(actorFor, () => {
     }
 
     assert.include(actor.permissions, "post:schedule");
+    assert.include(actor.permissions, "post:publish");
   });
 
   it("lets an API key act in its own workspace with its own permissions", () => {

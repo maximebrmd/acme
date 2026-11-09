@@ -30,9 +30,12 @@ const eventOf = (row: Row) =>
     at: DateTime.makeUnsafe(row.at),
     banExpiresAt: utc(row.banExpiresAt),
     id: row.id,
+    objectIds: row.objectIds,
+    operation: Option.fromNullOr(row.operation),
     reason: Option.fromNullOr(row.reason),
     staffId: Option.fromNullOr(row.staffId),
     targetId: Option.fromNullOr(row.targetId),
+    workspaceId: Option.fromNullOr(row.workspaceId),
   }).pipe(Effect.orDie);
 
 const date = (instant: DateTime.Utc) => DateTime.toDateUtc(instant);
@@ -89,9 +92,12 @@ export const DrizzleAuditLog = Layer.effect(
               Option.getOrNull
             ),
             id: event.id,
+            objectIds: event.objectIds,
+            operation: Option.getOrNull(event.operation),
             reason: Option.getOrNull(event.reason),
             staffId: Option.getOrNull(event.staffId),
             targetId: Option.getOrNull(event.targetId),
+            workspaceId: Option.getOrNull(event.workspaceId),
           })
           .pipe(
             Effect.mapError(failed),
@@ -120,11 +126,15 @@ export const DrizzleStaffRecords = Layer.effect(
 
           const events = yield* Effect.all(rows.map(eventOf));
 
+          // Who did it is left out: it is staff's.
           return events.map((event): StaffActionRecord => ({
             action: event.action,
             at: event.at,
             banExpiresAt: Option.getOrNull(event.banExpiresAt),
+            objectIds: event.objectIds,
+            operation: Option.getOrNull(event.operation),
             reason: Option.getOrNull(event.reason),
+            workspaceId: Option.getOrNull(event.workspaceId),
           }));
         }
       ),

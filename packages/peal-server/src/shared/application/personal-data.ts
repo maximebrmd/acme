@@ -177,5 +177,11 @@ export interface StaffActionRecord {
   readonly action: string;
   readonly at: DateTime.Utc;
   readonly banExpiresAt: DateTime.Utc | null;
+  /** The ids a change staff made while acting as the user named. */
+  readonly objectIds: Readonly<Record<string, string>>;
+  /** What staff asked for while acting as the user, or stopped it with. */
+  readonly operation: string | null;
   readonly reason: string | null;
+  /** The workspace a change staff made while acting as the user was in. */
+  readonly workspaceId: string | null;
 }

@@ -38,6 +38,7 @@ const nothing = async (): Promise<void> => {
 const auth = makeAuth({
   database: { db: drizzle.mock(), tables: {} },
   hooks: {
+    impersonatedRequest: async () => await Promise.resolve(true),
     invitation: ignore,
     log: ignore,
     memberAllowance: async () => await Promise.resolve(Option.none()),

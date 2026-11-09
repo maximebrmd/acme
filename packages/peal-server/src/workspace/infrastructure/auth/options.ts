@@ -31,7 +31,11 @@ import {
   turnstile,
 } from "./billing.ts";
 import type { BillingHooks } from "./billing.ts";
-import { refuseImpersonatedChanges } from "./impersonation.ts";
+import {
+  guardImpersonatedRequest,
+  refuseImpersonatedChanges,
+} from "./impersonation.ts";
+import type { ImpersonationCheck } from "./impersonation.ts";
 import {
   apiResourceOf,
   cliClientId,
@@ -65,6 +69,12 @@ export type AuthLogLevel = "debug" | "error" | "info" | "warn";
  * unknown ones. The billing hooks are awaited.
  */
 export interface AuthHooks extends BillingHooks {
+  /**
+   * Awaited on each request a browser sends in a session staff act as
+   * someone in: refuses it once they are no longer staff, and records
+   * the changes it asks for.
+   */
+  readonly impersonatedRequest: ImpersonationCheck;
   readonly invitation: (link: InvitationLink) => void;
   readonly log: (level: AuthLogLevel, message: string) => void;
   readonly resetPassword: (link: AuthLink) => void;
@@ -272,11 +282,14 @@ const oauthServer = (settings: AuthConfiguration) => {
     : oauthProvider(provider);
 };
 
-// Every route's before hook.
-const beforeEveryRoute = createAuthMiddleware(async (ctx) => {
-  await refuseImpersonatedChanges(ctx);
-  refusePersonalSubscriptions(ctx);
-});
+// Every route's before hook. A request staff send while acting as someone
+// is checked and recorded first, refused or not.
+const beforeEveryRoute = (hooks: AuthHooks) =>
+  createAuthMiddleware(async (ctx) => {
+    await guardImpersonatedRequest(ctx, hooks.impersonatedRequest);
+    await refuseImpersonatedChanges(ctx);
+    refusePersonalSubscriptions(ctx);
+  });
 
 /**
  * The Better Auth instance: email and password with verification, workspaces
@@ -394,7 +407,7 @@ export const makeAuth = ({ database, hooks, settings }: AuthDependencies) =>
         await Promise.resolve();
       },
     },
-    hooks: { before: beforeEveryRoute },
+    hooks: { before: beforeEveryRoute(hooks) },
     logger: {
       level: "warn",
       // Messages only: Better Auth passes request details as further

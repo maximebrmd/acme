@@ -10,6 +10,7 @@ import { BillingLive } from "#billing/container.ts";
 import { SendAuthEmail } from "#notifications/application/send-auth-email.ts";
 import { DatabaseLive } from "#shared/infrastructure/database.ts";
 import { MigrationsLive } from "#shared/infrastructure/migrations.ts";
+import { ImpersonationGuard } from "#workspace/application/impersonation-guard.ts";
 import {
   BetterAuth,
   BetterAuthLive,
@@ -42,6 +43,17 @@ const authWith = (env: Record<string, string>) =>
       Layer.succeed(
         SendAuthEmail,
         SendAuthEmail.of({ send: () => Effect.void })
+      )
+    ),
+    // Nobody signs in here, as staff or anyone.
+    Layer.provide(
+      Layer.succeed(
+        ImpersonationGuard,
+        ImpersonationGuard.of({
+          admit: () => Effect.void,
+          changed: () => Effect.void,
+          stopped: () => Effect.void,
+        })
       )
     ),
     Layer.provide(
