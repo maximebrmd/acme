@@ -1,6 +1,7 @@
 import { HttpApi, OpenApi } from "effect/http-api";
 
 import { ApiKeysApi } from "./api-keys.ts";
+import { ChannelsApi } from "./channels.ts";
 import { SessionApi } from "./session.ts";
 import { SystemApi } from "./system.ts";
 
@@ -18,6 +19,12 @@ export type { ApiKey, NewApiKey } from "./api-keys.ts";
 
 export { Authentication } from "./authentication.ts";
 
+export { ChannelNotFound } from "./channel-not-found.ts";
+
+export { ChannelSchema, ChannelStatusSchema } from "./channels.ts";
+
+export type { Channel, ChannelStatus } from "./channels.ts";
+
 export { CurrentMember } from "./current-member.ts";
 
 export { CurrentPrincipal } from "./current-principal.ts";
@@ -27,6 +34,10 @@ export { Forbidden } from "./forbidden.ts";
 export { PermissionSchema } from "./permission.ts";
 
 export type { Permission } from "./permission.ts";
+
+export { PlatformSchema } from "./platform.ts";
+
+export type { Platform } from "./platform.ts";
 
 export { MemberSchema, PrincipalSchema } from "./principal.ts";
 
@@ -49,4 +60,5 @@ export class Api extends HttpApi.make("acme")
   .add(SystemApi)
   .add(SessionApi)
   .add(ApiKeysApi)
+  .add(ChannelsApi)
   .annotateMerge(OpenApi.annotations({ title: "Acme API" })) {}

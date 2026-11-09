@@ -90,6 +90,9 @@ const bearer = (key: string) => ({ authorization: `Bearer ${key}` });
 const apiKeys = (workspaceId: string) =>
   `/api/workspaces/${workspaceId}/api-keys`;
 
+const channels = (workspaceId: string) =>
+  `/api/workspaces/${workspaceId}/channels`;
+
 interface Case {
   readonly expected: number;
   readonly headers?: (fixture: Fixture) => Record<string, string>;
@@ -174,6 +177,35 @@ const cases: readonly Case[] = [
     method: "POST",
     name: "a member's session sent by another site",
     path: (fixture) => apiKeys(fixture.workspaceId),
+  },
+  {
+    expected: 401,
+    name: "no credentials on the channels",
+    path: (fixture) => channels(fixture.workspaceId),
+  },
+  {
+    expected: 200,
+    headers: (fixture) => ({ cookie: fixture.ownerCookies }),
+    name: "a member's session on the channels",
+    path: (fixture) => channels(fixture.workspaceId),
+  },
+  {
+    expected: 404,
+    headers: (fixture) => ({ cookie: fixture.ownerCookies }),
+    name: "a session on another workspace's channels",
+    path: (fixture) => channels(fixture.otherWorkspaceId),
+  },
+  {
+    expected: 403,
+    headers: (fixture) => bearer(fixture.key),
+    name: "an API key without channel:read on the channels",
+    path: (fixture) => channels(fixture.workspaceId),
+  },
+  {
+    expected: 403,
+    headers: (fixture) => bearer(fixture.key),
+    name: "an API key on another workspace's channels",
+    path: (fixture) => channels(fixture.otherWorkspaceId),
   },
   {
     expected: 401,

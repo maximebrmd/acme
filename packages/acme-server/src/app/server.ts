@@ -8,6 +8,7 @@ import { ClusterLive } from "#app/cluster.ts";
 import { CronsLive } from "#app/crons.ts";
 import { ObservabilityLive } from "#app/observability.ts";
 import { SystemHandlers } from "#app/system.ts";
+import { ChannelsApiLive, ChannelsLive } from "#channels/container.ts";
 import { NotificationsLive } from "#notifications/container.ts";
 import {
   PublishingLive,
@@ -23,9 +24,15 @@ import {
   WorkspaceLive,
 } from "#workspace/container.ts";
 
+// The groups of the workspace endpoints, behind the Authentication and
+// WorkspaceAccess middleware that WorkspaceApiLive provides.
+const WorkspaceGroupsLive = ChannelsApiLive.pipe(
+  Layer.provideMerge(WorkspaceApiLive)
+);
+
 const ApiLive = HttpApiBuilder.layer(Api, {
   openapiPath: "/openapi.json",
-}).pipe(Layer.provide([SystemHandlers, WorkspaceApiLive]));
+}).pipe(Layer.provide([SystemHandlers, WorkspaceGroupsLive]));
 
 /** Every route the server answers: the HTTP API and Better Auth's. */
 export const RoutesLive = Layer.mergeAll(ApiLive, AuthRoutesLive);
@@ -33,7 +40,7 @@ export const RoutesLive = Layer.mergeAll(ApiLive, AuthRoutesLive);
 // The services the routes need, each built after the ones below it: the
 // database pool, the migrations, then the contexts. Better Auth checks its
 // tables against the database, so it starts once they are migrated.
-const ServicesLive = WorkspaceLive.pipe(
+const ServicesLive = Layer.mergeAll(WorkspaceLive, ChannelsLive).pipe(
   Layer.provideMerge(NotificationsLive),
   Layer.provideMerge(MigrationsLive),
   Layer.provideMerge(DatabaseLive)
@@ -56,7 +63,8 @@ const WorkersLive = Layer.mergeAll(PublishingWorkersLive, CronsLive);
 // The contexts' use cases and adapters, which handlers and workers share.
 const ContextsLive = Layer.mergeAll(
   WorkspaceLive.pipe(Layer.provideMerge(NotificationsLive)),
-  PublishingLive
+  PublishingLive,
+  ChannelsLive
 ).pipe(Layer.provideMerge(Layer.mergeAll(IdsLive, TransactionRunnerLive)));
 
 // Each layer is built after the ones it is provided with, from the bottom up:
