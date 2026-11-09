@@ -369,7 +369,8 @@ behind.
 up through the emailed link, creating a workspace, writing a draft and
 finding it on the drafts page, scheduling it on a synthetic channel,
 finding it on the calendar, taking it back to draft to edit and schedule
-it again, cancelling it, inviting a second member, switching to French and
+it again, cancelling it, giving a draft on a synthetic YouTube channel the
+options YouTube asks for, inviting a second member, switching to French and
 keeping it in the account settings, signing out and in again, then the
 second member signing up and joining. Each run builds
 the web app, starts the server and the web app's production build on free
