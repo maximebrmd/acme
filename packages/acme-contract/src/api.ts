@@ -370,6 +370,29 @@ export type {
   UnconfirmedReason,
 } from "./posts.ts";
 
+export {
+  ChannelOptionsSchema,
+  maxYouTubeTagsLength,
+  maxYouTubeTitleLength,
+  optionsPlatforms,
+  TargetOptionsSchema,
+  TikTokOptionsSchema,
+  TikTokPrivacyLevelSchema,
+  YouTubeOptionsSchema,
+  YouTubePrivacySchema,
+  youTubeTagsLength,
+} from "./target-options.ts";
+
+export type {
+  ChannelOptions,
+  OptionsPlatform,
+  TargetOptions,
+  TikTokOptions,
+  TikTokPrivacyLevel,
+  YouTubeOptions,
+  YouTubePrivacy,
+} from "./target-options.ts";
+
 export { PostTargetStatusSchema } from "./post-target-status.ts";
 
 export type { PostTargetStatus } from "./post-target-status.ts";

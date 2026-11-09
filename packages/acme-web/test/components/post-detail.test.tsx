@@ -38,6 +38,7 @@ const target = (
   channelId,
   failureReason: null,
   id,
+  options: null,
   permalink: null,
   publishedAt: null,
   round: 1,

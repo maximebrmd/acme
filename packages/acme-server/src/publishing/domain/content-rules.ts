@@ -1,15 +1,20 @@
-import { Array as Arr, Duration, Option, Result } from "effect";
+import { Array as Arr, Duration, Match, Option, Result } from "effect";
 
 import type { ChannelId, MediaAssetId } from "#shared/domain/ids.ts";
 import type { Platform } from "#shared/domain/platform.ts";
 
+import { optionsOn } from "./channel-options.ts";
+import type { ChannelOptions } from "./channel-options.ts";
 import type { ContentViolation } from "./content-violation.ts";
 import type { Dimensions, MediaFile } from "./media-file.ts";
+import type { OptionProblem } from "./option-problem.ts";
 import { platformRules } from "./platform-rules.ts";
 import type { FormatLimits, MediaRules } from "./platform-rules.ts";
 import { PostContentRejected } from "./post-content-rejected.ts";
 import { textOn } from "./post-content.ts";
 import type { PostContent } from "./post-content.ts";
+import { optionProblemsOn } from "./target-options.ts";
+import type { TargetOptions } from "./target-options.ts";
 import {
   countHashtags,
   countLinks,
@@ -44,16 +49,97 @@ const overridesWithoutChannel = (
     .filter((override) => !channelIds.includes(override.channelId))
     .map(({ channelId }) => ({ _tag: "overrideWithoutChannel", channelId }));
 
+const optionsWithoutChannel = (
+  options: readonly ChannelOptions[],
+  channelIds: readonly ChannelId[]
+): readonly ContentViolation[] =>
+  options.flatMap(({ channelId }) =>
+    channelIds.includes(channelId)
+      ? []
+      : [{ _tag: "optionsWithoutChannel" as const, channelId }]
+  );
+
+const otherPlatform = (
+  channel: ChannelOnPlatform,
+  options: Option.Option<TargetOptions>
+): readonly ContentViolation[] =>
+  Option.match(options, {
+    onNone: () => [],
+    onSome: ({ platform }) =>
+      platform === channel.platform
+        ? []
+        : [
+            {
+              _tag: "optionsForOtherPlatform",
+              ...channel,
+              optionsPlatform: platform,
+            },
+          ],
+  });
+
+const optionViolation = (
+  channel: ChannelOnPlatform,
+  problem: OptionProblem
+): ContentViolation =>
+  Match.valueTags(problem, {
+    invalid: ({ field }): ContentViolation => ({
+      _tag: "optionInvalid",
+      ...channel,
+      field,
+    }),
+    missing: ({ field }): ContentViolation => ({
+      _tag: "optionMissing",
+      ...channel,
+      field,
+    }),
+    tooLong: ({ field, length, maximum }): ContentViolation => ({
+      _tag: "optionTooLong",
+      ...channel,
+      field,
+      length,
+      maximum,
+    }),
+  });
+
 /**
- * What a draft for these channels must hold: a text override only for one of
- * them. The platforms' rules wait until it is scheduled, so a draft can be
- * longer than they take while the user works on it.
+ * What the channel's platform would refuse in the options the post has
+ * there, or in none at all (`#publishing/domain/target-options.ts`): those
+ * of another platform, then each option it needs and lacks or refuses.
+ */
+export const optionViolationsOn = (
+  channel: ChannelOnPlatform,
+  options: Option.Option<TargetOptions>
+): readonly ContentViolation[] => {
+  const mismatched = otherPlatform(channel, options);
+
+  return Arr.isReadonlyArrayNonEmpty(mismatched)
+    ? mismatched
+    : optionProblemsOn(channel.platform, options).map((problem) =>
+        optionViolation(channel, problem)
+      );
+};
+
+/**
+ * What a draft for these channels must hold: text overrides and options
+ * only for some of them, and options of their own platforms. The platforms'
+ * rules wait until it is scheduled, so a draft can be longer than they take,
+ * or lack options they need, while the user works on it.
  */
 export const checkDraft = (
   content: PostContent,
-  channelIds: readonly ChannelId[]
-): Result.Result<PostContent, PostContentRejected> =>
-  checked(content, overridesWithoutChannel(content, channelIds));
+  channels: readonly ChannelOnPlatform[],
+  options: readonly ChannelOptions[] = []
+): Result.Result<PostContent, PostContentRejected> => {
+  const channelIds = channels.map(({ channelId }) => channelId);
+
+  return checked(content, [
+    ...overridesWithoutChannel(content, channelIds),
+    ...optionsWithoutChannel(options, channelIds),
+    ...channels.flatMap((channel) =>
+      otherPlatform(channel, optionsOn(options, channel.channelId))
+    ),
+  ]);
+};
 
 const atMost = (
   tag:
@@ -298,22 +384,27 @@ export const mediaViolationsOn = (
 
 /**
  * Whether the post can be scheduled on these channels: for one channel at
- * least, with text overrides for them only, and within each platform's rules
- * on the text it has there and on its media, whose files are `files`.
+ * least, with text overrides and options for them only, within each
+ * platform's rules on the text it has there and on its media, whose files
+ * are `files`, and with the options each platform needs, as `options` gives
+ * them.
  */
 export const checkPublishable = (
   content: PostContent,
   channels: readonly ChannelOnPlatform[],
-  files: readonly MediaFile[]
-): Result.Result<PostContent, PostContentRejected> =>
-  checked(content, [
+  files: readonly MediaFile[],
+  options: readonly ChannelOptions[] = []
+): Result.Result<PostContent, PostContentRejected> => {
+  const channelIds = channels.map(({ channelId }) => channelId);
+
+  return checked(content, [
     ...(channels.length === 0 ? [{ _tag: "noChannels" as const }] : []),
-    ...overridesWithoutChannel(
-      content,
-      channels.map(({ channelId }) => channelId)
-    ),
+    ...overridesWithoutChannel(content, channelIds),
+    ...optionsWithoutChannel(options, channelIds),
     ...channels.flatMap((channel) => [
       ...violationsOn(content, channel),
       ...mediaViolationsOn(content, channel, files),
+      ...optionViolationsOn(channel, optionsOn(options, channel.channelId)),
     ]),
   ]);
+};

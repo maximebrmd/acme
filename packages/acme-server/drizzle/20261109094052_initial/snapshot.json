@@ -2,7 +2,7 @@
   "type": "base",
   "version": "9",
   "dialect": "postgres",
-  "id": "a6d3c3d2-94a0-4aac-b783-cd7fb6fd3e99",
+  "id": "41b526df-2f3f-442e-affb-6aac3fa2b737",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
@@ -4096,6 +4096,19 @@
       "type": "uuid",
       "typeSchema": null,
       "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "post_targets",
+      "name": "options",
+      "type": "jsonb",
+      "typeSchema": null,
+      "notNull": false,
       "dimensions": 0,
       "default": null,
       "generated": null,

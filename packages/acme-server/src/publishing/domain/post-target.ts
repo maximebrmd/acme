@@ -11,6 +11,8 @@ import { PostTargetIdSchema } from "./post-target-id.ts";
 import type { PostTargetId } from "./post-target-id.ts";
 import { PostTargetStatusSchema } from "./post-target-status.ts";
 import type { PostTargetStatus } from "./post-target-status.ts";
+import { TargetOptionsSchema } from "./target-options.ts";
+import type { TargetOptions } from "./target-options.ts";
 import type { TargetSettlement } from "./target-settlement.ts";
 
 /**
@@ -29,12 +31,17 @@ import type { TargetSettlement } from "./target-settlement.ts";
  * `round` counts the times it was sent: a repost after an unconfirmed or
  * failed round starts the next one, so a job left from an earlier round
  * cannot act on it.
+ *
+ * `options` are what the post says on the channel that only its platform
+ * knows (`./target-options.ts`), none on most platforms. Like the post's
+ * content, they change only while it is a draft.
  */
 export class PostTarget extends Schema.Class<PostTarget>(
   "acme-server/publishing/domain/PostTarget"
 )({
   channelId: ChannelIdSchema,
   id: PostTargetIdSchema,
+  options: Schema.Option(TargetOptionsSchema),
   postId: PostIdSchema,
   round: Schema.Int.check(Schema.isGreaterThanOrEqualTo(1)),
   status: PostTargetStatusSchema,
@@ -46,6 +53,7 @@ const withStatus = (target: PostTarget, status: PostTargetStatus): PostTarget =>
   new PostTarget({
     channelId: target.channelId,
     id: target.id,
+    options: target.options,
     postId: target.postId,
     round: target.round,
     status,
@@ -67,14 +75,33 @@ const rejected = (
 export const createTarget = (
   id: PostTargetId,
   postId: PostId,
-  channelId: ChannelId
+  channelId: ChannelId,
+  options: Option.Option<TargetOptions> = Option.none()
 ): PostTarget =>
   new PostTarget({
     channelId,
     id,
+    options,
     postId,
     round: 1,
     status: { _tag: "pending" },
+  });
+
+/**
+ * The target with other options. Only a draft's targets change them, and
+ * they are all pending.
+ */
+export const withOptions = (
+  target: PostTarget,
+  options: Option.Option<TargetOptions>
+): PostTarget =>
+  new PostTarget({
+    channelId: target.channelId,
+    id: target.id,
+    options,
+    postId: target.postId,
+    round: target.round,
+    status: target.status,
   });
 
 /** Whether the target's publication is over, one way or another. */
@@ -220,6 +247,7 @@ export const repostTarget = (target: PostTarget): Transition =>
         new PostTarget({
           channelId: target.channelId,
           id: target.id,
+          options: target.options,
           postId: target.postId,
           round: target.round + 1,
           status: { _tag: "pending" },

@@ -1,5 +1,6 @@
-import { Context, Effect, Layer } from "effect";
+import { Context, Effect, Layer, Option } from "effect";
 
+import type { ChannelOptions } from "#publishing/domain/channel-options.ts";
 import { checkDraft } from "#publishing/domain/content-rules.ts";
 import type { InvalidPostTransition } from "#publishing/domain/invalid-post-transition.ts";
 import type { PostContentRejected } from "#publishing/domain/post-content-rejected.ts";
@@ -32,11 +33,16 @@ import type { UnknownMedia } from "./unknown-media.ts";
 import type { WorkspaceChannels } from "./workspace-channels.ts";
 import { lockInWorkspace, targetsOn } from "./workspace-posts.ts";
 
-/** What a draft says, and the channels it is meant for so far. */
+/**
+ * What a draft says, the channels it is meant for so far, and the options
+ * it has on some of them, unfinished as they may be.
+ */
 export interface DraftRequest {
   // Possibly none yet; a channel listed twice gets one target.
   readonly channelIds: readonly ChannelId[];
   readonly content: PostContent;
+  // One at most per channel; left out, none on any channel.
+  readonly options?: readonly ChannelOptions[];
 }
 
 type DraftFailure =
@@ -69,7 +75,7 @@ export class PostDrafts extends Context.Service<
       actor: Actor,
       request: DraftRequest
     ) => Effect.Effect<PostWithTargets, DraftFailure>;
-    /** Replaces a draft's content and channels. */
+    /** Replaces a draft's content, channels and options. */
     readonly update: (
       actor: Actor,
       postId: PostId,
@@ -97,22 +103,20 @@ export class PostDrafts extends Context.Service<
 
       const withPorts = Effect.provideContext(ports);
 
-      // The draft's channels, once its content may go to them.
+      // The draft's channels, once its content and options may go to them.
       const checked = Effect.fn("PostDrafts.checked")(function* checked(
         actor: Actor,
         permission: Permission,
-        { channelIds, content }: DraftRequest
+        { channelIds, content, options = [] }: DraftRequest
       ) {
         yield* Effect.fromResult(authorize(actor, permission));
 
-        const channels = (yield* channelsFor(actor, channelIds)).map(
-          ({ channelId }) => channelId
-        );
+        const channels = yield* channelsFor(actor, channelIds);
 
-        yield* Effect.fromResult(checkDraft(content, channels));
+        yield* Effect.fromResult(checkDraft(content, channels, options));
         yield* mediaFor(actor, content);
 
-        return channels;
+        return channels.map(({ channelId }) => channelId);
       }, withPorts);
 
       const create = Effect.fn("PostDrafts.create")(function* create(
@@ -129,7 +133,12 @@ export class PostDrafts extends Context.Service<
           authorOf(actor)
         );
 
-        const targets = yield* targetsOn(postId, channels).pipe(withPorts);
+        const targets = yield* targetsOn(
+          postId,
+          channels,
+          [],
+          Option.some(request.options ?? [])
+        ).pipe(withPorts);
 
         yield* transaction(posts.insert(post, targets));
 
@@ -157,7 +166,8 @@ export class PostDrafts extends Context.Service<
             const targets = yield* targetsOn(
               postId,
               channels,
-              yield* posts.lockTargets(postId)
+              yield* posts.lockTargets(postId),
+              Option.some(request.options ?? [])
             ).pipe(withPorts);
 
             yield* applied(yield* posts.update(post, current.post));

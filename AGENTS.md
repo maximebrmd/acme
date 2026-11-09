@@ -543,6 +543,25 @@ and no socket, for tests.
   `acme-contract/post-text` is the clients' copy, kept equal by
   `test/publishing/api/contract.test.ts`: change both together. Compare video
   durations in whole milliseconds, as the media API shows them.
+- A post's target carries options only its channel's platform knows
+  (`TargetOptionsSchema`, `#publishing/domain/target-options.ts`), tagged by
+  `platform`, in `publishing.post_targets.options` (JSON the domain decodes;
+  null on rows from before options and on platforms that take none). A
+  platform's options are one `Schema.Class` in its own file
+  (`youtube-options.ts`, `tiktok-options.ts`): every field optional, so a
+  draft holds them unfinished, a `platform: Schema.tag(...)`, and a
+  `problems()` method listing what the platform would refuse (`missing`,
+  `tooLong`, `invalid`, by field). Adding a platform's options is adding its
+  class to that union, its copy to `acme-contract/src/target-options.ts`
+  (kept equal by `test/publishing/api/contract.test.ts`), its fields to the
+  web app's `#posts/target-options.ts`, and their strings to the
+  `Posts.Options` catalogues. Drafts refuse only options of another platform
+  or channel; scheduling refuses what `problems()` lists
+  (`optionMissing`, `optionTooLong`, `optionInvalid`). Options change only
+  with the draft, and an update replaces them all. Adapters read their own
+  from `OutgoingPost.options`, with
+  `post.options.pipe(Option.filter(Schema.is(YouTubeOptions)))`; keep stored
+  options decoding (`fixtures/persisted/post-targets/options.json`).
 - Posts show only ready media of the workspace: `LibraryAttachableMedia`
   reads each asset through the media context's `MediaLibrary`, and anything
   else answers `UnknownMedia` when a draft is saved or scheduled.
@@ -900,6 +919,12 @@ self-hoster needs only Postgres and an S3-compatible store:
   in a status region. Polling works through any proxy and needs nothing
   shared between servers; keep it. Write notices from their events with
   `src/notices/notice-text.ts`.
+- The composer's options come from `TargetOptionsSection`
+  (`components/posts/target-options-panel.tsx`), which renders the fields
+  `#posts/target-options.ts` describes for each selected channel's platform
+  (text, tags, choice, yes or no, toggle; `initial`, `inverted` and `within`
+  for TikTok's boxes), turns them into the contract's `TargetOptions` with
+  Schema, and shows each `option*` violation under its field.
 - The composer's attachments come from `MediaPicker` (ready media of the
   workspace) or `MediaUploader` (`onUploaded` attaches ready uploads).
   `#posts/attachments.ts` keeps the list: order, alt text seeded from the

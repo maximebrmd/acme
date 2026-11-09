@@ -1,7 +1,11 @@
 import { Effect, Option } from "effect";
 
+import {
+  ChannelOptions,
+  optionsOn,
+} from "#publishing/domain/channel-options.ts";
 import { PostTargetIdSchema } from "#publishing/domain/post-target-id.ts";
-import { createTarget } from "#publishing/domain/post-target.ts";
+import { createTarget, withOptions } from "#publishing/domain/post-target.ts";
 import type { PostTarget } from "#publishing/domain/post-target.ts";
 import { newId } from "#shared/application/ids.ts";
 import type { ChannelId, PostId, WorkspaceId } from "#shared/domain/ids.ts";
@@ -38,13 +42,19 @@ export const lockInWorkspace = (workspaceId: WorkspaceId, postId: PostId) =>
 
 /**
  * The targets a post has on these channels, in their order: the one it
- * already has on a channel, or a new one.
+ * already has on a channel, or a new one. Given `options`, each target has
+ * the options they give on its channel, or none; otherwise each keeps its
+ * own, and a new one has none.
  */
 export const targetsOn = Effect.fn("Publishing.targetsOn")(function* targetsOn(
   postId: PostId,
   channelIds: readonly ChannelId[],
-  existing: readonly PostTarget[] = []
+  existing: readonly PostTarget[] = [],
+  options: Option.Option<readonly ChannelOptions[]> = Option.none()
 ) {
+  const chosenOn = (channelId: ChannelId) =>
+    options.pipe(Option.flatMap((given) => optionsOn(given, channelId)));
+
   return yield* Effect.all(
     channelIds.map((channelId) =>
       Option.match(
@@ -55,12 +65,33 @@ export const targetsOn = Effect.fn("Publishing.targetsOn")(function* targetsOn(
           onNone: () =>
             newId(PostTargetIdSchema).pipe(
               Effect.map((targetId) =>
-                createTarget(targetId, postId, channelId)
+                createTarget(targetId, postId, channelId, chosenOn(channelId))
               )
             ),
-          onSome: Effect.succeed,
+          onSome: (target) =>
+            Effect.succeed(
+              Option.isSome(options)
+                ? withOptions(target, chosenOn(channelId))
+                : target
+            ),
         }
       )
     )
   );
 });
+
+/** The options the targets on these channels have, channel by channel. */
+export const optionsOfTargets = (
+  targets: readonly PostTarget[],
+  channelIds: readonly ChannelId[]
+): readonly ChannelOptions[] =>
+  targets.flatMap(({ channelId, options }) =>
+    channelIds.includes(channelId)
+      ? options.pipe(
+          Option.map(
+            (chosen) => new ChannelOptions({ channelId, options: chosen })
+          ),
+          Option.toArray
+        )
+      : []
+  );

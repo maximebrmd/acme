@@ -201,6 +201,7 @@ CREATE TABLE "publishing"."post_targets" (
 	"failure_reason" text,
 	"finished_at" timestamp with time zone,
 	"id" uuid PRIMARY KEY,
+	"options" jsonb,
 	"permalink" text,
 	"platform_post_id" text,
 	"post_id" uuid NOT NULL,

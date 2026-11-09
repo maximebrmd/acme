@@ -1,13 +1,14 @@
 "use client";
 
-import type { Channel, ContentViolation } from "acme-contract";
+import type { Channel, ContentViolation, Platform } from "acme-contract";
 import { Alert, AlertDescription, AlertTitle } from "acme-ui/components/alert";
-import { Match } from "effect";
+import { Match, Option } from "effect";
 import { useTranslations } from "next-intl";
 
 import { useMediaViolationTexts } from "#components/posts/media-text.ts";
 import type { ComposerFailure } from "#posts/composer-failure.ts";
 import type { AttachedMedia } from "#posts/media-fit.ts";
+import { fieldOf } from "#posts/target-options.ts";
 
 /**
  * What tells a violation from the others in the list: its kind and channel,
@@ -21,8 +22,9 @@ export const violationKey = (violation: ContentViolation): string => {
 
   const unit = violation._tag === "textTooLong" ? `-${violation.unit}` : "";
   const media = "mediaId" in violation ? `-${violation.mediaId}` : "";
+  const field = "field" in violation ? `-${violation.field}` : "";
 
-  return `${violation._tag}-${violation.channelId}${unit}${media}`;
+  return `${violation._tag}-${violation.channelId}${unit}${media}${field}`;
 };
 
 interface ComposerErrorsProps {
@@ -43,7 +45,23 @@ export const ComposerErrors = ({
 }: ComposerErrorsProps) => {
   const t = useTranslations("Posts.Composer");
   const tPosts = useTranslations("Posts");
+  const tOptions = useTranslations("Posts.Options");
   const billing = useTranslations("Billing");
+
+  // An option's label, as its platform's fields name it.
+  const fieldName = (violation: { platform: Platform; field: string }) =>
+    Option.match(fieldOf(violation.platform, violation.field), {
+      onNone: () => tOptions("unknownField"),
+      onSome: ({ label }) => tOptions(label),
+    });
+
+  // Why the platform refuses an option's value, as its field says.
+  const fieldReason = (violation: { platform: Platform; field: string }) =>
+    Option.match(fieldOf(violation.platform, violation.field), {
+      onNone: () => tOptions("invalid"),
+      onSome: ({ invalid }) =>
+        invalid === undefined ? tOptions("invalid") : tOptions(invalid),
+    });
 
   const channelName = (channelId: string) => {
     const channel = channels.find(({ id }) => id === channelId);
@@ -70,6 +88,29 @@ export const ComposerErrors = ({
       mediaRequired: ({ channelId }) =>
         t("violation.mediaRequired", { channel: channelName(channelId) }),
       noChannels: () => t("violation.noChannels"),
+      optionInvalid: (option) =>
+        t("violation.optionInvalid", {
+          channel: channelName(option.channelId),
+          reason: fieldReason(option),
+        }),
+      optionMissing: (option) =>
+        t("violation.optionMissing", {
+          channel: channelName(option.channelId),
+          field: fieldName(option),
+        }),
+      optionTooLong: (option) =>
+        t("violation.optionTooLong", {
+          channel: channelName(option.channelId),
+          field: fieldName(option),
+          length: option.length,
+          maximum: option.maximum,
+        }),
+      optionsForOtherPlatform: ({ channelId, optionsPlatform }) =>
+        t("violation.optionsForOtherPlatform", {
+          channel: channelName(channelId),
+          platform: tPosts("platform", { platform: optionsPlatform }),
+        }),
+      optionsWithoutChannel: () => t("violation.optionsWithoutChannel"),
       overrideWithoutChannel: () => t("violation.overrideWithoutChannel"),
       textTooLong: ({ channelId, length, maximum, unit }) =>
         t("violation.textTooLong", {

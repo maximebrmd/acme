@@ -1,5 +1,6 @@
 import { Context, DateTime, Effect, Layer, Option, Result } from "effect";
 
+import type { ChannelOptions } from "#publishing/domain/channel-options.ts";
 import { checkPublishable } from "#publishing/domain/content-rules.ts";
 import { InvalidPostTransition } from "#publishing/domain/invalid-post-transition.ts";
 import type { PostContentRejected } from "#publishing/domain/post-content-rejected.ts";
@@ -40,7 +41,11 @@ import { PublicationScheduler } from "./publication-scheduler.ts";
 import type { UnknownChannels } from "./unknown-channels.ts";
 import type { UnknownMedia } from "./unknown-media.ts";
 import type { WorkspaceChannels } from "./workspace-channels.ts";
-import { lockInWorkspace, targetsOn } from "./workspace-posts.ts";
+import {
+  lockInWorkspace,
+  optionsOfTargets,
+  targetsOn,
+} from "./workspace-posts.ts";
 
 // A compare and set that misses under the row lock means the lock was not
 // held: a bug, not a conflict to report.
@@ -57,10 +62,12 @@ export interface SchedulePostRequest {
   // At least one; a channel listed twice gets one target.
   readonly channelIds: readonly [ChannelId, ...ChannelId[]];
   readonly content: PostContent;
+  // The options it has on some channels, one at most per channel.
+  readonly options?: readonly ChannelOptions[];
   readonly schedule: Schedule;
 }
 
-/** A draft to send to some channels, at a time. */
+/** A draft to send to some channels, at a time, with its targets' options. */
 export interface ScheduleDraftRequest {
   // A channel listed twice gets one target.
   readonly channelIds: readonly ChannelId[];
@@ -188,17 +195,21 @@ export class PostScheduling extends Context.Service<
 
       const withPorts = Effect.provideContext(ports);
 
-      // The channels to send the content to, once their platforms take it.
+      // The channels to send the content to, once their platforms take it
+      // and the options it has on them.
       const publishableOn = Effect.fn("PostScheduling.publishableOn")(
         function* publishableOn(
           actor: Actor,
           content: PostContent,
-          channelIds: readonly ChannelId[]
+          channelIds: readonly ChannelId[],
+          options: readonly ChannelOptions[]
         ) {
           const channels = yield* channelsFor(actor, channelIds);
           const files = yield* mediaFor(actor, content);
 
-          yield* Effect.fromResult(checkPublishable(content, channels, files));
+          yield* Effect.fromResult(
+            checkPublishable(content, channels, files, options)
+          );
 
           return channels.map(({ channelId }) => channelId);
         },
@@ -311,11 +322,17 @@ export class PostScheduling extends Context.Service<
 
       const schedule = Effect.fn("PostScheduling.schedule")(function* schedule(
         actor: Actor,
-        { channelIds, content, schedule: at }: SchedulePostRequest
+        { channelIds, content, options = [], schedule: at }: SchedulePostRequest
       ) {
         yield* mayPublish(actor);
 
-        const channels = yield* publishableOn(actor, content, channelIds);
+        const channels = yield* publishableOn(
+          actor,
+          content,
+          channelIds,
+          options
+        );
+
         const now = yield* DateTime.now;
         const postId = yield* newId(PostIdSchema).pipe(withPorts);
 
@@ -328,7 +345,12 @@ export class PostScheduling extends Context.Service<
           )
         ).pipe(Effect.catchTag("InvalidPostTransition", Effect.die));
 
-        const targets = yield* targetsOn(postId, channels).pipe(withPorts);
+        const targets = yield* targetsOn(
+          postId,
+          channels,
+          [],
+          Option.some(options)
+        ).pipe(withPorts);
 
         yield* transaction(
           Effect.gen(function* insertAndStart() {
@@ -362,17 +384,19 @@ export class PostScheduling extends Context.Service<
                 });
               }
 
+              const existing = yield* posts.lockTargets(postId);
+
+              // A channel it had keeps its options; a new one has none.
               const channels = yield* publishableOn(
                 actor,
                 current.post.content,
-                channelIds
+                channelIds,
+                optionsOfTargets(existing, channelIds)
               );
 
-              const targets = yield* targetsOn(
-                postId,
-                channels,
-                yield* posts.lockTargets(postId)
-              ).pipe(withPorts);
+              const targets = yield* targetsOn(postId, channels, existing).pipe(
+                withPorts
+              );
 
               yield* posts.setTargets(postId, targets);
 
@@ -396,10 +420,13 @@ export class PostScheduling extends Context.Service<
               // A draft is checked as it is scheduled. A scheduled post was
               // checked then, and moving it changes nothing it says.
               if (current.post.status._tag === "draft") {
+                const channelIds = targets.map(({ channelId }) => channelId);
+
                 yield* publishableOn(
                   actor,
                   current.post.content,
-                  targets.map(({ channelId }) => channelId)
+                  channelIds,
+                  optionsOfTargets(targets, channelIds)
                 );
               }
 

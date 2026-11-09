@@ -4,7 +4,7 @@ import type {
   PublicationAttempt as AttemptView,
   PostTarget as TargetView,
 } from "acme-contract";
-import { DateTime, Match, Option } from "effect";
+import { DateTime, Match, Option, Schema } from "effect";
 
 import type { PostWithTargets } from "#publishing/application/post-repository.ts";
 import type { RecordedAttempt } from "#publishing/application/publication-journal.ts";
@@ -13,6 +13,10 @@ import type { PostTarget } from "#publishing/domain/post-target.ts";
 import { failureReasonOf } from "#publishing/domain/publication-policy.ts";
 import type { AttemptOutcome } from "#publishing/domain/publication-policy.ts";
 import type { Schedule } from "#publishing/domain/schedule.ts";
+import { TargetOptionsSchema } from "#publishing/domain/target-options.ts";
+
+// The domain's options, as plain values the contract describes.
+const encodeOptions = Schema.encodeSync(TargetOptionsSchema);
 
 const scheduleView = ({ at, timeZone }: Schedule) => ({ at, timeZone });
 
@@ -29,12 +33,14 @@ const scheduleOf = (status: PostStatus) =>
 const targetView = ({
   channelId,
   id,
+  options,
   round,
   status,
 }: PostTarget): TargetView => ({
   channelId,
   failureReason: status._tag === "failed" ? status.reason : null,
   id,
+  options: options.pipe(Option.map(encodeOptions), Option.getOrNull),
   permalink:
     status._tag === "published" ? Option.getOrNull(status.permalink) : null,
   publishedAt: status._tag === "published" ? status.publishedAt : null,

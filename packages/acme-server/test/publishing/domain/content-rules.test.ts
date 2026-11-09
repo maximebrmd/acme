@@ -275,9 +275,9 @@ describe(checkPublishable, () => {
 
 describe(checkDraft, () => {
   it("lets a draft be longer than its platforms take, or empty", () => {
-    expect(
-      checkDraft(contentOf("a".repeat(5000)), [x.channelId])
-    ).toStrictEqual(Result.succeed(contentOf("a".repeat(5000))));
+    expect(checkDraft(contentOf("a".repeat(5000)), [x])).toStrictEqual(
+      Result.succeed(contentOf("a".repeat(5000)))
+    );
 
     expect(checkDraft(emptyContent, [])).toStrictEqual(
       Result.succeed(emptyContent)
@@ -287,9 +287,7 @@ describe(checkDraft, () => {
   it("refuses an override for a channel the draft is not for", () => {
     const content = contentOf("Hi", { overrides: [[x.channelId, "Hi X"]] });
 
-    expect(
-      violationsOf(checkDraft(content, [bluesky.channelId]))
-    ).toStrictEqual([
+    expect(violationsOf(checkDraft(content, [bluesky]))).toStrictEqual([
       { _tag: "overrideWithoutChannel", channelId: x.channelId },
     ]);
   });

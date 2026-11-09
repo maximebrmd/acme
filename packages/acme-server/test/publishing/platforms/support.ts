@@ -221,6 +221,7 @@ export const outgoing = Effect.fn("test.outgoing")(function* outgoing(
     channelId,
     idempotencyKey: "9f86d081884c7d659a2feaa0c55ad015",
     media: [],
+    options: Option.none(),
     startedAt: yield* DateTime.now,
     text: "Hello from a synthetic account",
     workspaceId,

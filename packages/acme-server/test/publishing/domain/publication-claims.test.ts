@@ -52,6 +52,7 @@ const targetIn = (status: PostTargetStatus, round = 1) =>
   new PostTarget({
     channelId: ChannelIdSchema.make("00000000-0000-7000-8000-000000000003"),
     id: PostTargetIdSchema.make("00000000-0000-7000-8000-000000000004"),
+    options: Option.none(),
     postId,
     round,
     status,

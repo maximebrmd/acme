@@ -17,6 +17,9 @@ const workspace = "Field Notes";
 const handle = "@notes@social.example";
 const text = "Our first field note, written once and scheduled from Acme.";
 const edited = "Our first field note, taken back, edited and scheduled again.";
+const videos = "@acme_field_videos";
+const video = "A synthetic field video, described for YouTube.";
+const videoTitle = "Field notes, the video";
 
 // The calendar names each post "<time>, <status>: <text>".
 const scheduledAs = (body: string) =>
@@ -194,6 +197,54 @@ describe("a new member's first post", { serial: true }, () => {
 
     await expect(screen.getByText("Post cancelled.")).toBeVisible();
     await expect(screen.getByRole("heading", "Calendar")).toBeVisible();
+  });
+
+  test("asks a YouTube video for its options, and keeps them", async ({
+    app,
+    browser,
+    screen,
+  }) => {
+    await seedChannel(workspaceId, videos, "youtube");
+    await app.open(`/app/${workspaceId}/posts/new`);
+
+    await expect(screen.getByRole("heading", "New post")).toBeVisible();
+    await screen.getByRole("checkbox", videos).check();
+    await screen.getByRole("textbox", "Text for all channels").fill(video);
+    await screen.getByRole("textbox", "Time").fill("23:59");
+    await screen.getByRole("button", "Schedule").tap();
+
+    // Saved as a draft, then refused: YouTube needs a title and to know
+    // whether the video is made for kids.
+    await expect(
+      screen.getByText(`${videos} on YouTube: Title is required.`)
+    ).toBeVisible();
+    await expect(
+      screen.getByText(`${videos} on YouTube: Made for kids is required.`)
+    ).toBeVisible();
+
+    await screen.getByRole("textbox", "Title (required)").fill(videoTitle);
+    await screen.getByRole("combobox", "Made for kids (required)").tap();
+    await screen.getByRole("option", "No, it's not made for kids").tap();
+    await screen.getByRole("button", "Save as draft").tap();
+    await expect(screen.getByText("Draft saved.")).toBeVisible();
+
+    await browser.reload();
+
+    await expect(screen.getByRole("heading", "Edit the draft")).toBeVisible();
+    await expect(screen.getByRole("textbox", "Title (required)")).toHaveValue(
+      videoTitle
+    );
+    await expect(
+      screen.getByRole("combobox", "Made for kids (required)")
+    ).toHaveText("No, it's not made for kids");
+
+    // Nothing goes out: the draft is discarded.
+    await screen.getByRole("button", "Discard the draft").tap();
+    await screen
+      .getByRole("dialog", "Discard this draft?")
+      .getByRole("button", "Discard the draft")
+      .tap();
+    await expect(screen.getByText("Draft discarded.")).toBeVisible();
   });
 
   test("invites a second member", async ({ app, screen }) => {

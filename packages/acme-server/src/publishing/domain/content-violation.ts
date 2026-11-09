@@ -8,6 +8,9 @@ import { TextUnitSchema } from "./text-length.ts";
 
 const onChannel = { channelId: ChannelIdSchema, platform: PlatformSchema };
 
+// One of the options the post has on the channel, by name.
+const onOption = { ...onChannel, field: Schema.String };
+
 const tooMany = {
   ...onChannel,
   count: Schema.Int,
@@ -32,6 +35,23 @@ export const ContentViolationSchema = Schema.Union([
   Schema.TaggedStruct("noChannels", {}),
   // A text override names a channel the post is not for.
   Schema.TaggedStruct("overrideWithoutChannel", { channelId: ChannelIdSchema }),
+  // Options name a channel the post is not for.
+  Schema.TaggedStruct("optionsWithoutChannel", { channelId: ChannelIdSchema }),
+  // The options on the channel are another platform's.
+  Schema.TaggedStruct("optionsForOtherPlatform", {
+    ...onChannel,
+    optionsPlatform: PlatformSchema,
+  }),
+  // The channel's platform needs this option (`field`), and it has none.
+  Schema.TaggedStruct("optionMissing", onOption),
+  // The option is longer than the platform takes, in code points.
+  Schema.TaggedStruct("optionTooLong", {
+    ...onOption,
+    length: Schema.Int,
+    maximum: Schema.Int,
+  }),
+  // The platform refuses the option's value, for a reason of the field's.
+  Schema.TaggedStruct("optionInvalid", onOption),
   // The post would go out on the channel with no text and no media.
   Schema.TaggedStruct("empty", onChannel),
   // The text on the channel is longer than its platform takes.

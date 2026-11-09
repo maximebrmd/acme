@@ -87,8 +87,8 @@ export class PostRepository extends Context.Service<
     ) => Effect.Effect<boolean, DatabaseError>;
     /**
      * Makes these the post's targets: those it had and that are not listed
-     * are deleted, the listed ones it lacked are added, and the others stay
-     * as they are.
+     * are deleted, the listed ones it lacked are added, and the others take
+     * the listed options and otherwise stay as they are.
      */
     readonly setTargets: (
       postId: PostId,

@@ -1,6 +1,6 @@
 ---
 title: Schedule posts
-description: Write a post, give it its own text on some channels, ask the writing assistant for help, schedule it in your time zone, move it, take it back to draft or cancel it, and follow how it went on each channel.
+description: Write a post, give it its own text and options on some channels, ask the writing assistant for help, schedule it in your time zone, move it, take it back to draft or cancel it, and follow how it went on each channel.
 sidebar:
   order: 3
 ---
@@ -27,7 +27,8 @@ From a workspace's card on **Workspaces**, choose **New post**.
 2. Write in **Text for all channels**. Mentions, hashtags and links stand out as you type, and are kept as plain text.
 3. To say something else on one channel, open its tab and write its own text there. Left empty, a channel uses the text for all channels.
 4. Under **Images and videos**, attach images or videos from the media library, or upload them there: see [Images and videos](/media).
-5. Choose **Save as draft** to keep the post without a time. It joins the workspace's **Drafts**, which the calendar does not show.
+5. When a channel's platform asks for more, such as a YouTube video's title, fill in its fields under **Platform options**: see [Platform options](#options).
+6. Choose **Save as draft** to keep the post without a time. It joins the workspace's **Drafts**, which the calendar does not show.
 
 Under **Length on each channel**, each channel the post goes to shows how much room its platform leaves, and what else the platform would refuse, its images and videos included. Platforms count differently, so the same text can fit on one and not on another:
 
@@ -42,9 +43,24 @@ Under **Length on each channel**, each channel the post goes to shows how much r
 
 Bluesky counts what a reader sees as one character, so an emoji made of several code points counts once. Facebook, TikTok, YouTube and Pinterest have no limit in Acme yet. Acme checks the limits when you schedule a post, not while you write a draft.
 
+## Platform options [#options]
+
+Some platforms ask each post for more than its text and media. When the post goes to a channel on one of them, **Platform options** shows that channel's fields. A draft keeps them as they are, unfinished; scheduling needs those marked required, and shows under each field what its platform would refuse. YouTube and TikTok channels cannot be connected yet: their options are ready for when they can.
+
+| Platform | Options                                                                                                                                                                                                                                                                                |
+| -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| YouTube  | **Title** (required: 100 characters at most, without `<` or `>`), **Made for kids** (required, with no default), **Visibility** (public unless you choose otherwise), **Tags** (500 characters in all), **Category number**, **Notify subscribers** (on), altered or synthetic content |
+| TikTok   | **Who can view this post** (required, with no default), **Allow comments**, **Allow Duet** and **Allow Stitch** (off until you turn them on), commercial content disclosure, AI-generated content                                                                                      |
+
+The post's text is the YouTube video's description and the TikTok post's caption. Tags are separated by commas; YouTube counts the commas, and two more for a tag with a space in it.
+
+To disclose commercial content on TikTok, turn on **Disclose commercial content**, then say whose brand the post promotes: **Your brand** (labelled "Promotional content"), **Branded content** for a third party (labelled "Paid partnership"), or both. Branded content cannot be visible to you only.
+
+Through the API, a draft takes its options in `options`, one entry per channel, each tagged by its `platform`; each of the post's targets answers with its own. Updating a draft replaces its options: those left out are removed. A channel added only when the post is scheduled has none yet, so on YouTube or TikTok, give it its options in the draft first.
+
 ## Schedule it [#schedule]
 
-Under **When**, pick the **Date**, the **Time** and the **Time zone**, which starts as your browser's. Then choose **Schedule**. It stays off while the post breaks a limit on one of its channels, and the composer lists what to fix.
+Under **When**, pick the **Date**, the **Time** and the **Time zone**, which starts as your browser's. Then choose **Schedule**. It stays off while the post breaks a limit on one of its channels, and the composer lists what to fix. The [platform options](#options) a channel lacks are listed once you choose it, and shown under their fields.
 
 The time is the wall-clock time in that zone, daylight saving included:
 

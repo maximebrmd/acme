@@ -1,8 +1,16 @@
 import { describe, expect, it } from "@effect/vitest";
-import { ContentViolationSchema, PostContentSchema } from "acme-contract";
+import {
+  ContentViolationSchema,
+  maxYouTubeTagsLength as contractMaxTagsLength,
+  maxYouTubeTitleLength as contractMaxTitleLength,
+  optionsPlatforms as contractOptionsPlatforms,
+  PostContentSchema,
+  TargetOptionsSchema as ContractOptionsSchema,
+  youTubeTagsLength as contractTagsLength,
+} from "acme-contract";
 import type { ContentViolation as ContractViolation } from "acme-contract";
 import * as ContractText from "acme-contract/post-text";
-import { Schema } from "effect";
+import { Exit, Schema } from "effect";
 
 import type { ContentViolation } from "#publishing/domain/content-violation.ts";
 import { maxAltTextLength } from "#publishing/domain/media-attachment.ts";
@@ -13,12 +21,21 @@ import {
 } from "#publishing/domain/post-content.ts";
 import { maxPostTextLength } from "#publishing/domain/post-text.ts";
 import {
+  optionsPlatforms,
+  TargetOptionsSchema,
+} from "#publishing/domain/target-options.ts";
+import {
   countHashtags,
   countLinks,
   countMentions,
   measureText,
   TextUnitSchema,
 } from "#publishing/domain/text-length.ts";
+import {
+  maxYouTubeTagsLength,
+  maxYouTubeTitleLength,
+  youTubeTagsLength,
+} from "#publishing/domain/youtube-options.ts";
 import { ChannelIdSchema, MediaAssetIdSchema } from "#shared/domain/ids.ts";
 
 // Clients count text with the contract's copy of the rules, so a composer
@@ -80,6 +97,33 @@ const violations: Record<ContractViolation["_tag"], ContentViolation> = {
   },
   mixedMedia: { _tag: "mixedMedia", channelId, platform: "mastodon" },
   noChannels: { _tag: "noChannels" },
+  optionInvalid: {
+    _tag: "optionInvalid",
+    channelId,
+    field: "title",
+    platform: "youtube",
+  },
+  optionMissing: {
+    _tag: "optionMissing",
+    channelId,
+    field: "privacyLevel",
+    platform: "tiktok",
+  },
+  optionTooLong: {
+    _tag: "optionTooLong",
+    channelId,
+    field: "title",
+    length: 101,
+    maximum: 100,
+    platform: "youtube",
+  },
+  optionsForOtherPlatform: {
+    _tag: "optionsForOtherPlatform",
+    channelId,
+    optionsPlatform: "youtube",
+    platform: "tiktok",
+  },
+  optionsWithoutChannel: { _tag: "optionsWithoutChannel", channelId },
   overrideWithoutChannel: { _tag: "overrideWithoutChannel", channelId },
   textTooLong: {
     _tag: "textTooLong",
@@ -160,6 +204,11 @@ const contractTags: Record<ContentViolation["_tag"], true> = {
   mediaTypeUnsupported: true,
   mixedMedia: true,
   noChannels: true,
+  optionInvalid: true,
+  optionMissing: true,
+  optionTooLong: true,
+  optionsForOtherPlatform: true,
+  optionsWithoutChannel: true,
   overrideWithoutChannel: true,
   textTooLong: true,
   tooManyHashtags: true,
@@ -266,5 +315,67 @@ describe("the contract's post text rules", () => {
       "Success"
     );
     expect(Schema.decodeUnknownExit(PostContent)(content)._tag).toBe("Success");
+  });
+});
+
+// Options either side takes, or refuses, the other must too: a client that
+// builds them from the contract sends what the server keeps.
+const options: readonly unknown[] = [
+  { platform: "youtube" },
+  {
+    categoryId: "22",
+    containsSyntheticMedia: false,
+    madeForKids: false,
+    notifySubscribers: true,
+    platform: "youtube",
+    privacy: "unlisted",
+    tags: ["launch", "launch day"],
+    title: "A synthetic launch video",
+  },
+  // Unfinished or over a limit: kept until the post is scheduled.
+  { platform: "youtube", tags: [""], title: "a".repeat(101) },
+  { platform: "youtube", tags: Array.from({ length: 501 }, () => "a") },
+  { platform: "youtube", title: "a\u0000b" },
+  { platform: "youtube", privacy: "friends" },
+  { madeForKids: "no", platform: "youtube" },
+  { platform: "tiktok" },
+  {
+    aiGenerated: true,
+    brandContent: true,
+    brandOrganic: false,
+    commercialContent: true,
+    disableComment: true,
+    disableDuet: false,
+    disableStitch: true,
+    platform: "tiktok",
+    privacyLevel: "FOLLOWER_OF_CREATOR",
+  },
+  { platform: "tiktok", privacyLevel: "FRIENDS" },
+  { platform: "tiktok", title: "TikTok's caption is the post's text" },
+  { platform: "mastodon" },
+  { platform: "youtube", title: "A title", unknownOption: true },
+];
+
+describe("the contract's target options", () => {
+  it("are the server's, with the same limits", () => {
+    expect(contractOptionsPlatforms).toStrictEqual(optionsPlatforms);
+    expect(contractMaxTitleLength).toBe(maxYouTubeTitleLength);
+    expect(contractMaxTagsLength).toBe(maxYouTubeTagsLength);
+
+    for (const tags of [[], ["Foo-Baz", "Foo Baz"], ["日本語", "👍🏽 ok"]]) {
+      expect(contractTagsLength(tags)).toBe(youTubeTagsLength(tags));
+    }
+  });
+
+  it.each(options)("decode %j as the server does", (input) => {
+    const server = Schema.decodeUnknownExit(TargetOptionsSchema)(input);
+    const contract = Schema.decodeUnknownExit(ContractOptionsSchema)(input);
+
+    expect(contract._tag).toBe(server._tag);
+    expect(
+      Exit.isSuccess(server)
+        ? Schema.encodeSync(TargetOptionsSchema)(server.value)
+        : undefined
+    ).toStrictEqual(Exit.isSuccess(contract) ? contract.value : undefined);
   });
 });

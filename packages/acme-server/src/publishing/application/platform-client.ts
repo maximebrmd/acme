@@ -2,6 +2,7 @@ import { Context } from "effect";
 import type { DateTime, Effect, Option } from "effect";
 
 import type { MediaAttachment } from "#publishing/domain/media-attachment.ts";
+import type { TargetOptions } from "#publishing/domain/target-options.ts";
 import type { ChannelId, WorkspaceId } from "#shared/domain/ids.ts";
 import type { Platform } from "#shared/domain/platform.ts";
 import type { PublishFailure } from "#shared/domain/publish-failure.ts";
@@ -16,6 +17,12 @@ export interface OutgoingPost {
   readonly idempotencyKey: string;
   /** The images and videos, in order, with their descriptions. */
   readonly media: readonly MediaAttachment[];
+  /**
+   * The options the post has on this channel, checked against its platform
+   * when it was scheduled. An adapter reads its own platform's, as in
+   * `post.options.pipe(Option.filter(Schema.is(YouTubeOptions)))`.
+   */
+  readonly options: Option.Option<TargetOptions>;
   /** When the attempt's call started: the same for every run of it. */
   readonly startedAt: DateTime.Utc;
   /** The text on this channel: the post's own, or its override there. */
