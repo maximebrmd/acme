@@ -322,9 +322,28 @@ const apiKey: Principal = {
   workspaceId: harbour,
 };
 
+// The command line, which the user signs in at their terminal.
 const oauth = user({
   oauth: {
     clientId: "acme-cli",
+    scopes: ["workspace:write"],
+    workspaceId: null,
+  },
+});
+
+// An MCP client, bound to the workspace the user picked.
+const mcpClient = user({
+  oauth: {
+    clientId: "synthetic-agent",
+    scopes: ["workspace:read"],
+    workspaceId: harbour,
+  },
+});
+
+// Another client that is not bound to a workspace.
+const otherClient = user({
+  oauth: {
+    clientId: "synthetic-tool",
     scopes: ["workspace:write"],
     workspaceId: null,
   },
@@ -454,80 +473,91 @@ layer(Fakes.layer)("the settings endpoints", (it) => {
     })
   );
 
-  it.effect("export the user's data as a file, to them in person only", () =>
-    Effect.gen(function* exports() {
-      const { standings } = yield* Fakes;
+  it.effect(
+    "export the user's data as a file, to them in person or through the command line only",
+    () =>
+      Effect.gen(function* exports() {
+        const { standings } = yield* Fakes;
 
-      yield* Ref.set(
-        standings,
-        new Map([
-          [
-            userId,
+        yield* Ref.set(
+          standings,
+          new Map([
             [
-              {
-                memberRoles: ["owner"],
-                role: "owner",
-                workspaceId: harbour,
-                workspaceName: "Harbour",
-              },
-              {
-                memberRoles: ["owner", "editor"],
-                role: "editor",
-                workspaceId: shared,
-                workspaceName: "Shared",
-              },
+              userId,
+              [
+                {
+                  memberRoles: ["owner"],
+                  role: "owner",
+                  workspaceId: harbour,
+                  workspaceName: "Harbour",
+                },
+                {
+                  memberRoles: ["owner", "editor"],
+                  role: "editor",
+                  workspaceId: shared,
+                  workspaceName: "Shared",
+                },
+              ],
             ],
-          ],
-        ])
-      );
+          ])
+        );
 
-      const client = yield* as(user());
-      const { body, headers } = yield* client.account.export();
-
-      assert.strictEqual(
-        headers["content-disposition"],
-        `attachment; filename="acme-data-${DateTime.formatIsoDate(body.exportedAt)}.json"`
-      );
-      assert.strictEqual(body.user.email, "ana@example.test");
-      assert.deepStrictEqual(
-        body.workspaces.map(({ assistantUsage, billing, name }) => ({
-          assistantUsage,
-          name,
-          plan: billing.plan,
-          statuses: billing.subscriptions.map(({ status }) => status),
-        })),
-        [
-          {
-            assistantUsage: [{ day: "2026-11-09", requests: 3 }],
-            name: "Harbour",
-            plan: "pro",
-            statuses: ["active"],
-          },
-        ]
-      );
-      // Of Shared, only the posts Ana wrote.
-      assert.include(yield* calls, `exportAuthored:${userId}:${shared}`);
-      assert.deepStrictEqual(
-        body.authoredPosts.map(({ text, workspaceId }) => ({
-          text,
-          workspaceId,
-        })),
-        [{ text: "A synthetic post of Ana's.", workspaceId: shared }]
-      );
-      assert.deepStrictEqual(
-        body.connectedApps.map(({ clientId }) => clientId),
-        ["acme-cli"]
-      );
-
-      for (const principal of [apiKey, oauth, impersonated]) {
-        const refused = yield* as(principal);
+        const client = yield* as(user());
+        const { body, headers } = yield* client.account.export();
 
         assert.strictEqual(
-          yield* failureOf(refused.account.export()),
-          "Forbidden"
+          headers["content-disposition"],
+          `attachment; filename="acme-data-${DateTime.formatIsoDate(body.exportedAt)}.json"`
         );
-      }
-    })
+        assert.strictEqual(body.user.email, "ana@example.test");
+        assert.deepStrictEqual(
+          body.workspaces.map(({ assistantUsage, billing, name }) => ({
+            assistantUsage,
+            name,
+            plan: billing.plan,
+            statuses: billing.subscriptions.map(({ status }) => status),
+          })),
+          [
+            {
+              assistantUsage: [{ day: "2026-11-09", requests: 3 }],
+              name: "Harbour",
+              plan: "pro",
+              statuses: ["active"],
+            },
+          ]
+        );
+        // Of Shared, only the posts Ana wrote.
+        assert.include(yield* calls, `exportAuthored:${userId}:${shared}`);
+        assert.deepStrictEqual(
+          body.authoredPosts.map(({ text, workspaceId }) => ({
+            text,
+            workspaceId,
+          })),
+          [{ text: "A synthetic post of Ana's.", workspaceId: shared }]
+        );
+        assert.deepStrictEqual(
+          body.connectedApps.map(({ clientId }) => clientId),
+          ["acme-cli"]
+        );
+
+        const fromTerminal = yield* (yield* as(oauth)).account.export();
+
+        assert.strictEqual(fromTerminal.body.user.email, "ana@example.test");
+
+        for (const principal of [
+          apiKey,
+          mcpClient,
+          otherClient,
+          impersonated,
+        ]) {
+          const refused = yield* as(principal);
+
+          assert.strictEqual(
+            yield* failureOf(refused.account.export()),
+            "Forbidden"
+          );
+        }
+      })
   );
 
   it.effect(
@@ -660,7 +690,7 @@ layer(Fakes.layer)("the settings endpoints", (it) => {
   );
 
   it.effect(
-    "list and revoke connected applications, for the user in person",
+    "list connected applications to the user and the command line, and revoke them for the user in person",
     () =>
       Effect.gen(function* apps() {
         const client = yield* as(user());
@@ -684,19 +714,33 @@ layer(Fakes.layer)("the settings endpoints", (it) => {
 
         assert.include(yield* calls, `revoke:${userId}:acme-cli`);
 
-        // A client may not see or revoke the others, nor itself.
-        const asClient = yield* as(oauth);
+        // The command line lists them, but may not revoke the others, nor
+        // itself; no other client sees them.
+        const fromTerminal = yield* as(oauth);
 
-        assert.strictEqual(
-          yield* failureOf(asClient.connectedApps.list()),
-          "Forbidden"
+        assert.deepStrictEqual(
+          (yield* fromTerminal.connectedApps.list()).map(
+            ({ clientId }) => clientId
+          ),
+          ["acme-cli"]
         );
         assert.strictEqual(
           yield* failureOf(
-            asClient.connectedApps.revoke({ params: { clientId: "acme-cli" } })
+            fromTerminal.connectedApps.revoke({
+              params: { clientId: "acme-cli" },
+            })
           ),
           "Forbidden"
         );
+
+        for (const principal of [mcpClient, otherClient, impersonated]) {
+          const refused = yield* as(principal);
+
+          assert.strictEqual(
+            yield* failureOf(refused.connectedApps.list()),
+            "Forbidden"
+          );
+        }
       })
   );
 });

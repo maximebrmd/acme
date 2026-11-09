@@ -1,11 +1,13 @@
 import { describe, expect, it } from "@effect/vitest";
 import {
   Api,
+  cliClientId,
   MediaContentTypeSchema,
   PermissionSchema,
   PlatformSchema,
   ProbeStateSchema,
   RejectionReasonSchema,
+  RoleSchema,
   WorkspaceAccess,
 } from "acme-contract";
 import { HttpApi } from "effect/http-api";
@@ -17,12 +19,22 @@ import {
   RejectionReasonSchema as DomainRejectionReasonSchema,
 } from "#media/domain/media-status.ts";
 import { PermissionSchema as DomainPermissionSchema } from "#shared/domain/access.ts";
+import { commandLineClientId } from "#workspace/domain/oauth-grant.ts";
+import { RoleSchema as DomainRoleSchema } from "#workspace/domain/roles.ts";
 
 describe("the contract", () => {
   it("lists the server's permission vocabulary", () => {
     expect(PermissionSchema.literals).toStrictEqual(
       DomainPermissionSchema.literals
     );
+  });
+
+  it("lists the server's roles", () => {
+    expect(RoleSchema.literals).toStrictEqual(DomainRoleSchema.literals);
+  });
+
+  it("names the command line's OAuth client as the server does", () => {
+    expect(cliClientId).toBe(commandLineClientId);
   });
 
   it("lists the server's platforms", () => {

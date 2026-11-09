@@ -220,8 +220,10 @@ export type DeleteAccount = typeof DeleteAccountSchema.Type;
 
 /**
  * The signed-in user's rights over their own data: a copy of it, and the
- * account's deletion. Only the user, signed in with their own session, may
- * ask: API keys, OAuth clients and staff impersonating the user get 403.
+ * account's deletion. Only the user may ask, signed in with their own
+ * session, or, for the copy, through Acme's command line (the `acme-cli`
+ * client, whose tokens are bound to no workspace): API keys, other OAuth
+ * clients, MCP clients among them, and staff impersonating the user get 403.
  */
 export class AccountApi extends HttpApiGroup.make("account")
   .add(
@@ -233,7 +235,7 @@ export class AccountApi extends HttpApiGroup.make("account")
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Answers with a JSON copy of everything Acme keeps about the user, as a file to save: their account, how they sign in, their sessions, memberships, invitations, connected applications, notices and preferences, the posts they wrote in the workspaces they share, and the channels, posts, media details, analytics, API keys, assistant usage and billing state (plan and subscription status) of the workspaces where they are the only member. It holds no secret: no password, token, key or card.",
+          "Answers with a JSON copy of everything Acme keeps about the user, as a file to save: their account, how they sign in, their sessions, memberships, invitations, connected applications, notices and preferences, the posts they wrote in the workspaces they share, and the channels, posts, media details, analytics, API keys, assistant usage and billing state (plan and subscription status) of the workspaces where they are the only member. It holds no secret: no password, token, key or card. Open to the user in their own session and to Acme's command line, never to another OAuth client: an MCP client would hand all of it to an AI model.",
         summary: "Export my data",
       })
     ),
