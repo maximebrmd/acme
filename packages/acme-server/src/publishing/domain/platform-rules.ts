@@ -47,6 +47,8 @@ export interface MediaRules {
  * platform without `media`.
  */
 export interface PlatformRules {
+  /** Characters the platform refuses anywhere in the text (YouTube: < and >). */
+  readonly forbiddenCharacters?: readonly string[];
   readonly maxHashtags?: number;
   /** Different links, counted by `countLinks`. */
   readonly maxLinks?: number;
@@ -82,7 +84,9 @@ const minute = 60 * second;
 // - Facebook Pages: 63,206 characters, the figure commonly reported (Meta's
 //   reference names no limit for `message`); how many photos one post
 //   attaches is not known yet.
-// - TikTok, YouTube and Pinterest: no limit known yet.
+// - YouTube: the video's description, at most 5,000 bytes, without "<" or
+//   ">"; no post without its one video.
+// - TikTok and Pinterest: no limit known yet.
 //
 // "Characters" with no other word count code points, the stricter reading.
 //
@@ -113,7 +117,11 @@ const minute = 60 * second;
 //   which also lists BMP and TIFF, formats Acme does not take), with alt
 //   text; one MP4 or QuickTime video, never with photos, whose limits
 //   Meta's reference does not give.
-// - TikTok, YouTube and Pinterest: no media rule known yet.
+// - YouTube: one video, MP4 or QuickTime, of up to 256 GB and 12 hours,
+//   alone (channels Google has not verified take 15 minutes at most, which
+//   only YouTube knows). A video of 3 minutes or less that is square or
+//   taller than wide becomes a Short.
+// - TikTok and Pinterest: no media rule known yet.
 const blueskyImage: FormatLimits = { maxByteSize: 2_000_000 };
 
 const mastodonImage: FormatLimits = {
@@ -148,6 +156,11 @@ const threadsVideo: FormatLimits = {
 };
 
 const facebookImage: FormatLimits = { maxByteSize: 10 * mebibyte };
+
+const youtubeVideo: FormatLimits = {
+  maxByteSize: 256 * 1024 * mebibyte,
+  maxDurationMs: 12 * 60 * minute,
+};
 
 const instagramVideo: FormatLimits = {
   aspectRatio: { maximum: 10, minimum: 0.01 },
@@ -290,5 +303,16 @@ export const platformRules: Readonly<Record<Platform, PlatformRules>> = {
     mediaRequired: false,
     textLimits: [{ maximum: 280, unit: "weighted" }],
   },
-  youtube: { mediaRequired: false, textLimits: [] },
+  youtube: {
+    forbiddenCharacters: ["<", ">"],
+    maxMedia: 1,
+    media: {
+      formats: { "video/mp4": youtubeVideo, "video/quicktime": youtubeVideo },
+      maxVideos: 1,
+      mixesKinds: false,
+      showsAltText: false,
+    },
+    mediaRequired: true,
+    textLimits: [{ maximum: 5000, unit: "utf8Bytes" }],
+  },
 };

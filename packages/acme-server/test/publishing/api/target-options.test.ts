@@ -10,7 +10,11 @@ import { newId } from "#shared/application/ids.ts";
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import { memberOf } from "#test/channels/support.ts";
 import { utc } from "#test/publishing/infrastructure/harness.ts";
-import { connect, onPostsServerAt } from "#test/publishing/posts-server.ts";
+import {
+  attachableVideo,
+  connect,
+  onPostsServerAt,
+} from "#test/publishing/posts-server.ts";
 import { securityTest } from "#workspace/api/security.ts";
 import { permissionsFor } from "#workspace/domain/roles.ts";
 
@@ -28,8 +32,9 @@ const clientAs = (member: Member) =>
     )
   );
 
+// YouTube takes videos only.
 const content: PostContent = {
-  media: [],
+  media: [{ altText: "A synthetic video", mediaId: attachableVideo }],
   overrides: [],
   text: "A synthetic video",
 };

@@ -45,6 +45,7 @@ describe(shortenablePlatforms, () => {
       "threads",
       "instagram",
       "facebook",
+      "youtube",
     ]);
     expect(shortenablePlatforms(["tiktok"])).toStrictEqual(
       shortenablePlatforms([])

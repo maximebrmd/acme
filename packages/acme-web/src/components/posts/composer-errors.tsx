@@ -85,6 +85,11 @@ export const ComposerErrors = ({
       ...mediaTexts,
       empty: ({ channelId }) =>
         t("violation.empty", { channel: channelName(channelId) }),
+      forbiddenCharacters: ({ channelId, characters }) =>
+        t("violation.forbiddenCharacters", {
+          channel: channelName(channelId),
+          characters: characters.join(" "),
+        }),
       mediaRequired: ({ channelId }) =>
         t("violation.mediaRequired", { channel: channelName(channelId) }),
       noChannels: () => t("violation.noChannels"),

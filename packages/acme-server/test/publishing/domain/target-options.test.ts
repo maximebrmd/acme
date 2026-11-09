@@ -23,9 +23,9 @@ import {
   YouTubeOptions,
   youTubeTagsLength,
 } from "#publishing/domain/youtube-options.ts";
-import { ChannelIdSchema } from "#shared/domain/ids.ts";
+import { ChannelIdSchema, MediaAssetIdSchema } from "#shared/domain/ids.ts";
 import type { Platform } from "#shared/domain/platform.ts";
-import { contentOf } from "#test/publishing/support.ts";
+import { contentOf, mediaFile } from "#test/publishing/support.ts";
 
 const channel = (suffix: string, platform: Platform): ChannelOnPlatform => ({
   channelId: ChannelIdSchema.make(
@@ -262,10 +262,17 @@ describe("options on a post's channels", () => {
   });
 
   it("are needed to schedule on YouTube and TikTok, after the text rules", () => {
-    const content = contentOf("A synthetic video");
+    const videoId = MediaAssetIdSchema.make(
+      "00000000-0000-7000-8000-00000000a001"
+    );
+
+    const content = contentOf("A synthetic video", { media: [videoId] });
+    const files = [mediaFile(videoId, { contentType: "video/mp4" })];
 
     expect(
-      violationsOf(checkPublishable(content, [mastodon, youtube, tiktok], []))
+      violationsOf(
+        checkPublishable(content, [mastodon, youtube, tiktok], files)
+      )
     ).toStrictEqual([
       { _tag: "optionMissing", ...youtube, field: "title" },
       { _tag: "optionMissing", ...youtube, field: "madeForKids" },
@@ -273,12 +280,10 @@ describe("options on a post's channels", () => {
     ]);
 
     expect(
-      checkPublishable(
-        content,
-        [mastodon, youtube, tiktok],
-        [],
-        [on(youtube, finishedYouTube), on(tiktok, finishedTikTok)]
-      )
+      checkPublishable(content, [mastodon, youtube, tiktok], files, [
+        on(youtube, finishedYouTube),
+        on(tiktok, finishedTikTok),
+      ])
     ).toStrictEqual(Result.succeed(content));
   });
 

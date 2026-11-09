@@ -12,7 +12,11 @@ import { newId } from "#shared/application/ids.ts";
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import type { ChannelId } from "#shared/domain/ids.ts";
 import { scheduleIn } from "#test/publishing/infrastructure/harness.ts";
-import { connect, onPostsServerAt } from "#test/publishing/posts-server.ts";
+import {
+  attachableVideo,
+  connect,
+  onPostsServerAt,
+} from "#test/publishing/posts-server.ts";
 import { actorIn, contentOf } from "#test/publishing/support.ts";
 
 const timeout = 60_000;
@@ -29,6 +33,9 @@ const finishedYouTube = new YouTubeOptions({
 
 const on = (channelId: ChannelId, options: TargetOptions) =>
   new ChannelOptions({ channelId, options });
+
+// What a video post says: YouTube takes videos only.
+const video = contentOf("A synthetic video", { media: [attachableVideo] });
 
 const violationsOf = (failure: { readonly _tag: string }) =>
   Schema.is(PostContentRejected)(failure) ? failure.violations : [];
@@ -148,7 +155,7 @@ describe("a post's options on its channels", () => {
 
           const draft = yield* drafts.create(actor, {
             channelIds: [youtube],
-            content: contentOf("A synthetic video"),
+            content: video,
             options: [on(youtube, new YouTubeOptions({ madeForKids: true }))],
           });
 
@@ -170,7 +177,7 @@ describe("a post's options on its channels", () => {
 
           yield* drafts.update(actor, draft.post.id, {
             channelIds: [youtube],
-            content: contentOf("A synthetic video"),
+            content: video,
             options: [on(youtube, finishedYouTube)],
           });
 
@@ -209,7 +216,7 @@ describe("a post's options on its channels", () => {
           const direct = yield* scheduling
             .schedule(actor, {
               channelIds: [tiktok],
-              content: contentOf("A synthetic video"),
+              content: video,
               schedule: at,
             })
             .pipe(Effect.flip);

@@ -73,6 +73,22 @@ describe(fitOn, () => {
     expect(fits(fitOn("instagram", "A caption", 1))).toBeTruthy();
   });
 
+  it("counts a YouTube description in bytes, and refuses < and >", () => {
+    expect(fitOn("youtube", "é".repeat(2500), 1).tightest).toStrictEqual({
+      length: 5000,
+      maximum: 5000,
+      remaining: 0,
+      unit: "utf8Bytes",
+    });
+    expect(fitOn("youtube", "1 < 2", 1).problems).toStrictEqual([
+      { _tag: "forbiddenCharacters", characters: ["<"] },
+    ]);
+    expect(fitOn("youtube", "A description", 0).problems).toStrictEqual([
+      { _tag: "mediaRequired" },
+    ]);
+    expect(fits(fitOn("youtube", "A description", 1))).toBeTruthy();
+  });
+
   it("flags an empty post, and too many images", () => {
     expect(fitOn("mastodon", "  ", 0).problems).toStrictEqual([
       { _tag: "empty" },

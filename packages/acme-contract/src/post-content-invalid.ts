@@ -56,6 +56,12 @@ export const ContentViolationSchema = Schema.Union([
     maximum: Schema.Int,
     unit: TextUnitSchema,
   }),
+  // The text on the channel holds characters its platform refuses (YouTube:
+  // "<" and ">"), each named once.
+  Schema.TaggedStruct("forbiddenCharacters", {
+    ...onChannel,
+    characters: Schema.Array(Schema.String),
+  }),
   Schema.TaggedStruct("tooManyMedia", tooMany),
   // The platform publishes nothing without an image or a video.
   Schema.TaggedStruct("mediaRequired", onChannel),

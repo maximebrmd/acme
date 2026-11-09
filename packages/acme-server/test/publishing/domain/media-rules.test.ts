@@ -77,12 +77,57 @@ describe(mediaViolationsOn, () => {
       "mastodon",
       "threads",
       "x",
+      "youtube",
     ]);
 
     for (const platform of withRules) {
-      expect(violations(platform, mediaFile(first))).toStrictEqual([]);
       expect(violations(platform, video(first))).toStrictEqual([]);
     }
+
+    // YouTube takes videos only.
+    for (const platform of withRules.filter((name) => name !== "youtube")) {
+      expect(violations(platform, mediaFile(first))).toStrictEqual([]);
+    }
+  });
+
+  it("takes one video alone on YouTube, of 12 hours at most", () => {
+    const long = video(first, {
+      byteSize: 900 * mebibyte,
+      contentType: "video/quicktime",
+      duration: Option.some(Duration.hours(12)),
+    });
+
+    expect(violations("youtube", long)).toStrictEqual([]);
+    expect(
+      violations(
+        "youtube",
+        video(first, { duration: Option.some(Duration.millis(43_200_001)) })
+      )
+    ).toStrictEqual([
+      {
+        _tag: "videoTooLong",
+        ...on("youtube"),
+        durationMs: 43_200_001,
+        maximumMs: 43_200_000,
+        mediaId: first,
+      },
+    ]);
+    expect(violations("youtube", mediaFile(second))).toStrictEqual([
+      {
+        _tag: "mediaTypeUnsupported",
+        ...on("youtube"),
+        contentType: "image/jpeg",
+        mediaId: second,
+      },
+    ]);
+    expect(violations("youtube", video(first), video(second))).toStrictEqual([
+      {
+        _tag: "tooManyVideos",
+        ...on("youtube"),
+        count: 2,
+        maximum: 1,
+      },
+    ]);
   });
 
   it("refuses file types the platform does not take", () => {
@@ -347,7 +392,7 @@ describe(mediaViolationsOn, () => {
       duration: Option.some(Duration.hours(2)),
     });
 
-    for (const platform of ["pinterest", "tiktok", "youtube"] as const) {
+    for (const platform of ["pinterest", "tiktok"] as const) {
       expect(violations(platform, huge, mediaFile(second))).toStrictEqual([]);
     }
   });
