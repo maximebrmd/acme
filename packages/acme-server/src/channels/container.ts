@@ -8,6 +8,7 @@ import { DisconnectChannel } from "#channels/application/disconnect-channel.ts";
 import { ListChannels } from "#channels/application/list-channels.ts";
 import { RefreshChannelTokens } from "#channels/application/refresh-channel-tokens.ts";
 import { WarnChannelsNeedingReconnect } from "#channels/application/warn-channels-needing-reconnect.ts";
+import { DrizzleChannelRecords } from "#channels/infrastructure/drizzle-channel-records.ts";
 import { DrizzleChannelRepository } from "#channels/infrastructure/drizzle-channel-repository.ts";
 import { DrizzleConnectAttempts } from "#channels/infrastructure/drizzle-connect-attempts.ts";
 import { NotifiedChannelNotices } from "#channels/infrastructure/notified-channel-notices.ts";
@@ -41,6 +42,7 @@ const PlatformsLive = Layer.mergeAll(
 // channel, but a malformed keyring stops the server there, as do malformed
 // Bluesky client keys.
 const AdaptersLive = Layer.mergeAll(
+  DrizzleChannelRecords,
   DrizzleChannelRepository,
   DrizzleConnectAttempts,
   SqlChannelLocks,
@@ -60,8 +62,9 @@ const UseCasesLive = Layer.mergeAll(
 /**
  * The channels context's use cases, and the adapters behind its ports
  * (ChannelRepository, TokenCipher, ...), which its other use cases and
- * workers share. Needs the database (Drizzle and SqlClient), migrated, Ids,
- * Dns, and the notifications context's Notify.
+ * workers share, and ChannelRecords for the workspace context. Needs the
+ * database (Drizzle and SqlClient), migrated, Ids, Dns, and the
+ * notifications context's Notify.
  */
 export const ChannelsLive = UseCasesLive.pipe(Layer.provideMerge(AdaptersLive));
 

@@ -289,7 +289,14 @@ export const makeAuth = ({ database, hooks, settings }: AuthDependencies) =>
     // OAuth access tokens; the device grant's session tokens bypass OAuth.
     // OAuth clients are registered by the server (the command line's) or by
     // MCP clients themselves, never by signed-in users.
+    //
+    // Workspaces and accounts are deleted through Acme's API too
+    // (DELETE /api/workspaces/:id and DELETE /api/me), which delete what
+    // every context keeps: the admin plugin's removal of a user would leave
+    // their notices, preferences and the workspaces they alone belonged to.
+    // Staff ban accounts instead.
     disabledPaths: [
+      "/admin/remove-user",
       "/api-key/create",
       "/api-key/delete",
       "/api-key/get",
@@ -302,6 +309,7 @@ export const makeAuth = ({ database, hooks, settings }: AuthDependencies) =>
       "/oauth2/get-client",
       "/oauth2/get-clients",
       "/oauth2/update-client",
+      "/organization/delete",
       "/token",
     ],
     emailAndPassword: {

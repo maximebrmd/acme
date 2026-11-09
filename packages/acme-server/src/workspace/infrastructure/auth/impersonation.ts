@@ -40,16 +40,32 @@ const grantsAccess: ReadonlySet<string> = new Set([
   "/oauth2/update-consent",
 ]);
 
+// The routes that change the account itself: its name, language, address
+// and password, and its sessions. Staff read an account to help; changing
+// it in the member's name would outlive the impersonation, or end the
+// member's own sessions.
+const changesAccount: ReadonlySet<string> = new Set([
+  "/change-email",
+  "/change-password",
+  "/delete-user",
+  "/revoke-other-sessions",
+  "/revoke-session",
+  "/revoke-sessions",
+  "/update-user",
+]);
+
 /**
  * Whether staff impersonating a member are refused a Better Auth route: every
- * workspace route but those that only read, and those that give an OAuth
- * client access. Creating, inviting, accepting, changing roles, removing,
- * deleting and granting access all outlive the impersonation, as what
- * `withheldWhileImpersonating` lists does, and these routes never reach
- * Acme's API, which applies that list.
+ * workspace route but those that only read, those that give an OAuth client
+ * access, and those that change the account. Creating, inviting, accepting,
+ * changing roles, removing, deleting, granting access and changing the
+ * account all outlive the impersonation, as what `withheldWhileImpersonating`
+ * lists does, and these routes never reach Acme's API, which applies that
+ * list.
  */
 export const refusedWhileImpersonating = (path: string): boolean =>
   grantsAccess.has(path) ||
+  changesAccount.has(path) ||
   (path.startsWith("/organization/") && !allowedWhileImpersonating.has(path));
 
 const isImpersonation = Schema.is(
@@ -68,7 +84,7 @@ export const refuseImpersonatedChanges = createAuthMiddleware(async (ctx) => {
     throw APIError.from("FORBIDDEN", {
       code: "IMPERSONATION_READ_ONLY",
       message:
-        "Staff impersonating a member cannot change workspaces or give access to them",
+        "Staff impersonating a member cannot change workspaces or the account, or give access to them",
     });
   }
 });

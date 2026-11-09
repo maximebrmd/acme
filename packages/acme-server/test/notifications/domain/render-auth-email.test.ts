@@ -49,6 +49,29 @@ describe(renderAuthEmail, () => {
     expect(email.html).toContain('<html lang="fr">');
   });
 
+  it("confirms an account's deletion in its language, linking to Acme", () => {
+    const inEnglish = renderAuthEmail({
+      _tag: "AccountDeleted",
+      locale: "en",
+      to: "ada@example.test",
+      url: "https://app.example.test",
+    });
+
+    const inFrench = renderAuthEmail({
+      _tag: "AccountDeleted",
+      locale: "fr",
+      to: "ada@example.test",
+      url: "https://app.example.test/fr",
+    });
+
+    expect(inEnglish.subject).toBe("Your Acme account is deleted");
+    expect(inEnglish.text).toContain("Open Acme: https://app.example.test");
+    expect(inFrench.subject).toBe("Votre compte Acme est supprimé");
+    expect(inFrench.text).toContain(
+      "Ouvrir Acme\u00A0: https://app.example.test/fr"
+    );
+  });
+
   it("names the role an invitation offers, with French elision", () => {
     expect(renderAuthEmail(invitation("en", "editor")).text).toContain(
       "on Acme as an editor."

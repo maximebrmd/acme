@@ -371,12 +371,21 @@ layer(IntegrationLive, { excludeTestServices: true, timeout: "180 seconds" })(
         const workspaceId = yield* workspaceOf(owner, "Closing");
         const { key } = yield* apiKeyOf(owner, workspaceId, ["apiKey:read"]);
 
-        const deleted = yield* app.request("/api/auth/organization/delete", {
+        // Better Auth's own route would leave the workspace's content.
+        const direct = yield* app.request("/api/auth/organization/delete", {
           body: { organizationId: workspaceId },
           headers: { cookie: owner.cookies },
         });
 
-        assert.strictEqual(deleted.status, 200);
+        assert.strictEqual(direct.status, 404);
+
+        const deleted = yield* app.request(`/api/workspaces/${workspaceId}`, {
+          body: { name: "Closing" },
+          headers: { cookie: owner.cookies },
+          method: "DELETE",
+        });
+
+        assert.strictEqual(deleted.status, 204);
 
         const keys =
           yield* sql`SELECT id FROM auth.apikey WHERE reference_id = ${workspaceId}`;

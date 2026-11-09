@@ -23,8 +23,18 @@ describe(refusedWhileImpersonating, () => {
   });
 
   it.each([
+    "/change-password",
+    "/revoke-other-sessions",
+    "/revoke-session",
+    "/update-user",
+  ])("refuses %s, which changes the account", (path) => {
+    expect(refusedWhileImpersonating(path)).toBeTruthy();
+  });
+
+  it.each([
     "/device",
     "/get-session",
+    "/list-sessions",
     "/oauth2/public-client",
     "/organization/list-members",
     "/organization/set-active",

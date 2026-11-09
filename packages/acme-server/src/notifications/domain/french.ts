@@ -1,6 +1,13 @@
 import type { EmailCatalog } from "./email-catalog.ts";
 
 export const french: EmailCatalog = {
+  accountDeleted: {
+    action: "Ouvrir Acme",
+    body: "Votre compte Acme a été supprimé à votre demande, avec les données qui s’y rattachent : votre profil, vos sessions, vos adhésions, vos notifications, et les espaces de travail dont vous étiez le seul membre, avec tout leur contenu.",
+    ignore:
+      "Si vous n’êtes pas à l’origine de cette demande, prévenez la personne qui gère ce serveur Acme. Acme n’envoie plus d’e-mail à cette adresse.",
+    subject: "Votre compte Acme est supprimé",
+  },
   channel: "{platform} ({handle})",
   channelReconnectRequired: {
     action: "Reconnecter le compte",

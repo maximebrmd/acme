@@ -36,7 +36,7 @@ With a session or an OAuth token, `GET /api/me` tells who you are, and lists you
 
 ## Workspaces [#workspaces]
 
-A workspace's resources live under `/api/workspaces/{workspaceId}/`: `channels`, `posts`, `media`, `assistant` and `api-keys`. Each endpoint's reference names the permission it needs, such as `post:schedule` or `channel:connect`.
+A workspace's resources live under `/api/workspaces/{workspaceId}/`: `channels`, `posts`, `media`, `assistant` and `api-keys`; `DELETE /api/workspaces/{workspaceId}` deletes the workspace itself, with everything in it ([Workspaces and your account](/settings#delete-workspace)). Each endpoint's reference names the permission it needs, such as `post:schedule` or `channel:connect`.
 
 | Status | Meaning                                                                        |
 | ------ | ------------------------------------------------------------------------------ |
@@ -49,6 +49,8 @@ Errors answer with a JSON body whose `_tag` names the error, such as `PostConten
 ## Your account [#me]
 
 What belongs to you rather than to a workspace lives under `/api/me`: who you are (`GET /api/me`), your [notifications](/notifications#api) under `/api/me/notices`, and which of them are emailed, under `/api/me/notification-preferences`. The notification endpoints answer 403 to API keys, which belong to a workspace, and to OAuth tokens bound to one workspace, such as an MCP client's.
+
+A copy of your data (`GET /api/me/export`), deleting your account (`DELETE /api/me`) and your connected applications (`/api/me/connected-apps`) answer only your own session in the web app: API keys, OAuth tokens and staff acting as you get 403 ([Workspaces and your account](/settings#api)).
 
 ## OpenAPI document [#openapi]
 

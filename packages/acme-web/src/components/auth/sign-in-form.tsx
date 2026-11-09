@@ -2,6 +2,7 @@
 
 import { Alert, AlertDescription } from "acme-ui/components/alert";
 import { Button } from "acme-ui/components/button";
+import { Option } from "effect";
 import { useLocale, useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import type { SubmitEvent } from "react";
@@ -9,6 +10,7 @@ import type { SubmitEvent } from "react";
 import { authClient } from "#auth/client.ts";
 import { authErrorKey } from "#auth/errors.ts";
 import type { AuthErrorKey } from "#auth/errors.ts";
+import { landingLocale } from "#auth/next-path.ts";
 import { isOAuthRedirect } from "#auth/oauth-redirect.ts";
 import { FormError } from "#components/auth/form-error.tsx";
 import { FormField } from "#components/auth/form-field.tsx";
@@ -39,7 +41,15 @@ export const SignInForm = ({ next }: { readonly next: string }) => {
           return;
         }
 
-        router.push(next);
+        // In the language the account keeps, which may not be this page's.
+        Option.match(landingLocale(next, result.data.user.locale), {
+          onNone: () => {
+            router.push(next);
+          },
+          onSome: (preferred) => {
+            router.push(next, { locale: preferred });
+          },
+        });
         router.refresh();
       } else {
         setResentTo(null);

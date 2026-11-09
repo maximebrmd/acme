@@ -250,7 +250,11 @@ and no socket, for tests.
 - Put the signed-in user's own groups, which span workspaces (notices,
   notification preferences), under `/api/me/…` with `Authentication` alone,
   in `WorkspaceGroupsLive` too. They answer 403 to API keys, which belong to
-  a workspace, and to OAuth tokens bound to one workspace.
+  a workspace, and to OAuth tokens bound to one workspace. Those that act on
+  the account itself (its export, its deletion, connected applications) and
+  deleting a workspace answer only the person in their own session:
+  `ownSession` (`workspace/domain/own-session.ts`) refuses OAuth tokens and
+  staff impersonating them too.
 - Handlers turn `CurrentMember` into an `Actor` with `actorOf`
   (`#shared/api/actor.ts`). Use cases that act for someone take that `Actor`
   and check it with `authorize`: permissions are `resource:action`
@@ -279,8 +283,31 @@ and no socket, for tests.
 - Staff (Better Auth's admin role) may impersonate a member for an hour. They
   then lose the permissions `withheldWhileImpersonating` lists
   (`workspace/domain/membership.ts`), and Better Auth refuses them every route
-  that changes a workspace, grants an OAuth client access or approves a
-  device code (`impersonation.ts`).
+  that changes a workspace or the account (name, language, password,
+  sessions), grants an OAuth client access or approves a device code
+  (`impersonation.ts`).
+- Workspaces and accounts are deleted through Acme's API only
+  (`DeleteWorkspace`, `CloseAccount`): Better Auth's `/organization/delete`
+  and the admin plugin's `/admin/remove-user` are disabled and its
+  `/delete-user` stays off, as they would leave the other contexts' data.
+  Both lock the workspaces they read (`AccountStore.standings`, `workspace`)
+  before deciding, so closures, joins and deletions take turns. Each context
+  hands its records of a workspace or a user to the workspace context
+  through an application port (`ChannelRecords`, `PostRecords`,
+  `MediaRecords`, `NoticeRecords`, `UsageRecords`, in the shapes of
+  `#shared/application/personal-data.ts`), which `ContextRecords` reaches.
+  The rows go in one TransactionRunner transaction, Better Auth's included
+  (the server's Drizzle on the `auth` tables), and the workspace's media
+  folder once it commits. A context that keeps new data about a workspace
+  or a user adds it to its records.
+- `AccountData` exports what is tied to the user, and the content of the
+  workspaces where they are the only member: those `CloseAccount` deletes.
+  Sessions staff opened to impersonate the user are left out, as Better
+  Auth's own list leaves them out: their browser and address are staff's.
+  Closing an account is refused while its user alone owns a workspace others
+  use (`planClosure`), and its confirmation is emailed in their language.
+  `PasswordCheck` checks a password three times within 10 seconds per
+  account at most, as Better Auth's own routes do.
 - Better Auth is also the OAuth authorization server for the CLI (device
   grant, the `acme-cli` public client registered at startup) and MCP clients
   (authorization code with PKCE, and dynamic registration when
@@ -370,6 +397,9 @@ and no socket, for tests.
   (`publishing.publication_calls`) before calling the platform.
 - A post whose outcome is unknown is marked unconfirmed, never retried blindly:
   the user checks the platform before reposting.
+- Erasing a workspace's posts (`PostRecords`) stops its scheduled jobs in the
+  same transaction, and is refused while one of its posts is publishing; a
+  job that wakes for a post deleted that way stops.
 - Platform calls go through the `PlatformPublisher` port, one at a time per
   channel through `ChannelGate`, whose calls are volatile: post content never
   lands in the cluster tables. The gates run `RoutedPlatformPublisher`, which
@@ -606,8 +636,9 @@ Billing and captcha are not built yet.
   the OAuth pages (`device`, `oauth/workspace`, `oauth/consent`), the
   platforms' redirect URI `connect/[platform]/callback`, and the signed-in
   app: `app` (workspaces), `app/notices`, `app/notices/preferences`,
-  `app/[workspaceId]/channels`, `…/media`, `…/calendar`, `…/posts/new` and
-  `…/posts/[postId]`.
+  `app/account`, `app/[workspaceId]/channels`, `…/media`, `…/calendar`,
+  `…/posts/new`, `…/posts/[postId]` and `…/settings` (with `members`,
+  `invitations` and `api-keys`).
 - Pages fetch through the client derived from `acme-contract`, with
   `@effect/atom-react`: query atoms come from `AcmeApi` in `src/api/client.ts`.
   Browsers call `/api`; server code calls `ACME_API_URL`.
@@ -623,6 +654,13 @@ Billing and captcha are not built yet.
   query that needs them, and anything that depends on the browser (its time
   zone, the current time), renders after hydration (`useHydrated`,
   `useMounted`). Tiptap editors set `immediatelyRender: false`.
+- Settings pages read Better Auth's members, invitations and sessions in
+  atoms (`#settings/atoms.ts`), decoding each answer with `authCall`, and
+  offer only the role changes its routes accept (`#settings/member-rules.ts`).
+  Invitations go through `invite` (`#settings/invite.ts`): Better Auth's
+  client types roles from its own defaults. Sign-in opens `next` in the
+  language the account keeps (`landingLocale`), which account settings save
+  with `updateUser`.
 - Client components call Better Auth through `authClient` (`#auth/client.ts`).
   During an OAuth authorization it sends the page's signed query with every
   POST, and Better Auth resumes the authorization after any call that sets

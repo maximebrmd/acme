@@ -7,6 +7,7 @@ import { NotificationSettings } from "#notifications/application/notification-se
 import { Notify } from "#notifications/application/notify.ts";
 import { SendAuthEmail } from "#notifications/application/send-auth-email.ts";
 import { DrizzleNoticeLog } from "#notifications/infrastructure/drizzle-notice-log.ts";
+import { DrizzleNoticeRecords } from "#notifications/infrastructure/drizzle-notice-records.ts";
 import { DrizzleNoticeStore } from "#notifications/infrastructure/drizzle-notice-store.ts";
 import { DrizzlePreferenceStore } from "#notifications/infrastructure/drizzle-preference-store.ts";
 import { mailSettingsConfig } from "#notifications/infrastructure/mail-settings.ts";
@@ -57,8 +58,9 @@ const NoticeAdaptersLive = Layer.mergeAll(
  * Notices: what happened to posts and channels, told once per event to the
  * members of a workspace who can act on it, in the app and by email, each in
  * their language (Notify); each user's notices and preferences (NoticeInbox,
- * NotificationSettings); and the emails' delivery (DeliverNoticeEmails), for
- * the workers. Needs the Mailer (from NotificationsLive), the database,
+ * NotificationSettings); the emails' delivery (DeliverNoticeEmails), for
+ * the workers; and NoticeRecords, for the workspace context's exports and
+ * erasures. Needs the Mailer (from NotificationsLive), the database,
  * migrated, a TransactionRunner, Ids, the workflow engine, and the workspace
  * context's WorkspaceContacts and AccountStanding, which themselves need
  * NotificationsLive: build the two apart, notices last.
@@ -67,7 +69,8 @@ export const NoticesLive = Layer.mergeAll(
   Notify.layer,
   DeliverNoticeEmails.layer,
   NoticeInbox.layer,
-  NotificationSettings.layer
+  NotificationSettings.layer,
+  DrizzleNoticeRecords
 ).pipe(Layer.provide(NoticeAdaptersLive));
 
 /** Registers the workflow that sends notices' emails. Needs NoticesLive. */

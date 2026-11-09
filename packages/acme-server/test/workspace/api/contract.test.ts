@@ -55,9 +55,10 @@ describe("the contract", () => {
         if (keys.includes(WorkspaceAccess.key)) {
           const name = `${group.identifier}.${endpoint.identifier}`;
 
-          (endpoint.path.includes("/:workspaceId/") ? scoped : unscoped).push(
-            name
-          );
+          (/\/:workspaceId(?:\/|$)/u.test(endpoint.path)
+            ? scoped
+            : unscoped
+          ).push(name);
         }
       },
       onGroup: () => {
@@ -68,5 +69,6 @@ describe("the contract", () => {
     expect(unscoped).toStrictEqual([]);
     expect(scoped).toContain("apiKeys.list");
     expect(scoped).toContain("channels.disconnect");
+    expect(scoped).toContain("workspaces.delete");
   });
 });
