@@ -76,6 +76,17 @@ export const AuthorizationSchema = Schema.Struct({
 export type Authorization = typeof AuthorizationSchema.Type;
 
 /**
+ * The platforms this server can connect accounts of: those Acme has a
+ * sign-in flow for, and whose settings the server has, such as an app
+ * registered on LinkedIn or X. Clients offer only these.
+ */
+export const ConnectablePlatformsSchema = Schema.Struct({
+  platforms: Schema.Array(PlatformSchema),
+}).annotate({ identifier: "ConnectablePlatforms" });
+
+export type ConnectablePlatforms = typeof ConnectablePlatformsSchema.Type;
+
+/**
  * What the platform added to the callback page's address: the `state` that
  * names the connection, and either a `code` or an `error`. Bluesky adds the
  * issuer as `iss`.
@@ -110,6 +121,17 @@ export class ChannelsApi extends HttpApiGroup.make("channels")
         description:
           "Lists the channels connected to the workspace, oldest first. Their tokens are never shown. Needs channel:read.",
         summary: "List channels",
+      })
+    ),
+    HttpApiEndpoint.get("platforms", "/platforms", {
+      error: Forbidden,
+      params: workspace,
+      success: ConnectablePlatformsSchema,
+    }).annotateMerge(
+      OpenApi.annotations({
+        description:
+          "Lists the platforms this server can connect accounts of, in Acme's order. A platform that needs a setting the server lacks, such as an app registered on LinkedIn or X, is left out. Needs channel:read.",
+        summary: "List connectable platforms",
       })
     ),
     HttpApiEndpoint.post("connect", "/connect/:platform", {

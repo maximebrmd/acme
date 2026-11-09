@@ -19,6 +19,11 @@ export const channelsOf = Atom.family((workspaceId: string) =>
   })
 );
 
+/** The platforms this server connects, in Acme's order. */
+export const connectablePlatformsOf = Atom.family((workspaceId: string) =>
+  AcmeApi.query("channels", "platforms", { params: { workspaceId } })
+);
+
 export const connectChannel = AcmeApi.mutation("channels", "connect");
 
 export const completeConnection = AcmeApi.mutation(

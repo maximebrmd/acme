@@ -180,14 +180,83 @@ const ConnectBluesky = ({ workspaceId }: { readonly workspaceId: string }) => {
   );
 };
 
-/** Where a member starts connecting a Mastodon or Bluesky account. */
-export const ConnectForms = ({
+// The platforms whose sign-in needs nothing typed first: a button.
+type ButtonPlatform = "linkedin" | "x";
+
+const buttonPlatforms: readonly ButtonPlatform[] = ["linkedin", "x"];
+
+const ConnectWithButton = ({
+  platform,
   workspaceId,
 }: {
+  readonly platform: ButtonPlatform;
   readonly workspaceId: string;
-}) => (
-  <div className="grid gap-4 sm:grid-cols-2">
-    <ConnectMastodon workspaceId={workspaceId} />
-    <ConnectBluesky workspaceId={workspaceId} />
-  </div>
-);
+}) => {
+  const t = useTranslations("PlatformConnect");
+  const { error, isPending, start } = useConnect(workspaceId, platform);
+
+  const handleClick = () => {
+    start({});
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>
+          <h3>{t(`${platform}.title`)}</h3>
+        </CardTitle>
+        <CardDescription>{t(`${platform}.description`)}</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="flex flex-col gap-4">
+          <ErrorMessage error={error} />
+          <Button
+            type="button"
+            onClick={handleClick}
+            disabled={isPending}
+            focusableWhenDisabled
+          >
+            {isPending ? t("connecting") : t(`${platform}.connect`)}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+/**
+ * Where a member starts connecting an account, for each platform this
+ * server connects: a form for Mastodon and Bluesky, which ask for a server
+ * or a handle, a button for the others.
+ */
+export const ConnectForms = ({
+  platforms,
+  workspaceId,
+}: {
+  readonly platforms: readonly Platform[];
+  readonly workspaceId: string;
+}) => {
+  const offered = new Set(platforms);
+
+  return (
+    <div className="grid gap-4 sm:grid-cols-2">
+      {offered.has("mastodon") ? (
+        <ConnectMastodon workspaceId={workspaceId} />
+      ) : null}
+      {offered.has("bluesky") ? (
+        <ConnectBluesky workspaceId={workspaceId} />
+      ) : null}
+      {buttonPlatforms.flatMap((platform) =>
+        offered.has(platform)
+          ? [
+              <ConnectWithButton
+                key={platform}
+                platform={platform}
+                workspaceId={workspaceId}
+              />,
+            ]
+          : []
+      )}
+    </div>
+  );
+};

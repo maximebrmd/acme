@@ -36,7 +36,7 @@ Chaque image ou vidéo d’une publication a son propre texte alternatif, qui pa
 
 ## Ce que chaque plateforme accepte [#platforms]
 
-Acme publie sur Mastodon et Bluesky. Quand vous programmez une publication, il vérifie ses images et vidéos selon ces limites :
+Acme publie sur Mastodon, Bluesky, LinkedIn et X. Quand vous programmez une publication, il vérifie ses images et vidéos selon ces limites :
 
 | Limite                           | Bluesky                                                  | Mastodon                                                                  |
 | -------------------------------- | -------------------------------------------------------- | ------------------------------------------------------------------------- |
@@ -48,7 +48,17 @@ Acme publie sur Mastodon et Bluesky. Quand vous programmez une publication, il v
 
 Les limites de Mastodon sont celles d’un serveur Mastodon tel qu’il est livré. Quand la publication part, Acme lit aussi les limites du serveur du compte, les types de fichiers qu’il accepte et sa plus grande image et vidéo, et n’envoie pas un fichier que le serveur refuserait : la publication échoue alors sur ce canal.
 
-Acme connaît aussi les limites de X, LinkedIn, Threads et Instagram, et les vérifiera dès que leurs comptes pourront être connectés. Il ne vérifie que ce qu’il a lu de chaque fichier : un fait qu’il n’a pas pu lire, comme la durée d’une vidéo, n’est pas vérifié, et la plateforme peut encore refuser le fichier.
+| Limite                           | LinkedIn                                                                         | X                                                                |
+| -------------------------------- | -------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| Images et vidéos par publication | 20                                                                               | 4, ou un GIF seul                                                |
+| Images                           | JPEG, PNG et GIF, jusqu’à 36 152 320 pixels                                      | JPEG, PNG et WebP jusqu’à 5 Mio ; GIF jusqu’à 15 Mio             |
+| Vidéos                           | Une MP4, de 3 secondes à 30 minutes, de 75 Ko à 500 Mio                          | Une MP4 ou QuickTime, de 0,5 à 140 secondes, jusqu’à 512 Mio     |
+| Images et vidéo ensemble         | Non                                                                              | Non                                                              |
+| Texte alternatif                 | Sur les images, montré aux personnes qui en ont besoin, jusqu’à 4 086 caractères | Montré aux personnes qui en ont besoin, jusqu’à 1 000 caractères |
+
+X laisse certains comptes publier des vidéos plus longues ; Acme vérifie la durée que tout compte peut publier. Une vidéo de moins de 75 Ko, ou un GIF avec d’autres fichiers sur X, est refusé quand la publication part.
+
+Acme connaît aussi les limites de Threads et Instagram, et les vérifiera dès que leurs comptes pourront être connectés. Il ne vérifie que ce qu’il a lu de chaque fichier : un fait qu’il n’a pas pu lire, comme la durée d’une vidéo, n’est pas vérifié, et la plateforme peut encore refuser le fichier.
 
 ## Quand vous programmez [#schedule]
 

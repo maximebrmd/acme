@@ -137,9 +137,9 @@ echo "k1:$(openssl rand -base64 32)"
 
 The value lists `keyId:key` entries separated by commas, such as `k2:<key>,k1:<key>`. The first key encrypts and every listed key decrypts: to rotate, put a new key first and keep the old ones. A malformed value stops the server at startup. Keep the keys secret, and keep a copy: without them, every channel must be reconnected.
 
-The server reaches the platforms itself, over HTTPS, so it needs to reach the internet: to connect accounts, and to publish, on each account's Mastodon server, on the Bluesky server that holds each account, and through Bluesky's video service, `https://video.bsky.app`, for videos. It only calls servers on public addresses, on the default HTTPS port, which keeps people from pointing it at your private network. The platforms send people back to `PUBLIC_URL/connect/<platform>/callback`, through their browser: they never call the server themselves, apart from Bluesky reading Acme's client description, below.
+The server reaches the platforms itself, over HTTPS, so it needs to reach the internet: to connect accounts, and to publish, on each account's Mastodon server, on the Bluesky server that holds each account, through Bluesky's video service, `https://video.bsky.app`, for videos, on LinkedIn (`www.linkedin.com`, `api.linkedin.com` and the upload addresses LinkedIn gives) and on X (`api.x.com`). It only calls servers on public addresses, on the default HTTPS port, which keeps people from pointing it at your private network. The platforms send people back to `PUBLIC_URL/connect/<platform>/callback`, through their browser: they never call the server themselves, apart from Bluesky reading Acme's client description, below.
 
-To publish an image or a video, the server reads it from the media store, whole, into memory, then uploads it: a Bluesky video can take up to 300 MB. Give the server the memory for the largest files your members post.
+To publish an image or a video, the server reads it from the media store, whole, into memory, then uploads it: a Bluesky video can take up to 300 MB. LinkedIn and X take videos in parts of 4 MiB, so the server holds one part at a time. Give the server the memory for the largest files your members post.
 
 ### Bluesky [#bluesky]
 
@@ -152,6 +152,28 @@ bun nx run acme-server:bluesky-key
 Put the line it prints in `BLUESKY_CLIENT_KEYS`. Entries are separated by commas: to rotate, put a new key first, and keep the old ones until the sessions they signed for have been refreshed. Bluesky reads Acme's client description at `PUBLIC_URL/api/channels/oauth/bluesky/client-metadata.json`, and its public keys beside it.
 
 Without keys, a server running from source on `localhost` uses Bluesky's development client, whose sessions last two weeks, and any other server cannot connect Bluesky.
+
+### LinkedIn [#linkedin]
+
+A server connects LinkedIn members once you register an app for it on LinkedIn's developer portal, which asks for a LinkedIn page to own it:
+
+1. Add the **Sign In with LinkedIn using OpenID Connect** and **Share on LinkedIn** products. Both are granted at once, without review.
+2. Under **Auth**, add `PUBLIC_URL/connect/linkedin/callback` as an authorized redirect URL, such as `https://acme.example.com/connect/linkedin/callback`.
+3. Put the app's client id in `LINKEDIN_CLIENT_ID` and its primary client secret in `LINKEDIN_CLIENT_SECRET`.
+
+These apps get no refresh token: members reconnect their channel every 60 days, and are told a week before. Acme calls LinkedIn's API in the version `LINKEDIN_API_VERSION` names, a recent one unless set; LinkedIn retires each version a year after its release, and a retired one fails every post.
+
+### X [#x]
+
+A server connects X accounts once you register an app for it in X's developer console:
+
+1. Under the app's user authentication settings, turn on OAuth 2.0, as a **Web App, Automated App or Bot**, with **Read and write** permissions.
+2. Add `PUBLIC_URL/connect/x/callback` as a callback URI, exactly, such as `https://acme.example.com/connect/x/callback`. X refuses `localhost`: in development, use `http://127.0.0.1` and its port.
+3. Put the OAuth 2.0 client id in `X_CLIENT_ID` and its client secret in `X_CLIENT_SECRET`.
+
+X bills each request of the API to the app, and a post with a link costs more. Set a spending limit in X's console: once it is reached, X refuses posts, which fail with their reason, until you raise it. Acme renews each account's access every two hours, and keeps it working as long as it is renewed.
+
+For LinkedIn as for X, one of the two settings without the other stops the server at startup; without both, **Channels** does not offer the platform.
 
 ## Writing assistant [#ai]
 

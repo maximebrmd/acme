@@ -153,6 +153,16 @@ export const ChannelsHandlers = HttpApiBuilder.group(
 
           return channels.map(toChannelView);
         }),
+      platforms: () =>
+        Effect.gen(function* platforms() {
+          const actor = actorOf(yield* CurrentMember);
+
+          const connectable = yield* connectChannel
+            .connectable(actor)
+            .pipe(Effect.catchTag("MissingPermission", forbidden));
+
+          return { platforms: connectable };
+        }),
       reconnect: ({ params }) =>
         Effect.gen(function* reconnect() {
           const actor = actorOf(yield* CurrentMember);

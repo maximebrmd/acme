@@ -18,13 +18,19 @@ import {
 
 import type { BlueskyAuthorizerOptions } from "./bluesky/bluesky-authorizer.ts";
 import type { BlueskyClientMode } from "./bluesky/bluesky-client.ts";
+import { oauthClientConfig } from "./oauth-client.ts";
+import type { OAuthClient } from "./oauth-client.ts";
 
 /** How this server connects each platform. */
 export interface ChannelPlatformSettings {
   /** None when this server cannot connect Bluesky accounts. */
   readonly bluesky: Option.Option<BlueskyAuthorizerOptions>;
+  /** Acme's LinkedIn app, if the operator registered one. */
+  readonly linkedin: Option.Option<OAuthClient>;
   /** The web app's origin, where the platforms send members back. */
   readonly publicUrl: string;
+  /** Acme's X app, if the operator registered one. */
+  readonly x: Option.Option<OAuthClient>;
 }
 
 export class ChannelPlatforms extends Context.Service<
@@ -132,6 +138,10 @@ const blueskyModeOf = Effect.fnUntraced(function* blueskyModeOf(settings: {
  *   runs a confidential Bluesky client, which needs PUBLIC_URL on HTTPS.
  *   Without them, a server on localhost runs the development client, and any
  *   other server cannot connect Bluesky.
+ * - `LINKEDIN_CLIENT_ID` and `LINKEDIN_CLIENT_SECRET`, `X_CLIENT_ID` and
+ *   `X_CLIENT_SECRET`: the apps the operator registered on LinkedIn and X.
+ *   Without them, the platform is not offered; one half alone stops the
+ *   server.
  */
 export const channelPlatformsConfig = Effect.gen(function* settings() {
   const publicUrl = yield* publicUrlConfig;
@@ -144,6 +154,8 @@ export const channelPlatformsConfig = Effect.gen(function* settings() {
   );
 
   const mode = yield* blueskyModeOf({ keys, production, publicUrl });
+  const linkedin = yield* oauthClientConfig("linkedin", "LINKEDIN");
+  const x = yield* oauthClientConfig("x", "X");
 
   const platforms: ChannelPlatformSettings = {
     bluesky: mode.pipe(
@@ -153,7 +165,9 @@ export const channelPlatformsConfig = Effect.gen(function* settings() {
         publicUrl,
       }))
     ),
+    linkedin,
     publicUrl,
+    x,
   };
 
   return platforms;

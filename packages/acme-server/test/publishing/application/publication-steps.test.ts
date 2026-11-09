@@ -43,6 +43,7 @@ interface Options {
   readonly commits?: readonly CommitAnswer[];
   readonly confirmation:
     | { readonly _tag: "lookUp"; readonly found: readonly LookUp["_tag"][] }
+    | { readonly _tag: "none" }
     | { readonly _tag: "resend"; readonly window: Duration.Duration };
   // How many looks at the media find it still processing, a minute apart.
   readonly processing?: number;
@@ -89,9 +90,8 @@ const stepsWith = Effect.fn("test.stepsWith")(function* stepsWith(
           : published;
       }),
     confirmation:
-      options.confirmation._tag === "resend"
-        ? options.confirmation
-        : {
+      options.confirmation._tag === "lookUp"
+        ? {
             _tag: "lookUp",
             lookUp: () =>
               Ref.getAndUpdate(looks, (count) => count + 1).pipe(
@@ -103,7 +103,8 @@ const stepsWith = Effect.fn("test.stepsWith")(function* stepsWith(
                     : { _tag: tag };
                 })
               ),
-          },
+          }
+        : options.confirmation,
     platform: "mastodon",
     poll: (_post, remaining) => Effect.succeed(readiness(remaining)),
     prepare: () => Effect.succeed(readiness(options.processing ?? 0)),
@@ -140,6 +141,30 @@ const minutesAgo = (minutes: number) =>
   );
 
 describe("the publication steps", () => {
+  it.effect(
+    "answers unconfirmed at once when nothing reads the post back",
+    () =>
+      Effect.gen(function* noConfirmation() {
+        const { client, sentAt } = yield* stepsWith({
+          commits: [{ _tag: "unknown" }],
+          confirmation: { _tag: "none" },
+        });
+
+        const post = postStarted(yield* DateTime.now);
+
+        // No wait before giving up: the test clock never moves.
+        assert.deepStrictEqual(yield* client.publish(post), {
+          _tag: "unconfirmed",
+          reason: "noResponse",
+        });
+        assert.deepStrictEqual(yield* client.resume(post), {
+          _tag: "unconfirmed",
+          reason: "interrupted",
+        });
+        assert.lengthOf(yield* sentAt, 1);
+      })
+  );
+
   it.effect("posts once the platform has processed the media", () =>
     Effect.gen(function* processed() {
       const startedAt = yield* DateTime.now;

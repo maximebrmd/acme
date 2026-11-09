@@ -167,6 +167,7 @@ export {
   AuthorizationSchema,
   ChannelSchema,
   ChannelStatusSchema,
+  ConnectablePlatformsSchema,
   ConnectCallbackSchema,
   ConnectChannelSchema,
 } from "./channels.ts";
@@ -175,6 +176,7 @@ export type {
   Authorization,
   Channel,
   ChannelStatus,
+  ConnectablePlatforms,
   ConnectCallback,
   ConnectChannel,
 } from "./channels.ts";

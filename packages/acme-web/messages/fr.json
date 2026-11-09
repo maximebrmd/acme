@@ -256,7 +256,7 @@
     "disconnectAccount": "Déconnecter {handle}",
     "disconnecting": "Déconnexion…",
     "disconnectTitle": "Déconnecter {handle} ?",
-    "disconnectDescription": "Acme supprime les jetons qu’il détient pour ce compte {platform, select, bluesky {Bluesky} mastodon {Mastodon} other {{platform}}} et n’y publie plus rien. Vous pourrez le reconnecter plus tard.",
+    "disconnectDescription": "Acme supprime les jetons qu’il détient pour ce compte {platform, select, bluesky {Bluesky} facebook {Facebook} instagram {Instagram} linkedin {LinkedIn} mastodon {Mastodon} pinterest {Pinterest} threads {Threads} tiktok {TikTok} x {X} youtube {YouTube} other {{platform}}} et n’y publie plus rien. Vous pourrez le reconnecter plus tard.",
     "cancel": "Annuler",
     "disconnected": "{handle} est déconnecté.",
     "connectTitle": "Connecter un compte",
@@ -287,6 +287,20 @@
       "forbidden": "Vous ne pouvez pas faire cela dans cet espace de travail.",
       "notFound": "Ce canal n’est plus connecté.",
       "unknown": "Une erreur est survenue. Réessayez."
+    }
+  },
+  "PlatformConnect": {
+    "connecting": "Ouverture…",
+    "loadFailed": "Les plateformes que vous pouvez connecter n’ont pas pu être chargées. Réessayez.",
+    "linkedin": {
+      "title": "LinkedIn",
+      "description": "Votre profil LinkedIn. LinkedIn demande de vous reconnecter tous les 60 jours : Acme vous le rappelle une semaine avant.",
+      "connect": "Connecter LinkedIn"
+    },
+    "x": {
+      "title": "X",
+      "description": "Votre compte X. Vous vous connectez sur X et autorisez Acme à publier et à envoyer des médias pour vous.",
+      "connect": "Connecter X"
     }
   },
   "ConnectCallbackPage": {

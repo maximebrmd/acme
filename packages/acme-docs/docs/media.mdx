@@ -36,7 +36,7 @@ Write alt text for every file. When one has none, the composer names the platfor
 
 ## What each platform accepts [#platforms]
 
-Acme publishes to Mastodon and Bluesky. When you schedule a post, it checks the post's images and videos against these limits:
+Acme publishes to Mastodon, Bluesky, LinkedIn and X. When you schedule a post, it checks the post's images and videos against these limits:
 
 | Limit                         | Bluesky                                             | Mastodon                                                                  |
 | ----------------------------- | --------------------------------------------------- | ------------------------------------------------------------------------- |
@@ -48,7 +48,17 @@ Acme publishes to Mastodon and Bluesky. When you schedule a post, it checks the 
 
 The Mastodon limits are those of a Mastodon server as it comes. When the post goes out, Acme also reads the limits of the account's own server, the file types it takes and its largest image and video, and does not send a file the server would refuse: the post then fails on that channel.
 
-Acme knows the limits of X, LinkedIn, Threads and Instagram too, and will check them once their accounts can be connected. It checks only what it read from each file: a fact it could not read, such as a video's duration, is not checked, and the platform may still refuse the file.
+| Limit                         | LinkedIn                                                       | X                                                          |
+| ----------------------------- | -------------------------------------------------------------- | ---------------------------------------------------------- |
+| Images and videos in one post | 20                                                             | 4, or one GIF alone                                        |
+| Images                        | JPEG, PNG and GIF, up to 36,152,320 pixels                     | JPEG, PNG and WebP up to 5 MiB; GIF up to 15 MiB           |
+| Videos                        | One MP4, of 3 seconds to 30 minutes, from 75 KB to 500 MiB     | One MP4 or QuickTime, of 0.5 to 140 seconds, up to 512 MiB |
+| Images and a video together   | No                                                             | No                                                         |
+| Alt text                      | On images, shown to people who need it, up to 4,086 characters | Shown to people who need it, up to 1,000 characters        |
+
+X lets some accounts post longer videos; Acme checks the length every account may post. A video shorter than 75 KB, or a GIF with other files on X, is refused when the post goes out.
+
+Acme knows the limits of Threads and Instagram too, and will check them once their accounts can be connected. It checks only what it read from each file: a fact it could not read, such as a video's duration, is not checked, and the platform may still refuse the file.
 
 ## When you schedule [#schedule]
 

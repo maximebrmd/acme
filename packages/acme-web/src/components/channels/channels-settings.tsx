@@ -16,7 +16,7 @@ import { AsyncResult } from "effect/reactivity";
 import { useTranslations } from "next-intl";
 import { useSyncExternalStore } from "react";
 
-import { channelsOf } from "#channels/channels-api.ts";
+import { channelsOf, connectablePlatformsOf } from "#channels/channels-api.ts";
 import { ChannelRow } from "#components/channels/channel-row.tsx";
 import { ConnectForms } from "#components/channels/connect-forms.tsx";
 
@@ -52,13 +52,19 @@ const ChannelList = ({
   );
 };
 
-const LoadFailed = ({ onRetry }: { readonly onRetry: () => void }) => {
+const LoadFailed = ({
+  message,
+  onRetry,
+}: {
+  readonly message: string;
+  readonly onRetry: () => void;
+}) => {
   const t = useTranslations("ChannelsPage");
 
   return (
     <div className="flex flex-col gap-4">
       <Alert variant="destructive">
-        <AlertDescription>{t("loadFailed")}</AlertDescription>
+        <AlertDescription>{message}</AlertDescription>
       </Alert>
       <Button variant="outline" size="sm" onClick={onRetry}>
         {t("retry")}
@@ -87,6 +93,7 @@ const LoadedChannels = ({
   canDisconnect,
   workspaceId,
 }: LoadedChannelsProps) => {
+  const t = useTranslations("ChannelsPage");
   const channels = useAtomValue(channelsOf(workspaceId));
   const handleRetry = useAtomRefresh(channelsOf(workspaceId));
 
@@ -102,7 +109,34 @@ const LoadedChannels = ({
   }
 
   return AsyncResult.isFailure(channels) ? (
-    <LoadFailed onRetry={handleRetry} />
+    <LoadFailed message={t("loadFailed")} onRetry={handleRetry} />
+  ) : (
+    <Loading />
+  );
+};
+
+// The forms for the platforms this server connects, once the browser knows
+// which: a platform the server lacks settings for is not offered.
+const LoadedConnectForms = ({
+  workspaceId,
+}: {
+  readonly workspaceId: string;
+}) => {
+  const t = useTranslations("PlatformConnect");
+  const platforms = useAtomValue(connectablePlatformsOf(workspaceId));
+  const handleRetry = useAtomRefresh(connectablePlatformsOf(workspaceId));
+
+  if (AsyncResult.isSuccess(platforms)) {
+    return (
+      <ConnectForms
+        platforms={platforms.value.platforms}
+        workspaceId={workspaceId}
+      />
+    );
+  }
+
+  return AsyncResult.isFailure(platforms) ? (
+    <LoadFailed message={t("loadFailed")} onRetry={handleRetry} />
   ) : (
     <Loading />
   );
@@ -161,7 +195,10 @@ export const ChannelsSettings = ({
             {canConnect ? t("connectDescription") : t("noPermission")}
           </p>
         </div>
-        {canConnect ? <ConnectForms workspaceId={workspaceId} /> : null}
+        {canConnect && hydrated ? (
+          <LoadedConnectForms workspaceId={workspaceId} />
+        ) : null}
+        {canConnect && !hydrated ? <Loading /> : null}
       </section>
     </div>
   );

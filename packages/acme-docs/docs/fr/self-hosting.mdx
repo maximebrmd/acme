@@ -137,9 +137,9 @@ echo "k1:$(openssl rand -base64 32)"
 
 La valeur liste des entrées `idDeClé:clé` séparées par des virgules, comme `k2:<clé>,k1:<clé>`. La première clé chiffre et toutes les clés listées déchiffrent : pour en changer, placez une nouvelle clé en tête et gardez les anciennes. Une valeur mal formée arrête le serveur au démarrage. Gardez les clés secrètes, et gardez-en une copie : sans elles, chaque canal doit être reconnecté.
 
-Le serveur joint lui-même les plateformes, en HTTPS : il doit donc accéder à Internet, pour connecter des comptes et pour publier, sur le serveur Mastodon de chaque compte, sur le serveur Bluesky qui héberge chaque compte, et par le service vidéo de Bluesky, `https://video.bsky.app`, pour les vidéos. Il n’appelle que des serveurs aux adresses publiques, sur le port HTTPS par défaut, ce qui empêche de le diriger vers votre réseau privé. Les plateformes renvoient les personnes vers `PUBLIC_URL/connect/<plateforme>/callback`, par leur navigateur : elles n’appellent jamais le serveur elles-mêmes, sauf Bluesky, qui lit la description du client d’Acme, ci-dessous.
+Le serveur joint lui-même les plateformes, en HTTPS : il doit donc accéder à Internet, pour connecter des comptes et pour publier, sur le serveur Mastodon de chaque compte, sur le serveur Bluesky qui héberge chaque compte, par le service vidéo de Bluesky, `https://video.bsky.app`, pour les vidéos, sur LinkedIn (`www.linkedin.com`, `api.linkedin.com` et les adresses d’envoi que LinkedIn donne) et sur X (`api.x.com`). Il n’appelle que des serveurs aux adresses publiques, sur le port HTTPS par défaut, ce qui empêche de le diriger vers votre réseau privé. Les plateformes renvoient les personnes vers `PUBLIC_URL/connect/<plateforme>/callback`, par leur navigateur : elles n’appellent jamais le serveur elles-mêmes, sauf Bluesky, qui lit la description du client d’Acme, ci-dessous.
 
-Pour publier une image ou une vidéo, le serveur la lit dans le stockage des médias, en entier, en mémoire, puis l’envoie : une vidéo Bluesky peut prendre jusqu’à 300 Mo. Donnez au serveur la mémoire nécessaire aux plus gros fichiers que publient vos membres.
+Pour publier une image ou une vidéo, le serveur la lit dans le stockage des médias, en entier, en mémoire, puis l’envoie : une vidéo Bluesky peut prendre jusqu’à 300 Mo. LinkedIn et X prennent les vidéos par parties de 4 Mio : le serveur n’en garde qu’une à la fois. Donnez au serveur la mémoire nécessaire aux plus gros fichiers que publient vos membres.
 
 ### Bluesky [#bluesky]
 
@@ -152,6 +152,28 @@ bun nx run acme-server:bluesky-key
 Mettez la ligne qu’elle affiche dans `BLUESKY_CLIENT_KEYS`. Les entrées sont séparées par des virgules : pour en changer, placez une nouvelle clé en tête, et gardez les anciennes jusqu’à ce que les sessions qu’elles ont signées aient été rafraîchies. Bluesky lit la description du client d’Acme à `PUBLIC_URL/api/channels/oauth/bluesky/client-metadata.json`, et ses clés publiques à côté.
 
 Sans clés, un serveur lancé depuis les sources sur `localhost` utilise le client de développement de Bluesky, dont les sessions durent deux semaines, et tout autre serveur ne peut pas connecter Bluesky.
+
+### LinkedIn [#linkedin]
+
+Un serveur connecte des membres LinkedIn une fois que vous lui avez enregistré une application sur le portail développeurs de LinkedIn, qui demande une page LinkedIn pour la détenir :
+
+1. Ajoutez les produits **Sign In with LinkedIn using OpenID Connect** et **Share on LinkedIn**. Les deux sont accordés tout de suite, sans examen.
+2. Sous **Auth**, ajoutez `PUBLIC_URL/connect/linkedin/callback` comme URL de redirection autorisée, comme `https://acme.example.com/connect/linkedin/callback`.
+3. Mettez l’identifiant client de l’application dans `LINKEDIN_CLIENT_ID` et son secret client principal dans `LINKEDIN_CLIENT_SECRET`.
+
+Ces applications n’obtiennent pas de jeton de rafraîchissement : les membres reconnectent leur canal tous les 60 jours, et en sont prévenus une semaine avant. Acme appelle l’API de LinkedIn dans la version que nomme `LINKEDIN_API_VERSION`, une version récente si elle n’est pas définie ; LinkedIn retire chaque version un an après sa sortie, et une version retirée fait échouer chaque publication.
+
+### X [#x]
+
+Un serveur connecte des comptes X une fois que vous lui avez enregistré une application dans la console développeurs de X :
+
+1. Dans les réglages d’authentification des utilisateurs de l’application, activez OAuth 2.0, comme **Web App, Automated App or Bot**, avec les permissions **Read and write**.
+2. Ajoutez `PUBLIC_URL/connect/x/callback` comme URI de rappel, exactement, comme `https://acme.example.com/connect/x/callback`. X refuse `localhost` : en développement, utilisez `http://127.0.0.1` et son port.
+3. Mettez l’identifiant client OAuth 2.0 dans `X_CLIENT_ID` et son secret client dans `X_CLIENT_SECRET`.
+
+X facture chaque requête de l’API à l’application, et une publication avec un lien coûte plus. Fixez une limite de dépenses dans la console de X : une fois atteinte, X refuse les publications, qui échouent avec leur raison, jusqu’à ce que vous la releviez. Acme renouvelle l’accès de chaque compte toutes les deux heures, et le garde valable tant qu’il est renouvelé.
+
+Pour LinkedIn comme pour X, l’un des deux réglages sans l’autre arrête le serveur au démarrage ; sans les deux, **Canaux** ne propose pas la plateforme.
 
 ## Assistant de rédaction [#ai]
 
