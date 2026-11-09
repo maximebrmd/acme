@@ -1,0 +1,20 @@
+[
+  {
+    "_tag": "claimed",
+    "targets": [
+      {
+        "round": 1,
+        "targetId": "019eca14-7980-76b6-8170-13a950e6215a"
+      }
+    ]
+  },
+  {
+    "_tag": "superseded"
+  },
+  {
+    "_tag": "cancelled"
+  },
+  {
+    "_tag": "missed"
+  }
+]

@@ -1,0 +1,378 @@
+import { DateTime, Effect, Match, Option, Result } from "effect";
+
+import type { PostOutcome } from "#publishing/domain/post-status.ts";
+import type { PostTargetId } from "#publishing/domain/post-target-id.ts";
+import {
+  isCancelRequested,
+  isSettled,
+  missTarget,
+  settleTarget,
+} from "#publishing/domain/post-target.ts";
+import type { PostTarget } from "#publishing/domain/post-target.ts";
+import { finishPost } from "#publishing/domain/post.ts";
+import type { Post } from "#publishing/domain/post.ts";
+import type {
+  PostClaim,
+  TargetClaim,
+  TargetOutcome,
+} from "#publishing/domain/publication-claims.ts";
+import {
+  claimPost,
+  claimTarget,
+  targetOutcomeOf,
+} from "#publishing/domain/publication-claims.ts";
+import { decide } from "#publishing/domain/publication-policy.ts";
+import type {
+  AttemptOutcome,
+  PublicationDecision,
+} from "#publishing/domain/publication-policy.ts";
+import { needsReconnect } from "#publishing/domain/target-settlement.ts";
+import type { TargetSettlement } from "#publishing/domain/target-settlement.ts";
+import { TransactionRunner } from "#shared/application/transaction-runner.ts";
+import type { ChannelId, PostId } from "#shared/domain/ids.ts";
+
+import { ChannelHealth } from "./channel-health.ts";
+import { PlatformPublisher } from "./platform-publisher.ts";
+import { PostRepository } from "./post-repository.ts";
+import { PublicationJournal } from "./publication-journal.ts";
+
+// The steps of publishing a post, one use case per step of the durable job
+// (#publishing/infrastructure/workflows). Each reads and writes the post as it
+// is now, so a step run again after a crash, or for a post that changed, does
+// the right thing. A row missing, or in a state no step leaves it in, is a
+// bug, and dies.
+
+const found = <A>(row: Option.Option<A>, what: string) =>
+  Option.match(row, {
+    onNone: () => Effect.die(`${what} is missing`),
+    onSome: Effect.succeed,
+  });
+
+const applied = (written: boolean) =>
+  written ? Effect.void : Effect.die("A row changed under its lock");
+
+const settledOutcome = (target: PostTarget): Effect.Effect<TargetOutcome> => {
+  const { status } = target;
+
+  return status._tag === "pending" || status._tag === "publishing"
+    ? Effect.die(`Target ${target.id} has not settled`)
+    : Effect.succeed(targetOutcomeOf(status));
+};
+
+const scheduleOf = (post: Post) => {
+  const { status } = post;
+
+  return status._tag === "publishing" || status._tag === "finished"
+    ? Effect.succeed(status.schedule)
+    : Effect.die(`Post ${post.id} is ${status._tag}, not publishing`);
+};
+
+/**
+ * The post's job woke for `revision`: start publishing if the post still has
+ * that revision, mark it missed if it is too late, or stop.
+ */
+export const claimPostRun = Effect.fn("Publishing.claimPost")(
+  function* claimPostRun(postId: PostId, revision: number) {
+    const posts = yield* PostRepository;
+    const { transaction } = yield* TransactionRunner;
+
+    return yield* transaction(
+      Effect.gen(function* claimInTransaction() {
+        const { post } = yield* found(yield* posts.lock(postId), "The post");
+        const now = yield* DateTime.now;
+
+        const decision = yield* Effect.fromResult(
+          claimPost(post, revision, now)
+        ).pipe(Effect.orDie);
+
+        const claimed = posts.targets(postId).pipe(
+          Effect.map((targets): PostClaim => ({
+            _tag: "claimed",
+            targets: targets.map((target) => ({
+              round: target.round,
+              targetId: target.id,
+            })),
+          }))
+        );
+
+        const missAll = Effect.fn("Publishing.missPost")(function* missAll(
+          publishing: Post
+        ) {
+          const targets = yield* posts.lockTargets(postId);
+
+          const missed = yield* Effect.all(
+            targets.map((target) =>
+              Effect.fromResult(missTarget(target, now)).pipe(
+                Effect.orDie,
+                Effect.tap((next) =>
+                  posts.updateTarget(next, target).pipe(Effect.flatMap(applied))
+                )
+              )
+            )
+          );
+
+          const finished = yield* Effect.fromResult(
+            finishPost(publishing, missed, now)
+          ).pipe(Effect.orDie);
+
+          yield* applied(yield* posts.update(finished, post));
+
+          const claim: PostClaim = { _tag: "missed" };
+
+          return claim;
+        });
+
+        return yield* Match.valueTags(decision, {
+          cancelled: () => Effect.succeed<PostClaim>({ _tag: "cancelled" }),
+          miss: ({ post: publishing }) => missAll(publishing),
+          resume: () => claimed,
+          start: ({ post: publishing }) =>
+            posts
+              .update(publishing, post)
+              .pipe(Effect.flatMap(applied), Effect.andThen(claimed)),
+          superseded: () => Effect.succeed<PostClaim>({ _tag: "superseded" }),
+        });
+      })
+    );
+  }
+);
+
+/** Every target has settled: the post finishes with what they add up to. */
+export const completePostRun = Effect.fn("Publishing.completePost")(
+  function* completePostRun(postId: PostId) {
+    const posts = yield* PostRepository;
+    const { transaction } = yield* TransactionRunner;
+
+    return yield* transaction(
+      Effect.gen(function* completeInTransaction() {
+        const { post } = yield* found(yield* posts.lock(postId), "The post");
+
+        if (post.status._tag === "finished") {
+          const outcome: PostOutcome = post.status.outcome;
+
+          return outcome;
+        }
+
+        const targets = yield* posts.targets(postId);
+
+        if (!targets.every(isSettled)) {
+          return yield* Effect.die(
+            `Post ${postId} finished before its targets`
+          );
+        }
+
+        const finished = yield* Effect.fromResult(
+          finishPost(post, targets, yield* DateTime.now)
+        ).pipe(Effect.orDie);
+
+        yield* applied(yield* posts.update(finished, post));
+
+        return finished.status._tag === "finished"
+          ? finished.status.outcome
+          : yield* Effect.die("A finished post is not finished");
+      })
+    );
+  }
+);
+
+/**
+ * A target's job started for `round`: start sending it if it is still
+ * pending in that round, or say why not.
+ */
+export const claimTargetRun = Effect.fn("Publishing.claimTarget")(
+  function* claimTargetRun(targetId: PostTargetId, round: number) {
+    const posts = yield* PostRepository;
+    const { transaction } = yield* TransactionRunner;
+
+    return yield* transaction(
+      Effect.gen(function* claimInTransaction() {
+        const target = yield* found(
+          yield* posts.lockTarget(targetId),
+          "The target"
+        );
+
+        const decision = yield* Effect.fromResult(
+          claimTarget(target, round, yield* DateTime.now)
+        ).pipe(Effect.orDie);
+
+        const claimed = Effect.gen(function* claimed() {
+          const { post } = yield* found(
+            yield* posts.find(target.postId),
+            "The post"
+          );
+
+          const schedule = yield* scheduleOf(post);
+
+          const claim: TargetClaim = {
+            _tag: "claimed",
+            channelId: target.channelId,
+            postId: post.id,
+            scheduledAt: schedule.at,
+          };
+
+          return claim;
+        });
+
+        return yield* Match.valueTags(decision, {
+          cancelled: () => Effect.succeed<TargetClaim>({ _tag: "cancelled" }),
+          resume: () => claimed,
+          settled: ({ outcome }) =>
+            Effect.succeed<TargetClaim>({ _tag: "settled", outcome }),
+          start: ({ target: started }) =>
+            posts
+              .updateTarget(started, target)
+              .pipe(Effect.flatMap(applied), Effect.andThen(claimed)),
+          superseded: () => Effect.succeed<TargetClaim>({ _tag: "superseded" }),
+        });
+      })
+    );
+  }
+);
+
+/** One attempt at publishing a claimed target. */
+export interface PublishAttempt {
+  readonly attempt: number;
+  readonly channelId: ChannelId;
+  // Unique to this attempt of this job, and the same for every run of it.
+  readonly idempotencyKey: string;
+  readonly postId: PostId;
+  readonly round: number;
+  readonly scheduledAt: DateTime.Utc;
+  readonly targetId: PostTargetId;
+}
+
+// The journal row is written, and committed, before the call: a run that
+// finds it begun and not ended does not call again. A row that ended returns
+// what it recorded, so a run after a crash decides as the first one did.
+const callPlatform = Effect.fn("Publishing.callPlatform")(
+  function* callPlatform(attempt: PublishAttempt) {
+    const journal = yield* PublicationJournal;
+    const publisher = yield* PlatformPublisher;
+
+    const start = yield* journal.begin({
+      attempt: attempt.attempt,
+      idempotencyKey: attempt.idempotencyKey,
+      round: attempt.round,
+      startedAt: yield* DateTime.now,
+      targetId: attempt.targetId,
+    });
+
+    if (start._tag === "completed") {
+      return { finishedAt: start.finishedAt, outcome: start.outcome };
+    }
+
+    const outcome: AttemptOutcome =
+      start._tag === "inFlight"
+        ? { _tag: "unconfirmed", reason: "interrupted" }
+        : yield* publisher
+            .publish({
+              channelId: attempt.channelId,
+              idempotencyKey: attempt.idempotencyKey,
+              postId: attempt.postId,
+              targetId: attempt.targetId,
+            })
+            .pipe(Effect.catch((error) => Effect.succeed(error)));
+
+    const finishedAt = yield* DateTime.now;
+
+    yield* journal.finish(attempt.idempotencyKey, outcome, finishedAt);
+
+    return { finishedAt, outcome };
+  }
+);
+
+/**
+ * Makes one attempt and decides what follows: retry after a delay, or
+ * settle the target. It is not a transaction: the journal commits before the
+ * platform is called.
+ */
+export const publishAttemptRun = Effect.fn("Publishing.publishAttempt")(
+  function* publishAttemptRun(attempt: PublishAttempt) {
+    const journal = yield* PublicationJournal;
+    const posts = yield* PostRepository;
+
+    const target = yield* found(
+      yield* posts.findTarget(attempt.targetId),
+      "The target"
+    );
+
+    // Cancelled since the last attempt: nothing more is sent.
+    if (isCancelRequested(target)) {
+      const cancelled: PublicationDecision = {
+        _tag: "settle",
+        settlement: { _tag: "cancelled" },
+      };
+
+      return cancelled;
+    }
+
+    const startedAt = yield* DateTime.now;
+    const { finishedAt, outcome } = yield* callPlatform(attempt);
+
+    const decision: PublicationDecision = decide(outcome, {
+      attempt: attempt.attempt,
+      sinceScheduled: DateTime.distance(attempt.scheduledAt, finishedAt),
+    });
+
+    yield* journal.recordAttempt({
+      attempt: attempt.attempt,
+      decision,
+      finishedAt,
+      outcome,
+      round: attempt.round,
+      startedAt,
+      targetId: attempt.targetId,
+    });
+
+    return decision;
+  }
+);
+
+/**
+ * Settles a target with how its attempts ended, and tells the channels
+ * context when its token is gone for good.
+ */
+export const recordTargetRun = Effect.fn("Publishing.recordTarget")(
+  function* recordTargetRun(
+    targetId: PostTargetId,
+    round: number,
+    settlement: TargetSettlement
+  ) {
+    const posts = yield* PostRepository;
+    const health = yield* ChannelHealth;
+    const { transaction } = yield* TransactionRunner;
+
+    return yield* transaction(
+      Effect.gen(function* recordInTransaction() {
+        const target = yield* found(
+          yield* posts.lockTarget(targetId),
+          "The target"
+        );
+
+        if (target.round !== round) {
+          const outcome: TargetOutcome = "superseded";
+
+          return outcome;
+        }
+
+        // An earlier run recorded it.
+        if (isSettled(target)) {
+          return yield* settledOutcome(target);
+        }
+
+        const settled = yield* Result.match(
+          settleTarget(target, settlement, yield* DateTime.now),
+          { onFailure: Effect.die, onSuccess: Effect.succeed }
+        );
+
+        yield* applied(yield* posts.updateTarget(settled, target));
+
+        if (needsReconnect(settlement)) {
+          yield* health.reconnectRequired(target.channelId);
+        }
+
+        return yield* settledOutcome(settled);
+      })
+    );
+  }
+);
