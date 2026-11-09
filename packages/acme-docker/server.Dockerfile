@@ -23,6 +23,12 @@ COPY packages/acme-server/package.json packages/acme-server/
 RUN --mount=type=cache,target=/root/.bun/install/cache \
     bun install --frozen-lockfile --production --filter acme-server
 
+# The C++ runtime that sharp's prebuilt libvips links against, which the
+# distroless base lacks. --parents keeps each library's multiarch folder, so
+# the runtime stage finds it without LD_LIBRARY_PATH on amd64 and arm64.
+RUN mkdir /cc-runtime && \
+    cp --parents /usr/lib/*-linux-gnu/libstdc++.so.6 /usr/lib/*-linux-gnu/libgcc_s.so.1 /cc-runtime/
+
 # Runtime: Bun on a distroless base, with no shell or package manager.
 FROM oven/bun:1.4.4-distroless@sha256:153a951ae40106e125898103e6e990ee0f38e6aee7f561029e26cf9fbed23470
 
@@ -30,6 +36,7 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
+COPY --from=dependencies /cc-runtime/ /
 COPY --from=dependencies /app/node_modules node_modules
 COPY --from=dependencies /app/packages/acme-contract/node_modules packages/acme-contract/node_modules
 COPY --from=dependencies /app/packages/acme-server/node_modules packages/acme-server/node_modules
