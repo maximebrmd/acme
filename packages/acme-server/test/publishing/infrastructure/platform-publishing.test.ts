@@ -6,8 +6,8 @@ import { FetchHttpClient } from "effect/http";
 
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
 import { RoutedPlatformPublisher } from "#publishing/application/routed-platform-publisher.ts";
-import { DrizzlePublicationProgress } from "#publishing/infrastructure/drizzle-publication-progress.ts";
 import { DrizzlePlatformQuota } from "#publishing/infrastructure/drizzle-platform-quota.ts";
+import { DrizzlePublicationProgress } from "#publishing/infrastructure/drizzle-publication-progress.ts";
 import { DrizzleUploadSessions } from "#publishing/infrastructure/drizzle-upload-sessions.ts";
 import { platformClientsWith } from "#publishing/infrastructure/platforms/platform-clients-live.ts";
 import { OpenOutboundGuard } from "#test/channels/support.ts";
@@ -72,9 +72,9 @@ const platformsOn = (instanceUrl: string) =>
           ["token-1"]
         ),
         mediaOf([]),
-      DrizzlePublicationProgress,
-      DrizzleUploadSessions,
-      DrizzlePlatformQuota
+        DrizzlePublicationProgress,
+        DrizzleUploadSessions,
+        DrizzlePlatformQuota
       )
     ),
     Layer.provide(

@@ -56,6 +56,7 @@ export const platformMetricsReaderWith = (settings: MetricsReaderSettings) =>
       });
 
       const tiktok = yield* tiktokMetrics({ api: settings.tiktokApi, http });
+
       const youtube = yield* youtubeMetrics({
         api: settings.youtubeApi,
         http,

@@ -76,8 +76,7 @@ export const readersWith = ({
   readonly appView?: string | undefined;
   readonly tiktokApi?: string | undefined;
   readonly youtubeApi?: string | undefined;
-} = {}
-) =>
+} = {}) =>
   platformMetricsReaderWith({
     blueskyAppView: new URL(appView),
     mastodonScheme: "http:",

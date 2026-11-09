@@ -7,8 +7,8 @@ import type {
   MetricsReadFailure,
   PostToRead,
 } from "#analytics/application/metrics-reader.ts";
-import { PostMetrics } from "#analytics/domain/post-metrics.ts";
 import { isCounted } from "#analytics/domain/counted-platforms.ts";
+import { PostMetrics } from "#analytics/domain/post-metrics.ts";
 import type { ChannelAccount } from "#channels/application/channel-access.ts";
 import { ChannelUnusable } from "#channels/application/channel-unusable.ts";
 import { ChannelIdSchema, PostTargetIdSchema } from "#shared/domain/ids.ts";
