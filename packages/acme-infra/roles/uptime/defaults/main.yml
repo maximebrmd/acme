@@ -1,0 +1,59 @@
+---
+# Where the uptime stack lives on its server, run as the Compose project
+# uptime (`sudo uptime-compose ps`).
+uptime_root: /srv/uptime
+uptime_compose_bin: /usr/local/bin/uptime-compose
+
+# Gatus checks, Caddy is the one public entry. Each is pinned by digest, at
+# the Caddy that compose.self-host.yaml runs.
+uptime_gatus_image: twinproduction/gatus:v5.38.0@sha256:085ed63da963728965d00a3c78aa6167e3bf135218485b893201758e079e8415
+uptime_caddy_image: caddy:2.11.9-alpine@sha256:0bbb055bda6793c999bde78b1b5ce3e89f829fb031af2cf50056ea1246559fee
+
+# Gatus's dashboard, on 127.0.0.1 only: `ssh -N -L 8080:127.0.0.1:8080 ops@<uptime_hostname>`.
+uptime_gatus_port: 8080
+
+# What each environment of uptime_environments is checked for, every
+# uptime_check_interval: the status a request answers, and how fast, in
+# milliseconds, through Cloudflare as people reach it. A redirect is a
+# failure, so a page that sends visitors to Cloudflare Access's sign-in never
+# passes for the page itself.
+uptime_checks:
+  - name: site
+    host: site
+    path: /
+    status: 200
+    max_ms: 1000
+  - name: docs
+    host: docs
+    path: /
+    status: 200
+    max_ms: 1000
+  - name: web app
+    host: app
+    path: /sign-in
+    status: 200
+    max_ms: 2000
+  # Readiness: the server answers and its database too.
+  - name: api
+    host: app
+    path: /api/ready
+    status: 204
+    max_ms: 1000
+uptime_check_interval: 1m
+
+# Each host name's certificate, checked hourly, must be valid for this long.
+uptime_certificate_hours: 336
+
+# Each host name must resolve through a public resolver outside Cloudflare,
+# which serves the zone.
+uptime_dns_resolver: 9.9.9.9
+uptime_dns_interval: 5m
+
+# A heartbeat that goes this long without news alerts. Grafana sends one
+# every 5 minutes or so, so two may go missing first.
+uptime_heartbeat_interval: 15m
+
+# Telegram hears of a check after this many failures in a row, and that it
+# passes again after this many successes.
+uptime_failure_threshold: 3
+uptime_success_threshold: 2

@@ -29,3 +29,47 @@
         src: ../roles/acme_runtime/templates/host.env.j2
         dest: "{{ render_dir }}/{{ inventory_hostname }}/host.env"
         mode: "0600"
+
+- name: Render the templates of the uptime server
+  hosts: uptime
+  gather_facts: false
+  connection: local
+  vars:
+    ansible_python_interpreter: "{{ ansible_playbook_python }}"
+    # What the role reads from the server: the gatus user's ids.
+    uptime_gatus_user: { uid: 990, group: 990 }
+    uptime_templates: "{{ playbook_dir }}/../roles/uptime/templates"
+  vars_files:
+    - ../roles/uptime/defaults/main.yml
+    - ../roles/uptime/vars/main.yml
+  tasks:
+    - name: Create the server's folders
+      ansible.builtin.file:
+        path: "{{ render_dir }}/{{ inventory_hostname }}/{{ item }}"
+        state: directory
+        mode: "0700"
+      loop: [gatus, caddy]
+
+    - name: Render the configuration as the role does
+      ansible.builtin.set_fact:
+        uptime_gatus_config: "{{ lookup('ansible.builtin.template', uptime_templates ~ '/config.yaml.j2') }}"
+        uptime_caddyfile: "{{ lookup('ansible.builtin.template', uptime_templates ~ '/Caddyfile.j2') }}"
+        uptime_caddy_routes: "{{ lookup('ansible.builtin.template', uptime_templates ~ '/routes.caddy.j2') }}"
+
+    - name: Write the configuration
+      ansible.builtin.copy:
+        dest: "{{ render_dir }}/{{ inventory_hostname }}/{{ item.path }}"
+        content: "{{ item.content }}"
+        mode: "0600"
+      loop:
+        - { path: gatus/config.yaml, content: "{{ uptime_gatus_config }}" }
+        - { path: caddy/Caddyfile, content: "{{ uptime_caddyfile }}" }
+        - { path: caddy/routes.caddy, content: "{{ uptime_caddy_routes }}" }
+      loop_control:
+        label: "{{ item.path }}"
+
+    - name: Render the stack's Compose file
+      ansible.builtin.template:
+        src: ../roles/uptime/templates/compose.yaml.j2
+        dest: "{{ render_dir }}/{{ inventory_hostname }}/compose.yaml"
+        mode: "0600"

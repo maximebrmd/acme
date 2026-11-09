@@ -1,0 +1,21 @@
+# Managed by Ansible (acme-infra). Caddy is the uptime server's one public
+# entry, on port 443 alone: it gets a Let's Encrypt certificate for
+# {{ uptime_hostname }} through the TLS-ALPN challenge, so port 80 stays
+# closed, and answers as routes.caddy says.
+{
+	auto_https disable_redirects
+	# No HTTP/3: only TCP port 443 is published.
+	servers {
+		protocols h1 h2
+	}
+}
+
+{{ uptime_hostname }} {
+	tls {
+		issuer acme {
+			disable_http_challenge
+		}
+	}
+
+	import /etc/caddy/routes.caddy
+}

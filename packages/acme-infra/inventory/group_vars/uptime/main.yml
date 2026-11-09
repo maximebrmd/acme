@@ -1,0 +1,57 @@
+---
+# The uptime server: another Hetzner server, which checks the public
+# endpoints of production and the sandbox from outside and alerts on
+# Telegram, and hears production's Grafana's heartbeat. It shares nothing
+# with them: no secret, no tunnel, no private network. Every value below is a
+# placeholder until the server and its DNS name exist.
+server_hostname: acme-uptime
+
+# No tunnel: SSH listens on port 22, key-only and rate limited, and the admin
+# user may forward one local port, to Gatus's dashboard on 127.0.0.1:
+#   ssh -N -L 8080:127.0.0.1:8080 ops@uptime.example.com
+ssh_via_tunnel: false
+uptime_gatus_port: 8080
+ssh_tcp_forwarding: local
+ssh_permit_open: ["127.0.0.1:{{ uptime_gatus_port }}"]
+
+# A kernel update reboots it an hour after the servers it watches, so it
+# watches them through theirs.
+unattended_reboot_time: "04:30"
+
+# The settings acme_preflight searches for placeholders.
+acme_preflight_names:
+  - ansible_host
+  - admin_ssh_public_keys
+  - uptime_hostname
+  - uptime_environments
+
+# The uptime server's name, with an A (and AAAA) record to its address that
+# Cloudflare does not proxy: Caddy gets its certificate for it, and Grafana
+# sends its heartbeat to it.
+uptime_hostname: uptime.example.com
+
+# Whether Caddy also serves Gatus's dashboard, read-only, at
+# https://<uptime_hostname>/: a public status page, which is the owner's
+# decision (README.md, "Uptime"). Off, the dashboard is reached through SSH.
+uptime_public_status: false
+
+# What it checks: each environment's public host names, as its
+# group_vars/<environment>/main.yml has them (tests/test_uptime.py keeps them
+# equal), for the checks the uptime role lists.
+uptime_environments:
+  - name: production
+    hostnames:
+      app: app.example.com
+      site: example.com
+      docs: docs.example.com
+    # Its Grafana sends a heartbeat (acme_heartbeat_url), with the token
+    # PRODUCTION_HEARTBEAT_TOKEN generated here.
+    heartbeat: true
+  - name: sandbox
+    hostnames:
+      app: sandbox.example.com
+      site: site-sandbox.example.com
+      docs: docs-sandbox.example.com
+    # Behind Cloudflare Access throughout: each check carries the service
+    # token SANDBOX_ACCESS_CLIENT_ID and SANDBOX_ACCESS_CLIENT_SECRET.
+    access: true

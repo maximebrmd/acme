@@ -1,0 +1,72 @@
+# Managed by Ansible (acme-infra): the uptime server's stack, the Compose
+# project uptime in {{ uptime_root }} (`sudo uptime-compose ps`). Gatus
+# publishes its dashboard on 127.0.0.1 only; Caddy alone publishes a port to
+# the world, 443, which Docker opens whatever ufw says.
+#
+# Each service's `acme.config` label is the digest of the configuration it
+# mounts, so `up` recreates a service whose configuration changed, and only
+# that one.
+name: uptime
+
+x-service: &service
+  restart: unless-stopped
+  # Containers write only to their volumes and tmpfs mounts, hold no
+  # capability they are not given, and gain no privilege.
+  read_only: true
+  security_opt: [no-new-privileges:true]
+  cap_drop: [ALL]
+  tmpfs: [/tmp:size=16m]
+  logging:
+    driver: local
+    options:
+      max-size: 10m
+      max-file: "3"
+
+services:
+  # Gatus's image holds its binary alone, so it has no health check of its
+  # own: the uptime role reads /health once the stack is up.
+  gatus:
+    <<: *service
+    image: {{ uptime_gatus_image }}
+    user: "{{ uptime_gatus_user.uid }}:{{ uptime_gatus_user.group }}"
+    environment:
+      GATUS_CONFIG_PATH: /config/config.yaml
+    # The Telegram bot, the Access service tokens and the heartbeat tokens
+    # the configuration names.
+    env_file: [credentials.env, secrets.env]
+    labels:
+      acme.config: "{{ uptime_gatus_config | hash('sha256') }}"
+    volumes:
+      # The folder, not the file: Ansible replaces files whole, and a file
+      # mounted alone would keep showing the old one.
+      - ./gatus:/config:ro
+      - ./data:/data
+    ports:
+      - 127.0.0.1:{{ uptime_gatus_port }}:8080
+
+  caddy:
+    <<: *service
+    image: {{ uptime_caddy_image }}
+    cap_add: [NET_BIND_SERVICE]
+    labels:
+      acme.config: "{{ (uptime_caddyfile ~ uptime_caddy_routes) | hash('sha256') }}"
+    volumes:
+      - ./caddy:/etc/caddy:ro
+      # The certificate and its key.
+      - caddy-data:/data
+      - caddy-config:/config
+    ports:
+      - 443:443
+    depends_on: [gatus]
+    healthcheck:
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+      start_interval: 1s
+      # Caddy's admin API, which listens on localhost inside the container.
+      test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1:2019/config/]
+
+volumes:
+  caddy-data:
+  caddy-config:

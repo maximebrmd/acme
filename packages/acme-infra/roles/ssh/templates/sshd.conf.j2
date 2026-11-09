@@ -11,5 +11,8 @@ ClientAliveInterval 300
 ClientAliveCountMax 2
 X11Forwarding no
 AllowAgentForwarding no
-AllowTcpForwarding no
+AllowTcpForwarding {{ ssh_tcp_forwarding }}
+{% if ssh_tcp_forwarding != 'no' %}
+PermitOpen {{ ssh_permit_open | join(' ') if ssh_permit_open else 'none' }}
+{% endif %}
 PermitTunnel no

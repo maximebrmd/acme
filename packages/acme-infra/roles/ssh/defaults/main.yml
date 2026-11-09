@@ -1,0 +1,6 @@
+---
+# Port forwarding over SSH: none on Acme's servers. `local` lets the admin
+# user forward a local port (ssh -L), to the addresses ssh_permit_open lists
+# only, as host:port.
+ssh_tcp_forwarding: "no"
+ssh_permit_open: []

@@ -1,0 +1,20 @@
+---
+# The uptime server's credentials. Copy this file to
+# group_vars/uptime/vault.yml (Git ignores it), fill it in, and encrypt it:
+# `uv run ansible-vault encrypt group_vars/uptime/vault.yml`. Or leave the
+# vault out and write the same values on the server (README.md, "Uptime").
+# Values shown are placeholders. None of them is production's or the
+# sandbox's: the uptime server has credentials of its own.
+
+# Written to /srv/uptime/credentials.env as NAME='value'. A value cannot hold
+# a quote, a backslash or a line break.
+uptime_credentials:
+  # A bot of its own, from @BotFather, and the chat it writes to, which may
+  # be the one production's Grafana writes to.
+  TELEGRAM_BOT_TOKEN: REPLACE
+  TELEGRAM_CHAT_ID: REPLACE
+  # A Cloudflare Access service token (Zero Trust › Access › Service
+  # credentials), which the sandbox's Access application lets in with a
+  # Service Auth policy.
+  SANDBOX_ACCESS_CLIENT_ID: REPLACE
+  SANDBOX_ACCESS_CLIENT_SECRET: REPLACE

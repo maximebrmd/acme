@@ -1,0 +1,118 @@
+# Managed by Ansible (acme-infra): Gatus's configuration, generated from the
+# inventory (uptime_environments, and the uptime role's defaults). It holds
+# no secret: Gatus replaces each ${NAME} with the value its environment gives
+# (credentials.env and secrets.env), and reads $$ as a single $.
+{% macro text(value) %}{{ value | string | replace('$', '$$') | to_json }}{% endmacro %}
+{% macro secret(environment, name) %}"{{ '${%s_%s}' | format(environment.name | upper, name) }}"{% endmacro %}
+
+storage:
+  type: sqlite
+  path: /data/data.db
+
+web:
+  port: 8080
+
+ui:
+  title: Acme uptime
+  header: Acme uptime
+  dashboard-heading: Acme uptime
+  dashboard-subheading: Acme's public endpoints, checked from outside
+  default-sort-by: group
+
+alerting:
+  telegram:
+    token: "${TELEGRAM_BOT_TOKEN}"
+    id: "${TELEGRAM_CHAT_ID}"
+    default-alert:
+      failure-threshold: {{ uptime_failure_threshold }}
+      success-threshold: {{ uptime_success_threshold }}
+      send-on-resolved: true
+
+endpoints:
+{% for environment in uptime_environments %}
+  # The checks of {{ environment.name }}{{ ', behind Cloudflare Access: each request carries its service token' if environment.access | default(false) else '' }}.
+{% for check in uptime_checks %}
+{% set url = 'https://' ~ environment.hostnames[check.host] ~ check.path %}
+  - name: {{ text(check.name) }}
+    group: {{ text(environment.name) }}
+    url: {{ text(url) }}
+    interval: {{ uptime_check_interval }}
+    client:
+      ignore-redirect: true
+{% if environment.access | default(false) %}
+    headers:
+      CF-Access-Client-Id: {{ secret(environment, 'ACCESS_CLIENT_ID') }}
+      CF-Access-Client-Secret: {{ secret(environment, 'ACCESS_CLIENT_SECRET') }}
+{% endif %}
+    conditions:
+      - "[STATUS] == {{ check.status }}"
+      - "[RESPONSE_TIME] < {{ check.max_ms }}"
+    alerts:
+      - type: telegram
+        description: {{ text(url) }}
+{% endfor %}
+{% for host in environment.hostnames.values() | unique %}
+  - name: {{ text('certificate of ' ~ host) }}
+    group: {{ text(environment.name) }}
+    url: {{ text('https://' ~ host ~ '/') }}
+    interval: 1h
+    client:
+      ignore-redirect: true
+    conditions:
+      - "[CONNECTED] == true"
+      - "[CERTIFICATE_EXPIRATION] > {{ uptime_certificate_hours }}h"
+    alerts:
+      - type: telegram
+        failure-threshold: 1
+        success-threshold: 1
+        description: {{ text('The certificate of ' ~ host ~ ' expires within ' ~ uptime_certificate_hours ~ ' hours, or cannot be read.') }}
+  - name: {{ text('dns of ' ~ host) }}
+    group: {{ text(environment.name) }}
+    url: {{ text(uptime_dns_resolver) }}
+    interval: {{ uptime_dns_interval }}
+    dns:
+      query-name: {{ text(host) }}
+      query-type: A
+    conditions:
+      - "[DNS_RCODE] == NOERROR"
+      - "[BODY] == pat(*.*.*.*)"
+    alerts:
+      - type: telegram
+        failure-threshold: 2
+        description: {{ text(host ~ ' does not resolve through ' ~ uptime_dns_resolver ~ '.') }}
+{% endfor %}
+{% endfor %}
+  # The uptime server's own certificate, which Caddy renews: the heartbeats
+  # need it.
+  - name: {{ text('certificate of ' ~ uptime_hostname) }}
+    group: uptime
+    url: {{ text('https://' ~ uptime_hostname ~ '/') }}
+    interval: 1h
+    client:
+      ignore-redirect: true
+    conditions:
+      - "[CONNECTED] == true"
+      - "[CERTIFICATE_EXPIRATION] > {{ uptime_certificate_hours }}h"
+    alerts:
+      - type: telegram
+        failure-threshold: 1
+        success-threshold: 1
+        description: {{ text('The certificate of ' ~ uptime_hostname ~ ', which Caddy renews on this server, expires within ' ~ uptime_certificate_hours ~ ' hours, or cannot be read.') }}
+
+{% set heartbeats = uptime_environments | selectattr('heartbeat', 'defined') | selectattr('heartbeat') | list %}
+# Grafana's heartbeats: each environment's Grafana posts one every few minutes
+# (acme_heartbeat_url), with the token generated here, so silence means its
+# own alerts may not reach anyone either.
+external-endpoints:{{ ' []' if not heartbeats else '' }}
+{% for environment in heartbeats %}
+  - name: grafana heartbeat
+    group: {{ text(environment.name) }}
+    token: {{ secret(environment, 'HEARTBEAT_TOKEN') }}
+    heartbeat:
+      interval: {{ uptime_heartbeat_interval }}
+    alerts:
+      - type: telegram
+        failure-threshold: 1
+        success-threshold: 1
+        description: {{ text(environment.name ~ "'s Grafana has sent no heartbeat for " ~ uptime_heartbeat_interval ~ ': its own alerts may not reach anyone. Check that Grafana runs there and reaches ' ~ uptime_hostname ~ '.') }}
+{% endfor %}

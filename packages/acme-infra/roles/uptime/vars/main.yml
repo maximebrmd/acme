@@ -1,0 +1,14 @@
+---
+# The credentials Gatus needs, by name: its Telegram bot, and the Cloudflare
+# Access service token of each environment behind Access.
+uptime_required_credentials: >-
+  {{ ['TELEGRAM_BOT_TOKEN', 'TELEGRAM_CHAT_ID']
+     + (uptime_environments | selectattr('access', 'defined') | selectattr('access')
+        | map(attribute='name') | map('upper')
+        | product(['_ACCESS_CLIENT_ID', '_ACCESS_CLIENT_SECRET']) | map('join') | list) }}
+
+# The heartbeat tokens generated on the server, one per environment whose
+# Grafana sends a heartbeat.
+uptime_heartbeat_tokens: >-
+  {{ uptime_environments | selectattr('heartbeat', 'defined') | selectattr('heartbeat')
+     | map(attribute='name') | map('upper') | map('regex_replace', '$', '_HEARTBEAT_TOKEN') | list }}
