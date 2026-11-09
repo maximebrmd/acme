@@ -191,4 +191,29 @@ layer(RepositoryTest)("the channel job queries", (it) => {
         }
       })
   );
+
+  it.effect(
+    "find the channels to warn before those already marked, however many",
+    () =>
+      Effect.gen(function* warnFirst() {
+        const channels = yield* ChannelRepository;
+        const workspaceId = yield* freshWorkspace;
+
+        // Marked long ago and never reconnected, as accumulate over time.
+        const stale = yield* stored(workspaceId, { _tag: "nonExpiring" });
+
+        yield* save(markRefreshNeeded(stale, at("-1000 days")));
+
+        yield* stored(workspaceId, lasting(at("-54 days"), at("6 days")));
+
+        // A run that can take one channel takes one to warn about.
+        const [first] = yield* channels.needingReconnect({
+          leadTime: Duration.days(7),
+          limit: 1,
+          now: start,
+        });
+
+        assert.deepStrictEqual(first?.status, { _tag: "active" });
+      })
+  );
 });

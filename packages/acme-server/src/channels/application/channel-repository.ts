@@ -51,10 +51,12 @@ export class ChannelRepository extends Context.Service<
       readonly limit: number;
     }) => Effect.Effect<readonly Channel[], DatabaseError>;
     /**
-     * Channels the user must reconnect, soonest first, at most `limit`: those
-     * that need a refresh, and the active ones whose token cannot be renewed
-     * and is within `leadTime` of expiring, or half its lifetime when that is
-     * shorter (`reconnectWarningFrom` in the domain), expired or not.
+     * Channels the user must reconnect, at most `limit`: the active ones
+     * whose token cannot be renewed and is within `leadTime` of expiring, or
+     * half its lifetime when that is shorter (`reconnectWarningFrom` in the
+     * domain), expired or not; then those that already need a refresh. Each
+     * group comes oldest change first. The active ones come first, so the
+     * marked channels nobody reconnects never crowd them out.
      */
     readonly needingReconnect: (request: {
       readonly leadTime: Duration.Duration;

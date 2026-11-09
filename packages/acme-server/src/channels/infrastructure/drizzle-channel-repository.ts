@@ -250,7 +250,12 @@ export const DrizzleChannelRepository = Layer.effect(
               )
             )
           )
-          .orderBy(asc(channels.updatedAt), asc(channels.id))
+          // False sorts first: the active channels, then the marked ones.
+          .orderBy(
+            sql`${channels.status} = 'refreshNeeded'`,
+            asc(channels.updatedAt),
+            asc(channels.id)
+          )
           .limit(limit)
           .pipe(
             Effect.mapError(failed),
