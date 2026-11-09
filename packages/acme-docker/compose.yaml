@@ -85,6 +85,9 @@ services:
       MP_DATABASE: /data/mailpit.db
       MP_SMTP_AUTH_ACCEPT_ANY: "true"
       MP_SMTP_AUTH_ALLOW_INSECURE: "true"
+      # Mailpit looks up each client's reverse DNS before greeting, which takes
+      # about 10 s under Docker Desktop and stalls the email tests.
+      MP_SMTP_DISABLE_RDNS: "true"
     ports:
       - 127.0.0.1:${ACME_SMTP_PORT:-11025}:1025
       - 127.0.0.1:${ACME_MAILPIT_PORT:-18025}:8025
