@@ -320,12 +320,19 @@ export interface StudioState {
 export interface Studio {
   readonly me: Me;
   readonly state: Ref.Ref<StudioState>;
+  /** What happens while the server answers an export, as a test sets it. */
+  readonly whileExporting: Ref.Ref<Effect.Effect<void>>;
 }
 
 export const makeStudio = (me: Me = studioMe) =>
-  Ref.make<StudioState>({ changes: [], invitations: [invitation], posts }).pipe(
-    Effect.map((state): Studio => ({ me, state }))
-  );
+  Effect.all({
+    state: Ref.make<StudioState>({
+      changes: [],
+      invitations: [invitation],
+      posts,
+    }),
+    whileExporting: Ref.make<Effect.Effect<void>>(Effect.void),
+  }).pipe(Effect.map((refs): Studio => ({ me, ...refs })));
 
 const record = (studio: Studio, change: string) =>
   Ref.update(studio.state, (current) => ({
@@ -770,6 +777,7 @@ export const studioGroupsLive = (studio: Studio) =>
             const now = yield* DateTime.now;
 
             yield* record(studio, "export");
+            yield* Effect.flatten(Ref.get(studio.whileExporting));
 
             return HttpApiSchema.withHeaders({
               body: exported(now),

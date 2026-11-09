@@ -699,6 +699,66 @@ describe("acme account", () => {
       }).pipe(Effect.scoped, Effect.provide(filesLayer))
   );
 
+  it.effect(
+    "never replaces a file made while the server answers, unless forced",
+    () =>
+      Effect.gen(function* raced() {
+        const session = yield* signedIn();
+        const fs = yield* FileSystem.FileSystem;
+        const path = yield* Path.Path;
+        const file = path.join(session.directory, "my-data.json");
+
+        yield* Ref.set(
+          session.studio.whileExporting,
+          fs.writeFileString(file, "the user's own notes\n").pipe(Effect.orDie)
+        );
+
+        assert.include(
+          yield* session.refused(["account", "export", "-o", file]),
+          `${file} exists already`
+        );
+        assert.strictEqual(
+          yield* fs.readFileString(file),
+          "the user's own notes\n"
+        );
+        // Nothing is left beside it.
+        assert.deepStrictEqual(
+          (yield* fs.readDirectory(session.directory)).filter((name) =>
+            name.includes("my-data")
+          ),
+          ["my-data.json"]
+        );
+      }).pipe(Effect.scoped, Effect.provide(filesLayer))
+  );
+
+  it.effect(
+    "writes the copy through no link someone left beside the file",
+    () =>
+      Effect.gen(function* planted() {
+        const session = yield* signedIn();
+        const fs = yield* FileSystem.FileSystem;
+        const path = yield* Path.Path;
+        const file = path.join(session.directory, "my-data.json");
+        const elsewhere = path.join(session.directory, "elsewhere.txt");
+
+        yield* fs.writeFileString(elsewhere, "untouched\n", { mode: 0o666 });
+        yield* fs.symlink(elsewhere, `${file}.tmp`);
+
+        for (const args of [
+          ["account", "export", "-o", file],
+          ["account", "export", "-o", file, "--force"],
+        ]) {
+          yield* session.printed(args);
+
+          assert.strictEqual(
+            yield* fs.readFileString(elsewhere),
+            "untouched\n"
+          );
+          assert.strictEqual((yield* fs.stat(file)).mode % 0o1000, 0o600);
+        }
+      }).pipe(Effect.scoped, Effect.provide(filesLayer))
+  );
+
   it.effect("lists the applications that act for the user", () =>
     Effect.gen(function* apps() {
       const session = yield* signedIn();
