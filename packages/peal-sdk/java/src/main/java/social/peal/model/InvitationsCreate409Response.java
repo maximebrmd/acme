@@ -13,110 +13,128 @@
 
 package social.peal.model;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.StringJoiner;
 import java.util.Objects;
-import java.util.Map;
-import java.util.HashMap;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.fasterxml.jackson.annotation.JsonValue;
+import com.google.gson.TypeAdapter;
+import com.google.gson.annotations.JsonAdapter;
+import com.google.gson.annotations.SerializedName;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 import java.util.Arrays;
 import social.peal.model.AlreadyMemberEncoded;
 import social.peal.model.TooManyInvitationsEncoded;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+
 
 
 import java.io.IOException;
+import java.lang.reflect.Type;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
-import social.peal.ApiClient;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonParseException;
+import com.google.gson.TypeAdapter;
+import com.google.gson.TypeAdapterFactory;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.annotations.JsonAdapter;
+import com.google.gson.annotations.SerializedName;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonParseException;
+
 import social.peal.JSON;
 
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.27.0")
-@JsonDeserialize(using=InvitationsCreate409Response.InvitationsCreate409ResponseDeserializer.class)
-@JsonSerialize(using = InvitationsCreate409Response.InvitationsCreate409ResponseSerializer.class)
 public class InvitationsCreate409Response extends AbstractOpenApiSchema {
     private static final Logger log = Logger.getLogger(InvitationsCreate409Response.class.getName());
 
-    public static class InvitationsCreate409ResponseSerializer extends StdSerializer<InvitationsCreate409Response> {
-        public InvitationsCreate409ResponseSerializer(Class<InvitationsCreate409Response> t) {
-            super(t);
-        }
-
-        public InvitationsCreate409ResponseSerializer() {
-            this(null);
-        }
-
+    public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
+        @SuppressWarnings("unchecked")
         @Override
-        public void serialize(InvitationsCreate409Response value, JsonGenerator jgen, SerializerProvider provider) throws IOException, JsonProcessingException {
-            jgen.writeObject(value.getActualInstance());
-        }
-    }
-
-    public static class InvitationsCreate409ResponseDeserializer extends StdDeserializer<InvitationsCreate409Response> {
-        public InvitationsCreate409ResponseDeserializer() {
-            this(InvitationsCreate409Response.class);
-        }
-
-        public InvitationsCreate409ResponseDeserializer(Class<?> vc) {
-            super(vc);
-        }
-
-        @Override
-        public InvitationsCreate409Response deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException, JsonProcessingException {
-            JsonNode tree = ctxt.readTree(jp);
-
-            Object deserialized = null;
-            // deserialize AlreadyMemberEncoded
-            try {
-                deserialized = tree.traverse(jp.getCodec()).readValueAs(AlreadyMemberEncoded.class);
-                InvitationsCreate409Response ret = new InvitationsCreate409Response();
-                ret.setActualInstance(deserialized);
-                return ret;
-            } catch (Exception e) {
-                // deserialization failed, continue, log to help debugging
-                log.log(Level.FINER, "Input data does not match 'InvitationsCreate409Response'", e);
+        public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
+            if (!InvitationsCreate409Response.class.isAssignableFrom(type.getRawType())) {
+                return null; // this class only serializes 'InvitationsCreate409Response' and its subtypes
             }
+            final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
+            final TypeAdapter<AlreadyMemberEncoded> adapterAlreadyMemberEncoded = gson.getDelegateAdapter(this, TypeToken.get(AlreadyMemberEncoded.class));
+            final TypeAdapter<TooManyInvitationsEncoded> adapterTooManyInvitationsEncoded = gson.getDelegateAdapter(this, TypeToken.get(TooManyInvitationsEncoded.class));
 
-            // deserialize TooManyInvitationsEncoded
-            try {
-                deserialized = tree.traverse(jp.getCodec()).readValueAs(TooManyInvitationsEncoded.class);
-                InvitationsCreate409Response ret = new InvitationsCreate409Response();
-                ret.setActualInstance(deserialized);
-                return ret;
-            } catch (Exception e) {
-                // deserialization failed, continue, log to help debugging
-                log.log(Level.FINER, "Input data does not match 'InvitationsCreate409Response'", e);
-            }
+            return (TypeAdapter<T>) new TypeAdapter<InvitationsCreate409Response>() {
+                @Override
+                public void write(JsonWriter out, InvitationsCreate409Response value) throws IOException {
+                    if (value == null || value.getActualInstance() == null) {
+                        elementAdapter.write(out, null);
+                        return;
+                    }
 
-            throw new IOException("Failed deserialization for InvitationsCreate409Response: no match found");
-        }
+                    // check if the actual instance is of the type `AlreadyMemberEncoded`
+                    if (value.getActualInstance() instanceof AlreadyMemberEncoded) {
+                        JsonElement element = adapterAlreadyMemberEncoded.toJsonTree((AlreadyMemberEncoded)value.getActualInstance());
+                        elementAdapter.write(out, element);
+                        return;
+                    }
+                    // check if the actual instance is of the type `TooManyInvitationsEncoded`
+                    if (value.getActualInstance() instanceof TooManyInvitationsEncoded) {
+                        JsonElement element = adapterTooManyInvitationsEncoded.toJsonTree((TooManyInvitationsEncoded)value.getActualInstance());
+                        elementAdapter.write(out, element);
+                        return;
+                    }
+                    throw new IOException("Failed to serialize as the type doesn't match anyOf schemas: AlreadyMemberEncoded, TooManyInvitationsEncoded");
+                }
 
-        /**
-         * Handle deserialization of the 'null' value.
-         */
-        @Override
-        public InvitationsCreate409Response getNullValue(DeserializationContext ctxt) throws JsonMappingException {
-            throw new JsonMappingException(ctxt.getParser(), "InvitationsCreate409Response cannot be null");
+                @Override
+                public InvitationsCreate409Response read(JsonReader in) throws IOException {
+                    Object deserialized = null;
+                    JsonElement jsonElement = elementAdapter.read(in);
+
+                    ArrayList<String> errorMessages = new ArrayList<>();
+                    TypeAdapter actualAdapter = elementAdapter;
+
+                    // deserialize AlreadyMemberEncoded
+                    try {
+                        // validate the JSON object to see if any exception is thrown
+                        AlreadyMemberEncoded.validateJsonElement(jsonElement);
+                        actualAdapter = adapterAlreadyMemberEncoded;
+                        InvitationsCreate409Response ret = new InvitationsCreate409Response();
+                        ret.setActualInstance(actualAdapter.fromJsonTree(jsonElement));
+                        return ret;
+                    } catch (Exception e) {
+                        // deserialization failed, continue
+                        errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for AlreadyMemberEncoded failed with `%s`.", e.getMessage()));
+                        log.log(Level.FINER, "Input data does not match schema 'AlreadyMemberEncoded'", e);
+                    }
+                    // deserialize TooManyInvitationsEncoded
+                    try {
+                        // validate the JSON object to see if any exception is thrown
+                        TooManyInvitationsEncoded.validateJsonElement(jsonElement);
+                        actualAdapter = adapterTooManyInvitationsEncoded;
+                        InvitationsCreate409Response ret = new InvitationsCreate409Response();
+                        ret.setActualInstance(actualAdapter.fromJsonTree(jsonElement));
+                        return ret;
+                    } catch (Exception e) {
+                        // deserialization failed, continue
+                        errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for TooManyInvitationsEncoded failed with `%s`.", e.getMessage()));
+                        log.log(Level.FINER, "Input data does not match schema 'TooManyInvitationsEncoded'", e);
+                    }
+
+                    throw new IOException(String.format(java.util.Locale.ROOT, "Failed deserialization for InvitationsCreate409Response: no class matches result, expected at least 1. Detailed failure message for anyOf schemas: %s. JSON: %s", errorMessages, jsonElement.toString()));
+                }
+            }.nullSafe();
         }
     }
 
@@ -127,20 +145,14 @@ public class InvitationsCreate409Response extends AbstractOpenApiSchema {
         super("anyOf", Boolean.FALSE);
     }
 
-    public InvitationsCreate409Response(AlreadyMemberEncoded o) {
-        this();
-        setActualInstance(o);
-    }
-
-    public InvitationsCreate409Response(TooManyInvitationsEncoded o) {
-        this();
+    public InvitationsCreate409Response(Object o) {
+        super("anyOf", Boolean.FALSE);
         setActualInstance(o);
     }
 
     static {
         schemas.put("AlreadyMemberEncoded", AlreadyMemberEncoded.class);
         schemas.put("TooManyInvitationsEncoded", TooManyInvitationsEncoded.class);
-        JSON.registerDescendants(InvitationsCreate409Response.class, Collections.unmodifiableMap(schemas));
     }
 
     @Override
@@ -154,16 +166,15 @@ public class InvitationsCreate409Response extends AbstractOpenApiSchema {
      * AlreadyMemberEncoded, TooManyInvitationsEncoded
      *
      * It could be an instance of the 'anyOf' schemas.
-     * The anyOf child schemas may themselves be a composed schema (allOf, anyOf, anyOf).
      */
     @Override
     public void setActualInstance(Object instance) {
-        if (JSON.isInstanceOf(AlreadyMemberEncoded.class, instance, new HashSet<Class<?>>())) {
+        if (instance instanceof AlreadyMemberEncoded) {
             super.setActualInstance(instance);
             return;
         }
 
-        if (JSON.isInstanceOf(TooManyInvitationsEncoded.class, instance, new HashSet<Class<?>>())) {
+        if (instance instanceof TooManyInvitationsEncoded) {
             super.setActualInstance(instance);
             return;
         }
@@ -177,6 +188,7 @@ public class InvitationsCreate409Response extends AbstractOpenApiSchema {
      *
      * @return The actual instance (AlreadyMemberEncoded, TooManyInvitationsEncoded)
      */
+    @SuppressWarnings("unchecked")
     @Override
     public Object getActualInstance() {
         return super.getActualInstance();
@@ -204,42 +216,52 @@ public class InvitationsCreate409Response extends AbstractOpenApiSchema {
         return (TooManyInvitationsEncoded)super.getActualInstance();
     }
 
-
-
-  /**
-   * Convert the instance into URL query string.
-   *
-   * @return URL query string
-   */
-  public String toUrlQueryString() {
-    return toUrlQueryString(null);
-  }
-
-  /**
-   * Convert the instance into URL query string.
-   *
-   * @param prefix prefix of the query string
-   * @return URL query string
-   */
-  public String toUrlQueryString(String prefix) {
-    String suffix = "";
-    String containerSuffix = "";
-    String containerPrefix = "";
-    if (prefix == null) {
-      // style=form, explode=true, e.g. /pet?name=cat&type=manx
-      prefix = "";
-    } else {
-      // deepObject style e.g. /pet?id[name]=cat&id[type]=manx
-      prefix = prefix + "[";
-      suffix = "]";
-      containerSuffix = "]";
-      containerPrefix = "[";
+    /**
+     * Validates the JSON Element and throws an exception if issues found
+     *
+     * @param jsonElement JSON Element
+     * @throws IOException if the JSON Element is invalid with respect to InvitationsCreate409Response
+     */
+    public static void validateJsonElement(JsonElement jsonElement) throws IOException {
+        // validate anyOf schemas one by one
+        ArrayList<String> errorMessages = new ArrayList<>();
+        // validate the json string with AlreadyMemberEncoded
+        try {
+            AlreadyMemberEncoded.validateJsonElement(jsonElement);
+            return;
+        } catch (Exception e) {
+            errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for AlreadyMemberEncoded failed with `%s`.", e.getMessage()));
+            // continue to the next one
+        }
+        // validate the json string with TooManyInvitationsEncoded
+        try {
+            TooManyInvitationsEncoded.validateJsonElement(jsonElement);
+            return;
+        } catch (Exception e) {
+            errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for TooManyInvitationsEncoded failed with `%s`.", e.getMessage()));
+            // continue to the next one
+        }
+        throw new IOException(String.format(java.util.Locale.ROOT, "The JSON string is invalid for InvitationsCreate409Response with anyOf schemas: AlreadyMemberEncoded, TooManyInvitationsEncoded. no class match the result, expected at least 1. Detailed failure message for anyOf schemas: %s. JSON: %s", errorMessages, jsonElement.toString()));
     }
 
-    StringJoiner joiner = new StringJoiner("&");
+    /**
+     * Create an instance of InvitationsCreate409Response given an JSON string
+     *
+     * @param jsonString JSON string
+     * @return An instance of InvitationsCreate409Response
+     * @throws IOException if the JSON string is invalid with respect to InvitationsCreate409Response
+     */
+    public static InvitationsCreate409Response fromJson(String jsonString) throws IOException {
+        return JSON.getGson().fromJson(jsonString, InvitationsCreate409Response.class);
+    }
 
-    return null;
-  }
-
+    /**
+     * Convert an instance of InvitationsCreate409Response to an JSON string
+     *
+     * @return JSON string
+     */
+    public String toJson() {
+        return JSON.getGson().toJson(this);
+    }
 }
 

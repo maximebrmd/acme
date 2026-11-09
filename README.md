@@ -415,6 +415,7 @@ and uv's:
 bun run sdk:generate   # rewrite every SDK from the contract
 bun run sdk:build      # build each one as its registry would get it, and load it
 bun run sdk:check      # what CI runs: fails when the committed SDKs are stale
+bun run sdk:test       # each SDK calls a stand-in API, as its users would
 ```
 
 ### End-to-end tests

@@ -13,6 +13,14 @@
  */
 
 import { mapValues } from '../runtime.js';
+import type { Permission } from './Permission.js';
+import {
+    PermissionFromJSON,
+    PermissionFromJSONTyped,
+    PermissionToJSON,
+    PermissionToJSONTyped,
+} from './Permission.js';
+
 /**
  * 
  * @export
@@ -38,49 +46,12 @@ export interface ApiKey {
     /**
      * 
      */
-    permissions: Array<ApiKeyPermissionsEnum>;
+    permissions: Array<Permission>;
     /**
      * 
      */
     start: string | null;
 }
-
-
-/**
- * @export
- */
-export const ApiKeyPermissionsEnum = {
-    AnalyticsRead: 'analytics:read',
-    ApiKeyCreate: 'apiKey:create',
-    ApiKeyRead: 'apiKey:read',
-    ApiKeyUpdate: 'apiKey:update',
-    ApiKeyDelete: 'apiKey:delete',
-    AssistantUse: 'assistant:use',
-    BillingRead: 'billing:read',
-    BillingManage: 'billing:manage',
-    ChannelRead: 'channel:read',
-    ChannelConnect: 'channel:connect',
-    ChannelDisconnect: 'channel:disconnect',
-    InvitationCreate: 'invitation:create',
-    InvitationCancel: 'invitation:cancel',
-    MediaRead: 'media:read',
-    MediaUpload: 'media:upload',
-    MediaDelete: 'media:delete',
-    MemberCreate: 'member:create',
-    MemberUpdate: 'member:update',
-    MemberDelete: 'member:delete',
-    OrganizationUpdate: 'organization:update',
-    OrganizationDelete: 'organization:delete',
-    PostRead: 'post:read',
-    PostCreate: 'post:create',
-    PostUpdate: 'post:update',
-    PostDelete: 'post:delete',
-    PostSchedule: 'post:schedule',
-    PostApprove: 'post:approve',
-    PostPublish: 'post:publish',
-} as const;
-export type ApiKeyPermissionsEnum = typeof ApiKeyPermissionsEnum[keyof typeof ApiKeyPermissionsEnum];
-
 
 /**
  * Check if a given object implements the ApiKey interface.
@@ -109,7 +80,7 @@ export function ApiKeyFromJSONTyped(json: any, ignoreDiscriminator: boolean): Ap
         'expiresAt': json['expiresAt'],
         'id': json['id'],
         'name': json['name'],
-        'permissions': json['permissions'],
+        'permissions': ((json['permissions'] as Array<any>).map(PermissionFromJSON)),
         'start': json['start'],
     };
 }
@@ -129,7 +100,7 @@ export function ApiKeyToJSONTyped(value?: ApiKey | null, ignoreDiscriminator: bo
         'expiresAt': value['expiresAt'],
         'id': value['id'],
         'name': value['name'],
-        'permissions': value['permissions'],
+        'permissions': ((value['permissions'] as Array<any>).map(PermissionToJSON)),
         'start': value['start'],
     };
 }

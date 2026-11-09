@@ -13,38 +13,51 @@
 
 package social.peal.model;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.StringJoiner;
 import java.util.Objects;
-import java.util.Map;
-import java.util.HashMap;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.fasterxml.jackson.annotation.JsonValue;
+import com.google.gson.TypeAdapter;
+import com.google.gson.annotations.JsonAdapter;
+import com.google.gson.annotations.SerializedName;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 import java.util.Arrays;
 import social.peal.model.NoticeChannel;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonNull;
+import com.google.gson.JsonParseException;
+import com.google.gson.TypeAdapterFactory;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.TypeAdapter;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 
-import social.peal.ApiClient;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import social.peal.JSON;
+
 /**
  * NoticeEventAnyOf4
  */
-@JsonPropertyOrder({
-  NoticeEventAnyOf4.JSON_PROPERTY_TAG,
-  NoticeEventAnyOf4.JSON_PROPERTY_CHANNEL,
-  NoticeEventAnyOf4.JSON_PROPERTY_EXPIRES_AT
-})
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.27.0")
 public class NoticeEventAnyOf4 {
   /**
    * Gets or Sets tag
    */
+  @JsonAdapter(TagEnum.Adapter.class)
   public enum TagEnum {
-    CHANNEL_RECONNECT_SOON(String.valueOf("ChannelReconnectSoon"));
+    CHANNEL_RECONNECT_SOON("ChannelReconnectSoon");
 
     private String value;
 
@@ -52,7 +65,6 @@ public class NoticeEventAnyOf4 {
       this.value = value;
     }
 
-    @JsonValue
     public String getValue() {
       return value;
     }
@@ -62,7 +74,6 @@ public class NoticeEventAnyOf4 {
       return String.valueOf(value);
     }
 
-    @JsonCreator
     public static TagEnum fromValue(String value) {
       for (TagEnum b : TagEnum.values()) {
         if (b.value.equals(value)) {
@@ -71,21 +82,42 @@ public class NoticeEventAnyOf4 {
       }
       throw new IllegalArgumentException("Unexpected value '" + value + "'");
     }
+
+    public static class Adapter extends TypeAdapter<TagEnum> {
+      @Override
+      public void write(final JsonWriter jsonWriter, final TagEnum enumeration) throws IOException {
+        jsonWriter.value(enumeration.getValue());
+      }
+
+      @Override
+      public TagEnum read(final JsonReader jsonReader) throws IOException {
+        String value =  jsonReader.nextString();
+        return TagEnum.fromValue(value);
+      }
+    }
+
+    public static void validateJsonElement(JsonElement jsonElement) throws IOException {
+      String value = jsonElement.getAsString();
+      TagEnum.fromValue(value);
+    }
   }
 
-  public static final String JSON_PROPERTY_TAG = "_tag";
+  public static final String SERIALIZED_NAME_TAG = "_tag";
+  @SerializedName(SERIALIZED_NAME_TAG)
   @javax.annotation.Nonnull
   private TagEnum tag;
 
-  public static final String JSON_PROPERTY_CHANNEL = "channel";
+  public static final String SERIALIZED_NAME_CHANNEL = "channel";
+  @SerializedName(SERIALIZED_NAME_CHANNEL)
   @javax.annotation.Nonnull
   private NoticeChannel channel;
 
-  public static final String JSON_PROPERTY_EXPIRES_AT = "expiresAt";
+  public static final String SERIALIZED_NAME_EXPIRES_AT = "expiresAt";
+  @SerializedName(SERIALIZED_NAME_EXPIRES_AT)
   @javax.annotation.Nonnull
   private String expiresAt;
 
-  public NoticeEventAnyOf4() { 
+  public NoticeEventAnyOf4() {
   }
 
   public NoticeEventAnyOf4 tag(@javax.annotation.Nonnull TagEnum tag) {
@@ -98,15 +130,10 @@ public class NoticeEventAnyOf4 {
    * @return tag
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_TAG, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public TagEnum getTag() {
     return tag;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_TAG, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setTag(@javax.annotation.Nonnull TagEnum tag) {
     this.tag = tag;
   }
@@ -122,15 +149,10 @@ public class NoticeEventAnyOf4 {
    * @return channel
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_CHANNEL, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public NoticeChannel getChannel() {
     return channel;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_CHANNEL, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setChannel(@javax.annotation.Nonnull NoticeChannel channel) {
     this.channel = channel;
   }
@@ -146,23 +168,16 @@ public class NoticeEventAnyOf4 {
    * @return expiresAt
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_EXPIRES_AT, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public String getExpiresAt() {
     return expiresAt;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_EXPIRES_AT, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setExpiresAt(@javax.annotation.Nonnull String expiresAt) {
     this.expiresAt = expiresAt;
   }
 
 
-  /**
-   * Return true if this NoticeEvent_anyOf_4 object is equal to o.
-   */
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -201,54 +216,105 @@ public class NoticeEventAnyOf4 {
     return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
 
-  /**
-   * Convert the instance into URL query string.
-   *
-   * @return URL query string
-   */
-  public String toUrlQueryString() {
-    return toUrlQueryString(null);
+
+  public static HashSet<String> openapiFields;
+  public static HashSet<String> openapiRequiredFields;
+
+  static {
+    // a set of all properties/fields (JSON key names)
+    openapiFields = new HashSet<String>(Arrays.asList("_tag", "channel", "expiresAt"));
+
+    // a set of required properties/fields (JSON key names)
+    openapiRequiredFields = new HashSet<String>(Arrays.asList("_tag", "channel", "expiresAt"));
   }
 
   /**
-   * Convert the instance into URL query string.
+   * Validates the JSON Element and throws an exception if issues found
    *
-   * @param prefix prefix of the query string
-   * @return URL query string
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to NoticeEventAnyOf4
    */
-  public String toUrlQueryString(String prefix) {
-    String suffix = "";
-    String containerSuffix = "";
-    String containerPrefix = "";
-    if (prefix == null) {
-      // style=form, explode=true, e.g. /pet?name=cat&type=manx
-      prefix = "";
-    } else {
-      // deepObject style e.g. /pet?id[name]=cat&id[type]=manx
-      prefix = prefix + "[";
-      suffix = "]";
-      containerSuffix = "]";
-      containerPrefix = "[";
+  public static void validateJsonElement(JsonElement jsonElement) throws IOException {
+      if (jsonElement == null) {
+        if (!NoticeEventAnyOf4.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The required field(s) %s in NoticeEventAnyOf4 is not found in the empty JSON string", NoticeEventAnyOf4.openapiRequiredFields.toString()));
+        }
+      }
+
+      Set<Map.Entry<String, JsonElement>> entries = jsonElement.getAsJsonObject().entrySet();
+      // check to see if the JSON string contains additional fields
+      for (Map.Entry<String, JsonElement> entry : entries) {
+        if (!NoticeEventAnyOf4.openapiFields.contains(entry.getKey())) {
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The field `%s` in the JSON string is not defined in the `NoticeEventAnyOf4` properties. JSON: %s", entry.getKey(), jsonElement.toString()));
+        }
+      }
+
+      // check to make sure all required properties/fields are present in the JSON string
+      for (String requiredField : NoticeEventAnyOf4.openapiRequiredFields) {
+        if (jsonElement.getAsJsonObject().get(requiredField) == null) {
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The required field `%s` is not found in the JSON string: %s", requiredField, jsonElement.toString()));
+        }
+      }
+        JsonObject jsonObj = jsonElement.getAsJsonObject();
+      if (!jsonObj.get("_tag").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `_tag` to be a primitive type in the JSON string but got `%s`", jsonObj.get("_tag").toString()));
+      }
+      // validate the required field `_tag`
+      TagEnum.validateJsonElement(jsonObj.get("_tag"));
+      // validate the required field `channel`
+      NoticeChannel.validateJsonElement(jsonObj.get("channel"));
+      if (!jsonObj.get("expiresAt").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `expiresAt` to be a primitive type in the JSON string but got `%s`", jsonObj.get("expiresAt").toString()));
+      }
+  }
+
+  public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
+       if (!NoticeEventAnyOf4.class.isAssignableFrom(type.getRawType())) {
+         return null; // this class only serializes 'NoticeEventAnyOf4' and its subtypes
+       }
+       final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
+       final TypeAdapter<NoticeEventAnyOf4> thisAdapter
+                        = gson.getDelegateAdapter(this, TypeToken.get(NoticeEventAnyOf4.class));
+
+       return (TypeAdapter<T>) new TypeAdapter<NoticeEventAnyOf4>() {
+           @Override
+           public void write(JsonWriter out, NoticeEventAnyOf4 value) throws IOException {
+             JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
+             elementAdapter.write(out, obj);
+           }
+
+           @Override
+           public NoticeEventAnyOf4 read(JsonReader in) throws IOException {
+             JsonElement jsonElement = elementAdapter.read(in);
+             validateJsonElement(jsonElement);
+             return thisAdapter.fromJsonTree(jsonElement);
+           }
+
+       }.nullSafe();
     }
+  }
 
-    StringJoiner joiner = new StringJoiner("&");
+  /**
+   * Create an instance of NoticeEventAnyOf4 given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of NoticeEventAnyOf4
+   * @throws IOException if the JSON string is invalid with respect to NoticeEventAnyOf4
+   */
+  public static NoticeEventAnyOf4 fromJson(String jsonString) throws IOException {
+    return JSON.getGson().fromJson(jsonString, NoticeEventAnyOf4.class);
+  }
 
-    // add `_tag` to the URL query string
-    if (getTag() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%s_tag%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getTag()))));
-    }
-
-    // add `channel` to the URL query string
-    if (getChannel() != null) {
-      joiner.add(getChannel().toUrlQueryString(prefix + "channel" + suffix));
-    }
-
-    // add `expiresAt` to the URL query string
-    if (getExpiresAt() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%sexpiresAt%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getExpiresAt()))));
-    }
-
-    return joiner.toString();
+  /**
+   * Convert an instance of NoticeEventAnyOf4 to an JSON string
+   *
+   * @return JSON string
+   */
+  public String toJson() {
+    return JSON.getGson().toJson(this);
   }
 }
 

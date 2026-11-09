@@ -112,6 +112,8 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: bun run sdk:check
       - run: bun run sdk:build
+      # Each SDK calls a stand-in API as its users would (scripts/test.ts).
+      - run: bun run sdk:test
 
   # The end-to-end tests: a new member's first steps in Chromium, against the
   # server and the web app's production build, each started by the run on

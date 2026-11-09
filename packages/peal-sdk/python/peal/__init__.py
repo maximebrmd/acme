@@ -15,7 +15,7 @@
 """  # noqa: E501
 
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 # Define package exports
 __all__ = [
@@ -169,6 +169,7 @@ __all__ = [
     "NotificationPreferencesEmail",
     "PaidPlan",
     "PeriodUsage",
+    "Permission",
     "Plan",
     "PlanAllowances",
     "PlanLimit",
@@ -399,6 +400,7 @@ from peal.models.notification_preferences_change_email import NotificationPrefer
 from peal.models.notification_preferences_email import NotificationPreferencesEmail as NotificationPreferencesEmail
 from peal.models.paid_plan import PaidPlan as PaidPlan
 from peal.models.period_usage import PeriodUsage as PeriodUsage
+from peal.models.permission import Permission as Permission
 from peal.models.plan import Plan as Plan
 from peal.models.plan_allowances import PlanAllowances as PlanAllowances
 from peal.models.plan_limit import PlanLimit as PlanLimit

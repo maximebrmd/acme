@@ -13,17 +13,13 @@
 
 package social.peal.model;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.StringJoiner;
 import java.util.Objects;
-import java.util.Map;
-import java.util.HashMap;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.fasterxml.jackson.annotation.JsonValue;
+import com.google.gson.TypeAdapter;
+import com.google.gson.annotations.JsonAdapter;
+import com.google.gson.annotations.SerializedName;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -31,53 +27,72 @@ import social.peal.model.ChannelMetrics;
 import social.peal.model.EngagementDay;
 import social.peal.model.MetricTotals;
 import social.peal.model.TopPost;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonNull;
+import com.google.gson.JsonParseException;
+import com.google.gson.TypeAdapterFactory;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.TypeAdapter;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 
-import social.peal.ApiClient;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import social.peal.JSON;
+
 /**
  * AnalyticsSummary
  */
-@JsonPropertyOrder({
-  AnalyticsSummary.JSON_PROPERTY_CHANNELS,
-  AnalyticsSummary.JSON_PROPERTY_DAYS,
-  AnalyticsSummary.JSON_PROPERTY_FROM,
-  AnalyticsSummary.JSON_PROPERTY_TIME_ZONE,
-  AnalyticsSummary.JSON_PROPERTY_TO,
-  AnalyticsSummary.JSON_PROPERTY_TOP_POSTS,
-  AnalyticsSummary.JSON_PROPERTY_TOTALS
-})
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.27.0")
 public class AnalyticsSummary {
-  public static final String JSON_PROPERTY_CHANNELS = "channels";
+  public static final String SERIALIZED_NAME_CHANNELS = "channels";
+  @SerializedName(SERIALIZED_NAME_CHANNELS)
   @javax.annotation.Nonnull
   private List<ChannelMetrics> channels = new ArrayList<>();
 
-  public static final String JSON_PROPERTY_DAYS = "days";
+  public static final String SERIALIZED_NAME_DAYS = "days";
+  @SerializedName(SERIALIZED_NAME_DAYS)
   @javax.annotation.Nonnull
   private List<EngagementDay> days = new ArrayList<>();
 
-  public static final String JSON_PROPERTY_FROM = "from";
+  public static final String SERIALIZED_NAME_FROM = "from";
+  @SerializedName(SERIALIZED_NAME_FROM)
   @javax.annotation.Nonnull
   private String from;
 
-  public static final String JSON_PROPERTY_TIME_ZONE = "timeZone";
+  public static final String SERIALIZED_NAME_TIME_ZONE = "timeZone";
+  @SerializedName(SERIALIZED_NAME_TIME_ZONE)
   @javax.annotation.Nonnull
   private String timeZone;
 
-  public static final String JSON_PROPERTY_TO = "to";
+  public static final String SERIALIZED_NAME_TO = "to";
+  @SerializedName(SERIALIZED_NAME_TO)
   @javax.annotation.Nonnull
   private String to;
 
-  public static final String JSON_PROPERTY_TOP_POSTS = "topPosts";
+  public static final String SERIALIZED_NAME_TOP_POSTS = "topPosts";
+  @SerializedName(SERIALIZED_NAME_TOP_POSTS)
   @javax.annotation.Nonnull
   private List<TopPost> topPosts = new ArrayList<>();
 
-  public static final String JSON_PROPERTY_TOTALS = "totals";
+  public static final String SERIALIZED_NAME_TOTALS = "totals";
+  @SerializedName(SERIALIZED_NAME_TOTALS)
   @javax.annotation.Nonnull
   private MetricTotals totals;
 
-  public AnalyticsSummary() { 
+  public AnalyticsSummary() {
   }
 
   public AnalyticsSummary channels(@javax.annotation.Nonnull List<ChannelMetrics> channels) {
@@ -98,15 +113,10 @@ public class AnalyticsSummary {
    * @return channels
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_CHANNELS, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public List<ChannelMetrics> getChannels() {
     return channels;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_CHANNELS, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setChannels(@javax.annotation.Nonnull List<ChannelMetrics> channels) {
     this.channels = channels;
   }
@@ -130,15 +140,10 @@ public class AnalyticsSummary {
    * @return days
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_DAYS, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public List<EngagementDay> getDays() {
     return days;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_DAYS, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setDays(@javax.annotation.Nonnull List<EngagementDay> days) {
     this.days = days;
   }
@@ -154,15 +159,10 @@ public class AnalyticsSummary {
    * @return from
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_FROM, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public String getFrom() {
     return from;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_FROM, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setFrom(@javax.annotation.Nonnull String from) {
     this.from = from;
   }
@@ -178,15 +178,10 @@ public class AnalyticsSummary {
    * @return timeZone
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_TIME_ZONE, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public String getTimeZone() {
     return timeZone;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_TIME_ZONE, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setTimeZone(@javax.annotation.Nonnull String timeZone) {
     this.timeZone = timeZone;
   }
@@ -202,15 +197,10 @@ public class AnalyticsSummary {
    * @return to
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_TO, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public String getTo() {
     return to;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_TO, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setTo(@javax.annotation.Nonnull String to) {
     this.to = to;
   }
@@ -234,15 +224,10 @@ public class AnalyticsSummary {
    * @return topPosts
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_TOP_POSTS, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public List<TopPost> getTopPosts() {
     return topPosts;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_TOP_POSTS, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setTopPosts(@javax.annotation.Nonnull List<TopPost> topPosts) {
     this.topPosts = topPosts;
   }
@@ -258,23 +243,16 @@ public class AnalyticsSummary {
    * @return totals
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_TOTALS, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public MetricTotals getTotals() {
     return totals;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_TOTALS, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setTotals(@javax.annotation.Nonnull MetricTotals totals) {
     this.totals = totals;
   }
 
 
-  /**
-   * Return true if this AnalyticsSummary object is equal to o.
-   */
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -321,89 +299,136 @@ public class AnalyticsSummary {
     return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
 
-  /**
-   * Convert the instance into URL query string.
-   *
-   * @return URL query string
-   */
-  public String toUrlQueryString() {
-    return toUrlQueryString(null);
+
+  public static HashSet<String> openapiFields;
+  public static HashSet<String> openapiRequiredFields;
+
+  static {
+    // a set of all properties/fields (JSON key names)
+    openapiFields = new HashSet<String>(Arrays.asList("channels", "days", "from", "timeZone", "to", "topPosts", "totals"));
+
+    // a set of required properties/fields (JSON key names)
+    openapiRequiredFields = new HashSet<String>(Arrays.asList("channels", "days", "from", "timeZone", "to", "topPosts", "totals"));
   }
 
   /**
-   * Convert the instance into URL query string.
+   * Validates the JSON Element and throws an exception if issues found
    *
-   * @param prefix prefix of the query string
-   * @return URL query string
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to AnalyticsSummary
    */
-  public String toUrlQueryString(String prefix) {
-    String suffix = "";
-    String containerSuffix = "";
-    String containerPrefix = "";
-    if (prefix == null) {
-      // style=form, explode=true, e.g. /pet?name=cat&type=manx
-      prefix = "";
-    } else {
-      // deepObject style e.g. /pet?id[name]=cat&id[type]=manx
-      prefix = prefix + "[";
-      suffix = "]";
-      containerSuffix = "]";
-      containerPrefix = "[";
-    }
-
-    StringJoiner joiner = new StringJoiner("&");
-
-    // add `channels` to the URL query string
-    if (getChannels() != null) {
-      for (int i = 0; i < getChannels().size(); i++) {
-        if (getChannels().get(i) != null) {
-          joiner.add(getChannels().get(i).toUrlQueryString(String.format(java.util.Locale.ROOT, "%schannels%s%s", prefix, suffix,
-          "".equals(suffix) ? "" : String.format(java.util.Locale.ROOT, "%s%d%s", containerPrefix, i, containerSuffix))));
+  public static void validateJsonElement(JsonElement jsonElement) throws IOException {
+      if (jsonElement == null) {
+        if (!AnalyticsSummary.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The required field(s) %s in AnalyticsSummary is not found in the empty JSON string", AnalyticsSummary.openapiRequiredFields.toString()));
         }
       }
-    }
 
-    // add `days` to the URL query string
-    if (getDays() != null) {
-      for (int i = 0; i < getDays().size(); i++) {
-        if (getDays().get(i) != null) {
-          joiner.add(getDays().get(i).toUrlQueryString(String.format(java.util.Locale.ROOT, "%sdays%s%s", prefix, suffix,
-          "".equals(suffix) ? "" : String.format(java.util.Locale.ROOT, "%s%d%s", containerPrefix, i, containerSuffix))));
+      Set<Map.Entry<String, JsonElement>> entries = jsonElement.getAsJsonObject().entrySet();
+      // check to see if the JSON string contains additional fields
+      for (Map.Entry<String, JsonElement> entry : entries) {
+        if (!AnalyticsSummary.openapiFields.contains(entry.getKey())) {
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The field `%s` in the JSON string is not defined in the `AnalyticsSummary` properties. JSON: %s", entry.getKey(), jsonElement.toString()));
         }
       }
-    }
 
-    // add `from` to the URL query string
-    if (getFrom() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%sfrom%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getFrom()))));
-    }
-
-    // add `timeZone` to the URL query string
-    if (getTimeZone() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%stimeZone%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getTimeZone()))));
-    }
-
-    // add `to` to the URL query string
-    if (getTo() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%sto%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getTo()))));
-    }
-
-    // add `topPosts` to the URL query string
-    if (getTopPosts() != null) {
-      for (int i = 0; i < getTopPosts().size(); i++) {
-        if (getTopPosts().get(i) != null) {
-          joiner.add(getTopPosts().get(i).toUrlQueryString(String.format(java.util.Locale.ROOT, "%stopPosts%s%s", prefix, suffix,
-          "".equals(suffix) ? "" : String.format(java.util.Locale.ROOT, "%s%d%s", containerPrefix, i, containerSuffix))));
+      // check to make sure all required properties/fields are present in the JSON string
+      for (String requiredField : AnalyticsSummary.openapiRequiredFields) {
+        if (jsonElement.getAsJsonObject().get(requiredField) == null) {
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The required field `%s` is not found in the JSON string: %s", requiredField, jsonElement.toString()));
         }
       }
-    }
+        JsonObject jsonObj = jsonElement.getAsJsonObject();
+      if (jsonObj.get("channels") != null) {
+        if (!jsonObj.get("channels").isJsonArray()) {
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `channels` to be an array in the JSON string but got `%s`", jsonObj.get("channels").toString()));
+        }
+        JsonArray jsonArraychannels = jsonObj.getAsJsonArray("channels");
+        // validate the required field `channels` (array)
+        for (int i = 0; i < jsonArraychannels.size(); i++) {
+          ChannelMetrics.validateJsonElement(jsonArraychannels.get(i));
+        }
+      }
+      if (jsonObj.get("days") != null) {
+        if (!jsonObj.get("days").isJsonArray()) {
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `days` to be an array in the JSON string but got `%s`", jsonObj.get("days").toString()));
+        }
+        JsonArray jsonArraydays = jsonObj.getAsJsonArray("days");
+        // validate the required field `days` (array)
+        for (int i = 0; i < jsonArraydays.size(); i++) {
+          EngagementDay.validateJsonElement(jsonArraydays.get(i));
+        }
+      }
+      if (!jsonObj.get("from").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `from` to be a primitive type in the JSON string but got `%s`", jsonObj.get("from").toString()));
+      }
+      if (!jsonObj.get("timeZone").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `timeZone` to be a primitive type in the JSON string but got `%s`", jsonObj.get("timeZone").toString()));
+      }
+      if (!jsonObj.get("to").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `to` to be a primitive type in the JSON string but got `%s`", jsonObj.get("to").toString()));
+      }
+      if (jsonObj.get("topPosts") != null) {
+        if (!jsonObj.get("topPosts").isJsonArray()) {
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `topPosts` to be an array in the JSON string but got `%s`", jsonObj.get("topPosts").toString()));
+        }
+        JsonArray jsonArraytopPosts = jsonObj.getAsJsonArray("topPosts");
+        // validate the required field `topPosts` (array)
+        for (int i = 0; i < jsonArraytopPosts.size(); i++) {
+          TopPost.validateJsonElement(jsonArraytopPosts.get(i));
+        }
+      }
+      // validate the required field `totals`
+      MetricTotals.validateJsonElement(jsonObj.get("totals"));
+  }
 
-    // add `totals` to the URL query string
-    if (getTotals() != null) {
-      joiner.add(getTotals().toUrlQueryString(prefix + "totals" + suffix));
-    }
+  public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
+       if (!AnalyticsSummary.class.isAssignableFrom(type.getRawType())) {
+         return null; // this class only serializes 'AnalyticsSummary' and its subtypes
+       }
+       final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
+       final TypeAdapter<AnalyticsSummary> thisAdapter
+                        = gson.getDelegateAdapter(this, TypeToken.get(AnalyticsSummary.class));
 
-    return joiner.toString();
+       return (TypeAdapter<T>) new TypeAdapter<AnalyticsSummary>() {
+           @Override
+           public void write(JsonWriter out, AnalyticsSummary value) throws IOException {
+             JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
+             elementAdapter.write(out, obj);
+           }
+
+           @Override
+           public AnalyticsSummary read(JsonReader in) throws IOException {
+             JsonElement jsonElement = elementAdapter.read(in);
+             validateJsonElement(jsonElement);
+             return thisAdapter.fromJsonTree(jsonElement);
+           }
+
+       }.nullSafe();
+    }
+  }
+
+  /**
+   * Create an instance of AnalyticsSummary given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of AnalyticsSummary
+   * @throws IOException if the JSON string is invalid with respect to AnalyticsSummary
+   */
+  public static AnalyticsSummary fromJson(String jsonString) throws IOException {
+    return JSON.getGson().fromJson(jsonString, AnalyticsSummary.class);
+  }
+
+  /**
+   * Convert an instance of AnalyticsSummary to an JSON string
+   *
+   * @return JSON string
+   */
+  public String toJson() {
+    return JSON.getGson().toJson(this);
   }
 }
 

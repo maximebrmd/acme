@@ -13,84 +13,99 @@
 
 package social.peal.model;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.StringJoiner;
 import java.util.Objects;
-import java.util.Map;
-import java.util.HashMap;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.fasterxml.jackson.annotation.JsonValue;
+import com.google.gson.TypeAdapter;
+import com.google.gson.annotations.JsonAdapter;
+import com.google.gson.annotations.SerializedName;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 import java.util.Arrays;
 import social.peal.model.FailureReason;
 import social.peal.model.PostTargetStatus;
 import social.peal.model.TargetOptions;
 import social.peal.model.UnconfirmedReason;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonNull;
+import com.google.gson.JsonParseException;
+import com.google.gson.TypeAdapterFactory;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.TypeAdapter;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 
-import social.peal.ApiClient;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import social.peal.JSON;
+
 /**
  * PostTarget
  */
-@JsonPropertyOrder({
-  PostTarget.JSON_PROPERTY_CHANNEL_ID,
-  PostTarget.JSON_PROPERTY_FAILURE_REASON,
-  PostTarget.JSON_PROPERTY_ID,
-  PostTarget.JSON_PROPERTY_KEPT_PRIVATE,
-  PostTarget.JSON_PROPERTY_OPTIONS,
-  PostTarget.JSON_PROPERTY_PERMALINK,
-  PostTarget.JSON_PROPERTY_PUBLISHED_AT,
-  PostTarget.JSON_PROPERTY_ROUND,
-  PostTarget.JSON_PROPERTY_STATUS,
-  PostTarget.JSON_PROPERTY_UNCONFIRMED_REASON
-})
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.27.0")
 public class PostTarget {
-  public static final String JSON_PROPERTY_CHANNEL_ID = "channelId";
+  public static final String SERIALIZED_NAME_CHANNEL_ID = "channelId";
+  @SerializedName(SERIALIZED_NAME_CHANNEL_ID)
   @javax.annotation.Nonnull
   private String channelId;
 
-  public static final String JSON_PROPERTY_FAILURE_REASON = "failureReason";
+  public static final String SERIALIZED_NAME_FAILURE_REASON = "failureReason";
+  @SerializedName(SERIALIZED_NAME_FAILURE_REASON)
   @javax.annotation.Nullable
   private FailureReason failureReason;
 
-  public static final String JSON_PROPERTY_ID = "id";
+  public static final String SERIALIZED_NAME_ID = "id";
+  @SerializedName(SERIALIZED_NAME_ID)
   @javax.annotation.Nonnull
   private String id;
 
-  public static final String JSON_PROPERTY_KEPT_PRIVATE = "keptPrivate";
+  public static final String SERIALIZED_NAME_KEPT_PRIVATE = "keptPrivate";
+  @SerializedName(SERIALIZED_NAME_KEPT_PRIVATE)
   @javax.annotation.Nullable
   private Boolean keptPrivate;
 
-  public static final String JSON_PROPERTY_OPTIONS = "options";
+  public static final String SERIALIZED_NAME_OPTIONS = "options";
+  @SerializedName(SERIALIZED_NAME_OPTIONS)
   @javax.annotation.Nullable
   private TargetOptions options;
 
-  public static final String JSON_PROPERTY_PERMALINK = "permalink";
+  public static final String SERIALIZED_NAME_PERMALINK = "permalink";
+  @SerializedName(SERIALIZED_NAME_PERMALINK)
   @javax.annotation.Nullable
   private String permalink;
 
-  public static final String JSON_PROPERTY_PUBLISHED_AT = "publishedAt";
+  public static final String SERIALIZED_NAME_PUBLISHED_AT = "publishedAt";
+  @SerializedName(SERIALIZED_NAME_PUBLISHED_AT)
   @javax.annotation.Nullable
   private String publishedAt;
 
-  public static final String JSON_PROPERTY_ROUND = "round";
+  public static final String SERIALIZED_NAME_ROUND = "round";
+  @SerializedName(SERIALIZED_NAME_ROUND)
   @javax.annotation.Nonnull
   private Integer round;
 
-  public static final String JSON_PROPERTY_STATUS = "status";
+  public static final String SERIALIZED_NAME_STATUS = "status";
+  @SerializedName(SERIALIZED_NAME_STATUS)
   @javax.annotation.Nonnull
   private PostTargetStatus status;
 
-  public static final String JSON_PROPERTY_UNCONFIRMED_REASON = "unconfirmedReason";
+  public static final String SERIALIZED_NAME_UNCONFIRMED_REASON = "unconfirmedReason";
+  @SerializedName(SERIALIZED_NAME_UNCONFIRMED_REASON)
   @javax.annotation.Nullable
   private UnconfirmedReason unconfirmedReason;
 
-  public PostTarget() { 
+  public PostTarget() {
   }
 
   public PostTarget channelId(@javax.annotation.Nonnull String channelId) {
@@ -103,15 +118,10 @@ public class PostTarget {
    * @return channelId
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_CHANNEL_ID, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public String getChannelId() {
     return channelId;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_CHANNEL_ID, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setChannelId(@javax.annotation.Nonnull String channelId) {
     this.channelId = channelId;
   }
@@ -127,15 +137,10 @@ public class PostTarget {
    * @return failureReason
    */
   @javax.annotation.Nullable
-  @JsonProperty(value = JSON_PROPERTY_FAILURE_REASON, required = false)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public FailureReason getFailureReason() {
     return failureReason;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_FAILURE_REASON, required = false)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setFailureReason(@javax.annotation.Nullable FailureReason failureReason) {
     this.failureReason = failureReason;
   }
@@ -151,15 +156,10 @@ public class PostTarget {
    * @return id
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_ID, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public String getId() {
     return id;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_ID, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setId(@javax.annotation.Nonnull String id) {
     this.id = id;
   }
@@ -175,15 +175,10 @@ public class PostTarget {
    * @return keptPrivate
    */
   @javax.annotation.Nullable
-  @JsonProperty(value = JSON_PROPERTY_KEPT_PRIVATE, required = false)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public Boolean getKeptPrivate() {
     return keptPrivate;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_KEPT_PRIVATE, required = false)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setKeptPrivate(@javax.annotation.Nullable Boolean keptPrivate) {
     this.keptPrivate = keptPrivate;
   }
@@ -199,15 +194,10 @@ public class PostTarget {
    * @return options
    */
   @javax.annotation.Nullable
-  @JsonProperty(value = JSON_PROPERTY_OPTIONS, required = false)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public TargetOptions getOptions() {
     return options;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_OPTIONS, required = false)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setOptions(@javax.annotation.Nullable TargetOptions options) {
     this.options = options;
   }
@@ -223,15 +213,10 @@ public class PostTarget {
    * @return permalink
    */
   @javax.annotation.Nullable
-  @JsonProperty(value = JSON_PROPERTY_PERMALINK, required = false)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public String getPermalink() {
     return permalink;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_PERMALINK, required = false)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setPermalink(@javax.annotation.Nullable String permalink) {
     this.permalink = permalink;
   }
@@ -247,15 +232,10 @@ public class PostTarget {
    * @return publishedAt
    */
   @javax.annotation.Nullable
-  @JsonProperty(value = JSON_PROPERTY_PUBLISHED_AT, required = false)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public String getPublishedAt() {
     return publishedAt;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_PUBLISHED_AT, required = false)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setPublishedAt(@javax.annotation.Nullable String publishedAt) {
     this.publishedAt = publishedAt;
   }
@@ -273,15 +253,10 @@ public class PostTarget {
    * @return round
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_ROUND, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public Integer getRound() {
     return round;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_ROUND, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setRound(@javax.annotation.Nonnull Integer round) {
     this.round = round;
   }
@@ -297,15 +272,10 @@ public class PostTarget {
    * @return status
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_STATUS, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public PostTargetStatus getStatus() {
     return status;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_STATUS, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setStatus(@javax.annotation.Nonnull PostTargetStatus status) {
     this.status = status;
   }
@@ -321,23 +291,16 @@ public class PostTarget {
    * @return unconfirmedReason
    */
   @javax.annotation.Nullable
-  @JsonProperty(value = JSON_PROPERTY_UNCONFIRMED_REASON, required = false)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public UnconfirmedReason getUnconfirmedReason() {
     return unconfirmedReason;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_UNCONFIRMED_REASON, required = false)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setUnconfirmedReason(@javax.annotation.Nullable UnconfirmedReason unconfirmedReason) {
     this.unconfirmedReason = unconfirmedReason;
   }
 
 
-  /**
-   * Return true if this PostTarget object is equal to o.
-   */
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -390,89 +353,121 @@ public class PostTarget {
     return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
 
-  /**
-   * Convert the instance into URL query string.
-   *
-   * @return URL query string
-   */
-  public String toUrlQueryString() {
-    return toUrlQueryString(null);
+
+  public static HashSet<String> openapiFields;
+  public static HashSet<String> openapiRequiredFields;
+
+  static {
+    // a set of all properties/fields (JSON key names)
+    openapiFields = new HashSet<String>(Arrays.asList("channelId", "failureReason", "id", "keptPrivate", "options", "permalink", "publishedAt", "round", "status", "unconfirmedReason"));
+
+    // a set of required properties/fields (JSON key names)
+    openapiRequiredFields = new HashSet<String>(Arrays.asList("channelId", "failureReason", "id", "options", "permalink", "publishedAt", "round", "status", "unconfirmedReason"));
   }
 
   /**
-   * Convert the instance into URL query string.
+   * Validates the JSON Element and throws an exception if issues found
    *
-   * @param prefix prefix of the query string
-   * @return URL query string
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to PostTarget
    */
-  public String toUrlQueryString(String prefix) {
-    String suffix = "";
-    String containerSuffix = "";
-    String containerPrefix = "";
-    if (prefix == null) {
-      // style=form, explode=true, e.g. /pet?name=cat&type=manx
-      prefix = "";
-    } else {
-      // deepObject style e.g. /pet?id[name]=cat&id[type]=manx
-      prefix = prefix + "[";
-      suffix = "]";
-      containerSuffix = "]";
-      containerPrefix = "[";
+  public static void validateJsonElement(JsonElement jsonElement) throws IOException {
+      if (jsonElement == null) {
+        if (!PostTarget.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The required field(s) %s in PostTarget is not found in the empty JSON string", PostTarget.openapiRequiredFields.toString()));
+        }
+      }
+
+      Set<Map.Entry<String, JsonElement>> entries = jsonElement.getAsJsonObject().entrySet();
+      // check to see if the JSON string contains additional fields
+      for (Map.Entry<String, JsonElement> entry : entries) {
+        if (!PostTarget.openapiFields.contains(entry.getKey())) {
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The field `%s` in the JSON string is not defined in the `PostTarget` properties. JSON: %s", entry.getKey(), jsonElement.toString()));
+        }
+      }
+
+      // check to make sure all required properties/fields are present in the JSON string
+      for (String requiredField : PostTarget.openapiRequiredFields) {
+        if (jsonElement.getAsJsonObject().get(requiredField) == null) {
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The required field `%s` is not found in the JSON string: %s", requiredField, jsonElement.toString()));
+        }
+      }
+        JsonObject jsonObj = jsonElement.getAsJsonObject();
+      if (!jsonObj.get("channelId").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `channelId` to be a primitive type in the JSON string but got `%s`", jsonObj.get("channelId").toString()));
+      }
+      if (jsonObj.get("failureReason") != null && !jsonObj.get("failureReason").isJsonNull()) {
+      // validate the required field `failureReason`
+      FailureReason.validateJsonElement(jsonObj.get("failureReason"));
+      }
+      if (!jsonObj.get("id").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `id` to be a primitive type in the JSON string but got `%s`", jsonObj.get("id").toString()));
+      }
+      if (jsonObj.get("options") != null && !jsonObj.get("options").isJsonNull()) {
+      // validate the required field `options`
+      TargetOptions.validateJsonElement(jsonObj.get("options"));
+      }
+      if ((jsonObj.get("permalink") != null && !jsonObj.get("permalink").isJsonNull()) && !jsonObj.get("permalink").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `permalink` to be a primitive type in the JSON string but got `%s`", jsonObj.get("permalink").toString()));
+      }
+      if ((jsonObj.get("publishedAt") != null && !jsonObj.get("publishedAt").isJsonNull()) && !jsonObj.get("publishedAt").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `publishedAt` to be a primitive type in the JSON string but got `%s`", jsonObj.get("publishedAt").toString()));
+      }
+      // validate the required field `status`
+      PostTargetStatus.validateJsonElement(jsonObj.get("status"));
+      if (jsonObj.get("unconfirmedReason") != null && !jsonObj.get("unconfirmedReason").isJsonNull()) {
+      // validate the required field `unconfirmedReason`
+      UnconfirmedReason.validateJsonElement(jsonObj.get("unconfirmedReason"));
+      }
+  }
+
+  public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
+       if (!PostTarget.class.isAssignableFrom(type.getRawType())) {
+         return null; // this class only serializes 'PostTarget' and its subtypes
+       }
+       final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
+       final TypeAdapter<PostTarget> thisAdapter
+                        = gson.getDelegateAdapter(this, TypeToken.get(PostTarget.class));
+
+       return (TypeAdapter<T>) new TypeAdapter<PostTarget>() {
+           @Override
+           public void write(JsonWriter out, PostTarget value) throws IOException {
+             JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
+             elementAdapter.write(out, obj);
+           }
+
+           @Override
+           public PostTarget read(JsonReader in) throws IOException {
+             JsonElement jsonElement = elementAdapter.read(in);
+             validateJsonElement(jsonElement);
+             return thisAdapter.fromJsonTree(jsonElement);
+           }
+
+       }.nullSafe();
     }
+  }
 
-    StringJoiner joiner = new StringJoiner("&");
+  /**
+   * Create an instance of PostTarget given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of PostTarget
+   * @throws IOException if the JSON string is invalid with respect to PostTarget
+   */
+  public static PostTarget fromJson(String jsonString) throws IOException {
+    return JSON.getGson().fromJson(jsonString, PostTarget.class);
+  }
 
-    // add `channelId` to the URL query string
-    if (getChannelId() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%schannelId%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getChannelId()))));
-    }
-
-    // add `failureReason` to the URL query string
-    if (getFailureReason() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%sfailureReason%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getFailureReason()))));
-    }
-
-    // add `id` to the URL query string
-    if (getId() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%sid%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getId()))));
-    }
-
-    // add `keptPrivate` to the URL query string
-    if (getKeptPrivate() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%skeptPrivate%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getKeptPrivate()))));
-    }
-
-    // add `options` to the URL query string
-    if (getOptions() != null) {
-      joiner.add(getOptions().toUrlQueryString(prefix + "options" + suffix));
-    }
-
-    // add `permalink` to the URL query string
-    if (getPermalink() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%spermalink%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getPermalink()))));
-    }
-
-    // add `publishedAt` to the URL query string
-    if (getPublishedAt() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%spublishedAt%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getPublishedAt()))));
-    }
-
-    // add `round` to the URL query string
-    if (getRound() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%sround%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getRound()))));
-    }
-
-    // add `status` to the URL query string
-    if (getStatus() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%sstatus%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getStatus()))));
-    }
-
-    // add `unconfirmedReason` to the URL query string
-    if (getUnconfirmedReason() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%sunconfirmedReason%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getUnconfirmedReason()))));
-    }
-
-    return joiner.toString();
+  /**
+   * Convert an instance of PostTarget to an JSON string
+   *
+   * @return JSON string
+   */
+  public String toJson() {
+    return JSON.getGson().toJson(this);
   }
 }
 

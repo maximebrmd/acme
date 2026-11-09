@@ -10,13 +10,22 @@
  * Do not edit the class manually.
  */
 
+
 package social.peal.api;
 
+import social.peal.ApiCallback;
 import social.peal.ApiClient;
 import social.peal.ApiException;
 import social.peal.ApiResponse;
 import social.peal.Configuration;
 import social.peal.Pair;
+import social.peal.ProgressRequestBody;
+import social.peal.ProgressResponseBody;
+
+import com.google.gson.reflect.TypeToken;
+
+import java.io.IOException;
+
 
 import social.peal.model.ChannelCannotPostEncoded;
 import social.peal.model.ChannelsCompleteConnect404Response;
@@ -25,273 +34,204 @@ import social.peal.model.PlatformUnreachableEncoded;
 import social.peal.model.TikTokAccount;
 import social.peal.model.UnauthenticatedEncoded;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import java.io.InputStream;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.net.http.HttpRequest;
-import java.nio.channels.Channels;
-import java.nio.channels.Pipe;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.time.Duration;
-
+import java.lang.reflect.Type;
 import java.util.ArrayList;
-import java.util.StringJoiner;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.function.Consumer;
 
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.27.0")
 public class TiktokApi {
-  /**
-   * Utility class for extending HttpRequest.Builder functionality.
-   */
-  private static class HttpRequestBuilderExtensions {
+    private ApiClient localVarApiClient;
+    private int localHostIndex;
+    private String localCustomBaseUrl;
+
+    public TiktokApi() {
+        this(Configuration.getDefaultApiClient());
+    }
+
+    public TiktokApi(ApiClient apiClient) {
+        this.localVarApiClient = apiClient;
+    }
+
+    public ApiClient getApiClient() {
+        return localVarApiClient;
+    }
+
+    public void setApiClient(ApiClient apiClient) {
+        this.localVarApiClient = apiClient;
+    }
+
+    public int getHostIndex() {
+        return localHostIndex;
+    }
+
+    public void setHostIndex(int hostIndex) {
+        this.localHostIndex = hostIndex;
+    }
+
+    public String getCustomBaseUrl() {
+        return localCustomBaseUrl;
+    }
+
+    public void setCustomBaseUrl(String customBaseUrl) {
+        this.localCustomBaseUrl = customBaseUrl;
+    }
+
     /**
-     * Adds additional headers to the provided HttpRequest.Builder. Useful for adding method/endpoint specific headers.
-     *
-     * @param builder the HttpRequest.Builder to which headers will be added
-     * @param headers a map of header names and values to add; may be null
-     * @return the same HttpRequest.Builder instance with the additional headers set
+     * Build call for tiktokCreator
+     * @param channelId  (required)
+     * @param workspaceId  (required)
+     * @param _callback Callback for upload/download progress
+     * @return Call to execute
+     * @throws ApiException If fail to serialize the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> TikTokAccount </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no channel with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 409 </td><td> The channel cannot post now: it is turned off (&#x60;disabled&#x60;), or its account must be reconnected (&#x60;reconnect&#x60;). </td><td>  -  </td></tr>
+        <tr><td> 502 </td><td> The platform did not answer, or failed on its side. Nothing was connected; try again later. </td><td>  -  </td></tr>
+     </table>
      */
-    static HttpRequest.Builder withAdditionalHeaders(HttpRequest.Builder builder, Map<String, String> headers) {
-        if (headers != null) {
-            for (Map.Entry<String, String> entry : headers.entrySet()) {
-                builder.header(entry.getKey(), entry.getValue());
-            }
-        }
-        return builder;
-    }
-  }
-  private final HttpClient memberVarHttpClient;
-  private final ObjectMapper memberVarObjectMapper;
-  private final String memberVarBaseUri;
-  private final Consumer<HttpRequest.Builder> memberVarInterceptor;
-  private final Duration memberVarReadTimeout;
-  private final Consumer<HttpResponse<InputStream>> memberVarResponseInterceptor;
-  private final Consumer<HttpResponse<InputStream>> memberVarAsyncResponseInterceptor;
+    public okhttp3.Call tiktokCreatorCall(@javax.annotation.Nonnull String channelId, @javax.annotation.Nonnull String workspaceId, final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
 
-  public TiktokApi() {
-    this(Configuration.getDefaultApiClient());
-  }
-
-  public TiktokApi(ApiClient apiClient) {
-    memberVarHttpClient = apiClient.getHttpClient();
-    memberVarObjectMapper = apiClient.getObjectMapper();
-    memberVarBaseUri = apiClient.getBaseUri();
-    memberVarInterceptor = apiClient.getRequestInterceptor();
-    memberVarReadTimeout = apiClient.getReadTimeout();
-    memberVarResponseInterceptor = apiClient.getResponseInterceptor();
-    memberVarAsyncResponseInterceptor = apiClient.getAsyncResponseInterceptor();
-  }
-
-
-  protected ApiException getApiException(String operationId, HttpResponse<InputStream> response) throws IOException {
-    InputStream responseBody = ApiClient.getResponseBody(response);
-    String body = null;
-    try {
-      body = responseBody == null ? null : new String(responseBody.readAllBytes());
-    } finally {
-      if (responseBody != null) {
-        responseBody.close();
-      }
-    }
-    String message = formatExceptionMessage(operationId, response.statusCode(), body);
-    return new ApiException(response.statusCode(), message, response.headers(), body);
-  }
-
-  private String formatExceptionMessage(String operationId, int statusCode, String body) {
-    if (body == null || body.isEmpty()) {
-      body = "[no body]";
-    }
-    return operationId + " call failed with: " + statusCode + " - " + body;
-  }
-
-  /**
-   * Download file from the given response.
-   *
-   * @param response Response
-   * @return File
-   * @throws ApiException If fail to read file content from response and write to disk
-   */
-  public File downloadFileFromResponse(HttpResponse<InputStream> response, InputStream responseBody) throws ApiException {
-    if (responseBody == null) {
-      throw new ApiException(new IOException("Response body is empty"));
-    }
-    try {
-      File file = prepareDownloadFile(response);
-      java.nio.file.Files.copy(responseBody, file.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-      return file;
-    } catch (IOException e) {
-      throw new ApiException(e);
-    }
-  }
-
-  /**
-   * <p>Prepare the file for download from the response.</p>
-   *
-   * @param response a {@link java.net.http.HttpResponse} object.
-   * @return a {@link java.io.File} object.
-   * @throws java.io.IOException if any.
-   */
-  private File prepareDownloadFile(HttpResponse<InputStream> response) throws IOException {
-    String filename = null;
-    java.util.Optional<String> contentDisposition = response.headers().firstValue("Content-Disposition");
-    if (contentDisposition.isPresent() && !"".equals(contentDisposition.get())) {
-      // Get filename from the Content-Disposition header.
-      java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("filename=['\"]?([^'\"\\s]+)['\"]?");
-      java.util.regex.Matcher matcher = pattern.matcher(contentDisposition.get());
-      if (matcher.find())
-        filename = matcher.group(1);
-    }
-    File file = null;
-    if (filename != null) {
-      java.nio.file.Path tempDir = java.nio.file.Files.createTempDirectory("swagger-gen-native");
-      java.nio.file.Path filePath = java.nio.file.Files.createFile(tempDir.resolve(filename));
-      file = filePath.toFile();
-      tempDir.toFile().deleteOnExit();   // best effort cleanup
-      file.deleteOnExit(); // best effort cleanup
-    } else {
-      file = java.nio.file.Files.createTempFile("download-", "").toFile();
-      file.deleteOnExit(); // best effort cleanup
-    }
-    return file;
-  }
-
-  /**
-   * Read a TikTok channel&#39;s creator
-   * Reads a TikTok channel&#39;s creator from TikTok: their nickname, the audiences the account offers, the interactions they turned off and the longest video they may post, or why they cannot post now. A channel that is not TikTok&#39;s is ChannelNotFound. Needs post:create.
-   * @param channelId  (required)
-   * @param workspaceId  (required)
-   * @return TikTokAccount
-   * @throws ApiException if fails to make API call
-   */
-  public TikTokAccount tiktokCreator(@javax.annotation.Nonnull String channelId, @javax.annotation.Nonnull String workspaceId) throws ApiException {
-    return tiktokCreator(channelId, workspaceId, null);
-  }
-
-  /**
-   * Read a TikTok channel&#39;s creator
-   * Reads a TikTok channel&#39;s creator from TikTok: their nickname, the audiences the account offers, the interactions they turned off and the longest video they may post, or why they cannot post now. A channel that is not TikTok&#39;s is ChannelNotFound. Needs post:create.
-   * @param channelId  (required)
-   * @param workspaceId  (required)
-   * @param headers Optional headers to include in the request
-   * @return TikTokAccount
-   * @throws ApiException if fails to make API call
-   */
-  public TikTokAccount tiktokCreator(@javax.annotation.Nonnull String channelId, @javax.annotation.Nonnull String workspaceId, Map<String, String> headers) throws ApiException {
-    ApiResponse<TikTokAccount> localVarResponse = tiktokCreatorWithHttpInfo(channelId, workspaceId, headers);
-    return localVarResponse.getData();
-  }
-
-  /**
-   * Read a TikTok channel&#39;s creator
-   * Reads a TikTok channel&#39;s creator from TikTok: their nickname, the audiences the account offers, the interactions they turned off and the longest video they may post, or why they cannot post now. A channel that is not TikTok&#39;s is ChannelNotFound. Needs post:create.
-   * @param channelId  (required)
-   * @param workspaceId  (required)
-   * @return ApiResponse&lt;TikTokAccount&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<TikTokAccount> tiktokCreatorWithHttpInfo(@javax.annotation.Nonnull String channelId, @javax.annotation.Nonnull String workspaceId) throws ApiException {
-    return tiktokCreatorWithHttpInfo(channelId, workspaceId, null);
-  }
-
-  /**
-   * Read a TikTok channel&#39;s creator
-   * Reads a TikTok channel&#39;s creator from TikTok: their nickname, the audiences the account offers, the interactions they turned off and the longest video they may post, or why they cannot post now. A channel that is not TikTok&#39;s is ChannelNotFound. Needs post:create.
-   * @param channelId  (required)
-   * @param workspaceId  (required)
-   * @param headers Optional headers to include in the request
-   * @return ApiResponse&lt;TikTokAccount&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<TikTokAccount> tiktokCreatorWithHttpInfo(@javax.annotation.Nonnull String channelId, @javax.annotation.Nonnull String workspaceId, Map<String, String> headers) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = tiktokCreatorRequestBuilder(channelId, workspaceId, headers);
-    try {
-      HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
-          localVarRequestBuilder.build(),
-          HttpResponse.BodyHandlers.ofInputStream());
-      if (memberVarResponseInterceptor != null) {
-        memberVarResponseInterceptor.accept(localVarResponse);
-      }
-      InputStream localVarResponseBody = null;
-      try {
-        if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("tiktokCreator", localVarResponse);
-        }
-        localVarResponseBody = ApiClient.getResponseBody(localVarResponse);
-        if (localVarResponseBody == null) {
-          return new ApiResponse<TikTokAccount>(
-              localVarResponse.statusCode(),
-              localVarResponse.headers().map(),
-              null
-          );
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
         }
 
-        
-        
-        String responseBody = new String(localVarResponseBody.readAllBytes());
-        TikTokAccount responseValue = responseBody.isBlank()? null: memberVarObjectMapper.readValue(responseBody, new TypeReference<TikTokAccount>() {});
-        
+        Object localVarPostBody = null;
 
-        return new ApiResponse<TikTokAccount>(
-            localVarResponse.statusCode(),
-            localVarResponse.headers().map(),
-            responseValue
-        );
-      } finally {
-        if (localVarResponseBody != null) {
-          localVarResponseBody.close();
+        // create path and map variables
+        String localVarPath = "/api/workspaces/{workspaceId}/channels/{channelId}/tiktok-creator"
+            .replace("{" + "channelId" + "}", localVarApiClient.escapeString(channelId.toString()))
+            .replace("{" + "workspaceId" + "}", localVarApiClient.escapeString(workspaceId.toString()));
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
         }
-      }
-    } catch (IOException e) {
-      throw new ApiException(e);
-    }
-    catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new ApiException(e);
-    }
-  }
 
-  private HttpRequest.Builder tiktokCreatorRequestBuilder(@javax.annotation.Nonnull String channelId, @javax.annotation.Nonnull String workspaceId, Map<String, String> headers) throws ApiException {
-    // verify the required parameter 'channelId' is set
-    if (channelId == null) {
-      throw new ApiException(400, "Missing the required parameter 'channelId' when calling tiktokCreator");
-    }
-    // verify the required parameter 'workspaceId' is set
-    if (workspaceId == null) {
-      throw new ApiException(400, "Missing the required parameter 'workspaceId' when calling tiktokCreator");
+        final String[] localVarContentTypes = {
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
+        }
+
+        String[] localVarAuthNames = new String[] { "bearer" };
+        return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
-    HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call tiktokCreatorValidateBeforeCall(@javax.annotation.Nonnull String channelId, @javax.annotation.Nonnull String workspaceId, final ApiCallback _callback) throws ApiException {
+        // verify the required parameter 'channelId' is set
+        if (channelId == null) {
+            throw new ApiException("Missing the required parameter 'channelId' when calling tiktokCreator(Async)");
+        }
 
-    String localVarPath = "/api/workspaces/{workspaceId}/channels/{channelId}/tiktok-creator"
-        .replace("{channelId}", ApiClient.urlEncode(channelId.toString()))
-        .replace("{workspaceId}", ApiClient.urlEncode(workspaceId.toString()));
+        // verify the required parameter 'workspaceId' is set
+        if (workspaceId == null) {
+            throw new ApiException("Missing the required parameter 'workspaceId' when calling tiktokCreator(Async)");
+        }
 
-    localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
+        return tiktokCreatorCall(channelId, workspaceId, _callback);
 
-    localVarRequestBuilder.header("Accept", "application/json");
-
-    localVarRequestBuilder.method("GET", HttpRequest.BodyPublishers.noBody());
-    if (memberVarReadTimeout != null) {
-      localVarRequestBuilder.timeout(memberVarReadTimeout);
     }
-    // Add custom headers if provided
-    localVarRequestBuilder = HttpRequestBuilderExtensions.withAdditionalHeaders(localVarRequestBuilder, headers);
-    if (memberVarInterceptor != null) {
-      memberVarInterceptor.accept(localVarRequestBuilder);
-    }
-    return localVarRequestBuilder;
-  }
 
+    /**
+     * Read a TikTok channel&#39;s creator
+     * Reads a TikTok channel&#39;s creator from TikTok: their nickname, the audiences the account offers, the interactions they turned off and the longest video they may post, or why they cannot post now. A channel that is not TikTok&#39;s is ChannelNotFound. Needs post:create.
+     * @param channelId  (required)
+     * @param workspaceId  (required)
+     * @return TikTokAccount
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> TikTokAccount </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no channel with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 409 </td><td> The channel cannot post now: it is turned off (&#x60;disabled&#x60;), or its account must be reconnected (&#x60;reconnect&#x60;). </td><td>  -  </td></tr>
+        <tr><td> 502 </td><td> The platform did not answer, or failed on its side. Nothing was connected; try again later. </td><td>  -  </td></tr>
+     </table>
+     */
+    public TikTokAccount tiktokCreator(@javax.annotation.Nonnull String channelId, @javax.annotation.Nonnull String workspaceId) throws ApiException {
+        ApiResponse<TikTokAccount> localVarResp = tiktokCreatorWithHttpInfo(channelId, workspaceId);
+        return localVarResp.getData();
+    }
+
+    /**
+     * Read a TikTok channel&#39;s creator
+     * Reads a TikTok channel&#39;s creator from TikTok: their nickname, the audiences the account offers, the interactions they turned off and the longest video they may post, or why they cannot post now. A channel that is not TikTok&#39;s is ChannelNotFound. Needs post:create.
+     * @param channelId  (required)
+     * @param workspaceId  (required)
+     * @return ApiResponse&lt;TikTokAccount&gt;
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> TikTokAccount </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no channel with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 409 </td><td> The channel cannot post now: it is turned off (&#x60;disabled&#x60;), or its account must be reconnected (&#x60;reconnect&#x60;). </td><td>  -  </td></tr>
+        <tr><td> 502 </td><td> The platform did not answer, or failed on its side. Nothing was connected; try again later. </td><td>  -  </td></tr>
+     </table>
+     */
+    public ApiResponse<TikTokAccount> tiktokCreatorWithHttpInfo(@javax.annotation.Nonnull String channelId, @javax.annotation.Nonnull String workspaceId) throws ApiException {
+        okhttp3.Call localVarCall = tiktokCreatorValidateBeforeCall(channelId, workspaceId, null);
+        Type localVarReturnType = new TypeToken<TikTokAccount>(){}.getType();
+        return localVarApiClient.execute(localVarCall, localVarReturnType);
+    }
+
+    /**
+     * Read a TikTok channel&#39;s creator (asynchronously)
+     * Reads a TikTok channel&#39;s creator from TikTok: their nickname, the audiences the account offers, the interactions they turned off and the longest video they may post, or why they cannot post now. A channel that is not TikTok&#39;s is ChannelNotFound. Needs post:create.
+     * @param channelId  (required)
+     * @param workspaceId  (required)
+     * @param _callback The callback to be executed when the API call finishes
+     * @return The request call
+     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> TikTokAccount </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no channel with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 409 </td><td> The channel cannot post now: it is turned off (&#x60;disabled&#x60;), or its account must be reconnected (&#x60;reconnect&#x60;). </td><td>  -  </td></tr>
+        <tr><td> 502 </td><td> The platform did not answer, or failed on its side. Nothing was connected; try again later. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call tiktokCreatorAsync(@javax.annotation.Nonnull String channelId, @javax.annotation.Nonnull String workspaceId, final ApiCallback<TikTokAccount> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = tiktokCreatorValidateBeforeCall(channelId, workspaceId, _callback);
+        Type localVarReturnType = new TypeToken<TikTokAccount>(){}.getType();
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
+        return localVarCall;
+    }
 }

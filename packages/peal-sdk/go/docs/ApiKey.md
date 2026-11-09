@@ -8,14 +8,14 @@ Name | Type | Description | Notes
 **ExpiresAt** | **NullableString** |  | 
 **Id** | **string** |  | 
 **Name** | **string** |  | 
-**Permissions** | **[]string** |  | 
+**Permissions** | [**[]Permission**](Permission.md) |  | 
 **Start** | **NullableString** |  | 
 
 ## Methods
 
 ### NewApiKey
 
-`func NewApiKey(createdAt string, expiresAt NullableString, id string, name string, permissions []string, start NullableString, ) *ApiKey`
+`func NewApiKey(createdAt string, expiresAt NullableString, id string, name string, permissions []Permission, start NullableString, ) *ApiKey`
 
 NewApiKey instantiates a new ApiKey object
 This constructor will assign default values to properties that have it defined,
@@ -122,20 +122,20 @@ SetName sets Name field to given value.
 
 ### GetPermissions
 
-`func (o *ApiKey) GetPermissions() []string`
+`func (o *ApiKey) GetPermissions() []Permission`
 
 GetPermissions returns the Permissions field if non-nil, zero value otherwise.
 
 ### GetPermissionsOk
 
-`func (o *ApiKey) GetPermissionsOk() (*[]string, bool)`
+`func (o *ApiKey) GetPermissionsOk() (*[]Permission, bool)`
 
 GetPermissionsOk returns a tuple with the Permissions field if it's non-nil, zero value otherwise
 and a boolean to check if the value has been set.
 
 ### SetPermissions
 
-`func (o *ApiKey) SetPermissions(v []string)`
+`func (o *ApiKey) SetPermissions(v []Permission)`
 
 SetPermissions sets Permissions field to given value.
 

@@ -2,16 +2,32 @@
   "$schema": "../../../node_modules/nx/schemas/project-schema.json",
   "name": "peal-sdk-dotnet",
   "projectType": "library",
-  "tags": ["sdk"],
+  "tags": [
+    "sdk"
+  ],
   "targets": {
     "sdk:generate": {
       "command": "bun scripts/generate.ts dotnet",
-      "options": { "cwd": "packages/peal-sdk" }
+      "options": {
+        "cwd": "packages/peal-sdk"
+      }
     },
     "sdk:build": {
       "command": "bun scripts/build.ts dotnet",
-      "options": { "cwd": "packages/peal-sdk" },
-      "outputs": ["{projectRoot}/dist", "{projectRoot}/src/Peal/bin", "{projectRoot}/src/Peal/obj"]
+      "options": {
+        "cwd": "packages/peal-sdk"
+      },
+      "outputs": [
+        "{projectRoot}/dist",
+        "{projectRoot}/src/Peal/bin",
+        "{projectRoot}/src/Peal/obj"
+      ]
+    },
+    "sdk:test": {
+      "command": "bun scripts/test.ts dotnet",
+      "options": {
+        "cwd": "packages/peal-sdk"
+      }
     }
   }
 }

@@ -6,7 +6,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **Id** | **string** |  | 
 **Name** | **string** |  | 
-**Permissions** | **List&lt;Membership.PermissionsEnum&gt;** |  | 
+**Permissions** | [**List&lt;Permission&gt;**](Permission.md) |  | 
 **Role** | **string** |  | 
 **Slug** | **string** |  | 
 

@@ -13,3 +13,6 @@ package.json
 tsconfig.json
 tsconfig.esm.json
 .npmignore
+
+# The smoke test, which scripts/test.ts runs against a stand-in server.
+test/**

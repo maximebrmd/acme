@@ -8,7 +8,7 @@
 | **expires_at** | **String** |  |  |
 | **id** | **String** |  |  |
 | **name** | **String** |  |  |
-| **permissions** | **Array&lt;String&gt;** |  |  |
+| **permissions** | [**Array&lt;Permission&gt;**](Permission.md) |  |  |
 | **start** | **String** |  |  |
 
 ## Example

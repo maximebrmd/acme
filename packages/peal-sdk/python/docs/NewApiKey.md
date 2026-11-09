@@ -7,7 +7,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **expires_in_days** | **int** |  | [optional] 
 **name** | **str** |  | 
-**permissions** | **List[str]** |  | 
+**permissions** | [**List[Permission]**](Permission.md) |  | 
 
 ## Example
 

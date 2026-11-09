@@ -76,6 +76,46 @@ const dotnet = async (_language: Language, folder: string): Promise<void> => {
       "<Copyright>No Copyright</Copyright>",
       "<Copyright>Copyright 2026 Peal</Copyright>",
     ],
+    // The generator's notes say "Minor update" whatever changed.
+    ["    <PackageReleaseNotes>Minor update</PackageReleaseNotes>\n", ""],
+    // NuGet shows the README in the package: ours, beside src/.
+    [
+      "<PackageTags>",
+      "<PackageReadmeFile>README.md</PackageReadmeFile>\n    <PackageTags>",
+    ],
+    [
+      "</Project>",
+      '  <ItemGroup>\n    <None Include="..\\..\\README.md" Pack="true" PackagePath="\\" />\n  </ItemGroup>\n</Project>',
+    ],
+  ]);
+
+  // System.Text.Json takes the first converter that handles a type, and the
+  // generator registers the catch-all enum one first. It reads member names,
+  // so a list of permissions ("post:schedule") failed to decode: registered
+  // last, it only handles what no generated converter does.
+  const enumConverter =
+    "            _jsonOptions.Converters.Add(new JsonStringEnumConverter());\n";
+
+  const provider =
+    "            JsonSerializerOptionsProvider jsonSerializerOptionsProvider = new(_jsonOptions);\n";
+
+  await replaceIn(
+    path.join(folder, "src", "Peal", "Client", "HostConfiguration.cs"),
+    [
+      [enumConverter, ""],
+      [provider, `${enumConverter}${provider}`],
+    ]
+  );
+};
+
+/** The gem holds the library, its README and its license: no Gemfile or lock file. */
+const ruby = async (_language: Language, folder: string): Promise<void> => {
+  await replaceIn(path.join(folder, "peal.gemspec"), [
+    [
+      '  s.files         = `find *`.split("\\n").uniq.sort.select { |f| !f.empty? }\n',
+      '  s.files         = Dir["lib/**/*.rb", "README.md", "LICENSE"]\n',
+    ],
+    ['  s.test_files    = `find spec/*`.split("\\n")\n', ""],
   ]);
 };
 
@@ -92,7 +132,7 @@ const java = async (_language: Language, folder: string): Promise<void> => {
       "<id>release</id>\n            <build>",
     ],
     [
-      "<artifactId>maven-gpg-plugin</artifactId>\n                        <version>3.0.1</version>",
+      "<artifactId>maven-gpg-plugin</artifactId>\n                        <version>3.2.1</version>",
       "<artifactId>maven-gpg-plugin</artifactId>\n                        <version>3.2.8</version>\n                        <configuration>\n                            <signer>bc</signer>\n                        </configuration>",
     ],
     [
@@ -110,8 +150,23 @@ const rust = async (_language: Language, folder: string): Promise<void> => {
     ],
     [
       'license = "Apache-2.0"\n',
-      `license = "Apache-2.0"\nhomepage = "${homepage}"\nrepository = "${repository}"\n`,
+      `license = "Apache-2.0"\nhomepage = "${homepage}"\nrepository = "${repository}"\n# Files this repository needs and the crate does not: Nx's project, the\n# generator's records, the smoke test (scripts/test.ts runs it).\nexclude = ["project.json", ".openapi-generator", ".openapi-generator-ignore", ".gitignore", "examples/smoke.rs"]\n`,
     ],
+    // The smoke test's runtime, which users of the crate bring their own of.
+    [
+      "\n[features]\n",
+      '\n[dev-dependencies]\ntokio = { version = "1", features = ["macros", "rt-multi-thread"] }\n\n[features]\n',
+    ],
+  ]);
+};
+
+/**
+ * Packagist reads each version from the mirror's tags, and asks that
+ * composer.json carry none of its own.
+ */
+const php = async (language: Language, folder: string): Promise<void> => {
+  await replaceIn(path.join(folder, "composer.json"), [
+    [`    "version": "${language.version}",\n`, ""],
   ]);
 };
 
@@ -122,9 +177,9 @@ const finishers = {
   go: undefined,
   java,
   node,
-  php: undefined,
+  php,
   python,
-  ruby: undefined,
+  ruby,
   rust,
 } satisfies Readonly<Record<LanguageName, Finisher | undefined>>;
 

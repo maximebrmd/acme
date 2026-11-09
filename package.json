@@ -21,6 +21,7 @@
     "sdk:generate": "nx run-many -t sdk:generate",
     "sdk:build": "nx run-many -t sdk:build",
     "sdk:check": "nx run peal-sdk:check",
+    "sdk:test": "nx run-many -t sdk:test",
     "nx": "nx"
   },
   "devDependencies": {

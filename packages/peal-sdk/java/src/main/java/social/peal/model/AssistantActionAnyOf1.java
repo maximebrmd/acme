@@ -13,37 +13,51 @@
 
 package social.peal.model;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.StringJoiner;
 import java.util.Objects;
-import java.util.Map;
-import java.util.HashMap;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.fasterxml.jackson.annotation.JsonValue;
+import com.google.gson.TypeAdapter;
+import com.google.gson.annotations.JsonAdapter;
+import com.google.gson.annotations.SerializedName;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 import java.util.Arrays;
 import social.peal.model.Platform;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonNull;
+import com.google.gson.JsonParseException;
+import com.google.gson.TypeAdapterFactory;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.TypeAdapter;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 
-import social.peal.ApiClient;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import social.peal.JSON;
+
 /**
  * AssistantActionAnyOf1
  */
-@JsonPropertyOrder({
-  AssistantActionAnyOf1.JSON_PROPERTY_TAG,
-  AssistantActionAnyOf1.JSON_PROPERTY_PLATFORM
-})
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.27.0")
 public class AssistantActionAnyOf1 {
   /**
    * Gets or Sets tag
    */
+  @JsonAdapter(TagEnum.Adapter.class)
   public enum TagEnum {
-    SHORTEN(String.valueOf("shorten"));
+    SHORTEN("shorten");
 
     private String value;
 
@@ -51,7 +65,6 @@ public class AssistantActionAnyOf1 {
       this.value = value;
     }
 
-    @JsonValue
     public String getValue() {
       return value;
     }
@@ -61,7 +74,6 @@ public class AssistantActionAnyOf1 {
       return String.valueOf(value);
     }
 
-    @JsonCreator
     public static TagEnum fromValue(String value) {
       for (TagEnum b : TagEnum.values()) {
         if (b.value.equals(value)) {
@@ -70,17 +82,37 @@ public class AssistantActionAnyOf1 {
       }
       throw new IllegalArgumentException("Unexpected value '" + value + "'");
     }
+
+    public static class Adapter extends TypeAdapter<TagEnum> {
+      @Override
+      public void write(final JsonWriter jsonWriter, final TagEnum enumeration) throws IOException {
+        jsonWriter.value(enumeration.getValue());
+      }
+
+      @Override
+      public TagEnum read(final JsonReader jsonReader) throws IOException {
+        String value =  jsonReader.nextString();
+        return TagEnum.fromValue(value);
+      }
+    }
+
+    public static void validateJsonElement(JsonElement jsonElement) throws IOException {
+      String value = jsonElement.getAsString();
+      TagEnum.fromValue(value);
+    }
   }
 
-  public static final String JSON_PROPERTY_TAG = "_tag";
+  public static final String SERIALIZED_NAME_TAG = "_tag";
+  @SerializedName(SERIALIZED_NAME_TAG)
   @javax.annotation.Nonnull
   private TagEnum tag;
 
-  public static final String JSON_PROPERTY_PLATFORM = "platform";
+  public static final String SERIALIZED_NAME_PLATFORM = "platform";
+  @SerializedName(SERIALIZED_NAME_PLATFORM)
   @javax.annotation.Nonnull
   private Platform platform;
 
-  public AssistantActionAnyOf1() { 
+  public AssistantActionAnyOf1() {
   }
 
   public AssistantActionAnyOf1 tag(@javax.annotation.Nonnull TagEnum tag) {
@@ -93,15 +125,10 @@ public class AssistantActionAnyOf1 {
    * @return tag
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_TAG, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public TagEnum getTag() {
     return tag;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_TAG, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setTag(@javax.annotation.Nonnull TagEnum tag) {
     this.tag = tag;
   }
@@ -117,23 +144,16 @@ public class AssistantActionAnyOf1 {
    * @return platform
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_PLATFORM, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public Platform getPlatform() {
     return platform;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_PLATFORM, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setPlatform(@javax.annotation.Nonnull Platform platform) {
     this.platform = platform;
   }
 
 
-  /**
-   * Return true if this AssistantAction_anyOf_1 object is equal to o.
-   */
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -170,49 +190,102 @@ public class AssistantActionAnyOf1 {
     return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
 
-  /**
-   * Convert the instance into URL query string.
-   *
-   * @return URL query string
-   */
-  public String toUrlQueryString() {
-    return toUrlQueryString(null);
+
+  public static HashSet<String> openapiFields;
+  public static HashSet<String> openapiRequiredFields;
+
+  static {
+    // a set of all properties/fields (JSON key names)
+    openapiFields = new HashSet<String>(Arrays.asList("_tag", "platform"));
+
+    // a set of required properties/fields (JSON key names)
+    openapiRequiredFields = new HashSet<String>(Arrays.asList("_tag", "platform"));
   }
 
   /**
-   * Convert the instance into URL query string.
+   * Validates the JSON Element and throws an exception if issues found
    *
-   * @param prefix prefix of the query string
-   * @return URL query string
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to AssistantActionAnyOf1
    */
-  public String toUrlQueryString(String prefix) {
-    String suffix = "";
-    String containerSuffix = "";
-    String containerPrefix = "";
-    if (prefix == null) {
-      // style=form, explode=true, e.g. /pet?name=cat&type=manx
-      prefix = "";
-    } else {
-      // deepObject style e.g. /pet?id[name]=cat&id[type]=manx
-      prefix = prefix + "[";
-      suffix = "]";
-      containerSuffix = "]";
-      containerPrefix = "[";
+  public static void validateJsonElement(JsonElement jsonElement) throws IOException {
+      if (jsonElement == null) {
+        if (!AssistantActionAnyOf1.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The required field(s) %s in AssistantActionAnyOf1 is not found in the empty JSON string", AssistantActionAnyOf1.openapiRequiredFields.toString()));
+        }
+      }
+
+      Set<Map.Entry<String, JsonElement>> entries = jsonElement.getAsJsonObject().entrySet();
+      // check to see if the JSON string contains additional fields
+      for (Map.Entry<String, JsonElement> entry : entries) {
+        if (!AssistantActionAnyOf1.openapiFields.contains(entry.getKey())) {
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The field `%s` in the JSON string is not defined in the `AssistantActionAnyOf1` properties. JSON: %s", entry.getKey(), jsonElement.toString()));
+        }
+      }
+
+      // check to make sure all required properties/fields are present in the JSON string
+      for (String requiredField : AssistantActionAnyOf1.openapiRequiredFields) {
+        if (jsonElement.getAsJsonObject().get(requiredField) == null) {
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The required field `%s` is not found in the JSON string: %s", requiredField, jsonElement.toString()));
+        }
+      }
+        JsonObject jsonObj = jsonElement.getAsJsonObject();
+      if (!jsonObj.get("_tag").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `_tag` to be a primitive type in the JSON string but got `%s`", jsonObj.get("_tag").toString()));
+      }
+      // validate the required field `_tag`
+      TagEnum.validateJsonElement(jsonObj.get("_tag"));
+      // validate the required field `platform`
+      Platform.validateJsonElement(jsonObj.get("platform"));
+  }
+
+  public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
+       if (!AssistantActionAnyOf1.class.isAssignableFrom(type.getRawType())) {
+         return null; // this class only serializes 'AssistantActionAnyOf1' and its subtypes
+       }
+       final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
+       final TypeAdapter<AssistantActionAnyOf1> thisAdapter
+                        = gson.getDelegateAdapter(this, TypeToken.get(AssistantActionAnyOf1.class));
+
+       return (TypeAdapter<T>) new TypeAdapter<AssistantActionAnyOf1>() {
+           @Override
+           public void write(JsonWriter out, AssistantActionAnyOf1 value) throws IOException {
+             JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
+             elementAdapter.write(out, obj);
+           }
+
+           @Override
+           public AssistantActionAnyOf1 read(JsonReader in) throws IOException {
+             JsonElement jsonElement = elementAdapter.read(in);
+             validateJsonElement(jsonElement);
+             return thisAdapter.fromJsonTree(jsonElement);
+           }
+
+       }.nullSafe();
     }
+  }
 
-    StringJoiner joiner = new StringJoiner("&");
+  /**
+   * Create an instance of AssistantActionAnyOf1 given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of AssistantActionAnyOf1
+   * @throws IOException if the JSON string is invalid with respect to AssistantActionAnyOf1
+   */
+  public static AssistantActionAnyOf1 fromJson(String jsonString) throws IOException {
+    return JSON.getGson().fromJson(jsonString, AssistantActionAnyOf1.class);
+  }
 
-    // add `_tag` to the URL query string
-    if (getTag() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%s_tag%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getTag()))));
-    }
-
-    // add `platform` to the URL query string
-    if (getPlatform() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%splatform%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getPlatform()))));
-    }
-
-    return joiner.toString();
+  /**
+   * Convert an instance of AssistantActionAnyOf1 to an JSON string
+   *
+   * @return JSON string
+   */
+  public String toJson() {
+    return JSON.getGson().toJson(this);
   }
 }
 

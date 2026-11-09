@@ -13,17 +13,13 @@
 
 package social.peal.model;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.StringJoiner;
 import java.util.Objects;
-import java.util.Map;
-import java.util.HashMap;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.fasterxml.jackson.annotation.JsonValue;
+import com.google.gson.TypeAdapter;
+import com.google.gson.annotations.JsonAdapter;
+import com.google.gson.annotations.SerializedName;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -31,107 +27,138 @@ import social.peal.model.ContentViolation;
 import social.peal.model.PostContentInvalidEncoded;
 import social.peal.model.UnknownChannelsEncoded;
 import social.peal.model.UnknownMediaEncoded;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+
 
 
 import java.io.IOException;
+import java.lang.reflect.Type;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
-import social.peal.ApiClient;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonParseException;
+import com.google.gson.TypeAdapter;
+import com.google.gson.TypeAdapterFactory;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.annotations.JsonAdapter;
+import com.google.gson.annotations.SerializedName;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonParseException;
+
 import social.peal.JSON;
 
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.27.0")
-@JsonDeserialize(using=PostsCreate422Response.PostsCreate422ResponseDeserializer.class)
-@JsonSerialize(using = PostsCreate422Response.PostsCreate422ResponseSerializer.class)
 public class PostsCreate422Response extends AbstractOpenApiSchema {
     private static final Logger log = Logger.getLogger(PostsCreate422Response.class.getName());
 
-    public static class PostsCreate422ResponseSerializer extends StdSerializer<PostsCreate422Response> {
-        public PostsCreate422ResponseSerializer(Class<PostsCreate422Response> t) {
-            super(t);
-        }
-
-        public PostsCreate422ResponseSerializer() {
-            this(null);
-        }
-
+    public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
+        @SuppressWarnings("unchecked")
         @Override
-        public void serialize(PostsCreate422Response value, JsonGenerator jgen, SerializerProvider provider) throws IOException, JsonProcessingException {
-            jgen.writeObject(value.getActualInstance());
-        }
-    }
-
-    public static class PostsCreate422ResponseDeserializer extends StdDeserializer<PostsCreate422Response> {
-        public PostsCreate422ResponseDeserializer() {
-            this(PostsCreate422Response.class);
-        }
-
-        public PostsCreate422ResponseDeserializer(Class<?> vc) {
-            super(vc);
-        }
-
-        @Override
-        public PostsCreate422Response deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException, JsonProcessingException {
-            JsonNode tree = ctxt.readTree(jp);
-
-            Object deserialized = null;
-            // deserialize PostContentInvalidEncoded
-            try {
-                deserialized = tree.traverse(jp.getCodec()).readValueAs(PostContentInvalidEncoded.class);
-                PostsCreate422Response ret = new PostsCreate422Response();
-                ret.setActualInstance(deserialized);
-                return ret;
-            } catch (Exception e) {
-                // deserialization failed, continue, log to help debugging
-                log.log(Level.FINER, "Input data does not match 'PostsCreate422Response'", e);
+        public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
+            if (!PostsCreate422Response.class.isAssignableFrom(type.getRawType())) {
+                return null; // this class only serializes 'PostsCreate422Response' and its subtypes
             }
+            final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
+            final TypeAdapter<PostContentInvalidEncoded> adapterPostContentInvalidEncoded = gson.getDelegateAdapter(this, TypeToken.get(PostContentInvalidEncoded.class));
+            final TypeAdapter<UnknownChannelsEncoded> adapterUnknownChannelsEncoded = gson.getDelegateAdapter(this, TypeToken.get(UnknownChannelsEncoded.class));
+            final TypeAdapter<UnknownMediaEncoded> adapterUnknownMediaEncoded = gson.getDelegateAdapter(this, TypeToken.get(UnknownMediaEncoded.class));
 
-            // deserialize UnknownChannelsEncoded
-            try {
-                deserialized = tree.traverse(jp.getCodec()).readValueAs(UnknownChannelsEncoded.class);
-                PostsCreate422Response ret = new PostsCreate422Response();
-                ret.setActualInstance(deserialized);
-                return ret;
-            } catch (Exception e) {
-                // deserialization failed, continue, log to help debugging
-                log.log(Level.FINER, "Input data does not match 'PostsCreate422Response'", e);
-            }
+            return (TypeAdapter<T>) new TypeAdapter<PostsCreate422Response>() {
+                @Override
+                public void write(JsonWriter out, PostsCreate422Response value) throws IOException {
+                    if (value == null || value.getActualInstance() == null) {
+                        elementAdapter.write(out, null);
+                        return;
+                    }
 
-            // deserialize UnknownMediaEncoded
-            try {
-                deserialized = tree.traverse(jp.getCodec()).readValueAs(UnknownMediaEncoded.class);
-                PostsCreate422Response ret = new PostsCreate422Response();
-                ret.setActualInstance(deserialized);
-                return ret;
-            } catch (Exception e) {
-                // deserialization failed, continue, log to help debugging
-                log.log(Level.FINER, "Input data does not match 'PostsCreate422Response'", e);
-            }
+                    // check if the actual instance is of the type `PostContentInvalidEncoded`
+                    if (value.getActualInstance() instanceof PostContentInvalidEncoded) {
+                        JsonElement element = adapterPostContentInvalidEncoded.toJsonTree((PostContentInvalidEncoded)value.getActualInstance());
+                        elementAdapter.write(out, element);
+                        return;
+                    }
+                    // check if the actual instance is of the type `UnknownChannelsEncoded`
+                    if (value.getActualInstance() instanceof UnknownChannelsEncoded) {
+                        JsonElement element = adapterUnknownChannelsEncoded.toJsonTree((UnknownChannelsEncoded)value.getActualInstance());
+                        elementAdapter.write(out, element);
+                        return;
+                    }
+                    // check if the actual instance is of the type `UnknownMediaEncoded`
+                    if (value.getActualInstance() instanceof UnknownMediaEncoded) {
+                        JsonElement element = adapterUnknownMediaEncoded.toJsonTree((UnknownMediaEncoded)value.getActualInstance());
+                        elementAdapter.write(out, element);
+                        return;
+                    }
+                    throw new IOException("Failed to serialize as the type doesn't match anyOf schemas: PostContentInvalidEncoded, UnknownChannelsEncoded, UnknownMediaEncoded");
+                }
 
-            throw new IOException("Failed deserialization for PostsCreate422Response: no match found");
-        }
+                @Override
+                public PostsCreate422Response read(JsonReader in) throws IOException {
+                    Object deserialized = null;
+                    JsonElement jsonElement = elementAdapter.read(in);
 
-        /**
-         * Handle deserialization of the 'null' value.
-         */
-        @Override
-        public PostsCreate422Response getNullValue(DeserializationContext ctxt) throws JsonMappingException {
-            throw new JsonMappingException(ctxt.getParser(), "PostsCreate422Response cannot be null");
+                    ArrayList<String> errorMessages = new ArrayList<>();
+                    TypeAdapter actualAdapter = elementAdapter;
+
+                    // deserialize PostContentInvalidEncoded
+                    try {
+                        // validate the JSON object to see if any exception is thrown
+                        PostContentInvalidEncoded.validateJsonElement(jsonElement);
+                        actualAdapter = adapterPostContentInvalidEncoded;
+                        PostsCreate422Response ret = new PostsCreate422Response();
+                        ret.setActualInstance(actualAdapter.fromJsonTree(jsonElement));
+                        return ret;
+                    } catch (Exception e) {
+                        // deserialization failed, continue
+                        errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for PostContentInvalidEncoded failed with `%s`.", e.getMessage()));
+                        log.log(Level.FINER, "Input data does not match schema 'PostContentInvalidEncoded'", e);
+                    }
+                    // deserialize UnknownChannelsEncoded
+                    try {
+                        // validate the JSON object to see if any exception is thrown
+                        UnknownChannelsEncoded.validateJsonElement(jsonElement);
+                        actualAdapter = adapterUnknownChannelsEncoded;
+                        PostsCreate422Response ret = new PostsCreate422Response();
+                        ret.setActualInstance(actualAdapter.fromJsonTree(jsonElement));
+                        return ret;
+                    } catch (Exception e) {
+                        // deserialization failed, continue
+                        errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for UnknownChannelsEncoded failed with `%s`.", e.getMessage()));
+                        log.log(Level.FINER, "Input data does not match schema 'UnknownChannelsEncoded'", e);
+                    }
+                    // deserialize UnknownMediaEncoded
+                    try {
+                        // validate the JSON object to see if any exception is thrown
+                        UnknownMediaEncoded.validateJsonElement(jsonElement);
+                        actualAdapter = adapterUnknownMediaEncoded;
+                        PostsCreate422Response ret = new PostsCreate422Response();
+                        ret.setActualInstance(actualAdapter.fromJsonTree(jsonElement));
+                        return ret;
+                    } catch (Exception e) {
+                        // deserialization failed, continue
+                        errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for UnknownMediaEncoded failed with `%s`.", e.getMessage()));
+                        log.log(Level.FINER, "Input data does not match schema 'UnknownMediaEncoded'", e);
+                    }
+
+                    throw new IOException(String.format(java.util.Locale.ROOT, "Failed deserialization for PostsCreate422Response: no class matches result, expected at least 1. Detailed failure message for anyOf schemas: %s. JSON: %s", errorMessages, jsonElement.toString()));
+                }
+            }.nullSafe();
         }
     }
 
@@ -142,18 +169,8 @@ public class PostsCreate422Response extends AbstractOpenApiSchema {
         super("anyOf", Boolean.FALSE);
     }
 
-    public PostsCreate422Response(PostContentInvalidEncoded o) {
-        this();
-        setActualInstance(o);
-    }
-
-    public PostsCreate422Response(UnknownChannelsEncoded o) {
-        this();
-        setActualInstance(o);
-    }
-
-    public PostsCreate422Response(UnknownMediaEncoded o) {
-        this();
+    public PostsCreate422Response(Object o) {
+        super("anyOf", Boolean.FALSE);
         setActualInstance(o);
     }
 
@@ -161,7 +178,6 @@ public class PostsCreate422Response extends AbstractOpenApiSchema {
         schemas.put("PostContentInvalidEncoded", PostContentInvalidEncoded.class);
         schemas.put("UnknownChannelsEncoded", UnknownChannelsEncoded.class);
         schemas.put("UnknownMediaEncoded", UnknownMediaEncoded.class);
-        JSON.registerDescendants(PostsCreate422Response.class, Collections.unmodifiableMap(schemas));
     }
 
     @Override
@@ -175,21 +191,20 @@ public class PostsCreate422Response extends AbstractOpenApiSchema {
      * PostContentInvalidEncoded, UnknownChannelsEncoded, UnknownMediaEncoded
      *
      * It could be an instance of the 'anyOf' schemas.
-     * The anyOf child schemas may themselves be a composed schema (allOf, anyOf, anyOf).
      */
     @Override
     public void setActualInstance(Object instance) {
-        if (JSON.isInstanceOf(PostContentInvalidEncoded.class, instance, new HashSet<Class<?>>())) {
+        if (instance instanceof PostContentInvalidEncoded) {
             super.setActualInstance(instance);
             return;
         }
 
-        if (JSON.isInstanceOf(UnknownChannelsEncoded.class, instance, new HashSet<Class<?>>())) {
+        if (instance instanceof UnknownChannelsEncoded) {
             super.setActualInstance(instance);
             return;
         }
 
-        if (JSON.isInstanceOf(UnknownMediaEncoded.class, instance, new HashSet<Class<?>>())) {
+        if (instance instanceof UnknownMediaEncoded) {
             super.setActualInstance(instance);
             return;
         }
@@ -203,6 +218,7 @@ public class PostsCreate422Response extends AbstractOpenApiSchema {
      *
      * @return The actual instance (PostContentInvalidEncoded, UnknownChannelsEncoded, UnknownMediaEncoded)
      */
+    @SuppressWarnings("unchecked")
     @Override
     public Object getActualInstance() {
         return super.getActualInstance();
@@ -241,42 +257,60 @@ public class PostsCreate422Response extends AbstractOpenApiSchema {
         return (UnknownMediaEncoded)super.getActualInstance();
     }
 
-
-
-  /**
-   * Convert the instance into URL query string.
-   *
-   * @return URL query string
-   */
-  public String toUrlQueryString() {
-    return toUrlQueryString(null);
-  }
-
-  /**
-   * Convert the instance into URL query string.
-   *
-   * @param prefix prefix of the query string
-   * @return URL query string
-   */
-  public String toUrlQueryString(String prefix) {
-    String suffix = "";
-    String containerSuffix = "";
-    String containerPrefix = "";
-    if (prefix == null) {
-      // style=form, explode=true, e.g. /pet?name=cat&type=manx
-      prefix = "";
-    } else {
-      // deepObject style e.g. /pet?id[name]=cat&id[type]=manx
-      prefix = prefix + "[";
-      suffix = "]";
-      containerSuffix = "]";
-      containerPrefix = "[";
+    /**
+     * Validates the JSON Element and throws an exception if issues found
+     *
+     * @param jsonElement JSON Element
+     * @throws IOException if the JSON Element is invalid with respect to PostsCreate422Response
+     */
+    public static void validateJsonElement(JsonElement jsonElement) throws IOException {
+        // validate anyOf schemas one by one
+        ArrayList<String> errorMessages = new ArrayList<>();
+        // validate the json string with PostContentInvalidEncoded
+        try {
+            PostContentInvalidEncoded.validateJsonElement(jsonElement);
+            return;
+        } catch (Exception e) {
+            errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for PostContentInvalidEncoded failed with `%s`.", e.getMessage()));
+            // continue to the next one
+        }
+        // validate the json string with UnknownChannelsEncoded
+        try {
+            UnknownChannelsEncoded.validateJsonElement(jsonElement);
+            return;
+        } catch (Exception e) {
+            errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for UnknownChannelsEncoded failed with `%s`.", e.getMessage()));
+            // continue to the next one
+        }
+        // validate the json string with UnknownMediaEncoded
+        try {
+            UnknownMediaEncoded.validateJsonElement(jsonElement);
+            return;
+        } catch (Exception e) {
+            errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for UnknownMediaEncoded failed with `%s`.", e.getMessage()));
+            // continue to the next one
+        }
+        throw new IOException(String.format(java.util.Locale.ROOT, "The JSON string is invalid for PostsCreate422Response with anyOf schemas: PostContentInvalidEncoded, UnknownChannelsEncoded, UnknownMediaEncoded. no class match the result, expected at least 1. Detailed failure message for anyOf schemas: %s. JSON: %s", errorMessages, jsonElement.toString()));
     }
 
-    StringJoiner joiner = new StringJoiner("&");
+    /**
+     * Create an instance of PostsCreate422Response given an JSON string
+     *
+     * @param jsonString JSON string
+     * @return An instance of PostsCreate422Response
+     * @throws IOException if the JSON string is invalid with respect to PostsCreate422Response
+     */
+    public static PostsCreate422Response fromJson(String jsonString) throws IOException {
+        return JSON.getGson().fromJson(jsonString, PostsCreate422Response.class);
+    }
 
-    return null;
-  }
-
+    /**
+     * Convert an instance of PostsCreate422Response to an JSON string
+     *
+     * @return JSON string
+     */
+    public String toJson() {
+        return JSON.getGson().toJson(this);
+    }
 }
 

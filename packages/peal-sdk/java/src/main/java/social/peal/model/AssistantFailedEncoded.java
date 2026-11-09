@@ -13,36 +13,50 @@
 
 package social.peal.model;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.StringJoiner;
 import java.util.Objects;
-import java.util.Map;
-import java.util.HashMap;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.fasterxml.jackson.annotation.JsonValue;
+import com.google.gson.TypeAdapter;
+import com.google.gson.annotations.JsonAdapter;
+import com.google.gson.annotations.SerializedName;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 import java.util.Arrays;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonNull;
+import com.google.gson.JsonParseException;
+import com.google.gson.TypeAdapterFactory;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.TypeAdapter;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 
-import social.peal.ApiClient;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import social.peal.JSON;
+
 /**
  * AssistantFailedEncoded
  */
-@JsonPropertyOrder({
-  AssistantFailedEncoded.JSON_PROPERTY_TAG,
-  AssistantFailedEncoded.JSON_PROPERTY_REASON
-})
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.27.0")
 public class AssistantFailedEncoded {
   /**
    * Gets or Sets tag
    */
+  @JsonAdapter(TagEnum.Adapter.class)
   public enum TagEnum {
-    ASSISTANT_FAILED(String.valueOf("AssistantFailed"));
+    ASSISTANT_FAILED("AssistantFailed");
 
     private String value;
 
@@ -50,7 +64,6 @@ public class AssistantFailedEncoded {
       this.value = value;
     }
 
-    @JsonValue
     public String getValue() {
       return value;
     }
@@ -60,7 +73,6 @@ public class AssistantFailedEncoded {
       return String.valueOf(value);
     }
 
-    @JsonCreator
     public static TagEnum fromValue(String value) {
       for (TagEnum b : TagEnum.values()) {
         if (b.value.equals(value)) {
@@ -69,23 +81,43 @@ public class AssistantFailedEncoded {
       }
       throw new IllegalArgumentException("Unexpected value '" + value + "'");
     }
+
+    public static class Adapter extends TypeAdapter<TagEnum> {
+      @Override
+      public void write(final JsonWriter jsonWriter, final TagEnum enumeration) throws IOException {
+        jsonWriter.value(enumeration.getValue());
+      }
+
+      @Override
+      public TagEnum read(final JsonReader jsonReader) throws IOException {
+        String value =  jsonReader.nextString();
+        return TagEnum.fromValue(value);
+      }
+    }
+
+    public static void validateJsonElement(JsonElement jsonElement) throws IOException {
+      String value = jsonElement.getAsString();
+      TagEnum.fromValue(value);
+    }
   }
 
-  public static final String JSON_PROPERTY_TAG = "_tag";
+  public static final String SERIALIZED_NAME_TAG = "_tag";
+  @SerializedName(SERIALIZED_NAME_TAG)
   @javax.annotation.Nonnull
   private TagEnum tag;
 
   /**
    * Gets or Sets reason
    */
+  @JsonAdapter(ReasonEnum.Adapter.class)
   public enum ReasonEnum {
-    UNREACHABLE(String.valueOf("unreachable")),
+    UNREACHABLE("unreachable"),
     
-    TIMED_OUT(String.valueOf("timedOut")),
+    TIMED_OUT("timedOut"),
     
-    DECLINED(String.valueOf("declined")),
+    DECLINED("declined"),
     
-    INVALID_ANSWER(String.valueOf("invalidAnswer"));
+    INVALID_ANSWER("invalidAnswer");
 
     private String value;
 
@@ -93,7 +125,6 @@ public class AssistantFailedEncoded {
       this.value = value;
     }
 
-    @JsonValue
     public String getValue() {
       return value;
     }
@@ -103,7 +134,6 @@ public class AssistantFailedEncoded {
       return String.valueOf(value);
     }
 
-    @JsonCreator
     public static ReasonEnum fromValue(String value) {
       for (ReasonEnum b : ReasonEnum.values()) {
         if (b.value.equals(value)) {
@@ -112,13 +142,32 @@ public class AssistantFailedEncoded {
       }
       throw new IllegalArgumentException("Unexpected value '" + value + "'");
     }
+
+    public static class Adapter extends TypeAdapter<ReasonEnum> {
+      @Override
+      public void write(final JsonWriter jsonWriter, final ReasonEnum enumeration) throws IOException {
+        jsonWriter.value(enumeration.getValue());
+      }
+
+      @Override
+      public ReasonEnum read(final JsonReader jsonReader) throws IOException {
+        String value =  jsonReader.nextString();
+        return ReasonEnum.fromValue(value);
+      }
+    }
+
+    public static void validateJsonElement(JsonElement jsonElement) throws IOException {
+      String value = jsonElement.getAsString();
+      ReasonEnum.fromValue(value);
+    }
   }
 
-  public static final String JSON_PROPERTY_REASON = "reason";
+  public static final String SERIALIZED_NAME_REASON = "reason";
+  @SerializedName(SERIALIZED_NAME_REASON)
   @javax.annotation.Nonnull
   private ReasonEnum reason;
 
-  public AssistantFailedEncoded() { 
+  public AssistantFailedEncoded() {
   }
 
   public AssistantFailedEncoded tag(@javax.annotation.Nonnull TagEnum tag) {
@@ -131,15 +180,10 @@ public class AssistantFailedEncoded {
    * @return tag
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_TAG, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public TagEnum getTag() {
     return tag;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_TAG, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setTag(@javax.annotation.Nonnull TagEnum tag) {
     this.tag = tag;
   }
@@ -155,23 +199,16 @@ public class AssistantFailedEncoded {
    * @return reason
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_REASON, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public ReasonEnum getReason() {
     return reason;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_REASON, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setReason(@javax.annotation.Nonnull ReasonEnum reason) {
     this.reason = reason;
   }
 
 
-  /**
-   * Return true if this AssistantFailedEncoded object is equal to o.
-   */
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -208,49 +245,105 @@ public class AssistantFailedEncoded {
     return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
 
-  /**
-   * Convert the instance into URL query string.
-   *
-   * @return URL query string
-   */
-  public String toUrlQueryString() {
-    return toUrlQueryString(null);
+
+  public static HashSet<String> openapiFields;
+  public static HashSet<String> openapiRequiredFields;
+
+  static {
+    // a set of all properties/fields (JSON key names)
+    openapiFields = new HashSet<String>(Arrays.asList("_tag", "reason"));
+
+    // a set of required properties/fields (JSON key names)
+    openapiRequiredFields = new HashSet<String>(Arrays.asList("_tag", "reason"));
   }
 
   /**
-   * Convert the instance into URL query string.
+   * Validates the JSON Element and throws an exception if issues found
    *
-   * @param prefix prefix of the query string
-   * @return URL query string
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to AssistantFailedEncoded
    */
-  public String toUrlQueryString(String prefix) {
-    String suffix = "";
-    String containerSuffix = "";
-    String containerPrefix = "";
-    if (prefix == null) {
-      // style=form, explode=true, e.g. /pet?name=cat&type=manx
-      prefix = "";
-    } else {
-      // deepObject style e.g. /pet?id[name]=cat&id[type]=manx
-      prefix = prefix + "[";
-      suffix = "]";
-      containerSuffix = "]";
-      containerPrefix = "[";
+  public static void validateJsonElement(JsonElement jsonElement) throws IOException {
+      if (jsonElement == null) {
+        if (!AssistantFailedEncoded.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The required field(s) %s in AssistantFailedEncoded is not found in the empty JSON string", AssistantFailedEncoded.openapiRequiredFields.toString()));
+        }
+      }
+
+      Set<Map.Entry<String, JsonElement>> entries = jsonElement.getAsJsonObject().entrySet();
+      // check to see if the JSON string contains additional fields
+      for (Map.Entry<String, JsonElement> entry : entries) {
+        if (!AssistantFailedEncoded.openapiFields.contains(entry.getKey())) {
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The field `%s` in the JSON string is not defined in the `AssistantFailedEncoded` properties. JSON: %s", entry.getKey(), jsonElement.toString()));
+        }
+      }
+
+      // check to make sure all required properties/fields are present in the JSON string
+      for (String requiredField : AssistantFailedEncoded.openapiRequiredFields) {
+        if (jsonElement.getAsJsonObject().get(requiredField) == null) {
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The required field `%s` is not found in the JSON string: %s", requiredField, jsonElement.toString()));
+        }
+      }
+        JsonObject jsonObj = jsonElement.getAsJsonObject();
+      if (!jsonObj.get("_tag").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `_tag` to be a primitive type in the JSON string but got `%s`", jsonObj.get("_tag").toString()));
+      }
+      // validate the required field `_tag`
+      TagEnum.validateJsonElement(jsonObj.get("_tag"));
+      if (!jsonObj.get("reason").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `reason` to be a primitive type in the JSON string but got `%s`", jsonObj.get("reason").toString()));
+      }
+      // validate the required field `reason`
+      ReasonEnum.validateJsonElement(jsonObj.get("reason"));
+  }
+
+  public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
+       if (!AssistantFailedEncoded.class.isAssignableFrom(type.getRawType())) {
+         return null; // this class only serializes 'AssistantFailedEncoded' and its subtypes
+       }
+       final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
+       final TypeAdapter<AssistantFailedEncoded> thisAdapter
+                        = gson.getDelegateAdapter(this, TypeToken.get(AssistantFailedEncoded.class));
+
+       return (TypeAdapter<T>) new TypeAdapter<AssistantFailedEncoded>() {
+           @Override
+           public void write(JsonWriter out, AssistantFailedEncoded value) throws IOException {
+             JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
+             elementAdapter.write(out, obj);
+           }
+
+           @Override
+           public AssistantFailedEncoded read(JsonReader in) throws IOException {
+             JsonElement jsonElement = elementAdapter.read(in);
+             validateJsonElement(jsonElement);
+             return thisAdapter.fromJsonTree(jsonElement);
+           }
+
+       }.nullSafe();
     }
+  }
 
-    StringJoiner joiner = new StringJoiner("&");
+  /**
+   * Create an instance of AssistantFailedEncoded given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of AssistantFailedEncoded
+   * @throws IOException if the JSON string is invalid with respect to AssistantFailedEncoded
+   */
+  public static AssistantFailedEncoded fromJson(String jsonString) throws IOException {
+    return JSON.getGson().fromJson(jsonString, AssistantFailedEncoded.class);
+  }
 
-    // add `_tag` to the URL query string
-    if (getTag() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%s_tag%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getTag()))));
-    }
-
-    // add `reason` to the URL query string
-    if (getReason() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%sreason%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getReason()))));
-    }
-
-    return joiner.toString();
+  /**
+   * Convert an instance of AssistantFailedEncoded to an JSON string
+   *
+   * @return JSON string
+   */
+  public String toJson() {
+    return JSON.getGson().toJson(this);
   }
 }
 

@@ -13,17 +13,13 @@
 
 package social.peal.model;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.StringJoiner;
 import java.util.Objects;
-import java.util.Map;
-import java.util.HashMap;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.fasterxml.jackson.annotation.JsonValue;
+import com.google.gson.TypeAdapter;
+import com.google.gson.annotations.JsonAdapter;
+import com.google.gson.annotations.SerializedName;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -32,53 +28,72 @@ import social.peal.model.PostOutcome;
 import social.peal.model.PostSchedule;
 import social.peal.model.PostStatus;
 import social.peal.model.PostTarget;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonNull;
+import com.google.gson.JsonParseException;
+import com.google.gson.TypeAdapterFactory;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.TypeAdapter;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 
-import social.peal.ApiClient;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import social.peal.JSON;
+
 /**
  * Post
  */
-@JsonPropertyOrder({
-  Post.JSON_PROPERTY_AUTHOR_ID,
-  Post.JSON_PROPERTY_CONTENT,
-  Post.JSON_PROPERTY_ID,
-  Post.JSON_PROPERTY_OUTCOME,
-  Post.JSON_PROPERTY_SCHEDULE,
-  Post.JSON_PROPERTY_STATUS,
-  Post.JSON_PROPERTY_TARGETS
-})
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.27.0")
 public class Post {
-  public static final String JSON_PROPERTY_AUTHOR_ID = "authorId";
+  public static final String SERIALIZED_NAME_AUTHOR_ID = "authorId";
+  @SerializedName(SERIALIZED_NAME_AUTHOR_ID)
   @javax.annotation.Nullable
   private String authorId;
 
-  public static final String JSON_PROPERTY_CONTENT = "content";
+  public static final String SERIALIZED_NAME_CONTENT = "content";
+  @SerializedName(SERIALIZED_NAME_CONTENT)
   @javax.annotation.Nonnull
   private PostContent content;
 
-  public static final String JSON_PROPERTY_ID = "id";
+  public static final String SERIALIZED_NAME_ID = "id";
+  @SerializedName(SERIALIZED_NAME_ID)
   @javax.annotation.Nonnull
   private String id;
 
-  public static final String JSON_PROPERTY_OUTCOME = "outcome";
+  public static final String SERIALIZED_NAME_OUTCOME = "outcome";
+  @SerializedName(SERIALIZED_NAME_OUTCOME)
   @javax.annotation.Nullable
   private PostOutcome outcome;
 
-  public static final String JSON_PROPERTY_SCHEDULE = "schedule";
+  public static final String SERIALIZED_NAME_SCHEDULE = "schedule";
+  @SerializedName(SERIALIZED_NAME_SCHEDULE)
   @javax.annotation.Nullable
   private PostSchedule schedule;
 
-  public static final String JSON_PROPERTY_STATUS = "status";
+  public static final String SERIALIZED_NAME_STATUS = "status";
+  @SerializedName(SERIALIZED_NAME_STATUS)
   @javax.annotation.Nonnull
   private PostStatus status;
 
-  public static final String JSON_PROPERTY_TARGETS = "targets";
+  public static final String SERIALIZED_NAME_TARGETS = "targets";
+  @SerializedName(SERIALIZED_NAME_TARGETS)
   @javax.annotation.Nonnull
   private List<PostTarget> targets = new ArrayList<>();
 
-  public Post() { 
+  public Post() {
   }
 
   public Post authorId(@javax.annotation.Nullable String authorId) {
@@ -91,15 +106,10 @@ public class Post {
    * @return authorId
    */
   @javax.annotation.Nullable
-  @JsonProperty(value = JSON_PROPERTY_AUTHOR_ID, required = false)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public String getAuthorId() {
     return authorId;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_AUTHOR_ID, required = false)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setAuthorId(@javax.annotation.Nullable String authorId) {
     this.authorId = authorId;
   }
@@ -115,15 +125,10 @@ public class Post {
    * @return content
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_CONTENT, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public PostContent getContent() {
     return content;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_CONTENT, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setContent(@javax.annotation.Nonnull PostContent content) {
     this.content = content;
   }
@@ -139,15 +144,10 @@ public class Post {
    * @return id
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_ID, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public String getId() {
     return id;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_ID, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setId(@javax.annotation.Nonnull String id) {
     this.id = id;
   }
@@ -163,15 +163,10 @@ public class Post {
    * @return outcome
    */
   @javax.annotation.Nullable
-  @JsonProperty(value = JSON_PROPERTY_OUTCOME, required = false)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public PostOutcome getOutcome() {
     return outcome;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_OUTCOME, required = false)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setOutcome(@javax.annotation.Nullable PostOutcome outcome) {
     this.outcome = outcome;
   }
@@ -187,15 +182,10 @@ public class Post {
    * @return schedule
    */
   @javax.annotation.Nullable
-  @JsonProperty(value = JSON_PROPERTY_SCHEDULE, required = false)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public PostSchedule getSchedule() {
     return schedule;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_SCHEDULE, required = false)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setSchedule(@javax.annotation.Nullable PostSchedule schedule) {
     this.schedule = schedule;
   }
@@ -211,15 +201,10 @@ public class Post {
    * @return status
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_STATUS, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public PostStatus getStatus() {
     return status;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_STATUS, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setStatus(@javax.annotation.Nonnull PostStatus status) {
     this.status = status;
   }
@@ -243,23 +228,16 @@ public class Post {
    * @return targets
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_TARGETS, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public List<PostTarget> getTargets() {
     return targets;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_TARGETS, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setTargets(@javax.annotation.Nonnull List<PostTarget> targets) {
     this.targets = targets;
   }
 
 
-  /**
-   * Return true if this Post object is equal to o.
-   */
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -306,79 +284,123 @@ public class Post {
     return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
 
-  /**
-   * Convert the instance into URL query string.
-   *
-   * @return URL query string
-   */
-  public String toUrlQueryString() {
-    return toUrlQueryString(null);
+
+  public static HashSet<String> openapiFields;
+  public static HashSet<String> openapiRequiredFields;
+
+  static {
+    // a set of all properties/fields (JSON key names)
+    openapiFields = new HashSet<String>(Arrays.asList("authorId", "content", "id", "outcome", "schedule", "status", "targets"));
+
+    // a set of required properties/fields (JSON key names)
+    openapiRequiredFields = new HashSet<String>(Arrays.asList("authorId", "content", "id", "outcome", "schedule", "status", "targets"));
   }
 
   /**
-   * Convert the instance into URL query string.
+   * Validates the JSON Element and throws an exception if issues found
    *
-   * @param prefix prefix of the query string
-   * @return URL query string
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to Post
    */
-  public String toUrlQueryString(String prefix) {
-    String suffix = "";
-    String containerSuffix = "";
-    String containerPrefix = "";
-    if (prefix == null) {
-      // style=form, explode=true, e.g. /pet?name=cat&type=manx
-      prefix = "";
-    } else {
-      // deepObject style e.g. /pet?id[name]=cat&id[type]=manx
-      prefix = prefix + "[";
-      suffix = "]";
-      containerSuffix = "]";
-      containerPrefix = "[";
-    }
-
-    StringJoiner joiner = new StringJoiner("&");
-
-    // add `authorId` to the URL query string
-    if (getAuthorId() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%sauthorId%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getAuthorId()))));
-    }
-
-    // add `content` to the URL query string
-    if (getContent() != null) {
-      joiner.add(getContent().toUrlQueryString(prefix + "content" + suffix));
-    }
-
-    // add `id` to the URL query string
-    if (getId() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%sid%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getId()))));
-    }
-
-    // add `outcome` to the URL query string
-    if (getOutcome() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%soutcome%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getOutcome()))));
-    }
-
-    // add `schedule` to the URL query string
-    if (getSchedule() != null) {
-      joiner.add(getSchedule().toUrlQueryString(prefix + "schedule" + suffix));
-    }
-
-    // add `status` to the URL query string
-    if (getStatus() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%sstatus%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getStatus()))));
-    }
-
-    // add `targets` to the URL query string
-    if (getTargets() != null) {
-      for (int i = 0; i < getTargets().size(); i++) {
-        if (getTargets().get(i) != null) {
-          joiner.add(getTargets().get(i).toUrlQueryString(String.format(java.util.Locale.ROOT, "%stargets%s%s", prefix, suffix,
-          "".equals(suffix) ? "" : String.format(java.util.Locale.ROOT, "%s%d%s", containerPrefix, i, containerSuffix))));
+  public static void validateJsonElement(JsonElement jsonElement) throws IOException {
+      if (jsonElement == null) {
+        if (!Post.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The required field(s) %s in Post is not found in the empty JSON string", Post.openapiRequiredFields.toString()));
         }
       }
-    }
 
-    return joiner.toString();
+      Set<Map.Entry<String, JsonElement>> entries = jsonElement.getAsJsonObject().entrySet();
+      // check to see if the JSON string contains additional fields
+      for (Map.Entry<String, JsonElement> entry : entries) {
+        if (!Post.openapiFields.contains(entry.getKey())) {
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The field `%s` in the JSON string is not defined in the `Post` properties. JSON: %s", entry.getKey(), jsonElement.toString()));
+        }
+      }
+
+      // check to make sure all required properties/fields are present in the JSON string
+      for (String requiredField : Post.openapiRequiredFields) {
+        if (jsonElement.getAsJsonObject().get(requiredField) == null) {
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The required field `%s` is not found in the JSON string: %s", requiredField, jsonElement.toString()));
+        }
+      }
+        JsonObject jsonObj = jsonElement.getAsJsonObject();
+      if ((jsonObj.get("authorId") != null && !jsonObj.get("authorId").isJsonNull()) && !jsonObj.get("authorId").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `authorId` to be a primitive type in the JSON string but got `%s`", jsonObj.get("authorId").toString()));
+      }
+      // validate the required field `content`
+      PostContent.validateJsonElement(jsonObj.get("content"));
+      if (!jsonObj.get("id").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `id` to be a primitive type in the JSON string but got `%s`", jsonObj.get("id").toString()));
+      }
+      if (jsonObj.get("outcome") != null && !jsonObj.get("outcome").isJsonNull()) {
+      // validate the required field `outcome`
+      PostOutcome.validateJsonElement(jsonObj.get("outcome"));
+      }
+      if (jsonObj.get("schedule") != null && !jsonObj.get("schedule").isJsonNull()) {
+      // validate the required field `schedule`
+      PostSchedule.validateJsonElement(jsonObj.get("schedule"));
+      }
+      // validate the required field `status`
+      PostStatus.validateJsonElement(jsonObj.get("status"));
+      if (jsonObj.get("targets") != null) {
+        if (!jsonObj.get("targets").isJsonArray()) {
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `targets` to be an array in the JSON string but got `%s`", jsonObj.get("targets").toString()));
+        }
+        JsonArray jsonArraytargets = jsonObj.getAsJsonArray("targets");
+        // validate the required field `targets` (array)
+        for (int i = 0; i < jsonArraytargets.size(); i++) {
+          PostTarget.validateJsonElement(jsonArraytargets.get(i));
+        }
+      }
+  }
+
+  public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
+       if (!Post.class.isAssignableFrom(type.getRawType())) {
+         return null; // this class only serializes 'Post' and its subtypes
+       }
+       final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
+       final TypeAdapter<Post> thisAdapter
+                        = gson.getDelegateAdapter(this, TypeToken.get(Post.class));
+
+       return (TypeAdapter<T>) new TypeAdapter<Post>() {
+           @Override
+           public void write(JsonWriter out, Post value) throws IOException {
+             JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
+             elementAdapter.write(out, obj);
+           }
+
+           @Override
+           public Post read(JsonReader in) throws IOException {
+             JsonElement jsonElement = elementAdapter.read(in);
+             validateJsonElement(jsonElement);
+             return thisAdapter.fromJsonTree(jsonElement);
+           }
+
+       }.nullSafe();
+    }
+  }
+
+  /**
+   * Create an instance of Post given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of Post
+   * @throws IOException if the JSON string is invalid with respect to Post
+   */
+  public static Post fromJson(String jsonString) throws IOException {
+    return JSON.getGson().fromJson(jsonString, Post.class);
+  }
+
+  /**
+   * Convert an instance of Post to an JSON string
+   *
+   * @return JSON string
+   */
+  public String toJson() {
+    return JSON.getGson().toJson(this);
   }
 }
 

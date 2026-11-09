@@ -34,6 +34,11 @@ export const PermissionSchema = Schema.Literals([
   "post:schedule",
   "post:approve",
   "post:publish",
-]).annotate({ description: "One action on one resource of a workspace." });
+]).annotate({
+  description: "One action on one resource of a workspace.",
+  // One named schema in the OpenAPI document, which every SDK reads as one
+  // enum type: written inline in each list, .NET could not decode it.
+  identifier: "Permission",
+});
 
 export type Permission = typeof PermissionSchema.Type;

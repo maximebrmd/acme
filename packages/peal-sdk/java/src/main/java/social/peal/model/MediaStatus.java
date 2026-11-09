@@ -13,17 +13,13 @@
 
 package social.peal.model;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.StringJoiner;
 import java.util.Objects;
-import java.util.Map;
-import java.util.HashMap;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.fasterxml.jackson.annotation.JsonValue;
+import com.google.gson.TypeAdapter;
+import com.google.gson.annotations.JsonAdapter;
+import com.google.gson.annotations.SerializedName;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 import java.util.Arrays;
 import social.peal.model.MediaStatusAnyOf;
 import social.peal.model.MediaStatusAnyOf1;
@@ -31,118 +27,158 @@ import social.peal.model.MediaStatusAnyOf2;
 import social.peal.model.MediaStatusAnyOf3;
 import social.peal.model.ProbeState;
 import social.peal.model.RejectionReason;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+
 
 
 import java.io.IOException;
+import java.lang.reflect.Type;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
-import social.peal.ApiClient;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonParseException;
+import com.google.gson.TypeAdapter;
+import com.google.gson.TypeAdapterFactory;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.annotations.JsonAdapter;
+import com.google.gson.annotations.SerializedName;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonParseException;
+
 import social.peal.JSON;
 
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.27.0")
-@JsonDeserialize(using=MediaStatus.MediaStatusDeserializer.class)
-@JsonSerialize(using = MediaStatus.MediaStatusSerializer.class)
 public class MediaStatus extends AbstractOpenApiSchema {
     private static final Logger log = Logger.getLogger(MediaStatus.class.getName());
 
-    public static class MediaStatusSerializer extends StdSerializer<MediaStatus> {
-        public MediaStatusSerializer(Class<MediaStatus> t) {
-            super(t);
-        }
-
-        public MediaStatusSerializer() {
-            this(null);
-        }
-
+    public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
+        @SuppressWarnings("unchecked")
         @Override
-        public void serialize(MediaStatus value, JsonGenerator jgen, SerializerProvider provider) throws IOException, JsonProcessingException {
-            jgen.writeObject(value.getActualInstance());
-        }
-    }
-
-    public static class MediaStatusDeserializer extends StdDeserializer<MediaStatus> {
-        public MediaStatusDeserializer() {
-            this(MediaStatus.class);
-        }
-
-        public MediaStatusDeserializer(Class<?> vc) {
-            super(vc);
-        }
-
-        @Override
-        public MediaStatus deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException, JsonProcessingException {
-            JsonNode tree = ctxt.readTree(jp);
-
-            Object deserialized = null;
-            // deserialize MediaStatusAnyOf
-            try {
-                deserialized = tree.traverse(jp.getCodec()).readValueAs(MediaStatusAnyOf.class);
-                MediaStatus ret = new MediaStatus();
-                ret.setActualInstance(deserialized);
-                return ret;
-            } catch (Exception e) {
-                // deserialization failed, continue, log to help debugging
-                log.log(Level.FINER, "Input data does not match 'MediaStatus'", e);
+        public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
+            if (!MediaStatus.class.isAssignableFrom(type.getRawType())) {
+                return null; // this class only serializes 'MediaStatus' and its subtypes
             }
+            final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
+            final TypeAdapter<MediaStatusAnyOf> adapterMediaStatusAnyOf = gson.getDelegateAdapter(this, TypeToken.get(MediaStatusAnyOf.class));
+            final TypeAdapter<MediaStatusAnyOf1> adapterMediaStatusAnyOf1 = gson.getDelegateAdapter(this, TypeToken.get(MediaStatusAnyOf1.class));
+            final TypeAdapter<MediaStatusAnyOf2> adapterMediaStatusAnyOf2 = gson.getDelegateAdapter(this, TypeToken.get(MediaStatusAnyOf2.class));
+            final TypeAdapter<MediaStatusAnyOf3> adapterMediaStatusAnyOf3 = gson.getDelegateAdapter(this, TypeToken.get(MediaStatusAnyOf3.class));
 
-            // deserialize MediaStatusAnyOf1
-            try {
-                deserialized = tree.traverse(jp.getCodec()).readValueAs(MediaStatusAnyOf1.class);
-                MediaStatus ret = new MediaStatus();
-                ret.setActualInstance(deserialized);
-                return ret;
-            } catch (Exception e) {
-                // deserialization failed, continue, log to help debugging
-                log.log(Level.FINER, "Input data does not match 'MediaStatus'", e);
-            }
+            return (TypeAdapter<T>) new TypeAdapter<MediaStatus>() {
+                @Override
+                public void write(JsonWriter out, MediaStatus value) throws IOException {
+                    if (value == null || value.getActualInstance() == null) {
+                        elementAdapter.write(out, null);
+                        return;
+                    }
 
-            // deserialize MediaStatusAnyOf2
-            try {
-                deserialized = tree.traverse(jp.getCodec()).readValueAs(MediaStatusAnyOf2.class);
-                MediaStatus ret = new MediaStatus();
-                ret.setActualInstance(deserialized);
-                return ret;
-            } catch (Exception e) {
-                // deserialization failed, continue, log to help debugging
-                log.log(Level.FINER, "Input data does not match 'MediaStatus'", e);
-            }
+                    // check if the actual instance is of the type `MediaStatusAnyOf`
+                    if (value.getActualInstance() instanceof MediaStatusAnyOf) {
+                        JsonElement element = adapterMediaStatusAnyOf.toJsonTree((MediaStatusAnyOf)value.getActualInstance());
+                        elementAdapter.write(out, element);
+                        return;
+                    }
+                    // check if the actual instance is of the type `MediaStatusAnyOf1`
+                    if (value.getActualInstance() instanceof MediaStatusAnyOf1) {
+                        JsonElement element = adapterMediaStatusAnyOf1.toJsonTree((MediaStatusAnyOf1)value.getActualInstance());
+                        elementAdapter.write(out, element);
+                        return;
+                    }
+                    // check if the actual instance is of the type `MediaStatusAnyOf2`
+                    if (value.getActualInstance() instanceof MediaStatusAnyOf2) {
+                        JsonElement element = adapterMediaStatusAnyOf2.toJsonTree((MediaStatusAnyOf2)value.getActualInstance());
+                        elementAdapter.write(out, element);
+                        return;
+                    }
+                    // check if the actual instance is of the type `MediaStatusAnyOf3`
+                    if (value.getActualInstance() instanceof MediaStatusAnyOf3) {
+                        JsonElement element = adapterMediaStatusAnyOf3.toJsonTree((MediaStatusAnyOf3)value.getActualInstance());
+                        elementAdapter.write(out, element);
+                        return;
+                    }
+                    throw new IOException("Failed to serialize as the type doesn't match anyOf schemas: MediaStatusAnyOf, MediaStatusAnyOf1, MediaStatusAnyOf2, MediaStatusAnyOf3");
+                }
 
-            // deserialize MediaStatusAnyOf3
-            try {
-                deserialized = tree.traverse(jp.getCodec()).readValueAs(MediaStatusAnyOf3.class);
-                MediaStatus ret = new MediaStatus();
-                ret.setActualInstance(deserialized);
-                return ret;
-            } catch (Exception e) {
-                // deserialization failed, continue, log to help debugging
-                log.log(Level.FINER, "Input data does not match 'MediaStatus'", e);
-            }
+                @Override
+                public MediaStatus read(JsonReader in) throws IOException {
+                    Object deserialized = null;
+                    JsonElement jsonElement = elementAdapter.read(in);
 
-            throw new IOException("Failed deserialization for MediaStatus: no match found");
-        }
+                    ArrayList<String> errorMessages = new ArrayList<>();
+                    TypeAdapter actualAdapter = elementAdapter;
 
-        /**
-         * Handle deserialization of the 'null' value.
-         */
-        @Override
-        public MediaStatus getNullValue(DeserializationContext ctxt) throws JsonMappingException {
-            throw new JsonMappingException(ctxt.getParser(), "MediaStatus cannot be null");
+                    // deserialize MediaStatusAnyOf
+                    try {
+                        // validate the JSON object to see if any exception is thrown
+                        MediaStatusAnyOf.validateJsonElement(jsonElement);
+                        actualAdapter = adapterMediaStatusAnyOf;
+                        MediaStatus ret = new MediaStatus();
+                        ret.setActualInstance(actualAdapter.fromJsonTree(jsonElement));
+                        return ret;
+                    } catch (Exception e) {
+                        // deserialization failed, continue
+                        errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for MediaStatusAnyOf failed with `%s`.", e.getMessage()));
+                        log.log(Level.FINER, "Input data does not match schema 'MediaStatusAnyOf'", e);
+                    }
+                    // deserialize MediaStatusAnyOf1
+                    try {
+                        // validate the JSON object to see if any exception is thrown
+                        MediaStatusAnyOf1.validateJsonElement(jsonElement);
+                        actualAdapter = adapterMediaStatusAnyOf1;
+                        MediaStatus ret = new MediaStatus();
+                        ret.setActualInstance(actualAdapter.fromJsonTree(jsonElement));
+                        return ret;
+                    } catch (Exception e) {
+                        // deserialization failed, continue
+                        errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for MediaStatusAnyOf1 failed with `%s`.", e.getMessage()));
+                        log.log(Level.FINER, "Input data does not match schema 'MediaStatusAnyOf1'", e);
+                    }
+                    // deserialize MediaStatusAnyOf2
+                    try {
+                        // validate the JSON object to see if any exception is thrown
+                        MediaStatusAnyOf2.validateJsonElement(jsonElement);
+                        actualAdapter = adapterMediaStatusAnyOf2;
+                        MediaStatus ret = new MediaStatus();
+                        ret.setActualInstance(actualAdapter.fromJsonTree(jsonElement));
+                        return ret;
+                    } catch (Exception e) {
+                        // deserialization failed, continue
+                        errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for MediaStatusAnyOf2 failed with `%s`.", e.getMessage()));
+                        log.log(Level.FINER, "Input data does not match schema 'MediaStatusAnyOf2'", e);
+                    }
+                    // deserialize MediaStatusAnyOf3
+                    try {
+                        // validate the JSON object to see if any exception is thrown
+                        MediaStatusAnyOf3.validateJsonElement(jsonElement);
+                        actualAdapter = adapterMediaStatusAnyOf3;
+                        MediaStatus ret = new MediaStatus();
+                        ret.setActualInstance(actualAdapter.fromJsonTree(jsonElement));
+                        return ret;
+                    } catch (Exception e) {
+                        // deserialization failed, continue
+                        errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for MediaStatusAnyOf3 failed with `%s`.", e.getMessage()));
+                        log.log(Level.FINER, "Input data does not match schema 'MediaStatusAnyOf3'", e);
+                    }
+
+                    throw new IOException(String.format(java.util.Locale.ROOT, "Failed deserialization for MediaStatus: no class matches result, expected at least 1. Detailed failure message for anyOf schemas: %s. JSON: %s", errorMessages, jsonElement.toString()));
+                }
+            }.nullSafe();
         }
     }
 
@@ -153,23 +189,8 @@ public class MediaStatus extends AbstractOpenApiSchema {
         super("anyOf", Boolean.FALSE);
     }
 
-    public MediaStatus(MediaStatusAnyOf o) {
-        this();
-        setActualInstance(o);
-    }
-
-    public MediaStatus(MediaStatusAnyOf1 o) {
-        this();
-        setActualInstance(o);
-    }
-
-    public MediaStatus(MediaStatusAnyOf2 o) {
-        this();
-        setActualInstance(o);
-    }
-
-    public MediaStatus(MediaStatusAnyOf3 o) {
-        this();
+    public MediaStatus(Object o) {
+        super("anyOf", Boolean.FALSE);
         setActualInstance(o);
     }
 
@@ -178,7 +199,6 @@ public class MediaStatus extends AbstractOpenApiSchema {
         schemas.put("MediaStatusAnyOf1", MediaStatusAnyOf1.class);
         schemas.put("MediaStatusAnyOf2", MediaStatusAnyOf2.class);
         schemas.put("MediaStatusAnyOf3", MediaStatusAnyOf3.class);
-        JSON.registerDescendants(MediaStatus.class, Collections.unmodifiableMap(schemas));
     }
 
     @Override
@@ -192,26 +212,25 @@ public class MediaStatus extends AbstractOpenApiSchema {
      * MediaStatusAnyOf, MediaStatusAnyOf1, MediaStatusAnyOf2, MediaStatusAnyOf3
      *
      * It could be an instance of the 'anyOf' schemas.
-     * The anyOf child schemas may themselves be a composed schema (allOf, anyOf, anyOf).
      */
     @Override
     public void setActualInstance(Object instance) {
-        if (JSON.isInstanceOf(MediaStatusAnyOf.class, instance, new HashSet<Class<?>>())) {
+        if (instance instanceof MediaStatusAnyOf) {
             super.setActualInstance(instance);
             return;
         }
 
-        if (JSON.isInstanceOf(MediaStatusAnyOf1.class, instance, new HashSet<Class<?>>())) {
+        if (instance instanceof MediaStatusAnyOf1) {
             super.setActualInstance(instance);
             return;
         }
 
-        if (JSON.isInstanceOf(MediaStatusAnyOf2.class, instance, new HashSet<Class<?>>())) {
+        if (instance instanceof MediaStatusAnyOf2) {
             super.setActualInstance(instance);
             return;
         }
 
-        if (JSON.isInstanceOf(MediaStatusAnyOf3.class, instance, new HashSet<Class<?>>())) {
+        if (instance instanceof MediaStatusAnyOf3) {
             super.setActualInstance(instance);
             return;
         }
@@ -225,6 +244,7 @@ public class MediaStatus extends AbstractOpenApiSchema {
      *
      * @return The actual instance (MediaStatusAnyOf, MediaStatusAnyOf1, MediaStatusAnyOf2, MediaStatusAnyOf3)
      */
+    @SuppressWarnings("unchecked")
     @Override
     public Object getActualInstance() {
         return super.getActualInstance();
@@ -274,42 +294,68 @@ public class MediaStatus extends AbstractOpenApiSchema {
         return (MediaStatusAnyOf3)super.getActualInstance();
     }
 
-
-
-  /**
-   * Convert the instance into URL query string.
-   *
-   * @return URL query string
-   */
-  public String toUrlQueryString() {
-    return toUrlQueryString(null);
-  }
-
-  /**
-   * Convert the instance into URL query string.
-   *
-   * @param prefix prefix of the query string
-   * @return URL query string
-   */
-  public String toUrlQueryString(String prefix) {
-    String suffix = "";
-    String containerSuffix = "";
-    String containerPrefix = "";
-    if (prefix == null) {
-      // style=form, explode=true, e.g. /pet?name=cat&type=manx
-      prefix = "";
-    } else {
-      // deepObject style e.g. /pet?id[name]=cat&id[type]=manx
-      prefix = prefix + "[";
-      suffix = "]";
-      containerSuffix = "]";
-      containerPrefix = "[";
+    /**
+     * Validates the JSON Element and throws an exception if issues found
+     *
+     * @param jsonElement JSON Element
+     * @throws IOException if the JSON Element is invalid with respect to MediaStatus
+     */
+    public static void validateJsonElement(JsonElement jsonElement) throws IOException {
+        // validate anyOf schemas one by one
+        ArrayList<String> errorMessages = new ArrayList<>();
+        // validate the json string with MediaStatusAnyOf
+        try {
+            MediaStatusAnyOf.validateJsonElement(jsonElement);
+            return;
+        } catch (Exception e) {
+            errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for MediaStatusAnyOf failed with `%s`.", e.getMessage()));
+            // continue to the next one
+        }
+        // validate the json string with MediaStatusAnyOf1
+        try {
+            MediaStatusAnyOf1.validateJsonElement(jsonElement);
+            return;
+        } catch (Exception e) {
+            errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for MediaStatusAnyOf1 failed with `%s`.", e.getMessage()));
+            // continue to the next one
+        }
+        // validate the json string with MediaStatusAnyOf2
+        try {
+            MediaStatusAnyOf2.validateJsonElement(jsonElement);
+            return;
+        } catch (Exception e) {
+            errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for MediaStatusAnyOf2 failed with `%s`.", e.getMessage()));
+            // continue to the next one
+        }
+        // validate the json string with MediaStatusAnyOf3
+        try {
+            MediaStatusAnyOf3.validateJsonElement(jsonElement);
+            return;
+        } catch (Exception e) {
+            errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for MediaStatusAnyOf3 failed with `%s`.", e.getMessage()));
+            // continue to the next one
+        }
+        throw new IOException(String.format(java.util.Locale.ROOT, "The JSON string is invalid for MediaStatus with anyOf schemas: MediaStatusAnyOf, MediaStatusAnyOf1, MediaStatusAnyOf2, MediaStatusAnyOf3. no class match the result, expected at least 1. Detailed failure message for anyOf schemas: %s. JSON: %s", errorMessages, jsonElement.toString()));
     }
 
-    StringJoiner joiner = new StringJoiner("&");
+    /**
+     * Create an instance of MediaStatus given an JSON string
+     *
+     * @param jsonString JSON string
+     * @return An instance of MediaStatus
+     * @throws IOException if the JSON string is invalid with respect to MediaStatus
+     */
+    public static MediaStatus fromJson(String jsonString) throws IOException {
+        return JSON.getGson().fromJson(jsonString, MediaStatus.class);
+    }
 
-    return null;
-  }
-
+    /**
+     * Convert an instance of MediaStatus to an JSON string
+     *
+     * @return JSON string
+     */
+    public String toJson() {
+        return JSON.getGson().toJson(this);
+    }
 }
 

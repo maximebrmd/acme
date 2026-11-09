@@ -7,7 +7,7 @@ Name | Type | Description | Notes
 **CreatedAt** | **string** |  | 
 **Id** | **string** |  | 
 **Name** | **string** |  | 
-**Permissions** | **List&lt;ApiKey.PermissionsEnum&gt;** |  | 
+**Permissions** | [**List&lt;Permission&gt;**](Permission.md) |  | 
 **ExpiresAt** | **string** |  | 
 **Start** | **string** |  | 
 

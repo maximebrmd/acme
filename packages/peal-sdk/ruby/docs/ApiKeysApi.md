@@ -30,7 +30,7 @@ end
 
 api_instance = Peal::ApiKeysApi.new
 workspace_id = 'workspace_id_example' # String | 
-new_api_key = Peal::NewApiKey.new({name: 'name_example', permissions: ['analytics:read']}) # NewApiKey | 
+new_api_key = Peal::NewApiKey.new({name: 'name_example', permissions: [Peal::Permission::ANALYTICS_READ]}) # NewApiKey | 
 
 begin
   # Create an API key

@@ -10,13 +10,22 @@
  * Do not edit the class manually.
  */
 
+
 package social.peal.api;
 
+import social.peal.ApiCallback;
 import social.peal.ApiClient;
 import social.peal.ApiException;
 import social.peal.ApiResponse;
 import social.peal.Configuration;
 import social.peal.Pair;
+import social.peal.ProgressRequestBody;
+import social.peal.ProgressResponseBody;
+
+import com.google.gson.reflect.TypeToken;
+
+import java.io.IOException;
+
 
 import social.peal.model.EffectHttpApiErrorBadRequestEncoded;
 import social.peal.model.ForbiddenEncoded;
@@ -25,621 +34,577 @@ import social.peal.model.NoticePage;
 import social.peal.model.UnauthenticatedEncoded;
 import social.peal.model.UnreadNotices;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import java.io.InputStream;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.net.http.HttpRequest;
-import java.nio.channels.Channels;
-import java.nio.channels.Pipe;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.time.Duration;
-
+import java.lang.reflect.Type;
 import java.util.ArrayList;
-import java.util.StringJoiner;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.function.Consumer;
 
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.27.0")
 public class NoticesApi {
-  /**
-   * Utility class for extending HttpRequest.Builder functionality.
-   */
-  private static class HttpRequestBuilderExtensions {
+    private ApiClient localVarApiClient;
+    private int localHostIndex;
+    private String localCustomBaseUrl;
+
+    public NoticesApi() {
+        this(Configuration.getDefaultApiClient());
+    }
+
+    public NoticesApi(ApiClient apiClient) {
+        this.localVarApiClient = apiClient;
+    }
+
+    public ApiClient getApiClient() {
+        return localVarApiClient;
+    }
+
+    public void setApiClient(ApiClient apiClient) {
+        this.localVarApiClient = apiClient;
+    }
+
+    public int getHostIndex() {
+        return localHostIndex;
+    }
+
+    public void setHostIndex(int hostIndex) {
+        this.localHostIndex = hostIndex;
+    }
+
+    public String getCustomBaseUrl() {
+        return localCustomBaseUrl;
+    }
+
+    public void setCustomBaseUrl(String customBaseUrl) {
+        this.localCustomBaseUrl = customBaseUrl;
+    }
+
     /**
-     * Adds additional headers to the provided HttpRequest.Builder. Useful for adding method/endpoint specific headers.
-     *
-     * @param builder the HttpRequest.Builder to which headers will be added
-     * @param headers a map of header names and values to add; may be null
-     * @return the same HttpRequest.Builder instance with the additional headers set
+     * Build call for noticesList
+     * @param cursor  (optional)
+     * @param limit  (optional)
+     * @param _callback Callback for upload/download progress
+     * @return Call to execute
+     * @throws ApiException If fail to serialize the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> NoticePage </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> BadRequest </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+     </table>
      */
-    static HttpRequest.Builder withAdditionalHeaders(HttpRequest.Builder builder, Map<String, String> headers) {
-        if (headers != null) {
-            for (Map.Entry<String, String> entry : headers.entrySet()) {
-                builder.header(entry.getKey(), entry.getValue());
-            }
-        }
-        return builder;
-    }
-  }
-  private final HttpClient memberVarHttpClient;
-  private final ObjectMapper memberVarObjectMapper;
-  private final String memberVarBaseUri;
-  private final Consumer<HttpRequest.Builder> memberVarInterceptor;
-  private final Duration memberVarReadTimeout;
-  private final Consumer<HttpResponse<InputStream>> memberVarResponseInterceptor;
-  private final Consumer<HttpResponse<InputStream>> memberVarAsyncResponseInterceptor;
+    public okhttp3.Call noticesListCall(@javax.annotation.Nullable String cursor, @javax.annotation.Nullable String limit, final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
 
-  public NoticesApi() {
-    this(Configuration.getDefaultApiClient());
-  }
-
-  public NoticesApi(ApiClient apiClient) {
-    memberVarHttpClient = apiClient.getHttpClient();
-    memberVarObjectMapper = apiClient.getObjectMapper();
-    memberVarBaseUri = apiClient.getBaseUri();
-    memberVarInterceptor = apiClient.getRequestInterceptor();
-    memberVarReadTimeout = apiClient.getReadTimeout();
-    memberVarResponseInterceptor = apiClient.getResponseInterceptor();
-    memberVarAsyncResponseInterceptor = apiClient.getAsyncResponseInterceptor();
-  }
-
-
-  protected ApiException getApiException(String operationId, HttpResponse<InputStream> response) throws IOException {
-    InputStream responseBody = ApiClient.getResponseBody(response);
-    String body = null;
-    try {
-      body = responseBody == null ? null : new String(responseBody.readAllBytes());
-    } finally {
-      if (responseBody != null) {
-        responseBody.close();
-      }
-    }
-    String message = formatExceptionMessage(operationId, response.statusCode(), body);
-    return new ApiException(response.statusCode(), message, response.headers(), body);
-  }
-
-  private String formatExceptionMessage(String operationId, int statusCode, String body) {
-    if (body == null || body.isEmpty()) {
-      body = "[no body]";
-    }
-    return operationId + " call failed with: " + statusCode + " - " + body;
-  }
-
-  /**
-   * Download file from the given response.
-   *
-   * @param response Response
-   * @return File
-   * @throws ApiException If fail to read file content from response and write to disk
-   */
-  public File downloadFileFromResponse(HttpResponse<InputStream> response, InputStream responseBody) throws ApiException {
-    if (responseBody == null) {
-      throw new ApiException(new IOException("Response body is empty"));
-    }
-    try {
-      File file = prepareDownloadFile(response);
-      java.nio.file.Files.copy(responseBody, file.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-      return file;
-    } catch (IOException e) {
-      throw new ApiException(e);
-    }
-  }
-
-  /**
-   * <p>Prepare the file for download from the response.</p>
-   *
-   * @param response a {@link java.net.http.HttpResponse} object.
-   * @return a {@link java.io.File} object.
-   * @throws java.io.IOException if any.
-   */
-  private File prepareDownloadFile(HttpResponse<InputStream> response) throws IOException {
-    String filename = null;
-    java.util.Optional<String> contentDisposition = response.headers().firstValue("Content-Disposition");
-    if (contentDisposition.isPresent() && !"".equals(contentDisposition.get())) {
-      // Get filename from the Content-Disposition header.
-      java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("filename=['\"]?([^'\"\\s]+)['\"]?");
-      java.util.regex.Matcher matcher = pattern.matcher(contentDisposition.get());
-      if (matcher.find())
-        filename = matcher.group(1);
-    }
-    File file = null;
-    if (filename != null) {
-      java.nio.file.Path tempDir = java.nio.file.Files.createTempDirectory("swagger-gen-native");
-      java.nio.file.Path filePath = java.nio.file.Files.createFile(tempDir.resolve(filename));
-      file = filePath.toFile();
-      tempDir.toFile().deleteOnExit();   // best effort cleanup
-      file.deleteOnExit(); // best effort cleanup
-    } else {
-      file = java.nio.file.Files.createTempFile("download-", "").toFile();
-      file.deleteOnExit(); // best effort cleanup
-    }
-    return file;
-  }
-
-  /**
-   * List notices
-   * Lists the user&#39;s notices, newest first, 20 a page unless &#x60;limit&#x60; (at most 100) says otherwise. Pass the page&#39;s &#x60;nextCursor&#x60; as &#x60;cursor&#x60; for the next one. Each notice is data, for the client to write in the reader&#39;s language.
-   * @param cursor  (optional)
-   * @param limit  (optional)
-   * @return NoticePage
-   * @throws ApiException if fails to make API call
-   */
-  public NoticePage noticesList(@javax.annotation.Nullable String cursor, @javax.annotation.Nullable String limit) throws ApiException {
-    return noticesList(cursor, limit, null);
-  }
-
-  /**
-   * List notices
-   * Lists the user&#39;s notices, newest first, 20 a page unless &#x60;limit&#x60; (at most 100) says otherwise. Pass the page&#39;s &#x60;nextCursor&#x60; as &#x60;cursor&#x60; for the next one. Each notice is data, for the client to write in the reader&#39;s language.
-   * @param cursor  (optional)
-   * @param limit  (optional)
-   * @param headers Optional headers to include in the request
-   * @return NoticePage
-   * @throws ApiException if fails to make API call
-   */
-  public NoticePage noticesList(@javax.annotation.Nullable String cursor, @javax.annotation.Nullable String limit, Map<String, String> headers) throws ApiException {
-    ApiResponse<NoticePage> localVarResponse = noticesListWithHttpInfo(cursor, limit, headers);
-    return localVarResponse.getData();
-  }
-
-  /**
-   * List notices
-   * Lists the user&#39;s notices, newest first, 20 a page unless &#x60;limit&#x60; (at most 100) says otherwise. Pass the page&#39;s &#x60;nextCursor&#x60; as &#x60;cursor&#x60; for the next one. Each notice is data, for the client to write in the reader&#39;s language.
-   * @param cursor  (optional)
-   * @param limit  (optional)
-   * @return ApiResponse&lt;NoticePage&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<NoticePage> noticesListWithHttpInfo(@javax.annotation.Nullable String cursor, @javax.annotation.Nullable String limit) throws ApiException {
-    return noticesListWithHttpInfo(cursor, limit, null);
-  }
-
-  /**
-   * List notices
-   * Lists the user&#39;s notices, newest first, 20 a page unless &#x60;limit&#x60; (at most 100) says otherwise. Pass the page&#39;s &#x60;nextCursor&#x60; as &#x60;cursor&#x60; for the next one. Each notice is data, for the client to write in the reader&#39;s language.
-   * @param cursor  (optional)
-   * @param limit  (optional)
-   * @param headers Optional headers to include in the request
-   * @return ApiResponse&lt;NoticePage&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<NoticePage> noticesListWithHttpInfo(@javax.annotation.Nullable String cursor, @javax.annotation.Nullable String limit, Map<String, String> headers) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = noticesListRequestBuilder(cursor, limit, headers);
-    try {
-      HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
-          localVarRequestBuilder.build(),
-          HttpResponse.BodyHandlers.ofInputStream());
-      if (memberVarResponseInterceptor != null) {
-        memberVarResponseInterceptor.accept(localVarResponse);
-      }
-      InputStream localVarResponseBody = null;
-      try {
-        if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("noticesList", localVarResponse);
-        }
-        localVarResponseBody = ApiClient.getResponseBody(localVarResponse);
-        if (localVarResponseBody == null) {
-          return new ApiResponse<NoticePage>(
-              localVarResponse.statusCode(),
-              localVarResponse.headers().map(),
-              null
-          );
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
         }
 
-        
-        
-        String responseBody = new String(localVarResponseBody.readAllBytes());
-        NoticePage responseValue = responseBody.isBlank()? null: memberVarObjectMapper.readValue(responseBody, new TypeReference<NoticePage>() {});
-        
+        Object localVarPostBody = null;
 
-        return new ApiResponse<NoticePage>(
-            localVarResponse.statusCode(),
-            localVarResponse.headers().map(),
-            responseValue
-        );
-      } finally {
-        if (localVarResponseBody != null) {
-          localVarResponseBody.close();
-        }
-      }
-    } catch (IOException e) {
-      throw new ApiException(e);
-    }
-    catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new ApiException(e);
-    }
-  }
+        // create path and map variables
+        String localVarPath = "/api/me/notices";
 
-  private HttpRequest.Builder noticesListRequestBuilder(@javax.annotation.Nullable String cursor, @javax.annotation.Nullable String limit, Map<String, String> headers) throws ApiException {
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
 
-    HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
-
-    String localVarPath = "/api/me/notices";
-
-    List<Pair> localVarQueryParams = new ArrayList<>();
-    StringJoiner localVarQueryStringJoiner = new StringJoiner("&");
-    String localVarQueryParameterBaseName;
-    localVarQueryParameterBaseName = "cursor";
-    localVarQueryParams.addAll(ApiClient.parameterToPairs("cursor", cursor));
-    localVarQueryParameterBaseName = "limit";
-    localVarQueryParams.addAll(ApiClient.parameterToPairs("limit", limit));
-
-    if (!localVarQueryParams.isEmpty() || localVarQueryStringJoiner.length() != 0) {
-      StringJoiner queryJoiner = new StringJoiner("&");
-      localVarQueryParams.forEach(p -> queryJoiner.add(p.getName() + '=' + p.getValue()));
-      if (localVarQueryStringJoiner.length() != 0) {
-        queryJoiner.add(localVarQueryStringJoiner.toString());
-      }
-      localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath + '?' + queryJoiner.toString()));
-    } else {
-      localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
-    }
-
-    localVarRequestBuilder.header("Accept", "application/json");
-
-    localVarRequestBuilder.method("GET", HttpRequest.BodyPublishers.noBody());
-    if (memberVarReadTimeout != null) {
-      localVarRequestBuilder.timeout(memberVarReadTimeout);
-    }
-    // Add custom headers if provided
-    localVarRequestBuilder = HttpRequestBuilderExtensions.withAdditionalHeaders(localVarRequestBuilder, headers);
-    if (memberVarInterceptor != null) {
-      memberVarInterceptor.accept(localVarRequestBuilder);
-    }
-    return localVarRequestBuilder;
-  }
-
-  /**
-   * Mark all notices read
-   * Marks every notice of the user read.
-   * @return UnreadNotices
-   * @throws ApiException if fails to make API call
-   */
-  public UnreadNotices noticesMarkAllRead() throws ApiException {
-    return noticesMarkAllRead(null);
-  }
-
-  /**
-   * Mark all notices read
-   * Marks every notice of the user read.
-   * @param headers Optional headers to include in the request
-   * @return UnreadNotices
-   * @throws ApiException if fails to make API call
-   */
-  public UnreadNotices noticesMarkAllRead(Map<String, String> headers) throws ApiException {
-    ApiResponse<UnreadNotices> localVarResponse = noticesMarkAllReadWithHttpInfo(headers);
-    return localVarResponse.getData();
-  }
-
-  /**
-   * Mark all notices read
-   * Marks every notice of the user read.
-   * @return ApiResponse&lt;UnreadNotices&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<UnreadNotices> noticesMarkAllReadWithHttpInfo() throws ApiException {
-    return noticesMarkAllReadWithHttpInfo(null);
-  }
-
-  /**
-   * Mark all notices read
-   * Marks every notice of the user read.
-   * @param headers Optional headers to include in the request
-   * @return ApiResponse&lt;UnreadNotices&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<UnreadNotices> noticesMarkAllReadWithHttpInfo(Map<String, String> headers) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = noticesMarkAllReadRequestBuilder(headers);
-    try {
-      HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
-          localVarRequestBuilder.build(),
-          HttpResponse.BodyHandlers.ofInputStream());
-      if (memberVarResponseInterceptor != null) {
-        memberVarResponseInterceptor.accept(localVarResponse);
-      }
-      InputStream localVarResponseBody = null;
-      try {
-        if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("noticesMarkAllRead", localVarResponse);
-        }
-        localVarResponseBody = ApiClient.getResponseBody(localVarResponse);
-        if (localVarResponseBody == null) {
-          return new ApiResponse<UnreadNotices>(
-              localVarResponse.statusCode(),
-              localVarResponse.headers().map(),
-              null
-          );
+        if (cursor != null) {
+            localVarQueryParams.addAll(localVarApiClient.parameterToPair("cursor", cursor));
         }
 
-        
-        
-        String responseBody = new String(localVarResponseBody.readAllBytes());
-        UnreadNotices responseValue = responseBody.isBlank()? null: memberVarObjectMapper.readValue(responseBody, new TypeReference<UnreadNotices>() {});
-        
-
-        return new ApiResponse<UnreadNotices>(
-            localVarResponse.statusCode(),
-            localVarResponse.headers().map(),
-            responseValue
-        );
-      } finally {
-        if (localVarResponseBody != null) {
-          localVarResponseBody.close();
-        }
-      }
-    } catch (IOException e) {
-      throw new ApiException(e);
-    }
-    catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new ApiException(e);
-    }
-  }
-
-  private HttpRequest.Builder noticesMarkAllReadRequestBuilder(Map<String, String> headers) throws ApiException {
-
-    HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
-
-    String localVarPath = "/api/me/notices/read-all";
-
-    localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
-
-    localVarRequestBuilder.header("Accept", "application/json");
-
-    localVarRequestBuilder.method("POST", HttpRequest.BodyPublishers.noBody());
-    if (memberVarReadTimeout != null) {
-      localVarRequestBuilder.timeout(memberVarReadTimeout);
-    }
-    // Add custom headers if provided
-    localVarRequestBuilder = HttpRequestBuilderExtensions.withAdditionalHeaders(localVarRequestBuilder, headers);
-    if (memberVarInterceptor != null) {
-      memberVarInterceptor.accept(localVarRequestBuilder);
-    }
-    return localVarRequestBuilder;
-  }
-
-  /**
-   * Mark notices read
-   * Marks up to 100 of the user&#39;s notices read, and answers with how many stay unread. Ids that name none of the user&#39;s notices, and notices already read, are left as they are.
-   * @param markNoticesRead  (required)
-   * @return UnreadNotices
-   * @throws ApiException if fails to make API call
-   */
-  public UnreadNotices noticesMarkRead(@javax.annotation.Nonnull MarkNoticesRead markNoticesRead) throws ApiException {
-    return noticesMarkRead(markNoticesRead, null);
-  }
-
-  /**
-   * Mark notices read
-   * Marks up to 100 of the user&#39;s notices read, and answers with how many stay unread. Ids that name none of the user&#39;s notices, and notices already read, are left as they are.
-   * @param markNoticesRead  (required)
-   * @param headers Optional headers to include in the request
-   * @return UnreadNotices
-   * @throws ApiException if fails to make API call
-   */
-  public UnreadNotices noticesMarkRead(@javax.annotation.Nonnull MarkNoticesRead markNoticesRead, Map<String, String> headers) throws ApiException {
-    ApiResponse<UnreadNotices> localVarResponse = noticesMarkReadWithHttpInfo(markNoticesRead, headers);
-    return localVarResponse.getData();
-  }
-
-  /**
-   * Mark notices read
-   * Marks up to 100 of the user&#39;s notices read, and answers with how many stay unread. Ids that name none of the user&#39;s notices, and notices already read, are left as they are.
-   * @param markNoticesRead  (required)
-   * @return ApiResponse&lt;UnreadNotices&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<UnreadNotices> noticesMarkReadWithHttpInfo(@javax.annotation.Nonnull MarkNoticesRead markNoticesRead) throws ApiException {
-    return noticesMarkReadWithHttpInfo(markNoticesRead, null);
-  }
-
-  /**
-   * Mark notices read
-   * Marks up to 100 of the user&#39;s notices read, and answers with how many stay unread. Ids that name none of the user&#39;s notices, and notices already read, are left as they are.
-   * @param markNoticesRead  (required)
-   * @param headers Optional headers to include in the request
-   * @return ApiResponse&lt;UnreadNotices&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<UnreadNotices> noticesMarkReadWithHttpInfo(@javax.annotation.Nonnull MarkNoticesRead markNoticesRead, Map<String, String> headers) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = noticesMarkReadRequestBuilder(markNoticesRead, headers);
-    try {
-      HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
-          localVarRequestBuilder.build(),
-          HttpResponse.BodyHandlers.ofInputStream());
-      if (memberVarResponseInterceptor != null) {
-        memberVarResponseInterceptor.accept(localVarResponse);
-      }
-      InputStream localVarResponseBody = null;
-      try {
-        if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("noticesMarkRead", localVarResponse);
-        }
-        localVarResponseBody = ApiClient.getResponseBody(localVarResponse);
-        if (localVarResponseBody == null) {
-          return new ApiResponse<UnreadNotices>(
-              localVarResponse.statusCode(),
-              localVarResponse.headers().map(),
-              null
-          );
+        if (limit != null) {
+            localVarQueryParams.addAll(localVarApiClient.parameterToPair("limit", limit));
         }
 
-        
-        
-        String responseBody = new String(localVarResponseBody.readAllBytes());
-        UnreadNotices responseValue = responseBody.isBlank()? null: memberVarObjectMapper.readValue(responseBody, new TypeReference<UnreadNotices>() {});
-        
-
-        return new ApiResponse<UnreadNotices>(
-            localVarResponse.statusCode(),
-            localVarResponse.headers().map(),
-            responseValue
-        );
-      } finally {
-        if (localVarResponseBody != null) {
-          localVarResponseBody.close();
-        }
-      }
-    } catch (IOException e) {
-      throw new ApiException(e);
-    }
-    catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new ApiException(e);
-    }
-  }
-
-  private HttpRequest.Builder noticesMarkReadRequestBuilder(@javax.annotation.Nonnull MarkNoticesRead markNoticesRead, Map<String, String> headers) throws ApiException {
-    // verify the required parameter 'markNoticesRead' is set
-    if (markNoticesRead == null) {
-      throw new ApiException(400, "Missing the required parameter 'markNoticesRead' when calling noticesMarkRead");
-    }
-
-    HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
-
-    String localVarPath = "/api/me/notices/read";
-
-    localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
-
-    localVarRequestBuilder.header("Content-Type", "application/json");
-    localVarRequestBuilder.header("Accept", "application/json");
-
-    try {
-      byte[] localVarPostBody = memberVarObjectMapper.writeValueAsBytes(markNoticesRead);
-      localVarRequestBuilder.method("POST", HttpRequest.BodyPublishers.ofByteArray(localVarPostBody));
-    } catch (IOException e) {
-      throw new ApiException(e);
-    }
-    if (memberVarReadTimeout != null) {
-      localVarRequestBuilder.timeout(memberVarReadTimeout);
-    }
-    // Add custom headers if provided
-    localVarRequestBuilder = HttpRequestBuilderExtensions.withAdditionalHeaders(localVarRequestBuilder, headers);
-    if (memberVarInterceptor != null) {
-      memberVarInterceptor.accept(localVarRequestBuilder);
-    }
-    return localVarRequestBuilder;
-  }
-
-  /**
-   * Count unread notices
-   * Counts the user&#39;s unread notices.
-   * @return UnreadNotices
-   * @throws ApiException if fails to make API call
-   */
-  public UnreadNotices noticesUnread() throws ApiException {
-    return noticesUnread(null);
-  }
-
-  /**
-   * Count unread notices
-   * Counts the user&#39;s unread notices.
-   * @param headers Optional headers to include in the request
-   * @return UnreadNotices
-   * @throws ApiException if fails to make API call
-   */
-  public UnreadNotices noticesUnread(Map<String, String> headers) throws ApiException {
-    ApiResponse<UnreadNotices> localVarResponse = noticesUnreadWithHttpInfo(headers);
-    return localVarResponse.getData();
-  }
-
-  /**
-   * Count unread notices
-   * Counts the user&#39;s unread notices.
-   * @return ApiResponse&lt;UnreadNotices&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<UnreadNotices> noticesUnreadWithHttpInfo() throws ApiException {
-    return noticesUnreadWithHttpInfo(null);
-  }
-
-  /**
-   * Count unread notices
-   * Counts the user&#39;s unread notices.
-   * @param headers Optional headers to include in the request
-   * @return ApiResponse&lt;UnreadNotices&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<UnreadNotices> noticesUnreadWithHttpInfo(Map<String, String> headers) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = noticesUnreadRequestBuilder(headers);
-    try {
-      HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
-          localVarRequestBuilder.build(),
-          HttpResponse.BodyHandlers.ofInputStream());
-      if (memberVarResponseInterceptor != null) {
-        memberVarResponseInterceptor.accept(localVarResponse);
-      }
-      InputStream localVarResponseBody = null;
-      try {
-        if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("noticesUnread", localVarResponse);
-        }
-        localVarResponseBody = ApiClient.getResponseBody(localVarResponse);
-        if (localVarResponseBody == null) {
-          return new ApiResponse<UnreadNotices>(
-              localVarResponse.statusCode(),
-              localVarResponse.headers().map(),
-              null
-          );
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
         }
 
-        
-        
-        String responseBody = new String(localVarResponseBody.readAllBytes());
-        UnreadNotices responseValue = responseBody.isBlank()? null: memberVarObjectMapper.readValue(responseBody, new TypeReference<UnreadNotices>() {});
-        
-
-        return new ApiResponse<UnreadNotices>(
-            localVarResponse.statusCode(),
-            localVarResponse.headers().map(),
-            responseValue
-        );
-      } finally {
-        if (localVarResponseBody != null) {
-          localVarResponseBody.close();
+        final String[] localVarContentTypes = {
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
         }
-      }
-    } catch (IOException e) {
-      throw new ApiException(e);
+
+        String[] localVarAuthNames = new String[] { "bearer" };
+        return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
-    catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new ApiException(e);
+
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call noticesListValidateBeforeCall(@javax.annotation.Nullable String cursor, @javax.annotation.Nullable String limit, final ApiCallback _callback) throws ApiException {
+        return noticesListCall(cursor, limit, _callback);
+
     }
-  }
 
-  private HttpRequest.Builder noticesUnreadRequestBuilder(Map<String, String> headers) throws ApiException {
-
-    HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
-
-    String localVarPath = "/api/me/notices/unread";
-
-    localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
-
-    localVarRequestBuilder.header("Accept", "application/json");
-
-    localVarRequestBuilder.method("GET", HttpRequest.BodyPublishers.noBody());
-    if (memberVarReadTimeout != null) {
-      localVarRequestBuilder.timeout(memberVarReadTimeout);
+    /**
+     * List notices
+     * Lists the user&#39;s notices, newest first, 20 a page unless &#x60;limit&#x60; (at most 100) says otherwise. Pass the page&#39;s &#x60;nextCursor&#x60; as &#x60;cursor&#x60; for the next one. Each notice is data, for the client to write in the reader&#39;s language.
+     * @param cursor  (optional)
+     * @param limit  (optional)
+     * @return NoticePage
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> NoticePage </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> BadRequest </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+     </table>
+     */
+    public NoticePage noticesList(@javax.annotation.Nullable String cursor, @javax.annotation.Nullable String limit) throws ApiException {
+        ApiResponse<NoticePage> localVarResp = noticesListWithHttpInfo(cursor, limit);
+        return localVarResp.getData();
     }
-    // Add custom headers if provided
-    localVarRequestBuilder = HttpRequestBuilderExtensions.withAdditionalHeaders(localVarRequestBuilder, headers);
-    if (memberVarInterceptor != null) {
-      memberVarInterceptor.accept(localVarRequestBuilder);
-    }
-    return localVarRequestBuilder;
-  }
 
+    /**
+     * List notices
+     * Lists the user&#39;s notices, newest first, 20 a page unless &#x60;limit&#x60; (at most 100) says otherwise. Pass the page&#39;s &#x60;nextCursor&#x60; as &#x60;cursor&#x60; for the next one. Each notice is data, for the client to write in the reader&#39;s language.
+     * @param cursor  (optional)
+     * @param limit  (optional)
+     * @return ApiResponse&lt;NoticePage&gt;
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> NoticePage </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> BadRequest </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+     </table>
+     */
+    public ApiResponse<NoticePage> noticesListWithHttpInfo(@javax.annotation.Nullable String cursor, @javax.annotation.Nullable String limit) throws ApiException {
+        okhttp3.Call localVarCall = noticesListValidateBeforeCall(cursor, limit, null);
+        Type localVarReturnType = new TypeToken<NoticePage>(){}.getType();
+        return localVarApiClient.execute(localVarCall, localVarReturnType);
+    }
+
+    /**
+     * List notices (asynchronously)
+     * Lists the user&#39;s notices, newest first, 20 a page unless &#x60;limit&#x60; (at most 100) says otherwise. Pass the page&#39;s &#x60;nextCursor&#x60; as &#x60;cursor&#x60; for the next one. Each notice is data, for the client to write in the reader&#39;s language.
+     * @param cursor  (optional)
+     * @param limit  (optional)
+     * @param _callback The callback to be executed when the API call finishes
+     * @return The request call
+     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> NoticePage </td><td>  -  </td></tr>
+        <tr><td> 400 </td><td> BadRequest </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call noticesListAsync(@javax.annotation.Nullable String cursor, @javax.annotation.Nullable String limit, final ApiCallback<NoticePage> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = noticesListValidateBeforeCall(cursor, limit, _callback);
+        Type localVarReturnType = new TypeToken<NoticePage>(){}.getType();
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
+        return localVarCall;
+    }
+    /**
+     * Build call for noticesMarkAllRead
+     * @param _callback Callback for upload/download progress
+     * @return Call to execute
+     * @throws ApiException If fail to serialize the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> UnreadNotices </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call noticesMarkAllReadCall(final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
+
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
+        }
+
+        Object localVarPostBody = null;
+
+        // create path and map variables
+        String localVarPath = "/api/me/notices/read-all";
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
+        }
+
+        String[] localVarAuthNames = new String[] { "bearer" };
+        return localVarApiClient.buildCall(basePath, localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call noticesMarkAllReadValidateBeforeCall(final ApiCallback _callback) throws ApiException {
+        return noticesMarkAllReadCall(_callback);
+
+    }
+
+    /**
+     * Mark all notices read
+     * Marks every notice of the user read.
+     * @return UnreadNotices
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> UnreadNotices </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+     </table>
+     */
+    public UnreadNotices noticesMarkAllRead() throws ApiException {
+        ApiResponse<UnreadNotices> localVarResp = noticesMarkAllReadWithHttpInfo();
+        return localVarResp.getData();
+    }
+
+    /**
+     * Mark all notices read
+     * Marks every notice of the user read.
+     * @return ApiResponse&lt;UnreadNotices&gt;
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> UnreadNotices </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+     </table>
+     */
+    public ApiResponse<UnreadNotices> noticesMarkAllReadWithHttpInfo() throws ApiException {
+        okhttp3.Call localVarCall = noticesMarkAllReadValidateBeforeCall(null);
+        Type localVarReturnType = new TypeToken<UnreadNotices>(){}.getType();
+        return localVarApiClient.execute(localVarCall, localVarReturnType);
+    }
+
+    /**
+     * Mark all notices read (asynchronously)
+     * Marks every notice of the user read.
+     * @param _callback The callback to be executed when the API call finishes
+     * @return The request call
+     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> UnreadNotices </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call noticesMarkAllReadAsync(final ApiCallback<UnreadNotices> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = noticesMarkAllReadValidateBeforeCall(_callback);
+        Type localVarReturnType = new TypeToken<UnreadNotices>(){}.getType();
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
+        return localVarCall;
+    }
+    /**
+     * Build call for noticesMarkRead
+     * @param markNoticesRead  (required)
+     * @param _callback Callback for upload/download progress
+     * @return Call to execute
+     * @throws ApiException If fail to serialize the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> UnreadNotices </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call noticesMarkReadCall(@javax.annotation.Nonnull MarkNoticesRead markNoticesRead, final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
+
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
+        }
+
+        Object localVarPostBody = markNoticesRead;
+
+        // create path and map variables
+        String localVarPath = "/api/me/notices/read";
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+            "application/json"
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
+        }
+
+        String[] localVarAuthNames = new String[] { "bearer" };
+        return localVarApiClient.buildCall(basePath, localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call noticesMarkReadValidateBeforeCall(@javax.annotation.Nonnull MarkNoticesRead markNoticesRead, final ApiCallback _callback) throws ApiException {
+        // verify the required parameter 'markNoticesRead' is set
+        if (markNoticesRead == null) {
+            throw new ApiException("Missing the required parameter 'markNoticesRead' when calling noticesMarkRead(Async)");
+        }
+
+        return noticesMarkReadCall(markNoticesRead, _callback);
+
+    }
+
+    /**
+     * Mark notices read
+     * Marks up to 100 of the user&#39;s notices read, and answers with how many stay unread. Ids that name none of the user&#39;s notices, and notices already read, are left as they are.
+     * @param markNoticesRead  (required)
+     * @return UnreadNotices
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> UnreadNotices </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+     </table>
+     */
+    public UnreadNotices noticesMarkRead(@javax.annotation.Nonnull MarkNoticesRead markNoticesRead) throws ApiException {
+        ApiResponse<UnreadNotices> localVarResp = noticesMarkReadWithHttpInfo(markNoticesRead);
+        return localVarResp.getData();
+    }
+
+    /**
+     * Mark notices read
+     * Marks up to 100 of the user&#39;s notices read, and answers with how many stay unread. Ids that name none of the user&#39;s notices, and notices already read, are left as they are.
+     * @param markNoticesRead  (required)
+     * @return ApiResponse&lt;UnreadNotices&gt;
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> UnreadNotices </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+     </table>
+     */
+    public ApiResponse<UnreadNotices> noticesMarkReadWithHttpInfo(@javax.annotation.Nonnull MarkNoticesRead markNoticesRead) throws ApiException {
+        okhttp3.Call localVarCall = noticesMarkReadValidateBeforeCall(markNoticesRead, null);
+        Type localVarReturnType = new TypeToken<UnreadNotices>(){}.getType();
+        return localVarApiClient.execute(localVarCall, localVarReturnType);
+    }
+
+    /**
+     * Mark notices read (asynchronously)
+     * Marks up to 100 of the user&#39;s notices read, and answers with how many stay unread. Ids that name none of the user&#39;s notices, and notices already read, are left as they are.
+     * @param markNoticesRead  (required)
+     * @param _callback The callback to be executed when the API call finishes
+     * @return The request call
+     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> UnreadNotices </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call noticesMarkReadAsync(@javax.annotation.Nonnull MarkNoticesRead markNoticesRead, final ApiCallback<UnreadNotices> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = noticesMarkReadValidateBeforeCall(markNoticesRead, _callback);
+        Type localVarReturnType = new TypeToken<UnreadNotices>(){}.getType();
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
+        return localVarCall;
+    }
+    /**
+     * Build call for noticesUnread
+     * @param _callback Callback for upload/download progress
+     * @return Call to execute
+     * @throws ApiException If fail to serialize the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> UnreadNotices </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call noticesUnreadCall(final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
+
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
+        }
+
+        Object localVarPostBody = null;
+
+        // create path and map variables
+        String localVarPath = "/api/me/notices/unread";
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
+        }
+
+        String[] localVarAuthNames = new String[] { "bearer" };
+        return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call noticesUnreadValidateBeforeCall(final ApiCallback _callback) throws ApiException {
+        return noticesUnreadCall(_callback);
+
+    }
+
+    /**
+     * Count unread notices
+     * Counts the user&#39;s unread notices.
+     * @return UnreadNotices
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> UnreadNotices </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+     </table>
+     */
+    public UnreadNotices noticesUnread() throws ApiException {
+        ApiResponse<UnreadNotices> localVarResp = noticesUnreadWithHttpInfo();
+        return localVarResp.getData();
+    }
+
+    /**
+     * Count unread notices
+     * Counts the user&#39;s unread notices.
+     * @return ApiResponse&lt;UnreadNotices&gt;
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> UnreadNotices </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+     </table>
+     */
+    public ApiResponse<UnreadNotices> noticesUnreadWithHttpInfo() throws ApiException {
+        okhttp3.Call localVarCall = noticesUnreadValidateBeforeCall(null);
+        Type localVarReturnType = new TypeToken<UnreadNotices>(){}.getType();
+        return localVarApiClient.execute(localVarCall, localVarReturnType);
+    }
+
+    /**
+     * Count unread notices (asynchronously)
+     * Counts the user&#39;s unread notices.
+     * @param _callback The callback to be executed when the API call finishes
+     * @return The request call
+     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> UnreadNotices </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call noticesUnreadAsync(final ApiCallback<UnreadNotices> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = noticesUnreadValidateBeforeCall(_callback);
+        Type localVarReturnType = new TypeToken<UnreadNotices>(){}.getType();
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
+        return localVarCall;
+    }
 }

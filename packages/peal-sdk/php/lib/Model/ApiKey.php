@@ -62,7 +62,7 @@ class ApiKey implements ModelInterface, ArrayAccess, \JsonSerializable
         'expires_at' => 'string',
         'id' => 'string',
         'name' => 'string',
-        'permissions' => 'string[]',
+        'permissions' => '\Peal\Model\Permission[]',
         'start' => 'string'
     ];
 
@@ -259,73 +259,6 @@ class ApiKey implements ModelInterface, ArrayAccess, \JsonSerializable
         return self::$openAPIModelName;
     }
 
-    public const PERMISSIONS_ANALYTICS_READ = 'analytics:read';
-    public const PERMISSIONS_API_KEY_CREATE = 'apiKey:create';
-    public const PERMISSIONS_API_KEY_READ = 'apiKey:read';
-    public const PERMISSIONS_API_KEY_UPDATE = 'apiKey:update';
-    public const PERMISSIONS_API_KEY_DELETE = 'apiKey:delete';
-    public const PERMISSIONS_ASSISTANT_USE = 'assistant:use';
-    public const PERMISSIONS_BILLING_READ = 'billing:read';
-    public const PERMISSIONS_BILLING_MANAGE = 'billing:manage';
-    public const PERMISSIONS_CHANNEL_READ = 'channel:read';
-    public const PERMISSIONS_CHANNEL_CONNECT = 'channel:connect';
-    public const PERMISSIONS_CHANNEL_DISCONNECT = 'channel:disconnect';
-    public const PERMISSIONS_INVITATION_CREATE = 'invitation:create';
-    public const PERMISSIONS_INVITATION_CANCEL = 'invitation:cancel';
-    public const PERMISSIONS_MEDIA_READ = 'media:read';
-    public const PERMISSIONS_MEDIA_UPLOAD = 'media:upload';
-    public const PERMISSIONS_MEDIA_DELETE = 'media:delete';
-    public const PERMISSIONS_MEMBER_CREATE = 'member:create';
-    public const PERMISSIONS_MEMBER_UPDATE = 'member:update';
-    public const PERMISSIONS_MEMBER_DELETE = 'member:delete';
-    public const PERMISSIONS_ORGANIZATION_UPDATE = 'organization:update';
-    public const PERMISSIONS_ORGANIZATION_DELETE = 'organization:delete';
-    public const PERMISSIONS_POST_READ = 'post:read';
-    public const PERMISSIONS_POST_CREATE = 'post:create';
-    public const PERMISSIONS_POST_UPDATE = 'post:update';
-    public const PERMISSIONS_POST_DELETE = 'post:delete';
-    public const PERMISSIONS_POST_SCHEDULE = 'post:schedule';
-    public const PERMISSIONS_POST_APPROVE = 'post:approve';
-    public const PERMISSIONS_POST_PUBLISH = 'post:publish';
-
-    /**
-     * Gets allowable values of the enum
-     *
-     * @return string[]
-     */
-    public function getPermissionsAllowableValues()
-    {
-        return [
-            self::PERMISSIONS_ANALYTICS_READ,
-            self::PERMISSIONS_API_KEY_CREATE,
-            self::PERMISSIONS_API_KEY_READ,
-            self::PERMISSIONS_API_KEY_UPDATE,
-            self::PERMISSIONS_API_KEY_DELETE,
-            self::PERMISSIONS_ASSISTANT_USE,
-            self::PERMISSIONS_BILLING_READ,
-            self::PERMISSIONS_BILLING_MANAGE,
-            self::PERMISSIONS_CHANNEL_READ,
-            self::PERMISSIONS_CHANNEL_CONNECT,
-            self::PERMISSIONS_CHANNEL_DISCONNECT,
-            self::PERMISSIONS_INVITATION_CREATE,
-            self::PERMISSIONS_INVITATION_CANCEL,
-            self::PERMISSIONS_MEDIA_READ,
-            self::PERMISSIONS_MEDIA_UPLOAD,
-            self::PERMISSIONS_MEDIA_DELETE,
-            self::PERMISSIONS_MEMBER_CREATE,
-            self::PERMISSIONS_MEMBER_UPDATE,
-            self::PERMISSIONS_MEMBER_DELETE,
-            self::PERMISSIONS_ORGANIZATION_UPDATE,
-            self::PERMISSIONS_ORGANIZATION_DELETE,
-            self::PERMISSIONS_POST_READ,
-            self::PERMISSIONS_POST_CREATE,
-            self::PERMISSIONS_POST_UPDATE,
-            self::PERMISSIONS_POST_DELETE,
-            self::PERMISSIONS_POST_SCHEDULE,
-            self::PERMISSIONS_POST_APPROVE,
-            self::PERMISSIONS_POST_PUBLISH,
-        ];
-    }
 
     /**
      * Associative array for storing property values
@@ -528,7 +461,7 @@ class ApiKey implements ModelInterface, ArrayAccess, \JsonSerializable
     /**
      * Gets permissions
      *
-     * @return string[]
+     * @return \Peal\Model\Permission[]
      */
     public function getPermissions()
     {
@@ -538,7 +471,7 @@ class ApiKey implements ModelInterface, ArrayAccess, \JsonSerializable
     /**
      * Sets permissions
      *
-     * @param string[] $permissions permissions
+     * @param \Peal\Model\Permission[] $permissions permissions
      *
      * @return self
      */
@@ -546,15 +479,6 @@ class ApiKey implements ModelInterface, ArrayAccess, \JsonSerializable
     {
         if (is_null($permissions)) {
             throw new \InvalidArgumentException('non-nullable permissions cannot be null');
-        }
-        $allowedValues = $this->getPermissionsAllowableValues();
-        if (array_diff($permissions, $allowedValues)) {
-            throw new \InvalidArgumentException(
-                sprintf(
-                    "Invalid value for 'permissions', must be one of '%s'",
-                    implode("', '", $allowedValues)
-                )
-            );
         }
         $this->container['permissions'] = $permissions;
 

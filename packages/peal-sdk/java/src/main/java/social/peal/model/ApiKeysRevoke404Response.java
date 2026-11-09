@@ -13,110 +13,128 @@
 
 package social.peal.model;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.StringJoiner;
 import java.util.Objects;
-import java.util.Map;
-import java.util.HashMap;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.fasterxml.jackson.annotation.JsonValue;
+import com.google.gson.TypeAdapter;
+import com.google.gson.annotations.JsonAdapter;
+import com.google.gson.annotations.SerializedName;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 import java.util.Arrays;
 import social.peal.model.ApiKeyNotFoundEncoded;
 import social.peal.model.WorkspaceNotFoundEncoded;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+
 
 
 import java.io.IOException;
+import java.lang.reflect.Type;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
-import social.peal.ApiClient;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonParseException;
+import com.google.gson.TypeAdapter;
+import com.google.gson.TypeAdapterFactory;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.annotations.JsonAdapter;
+import com.google.gson.annotations.SerializedName;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonParseException;
+
 import social.peal.JSON;
 
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.27.0")
-@JsonDeserialize(using=ApiKeysRevoke404Response.ApiKeysRevoke404ResponseDeserializer.class)
-@JsonSerialize(using = ApiKeysRevoke404Response.ApiKeysRevoke404ResponseSerializer.class)
 public class ApiKeysRevoke404Response extends AbstractOpenApiSchema {
     private static final Logger log = Logger.getLogger(ApiKeysRevoke404Response.class.getName());
 
-    public static class ApiKeysRevoke404ResponseSerializer extends StdSerializer<ApiKeysRevoke404Response> {
-        public ApiKeysRevoke404ResponseSerializer(Class<ApiKeysRevoke404Response> t) {
-            super(t);
-        }
-
-        public ApiKeysRevoke404ResponseSerializer() {
-            this(null);
-        }
-
+    public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
+        @SuppressWarnings("unchecked")
         @Override
-        public void serialize(ApiKeysRevoke404Response value, JsonGenerator jgen, SerializerProvider provider) throws IOException, JsonProcessingException {
-            jgen.writeObject(value.getActualInstance());
-        }
-    }
-
-    public static class ApiKeysRevoke404ResponseDeserializer extends StdDeserializer<ApiKeysRevoke404Response> {
-        public ApiKeysRevoke404ResponseDeserializer() {
-            this(ApiKeysRevoke404Response.class);
-        }
-
-        public ApiKeysRevoke404ResponseDeserializer(Class<?> vc) {
-            super(vc);
-        }
-
-        @Override
-        public ApiKeysRevoke404Response deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException, JsonProcessingException {
-            JsonNode tree = ctxt.readTree(jp);
-
-            Object deserialized = null;
-            // deserialize ApiKeyNotFoundEncoded
-            try {
-                deserialized = tree.traverse(jp.getCodec()).readValueAs(ApiKeyNotFoundEncoded.class);
-                ApiKeysRevoke404Response ret = new ApiKeysRevoke404Response();
-                ret.setActualInstance(deserialized);
-                return ret;
-            } catch (Exception e) {
-                // deserialization failed, continue, log to help debugging
-                log.log(Level.FINER, "Input data does not match 'ApiKeysRevoke404Response'", e);
+        public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
+            if (!ApiKeysRevoke404Response.class.isAssignableFrom(type.getRawType())) {
+                return null; // this class only serializes 'ApiKeysRevoke404Response' and its subtypes
             }
+            final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
+            final TypeAdapter<ApiKeyNotFoundEncoded> adapterApiKeyNotFoundEncoded = gson.getDelegateAdapter(this, TypeToken.get(ApiKeyNotFoundEncoded.class));
+            final TypeAdapter<WorkspaceNotFoundEncoded> adapterWorkspaceNotFoundEncoded = gson.getDelegateAdapter(this, TypeToken.get(WorkspaceNotFoundEncoded.class));
 
-            // deserialize WorkspaceNotFoundEncoded
-            try {
-                deserialized = tree.traverse(jp.getCodec()).readValueAs(WorkspaceNotFoundEncoded.class);
-                ApiKeysRevoke404Response ret = new ApiKeysRevoke404Response();
-                ret.setActualInstance(deserialized);
-                return ret;
-            } catch (Exception e) {
-                // deserialization failed, continue, log to help debugging
-                log.log(Level.FINER, "Input data does not match 'ApiKeysRevoke404Response'", e);
-            }
+            return (TypeAdapter<T>) new TypeAdapter<ApiKeysRevoke404Response>() {
+                @Override
+                public void write(JsonWriter out, ApiKeysRevoke404Response value) throws IOException {
+                    if (value == null || value.getActualInstance() == null) {
+                        elementAdapter.write(out, null);
+                        return;
+                    }
 
-            throw new IOException("Failed deserialization for ApiKeysRevoke404Response: no match found");
-        }
+                    // check if the actual instance is of the type `ApiKeyNotFoundEncoded`
+                    if (value.getActualInstance() instanceof ApiKeyNotFoundEncoded) {
+                        JsonElement element = adapterApiKeyNotFoundEncoded.toJsonTree((ApiKeyNotFoundEncoded)value.getActualInstance());
+                        elementAdapter.write(out, element);
+                        return;
+                    }
+                    // check if the actual instance is of the type `WorkspaceNotFoundEncoded`
+                    if (value.getActualInstance() instanceof WorkspaceNotFoundEncoded) {
+                        JsonElement element = adapterWorkspaceNotFoundEncoded.toJsonTree((WorkspaceNotFoundEncoded)value.getActualInstance());
+                        elementAdapter.write(out, element);
+                        return;
+                    }
+                    throw new IOException("Failed to serialize as the type doesn't match anyOf schemas: ApiKeyNotFoundEncoded, WorkspaceNotFoundEncoded");
+                }
 
-        /**
-         * Handle deserialization of the 'null' value.
-         */
-        @Override
-        public ApiKeysRevoke404Response getNullValue(DeserializationContext ctxt) throws JsonMappingException {
-            throw new JsonMappingException(ctxt.getParser(), "ApiKeysRevoke404Response cannot be null");
+                @Override
+                public ApiKeysRevoke404Response read(JsonReader in) throws IOException {
+                    Object deserialized = null;
+                    JsonElement jsonElement = elementAdapter.read(in);
+
+                    ArrayList<String> errorMessages = new ArrayList<>();
+                    TypeAdapter actualAdapter = elementAdapter;
+
+                    // deserialize ApiKeyNotFoundEncoded
+                    try {
+                        // validate the JSON object to see if any exception is thrown
+                        ApiKeyNotFoundEncoded.validateJsonElement(jsonElement);
+                        actualAdapter = adapterApiKeyNotFoundEncoded;
+                        ApiKeysRevoke404Response ret = new ApiKeysRevoke404Response();
+                        ret.setActualInstance(actualAdapter.fromJsonTree(jsonElement));
+                        return ret;
+                    } catch (Exception e) {
+                        // deserialization failed, continue
+                        errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for ApiKeyNotFoundEncoded failed with `%s`.", e.getMessage()));
+                        log.log(Level.FINER, "Input data does not match schema 'ApiKeyNotFoundEncoded'", e);
+                    }
+                    // deserialize WorkspaceNotFoundEncoded
+                    try {
+                        // validate the JSON object to see if any exception is thrown
+                        WorkspaceNotFoundEncoded.validateJsonElement(jsonElement);
+                        actualAdapter = adapterWorkspaceNotFoundEncoded;
+                        ApiKeysRevoke404Response ret = new ApiKeysRevoke404Response();
+                        ret.setActualInstance(actualAdapter.fromJsonTree(jsonElement));
+                        return ret;
+                    } catch (Exception e) {
+                        // deserialization failed, continue
+                        errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for WorkspaceNotFoundEncoded failed with `%s`.", e.getMessage()));
+                        log.log(Level.FINER, "Input data does not match schema 'WorkspaceNotFoundEncoded'", e);
+                    }
+
+                    throw new IOException(String.format(java.util.Locale.ROOT, "Failed deserialization for ApiKeysRevoke404Response: no class matches result, expected at least 1. Detailed failure message for anyOf schemas: %s. JSON: %s", errorMessages, jsonElement.toString()));
+                }
+            }.nullSafe();
         }
     }
 
@@ -127,20 +145,14 @@ public class ApiKeysRevoke404Response extends AbstractOpenApiSchema {
         super("anyOf", Boolean.FALSE);
     }
 
-    public ApiKeysRevoke404Response(ApiKeyNotFoundEncoded o) {
-        this();
-        setActualInstance(o);
-    }
-
-    public ApiKeysRevoke404Response(WorkspaceNotFoundEncoded o) {
-        this();
+    public ApiKeysRevoke404Response(Object o) {
+        super("anyOf", Boolean.FALSE);
         setActualInstance(o);
     }
 
     static {
         schemas.put("ApiKeyNotFoundEncoded", ApiKeyNotFoundEncoded.class);
         schemas.put("WorkspaceNotFoundEncoded", WorkspaceNotFoundEncoded.class);
-        JSON.registerDescendants(ApiKeysRevoke404Response.class, Collections.unmodifiableMap(schemas));
     }
 
     @Override
@@ -154,16 +166,15 @@ public class ApiKeysRevoke404Response extends AbstractOpenApiSchema {
      * ApiKeyNotFoundEncoded, WorkspaceNotFoundEncoded
      *
      * It could be an instance of the 'anyOf' schemas.
-     * The anyOf child schemas may themselves be a composed schema (allOf, anyOf, anyOf).
      */
     @Override
     public void setActualInstance(Object instance) {
-        if (JSON.isInstanceOf(ApiKeyNotFoundEncoded.class, instance, new HashSet<Class<?>>())) {
+        if (instance instanceof ApiKeyNotFoundEncoded) {
             super.setActualInstance(instance);
             return;
         }
 
-        if (JSON.isInstanceOf(WorkspaceNotFoundEncoded.class, instance, new HashSet<Class<?>>())) {
+        if (instance instanceof WorkspaceNotFoundEncoded) {
             super.setActualInstance(instance);
             return;
         }
@@ -177,6 +188,7 @@ public class ApiKeysRevoke404Response extends AbstractOpenApiSchema {
      *
      * @return The actual instance (ApiKeyNotFoundEncoded, WorkspaceNotFoundEncoded)
      */
+    @SuppressWarnings("unchecked")
     @Override
     public Object getActualInstance() {
         return super.getActualInstance();
@@ -204,42 +216,52 @@ public class ApiKeysRevoke404Response extends AbstractOpenApiSchema {
         return (WorkspaceNotFoundEncoded)super.getActualInstance();
     }
 
-
-
-  /**
-   * Convert the instance into URL query string.
-   *
-   * @return URL query string
-   */
-  public String toUrlQueryString() {
-    return toUrlQueryString(null);
-  }
-
-  /**
-   * Convert the instance into URL query string.
-   *
-   * @param prefix prefix of the query string
-   * @return URL query string
-   */
-  public String toUrlQueryString(String prefix) {
-    String suffix = "";
-    String containerSuffix = "";
-    String containerPrefix = "";
-    if (prefix == null) {
-      // style=form, explode=true, e.g. /pet?name=cat&type=manx
-      prefix = "";
-    } else {
-      // deepObject style e.g. /pet?id[name]=cat&id[type]=manx
-      prefix = prefix + "[";
-      suffix = "]";
-      containerSuffix = "]";
-      containerPrefix = "[";
+    /**
+     * Validates the JSON Element and throws an exception if issues found
+     *
+     * @param jsonElement JSON Element
+     * @throws IOException if the JSON Element is invalid with respect to ApiKeysRevoke404Response
+     */
+    public static void validateJsonElement(JsonElement jsonElement) throws IOException {
+        // validate anyOf schemas one by one
+        ArrayList<String> errorMessages = new ArrayList<>();
+        // validate the json string with ApiKeyNotFoundEncoded
+        try {
+            ApiKeyNotFoundEncoded.validateJsonElement(jsonElement);
+            return;
+        } catch (Exception e) {
+            errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for ApiKeyNotFoundEncoded failed with `%s`.", e.getMessage()));
+            // continue to the next one
+        }
+        // validate the json string with WorkspaceNotFoundEncoded
+        try {
+            WorkspaceNotFoundEncoded.validateJsonElement(jsonElement);
+            return;
+        } catch (Exception e) {
+            errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for WorkspaceNotFoundEncoded failed with `%s`.", e.getMessage()));
+            // continue to the next one
+        }
+        throw new IOException(String.format(java.util.Locale.ROOT, "The JSON string is invalid for ApiKeysRevoke404Response with anyOf schemas: ApiKeyNotFoundEncoded, WorkspaceNotFoundEncoded. no class match the result, expected at least 1. Detailed failure message for anyOf schemas: %s. JSON: %s", errorMessages, jsonElement.toString()));
     }
 
-    StringJoiner joiner = new StringJoiner("&");
+    /**
+     * Create an instance of ApiKeysRevoke404Response given an JSON string
+     *
+     * @param jsonString JSON string
+     * @return An instance of ApiKeysRevoke404Response
+     * @throws IOException if the JSON string is invalid with respect to ApiKeysRevoke404Response
+     */
+    public static ApiKeysRevoke404Response fromJson(String jsonString) throws IOException {
+        return JSON.getGson().fromJson(jsonString, ApiKeysRevoke404Response.class);
+    }
 
-    return null;
-  }
-
+    /**
+     * Convert an instance of ApiKeysRevoke404Response to an JSON string
+     *
+     * @return JSON string
+     */
+    public String toJson() {
+        return JSON.getGson().toJson(this);
+    }
 }
 

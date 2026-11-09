@@ -13,47 +13,62 @@
 
 package social.peal.model;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.StringJoiner;
 import java.util.Objects;
-import java.util.Map;
-import java.util.HashMap;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.fasterxml.jackson.annotation.JsonValue;
+import com.google.gson.TypeAdapter;
+import com.google.gson.annotations.JsonAdapter;
+import com.google.gson.annotations.SerializedName;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonNull;
+import com.google.gson.JsonParseException;
+import com.google.gson.TypeAdapterFactory;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.TypeAdapter;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 
-import social.peal.ApiClient;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import social.peal.JSON;
+
 /**
  * SchedulePost
  */
-@JsonPropertyOrder({
-  SchedulePost.JSON_PROPERTY_AT,
-  SchedulePost.JSON_PROPERTY_CHANNEL_IDS,
-  SchedulePost.JSON_PROPERTY_TIME_ZONE
-})
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.27.0")
 public class SchedulePost {
-  public static final String JSON_PROPERTY_AT = "at";
+  public static final String SERIALIZED_NAME_AT = "at";
+  @SerializedName(SERIALIZED_NAME_AT)
   @javax.annotation.Nonnull
   private String at;
 
-  public static final String JSON_PROPERTY_CHANNEL_IDS = "channelIds";
+  public static final String SERIALIZED_NAME_CHANNEL_IDS = "channelIds";
+  @SerializedName(SERIALIZED_NAME_CHANNEL_IDS)
   @javax.annotation.Nonnull
   private List<String> channelIds = new ArrayList<>();
 
-  public static final String JSON_PROPERTY_TIME_ZONE = "timeZone";
+  public static final String SERIALIZED_NAME_TIME_ZONE = "timeZone";
+  @SerializedName(SERIALIZED_NAME_TIME_ZONE)
   @javax.annotation.Nonnull
   private String timeZone;
 
-  public SchedulePost() { 
+  public SchedulePost() {
   }
 
   public SchedulePost at(@javax.annotation.Nonnull String at) {
@@ -66,15 +81,10 @@ public class SchedulePost {
    * @return at
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_AT, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public String getAt() {
     return at;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_AT, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setAt(@javax.annotation.Nonnull String at) {
     this.at = at;
   }
@@ -98,15 +108,10 @@ public class SchedulePost {
    * @return channelIds
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_CHANNEL_IDS, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public List<String> getChannelIds() {
     return channelIds;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_CHANNEL_IDS, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setChannelIds(@javax.annotation.Nonnull List<String> channelIds) {
     this.channelIds = channelIds;
   }
@@ -122,23 +127,16 @@ public class SchedulePost {
    * @return timeZone
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_TIME_ZONE, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public String getTimeZone() {
     return timeZone;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_TIME_ZONE, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setTimeZone(@javax.annotation.Nonnull String timeZone) {
     this.timeZone = timeZone;
   }
 
 
-  /**
-   * Return true if this SchedulePost object is equal to o.
-   */
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -177,58 +175,107 @@ public class SchedulePost {
     return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
 
-  /**
-   * Convert the instance into URL query string.
-   *
-   * @return URL query string
-   */
-  public String toUrlQueryString() {
-    return toUrlQueryString(null);
+
+  public static HashSet<String> openapiFields;
+  public static HashSet<String> openapiRequiredFields;
+
+  static {
+    // a set of all properties/fields (JSON key names)
+    openapiFields = new HashSet<String>(Arrays.asList("at", "channelIds", "timeZone"));
+
+    // a set of required properties/fields (JSON key names)
+    openapiRequiredFields = new HashSet<String>(Arrays.asList("at", "channelIds", "timeZone"));
   }
 
   /**
-   * Convert the instance into URL query string.
+   * Validates the JSON Element and throws an exception if issues found
    *
-   * @param prefix prefix of the query string
-   * @return URL query string
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to SchedulePost
    */
-  public String toUrlQueryString(String prefix) {
-    String suffix = "";
-    String containerSuffix = "";
-    String containerPrefix = "";
-    if (prefix == null) {
-      // style=form, explode=true, e.g. /pet?name=cat&type=manx
-      prefix = "";
-    } else {
-      // deepObject style e.g. /pet?id[name]=cat&id[type]=manx
-      prefix = prefix + "[";
-      suffix = "]";
-      containerSuffix = "]";
-      containerPrefix = "[";
-    }
-
-    StringJoiner joiner = new StringJoiner("&");
-
-    // add `at` to the URL query string
-    if (getAt() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%sat%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getAt()))));
-    }
-
-    // add `channelIds` to the URL query string
-    if (getChannelIds() != null) {
-      for (int i = 0; i < getChannelIds().size(); i++) {
-        joiner.add(String.format(java.util.Locale.ROOT, "%schannelIds%s%s=%s", prefix, suffix,
-            "".equals(suffix) ? "" : String.format(java.util.Locale.ROOT, "%s%d%s", containerPrefix, i, containerSuffix),
-            ApiClient.urlEncode(ApiClient.valueToString(getChannelIds().get(i)))));
+  public static void validateJsonElement(JsonElement jsonElement) throws IOException {
+      if (jsonElement == null) {
+        if (!SchedulePost.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The required field(s) %s in SchedulePost is not found in the empty JSON string", SchedulePost.openapiRequiredFields.toString()));
+        }
       }
-    }
 
-    // add `timeZone` to the URL query string
-    if (getTimeZone() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%stimeZone%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getTimeZone()))));
-    }
+      Set<Map.Entry<String, JsonElement>> entries = jsonElement.getAsJsonObject().entrySet();
+      // check to see if the JSON string contains additional fields
+      for (Map.Entry<String, JsonElement> entry : entries) {
+        if (!SchedulePost.openapiFields.contains(entry.getKey())) {
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The field `%s` in the JSON string is not defined in the `SchedulePost` properties. JSON: %s", entry.getKey(), jsonElement.toString()));
+        }
+      }
 
-    return joiner.toString();
+      // check to make sure all required properties/fields are present in the JSON string
+      for (String requiredField : SchedulePost.openapiRequiredFields) {
+        if (jsonElement.getAsJsonObject().get(requiredField) == null) {
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The required field `%s` is not found in the JSON string: %s", requiredField, jsonElement.toString()));
+        }
+      }
+        JsonObject jsonObj = jsonElement.getAsJsonObject();
+      if (!jsonObj.get("at").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `at` to be a primitive type in the JSON string but got `%s`", jsonObj.get("at").toString()));
+      }
+      // ensure the required json array is present
+      if (jsonObj.get("channelIds") == null) {
+        throw new IllegalArgumentException("Expected the field `linkedContent` to be an array in the JSON string but got `null`");
+      } else if (!jsonObj.get("channelIds").isJsonArray()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `channelIds` to be an array in the JSON string but got `%s`", jsonObj.get("channelIds").toString()));
+      }
+      if (!jsonObj.get("timeZone").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `timeZone` to be a primitive type in the JSON string but got `%s`", jsonObj.get("timeZone").toString()));
+      }
+  }
+
+  public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
+       if (!SchedulePost.class.isAssignableFrom(type.getRawType())) {
+         return null; // this class only serializes 'SchedulePost' and its subtypes
+       }
+       final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
+       final TypeAdapter<SchedulePost> thisAdapter
+                        = gson.getDelegateAdapter(this, TypeToken.get(SchedulePost.class));
+
+       return (TypeAdapter<T>) new TypeAdapter<SchedulePost>() {
+           @Override
+           public void write(JsonWriter out, SchedulePost value) throws IOException {
+             JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
+             elementAdapter.write(out, obj);
+           }
+
+           @Override
+           public SchedulePost read(JsonReader in) throws IOException {
+             JsonElement jsonElement = elementAdapter.read(in);
+             validateJsonElement(jsonElement);
+             return thisAdapter.fromJsonTree(jsonElement);
+           }
+
+       }.nullSafe();
+    }
+  }
+
+  /**
+   * Create an instance of SchedulePost given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of SchedulePost
+   * @throws IOException if the JSON string is invalid with respect to SchedulePost
+   */
+  public static SchedulePost fromJson(String jsonString) throws IOException {
+    return JSON.getGson().fromJson(jsonString, SchedulePost.class);
+  }
+
+  /**
+   * Convert an instance of SchedulePost to an JSON string
+   *
+   * @return JSON string
+   */
+  public String toJson() {
+    return JSON.getGson().toJson(this);
   }
 }
 

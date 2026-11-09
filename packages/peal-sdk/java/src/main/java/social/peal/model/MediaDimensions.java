@@ -13,40 +13,55 @@
 
 package social.peal.model;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.StringJoiner;
 import java.util.Objects;
-import java.util.Map;
-import java.util.HashMap;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.fasterxml.jackson.annotation.JsonValue;
+import com.google.gson.TypeAdapter;
+import com.google.gson.annotations.JsonAdapter;
+import com.google.gson.annotations.SerializedName;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 import java.util.Arrays;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonNull;
+import com.google.gson.JsonParseException;
+import com.google.gson.TypeAdapterFactory;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.TypeAdapter;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 
-import social.peal.ApiClient;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import social.peal.JSON;
+
 /**
  * MediaDimensions
  */
-@JsonPropertyOrder({
-  MediaDimensions.JSON_PROPERTY_HEIGHT,
-  MediaDimensions.JSON_PROPERTY_WIDTH
-})
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.27.0")
 public class MediaDimensions {
-  public static final String JSON_PROPERTY_HEIGHT = "height";
+  public static final String SERIALIZED_NAME_HEIGHT = "height";
+  @SerializedName(SERIALIZED_NAME_HEIGHT)
   @javax.annotation.Nonnull
   private Integer height;
 
-  public static final String JSON_PROPERTY_WIDTH = "width";
+  public static final String SERIALIZED_NAME_WIDTH = "width";
+  @SerializedName(SERIALIZED_NAME_WIDTH)
   @javax.annotation.Nonnull
   private Integer width;
 
-  public MediaDimensions() { 
+  public MediaDimensions() {
   }
 
   public MediaDimensions height(@javax.annotation.Nonnull Integer height) {
@@ -61,15 +76,10 @@ public class MediaDimensions {
    * @return height
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_HEIGHT, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public Integer getHeight() {
     return height;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_HEIGHT, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setHeight(@javax.annotation.Nonnull Integer height) {
     this.height = height;
   }
@@ -87,23 +97,16 @@ public class MediaDimensions {
    * @return width
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_WIDTH, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public Integer getWidth() {
     return width;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_WIDTH, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setWidth(@javax.annotation.Nonnull Integer width) {
     this.width = width;
   }
 
 
-  /**
-   * Return true if this Media_dimensions object is equal to o.
-   */
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -140,49 +143,95 @@ public class MediaDimensions {
     return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
 
-  /**
-   * Convert the instance into URL query string.
-   *
-   * @return URL query string
-   */
-  public String toUrlQueryString() {
-    return toUrlQueryString(null);
+
+  public static HashSet<String> openapiFields;
+  public static HashSet<String> openapiRequiredFields;
+
+  static {
+    // a set of all properties/fields (JSON key names)
+    openapiFields = new HashSet<String>(Arrays.asList("height", "width"));
+
+    // a set of required properties/fields (JSON key names)
+    openapiRequiredFields = new HashSet<String>(Arrays.asList("height", "width"));
   }
 
   /**
-   * Convert the instance into URL query string.
+   * Validates the JSON Element and throws an exception if issues found
    *
-   * @param prefix prefix of the query string
-   * @return URL query string
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to MediaDimensions
    */
-  public String toUrlQueryString(String prefix) {
-    String suffix = "";
-    String containerSuffix = "";
-    String containerPrefix = "";
-    if (prefix == null) {
-      // style=form, explode=true, e.g. /pet?name=cat&type=manx
-      prefix = "";
-    } else {
-      // deepObject style e.g. /pet?id[name]=cat&id[type]=manx
-      prefix = prefix + "[";
-      suffix = "]";
-      containerSuffix = "]";
-      containerPrefix = "[";
+  public static void validateJsonElement(JsonElement jsonElement) throws IOException {
+      if (jsonElement == null) {
+        if (!MediaDimensions.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The required field(s) %s in MediaDimensions is not found in the empty JSON string", MediaDimensions.openapiRequiredFields.toString()));
+        }
+      }
+
+      Set<Map.Entry<String, JsonElement>> entries = jsonElement.getAsJsonObject().entrySet();
+      // check to see if the JSON string contains additional fields
+      for (Map.Entry<String, JsonElement> entry : entries) {
+        if (!MediaDimensions.openapiFields.contains(entry.getKey())) {
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The field `%s` in the JSON string is not defined in the `MediaDimensions` properties. JSON: %s", entry.getKey(), jsonElement.toString()));
+        }
+      }
+
+      // check to make sure all required properties/fields are present in the JSON string
+      for (String requiredField : MediaDimensions.openapiRequiredFields) {
+        if (jsonElement.getAsJsonObject().get(requiredField) == null) {
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The required field `%s` is not found in the JSON string: %s", requiredField, jsonElement.toString()));
+        }
+      }
+        JsonObject jsonObj = jsonElement.getAsJsonObject();
+  }
+
+  public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
+       if (!MediaDimensions.class.isAssignableFrom(type.getRawType())) {
+         return null; // this class only serializes 'MediaDimensions' and its subtypes
+       }
+       final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
+       final TypeAdapter<MediaDimensions> thisAdapter
+                        = gson.getDelegateAdapter(this, TypeToken.get(MediaDimensions.class));
+
+       return (TypeAdapter<T>) new TypeAdapter<MediaDimensions>() {
+           @Override
+           public void write(JsonWriter out, MediaDimensions value) throws IOException {
+             JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
+             elementAdapter.write(out, obj);
+           }
+
+           @Override
+           public MediaDimensions read(JsonReader in) throws IOException {
+             JsonElement jsonElement = elementAdapter.read(in);
+             validateJsonElement(jsonElement);
+             return thisAdapter.fromJsonTree(jsonElement);
+           }
+
+       }.nullSafe();
     }
+  }
 
-    StringJoiner joiner = new StringJoiner("&");
+  /**
+   * Create an instance of MediaDimensions given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of MediaDimensions
+   * @throws IOException if the JSON string is invalid with respect to MediaDimensions
+   */
+  public static MediaDimensions fromJson(String jsonString) throws IOException {
+    return JSON.getGson().fromJson(jsonString, MediaDimensions.class);
+  }
 
-    // add `height` to the URL query string
-    if (getHeight() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%sheight%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getHeight()))));
-    }
-
-    // add `width` to the URL query string
-    if (getWidth() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%swidth%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getWidth()))));
-    }
-
-    return joiner.toString();
+  /**
+   * Convert an instance of MediaDimensions to an JSON string
+   *
+   * @return JSON string
+   */
+  public String toJson() {
+    return JSON.getGson().toJson(this);
   }
 }
 

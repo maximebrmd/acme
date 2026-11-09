@@ -137,6 +137,7 @@ docs/NotificationPreferencesChangeEmail.md
 docs/NotificationPreferencesEmail.md
 docs/PaidPlan.md
 docs/PeriodUsage.md
+docs/Permission.md
 docs/Plan.md
 docs/PlanAllowances.md
 docs/PlanLimit.md
@@ -357,6 +358,7 @@ src/models/NotificationPreferencesChangeEmail.ts
 src/models/NotificationPreferencesEmail.ts
 src/models/PaidPlan.ts
 src/models/PeriodUsage.ts
+src/models/Permission.ts
 src/models/Plan.ts
 src/models/PlanAllowances.ts
 src/models/PlanLimit.ts

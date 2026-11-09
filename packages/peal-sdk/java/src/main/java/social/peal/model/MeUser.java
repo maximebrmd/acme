@@ -13,58 +13,72 @@
 
 package social.peal.model;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.StringJoiner;
 import java.util.Objects;
-import java.util.Map;
-import java.util.HashMap;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.fasterxml.jackson.annotation.JsonValue;
+import com.google.gson.TypeAdapter;
+import com.google.gson.annotations.JsonAdapter;
+import com.google.gson.annotations.SerializedName;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 import java.util.Arrays;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonNull;
+import com.google.gson.JsonParseException;
+import com.google.gson.TypeAdapterFactory;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.TypeAdapter;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 
-import social.peal.ApiClient;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import social.peal.JSON;
+
 /**
  * MeUser
  */
-@JsonPropertyOrder({
-  MeUser.JSON_PROPERTY_EMAIL,
-  MeUser.JSON_PROPERTY_EMAIL_VERIFIED,
-  MeUser.JSON_PROPERTY_ID,
-  MeUser.JSON_PROPERTY_IMAGE,
-  MeUser.JSON_PROPERTY_LOCALE,
-  MeUser.JSON_PROPERTY_NAME
-})
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.27.0")
 public class MeUser {
-  public static final String JSON_PROPERTY_EMAIL = "email";
+  public static final String SERIALIZED_NAME_EMAIL = "email";
+  @SerializedName(SERIALIZED_NAME_EMAIL)
   @javax.annotation.Nonnull
   private String email;
 
-  public static final String JSON_PROPERTY_EMAIL_VERIFIED = "emailVerified";
+  public static final String SERIALIZED_NAME_EMAIL_VERIFIED = "emailVerified";
+  @SerializedName(SERIALIZED_NAME_EMAIL_VERIFIED)
   @javax.annotation.Nonnull
   private Boolean emailVerified;
 
-  public static final String JSON_PROPERTY_ID = "id";
+  public static final String SERIALIZED_NAME_ID = "id";
+  @SerializedName(SERIALIZED_NAME_ID)
   @javax.annotation.Nonnull
   private String id;
 
-  public static final String JSON_PROPERTY_IMAGE = "image";
+  public static final String SERIALIZED_NAME_IMAGE = "image";
+  @SerializedName(SERIALIZED_NAME_IMAGE)
   @javax.annotation.Nullable
   private String image;
 
   /**
    * Gets or Sets locale
    */
+  @JsonAdapter(LocaleEnum.Adapter.class)
   public enum LocaleEnum {
-    EN(String.valueOf("en")),
+    EN("en"),
     
-    FR(String.valueOf("fr"));
+    FR("fr");
 
     private String value;
 
@@ -72,7 +86,6 @@ public class MeUser {
       this.value = value;
     }
 
-    @JsonValue
     public String getValue() {
       return value;
     }
@@ -82,7 +95,6 @@ public class MeUser {
       return String.valueOf(value);
     }
 
-    @JsonCreator
     public static LocaleEnum fromValue(String value) {
       for (LocaleEnum b : LocaleEnum.values()) {
         if (b.value.equals(value)) {
@@ -91,17 +103,37 @@ public class MeUser {
       }
       throw new IllegalArgumentException("Unexpected value '" + value + "'");
     }
+
+    public static class Adapter extends TypeAdapter<LocaleEnum> {
+      @Override
+      public void write(final JsonWriter jsonWriter, final LocaleEnum enumeration) throws IOException {
+        jsonWriter.value(enumeration.getValue());
+      }
+
+      @Override
+      public LocaleEnum read(final JsonReader jsonReader) throws IOException {
+        String value =  jsonReader.nextString();
+        return LocaleEnum.fromValue(value);
+      }
+    }
+
+    public static void validateJsonElement(JsonElement jsonElement) throws IOException {
+      String value = jsonElement.getAsString();
+      LocaleEnum.fromValue(value);
+    }
   }
 
-  public static final String JSON_PROPERTY_LOCALE = "locale";
+  public static final String SERIALIZED_NAME_LOCALE = "locale";
+  @SerializedName(SERIALIZED_NAME_LOCALE)
   @javax.annotation.Nonnull
   private LocaleEnum locale;
 
-  public static final String JSON_PROPERTY_NAME = "name";
+  public static final String SERIALIZED_NAME_NAME = "name";
+  @SerializedName(SERIALIZED_NAME_NAME)
   @javax.annotation.Nonnull
   private String name;
 
-  public MeUser() { 
+  public MeUser() {
   }
 
   public MeUser email(@javax.annotation.Nonnull String email) {
@@ -114,15 +146,10 @@ public class MeUser {
    * @return email
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_EMAIL, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public String getEmail() {
     return email;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_EMAIL, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setEmail(@javax.annotation.Nonnull String email) {
     this.email = email;
   }
@@ -138,15 +165,10 @@ public class MeUser {
    * @return emailVerified
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_EMAIL_VERIFIED, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public Boolean getEmailVerified() {
     return emailVerified;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_EMAIL_VERIFIED, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setEmailVerified(@javax.annotation.Nonnull Boolean emailVerified) {
     this.emailVerified = emailVerified;
   }
@@ -162,15 +184,10 @@ public class MeUser {
    * @return id
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_ID, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public String getId() {
     return id;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_ID, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setId(@javax.annotation.Nonnull String id) {
     this.id = id;
   }
@@ -186,15 +203,10 @@ public class MeUser {
    * @return image
    */
   @javax.annotation.Nullable
-  @JsonProperty(value = JSON_PROPERTY_IMAGE, required = false)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public String getImage() {
     return image;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_IMAGE, required = false)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setImage(@javax.annotation.Nullable String image) {
     this.image = image;
   }
@@ -210,15 +222,10 @@ public class MeUser {
    * @return locale
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_LOCALE, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public LocaleEnum getLocale() {
     return locale;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_LOCALE, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setLocale(@javax.annotation.Nonnull LocaleEnum locale) {
     this.locale = locale;
   }
@@ -234,23 +241,16 @@ public class MeUser {
    * @return name
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_NAME, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public String getName() {
     return name;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_NAME, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setName(@javax.annotation.Nonnull String name) {
     this.name = name;
   }
 
 
-  /**
-   * Return true if this Me_user object is equal to o.
-   */
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -295,69 +295,112 @@ public class MeUser {
     return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
 
-  /**
-   * Convert the instance into URL query string.
-   *
-   * @return URL query string
-   */
-  public String toUrlQueryString() {
-    return toUrlQueryString(null);
+
+  public static HashSet<String> openapiFields;
+  public static HashSet<String> openapiRequiredFields;
+
+  static {
+    // a set of all properties/fields (JSON key names)
+    openapiFields = new HashSet<String>(Arrays.asList("email", "emailVerified", "id", "image", "locale", "name"));
+
+    // a set of required properties/fields (JSON key names)
+    openapiRequiredFields = new HashSet<String>(Arrays.asList("email", "emailVerified", "id", "image", "locale", "name"));
   }
 
   /**
-   * Convert the instance into URL query string.
+   * Validates the JSON Element and throws an exception if issues found
    *
-   * @param prefix prefix of the query string
-   * @return URL query string
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to MeUser
    */
-  public String toUrlQueryString(String prefix) {
-    String suffix = "";
-    String containerSuffix = "";
-    String containerPrefix = "";
-    if (prefix == null) {
-      // style=form, explode=true, e.g. /pet?name=cat&type=manx
-      prefix = "";
-    } else {
-      // deepObject style e.g. /pet?id[name]=cat&id[type]=manx
-      prefix = prefix + "[";
-      suffix = "]";
-      containerSuffix = "]";
-      containerPrefix = "[";
+  public static void validateJsonElement(JsonElement jsonElement) throws IOException {
+      if (jsonElement == null) {
+        if (!MeUser.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The required field(s) %s in MeUser is not found in the empty JSON string", MeUser.openapiRequiredFields.toString()));
+        }
+      }
+
+      Set<Map.Entry<String, JsonElement>> entries = jsonElement.getAsJsonObject().entrySet();
+      // check to see if the JSON string contains additional fields
+      for (Map.Entry<String, JsonElement> entry : entries) {
+        if (!MeUser.openapiFields.contains(entry.getKey())) {
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The field `%s` in the JSON string is not defined in the `MeUser` properties. JSON: %s", entry.getKey(), jsonElement.toString()));
+        }
+      }
+
+      // check to make sure all required properties/fields are present in the JSON string
+      for (String requiredField : MeUser.openapiRequiredFields) {
+        if (jsonElement.getAsJsonObject().get(requiredField) == null) {
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The required field `%s` is not found in the JSON string: %s", requiredField, jsonElement.toString()));
+        }
+      }
+        JsonObject jsonObj = jsonElement.getAsJsonObject();
+      if (!jsonObj.get("email").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `email` to be a primitive type in the JSON string but got `%s`", jsonObj.get("email").toString()));
+      }
+      if (!jsonObj.get("id").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `id` to be a primitive type in the JSON string but got `%s`", jsonObj.get("id").toString()));
+      }
+      if ((jsonObj.get("image") != null && !jsonObj.get("image").isJsonNull()) && !jsonObj.get("image").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `image` to be a primitive type in the JSON string but got `%s`", jsonObj.get("image").toString()));
+      }
+      if (!jsonObj.get("locale").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `locale` to be a primitive type in the JSON string but got `%s`", jsonObj.get("locale").toString()));
+      }
+      // validate the required field `locale`
+      LocaleEnum.validateJsonElement(jsonObj.get("locale"));
+      if (!jsonObj.get("name").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `name` to be a primitive type in the JSON string but got `%s`", jsonObj.get("name").toString()));
+      }
+  }
+
+  public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
+       if (!MeUser.class.isAssignableFrom(type.getRawType())) {
+         return null; // this class only serializes 'MeUser' and its subtypes
+       }
+       final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
+       final TypeAdapter<MeUser> thisAdapter
+                        = gson.getDelegateAdapter(this, TypeToken.get(MeUser.class));
+
+       return (TypeAdapter<T>) new TypeAdapter<MeUser>() {
+           @Override
+           public void write(JsonWriter out, MeUser value) throws IOException {
+             JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
+             elementAdapter.write(out, obj);
+           }
+
+           @Override
+           public MeUser read(JsonReader in) throws IOException {
+             JsonElement jsonElement = elementAdapter.read(in);
+             validateJsonElement(jsonElement);
+             return thisAdapter.fromJsonTree(jsonElement);
+           }
+
+       }.nullSafe();
     }
+  }
 
-    StringJoiner joiner = new StringJoiner("&");
+  /**
+   * Create an instance of MeUser given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of MeUser
+   * @throws IOException if the JSON string is invalid with respect to MeUser
+   */
+  public static MeUser fromJson(String jsonString) throws IOException {
+    return JSON.getGson().fromJson(jsonString, MeUser.class);
+  }
 
-    // add `email` to the URL query string
-    if (getEmail() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%semail%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getEmail()))));
-    }
-
-    // add `emailVerified` to the URL query string
-    if (getEmailVerified() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%semailVerified%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getEmailVerified()))));
-    }
-
-    // add `id` to the URL query string
-    if (getId() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%sid%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getId()))));
-    }
-
-    // add `image` to the URL query string
-    if (getImage() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%simage%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getImage()))));
-    }
-
-    // add `locale` to the URL query string
-    if (getLocale() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%slocale%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getLocale()))));
-    }
-
-    // add `name` to the URL query string
-    if (getName() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%sname%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getName()))));
-    }
-
-    return joiner.toString();
+  /**
+   * Convert an instance of MeUser to an JSON string
+   *
+   * @return JSON string
+   */
+  public String toJson() {
+    return JSON.getGson().toJson(this);
   }
 }
 

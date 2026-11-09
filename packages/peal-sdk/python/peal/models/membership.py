@@ -18,8 +18,9 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, StrictStr, field_validator
+from pydantic import BaseModel, ConfigDict, StrictStr
 from typing import Any, ClassVar, Dict, List
+from peal.models.permission import Permission
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -30,18 +31,10 @@ class Membership(BaseModel):
     """ # noqa: E501
     id: StrictStr
     name: StrictStr
-    permissions: List[StrictStr]
+    permissions: List[Permission]
     role: StrictStr
     slug: StrictStr
     __properties: ClassVar[List[str]] = ["id", "name", "permissions", "role", "slug"]
-
-    @field_validator('permissions')
-    def permissions_validate_enum(cls, value):
-        """Validates the enum"""
-        for i in value:
-            if i not in set(['analytics:read', 'apiKey:create', 'apiKey:read', 'apiKey:update', 'apiKey:delete', 'assistant:use', 'billing:read', 'billing:manage', 'channel:read', 'channel:connect', 'channel:disconnect', 'invitation:create', 'invitation:cancel', 'media:read', 'media:upload', 'media:delete', 'member:create', 'member:update', 'member:delete', 'organization:update', 'organization:delete', 'post:read', 'post:create', 'post:update', 'post:delete', 'post:schedule', 'post:approve', 'post:publish']):
-                raise ValueError("each list item must be one of ('analytics:read', 'apiKey:create', 'apiKey:read', 'apiKey:update', 'apiKey:delete', 'assistant:use', 'billing:read', 'billing:manage', 'channel:read', 'channel:connect', 'channel:disconnect', 'invitation:create', 'invitation:cancel', 'media:read', 'media:upload', 'media:delete', 'member:create', 'member:update', 'member:delete', 'organization:update', 'organization:delete', 'post:read', 'post:create', 'post:update', 'post:delete', 'post:schedule', 'post:approve', 'post:publish')")
-        return value
 
     model_config = ConfigDict(
         validate_by_name=True,

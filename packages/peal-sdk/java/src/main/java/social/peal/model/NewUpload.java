@@ -13,52 +13,65 @@
 
 package social.peal.model;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.StringJoiner;
 import java.util.Objects;
-import java.util.Map;
-import java.util.HashMap;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.fasterxml.jackson.annotation.JsonValue;
+import com.google.gson.TypeAdapter;
+import com.google.gson.annotations.JsonAdapter;
+import com.google.gson.annotations.SerializedName;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 import java.util.Arrays;
 import org.openapitools.jackson.nullable.JsonNullable;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import org.openapitools.jackson.nullable.JsonNullable;
-import java.util.NoSuchElementException;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonNull;
+import com.google.gson.JsonParseException;
+import com.google.gson.TypeAdapterFactory;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.TypeAdapter;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 
-import social.peal.ApiClient;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import social.peal.JSON;
+
 /**
  * NewUpload
  */
-@JsonPropertyOrder({
-  NewUpload.JSON_PROPERTY_ALT_TEXT,
-  NewUpload.JSON_PROPERTY_BYTE_SIZE,
-  NewUpload.JSON_PROPERTY_CONTENT_TYPE
-})
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.27.0")
 public class NewUpload {
-  public static final String JSON_PROPERTY_ALT_TEXT = "altText";
-  private JsonNullable<String> altText = JsonNullable.<String>undefined();
+  public static final String SERIALIZED_NAME_ALT_TEXT = "altText";
+  @SerializedName(SERIALIZED_NAME_ALT_TEXT)
+  @javax.annotation.Nullable
+  private String altText;
 
-  public static final String JSON_PROPERTY_BYTE_SIZE = "byteSize";
+  public static final String SERIALIZED_NAME_BYTE_SIZE = "byteSize";
+  @SerializedName(SERIALIZED_NAME_BYTE_SIZE)
   @javax.annotation.Nonnull
   private Integer byteSize;
 
-  public static final String JSON_PROPERTY_CONTENT_TYPE = "contentType";
+  public static final String SERIALIZED_NAME_CONTENT_TYPE = "contentType";
+  @SerializedName(SERIALIZED_NAME_CONTENT_TYPE)
   @javax.annotation.Nonnull
   private String contentType;
 
-  public NewUpload() { 
+  public NewUpload() {
   }
 
   public NewUpload altText(@javax.annotation.Nullable String altText) {
-    this.altText = JsonNullable.<String>of(altText);
+    this.altText = altText;
     return this;
   }
 
@@ -67,25 +80,12 @@ public class NewUpload {
    * @return altText
    */
   @javax.annotation.Nullable
-  @JsonIgnore
   public String getAltText() {
-        return altText.orElse(null);
-  }
-
-  @JsonProperty(value = JSON_PROPERTY_ALT_TEXT, required = false)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
-
-  public JsonNullable<String> getAltText_JsonNullable() {
     return altText;
-  }
-  
-  @JsonProperty(JSON_PROPERTY_ALT_TEXT)
-  public void setAltText_JsonNullable(JsonNullable<String> altText) {
-    this.altText = altText;
   }
 
   public void setAltText(@javax.annotation.Nullable String altText) {
-    this.altText = JsonNullable.<String>of(altText);
+    this.altText = altText;
   }
 
 
@@ -101,15 +101,10 @@ public class NewUpload {
    * @return byteSize
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_BYTE_SIZE, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public Integer getByteSize() {
     return byteSize;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_BYTE_SIZE, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setByteSize(@javax.annotation.Nonnull Integer byteSize) {
     this.byteSize = byteSize;
   }
@@ -125,23 +120,16 @@ public class NewUpload {
    * @return contentType
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_CONTENT_TYPE, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public String getContentType() {
     return contentType;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_CONTENT_TYPE, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setContentType(@javax.annotation.Nonnull String contentType) {
     this.contentType = contentType;
   }
 
 
-  /**
-   * Return true if this NewUpload object is equal to o.
-   */
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -151,7 +139,7 @@ public class NewUpload {
       return false;
     }
     NewUpload newUpload = (NewUpload) o;
-    return equalsNullable(this.altText, newUpload.altText) &&
+    return Objects.equals(this.altText, newUpload.altText) &&
         Objects.equals(this.byteSize, newUpload.byteSize) &&
         Objects.equals(this.contentType, newUpload.contentType);
   }
@@ -162,7 +150,7 @@ public class NewUpload {
 
   @Override
   public int hashCode() {
-    return Objects.hash(hashCodeNullable(altText), byteSize, contentType);
+    return Objects.hash(altText, byteSize, contentType);
   }
 
   private static <T> int hashCodeNullable(JsonNullable<T> a) {
@@ -191,54 +179,101 @@ public class NewUpload {
     return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
 
-  /**
-   * Convert the instance into URL query string.
-   *
-   * @return URL query string
-   */
-  public String toUrlQueryString() {
-    return toUrlQueryString(null);
+
+  public static HashSet<String> openapiFields;
+  public static HashSet<String> openapiRequiredFields;
+
+  static {
+    // a set of all properties/fields (JSON key names)
+    openapiFields = new HashSet<String>(Arrays.asList("altText", "byteSize", "contentType"));
+
+    // a set of required properties/fields (JSON key names)
+    openapiRequiredFields = new HashSet<String>(Arrays.asList("byteSize", "contentType"));
   }
 
   /**
-   * Convert the instance into URL query string.
+   * Validates the JSON Element and throws an exception if issues found
    *
-   * @param prefix prefix of the query string
-   * @return URL query string
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to NewUpload
    */
-  public String toUrlQueryString(String prefix) {
-    String suffix = "";
-    String containerSuffix = "";
-    String containerPrefix = "";
-    if (prefix == null) {
-      // style=form, explode=true, e.g. /pet?name=cat&type=manx
-      prefix = "";
-    } else {
-      // deepObject style e.g. /pet?id[name]=cat&id[type]=manx
-      prefix = prefix + "[";
-      suffix = "]";
-      containerSuffix = "]";
-      containerPrefix = "[";
+  public static void validateJsonElement(JsonElement jsonElement) throws IOException {
+      if (jsonElement == null) {
+        if (!NewUpload.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The required field(s) %s in NewUpload is not found in the empty JSON string", NewUpload.openapiRequiredFields.toString()));
+        }
+      }
+
+      Set<Map.Entry<String, JsonElement>> entries = jsonElement.getAsJsonObject().entrySet();
+      // check to see if the JSON string contains additional fields
+      for (Map.Entry<String, JsonElement> entry : entries) {
+        if (!NewUpload.openapiFields.contains(entry.getKey())) {
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The field `%s` in the JSON string is not defined in the `NewUpload` properties. JSON: %s", entry.getKey(), jsonElement.toString()));
+        }
+      }
+
+      // check to make sure all required properties/fields are present in the JSON string
+      for (String requiredField : NewUpload.openapiRequiredFields) {
+        if (jsonElement.getAsJsonObject().get(requiredField) == null) {
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The required field `%s` is not found in the JSON string: %s", requiredField, jsonElement.toString()));
+        }
+      }
+        JsonObject jsonObj = jsonElement.getAsJsonObject();
+      if ((jsonObj.get("altText") != null && !jsonObj.get("altText").isJsonNull()) && !jsonObj.get("altText").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `altText` to be a primitive type in the JSON string but got `%s`", jsonObj.get("altText").toString()));
+      }
+      if (!jsonObj.get("contentType").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `contentType` to be a primitive type in the JSON string but got `%s`", jsonObj.get("contentType").toString()));
+      }
+  }
+
+  public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
+       if (!NewUpload.class.isAssignableFrom(type.getRawType())) {
+         return null; // this class only serializes 'NewUpload' and its subtypes
+       }
+       final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
+       final TypeAdapter<NewUpload> thisAdapter
+                        = gson.getDelegateAdapter(this, TypeToken.get(NewUpload.class));
+
+       return (TypeAdapter<T>) new TypeAdapter<NewUpload>() {
+           @Override
+           public void write(JsonWriter out, NewUpload value) throws IOException {
+             JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
+             elementAdapter.write(out, obj);
+           }
+
+           @Override
+           public NewUpload read(JsonReader in) throws IOException {
+             JsonElement jsonElement = elementAdapter.read(in);
+             validateJsonElement(jsonElement);
+             return thisAdapter.fromJsonTree(jsonElement);
+           }
+
+       }.nullSafe();
     }
+  }
 
-    StringJoiner joiner = new StringJoiner("&");
+  /**
+   * Create an instance of NewUpload given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of NewUpload
+   * @throws IOException if the JSON string is invalid with respect to NewUpload
+   */
+  public static NewUpload fromJson(String jsonString) throws IOException {
+    return JSON.getGson().fromJson(jsonString, NewUpload.class);
+  }
 
-    // add `altText` to the URL query string
-    if (getAltText() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%saltText%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getAltText()))));
-    }
-
-    // add `byteSize` to the URL query string
-    if (getByteSize() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%sbyteSize%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getByteSize()))));
-    }
-
-    // add `contentType` to the URL query string
-    if (getContentType() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%scontentType%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getContentType()))));
-    }
-
-    return joiner.toString();
+  /**
+   * Convert an instance of NewUpload to an JSON string
+   *
+   * @return JSON string
+   */
+  public String toJson() {
+    return JSON.getGson().toJson(this);
   }
 }
 

@@ -13,17 +13,13 @@
 
 package social.peal.model;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.StringJoiner;
 import java.util.Objects;
-import java.util.Map;
-import java.util.HashMap;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.fasterxml.jackson.annotation.JsonValue;
+import com.google.gson.TypeAdapter;
+import com.google.gson.annotations.JsonAdapter;
+import com.google.gson.annotations.SerializedName;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -31,96 +27,118 @@ import social.peal.model.Channel;
 import social.peal.model.ChoosableAccount;
 import social.peal.model.ConnectOutcomeAnyOf;
 import social.peal.model.ConnectOutcomeAnyOf1;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+
 
 
 import java.io.IOException;
+import java.lang.reflect.Type;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
-import social.peal.ApiClient;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonParseException;
+import com.google.gson.TypeAdapter;
+import com.google.gson.TypeAdapterFactory;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.annotations.JsonAdapter;
+import com.google.gson.annotations.SerializedName;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonParseException;
+
 import social.peal.JSON;
 
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.27.0")
-@JsonDeserialize(using=ConnectOutcome.ConnectOutcomeDeserializer.class)
-@JsonSerialize(using = ConnectOutcome.ConnectOutcomeSerializer.class)
 public class ConnectOutcome extends AbstractOpenApiSchema {
     private static final Logger log = Logger.getLogger(ConnectOutcome.class.getName());
 
-    public static class ConnectOutcomeSerializer extends StdSerializer<ConnectOutcome> {
-        public ConnectOutcomeSerializer(Class<ConnectOutcome> t) {
-            super(t);
-        }
-
-        public ConnectOutcomeSerializer() {
-            this(null);
-        }
-
+    public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
+        @SuppressWarnings("unchecked")
         @Override
-        public void serialize(ConnectOutcome value, JsonGenerator jgen, SerializerProvider provider) throws IOException, JsonProcessingException {
-            jgen.writeObject(value.getActualInstance());
-        }
-    }
-
-    public static class ConnectOutcomeDeserializer extends StdDeserializer<ConnectOutcome> {
-        public ConnectOutcomeDeserializer() {
-            this(ConnectOutcome.class);
-        }
-
-        public ConnectOutcomeDeserializer(Class<?> vc) {
-            super(vc);
-        }
-
-        @Override
-        public ConnectOutcome deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException, JsonProcessingException {
-            JsonNode tree = ctxt.readTree(jp);
-
-            Object deserialized = null;
-            // deserialize ConnectOutcomeAnyOf
-            try {
-                deserialized = tree.traverse(jp.getCodec()).readValueAs(ConnectOutcomeAnyOf.class);
-                ConnectOutcome ret = new ConnectOutcome();
-                ret.setActualInstance(deserialized);
-                return ret;
-            } catch (Exception e) {
-                // deserialization failed, continue, log to help debugging
-                log.log(Level.FINER, "Input data does not match 'ConnectOutcome'", e);
+        public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
+            if (!ConnectOutcome.class.isAssignableFrom(type.getRawType())) {
+                return null; // this class only serializes 'ConnectOutcome' and its subtypes
             }
+            final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
+            final TypeAdapter<ConnectOutcomeAnyOf> adapterConnectOutcomeAnyOf = gson.getDelegateAdapter(this, TypeToken.get(ConnectOutcomeAnyOf.class));
+            final TypeAdapter<ConnectOutcomeAnyOf1> adapterConnectOutcomeAnyOf1 = gson.getDelegateAdapter(this, TypeToken.get(ConnectOutcomeAnyOf1.class));
 
-            // deserialize ConnectOutcomeAnyOf1
-            try {
-                deserialized = tree.traverse(jp.getCodec()).readValueAs(ConnectOutcomeAnyOf1.class);
-                ConnectOutcome ret = new ConnectOutcome();
-                ret.setActualInstance(deserialized);
-                return ret;
-            } catch (Exception e) {
-                // deserialization failed, continue, log to help debugging
-                log.log(Level.FINER, "Input data does not match 'ConnectOutcome'", e);
-            }
+            return (TypeAdapter<T>) new TypeAdapter<ConnectOutcome>() {
+                @Override
+                public void write(JsonWriter out, ConnectOutcome value) throws IOException {
+                    if (value == null || value.getActualInstance() == null) {
+                        elementAdapter.write(out, null);
+                        return;
+                    }
 
-            throw new IOException("Failed deserialization for ConnectOutcome: no match found");
-        }
+                    // check if the actual instance is of the type `ConnectOutcomeAnyOf`
+                    if (value.getActualInstance() instanceof ConnectOutcomeAnyOf) {
+                        JsonElement element = adapterConnectOutcomeAnyOf.toJsonTree((ConnectOutcomeAnyOf)value.getActualInstance());
+                        elementAdapter.write(out, element);
+                        return;
+                    }
+                    // check if the actual instance is of the type `ConnectOutcomeAnyOf1`
+                    if (value.getActualInstance() instanceof ConnectOutcomeAnyOf1) {
+                        JsonElement element = adapterConnectOutcomeAnyOf1.toJsonTree((ConnectOutcomeAnyOf1)value.getActualInstance());
+                        elementAdapter.write(out, element);
+                        return;
+                    }
+                    throw new IOException("Failed to serialize as the type doesn't match anyOf schemas: ConnectOutcomeAnyOf, ConnectOutcomeAnyOf1");
+                }
 
-        /**
-         * Handle deserialization of the 'null' value.
-         */
-        @Override
-        public ConnectOutcome getNullValue(DeserializationContext ctxt) throws JsonMappingException {
-            throw new JsonMappingException(ctxt.getParser(), "ConnectOutcome cannot be null");
+                @Override
+                public ConnectOutcome read(JsonReader in) throws IOException {
+                    Object deserialized = null;
+                    JsonElement jsonElement = elementAdapter.read(in);
+
+                    ArrayList<String> errorMessages = new ArrayList<>();
+                    TypeAdapter actualAdapter = elementAdapter;
+
+                    // deserialize ConnectOutcomeAnyOf
+                    try {
+                        // validate the JSON object to see if any exception is thrown
+                        ConnectOutcomeAnyOf.validateJsonElement(jsonElement);
+                        actualAdapter = adapterConnectOutcomeAnyOf;
+                        ConnectOutcome ret = new ConnectOutcome();
+                        ret.setActualInstance(actualAdapter.fromJsonTree(jsonElement));
+                        return ret;
+                    } catch (Exception e) {
+                        // deserialization failed, continue
+                        errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for ConnectOutcomeAnyOf failed with `%s`.", e.getMessage()));
+                        log.log(Level.FINER, "Input data does not match schema 'ConnectOutcomeAnyOf'", e);
+                    }
+                    // deserialize ConnectOutcomeAnyOf1
+                    try {
+                        // validate the JSON object to see if any exception is thrown
+                        ConnectOutcomeAnyOf1.validateJsonElement(jsonElement);
+                        actualAdapter = adapterConnectOutcomeAnyOf1;
+                        ConnectOutcome ret = new ConnectOutcome();
+                        ret.setActualInstance(actualAdapter.fromJsonTree(jsonElement));
+                        return ret;
+                    } catch (Exception e) {
+                        // deserialization failed, continue
+                        errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for ConnectOutcomeAnyOf1 failed with `%s`.", e.getMessage()));
+                        log.log(Level.FINER, "Input data does not match schema 'ConnectOutcomeAnyOf1'", e);
+                    }
+
+                    throw new IOException(String.format(java.util.Locale.ROOT, "Failed deserialization for ConnectOutcome: no class matches result, expected at least 1. Detailed failure message for anyOf schemas: %s. JSON: %s", errorMessages, jsonElement.toString()));
+                }
+            }.nullSafe();
         }
     }
 
@@ -131,20 +149,14 @@ public class ConnectOutcome extends AbstractOpenApiSchema {
         super("anyOf", Boolean.FALSE);
     }
 
-    public ConnectOutcome(ConnectOutcomeAnyOf o) {
-        this();
-        setActualInstance(o);
-    }
-
-    public ConnectOutcome(ConnectOutcomeAnyOf1 o) {
-        this();
+    public ConnectOutcome(Object o) {
+        super("anyOf", Boolean.FALSE);
         setActualInstance(o);
     }
 
     static {
         schemas.put("ConnectOutcomeAnyOf", ConnectOutcomeAnyOf.class);
         schemas.put("ConnectOutcomeAnyOf1", ConnectOutcomeAnyOf1.class);
-        JSON.registerDescendants(ConnectOutcome.class, Collections.unmodifiableMap(schemas));
     }
 
     @Override
@@ -158,16 +170,15 @@ public class ConnectOutcome extends AbstractOpenApiSchema {
      * ConnectOutcomeAnyOf, ConnectOutcomeAnyOf1
      *
      * It could be an instance of the 'anyOf' schemas.
-     * The anyOf child schemas may themselves be a composed schema (allOf, anyOf, anyOf).
      */
     @Override
     public void setActualInstance(Object instance) {
-        if (JSON.isInstanceOf(ConnectOutcomeAnyOf.class, instance, new HashSet<Class<?>>())) {
+        if (instance instanceof ConnectOutcomeAnyOf) {
             super.setActualInstance(instance);
             return;
         }
 
-        if (JSON.isInstanceOf(ConnectOutcomeAnyOf1.class, instance, new HashSet<Class<?>>())) {
+        if (instance instanceof ConnectOutcomeAnyOf1) {
             super.setActualInstance(instance);
             return;
         }
@@ -181,6 +192,7 @@ public class ConnectOutcome extends AbstractOpenApiSchema {
      *
      * @return The actual instance (ConnectOutcomeAnyOf, ConnectOutcomeAnyOf1)
      */
+    @SuppressWarnings("unchecked")
     @Override
     public Object getActualInstance() {
         return super.getActualInstance();
@@ -208,42 +220,52 @@ public class ConnectOutcome extends AbstractOpenApiSchema {
         return (ConnectOutcomeAnyOf1)super.getActualInstance();
     }
 
-
-
-  /**
-   * Convert the instance into URL query string.
-   *
-   * @return URL query string
-   */
-  public String toUrlQueryString() {
-    return toUrlQueryString(null);
-  }
-
-  /**
-   * Convert the instance into URL query string.
-   *
-   * @param prefix prefix of the query string
-   * @return URL query string
-   */
-  public String toUrlQueryString(String prefix) {
-    String suffix = "";
-    String containerSuffix = "";
-    String containerPrefix = "";
-    if (prefix == null) {
-      // style=form, explode=true, e.g. /pet?name=cat&type=manx
-      prefix = "";
-    } else {
-      // deepObject style e.g. /pet?id[name]=cat&id[type]=manx
-      prefix = prefix + "[";
-      suffix = "]";
-      containerSuffix = "]";
-      containerPrefix = "[";
+    /**
+     * Validates the JSON Element and throws an exception if issues found
+     *
+     * @param jsonElement JSON Element
+     * @throws IOException if the JSON Element is invalid with respect to ConnectOutcome
+     */
+    public static void validateJsonElement(JsonElement jsonElement) throws IOException {
+        // validate anyOf schemas one by one
+        ArrayList<String> errorMessages = new ArrayList<>();
+        // validate the json string with ConnectOutcomeAnyOf
+        try {
+            ConnectOutcomeAnyOf.validateJsonElement(jsonElement);
+            return;
+        } catch (Exception e) {
+            errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for ConnectOutcomeAnyOf failed with `%s`.", e.getMessage()));
+            // continue to the next one
+        }
+        // validate the json string with ConnectOutcomeAnyOf1
+        try {
+            ConnectOutcomeAnyOf1.validateJsonElement(jsonElement);
+            return;
+        } catch (Exception e) {
+            errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for ConnectOutcomeAnyOf1 failed with `%s`.", e.getMessage()));
+            // continue to the next one
+        }
+        throw new IOException(String.format(java.util.Locale.ROOT, "The JSON string is invalid for ConnectOutcome with anyOf schemas: ConnectOutcomeAnyOf, ConnectOutcomeAnyOf1. no class match the result, expected at least 1. Detailed failure message for anyOf schemas: %s. JSON: %s", errorMessages, jsonElement.toString()));
     }
 
-    StringJoiner joiner = new StringJoiner("&");
+    /**
+     * Create an instance of ConnectOutcome given an JSON string
+     *
+     * @param jsonString JSON string
+     * @return An instance of ConnectOutcome
+     * @throws IOException if the JSON string is invalid with respect to ConnectOutcome
+     */
+    public static ConnectOutcome fromJson(String jsonString) throws IOException {
+        return JSON.getGson().fromJson(jsonString, ConnectOutcome.class);
+    }
 
-    return null;
-  }
-
+    /**
+     * Convert an instance of ConnectOutcome to an JSON string
+     *
+     * @return JSON string
+     */
+    public String toJson() {
+        return JSON.getGson().toJson(this);
+    }
 }
 

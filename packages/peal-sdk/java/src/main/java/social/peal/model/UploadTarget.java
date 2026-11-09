@@ -13,17 +13,13 @@
 
 package social.peal.model;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.StringJoiner;
 import java.util.Objects;
-import java.util.Map;
-import java.util.HashMap;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.fasterxml.jackson.annotation.JsonValue;
+import com.google.gson.TypeAdapter;
+import com.google.gson.annotations.JsonAdapter;
+import com.google.gson.annotations.SerializedName;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -31,96 +27,118 @@ import social.peal.model.SignedRequest;
 import social.peal.model.UploadPart;
 import social.peal.model.UploadTargetAnyOf;
 import social.peal.model.UploadTargetAnyOf1;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+
 
 
 import java.io.IOException;
+import java.lang.reflect.Type;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
-import social.peal.ApiClient;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonParseException;
+import com.google.gson.TypeAdapter;
+import com.google.gson.TypeAdapterFactory;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.annotations.JsonAdapter;
+import com.google.gson.annotations.SerializedName;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonParseException;
+
 import social.peal.JSON;
 
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.27.0")
-@JsonDeserialize(using=UploadTarget.UploadTargetDeserializer.class)
-@JsonSerialize(using = UploadTarget.UploadTargetSerializer.class)
 public class UploadTarget extends AbstractOpenApiSchema {
     private static final Logger log = Logger.getLogger(UploadTarget.class.getName());
 
-    public static class UploadTargetSerializer extends StdSerializer<UploadTarget> {
-        public UploadTargetSerializer(Class<UploadTarget> t) {
-            super(t);
-        }
-
-        public UploadTargetSerializer() {
-            this(null);
-        }
-
+    public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
+        @SuppressWarnings("unchecked")
         @Override
-        public void serialize(UploadTarget value, JsonGenerator jgen, SerializerProvider provider) throws IOException, JsonProcessingException {
-            jgen.writeObject(value.getActualInstance());
-        }
-    }
-
-    public static class UploadTargetDeserializer extends StdDeserializer<UploadTarget> {
-        public UploadTargetDeserializer() {
-            this(UploadTarget.class);
-        }
-
-        public UploadTargetDeserializer(Class<?> vc) {
-            super(vc);
-        }
-
-        @Override
-        public UploadTarget deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException, JsonProcessingException {
-            JsonNode tree = ctxt.readTree(jp);
-
-            Object deserialized = null;
-            // deserialize UploadTargetAnyOf
-            try {
-                deserialized = tree.traverse(jp.getCodec()).readValueAs(UploadTargetAnyOf.class);
-                UploadTarget ret = new UploadTarget();
-                ret.setActualInstance(deserialized);
-                return ret;
-            } catch (Exception e) {
-                // deserialization failed, continue, log to help debugging
-                log.log(Level.FINER, "Input data does not match 'UploadTarget'", e);
+        public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
+            if (!UploadTarget.class.isAssignableFrom(type.getRawType())) {
+                return null; // this class only serializes 'UploadTarget' and its subtypes
             }
+            final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
+            final TypeAdapter<UploadTargetAnyOf> adapterUploadTargetAnyOf = gson.getDelegateAdapter(this, TypeToken.get(UploadTargetAnyOf.class));
+            final TypeAdapter<UploadTargetAnyOf1> adapterUploadTargetAnyOf1 = gson.getDelegateAdapter(this, TypeToken.get(UploadTargetAnyOf1.class));
 
-            // deserialize UploadTargetAnyOf1
-            try {
-                deserialized = tree.traverse(jp.getCodec()).readValueAs(UploadTargetAnyOf1.class);
-                UploadTarget ret = new UploadTarget();
-                ret.setActualInstance(deserialized);
-                return ret;
-            } catch (Exception e) {
-                // deserialization failed, continue, log to help debugging
-                log.log(Level.FINER, "Input data does not match 'UploadTarget'", e);
-            }
+            return (TypeAdapter<T>) new TypeAdapter<UploadTarget>() {
+                @Override
+                public void write(JsonWriter out, UploadTarget value) throws IOException {
+                    if (value == null || value.getActualInstance() == null) {
+                        elementAdapter.write(out, null);
+                        return;
+                    }
 
-            throw new IOException("Failed deserialization for UploadTarget: no match found");
-        }
+                    // check if the actual instance is of the type `UploadTargetAnyOf`
+                    if (value.getActualInstance() instanceof UploadTargetAnyOf) {
+                        JsonElement element = adapterUploadTargetAnyOf.toJsonTree((UploadTargetAnyOf)value.getActualInstance());
+                        elementAdapter.write(out, element);
+                        return;
+                    }
+                    // check if the actual instance is of the type `UploadTargetAnyOf1`
+                    if (value.getActualInstance() instanceof UploadTargetAnyOf1) {
+                        JsonElement element = adapterUploadTargetAnyOf1.toJsonTree((UploadTargetAnyOf1)value.getActualInstance());
+                        elementAdapter.write(out, element);
+                        return;
+                    }
+                    throw new IOException("Failed to serialize as the type doesn't match anyOf schemas: UploadTargetAnyOf, UploadTargetAnyOf1");
+                }
 
-        /**
-         * Handle deserialization of the 'null' value.
-         */
-        @Override
-        public UploadTarget getNullValue(DeserializationContext ctxt) throws JsonMappingException {
-            throw new JsonMappingException(ctxt.getParser(), "UploadTarget cannot be null");
+                @Override
+                public UploadTarget read(JsonReader in) throws IOException {
+                    Object deserialized = null;
+                    JsonElement jsonElement = elementAdapter.read(in);
+
+                    ArrayList<String> errorMessages = new ArrayList<>();
+                    TypeAdapter actualAdapter = elementAdapter;
+
+                    // deserialize UploadTargetAnyOf
+                    try {
+                        // validate the JSON object to see if any exception is thrown
+                        UploadTargetAnyOf.validateJsonElement(jsonElement);
+                        actualAdapter = adapterUploadTargetAnyOf;
+                        UploadTarget ret = new UploadTarget();
+                        ret.setActualInstance(actualAdapter.fromJsonTree(jsonElement));
+                        return ret;
+                    } catch (Exception e) {
+                        // deserialization failed, continue
+                        errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for UploadTargetAnyOf failed with `%s`.", e.getMessage()));
+                        log.log(Level.FINER, "Input data does not match schema 'UploadTargetAnyOf'", e);
+                    }
+                    // deserialize UploadTargetAnyOf1
+                    try {
+                        // validate the JSON object to see if any exception is thrown
+                        UploadTargetAnyOf1.validateJsonElement(jsonElement);
+                        actualAdapter = adapterUploadTargetAnyOf1;
+                        UploadTarget ret = new UploadTarget();
+                        ret.setActualInstance(actualAdapter.fromJsonTree(jsonElement));
+                        return ret;
+                    } catch (Exception e) {
+                        // deserialization failed, continue
+                        errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for UploadTargetAnyOf1 failed with `%s`.", e.getMessage()));
+                        log.log(Level.FINER, "Input data does not match schema 'UploadTargetAnyOf1'", e);
+                    }
+
+                    throw new IOException(String.format(java.util.Locale.ROOT, "Failed deserialization for UploadTarget: no class matches result, expected at least 1. Detailed failure message for anyOf schemas: %s. JSON: %s", errorMessages, jsonElement.toString()));
+                }
+            }.nullSafe();
         }
     }
 
@@ -131,20 +149,14 @@ public class UploadTarget extends AbstractOpenApiSchema {
         super("anyOf", Boolean.FALSE);
     }
 
-    public UploadTarget(UploadTargetAnyOf o) {
-        this();
-        setActualInstance(o);
-    }
-
-    public UploadTarget(UploadTargetAnyOf1 o) {
-        this();
+    public UploadTarget(Object o) {
+        super("anyOf", Boolean.FALSE);
         setActualInstance(o);
     }
 
     static {
         schemas.put("UploadTargetAnyOf", UploadTargetAnyOf.class);
         schemas.put("UploadTargetAnyOf1", UploadTargetAnyOf1.class);
-        JSON.registerDescendants(UploadTarget.class, Collections.unmodifiableMap(schemas));
     }
 
     @Override
@@ -158,16 +170,15 @@ public class UploadTarget extends AbstractOpenApiSchema {
      * UploadTargetAnyOf, UploadTargetAnyOf1
      *
      * It could be an instance of the 'anyOf' schemas.
-     * The anyOf child schemas may themselves be a composed schema (allOf, anyOf, anyOf).
      */
     @Override
     public void setActualInstance(Object instance) {
-        if (JSON.isInstanceOf(UploadTargetAnyOf.class, instance, new HashSet<Class<?>>())) {
+        if (instance instanceof UploadTargetAnyOf) {
             super.setActualInstance(instance);
             return;
         }
 
-        if (JSON.isInstanceOf(UploadTargetAnyOf1.class, instance, new HashSet<Class<?>>())) {
+        if (instance instanceof UploadTargetAnyOf1) {
             super.setActualInstance(instance);
             return;
         }
@@ -181,6 +192,7 @@ public class UploadTarget extends AbstractOpenApiSchema {
      *
      * @return The actual instance (UploadTargetAnyOf, UploadTargetAnyOf1)
      */
+    @SuppressWarnings("unchecked")
     @Override
     public Object getActualInstance() {
         return super.getActualInstance();
@@ -208,42 +220,52 @@ public class UploadTarget extends AbstractOpenApiSchema {
         return (UploadTargetAnyOf1)super.getActualInstance();
     }
 
-
-
-  /**
-   * Convert the instance into URL query string.
-   *
-   * @return URL query string
-   */
-  public String toUrlQueryString() {
-    return toUrlQueryString(null);
-  }
-
-  /**
-   * Convert the instance into URL query string.
-   *
-   * @param prefix prefix of the query string
-   * @return URL query string
-   */
-  public String toUrlQueryString(String prefix) {
-    String suffix = "";
-    String containerSuffix = "";
-    String containerPrefix = "";
-    if (prefix == null) {
-      // style=form, explode=true, e.g. /pet?name=cat&type=manx
-      prefix = "";
-    } else {
-      // deepObject style e.g. /pet?id[name]=cat&id[type]=manx
-      prefix = prefix + "[";
-      suffix = "]";
-      containerSuffix = "]";
-      containerPrefix = "[";
+    /**
+     * Validates the JSON Element and throws an exception if issues found
+     *
+     * @param jsonElement JSON Element
+     * @throws IOException if the JSON Element is invalid with respect to UploadTarget
+     */
+    public static void validateJsonElement(JsonElement jsonElement) throws IOException {
+        // validate anyOf schemas one by one
+        ArrayList<String> errorMessages = new ArrayList<>();
+        // validate the json string with UploadTargetAnyOf
+        try {
+            UploadTargetAnyOf.validateJsonElement(jsonElement);
+            return;
+        } catch (Exception e) {
+            errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for UploadTargetAnyOf failed with `%s`.", e.getMessage()));
+            // continue to the next one
+        }
+        // validate the json string with UploadTargetAnyOf1
+        try {
+            UploadTargetAnyOf1.validateJsonElement(jsonElement);
+            return;
+        } catch (Exception e) {
+            errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for UploadTargetAnyOf1 failed with `%s`.", e.getMessage()));
+            // continue to the next one
+        }
+        throw new IOException(String.format(java.util.Locale.ROOT, "The JSON string is invalid for UploadTarget with anyOf schemas: UploadTargetAnyOf, UploadTargetAnyOf1. no class match the result, expected at least 1. Detailed failure message for anyOf schemas: %s. JSON: %s", errorMessages, jsonElement.toString()));
     }
 
-    StringJoiner joiner = new StringJoiner("&");
+    /**
+     * Create an instance of UploadTarget given an JSON string
+     *
+     * @param jsonString JSON string
+     * @return An instance of UploadTarget
+     * @throws IOException if the JSON string is invalid with respect to UploadTarget
+     */
+    public static UploadTarget fromJson(String jsonString) throws IOException {
+        return JSON.getGson().fromJson(jsonString, UploadTarget.class);
+    }
 
-    return null;
-  }
-
+    /**
+     * Convert an instance of UploadTarget to an JSON string
+     *
+     * @return JSON string
+     */
+    public String toJson() {
+        return JSON.getGson().toJson(this);
+    }
 }
 

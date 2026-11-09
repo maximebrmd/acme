@@ -13,56 +13,71 @@
 
 package social.peal.model;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.StringJoiner;
 import java.util.Objects;
-import java.util.Map;
-import java.util.HashMap;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.fasterxml.jackson.annotation.JsonValue;
+import com.google.gson.TypeAdapter;
+import com.google.gson.annotations.JsonAdapter;
+import com.google.gson.annotations.SerializedName;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 import java.util.Arrays;
 import social.peal.model.NoticeEvent;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonNull;
+import com.google.gson.JsonParseException;
+import com.google.gson.TypeAdapterFactory;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.TypeAdapter;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 
-import social.peal.ApiClient;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import social.peal.JSON;
+
 /**
  * Notice
  */
-@JsonPropertyOrder({
-  Notice.JSON_PROPERTY_CREATED_AT,
-  Notice.JSON_PROPERTY_EVENT,
-  Notice.JSON_PROPERTY_ID,
-  Notice.JSON_PROPERTY_READ_AT,
-  Notice.JSON_PROPERTY_WORKSPACE_ID
-})
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.27.0")
 public class Notice {
-  public static final String JSON_PROPERTY_CREATED_AT = "createdAt";
+  public static final String SERIALIZED_NAME_CREATED_AT = "createdAt";
+  @SerializedName(SERIALIZED_NAME_CREATED_AT)
   @javax.annotation.Nonnull
   private String createdAt;
 
-  public static final String JSON_PROPERTY_EVENT = "event";
+  public static final String SERIALIZED_NAME_EVENT = "event";
+  @SerializedName(SERIALIZED_NAME_EVENT)
   @javax.annotation.Nonnull
   private NoticeEvent event;
 
-  public static final String JSON_PROPERTY_ID = "id";
+  public static final String SERIALIZED_NAME_ID = "id";
+  @SerializedName(SERIALIZED_NAME_ID)
   @javax.annotation.Nonnull
   private String id;
 
-  public static final String JSON_PROPERTY_READ_AT = "readAt";
+  public static final String SERIALIZED_NAME_READ_AT = "readAt";
+  @SerializedName(SERIALIZED_NAME_READ_AT)
   @javax.annotation.Nullable
   private String readAt;
 
-  public static final String JSON_PROPERTY_WORKSPACE_ID = "workspaceId";
+  public static final String SERIALIZED_NAME_WORKSPACE_ID = "workspaceId";
+  @SerializedName(SERIALIZED_NAME_WORKSPACE_ID)
   @javax.annotation.Nonnull
   private String workspaceId;
 
-  public Notice() { 
+  public Notice() {
   }
 
   public Notice createdAt(@javax.annotation.Nonnull String createdAt) {
@@ -75,15 +90,10 @@ public class Notice {
    * @return createdAt
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_CREATED_AT, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public String getCreatedAt() {
     return createdAt;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_CREATED_AT, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setCreatedAt(@javax.annotation.Nonnull String createdAt) {
     this.createdAt = createdAt;
   }
@@ -99,15 +109,10 @@ public class Notice {
    * @return event
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_EVENT, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public NoticeEvent getEvent() {
     return event;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_EVENT, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setEvent(@javax.annotation.Nonnull NoticeEvent event) {
     this.event = event;
   }
@@ -123,15 +128,10 @@ public class Notice {
    * @return id
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_ID, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public String getId() {
     return id;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_ID, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setId(@javax.annotation.Nonnull String id) {
     this.id = id;
   }
@@ -147,15 +147,10 @@ public class Notice {
    * @return readAt
    */
   @javax.annotation.Nullable
-  @JsonProperty(value = JSON_PROPERTY_READ_AT, required = false)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public String getReadAt() {
     return readAt;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_READ_AT, required = false)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setReadAt(@javax.annotation.Nullable String readAt) {
     this.readAt = readAt;
   }
@@ -171,23 +166,16 @@ public class Notice {
    * @return workspaceId
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_WORKSPACE_ID, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public String getWorkspaceId() {
     return workspaceId;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_WORKSPACE_ID, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setWorkspaceId(@javax.annotation.Nonnull String workspaceId) {
     this.workspaceId = workspaceId;
   }
 
 
-  /**
-   * Return true if this Notice object is equal to o.
-   */
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -230,64 +218,109 @@ public class Notice {
     return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
 
-  /**
-   * Convert the instance into URL query string.
-   *
-   * @return URL query string
-   */
-  public String toUrlQueryString() {
-    return toUrlQueryString(null);
+
+  public static HashSet<String> openapiFields;
+  public static HashSet<String> openapiRequiredFields;
+
+  static {
+    // a set of all properties/fields (JSON key names)
+    openapiFields = new HashSet<String>(Arrays.asList("createdAt", "event", "id", "readAt", "workspaceId"));
+
+    // a set of required properties/fields (JSON key names)
+    openapiRequiredFields = new HashSet<String>(Arrays.asList("createdAt", "event", "id", "readAt", "workspaceId"));
   }
 
   /**
-   * Convert the instance into URL query string.
+   * Validates the JSON Element and throws an exception if issues found
    *
-   * @param prefix prefix of the query string
-   * @return URL query string
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to Notice
    */
-  public String toUrlQueryString(String prefix) {
-    String suffix = "";
-    String containerSuffix = "";
-    String containerPrefix = "";
-    if (prefix == null) {
-      // style=form, explode=true, e.g. /pet?name=cat&type=manx
-      prefix = "";
-    } else {
-      // deepObject style e.g. /pet?id[name]=cat&id[type]=manx
-      prefix = prefix + "[";
-      suffix = "]";
-      containerSuffix = "]";
-      containerPrefix = "[";
+  public static void validateJsonElement(JsonElement jsonElement) throws IOException {
+      if (jsonElement == null) {
+        if (!Notice.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The required field(s) %s in Notice is not found in the empty JSON string", Notice.openapiRequiredFields.toString()));
+        }
+      }
+
+      Set<Map.Entry<String, JsonElement>> entries = jsonElement.getAsJsonObject().entrySet();
+      // check to see if the JSON string contains additional fields
+      for (Map.Entry<String, JsonElement> entry : entries) {
+        if (!Notice.openapiFields.contains(entry.getKey())) {
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The field `%s` in the JSON string is not defined in the `Notice` properties. JSON: %s", entry.getKey(), jsonElement.toString()));
+        }
+      }
+
+      // check to make sure all required properties/fields are present in the JSON string
+      for (String requiredField : Notice.openapiRequiredFields) {
+        if (jsonElement.getAsJsonObject().get(requiredField) == null) {
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The required field `%s` is not found in the JSON string: %s", requiredField, jsonElement.toString()));
+        }
+      }
+        JsonObject jsonObj = jsonElement.getAsJsonObject();
+      if (!jsonObj.get("createdAt").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `createdAt` to be a primitive type in the JSON string but got `%s`", jsonObj.get("createdAt").toString()));
+      }
+      // validate the required field `event`
+      NoticeEvent.validateJsonElement(jsonObj.get("event"));
+      if (!jsonObj.get("id").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `id` to be a primitive type in the JSON string but got `%s`", jsonObj.get("id").toString()));
+      }
+      if ((jsonObj.get("readAt") != null && !jsonObj.get("readAt").isJsonNull()) && !jsonObj.get("readAt").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `readAt` to be a primitive type in the JSON string but got `%s`", jsonObj.get("readAt").toString()));
+      }
+      if (!jsonObj.get("workspaceId").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `workspaceId` to be a primitive type in the JSON string but got `%s`", jsonObj.get("workspaceId").toString()));
+      }
+  }
+
+  public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
+       if (!Notice.class.isAssignableFrom(type.getRawType())) {
+         return null; // this class only serializes 'Notice' and its subtypes
+       }
+       final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
+       final TypeAdapter<Notice> thisAdapter
+                        = gson.getDelegateAdapter(this, TypeToken.get(Notice.class));
+
+       return (TypeAdapter<T>) new TypeAdapter<Notice>() {
+           @Override
+           public void write(JsonWriter out, Notice value) throws IOException {
+             JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
+             elementAdapter.write(out, obj);
+           }
+
+           @Override
+           public Notice read(JsonReader in) throws IOException {
+             JsonElement jsonElement = elementAdapter.read(in);
+             validateJsonElement(jsonElement);
+             return thisAdapter.fromJsonTree(jsonElement);
+           }
+
+       }.nullSafe();
     }
+  }
 
-    StringJoiner joiner = new StringJoiner("&");
+  /**
+   * Create an instance of Notice given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of Notice
+   * @throws IOException if the JSON string is invalid with respect to Notice
+   */
+  public static Notice fromJson(String jsonString) throws IOException {
+    return JSON.getGson().fromJson(jsonString, Notice.class);
+  }
 
-    // add `createdAt` to the URL query string
-    if (getCreatedAt() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%screatedAt%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getCreatedAt()))));
-    }
-
-    // add `event` to the URL query string
-    if (getEvent() != null) {
-      joiner.add(getEvent().toUrlQueryString(prefix + "event" + suffix));
-    }
-
-    // add `id` to the URL query string
-    if (getId() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%sid%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getId()))));
-    }
-
-    // add `readAt` to the URL query string
-    if (getReadAt() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%sreadAt%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getReadAt()))));
-    }
-
-    // add `workspaceId` to the URL query string
-    if (getWorkspaceId() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%sworkspaceId%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getWorkspaceId()))));
-    }
-
-    return joiner.toString();
+  /**
+   * Convert an instance of Notice to an JSON string
+   *
+   * @return JSON string
+   */
+  public String toJson() {
+    return JSON.getGson().toJson(this);
   }
 }
 

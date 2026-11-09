@@ -13,252 +13,646 @@
 
 package social.peal;
 
-import com.fasterxml.jackson.annotation.*;
-import com.fasterxml.jackson.databind.*;
-import com.fasterxml.jackson.databind.json.JsonMapper;
-import org.openapitools.jackson.nullable.JsonNullableModule;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import social.peal.model.*;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonParseException;
+import com.google.gson.TypeAdapter;
+import com.google.gson.internal.bind.util.ISO8601Utils;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import com.google.gson.JsonElement;
+import io.gsonfire.GsonFireBuilder;
+import io.gsonfire.TypeSelector;
 
+import okio.ByteString;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.StringReader;
+import java.lang.reflect.Type;
+import java.nio.charset.StandardCharsets;
 import java.text.DateFormat;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.text.ParseException;
+import java.text.ParsePosition;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.util.Date;
+import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
+import java.util.HashMap;
 
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.27.0")
+/*
+ * A JSON utility class
+ *
+ * NOTE: in the future, this class may be converted to static, which may break
+ *       backward-compatibility
+ */
 public class JSON {
-  private ObjectMapper mapper;
+    private static Gson gson;
+    private static boolean isLenientOnJson = false;
+    private static DateTypeAdapter dateTypeAdapter = new DateTypeAdapter();
+    private static SqlDateTypeAdapter sqlDateTypeAdapter = new SqlDateTypeAdapter();
+    private static OffsetDateTimeTypeAdapter offsetDateTimeTypeAdapter = new OffsetDateTimeTypeAdapter();
+    private static LocalDateTypeAdapter localDateTypeAdapter = new LocalDateTypeAdapter();
+    private static LocalDateTimeTypeAdapter localDateTimeTypeAdapter = new LocalDateTimeTypeAdapter();
+    private static ByteArrayAdapter byteArrayAdapter = new ByteArrayAdapter();
 
-  public JSON() {
-    mapper = JsonMapper.builder()
-        .serializationInclusion(JsonInclude.Include.NON_NULL)
-        .disable(MapperFeature.ALLOW_COERCION_OF_SCALARS)
-        .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
-        .enable(DeserializationFeature.FAIL_ON_INVALID_SUBTYPE)
-        .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
-        .enable(SerializationFeature.WRITE_ENUMS_USING_TO_STRING)
-        .enable(DeserializationFeature.READ_ENUMS_USING_TO_STRING)
-        .defaultDateFormat(new RFC3339DateFormat())
-        .addModule(new JavaTimeModule())
-        .build();
-    JsonNullableModule jnm = new JsonNullableModule();
-    mapper.registerModule(jnm);
-  }
-
-  /**
-   * Set the date format for JSON (de)serialization with Date properties.
-   *
-   * @param dateFormat Date format
-   */
-  public void setDateFormat(DateFormat dateFormat) {
-    mapper.setDateFormat(dateFormat);
-  }
-
-  /**
-   * Get the object mapper
-   *
-   * @return object mapper
-   */
-  public ObjectMapper getMapper() { return mapper; }
-
-  /**
-   * Returns the target model class that should be used to deserialize the input data.
-   * The discriminator mappings are used to determine the target model class.
-   *
-   * @param node The input data.
-   * @param modelClass The class that contains the discriminator mappings.
-   *
-   * @return the target model class.
-   */
-  public static Class<?> getClassForElement(JsonNode node, Class<?> modelClass) {
-    ClassDiscriminatorMapping cdm = modelDiscriminators.get(modelClass);
-    if (cdm != null) {
-      return cdm.getClassForElement(node, new HashSet<Class<?>>());
-    }
-    return null;
-  }
-
-  /**
-   * Helper class to register the discriminator mappings.
-   */
-  @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.27.0")
-  private static class ClassDiscriminatorMapping {
-    // The model class name.
-    Class<?> modelClass;
-    // The name of the discriminator property.
-    String discriminatorName;
-    // The discriminator mappings for a model class.
-    Map<String, Class<?>> discriminatorMappings;
-
-    // Constructs a new class discriminator.
-    ClassDiscriminatorMapping(Class<?> cls, String propertyName, Map<String, Class<?>> mappings) {
-      modelClass = cls;
-      discriminatorName = propertyName;
-      discriminatorMappings = new HashMap<String, Class<?>>();
-      if (mappings != null) {
-        discriminatorMappings.putAll(mappings);
-      }
+    @SuppressWarnings("unchecked")
+    public static GsonBuilder createGson() {
+        GsonFireBuilder fireBuilder = new GsonFireBuilder()
+        ;
+        GsonBuilder builder = fireBuilder.createGsonBuilder();
+        return builder;
     }
 
-    // Return the name of the discriminator property for this model class.
-    String getDiscriminatorPropertyName() {
-      return discriminatorName;
-    }
-
-    // Return the discriminator value or null if the discriminator is not
-    // present in the payload.
-    String getDiscriminatorValue(JsonNode node) {
-      // Determine the value of the discriminator property in the input data.
-      if (discriminatorName != null) {
-        // Get the value of the discriminator property, if present in the input payload.
-        node = node.get(discriminatorName);
-        if (node != null && node.isValueNode()) {
-          String discrValue = node.asText();
-          if (discrValue != null) {
-            return discrValue;
-          }
+    private static String getDiscriminatorValue(JsonElement readElement, String discriminatorField) {
+        JsonElement element = readElement.getAsJsonObject().get(discriminatorField);
+        if (null == element) {
+            throw new IllegalArgumentException("missing discriminator field: <" + discriminatorField + ">");
         }
-      }
-      return null;
+        return element.getAsString();
     }
 
     /**
-     * Returns the target model class that should be used to deserialize the input data.
-     * This function can be invoked for anyOf/oneOf composed models with discriminator mappings.
-     * The discriminator mappings are used to determine the target model class.
+     * Returns the Java class that implements the OpenAPI schema for the specified discriminator value.
      *
-     * @param node The input data.
-     * @param visitedClasses The set of classes that have already been visited.
-     *
-     * @return the target model class.
+     * @param classByDiscriminatorValue The map of discriminator values to Java classes.
+     * @param discriminatorValue The value of the OpenAPI discriminator in the input data.
+     * @return The Java class that implements the OpenAPI schema
      */
-    Class<?> getClassForElement(JsonNode node, Set<Class<?>> visitedClasses) {
-      if (visitedClasses.contains(modelClass)) {
-        // Class has already been visited.
-        return null;
-      }
-      // Determine the value of the discriminator property in the input data.
-      String discrValue = getDiscriminatorValue(node);
-      if (discrValue == null) {
-        return null;
-      }
-      Class<?> cls = discriminatorMappings.get(discrValue);
-      // It may not be sufficient to return this cls directly because that target class
-      // may itself be a composed schema, possibly with its own discriminator.
-      visitedClasses.add(modelClass);
-      for (Class<?> childClass : discriminatorMappings.values()) {
-        ClassDiscriminatorMapping childCdm = modelDiscriminators.get(childClass);
-        if (childCdm == null) {
-          continue;
+    private static Class getClassByDiscriminator(Map classByDiscriminatorValue, String discriminatorValue) {
+        Class clazz = (Class) classByDiscriminatorValue.get(discriminatorValue);
+        if (null == clazz) {
+            throw new IllegalArgumentException("cannot determine model class of name: <" + discriminatorValue + ">");
         }
-        if (!discriminatorName.equals(childCdm.discriminatorName)) {
-          discrValue = getDiscriminatorValue(node);
-          if (discrValue == null) {
-            continue;
-          }
+        return clazz;
+    }
+
+    static {
+        GsonBuilder gsonBuilder = createGson();
+        gsonBuilder.registerTypeAdapter(Date.class, dateTypeAdapter);
+        gsonBuilder.registerTypeAdapter(java.sql.Date.class, sqlDateTypeAdapter);
+        gsonBuilder.registerTypeAdapter(OffsetDateTime.class, offsetDateTimeTypeAdapter);
+        gsonBuilder.registerTypeAdapter(LocalDate.class, localDateTypeAdapter);
+        gsonBuilder.registerTypeAdapter(LocalDateTime.class, localDateTimeTypeAdapter);
+        gsonBuilder.registerTypeAdapter(byte[].class, byteArrayAdapter);
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.AlreadyMemberEncoded.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.AltTextTooLongEncoded.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.AnalyticsSummary.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.ApiKey.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.ApiKeyNotFoundEncoded.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.ApiKeysRevoke404Response.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.AssistantAction.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.AssistantActionAnyOf.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.AssistantActionAnyOf1.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.AssistantActionAnyOf2.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.AssistantActionAnyOf3.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.AssistantFailedEncoded.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.AssistantInputRejectedEncoded.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.AssistantQuotaExceededEncoded.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.AssistantStatus.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.AssistantUnavailableEncoded.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.Authorization.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.Billing.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.BillingSubscription.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.Channel.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.ChannelCannotPostEncoded.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.ChannelMetrics.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.ChannelNotFoundEncoded.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.ChannelOptions.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.ChannelStatus.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.ChannelStatusAnyOf.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.ChannelStatusAnyOf1.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.ChannelStatusAnyOf2.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.ChannelsCompleteConnect404Response.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.ChoosableAccount.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.ChooseAccounts.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.ConnectCallback.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.ConnectChannel.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.ConnectFailedEncoded.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.ConnectOutcome.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.ConnectOutcomeAnyOf.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.ConnectOutcomeAnyOf1.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.ConnectablePlatforms.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.ContentViolation.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.ContentViolationAnyOf.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.ContentViolationAnyOf1.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.ContentViolationAnyOf10.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.ContentViolationAnyOf11.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.ContentViolationAnyOf12.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.ContentViolationAnyOf13.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.ContentViolationAnyOf14.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.ContentViolationAnyOf15.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.ContentViolationAnyOf16.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.ContentViolationAnyOf17.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.ContentViolationAnyOf18.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.ContentViolationAnyOf19.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.ContentViolationAnyOf2.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.ContentViolationAnyOf20.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.ContentViolationAnyOf21.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.ContentViolationAnyOf22.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.ContentViolationAnyOf23.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.ContentViolationAnyOf24.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.ContentViolationAnyOf24Maximum.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.ContentViolationAnyOf25.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.ContentViolationAnyOf3.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.ContentViolationAnyOf4.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.ContentViolationAnyOf5.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.ContentViolationAnyOf6.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.ContentViolationAnyOf7.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.ContentViolationAnyOf8.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.ContentViolationAnyOf9.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.CreatedApiKey.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.DatabaseUnavailableEncoded.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.DraftPage.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.EffectHttpApiErrorBadRequestEncoded.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.EngagementDay.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.ForbiddenEncoded.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.InvalidDateRangeEncoded.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.InvalidTimeRangeEncoded.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.InvalidTimeZoneEncoded.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.Invitation.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.InvitationNotFoundEncoded.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.InvitationsCreate409Response.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.InvitationsRevoke404Response.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.MarkNoticesRead.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.Me.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.MeUser.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.Media.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.MediaAttachment.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.MediaCreate422Response.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.MediaDescription.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.MediaDimensions.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.MediaGet404Response.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.MediaInUseEncoded.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.MediaNotFoundEncoded.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.MediaPage.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.MediaStatus.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.MediaStatusAnyOf.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.MediaStatusAnyOf1.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.MediaStatusAnyOf2.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.MediaStatusAnyOf3.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.MediaStoreUnavailableEncoded.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.MediaTooLargeEncoded.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.MediaUsage.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.Membership.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.MetricTotals.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.MetricsSnapshot.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.NewApiKey.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.NewInvitation.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.NewUpload.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.Notice.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.NoticeChannel.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.NoticeEvent.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.NoticeEventAnyOf.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.NoticeEventAnyOf1.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.NoticeEventAnyOf2.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.NoticeEventAnyOf3.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.NoticeEventAnyOf4.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.NoticePage.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.NotificationPreferences.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.NotificationPreferencesChange.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.NotificationPreferencesChangeEmail.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.NotificationPreferencesEmail.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.PeriodUsage.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.PlanAllowances.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.PlanLimitReachedEncoded.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.PlanOffer.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.PlatformUnreachableEncoded.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.Post.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.PostAnalytics.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.PostContent.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.PostContentInvalidEncoded.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.PostDraft.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.PostMetrics.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.PostNotFoundEncoded.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.PostSchedule.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.PostStatusConflictEncoded.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.PostTarget.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.PostsCreate422Response.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.PostsGet404Response.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.PostsRepost409Response.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.PostsSchedule422Response.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.PreparedUpload.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.PublicationAttempt.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.ScheduleInPastEncoded.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.SchedulePost.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.SignedRequest.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.Suggestion.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.SuggestionAnyOf.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.SuggestionAnyOf1.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.SuggestionRequest.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.TargetConfirmation.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.TargetConfirmationAnyOf.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.TargetConfirmationAnyOf1.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.TargetMetrics.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.TargetOptions.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.TargetStatusConflictEncoded.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.TextOverride.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.TikTokAccount.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.TikTokAccountPosting.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.TikTokAccountPostingAnyOf.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.TikTokAccountPostingAnyOf1.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.TikTokCreator.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.TikTokOptions.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.TooManyInvitationsEncoded.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.TopPost.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.UnauthenticatedEncoded.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.UnknownChannelsEncoded.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.UnknownMediaEncoded.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.UnreadNotices.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.UnsupportedMediaTypeEncoded.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.UploadIncompleteEncoded.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.UploadPart.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.UploadRejectedEncoded.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.UploadTarget.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.UploadTargetAnyOf.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.UploadTargetAnyOf1.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.Usage.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.WorkspaceMember.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.WorkspaceNotFoundEncoded.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.YouTubeOptions.CustomTypeAdapterFactory());
+        gson = gsonBuilder.create();
+    }
+
+    /**
+     * Get Gson.
+     *
+     * @return Gson
+     */
+    public static Gson getGson() {
+        return gson;
+    }
+
+    /**
+     * Set Gson.
+     *
+     * @param gson Gson
+     */
+    public static void setGson(Gson gson) {
+        JSON.gson = gson;
+    }
+
+    public static void setLenientOnJson(boolean lenientOnJson) {
+        isLenientOnJson = lenientOnJson;
+    }
+
+    /**
+     * Serialize the given Java object into JSON string.
+     *
+     * @param obj Object
+     * @return String representation of the JSON
+     */
+    public static String serialize(Object obj) {
+        return gson.toJson(obj);
+    }
+
+    /**
+     * Deserialize the given JSON string to Java object.
+     *
+     * @param <T>        Type
+     * @param body       The JSON string
+     * @param returnType The type to deserialize into
+     * @return The deserialized Java object
+     */
+    @SuppressWarnings("unchecked")
+    public static <T> T deserialize(String body, Type returnType) {
+        try {
+            if (isLenientOnJson) {
+                JsonReader jsonReader = new JsonReader(new StringReader(body));
+                // see https://google-gson.googlecode.com/svn/trunk/gson/docs/javadocs/com/google/gson/stream/JsonReader.html#setLenient(boolean)
+                jsonReader.setLenient(true);
+                return gson.fromJson(jsonReader, returnType);
+            } else {
+                return gson.fromJson(body, returnType);
+            }
+        } catch (JsonParseException e) {
+            // Fallback processing when failed to parse JSON form response body:
+            // return the response body string directly for the String return type;
+            if (returnType.equals(String.class)) {
+                return (T) body;
+            } else {
+                throw (e);
+            }
         }
-        if (childCdm != null) {
-          // Recursively traverse the discriminator mappings.
-          Class<?> childDiscr = childCdm.getClassForElement(node, visitedClasses);
-          if (childDiscr != null) {
-            return childDiscr;
-          }
+    }
+
+    /**
+    * Deserialize the given JSON InputStream to a Java object.
+    *
+    * @param <T>         Type
+    * @param inputStream The JSON InputStream
+    * @param returnType  The type to deserialize into
+    * @return The deserialized Java object
+    */
+    @SuppressWarnings("unchecked")
+    public static <T> T deserialize(InputStream inputStream, Type returnType) throws IOException {
+        try (InputStreamReader reader = new InputStreamReader(inputStream, StandardCharsets.UTF_8)) {
+        if (isLenientOnJson) {
+            // see https://google-gson.googlecode.com/svn/trunk/gson/docs/javadocs/com/google/gson/stream/JsonReader.html#setLenient(boolean)
+            JsonReader jsonReader = new JsonReader(reader);
+            jsonReader.setLenient(true);
+            return gson.fromJson(jsonReader, returnType);
+            } else {
+                return gson.fromJson(reader, returnType);
+            }
         }
-      }
-      return cls;
     }
-  }
 
-  /**
-   * Returns true if inst is an instance of modelClass in the OpenAPI model hierarchy.
-   *
-   * The Java class hierarchy is not implemented the same way as the OpenAPI model hierarchy,
-   * so it's not possible to use the instanceof keyword.
-   *
-   * @param modelClass A OpenAPI model class.
-   * @param inst The instance object.
-   * @param visitedClasses The set of classes that have already been visited.
-   *
-   * @return true if inst is an instance of modelClass in the OpenAPI model hierarchy.
-   */
-  public static boolean isInstanceOf(Class<?> modelClass, Object inst, Set<Class<?>> visitedClasses) {
-    if (modelClass.isInstance(inst)) {
-      // This handles the 'allOf' use case with single parent inheritance.
-      return true;
-    }
-    if (visitedClasses.contains(modelClass)) {
-      // This is to prevent infinite recursion when the composed schemas have
-      // a circular dependency.
-      return false;
-    }
-    visitedClasses.add(modelClass);
+    /**
+     * Gson TypeAdapter for Byte Array type
+     */
+    public static class ByteArrayAdapter extends TypeAdapter<byte[]> {
 
-    // Traverse the oneOf/anyOf composed schemas.
-    Map<String, Class<?>> descendants = modelDescendants.get(modelClass);
-    if (descendants != null) {
-      for (Class<?> childType : descendants.values()) {
-        if (isInstanceOf(childType, inst, visitedClasses)) {
-          return true;
+        @Override
+        public void write(JsonWriter out, byte[] value) throws IOException {
+            if (value == null) {
+                out.nullValue();
+            } else {
+                out.value(ByteString.of(value).base64());
+            }
         }
-      }
+
+        @Override
+        public byte[] read(JsonReader in) throws IOException {
+            switch (in.peek()) {
+                case NULL:
+                    in.nextNull();
+                    return null;
+                default:
+                    String bytesAsBase64 = in.nextString();
+                    ByteString byteString = ByteString.decodeBase64(bytesAsBase64);
+                    return byteString.toByteArray();
+            }
+        }
     }
-    return false;
-  }
 
-  /**
-   * A map of discriminators for all model classes.
-   */
-  private static Map<Class<?>, ClassDiscriminatorMapping> modelDiscriminators = new HashMap<>();
+    /**
+     * Gson TypeAdapter for JSR310 OffsetDateTime type
+     */
+    public static class OffsetDateTimeTypeAdapter extends TypeAdapter<OffsetDateTime> {
 
-  /**
-   * A map of oneOf/anyOf descendants for each model class.
-   */
-  private static Map<Class<?>, Map<String, Class<?>>> modelDescendants = new HashMap<>();
+        private DateTimeFormatter formatter;
 
-  /**
-    * Register a model class discriminator.
-    *
-    * @param modelClass the model class
-    * @param discriminatorPropertyName the name of the discriminator property
-    * @param mappings a map with the discriminator mappings.
-    */
-  public static void registerDiscriminator(Class<?> modelClass, String discriminatorPropertyName, Map<String, Class<?>> mappings) {
-    ClassDiscriminatorMapping m = new ClassDiscriminatorMapping(modelClass, discriminatorPropertyName, mappings);
-    modelDiscriminators.put(modelClass, m);
-  }
+        public OffsetDateTimeTypeAdapter() {
+            this(DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+        }
 
-  /**
-    * Register the oneOf/anyOf descendants of the modelClass.
-    *
-    * @param modelClass the model class
-    * @param descendants a map of oneOf/anyOf descendants.
-    */
-  public static void registerDescendants(Class<?> modelClass, Map<String, Class<?>> descendants) {
-    modelDescendants.put(modelClass, descendants);
-  }
+        public OffsetDateTimeTypeAdapter(DateTimeFormatter formatter) {
+            this.formatter = formatter;
+        }
 
-  private static JSON json;
+        public void setFormat(DateTimeFormatter dateFormat) {
+            this.formatter = dateFormat;
+        }
 
-  static {
-    json = new JSON();
-  }
+        @Override
+        public void write(JsonWriter out, OffsetDateTime date) throws IOException {
+            if (date == null) {
+                out.nullValue();
+            } else {
+                out.value(formatter.format(date));
+            }
+        }
 
-  /**
-    * Get the default JSON instance.
-    *
-    * @return the default JSON instance
-    */
-  public static JSON getDefault() {
-    return json;
-  }
+        @Override
+        public OffsetDateTime read(JsonReader in) throws IOException {
+            switch (in.peek()) {
+                case NULL:
+                    in.nextNull();
+                    return null;
+                default:
+                    String date = in.nextString();
+                    if (date.endsWith("+0000")) {
+                        date = date.substring(0, date.length()-5) + "Z";
+                    }
+                    return OffsetDateTime.parse(date, formatter);
+            }
+        }
+    }
 
-  /**
-    * Set the default JSON instance.
-    *
-    * @param json JSON instance to be used
-    */
-  public static void setDefault(JSON json) {
-    JSON.json = json;
-  }
+    /**
+     * Gson TypeAdapter for JSR310 LocalDate type
+     */
+    public static class LocalDateTypeAdapter extends TypeAdapter<LocalDate> {
+
+        private DateTimeFormatter formatter;
+
+        public LocalDateTypeAdapter() {
+            this(DateTimeFormatter.ISO_LOCAL_DATE);
+        }
+
+        public LocalDateTypeAdapter(DateTimeFormatter formatter) {
+            this.formatter = formatter;
+        }
+
+        public void setFormat(DateTimeFormatter dateFormat) {
+            this.formatter = dateFormat;
+        }
+
+        @Override
+        public void write(JsonWriter out, LocalDate date) throws IOException {
+            if (date == null) {
+                out.nullValue();
+            } else {
+                out.value(formatter.format(date));
+            }
+        }
+
+        @Override
+        public LocalDate read(JsonReader in) throws IOException {
+            switch (in.peek()) {
+                case NULL:
+                    in.nextNull();
+                    return null;
+                default:
+                    String date = in.nextString();
+                    return LocalDate.parse(date, formatter);
+            }
+        }
+    }
+
+    /**
+     * Gson TypeAdapter for JSR310 LocalDateTime type
+     */
+    public static class LocalDateTimeTypeAdapter extends TypeAdapter<LocalDateTime> {
+
+        private DateTimeFormatter formatter;
+
+        public LocalDateTimeTypeAdapter() {
+            this(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+        }
+
+        public LocalDateTimeTypeAdapter(DateTimeFormatter formatter) {
+            this.formatter = formatter;
+        }
+
+        public void setFormat(DateTimeFormatter dateFormat) {
+            this.formatter = dateFormat;
+        }
+
+        @Override
+        public void write(JsonWriter out, LocalDateTime date) throws IOException {
+            if (date == null) {
+                out.nullValue();
+            } else {
+                out.value(formatter.format(date));
+            }
+        }
+
+        @Override
+        public LocalDateTime read(JsonReader in) throws IOException {
+            switch (in.peek()) {
+                case NULL:
+                    in.nextNull();
+                    return null;
+                default:
+                    String date = in.nextString();
+                    try {
+                        return LocalDateTime.parse(date, formatter);
+                    } catch (DateTimeParseException e) {
+                        if (date.length() > 10 && date.charAt(10) == ' ') {
+                            date = date.substring(0, 10) + 'T' + date.substring(11);
+                            return LocalDateTime.parse(date, formatter);
+                        }
+                        throw e;
+                    }
+            }
+        }
+    }
+
+    public static void setOffsetDateTimeFormat(DateTimeFormatter dateFormat) {
+        offsetDateTimeTypeAdapter.setFormat(dateFormat);
+    }
+
+    public static void setLocalDateFormat(DateTimeFormatter dateFormat) {
+        localDateTypeAdapter.setFormat(dateFormat);
+    }
+
+    public static void setLocalDateTimeFormat(DateTimeFormatter dateFormat) {
+        localDateTimeTypeAdapter.setFormat(dateFormat);
+    }
+
+    /**
+     * Gson TypeAdapter for java.sql.Date type
+     * If the dateFormat is null, a simple "yyyy-MM-dd" format will be used
+     * (more efficient than SimpleDateFormat).
+     */
+    public static class SqlDateTypeAdapter extends TypeAdapter<java.sql.Date> {
+
+        private DateFormat dateFormat;
+
+        public SqlDateTypeAdapter() {}
+
+        public SqlDateTypeAdapter(DateFormat dateFormat) {
+            this.dateFormat = dateFormat;
+        }
+
+        public void setFormat(DateFormat dateFormat) {
+            this.dateFormat = dateFormat;
+        }
+
+        @Override
+        public void write(JsonWriter out, java.sql.Date date) throws IOException {
+            if (date == null) {
+                out.nullValue();
+            } else {
+                String value;
+                if (dateFormat != null) {
+                    value = dateFormat.format(date);
+                } else {
+                    value = date.toString();
+                }
+                out.value(value);
+            }
+        }
+
+        @Override
+        public java.sql.Date read(JsonReader in) throws IOException {
+            switch (in.peek()) {
+                case NULL:
+                    in.nextNull();
+                    return null;
+                default:
+                    String date = in.nextString();
+                    try {
+                        if (dateFormat != null) {
+                            return new java.sql.Date(dateFormat.parse(date).getTime());
+                        }
+                        return new java.sql.Date(ISO8601Utils.parse(date, new ParsePosition(0)).getTime());
+                    } catch (ParseException e) {
+                        throw new JsonParseException(e);
+                    }
+            }
+        }
+    }
+
+    /**
+     * Gson TypeAdapter for java.util.Date type
+     * If the dateFormat is null, ISO8601Utils will be used.
+     */
+    public static class DateTypeAdapter extends TypeAdapter<Date> {
+
+        private DateFormat dateFormat;
+
+        public DateTypeAdapter() {}
+
+        public DateTypeAdapter(DateFormat dateFormat) {
+            this.dateFormat = dateFormat;
+        }
+
+        public void setFormat(DateFormat dateFormat) {
+            this.dateFormat = dateFormat;
+        }
+
+        @Override
+        public void write(JsonWriter out, Date date) throws IOException {
+            if (date == null) {
+                out.nullValue();
+            } else {
+                String value;
+                if (dateFormat != null) {
+                    value = dateFormat.format(date);
+                } else {
+                    value = ISO8601Utils.format(date, true);
+                }
+                out.value(value);
+            }
+        }
+
+        @Override
+        public Date read(JsonReader in) throws IOException {
+            try {
+                switch (in.peek()) {
+                    case NULL:
+                        in.nextNull();
+                        return null;
+                    default:
+                        String date = in.nextString();
+                        try {
+                            if (dateFormat != null) {
+                                return dateFormat.parse(date);
+                            }
+                            return ISO8601Utils.parse(date, new ParsePosition(0));
+                        } catch (ParseException e) {
+                            throw new JsonParseException(e);
+                        }
+                }
+            } catch (IllegalArgumentException e) {
+                throw new JsonParseException(e);
+            }
+        }
+    }
+
+    public static void setDateFormat(DateFormat dateFormat) {
+        dateTypeAdapter.setFormat(dateFormat);
+    }
+
+    public static void setSqlDateFormat(DateFormat dateFormat) {
+        sqlDateTypeAdapter.setFormat(dateFormat);
+    }
 }

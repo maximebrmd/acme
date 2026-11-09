@@ -51,17 +51,22 @@ export interface Language {
   readonly options: Readonly<Record<string, string | boolean>>;
   /** What developers install: the registry and the package's name there. */
   readonly package: { readonly name: string; readonly registry: string };
+  /**
+   * The smoke test, run like the build (same image, same folder) by
+   * scripts/test.ts, with PEAL_API_URL pointing at its stand-in server.
+   */
+  readonly test: string;
   readonly version: string;
 }
 
-const python = "0.1.0";
-const node = "0.1.0";
-const go = "0.1.0";
-const ruby = "0.1.0";
-const java = "0.1.0";
-const php = "0.1.0";
-const dotnet = "0.1.0";
-const rust = "0.1.0";
+const python = "0.2.0";
+const node = "0.2.0";
+const go = "0.2.0";
+const ruby = "0.2.0";
+const java = "0.2.0";
+const php = "0.2.0";
+const dotnet = "0.2.0";
+const rust = "0.2.0";
 
 export const languages: readonly Language[] = [
   {
@@ -83,6 +88,7 @@ export const languages: readonly Language[] = [
       supportsES6: true,
     },
     package: { name: "peal-sdk", registry: "npm" },
+    test: "node test/smoke.mjs",
     version: node,
   },
   {
@@ -103,6 +109,7 @@ export const languages: readonly Language[] = [
       projectName: "peal-sdk",
     },
     package: { name: "peal-sdk", registry: "PyPI" },
+    test: 'uv run --quiet --isolated --no-project --with "$(ls dist/*.whl)" python tests/smoke_test.py',
     version: python,
   },
   {
@@ -133,6 +140,7 @@ export const languages: readonly Language[] = [
       name: "github.com/peal-social/peal/packages/peal-sdk/go",
       registry: "Go",
     },
+    test: "go test -count=1 -run TestSmoke .",
     version: go,
   },
   {
@@ -169,6 +177,7 @@ export const languages: readonly Language[] = [
       moduleName: "Peal",
     },
     package: { name: "peal", registry: "RubyGems" },
+    test: "bundle exec ruby -Ilib smoke.rb",
     version: ruby,
   },
   {
@@ -182,7 +191,9 @@ export const languages: readonly Language[] = [
     },
     generator: "java",
     gitRepoId: "peal",
-    library: "native",
+    // OkHttp with Gson, the generator's default, sends the bearer token its docs
+    // show (HttpBearerAuth); its `native` library has no authentication.
+    library: "okhttp-gson",
     name: "java",
     options: {
       apiPackage: "social.peal.api",
@@ -205,6 +216,7 @@ export const languages: readonly Language[] = [
       scmUrl: repository,
     },
     package: { name: "social.peal:peal", registry: "Maven Central" },
+    test: "mvn --batch-mode --quiet -Dmaven.repo.local=/cache/m2 -Dtest=SmokeTest -Dsurefire.failIfNoSpecifiedTests=false test",
     version: java,
   },
   {
@@ -214,7 +226,7 @@ export const languages: readonly Language[] = [
         "composer:2.11.1@sha256:8de2184c6de224f4689e8f80ed5f5edaf0030b6b8b7839a22a2bcb6722ac87d0",
       kind: "container",
       script:
-        "composer validate --no-check-publish --quiet && composer install --no-interaction --no-progress --quiet && find lib -name '*.php' -print0 | xargs -0 -n 1 php --syntax-check > /dev/null && php -r 'require \"vendor/autoload.php\"; exit(class_exists(\"Peal\\\\Api\\\\SystemApi\") ? 0 : 1);'",
+        "composer validate --no-check-publish --no-check-lock --strict --quiet && composer update --no-interaction --no-progress --quiet && find lib -name '*.php' -print0 | xargs -0 -n 1 php --syntax-check > /dev/null && php -r 'require \"vendor/autoload.php\"; exit(class_exists(\"Peal\\\\Api\\\\SystemApi\") ? 0 : 1);'",
     },
     generator: "php",
     gitRepoId: "peal",
@@ -230,6 +242,7 @@ export const languages: readonly Language[] = [
       licenseName: "Apache-2.0",
     },
     package: { name: "peal-social/peal", registry: "Packagist" },
+    test: "php smoke.php",
     version: php,
   },
   {
@@ -260,6 +273,7 @@ export const languages: readonly Language[] = [
       targetFramework: "net10.0",
     },
     package: { name: "Peal", registry: "NuGet" },
+    test: "dotnet run --project smoke/Smoke.csproj --nologo --verbosity quiet",
     version: dotnet,
   },
   {
@@ -282,6 +296,7 @@ export const languages: readonly Language[] = [
       reqwestDefaultFeatures: "rustls",
     },
     package: { name: "peal-sdk", registry: "crates.io" },
+    test: "cargo run --quiet --example smoke",
     version: rust,
   },
 ];

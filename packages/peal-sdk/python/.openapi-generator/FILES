@@ -137,6 +137,7 @@ docs/NotificationPreferencesChangeEmail.md
 docs/NotificationPreferencesEmail.md
 docs/PaidPlan.md
 docs/PeriodUsage.md
+docs/Permission.md
 docs/Plan.md
 docs/PlanAllowances.md
 docs/PlanLimit.md
@@ -362,6 +363,7 @@ peal/models/notification_preferences_change_email.py
 peal/models/notification_preferences_email.py
 peal/models/paid_plan.py
 peal/models/period_usage.py
+peal/models/permission.py
 peal/models/plan.py
 peal/models/plan_allowances.py
 peal/models/plan_limit.py

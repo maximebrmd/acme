@@ -1,0 +1,6 @@
+# What Composer's downloads of the PHP SDK leave out: files only the Peal
+# repository needs (Nx's project, the generator's records, the smoke test).
+/project.json export-ignore
+/.openapi-generator export-ignore
+/.openapi-generator-ignore export-ignore
+/smoke.php export-ignore

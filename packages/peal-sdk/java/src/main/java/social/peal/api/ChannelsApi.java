@@ -10,13 +10,22 @@
  * Do not edit the class manually.
  */
 
+
 package social.peal.api;
 
+import social.peal.ApiCallback;
 import social.peal.ApiClient;
 import social.peal.ApiException;
 import social.peal.ApiResponse;
 import social.peal.Configuration;
 import social.peal.Pair;
+import social.peal.ProgressRequestBody;
+import social.peal.ProgressResponseBody;
+
+import com.google.gson.reflect.TypeToken;
+
+import java.io.IOException;
+
 
 import social.peal.model.Authorization;
 import social.peal.model.Channel;
@@ -34,1045 +43,1140 @@ import social.peal.model.PlatformUnreachableEncoded;
 import social.peal.model.UnauthenticatedEncoded;
 import social.peal.model.WorkspaceNotFoundEncoded;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import java.io.InputStream;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.net.http.HttpRequest;
-import java.nio.channels.Channels;
-import java.nio.channels.Pipe;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.time.Duration;
-
+import java.lang.reflect.Type;
 import java.util.ArrayList;
-import java.util.StringJoiner;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.function.Consumer;
 
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.27.0")
 public class ChannelsApi {
-  /**
-   * Utility class for extending HttpRequest.Builder functionality.
-   */
-  private static class HttpRequestBuilderExtensions {
+    private ApiClient localVarApiClient;
+    private int localHostIndex;
+    private String localCustomBaseUrl;
+
+    public ChannelsApi() {
+        this(Configuration.getDefaultApiClient());
+    }
+
+    public ChannelsApi(ApiClient apiClient) {
+        this.localVarApiClient = apiClient;
+    }
+
+    public ApiClient getApiClient() {
+        return localVarApiClient;
+    }
+
+    public void setApiClient(ApiClient apiClient) {
+        this.localVarApiClient = apiClient;
+    }
+
+    public int getHostIndex() {
+        return localHostIndex;
+    }
+
+    public void setHostIndex(int hostIndex) {
+        this.localHostIndex = hostIndex;
+    }
+
+    public String getCustomBaseUrl() {
+        return localCustomBaseUrl;
+    }
+
+    public void setCustomBaseUrl(String customBaseUrl) {
+        this.localCustomBaseUrl = customBaseUrl;
+    }
+
     /**
-     * Adds additional headers to the provided HttpRequest.Builder. Useful for adding method/endpoint specific headers.
-     *
-     * @param builder the HttpRequest.Builder to which headers will be added
-     * @param headers a map of header names and values to add; may be null
-     * @return the same HttpRequest.Builder instance with the additional headers set
+     * Build call for channelsChooseAccounts
+     * @param workspaceId  (required)
+     * @param platform  (required)
+     * @param chooseAccounts  (required)
+     * @param _callback Callback for upload/download progress
+     * @return Call to execute
+     * @throws ApiException If fail to serialize the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Success </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 402 </td><td> The workspace&#39;s plan allows no more of &#x60;limit&#x60;: it has &#x60;allowed&#x60; already. A larger plan, or removing some, makes room. Nothing was changed. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no channel with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 422 </td><td> The account was not connected; &#x60;reason&#x60; says why. Nothing was saved. </td><td>  -  </td></tr>
+        <tr><td> 502 </td><td> The platform did not answer, or failed on its side. Nothing was connected; try again later. </td><td>  -  </td></tr>
+     </table>
      */
-    static HttpRequest.Builder withAdditionalHeaders(HttpRequest.Builder builder, Map<String, String> headers) {
-        if (headers != null) {
-            for (Map.Entry<String, String> entry : headers.entrySet()) {
-                builder.header(entry.getKey(), entry.getValue());
-            }
-        }
-        return builder;
-    }
-  }
-  private final HttpClient memberVarHttpClient;
-  private final ObjectMapper memberVarObjectMapper;
-  private final String memberVarBaseUri;
-  private final Consumer<HttpRequest.Builder> memberVarInterceptor;
-  private final Duration memberVarReadTimeout;
-  private final Consumer<HttpResponse<InputStream>> memberVarResponseInterceptor;
-  private final Consumer<HttpResponse<InputStream>> memberVarAsyncResponseInterceptor;
+    public okhttp3.Call channelsChooseAccountsCall(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull Platform platform, @javax.annotation.Nonnull ChooseAccounts chooseAccounts, final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
 
-  public ChannelsApi() {
-    this(Configuration.getDefaultApiClient());
-  }
-
-  public ChannelsApi(ApiClient apiClient) {
-    memberVarHttpClient = apiClient.getHttpClient();
-    memberVarObjectMapper = apiClient.getObjectMapper();
-    memberVarBaseUri = apiClient.getBaseUri();
-    memberVarInterceptor = apiClient.getRequestInterceptor();
-    memberVarReadTimeout = apiClient.getReadTimeout();
-    memberVarResponseInterceptor = apiClient.getResponseInterceptor();
-    memberVarAsyncResponseInterceptor = apiClient.getAsyncResponseInterceptor();
-  }
-
-
-  protected ApiException getApiException(String operationId, HttpResponse<InputStream> response) throws IOException {
-    InputStream responseBody = ApiClient.getResponseBody(response);
-    String body = null;
-    try {
-      body = responseBody == null ? null : new String(responseBody.readAllBytes());
-    } finally {
-      if (responseBody != null) {
-        responseBody.close();
-      }
-    }
-    String message = formatExceptionMessage(operationId, response.statusCode(), body);
-    return new ApiException(response.statusCode(), message, response.headers(), body);
-  }
-
-  private String formatExceptionMessage(String operationId, int statusCode, String body) {
-    if (body == null || body.isEmpty()) {
-      body = "[no body]";
-    }
-    return operationId + " call failed with: " + statusCode + " - " + body;
-  }
-
-  /**
-   * Download file from the given response.
-   *
-   * @param response Response
-   * @return File
-   * @throws ApiException If fail to read file content from response and write to disk
-   */
-  public File downloadFileFromResponse(HttpResponse<InputStream> response, InputStream responseBody) throws ApiException {
-    if (responseBody == null) {
-      throw new ApiException(new IOException("Response body is empty"));
-    }
-    try {
-      File file = prepareDownloadFile(response);
-      java.nio.file.Files.copy(responseBody, file.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-      return file;
-    } catch (IOException e) {
-      throw new ApiException(e);
-    }
-  }
-
-  /**
-   * <p>Prepare the file for download from the response.</p>
-   *
-   * @param response a {@link java.net.http.HttpResponse} object.
-   * @return a {@link java.io.File} object.
-   * @throws java.io.IOException if any.
-   */
-  private File prepareDownloadFile(HttpResponse<InputStream> response) throws IOException {
-    String filename = null;
-    java.util.Optional<String> contentDisposition = response.headers().firstValue("Content-Disposition");
-    if (contentDisposition.isPresent() && !"".equals(contentDisposition.get())) {
-      // Get filename from the Content-Disposition header.
-      java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("filename=['\"]?([^'\"\\s]+)['\"]?");
-      java.util.regex.Matcher matcher = pattern.matcher(contentDisposition.get());
-      if (matcher.find())
-        filename = matcher.group(1);
-    }
-    File file = null;
-    if (filename != null) {
-      java.nio.file.Path tempDir = java.nio.file.Files.createTempDirectory("swagger-gen-native");
-      java.nio.file.Path filePath = java.nio.file.Files.createFile(tempDir.resolve(filename));
-      file = filePath.toFile();
-      tempDir.toFile().deleteOnExit();   // best effort cleanup
-      file.deleteOnExit(); // best effort cleanup
-    } else {
-      file = java.nio.file.Files.createTempFile("download-", "").toFile();
-      file.deleteOnExit(); // best effort cleanup
-    }
-    return file;
-  }
-
-  /**
-   * Choose the accounts to connect
-   * Connects the accounts the member chose among those a completed sign-in listed: each becomes a channel of the workspace, or reconnects the one it has. The new accounts chosen need room in the workspace&#39;s plan, all of them: otherwise none is connected (PlanLimitReached), and the choice can be made again with fewer. Only the member who completed the sign-in can choose, within 15 minutes, and once an account is connected: a choice that failed before connecting any can be made again. Needs channel:connect.
-   * @param workspaceId  (required)
-   * @param platform  (required)
-   * @param chooseAccounts  (required)
-   * @return List&lt;Channel&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public List<Channel> channelsChooseAccounts(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull Platform platform, @javax.annotation.Nonnull ChooseAccounts chooseAccounts) throws ApiException {
-    return channelsChooseAccounts(workspaceId, platform, chooseAccounts, null);
-  }
-
-  /**
-   * Choose the accounts to connect
-   * Connects the accounts the member chose among those a completed sign-in listed: each becomes a channel of the workspace, or reconnects the one it has. The new accounts chosen need room in the workspace&#39;s plan, all of them: otherwise none is connected (PlanLimitReached), and the choice can be made again with fewer. Only the member who completed the sign-in can choose, within 15 minutes, and once an account is connected: a choice that failed before connecting any can be made again. Needs channel:connect.
-   * @param workspaceId  (required)
-   * @param platform  (required)
-   * @param chooseAccounts  (required)
-   * @param headers Optional headers to include in the request
-   * @return List&lt;Channel&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public List<Channel> channelsChooseAccounts(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull Platform platform, @javax.annotation.Nonnull ChooseAccounts chooseAccounts, Map<String, String> headers) throws ApiException {
-    ApiResponse<List<Channel>> localVarResponse = channelsChooseAccountsWithHttpInfo(workspaceId, platform, chooseAccounts, headers);
-    return localVarResponse.getData();
-  }
-
-  /**
-   * Choose the accounts to connect
-   * Connects the accounts the member chose among those a completed sign-in listed: each becomes a channel of the workspace, or reconnects the one it has. The new accounts chosen need room in the workspace&#39;s plan, all of them: otherwise none is connected (PlanLimitReached), and the choice can be made again with fewer. Only the member who completed the sign-in can choose, within 15 minutes, and once an account is connected: a choice that failed before connecting any can be made again. Needs channel:connect.
-   * @param workspaceId  (required)
-   * @param platform  (required)
-   * @param chooseAccounts  (required)
-   * @return ApiResponse&lt;List&lt;Channel&gt;&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<List<Channel>> channelsChooseAccountsWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull Platform platform, @javax.annotation.Nonnull ChooseAccounts chooseAccounts) throws ApiException {
-    return channelsChooseAccountsWithHttpInfo(workspaceId, platform, chooseAccounts, null);
-  }
-
-  /**
-   * Choose the accounts to connect
-   * Connects the accounts the member chose among those a completed sign-in listed: each becomes a channel of the workspace, or reconnects the one it has. The new accounts chosen need room in the workspace&#39;s plan, all of them: otherwise none is connected (PlanLimitReached), and the choice can be made again with fewer. Only the member who completed the sign-in can choose, within 15 minutes, and once an account is connected: a choice that failed before connecting any can be made again. Needs channel:connect.
-   * @param workspaceId  (required)
-   * @param platform  (required)
-   * @param chooseAccounts  (required)
-   * @param headers Optional headers to include in the request
-   * @return ApiResponse&lt;List&lt;Channel&gt;&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<List<Channel>> channelsChooseAccountsWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull Platform platform, @javax.annotation.Nonnull ChooseAccounts chooseAccounts, Map<String, String> headers) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = channelsChooseAccountsRequestBuilder(workspaceId, platform, chooseAccounts, headers);
-    try {
-      HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
-          localVarRequestBuilder.build(),
-          HttpResponse.BodyHandlers.ofInputStream());
-      if (memberVarResponseInterceptor != null) {
-        memberVarResponseInterceptor.accept(localVarResponse);
-      }
-      InputStream localVarResponseBody = null;
-      try {
-        if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("channelsChooseAccounts", localVarResponse);
-        }
-        localVarResponseBody = ApiClient.getResponseBody(localVarResponse);
-        if (localVarResponseBody == null) {
-          return new ApiResponse<List<Channel>>(
-              localVarResponse.statusCode(),
-              localVarResponse.headers().map(),
-              null
-          );
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
         }
 
-        
-        
-        String responseBody = new String(localVarResponseBody.readAllBytes());
-        List<Channel> responseValue = responseBody.isBlank()? null: memberVarObjectMapper.readValue(responseBody, new TypeReference<List<Channel>>() {});
-        
+        Object localVarPostBody = chooseAccounts;
 
-        return new ApiResponse<List<Channel>>(
-            localVarResponse.statusCode(),
-            localVarResponse.headers().map(),
-            responseValue
-        );
-      } finally {
-        if (localVarResponseBody != null) {
-          localVarResponseBody.close();
-        }
-      }
-    } catch (IOException e) {
-      throw new ApiException(e);
-    }
-    catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new ApiException(e);
-    }
-  }
+        // create path and map variables
+        String localVarPath = "/api/workspaces/{workspaceId}/channels/connect/{platform}/accounts"
+            .replace("{" + "workspaceId" + "}", localVarApiClient.escapeString(workspaceId.toString()))
+            .replace("{" + "platform" + "}", localVarApiClient.escapeString(platform.toString()));
 
-  private HttpRequest.Builder channelsChooseAccountsRequestBuilder(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull Platform platform, @javax.annotation.Nonnull ChooseAccounts chooseAccounts, Map<String, String> headers) throws ApiException {
-    // verify the required parameter 'workspaceId' is set
-    if (workspaceId == null) {
-      throw new ApiException(400, "Missing the required parameter 'workspaceId' when calling channelsChooseAccounts");
-    }
-    // verify the required parameter 'platform' is set
-    if (platform == null) {
-      throw new ApiException(400, "Missing the required parameter 'platform' when calling channelsChooseAccounts");
-    }
-    // verify the required parameter 'chooseAccounts' is set
-    if (chooseAccounts == null) {
-      throw new ApiException(400, "Missing the required parameter 'chooseAccounts' when calling channelsChooseAccounts");
-    }
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
 
-    HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
-
-    String localVarPath = "/api/workspaces/{workspaceId}/channels/connect/{platform}/accounts"
-        .replace("{workspaceId}", ApiClient.urlEncode(workspaceId.toString()))
-        .replace("{platform}", ApiClient.urlEncode(platform.toString()));
-
-    localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
-
-    localVarRequestBuilder.header("Content-Type", "application/json");
-    localVarRequestBuilder.header("Accept", "application/json");
-
-    try {
-      byte[] localVarPostBody = memberVarObjectMapper.writeValueAsBytes(chooseAccounts);
-      localVarRequestBuilder.method("POST", HttpRequest.BodyPublishers.ofByteArray(localVarPostBody));
-    } catch (IOException e) {
-      throw new ApiException(e);
-    }
-    if (memberVarReadTimeout != null) {
-      localVarRequestBuilder.timeout(memberVarReadTimeout);
-    }
-    // Add custom headers if provided
-    localVarRequestBuilder = HttpRequestBuilderExtensions.withAdditionalHeaders(localVarRequestBuilder, headers);
-    if (memberVarInterceptor != null) {
-      memberVarInterceptor.accept(localVarRequestBuilder);
-    }
-    return localVarRequestBuilder;
-  }
-
-  /**
-   * Complete connecting an account
-   * Completes a connection with what the platform sent back: the account becomes a channel of the workspace, or the channel it reconnects takes its new tokens. When the sign-in reached several accounts, as the Pages a Facebook user manages, the answer lists them instead, to choose with chooseAccounts. Only the member who started the connection can complete it, once. A new account needs room in the workspace&#39;s plan (PlanLimitReached). Needs channel:connect.
-   * @param workspaceId  (required)
-   * @param platform  (required)
-   * @param connectCallback  (required)
-   * @return ConnectOutcome
-   * @throws ApiException if fails to make API call
-   */
-  public ConnectOutcome channelsCompleteConnect(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull Platform platform, @javax.annotation.Nonnull ConnectCallback connectCallback) throws ApiException {
-    return channelsCompleteConnect(workspaceId, platform, connectCallback, null);
-  }
-
-  /**
-   * Complete connecting an account
-   * Completes a connection with what the platform sent back: the account becomes a channel of the workspace, or the channel it reconnects takes its new tokens. When the sign-in reached several accounts, as the Pages a Facebook user manages, the answer lists them instead, to choose with chooseAccounts. Only the member who started the connection can complete it, once. A new account needs room in the workspace&#39;s plan (PlanLimitReached). Needs channel:connect.
-   * @param workspaceId  (required)
-   * @param platform  (required)
-   * @param connectCallback  (required)
-   * @param headers Optional headers to include in the request
-   * @return ConnectOutcome
-   * @throws ApiException if fails to make API call
-   */
-  public ConnectOutcome channelsCompleteConnect(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull Platform platform, @javax.annotation.Nonnull ConnectCallback connectCallback, Map<String, String> headers) throws ApiException {
-    ApiResponse<ConnectOutcome> localVarResponse = channelsCompleteConnectWithHttpInfo(workspaceId, platform, connectCallback, headers);
-    return localVarResponse.getData();
-  }
-
-  /**
-   * Complete connecting an account
-   * Completes a connection with what the platform sent back: the account becomes a channel of the workspace, or the channel it reconnects takes its new tokens. When the sign-in reached several accounts, as the Pages a Facebook user manages, the answer lists them instead, to choose with chooseAccounts. Only the member who started the connection can complete it, once. A new account needs room in the workspace&#39;s plan (PlanLimitReached). Needs channel:connect.
-   * @param workspaceId  (required)
-   * @param platform  (required)
-   * @param connectCallback  (required)
-   * @return ApiResponse&lt;ConnectOutcome&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<ConnectOutcome> channelsCompleteConnectWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull Platform platform, @javax.annotation.Nonnull ConnectCallback connectCallback) throws ApiException {
-    return channelsCompleteConnectWithHttpInfo(workspaceId, platform, connectCallback, null);
-  }
-
-  /**
-   * Complete connecting an account
-   * Completes a connection with what the platform sent back: the account becomes a channel of the workspace, or the channel it reconnects takes its new tokens. When the sign-in reached several accounts, as the Pages a Facebook user manages, the answer lists them instead, to choose with chooseAccounts. Only the member who started the connection can complete it, once. A new account needs room in the workspace&#39;s plan (PlanLimitReached). Needs channel:connect.
-   * @param workspaceId  (required)
-   * @param platform  (required)
-   * @param connectCallback  (required)
-   * @param headers Optional headers to include in the request
-   * @return ApiResponse&lt;ConnectOutcome&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<ConnectOutcome> channelsCompleteConnectWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull Platform platform, @javax.annotation.Nonnull ConnectCallback connectCallback, Map<String, String> headers) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = channelsCompleteConnectRequestBuilder(workspaceId, platform, connectCallback, headers);
-    try {
-      HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
-          localVarRequestBuilder.build(),
-          HttpResponse.BodyHandlers.ofInputStream());
-      if (memberVarResponseInterceptor != null) {
-        memberVarResponseInterceptor.accept(localVarResponse);
-      }
-      InputStream localVarResponseBody = null;
-      try {
-        if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("channelsCompleteConnect", localVarResponse);
-        }
-        localVarResponseBody = ApiClient.getResponseBody(localVarResponse);
-        if (localVarResponseBody == null) {
-          return new ApiResponse<ConnectOutcome>(
-              localVarResponse.statusCode(),
-              localVarResponse.headers().map(),
-              null
-          );
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
         }
 
-        
-        
-        String responseBody = new String(localVarResponseBody.readAllBytes());
-        ConnectOutcome responseValue = responseBody.isBlank()? null: memberVarObjectMapper.readValue(responseBody, new TypeReference<ConnectOutcome>() {});
-        
-
-        return new ApiResponse<ConnectOutcome>(
-            localVarResponse.statusCode(),
-            localVarResponse.headers().map(),
-            responseValue
-        );
-      } finally {
-        if (localVarResponseBody != null) {
-          localVarResponseBody.close();
-        }
-      }
-    } catch (IOException e) {
-      throw new ApiException(e);
-    }
-    catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new ApiException(e);
-    }
-  }
-
-  private HttpRequest.Builder channelsCompleteConnectRequestBuilder(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull Platform platform, @javax.annotation.Nonnull ConnectCallback connectCallback, Map<String, String> headers) throws ApiException {
-    // verify the required parameter 'workspaceId' is set
-    if (workspaceId == null) {
-      throw new ApiException(400, "Missing the required parameter 'workspaceId' when calling channelsCompleteConnect");
-    }
-    // verify the required parameter 'platform' is set
-    if (platform == null) {
-      throw new ApiException(400, "Missing the required parameter 'platform' when calling channelsCompleteConnect");
-    }
-    // verify the required parameter 'connectCallback' is set
-    if (connectCallback == null) {
-      throw new ApiException(400, "Missing the required parameter 'connectCallback' when calling channelsCompleteConnect");
-    }
-
-    HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
-
-    String localVarPath = "/api/workspaces/{workspaceId}/channels/connect/{platform}/callback"
-        .replace("{workspaceId}", ApiClient.urlEncode(workspaceId.toString()))
-        .replace("{platform}", ApiClient.urlEncode(platform.toString()));
-
-    localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
-
-    localVarRequestBuilder.header("Content-Type", "application/json");
-    localVarRequestBuilder.header("Accept", "application/json");
-
-    try {
-      byte[] localVarPostBody = memberVarObjectMapper.writeValueAsBytes(connectCallback);
-      localVarRequestBuilder.method("POST", HttpRequest.BodyPublishers.ofByteArray(localVarPostBody));
-    } catch (IOException e) {
-      throw new ApiException(e);
-    }
-    if (memberVarReadTimeout != null) {
-      localVarRequestBuilder.timeout(memberVarReadTimeout);
-    }
-    // Add custom headers if provided
-    localVarRequestBuilder = HttpRequestBuilderExtensions.withAdditionalHeaders(localVarRequestBuilder, headers);
-    if (memberVarInterceptor != null) {
-      memberVarInterceptor.accept(localVarRequestBuilder);
-    }
-    return localVarRequestBuilder;
-  }
-
-  /**
-   * Start connecting an account
-   * Starts connecting an account of the platform: answers with the platform&#39;s sign-in page, where the browser goes next. The connection is tied to the caller and the workspace, and must be completed within 15 minutes. On a server that bills, a workspace whose plan allows no more channels gets PlanLimitReached. Needs channel:connect.
-   * @param workspaceId  (required)
-   * @param platform  (required)
-   * @param connectChannel  (required)
-   * @return Authorization
-   * @throws ApiException if fails to make API call
-   */
-  public Authorization channelsConnect(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull Platform platform, @javax.annotation.Nonnull ConnectChannel connectChannel) throws ApiException {
-    return channelsConnect(workspaceId, platform, connectChannel, null);
-  }
-
-  /**
-   * Start connecting an account
-   * Starts connecting an account of the platform: answers with the platform&#39;s sign-in page, where the browser goes next. The connection is tied to the caller and the workspace, and must be completed within 15 minutes. On a server that bills, a workspace whose plan allows no more channels gets PlanLimitReached. Needs channel:connect.
-   * @param workspaceId  (required)
-   * @param platform  (required)
-   * @param connectChannel  (required)
-   * @param headers Optional headers to include in the request
-   * @return Authorization
-   * @throws ApiException if fails to make API call
-   */
-  public Authorization channelsConnect(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull Platform platform, @javax.annotation.Nonnull ConnectChannel connectChannel, Map<String, String> headers) throws ApiException {
-    ApiResponse<Authorization> localVarResponse = channelsConnectWithHttpInfo(workspaceId, platform, connectChannel, headers);
-    return localVarResponse.getData();
-  }
-
-  /**
-   * Start connecting an account
-   * Starts connecting an account of the platform: answers with the platform&#39;s sign-in page, where the browser goes next. The connection is tied to the caller and the workspace, and must be completed within 15 minutes. On a server that bills, a workspace whose plan allows no more channels gets PlanLimitReached. Needs channel:connect.
-   * @param workspaceId  (required)
-   * @param platform  (required)
-   * @param connectChannel  (required)
-   * @return ApiResponse&lt;Authorization&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<Authorization> channelsConnectWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull Platform platform, @javax.annotation.Nonnull ConnectChannel connectChannel) throws ApiException {
-    return channelsConnectWithHttpInfo(workspaceId, platform, connectChannel, null);
-  }
-
-  /**
-   * Start connecting an account
-   * Starts connecting an account of the platform: answers with the platform&#39;s sign-in page, where the browser goes next. The connection is tied to the caller and the workspace, and must be completed within 15 minutes. On a server that bills, a workspace whose plan allows no more channels gets PlanLimitReached. Needs channel:connect.
-   * @param workspaceId  (required)
-   * @param platform  (required)
-   * @param connectChannel  (required)
-   * @param headers Optional headers to include in the request
-   * @return ApiResponse&lt;Authorization&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<Authorization> channelsConnectWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull Platform platform, @javax.annotation.Nonnull ConnectChannel connectChannel, Map<String, String> headers) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = channelsConnectRequestBuilder(workspaceId, platform, connectChannel, headers);
-    try {
-      HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
-          localVarRequestBuilder.build(),
-          HttpResponse.BodyHandlers.ofInputStream());
-      if (memberVarResponseInterceptor != null) {
-        memberVarResponseInterceptor.accept(localVarResponse);
-      }
-      InputStream localVarResponseBody = null;
-      try {
-        if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("channelsConnect", localVarResponse);
-        }
-        localVarResponseBody = ApiClient.getResponseBody(localVarResponse);
-        if (localVarResponseBody == null) {
-          return new ApiResponse<Authorization>(
-              localVarResponse.statusCode(),
-              localVarResponse.headers().map(),
-              null
-          );
+        final String[] localVarContentTypes = {
+            "application/json"
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
         }
 
-        
-        
-        String responseBody = new String(localVarResponseBody.readAllBytes());
-        Authorization responseValue = responseBody.isBlank()? null: memberVarObjectMapper.readValue(responseBody, new TypeReference<Authorization>() {});
-        
-
-        return new ApiResponse<Authorization>(
-            localVarResponse.statusCode(),
-            localVarResponse.headers().map(),
-            responseValue
-        );
-      } finally {
-        if (localVarResponseBody != null) {
-          localVarResponseBody.close();
-        }
-      }
-    } catch (IOException e) {
-      throw new ApiException(e);
-    }
-    catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new ApiException(e);
-    }
-  }
-
-  private HttpRequest.Builder channelsConnectRequestBuilder(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull Platform platform, @javax.annotation.Nonnull ConnectChannel connectChannel, Map<String, String> headers) throws ApiException {
-    // verify the required parameter 'workspaceId' is set
-    if (workspaceId == null) {
-      throw new ApiException(400, "Missing the required parameter 'workspaceId' when calling channelsConnect");
-    }
-    // verify the required parameter 'platform' is set
-    if (platform == null) {
-      throw new ApiException(400, "Missing the required parameter 'platform' when calling channelsConnect");
-    }
-    // verify the required parameter 'connectChannel' is set
-    if (connectChannel == null) {
-      throw new ApiException(400, "Missing the required parameter 'connectChannel' when calling channelsConnect");
+        String[] localVarAuthNames = new String[] { "bearer" };
+        return localVarApiClient.buildCall(basePath, localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
-    HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
-
-    String localVarPath = "/api/workspaces/{workspaceId}/channels/connect/{platform}"
-        .replace("{workspaceId}", ApiClient.urlEncode(workspaceId.toString()))
-        .replace("{platform}", ApiClient.urlEncode(platform.toString()));
-
-    localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
-
-    localVarRequestBuilder.header("Content-Type", "application/json");
-    localVarRequestBuilder.header("Accept", "application/json");
-
-    try {
-      byte[] localVarPostBody = memberVarObjectMapper.writeValueAsBytes(connectChannel);
-      localVarRequestBuilder.method("POST", HttpRequest.BodyPublishers.ofByteArray(localVarPostBody));
-    } catch (IOException e) {
-      throw new ApiException(e);
-    }
-    if (memberVarReadTimeout != null) {
-      localVarRequestBuilder.timeout(memberVarReadTimeout);
-    }
-    // Add custom headers if provided
-    localVarRequestBuilder = HttpRequestBuilderExtensions.withAdditionalHeaders(localVarRequestBuilder, headers);
-    if (memberVarInterceptor != null) {
-      memberVarInterceptor.accept(localVarRequestBuilder);
-    }
-    return localVarRequestBuilder;
-  }
-
-  /**
-   * Disconnect a channel
-   * Disconnects a channel from the workspace: the channel and the tokens Peal holds for it are deleted, and nothing more is posted on it. Needs channel:disconnect.
-   * @param workspaceId  (required)
-   * @param channelId  (required)
-   * @throws ApiException if fails to make API call
-   */
-  public void channelsDisconnect(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String channelId) throws ApiException {
-    channelsDisconnect(workspaceId, channelId, null);
-  }
-
-  /**
-   * Disconnect a channel
-   * Disconnects a channel from the workspace: the channel and the tokens Peal holds for it are deleted, and nothing more is posted on it. Needs channel:disconnect.
-   * @param workspaceId  (required)
-   * @param channelId  (required)
-   * @param headers Optional headers to include in the request
-   * @throws ApiException if fails to make API call
-   */
-  public void channelsDisconnect(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String channelId, Map<String, String> headers) throws ApiException {
-    channelsDisconnectWithHttpInfo(workspaceId, channelId, headers);
-  }
-
-  /**
-   * Disconnect a channel
-   * Disconnects a channel from the workspace: the channel and the tokens Peal holds for it are deleted, and nothing more is posted on it. Needs channel:disconnect.
-   * @param workspaceId  (required)
-   * @param channelId  (required)
-   * @return ApiResponse&lt;Void&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<Void> channelsDisconnectWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String channelId) throws ApiException {
-    return channelsDisconnectWithHttpInfo(workspaceId, channelId, null);
-  }
-
-  /**
-   * Disconnect a channel
-   * Disconnects a channel from the workspace: the channel and the tokens Peal holds for it are deleted, and nothing more is posted on it. Needs channel:disconnect.
-   * @param workspaceId  (required)
-   * @param channelId  (required)
-   * @param headers Optional headers to include in the request
-   * @return ApiResponse&lt;Void&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<Void> channelsDisconnectWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String channelId, Map<String, String> headers) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = channelsDisconnectRequestBuilder(workspaceId, channelId, headers);
-    try {
-      HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
-          localVarRequestBuilder.build(),
-          HttpResponse.BodyHandlers.ofInputStream());
-      if (memberVarResponseInterceptor != null) {
-        memberVarResponseInterceptor.accept(localVarResponse);
-      }
-      InputStream localVarResponseBody = null;
-      try {
-        if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("channelsDisconnect", localVarResponse);
-        }
-        localVarResponseBody = ApiClient.getResponseBody(localVarResponse);
-        if (localVarResponseBody != null) {
-          localVarResponseBody.readAllBytes();
-        }
-        return new ApiResponse<>(
-            localVarResponse.statusCode(),
-            localVarResponse.headers().map(),
-            null
-        );
-      } finally {
-        if (localVarResponseBody != null) {
-          localVarResponseBody.close();
-        }
-      }
-    } catch (IOException e) {
-      throw new ApiException(e);
-    }
-    catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new ApiException(e);
-    }
-  }
-
-  private HttpRequest.Builder channelsDisconnectRequestBuilder(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String channelId, Map<String, String> headers) throws ApiException {
-    // verify the required parameter 'workspaceId' is set
-    if (workspaceId == null) {
-      throw new ApiException(400, "Missing the required parameter 'workspaceId' when calling channelsDisconnect");
-    }
-    // verify the required parameter 'channelId' is set
-    if (channelId == null) {
-      throw new ApiException(400, "Missing the required parameter 'channelId' when calling channelsDisconnect");
-    }
-
-    HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
-
-    String localVarPath = "/api/workspaces/{workspaceId}/channels/{channelId}"
-        .replace("{workspaceId}", ApiClient.urlEncode(workspaceId.toString()))
-        .replace("{channelId}", ApiClient.urlEncode(channelId.toString()));
-
-    localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
-
-    localVarRequestBuilder.header("Accept", "application/json");
-
-    localVarRequestBuilder.method("DELETE", HttpRequest.BodyPublishers.noBody());
-    if (memberVarReadTimeout != null) {
-      localVarRequestBuilder.timeout(memberVarReadTimeout);
-    }
-    // Add custom headers if provided
-    localVarRequestBuilder = HttpRequestBuilderExtensions.withAdditionalHeaders(localVarRequestBuilder, headers);
-    if (memberVarInterceptor != null) {
-      memberVarInterceptor.accept(localVarRequestBuilder);
-    }
-    return localVarRequestBuilder;
-  }
-
-  /**
-   * List channels
-   * Lists the channels connected to the workspace, oldest first. Their tokens are never shown. Needs channel:read.
-   * @param workspaceId  (required)
-   * @return List&lt;Channel&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public List<Channel> channelsList(@javax.annotation.Nonnull String workspaceId) throws ApiException {
-    return channelsList(workspaceId, null);
-  }
-
-  /**
-   * List channels
-   * Lists the channels connected to the workspace, oldest first. Their tokens are never shown. Needs channel:read.
-   * @param workspaceId  (required)
-   * @param headers Optional headers to include in the request
-   * @return List&lt;Channel&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public List<Channel> channelsList(@javax.annotation.Nonnull String workspaceId, Map<String, String> headers) throws ApiException {
-    ApiResponse<List<Channel>> localVarResponse = channelsListWithHttpInfo(workspaceId, headers);
-    return localVarResponse.getData();
-  }
-
-  /**
-   * List channels
-   * Lists the channels connected to the workspace, oldest first. Their tokens are never shown. Needs channel:read.
-   * @param workspaceId  (required)
-   * @return ApiResponse&lt;List&lt;Channel&gt;&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<List<Channel>> channelsListWithHttpInfo(@javax.annotation.Nonnull String workspaceId) throws ApiException {
-    return channelsListWithHttpInfo(workspaceId, null);
-  }
-
-  /**
-   * List channels
-   * Lists the channels connected to the workspace, oldest first. Their tokens are never shown. Needs channel:read.
-   * @param workspaceId  (required)
-   * @param headers Optional headers to include in the request
-   * @return ApiResponse&lt;List&lt;Channel&gt;&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<List<Channel>> channelsListWithHttpInfo(@javax.annotation.Nonnull String workspaceId, Map<String, String> headers) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = channelsListRequestBuilder(workspaceId, headers);
-    try {
-      HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
-          localVarRequestBuilder.build(),
-          HttpResponse.BodyHandlers.ofInputStream());
-      if (memberVarResponseInterceptor != null) {
-        memberVarResponseInterceptor.accept(localVarResponse);
-      }
-      InputStream localVarResponseBody = null;
-      try {
-        if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("channelsList", localVarResponse);
-        }
-        localVarResponseBody = ApiClient.getResponseBody(localVarResponse);
-        if (localVarResponseBody == null) {
-          return new ApiResponse<List<Channel>>(
-              localVarResponse.statusCode(),
-              localVarResponse.headers().map(),
-              null
-          );
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call channelsChooseAccountsValidateBeforeCall(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull Platform platform, @javax.annotation.Nonnull ChooseAccounts chooseAccounts, final ApiCallback _callback) throws ApiException {
+        // verify the required parameter 'workspaceId' is set
+        if (workspaceId == null) {
+            throw new ApiException("Missing the required parameter 'workspaceId' when calling channelsChooseAccounts(Async)");
         }
 
-        
-        
-        String responseBody = new String(localVarResponseBody.readAllBytes());
-        List<Channel> responseValue = responseBody.isBlank()? null: memberVarObjectMapper.readValue(responseBody, new TypeReference<List<Channel>>() {});
-        
-
-        return new ApiResponse<List<Channel>>(
-            localVarResponse.statusCode(),
-            localVarResponse.headers().map(),
-            responseValue
-        );
-      } finally {
-        if (localVarResponseBody != null) {
-          localVarResponseBody.close();
-        }
-      }
-    } catch (IOException e) {
-      throw new ApiException(e);
-    }
-    catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new ApiException(e);
-    }
-  }
-
-  private HttpRequest.Builder channelsListRequestBuilder(@javax.annotation.Nonnull String workspaceId, Map<String, String> headers) throws ApiException {
-    // verify the required parameter 'workspaceId' is set
-    if (workspaceId == null) {
-      throw new ApiException(400, "Missing the required parameter 'workspaceId' when calling channelsList");
-    }
-
-    HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
-
-    String localVarPath = "/api/workspaces/{workspaceId}/channels"
-        .replace("{workspaceId}", ApiClient.urlEncode(workspaceId.toString()));
-
-    localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
-
-    localVarRequestBuilder.header("Accept", "application/json");
-
-    localVarRequestBuilder.method("GET", HttpRequest.BodyPublishers.noBody());
-    if (memberVarReadTimeout != null) {
-      localVarRequestBuilder.timeout(memberVarReadTimeout);
-    }
-    // Add custom headers if provided
-    localVarRequestBuilder = HttpRequestBuilderExtensions.withAdditionalHeaders(localVarRequestBuilder, headers);
-    if (memberVarInterceptor != null) {
-      memberVarInterceptor.accept(localVarRequestBuilder);
-    }
-    return localVarRequestBuilder;
-  }
-
-  /**
-   * List connectable platforms
-   * Lists the platforms this server can connect accounts of, in Peal&#39;s order. A platform that needs a setting the server lacks, such as an app registered on LinkedIn, X or Meta or a Google OAuth client, is left out. Needs channel:connect.
-   * @param workspaceId  (required)
-   * @return ConnectablePlatforms
-   * @throws ApiException if fails to make API call
-   */
-  public ConnectablePlatforms channelsPlatforms(@javax.annotation.Nonnull String workspaceId) throws ApiException {
-    return channelsPlatforms(workspaceId, null);
-  }
-
-  /**
-   * List connectable platforms
-   * Lists the platforms this server can connect accounts of, in Peal&#39;s order. A platform that needs a setting the server lacks, such as an app registered on LinkedIn, X or Meta or a Google OAuth client, is left out. Needs channel:connect.
-   * @param workspaceId  (required)
-   * @param headers Optional headers to include in the request
-   * @return ConnectablePlatforms
-   * @throws ApiException if fails to make API call
-   */
-  public ConnectablePlatforms channelsPlatforms(@javax.annotation.Nonnull String workspaceId, Map<String, String> headers) throws ApiException {
-    ApiResponse<ConnectablePlatforms> localVarResponse = channelsPlatformsWithHttpInfo(workspaceId, headers);
-    return localVarResponse.getData();
-  }
-
-  /**
-   * List connectable platforms
-   * Lists the platforms this server can connect accounts of, in Peal&#39;s order. A platform that needs a setting the server lacks, such as an app registered on LinkedIn, X or Meta or a Google OAuth client, is left out. Needs channel:connect.
-   * @param workspaceId  (required)
-   * @return ApiResponse&lt;ConnectablePlatforms&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<ConnectablePlatforms> channelsPlatformsWithHttpInfo(@javax.annotation.Nonnull String workspaceId) throws ApiException {
-    return channelsPlatformsWithHttpInfo(workspaceId, null);
-  }
-
-  /**
-   * List connectable platforms
-   * Lists the platforms this server can connect accounts of, in Peal&#39;s order. A platform that needs a setting the server lacks, such as an app registered on LinkedIn, X or Meta or a Google OAuth client, is left out. Needs channel:connect.
-   * @param workspaceId  (required)
-   * @param headers Optional headers to include in the request
-   * @return ApiResponse&lt;ConnectablePlatforms&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<ConnectablePlatforms> channelsPlatformsWithHttpInfo(@javax.annotation.Nonnull String workspaceId, Map<String, String> headers) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = channelsPlatformsRequestBuilder(workspaceId, headers);
-    try {
-      HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
-          localVarRequestBuilder.build(),
-          HttpResponse.BodyHandlers.ofInputStream());
-      if (memberVarResponseInterceptor != null) {
-        memberVarResponseInterceptor.accept(localVarResponse);
-      }
-      InputStream localVarResponseBody = null;
-      try {
-        if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("channelsPlatforms", localVarResponse);
-        }
-        localVarResponseBody = ApiClient.getResponseBody(localVarResponse);
-        if (localVarResponseBody == null) {
-          return new ApiResponse<ConnectablePlatforms>(
-              localVarResponse.statusCode(),
-              localVarResponse.headers().map(),
-              null
-          );
+        // verify the required parameter 'platform' is set
+        if (platform == null) {
+            throw new ApiException("Missing the required parameter 'platform' when calling channelsChooseAccounts(Async)");
         }
 
-        
-        
-        String responseBody = new String(localVarResponseBody.readAllBytes());
-        ConnectablePlatforms responseValue = responseBody.isBlank()? null: memberVarObjectMapper.readValue(responseBody, new TypeReference<ConnectablePlatforms>() {});
-        
-
-        return new ApiResponse<ConnectablePlatforms>(
-            localVarResponse.statusCode(),
-            localVarResponse.headers().map(),
-            responseValue
-        );
-      } finally {
-        if (localVarResponseBody != null) {
-          localVarResponseBody.close();
-        }
-      }
-    } catch (IOException e) {
-      throw new ApiException(e);
-    }
-    catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new ApiException(e);
-    }
-  }
-
-  private HttpRequest.Builder channelsPlatformsRequestBuilder(@javax.annotation.Nonnull String workspaceId, Map<String, String> headers) throws ApiException {
-    // verify the required parameter 'workspaceId' is set
-    if (workspaceId == null) {
-      throw new ApiException(400, "Missing the required parameter 'workspaceId' when calling channelsPlatforms");
-    }
-
-    HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
-
-    String localVarPath = "/api/workspaces/{workspaceId}/channels/platforms"
-        .replace("{workspaceId}", ApiClient.urlEncode(workspaceId.toString()));
-
-    localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
-
-    localVarRequestBuilder.header("Accept", "application/json");
-
-    localVarRequestBuilder.method("GET", HttpRequest.BodyPublishers.noBody());
-    if (memberVarReadTimeout != null) {
-      localVarRequestBuilder.timeout(memberVarReadTimeout);
-    }
-    // Add custom headers if provided
-    localVarRequestBuilder = HttpRequestBuilderExtensions.withAdditionalHeaders(localVarRequestBuilder, headers);
-    if (memberVarInterceptor != null) {
-      memberVarInterceptor.accept(localVarRequestBuilder);
-    }
-    return localVarRequestBuilder;
-  }
-
-  /**
-   * Start reconnecting a channel
-   * Starts reconnecting a channel whose token stopped working or is about to: answers with the platform&#39;s sign-in page. Completing it must sign in to the same account. A channel the workspace has takes no room in its plan, so no plan limit refuses it. Needs channel:connect.
-   * @param workspaceId  (required)
-   * @param channelId  (required)
-   * @return Authorization
-   * @throws ApiException if fails to make API call
-   */
-  public Authorization channelsReconnect(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String channelId) throws ApiException {
-    return channelsReconnect(workspaceId, channelId, null);
-  }
-
-  /**
-   * Start reconnecting a channel
-   * Starts reconnecting a channel whose token stopped working or is about to: answers with the platform&#39;s sign-in page. Completing it must sign in to the same account. A channel the workspace has takes no room in its plan, so no plan limit refuses it. Needs channel:connect.
-   * @param workspaceId  (required)
-   * @param channelId  (required)
-   * @param headers Optional headers to include in the request
-   * @return Authorization
-   * @throws ApiException if fails to make API call
-   */
-  public Authorization channelsReconnect(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String channelId, Map<String, String> headers) throws ApiException {
-    ApiResponse<Authorization> localVarResponse = channelsReconnectWithHttpInfo(workspaceId, channelId, headers);
-    return localVarResponse.getData();
-  }
-
-  /**
-   * Start reconnecting a channel
-   * Starts reconnecting a channel whose token stopped working or is about to: answers with the platform&#39;s sign-in page. Completing it must sign in to the same account. A channel the workspace has takes no room in its plan, so no plan limit refuses it. Needs channel:connect.
-   * @param workspaceId  (required)
-   * @param channelId  (required)
-   * @return ApiResponse&lt;Authorization&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<Authorization> channelsReconnectWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String channelId) throws ApiException {
-    return channelsReconnectWithHttpInfo(workspaceId, channelId, null);
-  }
-
-  /**
-   * Start reconnecting a channel
-   * Starts reconnecting a channel whose token stopped working or is about to: answers with the platform&#39;s sign-in page. Completing it must sign in to the same account. A channel the workspace has takes no room in its plan, so no plan limit refuses it. Needs channel:connect.
-   * @param workspaceId  (required)
-   * @param channelId  (required)
-   * @param headers Optional headers to include in the request
-   * @return ApiResponse&lt;Authorization&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<Authorization> channelsReconnectWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String channelId, Map<String, String> headers) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = channelsReconnectRequestBuilder(workspaceId, channelId, headers);
-    try {
-      HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
-          localVarRequestBuilder.build(),
-          HttpResponse.BodyHandlers.ofInputStream());
-      if (memberVarResponseInterceptor != null) {
-        memberVarResponseInterceptor.accept(localVarResponse);
-      }
-      InputStream localVarResponseBody = null;
-      try {
-        if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("channelsReconnect", localVarResponse);
-        }
-        localVarResponseBody = ApiClient.getResponseBody(localVarResponse);
-        if (localVarResponseBody == null) {
-          return new ApiResponse<Authorization>(
-              localVarResponse.statusCode(),
-              localVarResponse.headers().map(),
-              null
-          );
+        // verify the required parameter 'chooseAccounts' is set
+        if (chooseAccounts == null) {
+            throw new ApiException("Missing the required parameter 'chooseAccounts' when calling channelsChooseAccounts(Async)");
         }
 
-        
-        
-        String responseBody = new String(localVarResponseBody.readAllBytes());
-        Authorization responseValue = responseBody.isBlank()? null: memberVarObjectMapper.readValue(responseBody, new TypeReference<Authorization>() {});
-        
+        return channelsChooseAccountsCall(workspaceId, platform, chooseAccounts, _callback);
 
-        return new ApiResponse<Authorization>(
-            localVarResponse.statusCode(),
-            localVarResponse.headers().map(),
-            responseValue
-        );
-      } finally {
-        if (localVarResponseBody != null) {
-          localVarResponseBody.close();
+    }
+
+    /**
+     * Choose the accounts to connect
+     * Connects the accounts the member chose among those a completed sign-in listed: each becomes a channel of the workspace, or reconnects the one it has. The new accounts chosen need room in the workspace&#39;s plan, all of them: otherwise none is connected (PlanLimitReached), and the choice can be made again with fewer. Only the member who completed the sign-in can choose, within 15 minutes, and once an account is connected: a choice that failed before connecting any can be made again. Needs channel:connect.
+     * @param workspaceId  (required)
+     * @param platform  (required)
+     * @param chooseAccounts  (required)
+     * @return List&lt;Channel&gt;
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Success </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 402 </td><td> The workspace&#39;s plan allows no more of &#x60;limit&#x60;: it has &#x60;allowed&#x60; already. A larger plan, or removing some, makes room. Nothing was changed. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no channel with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 422 </td><td> The account was not connected; &#x60;reason&#x60; says why. Nothing was saved. </td><td>  -  </td></tr>
+        <tr><td> 502 </td><td> The platform did not answer, or failed on its side. Nothing was connected; try again later. </td><td>  -  </td></tr>
+     </table>
+     */
+    public List<Channel> channelsChooseAccounts(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull Platform platform, @javax.annotation.Nonnull ChooseAccounts chooseAccounts) throws ApiException {
+        ApiResponse<List<Channel>> localVarResp = channelsChooseAccountsWithHttpInfo(workspaceId, platform, chooseAccounts);
+        return localVarResp.getData();
+    }
+
+    /**
+     * Choose the accounts to connect
+     * Connects the accounts the member chose among those a completed sign-in listed: each becomes a channel of the workspace, or reconnects the one it has. The new accounts chosen need room in the workspace&#39;s plan, all of them: otherwise none is connected (PlanLimitReached), and the choice can be made again with fewer. Only the member who completed the sign-in can choose, within 15 minutes, and once an account is connected: a choice that failed before connecting any can be made again. Needs channel:connect.
+     * @param workspaceId  (required)
+     * @param platform  (required)
+     * @param chooseAccounts  (required)
+     * @return ApiResponse&lt;List&lt;Channel&gt;&gt;
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Success </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 402 </td><td> The workspace&#39;s plan allows no more of &#x60;limit&#x60;: it has &#x60;allowed&#x60; already. A larger plan, or removing some, makes room. Nothing was changed. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no channel with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 422 </td><td> The account was not connected; &#x60;reason&#x60; says why. Nothing was saved. </td><td>  -  </td></tr>
+        <tr><td> 502 </td><td> The platform did not answer, or failed on its side. Nothing was connected; try again later. </td><td>  -  </td></tr>
+     </table>
+     */
+    public ApiResponse<List<Channel>> channelsChooseAccountsWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull Platform platform, @javax.annotation.Nonnull ChooseAccounts chooseAccounts) throws ApiException {
+        okhttp3.Call localVarCall = channelsChooseAccountsValidateBeforeCall(workspaceId, platform, chooseAccounts, null);
+        Type localVarReturnType = new TypeToken<List<Channel>>(){}.getType();
+        return localVarApiClient.execute(localVarCall, localVarReturnType);
+    }
+
+    /**
+     * Choose the accounts to connect (asynchronously)
+     * Connects the accounts the member chose among those a completed sign-in listed: each becomes a channel of the workspace, or reconnects the one it has. The new accounts chosen need room in the workspace&#39;s plan, all of them: otherwise none is connected (PlanLimitReached), and the choice can be made again with fewer. Only the member who completed the sign-in can choose, within 15 minutes, and once an account is connected: a choice that failed before connecting any can be made again. Needs channel:connect.
+     * @param workspaceId  (required)
+     * @param platform  (required)
+     * @param chooseAccounts  (required)
+     * @param _callback The callback to be executed when the API call finishes
+     * @return The request call
+     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Success </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 402 </td><td> The workspace&#39;s plan allows no more of &#x60;limit&#x60;: it has &#x60;allowed&#x60; already. A larger plan, or removing some, makes room. Nothing was changed. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no channel with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 422 </td><td> The account was not connected; &#x60;reason&#x60; says why. Nothing was saved. </td><td>  -  </td></tr>
+        <tr><td> 502 </td><td> The platform did not answer, or failed on its side. Nothing was connected; try again later. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call channelsChooseAccountsAsync(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull Platform platform, @javax.annotation.Nonnull ChooseAccounts chooseAccounts, final ApiCallback<List<Channel>> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = channelsChooseAccountsValidateBeforeCall(workspaceId, platform, chooseAccounts, _callback);
+        Type localVarReturnType = new TypeToken<List<Channel>>(){}.getType();
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
+        return localVarCall;
+    }
+    /**
+     * Build call for channelsCompleteConnect
+     * @param workspaceId  (required)
+     * @param platform  (required)
+     * @param connectCallback  (required)
+     * @param _callback Callback for upload/download progress
+     * @return Call to execute
+     * @throws ApiException If fail to serialize the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> ConnectOutcome </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 402 </td><td> The workspace&#39;s plan allows no more of &#x60;limit&#x60;: it has &#x60;allowed&#x60; already. A larger plan, or removing some, makes room. Nothing was changed. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no channel with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 422 </td><td> The account was not connected; &#x60;reason&#x60; says why. Nothing was saved. </td><td>  -  </td></tr>
+        <tr><td> 502 </td><td> The platform did not answer, or failed on its side. Nothing was connected; try again later. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call channelsCompleteConnectCall(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull Platform platform, @javax.annotation.Nonnull ConnectCallback connectCallback, final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
+
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
         }
-      }
-    } catch (IOException e) {
-      throw new ApiException(e);
+
+        Object localVarPostBody = connectCallback;
+
+        // create path and map variables
+        String localVarPath = "/api/workspaces/{workspaceId}/channels/connect/{platform}/callback"
+            .replace("{" + "workspaceId" + "}", localVarApiClient.escapeString(workspaceId.toString()))
+            .replace("{" + "platform" + "}", localVarApiClient.escapeString(platform.toString()));
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+            "application/json"
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
+        }
+
+        String[] localVarAuthNames = new String[] { "bearer" };
+        return localVarApiClient.buildCall(basePath, localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
-    catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new ApiException(e);
+
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call channelsCompleteConnectValidateBeforeCall(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull Platform platform, @javax.annotation.Nonnull ConnectCallback connectCallback, final ApiCallback _callback) throws ApiException {
+        // verify the required parameter 'workspaceId' is set
+        if (workspaceId == null) {
+            throw new ApiException("Missing the required parameter 'workspaceId' when calling channelsCompleteConnect(Async)");
+        }
+
+        // verify the required parameter 'platform' is set
+        if (platform == null) {
+            throw new ApiException("Missing the required parameter 'platform' when calling channelsCompleteConnect(Async)");
+        }
+
+        // verify the required parameter 'connectCallback' is set
+        if (connectCallback == null) {
+            throw new ApiException("Missing the required parameter 'connectCallback' when calling channelsCompleteConnect(Async)");
+        }
+
+        return channelsCompleteConnectCall(workspaceId, platform, connectCallback, _callback);
+
     }
-  }
 
-  private HttpRequest.Builder channelsReconnectRequestBuilder(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String channelId, Map<String, String> headers) throws ApiException {
-    // verify the required parameter 'workspaceId' is set
-    if (workspaceId == null) {
-      throw new ApiException(400, "Missing the required parameter 'workspaceId' when calling channelsReconnect");
+    /**
+     * Complete connecting an account
+     * Completes a connection with what the platform sent back: the account becomes a channel of the workspace, or the channel it reconnects takes its new tokens. When the sign-in reached several accounts, as the Pages a Facebook user manages, the answer lists them instead, to choose with chooseAccounts. Only the member who started the connection can complete it, once. A new account needs room in the workspace&#39;s plan (PlanLimitReached). Needs channel:connect.
+     * @param workspaceId  (required)
+     * @param platform  (required)
+     * @param connectCallback  (required)
+     * @return ConnectOutcome
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> ConnectOutcome </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 402 </td><td> The workspace&#39;s plan allows no more of &#x60;limit&#x60;: it has &#x60;allowed&#x60; already. A larger plan, or removing some, makes room. Nothing was changed. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no channel with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 422 </td><td> The account was not connected; &#x60;reason&#x60; says why. Nothing was saved. </td><td>  -  </td></tr>
+        <tr><td> 502 </td><td> The platform did not answer, or failed on its side. Nothing was connected; try again later. </td><td>  -  </td></tr>
+     </table>
+     */
+    public ConnectOutcome channelsCompleteConnect(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull Platform platform, @javax.annotation.Nonnull ConnectCallback connectCallback) throws ApiException {
+        ApiResponse<ConnectOutcome> localVarResp = channelsCompleteConnectWithHttpInfo(workspaceId, platform, connectCallback);
+        return localVarResp.getData();
     }
-    // verify the required parameter 'channelId' is set
-    if (channelId == null) {
-      throw new ApiException(400, "Missing the required parameter 'channelId' when calling channelsReconnect");
+
+    /**
+     * Complete connecting an account
+     * Completes a connection with what the platform sent back: the account becomes a channel of the workspace, or the channel it reconnects takes its new tokens. When the sign-in reached several accounts, as the Pages a Facebook user manages, the answer lists them instead, to choose with chooseAccounts. Only the member who started the connection can complete it, once. A new account needs room in the workspace&#39;s plan (PlanLimitReached). Needs channel:connect.
+     * @param workspaceId  (required)
+     * @param platform  (required)
+     * @param connectCallback  (required)
+     * @return ApiResponse&lt;ConnectOutcome&gt;
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> ConnectOutcome </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 402 </td><td> The workspace&#39;s plan allows no more of &#x60;limit&#x60;: it has &#x60;allowed&#x60; already. A larger plan, or removing some, makes room. Nothing was changed. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no channel with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 422 </td><td> The account was not connected; &#x60;reason&#x60; says why. Nothing was saved. </td><td>  -  </td></tr>
+        <tr><td> 502 </td><td> The platform did not answer, or failed on its side. Nothing was connected; try again later. </td><td>  -  </td></tr>
+     </table>
+     */
+    public ApiResponse<ConnectOutcome> channelsCompleteConnectWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull Platform platform, @javax.annotation.Nonnull ConnectCallback connectCallback) throws ApiException {
+        okhttp3.Call localVarCall = channelsCompleteConnectValidateBeforeCall(workspaceId, platform, connectCallback, null);
+        Type localVarReturnType = new TypeToken<ConnectOutcome>(){}.getType();
+        return localVarApiClient.execute(localVarCall, localVarReturnType);
     }
 
-    HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
+    /**
+     * Complete connecting an account (asynchronously)
+     * Completes a connection with what the platform sent back: the account becomes a channel of the workspace, or the channel it reconnects takes its new tokens. When the sign-in reached several accounts, as the Pages a Facebook user manages, the answer lists them instead, to choose with chooseAccounts. Only the member who started the connection can complete it, once. A new account needs room in the workspace&#39;s plan (PlanLimitReached). Needs channel:connect.
+     * @param workspaceId  (required)
+     * @param platform  (required)
+     * @param connectCallback  (required)
+     * @param _callback The callback to be executed when the API call finishes
+     * @return The request call
+     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> ConnectOutcome </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 402 </td><td> The workspace&#39;s plan allows no more of &#x60;limit&#x60;: it has &#x60;allowed&#x60; already. A larger plan, or removing some, makes room. Nothing was changed. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no channel with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 422 </td><td> The account was not connected; &#x60;reason&#x60; says why. Nothing was saved. </td><td>  -  </td></tr>
+        <tr><td> 502 </td><td> The platform did not answer, or failed on its side. Nothing was connected; try again later. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call channelsCompleteConnectAsync(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull Platform platform, @javax.annotation.Nonnull ConnectCallback connectCallback, final ApiCallback<ConnectOutcome> _callback) throws ApiException {
 
-    String localVarPath = "/api/workspaces/{workspaceId}/channels/{channelId}/reconnect"
-        .replace("{workspaceId}", ApiClient.urlEncode(workspaceId.toString()))
-        .replace("{channelId}", ApiClient.urlEncode(channelId.toString()));
-
-    localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
-
-    localVarRequestBuilder.header("Accept", "application/json");
-
-    localVarRequestBuilder.method("POST", HttpRequest.BodyPublishers.noBody());
-    if (memberVarReadTimeout != null) {
-      localVarRequestBuilder.timeout(memberVarReadTimeout);
+        okhttp3.Call localVarCall = channelsCompleteConnectValidateBeforeCall(workspaceId, platform, connectCallback, _callback);
+        Type localVarReturnType = new TypeToken<ConnectOutcome>(){}.getType();
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
+        return localVarCall;
     }
-    // Add custom headers if provided
-    localVarRequestBuilder = HttpRequestBuilderExtensions.withAdditionalHeaders(localVarRequestBuilder, headers);
-    if (memberVarInterceptor != null) {
-      memberVarInterceptor.accept(localVarRequestBuilder);
-    }
-    return localVarRequestBuilder;
-  }
+    /**
+     * Build call for channelsConnect
+     * @param workspaceId  (required)
+     * @param platform  (required)
+     * @param connectChannel  (required)
+     * @param _callback Callback for upload/download progress
+     * @return Call to execute
+     * @throws ApiException If fail to serialize the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Authorization </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 402 </td><td> The workspace&#39;s plan allows no more of &#x60;limit&#x60;: it has &#x60;allowed&#x60; already. A larger plan, or removing some, makes room. Nothing was changed. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 422 </td><td> The account was not connected; &#x60;reason&#x60; says why. Nothing was saved. </td><td>  -  </td></tr>
+        <tr><td> 502 </td><td> The platform did not answer, or failed on its side. Nothing was connected; try again later. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call channelsConnectCall(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull Platform platform, @javax.annotation.Nonnull ConnectChannel connectChannel, final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
 
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
+        }
+
+        Object localVarPostBody = connectChannel;
+
+        // create path and map variables
+        String localVarPath = "/api/workspaces/{workspaceId}/channels/connect/{platform}"
+            .replace("{" + "workspaceId" + "}", localVarApiClient.escapeString(workspaceId.toString()))
+            .replace("{" + "platform" + "}", localVarApiClient.escapeString(platform.toString()));
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+            "application/json"
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
+        }
+
+        String[] localVarAuthNames = new String[] { "bearer" };
+        return localVarApiClient.buildCall(basePath, localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call channelsConnectValidateBeforeCall(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull Platform platform, @javax.annotation.Nonnull ConnectChannel connectChannel, final ApiCallback _callback) throws ApiException {
+        // verify the required parameter 'workspaceId' is set
+        if (workspaceId == null) {
+            throw new ApiException("Missing the required parameter 'workspaceId' when calling channelsConnect(Async)");
+        }
+
+        // verify the required parameter 'platform' is set
+        if (platform == null) {
+            throw new ApiException("Missing the required parameter 'platform' when calling channelsConnect(Async)");
+        }
+
+        // verify the required parameter 'connectChannel' is set
+        if (connectChannel == null) {
+            throw new ApiException("Missing the required parameter 'connectChannel' when calling channelsConnect(Async)");
+        }
+
+        return channelsConnectCall(workspaceId, platform, connectChannel, _callback);
+
+    }
+
+    /**
+     * Start connecting an account
+     * Starts connecting an account of the platform: answers with the platform&#39;s sign-in page, where the browser goes next. The connection is tied to the caller and the workspace, and must be completed within 15 minutes. On a server that bills, a workspace whose plan allows no more channels gets PlanLimitReached. Needs channel:connect.
+     * @param workspaceId  (required)
+     * @param platform  (required)
+     * @param connectChannel  (required)
+     * @return Authorization
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Authorization </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 402 </td><td> The workspace&#39;s plan allows no more of &#x60;limit&#x60;: it has &#x60;allowed&#x60; already. A larger plan, or removing some, makes room. Nothing was changed. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 422 </td><td> The account was not connected; &#x60;reason&#x60; says why. Nothing was saved. </td><td>  -  </td></tr>
+        <tr><td> 502 </td><td> The platform did not answer, or failed on its side. Nothing was connected; try again later. </td><td>  -  </td></tr>
+     </table>
+     */
+    public Authorization channelsConnect(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull Platform platform, @javax.annotation.Nonnull ConnectChannel connectChannel) throws ApiException {
+        ApiResponse<Authorization> localVarResp = channelsConnectWithHttpInfo(workspaceId, platform, connectChannel);
+        return localVarResp.getData();
+    }
+
+    /**
+     * Start connecting an account
+     * Starts connecting an account of the platform: answers with the platform&#39;s sign-in page, where the browser goes next. The connection is tied to the caller and the workspace, and must be completed within 15 minutes. On a server that bills, a workspace whose plan allows no more channels gets PlanLimitReached. Needs channel:connect.
+     * @param workspaceId  (required)
+     * @param platform  (required)
+     * @param connectChannel  (required)
+     * @return ApiResponse&lt;Authorization&gt;
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Authorization </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 402 </td><td> The workspace&#39;s plan allows no more of &#x60;limit&#x60;: it has &#x60;allowed&#x60; already. A larger plan, or removing some, makes room. Nothing was changed. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 422 </td><td> The account was not connected; &#x60;reason&#x60; says why. Nothing was saved. </td><td>  -  </td></tr>
+        <tr><td> 502 </td><td> The platform did not answer, or failed on its side. Nothing was connected; try again later. </td><td>  -  </td></tr>
+     </table>
+     */
+    public ApiResponse<Authorization> channelsConnectWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull Platform platform, @javax.annotation.Nonnull ConnectChannel connectChannel) throws ApiException {
+        okhttp3.Call localVarCall = channelsConnectValidateBeforeCall(workspaceId, platform, connectChannel, null);
+        Type localVarReturnType = new TypeToken<Authorization>(){}.getType();
+        return localVarApiClient.execute(localVarCall, localVarReturnType);
+    }
+
+    /**
+     * Start connecting an account (asynchronously)
+     * Starts connecting an account of the platform: answers with the platform&#39;s sign-in page, where the browser goes next. The connection is tied to the caller and the workspace, and must be completed within 15 minutes. On a server that bills, a workspace whose plan allows no more channels gets PlanLimitReached. Needs channel:connect.
+     * @param workspaceId  (required)
+     * @param platform  (required)
+     * @param connectChannel  (required)
+     * @param _callback The callback to be executed when the API call finishes
+     * @return The request call
+     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Authorization </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 402 </td><td> The workspace&#39;s plan allows no more of &#x60;limit&#x60;: it has &#x60;allowed&#x60; already. A larger plan, or removing some, makes room. Nothing was changed. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 422 </td><td> The account was not connected; &#x60;reason&#x60; says why. Nothing was saved. </td><td>  -  </td></tr>
+        <tr><td> 502 </td><td> The platform did not answer, or failed on its side. Nothing was connected; try again later. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call channelsConnectAsync(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull Platform platform, @javax.annotation.Nonnull ConnectChannel connectChannel, final ApiCallback<Authorization> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = channelsConnectValidateBeforeCall(workspaceId, platform, connectChannel, _callback);
+        Type localVarReturnType = new TypeToken<Authorization>(){}.getType();
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
+        return localVarCall;
+    }
+    /**
+     * Build call for channelsDisconnect
+     * @param workspaceId  (required)
+     * @param channelId  (required)
+     * @param _callback Callback for upload/download progress
+     * @return Call to execute
+     * @throws ApiException If fail to serialize the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 204 </td><td> &lt;No Content&gt; </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no channel with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call channelsDisconnectCall(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String channelId, final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
+
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
+        }
+
+        Object localVarPostBody = null;
+
+        // create path and map variables
+        String localVarPath = "/api/workspaces/{workspaceId}/channels/{channelId}"
+            .replace("{" + "workspaceId" + "}", localVarApiClient.escapeString(workspaceId.toString()))
+            .replace("{" + "channelId" + "}", localVarApiClient.escapeString(channelId.toString()));
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
+        }
+
+        String[] localVarAuthNames = new String[] { "bearer" };
+        return localVarApiClient.buildCall(basePath, localVarPath, "DELETE", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call channelsDisconnectValidateBeforeCall(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String channelId, final ApiCallback _callback) throws ApiException {
+        // verify the required parameter 'workspaceId' is set
+        if (workspaceId == null) {
+            throw new ApiException("Missing the required parameter 'workspaceId' when calling channelsDisconnect(Async)");
+        }
+
+        // verify the required parameter 'channelId' is set
+        if (channelId == null) {
+            throw new ApiException("Missing the required parameter 'channelId' when calling channelsDisconnect(Async)");
+        }
+
+        return channelsDisconnectCall(workspaceId, channelId, _callback);
+
+    }
+
+    /**
+     * Disconnect a channel
+     * Disconnects a channel from the workspace: the channel and the tokens Peal holds for it are deleted, and nothing more is posted on it. Needs channel:disconnect.
+     * @param workspaceId  (required)
+     * @param channelId  (required)
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 204 </td><td> &lt;No Content&gt; </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no channel with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+     </table>
+     */
+    public void channelsDisconnect(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String channelId) throws ApiException {
+        channelsDisconnectWithHttpInfo(workspaceId, channelId);
+    }
+
+    /**
+     * Disconnect a channel
+     * Disconnects a channel from the workspace: the channel and the tokens Peal holds for it are deleted, and nothing more is posted on it. Needs channel:disconnect.
+     * @param workspaceId  (required)
+     * @param channelId  (required)
+     * @return ApiResponse&lt;Void&gt;
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 204 </td><td> &lt;No Content&gt; </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no channel with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+     </table>
+     */
+    public ApiResponse<Void> channelsDisconnectWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String channelId) throws ApiException {
+        okhttp3.Call localVarCall = channelsDisconnectValidateBeforeCall(workspaceId, channelId, null);
+        return localVarApiClient.execute(localVarCall);
+    }
+
+    /**
+     * Disconnect a channel (asynchronously)
+     * Disconnects a channel from the workspace: the channel and the tokens Peal holds for it are deleted, and nothing more is posted on it. Needs channel:disconnect.
+     * @param workspaceId  (required)
+     * @param channelId  (required)
+     * @param _callback The callback to be executed when the API call finishes
+     * @return The request call
+     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 204 </td><td> &lt;No Content&gt; </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no channel with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call channelsDisconnectAsync(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String channelId, final ApiCallback<Void> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = channelsDisconnectValidateBeforeCall(workspaceId, channelId, _callback);
+        localVarApiClient.executeAsync(localVarCall, _callback);
+        return localVarCall;
+    }
+    /**
+     * Build call for channelsList
+     * @param workspaceId  (required)
+     * @param _callback Callback for upload/download progress
+     * @return Call to execute
+     * @throws ApiException If fail to serialize the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Success </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call channelsListCall(@javax.annotation.Nonnull String workspaceId, final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
+
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
+        }
+
+        Object localVarPostBody = null;
+
+        // create path and map variables
+        String localVarPath = "/api/workspaces/{workspaceId}/channels"
+            .replace("{" + "workspaceId" + "}", localVarApiClient.escapeString(workspaceId.toString()));
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
+        }
+
+        String[] localVarAuthNames = new String[] { "bearer" };
+        return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call channelsListValidateBeforeCall(@javax.annotation.Nonnull String workspaceId, final ApiCallback _callback) throws ApiException {
+        // verify the required parameter 'workspaceId' is set
+        if (workspaceId == null) {
+            throw new ApiException("Missing the required parameter 'workspaceId' when calling channelsList(Async)");
+        }
+
+        return channelsListCall(workspaceId, _callback);
+
+    }
+
+    /**
+     * List channels
+     * Lists the channels connected to the workspace, oldest first. Their tokens are never shown. Needs channel:read.
+     * @param workspaceId  (required)
+     * @return List&lt;Channel&gt;
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Success </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+     </table>
+     */
+    public List<Channel> channelsList(@javax.annotation.Nonnull String workspaceId) throws ApiException {
+        ApiResponse<List<Channel>> localVarResp = channelsListWithHttpInfo(workspaceId);
+        return localVarResp.getData();
+    }
+
+    /**
+     * List channels
+     * Lists the channels connected to the workspace, oldest first. Their tokens are never shown. Needs channel:read.
+     * @param workspaceId  (required)
+     * @return ApiResponse&lt;List&lt;Channel&gt;&gt;
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Success </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+     </table>
+     */
+    public ApiResponse<List<Channel>> channelsListWithHttpInfo(@javax.annotation.Nonnull String workspaceId) throws ApiException {
+        okhttp3.Call localVarCall = channelsListValidateBeforeCall(workspaceId, null);
+        Type localVarReturnType = new TypeToken<List<Channel>>(){}.getType();
+        return localVarApiClient.execute(localVarCall, localVarReturnType);
+    }
+
+    /**
+     * List channels (asynchronously)
+     * Lists the channels connected to the workspace, oldest first. Their tokens are never shown. Needs channel:read.
+     * @param workspaceId  (required)
+     * @param _callback The callback to be executed when the API call finishes
+     * @return The request call
+     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Success </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call channelsListAsync(@javax.annotation.Nonnull String workspaceId, final ApiCallback<List<Channel>> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = channelsListValidateBeforeCall(workspaceId, _callback);
+        Type localVarReturnType = new TypeToken<List<Channel>>(){}.getType();
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
+        return localVarCall;
+    }
+    /**
+     * Build call for channelsPlatforms
+     * @param workspaceId  (required)
+     * @param _callback Callback for upload/download progress
+     * @return Call to execute
+     * @throws ApiException If fail to serialize the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> ConnectablePlatforms </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call channelsPlatformsCall(@javax.annotation.Nonnull String workspaceId, final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
+
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
+        }
+
+        Object localVarPostBody = null;
+
+        // create path and map variables
+        String localVarPath = "/api/workspaces/{workspaceId}/channels/platforms"
+            .replace("{" + "workspaceId" + "}", localVarApiClient.escapeString(workspaceId.toString()));
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
+        }
+
+        String[] localVarAuthNames = new String[] { "bearer" };
+        return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call channelsPlatformsValidateBeforeCall(@javax.annotation.Nonnull String workspaceId, final ApiCallback _callback) throws ApiException {
+        // verify the required parameter 'workspaceId' is set
+        if (workspaceId == null) {
+            throw new ApiException("Missing the required parameter 'workspaceId' when calling channelsPlatforms(Async)");
+        }
+
+        return channelsPlatformsCall(workspaceId, _callback);
+
+    }
+
+    /**
+     * List connectable platforms
+     * Lists the platforms this server can connect accounts of, in Peal&#39;s order. A platform that needs a setting the server lacks, such as an app registered on LinkedIn, X or Meta or a Google OAuth client, is left out. Needs channel:connect.
+     * @param workspaceId  (required)
+     * @return ConnectablePlatforms
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> ConnectablePlatforms </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+     </table>
+     */
+    public ConnectablePlatforms channelsPlatforms(@javax.annotation.Nonnull String workspaceId) throws ApiException {
+        ApiResponse<ConnectablePlatforms> localVarResp = channelsPlatformsWithHttpInfo(workspaceId);
+        return localVarResp.getData();
+    }
+
+    /**
+     * List connectable platforms
+     * Lists the platforms this server can connect accounts of, in Peal&#39;s order. A platform that needs a setting the server lacks, such as an app registered on LinkedIn, X or Meta or a Google OAuth client, is left out. Needs channel:connect.
+     * @param workspaceId  (required)
+     * @return ApiResponse&lt;ConnectablePlatforms&gt;
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> ConnectablePlatforms </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+     </table>
+     */
+    public ApiResponse<ConnectablePlatforms> channelsPlatformsWithHttpInfo(@javax.annotation.Nonnull String workspaceId) throws ApiException {
+        okhttp3.Call localVarCall = channelsPlatformsValidateBeforeCall(workspaceId, null);
+        Type localVarReturnType = new TypeToken<ConnectablePlatforms>(){}.getType();
+        return localVarApiClient.execute(localVarCall, localVarReturnType);
+    }
+
+    /**
+     * List connectable platforms (asynchronously)
+     * Lists the platforms this server can connect accounts of, in Peal&#39;s order. A platform that needs a setting the server lacks, such as an app registered on LinkedIn, X or Meta or a Google OAuth client, is left out. Needs channel:connect.
+     * @param workspaceId  (required)
+     * @param _callback The callback to be executed when the API call finishes
+     * @return The request call
+     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> ConnectablePlatforms </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call channelsPlatformsAsync(@javax.annotation.Nonnull String workspaceId, final ApiCallback<ConnectablePlatforms> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = channelsPlatformsValidateBeforeCall(workspaceId, _callback);
+        Type localVarReturnType = new TypeToken<ConnectablePlatforms>(){}.getType();
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
+        return localVarCall;
+    }
+    /**
+     * Build call for channelsReconnect
+     * @param workspaceId  (required)
+     * @param channelId  (required)
+     * @param _callback Callback for upload/download progress
+     * @return Call to execute
+     * @throws ApiException If fail to serialize the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Authorization </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no channel with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 422 </td><td> The account was not connected; &#x60;reason&#x60; says why. Nothing was saved. </td><td>  -  </td></tr>
+        <tr><td> 502 </td><td> The platform did not answer, or failed on its side. Nothing was connected; try again later. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call channelsReconnectCall(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String channelId, final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
+
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
+        }
+
+        Object localVarPostBody = null;
+
+        // create path and map variables
+        String localVarPath = "/api/workspaces/{workspaceId}/channels/{channelId}/reconnect"
+            .replace("{" + "workspaceId" + "}", localVarApiClient.escapeString(workspaceId.toString()))
+            .replace("{" + "channelId" + "}", localVarApiClient.escapeString(channelId.toString()));
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
+        }
+
+        String[] localVarAuthNames = new String[] { "bearer" };
+        return localVarApiClient.buildCall(basePath, localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call channelsReconnectValidateBeforeCall(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String channelId, final ApiCallback _callback) throws ApiException {
+        // verify the required parameter 'workspaceId' is set
+        if (workspaceId == null) {
+            throw new ApiException("Missing the required parameter 'workspaceId' when calling channelsReconnect(Async)");
+        }
+
+        // verify the required parameter 'channelId' is set
+        if (channelId == null) {
+            throw new ApiException("Missing the required parameter 'channelId' when calling channelsReconnect(Async)");
+        }
+
+        return channelsReconnectCall(workspaceId, channelId, _callback);
+
+    }
+
+    /**
+     * Start reconnecting a channel
+     * Starts reconnecting a channel whose token stopped working or is about to: answers with the platform&#39;s sign-in page. Completing it must sign in to the same account. A channel the workspace has takes no room in its plan, so no plan limit refuses it. Needs channel:connect.
+     * @param workspaceId  (required)
+     * @param channelId  (required)
+     * @return Authorization
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Authorization </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no channel with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 422 </td><td> The account was not connected; &#x60;reason&#x60; says why. Nothing was saved. </td><td>  -  </td></tr>
+        <tr><td> 502 </td><td> The platform did not answer, or failed on its side. Nothing was connected; try again later. </td><td>  -  </td></tr>
+     </table>
+     */
+    public Authorization channelsReconnect(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String channelId) throws ApiException {
+        ApiResponse<Authorization> localVarResp = channelsReconnectWithHttpInfo(workspaceId, channelId);
+        return localVarResp.getData();
+    }
+
+    /**
+     * Start reconnecting a channel
+     * Starts reconnecting a channel whose token stopped working or is about to: answers with the platform&#39;s sign-in page. Completing it must sign in to the same account. A channel the workspace has takes no room in its plan, so no plan limit refuses it. Needs channel:connect.
+     * @param workspaceId  (required)
+     * @param channelId  (required)
+     * @return ApiResponse&lt;Authorization&gt;
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Authorization </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no channel with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 422 </td><td> The account was not connected; &#x60;reason&#x60; says why. Nothing was saved. </td><td>  -  </td></tr>
+        <tr><td> 502 </td><td> The platform did not answer, or failed on its side. Nothing was connected; try again later. </td><td>  -  </td></tr>
+     </table>
+     */
+    public ApiResponse<Authorization> channelsReconnectWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String channelId) throws ApiException {
+        okhttp3.Call localVarCall = channelsReconnectValidateBeforeCall(workspaceId, channelId, null);
+        Type localVarReturnType = new TypeToken<Authorization>(){}.getType();
+        return localVarApiClient.execute(localVarCall, localVarReturnType);
+    }
+
+    /**
+     * Start reconnecting a channel (asynchronously)
+     * Starts reconnecting a channel whose token stopped working or is about to: answers with the platform&#39;s sign-in page. Completing it must sign in to the same account. A channel the workspace has takes no room in its plan, so no plan limit refuses it. Needs channel:connect.
+     * @param workspaceId  (required)
+     * @param channelId  (required)
+     * @param _callback The callback to be executed when the API call finishes
+     * @return The request call
+     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Authorization </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no channel with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+        <tr><td> 422 </td><td> The account was not connected; &#x60;reason&#x60; says why. Nothing was saved. </td><td>  -  </td></tr>
+        <tr><td> 502 </td><td> The platform did not answer, or failed on its side. Nothing was connected; try again later. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call channelsReconnectAsync(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String channelId, final ApiCallback<Authorization> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = channelsReconnectValidateBeforeCall(workspaceId, channelId, _callback);
+        Type localVarReturnType = new TypeToken<Authorization>(){}.getType();
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
+        return localVarCall;
+    }
 }

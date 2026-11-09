@@ -7,7 +7,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **id** | **str** |  | 
 **name** | **str** |  | 
-**permissions** | **List[str]** |  | 
+**permissions** | [**List[Permission]**](Permission.md) |  | 
 **role** | **str** |  | 
 **slug** | **str** |  | 
 

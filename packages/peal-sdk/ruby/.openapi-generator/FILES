@@ -140,6 +140,7 @@ docs/NotificationPreferencesChangeEmail.md
 docs/NotificationPreferencesEmail.md
 docs/PaidPlan.md
 docs/PeriodUsage.md
+docs/Permission.md
 docs/Plan.md
 docs/PlanAllowances.md
 docs/PlanLimit.md
@@ -363,6 +364,7 @@ lib/peal/models/notification_preferences_change_email.rb
 lib/peal/models/notification_preferences_email.rb
 lib/peal/models/paid_plan.rb
 lib/peal/models/period_usage.rb
+lib/peal/models/permission.rb
 lib/peal/models/plan.rb
 lib/peal/models/plan_allowances.rb
 lib/peal/models/plan_limit.rb

@@ -13,72 +13,86 @@
 
 package social.peal.model;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.StringJoiner;
 import java.util.Objects;
-import java.util.Map;
-import java.util.HashMap;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.fasterxml.jackson.annotation.JsonValue;
+import com.google.gson.TypeAdapter;
+import com.google.gson.annotations.JsonAdapter;
+import com.google.gson.annotations.SerializedName;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 import java.util.Arrays;
 import social.peal.model.TikTokPrivacyLevel;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonNull;
+import com.google.gson.JsonParseException;
+import com.google.gson.TypeAdapterFactory;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.TypeAdapter;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 
-import social.peal.ApiClient;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import social.peal.JSON;
+
 /**
  * How a post goes out on a TikTok account. Scheduling needs &#x60;privacyLevel&#x60;.
  */
-@JsonPropertyOrder({
-  TikTokOptions.JSON_PROPERTY_AI_GENERATED,
-  TikTokOptions.JSON_PROPERTY_BRAND_CONTENT,
-  TikTokOptions.JSON_PROPERTY_BRAND_ORGANIC,
-  TikTokOptions.JSON_PROPERTY_COMMERCIAL_CONTENT,
-  TikTokOptions.JSON_PROPERTY_DISABLE_COMMENT,
-  TikTokOptions.JSON_PROPERTY_DISABLE_DUET,
-  TikTokOptions.JSON_PROPERTY_DISABLE_STITCH,
-  TikTokOptions.JSON_PROPERTY_PLATFORM,
-  TikTokOptions.JSON_PROPERTY_PRIVACY_LEVEL
-})
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.27.0")
 public class TikTokOptions {
-  public static final String JSON_PROPERTY_AI_GENERATED = "aiGenerated";
+  public static final String SERIALIZED_NAME_AI_GENERATED = "aiGenerated";
+  @SerializedName(SERIALIZED_NAME_AI_GENERATED)
   @javax.annotation.Nullable
   private Boolean aiGenerated;
 
-  public static final String JSON_PROPERTY_BRAND_CONTENT = "brandContent";
+  public static final String SERIALIZED_NAME_BRAND_CONTENT = "brandContent";
+  @SerializedName(SERIALIZED_NAME_BRAND_CONTENT)
   @javax.annotation.Nullable
   private Boolean brandContent;
 
-  public static final String JSON_PROPERTY_BRAND_ORGANIC = "brandOrganic";
+  public static final String SERIALIZED_NAME_BRAND_ORGANIC = "brandOrganic";
+  @SerializedName(SERIALIZED_NAME_BRAND_ORGANIC)
   @javax.annotation.Nullable
   private Boolean brandOrganic;
 
-  public static final String JSON_PROPERTY_COMMERCIAL_CONTENT = "commercialContent";
+  public static final String SERIALIZED_NAME_COMMERCIAL_CONTENT = "commercialContent";
+  @SerializedName(SERIALIZED_NAME_COMMERCIAL_CONTENT)
   @javax.annotation.Nullable
   private Boolean commercialContent;
 
-  public static final String JSON_PROPERTY_DISABLE_COMMENT = "disableComment";
+  public static final String SERIALIZED_NAME_DISABLE_COMMENT = "disableComment";
+  @SerializedName(SERIALIZED_NAME_DISABLE_COMMENT)
   @javax.annotation.Nullable
   private Boolean disableComment;
 
-  public static final String JSON_PROPERTY_DISABLE_DUET = "disableDuet";
+  public static final String SERIALIZED_NAME_DISABLE_DUET = "disableDuet";
+  @SerializedName(SERIALIZED_NAME_DISABLE_DUET)
   @javax.annotation.Nullable
   private Boolean disableDuet;
 
-  public static final String JSON_PROPERTY_DISABLE_STITCH = "disableStitch";
+  public static final String SERIALIZED_NAME_DISABLE_STITCH = "disableStitch";
+  @SerializedName(SERIALIZED_NAME_DISABLE_STITCH)
   @javax.annotation.Nullable
   private Boolean disableStitch;
 
   /**
    * Gets or Sets platform
    */
+  @JsonAdapter(PlatformEnum.Adapter.class)
   public enum PlatformEnum {
-    TIKTOK(String.valueOf("tiktok"));
+    TIKTOK("tiktok");
 
     private String value;
 
@@ -86,7 +100,6 @@ public class TikTokOptions {
       this.value = value;
     }
 
-    @JsonValue
     public String getValue() {
       return value;
     }
@@ -96,7 +109,6 @@ public class TikTokOptions {
       return String.valueOf(value);
     }
 
-    @JsonCreator
     public static PlatformEnum fromValue(String value) {
       for (PlatformEnum b : PlatformEnum.values()) {
         if (b.value.equals(value)) {
@@ -105,17 +117,37 @@ public class TikTokOptions {
       }
       throw new IllegalArgumentException("Unexpected value '" + value + "'");
     }
+
+    public static class Adapter extends TypeAdapter<PlatformEnum> {
+      @Override
+      public void write(final JsonWriter jsonWriter, final PlatformEnum enumeration) throws IOException {
+        jsonWriter.value(enumeration.getValue());
+      }
+
+      @Override
+      public PlatformEnum read(final JsonReader jsonReader) throws IOException {
+        String value =  jsonReader.nextString();
+        return PlatformEnum.fromValue(value);
+      }
+    }
+
+    public static void validateJsonElement(JsonElement jsonElement) throws IOException {
+      String value = jsonElement.getAsString();
+      PlatformEnum.fromValue(value);
+    }
   }
 
-  public static final String JSON_PROPERTY_PLATFORM = "platform";
+  public static final String SERIALIZED_NAME_PLATFORM = "platform";
+  @SerializedName(SERIALIZED_NAME_PLATFORM)
   @javax.annotation.Nonnull
   private PlatformEnum platform;
 
-  public static final String JSON_PROPERTY_PRIVACY_LEVEL = "privacyLevel";
+  public static final String SERIALIZED_NAME_PRIVACY_LEVEL = "privacyLevel";
+  @SerializedName(SERIALIZED_NAME_PRIVACY_LEVEL)
   @javax.annotation.Nullable
   private TikTokPrivacyLevel privacyLevel;
 
-  public TikTokOptions() { 
+  public TikTokOptions() {
   }
 
   public TikTokOptions aiGenerated(@javax.annotation.Nullable Boolean aiGenerated) {
@@ -128,15 +160,10 @@ public class TikTokOptions {
    * @return aiGenerated
    */
   @javax.annotation.Nullable
-  @JsonProperty(value = JSON_PROPERTY_AI_GENERATED, required = false)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public Boolean getAiGenerated() {
     return aiGenerated;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_AI_GENERATED, required = false)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setAiGenerated(@javax.annotation.Nullable Boolean aiGenerated) {
     this.aiGenerated = aiGenerated;
   }
@@ -152,15 +179,10 @@ public class TikTokOptions {
    * @return brandContent
    */
   @javax.annotation.Nullable
-  @JsonProperty(value = JSON_PROPERTY_BRAND_CONTENT, required = false)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public Boolean getBrandContent() {
     return brandContent;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_BRAND_CONTENT, required = false)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setBrandContent(@javax.annotation.Nullable Boolean brandContent) {
     this.brandContent = brandContent;
   }
@@ -176,15 +198,10 @@ public class TikTokOptions {
    * @return brandOrganic
    */
   @javax.annotation.Nullable
-  @JsonProperty(value = JSON_PROPERTY_BRAND_ORGANIC, required = false)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public Boolean getBrandOrganic() {
     return brandOrganic;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_BRAND_ORGANIC, required = false)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setBrandOrganic(@javax.annotation.Nullable Boolean brandOrganic) {
     this.brandOrganic = brandOrganic;
   }
@@ -200,15 +217,10 @@ public class TikTokOptions {
    * @return commercialContent
    */
   @javax.annotation.Nullable
-  @JsonProperty(value = JSON_PROPERTY_COMMERCIAL_CONTENT, required = false)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public Boolean getCommercialContent() {
     return commercialContent;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_COMMERCIAL_CONTENT, required = false)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setCommercialContent(@javax.annotation.Nullable Boolean commercialContent) {
     this.commercialContent = commercialContent;
   }
@@ -224,15 +236,10 @@ public class TikTokOptions {
    * @return disableComment
    */
   @javax.annotation.Nullable
-  @JsonProperty(value = JSON_PROPERTY_DISABLE_COMMENT, required = false)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public Boolean getDisableComment() {
     return disableComment;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_DISABLE_COMMENT, required = false)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setDisableComment(@javax.annotation.Nullable Boolean disableComment) {
     this.disableComment = disableComment;
   }
@@ -248,15 +255,10 @@ public class TikTokOptions {
    * @return disableDuet
    */
   @javax.annotation.Nullable
-  @JsonProperty(value = JSON_PROPERTY_DISABLE_DUET, required = false)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public Boolean getDisableDuet() {
     return disableDuet;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_DISABLE_DUET, required = false)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setDisableDuet(@javax.annotation.Nullable Boolean disableDuet) {
     this.disableDuet = disableDuet;
   }
@@ -272,15 +274,10 @@ public class TikTokOptions {
    * @return disableStitch
    */
   @javax.annotation.Nullable
-  @JsonProperty(value = JSON_PROPERTY_DISABLE_STITCH, required = false)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public Boolean getDisableStitch() {
     return disableStitch;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_DISABLE_STITCH, required = false)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setDisableStitch(@javax.annotation.Nullable Boolean disableStitch) {
     this.disableStitch = disableStitch;
   }
@@ -296,15 +293,10 @@ public class TikTokOptions {
    * @return platform
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_PLATFORM, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public PlatformEnum getPlatform() {
     return platform;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_PLATFORM, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setPlatform(@javax.annotation.Nonnull PlatformEnum platform) {
     this.platform = platform;
   }
@@ -320,23 +312,16 @@ public class TikTokOptions {
    * @return privacyLevel
    */
   @javax.annotation.Nullable
-  @JsonProperty(value = JSON_PROPERTY_PRIVACY_LEVEL, required = false)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public TikTokPrivacyLevel getPrivacyLevel() {
     return privacyLevel;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_PRIVACY_LEVEL, required = false)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setPrivacyLevel(@javax.annotation.Nullable TikTokPrivacyLevel privacyLevel) {
     this.privacyLevel = privacyLevel;
   }
 
 
-  /**
-   * Return true if this TikTokOptions object is equal to o.
-   */
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -387,84 +372,104 @@ public class TikTokOptions {
     return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
 
-  /**
-   * Convert the instance into URL query string.
-   *
-   * @return URL query string
-   */
-  public String toUrlQueryString() {
-    return toUrlQueryString(null);
+
+  public static HashSet<String> openapiFields;
+  public static HashSet<String> openapiRequiredFields;
+
+  static {
+    // a set of all properties/fields (JSON key names)
+    openapiFields = new HashSet<String>(Arrays.asList("aiGenerated", "brandContent", "brandOrganic", "commercialContent", "disableComment", "disableDuet", "disableStitch", "platform", "privacyLevel"));
+
+    // a set of required properties/fields (JSON key names)
+    openapiRequiredFields = new HashSet<String>(Arrays.asList("platform"));
   }
 
   /**
-   * Convert the instance into URL query string.
+   * Validates the JSON Element and throws an exception if issues found
    *
-   * @param prefix prefix of the query string
-   * @return URL query string
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to TikTokOptions
    */
-  public String toUrlQueryString(String prefix) {
-    String suffix = "";
-    String containerSuffix = "";
-    String containerPrefix = "";
-    if (prefix == null) {
-      // style=form, explode=true, e.g. /pet?name=cat&type=manx
-      prefix = "";
-    } else {
-      // deepObject style e.g. /pet?id[name]=cat&id[type]=manx
-      prefix = prefix + "[";
-      suffix = "]";
-      containerSuffix = "]";
-      containerPrefix = "[";
+  public static void validateJsonElement(JsonElement jsonElement) throws IOException {
+      if (jsonElement == null) {
+        if (!TikTokOptions.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The required field(s) %s in TikTokOptions is not found in the empty JSON string", TikTokOptions.openapiRequiredFields.toString()));
+        }
+      }
+
+      Set<Map.Entry<String, JsonElement>> entries = jsonElement.getAsJsonObject().entrySet();
+      // check to see if the JSON string contains additional fields
+      for (Map.Entry<String, JsonElement> entry : entries) {
+        if (!TikTokOptions.openapiFields.contains(entry.getKey())) {
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The field `%s` in the JSON string is not defined in the `TikTokOptions` properties. JSON: %s", entry.getKey(), jsonElement.toString()));
+        }
+      }
+
+      // check to make sure all required properties/fields are present in the JSON string
+      for (String requiredField : TikTokOptions.openapiRequiredFields) {
+        if (jsonElement.getAsJsonObject().get(requiredField) == null) {
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The required field `%s` is not found in the JSON string: %s", requiredField, jsonElement.toString()));
+        }
+      }
+        JsonObject jsonObj = jsonElement.getAsJsonObject();
+      if (!jsonObj.get("platform").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `platform` to be a primitive type in the JSON string but got `%s`", jsonObj.get("platform").toString()));
+      }
+      // validate the required field `platform`
+      PlatformEnum.validateJsonElement(jsonObj.get("platform"));
+      // validate the optional field `privacyLevel`
+      if (jsonObj.get("privacyLevel") != null && !jsonObj.get("privacyLevel").isJsonNull()) {
+        TikTokPrivacyLevel.validateJsonElement(jsonObj.get("privacyLevel"));
+      }
+  }
+
+  public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
+       if (!TikTokOptions.class.isAssignableFrom(type.getRawType())) {
+         return null; // this class only serializes 'TikTokOptions' and its subtypes
+       }
+       final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
+       final TypeAdapter<TikTokOptions> thisAdapter
+                        = gson.getDelegateAdapter(this, TypeToken.get(TikTokOptions.class));
+
+       return (TypeAdapter<T>) new TypeAdapter<TikTokOptions>() {
+           @Override
+           public void write(JsonWriter out, TikTokOptions value) throws IOException {
+             JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
+             elementAdapter.write(out, obj);
+           }
+
+           @Override
+           public TikTokOptions read(JsonReader in) throws IOException {
+             JsonElement jsonElement = elementAdapter.read(in);
+             validateJsonElement(jsonElement);
+             return thisAdapter.fromJsonTree(jsonElement);
+           }
+
+       }.nullSafe();
     }
+  }
 
-    StringJoiner joiner = new StringJoiner("&");
+  /**
+   * Create an instance of TikTokOptions given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of TikTokOptions
+   * @throws IOException if the JSON string is invalid with respect to TikTokOptions
+   */
+  public static TikTokOptions fromJson(String jsonString) throws IOException {
+    return JSON.getGson().fromJson(jsonString, TikTokOptions.class);
+  }
 
-    // add `aiGenerated` to the URL query string
-    if (getAiGenerated() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%saiGenerated%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getAiGenerated()))));
-    }
-
-    // add `brandContent` to the URL query string
-    if (getBrandContent() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%sbrandContent%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getBrandContent()))));
-    }
-
-    // add `brandOrganic` to the URL query string
-    if (getBrandOrganic() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%sbrandOrganic%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getBrandOrganic()))));
-    }
-
-    // add `commercialContent` to the URL query string
-    if (getCommercialContent() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%scommercialContent%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getCommercialContent()))));
-    }
-
-    // add `disableComment` to the URL query string
-    if (getDisableComment() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%sdisableComment%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getDisableComment()))));
-    }
-
-    // add `disableDuet` to the URL query string
-    if (getDisableDuet() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%sdisableDuet%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getDisableDuet()))));
-    }
-
-    // add `disableStitch` to the URL query string
-    if (getDisableStitch() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%sdisableStitch%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getDisableStitch()))));
-    }
-
-    // add `platform` to the URL query string
-    if (getPlatform() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%splatform%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getPlatform()))));
-    }
-
-    // add `privacyLevel` to the URL query string
-    if (getPrivacyLevel() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%sprivacyLevel%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getPrivacyLevel()))));
-    }
-
-    return joiner.toString();
+  /**
+   * Convert an instance of TikTokOptions to an JSON string
+   *
+   * @return JSON string
+   */
+  public String toJson() {
+    return JSON.getGson().toJson(this);
   }
 }
 

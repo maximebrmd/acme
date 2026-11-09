@@ -13,17 +13,13 @@
 
 package social.peal.model;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.StringJoiner;
 import java.util.Objects;
-import java.util.Map;
-import java.util.HashMap;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.fasterxml.jackson.annotation.JsonValue;
+import com.google.gson.TypeAdapter;
+import com.google.gson.annotations.JsonAdapter;
+import com.google.gson.annotations.SerializedName;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 import java.util.Arrays;
 import social.peal.model.AssistantActionAnyOf;
 import social.peal.model.AssistantActionAnyOf1;
@@ -32,118 +28,158 @@ import social.peal.model.AssistantActionAnyOf3;
 import social.peal.model.AssistantTone;
 import social.peal.model.Platform;
 import social.peal.model.TranslationLanguage;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+
 
 
 import java.io.IOException;
+import java.lang.reflect.Type;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
-import social.peal.ApiClient;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonParseException;
+import com.google.gson.TypeAdapter;
+import com.google.gson.TypeAdapterFactory;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.annotations.JsonAdapter;
+import com.google.gson.annotations.SerializedName;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonParseException;
+
 import social.peal.JSON;
 
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.27.0")
-@JsonDeserialize(using=AssistantAction.AssistantActionDeserializer.class)
-@JsonSerialize(using = AssistantAction.AssistantActionSerializer.class)
 public class AssistantAction extends AbstractOpenApiSchema {
     private static final Logger log = Logger.getLogger(AssistantAction.class.getName());
 
-    public static class AssistantActionSerializer extends StdSerializer<AssistantAction> {
-        public AssistantActionSerializer(Class<AssistantAction> t) {
-            super(t);
-        }
-
-        public AssistantActionSerializer() {
-            this(null);
-        }
-
+    public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
+        @SuppressWarnings("unchecked")
         @Override
-        public void serialize(AssistantAction value, JsonGenerator jgen, SerializerProvider provider) throws IOException, JsonProcessingException {
-            jgen.writeObject(value.getActualInstance());
-        }
-    }
-
-    public static class AssistantActionDeserializer extends StdDeserializer<AssistantAction> {
-        public AssistantActionDeserializer() {
-            this(AssistantAction.class);
-        }
-
-        public AssistantActionDeserializer(Class<?> vc) {
-            super(vc);
-        }
-
-        @Override
-        public AssistantAction deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException, JsonProcessingException {
-            JsonNode tree = ctxt.readTree(jp);
-
-            Object deserialized = null;
-            // deserialize AssistantActionAnyOf
-            try {
-                deserialized = tree.traverse(jp.getCodec()).readValueAs(AssistantActionAnyOf.class);
-                AssistantAction ret = new AssistantAction();
-                ret.setActualInstance(deserialized);
-                return ret;
-            } catch (Exception e) {
-                // deserialization failed, continue, log to help debugging
-                log.log(Level.FINER, "Input data does not match 'AssistantAction'", e);
+        public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
+            if (!AssistantAction.class.isAssignableFrom(type.getRawType())) {
+                return null; // this class only serializes 'AssistantAction' and its subtypes
             }
+            final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
+            final TypeAdapter<AssistantActionAnyOf> adapterAssistantActionAnyOf = gson.getDelegateAdapter(this, TypeToken.get(AssistantActionAnyOf.class));
+            final TypeAdapter<AssistantActionAnyOf1> adapterAssistantActionAnyOf1 = gson.getDelegateAdapter(this, TypeToken.get(AssistantActionAnyOf1.class));
+            final TypeAdapter<AssistantActionAnyOf2> adapterAssistantActionAnyOf2 = gson.getDelegateAdapter(this, TypeToken.get(AssistantActionAnyOf2.class));
+            final TypeAdapter<AssistantActionAnyOf3> adapterAssistantActionAnyOf3 = gson.getDelegateAdapter(this, TypeToken.get(AssistantActionAnyOf3.class));
 
-            // deserialize AssistantActionAnyOf1
-            try {
-                deserialized = tree.traverse(jp.getCodec()).readValueAs(AssistantActionAnyOf1.class);
-                AssistantAction ret = new AssistantAction();
-                ret.setActualInstance(deserialized);
-                return ret;
-            } catch (Exception e) {
-                // deserialization failed, continue, log to help debugging
-                log.log(Level.FINER, "Input data does not match 'AssistantAction'", e);
-            }
+            return (TypeAdapter<T>) new TypeAdapter<AssistantAction>() {
+                @Override
+                public void write(JsonWriter out, AssistantAction value) throws IOException {
+                    if (value == null || value.getActualInstance() == null) {
+                        elementAdapter.write(out, null);
+                        return;
+                    }
 
-            // deserialize AssistantActionAnyOf2
-            try {
-                deserialized = tree.traverse(jp.getCodec()).readValueAs(AssistantActionAnyOf2.class);
-                AssistantAction ret = new AssistantAction();
-                ret.setActualInstance(deserialized);
-                return ret;
-            } catch (Exception e) {
-                // deserialization failed, continue, log to help debugging
-                log.log(Level.FINER, "Input data does not match 'AssistantAction'", e);
-            }
+                    // check if the actual instance is of the type `AssistantActionAnyOf`
+                    if (value.getActualInstance() instanceof AssistantActionAnyOf) {
+                        JsonElement element = adapterAssistantActionAnyOf.toJsonTree((AssistantActionAnyOf)value.getActualInstance());
+                        elementAdapter.write(out, element);
+                        return;
+                    }
+                    // check if the actual instance is of the type `AssistantActionAnyOf1`
+                    if (value.getActualInstance() instanceof AssistantActionAnyOf1) {
+                        JsonElement element = adapterAssistantActionAnyOf1.toJsonTree((AssistantActionAnyOf1)value.getActualInstance());
+                        elementAdapter.write(out, element);
+                        return;
+                    }
+                    // check if the actual instance is of the type `AssistantActionAnyOf2`
+                    if (value.getActualInstance() instanceof AssistantActionAnyOf2) {
+                        JsonElement element = adapterAssistantActionAnyOf2.toJsonTree((AssistantActionAnyOf2)value.getActualInstance());
+                        elementAdapter.write(out, element);
+                        return;
+                    }
+                    // check if the actual instance is of the type `AssistantActionAnyOf3`
+                    if (value.getActualInstance() instanceof AssistantActionAnyOf3) {
+                        JsonElement element = adapterAssistantActionAnyOf3.toJsonTree((AssistantActionAnyOf3)value.getActualInstance());
+                        elementAdapter.write(out, element);
+                        return;
+                    }
+                    throw new IOException("Failed to serialize as the type doesn't match anyOf schemas: AssistantActionAnyOf, AssistantActionAnyOf1, AssistantActionAnyOf2, AssistantActionAnyOf3");
+                }
 
-            // deserialize AssistantActionAnyOf3
-            try {
-                deserialized = tree.traverse(jp.getCodec()).readValueAs(AssistantActionAnyOf3.class);
-                AssistantAction ret = new AssistantAction();
-                ret.setActualInstance(deserialized);
-                return ret;
-            } catch (Exception e) {
-                // deserialization failed, continue, log to help debugging
-                log.log(Level.FINER, "Input data does not match 'AssistantAction'", e);
-            }
+                @Override
+                public AssistantAction read(JsonReader in) throws IOException {
+                    Object deserialized = null;
+                    JsonElement jsonElement = elementAdapter.read(in);
 
-            throw new IOException("Failed deserialization for AssistantAction: no match found");
-        }
+                    ArrayList<String> errorMessages = new ArrayList<>();
+                    TypeAdapter actualAdapter = elementAdapter;
 
-        /**
-         * Handle deserialization of the 'null' value.
-         */
-        @Override
-        public AssistantAction getNullValue(DeserializationContext ctxt) throws JsonMappingException {
-            throw new JsonMappingException(ctxt.getParser(), "AssistantAction cannot be null");
+                    // deserialize AssistantActionAnyOf
+                    try {
+                        // validate the JSON object to see if any exception is thrown
+                        AssistantActionAnyOf.validateJsonElement(jsonElement);
+                        actualAdapter = adapterAssistantActionAnyOf;
+                        AssistantAction ret = new AssistantAction();
+                        ret.setActualInstance(actualAdapter.fromJsonTree(jsonElement));
+                        return ret;
+                    } catch (Exception e) {
+                        // deserialization failed, continue
+                        errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for AssistantActionAnyOf failed with `%s`.", e.getMessage()));
+                        log.log(Level.FINER, "Input data does not match schema 'AssistantActionAnyOf'", e);
+                    }
+                    // deserialize AssistantActionAnyOf1
+                    try {
+                        // validate the JSON object to see if any exception is thrown
+                        AssistantActionAnyOf1.validateJsonElement(jsonElement);
+                        actualAdapter = adapterAssistantActionAnyOf1;
+                        AssistantAction ret = new AssistantAction();
+                        ret.setActualInstance(actualAdapter.fromJsonTree(jsonElement));
+                        return ret;
+                    } catch (Exception e) {
+                        // deserialization failed, continue
+                        errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for AssistantActionAnyOf1 failed with `%s`.", e.getMessage()));
+                        log.log(Level.FINER, "Input data does not match schema 'AssistantActionAnyOf1'", e);
+                    }
+                    // deserialize AssistantActionAnyOf2
+                    try {
+                        // validate the JSON object to see if any exception is thrown
+                        AssistantActionAnyOf2.validateJsonElement(jsonElement);
+                        actualAdapter = adapterAssistantActionAnyOf2;
+                        AssistantAction ret = new AssistantAction();
+                        ret.setActualInstance(actualAdapter.fromJsonTree(jsonElement));
+                        return ret;
+                    } catch (Exception e) {
+                        // deserialization failed, continue
+                        errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for AssistantActionAnyOf2 failed with `%s`.", e.getMessage()));
+                        log.log(Level.FINER, "Input data does not match schema 'AssistantActionAnyOf2'", e);
+                    }
+                    // deserialize AssistantActionAnyOf3
+                    try {
+                        // validate the JSON object to see if any exception is thrown
+                        AssistantActionAnyOf3.validateJsonElement(jsonElement);
+                        actualAdapter = adapterAssistantActionAnyOf3;
+                        AssistantAction ret = new AssistantAction();
+                        ret.setActualInstance(actualAdapter.fromJsonTree(jsonElement));
+                        return ret;
+                    } catch (Exception e) {
+                        // deserialization failed, continue
+                        errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for AssistantActionAnyOf3 failed with `%s`.", e.getMessage()));
+                        log.log(Level.FINER, "Input data does not match schema 'AssistantActionAnyOf3'", e);
+                    }
+
+                    throw new IOException(String.format(java.util.Locale.ROOT, "Failed deserialization for AssistantAction: no class matches result, expected at least 1. Detailed failure message for anyOf schemas: %s. JSON: %s", errorMessages, jsonElement.toString()));
+                }
+            }.nullSafe();
         }
     }
 
@@ -154,23 +190,8 @@ public class AssistantAction extends AbstractOpenApiSchema {
         super("anyOf", Boolean.FALSE);
     }
 
-    public AssistantAction(AssistantActionAnyOf o) {
-        this();
-        setActualInstance(o);
-    }
-
-    public AssistantAction(AssistantActionAnyOf1 o) {
-        this();
-        setActualInstance(o);
-    }
-
-    public AssistantAction(AssistantActionAnyOf2 o) {
-        this();
-        setActualInstance(o);
-    }
-
-    public AssistantAction(AssistantActionAnyOf3 o) {
-        this();
+    public AssistantAction(Object o) {
+        super("anyOf", Boolean.FALSE);
         setActualInstance(o);
     }
 
@@ -179,7 +200,6 @@ public class AssistantAction extends AbstractOpenApiSchema {
         schemas.put("AssistantActionAnyOf1", AssistantActionAnyOf1.class);
         schemas.put("AssistantActionAnyOf2", AssistantActionAnyOf2.class);
         schemas.put("AssistantActionAnyOf3", AssistantActionAnyOf3.class);
-        JSON.registerDescendants(AssistantAction.class, Collections.unmodifiableMap(schemas));
     }
 
     @Override
@@ -193,26 +213,25 @@ public class AssistantAction extends AbstractOpenApiSchema {
      * AssistantActionAnyOf, AssistantActionAnyOf1, AssistantActionAnyOf2, AssistantActionAnyOf3
      *
      * It could be an instance of the 'anyOf' schemas.
-     * The anyOf child schemas may themselves be a composed schema (allOf, anyOf, anyOf).
      */
     @Override
     public void setActualInstance(Object instance) {
-        if (JSON.isInstanceOf(AssistantActionAnyOf.class, instance, new HashSet<Class<?>>())) {
+        if (instance instanceof AssistantActionAnyOf) {
             super.setActualInstance(instance);
             return;
         }
 
-        if (JSON.isInstanceOf(AssistantActionAnyOf1.class, instance, new HashSet<Class<?>>())) {
+        if (instance instanceof AssistantActionAnyOf1) {
             super.setActualInstance(instance);
             return;
         }
 
-        if (JSON.isInstanceOf(AssistantActionAnyOf2.class, instance, new HashSet<Class<?>>())) {
+        if (instance instanceof AssistantActionAnyOf2) {
             super.setActualInstance(instance);
             return;
         }
 
-        if (JSON.isInstanceOf(AssistantActionAnyOf3.class, instance, new HashSet<Class<?>>())) {
+        if (instance instanceof AssistantActionAnyOf3) {
             super.setActualInstance(instance);
             return;
         }
@@ -226,6 +245,7 @@ public class AssistantAction extends AbstractOpenApiSchema {
      *
      * @return The actual instance (AssistantActionAnyOf, AssistantActionAnyOf1, AssistantActionAnyOf2, AssistantActionAnyOf3)
      */
+    @SuppressWarnings("unchecked")
     @Override
     public Object getActualInstance() {
         return super.getActualInstance();
@@ -275,42 +295,68 @@ public class AssistantAction extends AbstractOpenApiSchema {
         return (AssistantActionAnyOf3)super.getActualInstance();
     }
 
-
-
-  /**
-   * Convert the instance into URL query string.
-   *
-   * @return URL query string
-   */
-  public String toUrlQueryString() {
-    return toUrlQueryString(null);
-  }
-
-  /**
-   * Convert the instance into URL query string.
-   *
-   * @param prefix prefix of the query string
-   * @return URL query string
-   */
-  public String toUrlQueryString(String prefix) {
-    String suffix = "";
-    String containerSuffix = "";
-    String containerPrefix = "";
-    if (prefix == null) {
-      // style=form, explode=true, e.g. /pet?name=cat&type=manx
-      prefix = "";
-    } else {
-      // deepObject style e.g. /pet?id[name]=cat&id[type]=manx
-      prefix = prefix + "[";
-      suffix = "]";
-      containerSuffix = "]";
-      containerPrefix = "[";
+    /**
+     * Validates the JSON Element and throws an exception if issues found
+     *
+     * @param jsonElement JSON Element
+     * @throws IOException if the JSON Element is invalid with respect to AssistantAction
+     */
+    public static void validateJsonElement(JsonElement jsonElement) throws IOException {
+        // validate anyOf schemas one by one
+        ArrayList<String> errorMessages = new ArrayList<>();
+        // validate the json string with AssistantActionAnyOf
+        try {
+            AssistantActionAnyOf.validateJsonElement(jsonElement);
+            return;
+        } catch (Exception e) {
+            errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for AssistantActionAnyOf failed with `%s`.", e.getMessage()));
+            // continue to the next one
+        }
+        // validate the json string with AssistantActionAnyOf1
+        try {
+            AssistantActionAnyOf1.validateJsonElement(jsonElement);
+            return;
+        } catch (Exception e) {
+            errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for AssistantActionAnyOf1 failed with `%s`.", e.getMessage()));
+            // continue to the next one
+        }
+        // validate the json string with AssistantActionAnyOf2
+        try {
+            AssistantActionAnyOf2.validateJsonElement(jsonElement);
+            return;
+        } catch (Exception e) {
+            errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for AssistantActionAnyOf2 failed with `%s`.", e.getMessage()));
+            // continue to the next one
+        }
+        // validate the json string with AssistantActionAnyOf3
+        try {
+            AssistantActionAnyOf3.validateJsonElement(jsonElement);
+            return;
+        } catch (Exception e) {
+            errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for AssistantActionAnyOf3 failed with `%s`.", e.getMessage()));
+            // continue to the next one
+        }
+        throw new IOException(String.format(java.util.Locale.ROOT, "The JSON string is invalid for AssistantAction with anyOf schemas: AssistantActionAnyOf, AssistantActionAnyOf1, AssistantActionAnyOf2, AssistantActionAnyOf3. no class match the result, expected at least 1. Detailed failure message for anyOf schemas: %s. JSON: %s", errorMessages, jsonElement.toString()));
     }
 
-    StringJoiner joiner = new StringJoiner("&");
+    /**
+     * Create an instance of AssistantAction given an JSON string
+     *
+     * @param jsonString JSON string
+     * @return An instance of AssistantAction
+     * @throws IOException if the JSON string is invalid with respect to AssistantAction
+     */
+    public static AssistantAction fromJson(String jsonString) throws IOException {
+        return JSON.getGson().fromJson(jsonString, AssistantAction.class);
+    }
 
-    return null;
-  }
-
+    /**
+     * Convert an instance of AssistantAction to an JSON string
+     *
+     * @return JSON string
+     */
+    public String toJson() {
+        return JSON.getGson().toJson(this);
+    }
 }
 

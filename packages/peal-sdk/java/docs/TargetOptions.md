@@ -4,36 +4,34 @@
 
 What a post says on a channel that only its platform knows, tagged by `platform`. Platforms without options take none.
 
-## anyOf schemas
-* [TikTokOptions](TikTokOptions.md)
-* [YouTubeOptions](YouTubeOptions.md)
+## Properties
 
-## Example
-```java
-// Import classes:
-import social.peal.model.TargetOptions;
-import social.peal.model.TikTokOptions;
-import social.peal.model.YouTubeOptions;
+| Name | Type | Description | Notes |
+|------------ | ------------- | ------------- | -------------|
+|**categoryId** | **String** |  |  [optional] |
+|**containsSyntheticMedia** | **Boolean** |  |  [optional] |
+|**madeForKids** | **Boolean** |  |  [optional] |
+|**notifySubscribers** | **Boolean** |  |  [optional] |
+|**platform** | [**PlatformEnum**](#PlatformEnum) |  |  |
+|**privacy** | **YouTubePrivacy** |  |  [optional] |
+|**tags** | **List&lt;String&gt;** |  |  [optional] |
+|**title** | **String** |  |  [optional] |
+|**aiGenerated** | **Boolean** |  |  [optional] |
+|**brandContent** | **Boolean** |  |  [optional] |
+|**brandOrganic** | **Boolean** |  |  [optional] |
+|**commercialContent** | **Boolean** |  |  [optional] |
+|**disableComment** | **Boolean** |  |  [optional] |
+|**disableDuet** | **Boolean** |  |  [optional] |
+|**disableStitch** | **Boolean** |  |  [optional] |
+|**privacyLevel** | **TikTokPrivacyLevel** |  |  [optional] |
 
-public class Example {
-    public static void main(String[] args) {
-        TargetOptions exampleTargetOptions = new TargetOptions();
 
-        // create a new TikTokOptions
-        TikTokOptions exampleTikTokOptions = new TikTokOptions();
-        // set TargetOptions to TikTokOptions
-        exampleTargetOptions.setActualInstance(exampleTikTokOptions);
-        // to get back the TikTokOptions set earlier
-        TikTokOptions testTikTokOptions = (TikTokOptions) exampleTargetOptions.getActualInstance();
 
-        // create a new YouTubeOptions
-        YouTubeOptions exampleYouTubeOptions = new YouTubeOptions();
-        // set TargetOptions to YouTubeOptions
-        exampleTargetOptions.setActualInstance(exampleYouTubeOptions);
-        // to get back the YouTubeOptions set earlier
-        YouTubeOptions testYouTubeOptions = (YouTubeOptions) exampleTargetOptions.getActualInstance();
-    }
-}
-```
+## Enum: PlatformEnum
+
+| Name | Value |
+|---- | -----|
+| TIKTOK | &quot;tiktok&quot; |
+
 
 

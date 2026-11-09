@@ -13,17 +13,13 @@
 
 package social.peal.model;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.StringJoiner;
 import java.util.Objects;
-import java.util.Map;
-import java.util.HashMap;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.fasterxml.jackson.annotation.JsonValue;
+import com.google.gson.TypeAdapter;
+import com.google.gson.annotations.JsonAdapter;
+import com.google.gson.annotations.SerializedName;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -32,48 +28,67 @@ import social.peal.model.Plan;
 import social.peal.model.PlanAllowances;
 import social.peal.model.PlanOffer;
 import social.peal.model.Usage;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonNull;
+import com.google.gson.JsonParseException;
+import com.google.gson.TypeAdapterFactory;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.TypeAdapter;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 
-import social.peal.ApiClient;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import social.peal.JSON;
+
 /**
  * Billing
  */
-@JsonPropertyOrder({
-  Billing.JSON_PROPERTY_ALLOWANCES,
-  Billing.JSON_PROPERTY_ENABLED,
-  Billing.JSON_PROPERTY_PLAN,
-  Billing.JSON_PROPERTY_PLANS,
-  Billing.JSON_PROPERTY_SUBSCRIPTION,
-  Billing.JSON_PROPERTY_USAGE
-})
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.27.0")
 public class Billing {
-  public static final String JSON_PROPERTY_ALLOWANCES = "allowances";
+  public static final String SERIALIZED_NAME_ALLOWANCES = "allowances";
+  @SerializedName(SERIALIZED_NAME_ALLOWANCES)
   @javax.annotation.Nonnull
   private PlanAllowances allowances;
 
-  public static final String JSON_PROPERTY_ENABLED = "enabled";
+  public static final String SERIALIZED_NAME_ENABLED = "enabled";
+  @SerializedName(SERIALIZED_NAME_ENABLED)
   @javax.annotation.Nonnull
   private Boolean enabled;
 
-  public static final String JSON_PROPERTY_PLAN = "plan";
+  public static final String SERIALIZED_NAME_PLAN = "plan";
+  @SerializedName(SERIALIZED_NAME_PLAN)
   @javax.annotation.Nullable
   private Plan plan;
 
-  public static final String JSON_PROPERTY_PLANS = "plans";
+  public static final String SERIALIZED_NAME_PLANS = "plans";
+  @SerializedName(SERIALIZED_NAME_PLANS)
   @javax.annotation.Nonnull
   private List<PlanOffer> plans = new ArrayList<>();
 
-  public static final String JSON_PROPERTY_SUBSCRIPTION = "subscription";
+  public static final String SERIALIZED_NAME_SUBSCRIPTION = "subscription";
+  @SerializedName(SERIALIZED_NAME_SUBSCRIPTION)
   @javax.annotation.Nullable
   private BillingSubscription subscription;
 
-  public static final String JSON_PROPERTY_USAGE = "usage";
+  public static final String SERIALIZED_NAME_USAGE = "usage";
+  @SerializedName(SERIALIZED_NAME_USAGE)
   @javax.annotation.Nonnull
   private Usage usage;
 
-  public Billing() { 
+  public Billing() {
   }
 
   public Billing allowances(@javax.annotation.Nonnull PlanAllowances allowances) {
@@ -86,15 +101,10 @@ public class Billing {
    * @return allowances
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_ALLOWANCES, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public PlanAllowances getAllowances() {
     return allowances;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_ALLOWANCES, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setAllowances(@javax.annotation.Nonnull PlanAllowances allowances) {
     this.allowances = allowances;
   }
@@ -110,15 +120,10 @@ public class Billing {
    * @return enabled
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_ENABLED, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public Boolean getEnabled() {
     return enabled;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_ENABLED, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setEnabled(@javax.annotation.Nonnull Boolean enabled) {
     this.enabled = enabled;
   }
@@ -134,15 +139,10 @@ public class Billing {
    * @return plan
    */
   @javax.annotation.Nullable
-  @JsonProperty(value = JSON_PROPERTY_PLAN, required = false)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public Plan getPlan() {
     return plan;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_PLAN, required = false)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setPlan(@javax.annotation.Nullable Plan plan) {
     this.plan = plan;
   }
@@ -166,15 +166,10 @@ public class Billing {
    * @return plans
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_PLANS, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public List<PlanOffer> getPlans() {
     return plans;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_PLANS, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setPlans(@javax.annotation.Nonnull List<PlanOffer> plans) {
     this.plans = plans;
   }
@@ -190,15 +185,10 @@ public class Billing {
    * @return subscription
    */
   @javax.annotation.Nullable
-  @JsonProperty(value = JSON_PROPERTY_SUBSCRIPTION, required = false)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public BillingSubscription getSubscription() {
     return subscription;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_SUBSCRIPTION, required = false)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setSubscription(@javax.annotation.Nullable BillingSubscription subscription) {
     this.subscription = subscription;
   }
@@ -214,23 +204,16 @@ public class Billing {
    * @return usage
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_USAGE, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public Usage getUsage() {
     return usage;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_USAGE, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setUsage(@javax.annotation.Nonnull Usage usage) {
     this.usage = usage;
   }
 
 
-  /**
-   * Return true if this Billing object is equal to o.
-   */
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -275,74 +258,117 @@ public class Billing {
     return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
 
-  /**
-   * Convert the instance into URL query string.
-   *
-   * @return URL query string
-   */
-  public String toUrlQueryString() {
-    return toUrlQueryString(null);
+
+  public static HashSet<String> openapiFields;
+  public static HashSet<String> openapiRequiredFields;
+
+  static {
+    // a set of all properties/fields (JSON key names)
+    openapiFields = new HashSet<String>(Arrays.asList("allowances", "enabled", "plan", "plans", "subscription", "usage"));
+
+    // a set of required properties/fields (JSON key names)
+    openapiRequiredFields = new HashSet<String>(Arrays.asList("allowances", "enabled", "plan", "plans", "subscription", "usage"));
   }
 
   /**
-   * Convert the instance into URL query string.
+   * Validates the JSON Element and throws an exception if issues found
    *
-   * @param prefix prefix of the query string
-   * @return URL query string
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to Billing
    */
-  public String toUrlQueryString(String prefix) {
-    String suffix = "";
-    String containerSuffix = "";
-    String containerPrefix = "";
-    if (prefix == null) {
-      // style=form, explode=true, e.g. /pet?name=cat&type=manx
-      prefix = "";
-    } else {
-      // deepObject style e.g. /pet?id[name]=cat&id[type]=manx
-      prefix = prefix + "[";
-      suffix = "]";
-      containerSuffix = "]";
-      containerPrefix = "[";
-    }
-
-    StringJoiner joiner = new StringJoiner("&");
-
-    // add `allowances` to the URL query string
-    if (getAllowances() != null) {
-      joiner.add(getAllowances().toUrlQueryString(prefix + "allowances" + suffix));
-    }
-
-    // add `enabled` to the URL query string
-    if (getEnabled() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%senabled%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getEnabled()))));
-    }
-
-    // add `plan` to the URL query string
-    if (getPlan() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%splan%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getPlan()))));
-    }
-
-    // add `plans` to the URL query string
-    if (getPlans() != null) {
-      for (int i = 0; i < getPlans().size(); i++) {
-        if (getPlans().get(i) != null) {
-          joiner.add(getPlans().get(i).toUrlQueryString(String.format(java.util.Locale.ROOT, "%splans%s%s", prefix, suffix,
-          "".equals(suffix) ? "" : String.format(java.util.Locale.ROOT, "%s%d%s", containerPrefix, i, containerSuffix))));
+  public static void validateJsonElement(JsonElement jsonElement) throws IOException {
+      if (jsonElement == null) {
+        if (!Billing.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The required field(s) %s in Billing is not found in the empty JSON string", Billing.openapiRequiredFields.toString()));
         }
       }
-    }
 
-    // add `subscription` to the URL query string
-    if (getSubscription() != null) {
-      joiner.add(getSubscription().toUrlQueryString(prefix + "subscription" + suffix));
-    }
+      Set<Map.Entry<String, JsonElement>> entries = jsonElement.getAsJsonObject().entrySet();
+      // check to see if the JSON string contains additional fields
+      for (Map.Entry<String, JsonElement> entry : entries) {
+        if (!Billing.openapiFields.contains(entry.getKey())) {
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The field `%s` in the JSON string is not defined in the `Billing` properties. JSON: %s", entry.getKey(), jsonElement.toString()));
+        }
+      }
 
-    // add `usage` to the URL query string
-    if (getUsage() != null) {
-      joiner.add(getUsage().toUrlQueryString(prefix + "usage" + suffix));
-    }
+      // check to make sure all required properties/fields are present in the JSON string
+      for (String requiredField : Billing.openapiRequiredFields) {
+        if (jsonElement.getAsJsonObject().get(requiredField) == null) {
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The required field `%s` is not found in the JSON string: %s", requiredField, jsonElement.toString()));
+        }
+      }
+        JsonObject jsonObj = jsonElement.getAsJsonObject();
+      // validate the required field `allowances`
+      PlanAllowances.validateJsonElement(jsonObj.get("allowances"));
+      if (jsonObj.get("plan") != null && !jsonObj.get("plan").isJsonNull()) {
+      // validate the required field `plan`
+      Plan.validateJsonElement(jsonObj.get("plan"));
+      }
+      if (jsonObj.get("plans") != null) {
+        if (!jsonObj.get("plans").isJsonArray()) {
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `plans` to be an array in the JSON string but got `%s`", jsonObj.get("plans").toString()));
+        }
+        JsonArray jsonArrayplans = jsonObj.getAsJsonArray("plans");
+        // validate the required field `plans` (array)
+        for (int i = 0; i < jsonArrayplans.size(); i++) {
+          PlanOffer.validateJsonElement(jsonArrayplans.get(i));
+        }
+      }
+      if (jsonObj.get("subscription") != null && !jsonObj.get("subscription").isJsonNull()) {
+      // validate the required field `subscription`
+      BillingSubscription.validateJsonElement(jsonObj.get("subscription"));
+      }
+      // validate the required field `usage`
+      Usage.validateJsonElement(jsonObj.get("usage"));
+  }
 
-    return joiner.toString();
+  public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
+       if (!Billing.class.isAssignableFrom(type.getRawType())) {
+         return null; // this class only serializes 'Billing' and its subtypes
+       }
+       final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
+       final TypeAdapter<Billing> thisAdapter
+                        = gson.getDelegateAdapter(this, TypeToken.get(Billing.class));
+
+       return (TypeAdapter<T>) new TypeAdapter<Billing>() {
+           @Override
+           public void write(JsonWriter out, Billing value) throws IOException {
+             JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
+             elementAdapter.write(out, obj);
+           }
+
+           @Override
+           public Billing read(JsonReader in) throws IOException {
+             JsonElement jsonElement = elementAdapter.read(in);
+             validateJsonElement(jsonElement);
+             return thisAdapter.fromJsonTree(jsonElement);
+           }
+
+       }.nullSafe();
+    }
+  }
+
+  /**
+   * Create an instance of Billing given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of Billing
+   * @throws IOException if the JSON string is invalid with respect to Billing
+   */
+  public static Billing fromJson(String jsonString) throws IOException {
+    return JSON.getGson().fromJson(jsonString, Billing.class);
+  }
+
+  /**
+   * Convert an instance of Billing to an JSON string
+   *
+   * @return JSON string
+   */
+  public String toJson() {
+    return JSON.getGson().toJson(this);
   }
 }
 

@@ -9,7 +9,7 @@ Name | Type | Description | Notes
 **expires_at** | **str** |  | 
 **id** | **str** |  | 
 **name** | **str** |  | 
-**permissions** | **List[str]** |  | 
+**permissions** | [**List[Permission]**](Permission.md) |  | 
 **start** | **str** |  | 
 
 ## Example

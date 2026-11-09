@@ -13,66 +13,81 @@
 
 package social.peal.model;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.StringJoiner;
 import java.util.Objects;
-import java.util.Map;
-import java.util.HashMap;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.fasterxml.jackson.annotation.JsonValue;
+import com.google.gson.TypeAdapter;
+import com.google.gson.annotations.JsonAdapter;
+import com.google.gson.annotations.SerializedName;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 import java.util.Arrays;
 import social.peal.model.AttemptResult;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonNull;
+import com.google.gson.JsonParseException;
+import com.google.gson.TypeAdapterFactory;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.TypeAdapter;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 
-import social.peal.ApiClient;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import social.peal.JSON;
+
 /**
  * PublicationAttempt
  */
-@JsonPropertyOrder({
-  PublicationAttempt.JSON_PROPERTY_ATTEMPT,
-  PublicationAttempt.JSON_PROPERTY_FINISHED_AT,
-  PublicationAttempt.JSON_PROPERTY_RESULT,
-  PublicationAttempt.JSON_PROPERTY_RETRY_AT,
-  PublicationAttempt.JSON_PROPERTY_ROUND,
-  PublicationAttempt.JSON_PROPERTY_STARTED_AT,
-  PublicationAttempt.JSON_PROPERTY_TARGET_ID
-})
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.27.0")
 public class PublicationAttempt {
-  public static final String JSON_PROPERTY_ATTEMPT = "attempt";
+  public static final String SERIALIZED_NAME_ATTEMPT = "attempt";
+  @SerializedName(SERIALIZED_NAME_ATTEMPT)
   @javax.annotation.Nonnull
   private Integer attempt;
 
-  public static final String JSON_PROPERTY_FINISHED_AT = "finishedAt";
+  public static final String SERIALIZED_NAME_FINISHED_AT = "finishedAt";
+  @SerializedName(SERIALIZED_NAME_FINISHED_AT)
   @javax.annotation.Nonnull
   private String finishedAt;
 
-  public static final String JSON_PROPERTY_RESULT = "result";
+  public static final String SERIALIZED_NAME_RESULT = "result";
+  @SerializedName(SERIALIZED_NAME_RESULT)
   @javax.annotation.Nonnull
   private AttemptResult result;
 
-  public static final String JSON_PROPERTY_RETRY_AT = "retryAt";
+  public static final String SERIALIZED_NAME_RETRY_AT = "retryAt";
+  @SerializedName(SERIALIZED_NAME_RETRY_AT)
   @javax.annotation.Nullable
   private String retryAt;
 
-  public static final String JSON_PROPERTY_ROUND = "round";
+  public static final String SERIALIZED_NAME_ROUND = "round";
+  @SerializedName(SERIALIZED_NAME_ROUND)
   @javax.annotation.Nonnull
   private Integer round;
 
-  public static final String JSON_PROPERTY_STARTED_AT = "startedAt";
+  public static final String SERIALIZED_NAME_STARTED_AT = "startedAt";
+  @SerializedName(SERIALIZED_NAME_STARTED_AT)
   @javax.annotation.Nonnull
   private String startedAt;
 
-  public static final String JSON_PROPERTY_TARGET_ID = "targetId";
+  public static final String SERIALIZED_NAME_TARGET_ID = "targetId";
+  @SerializedName(SERIALIZED_NAME_TARGET_ID)
   @javax.annotation.Nonnull
   private String targetId;
 
-  public PublicationAttempt() { 
+  public PublicationAttempt() {
   }
 
   public PublicationAttempt attempt(@javax.annotation.Nonnull Integer attempt) {
@@ -87,15 +102,10 @@ public class PublicationAttempt {
    * @return attempt
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_ATTEMPT, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public Integer getAttempt() {
     return attempt;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_ATTEMPT, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setAttempt(@javax.annotation.Nonnull Integer attempt) {
     this.attempt = attempt;
   }
@@ -111,15 +121,10 @@ public class PublicationAttempt {
    * @return finishedAt
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_FINISHED_AT, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public String getFinishedAt() {
     return finishedAt;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_FINISHED_AT, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setFinishedAt(@javax.annotation.Nonnull String finishedAt) {
     this.finishedAt = finishedAt;
   }
@@ -135,15 +140,10 @@ public class PublicationAttempt {
    * @return result
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_RESULT, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public AttemptResult getResult() {
     return result;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_RESULT, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setResult(@javax.annotation.Nonnull AttemptResult result) {
     this.result = result;
   }
@@ -159,15 +159,10 @@ public class PublicationAttempt {
    * @return retryAt
    */
   @javax.annotation.Nullable
-  @JsonProperty(value = JSON_PROPERTY_RETRY_AT, required = false)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public String getRetryAt() {
     return retryAt;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_RETRY_AT, required = false)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setRetryAt(@javax.annotation.Nullable String retryAt) {
     this.retryAt = retryAt;
   }
@@ -185,15 +180,10 @@ public class PublicationAttempt {
    * @return round
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_ROUND, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public Integer getRound() {
     return round;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_ROUND, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setRound(@javax.annotation.Nonnull Integer round) {
     this.round = round;
   }
@@ -209,15 +199,10 @@ public class PublicationAttempt {
    * @return startedAt
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_STARTED_AT, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public String getStartedAt() {
     return startedAt;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_STARTED_AT, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setStartedAt(@javax.annotation.Nonnull String startedAt) {
     this.startedAt = startedAt;
   }
@@ -233,23 +218,16 @@ public class PublicationAttempt {
    * @return targetId
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_TARGET_ID, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public String getTargetId() {
     return targetId;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_TARGET_ID, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setTargetId(@javax.annotation.Nonnull String targetId) {
     this.targetId = targetId;
   }
 
 
-  /**
-   * Return true if this PublicationAttempt object is equal to o.
-   */
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -296,74 +274,109 @@ public class PublicationAttempt {
     return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
 
-  /**
-   * Convert the instance into URL query string.
-   *
-   * @return URL query string
-   */
-  public String toUrlQueryString() {
-    return toUrlQueryString(null);
+
+  public static HashSet<String> openapiFields;
+  public static HashSet<String> openapiRequiredFields;
+
+  static {
+    // a set of all properties/fields (JSON key names)
+    openapiFields = new HashSet<String>(Arrays.asList("attempt", "finishedAt", "result", "retryAt", "round", "startedAt", "targetId"));
+
+    // a set of required properties/fields (JSON key names)
+    openapiRequiredFields = new HashSet<String>(Arrays.asList("attempt", "finishedAt", "result", "retryAt", "round", "startedAt", "targetId"));
   }
 
   /**
-   * Convert the instance into URL query string.
+   * Validates the JSON Element and throws an exception if issues found
    *
-   * @param prefix prefix of the query string
-   * @return URL query string
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to PublicationAttempt
    */
-  public String toUrlQueryString(String prefix) {
-    String suffix = "";
-    String containerSuffix = "";
-    String containerPrefix = "";
-    if (prefix == null) {
-      // style=form, explode=true, e.g. /pet?name=cat&type=manx
-      prefix = "";
-    } else {
-      // deepObject style e.g. /pet?id[name]=cat&id[type]=manx
-      prefix = prefix + "[";
-      suffix = "]";
-      containerSuffix = "]";
-      containerPrefix = "[";
+  public static void validateJsonElement(JsonElement jsonElement) throws IOException {
+      if (jsonElement == null) {
+        if (!PublicationAttempt.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The required field(s) %s in PublicationAttempt is not found in the empty JSON string", PublicationAttempt.openapiRequiredFields.toString()));
+        }
+      }
+
+      Set<Map.Entry<String, JsonElement>> entries = jsonElement.getAsJsonObject().entrySet();
+      // check to see if the JSON string contains additional fields
+      for (Map.Entry<String, JsonElement> entry : entries) {
+        if (!PublicationAttempt.openapiFields.contains(entry.getKey())) {
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The field `%s` in the JSON string is not defined in the `PublicationAttempt` properties. JSON: %s", entry.getKey(), jsonElement.toString()));
+        }
+      }
+
+      // check to make sure all required properties/fields are present in the JSON string
+      for (String requiredField : PublicationAttempt.openapiRequiredFields) {
+        if (jsonElement.getAsJsonObject().get(requiredField) == null) {
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The required field `%s` is not found in the JSON string: %s", requiredField, jsonElement.toString()));
+        }
+      }
+        JsonObject jsonObj = jsonElement.getAsJsonObject();
+      if (!jsonObj.get("finishedAt").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `finishedAt` to be a primitive type in the JSON string but got `%s`", jsonObj.get("finishedAt").toString()));
+      }
+      // validate the required field `result`
+      AttemptResult.validateJsonElement(jsonObj.get("result"));
+      if ((jsonObj.get("retryAt") != null && !jsonObj.get("retryAt").isJsonNull()) && !jsonObj.get("retryAt").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `retryAt` to be a primitive type in the JSON string but got `%s`", jsonObj.get("retryAt").toString()));
+      }
+      if (!jsonObj.get("startedAt").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `startedAt` to be a primitive type in the JSON string but got `%s`", jsonObj.get("startedAt").toString()));
+      }
+      if (!jsonObj.get("targetId").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `targetId` to be a primitive type in the JSON string but got `%s`", jsonObj.get("targetId").toString()));
+      }
+  }
+
+  public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
+       if (!PublicationAttempt.class.isAssignableFrom(type.getRawType())) {
+         return null; // this class only serializes 'PublicationAttempt' and its subtypes
+       }
+       final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
+       final TypeAdapter<PublicationAttempt> thisAdapter
+                        = gson.getDelegateAdapter(this, TypeToken.get(PublicationAttempt.class));
+
+       return (TypeAdapter<T>) new TypeAdapter<PublicationAttempt>() {
+           @Override
+           public void write(JsonWriter out, PublicationAttempt value) throws IOException {
+             JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
+             elementAdapter.write(out, obj);
+           }
+
+           @Override
+           public PublicationAttempt read(JsonReader in) throws IOException {
+             JsonElement jsonElement = elementAdapter.read(in);
+             validateJsonElement(jsonElement);
+             return thisAdapter.fromJsonTree(jsonElement);
+           }
+
+       }.nullSafe();
     }
+  }
 
-    StringJoiner joiner = new StringJoiner("&");
+  /**
+   * Create an instance of PublicationAttempt given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of PublicationAttempt
+   * @throws IOException if the JSON string is invalid with respect to PublicationAttempt
+   */
+  public static PublicationAttempt fromJson(String jsonString) throws IOException {
+    return JSON.getGson().fromJson(jsonString, PublicationAttempt.class);
+  }
 
-    // add `attempt` to the URL query string
-    if (getAttempt() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%sattempt%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getAttempt()))));
-    }
-
-    // add `finishedAt` to the URL query string
-    if (getFinishedAt() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%sfinishedAt%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getFinishedAt()))));
-    }
-
-    // add `result` to the URL query string
-    if (getResult() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%sresult%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getResult()))));
-    }
-
-    // add `retryAt` to the URL query string
-    if (getRetryAt() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%sretryAt%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getRetryAt()))));
-    }
-
-    // add `round` to the URL query string
-    if (getRound() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%sround%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getRound()))));
-    }
-
-    // add `startedAt` to the URL query string
-    if (getStartedAt() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%sstartedAt%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getStartedAt()))));
-    }
-
-    // add `targetId` to the URL query string
-    if (getTargetId() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%stargetId%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getTargetId()))));
-    }
-
-    return joiner.toString();
+  /**
+   * Convert an instance of PublicationAttempt to an JSON string
+   *
+   * @return JSON string
+   */
+  public String toJson() {
+    return JSON.getGson().toJson(this);
   }
 }
 

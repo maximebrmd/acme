@@ -10,13 +10,22 @@
  * Do not edit the class manually.
  */
 
+
 package social.peal.api;
 
+import social.peal.ApiCallback;
 import social.peal.ApiClient;
 import social.peal.ApiException;
 import social.peal.ApiResponse;
 import social.peal.Configuration;
 import social.peal.Pair;
+import social.peal.ProgressRequestBody;
+import social.peal.ProgressResponseBody;
+
+import com.google.gson.reflect.TypeToken;
+
+import java.io.IOException;
+
 
 import social.peal.model.ApiKey;
 import social.peal.model.ApiKeysRevoke404Response;
@@ -26,509 +35,480 @@ import social.peal.model.NewApiKey;
 import social.peal.model.UnauthenticatedEncoded;
 import social.peal.model.WorkspaceNotFoundEncoded;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import java.io.InputStream;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.net.http.HttpRequest;
-import java.nio.channels.Channels;
-import java.nio.channels.Pipe;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.time.Duration;
-
+import java.lang.reflect.Type;
 import java.util.ArrayList;
-import java.util.StringJoiner;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.function.Consumer;
 
-@javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.27.0")
 public class ApiKeysApi {
-  /**
-   * Utility class for extending HttpRequest.Builder functionality.
-   */
-  private static class HttpRequestBuilderExtensions {
+    private ApiClient localVarApiClient;
+    private int localHostIndex;
+    private String localCustomBaseUrl;
+
+    public ApiKeysApi() {
+        this(Configuration.getDefaultApiClient());
+    }
+
+    public ApiKeysApi(ApiClient apiClient) {
+        this.localVarApiClient = apiClient;
+    }
+
+    public ApiClient getApiClient() {
+        return localVarApiClient;
+    }
+
+    public void setApiClient(ApiClient apiClient) {
+        this.localVarApiClient = apiClient;
+    }
+
+    public int getHostIndex() {
+        return localHostIndex;
+    }
+
+    public void setHostIndex(int hostIndex) {
+        this.localHostIndex = hostIndex;
+    }
+
+    public String getCustomBaseUrl() {
+        return localCustomBaseUrl;
+    }
+
+    public void setCustomBaseUrl(String customBaseUrl) {
+        this.localCustomBaseUrl = customBaseUrl;
+    }
+
     /**
-     * Adds additional headers to the provided HttpRequest.Builder. Useful for adding method/endpoint specific headers.
-     *
-     * @param builder the HttpRequest.Builder to which headers will be added
-     * @param headers a map of header names and values to add; may be null
-     * @return the same HttpRequest.Builder instance with the additional headers set
+     * Build call for apiKeysCreate
+     * @param workspaceId  (required)
+     * @param newApiKey  (required)
+     * @param _callback Callback for upload/download progress
+     * @return Call to execute
+     * @throws ApiException If fail to serialize the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 201 </td><td> CreatedApiKey </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+     </table>
      */
-    static HttpRequest.Builder withAdditionalHeaders(HttpRequest.Builder builder, Map<String, String> headers) {
-        if (headers != null) {
-            for (Map.Entry<String, String> entry : headers.entrySet()) {
-                builder.header(entry.getKey(), entry.getValue());
-            }
-        }
-        return builder;
-    }
-  }
-  private final HttpClient memberVarHttpClient;
-  private final ObjectMapper memberVarObjectMapper;
-  private final String memberVarBaseUri;
-  private final Consumer<HttpRequest.Builder> memberVarInterceptor;
-  private final Duration memberVarReadTimeout;
-  private final Consumer<HttpResponse<InputStream>> memberVarResponseInterceptor;
-  private final Consumer<HttpResponse<InputStream>> memberVarAsyncResponseInterceptor;
+    public okhttp3.Call apiKeysCreateCall(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull NewApiKey newApiKey, final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
 
-  public ApiKeysApi() {
-    this(Configuration.getDefaultApiClient());
-  }
-
-  public ApiKeysApi(ApiClient apiClient) {
-    memberVarHttpClient = apiClient.getHttpClient();
-    memberVarObjectMapper = apiClient.getObjectMapper();
-    memberVarBaseUri = apiClient.getBaseUri();
-    memberVarInterceptor = apiClient.getRequestInterceptor();
-    memberVarReadTimeout = apiClient.getReadTimeout();
-    memberVarResponseInterceptor = apiClient.getResponseInterceptor();
-    memberVarAsyncResponseInterceptor = apiClient.getAsyncResponseInterceptor();
-  }
-
-
-  protected ApiException getApiException(String operationId, HttpResponse<InputStream> response) throws IOException {
-    InputStream responseBody = ApiClient.getResponseBody(response);
-    String body = null;
-    try {
-      body = responseBody == null ? null : new String(responseBody.readAllBytes());
-    } finally {
-      if (responseBody != null) {
-        responseBody.close();
-      }
-    }
-    String message = formatExceptionMessage(operationId, response.statusCode(), body);
-    return new ApiException(response.statusCode(), message, response.headers(), body);
-  }
-
-  private String formatExceptionMessage(String operationId, int statusCode, String body) {
-    if (body == null || body.isEmpty()) {
-      body = "[no body]";
-    }
-    return operationId + " call failed with: " + statusCode + " - " + body;
-  }
-
-  /**
-   * Download file from the given response.
-   *
-   * @param response Response
-   * @return File
-   * @throws ApiException If fail to read file content from response and write to disk
-   */
-  public File downloadFileFromResponse(HttpResponse<InputStream> response, InputStream responseBody) throws ApiException {
-    if (responseBody == null) {
-      throw new ApiException(new IOException("Response body is empty"));
-    }
-    try {
-      File file = prepareDownloadFile(response);
-      java.nio.file.Files.copy(responseBody, file.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-      return file;
-    } catch (IOException e) {
-      throw new ApiException(e);
-    }
-  }
-
-  /**
-   * <p>Prepare the file for download from the response.</p>
-   *
-   * @param response a {@link java.net.http.HttpResponse} object.
-   * @return a {@link java.io.File} object.
-   * @throws java.io.IOException if any.
-   */
-  private File prepareDownloadFile(HttpResponse<InputStream> response) throws IOException {
-    String filename = null;
-    java.util.Optional<String> contentDisposition = response.headers().firstValue("Content-Disposition");
-    if (contentDisposition.isPresent() && !"".equals(contentDisposition.get())) {
-      // Get filename from the Content-Disposition header.
-      java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("filename=['\"]?([^'\"\\s]+)['\"]?");
-      java.util.regex.Matcher matcher = pattern.matcher(contentDisposition.get());
-      if (matcher.find())
-        filename = matcher.group(1);
-    }
-    File file = null;
-    if (filename != null) {
-      java.nio.file.Path tempDir = java.nio.file.Files.createTempDirectory("swagger-gen-native");
-      java.nio.file.Path filePath = java.nio.file.Files.createFile(tempDir.resolve(filename));
-      file = filePath.toFile();
-      tempDir.toFile().deleteOnExit();   // best effort cleanup
-      file.deleteOnExit(); // best effort cleanup
-    } else {
-      file = java.nio.file.Files.createTempFile("download-", "").toFile();
-      file.deleteOnExit(); // best effort cleanup
-    }
-    return file;
-  }
-
-  /**
-   * Create an API key
-   * Creates an API key for the workspace with some of the caller&#39;s permissions, and answers with the key itself, which is not shown again. Needs apiKey:create, and a signed-in member: API keys cannot create keys.
-   * @param workspaceId  (required)
-   * @param newApiKey  (required)
-   * @return CreatedApiKey
-   * @throws ApiException if fails to make API call
-   */
-  public CreatedApiKey apiKeysCreate(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull NewApiKey newApiKey) throws ApiException {
-    return apiKeysCreate(workspaceId, newApiKey, null);
-  }
-
-  /**
-   * Create an API key
-   * Creates an API key for the workspace with some of the caller&#39;s permissions, and answers with the key itself, which is not shown again. Needs apiKey:create, and a signed-in member: API keys cannot create keys.
-   * @param workspaceId  (required)
-   * @param newApiKey  (required)
-   * @param headers Optional headers to include in the request
-   * @return CreatedApiKey
-   * @throws ApiException if fails to make API call
-   */
-  public CreatedApiKey apiKeysCreate(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull NewApiKey newApiKey, Map<String, String> headers) throws ApiException {
-    ApiResponse<CreatedApiKey> localVarResponse = apiKeysCreateWithHttpInfo(workspaceId, newApiKey, headers);
-    return localVarResponse.getData();
-  }
-
-  /**
-   * Create an API key
-   * Creates an API key for the workspace with some of the caller&#39;s permissions, and answers with the key itself, which is not shown again. Needs apiKey:create, and a signed-in member: API keys cannot create keys.
-   * @param workspaceId  (required)
-   * @param newApiKey  (required)
-   * @return ApiResponse&lt;CreatedApiKey&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<CreatedApiKey> apiKeysCreateWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull NewApiKey newApiKey) throws ApiException {
-    return apiKeysCreateWithHttpInfo(workspaceId, newApiKey, null);
-  }
-
-  /**
-   * Create an API key
-   * Creates an API key for the workspace with some of the caller&#39;s permissions, and answers with the key itself, which is not shown again. Needs apiKey:create, and a signed-in member: API keys cannot create keys.
-   * @param workspaceId  (required)
-   * @param newApiKey  (required)
-   * @param headers Optional headers to include in the request
-   * @return ApiResponse&lt;CreatedApiKey&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<CreatedApiKey> apiKeysCreateWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull NewApiKey newApiKey, Map<String, String> headers) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = apiKeysCreateRequestBuilder(workspaceId, newApiKey, headers);
-    try {
-      HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
-          localVarRequestBuilder.build(),
-          HttpResponse.BodyHandlers.ofInputStream());
-      if (memberVarResponseInterceptor != null) {
-        memberVarResponseInterceptor.accept(localVarResponse);
-      }
-      InputStream localVarResponseBody = null;
-      try {
-        if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("apiKeysCreate", localVarResponse);
-        }
-        localVarResponseBody = ApiClient.getResponseBody(localVarResponse);
-        if (localVarResponseBody == null) {
-          return new ApiResponse<CreatedApiKey>(
-              localVarResponse.statusCode(),
-              localVarResponse.headers().map(),
-              null
-          );
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
         }
 
-        
-        
-        String responseBody = new String(localVarResponseBody.readAllBytes());
-        CreatedApiKey responseValue = responseBody.isBlank()? null: memberVarObjectMapper.readValue(responseBody, new TypeReference<CreatedApiKey>() {});
-        
+        Object localVarPostBody = newApiKey;
 
-        return new ApiResponse<CreatedApiKey>(
-            localVarResponse.statusCode(),
-            localVarResponse.headers().map(),
-            responseValue
-        );
-      } finally {
-        if (localVarResponseBody != null) {
-          localVarResponseBody.close();
-        }
-      }
-    } catch (IOException e) {
-      throw new ApiException(e);
-    }
-    catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new ApiException(e);
-    }
-  }
+        // create path and map variables
+        String localVarPath = "/api/workspaces/{workspaceId}/api-keys"
+            .replace("{" + "workspaceId" + "}", localVarApiClient.escapeString(workspaceId.toString()));
 
-  private HttpRequest.Builder apiKeysCreateRequestBuilder(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull NewApiKey newApiKey, Map<String, String> headers) throws ApiException {
-    // verify the required parameter 'workspaceId' is set
-    if (workspaceId == null) {
-      throw new ApiException(400, "Missing the required parameter 'workspaceId' when calling apiKeysCreate");
-    }
-    // verify the required parameter 'newApiKey' is set
-    if (newApiKey == null) {
-      throw new ApiException(400, "Missing the required parameter 'newApiKey' when calling apiKeysCreate");
-    }
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
 
-    HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
-
-    String localVarPath = "/api/workspaces/{workspaceId}/api-keys"
-        .replace("{workspaceId}", ApiClient.urlEncode(workspaceId.toString()));
-
-    localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
-
-    localVarRequestBuilder.header("Content-Type", "application/json");
-    localVarRequestBuilder.header("Accept", "application/json");
-
-    try {
-      byte[] localVarPostBody = memberVarObjectMapper.writeValueAsBytes(newApiKey);
-      localVarRequestBuilder.method("POST", HttpRequest.BodyPublishers.ofByteArray(localVarPostBody));
-    } catch (IOException e) {
-      throw new ApiException(e);
-    }
-    if (memberVarReadTimeout != null) {
-      localVarRequestBuilder.timeout(memberVarReadTimeout);
-    }
-    // Add custom headers if provided
-    localVarRequestBuilder = HttpRequestBuilderExtensions.withAdditionalHeaders(localVarRequestBuilder, headers);
-    if (memberVarInterceptor != null) {
-      memberVarInterceptor.accept(localVarRequestBuilder);
-    }
-    return localVarRequestBuilder;
-  }
-
-  /**
-   * List API keys
-   * Lists the workspace&#39;s API keys. Needs apiKey:read.
-   * @param workspaceId  (required)
-   * @return List&lt;ApiKey&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public List<ApiKey> apiKeysList(@javax.annotation.Nonnull String workspaceId) throws ApiException {
-    return apiKeysList(workspaceId, null);
-  }
-
-  /**
-   * List API keys
-   * Lists the workspace&#39;s API keys. Needs apiKey:read.
-   * @param workspaceId  (required)
-   * @param headers Optional headers to include in the request
-   * @return List&lt;ApiKey&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public List<ApiKey> apiKeysList(@javax.annotation.Nonnull String workspaceId, Map<String, String> headers) throws ApiException {
-    ApiResponse<List<ApiKey>> localVarResponse = apiKeysListWithHttpInfo(workspaceId, headers);
-    return localVarResponse.getData();
-  }
-
-  /**
-   * List API keys
-   * Lists the workspace&#39;s API keys. Needs apiKey:read.
-   * @param workspaceId  (required)
-   * @return ApiResponse&lt;List&lt;ApiKey&gt;&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<List<ApiKey>> apiKeysListWithHttpInfo(@javax.annotation.Nonnull String workspaceId) throws ApiException {
-    return apiKeysListWithHttpInfo(workspaceId, null);
-  }
-
-  /**
-   * List API keys
-   * Lists the workspace&#39;s API keys. Needs apiKey:read.
-   * @param workspaceId  (required)
-   * @param headers Optional headers to include in the request
-   * @return ApiResponse&lt;List&lt;ApiKey&gt;&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<List<ApiKey>> apiKeysListWithHttpInfo(@javax.annotation.Nonnull String workspaceId, Map<String, String> headers) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = apiKeysListRequestBuilder(workspaceId, headers);
-    try {
-      HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
-          localVarRequestBuilder.build(),
-          HttpResponse.BodyHandlers.ofInputStream());
-      if (memberVarResponseInterceptor != null) {
-        memberVarResponseInterceptor.accept(localVarResponse);
-      }
-      InputStream localVarResponseBody = null;
-      try {
-        if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("apiKeysList", localVarResponse);
-        }
-        localVarResponseBody = ApiClient.getResponseBody(localVarResponse);
-        if (localVarResponseBody == null) {
-          return new ApiResponse<List<ApiKey>>(
-              localVarResponse.statusCode(),
-              localVarResponse.headers().map(),
-              null
-          );
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
         }
 
-        
-        
-        String responseBody = new String(localVarResponseBody.readAllBytes());
-        List<ApiKey> responseValue = responseBody.isBlank()? null: memberVarObjectMapper.readValue(responseBody, new TypeReference<List<ApiKey>>() {});
-        
-
-        return new ApiResponse<List<ApiKey>>(
-            localVarResponse.statusCode(),
-            localVarResponse.headers().map(),
-            responseValue
-        );
-      } finally {
-        if (localVarResponseBody != null) {
-          localVarResponseBody.close();
+        final String[] localVarContentTypes = {
+            "application/json"
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
         }
-      }
-    } catch (IOException e) {
-      throw new ApiException(e);
-    }
-    catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new ApiException(e);
-    }
-  }
 
-  private HttpRequest.Builder apiKeysListRequestBuilder(@javax.annotation.Nonnull String workspaceId, Map<String, String> headers) throws ApiException {
-    // verify the required parameter 'workspaceId' is set
-    if (workspaceId == null) {
-      throw new ApiException(400, "Missing the required parameter 'workspaceId' when calling apiKeysList");
+        String[] localVarAuthNames = new String[] { "bearer" };
+        return localVarApiClient.buildCall(basePath, localVarPath, "POST", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
 
-    HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
-
-    String localVarPath = "/api/workspaces/{workspaceId}/api-keys"
-        .replace("{workspaceId}", ApiClient.urlEncode(workspaceId.toString()));
-
-    localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
-
-    localVarRequestBuilder.header("Accept", "application/json");
-
-    localVarRequestBuilder.method("GET", HttpRequest.BodyPublishers.noBody());
-    if (memberVarReadTimeout != null) {
-      localVarRequestBuilder.timeout(memberVarReadTimeout);
-    }
-    // Add custom headers if provided
-    localVarRequestBuilder = HttpRequestBuilderExtensions.withAdditionalHeaders(localVarRequestBuilder, headers);
-    if (memberVarInterceptor != null) {
-      memberVarInterceptor.accept(localVarRequestBuilder);
-    }
-    return localVarRequestBuilder;
-  }
-
-  /**
-   * Revoke an API key
-   * Revokes an API key of the workspace: it stops working at once. Needs apiKey:delete.
-   * @param workspaceId  (required)
-   * @param apiKeyId  (required)
-   * @throws ApiException if fails to make API call
-   */
-  public void apiKeysRevoke(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String apiKeyId) throws ApiException {
-    apiKeysRevoke(workspaceId, apiKeyId, null);
-  }
-
-  /**
-   * Revoke an API key
-   * Revokes an API key of the workspace: it stops working at once. Needs apiKey:delete.
-   * @param workspaceId  (required)
-   * @param apiKeyId  (required)
-   * @param headers Optional headers to include in the request
-   * @throws ApiException if fails to make API call
-   */
-  public void apiKeysRevoke(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String apiKeyId, Map<String, String> headers) throws ApiException {
-    apiKeysRevokeWithHttpInfo(workspaceId, apiKeyId, headers);
-  }
-
-  /**
-   * Revoke an API key
-   * Revokes an API key of the workspace: it stops working at once. Needs apiKey:delete.
-   * @param workspaceId  (required)
-   * @param apiKeyId  (required)
-   * @return ApiResponse&lt;Void&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<Void> apiKeysRevokeWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String apiKeyId) throws ApiException {
-    return apiKeysRevokeWithHttpInfo(workspaceId, apiKeyId, null);
-  }
-
-  /**
-   * Revoke an API key
-   * Revokes an API key of the workspace: it stops working at once. Needs apiKey:delete.
-   * @param workspaceId  (required)
-   * @param apiKeyId  (required)
-   * @param headers Optional headers to include in the request
-   * @return ApiResponse&lt;Void&gt;
-   * @throws ApiException if fails to make API call
-   */
-  public ApiResponse<Void> apiKeysRevokeWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String apiKeyId, Map<String, String> headers) throws ApiException {
-    HttpRequest.Builder localVarRequestBuilder = apiKeysRevokeRequestBuilder(workspaceId, apiKeyId, headers);
-    try {
-      HttpResponse<InputStream> localVarResponse = memberVarHttpClient.send(
-          localVarRequestBuilder.build(),
-          HttpResponse.BodyHandlers.ofInputStream());
-      if (memberVarResponseInterceptor != null) {
-        memberVarResponseInterceptor.accept(localVarResponse);
-      }
-      InputStream localVarResponseBody = null;
-      try {
-        if (localVarResponse.statusCode()/ 100 != 2) {
-          throw getApiException("apiKeysRevoke", localVarResponse);
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call apiKeysCreateValidateBeforeCall(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull NewApiKey newApiKey, final ApiCallback _callback) throws ApiException {
+        // verify the required parameter 'workspaceId' is set
+        if (workspaceId == null) {
+            throw new ApiException("Missing the required parameter 'workspaceId' when calling apiKeysCreate(Async)");
         }
-        localVarResponseBody = ApiClient.getResponseBody(localVarResponse);
-        if (localVarResponseBody != null) {
-          localVarResponseBody.readAllBytes();
+
+        // verify the required parameter 'newApiKey' is set
+        if (newApiKey == null) {
+            throw new ApiException("Missing the required parameter 'newApiKey' when calling apiKeysCreate(Async)");
         }
-        return new ApiResponse<>(
-            localVarResponse.statusCode(),
-            localVarResponse.headers().map(),
-            null
-        );
-      } finally {
-        if (localVarResponseBody != null) {
-          localVarResponseBody.close();
+
+        return apiKeysCreateCall(workspaceId, newApiKey, _callback);
+
+    }
+
+    /**
+     * Create an API key
+     * Creates an API key for the workspace with some of the caller&#39;s permissions, and answers with the key itself, which is not shown again. Needs apiKey:create, and a signed-in member: API keys cannot create keys.
+     * @param workspaceId  (required)
+     * @param newApiKey  (required)
+     * @return CreatedApiKey
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 201 </td><td> CreatedApiKey </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+     </table>
+     */
+    public CreatedApiKey apiKeysCreate(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull NewApiKey newApiKey) throws ApiException {
+        ApiResponse<CreatedApiKey> localVarResp = apiKeysCreateWithHttpInfo(workspaceId, newApiKey);
+        return localVarResp.getData();
+    }
+
+    /**
+     * Create an API key
+     * Creates an API key for the workspace with some of the caller&#39;s permissions, and answers with the key itself, which is not shown again. Needs apiKey:create, and a signed-in member: API keys cannot create keys.
+     * @param workspaceId  (required)
+     * @param newApiKey  (required)
+     * @return ApiResponse&lt;CreatedApiKey&gt;
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 201 </td><td> CreatedApiKey </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+     </table>
+     */
+    public ApiResponse<CreatedApiKey> apiKeysCreateWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull NewApiKey newApiKey) throws ApiException {
+        okhttp3.Call localVarCall = apiKeysCreateValidateBeforeCall(workspaceId, newApiKey, null);
+        Type localVarReturnType = new TypeToken<CreatedApiKey>(){}.getType();
+        return localVarApiClient.execute(localVarCall, localVarReturnType);
+    }
+
+    /**
+     * Create an API key (asynchronously)
+     * Creates an API key for the workspace with some of the caller&#39;s permissions, and answers with the key itself, which is not shown again. Needs apiKey:create, and a signed-in member: API keys cannot create keys.
+     * @param workspaceId  (required)
+     * @param newApiKey  (required)
+     * @param _callback The callback to be executed when the API call finishes
+     * @return The request call
+     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 201 </td><td> CreatedApiKey </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call apiKeysCreateAsync(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull NewApiKey newApiKey, final ApiCallback<CreatedApiKey> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = apiKeysCreateValidateBeforeCall(workspaceId, newApiKey, _callback);
+        Type localVarReturnType = new TypeToken<CreatedApiKey>(){}.getType();
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
+        return localVarCall;
+    }
+    /**
+     * Build call for apiKeysList
+     * @param workspaceId  (required)
+     * @param _callback Callback for upload/download progress
+     * @return Call to execute
+     * @throws ApiException If fail to serialize the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Success </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call apiKeysListCall(@javax.annotation.Nonnull String workspaceId, final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
+
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
         }
-      }
-    } catch (IOException e) {
-      throw new ApiException(e);
+
+        Object localVarPostBody = null;
+
+        // create path and map variables
+        String localVarPath = "/api/workspaces/{workspaceId}/api-keys"
+            .replace("{" + "workspaceId" + "}", localVarApiClient.escapeString(workspaceId.toString()));
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
+        }
+
+        String[] localVarAuthNames = new String[] { "bearer" };
+        return localVarApiClient.buildCall(basePath, localVarPath, "GET", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
     }
-    catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new ApiException(e);
-    }
-  }
 
-  private HttpRequest.Builder apiKeysRevokeRequestBuilder(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String apiKeyId, Map<String, String> headers) throws ApiException {
-    // verify the required parameter 'workspaceId' is set
-    if (workspaceId == null) {
-      throw new ApiException(400, "Missing the required parameter 'workspaceId' when calling apiKeysRevoke");
-    }
-    // verify the required parameter 'apiKeyId' is set
-    if (apiKeyId == null) {
-      throw new ApiException(400, "Missing the required parameter 'apiKeyId' when calling apiKeysRevoke");
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call apiKeysListValidateBeforeCall(@javax.annotation.Nonnull String workspaceId, final ApiCallback _callback) throws ApiException {
+        // verify the required parameter 'workspaceId' is set
+        if (workspaceId == null) {
+            throw new ApiException("Missing the required parameter 'workspaceId' when calling apiKeysList(Async)");
+        }
+
+        return apiKeysListCall(workspaceId, _callback);
+
     }
 
-    HttpRequest.Builder localVarRequestBuilder = HttpRequest.newBuilder();
-
-    String localVarPath = "/api/workspaces/{workspaceId}/api-keys/{apiKeyId}"
-        .replace("{workspaceId}", ApiClient.urlEncode(workspaceId.toString()))
-        .replace("{apiKeyId}", ApiClient.urlEncode(apiKeyId.toString()));
-
-    localVarRequestBuilder.uri(URI.create(memberVarBaseUri + localVarPath));
-
-    localVarRequestBuilder.header("Accept", "application/json");
-
-    localVarRequestBuilder.method("DELETE", HttpRequest.BodyPublishers.noBody());
-    if (memberVarReadTimeout != null) {
-      localVarRequestBuilder.timeout(memberVarReadTimeout);
+    /**
+     * List API keys
+     * Lists the workspace&#39;s API keys. Needs apiKey:read.
+     * @param workspaceId  (required)
+     * @return List&lt;ApiKey&gt;
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Success </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+     </table>
+     */
+    public List<ApiKey> apiKeysList(@javax.annotation.Nonnull String workspaceId) throws ApiException {
+        ApiResponse<List<ApiKey>> localVarResp = apiKeysListWithHttpInfo(workspaceId);
+        return localVarResp.getData();
     }
-    // Add custom headers if provided
-    localVarRequestBuilder = HttpRequestBuilderExtensions.withAdditionalHeaders(localVarRequestBuilder, headers);
-    if (memberVarInterceptor != null) {
-      memberVarInterceptor.accept(localVarRequestBuilder);
-    }
-    return localVarRequestBuilder;
-  }
 
+    /**
+     * List API keys
+     * Lists the workspace&#39;s API keys. Needs apiKey:read.
+     * @param workspaceId  (required)
+     * @return ApiResponse&lt;List&lt;ApiKey&gt;&gt;
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Success </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+     </table>
+     */
+    public ApiResponse<List<ApiKey>> apiKeysListWithHttpInfo(@javax.annotation.Nonnull String workspaceId) throws ApiException {
+        okhttp3.Call localVarCall = apiKeysListValidateBeforeCall(workspaceId, null);
+        Type localVarReturnType = new TypeToken<List<ApiKey>>(){}.getType();
+        return localVarApiClient.execute(localVarCall, localVarReturnType);
+    }
+
+    /**
+     * List API keys (asynchronously)
+     * Lists the workspace&#39;s API keys. Needs apiKey:read.
+     * @param workspaceId  (required)
+     * @param _callback The callback to be executed when the API call finishes
+     * @return The request call
+     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 200 </td><td> Success </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call apiKeysListAsync(@javax.annotation.Nonnull String workspaceId, final ApiCallback<List<ApiKey>> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = apiKeysListValidateBeforeCall(workspaceId, _callback);
+        Type localVarReturnType = new TypeToken<List<ApiKey>>(){}.getType();
+        localVarApiClient.executeAsync(localVarCall, localVarReturnType, _callback);
+        return localVarCall;
+    }
+    /**
+     * Build call for apiKeysRevoke
+     * @param workspaceId  (required)
+     * @param apiKeyId  (required)
+     * @param _callback Callback for upload/download progress
+     * @return Call to execute
+     * @throws ApiException If fail to serialize the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 204 </td><td> &lt;No Content&gt; </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no API key with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call apiKeysRevokeCall(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String apiKeyId, final ApiCallback _callback) throws ApiException {
+        String basePath = null;
+        // Operation Servers
+        String[] localBasePaths = new String[] {  };
+
+        // Determine Base Path to Use
+        if (localCustomBaseUrl != null){
+            basePath = localCustomBaseUrl;
+        } else if ( localBasePaths.length > 0 ) {
+            basePath = localBasePaths[localHostIndex];
+        } else {
+            basePath = null;
+        }
+
+        Object localVarPostBody = null;
+
+        // create path and map variables
+        String localVarPath = "/api/workspaces/{workspaceId}/api-keys/{apiKeyId}"
+            .replace("{" + "workspaceId" + "}", localVarApiClient.escapeString(workspaceId.toString()))
+            .replace("{" + "apiKeyId" + "}", localVarApiClient.escapeString(apiKeyId.toString()));
+
+        List<Pair> localVarQueryParams = new ArrayList<Pair>();
+        List<Pair> localVarCollectionQueryParams = new ArrayList<Pair>();
+        Map<String, String> localVarHeaderParams = new HashMap<String, String>();
+        Map<String, String> localVarCookieParams = new HashMap<String, String>();
+        Map<String, Object> localVarFormParams = new HashMap<String, Object>();
+
+        final String[] localVarAccepts = {
+            "application/json"
+        };
+        final String localVarAccept = localVarApiClient.selectHeaderAccept(localVarAccepts);
+        if (localVarAccept != null) {
+            localVarHeaderParams.put("Accept", localVarAccept);
+        }
+
+        final String[] localVarContentTypes = {
+        };
+        final String localVarContentType = localVarApiClient.selectHeaderContentType(localVarContentTypes);
+        if (localVarContentType != null) {
+            localVarHeaderParams.put("Content-Type", localVarContentType);
+        }
+
+        String[] localVarAuthNames = new String[] { "bearer" };
+        return localVarApiClient.buildCall(basePath, localVarPath, "DELETE", localVarQueryParams, localVarCollectionQueryParams, localVarPostBody, localVarHeaderParams, localVarCookieParams, localVarFormParams, localVarAuthNames, _callback);
+    }
+
+    @SuppressWarnings("rawtypes")
+    private okhttp3.Call apiKeysRevokeValidateBeforeCall(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String apiKeyId, final ApiCallback _callback) throws ApiException {
+        // verify the required parameter 'workspaceId' is set
+        if (workspaceId == null) {
+            throw new ApiException("Missing the required parameter 'workspaceId' when calling apiKeysRevoke(Async)");
+        }
+
+        // verify the required parameter 'apiKeyId' is set
+        if (apiKeyId == null) {
+            throw new ApiException("Missing the required parameter 'apiKeyId' when calling apiKeysRevoke(Async)");
+        }
+
+        return apiKeysRevokeCall(workspaceId, apiKeyId, _callback);
+
+    }
+
+    /**
+     * Revoke an API key
+     * Revokes an API key of the workspace: it stops working at once. Needs apiKey:delete.
+     * @param workspaceId  (required)
+     * @param apiKeyId  (required)
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 204 </td><td> &lt;No Content&gt; </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no API key with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+     </table>
+     */
+    public void apiKeysRevoke(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String apiKeyId) throws ApiException {
+        apiKeysRevokeWithHttpInfo(workspaceId, apiKeyId);
+    }
+
+    /**
+     * Revoke an API key
+     * Revokes an API key of the workspace: it stops working at once. Needs apiKey:delete.
+     * @param workspaceId  (required)
+     * @param apiKeyId  (required)
+     * @return ApiResponse&lt;Void&gt;
+     * @throws ApiException If fail to call the API, e.g. server error or cannot deserialize the response body
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 204 </td><td> &lt;No Content&gt; </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no API key with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+     </table>
+     */
+    public ApiResponse<Void> apiKeysRevokeWithHttpInfo(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String apiKeyId) throws ApiException {
+        okhttp3.Call localVarCall = apiKeysRevokeValidateBeforeCall(workspaceId, apiKeyId, null);
+        return localVarApiClient.execute(localVarCall);
+    }
+
+    /**
+     * Revoke an API key (asynchronously)
+     * Revokes an API key of the workspace: it stops working at once. Needs apiKey:delete.
+     * @param workspaceId  (required)
+     * @param apiKeyId  (required)
+     * @param _callback The callback to be executed when the API call finishes
+     * @return The request call
+     * @throws ApiException If fail to process the API call, e.g. serializing the request body object
+     * @http.response.details
+     <table border="1">
+       <caption>Response Details</caption>
+        <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
+        <tr><td> 204 </td><td> &lt;No Content&gt; </td><td>  -  </td></tr>
+        <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
+        <tr><td> 404 </td><td> The workspace has no API key with this id. | No workspace with this id is open to the caller. </td><td>  -  </td></tr>
+     </table>
+     */
+    public okhttp3.Call apiKeysRevokeAsync(@javax.annotation.Nonnull String workspaceId, @javax.annotation.Nonnull String apiKeyId, final ApiCallback<Void> _callback) throws ApiException {
+
+        okhttp3.Call localVarCall = apiKeysRevokeValidateBeforeCall(workspaceId, apiKeyId, _callback);
+        localVarApiClient.executeAsync(localVarCall, _callback);
+        return localVarCall;
+    }
 }

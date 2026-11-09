@@ -141,6 +141,7 @@ from peal.models.notification_preferences_change_email import NotificationPrefer
 from peal.models.notification_preferences_email import NotificationPreferencesEmail
 from peal.models.paid_plan import PaidPlan
 from peal.models.period_usage import PeriodUsage
+from peal.models.permission import Permission
 from peal.models.plan import Plan
 from peal.models.plan_allowances import PlanAllowances
 from peal.models.plan_limit import PlanLimit

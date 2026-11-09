@@ -26,7 +26,7 @@ type ApiKey struct {
 	ExpiresAt NullableString `json:"expiresAt"`
 	Id string `json:"id"`
 	Name string `json:"name"`
-	Permissions []string `json:"permissions"`
+	Permissions []Permission `json:"permissions"`
 	Start NullableString `json:"start"`
 }
 
@@ -36,7 +36,7 @@ type _ApiKey ApiKey
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewApiKey(createdAt string, expiresAt NullableString, id string, name string, permissions []string, start NullableString) *ApiKey {
+func NewApiKey(createdAt string, expiresAt NullableString, id string, name string, permissions []Permission, start NullableString) *ApiKey {
 	this := ApiKey{}
 	this.CreatedAt = createdAt
 	this.ExpiresAt = expiresAt
@@ -154,9 +154,9 @@ func (o *ApiKey) SetName(v string) {
 }
 
 // GetPermissions returns the Permissions field value
-func (o *ApiKey) GetPermissions() []string {
+func (o *ApiKey) GetPermissions() []Permission {
 	if o == nil {
-		var ret []string
+		var ret []Permission
 		return ret
 	}
 
@@ -165,7 +165,7 @@ func (o *ApiKey) GetPermissions() []string {
 
 // GetPermissionsOk returns a tuple with the Permissions field value
 // and a boolean to check if the value has been set.
-func (o *ApiKey) GetPermissionsOk() ([]string, bool) {
+func (o *ApiKey) GetPermissionsOk() ([]Permission, bool) {
 	if o == nil {
 		return nil, false
 	}
@@ -173,7 +173,7 @@ func (o *ApiKey) GetPermissionsOk() ([]string, bool) {
 }
 
 // SetPermissions sets field value
-func (o *ApiKey) SetPermissions(v []string) {
+func (o *ApiKey) SetPermissions(v []Permission) {
 	o.Permissions = v
 }
 

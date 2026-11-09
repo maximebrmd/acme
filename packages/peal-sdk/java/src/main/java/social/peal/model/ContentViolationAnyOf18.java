@@ -13,41 +13,51 @@
 
 package social.peal.model;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.StringJoiner;
 import java.util.Objects;
-import java.util.Map;
-import java.util.HashMap;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.fasterxml.jackson.annotation.JsonValue;
+import com.google.gson.TypeAdapter;
+import com.google.gson.annotations.JsonAdapter;
+import com.google.gson.annotations.SerializedName;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 import java.util.Arrays;
 import social.peal.model.Platform;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonNull;
+import com.google.gson.JsonParseException;
+import com.google.gson.TypeAdapterFactory;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.TypeAdapter;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 
-import social.peal.ApiClient;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import social.peal.JSON;
+
 /**
  * ContentViolationAnyOf18
  */
-@JsonPropertyOrder({
-  ContentViolationAnyOf18.JSON_PROPERTY_TAG,
-  ContentViolationAnyOf18.JSON_PROPERTY_CHANNEL_ID,
-  ContentViolationAnyOf18.JSON_PROPERTY_PLATFORM,
-  ContentViolationAnyOf18.JSON_PROPERTY_MEDIA_ID,
-  ContentViolationAnyOf18.JSON_PROPERTY_BYTE_SIZE,
-  ContentViolationAnyOf18.JSON_PROPERTY_MAXIMUM
-})
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.27.0")
 public class ContentViolationAnyOf18 {
   /**
    * Gets or Sets tag
    */
+  @JsonAdapter(TagEnum.Adapter.class)
   public enum TagEnum {
-    MEDIA_TOO_LARGE(String.valueOf("mediaTooLarge"));
+    MEDIA_TOO_LARGE("mediaTooLarge");
 
     private String value;
 
@@ -55,7 +65,6 @@ public class ContentViolationAnyOf18 {
       this.value = value;
     }
 
-    @JsonValue
     public String getValue() {
       return value;
     }
@@ -65,7 +74,6 @@ public class ContentViolationAnyOf18 {
       return String.valueOf(value);
     }
 
-    @JsonCreator
     public static TagEnum fromValue(String value) {
       for (TagEnum b : TagEnum.values()) {
         if (b.value.equals(value)) {
@@ -74,33 +82,57 @@ public class ContentViolationAnyOf18 {
       }
       throw new IllegalArgumentException("Unexpected value '" + value + "'");
     }
+
+    public static class Adapter extends TypeAdapter<TagEnum> {
+      @Override
+      public void write(final JsonWriter jsonWriter, final TagEnum enumeration) throws IOException {
+        jsonWriter.value(enumeration.getValue());
+      }
+
+      @Override
+      public TagEnum read(final JsonReader jsonReader) throws IOException {
+        String value =  jsonReader.nextString();
+        return TagEnum.fromValue(value);
+      }
+    }
+
+    public static void validateJsonElement(JsonElement jsonElement) throws IOException {
+      String value = jsonElement.getAsString();
+      TagEnum.fromValue(value);
+    }
   }
 
-  public static final String JSON_PROPERTY_TAG = "_tag";
+  public static final String SERIALIZED_NAME_TAG = "_tag";
+  @SerializedName(SERIALIZED_NAME_TAG)
   @javax.annotation.Nonnull
   private TagEnum tag;
 
-  public static final String JSON_PROPERTY_CHANNEL_ID = "channelId";
+  public static final String SERIALIZED_NAME_CHANNEL_ID = "channelId";
+  @SerializedName(SERIALIZED_NAME_CHANNEL_ID)
   @javax.annotation.Nonnull
   private String channelId;
 
-  public static final String JSON_PROPERTY_PLATFORM = "platform";
+  public static final String SERIALIZED_NAME_PLATFORM = "platform";
+  @SerializedName(SERIALIZED_NAME_PLATFORM)
   @javax.annotation.Nonnull
   private Platform platform;
 
-  public static final String JSON_PROPERTY_MEDIA_ID = "mediaId";
+  public static final String SERIALIZED_NAME_MEDIA_ID = "mediaId";
+  @SerializedName(SERIALIZED_NAME_MEDIA_ID)
   @javax.annotation.Nonnull
   private String mediaId;
 
-  public static final String JSON_PROPERTY_BYTE_SIZE = "byteSize";
+  public static final String SERIALIZED_NAME_BYTE_SIZE = "byteSize";
+  @SerializedName(SERIALIZED_NAME_BYTE_SIZE)
   @javax.annotation.Nonnull
   private Integer byteSize;
 
-  public static final String JSON_PROPERTY_MAXIMUM = "maximum";
+  public static final String SERIALIZED_NAME_MAXIMUM = "maximum";
+  @SerializedName(SERIALIZED_NAME_MAXIMUM)
   @javax.annotation.Nonnull
   private Integer maximum;
 
-  public ContentViolationAnyOf18() { 
+  public ContentViolationAnyOf18() {
   }
 
   public ContentViolationAnyOf18 tag(@javax.annotation.Nonnull TagEnum tag) {
@@ -113,15 +145,10 @@ public class ContentViolationAnyOf18 {
    * @return tag
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_TAG, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public TagEnum getTag() {
     return tag;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_TAG, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setTag(@javax.annotation.Nonnull TagEnum tag) {
     this.tag = tag;
   }
@@ -137,15 +164,10 @@ public class ContentViolationAnyOf18 {
    * @return channelId
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_CHANNEL_ID, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public String getChannelId() {
     return channelId;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_CHANNEL_ID, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setChannelId(@javax.annotation.Nonnull String channelId) {
     this.channelId = channelId;
   }
@@ -161,15 +183,10 @@ public class ContentViolationAnyOf18 {
    * @return platform
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_PLATFORM, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public Platform getPlatform() {
     return platform;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_PLATFORM, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setPlatform(@javax.annotation.Nonnull Platform platform) {
     this.platform = platform;
   }
@@ -185,15 +202,10 @@ public class ContentViolationAnyOf18 {
    * @return mediaId
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_MEDIA_ID, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public String getMediaId() {
     return mediaId;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_MEDIA_ID, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setMediaId(@javax.annotation.Nonnull String mediaId) {
     this.mediaId = mediaId;
   }
@@ -211,15 +223,10 @@ public class ContentViolationAnyOf18 {
    * @return byteSize
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_BYTE_SIZE, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public Integer getByteSize() {
     return byteSize;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_BYTE_SIZE, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setByteSize(@javax.annotation.Nonnull Integer byteSize) {
     this.byteSize = byteSize;
   }
@@ -237,23 +244,16 @@ public class ContentViolationAnyOf18 {
    * @return maximum
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_MAXIMUM, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public Integer getMaximum() {
     return maximum;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_MAXIMUM, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setMaximum(@javax.annotation.Nonnull Integer maximum) {
     this.maximum = maximum;
   }
 
 
-  /**
-   * Return true if this ContentViolation_anyOf_18 object is equal to o.
-   */
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -298,69 +298,108 @@ public class ContentViolationAnyOf18 {
     return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
 
-  /**
-   * Convert the instance into URL query string.
-   *
-   * @return URL query string
-   */
-  public String toUrlQueryString() {
-    return toUrlQueryString(null);
+
+  public static HashSet<String> openapiFields;
+  public static HashSet<String> openapiRequiredFields;
+
+  static {
+    // a set of all properties/fields (JSON key names)
+    openapiFields = new HashSet<String>(Arrays.asList("_tag", "channelId", "platform", "mediaId", "byteSize", "maximum"));
+
+    // a set of required properties/fields (JSON key names)
+    openapiRequiredFields = new HashSet<String>(Arrays.asList("_tag", "channelId", "platform", "mediaId", "byteSize", "maximum"));
   }
 
   /**
-   * Convert the instance into URL query string.
+   * Validates the JSON Element and throws an exception if issues found
    *
-   * @param prefix prefix of the query string
-   * @return URL query string
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to ContentViolationAnyOf18
    */
-  public String toUrlQueryString(String prefix) {
-    String suffix = "";
-    String containerSuffix = "";
-    String containerPrefix = "";
-    if (prefix == null) {
-      // style=form, explode=true, e.g. /pet?name=cat&type=manx
-      prefix = "";
-    } else {
-      // deepObject style e.g. /pet?id[name]=cat&id[type]=manx
-      prefix = prefix + "[";
-      suffix = "]";
-      containerSuffix = "]";
-      containerPrefix = "[";
+  public static void validateJsonElement(JsonElement jsonElement) throws IOException {
+      if (jsonElement == null) {
+        if (!ContentViolationAnyOf18.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The required field(s) %s in ContentViolationAnyOf18 is not found in the empty JSON string", ContentViolationAnyOf18.openapiRequiredFields.toString()));
+        }
+      }
+
+      Set<Map.Entry<String, JsonElement>> entries = jsonElement.getAsJsonObject().entrySet();
+      // check to see if the JSON string contains additional fields
+      for (Map.Entry<String, JsonElement> entry : entries) {
+        if (!ContentViolationAnyOf18.openapiFields.contains(entry.getKey())) {
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The field `%s` in the JSON string is not defined in the `ContentViolationAnyOf18` properties. JSON: %s", entry.getKey(), jsonElement.toString()));
+        }
+      }
+
+      // check to make sure all required properties/fields are present in the JSON string
+      for (String requiredField : ContentViolationAnyOf18.openapiRequiredFields) {
+        if (jsonElement.getAsJsonObject().get(requiredField) == null) {
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The required field `%s` is not found in the JSON string: %s", requiredField, jsonElement.toString()));
+        }
+      }
+        JsonObject jsonObj = jsonElement.getAsJsonObject();
+      if (!jsonObj.get("_tag").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `_tag` to be a primitive type in the JSON string but got `%s`", jsonObj.get("_tag").toString()));
+      }
+      // validate the required field `_tag`
+      TagEnum.validateJsonElement(jsonObj.get("_tag"));
+      if (!jsonObj.get("channelId").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `channelId` to be a primitive type in the JSON string but got `%s`", jsonObj.get("channelId").toString()));
+      }
+      // validate the required field `platform`
+      Platform.validateJsonElement(jsonObj.get("platform"));
+      if (!jsonObj.get("mediaId").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `mediaId` to be a primitive type in the JSON string but got `%s`", jsonObj.get("mediaId").toString()));
+      }
+  }
+
+  public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
+       if (!ContentViolationAnyOf18.class.isAssignableFrom(type.getRawType())) {
+         return null; // this class only serializes 'ContentViolationAnyOf18' and its subtypes
+       }
+       final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
+       final TypeAdapter<ContentViolationAnyOf18> thisAdapter
+                        = gson.getDelegateAdapter(this, TypeToken.get(ContentViolationAnyOf18.class));
+
+       return (TypeAdapter<T>) new TypeAdapter<ContentViolationAnyOf18>() {
+           @Override
+           public void write(JsonWriter out, ContentViolationAnyOf18 value) throws IOException {
+             JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
+             elementAdapter.write(out, obj);
+           }
+
+           @Override
+           public ContentViolationAnyOf18 read(JsonReader in) throws IOException {
+             JsonElement jsonElement = elementAdapter.read(in);
+             validateJsonElement(jsonElement);
+             return thisAdapter.fromJsonTree(jsonElement);
+           }
+
+       }.nullSafe();
     }
+  }
 
-    StringJoiner joiner = new StringJoiner("&");
+  /**
+   * Create an instance of ContentViolationAnyOf18 given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of ContentViolationAnyOf18
+   * @throws IOException if the JSON string is invalid with respect to ContentViolationAnyOf18
+   */
+  public static ContentViolationAnyOf18 fromJson(String jsonString) throws IOException {
+    return JSON.getGson().fromJson(jsonString, ContentViolationAnyOf18.class);
+  }
 
-    // add `_tag` to the URL query string
-    if (getTag() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%s_tag%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getTag()))));
-    }
-
-    // add `channelId` to the URL query string
-    if (getChannelId() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%schannelId%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getChannelId()))));
-    }
-
-    // add `platform` to the URL query string
-    if (getPlatform() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%splatform%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getPlatform()))));
-    }
-
-    // add `mediaId` to the URL query string
-    if (getMediaId() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%smediaId%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getMediaId()))));
-    }
-
-    // add `byteSize` to the URL query string
-    if (getByteSize() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%sbyteSize%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getByteSize()))));
-    }
-
-    // add `maximum` to the URL query string
-    if (getMaximum() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%smaximum%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getMaximum()))));
-    }
-
-    return joiner.toString();
+  /**
+   * Convert an instance of ContentViolationAnyOf18 to an JSON string
+   *
+   * @return JSON string
+   */
+  public String toJson() {
+    return JSON.getGson().toJson(this);
   }
 }
 

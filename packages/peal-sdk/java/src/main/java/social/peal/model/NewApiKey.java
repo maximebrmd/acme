@@ -13,134 +13,63 @@
 
 package social.peal.model;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.StringJoiner;
 import java.util.Objects;
-import java.util.Map;
-import java.util.HashMap;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.fasterxml.jackson.annotation.JsonValue;
+import com.google.gson.TypeAdapter;
+import com.google.gson.annotations.JsonAdapter;
+import com.google.gson.annotations.SerializedName;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import social.peal.model.Permission;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonNull;
+import com.google.gson.JsonParseException;
+import com.google.gson.TypeAdapterFactory;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.TypeAdapter;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 
-import social.peal.ApiClient;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import social.peal.JSON;
+
 /**
  * NewApiKey
  */
-@JsonPropertyOrder({
-  NewApiKey.JSON_PROPERTY_EXPIRES_IN_DAYS,
-  NewApiKey.JSON_PROPERTY_NAME,
-  NewApiKey.JSON_PROPERTY_PERMISSIONS
-})
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.27.0")
 public class NewApiKey {
-  public static final String JSON_PROPERTY_EXPIRES_IN_DAYS = "expiresInDays";
+  public static final String SERIALIZED_NAME_EXPIRES_IN_DAYS = "expiresInDays";
+  @SerializedName(SERIALIZED_NAME_EXPIRES_IN_DAYS)
   @javax.annotation.Nullable
   private Integer expiresInDays;
 
-  public static final String JSON_PROPERTY_NAME = "name";
+  public static final String SERIALIZED_NAME_NAME = "name";
+  @SerializedName(SERIALIZED_NAME_NAME)
   @javax.annotation.Nonnull
   private String name;
 
-  /**
-   * One action on one resource of a workspace.
-   */
-  public enum PermissionsEnum {
-    ANALYTICS_READ(String.valueOf("analytics:read")),
-    
-    API_KEY_CREATE(String.valueOf("apiKey:create")),
-    
-    API_KEY_READ(String.valueOf("apiKey:read")),
-    
-    API_KEY_UPDATE(String.valueOf("apiKey:update")),
-    
-    API_KEY_DELETE(String.valueOf("apiKey:delete")),
-    
-    ASSISTANT_USE(String.valueOf("assistant:use")),
-    
-    BILLING_READ(String.valueOf("billing:read")),
-    
-    BILLING_MANAGE(String.valueOf("billing:manage")),
-    
-    CHANNEL_READ(String.valueOf("channel:read")),
-    
-    CHANNEL_CONNECT(String.valueOf("channel:connect")),
-    
-    CHANNEL_DISCONNECT(String.valueOf("channel:disconnect")),
-    
-    INVITATION_CREATE(String.valueOf("invitation:create")),
-    
-    INVITATION_CANCEL(String.valueOf("invitation:cancel")),
-    
-    MEDIA_READ(String.valueOf("media:read")),
-    
-    MEDIA_UPLOAD(String.valueOf("media:upload")),
-    
-    MEDIA_DELETE(String.valueOf("media:delete")),
-    
-    MEMBER_CREATE(String.valueOf("member:create")),
-    
-    MEMBER_UPDATE(String.valueOf("member:update")),
-    
-    MEMBER_DELETE(String.valueOf("member:delete")),
-    
-    ORGANIZATION_UPDATE(String.valueOf("organization:update")),
-    
-    ORGANIZATION_DELETE(String.valueOf("organization:delete")),
-    
-    POST_READ(String.valueOf("post:read")),
-    
-    POST_CREATE(String.valueOf("post:create")),
-    
-    POST_UPDATE(String.valueOf("post:update")),
-    
-    POST_DELETE(String.valueOf("post:delete")),
-    
-    POST_SCHEDULE(String.valueOf("post:schedule")),
-    
-    POST_APPROVE(String.valueOf("post:approve")),
-    
-    POST_PUBLISH(String.valueOf("post:publish"));
-
-    private String value;
-
-    PermissionsEnum(String value) {
-      this.value = value;
-    }
-
-    @JsonValue
-    public String getValue() {
-      return value;
-    }
-
-    @Override
-    public String toString() {
-      return String.valueOf(value);
-    }
-
-    @JsonCreator
-    public static PermissionsEnum fromValue(String value) {
-      for (PermissionsEnum b : PermissionsEnum.values()) {
-        if (b.value.equals(value)) {
-          return b;
-        }
-      }
-      throw new IllegalArgumentException("Unexpected value '" + value + "'");
-    }
-  }
-
-  public static final String JSON_PROPERTY_PERMISSIONS = "permissions";
+  public static final String SERIALIZED_NAME_PERMISSIONS = "permissions";
+  @SerializedName(SERIALIZED_NAME_PERMISSIONS)
   @javax.annotation.Nonnull
-  private List<PermissionsEnum> permissions = new ArrayList<>();
+  private List<Permission> permissions = new ArrayList<>();
 
-  public NewApiKey() { 
+  public NewApiKey() {
   }
 
   public NewApiKey expiresInDays(@javax.annotation.Nullable Integer expiresInDays) {
@@ -155,15 +84,10 @@ public class NewApiKey {
    * @return expiresInDays
    */
   @javax.annotation.Nullable
-  @JsonProperty(value = JSON_PROPERTY_EXPIRES_IN_DAYS, required = false)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public Integer getExpiresInDays() {
     return expiresInDays;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_EXPIRES_IN_DAYS, required = false)
-  @JsonInclude(value = JsonInclude.Include.USE_DEFAULTS)
   public void setExpiresInDays(@javax.annotation.Nullable Integer expiresInDays) {
     this.expiresInDays = expiresInDays;
   }
@@ -179,26 +103,21 @@ public class NewApiKey {
    * @return name
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_NAME, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public String getName() {
     return name;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_NAME, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setName(@javax.annotation.Nonnull String name) {
     this.name = name;
   }
 
 
-  public NewApiKey permissions(@javax.annotation.Nonnull List<PermissionsEnum> permissions) {
+  public NewApiKey permissions(@javax.annotation.Nonnull List<Permission> permissions) {
     this.permissions = permissions;
     return this;
   }
 
-  public NewApiKey addPermissionsItem(PermissionsEnum permissionsItem) {
+  public NewApiKey addPermissionsItem(Permission permissionsItem) {
     if (this.permissions == null) {
       this.permissions = new ArrayList<>();
     }
@@ -211,23 +130,16 @@ public class NewApiKey {
    * @return permissions
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_PERMISSIONS, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public List<PermissionsEnum> getPermissions() {
+  public List<Permission> getPermissions() {
     return permissions;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_PERMISSIONS, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
-  public void setPermissions(@javax.annotation.Nonnull List<PermissionsEnum> permissions) {
+  public void setPermissions(@javax.annotation.Nonnull List<Permission> permissions) {
     this.permissions = permissions;
   }
 
 
-  /**
-   * Return true if this NewApiKey object is equal to o.
-   */
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -266,58 +178,104 @@ public class NewApiKey {
     return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
 
-  /**
-   * Convert the instance into URL query string.
-   *
-   * @return URL query string
-   */
-  public String toUrlQueryString() {
-    return toUrlQueryString(null);
+
+  public static HashSet<String> openapiFields;
+  public static HashSet<String> openapiRequiredFields;
+
+  static {
+    // a set of all properties/fields (JSON key names)
+    openapiFields = new HashSet<String>(Arrays.asList("expiresInDays", "name", "permissions"));
+
+    // a set of required properties/fields (JSON key names)
+    openapiRequiredFields = new HashSet<String>(Arrays.asList("name", "permissions"));
   }
 
   /**
-   * Convert the instance into URL query string.
+   * Validates the JSON Element and throws an exception if issues found
    *
-   * @param prefix prefix of the query string
-   * @return URL query string
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to NewApiKey
    */
-  public String toUrlQueryString(String prefix) {
-    String suffix = "";
-    String containerSuffix = "";
-    String containerPrefix = "";
-    if (prefix == null) {
-      // style=form, explode=true, e.g. /pet?name=cat&type=manx
-      prefix = "";
-    } else {
-      // deepObject style e.g. /pet?id[name]=cat&id[type]=manx
-      prefix = prefix + "[";
-      suffix = "]";
-      containerSuffix = "]";
-      containerPrefix = "[";
-    }
-
-    StringJoiner joiner = new StringJoiner("&");
-
-    // add `expiresInDays` to the URL query string
-    if (getExpiresInDays() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%sexpiresInDays%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getExpiresInDays()))));
-    }
-
-    // add `name` to the URL query string
-    if (getName() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%sname%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getName()))));
-    }
-
-    // add `permissions` to the URL query string
-    if (getPermissions() != null) {
-      for (int i = 0; i < getPermissions().size(); i++) {
-        joiner.add(String.format(java.util.Locale.ROOT, "%spermissions%s%s=%s", prefix, suffix,
-            "".equals(suffix) ? "" : String.format(java.util.Locale.ROOT, "%s%d%s", containerPrefix, i, containerSuffix),
-            ApiClient.urlEncode(ApiClient.valueToString(getPermissions().get(i)))));
+  public static void validateJsonElement(JsonElement jsonElement) throws IOException {
+      if (jsonElement == null) {
+        if (!NewApiKey.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The required field(s) %s in NewApiKey is not found in the empty JSON string", NewApiKey.openapiRequiredFields.toString()));
+        }
       }
-    }
 
-    return joiner.toString();
+      Set<Map.Entry<String, JsonElement>> entries = jsonElement.getAsJsonObject().entrySet();
+      // check to see if the JSON string contains additional fields
+      for (Map.Entry<String, JsonElement> entry : entries) {
+        if (!NewApiKey.openapiFields.contains(entry.getKey())) {
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The field `%s` in the JSON string is not defined in the `NewApiKey` properties. JSON: %s", entry.getKey(), jsonElement.toString()));
+        }
+      }
+
+      // check to make sure all required properties/fields are present in the JSON string
+      for (String requiredField : NewApiKey.openapiRequiredFields) {
+        if (jsonElement.getAsJsonObject().get(requiredField) == null) {
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The required field `%s` is not found in the JSON string: %s", requiredField, jsonElement.toString()));
+        }
+      }
+        JsonObject jsonObj = jsonElement.getAsJsonObject();
+      if (!jsonObj.get("name").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `name` to be a primitive type in the JSON string but got `%s`", jsonObj.get("name").toString()));
+      }
+      // ensure the required json array is present
+      if (jsonObj.get("permissions") == null) {
+        throw new IllegalArgumentException("Expected the field `linkedContent` to be an array in the JSON string but got `null`");
+      } else if (!jsonObj.get("permissions").isJsonArray()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `permissions` to be an array in the JSON string but got `%s`", jsonObj.get("permissions").toString()));
+      }
+  }
+
+  public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
+       if (!NewApiKey.class.isAssignableFrom(type.getRawType())) {
+         return null; // this class only serializes 'NewApiKey' and its subtypes
+       }
+       final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
+       final TypeAdapter<NewApiKey> thisAdapter
+                        = gson.getDelegateAdapter(this, TypeToken.get(NewApiKey.class));
+
+       return (TypeAdapter<T>) new TypeAdapter<NewApiKey>() {
+           @Override
+           public void write(JsonWriter out, NewApiKey value) throws IOException {
+             JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
+             elementAdapter.write(out, obj);
+           }
+
+           @Override
+           public NewApiKey read(JsonReader in) throws IOException {
+             JsonElement jsonElement = elementAdapter.read(in);
+             validateJsonElement(jsonElement);
+             return thisAdapter.fromJsonTree(jsonElement);
+           }
+
+       }.nullSafe();
+    }
+  }
+
+  /**
+   * Create an instance of NewApiKey given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of NewApiKey
+   * @throws IOException if the JSON string is invalid with respect to NewApiKey
+   */
+  public static NewApiKey fromJson(String jsonString) throws IOException {
+    return JSON.getGson().fromJson(jsonString, NewApiKey.class);
+  }
+
+  /**
+   * Convert an instance of NewApiKey to an JSON string
+   *
+   * @return JSON string
+   */
+  public String toJson() {
+    return JSON.getGson().toJson(this);
   }
 }
 

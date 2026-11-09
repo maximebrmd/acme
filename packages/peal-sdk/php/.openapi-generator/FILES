@@ -143,6 +143,7 @@ docs/Model/NotificationPreferencesChangeEmail.md
 docs/Model/NotificationPreferencesEmail.md
 docs/Model/PaidPlan.md
 docs/Model/PeriodUsage.md
+docs/Model/Permission.md
 docs/Model/Plan.md
 docs/Model/PlanAllowances.md
 docs/Model/PlanLimit.md
@@ -362,6 +363,7 @@ lib/Model/NotificationPreferencesChangeEmail.php
 lib/Model/NotificationPreferencesEmail.php
 lib/Model/PaidPlan.php
 lib/Model/PeriodUsage.php
+lib/Model/Permission.php
 lib/Model/Plan.php
 lib/Model/PlanAllowances.php
 lib/Model/PlanLimit.php

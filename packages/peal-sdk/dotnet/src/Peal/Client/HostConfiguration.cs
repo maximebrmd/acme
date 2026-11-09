@@ -39,7 +39,6 @@ namespace Peal.Client
         public HostConfiguration(IServiceCollection services)
         {
             _services = services;
-            _jsonOptions.Converters.Add(new JsonStringEnumConverter());
             _jsonOptions.Converters.Add(new AlreadyMemberEncodedJsonConverter());
             _jsonOptions.Converters.Add(new AltTextTooLongEncodedJsonConverter());
             _jsonOptions.Converters.Add(new AnalyticsSummaryJsonConverter());
@@ -175,6 +174,8 @@ namespace Peal.Client
             _jsonOptions.Converters.Add(new PaidPlanJsonConverter());
             _jsonOptions.Converters.Add(new PaidPlanNullableJsonConverter());
             _jsonOptions.Converters.Add(new PeriodUsageJsonConverter());
+            _jsonOptions.Converters.Add(new PermissionJsonConverter());
+            _jsonOptions.Converters.Add(new PermissionNullableJsonConverter());
             _jsonOptions.Converters.Add(new PlanJsonConverter());
             _jsonOptions.Converters.Add(new PlanNullableJsonConverter());
             _jsonOptions.Converters.Add(new PlanAllowancesJsonConverter());
@@ -264,6 +265,7 @@ namespace Peal.Client
             _jsonOptions.Converters.Add(new YouTubeOptionsJsonConverter());
             _jsonOptions.Converters.Add(new YouTubePrivacyJsonConverter());
             _jsonOptions.Converters.Add(new YouTubePrivacyNullableJsonConverter());
+            _jsonOptions.Converters.Add(new JsonStringEnumConverter());
             JsonSerializerOptionsProvider jsonSerializerOptionsProvider = new(_jsonOptions);
             _services.AddSingleton(jsonSerializerOptionsProvider);
             _services.AddSingleton<IApiFactory, ApiFactory>();

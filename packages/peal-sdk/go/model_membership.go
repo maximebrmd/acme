@@ -24,7 +24,7 @@ var _ MappedNullable = &Membership{}
 type Membership struct {
 	Id string `json:"id"`
 	Name string `json:"name"`
-	Permissions []string `json:"permissions"`
+	Permissions []Permission `json:"permissions"`
 	Role string `json:"role"`
 	Slug string `json:"slug"`
 }
@@ -35,7 +35,7 @@ type _Membership Membership
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewMembership(id string, name string, permissions []string, role string, slug string) *Membership {
+func NewMembership(id string, name string, permissions []Permission, role string, slug string) *Membership {
 	this := Membership{}
 	this.Id = id
 	this.Name = name
@@ -102,9 +102,9 @@ func (o *Membership) SetName(v string) {
 }
 
 // GetPermissions returns the Permissions field value
-func (o *Membership) GetPermissions() []string {
+func (o *Membership) GetPermissions() []Permission {
 	if o == nil {
-		var ret []string
+		var ret []Permission
 		return ret
 	}
 
@@ -113,7 +113,7 @@ func (o *Membership) GetPermissions() []string {
 
 // GetPermissionsOk returns a tuple with the Permissions field value
 // and a boolean to check if the value has been set.
-func (o *Membership) GetPermissionsOk() ([]string, bool) {
+func (o *Membership) GetPermissionsOk() ([]Permission, bool) {
 	if o == nil {
 		return nil, false
 	}
@@ -121,7 +121,7 @@ func (o *Membership) GetPermissionsOk() ([]string, bool) {
 }
 
 // SetPermissions sets field value
-func (o *Membership) SetPermissions(v []string) {
+func (o *Membership) SetPermissions(v []Permission) {
 	o.Permissions = v
 }
 

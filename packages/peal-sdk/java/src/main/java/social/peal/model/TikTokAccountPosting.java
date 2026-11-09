@@ -13,112 +13,130 @@
 
 package social.peal.model;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.StringJoiner;
 import java.util.Objects;
-import java.util.Map;
-import java.util.HashMap;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.fasterxml.jackson.annotation.JsonValue;
+import com.google.gson.TypeAdapter;
+import com.google.gson.annotations.JsonAdapter;
+import com.google.gson.annotations.SerializedName;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 import java.util.Arrays;
 import social.peal.model.TikTokAccountPostingAnyOf;
 import social.peal.model.TikTokAccountPostingAnyOf1;
 import social.peal.model.TikTokBlock;
 import social.peal.model.TikTokCreator;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+
 
 
 import java.io.IOException;
+import java.lang.reflect.Type;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
-import social.peal.ApiClient;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonParseException;
+import com.google.gson.TypeAdapter;
+import com.google.gson.TypeAdapterFactory;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.annotations.JsonAdapter;
+import com.google.gson.annotations.SerializedName;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonParseException;
+
 import social.peal.JSON;
 
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.27.0")
-@JsonDeserialize(using=TikTokAccountPosting.TikTokAccountPostingDeserializer.class)
-@JsonSerialize(using = TikTokAccountPosting.TikTokAccountPostingSerializer.class)
 public class TikTokAccountPosting extends AbstractOpenApiSchema {
     private static final Logger log = Logger.getLogger(TikTokAccountPosting.class.getName());
 
-    public static class TikTokAccountPostingSerializer extends StdSerializer<TikTokAccountPosting> {
-        public TikTokAccountPostingSerializer(Class<TikTokAccountPosting> t) {
-            super(t);
-        }
-
-        public TikTokAccountPostingSerializer() {
-            this(null);
-        }
-
+    public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
+        @SuppressWarnings("unchecked")
         @Override
-        public void serialize(TikTokAccountPosting value, JsonGenerator jgen, SerializerProvider provider) throws IOException, JsonProcessingException {
-            jgen.writeObject(value.getActualInstance());
-        }
-    }
-
-    public static class TikTokAccountPostingDeserializer extends StdDeserializer<TikTokAccountPosting> {
-        public TikTokAccountPostingDeserializer() {
-            this(TikTokAccountPosting.class);
-        }
-
-        public TikTokAccountPostingDeserializer(Class<?> vc) {
-            super(vc);
-        }
-
-        @Override
-        public TikTokAccountPosting deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException, JsonProcessingException {
-            JsonNode tree = ctxt.readTree(jp);
-
-            Object deserialized = null;
-            // deserialize TikTokAccountPostingAnyOf
-            try {
-                deserialized = tree.traverse(jp.getCodec()).readValueAs(TikTokAccountPostingAnyOf.class);
-                TikTokAccountPosting ret = new TikTokAccountPosting();
-                ret.setActualInstance(deserialized);
-                return ret;
-            } catch (Exception e) {
-                // deserialization failed, continue, log to help debugging
-                log.log(Level.FINER, "Input data does not match 'TikTokAccountPosting'", e);
+        public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
+            if (!TikTokAccountPosting.class.isAssignableFrom(type.getRawType())) {
+                return null; // this class only serializes 'TikTokAccountPosting' and its subtypes
             }
+            final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
+            final TypeAdapter<TikTokAccountPostingAnyOf> adapterTikTokAccountPostingAnyOf = gson.getDelegateAdapter(this, TypeToken.get(TikTokAccountPostingAnyOf.class));
+            final TypeAdapter<TikTokAccountPostingAnyOf1> adapterTikTokAccountPostingAnyOf1 = gson.getDelegateAdapter(this, TypeToken.get(TikTokAccountPostingAnyOf1.class));
 
-            // deserialize TikTokAccountPostingAnyOf1
-            try {
-                deserialized = tree.traverse(jp.getCodec()).readValueAs(TikTokAccountPostingAnyOf1.class);
-                TikTokAccountPosting ret = new TikTokAccountPosting();
-                ret.setActualInstance(deserialized);
-                return ret;
-            } catch (Exception e) {
-                // deserialization failed, continue, log to help debugging
-                log.log(Level.FINER, "Input data does not match 'TikTokAccountPosting'", e);
-            }
+            return (TypeAdapter<T>) new TypeAdapter<TikTokAccountPosting>() {
+                @Override
+                public void write(JsonWriter out, TikTokAccountPosting value) throws IOException {
+                    if (value == null || value.getActualInstance() == null) {
+                        elementAdapter.write(out, null);
+                        return;
+                    }
 
-            throw new IOException("Failed deserialization for TikTokAccountPosting: no match found");
-        }
+                    // check if the actual instance is of the type `TikTokAccountPostingAnyOf`
+                    if (value.getActualInstance() instanceof TikTokAccountPostingAnyOf) {
+                        JsonElement element = adapterTikTokAccountPostingAnyOf.toJsonTree((TikTokAccountPostingAnyOf)value.getActualInstance());
+                        elementAdapter.write(out, element);
+                        return;
+                    }
+                    // check if the actual instance is of the type `TikTokAccountPostingAnyOf1`
+                    if (value.getActualInstance() instanceof TikTokAccountPostingAnyOf1) {
+                        JsonElement element = adapterTikTokAccountPostingAnyOf1.toJsonTree((TikTokAccountPostingAnyOf1)value.getActualInstance());
+                        elementAdapter.write(out, element);
+                        return;
+                    }
+                    throw new IOException("Failed to serialize as the type doesn't match anyOf schemas: TikTokAccountPostingAnyOf, TikTokAccountPostingAnyOf1");
+                }
 
-        /**
-         * Handle deserialization of the 'null' value.
-         */
-        @Override
-        public TikTokAccountPosting getNullValue(DeserializationContext ctxt) throws JsonMappingException {
-            throw new JsonMappingException(ctxt.getParser(), "TikTokAccountPosting cannot be null");
+                @Override
+                public TikTokAccountPosting read(JsonReader in) throws IOException {
+                    Object deserialized = null;
+                    JsonElement jsonElement = elementAdapter.read(in);
+
+                    ArrayList<String> errorMessages = new ArrayList<>();
+                    TypeAdapter actualAdapter = elementAdapter;
+
+                    // deserialize TikTokAccountPostingAnyOf
+                    try {
+                        // validate the JSON object to see if any exception is thrown
+                        TikTokAccountPostingAnyOf.validateJsonElement(jsonElement);
+                        actualAdapter = adapterTikTokAccountPostingAnyOf;
+                        TikTokAccountPosting ret = new TikTokAccountPosting();
+                        ret.setActualInstance(actualAdapter.fromJsonTree(jsonElement));
+                        return ret;
+                    } catch (Exception e) {
+                        // deserialization failed, continue
+                        errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for TikTokAccountPostingAnyOf failed with `%s`.", e.getMessage()));
+                        log.log(Level.FINER, "Input data does not match schema 'TikTokAccountPostingAnyOf'", e);
+                    }
+                    // deserialize TikTokAccountPostingAnyOf1
+                    try {
+                        // validate the JSON object to see if any exception is thrown
+                        TikTokAccountPostingAnyOf1.validateJsonElement(jsonElement);
+                        actualAdapter = adapterTikTokAccountPostingAnyOf1;
+                        TikTokAccountPosting ret = new TikTokAccountPosting();
+                        ret.setActualInstance(actualAdapter.fromJsonTree(jsonElement));
+                        return ret;
+                    } catch (Exception e) {
+                        // deserialization failed, continue
+                        errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for TikTokAccountPostingAnyOf1 failed with `%s`.", e.getMessage()));
+                        log.log(Level.FINER, "Input data does not match schema 'TikTokAccountPostingAnyOf1'", e);
+                    }
+
+                    throw new IOException(String.format(java.util.Locale.ROOT, "Failed deserialization for TikTokAccountPosting: no class matches result, expected at least 1. Detailed failure message for anyOf schemas: %s. JSON: %s", errorMessages, jsonElement.toString()));
+                }
+            }.nullSafe();
         }
     }
 
@@ -129,20 +147,14 @@ public class TikTokAccountPosting extends AbstractOpenApiSchema {
         super("anyOf", Boolean.FALSE);
     }
 
-    public TikTokAccountPosting(TikTokAccountPostingAnyOf o) {
-        this();
-        setActualInstance(o);
-    }
-
-    public TikTokAccountPosting(TikTokAccountPostingAnyOf1 o) {
-        this();
+    public TikTokAccountPosting(Object o) {
+        super("anyOf", Boolean.FALSE);
         setActualInstance(o);
     }
 
     static {
         schemas.put("TikTokAccountPostingAnyOf", TikTokAccountPostingAnyOf.class);
         schemas.put("TikTokAccountPostingAnyOf1", TikTokAccountPostingAnyOf1.class);
-        JSON.registerDescendants(TikTokAccountPosting.class, Collections.unmodifiableMap(schemas));
     }
 
     @Override
@@ -156,16 +168,15 @@ public class TikTokAccountPosting extends AbstractOpenApiSchema {
      * TikTokAccountPostingAnyOf, TikTokAccountPostingAnyOf1
      *
      * It could be an instance of the 'anyOf' schemas.
-     * The anyOf child schemas may themselves be a composed schema (allOf, anyOf, anyOf).
      */
     @Override
     public void setActualInstance(Object instance) {
-        if (JSON.isInstanceOf(TikTokAccountPostingAnyOf.class, instance, new HashSet<Class<?>>())) {
+        if (instance instanceof TikTokAccountPostingAnyOf) {
             super.setActualInstance(instance);
             return;
         }
 
-        if (JSON.isInstanceOf(TikTokAccountPostingAnyOf1.class, instance, new HashSet<Class<?>>())) {
+        if (instance instanceof TikTokAccountPostingAnyOf1) {
             super.setActualInstance(instance);
             return;
         }
@@ -179,6 +190,7 @@ public class TikTokAccountPosting extends AbstractOpenApiSchema {
      *
      * @return The actual instance (TikTokAccountPostingAnyOf, TikTokAccountPostingAnyOf1)
      */
+    @SuppressWarnings("unchecked")
     @Override
     public Object getActualInstance() {
         return super.getActualInstance();
@@ -206,42 +218,52 @@ public class TikTokAccountPosting extends AbstractOpenApiSchema {
         return (TikTokAccountPostingAnyOf1)super.getActualInstance();
     }
 
-
-
-  /**
-   * Convert the instance into URL query string.
-   *
-   * @return URL query string
-   */
-  public String toUrlQueryString() {
-    return toUrlQueryString(null);
-  }
-
-  /**
-   * Convert the instance into URL query string.
-   *
-   * @param prefix prefix of the query string
-   * @return URL query string
-   */
-  public String toUrlQueryString(String prefix) {
-    String suffix = "";
-    String containerSuffix = "";
-    String containerPrefix = "";
-    if (prefix == null) {
-      // style=form, explode=true, e.g. /pet?name=cat&type=manx
-      prefix = "";
-    } else {
-      // deepObject style e.g. /pet?id[name]=cat&id[type]=manx
-      prefix = prefix + "[";
-      suffix = "]";
-      containerSuffix = "]";
-      containerPrefix = "[";
+    /**
+     * Validates the JSON Element and throws an exception if issues found
+     *
+     * @param jsonElement JSON Element
+     * @throws IOException if the JSON Element is invalid with respect to TikTokAccountPosting
+     */
+    public static void validateJsonElement(JsonElement jsonElement) throws IOException {
+        // validate anyOf schemas one by one
+        ArrayList<String> errorMessages = new ArrayList<>();
+        // validate the json string with TikTokAccountPostingAnyOf
+        try {
+            TikTokAccountPostingAnyOf.validateJsonElement(jsonElement);
+            return;
+        } catch (Exception e) {
+            errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for TikTokAccountPostingAnyOf failed with `%s`.", e.getMessage()));
+            // continue to the next one
+        }
+        // validate the json string with TikTokAccountPostingAnyOf1
+        try {
+            TikTokAccountPostingAnyOf1.validateJsonElement(jsonElement);
+            return;
+        } catch (Exception e) {
+            errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for TikTokAccountPostingAnyOf1 failed with `%s`.", e.getMessage()));
+            // continue to the next one
+        }
+        throw new IOException(String.format(java.util.Locale.ROOT, "The JSON string is invalid for TikTokAccountPosting with anyOf schemas: TikTokAccountPostingAnyOf, TikTokAccountPostingAnyOf1. no class match the result, expected at least 1. Detailed failure message for anyOf schemas: %s. JSON: %s", errorMessages, jsonElement.toString()));
     }
 
-    StringJoiner joiner = new StringJoiner("&");
+    /**
+     * Create an instance of TikTokAccountPosting given an JSON string
+     *
+     * @param jsonString JSON string
+     * @return An instance of TikTokAccountPosting
+     * @throws IOException if the JSON string is invalid with respect to TikTokAccountPosting
+     */
+    public static TikTokAccountPosting fromJson(String jsonString) throws IOException {
+        return JSON.getGson().fromJson(jsonString, TikTokAccountPosting.class);
+    }
 
-    return null;
-  }
-
+    /**
+     * Convert an instance of TikTokAccountPosting to an JSON string
+     *
+     * @return JSON string
+     */
+    public String toJson() {
+        return JSON.getGson().toJson(this);
+    }
 }
 

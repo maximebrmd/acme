@@ -8,7 +8,7 @@ Name | Type
 ------------ | -------------
 `expiresInDays` | number
 `name` | string
-`permissions` | Array&lt;string&gt;
+`permissions` | [Array&lt;Permission&gt;](Permission.md)
 
 ## Example
 

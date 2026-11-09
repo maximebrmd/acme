@@ -13,105 +13,123 @@
 
 package social.peal.model;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.StringJoiner;
 import java.util.Objects;
-import java.util.Map;
-import java.util.HashMap;
-import com.fasterxml.jackson.annotation.JsonTypeName;
 import java.math.BigDecimal;
 import social.peal.model.NonFiniteNumber;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+
 
 
 import java.io.IOException;
+import java.lang.reflect.Type;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.DeserializationContext;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.databind.deser.std.StdDeserializer;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
-import social.peal.ApiClient;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonParseException;
+import com.google.gson.TypeAdapter;
+import com.google.gson.TypeAdapterFactory;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.JsonPrimitive;
+import com.google.gson.annotations.JsonAdapter;
+import com.google.gson.annotations.SerializedName;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonSerializationContext;
+import com.google.gson.JsonSerializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonParseException;
+
 import social.peal.JSON;
 
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.27.0")
-@JsonDeserialize(using=ContentViolationAnyOf24Maximum.ContentViolationAnyOf24MaximumDeserializer.class)
-@JsonSerialize(using = ContentViolationAnyOf24Maximum.ContentViolationAnyOf24MaximumSerializer.class)
 public class ContentViolationAnyOf24Maximum extends AbstractOpenApiSchema {
     private static final Logger log = Logger.getLogger(ContentViolationAnyOf24Maximum.class.getName());
 
-    public static class ContentViolationAnyOf24MaximumSerializer extends StdSerializer<ContentViolationAnyOf24Maximum> {
-        public ContentViolationAnyOf24MaximumSerializer(Class<ContentViolationAnyOf24Maximum> t) {
-            super(t);
-        }
-
-        public ContentViolationAnyOf24MaximumSerializer() {
-            this(null);
-        }
-
+    public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
+        @SuppressWarnings("unchecked")
         @Override
-        public void serialize(ContentViolationAnyOf24Maximum value, JsonGenerator jgen, SerializerProvider provider) throws IOException, JsonProcessingException {
-            jgen.writeObject(value.getActualInstance());
-        }
-    }
-
-    public static class ContentViolationAnyOf24MaximumDeserializer extends StdDeserializer<ContentViolationAnyOf24Maximum> {
-        public ContentViolationAnyOf24MaximumDeserializer() {
-            this(ContentViolationAnyOf24Maximum.class);
-        }
-
-        public ContentViolationAnyOf24MaximumDeserializer(Class<?> vc) {
-            super(vc);
-        }
-
-        @Override
-        public ContentViolationAnyOf24Maximum deserialize(JsonParser jp, DeserializationContext ctxt) throws IOException, JsonProcessingException {
-            JsonNode tree = ctxt.readTree(jp);
-
-            Object deserialized = null;
-            // deserialize BigDecimal
-            try {
-                deserialized = tree.traverse(jp.getCodec()).readValueAs(BigDecimal.class);
-                ContentViolationAnyOf24Maximum ret = new ContentViolationAnyOf24Maximum();
-                ret.setActualInstance(deserialized);
-                return ret;
-            } catch (Exception e) {
-                // deserialization failed, continue, log to help debugging
-                log.log(Level.FINER, "Input data does not match 'ContentViolationAnyOf24Maximum'", e);
+        public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
+            if (!ContentViolationAnyOf24Maximum.class.isAssignableFrom(type.getRawType())) {
+                return null; // this class only serializes 'ContentViolationAnyOf24Maximum' and its subtypes
             }
+            final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
+            final TypeAdapter<BigDecimal> adapterBigDecimal = gson.getDelegateAdapter(this, TypeToken.get(BigDecimal.class));
+            final TypeAdapter<NonFiniteNumber> adapterNonFiniteNumber = gson.getDelegateAdapter(this, TypeToken.get(NonFiniteNumber.class));
 
-            // deserialize NonFiniteNumber
-            try {
-                deserialized = tree.traverse(jp.getCodec()).readValueAs(NonFiniteNumber.class);
-                ContentViolationAnyOf24Maximum ret = new ContentViolationAnyOf24Maximum();
-                ret.setActualInstance(deserialized);
-                return ret;
-            } catch (Exception e) {
-                // deserialization failed, continue, log to help debugging
-                log.log(Level.FINER, "Input data does not match 'ContentViolationAnyOf24Maximum'", e);
-            }
+            return (TypeAdapter<T>) new TypeAdapter<ContentViolationAnyOf24Maximum>() {
+                @Override
+                public void write(JsonWriter out, ContentViolationAnyOf24Maximum value) throws IOException {
+                    if (value == null || value.getActualInstance() == null) {
+                        elementAdapter.write(out, null);
+                        return;
+                    }
 
-            throw new IOException("Failed deserialization for ContentViolationAnyOf24Maximum: no match found");
-        }
+                    // check if the actual instance is of the type `BigDecimal`
+                    if (value.getActualInstance() instanceof BigDecimal) {
+                        JsonElement element = adapterBigDecimal.toJsonTree((BigDecimal)value.getActualInstance());
+                        elementAdapter.write(out, element);
+                        return;
+                    }
+                    // check if the actual instance is of the type `NonFiniteNumber`
+                    if (value.getActualInstance() instanceof NonFiniteNumber) {
+                        JsonElement element = adapterNonFiniteNumber.toJsonTree((NonFiniteNumber)value.getActualInstance());
+                        elementAdapter.write(out, element);
+                        return;
+                    }
+                    throw new IOException("Failed to serialize as the type doesn't match anyOf schemas: BigDecimal, NonFiniteNumber");
+                }
 
-        /**
-         * Handle deserialization of the 'null' value.
-         */
-        @Override
-        public ContentViolationAnyOf24Maximum getNullValue(DeserializationContext ctxt) throws JsonMappingException {
-            throw new JsonMappingException(ctxt.getParser(), "ContentViolationAnyOf24Maximum cannot be null");
+                @Override
+                public ContentViolationAnyOf24Maximum read(JsonReader in) throws IOException {
+                    Object deserialized = null;
+                    JsonElement jsonElement = elementAdapter.read(in);
+
+                    ArrayList<String> errorMessages = new ArrayList<>();
+                    TypeAdapter actualAdapter = elementAdapter;
+
+                    // deserialize BigDecimal
+                    try {
+                        // validate the JSON object to see if any exception is thrown
+                        if (!jsonElement.getAsJsonPrimitive().isNumber()) {
+                            throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected json element to be of type Number in the JSON string but got `%s`", jsonElement.toString()));
+                        }
+                        actualAdapter = adapterBigDecimal;
+                        ContentViolationAnyOf24Maximum ret = new ContentViolationAnyOf24Maximum();
+                        ret.setActualInstance(actualAdapter.fromJsonTree(jsonElement));
+                        return ret;
+                    } catch (Exception e) {
+                        // deserialization failed, continue
+                        errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for BigDecimal failed with `%s`.", e.getMessage()));
+                        log.log(Level.FINER, "Input data does not match schema 'BigDecimal'", e);
+                    }
+                    // deserialize NonFiniteNumber
+                    try {
+                        // validate the JSON object to see if any exception is thrown
+                        NonFiniteNumber.validateJsonElement(jsonElement);
+                        actualAdapter = adapterNonFiniteNumber;
+                        ContentViolationAnyOf24Maximum ret = new ContentViolationAnyOf24Maximum();
+                        ret.setActualInstance(actualAdapter.fromJsonTree(jsonElement));
+                        return ret;
+                    } catch (Exception e) {
+                        // deserialization failed, continue
+                        errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for NonFiniteNumber failed with `%s`.", e.getMessage()));
+                        log.log(Level.FINER, "Input data does not match schema 'NonFiniteNumber'", e);
+                    }
+
+                    throw new IOException(String.format(java.util.Locale.ROOT, "Failed deserialization for ContentViolationAnyOf24Maximum: no class matches result, expected at least 1. Detailed failure message for anyOf schemas: %s. JSON: %s", errorMessages, jsonElement.toString()));
+                }
+            }.nullSafe();
         }
     }
 
@@ -122,20 +140,14 @@ public class ContentViolationAnyOf24Maximum extends AbstractOpenApiSchema {
         super("anyOf", Boolean.FALSE);
     }
 
-    public ContentViolationAnyOf24Maximum(BigDecimal o) {
-        this();
-        setActualInstance(o);
-    }
-
-    public ContentViolationAnyOf24Maximum(NonFiniteNumber o) {
-        this();
+    public ContentViolationAnyOf24Maximum(Object o) {
+        super("anyOf", Boolean.FALSE);
         setActualInstance(o);
     }
 
     static {
         schemas.put("BigDecimal", BigDecimal.class);
         schemas.put("NonFiniteNumber", NonFiniteNumber.class);
-        JSON.registerDescendants(ContentViolationAnyOf24Maximum.class, Collections.unmodifiableMap(schemas));
     }
 
     @Override
@@ -149,16 +161,15 @@ public class ContentViolationAnyOf24Maximum extends AbstractOpenApiSchema {
      * BigDecimal, NonFiniteNumber
      *
      * It could be an instance of the 'anyOf' schemas.
-     * The anyOf child schemas may themselves be a composed schema (allOf, anyOf, anyOf).
      */
     @Override
     public void setActualInstance(Object instance) {
-        if (JSON.isInstanceOf(BigDecimal.class, instance, new HashSet<Class<?>>())) {
+        if (instance instanceof BigDecimal) {
             super.setActualInstance(instance);
             return;
         }
 
-        if (JSON.isInstanceOf(NonFiniteNumber.class, instance, new HashSet<Class<?>>())) {
+        if (instance instanceof NonFiniteNumber) {
             super.setActualInstance(instance);
             return;
         }
@@ -172,6 +183,7 @@ public class ContentViolationAnyOf24Maximum extends AbstractOpenApiSchema {
      *
      * @return The actual instance (BigDecimal, NonFiniteNumber)
      */
+    @SuppressWarnings("unchecked")
     @Override
     public Object getActualInstance() {
         return super.getActualInstance();
@@ -199,42 +211,54 @@ public class ContentViolationAnyOf24Maximum extends AbstractOpenApiSchema {
         return (NonFiniteNumber)super.getActualInstance();
     }
 
-
-
-  /**
-   * Convert the instance into URL query string.
-   *
-   * @return URL query string
-   */
-  public String toUrlQueryString() {
-    return toUrlQueryString(null);
-  }
-
-  /**
-   * Convert the instance into URL query string.
-   *
-   * @param prefix prefix of the query string
-   * @return URL query string
-   */
-  public String toUrlQueryString(String prefix) {
-    String suffix = "";
-    String containerSuffix = "";
-    String containerPrefix = "";
-    if (prefix == null) {
-      // style=form, explode=true, e.g. /pet?name=cat&type=manx
-      prefix = "";
-    } else {
-      // deepObject style e.g. /pet?id[name]=cat&id[type]=manx
-      prefix = prefix + "[";
-      suffix = "]";
-      containerSuffix = "]";
-      containerPrefix = "[";
+    /**
+     * Validates the JSON Element and throws an exception if issues found
+     *
+     * @param jsonElement JSON Element
+     * @throws IOException if the JSON Element is invalid with respect to ContentViolationAnyOf24Maximum
+     */
+    public static void validateJsonElement(JsonElement jsonElement) throws IOException {
+        // validate anyOf schemas one by one
+        ArrayList<String> errorMessages = new ArrayList<>();
+        // validate the json string with BigDecimal
+        try {
+            if (!jsonElement.getAsJsonPrimitive().isNumber()) {
+                throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected json element to be of type Number in the JSON string but got `%s`", jsonElement.toString()));
+            }
+            return;
+        } catch (Exception e) {
+            errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for BigDecimal failed with `%s`.", e.getMessage()));
+            // continue to the next one
+        }
+        // validate the json string with NonFiniteNumber
+        try {
+            NonFiniteNumber.validateJsonElement(jsonElement);
+            return;
+        } catch (Exception e) {
+            errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for NonFiniteNumber failed with `%s`.", e.getMessage()));
+            // continue to the next one
+        }
+        throw new IOException(String.format(java.util.Locale.ROOT, "The JSON string is invalid for ContentViolationAnyOf24Maximum with anyOf schemas: BigDecimal, NonFiniteNumber. no class match the result, expected at least 1. Detailed failure message for anyOf schemas: %s. JSON: %s", errorMessages, jsonElement.toString()));
     }
 
-    StringJoiner joiner = new StringJoiner("&");
+    /**
+     * Create an instance of ContentViolationAnyOf24Maximum given an JSON string
+     *
+     * @param jsonString JSON string
+     * @return An instance of ContentViolationAnyOf24Maximum
+     * @throws IOException if the JSON string is invalid with respect to ContentViolationAnyOf24Maximum
+     */
+    public static ContentViolationAnyOf24Maximum fromJson(String jsonString) throws IOException {
+        return JSON.getGson().fromJson(jsonString, ContentViolationAnyOf24Maximum.class);
+    }
 
-    return null;
-  }
-
+    /**
+     * Convert an instance of ContentViolationAnyOf24Maximum to an JSON string
+     *
+     * @return JSON string
+     */
+    public String toJson() {
+        return JSON.getGson().toJson(this);
+    }
 }
 

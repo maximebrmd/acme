@@ -13,60 +13,75 @@
 
 package social.peal.model;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.StringJoiner;
 import java.util.Objects;
-import java.util.Map;
-import java.util.HashMap;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.fasterxml.jackson.annotation.JsonValue;
+import com.google.gson.TypeAdapter;
+import com.google.gson.annotations.JsonAdapter;
+import com.google.gson.annotations.SerializedName;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 import java.util.Arrays;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonDeserializationContext;
+import com.google.gson.JsonDeserializer;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonNull;
+import com.google.gson.JsonParseException;
+import com.google.gson.TypeAdapterFactory;
+import com.google.gson.reflect.TypeToken;
+import com.google.gson.TypeAdapter;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
 
-import social.peal.ApiClient;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import social.peal.JSON;
+
 /**
  * Invitation
  */
-@JsonPropertyOrder({
-  Invitation.JSON_PROPERTY_CREATED_AT,
-  Invitation.JSON_PROPERTY_EMAIL,
-  Invitation.JSON_PROPERTY_EXPIRES_AT,
-  Invitation.JSON_PROPERTY_ID,
-  Invitation.JSON_PROPERTY_INVITER_ID,
-  Invitation.JSON_PROPERTY_ROLE
-})
 @javax.annotation.Generated(value = "org.openapitools.codegen.languages.JavaClientCodegen", comments = "Generator version: 7.27.0")
 public class Invitation {
-  public static final String JSON_PROPERTY_CREATED_AT = "createdAt";
+  public static final String SERIALIZED_NAME_CREATED_AT = "createdAt";
+  @SerializedName(SERIALIZED_NAME_CREATED_AT)
   @javax.annotation.Nonnull
   private String createdAt;
 
-  public static final String JSON_PROPERTY_EMAIL = "email";
+  public static final String SERIALIZED_NAME_EMAIL = "email";
+  @SerializedName(SERIALIZED_NAME_EMAIL)
   @javax.annotation.Nonnull
   private String email;
 
-  public static final String JSON_PROPERTY_EXPIRES_AT = "expiresAt";
+  public static final String SERIALIZED_NAME_EXPIRES_AT = "expiresAt";
+  @SerializedName(SERIALIZED_NAME_EXPIRES_AT)
   @javax.annotation.Nonnull
   private String expiresAt;
 
-  public static final String JSON_PROPERTY_ID = "id";
+  public static final String SERIALIZED_NAME_ID = "id";
+  @SerializedName(SERIALIZED_NAME_ID)
   @javax.annotation.Nonnull
   private String id;
 
-  public static final String JSON_PROPERTY_INVITER_ID = "inviterId";
+  public static final String SERIALIZED_NAME_INVITER_ID = "inviterId";
+  @SerializedName(SERIALIZED_NAME_INVITER_ID)
   @javax.annotation.Nonnull
   private String inviterId;
 
-  public static final String JSON_PROPERTY_ROLE = "role";
+  public static final String SERIALIZED_NAME_ROLE = "role";
+  @SerializedName(SERIALIZED_NAME_ROLE)
   @javax.annotation.Nonnull
   private String role;
 
-  public Invitation() { 
+  public Invitation() {
   }
 
   public Invitation createdAt(@javax.annotation.Nonnull String createdAt) {
@@ -79,15 +94,10 @@ public class Invitation {
    * @return createdAt
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_CREATED_AT, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public String getCreatedAt() {
     return createdAt;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_CREATED_AT, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setCreatedAt(@javax.annotation.Nonnull String createdAt) {
     this.createdAt = createdAt;
   }
@@ -103,15 +113,10 @@ public class Invitation {
    * @return email
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_EMAIL, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public String getEmail() {
     return email;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_EMAIL, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setEmail(@javax.annotation.Nonnull String email) {
     this.email = email;
   }
@@ -127,15 +132,10 @@ public class Invitation {
    * @return expiresAt
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_EXPIRES_AT, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public String getExpiresAt() {
     return expiresAt;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_EXPIRES_AT, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setExpiresAt(@javax.annotation.Nonnull String expiresAt) {
     this.expiresAt = expiresAt;
   }
@@ -151,15 +151,10 @@ public class Invitation {
    * @return id
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_ID, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public String getId() {
     return id;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_ID, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setId(@javax.annotation.Nonnull String id) {
     this.id = id;
   }
@@ -175,15 +170,10 @@ public class Invitation {
    * @return inviterId
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_INVITER_ID, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public String getInviterId() {
     return inviterId;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_INVITER_ID, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setInviterId(@javax.annotation.Nonnull String inviterId) {
     this.inviterId = inviterId;
   }
@@ -199,23 +189,16 @@ public class Invitation {
    * @return role
    */
   @javax.annotation.Nonnull
-  @JsonProperty(value = JSON_PROPERTY_ROLE, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public String getRole() {
     return role;
   }
 
-
-  @JsonProperty(value = JSON_PROPERTY_ROLE, required = true)
-  @JsonInclude(value = JsonInclude.Include.ALWAYS)
   public void setRole(@javax.annotation.Nonnull String role) {
     this.role = role;
   }
 
 
-  /**
-   * Return true if this Invitation object is equal to o.
-   */
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -260,69 +243,113 @@ public class Invitation {
     return o == null ? "null" : o.toString().replace("\n", "\n    ");
   }
 
-  /**
-   * Convert the instance into URL query string.
-   *
-   * @return URL query string
-   */
-  public String toUrlQueryString() {
-    return toUrlQueryString(null);
+
+  public static HashSet<String> openapiFields;
+  public static HashSet<String> openapiRequiredFields;
+
+  static {
+    // a set of all properties/fields (JSON key names)
+    openapiFields = new HashSet<String>(Arrays.asList("createdAt", "email", "expiresAt", "id", "inviterId", "role"));
+
+    // a set of required properties/fields (JSON key names)
+    openapiRequiredFields = new HashSet<String>(Arrays.asList("createdAt", "email", "expiresAt", "id", "inviterId", "role"));
   }
 
   /**
-   * Convert the instance into URL query string.
+   * Validates the JSON Element and throws an exception if issues found
    *
-   * @param prefix prefix of the query string
-   * @return URL query string
+   * @param jsonElement JSON Element
+   * @throws IOException if the JSON Element is invalid with respect to Invitation
    */
-  public String toUrlQueryString(String prefix) {
-    String suffix = "";
-    String containerSuffix = "";
-    String containerPrefix = "";
-    if (prefix == null) {
-      // style=form, explode=true, e.g. /pet?name=cat&type=manx
-      prefix = "";
-    } else {
-      // deepObject style e.g. /pet?id[name]=cat&id[type]=manx
-      prefix = prefix + "[";
-      suffix = "]";
-      containerSuffix = "]";
-      containerPrefix = "[";
+  public static void validateJsonElement(JsonElement jsonElement) throws IOException {
+      if (jsonElement == null) {
+        if (!Invitation.openapiRequiredFields.isEmpty()) { // has required fields but JSON element is null
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The required field(s) %s in Invitation is not found in the empty JSON string", Invitation.openapiRequiredFields.toString()));
+        }
+      }
+
+      Set<Map.Entry<String, JsonElement>> entries = jsonElement.getAsJsonObject().entrySet();
+      // check to see if the JSON string contains additional fields
+      for (Map.Entry<String, JsonElement> entry : entries) {
+        if (!Invitation.openapiFields.contains(entry.getKey())) {
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The field `%s` in the JSON string is not defined in the `Invitation` properties. JSON: %s", entry.getKey(), jsonElement.toString()));
+        }
+      }
+
+      // check to make sure all required properties/fields are present in the JSON string
+      for (String requiredField : Invitation.openapiRequiredFields) {
+        if (jsonElement.getAsJsonObject().get(requiredField) == null) {
+          throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "The required field `%s` is not found in the JSON string: %s", requiredField, jsonElement.toString()));
+        }
+      }
+        JsonObject jsonObj = jsonElement.getAsJsonObject();
+      if (!jsonObj.get("createdAt").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `createdAt` to be a primitive type in the JSON string but got `%s`", jsonObj.get("createdAt").toString()));
+      }
+      if (!jsonObj.get("email").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `email` to be a primitive type in the JSON string but got `%s`", jsonObj.get("email").toString()));
+      }
+      if (!jsonObj.get("expiresAt").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `expiresAt` to be a primitive type in the JSON string but got `%s`", jsonObj.get("expiresAt").toString()));
+      }
+      if (!jsonObj.get("id").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `id` to be a primitive type in the JSON string but got `%s`", jsonObj.get("id").toString()));
+      }
+      if (!jsonObj.get("inviterId").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `inviterId` to be a primitive type in the JSON string but got `%s`", jsonObj.get("inviterId").toString()));
+      }
+      if (!jsonObj.get("role").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `role` to be a primitive type in the JSON string but got `%s`", jsonObj.get("role").toString()));
+      }
+  }
+
+  public static class CustomTypeAdapterFactory implements TypeAdapterFactory {
+    @SuppressWarnings("unchecked")
+    @Override
+    public <T> TypeAdapter<T> create(Gson gson, TypeToken<T> type) {
+       if (!Invitation.class.isAssignableFrom(type.getRawType())) {
+         return null; // this class only serializes 'Invitation' and its subtypes
+       }
+       final TypeAdapter<JsonElement> elementAdapter = gson.getAdapter(JsonElement.class);
+       final TypeAdapter<Invitation> thisAdapter
+                        = gson.getDelegateAdapter(this, TypeToken.get(Invitation.class));
+
+       return (TypeAdapter<T>) new TypeAdapter<Invitation>() {
+           @Override
+           public void write(JsonWriter out, Invitation value) throws IOException {
+             JsonObject obj = thisAdapter.toJsonTree(value).getAsJsonObject();
+             elementAdapter.write(out, obj);
+           }
+
+           @Override
+           public Invitation read(JsonReader in) throws IOException {
+             JsonElement jsonElement = elementAdapter.read(in);
+             validateJsonElement(jsonElement);
+             return thisAdapter.fromJsonTree(jsonElement);
+           }
+
+       }.nullSafe();
     }
+  }
 
-    StringJoiner joiner = new StringJoiner("&");
+  /**
+   * Create an instance of Invitation given an JSON string
+   *
+   * @param jsonString JSON string
+   * @return An instance of Invitation
+   * @throws IOException if the JSON string is invalid with respect to Invitation
+   */
+  public static Invitation fromJson(String jsonString) throws IOException {
+    return JSON.getGson().fromJson(jsonString, Invitation.class);
+  }
 
-    // add `createdAt` to the URL query string
-    if (getCreatedAt() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%screatedAt%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getCreatedAt()))));
-    }
-
-    // add `email` to the URL query string
-    if (getEmail() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%semail%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getEmail()))));
-    }
-
-    // add `expiresAt` to the URL query string
-    if (getExpiresAt() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%sexpiresAt%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getExpiresAt()))));
-    }
-
-    // add `id` to the URL query string
-    if (getId() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%sid%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getId()))));
-    }
-
-    // add `inviterId` to the URL query string
-    if (getInviterId() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%sinviterId%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getInviterId()))));
-    }
-
-    // add `role` to the URL query string
-    if (getRole() != null) {
-      joiner.add(String.format(java.util.Locale.ROOT, "%srole%s=%s", prefix, suffix, ApiClient.urlEncode(ApiClient.valueToString(getRole()))));
-    }
-
-    return joiner.toString();
+  /**
+   * Convert an instance of Invitation to an JSON string
+   *
+   * @return JSON string
+   */
+  public String toJson() {
+    return JSON.getGson().toJson(this);
   }
 }
 
