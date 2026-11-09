@@ -52,6 +52,13 @@ const StatusCountsSchema = Schema.Struct({
 
 const countsOf = HttpClientResponse.schemaBodyJson(StatusCountsSchema);
 
+// How Mastodon refuses a token, or a reader signed out: a JSON error. A
+// page from something on the way, such as a proxy's challenge, says
+// nothing of the token.
+const refusalOf = HttpClientResponse.schemaBodyJson(
+  Schema.Struct({ error: Schema.String })
+);
+
 // The channels context names a Mastodon account `<id>@<host>`.
 const accountPattern = /^[^@\s]+@(?<host>[^@\s/]+)$/u;
 
@@ -89,10 +96,11 @@ const failedOn = (post: PostToRead): Step => ({
  * account's token when it may read statuses (`read:statuses`), as the
  * channels context hands it out; without one otherwise, which public and
  * unlisted statuses allow. A status the server no longer shows (404) is
- * missing. A refused token is refused once renewed: the channel needs
- * reconnecting. A server that answers 429 or has few requests left halts
- * the read; one that fails on a status, does not answer, or answers what
- * Acme cannot read, marks it failed and halts.
+ * missing. A token Mastodon refuses, with its JSON error, is refused once
+ * renewed: the channel needs reconnecting; a 401 or 403 without one, from
+ * something on the way, is a failure. A server that answers 429 or has few
+ * requests left halts the read; one that fails on a status, does not
+ * answer, or answers what Acme cannot read, marks it failed and halts.
  */
 export const mastodonMetrics = Effect.fn("MastodonMetrics.make")(
   function* mastodonMetrics(options: MastodonMetricsOptions) {
@@ -161,10 +169,14 @@ export const mastodonMetrics = Effect.fn("MastodonMetrics.make")(
         return { remaining, step };
       }
 
-      if (response.status === 401 || response.status === 403) {
-        // The token was refused: the channels context renews it, and asks
-        // for a reconnect when that does not help. Without a token, the
-        // server reads nothing for anyone signed out.
+      // Only Mastodon's own refusal counts: the channels context renews a
+      // refused token, and asks for a reconnect when that does not help,
+      // which stops the channel's publishing, so a proxy's page must not.
+      // Without a token, the server reads nothing for anyone signed out.
+      if (
+        (response.status === 401 || response.status === 403) &&
+        Option.isSome(yield* refusalOf(response).pipe(Effect.option))
+      ) {
         return yield* Option.isSome(token)
           ? new TokenRejected()
           : new ChannelUnreadable({ reason: "paused" });

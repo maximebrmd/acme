@@ -732,7 +732,9 @@ and no socket, for tests.
   `ChannelAccess` when its scopes include `read:statuses` (asked since
   analytics; an app registered without it is registered again), without one
   otherwise. A read stops at 429, 60 requests left or 30 seconds, or at a
-  post it failed on (an error, no answer, or one that does not decode).
+  post it failed on (an error, no answer, or one that does not decode). Only
+  a 401 or 403 with Mastodon's JSON error refuses the token: a proxy's page
+  must not mark the channel to reconnect, which stops its publishing.
   Bluesky reads the public AppView's `getPosts` without the session, whose
   scope stays what posting needs.
 - A halted read leaves the rest due for the next run; a missing post, one a

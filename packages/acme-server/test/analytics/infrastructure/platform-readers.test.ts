@@ -193,6 +193,47 @@ describe("reading counts on Mastodon", () => {
     }).pipe(Effect.scoped)
   );
 
+  // A reconnect stops the channel's publishing: a proxy in front of the
+  // server, refusing with a page of its own, must not ask for one.
+  it.live(
+    "keeps the token when a 401 or 403 is not Mastodon's own, and fails the status",
+    () =>
+      Effect.gen(function* notMastodon() {
+        for (const answer of [
+          empty(403),
+          json("Checking your browser before accessing", 403),
+          empty(401),
+        ]) {
+          const { account, instance } = yield* onInstance({
+            statuses,
+            tokens: ["token-1"],
+          });
+
+          instance.script("110000000000000001", [answer]);
+
+          const posts = postsToRead("110000000000000001");
+
+          const { batch, handed } = yield* reading(posts, account, {
+            tokens: ["token-1", "token-2"],
+          });
+
+          assert.deepStrictEqual(handed, ["token-1"]);
+          assert.deepStrictEqual(
+            batch._tag === "Success" ? batch.success : undefined,
+            {
+              halted: true,
+              readings: [
+                {
+                  _tag: "failed",
+                  targetId: posts[0]?.targetId ?? PostTargetIdSchema.make(""),
+                },
+              ],
+            }
+          );
+        }
+      }).pipe(Effect.scoped)
+  );
+
   it.live("pauses on a server that reads nothing signed out", () =>
     Effect.gen(function* signedInOnly() {
       const { account } = yield* onInstance({ signedInOnly: true, statuses }, [
