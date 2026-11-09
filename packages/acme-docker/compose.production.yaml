@@ -86,7 +86,8 @@ services:
       PGBACKREST_REPO1_CIPHER_TYPE: aes-256-cbc
       PGBACKREST_REPO1_CIPHER_PASS:
       # Four weekly full backups, with the daily differential ones and the
-      # write-ahead log between them: four weeks of point-in-time recovery.
+      # write-ahead log between them: point-in-time recovery over three to
+      # four weeks, as each full backup expires the oldest.
       PGBACKREST_REPO1_RETENTION_FULL: "4"
       PGBACKREST_REPO1_BUNDLE: "y"
       PGBACKREST_REPO1_BLOCK: "y"

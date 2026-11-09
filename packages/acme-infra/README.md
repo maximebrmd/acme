@@ -124,8 +124,17 @@ uv run ansible-galaxy collection install --requirements-file requirements.yml
 uv run ansible-playbook playbooks/site.yml --limit sandbox --check --diff
 ```
 
-`bun nx run acme-infra:test` runs ansible-lint with the production profile and
-`ansible-playbook --syntax-check` on every playbook; `bun run test` includes it.
+Check mode reads a server `site.yml` has configured. On a new one it stops
+at the first thing an earlier task would have made (the swap file, Docker's
+service): apply `site.yml` there as [A new server](#a-new-server) says, and
+check every run after.
+
+`bun nx run acme-infra:test` runs ansible-lint with the production profile,
+`ansible-playbook --syntax-check` on every playbook, and the tests in
+[`tests/`](tests) (`uv run pytest`): the tunnel's routes as Ansible renders
+them for each server, the secrets the server generates, and the release's
+steps on Postgres, run against its image in Docker (skipped when Docker is not
+running). `bun run test` includes it.
 
 ### Before the first run
 
@@ -208,30 +217,41 @@ If the tunnel ever stops carrying SSH, use the Hetzner console.
 ## Releases
 
 `release.yml` checks the commit out from GitHub on the machine running
-Ansible, builds the four images there (`acme-server`, `acme-web`,
+Ansible, builds there the images of the four (`acme-server`, `acme-web`,
 `acme-static` with the environment's site and docs URLs, and `acme-postgres`,
-named after its Dockerfile so Postgres restarts only when it changes), and
-uploads them over SSH. The servers hold no repository or registry credentials,
-and only pushed commits can be released. Then, on the server:
+named after its Dockerfile) that the server does not have yet, and uploads
+them over SSH. An image the server has is never uploaded again, so Postgres's
+changes, and Postgres restarts, only when its Dockerfile does. The servers
+hold no repository or registry credentials, and only pushed commits can be
+released. Then, on the server:
 
-1. the old server stops, with 75 seconds to finish its calls to the platforms;
+1. when Postgres is to restart, because its image or its settings changed,
+   the old server stops first, with 75 seconds to finish its calls to the
+   platforms;
 2. Postgres starts, and keeps the database password in step with
    `secrets.env`;
 3. the new server starts and applies its migrations before it listens;
 4. the rest of the stack starts, and the release is checked on the server and,
    for production, through the tunnel.
 
-Release the sandbox first. To roll back, release the previous commit; its
-images are still on the server for a week. Migrations do not run backwards, so
-write each one so that the release before it still runs against it.
+Release the sandbox first. To roll back, release the previous commit. Images
+no container uses are removed once they are a week old, counted from when
+they were built: an older release's are built and uploaded again. Migrations
+do not run backwards, so write each one so that the release before it still
+runs against it.
+
+Every container of the stack runs on a read-only file system, writing only
+to its volumes and to small tmpfs mounts, and none gains privileges it was
+not started with.
 
 ## Backups
 
 Postgres archives each write-ahead log segment to the backup bucket as soon as
 it fills, or after 5 minutes. `acme-backup` takes a full backup on Sundays and
 a differential one the other days, at 02:15 UTC, and pgBackRest keeps four
-full backups with what they need: four weeks of point-in-time recovery, at
-most 5 minutes lost. Backups are compressed and encrypted with the backup
+full backups with what they need: point-in-time recovery over the last three
+weeks at least, four just before a Sunday's backup expires the oldest, with
+at most 5 minutes lost. Backups are compressed and encrypted with the backup
 passphrase before they leave the server. Each one that finishes reports to the
 collector, and Grafana alerts when none has for 30 hours, and when the disk is
 85% full, as a stuck archive would make it.
