@@ -7,7 +7,8 @@ Schedule social media posts across platforms, from one place:
 
 Peal is fair source: you may use, modify and self-host it under the
 [Functional Source License](LICENSE.md), and each release becomes Apache-2.0
-two years after it ships.
+two years after it ships. The SDKs in [`packages/peal-sdk`](packages/peal-sdk)
+are Apache-2.0 from the start.
 
 It is not released yet. Today you can:
 
@@ -403,6 +404,19 @@ point them elsewhere. Run the tests on a database of
 their own when a dev server uses the stack's: it would run the jobs they leave
 behind.
 
+### SDKs
+
+The SDKs in `packages/peal-sdk` are generated from the contract and
+committed. After changing the contract, regenerate them, then build them; both
+need Docker, which runs openapi-generator and every toolchain but TypeScript's
+and uv's:
+
+```sh
+bun run sdk:generate   # rewrite every SDK from the contract
+bun run sdk:build      # build each one as its registry would get it, and load it
+bun run sdk:check      # what CI runs: fails when the committed SDKs are stale
+```
+
 ### End-to-end tests
 
 `packages/peal-e2e` drives a new member's first steps in Chromium: signing
@@ -559,6 +573,7 @@ The docs' self-hosting page explains each setting.
 | [`peal-site`](packages/peal-site)         | The marketing site (Astro), with the privacy, terms and data deletion pages    |
 | [`peal-e2e`](packages/peal-e2e)           | End-to-end browser tests, run against the server and the web app's build       |
 | [`peal-infra`](packages/peal-infra)       | Ansible for Peal's servers, behind a Cloudflare Tunnel                         |
+| [`peal-sdk`](packages/peal-sdk)           | The API's clients in eight languages, generated from the contract (Apache-2.0) |
 
 How the code is organised, and the rules it follows, are in
 [AGENTS.md](AGENTS.md).

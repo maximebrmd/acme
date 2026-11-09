@@ -18,6 +18,9 @@
     "typecheck": "tsc --noEmit -p . && nx run-many -t typecheck",
     "test": "nx run-many -t test",
     "build": "nx run-many -t build",
+    "sdk:generate": "nx run-many -t sdk:generate",
+    "sdk:build": "nx run-many -t sdk:build",
+    "sdk:check": "nx run peal-sdk:check",
     "nx": "nx"
   },
   "devDependencies": {

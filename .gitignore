@@ -9,8 +9,12 @@ coverage/
 *.tsbuildinfo
 next-env.d.ts
 
-# Generated from the contract: Nx rebuilds it (peal-contract:openapi)
+# Generated from the contract: Nx rebuilds them (peal-contract:openapi, peal-sdk:spec)
 packages/peal-contract/openapi.json
+packages/peal-sdk/openapi.json
+# Libraries leave their dependencies' versions to the projects that install them
+packages/peal-sdk/php/composer.lock
+packages/peal-sdk/ruby/Gemfile.lock
 
 # Tool caches and local state
 .nx/

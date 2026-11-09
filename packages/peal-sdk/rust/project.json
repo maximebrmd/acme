@@ -1,0 +1,17 @@
+{
+  "$schema": "../../../node_modules/nx/schemas/project-schema.json",
+  "name": "peal-sdk-rust",
+  "projectType": "library",
+  "tags": ["sdk"],
+  "targets": {
+    "sdk:generate": {
+      "command": "bun scripts/generate.ts rust",
+      "options": { "cwd": "packages/peal-sdk" }
+    },
+    "sdk:build": {
+      "command": "bun scripts/build.ts rust",
+      "options": { "cwd": "packages/peal-sdk" },
+      "outputs": ["{projectRoot}/target"]
+    }
+  }
+}

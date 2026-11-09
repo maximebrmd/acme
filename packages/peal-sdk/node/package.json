@@ -1,0 +1,40 @@
+{
+  "name": "peal",
+  "version": "0.1.0",
+  "description": "TypeScript and JavaScript client for the Peal API: schedule social media posts across platforms.",
+  "keywords": [
+    "peal",
+    "social media",
+    "scheduling",
+    "api",
+    "sdk"
+  ],
+  "homepage": "https://peal.social",
+  "bugs": "https://github.com/peal-social/peal/issues",
+  "license": "Apache-2.0",
+  "author": "Peal <hello@peal.social>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/peal-social/peal.git",
+    "directory": "packages/peal-sdk/node"
+  },
+  "files": [
+    "dist",
+    "src",
+    "LICENSE",
+    "README.md"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
