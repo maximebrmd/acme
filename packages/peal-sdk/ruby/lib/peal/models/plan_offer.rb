@@ -19,6 +19,8 @@ module Peal
 
     attr_accessor :plan
 
+    attr_accessor :price
+
     class EnumAttributeValidator
       attr_reader :datatype
       attr_reader :allowable_values
@@ -45,7 +47,8 @@ module Peal
     def self.attribute_map
       {
         :'allowances' => :'allowances',
-        :'plan' => :'plan'
+        :'plan' => :'plan',
+        :'price' => :'price'
       }
     end
 
@@ -63,13 +66,15 @@ module Peal
     def self.openapi_types
       {
         :'allowances' => :'PlanAllowances',
-        :'plan' => :'Plan'
+        :'plan' => :'Plan',
+        :'price' => :'PlanPrice'
       }
     end
 
     # List of attributes with nullable: true
     def self.openapi_nullable
       Set.new([
+        :'price'
       ])
     end
 
@@ -109,6 +114,12 @@ module Peal
         self.plan = attributes[:'plan']
       else
         self.plan = nil
+      end
+
+      if attributes.key?(:'price')
+        self.price = attributes[:'price']
+      else
+        self.price = nil
       end
     end
 
@@ -163,7 +174,8 @@ module Peal
       return true if self.equal?(o)
       self.class == o.class &&
           allowances == o.allowances &&
-          plan == o.plan
+          plan == o.plan &&
+          price == o.price
     end
 
     # @see the `==` method
@@ -175,7 +187,7 @@ module Peal
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [allowances, plan].hash
+      [allowances, plan, price].hash
     end
 
     # Builds the object from hash

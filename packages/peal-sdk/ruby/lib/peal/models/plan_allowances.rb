@@ -19,6 +19,8 @@ module Peal
 
     attr_accessor :channels
 
+    attr_accessor :media_storage
+
     attr_accessor :members
 
     attr_accessor :scheduled_posts
@@ -28,6 +30,7 @@ module Peal
       {
         :'assistant_requests' => :'assistantRequests',
         :'channels' => :'channels',
+        :'media_storage' => :'mediaStorage',
         :'members' => :'members',
         :'scheduled_posts' => :'scheduledPosts'
       }
@@ -48,6 +51,7 @@ module Peal
       {
         :'assistant_requests' => :'Integer',
         :'channels' => :'Integer',
+        :'media_storage' => :'Integer',
         :'members' => :'Integer',
         :'scheduled_posts' => :'Integer'
       }
@@ -58,6 +62,7 @@ module Peal
       Set.new([
         :'assistant_requests',
         :'channels',
+        :'media_storage',
         :'members',
         :'scheduled_posts'
       ])
@@ -101,6 +106,12 @@ module Peal
         self.channels = nil
       end
 
+      if attributes.key?(:'media_storage')
+        self.media_storage = attributes[:'media_storage']
+      else
+        self.media_storage = nil
+      end
+
       if attributes.key?(:'members')
         self.members = attributes[:'members']
       else
@@ -135,6 +146,14 @@ module Peal
         invalid_properties.push('invalid value for "channels", must be greater than or equal to -9007199254740991.')
       end
 
+      if @media_storage > 9007199254740991
+        invalid_properties.push('invalid value for "media_storage", must be smaller than or equal to 9007199254740991.')
+      end
+
+      if @media_storage < -9007199254740991
+        invalid_properties.push('invalid value for "media_storage", must be greater than or equal to -9007199254740991.')
+      end
+
       if @members > 9007199254740991
         invalid_properties.push('invalid value for "members", must be smaller than or equal to 9007199254740991.')
       end
@@ -162,6 +181,8 @@ module Peal
       return false if @assistant_requests < -9007199254740991
       return false if @channels > 9007199254740991
       return false if @channels < -9007199254740991
+      return false if @media_storage > 9007199254740991
+      return false if @media_storage < -9007199254740991
       return false if @members > 9007199254740991
       return false if @members < -9007199254740991
       return false if @scheduled_posts > 9007199254740991
@@ -195,6 +216,20 @@ module Peal
       end
 
       @channels = channels
+    end
+
+    # Custom attribute writer method with validation
+    # @param [Object] media_storage Value to be assigned
+    def media_storage=(media_storage)
+      if !media_storage.nil? && media_storage > 9007199254740991
+        fail ArgumentError, 'invalid value for "media_storage", must be smaller than or equal to 9007199254740991.'
+      end
+
+      if !media_storage.nil? && media_storage < -9007199254740991
+        fail ArgumentError, 'invalid value for "media_storage", must be greater than or equal to -9007199254740991.'
+      end
+
+      @media_storage = media_storage
     end
 
     # Custom attribute writer method with validation
@@ -232,6 +267,7 @@ module Peal
       self.class == o.class &&
           assistant_requests == o.assistant_requests &&
           channels == o.channels &&
+          media_storage == o.media_storage &&
           members == o.members &&
           scheduled_posts == o.scheduled_posts
     end
@@ -245,7 +281,7 @@ module Peal
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [assistant_requests, channels, members, scheduled_posts].hash
+      [assistant_requests, channels, media_storage, members, scheduled_posts].hash
     end
 
     # Builds the object from hash

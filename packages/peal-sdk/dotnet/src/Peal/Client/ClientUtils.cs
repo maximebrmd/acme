@@ -143,6 +143,8 @@ namespace Peal.Client
                 return AssistantUnavailableEncoded.TagEnumToJsonValue(assistantUnavailableEncodedTagEnum);
             if (obj is AttemptResult attemptResult)
                 return AttemptResultValueConverter.ToJsonValue(attemptResult);
+            if (obj is BillingInterval billingInterval)
+                return BillingIntervalValueConverter.ToJsonValue(billingInterval);
             if (obj is ChannelCannotPostEncoded.TagEnum channelCannotPostEncodedTagEnum)
                 return ChannelCannotPostEncoded.TagEnumToJsonValue(channelCannotPostEncodedTagEnum);
             if (obj is ChannelCannotPostEncoded.ReasonEnum channelCannotPostEncodedReasonEnum)
@@ -267,6 +269,16 @@ namespace Peal.Client
                 return NoticeEventAnyOf3.TagEnumToJsonValue(noticeEventAnyOf3TagEnum);
             if (obj is NoticeEventAnyOf4.TagEnum noticeEventAnyOf4TagEnum)
                 return NoticeEventAnyOf4.TagEnumToJsonValue(noticeEventAnyOf4TagEnum);
+            if (obj is NoticeEventAnyOf5.TagEnum noticeEventAnyOf5TagEnum)
+                return NoticeEventAnyOf5.TagEnumToJsonValue(noticeEventAnyOf5TagEnum);
+            if (obj is NoticeEventAnyOf6.TagEnum noticeEventAnyOf6TagEnum)
+                return NoticeEventAnyOf6.TagEnumToJsonValue(noticeEventAnyOf6TagEnum);
+            if (obj is NoticeEventAnyOf7.TagEnum noticeEventAnyOf7TagEnum)
+                return NoticeEventAnyOf7.TagEnumToJsonValue(noticeEventAnyOf7TagEnum);
+            if (obj is NoticeEventAnyOf8.TagEnum noticeEventAnyOf8TagEnum)
+                return NoticeEventAnyOf8.TagEnumToJsonValue(noticeEventAnyOf8TagEnum);
+            if (obj is NoticeEventAnyOf9.TagEnum noticeEventAnyOf9TagEnum)
+                return NoticeEventAnyOf9.TagEnumToJsonValue(noticeEventAnyOf9TagEnum);
             if (obj is PaidPlan paidPlan)
                 return PaidPlanValueConverter.ToJsonValue(paidPlan);
             if (obj is Permission permission)

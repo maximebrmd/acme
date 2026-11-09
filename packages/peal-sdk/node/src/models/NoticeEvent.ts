@@ -13,6 +13,27 @@
  */
 
 import { mapValues } from '../runtime.js';
+import type { BillingInterval } from './BillingInterval.js';
+import {
+    BillingIntervalFromJSON,
+    BillingIntervalFromJSONTyped,
+    BillingIntervalToJSON,
+    BillingIntervalToJSONTyped,
+} from './BillingInterval.js';
+import type { NoticeChannel } from './NoticeChannel.js';
+import {
+    NoticeChannelFromJSON,
+    NoticeChannelFromJSONTyped,
+    NoticeChannelToJSON,
+    NoticeChannelToJSONTyped,
+} from './NoticeChannel.js';
+import type { Money } from './Money.js';
+import {
+    MoneyFromJSON,
+    MoneyFromJSONTyped,
+    MoneyToJSON,
+    MoneyToJSONTyped,
+} from './Money.js';
 import type { NoticeEventAnyOf } from './NoticeEventAnyOf.js';
 import {
     NoticeEventAnyOfFromJSON,
@@ -20,6 +41,13 @@ import {
     NoticeEventAnyOfToJSON,
     NoticeEventAnyOfToJSONTyped,
 } from './NoticeEventAnyOf.js';
+import type { NoticeEventAnyOf9 } from './NoticeEventAnyOf9.js';
+import {
+    NoticeEventAnyOf9FromJSON,
+    NoticeEventAnyOf9FromJSONTyped,
+    NoticeEventAnyOf9ToJSON,
+    NoticeEventAnyOf9ToJSONTyped,
+} from './NoticeEventAnyOf9.js';
 import type { FailureReason } from './FailureReason.js';
 import {
     FailureReasonFromJSON,
@@ -55,13 +83,41 @@ import {
     NoticeEventAnyOf2ToJSON,
     NoticeEventAnyOf2ToJSONTyped,
 } from './NoticeEventAnyOf2.js';
-import type { NoticeChannel } from './NoticeChannel.js';
+import type { PaidPlan } from './PaidPlan.js';
 import {
-    NoticeChannelFromJSON,
-    NoticeChannelFromJSONTyped,
-    NoticeChannelToJSON,
-    NoticeChannelToJSONTyped,
-} from './NoticeChannel.js';
+    PaidPlanFromJSON,
+    PaidPlanFromJSONTyped,
+    PaidPlanToJSON,
+    PaidPlanToJSONTyped,
+} from './PaidPlan.js';
+import type { NoticeEventAnyOf7 } from './NoticeEventAnyOf7.js';
+import {
+    NoticeEventAnyOf7FromJSON,
+    NoticeEventAnyOf7FromJSONTyped,
+    NoticeEventAnyOf7ToJSON,
+    NoticeEventAnyOf7ToJSONTyped,
+} from './NoticeEventAnyOf7.js';
+import type { NoticeEventAnyOf8 } from './NoticeEventAnyOf8.js';
+import {
+    NoticeEventAnyOf8FromJSON,
+    NoticeEventAnyOf8FromJSONTyped,
+    NoticeEventAnyOf8ToJSON,
+    NoticeEventAnyOf8ToJSONTyped,
+} from './NoticeEventAnyOf8.js';
+import type { NoticeEventAnyOf5 } from './NoticeEventAnyOf5.js';
+import {
+    NoticeEventAnyOf5FromJSON,
+    NoticeEventAnyOf5FromJSONTyped,
+    NoticeEventAnyOf5ToJSON,
+    NoticeEventAnyOf5ToJSONTyped,
+} from './NoticeEventAnyOf5.js';
+import type { NoticeEventAnyOf6 } from './NoticeEventAnyOf6.js';
+import {
+    NoticeEventAnyOf6FromJSON,
+    NoticeEventAnyOf6FromJSONTyped,
+    NoticeEventAnyOf6ToJSON,
+    NoticeEventAnyOf6ToJSONTyped,
+} from './NoticeEventAnyOf6.js';
 
 /**
  * 
@@ -93,6 +149,42 @@ export interface NoticeEvent {
      * 
      */
     expiresAt: string;
+    /**
+     * 
+     */
+    interval: BillingInterval;
+    /**
+     * 
+     */
+    plan: PaidPlan;
+    /**
+     * 
+     */
+    price: Money;
+    /**
+     * 
+     */
+    startedAt: string;
+    /**
+     * 
+     */
+    trialEnd: string | null;
+    /**
+     * 
+     */
+    endsAt: string;
+    /**
+     * 
+     */
+    renewsAt: string;
+    /**
+     * 
+     */
+    refunded: Money;
+    /**
+     * 
+     */
+    withdrawnAt: string;
 }
 
 
@@ -100,7 +192,7 @@ export interface NoticeEvent {
  * @export
  */
 export const NoticeEventTagEnum = {
-    ChannelReconnectSoon: 'ChannelReconnectSoon',
+    SubscriptionWithdrawn: 'SubscriptionWithdrawn',
 } as const;
 export type NoticeEventTagEnum = typeof NoticeEventTagEnum[keyof typeof NoticeEventTagEnum];
 
@@ -110,13 +202,22 @@ export type NoticeEventTagEnum = typeof NoticeEventTagEnum[keyof typeof NoticeEv
  */
 export function instanceOfNoticeEvent(value: object): value is NoticeEvent {
     if ((!('tag' in (value as Record<string, any>)) && !('_tag' in (value as Record<string, any>))) || ((value as Record<string, any>)['tag'] === undefined && (value as Record<string, any>)['_tag'] === undefined)) return false;
-    if ((value as Record<string, any>)['tag'] !== 'ChannelReconnectSoon' && (value as Record<string, any>)['_tag'] !== 'ChannelReconnectSoon') return false;
+    if ((value as Record<string, any>)['tag'] !== 'SubscriptionWithdrawn' && (value as Record<string, any>)['_tag'] !== 'SubscriptionWithdrawn') return false;
     
     if (!('channel' in value) || value['channel'] === undefined) return false;
     if (!('permalink' in value) || value['permalink'] === undefined) return false;
     if (!('postId' in value) || value['postId'] === undefined) return false;
     if (!('reason' in value) || value['reason'] === undefined) return false;
     if (!('expiresAt' in value) || value['expiresAt'] === undefined) return false;
+    if (!('interval' in value) || value['interval'] === undefined) return false;
+    if (!('plan' in value) || value['plan'] === undefined) return false;
+    if (!('price' in value) || value['price'] === undefined) return false;
+    if (!('startedAt' in value) || value['startedAt'] === undefined) return false;
+    if (!('trialEnd' in value) || value['trialEnd'] === undefined) return false;
+    if (!('endsAt' in value) || value['endsAt'] === undefined) return false;
+    if (!('renewsAt' in value) || value['renewsAt'] === undefined) return false;
+    if (!('refunded' in value) || value['refunded'] === undefined) return false;
+    if (!('withdrawnAt' in value) || value['withdrawnAt'] === undefined) return false;
     return true;
 }
 
@@ -136,6 +237,15 @@ export function NoticeEventFromJSONTyped(json: any, ignoreDiscriminator: boolean
         'postId': json['postId'],
         'reason': FailureReasonFromJSON(json['reason']),
         'expiresAt': json['expiresAt'],
+        'interval': BillingIntervalFromJSON(json['interval']),
+        'plan': PaidPlanFromJSON(json['plan']),
+        'price': MoneyFromJSON(json['price']),
+        'startedAt': json['startedAt'],
+        'trialEnd': json['trialEnd'],
+        'endsAt': json['endsAt'],
+        'renewsAt': json['renewsAt'],
+        'refunded': MoneyFromJSON(json['refunded']),
+        'withdrawnAt': json['withdrawnAt'],
     };
 }
 
@@ -156,6 +266,15 @@ export function NoticeEventToJSONTyped(value?: NoticeEvent | null, ignoreDiscrim
         'postId': value['postId'],
         'reason': FailureReasonToJSON(value['reason']),
         'expiresAt': value['expiresAt'],
+        'interval': BillingIntervalToJSON(value['interval']),
+        'plan': PaidPlanToJSON(value['plan']),
+        'price': MoneyToJSON(value['price']),
+        'startedAt': value['startedAt'],
+        'trialEnd': value['trialEnd'],
+        'endsAt': value['endsAt'],
+        'renewsAt': value['renewsAt'],
+        'refunded': MoneyToJSON(value['refunded']),
+        'withdrawnAt': value['withdrawnAt'],
     };
 }
 

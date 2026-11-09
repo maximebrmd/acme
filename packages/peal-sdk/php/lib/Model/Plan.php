@@ -45,9 +45,13 @@ class Plan
      */
     public const FREE = 'free';
 
+    public const STARTER = 'starter';
+
     public const PRO = 'pro';
 
     public const BUSINESS = 'business';
+
+    public const AGENCY = 'agency';
 
     /**
      * Gets allowable values of the enum
@@ -57,8 +61,10 @@ class Plan
     {
         return [
             self::FREE,
+            self::STARTER,
             self::PRO,
-            self::BUSINESS
+            self::BUSINESS,
+            self::AGENCY
         ];
     }
 }

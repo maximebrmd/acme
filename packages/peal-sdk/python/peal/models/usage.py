@@ -32,9 +32,10 @@ class Usage(BaseModel):
     """ # noqa: E501
     assistant_requests: PeriodUsage = Field(alias="assistantRequests")
     channels: Annotated[int, Field(le=9007199254740991, strict=True, ge=-9007199254740991)]
+    media_storage: Annotated[int, Field(le=9007199254740991, strict=True, ge=-9007199254740991)] = Field(alias="mediaStorage")
     members: Annotated[int, Field(le=9007199254740991, strict=True, ge=-9007199254740991)]
     scheduled_posts: PeriodUsage = Field(alias="scheduledPosts")
-    __properties: ClassVar[List[str]] = ["assistantRequests", "channels", "members", "scheduledPosts"]
+    __properties: ClassVar[List[str]] = ["assistantRequests", "channels", "mediaStorage", "members", "scheduledPosts"]
 
     model_config = ConfigDict(
         validate_by_name=True,
@@ -95,6 +96,7 @@ class Usage(BaseModel):
         _obj = cls.model_validate({
             "assistantRequests": PeriodUsage.from_dict(obj["assistantRequests"]) if obj.get("assistantRequests") is not None else None,
             "channels": obj.get("channels"),
+            "mediaStorage": obj.get("mediaStorage"),
             "members": obj.get("members"),
             "scheduledPosts": PeriodUsage.from_dict(obj["scheduledPosts"]) if obj.get("scheduledPosts") is not None else None
         })

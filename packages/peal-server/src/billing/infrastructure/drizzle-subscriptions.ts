@@ -1,16 +1,38 @@
-import { asc, eq, lt, sql } from "drizzle-orm";
+import {
+  and,
+  asc,
+  eq,
+  gt,
+  inArray,
+  isNull,
+  lt,
+  lte,
+  or,
+  sql,
+} from "drizzle-orm";
 import { DateTime, Effect, Layer, Option, Schema } from "effect";
 import { SqlClient } from "effect/sql";
 
 import { Subscriptions } from "#billing/application/ports/subscriptions.ts";
 import type { RecordOutcome } from "#billing/application/ports/subscriptions.ts";
+import {
+  renewalNotice,
+  startedNotice,
+  trialNotice,
+} from "#billing/domain/reminders.ts";
 import type { SubscriptionChange } from "#billing/domain/subscription-change.ts";
 import { lifecycleStage, Subscription } from "#billing/domain/subscription.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
-import type { WorkspaceId } from "#shared/domain/ids.ts";
+import type { UserId, WorkspaceId } from "#shared/domain/ids.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 
-import { stripeEvents, subscriptions } from "./schema.ts";
+import {
+  orders,
+  stripeEvents,
+  subscriptions,
+  trials,
+  withdrawals,
+} from "./schema.ts";
 
 type Row = typeof subscriptions.$inferSelect;
 
@@ -21,6 +43,14 @@ const decodeSubscription = Schema.decodeUnknownEffect(Subscription);
 const failed = (cause: unknown) => new DatabaseError({ cause });
 
 const date = (instant: DateTime.Utc) => DateTime.toDateUtc(instant);
+
+const instantOf = (value: Date | null) =>
+  Option.fromNullOr(value).pipe(
+    Option.map((found) => DateTime.fromDateUnsafe(found))
+  );
+
+const dateOf = (instant: Option.Option<DateTime.Utc>) =>
+  instant.pipe(Option.map(date), Option.getOrNull);
 
 // The stage of the status a row holds, as `lifecycleStage` orders them; a
 // status the domain does not know yields to any event.
@@ -34,13 +64,15 @@ const storedStage = sql`case ${subscriptions.status} ${sql.join(
 const toSubscription = (row: Row) =>
   decodeSubscription({
     cancelAtPeriodEnd: row.cancelAtPeriodEnd,
-    currentPeriodEnd: Option.fromNullOr(row.currentPeriodEnd).pipe(
-      Option.map((end) => DateTime.fromDateUnsafe(end))
-    ),
+    currentPeriodEnd: instantOf(row.currentPeriodEnd),
+    currentPeriodStart: instantOf(row.currentPeriodStart),
+    interval: row.interval,
     plan: row.plan,
+    startedAt: instantOf(row.startedAt),
     status: row.status,
     stripeCustomerId: row.stripeCustomerId,
     stripeSubscriptionId: row.stripeSubscriptionId,
+    trialEnd: instantOf(row.trialEnd),
     workspaceId: row.workspaceId,
   }).pipe(Effect.orDie);
 
@@ -70,15 +102,90 @@ export const DrizzleSubscriptionsLive = Layer.effect(
           Effect.withSpan("Subscriptions.ofWorkspace")
         );
 
-    const eraseWorkspace = (workspaceId: WorkspaceId) =>
+    const remindable = (now: DateTime.Utc) =>
       db
-        .delete(subscriptions)
-        .where(eq(subscriptions.workspaceId, workspaceId))
+        .select()
+        .from(subscriptions)
+        .where(
+          or(
+            and(
+              inArray(subscriptions.status, ["active", "trialing"]),
+              gt(
+                subscriptions.startedAt,
+                date(DateTime.subtractDuration(now, startedNotice))
+              ),
+              lte(subscriptions.startedAt, date(now))
+            ),
+            and(
+              eq(subscriptions.status, "trialing"),
+              gt(subscriptions.trialEnd, date(now)),
+              lte(
+                subscriptions.trialEnd,
+                date(DateTime.addDuration(now, trialNotice))
+              )
+            ),
+            and(
+              inArray(subscriptions.status, ["active"]),
+              eq(subscriptions.interval, "year"),
+              gt(subscriptions.currentPeriodEnd, date(now)),
+              lte(
+                subscriptions.currentPeriodEnd,
+                date(DateTime.addDuration(now, renewalNotice))
+              )
+            )
+          )
+        )
+        .orderBy(asc(subscriptions.stripeSubscriptionId))
         .pipe(
           Effect.mapError(failed),
-          Effect.asVoid,
-          Effect.withSpan("Subscriptions.eraseWorkspace")
+          Effect.flatMap((rows) =>
+            Effect.all(rows.map((row) => toSubscription(row)))
+          ),
+          Effect.withSpan("Subscriptions.remindable")
         );
+
+    const eraseWorkspace = (workspaceId: WorkspaceId) =>
+      Effect.all([
+        db
+          .delete(subscriptions)
+          .where(eq(subscriptions.workspaceId, workspaceId)),
+        db.delete(orders).where(eq(orders.workspaceId, workspaceId)),
+        db.delete(withdrawals).where(eq(withdrawals.workspaceId, workspaceId)),
+        db
+          .update(trials)
+          .set({ workspaceId: null })
+          .where(eq(trials.workspaceId, workspaceId)),
+        db
+          .delete(trials)
+          .where(and(isNull(trials.userId), isNull(trials.workspaceId))),
+      ]).pipe(
+        Effect.mapError(failed),
+        Effect.asVoid,
+        Effect.withSpan("Subscriptions.eraseWorkspace")
+      );
+
+    const forgetUser = (userId: UserId) =>
+      Effect.all([
+        db
+          .update(orders)
+          .set({ userId: null })
+          .where(eq(orders.userId, userId)),
+        db
+          .update(withdrawals)
+          .set({ userId: null })
+          .where(eq(withdrawals.userId, userId)),
+        db
+          .update(trials)
+          .set({ userId: null })
+          .where(eq(trials.userId, userId)),
+        db
+          .delete(trials)
+          .where(and(isNull(trials.userId), isNull(trials.workspaceId))),
+      ]).pipe(
+        Effect.mapError(failed),
+        Effect.asVoid,
+        Effect.withSpan("Subscriptions.forgetUser")
+      );
 
     const save = Effect.fn("Subscriptions.save")(function* save(
       change: SubscriptionChange
@@ -88,16 +195,17 @@ export const DrizzleSubscriptionsLive = Layer.effect(
 
       const values = {
         cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
-        currentPeriodEnd: subscription.currentPeriodEnd.pipe(
-          Option.map(date),
-          Option.getOrNull
-        ),
+        currentPeriodEnd: dateOf(subscription.currentPeriodEnd),
+        currentPeriodStart: dateOf(subscription.currentPeriodStart),
+        interval: subscription.interval,
         lastEventAt: date(change.occurredAt),
         lastEventId: change.eventId,
         plan: subscription.plan,
+        startedAt: dateOf(subscription.startedAt),
         status: subscription.status,
         stripeCustomerId: subscription.stripeCustomerId,
         stripeSubscriptionId: subscription.stripeSubscriptionId,
+        trialEnd: dateOf(subscription.trialEnd),
         updatedAt: date(now),
         workspaceId: subscription.workspaceId,
       };
@@ -128,11 +236,15 @@ export const DrizzleSubscriptionsLive = Layer.effect(
           set: {
             cancelAtPeriodEnd: sql`excluded.cancel_at_period_end`,
             currentPeriodEnd: sql`excluded.current_period_end`,
+            currentPeriodStart: sql`excluded.current_period_start`,
+            interval: sql`excluded.interval`,
             lastEventAt: sql`excluded.last_event_at`,
             lastEventId: sql`excluded.last_event_id`,
             plan: sql`excluded.plan`,
+            startedAt: sql`excluded.started_at`,
             status: sql`excluded.status`,
             stripeCustomerId: sql`excluded.stripe_customer_id`,
+            trialEnd: sql`excluded.trial_end`,
             updatedAt: sql`excluded.updated_at`,
             workspaceId: sql`excluded.workspace_id`,
           },
@@ -151,6 +263,12 @@ export const DrizzleSubscriptionsLive = Layer.effect(
         .withTransaction(save(change))
         .pipe(Effect.mapError(failed), Effect.withSpan("Subscriptions.record"));
 
-    return Subscriptions.of({ eraseWorkspace, ofWorkspace, record });
+    return Subscriptions.of({
+      eraseWorkspace,
+      forgetUser,
+      ofWorkspace,
+      record,
+      remindable,
+    });
   })
 );

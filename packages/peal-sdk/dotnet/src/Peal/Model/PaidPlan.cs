@@ -32,14 +32,24 @@ namespace Peal.Model
     public enum PaidPlan
     {
         /// <summary>
+        /// Enum Starter for value: starter
+        /// </summary>
+        Starter = 1,
+
+        /// <summary>
         /// Enum Pro for value: pro
         /// </summary>
-        Pro = 1,
+        Pro = 2,
 
         /// <summary>
         /// Enum Business for value: business
         /// </summary>
-        Business = 2
+        Business = 3,
+
+        /// <summary>
+        /// Enum Agency for value: agency
+        /// </summary>
+        Agency = 4
     }
 
     /// <summary>
@@ -54,11 +64,17 @@ namespace Peal.Model
         /// <returns></returns>
         public static PaidPlan FromString(string value)
         {
+            if (value.Equals("starter"))
+                return PaidPlan.Starter;
+
             if (value.Equals("pro"))
                 return PaidPlan.Pro;
 
             if (value.Equals("business"))
                 return PaidPlan.Business;
+
+            if (value.Equals("agency"))
+                return PaidPlan.Agency;
 
             throw new NotImplementedException($"Could not convert value to type PaidPlan: '{value}'");
         }
@@ -70,11 +86,17 @@ namespace Peal.Model
         /// <returns></returns>
         public static PaidPlan? FromStringOrDefault(string value)
         {
+            if (value.Equals("starter"))
+                return PaidPlan.Starter;
+
             if (value.Equals("pro"))
                 return PaidPlan.Pro;
 
             if (value.Equals("business"))
                 return PaidPlan.Business;
+
+            if (value.Equals("agency"))
+                return PaidPlan.Agency;
 
             return null;
         }
@@ -87,11 +109,17 @@ namespace Peal.Model
         /// <exception cref="NotImplementedException"></exception>
         public static string ToJsonValue(PaidPlan value)
         {
+            if (value == PaidPlan.Starter)
+                return "starter";
+
             if (value == PaidPlan.Pro)
                 return "pro";
 
             if (value == PaidPlan.Business)
                 return "business";
+
+            if (value == PaidPlan.Agency)
+                return "agency";
 
             throw new NotImplementedException($"Value could not be handled: '{value}'");
         }

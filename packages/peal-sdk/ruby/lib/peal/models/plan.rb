@@ -16,11 +16,13 @@ require 'time'
 module Peal
   class Plan
     FREE = "free".freeze
+    STARTER = "starter".freeze
     PRO = "pro".freeze
     BUSINESS = "business".freeze
+    AGENCY = "agency".freeze
 
     def self.all_vars
-      @all_vars ||= [FREE, PRO, BUSINESS].freeze
+      @all_vars ||= [FREE, STARTER, PRO, BUSINESS, AGENCY].freeze
     end
 
     # Builds the enum from string

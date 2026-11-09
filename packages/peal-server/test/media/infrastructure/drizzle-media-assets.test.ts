@@ -9,6 +9,7 @@ import { MediaAsset, startUpload } from "#media/domain/media-asset.ts";
 import { maxDuration, MediaMetadata } from "#media/domain/media-metadata.ts";
 import type { MediaStatus } from "#media/domain/media-status.ts";
 import { MultipartUploadIdSchema } from "#media/domain/media-status.ts";
+import { storageKeyFor } from "#media/domain/storage-key.ts";
 import { DrizzleMediaAssetsLive } from "#media/infrastructure/drizzle-media-assets.ts";
 import { mediaAssets } from "#media/infrastructure/schema.ts";
 import { Ids } from "#shared/application/ids.ts";
@@ -73,6 +74,63 @@ const probed = new MediaMetadata({
 });
 
 layer(RepositoryTest)("the Drizzle media assets", (it) => {
+  it.effect(
+    "counts the bytes stored and in flight, and refuses an asset past the allowance",
+    () =>
+      Effect.gen(function* storage() {
+        const assets = yield* MediaAssets;
+        const first = yield* freshAsset;
+        const { workspaceId } = first;
+        const ids = yield* Ids;
+
+        // Pending uploads started after this may still arrive.
+        const since = DateTime.makeUnsafe("2026-06-15T06:00:00Z");
+        const allowance = Option.some(5_000_000_000);
+
+        yield* assets.insertWithin(first, allowance, since);
+
+        assert.strictEqual(
+          yield* assets.storedBytes(workspaceId, since),
+          3_000_000_000
+        );
+
+        const secondId = MediaAssetIdSchema.make(yield* ids.next);
+
+        const second = new MediaAsset({
+          altText: first.altText,
+          byteSize: first.byteSize,
+          contentType: first.contentType,
+          createdAt: first.createdAt,
+          id: secondId,
+          metadata: first.metadata,
+          status: first.status,
+          storageKey: storageKeyFor(workspaceId, secondId, first.contentType),
+          updatedAt: first.updatedAt,
+          workspaceId,
+        });
+
+        const refused = yield* assets
+          .insertWithin(second, allowance, since)
+          .pipe(Effect.flip);
+
+        assert.deepInclude(refused, {
+          _tag: "PlanLimitReached",
+          allowed: 5_000_000_000,
+          limit: "mediaStorage",
+        });
+
+        // An upload too old to arrive counts for nothing; no limit takes it.
+        assert.strictEqual(yield* assets.storedBytes(workspaceId, later), 0);
+
+        yield* assets.insertWithin(second, Option.none(), since);
+
+        assert.strictEqual(
+          yield* assets.storedBytes(workspaceId, since),
+          6_000_000_000
+        );
+      })
+  );
+
   it.effect("keeps every status and what a probe found", () =>
     Effect.gen(function* roundTrips() {
       const assets = yield* MediaAssets;

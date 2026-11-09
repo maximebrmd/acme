@@ -60,6 +60,7 @@ class Usage implements ModelInterface, ArrayAccess, \JsonSerializable
     protected static $openAPITypes = [
         'assistant_requests' => '\Peal\Model\PeriodUsage',
         'channels' => 'int',
+        'media_storage' => 'int',
         'members' => 'int',
         'scheduled_posts' => '\Peal\Model\PeriodUsage'
     ];
@@ -74,6 +75,7 @@ class Usage implements ModelInterface, ArrayAccess, \JsonSerializable
     protected static $openAPIFormats = [
         'assistant_requests' => null,
         'channels' => null,
+        'media_storage' => null,
         'members' => null,
         'scheduled_posts' => null
     ];
@@ -86,6 +88,7 @@ class Usage implements ModelInterface, ArrayAccess, \JsonSerializable
     protected static array $openAPINullables = [
         'assistant_requests' => false,
         'channels' => false,
+        'media_storage' => false,
         'members' => false,
         'scheduled_posts' => false
     ];
@@ -178,6 +181,7 @@ class Usage implements ModelInterface, ArrayAccess, \JsonSerializable
     protected static $attributeMap = [
         'assistant_requests' => 'assistantRequests',
         'channels' => 'channels',
+        'media_storage' => 'mediaStorage',
         'members' => 'members',
         'scheduled_posts' => 'scheduledPosts'
     ];
@@ -190,6 +194,7 @@ class Usage implements ModelInterface, ArrayAccess, \JsonSerializable
     protected static $setters = [
         'assistant_requests' => 'setAssistantRequests',
         'channels' => 'setChannels',
+        'media_storage' => 'setMediaStorage',
         'members' => 'setMembers',
         'scheduled_posts' => 'setScheduledPosts'
     ];
@@ -202,6 +207,7 @@ class Usage implements ModelInterface, ArrayAccess, \JsonSerializable
     protected static $getters = [
         'assistant_requests' => 'getAssistantRequests',
         'channels' => 'getChannels',
+        'media_storage' => 'getMediaStorage',
         'members' => 'getMembers',
         'scheduled_posts' => 'getScheduledPosts'
     ];
@@ -265,6 +271,7 @@ class Usage implements ModelInterface, ArrayAccess, \JsonSerializable
     {
         $this->setIfExists('assistant_requests', $data ?? [], null);
         $this->setIfExists('channels', $data ?? [], null);
+        $this->setIfExists('media_storage', $data ?? [], null);
         $this->setIfExists('members', $data ?? [], null);
         $this->setIfExists('scheduled_posts', $data ?? [], null);
     }
@@ -308,6 +315,17 @@ class Usage implements ModelInterface, ArrayAccess, \JsonSerializable
 
         if (($this->container['channels'] < -9007199254740991)) {
             $invalidProperties[] = "invalid value for 'channels', must be bigger than or equal to -9007199254740991.";
+        }
+
+        if ($this->container['media_storage'] === null) {
+            $invalidProperties[] = "'media_storage' can't be null";
+        }
+        if (($this->container['media_storage'] > 9007199254740991)) {
+            $invalidProperties[] = "invalid value for 'media_storage', must be smaller than or equal to 9007199254740991.";
+        }
+
+        if (($this->container['media_storage'] < -9007199254740991)) {
+            $invalidProperties[] = "invalid value for 'media_storage', must be bigger than or equal to -9007199254740991.";
         }
 
         if ($this->container['members'] === null) {
@@ -396,6 +414,40 @@ class Usage implements ModelInterface, ArrayAccess, \JsonSerializable
         }
 
         $this->container['channels'] = $channels;
+
+        return $this;
+    }
+
+    /**
+     * Gets media_storage
+     *
+     * @return int
+     */
+    public function getMediaStorage()
+    {
+        return $this->container['media_storage'];
+    }
+
+    /**
+     * Sets media_storage
+     *
+     * @param int $media_storage media_storage
+     *
+     * @return self
+     */
+    public function setMediaStorage($media_storage)
+    {
+        if (is_null($media_storage)) {
+            throw new \InvalidArgumentException('non-nullable media_storage cannot be null');
+        }
+        if (($media_storage > 9007199254740991)) {
+            throw new \InvalidArgumentException('invalid value for $media_storage when calling Usage., must be smaller than or equal to 9007199254740991.');
+        }
+        if (($media_storage < -9007199254740991)) {
+            throw new \InvalidArgumentException('invalid value for $media_storage when calling Usage., must be bigger than or equal to -9007199254740991.');
+        }
+
+        $this->container['media_storage'] = $media_storage;
 
         return $this;
     }

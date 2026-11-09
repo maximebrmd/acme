@@ -6,6 +6,7 @@
 | ---- | ---- | ----------- | ----- |
 | **allowances** | [**PlanAllowances**](PlanAllowances.md) |  |  |
 | **plan** | [**Plan**](Plan.md) |  |  |
+| **price** | [**PlanPrice**](PlanPrice.md) |  |  |
 
 ## Example
 
@@ -14,7 +15,8 @@ require 'peal'
 
 instance = Peal::PlanOffer.new(
   allowances: null,
-  plan: null
+  plan: null,
+  price: null
 )
 ```
 

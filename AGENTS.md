@@ -803,6 +803,12 @@ and no socket, for tests.
 - Accepted media: JPEG, PNG, GIF and WebP images up to 16 MiB; MP4 and
   QuickTime videos up to 1 GiB (`media/domain/media-format.ts`). Publishing
   checks per-platform limits when a post is scheduled.
+- On a server that bills, `createUpload` checks the declared size against
+  the plan's media storage (`StorageAllowance`) before the store opens an
+  upload, and again as the asset is recorded (`MediaAssets.insertWithin`,
+  under the workspace's advisory lock): `PlanLimitReached`
+  `mediaStorage`. Rejected files count for nothing, pending ones until
+  their URLs expire.
 - Storage keys are `media/<workspace id>/<asset id>.<ext>` under
   `PEAL_S3_KEY_PREFIX`, and never change. Keep presigned URLs out of logs and
   errors.
@@ -846,10 +852,11 @@ and no socket, for tests.
   (`NoticeRequest.author`), whatever their role, and the members with
   `post:schedule` who chose `everyPost`, off by default; for a post without
   an author, or whose author left the workspace, every member with
-  `post:schedule`. Every notice reaches the
-  app; `NotificationPreferences` say which are also emailed (failed and
-  unconfirmed posts and channels to reconnect by default, not published
-  posts). A preferences change writes only what it names.
+  `post:schedule`; for billing, every member with `billing:manage`. Every
+  notice reaches the app; `NotificationPreferences` say which are also
+  emailed (failed and unconfirmed posts and channels to reconnect by
+  default, not published posts; billing's always, as no preference covers
+  them). A preferences change writes only what it names.
 - `Notify.resolve(key)` says an event was dealt with: its notices are marked
   read for everyone and its pending emails skipped. Publishing resolves a
   round once a member confirms or reposts it.
@@ -910,36 +917,107 @@ and no socket, for tests.
   (`#shared/infrastructure/stripe-settings.ts`, read by the billing context
   and by Better Auth). Off, every workspace is `unmetered`: no plan, no
   limit, and the assistant keeps `PEAL_AI_DAILY_REQUESTS`. Keep it so: a
-  self-hosted server limits nothing.
-- Plans are `billing/domain/plans.ts`; their ids (`#shared/domain/plan.ts`),
-  the limits' names (`plan-limit.ts`), `PlanLimitReached` and
-  `roomForOneMore` (`allowance.ts`) are in the shared kernel, since every
-  context checks a limit. The contract copies them, kept equal by
-  `test/billing/api/contract.test.ts`.
+  self-hosted server limits nothing, and its billing routes answer
+  `BillingNotEnabled`.
+- Plans are priced by connected channels, in tiers: free, starter, pro,
+  business, agency, each a monthly and a yearly price (ten months). Their
+  allowances are `billing/domain/plans.ts` and their prices, euro cents
+  excluding VAT, `prices.ts`; their ids (`#shared/domain/plan.ts`), the
+  limits' names (`plan-limit.ts`: channels, members, scheduledPosts,
+  assistantRequests, mediaStorage in decimal bytes), `PlanLimitReached`
+  and `roomFor`/`roomForOneMore`/`withinAllowance` (`allowance.ts`) are in
+  the shared kernel, since every context checks a limit. The contract
+  copies them, with the catalogue (`planCatalogue`, `trialOffer`,
+  `displayVatRate` in `peal-contract/src/billing-plans.ts`, exported as
+  `peal-contract/billing-plans`), kept equal by
+  `test/billing/api/contract.test.ts`. The site's pricing page
+  (`peal-site/src/pricing.ts`) and the docs' variables
+  (`peal-docs/pricing-variables.ts`, `{{starter-month-en}}`…) read that
+  catalogue: never write a price by hand. `GET …/billing` answers it too.
+- Each paid tier must stay strictly cheaper than the comparable tier of
+  the per-account schedulers Peal is measured against, monthly and yearly,
+  with or without VAT, by a margin a 25% move of the EUR/USD rate does not
+  undo; recheck before any price change. The comparison lives outside the
+  repository: never name another product here.
+- Stripe prices are tax-exclusive EUR prices found by lookup key,
+  `<prefix>_<plan>_monthly` and `_yearly` (`STRIPE_LOOKUP_KEY_PREFIX`,
+  `peal`), never by id: Better Auth's plans carry `lookupKey` and
+  `annualDiscountLookupKey`, and `planOf` reads the plan and interval from
+  the event's `price.lookup_key`. Their amounts must equal `prices.ts`.
 - Each context checks its own limit when something is added, through a port
   of its own backed by the billing context's `WorkspaceEntitlements`:
   `ChannelAllowance` (connecting a new account: on start, and again before
   the channel is added; accounts chosen together need room for all of them,
   checked before the choice is taken), `PostAllowance` (a post scheduled or
   moved into a month, UTC: drafts and cancelled posts are left out, and a
-  repost adds nothing, as `countGoingOut` counts posts, not rounds),
-  `AssistantAllowance`, and members in Better Auth's organization hooks
+  repost adds nothing, as `countGoingOut` counts posts, not rounds; and a
+  workspace with more channels than its plan allows, as after a trial,
+  schedules nothing: `PostAllowance.channels`, with the channels context's
+  `ChannelUsage`), `AssistantAllowance`, `StorageAllowance` (an upload's
+  declared size against the bytes stored, pending uploads younger than
+  their URLs included: `MediaAssets.insertWithin`, under the workspace's
+  advisory lock), and members in Better Auth's organization hooks
   (`workspace/infrastructure/auth/billing.ts`: pending invitations count when
   inviting). Channels and posts are counted and added under a transaction's
   advisory lock (`ChannelRepository.addingTo`, `PostRepository.claimMonth`),
   so requests sent together never pass a limit. A workspace over a smaller
   plan's limits keeps what it has. Each context also counts for the billing
-  page (`ChannelUsage`, `PostUsage`, `WorkspaceSeats`, `AssistantRequests`),
-  so `BillingOverviewLive` is built after the contexts it reads.
+  page (`ChannelUsage`, `PostUsage`, `WorkspaceSeats`, `AssistantRequests`,
+  `MediaStorageUsage`), so `BillingOverviewLive` is built after the
+  contexts it reads.
+- An account owns one workspace on the free plan at most: Better Auth's
+  `beforeCreateOrganization` (`checkFreeWorkspace`) refuses another with
+  402 `FREE_WORKSPACE_LIMIT_REACHED` while one it owns is on the free plan.
 - Entitlements come only from `billing.subscriptions`, which
   `RecordSubscription` keeps from Stripe's `customer.subscription.*` events:
   Better Auth's webhook checks their signature, then its `onEvent` finds the
-  workspace by its Stripe customer and the plan by its price. An event is
-  recorded once (`billing.stripe_events`), never over a newer one; Stripe
-  dates events to the second, so of two in the same second the one further
-  along the subscription's life wins (`lifecycleStage`). A failure answers
-  the webhook an error, so Stripe sends it again. Active, trialing and past
-  due subscriptions give their plan.
+  workspace by its Stripe customer and the plan and interval by the price's
+  lookup key, with the start, the period's bounds, the trial's end and the
+  member who checked out (`metadata.userId`). An event is recorded once
+  (`billing.stripe_events`), never over a newer one; Stripe dates events to
+  the second, so of two in the same second the one further along the
+  subscription's life wins (`lifecycleStage`). A failure answers the
+  webhook an error, so Stripe sends it again. Active, trialing and past due
+  subscriptions give their plan.
+- Ordering takes two steps. `POST …/billing/orders` (`PlaceOrder`) records
+  the order in `billing.orders`: plan, interval or the trial, the member,
+  and their request to start at once knowing their right to withdraw
+  (`startNow: true`, the unticked box of the billing page;
+  `consentVersion` names its words, change it with them). Then Better
+  Auth's `/subscription/upgrade` with `metadata.orderId`: its
+  `getCheckoutSessionParams` (`checkoutParams`) takes the order once,
+  within 30 minutes, for the same member, plan and interval
+  (`CheckoutOrders`), or refuses `CHECKOUT_ORDER_REQUIRED`. Ordering a paid
+  plan during the trial ends the trial at once (`StripeContracts.endNow`).
+- The trial: Pro for 14 days (`trialPlan`, `trialDays`), once per account
+  and per workspace (`billing.trials`, recorded from the trialing event;
+  a workspace that ever had a subscription has none), through Checkout
+  with `payment_method_collection: "if_required"` and
+  `trial_settings.end_behavior.missing_payment_method: "cancel"`: it never
+  turns into a charge, and its end puts the workspace on the free plan.
+  Pause would leave a subscription that may still bill.
+- `billingActions` (`/orders`, `/cancellation`, `/withdrawal`) answer only
+  members with billing:manage in their own session: never an API key, an
+  OAuth client or staff impersonating them (403; the use cases refuse an
+  impersonated actor too, `PersonRequired`). The SDKs leave the group out
+  (`ownSessionTags`).
+- Cancelling (`CancelSubscription`, French law's few clicks: the button,
+  then the confirmation) sets `cancel_at_period_end`, or ends a trial at
+  once. Withdrawing (`Withdraw`, CRD art. 11a: **Withdraw from contract
+  here**, then **Confirm withdrawal**) is open 14 days from the contract's
+  start (`mayWithdraw`), refused to a customer with a verified `eu_vat` id
+  (`StripeContracts.isBusiness`), and refunds the rest of the latest paid
+  period to the second (`refundOf`): the withdrawal is recorded first
+  (`billing.withdrawals`), then refunded and ended under idempotency keys,
+  so trying again refunds the same amount once.
+- Billing tells the members with billing:manage through `BillingNotices`
+  (`Notify`), in the app and by email whatever their email choices
+  (`emailKindOf` is none for these): `SubscriptionStarted`, the contract's
+  confirmation; `SubscriptionCancelled`; `SubscriptionWithdrawn`, with its
+  date and time; and, from the hourly `billing.reminders` cron
+  (`SendBillingReminders`), `TrialEnding` three days before and
+  `SubscriptionRenewing` 45 days before a yearly plan renews (Code de la
+  consommation L215-1). Each once, by key.
 - Better Auth's subscription routes take `customerType: "organization"` and
   the workspace as `referenceId` only, for members with `billing:manage`,
   never staff impersonating them. Checkout sends Stripe Tax's parameters
@@ -949,12 +1027,16 @@ and no socket, for tests.
   is deleted only once the person agrees to cancel its subscriptions, which
   `BillingRecords` then does at Stripe at once, without proration (see
   Accounts and access); it also expires its open checkouts. Better Auth's
-  `/organization/delete` is disabled, so its hook refuses nothing. To stop
-  paying and keep the workspace, members use the portal, which cancels at
-  the period's end.
+  `/organization/delete` is disabled, so its hook refuses nothing. Erasing
+  a workspace deletes its orders and withdrawals and leaves its trial to
+  the account; closing an account leaves orders, trials and withdrawals
+  without the user (`Subscriptions.forgetUser`).
 - Never call Stripe in tests: checkout and the portal run against
-  stripe-mock, and webhooks post the payloads in
-  `test/billing/fixtures/webhooks`, signed in the test.
+  stripe-mock, billing's own calls (`StripeContractsLive`) against a
+  stand-in server, and webhooks post the payloads in
+  `test/billing/fixtures/webhooks`, signed in the test. The app's engine
+  in tests runs no workflow, so what notifies (cancelling, withdrawing) is
+  tested at the use cases and with `NoticesTest`.
 
 ### Analytics
 
@@ -1217,12 +1299,17 @@ self-hoster needs only Postgres and an S3-compatible store:
   only while `GET …/assistant` answers `available`; refresh that status after
   every request, which can change the requests left. Show each suggestion in
   a preview the person accepts or discards: never apply one unasked.
-- The billing page shows `GET …/billing` (`BillingView` renders each state)
-  and opens Stripe's checkout and customer portal through `billingClient`
+- The billing page shows `GET …/billing` (`BillingView` renders each state,
+  `BillingStep` the cancellation and withdrawal steps) with prices
+  including VAT first and excluding VAT beside them, a monthly and yearly
+  switch, the unticked box asking to start at once, and **Order with
+  obligation to pay**; it places the order (`#billing/api.ts`), then opens
+  Stripe's checkout and customer portal through `billingClient`
   (`#auth/billing-client.ts`, Better Auth's Stripe client), with
-  `disableRedirect` and the page as the way back. Explain a
-  `PlanLimitReached`, and Better Auth's `MEMBER_LIMIT_REACHED`, wherever they
-  surface, from the `Billing` catalogue and `Auth.errors`.
+  `disableRedirect` and the page as the way back. It links the terms of
+  service at `PEAL_TERMS_URL`. Explain a `PlanLimitReached`, and Better
+  Auth's `MEMBER_LIMIT_REACHED`, wherever they surface, from the `Billing`
+  catalogue and `Auth.errors`.
 - The sign-up and password reset pages read the Turnstile site key at
   request time (`captchaSiteKey()`, `GET /api/captcha`); `useCaptcha` shows
   the widget only with one, sends its token as `x-captcha-response`, and
@@ -1397,6 +1484,10 @@ self-hoster needs only Postgres and an S3-compatible store:
 - Do not run `blume build` or `blume check` while `blume dev` runs in the same
   package: they share the generated runtime in `.blume/` (typecheck uses
   `--isolated` for that reason). Leave Blume's own TypeScript 6 alone.
+- The site's pricing page (`src/pages/[...locale]/pricing.astro`, its
+  logic in `src/pricing.ts`) and the docs' **Plans and billing** page
+  (`docs/billing.mdx`, with the variables of `pricing-variables.ts`) show
+  the contract's catalogue; the legal pages' plans section follows it.
 - Site strings live in `packages/peal-site/src/i18n/messages.ts`, legal
   documents in `src/content/legal/<locale>/<document>.md`. Keep a legal
   document `draft: true` (banner and noindex) until legal review approves it,

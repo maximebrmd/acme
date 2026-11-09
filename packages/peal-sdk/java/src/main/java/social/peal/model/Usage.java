@@ -62,6 +62,11 @@ public class Usage {
   @javax.annotation.Nonnull
   private Integer channels;
 
+  public static final String SERIALIZED_NAME_MEDIA_STORAGE = "mediaStorage";
+  @SerializedName(SERIALIZED_NAME_MEDIA_STORAGE)
+  @javax.annotation.Nonnull
+  private Integer mediaStorage;
+
   public static final String SERIALIZED_NAME_MEMBERS = "members";
   @SerializedName(SERIALIZED_NAME_MEMBERS)
   @javax.annotation.Nonnull
@@ -112,6 +117,27 @@ public class Usage {
 
   public void setChannels(@javax.annotation.Nonnull Integer channels) {
     this.channels = channels;
+  }
+
+
+  public Usage mediaStorage(@javax.annotation.Nonnull Integer mediaStorage) {
+    this.mediaStorage = mediaStorage;
+    return this;
+  }
+
+  /**
+   * Get mediaStorage
+   * minimum: -9007199254740991
+   * maximum: 9007199254740991
+   * @return mediaStorage
+   */
+  @javax.annotation.Nonnull
+  public Integer getMediaStorage() {
+    return mediaStorage;
+  }
+
+  public void setMediaStorage(@javax.annotation.Nonnull Integer mediaStorage) {
+    this.mediaStorage = mediaStorage;
   }
 
 
@@ -167,13 +193,14 @@ public class Usage {
     Usage usage = (Usage) o;
     return Objects.equals(this.assistantRequests, usage.assistantRequests) &&
         Objects.equals(this.channels, usage.channels) &&
+        Objects.equals(this.mediaStorage, usage.mediaStorage) &&
         Objects.equals(this.members, usage.members) &&
         Objects.equals(this.scheduledPosts, usage.scheduledPosts);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(assistantRequests, channels, members, scheduledPosts);
+    return Objects.hash(assistantRequests, channels, mediaStorage, members, scheduledPosts);
   }
 
   @Override
@@ -182,6 +209,7 @@ public class Usage {
     sb.append("class Usage {\n");
     sb.append("    assistantRequests: ").append(toIndentedString(assistantRequests)).append("\n");
     sb.append("    channels: ").append(toIndentedString(channels)).append("\n");
+    sb.append("    mediaStorage: ").append(toIndentedString(mediaStorage)).append("\n");
     sb.append("    members: ").append(toIndentedString(members)).append("\n");
     sb.append("    scheduledPosts: ").append(toIndentedString(scheduledPosts)).append("\n");
     sb.append("}");
@@ -202,10 +230,10 @@ public class Usage {
 
   static {
     // a set of all properties/fields (JSON key names)
-    openapiFields = new HashSet<String>(Arrays.asList("assistantRequests", "channels", "members", "scheduledPosts"));
+    openapiFields = new HashSet<String>(Arrays.asList("assistantRequests", "channels", "mediaStorage", "members", "scheduledPosts"));
 
     // a set of required properties/fields (JSON key names)
-    openapiRequiredFields = new HashSet<String>(Arrays.asList("assistantRequests", "channels", "members", "scheduledPosts"));
+    openapiRequiredFields = new HashSet<String>(Arrays.asList("assistantRequests", "channels", "mediaStorage", "members", "scheduledPosts"));
   }
 
   /**

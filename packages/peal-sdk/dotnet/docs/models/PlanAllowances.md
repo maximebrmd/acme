@@ -6,6 +6,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **AssistantRequests** | **long** |  | 
 **Channels** | **long** |  | 
+**MediaStorage** | **long** |  | 
 **Members** | **long** |  | 
 **ScheduledPosts** | **long** |  | 
 

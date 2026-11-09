@@ -18,12 +18,14 @@ import pprint
 import re  # noqa: F401
 import json
 
-from pydantic import BaseModel, ConfigDict, StrictBool
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
+from typing_extensions import Annotated
 from peal.models.billing_subscription import BillingSubscription
 from peal.models.plan import Plan
 from peal.models.plan_allowances import PlanAllowances
 from peal.models.plan_offer import PlanOffer
+from peal.models.trial_offer import TrialOffer
 from peal.models.usage import Usage
 from typing import Optional, Set
 from typing_extensions import Self
@@ -34,12 +36,16 @@ class Billing(BaseModel):
     Billing
     """ # noqa: E501
     allowances: PlanAllowances
+    currency: StrictStr
     enabled: StrictBool
     plan: Optional[Plan]
     plans: List[PlanOffer]
     subscription: Optional[BillingSubscription]
+    trial: Optional[TrialOffer]
     usage: Usage
-    __properties: ClassVar[List[str]] = ["allowances", "enabled", "plan", "plans", "subscription", "usage"]
+    vat_rate: Annotated[int, Field(le=9007199254740991, strict=True, ge=-9007199254740991)] = Field(alias="vatRate")
+    withdrawable_until: Optional[StrictStr] = Field(alias="withdrawableUntil")
+    __properties: ClassVar[List[str]] = ["allowances", "currency", "enabled", "plan", "plans", "subscription", "trial", "usage", "vatRate", "withdrawableUntil"]
 
     model_config = ConfigDict(
         validate_by_name=True,
@@ -92,6 +98,9 @@ class Billing(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of subscription
         if self.subscription:
             _dict['subscription'] = self.subscription.to_dict()
+        # override the default output from pydantic by calling `to_dict()` of trial
+        if self.trial:
+            _dict['trial'] = self.trial.to_dict()
         # override the default output from pydantic by calling `to_dict()` of usage
         if self.usage:
             _dict['usage'] = self.usage.to_dict()
@@ -104,6 +113,16 @@ class Billing(BaseModel):
         # and model_fields_set contains the field
         if self.subscription is None and "subscription" in self.model_fields_set:
             _dict['subscription'] = None
+
+        # set to None if trial (nullable) is None
+        # and model_fields_set contains the field
+        if self.trial is None and "trial" in self.model_fields_set:
+            _dict['trial'] = None
+
+        # set to None if withdrawable_until (nullable) is None
+        # and model_fields_set contains the field
+        if self.withdrawable_until is None and "withdrawable_until" in self.model_fields_set:
+            _dict['withdrawableUntil'] = None
 
         return _dict
 
@@ -118,11 +137,15 @@ class Billing(BaseModel):
 
         _obj = cls.model_validate({
             "allowances": PlanAllowances.from_dict(obj["allowances"]) if obj.get("allowances") is not None else None,
+            "currency": obj.get("currency"),
             "enabled": obj.get("enabled"),
             "plan": obj.get("plan"),
             "plans": [PlanOffer.from_dict(_item) for _item in obj["plans"]] if obj.get("plans") is not None else None,
             "subscription": BillingSubscription.from_dict(obj["subscription"]) if obj.get("subscription") is not None else None,
-            "usage": Usage.from_dict(obj["usage"]) if obj.get("usage") is not None else None
+            "trial": TrialOffer.from_dict(obj["trial"]) if obj.get("trial") is not None else None,
+            "usage": Usage.from_dict(obj["usage"]) if obj.get("usage") is not None else None,
+            "vatRate": obj.get("vatRate"),
+            "withdrawableUntil": obj.get("withdrawableUntil")
         })
         return _obj
 

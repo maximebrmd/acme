@@ -13,5 +13,7 @@
 
 * `ASSISTANT_REQUESTS` (value: `"assistantRequests"`)
 
+* `MEDIA_STORAGE` (value: `"mediaStorage"`)
+
 
 

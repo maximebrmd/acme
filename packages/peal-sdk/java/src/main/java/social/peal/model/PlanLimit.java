@@ -35,7 +35,9 @@ public enum PlanLimit {
   
   SCHEDULED_POSTS("scheduledPosts"),
   
-  ASSISTANT_REQUESTS("assistantRequests");
+  ASSISTANT_REQUESTS("assistantRequests"),
+  
+  MEDIA_STORAGE("mediaStorage");
 
   private String value;
 

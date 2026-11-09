@@ -33,6 +33,7 @@ pub enum MediaCompleteError {
 #[serde(untagged)]
 pub enum MediaCreateError {
     Status401(models::UnauthenticatedEncoded),
+    Status402(models::PlanLimitReachedEncoded),
     Status403(models::ForbiddenEncoded),
     Status404(models::WorkspaceNotFoundEncoded),
     Status422(models::MediaCreate422Response),
@@ -139,7 +140,7 @@ pub async fn media_complete(configuration: &configuration::Configuration, worksp
     }
 }
 
-/// Records pending media and signs the upload of its file: one PUT for an image or a video up to 16 MiB, one PUT per part for a larger video. Send the file with them, then complete the upload. The requests only take the declared size and content type. Needs media:upload.
+/// Records pending media and signs the upload of its file: one PUT for an image or a video up to 16 MiB, one PUT per part for a larger video. Send the file with them, then complete the upload. The requests only take the declared size and content type. On a server that bills, the declared size must fit the plan's media storage with what the workspace stores (PlanLimitReached `mediaStorage`). Needs media:upload.
 pub async fn media_create(configuration: &configuration::Configuration, workspace_id: &str, new_upload: models::NewUpload) -> Result<models::PreparedUpload, Error<MediaCreateError>> {
     // add a prefix to parameters to efficiently prevent name collisions
     let p_path_workspace_id = workspace_id;

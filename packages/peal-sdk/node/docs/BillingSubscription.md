@@ -8,8 +8,11 @@ Name | Type
 ------------ | -------------
 `cancelAtPeriodEnd` | boolean
 `currentPeriodEnd` | string
+`interval` | [BillingInterval](BillingInterval.md)
 `plan` | [PaidPlan](PaidPlan.md)
+`startedAt` | string
 `status` | [SubscriptionStatus](SubscriptionStatus.md)
+`trialEnd` | string
 
 ## Example
 
@@ -20,8 +23,11 @@ import type { BillingSubscription } from 'peal-sdk'
 const example = {
   "cancelAtPeriodEnd": null,
   "currentPeriodEnd": null,
+  "interval": null,
   "plan": null,
+  "startedAt": null,
   "status": null,
+  "trialEnd": null,
 } satisfies BillingSubscription
 
 console.log(example)

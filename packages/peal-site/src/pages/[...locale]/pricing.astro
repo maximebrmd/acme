@@ -1,0 +1,94 @@
+---
+import type { GetStaticPaths } from "astro";
+import { getRelativeLocaleUrl } from "astro:i18n";
+
+import { localePaths, pageLocale } from "../../i18n/locales.ts";
+import { messages } from "../../i18n/messages.ts";
+import Base from "../../layouts/base.astro";
+import { planCards, pricingNotes } from "../../pricing.ts";
+
+export const getStaticPaths = (() => localePaths()) satisfies GetStaticPaths;
+
+const locale = pageLocale(Astro.currentLocale);
+
+const t = messages(locale).pricing;
+
+const cards = planCards(locale, t);
+
+const notes = pricingNotes(t);
+---
+
+<Base description={t.description} path="pricing" title={`${t.title} · Peal`}>
+  <section class="mx-auto max-w-6xl px-6 pt-16 pb-8">
+    <h1 class="text-4xl font-semibold tracking-tight">{t.title}</h1>
+    <p class="mt-4 max-w-3xl text-lg text-neutral-600 dark:text-neutral-400">
+      {t.lead}
+    </p>
+    <p class="mt-4 max-w-3xl text-sm text-neutral-600 dark:text-neutral-400">
+      {notes.vat}
+    </p>
+  </section>
+
+  <section class="mx-auto max-w-6xl px-6 pb-8">
+    <ul class="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      {
+        cards.map((card) => (
+          <li class="flex flex-col gap-4 rounded-2xl border border-neutral-200 p-5 dark:border-neutral-800">
+            <h2 class="text-lg font-semibold">{card.name}</h2>
+            {card.prices === undefined ? (
+              <p class="text-2xl font-semibold">{t.freePrice}</p>
+            ) : (
+              <div class="flex flex-col gap-1">
+                <p class="text-2xl font-semibold tabular-nums">
+                  {card.prices.monthly}
+                </p>
+                <p class="text-sm text-neutral-600 tabular-nums dark:text-neutral-400">
+                  {card.prices.monthlyExcluded}
+                </p>
+                <p class="mt-2 text-sm tabular-nums">{card.prices.yearly}</p>
+                <p class="text-sm text-neutral-600 tabular-nums dark:text-neutral-400">
+                  {card.prices.yearlyMonthly} · {card.prices.yearlyExcluded}
+                </p>
+                <p class="mt-2 text-sm text-neutral-600 dark:text-neutral-400">
+                  {card.prices.perChannel}
+                </p>
+              </div>
+            )}
+            <ul class="flex flex-col gap-1 text-sm text-neutral-600 dark:text-neutral-400">
+              {card.limits.map((line) => (
+                <li>{line}</li>
+              ))}
+            </ul>
+          </li>
+        ))
+      }
+    </ul>
+    <p
+      class="mt-6 rounded-2xl bg-neutral-100 p-5 text-sm dark:bg-neutral-900"
+      role="note"
+    >
+      {notes.trial}
+    </p>
+  </section>
+
+  <section class="mx-auto max-w-6xl px-6 pt-8 pb-24">
+    <h2 class="text-2xl font-semibold tracking-tight">{t.legal.title}</h2>
+    <ul
+      class="mt-4 flex max-w-3xl list-disc flex-col gap-2 pl-5 text-neutral-600 dark:text-neutral-400"
+    >
+      <li>{t.legal.cancel}</li>
+      <li>{t.legal.withdrawal}</li>
+      <li>{t.legal.renewal}</li>
+      <li>{t.legal.prices}</li>
+      <li>{t.selfHost}</li>
+    </ul>
+    <p class="mt-4">
+      <a
+        href={getRelativeLocaleUrl(locale, "terms")}
+        class="font-medium underline underline-offset-4"
+      >
+        {t.legal.terms}
+      </a>
+    </p>
+  </section>
+</Base>

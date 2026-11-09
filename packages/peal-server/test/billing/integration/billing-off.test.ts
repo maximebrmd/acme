@@ -38,6 +38,7 @@ layer(IntegrationLive, { excludeTestServices: true, timeout: "180 seconds" })(
         assert.deepStrictEqual(billing.allowances, {
           assistantRequests: null,
           channels: null,
+          mediaStorage: null,
           members: null,
           scheduledPosts: null,
         });

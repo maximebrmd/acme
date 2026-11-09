@@ -17,6 +17,8 @@ pub struct Usage {
     pub assistant_requests: Box<models::PeriodUsage>,
     #[serde(rename = "channels")]
     pub channels: i32,
+    #[serde(rename = "mediaStorage")]
+    pub media_storage: i32,
     #[serde(rename = "members")]
     pub members: i32,
     #[serde(rename = "scheduledPosts")]
@@ -24,10 +26,11 @@ pub struct Usage {
 }
 
 impl Usage {
-    pub fn new(assistant_requests: models::PeriodUsage, channels: i32, members: i32, scheduled_posts: models::PeriodUsage) -> Usage {
+    pub fn new(assistant_requests: models::PeriodUsage, channels: i32, media_storage: i32, members: i32, scheduled_posts: models::PeriodUsage) -> Usage {
         Usage {
             assistant_requests: Box::new(assistant_requests),
             channels,
+            media_storage,
             members,
             scheduled_posts: Box::new(scheduled_posts),
         }

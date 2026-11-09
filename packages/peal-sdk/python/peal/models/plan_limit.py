@@ -31,6 +31,7 @@ class PlanLimit(str, Enum):
     MEMBERS = 'members'
     SCHEDULEDPOSTS = 'scheduledPosts'
     ASSISTANTREQUESTS = 'assistantRequests'
+    MEDIASTORAGE = 'mediaStorage'
 
     @classmethod
     def from_json(cls, json_str: str) -> Self:

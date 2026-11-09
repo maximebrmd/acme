@@ -6,6 +6,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **AssistantRequests** | **NullableInt32** |  | 
 **Channels** | **NullableInt32** |  | 
+**MediaStorage** | **NullableInt32** |  | 
 **Members** | **NullableInt32** |  | 
 **ScheduledPosts** | **NullableInt32** |  | 
 
@@ -13,7 +14,7 @@ Name | Type | Description | Notes
 
 ### NewPlanAllowances
 
-`func NewPlanAllowances(assistantRequests NullableInt32, channels NullableInt32, members NullableInt32, scheduledPosts NullableInt32, ) *PlanAllowances`
+`func NewPlanAllowances(assistantRequests NullableInt32, channels NullableInt32, mediaStorage NullableInt32, members NullableInt32, scheduledPosts NullableInt32, ) *PlanAllowances`
 
 NewPlanAllowances instantiates a new PlanAllowances object
 This constructor will assign default values to properties that have it defined,
@@ -88,6 +89,36 @@ SetChannels sets Channels field to given value.
 `func (o *PlanAllowances) UnsetChannels()`
 
 UnsetChannels ensures that no value is present for Channels, not even an explicit nil
+### GetMediaStorage
+
+`func (o *PlanAllowances) GetMediaStorage() int32`
+
+GetMediaStorage returns the MediaStorage field if non-nil, zero value otherwise.
+
+### GetMediaStorageOk
+
+`func (o *PlanAllowances) GetMediaStorageOk() (*int32, bool)`
+
+GetMediaStorageOk returns a tuple with the MediaStorage field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetMediaStorage
+
+`func (o *PlanAllowances) SetMediaStorage(v int32)`
+
+SetMediaStorage sets MediaStorage field to given value.
+
+
+### SetMediaStorageNil
+
+`func (o *PlanAllowances) SetMediaStorageNil(b bool)`
+
+ SetMediaStorageNil sets the value for MediaStorage to be an explicit nil
+
+### UnsetMediaStorage
+`func (o *PlanAllowances) UnsetMediaStorage()`
+
+UnsetMediaStorage ensures that no value is present for MediaStorage, not even an explicit nil
 ### GetMembers
 
 `func (o *PlanAllowances) GetMembers() int32`

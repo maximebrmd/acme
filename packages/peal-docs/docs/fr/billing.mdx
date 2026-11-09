@@ -1,0 +1,56 @@
+---
+title: Abonnements et facturation
+description: Les abonnements de Peal Cloud, au nombre de comptes connectés et TVA comprise, l’offre gratuite et l’essai, la commande, la résiliation en ligne, la rétractation sous 14 jours et ce que chaque abonnement limite.
+sidebar:
+  order: 15
+---
+
+Sur Peal Cloud, chaque espace de travail a un abonnement. Les abonnements sont tarifés au nombre de comptes connectés (canaux) : plus un espace de travail en connecte, moins chacun coûte. Chaque abonnement, gratuit compris, comprend toutes les plateformes, le calendrier, les statistiques, l’API, le [serveur MCP](/fr/mcp) et la [ligne de commande](/fr/cli). Un serveur que vous hébergez vous-même ne facture rien et ne limite rien ([Auto-hébergement](/fr/self-hosting#billing)).
+
+## Les abonnements [#plans]
+
+Prix TTC, TVA française de {{vat-rate}} % comprise ; le prix HT est entre parenthèses. Dans un autre pays de l’UE, sa propre TVA s’applique au paiement, et une entreprise avec un numéro de TVA valide paie le prix HT (autoliquidation). Une année coûte dix mois.
+
+| Abonnement | Canaux                   | Membres                 | Publications par mois          | Assistant par jour                | Médias                       | Mensuel                                               | Annuel                                              |
+| ---------- | ------------------------ | ----------------------- | ------------------------------ | --------------------------------- | ---------------------------- | ----------------------------------------------------- | --------------------------------------------------- |
+| Gratuit    | {{free-channels-fr}}     | {{free-members-fr}}     | {{free-scheduledPosts-fr}}     | {{free-assistantRequests-fr}}     | {{free-mediaStorage-fr}}     | gratuit                                               | gratuit                                             |
+| Starter    | {{starter-channels-fr}}  | {{starter-members-fr}}  | {{starter-scheduledPosts-fr}}  | {{starter-assistantRequests-fr}}  | {{starter-mediaStorage-fr}}  | {{starter-month-fr}} ({{starter-month-excl-fr}} HT)   | {{starter-year-fr}} ({{starter-year-excl-fr}} HT)   |
+| Pro        | {{pro-channels-fr}}      | {{pro-members-fr}}      | {{pro-scheduledPosts-fr}}      | {{pro-assistantRequests-fr}}      | {{pro-mediaStorage-fr}}      | {{pro-month-fr}} ({{pro-month-excl-fr}} HT)           | {{pro-year-fr}} ({{pro-year-excl-fr}} HT)           |
+| Business   | {{business-channels-fr}} | {{business-members-fr}} | {{business-scheduledPosts-fr}} | {{business-assistantRequests-fr}} | {{business-mediaStorage-fr}} | {{business-month-fr}} ({{business-month-excl-fr}} HT) | {{business-year-fr}} ({{business-year-excl-fr}} HT) |
+| Agency     | {{agency-channels-fr}}   | {{agency-members-fr}}   | {{agency-scheduledPosts-fr}}   | {{agency-assistantRequests-fr}}   | {{agency-mediaStorage-fr}}   | {{agency-month-fr}} ({{agency-month-excl-fr}} HT)     | {{agency-year-fr}} ({{agency-year-excl-fr}} HT)     |
+
+La page **Facturation** de l’espace de travail montre les mêmes prix, son abonnement et ce qu’il utilise de chaque limite ; `GET /api/workspaces/:workspaceId/billing` les donne aussi, les prix en centimes HT.
+
+## L’offre gratuite et l’essai [#trial]
+
+Un nouvel espace de travail est sur l’offre gratuite. Un compte possède au plus un espace de travail sur l’offre gratuite : en créer un second répond 402 `FREE_WORKSPACE_LIMIT_REACHED` tant que le premier n’a pas d’abonnement. Un espace de travail qui revient à l’offre gratuite, après un essai ou une résiliation, reste.
+
+Une fois par compte et par espace de travail, un espace de travail qui n’a jamais eu d’abonnement peut essayer Pro gratuitement pendant {{trial-days}} jours, sans moyen de paiement : rien n’est facturé, et trois jours avant la fin, les membres qui gèrent la facturation reçoivent un rappel, dans l’application et par e-mail. À la fin de l’essai, l’espace de travail revient à l’offre gratuite, avec son contenu. Commander un abonnement pendant l’essai y met fin immédiatement, et l’abonnement payant commence le jour même.
+
+## Ce qu’un abonnement limite [#limits]
+
+Chaque limite est vérifiée quand quelque chose est ajouté, et un espace de travail au-delà des limites d’un abonnement inférieur, comme après son essai, garde ce qu’il a :
+
+- **Canaux** : connecter un compte pour lequel l’abonnement n’a pas de place est refusé. Un espace de travail qui a plus de canaux que son abonnement n’en permet ne programme rien tant qu’il n’en a pas déconnecté.
+- **Membres**, invitations en attente comprises.
+- **Publications** qui partent dans un mois civil (UTC), sur l’offre gratuite.
+- **Demandes à l’assistant de rédaction** par jour UTC.
+- **Médias** : les octets d’images et de vidéos stockés, envois en cours compris. Un envoi pour lequel l’abonnement n’a pas de place est refusé avant que rien ne parte ; supprimez des médias pour en faire.
+
+Chaque refus répond 402 `PlanLimitReached`, avec la limite (`limit`) et ce que l’abonnement permet (`allowed`).
+
+## Commander [#ordering]
+
+Les propriétaires et les administrateurs commandent depuis la page **Facturation** de l’espace de travail, dans leur propre session. Avant tout paiement, ils cochent une case qui n’est jamais cochée pour eux : « Je demande que mon abonnement commence dès maintenant. Je sais qu’en tant que consommateur, je peux me rétracter dans les 14 jours et ne payer alors que les jours utilisés. » Peal l’enregistre avec la commande, puis ouvre le paiement de Stripe depuis le bouton **Commander avec obligation de paiement**. Stripe demande l’adresse de facturation et, pour une entreprise, le numéro de TVA, et calcule la TVA. Une confirmation de l’abonnement arrive par e-mail.
+
+## Résilier [#cancelling]
+
+Résiliez en ligne à tout moment, depuis la page **Facturation** : **Résilier l’abonnement**, puis **Confirmer la résiliation**. Un abonnement payant prend fin avec la période payée, et plus rien n’est facturé ; un essai prend fin immédiatement. Les membres qui gèrent la facturation reçoivent la confirmation par e-mail, avec la date à laquelle elle prend effet. Supprimer l’espace de travail résilie aussi immédiatement ([Espaces de travail et compte](/fr/settings#delete-workspace)).
+
+## Se rétracter sous 14 jours [#withdrawal]
+
+En tant que consommateur, vous pouvez vous rétracter du contrat dans les 14 jours suivant la souscription, sans donner de motif. Pendant ces 14 jours, la page **Facturation** montre **Se rétracter du contrat ici** ; elle indique ce qui est remboursé, puis **Confirmer la rétractation** met fin à l’abonnement immédiatement et rembourse la part de la période non utilisée, à la seconde, sur votre moyen de paiement sous 14 jours. Un accusé de réception, avec sa date et son heure, arrive par e-mail. Une entreprise qui a donné un numéro de TVA vérifié par Stripe n’a pas de droit de rétractation, et peut résilier.
+
+## Abonnements annuels [#renewal]
+
+Un abonnement annuel se renouvelle chaque année jusqu’à résiliation. 45 jours avant le renouvellement, les membres qui gèrent la facturation reçoivent un rappel, dans l’application et par e-mail, avec son prix et la façon de résilier. Un changement de prix est annoncé par e-mail 30 jours à l’avance, et s’applique au renouvellement suivant.

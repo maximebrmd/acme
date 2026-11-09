@@ -24,6 +24,7 @@ docs/AttemptResult.md
 docs/Authorization.md
 docs/Billing.md
 docs/BillingApi.md
+docs/BillingInterval.md
 docs/BillingSubscription.md
 docs/Channel.md
 docs/ChannelCannotPostEncoded.md
@@ -116,6 +117,7 @@ docs/MembersApi.md
 docs/Membership.md
 docs/MetricTotals.md
 docs/MetricsSnapshot.md
+docs/Money.md
 docs/NewApiKey.md
 docs/NewInvitation.md
 docs/NewUpload.md
@@ -128,6 +130,11 @@ docs/NoticeEventAnyOf1.md
 docs/NoticeEventAnyOf2.md
 docs/NoticeEventAnyOf3.md
 docs/NoticeEventAnyOf4.md
+docs/NoticeEventAnyOf5.md
+docs/NoticeEventAnyOf6.md
+docs/NoticeEventAnyOf7.md
+docs/NoticeEventAnyOf8.md
+docs/NoticeEventAnyOf9.md
 docs/NoticePage.md
 docs/NoticesApi.md
 docs/NotificationPreferences.md
@@ -143,6 +150,7 @@ docs/PlanAllowances.md
 docs/PlanLimit.md
 docs/PlanLimitReachedEncoded.md
 docs/PlanOffer.md
+docs/PlanPrice.md
 docs/Platform.md
 docs/PlatformUnreachableEncoded.md
 docs/Post.md
@@ -198,6 +206,7 @@ docs/TiktokApi.md
 docs/TooManyInvitationsEncoded.md
 docs/TopPost.md
 docs/TranslationLanguage.md
+docs/TrialOffer.md
 docs/UnauthenticatedEncoded.md
 docs/UnconfirmedReason.md
 docs/UnknownChannelsEncoded.md
@@ -269,6 +278,7 @@ src/main/java/social/peal/model/AssistantUnavailableEncoded.java
 src/main/java/social/peal/model/AttemptResult.java
 src/main/java/social/peal/model/Authorization.java
 src/main/java/social/peal/model/Billing.java
+src/main/java/social/peal/model/BillingInterval.java
 src/main/java/social/peal/model/BillingSubscription.java
 src/main/java/social/peal/model/Channel.java
 src/main/java/social/peal/model/ChannelCannotPostEncoded.java
@@ -357,6 +367,7 @@ src/main/java/social/peal/model/MediaUsage.java
 src/main/java/social/peal/model/Membership.java
 src/main/java/social/peal/model/MetricTotals.java
 src/main/java/social/peal/model/MetricsSnapshot.java
+src/main/java/social/peal/model/Money.java
 src/main/java/social/peal/model/NewApiKey.java
 src/main/java/social/peal/model/NewInvitation.java
 src/main/java/social/peal/model/NewUpload.java
@@ -369,6 +380,11 @@ src/main/java/social/peal/model/NoticeEventAnyOf1.java
 src/main/java/social/peal/model/NoticeEventAnyOf2.java
 src/main/java/social/peal/model/NoticeEventAnyOf3.java
 src/main/java/social/peal/model/NoticeEventAnyOf4.java
+src/main/java/social/peal/model/NoticeEventAnyOf5.java
+src/main/java/social/peal/model/NoticeEventAnyOf6.java
+src/main/java/social/peal/model/NoticeEventAnyOf7.java
+src/main/java/social/peal/model/NoticeEventAnyOf8.java
+src/main/java/social/peal/model/NoticeEventAnyOf9.java
 src/main/java/social/peal/model/NoticePage.java
 src/main/java/social/peal/model/NotificationPreferences.java
 src/main/java/social/peal/model/NotificationPreferencesChange.java
@@ -382,6 +398,7 @@ src/main/java/social/peal/model/PlanAllowances.java
 src/main/java/social/peal/model/PlanLimit.java
 src/main/java/social/peal/model/PlanLimitReachedEncoded.java
 src/main/java/social/peal/model/PlanOffer.java
+src/main/java/social/peal/model/PlanPrice.java
 src/main/java/social/peal/model/Platform.java
 src/main/java/social/peal/model/PlatformUnreachableEncoded.java
 src/main/java/social/peal/model/Post.java
@@ -433,6 +450,7 @@ src/main/java/social/peal/model/TikTokPrivacyLevel.java
 src/main/java/social/peal/model/TooManyInvitationsEncoded.java
 src/main/java/social/peal/model/TopPost.java
 src/main/java/social/peal/model/TranslationLanguage.java
+src/main/java/social/peal/model/TrialOffer.java
 src/main/java/social/peal/model/UnauthenticatedEncoded.java
 src/main/java/social/peal/model/UnconfirmedReason.java
 src/main/java/social/peal/model/UnknownChannelsEncoded.java

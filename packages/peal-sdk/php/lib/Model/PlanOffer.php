@@ -59,7 +59,8 @@ class PlanOffer implements ModelInterface, ArrayAccess, \JsonSerializable
      */
     protected static $openAPITypes = [
         'allowances' => '\Peal\Model\PlanAllowances',
-        'plan' => '\Peal\Model\Plan'
+        'plan' => '\Peal\Model\Plan',
+        'price' => '\Peal\Model\PlanPrice'
     ];
 
     /**
@@ -71,7 +72,8 @@ class PlanOffer implements ModelInterface, ArrayAccess, \JsonSerializable
      */
     protected static $openAPIFormats = [
         'allowances' => null,
-        'plan' => null
+        'plan' => null,
+        'price' => null
     ];
 
     /**
@@ -81,7 +83,8 @@ class PlanOffer implements ModelInterface, ArrayAccess, \JsonSerializable
      */
     protected static array $openAPINullables = [
         'allowances' => false,
-        'plan' => false
+        'plan' => false,
+        'price' => true
     ];
 
     /**
@@ -171,7 +174,8 @@ class PlanOffer implements ModelInterface, ArrayAccess, \JsonSerializable
      */
     protected static $attributeMap = [
         'allowances' => 'allowances',
-        'plan' => 'plan'
+        'plan' => 'plan',
+        'price' => 'price'
     ];
 
     /**
@@ -181,7 +185,8 @@ class PlanOffer implements ModelInterface, ArrayAccess, \JsonSerializable
      */
     protected static $setters = [
         'allowances' => 'setAllowances',
-        'plan' => 'setPlan'
+        'plan' => 'setPlan',
+        'price' => 'setPrice'
     ];
 
     /**
@@ -191,7 +196,8 @@ class PlanOffer implements ModelInterface, ArrayAccess, \JsonSerializable
      */
     protected static $getters = [
         'allowances' => 'getAllowances',
-        'plan' => 'getPlan'
+        'plan' => 'getPlan',
+        'price' => 'getPrice'
     ];
 
     /**
@@ -253,6 +259,7 @@ class PlanOffer implements ModelInterface, ArrayAccess, \JsonSerializable
     {
         $this->setIfExists('allowances', $data ?? [], null);
         $this->setIfExists('plan', $data ?? [], null);
+        $this->setIfExists('price', $data ?? [], null);
     }
 
     /**
@@ -287,6 +294,9 @@ class PlanOffer implements ModelInterface, ArrayAccess, \JsonSerializable
         }
         if ($this->container['plan'] === null) {
             $invalidProperties[] = "'plan' can't be null";
+        }
+        if ($this->container['price'] === null && !$this->isNullableSetToNull('price')) {
+            $invalidProperties[] = "'price' is required";
         }
         return $invalidProperties;
     }
@@ -353,6 +363,40 @@ class PlanOffer implements ModelInterface, ArrayAccess, \JsonSerializable
             throw new \InvalidArgumentException('non-nullable plan cannot be null');
         }
         $this->container['plan'] = $plan;
+
+        return $this;
+    }
+
+    /**
+     * Gets price
+     *
+     * @return \Peal\Model\PlanPrice|null
+     */
+    public function getPrice()
+    {
+        return $this->container['price'];
+    }
+
+    /**
+     * Sets price
+     *
+     * @param \Peal\Model\PlanPrice|null $price price
+     *
+     * @return self
+     */
+    public function setPrice($price)
+    {
+        if (is_null($price)) {
+            array_push($this->openAPINullablesSetToNull, 'price');
+        } else {
+            $nullablesSetToNull = $this->getOpenAPINullablesSetToNull();
+            $index = array_search('price', $nullablesSetToNull);
+            if ($index !== FALSE) {
+                unset($nullablesSetToNull[$index]);
+                $this->setOpenAPINullablesSetToNull($nullablesSetToNull);
+            }
+        }
+        $this->container['price'] = $price;
 
         return $this;
     }

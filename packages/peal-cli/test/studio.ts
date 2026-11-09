@@ -244,21 +244,27 @@ const invitation: Invitation = {
 
 const billing: Billing = {
   allowances: {
-    assistantRequests: 10,
+    assistantRequests: 3,
     channels: 3,
+    mediaStorage: 500_000_000,
     members: 2,
     scheduledPosts: 30,
   },
+  currency: "eur",
   enabled: true,
   plan: "free",
   plans: [],
   subscription: null,
+  trial: { available: true, days: 14, plan: "pro" },
   usage: {
-    assistantRequests: { resetsAt: at("2026-11-10T00:00:00Z"), used: 4 },
+    assistantRequests: { resetsAt: at("2026-11-10T00:00:00Z"), used: 2 },
     channels: 2,
+    mediaStorage: 125_000_000,
     members: 2,
     scheduledPosts: { resetsAt: at("2026-12-01T00:00:00Z"), used: 7 },
   },
+  vatRate: 20,
+  withdrawableUntil: null,
 };
 
 const cli: ConnectedApp = {

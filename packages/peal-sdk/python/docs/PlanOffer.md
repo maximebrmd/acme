@@ -7,6 +7,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **allowances** | [**PlanAllowances**](PlanAllowances.md) |  | 
 **plan** | [**Plan**](Plan.md) |  | 
+**price** | [**PlanPrice**](PlanPrice.md) |  | 
 
 ## Example
 

@@ -27,6 +27,13 @@ import {
     PlanToJSON,
     PlanToJSONTyped,
 } from './Plan.js';
+import type { PlanPrice } from './PlanPrice.js';
+import {
+    PlanPriceFromJSON,
+    PlanPriceFromJSONTyped,
+    PlanPriceToJSON,
+    PlanPriceToJSONTyped,
+} from './PlanPrice.js';
 
 /**
  * 
@@ -42,6 +49,10 @@ export interface PlanOffer {
      * 
      */
     plan: Plan;
+    /**
+     * 
+     */
+    price: PlanPrice | null;
 }
 
 
@@ -52,6 +63,7 @@ export interface PlanOffer {
 export function instanceOfPlanOffer(value: object): value is PlanOffer {
     if (!('allowances' in value) || value['allowances'] === undefined) return false;
     if (!('plan' in value) || value['plan'] === undefined) return false;
+    if (!('price' in value) || value['price'] === undefined) return false;
     return true;
 }
 
@@ -67,6 +79,7 @@ export function PlanOfferFromJSONTyped(json: any, ignoreDiscriminator: boolean):
         
         'allowances': PlanAllowancesFromJSON(json['allowances']),
         'plan': PlanFromJSON(json['plan']),
+        'price': PlanPriceFromJSON(json['price']),
     };
 }
 
@@ -83,6 +96,7 @@ export function PlanOfferToJSONTyped(value?: PlanOffer | null, ignoreDiscriminat
         
         'allowances': PlanAllowancesToJSON(value['allowances']),
         'plan': PlanToJSON(value['plan']),
+        'price': PlanPriceToJSON(value['price']),
     };
 }
 

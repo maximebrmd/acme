@@ -8,6 +8,7 @@ Name | Type
 ------------ | -------------
 `assistantRequests` | [PeriodUsage](PeriodUsage.md)
 `channels` | number
+`mediaStorage` | number
 `members` | number
 `scheduledPosts` | [PeriodUsage](PeriodUsage.md)
 
@@ -20,6 +21,7 @@ import type { Usage } from 'peal-sdk'
 const example = {
   "assistantRequests": null,
   "channels": null,
+  "mediaStorage": null,
   "members": null,
   "scheduledPosts": null,
 } satisfies Usage

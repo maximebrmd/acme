@@ -5,7 +5,11 @@ import type { Locale } from "#shared/domain/locale.ts";
 import type { EmailCatalog, EmailMessages } from "./email-catalog.ts";
 import { catalogs, escapeHtml, fill, keep, layout } from "./email-layout.ts";
 import type { RenderedEmail } from "./email-layout.ts";
-import type { NoticeChannel, NoticeEvent } from "./notice-event.ts";
+import type {
+  NoticeChannel,
+  NoticeEvent,
+  NoticeMoney,
+} from "./notice-event.ts";
 
 /** A notice for one reader, as an email. */
 export interface NoticeEmail {
@@ -24,6 +28,13 @@ const instantIn = (instant: DateTime.Utc, locale: Locale): string =>
     timeStyle: "short",
     timeZone: "UTC",
   })} UTC`;
+
+// An amount in its currency, as the reader writes money.
+const moneyIn = ({ amount, currency }: NoticeMoney, locale: Locale): string =>
+  new Intl.NumberFormat(locale, {
+    currency: currency.toUpperCase(),
+    style: "currency",
+  }).format(amount / 100);
 
 const platformName = (catalog: EmailCatalog, channel: NoticeChannel) =>
   catalog.platforms[channel.platform] ?? channel.platform;
@@ -86,6 +97,63 @@ const contentOf = (
     PostUnconfirmed: ({ channel }): Content => ({
       messages: catalog.postUnconfirmed,
       values: [["channel", channelPhrase(catalog, channel)]],
+    }),
+    SubscriptionCancelled: ({ endsAt, plan }): Content => ({
+      messages: catalog.subscriptionCancelled,
+      values: [
+        ["endsAt", instantIn(endsAt, locale)],
+        ["plan", catalog.plans[plan]],
+      ],
+    }),
+    SubscriptionRenewing: ({ plan, price, renewsAt }): Content => ({
+      messages: catalog.subscriptionRenewing,
+      values: [
+        ["plan", catalog.plans[plan]],
+        ["price", moneyIn(price, locale)],
+        ["renewsAt", instantIn(renewsAt, locale)],
+      ],
+    }),
+    SubscriptionStarted: ({
+      interval,
+      plan,
+      price,
+      startedAt,
+      trialEnd,
+    }): Content =>
+      Option.match(trialEnd, {
+        onNone: (): Content => ({
+          messages: catalog.subscriptionStarted,
+          values: [
+            ["interval", catalog.intervals[interval]],
+            ["plan", catalog.plans[plan]],
+            ["price", moneyIn(price, locale)],
+            ["startedAt", instantIn(startedAt, locale)],
+          ],
+        }),
+        onSome: (endsAt): Content => ({
+          messages: catalog.trialStarted,
+          values: [
+            ["endsAt", instantIn(endsAt, locale)],
+            ["plan", catalog.plans[plan]],
+            ["price", moneyIn(price, locale)],
+            ["startedAt", instantIn(startedAt, locale)],
+          ],
+        }),
+      }),
+    SubscriptionWithdrawn: ({ plan, refunded, withdrawnAt }): Content => ({
+      messages: catalog.subscriptionWithdrawn,
+      values: [
+        ["plan", catalog.plans[plan]],
+        ["refunded", moneyIn(refunded, locale)],
+        ["withdrawnAt", instantIn(withdrawnAt, locale)],
+      ],
+    }),
+    TrialEnding: ({ endsAt, plan }): Content => ({
+      messages: catalog.trialEnding,
+      values: [
+        ["endsAt", instantIn(endsAt, locale)],
+        ["plan", catalog.plans[plan]],
+      ],
     }),
   });
 

@@ -2,7 +2,7 @@
   "type": "base",
   "version": "9",
   "dialect": "postgres",
-  "id": "111df661-b9d5-44eb-8a5c-c3c05cd033e0",
+  "id": "8964ee35-d092-4a03-9808-02d4bdfd7c94",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
@@ -196,6 +196,25 @@
       "statementTarget": [
         "table",
         "billing",
+        "orders"
+      ],
+      "writes": [
+        "s|tbl|billing.orders",
+        "n|tbl|billing.orders",
+        "e|tbl|billing.orders",
+        "n|rel|billing.orders",
+        "n|type|billing.orders",
+        "n|rel|billing.orders_pkey"
+      ],
+      "reads": [
+        "n|sch|billing"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "billing",
         "stripe_events"
       ],
       "writes": [
@@ -224,6 +243,44 @@
         "n|rel|billing.subscriptions",
         "n|type|billing.subscriptions",
         "n|rel|billing.subscriptions_pkey"
+      ],
+      "reads": [
+        "n|sch|billing"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "billing",
+        "trials"
+      ],
+      "writes": [
+        "s|tbl|billing.trials",
+        "n|tbl|billing.trials",
+        "e|tbl|billing.trials",
+        "n|rel|billing.trials",
+        "n|type|billing.trials",
+        "n|rel|billing.trials_pkey"
+      ],
+      "reads": [
+        "n|sch|billing"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "billing",
+        "withdrawals"
+      ],
+      "writes": [
+        "s|tbl|billing.withdrawals",
+        "n|tbl|billing.withdrawals",
+        "e|tbl|billing.withdrawals",
+        "n|rel|billing.withdrawals",
+        "n|type|billing.withdrawals",
+        "n|rel|billing.withdrawals_pkey"
       ],
       "reads": [
         "n|sch|billing"
@@ -996,6 +1053,26 @@
       "statementTarget": [
         "index",
         "billing",
+        "orders",
+        "orders_workspace"
+      ],
+      "writes": [
+        "s|idx|billing.orders_workspace",
+        "n|idx|billing.orders_workspace",
+        "e|idx|billing.orders_workspace",
+        "n|rel|billing.orders_workspace"
+      ],
+      "reads": [
+        "n|tbl|billing.orders",
+        "n|sch|billing",
+        "n|col|billing.orders.workspace_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "billing",
         "subscriptions",
         "subscriptions_workspace"
       ],
@@ -1009,6 +1086,87 @@
         "n|tbl|billing.subscriptions",
         "n|sch|billing",
         "n|col|billing.subscriptions.workspace_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "billing",
+        "subscriptions",
+        "subscriptions_reminders"
+      ],
+      "writes": [
+        "s|idx|billing.subscriptions_reminders",
+        "n|idx|billing.subscriptions_reminders",
+        "e|idx|billing.subscriptions_reminders",
+        "n|rel|billing.subscriptions_reminders"
+      ],
+      "reads": [
+        "n|tbl|billing.subscriptions",
+        "n|sch|billing",
+        "n|col|billing.subscriptions.status",
+        "n|col|billing.subscriptions.current_period_end"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "billing",
+        "trials",
+        "trials_user"
+      ],
+      "writes": [
+        "s|idx|billing.trials_user",
+        "n|idx|billing.trials_user",
+        "e|idx|billing.trials_user",
+        "n|rel|billing.trials_user"
+      ],
+      "reads": [
+        "n|tbl|billing.trials",
+        "n|sch|billing",
+        "n|col|billing.trials.user_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "billing",
+        "trials",
+        "trials_workspace"
+      ],
+      "writes": [
+        "s|idx|billing.trials_workspace",
+        "n|idx|billing.trials_workspace",
+        "e|idx|billing.trials_workspace",
+        "n|rel|billing.trials_workspace"
+      ],
+      "reads": [
+        "n|tbl|billing.trials",
+        "n|sch|billing",
+        "n|col|billing.trials.workspace_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "billing",
+        "withdrawals",
+        "withdrawals_workspace"
+      ],
+      "writes": [
+        "s|idx|billing.withdrawals_workspace",
+        "n|idx|billing.withdrawals_workspace",
+        "e|idx|billing.withdrawals_workspace",
+        "n|rel|billing.withdrawals_workspace"
+      ],
+      "reads": [
+        "n|tbl|billing.withdrawals",
+        "n|sch|billing",
+        "n|col|billing.withdrawals.workspace_id"
       ]
     },
     {
@@ -2473,6 +2631,12 @@
     },
     {
       "schema": "billing",
+      "name": "orders",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "billing",
       "name": "stripe_events",
       "isRlsEnabled": false,
       "entityType": "tables"
@@ -2480,6 +2644,18 @@
     {
       "schema": "billing",
       "name": "subscriptions",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "billing",
+      "name": "trials",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "billing",
+      "name": "withdrawals",
       "isRlsEnabled": false,
       "entityType": "tables"
     },
@@ -3059,6 +3235,123 @@
     },
     {
       "schema": "billing",
+      "table": "orders",
+      "name": "consent_version",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "billing",
+      "table": "orders",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "billing",
+      "table": "orders",
+      "name": "id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "billing",
+      "table": "orders",
+      "name": "interval",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "billing",
+      "table": "orders",
+      "name": "plan",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "billing",
+      "table": "orders",
+      "name": "trial",
+      "type": "boolean",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "billing",
+      "table": "orders",
+      "name": "used_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "billing",
+      "table": "orders",
+      "name": "user_id",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "billing",
+      "table": "orders",
+      "name": "workspace_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "billing",
       "table": "stripe_events",
       "name": "id",
       "type": "text",
@@ -3105,6 +3398,32 @@
       "notNull": false,
       "dimensions": 0,
       "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "billing",
+      "table": "subscriptions",
+      "name": "current_period_start",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "billing",
+      "table": "subscriptions",
+      "name": "interval",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "'month'",
       "generated": null,
       "identity": null,
       "entityType": "columns"
@@ -3177,10 +3496,36 @@
     {
       "schema": "billing",
       "table": "subscriptions",
+      "name": "started_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "billing",
+      "table": "subscriptions",
       "name": "stripe_subscription_id",
       "type": "text",
       "typeSchema": null,
       "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "billing",
+      "table": "subscriptions",
+      "name": "trial_end",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
       "dimensions": 0,
       "default": null,
       "generated": null,
@@ -3203,6 +3548,149 @@
     {
       "schema": "billing",
       "table": "subscriptions",
+      "name": "workspace_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "billing",
+      "table": "trials",
+      "name": "plan",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "billing",
+      "table": "trials",
+      "name": "started_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "billing",
+      "table": "trials",
+      "name": "stripe_subscription_id",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "billing",
+      "table": "trials",
+      "name": "user_id",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "billing",
+      "table": "trials",
+      "name": "workspace_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "billing",
+      "table": "withdrawals",
+      "name": "currency",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "billing",
+      "table": "withdrawals",
+      "name": "refunded",
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "billing",
+      "table": "withdrawals",
+      "name": "requested_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "billing",
+      "table": "withdrawals",
+      "name": "stripe_subscription_id",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "billing",
+      "table": "withdrawals",
+      "name": "user_id",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "billing",
+      "table": "withdrawals",
       "name": "workspace_id",
       "type": "uuid",
       "typeSchema": null,
@@ -8195,8 +8683,120 @@
     },
     {
       "schema": "billing",
+      "table": "orders",
+      "name": "orders_workspace",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "workspace_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "billing",
       "table": "subscriptions",
       "name": "subscriptions_workspace",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "workspace_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "billing",
+      "table": "subscriptions",
+      "name": "subscriptions_reminders",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "status",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "current_period_end",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "billing",
+      "table": "trials",
+      "name": "trials_user",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "user_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": true,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "billing",
+      "table": "trials",
+      "name": "trials_workspace",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "workspace_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": true,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "billing",
+      "table": "withdrawals",
+      "name": "withdrawals_workspace",
       "nameExplicit": true,
       "columns": [
         {
@@ -9649,6 +10249,16 @@
     },
     {
       "schema": "billing",
+      "table": "orders",
+      "name": "orders_pkey",
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "billing",
       "table": "stripe_events",
       "name": "stripe_events_pkey",
       "columns": [
@@ -9661,6 +10271,26 @@
       "schema": "billing",
       "table": "subscriptions",
       "name": "subscriptions_pkey",
+      "columns": [
+        "stripe_subscription_id"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "billing",
+      "table": "trials",
+      "name": "trials_pkey",
+      "columns": [
+        "stripe_subscription_id"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "billing",
+      "table": "withdrawals",
+      "name": "withdrawals_pkey",
       "columns": [
         "stripe_subscription_id"
       ],

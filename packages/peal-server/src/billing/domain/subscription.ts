@@ -3,6 +3,8 @@ import { Schema } from "effect";
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import { PaidPlanSchema } from "#shared/domain/plan.ts";
 
+import { BillingIntervalSchema } from "./billing-interval.ts";
+
 /** Where a Stripe subscription stands, as Stripe names it. */
 export const SubscriptionStatusSchema = Schema.Literals([
   "incomplete",
@@ -29,10 +31,19 @@ export class Subscription extends Schema.Class<Subscription>(
   cancelAtPeriodEnd: Schema.Boolean,
   // When the period it was paid for ends, and the next payment is due.
   currentPeriodEnd: Schema.Option(Schema.DateTimeUtc),
+  // When that period started.
+  currentPeriodStart: Schema.Option(Schema.DateTimeUtc),
+  // How often it is paid for.
+  interval: BillingIntervalSchema,
   plan: PaidPlanSchema,
+  // When the contract started: the trial's first day, for a trial. The
+  // consumer's 14 days to withdraw count from it.
+  startedAt: Schema.Option(Schema.DateTimeUtc),
   status: SubscriptionStatusSchema,
   stripeCustomerId: Schema.NonEmptyString,
   stripeSubscriptionId: Schema.NonEmptyString,
+  // When its trial ends, for one that started with a trial.
+  trialEnd: Schema.Option(Schema.DateTimeUtc),
   workspaceId: WorkspaceIdSchema,
 }) {}
 

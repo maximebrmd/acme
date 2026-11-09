@@ -8,6 +8,7 @@ Name | Type
 ------------ | -------------
 `assistantRequests` | number
 `channels` | number
+`mediaStorage` | number
 `members` | number
 `scheduledPosts` | number
 
@@ -20,6 +21,7 @@ import type { PlanAllowances } from 'peal-sdk'
 const example = {
   "assistantRequests": null,
   "channels": null,
+  "mediaStorage": null,
   "members": null,
   "scheduledPosts": null,
 } satisfies PlanAllowances

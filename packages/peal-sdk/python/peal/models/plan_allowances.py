@@ -31,9 +31,10 @@ class PlanAllowances(BaseModel):
     """ # noqa: E501
     assistant_requests: Optional[Annotated[int, Field(le=9007199254740991, strict=True, ge=-9007199254740991)]] = Field(alias="assistantRequests")
     channels: Optional[Annotated[int, Field(le=9007199254740991, strict=True, ge=-9007199254740991)]]
+    media_storage: Optional[Annotated[int, Field(le=9007199254740991, strict=True, ge=-9007199254740991)]] = Field(alias="mediaStorage")
     members: Optional[Annotated[int, Field(le=9007199254740991, strict=True, ge=-9007199254740991)]]
     scheduled_posts: Optional[Annotated[int, Field(le=9007199254740991, strict=True, ge=-9007199254740991)]] = Field(alias="scheduledPosts")
-    __properties: ClassVar[List[str]] = ["assistantRequests", "channels", "members", "scheduledPosts"]
+    __properties: ClassVar[List[str]] = ["assistantRequests", "channels", "mediaStorage", "members", "scheduledPosts"]
 
     model_config = ConfigDict(
         validate_by_name=True,
@@ -84,6 +85,11 @@ class PlanAllowances(BaseModel):
         if self.channels is None and "channels" in self.model_fields_set:
             _dict['channels'] = None
 
+        # set to None if media_storage (nullable) is None
+        # and model_fields_set contains the field
+        if self.media_storage is None and "media_storage" in self.model_fields_set:
+            _dict['mediaStorage'] = None
+
         # set to None if members (nullable) is None
         # and model_fields_set contains the field
         if self.members is None and "members" in self.model_fields_set:
@@ -108,6 +114,7 @@ class PlanAllowances(BaseModel):
         _obj = cls.model_validate({
             "assistantRequests": obj.get("assistantRequests"),
             "channels": obj.get("channels"),
+            "mediaStorage": obj.get("mediaStorage"),
             "members": obj.get("members"),
             "scheduledPosts": obj.get("scheduledPosts")
         })

@@ -23,11 +23,15 @@ var _ MappedNullable = &Billing{}
 // Billing struct for Billing
 type Billing struct {
 	Allowances PlanAllowances `json:"allowances"`
+	Currency string `json:"currency"`
 	Enabled bool `json:"enabled"`
 	Plan NullablePlan `json:"plan"`
 	Plans []PlanOffer `json:"plans"`
 	Subscription NullableBillingSubscription `json:"subscription"`
+	Trial NullableTrialOffer `json:"trial"`
 	Usage Usage `json:"usage"`
+	VatRate int32 `json:"vatRate"`
+	WithdrawableUntil NullableString `json:"withdrawableUntil"`
 }
 
 type _Billing Billing
@@ -36,14 +40,18 @@ type _Billing Billing
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewBilling(allowances PlanAllowances, enabled bool, plan NullablePlan, plans []PlanOffer, subscription NullableBillingSubscription, usage Usage) *Billing {
+func NewBilling(allowances PlanAllowances, currency string, enabled bool, plan NullablePlan, plans []PlanOffer, subscription NullableBillingSubscription, trial NullableTrialOffer, usage Usage, vatRate int32, withdrawableUntil NullableString) *Billing {
 	this := Billing{}
 	this.Allowances = allowances
+	this.Currency = currency
 	this.Enabled = enabled
 	this.Plan = plan
 	this.Plans = plans
 	this.Subscription = subscription
+	this.Trial = trial
 	this.Usage = usage
+	this.VatRate = vatRate
+	this.WithdrawableUntil = withdrawableUntil
 	return &this
 }
 
@@ -77,6 +85,30 @@ func (o *Billing) GetAllowancesOk() (*PlanAllowances, bool) {
 // SetAllowances sets field value
 func (o *Billing) SetAllowances(v PlanAllowances) {
 	o.Allowances = v
+}
+
+// GetCurrency returns the Currency field value
+func (o *Billing) GetCurrency() string {
+	if o == nil {
+		var ret string
+		return ret
+	}
+
+	return o.Currency
+}
+
+// GetCurrencyOk returns a tuple with the Currency field value
+// and a boolean to check if the value has been set.
+func (o *Billing) GetCurrencyOk() (*string, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return &o.Currency, true
+}
+
+// SetCurrency sets field value
+func (o *Billing) SetCurrency(v string) {
+	o.Currency = v
 }
 
 // GetEnabled returns the Enabled field value
@@ -179,6 +211,32 @@ func (o *Billing) SetSubscription(v BillingSubscription) {
 	o.Subscription.Set(&v)
 }
 
+// GetTrial returns the Trial field value
+// If the value is explicit nil, the zero value for TrialOffer will be returned
+func (o *Billing) GetTrial() TrialOffer {
+	if o == nil || o.Trial.Get() == nil {
+		var ret TrialOffer
+		return ret
+	}
+
+	return *o.Trial.Get()
+}
+
+// GetTrialOk returns a tuple with the Trial field value
+// and a boolean to check if the value has been set.
+// NOTE: If the value is an explicit nil, `nil, true` will be returned
+func (o *Billing) GetTrialOk() (*TrialOffer, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return o.Trial.Get(), o.Trial.IsSet()
+}
+
+// SetTrial sets field value
+func (o *Billing) SetTrial(v TrialOffer) {
+	o.Trial.Set(&v)
+}
+
 // GetUsage returns the Usage field value
 func (o *Billing) GetUsage() Usage {
 	if o == nil {
@@ -203,6 +261,56 @@ func (o *Billing) SetUsage(v Usage) {
 	o.Usage = v
 }
 
+// GetVatRate returns the VatRate field value
+func (o *Billing) GetVatRate() int32 {
+	if o == nil {
+		var ret int32
+		return ret
+	}
+
+	return o.VatRate
+}
+
+// GetVatRateOk returns a tuple with the VatRate field value
+// and a boolean to check if the value has been set.
+func (o *Billing) GetVatRateOk() (*int32, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return &o.VatRate, true
+}
+
+// SetVatRate sets field value
+func (o *Billing) SetVatRate(v int32) {
+	o.VatRate = v
+}
+
+// GetWithdrawableUntil returns the WithdrawableUntil field value
+// If the value is explicit nil, the zero value for string will be returned
+func (o *Billing) GetWithdrawableUntil() string {
+	if o == nil || o.WithdrawableUntil.Get() == nil {
+		var ret string
+		return ret
+	}
+
+	return *o.WithdrawableUntil.Get()
+}
+
+// GetWithdrawableUntilOk returns a tuple with the WithdrawableUntil field value
+// and a boolean to check if the value has been set.
+// NOTE: If the value is an explicit nil, `nil, true` will be returned
+func (o *Billing) GetWithdrawableUntilOk() (*string, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return o.WithdrawableUntil.Get(), o.WithdrawableUntil.IsSet()
+}
+
+// SetWithdrawableUntil sets field value
+func (o *Billing) SetWithdrawableUntil(v string) {
+	o.WithdrawableUntil.Set(&v)
+}
+
 func (o Billing) MarshalJSON() ([]byte, error) {
 	toSerialize,err := o.ToMap()
 	if err != nil {
@@ -214,11 +322,15 @@ func (o Billing) MarshalJSON() ([]byte, error) {
 func (o Billing) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
 	toSerialize["allowances"] = o.Allowances
+	toSerialize["currency"] = o.Currency
 	toSerialize["enabled"] = o.Enabled
 	toSerialize["plan"] = o.Plan.Get()
 	toSerialize["plans"] = o.Plans
 	toSerialize["subscription"] = o.Subscription.Get()
+	toSerialize["trial"] = o.Trial.Get()
 	toSerialize["usage"] = o.Usage
+	toSerialize["vatRate"] = o.VatRate
+	toSerialize["withdrawableUntil"] = o.WithdrawableUntil.Get()
 	return toSerialize, nil
 }
 
@@ -228,11 +340,15 @@ func (o *Billing) UnmarshalJSON(data []byte) (err error) {
 	// that every required field exists as a key in the generic map.
 	requiredProperties := []string{
 		"allowances",
+		"currency",
 		"enabled",
 		"plan",
 		"plans",
 		"subscription",
+		"trial",
 		"usage",
+		"vatRate",
+		"withdrawableUntil",
 	}
 
 	allProperties := make(map[string]interface{})

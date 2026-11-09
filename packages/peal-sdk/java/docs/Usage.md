@@ -9,6 +9,7 @@
 |------------ | ------------- | ------------- | -------------|
 |**assistantRequests** | [**PeriodUsage**](PeriodUsage.md) |  |  |
 |**channels** | **Integer** |  |  |
+|**mediaStorage** | **Integer** |  |  |
 |**members** | **Integer** |  |  |
 |**scheduledPosts** | [**PeriodUsage**](PeriodUsage.md) |  |  |
 

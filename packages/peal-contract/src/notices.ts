@@ -7,6 +7,11 @@ import {
 } from "effect/http-api";
 
 import { Authentication } from "./authentication.ts";
+import {
+  BillingIntervalSchema,
+  MoneySchema,
+  PaidPlanSchema,
+} from "./billing-plans.ts";
 import { Forbidden } from "./forbidden.ts";
 import { PlatformSchema } from "./platform.ts";
 import { FailureReasonSchema } from "./posts.ts";
@@ -51,6 +56,41 @@ export const NoticeEventSchema = Schema.Union([
   Schema.TaggedStruct("ChannelReconnectSoon", {
     channel: NoticeChannelSchema,
     expiresAt: Schema.DateTimeUtc,
+  }),
+  // A subscription started at `startedAt`, paid each `interval` at `price`
+  // excluding VAT, or in its trial until `trialEnd` (null for a paid one).
+  Schema.TaggedStruct("SubscriptionStarted", {
+    interval: BillingIntervalSchema,
+    plan: PaidPlanSchema,
+    price: MoneySchema,
+    startedAt: Schema.DateTimeUtc,
+    trialEnd: Schema.NullOr(Schema.DateTimeUtc),
+  }),
+  // The workspace's trial ends at `endsAt`: it then moves to the free plan
+  // unless someone orders a plan.
+  Schema.TaggedStruct("TrialEnding", {
+    endsAt: Schema.DateTimeUtc,
+    plan: PaidPlanSchema,
+  }),
+  // A yearly plan renews at `renewsAt`, for `price` excluding VAT, unless it
+  // is cancelled before.
+  Schema.TaggedStruct("SubscriptionRenewing", {
+    plan: PaidPlanSchema,
+    price: MoneySchema,
+    renewsAt: Schema.DateTimeUtc,
+  }),
+  // The subscription was cancelled: it ends at `endsAt`, and nothing more
+  // is charged.
+  Schema.TaggedStruct("SubscriptionCancelled", {
+    endsAt: Schema.DateTimeUtc,
+    plan: PaidPlanSchema,
+  }),
+  // A consumer withdrew from the contract at `withdrawnAt`: it ended then,
+  // and `refunded` is paid back.
+  Schema.TaggedStruct("SubscriptionWithdrawn", {
+    plan: PaidPlanSchema,
+    refunded: MoneySchema,
+    withdrawnAt: Schema.DateTimeUtc,
   }),
 ]).annotate({ identifier: "NoticeEvent" });
 

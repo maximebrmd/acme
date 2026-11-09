@@ -24,8 +24,11 @@ var _ MappedNullable = &BillingSubscription{}
 type BillingSubscription struct {
 	CancelAtPeriodEnd bool `json:"cancelAtPeriodEnd"`
 	CurrentPeriodEnd NullableString `json:"currentPeriodEnd"`
+	Interval BillingInterval `json:"interval"`
 	Plan PaidPlan `json:"plan"`
+	StartedAt NullableString `json:"startedAt"`
 	Status SubscriptionStatus `json:"status"`
+	TrialEnd NullableString `json:"trialEnd"`
 }
 
 type _BillingSubscription BillingSubscription
@@ -34,12 +37,15 @@ type _BillingSubscription BillingSubscription
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewBillingSubscription(cancelAtPeriodEnd bool, currentPeriodEnd NullableString, plan PaidPlan, status SubscriptionStatus) *BillingSubscription {
+func NewBillingSubscription(cancelAtPeriodEnd bool, currentPeriodEnd NullableString, interval BillingInterval, plan PaidPlan, startedAt NullableString, status SubscriptionStatus, trialEnd NullableString) *BillingSubscription {
 	this := BillingSubscription{}
 	this.CancelAtPeriodEnd = cancelAtPeriodEnd
 	this.CurrentPeriodEnd = currentPeriodEnd
+	this.Interval = interval
 	this.Plan = plan
+	this.StartedAt = startedAt
 	this.Status = status
+	this.TrialEnd = trialEnd
 	return &this
 }
 
@@ -101,6 +107,30 @@ func (o *BillingSubscription) SetCurrentPeriodEnd(v string) {
 	o.CurrentPeriodEnd.Set(&v)
 }
 
+// GetInterval returns the Interval field value
+func (o *BillingSubscription) GetInterval() BillingInterval {
+	if o == nil {
+		var ret BillingInterval
+		return ret
+	}
+
+	return o.Interval
+}
+
+// GetIntervalOk returns a tuple with the Interval field value
+// and a boolean to check if the value has been set.
+func (o *BillingSubscription) GetIntervalOk() (*BillingInterval, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return &o.Interval, true
+}
+
+// SetInterval sets field value
+func (o *BillingSubscription) SetInterval(v BillingInterval) {
+	o.Interval = v
+}
+
 // GetPlan returns the Plan field value
 func (o *BillingSubscription) GetPlan() PaidPlan {
 	if o == nil {
@@ -123,6 +153,32 @@ func (o *BillingSubscription) GetPlanOk() (*PaidPlan, bool) {
 // SetPlan sets field value
 func (o *BillingSubscription) SetPlan(v PaidPlan) {
 	o.Plan = v
+}
+
+// GetStartedAt returns the StartedAt field value
+// If the value is explicit nil, the zero value for string will be returned
+func (o *BillingSubscription) GetStartedAt() string {
+	if o == nil || o.StartedAt.Get() == nil {
+		var ret string
+		return ret
+	}
+
+	return *o.StartedAt.Get()
+}
+
+// GetStartedAtOk returns a tuple with the StartedAt field value
+// and a boolean to check if the value has been set.
+// NOTE: If the value is an explicit nil, `nil, true` will be returned
+func (o *BillingSubscription) GetStartedAtOk() (*string, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return o.StartedAt.Get(), o.StartedAt.IsSet()
+}
+
+// SetStartedAt sets field value
+func (o *BillingSubscription) SetStartedAt(v string) {
+	o.StartedAt.Set(&v)
 }
 
 // GetStatus returns the Status field value
@@ -149,6 +205,32 @@ func (o *BillingSubscription) SetStatus(v SubscriptionStatus) {
 	o.Status = v
 }
 
+// GetTrialEnd returns the TrialEnd field value
+// If the value is explicit nil, the zero value for string will be returned
+func (o *BillingSubscription) GetTrialEnd() string {
+	if o == nil || o.TrialEnd.Get() == nil {
+		var ret string
+		return ret
+	}
+
+	return *o.TrialEnd.Get()
+}
+
+// GetTrialEndOk returns a tuple with the TrialEnd field value
+// and a boolean to check if the value has been set.
+// NOTE: If the value is an explicit nil, `nil, true` will be returned
+func (o *BillingSubscription) GetTrialEndOk() (*string, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return o.TrialEnd.Get(), o.TrialEnd.IsSet()
+}
+
+// SetTrialEnd sets field value
+func (o *BillingSubscription) SetTrialEnd(v string) {
+	o.TrialEnd.Set(&v)
+}
+
 func (o BillingSubscription) MarshalJSON() ([]byte, error) {
 	toSerialize,err := o.ToMap()
 	if err != nil {
@@ -161,8 +243,11 @@ func (o BillingSubscription) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
 	toSerialize["cancelAtPeriodEnd"] = o.CancelAtPeriodEnd
 	toSerialize["currentPeriodEnd"] = o.CurrentPeriodEnd.Get()
+	toSerialize["interval"] = o.Interval
 	toSerialize["plan"] = o.Plan
+	toSerialize["startedAt"] = o.StartedAt.Get()
 	toSerialize["status"] = o.Status
+	toSerialize["trialEnd"] = o.TrialEnd.Get()
 	return toSerialize, nil
 }
 
@@ -173,8 +258,11 @@ func (o *BillingSubscription) UnmarshalJSON(data []byte) (err error) {
 	requiredProperties := []string{
 		"cancelAtPeriodEnd",
 		"currentPeriodEnd",
+		"interval",
 		"plan",
+		"startedAt",
 		"status",
+		"trialEnd",
 	}
 
 	allProperties := make(map[string]interface{})

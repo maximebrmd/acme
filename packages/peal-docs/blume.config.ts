@@ -3,6 +3,8 @@ import { plausible } from "blume/analytics";
 import type { PlausibleAdapter, PlausibleOptions } from "blume/analytics";
 import { openapi } from "blume/reference";
 
+import { pricingVariables } from "./pricing-variables.ts";
+
 // Values that differ per deployment come from the environment, so the same
 // sources build anyone's copy of the docs. Each is optional: an unset or empty
 // variable turns its feature off.
@@ -83,4 +85,6 @@ export default defineConfig({
     }),
   ],
   title: "Peal",
+  // The plans' prices and limits, from the contract's catalogue.
+  variables: pricingVariables,
 });

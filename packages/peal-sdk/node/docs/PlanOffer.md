@@ -8,6 +8,7 @@ Name | Type
 ------------ | -------------
 `allowances` | [PlanAllowances](PlanAllowances.md)
 `plan` | [Plan](Plan.md)
+`price` | [PlanPrice](PlanPrice.md)
 
 ## Example
 
@@ -18,6 +19,7 @@ import type { PlanOffer } from 'peal-sdk'
 const example = {
   "allowances": null,
   "plan": null,
+  "price": null,
 } satisfies PlanOffer
 
 console.log(example)

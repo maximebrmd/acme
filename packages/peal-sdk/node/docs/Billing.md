@@ -7,11 +7,15 @@
 Name | Type
 ------------ | -------------
 `allowances` | [PlanAllowances](PlanAllowances.md)
+`currency` | string
 `enabled` | boolean
 `plan` | [Plan](Plan.md)
 `plans` | [Array&lt;PlanOffer&gt;](PlanOffer.md)
 `subscription` | [BillingSubscription](BillingSubscription.md)
+`trial` | [TrialOffer](TrialOffer.md)
 `usage` | [Usage](Usage.md)
+`vatRate` | number
+`withdrawableUntil` | string
 
 ## Example
 
@@ -21,11 +25,15 @@ import type { Billing } from 'peal-sdk'
 // TODO: Update the object below with actual values
 const example = {
   "allowances": null,
+  "currency": null,
   "enabled": null,
   "plan": null,
   "plans": null,
   "subscription": null,
+  "trial": null,
   "usage": null,
+  "vatRate": null,
+  "withdrawableUntil": null,
 } satisfies Billing
 
 console.log(example)

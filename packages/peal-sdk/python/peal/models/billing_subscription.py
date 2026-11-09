@@ -20,6 +20,7 @@ import json
 
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr
 from typing import Any, ClassVar, Dict, List, Optional
+from peal.models.billing_interval import BillingInterval
 from peal.models.paid_plan import PaidPlan
 from peal.models.subscription_status import SubscriptionStatus
 from typing import Optional, Set
@@ -32,9 +33,12 @@ class BillingSubscription(BaseModel):
     """ # noqa: E501
     cancel_at_period_end: StrictBool = Field(alias="cancelAtPeriodEnd")
     current_period_end: Optional[StrictStr] = Field(alias="currentPeriodEnd")
+    interval: BillingInterval
     plan: PaidPlan
+    started_at: Optional[StrictStr] = Field(alias="startedAt")
     status: SubscriptionStatus
-    __properties: ClassVar[List[str]] = ["cancelAtPeriodEnd", "currentPeriodEnd", "plan", "status"]
+    trial_end: Optional[StrictStr] = Field(alias="trialEnd")
+    __properties: ClassVar[List[str]] = ["cancelAtPeriodEnd", "currentPeriodEnd", "interval", "plan", "startedAt", "status", "trialEnd"]
 
     model_config = ConfigDict(
         validate_by_name=True,
@@ -80,6 +84,16 @@ class BillingSubscription(BaseModel):
         if self.current_period_end is None and "current_period_end" in self.model_fields_set:
             _dict['currentPeriodEnd'] = None
 
+        # set to None if started_at (nullable) is None
+        # and model_fields_set contains the field
+        if self.started_at is None and "started_at" in self.model_fields_set:
+            _dict['startedAt'] = None
+
+        # set to None if trial_end (nullable) is None
+        # and model_fields_set contains the field
+        if self.trial_end is None and "trial_end" in self.model_fields_set:
+            _dict['trialEnd'] = None
+
         return _dict
 
     @classmethod
@@ -94,8 +108,11 @@ class BillingSubscription(BaseModel):
         _obj = cls.model_validate({
             "cancelAtPeriodEnd": obj.get("cancelAtPeriodEnd"),
             "currentPeriodEnd": obj.get("currentPeriodEnd"),
+            "interval": obj.get("interval"),
             "plan": obj.get("plan"),
-            "status": obj.get("status")
+            "startedAt": obj.get("startedAt"),
+            "status": obj.get("status"),
+            "trialEnd": obj.get("trialEnd")
         })
         return _obj
 

@@ -6,11 +6,15 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **allowances** | [**PlanAllowances**](PlanAllowances.md) |  | 
+**currency** | **str** |  | 
 **enabled** | **bool** |  | 
 **plan** | [**Plan**](Plan.md) |  | 
 **plans** | [**List[PlanOffer]**](PlanOffer.md) |  | 
 **subscription** | [**BillingSubscription**](BillingSubscription.md) |  | 
+**trial** | [**TrialOffer**](TrialOffer.md) |  | 
 **usage** | [**Usage**](Usage.md) |  | 
+**vat_rate** | **int** |  | 
+**withdrawable_until** | **str** |  | 
 
 ## Example
 

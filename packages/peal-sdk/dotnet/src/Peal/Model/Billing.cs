@@ -35,20 +35,28 @@ namespace Peal.Model
         /// Initializes a new instance of the <see cref="Billing" /> class.
         /// </summary>
         /// <param name="allowances">allowances</param>
+        /// <param name="currency">currency</param>
         /// <param name="enabled">enabled</param>
         /// <param name="plans">plans</param>
         /// <param name="usage">usage</param>
+        /// <param name="vatRate">vatRate</param>
         /// <param name="plan">plan</param>
         /// <param name="subscription">subscription</param>
+        /// <param name="trial">trial</param>
+        /// <param name="withdrawableUntil">withdrawableUntil</param>
         [JsonConstructor]
-        public Billing(PlanAllowances allowances, bool enabled, List<PlanOffer> plans, Usage usage, Plan? plan = default, BillingSubscription? subscription = default)
+        public Billing(PlanAllowances allowances, string currency, bool enabled, List<PlanOffer> plans, Usage usage, long vatRate, Plan? plan = default, BillingSubscription? subscription = default, TrialOffer? trial = default, string? withdrawableUntil = default)
         {
             Allowances = allowances;
+            Currency = currency;
             Enabled = enabled;
             Plans = plans;
             Usage = usage;
+            VatRate = vatRate;
             Plan = plan;
             Subscription = subscription;
+            Trial = trial;
+            WithdrawableUntil = withdrawableUntil;
             OnCreated();
         }
 
@@ -65,6 +73,12 @@ namespace Peal.Model
         /// </summary>
         [JsonPropertyName("allowances")]
         public PlanAllowances Allowances { get; set; }
+
+        /// <summary>
+        /// Gets or Sets Currency
+        /// </summary>
+        [JsonPropertyName("currency")]
+        public string Currency { get; set; }
 
         /// <summary>
         /// Gets or Sets Enabled
@@ -85,10 +99,28 @@ namespace Peal.Model
         public Usage Usage { get; set; }
 
         /// <summary>
+        /// Gets or Sets VatRate
+        /// </summary>
+        [JsonPropertyName("vatRate")]
+        public long VatRate { get; set; }
+
+        /// <summary>
         /// Gets or Sets Subscription
         /// </summary>
         [JsonPropertyName("subscription")]
         public BillingSubscription? Subscription { get; set; }
+
+        /// <summary>
+        /// Gets or Sets Trial
+        /// </summary>
+        [JsonPropertyName("trial")]
+        public TrialOffer? Trial { get; set; }
+
+        /// <summary>
+        /// Gets or Sets WithdrawableUntil
+        /// </summary>
+        [JsonPropertyName("withdrawableUntil")]
+        public string? WithdrawableUntil { get; set; }
 
         /// <summary>
         /// Returns the string presentation of the object
@@ -99,11 +131,15 @@ namespace Peal.Model
             StringBuilder sb = new StringBuilder();
             sb.Append("class Billing {\n");
             sb.Append("  Allowances: ").Append(Allowances).Append("\n");
+            sb.Append("  Currency: ").Append(Currency).Append("\n");
             sb.Append("  Enabled: ").Append(Enabled).Append("\n");
             sb.Append("  Plans: ").Append(Plans).Append("\n");
             sb.Append("  Usage: ").Append(Usage).Append("\n");
+            sb.Append("  VatRate: ").Append(VatRate).Append("\n");
             sb.Append("  Plan: ").Append(Plan).Append("\n");
             sb.Append("  Subscription: ").Append(Subscription).Append("\n");
+            sb.Append("  Trial: ").Append(Trial).Append("\n");
+            sb.Append("  WithdrawableUntil: ").Append(WithdrawableUntil).Append("\n");
             sb.Append("}\n");
             return sb.ToString();
         }
@@ -115,6 +151,18 @@ namespace Peal.Model
         /// <returns>Validation Result</returns>
         IEnumerable<System.ComponentModel.DataAnnotations.ValidationResult> IValidatableObject.Validate(ValidationContext validationContext)
         {
+            // VatRate (long) maximum
+            if (this.VatRate > (long)9007199254740991)
+            {
+                yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for VatRate, must be a value less than or equal to 9007199254740991.", new [] { "VatRate" });
+            }
+
+            // VatRate (long) minimum
+            if (this.VatRate < (long)-9007199254740991)
+            {
+                yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for VatRate, must be a value greater than or equal to -9007199254740991.", new [] { "VatRate" });
+            }
+
             yield break;
         }
     }
@@ -152,11 +200,15 @@ namespace Peal.Model
             JsonTokenType startingTokenType = utf8JsonReader.TokenType;
 
             Option<PlanAllowances?> allowances = default;
+            Option<string?> currency = default;
             Option<bool?> enabled = default;
             Option<List<PlanOffer>?> plans = default;
             Option<Usage?> usage = default;
+            Option<long?> vatRate = default;
             Option<Plan?> plan = default;
             Option<BillingSubscription?> subscription = default;
+            Option<TrialOffer?> trial = default;
+            Option<string?> withdrawableUntil = default;
 
             while (utf8JsonReader.Read())
             {
@@ -176,6 +228,9 @@ namespace Peal.Model
                         case "allowances":
                             allowances = new Option<PlanAllowances?>(JsonSerializer.Deserialize<PlanAllowances>(ref utf8JsonReader, jsonSerializerOptions)!);
                             break;
+                        case "currency":
+                            currency = new Option<string?>(utf8JsonReader.GetString()!);
+                            break;
                         case "enabled":
                             enabled = new Option<bool?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (bool?)null : utf8JsonReader.GetBoolean());
                             break;
@@ -185,11 +240,20 @@ namespace Peal.Model
                         case "usage":
                             usage = new Option<Usage?>(JsonSerializer.Deserialize<Usage>(ref utf8JsonReader, jsonSerializerOptions)!);
                             break;
+                        case "vatRate":
+                            vatRate = new Option<long?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (int?)null : utf8JsonReader.GetInt32());
+                            break;
                         case "plan":
                             plan = new Option<Plan?>(JsonSerializer.Deserialize<Plan?>(ref utf8JsonReader, jsonSerializerOptions));
                             break;
                         case "subscription":
                             subscription = new Option<BillingSubscription?>(JsonSerializer.Deserialize<BillingSubscription>(ref utf8JsonReader, jsonSerializerOptions));
+                            break;
+                        case "trial":
+                            trial = new Option<TrialOffer?>(JsonSerializer.Deserialize<TrialOffer>(ref utf8JsonReader, jsonSerializerOptions));
+                            break;
+                        case "withdrawableUntil":
+                            withdrawableUntil = new Option<string?>(utf8JsonReader.GetString());
                             break;
                         default:
                             break;
@@ -200,6 +264,9 @@ namespace Peal.Model
             if (!allowances.IsSet)
                 throw new JsonException("Property is required for class Billing: allowances.");
 
+            if (!currency.IsSet)
+                throw new JsonException("Property is required for class Billing: currency.");
+
             if (!enabled.IsSet)
                 throw new JsonException("Property is required for class Billing: enabled.");
 
@@ -209,14 +276,26 @@ namespace Peal.Model
             if (!usage.IsSet)
                 throw new JsonException("Property is required for class Billing: usage.");
 
+            if (!vatRate.IsSet)
+                throw new JsonException("Property is required for class Billing: vatRate.");
+
             if (!plan.IsSet)
                 throw new JsonException("Property is required for class Billing: plan.");
 
             if (!subscription.IsSet)
                 throw new JsonException("Property is required for class Billing: subscription.");
 
+            if (!trial.IsSet)
+                throw new JsonException("Property is required for class Billing: trial.");
+
+            if (!withdrawableUntil.IsSet)
+                throw new JsonException("Property is required for class Billing: withdrawableUntil.");
+
             if (allowances.IsSet && allowances.Value == null)
                 throw new JsonException("Property is not nullable for class Billing: allowances.");
+
+            if (currency.IsSet && currency.Value == null)
+                throw new JsonException("Property is not nullable for class Billing: currency.");
 
             if (enabled.IsSet && enabled.Value == null)
                 throw new JsonException("Property is not nullable for class Billing: enabled.");
@@ -227,7 +306,10 @@ namespace Peal.Model
             if (usage.IsSet && usage.Value == null)
                 throw new JsonException("Property is not nullable for class Billing: usage.");
 
-            return new Billing(allowances.Value!, enabled.Value!.Value!, plans.Value!, usage.Value!, plan.Value!, subscription.Value!);
+            if (vatRate.IsSet && vatRate.Value == null)
+                throw new JsonException("Property is not nullable for class Billing: vatRate.");
+
+            return new Billing(allowances.Value!, currency.Value!, enabled.Value!.Value!, plans.Value!, usage.Value!, vatRate.Value!.Value!, plan.Value!, subscription.Value!, trial.Value!, withdrawableUntil.Value!);
         }
 
         /// <summary>
@@ -254,12 +336,16 @@ namespace Peal.Model
         {
             writer.WritePropertyName("allowances");
             JsonSerializer.Serialize(writer, billing.Allowances, jsonSerializerOptions);
+            writer.WriteString("currency", billing.Currency);
+
             writer.WriteBoolean("enabled", billing.Enabled);
 
             writer.WritePropertyName("plans");
             JsonSerializer.Serialize(writer, billing.Plans, jsonSerializerOptions);
             writer.WritePropertyName("usage");
             JsonSerializer.Serialize(writer, billing.Usage, jsonSerializerOptions);
+            writer.WriteNumber("vatRate", billing.VatRate);
+
             if (billing.Plan == null)
                 writer.WriteNull("plan");
             else
@@ -278,6 +364,17 @@ namespace Peal.Model
             }
             else
                 writer.WriteNull("subscription");
+            if (billing.Trial != null)
+            {
+                writer.WritePropertyName("trial");
+                JsonSerializer.Serialize(writer, billing.Trial, jsonSerializerOptions);
+            }
+            else
+                writer.WriteNull("trial");
+            if (billing.WithdrawableUntil != null)
+                writer.WriteString("withdrawableUntil", billing.WithdrawableUntil);
+            else
+                writer.WriteNull("withdrawableUntil");
         }
     }
 }

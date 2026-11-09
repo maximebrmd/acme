@@ -25,11 +25,16 @@ from peal.models.notice_event_any_of1 import NoticeEventAnyOf1
 from peal.models.notice_event_any_of2 import NoticeEventAnyOf2
 from peal.models.notice_event_any_of3 import NoticeEventAnyOf3
 from peal.models.notice_event_any_of4 import NoticeEventAnyOf4
+from peal.models.notice_event_any_of5 import NoticeEventAnyOf5
+from peal.models.notice_event_any_of6 import NoticeEventAnyOf6
+from peal.models.notice_event_any_of7 import NoticeEventAnyOf7
+from peal.models.notice_event_any_of8 import NoticeEventAnyOf8
+from peal.models.notice_event_any_of9 import NoticeEventAnyOf9
 from typing import Union, Any, List, Set, TYPE_CHECKING, Optional, Dict
 from typing_extensions import Literal, Self
 from pydantic import Field
 
-NOTICEEVENT_ANY_OF_SCHEMAS = ["NoticeEventAnyOf", "NoticeEventAnyOf1", "NoticeEventAnyOf2", "NoticeEventAnyOf3", "NoticeEventAnyOf4"]
+NOTICEEVENT_ANY_OF_SCHEMAS = ["NoticeEventAnyOf", "NoticeEventAnyOf1", "NoticeEventAnyOf2", "NoticeEventAnyOf3", "NoticeEventAnyOf4", "NoticeEventAnyOf5", "NoticeEventAnyOf6", "NoticeEventAnyOf7", "NoticeEventAnyOf8", "NoticeEventAnyOf9"]
 
 class NoticeEvent(BaseModel):
     """
@@ -46,11 +51,21 @@ class NoticeEvent(BaseModel):
     anyof_schema_4_validator: Optional[NoticeEventAnyOf3] = None
     # data type: NoticeEventAnyOf4
     anyof_schema_5_validator: Optional[NoticeEventAnyOf4] = None
+    # data type: NoticeEventAnyOf5
+    anyof_schema_6_validator: Optional[NoticeEventAnyOf5] = None
+    # data type: NoticeEventAnyOf6
+    anyof_schema_7_validator: Optional[NoticeEventAnyOf6] = None
+    # data type: NoticeEventAnyOf7
+    anyof_schema_8_validator: Optional[NoticeEventAnyOf7] = None
+    # data type: NoticeEventAnyOf8
+    anyof_schema_9_validator: Optional[NoticeEventAnyOf8] = None
+    # data type: NoticeEventAnyOf9
+    anyof_schema_10_validator: Optional[NoticeEventAnyOf9] = None
     if TYPE_CHECKING:
-        actual_instance: Optional[Union[NoticeEventAnyOf, NoticeEventAnyOf1, NoticeEventAnyOf2, NoticeEventAnyOf3, NoticeEventAnyOf4]] = None
+        actual_instance: Optional[Union[NoticeEventAnyOf, NoticeEventAnyOf1, NoticeEventAnyOf2, NoticeEventAnyOf3, NoticeEventAnyOf4, NoticeEventAnyOf5, NoticeEventAnyOf6, NoticeEventAnyOf7, NoticeEventAnyOf8, NoticeEventAnyOf9]] = None
     else:
         actual_instance: Any = None
-    any_of_schemas: Set[str] = { "NoticeEventAnyOf", "NoticeEventAnyOf1", "NoticeEventAnyOf2", "NoticeEventAnyOf3", "NoticeEventAnyOf4" }
+    any_of_schemas: Set[str] = { "NoticeEventAnyOf", "NoticeEventAnyOf1", "NoticeEventAnyOf2", "NoticeEventAnyOf3", "NoticeEventAnyOf4", "NoticeEventAnyOf5", "NoticeEventAnyOf6", "NoticeEventAnyOf7", "NoticeEventAnyOf8", "NoticeEventAnyOf9" }
 
     model_config = {
         "validate_assignment": True,
@@ -101,9 +116,39 @@ class NoticeEvent(BaseModel):
         else:
             return v
 
+        # validate data type: NoticeEventAnyOf5
+        if not isinstance(v, NoticeEventAnyOf5):
+            error_messages.append(f"Error! Input type `{type(v)}` is not `NoticeEventAnyOf5`")
+        else:
+            return v
+
+        # validate data type: NoticeEventAnyOf6
+        if not isinstance(v, NoticeEventAnyOf6):
+            error_messages.append(f"Error! Input type `{type(v)}` is not `NoticeEventAnyOf6`")
+        else:
+            return v
+
+        # validate data type: NoticeEventAnyOf7
+        if not isinstance(v, NoticeEventAnyOf7):
+            error_messages.append(f"Error! Input type `{type(v)}` is not `NoticeEventAnyOf7`")
+        else:
+            return v
+
+        # validate data type: NoticeEventAnyOf8
+        if not isinstance(v, NoticeEventAnyOf8):
+            error_messages.append(f"Error! Input type `{type(v)}` is not `NoticeEventAnyOf8`")
+        else:
+            return v
+
+        # validate data type: NoticeEventAnyOf9
+        if not isinstance(v, NoticeEventAnyOf9):
+            error_messages.append(f"Error! Input type `{type(v)}` is not `NoticeEventAnyOf9`")
+        else:
+            return v
+
         if error_messages:
             # no match
-            raise ValueError("No match found when setting the actual_instance in NoticeEvent with anyOf schemas: NoticeEventAnyOf, NoticeEventAnyOf1, NoticeEventAnyOf2, NoticeEventAnyOf3, NoticeEventAnyOf4. Details: " + ", ".join(error_messages))
+            raise ValueError("No match found when setting the actual_instance in NoticeEvent with anyOf schemas: NoticeEventAnyOf, NoticeEventAnyOf1, NoticeEventAnyOf2, NoticeEventAnyOf3, NoticeEventAnyOf4, NoticeEventAnyOf5, NoticeEventAnyOf6, NoticeEventAnyOf7, NoticeEventAnyOf8, NoticeEventAnyOf9. Details: " + ", ".join(error_messages))
         else:
             return v
 
@@ -146,10 +191,40 @@ class NoticeEvent(BaseModel):
             return instance
         except (ValidationError, ValueError) as e:
              error_messages.append(str(e))
+        # anyof_schema_6_validator: Optional[NoticeEventAnyOf5] = None
+        try:
+            instance.actual_instance = NoticeEventAnyOf5.from_json(json_str)
+            return instance
+        except (ValidationError, ValueError) as e:
+             error_messages.append(str(e))
+        # anyof_schema_7_validator: Optional[NoticeEventAnyOf6] = None
+        try:
+            instance.actual_instance = NoticeEventAnyOf6.from_json(json_str)
+            return instance
+        except (ValidationError, ValueError) as e:
+             error_messages.append(str(e))
+        # anyof_schema_8_validator: Optional[NoticeEventAnyOf7] = None
+        try:
+            instance.actual_instance = NoticeEventAnyOf7.from_json(json_str)
+            return instance
+        except (ValidationError, ValueError) as e:
+             error_messages.append(str(e))
+        # anyof_schema_9_validator: Optional[NoticeEventAnyOf8] = None
+        try:
+            instance.actual_instance = NoticeEventAnyOf8.from_json(json_str)
+            return instance
+        except (ValidationError, ValueError) as e:
+             error_messages.append(str(e))
+        # anyof_schema_10_validator: Optional[NoticeEventAnyOf9] = None
+        try:
+            instance.actual_instance = NoticeEventAnyOf9.from_json(json_str)
+            return instance
+        except (ValidationError, ValueError) as e:
+             error_messages.append(str(e))
 
         if error_messages:
             # no match
-            raise ValueError("No match found when deserializing the JSON string into NoticeEvent with anyOf schemas: NoticeEventAnyOf, NoticeEventAnyOf1, NoticeEventAnyOf2, NoticeEventAnyOf3, NoticeEventAnyOf4. Details: " + ", ".join(error_messages))
+            raise ValueError("No match found when deserializing the JSON string into NoticeEvent with anyOf schemas: NoticeEventAnyOf, NoticeEventAnyOf1, NoticeEventAnyOf2, NoticeEventAnyOf3, NoticeEventAnyOf4, NoticeEventAnyOf5, NoticeEventAnyOf6, NoticeEventAnyOf7, NoticeEventAnyOf8, NoticeEventAnyOf9. Details: " + ", ".join(error_messages))
         else:
             return instance
 
@@ -163,7 +238,7 @@ class NoticeEvent(BaseModel):
         else:
             return json.dumps(self.actual_instance)
 
-    def to_dict(self) -> Optional[Union[Dict[str, Any], NoticeEventAnyOf, NoticeEventAnyOf1, NoticeEventAnyOf2, NoticeEventAnyOf3, NoticeEventAnyOf4]]:
+    def to_dict(self) -> Optional[Union[Dict[str, Any], NoticeEventAnyOf, NoticeEventAnyOf1, NoticeEventAnyOf2, NoticeEventAnyOf3, NoticeEventAnyOf4, NoticeEventAnyOf5, NoticeEventAnyOf6, NoticeEventAnyOf7, NoticeEventAnyOf8, NoticeEventAnyOf9]]:
         """Returns the dict representation of the actual instance"""
         if self.actual_instance is None:
             return None

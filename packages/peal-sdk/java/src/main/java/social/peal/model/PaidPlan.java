@@ -29,9 +29,13 @@ import com.google.gson.stream.JsonWriter;
 @JsonAdapter(PaidPlan.Adapter.class)
 public enum PaidPlan {
   
+  STARTER("starter"),
+  
   PRO("pro"),
   
-  BUSINESS("business");
+  BUSINESS("business"),
+  
+  AGENCY("agency");
 
   private String value;
 

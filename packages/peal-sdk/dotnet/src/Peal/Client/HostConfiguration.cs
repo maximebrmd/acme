@@ -61,6 +61,8 @@ namespace Peal.Client
             _jsonOptions.Converters.Add(new AttemptResultNullableJsonConverter());
             _jsonOptions.Converters.Add(new AuthorizationJsonConverter());
             _jsonOptions.Converters.Add(new BillingJsonConverter());
+            _jsonOptions.Converters.Add(new BillingIntervalJsonConverter());
+            _jsonOptions.Converters.Add(new BillingIntervalNullableJsonConverter());
             _jsonOptions.Converters.Add(new BillingSubscriptionJsonConverter());
             _jsonOptions.Converters.Add(new ChannelJsonConverter());
             _jsonOptions.Converters.Add(new ChannelCannotPostEncodedJsonConverter());
@@ -153,6 +155,7 @@ namespace Peal.Client
             _jsonOptions.Converters.Add(new MembershipJsonConverter());
             _jsonOptions.Converters.Add(new MetricTotalsJsonConverter());
             _jsonOptions.Converters.Add(new MetricsSnapshotJsonConverter());
+            _jsonOptions.Converters.Add(new MoneyJsonConverter());
             _jsonOptions.Converters.Add(new NewApiKeyJsonConverter());
             _jsonOptions.Converters.Add(new NewInvitationJsonConverter());
             _jsonOptions.Converters.Add(new NewUploadJsonConverter());
@@ -166,6 +169,11 @@ namespace Peal.Client
             _jsonOptions.Converters.Add(new NoticeEventAnyOf2JsonConverter());
             _jsonOptions.Converters.Add(new NoticeEventAnyOf3JsonConverter());
             _jsonOptions.Converters.Add(new NoticeEventAnyOf4JsonConverter());
+            _jsonOptions.Converters.Add(new NoticeEventAnyOf5JsonConverter());
+            _jsonOptions.Converters.Add(new NoticeEventAnyOf6JsonConverter());
+            _jsonOptions.Converters.Add(new NoticeEventAnyOf7JsonConverter());
+            _jsonOptions.Converters.Add(new NoticeEventAnyOf8JsonConverter());
+            _jsonOptions.Converters.Add(new NoticeEventAnyOf9JsonConverter());
             _jsonOptions.Converters.Add(new NoticePageJsonConverter());
             _jsonOptions.Converters.Add(new NotificationPreferencesJsonConverter());
             _jsonOptions.Converters.Add(new NotificationPreferencesChangeJsonConverter());
@@ -183,6 +191,7 @@ namespace Peal.Client
             _jsonOptions.Converters.Add(new PlanLimitNullableJsonConverter());
             _jsonOptions.Converters.Add(new PlanLimitReachedEncodedJsonConverter());
             _jsonOptions.Converters.Add(new PlanOfferJsonConverter());
+            _jsonOptions.Converters.Add(new PlanPriceJsonConverter());
             _jsonOptions.Converters.Add(new PlatformJsonConverter());
             _jsonOptions.Converters.Add(new PlatformNullableJsonConverter());
             _jsonOptions.Converters.Add(new PlatformUnreachableEncodedJsonConverter());
@@ -246,6 +255,7 @@ namespace Peal.Client
             _jsonOptions.Converters.Add(new TopPostJsonConverter());
             _jsonOptions.Converters.Add(new TranslationLanguageJsonConverter());
             _jsonOptions.Converters.Add(new TranslationLanguageNullableJsonConverter());
+            _jsonOptions.Converters.Add(new TrialOfferJsonConverter());
             _jsonOptions.Converters.Add(new UnauthenticatedEncodedJsonConverter());
             _jsonOptions.Converters.Add(new UnconfirmedReasonJsonConverter());
             _jsonOptions.Converters.Add(new UnconfirmedReasonNullableJsonConverter());

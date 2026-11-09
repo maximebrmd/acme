@@ -23,7 +23,12 @@ module Peal
           :'NoticeEventAnyOf1',
           :'NoticeEventAnyOf2',
           :'NoticeEventAnyOf3',
-          :'NoticeEventAnyOf4'
+          :'NoticeEventAnyOf4',
+          :'NoticeEventAnyOf5',
+          :'NoticeEventAnyOf6',
+          :'NoticeEventAnyOf7',
+          :'NoticeEventAnyOf8',
+          :'NoticeEventAnyOf9'
         ]
       end
 

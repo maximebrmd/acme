@@ -10,25 +10,36 @@ import type { BillingViewProps } from "#components/billing/billing-view.tsx";
 import { loadMessages } from "#i18n/messages.ts";
 
 const free: PlanAllowances = {
-  assistantRequests: 10,
+  assistantRequests: 3,
   channels: 3,
+  mediaStorage: 500_000_000,
   members: 2,
   scheduledPosts: 30,
 };
 
+const starter: PlanAllowances = {
+  assistantRequests: 10,
+  channels: 5,
+  mediaStorage: 5_000_000_000,
+  members: 3,
+  scheduledPosts: null,
+};
+
 const business: PlanAllowances = {
-  assistantRequests: 500,
+  assistantRequests: 40,
   channels: 30,
-  members: 20,
+  mediaStorage: 75_000_000_000,
+  members: null,
   scheduledPosts: null,
 };
 
 const usage: Billing["usage"] = {
   assistantRequests: {
     resetsAt: DateTime.makeUnsafe("2026-11-10T00:00:00Z"),
-    used: 4,
+    used: 2,
   },
   channels: 3,
+  mediaStorage: 125_000_000,
   members: 1,
   scheduledPosts: {
     resetsAt: DateTime.makeUnsafe("2026-12-01T00:00:00Z"),
@@ -38,44 +49,66 @@ const usage: Billing["usage"] = {
 
 const onFree: Billing = {
   allowances: free,
+  currency: "eur",
   enabled: true,
   plan: "free",
   plans: [
-    { allowances: free, plan: "free" },
+    { allowances: free, plan: "free", price: null },
+    { allowances: starter, plan: "starter", price: { month: 750, year: 7500 } },
     {
-      allowances: {
-        assistantRequests: 100,
-        channels: 10,
-        members: 5,
-        scheduledPosts: 300,
-      },
-      plan: "pro",
+      allowances: business,
+      plan: "business",
+      price: { month: 2500, year: 25_000 },
     },
-    { allowances: business, plan: "business" },
   ],
   subscription: null,
+  trial: { available: true, days: 14, plan: "pro" },
   usage,
+  vatRate: 20,
+  withdrawableUntil: null,
+};
+
+const onStarter: Billing = {
+  ...onFree,
+  allowances: starter,
+  plan: "starter",
+  subscription: {
+    cancelAtPeriodEnd: false,
+    currentPeriodEnd: DateTime.makeUnsafe("2026-12-09T10:00:00Z"),
+    interval: "month",
+    plan: "starter",
+    startedAt: DateTime.makeUnsafe("2026-11-09T10:00:00Z"),
+    status: "active",
+    trialEnd: null,
+  },
+  trial: { available: false, days: 14, plan: "pro" },
+  withdrawableUntil: DateTime.makeUnsafe("2026-11-23T10:00:00Z"),
 };
 
 const unbilled: Billing = {
   allowances: {
     assistantRequests: null,
     channels: null,
+    mediaStorage: null,
     members: null,
     scheduledPosts: null,
   },
+  currency: "eur",
   enabled: false,
   plan: null,
   plans: [],
   subscription: null,
+  trial: null,
   usage,
+  vatRate: 20,
+  withdrawableUntil: null,
 };
 
 const ignore = () => {
   // The view only renders.
 };
 
-// What a page says that it should not, or does not say that it should.
+// What a page does not say that it should.
 const missing = (html: string, texts: readonly string[]) =>
   texts.filter((text) => !html.includes(text));
 
@@ -90,11 +123,22 @@ const render = async (
       <BillingView
         canManage
         checkedOut={false}
+        consented={false}
         error={null}
+        interval="month"
         pending={null}
-        onChoose={ignore}
+        step={{ _tag: "idle" }}
+        termsUrl="https://site.example.test/terms"
+        onBack={ignore}
+        onCancel={ignore}
+        onConfirmCancel={ignore}
+        onConfirmWithdrawal={ignore}
+        onConsent={ignore}
+        onInterval={ignore}
         onManage={ignore}
+        onOrder={ignore}
         onRefresh={ignore}
+        onWithdraw={ignore}
         {...props}
       />
     </NextIntlClientProvider>
@@ -102,56 +146,133 @@ const render = async (
 };
 
 describe(BillingView, () => {
-  it("shows the free plan's usage against its limits, and the plans to move to", async () => {
+  it("shows prices with VAT first, the box to tick, and the order and trial buttons", async () => {
     const html = await render("en", { billing: onFree });
 
     expect(
       missing(html, [
-        "The workspace has no subscription.",
-        "3 of 3",
+        "€9.00 a month, VAT incl.",
+        "€7.50 excl. VAT",
+        "€1.80 per channel a month",
+        "Prices include 20% VAT",
+        "I ask Peal to start my subscription now.",
+        'href="https://site.example.test/terms"',
+        "Order with obligation to pay",
+        "Try Pro free for 14 days",
+        "Start the free trial",
+        "Tick the box above",
+        "5 GB of media",
+        "125 MB of 500 MB",
         "12 of 30",
-        "Starts again on Dec 1, 2026",
-        "Move to Pro",
-        "Move to Business",
-        "Unlimited posts",
       ])
     ).toStrictEqual([]);
-    expect(html).not.toContain("Manage billing");
+    // Nothing is ordered before the box is ticked.
+    expect(html).toMatch(
+      /<button[^>]*aria-disabled="true"[^>]*>Order with obligation to pay/u
+    );
   });
 
-  it("shows a subscription's state, and the portal to those who manage it", async () => {
-    const html = await render("fr", {
-      billing: {
-        ...onFree,
-        allowances: business,
-        plan: "business",
-        subscription: {
-          cancelAtPeriodEnd: true,
-          currentPeriodEnd: DateTime.makeUnsafe("2026-12-09T10:00:00Z"),
-          plan: "business",
-          status: "past_due",
+  it("prices a year as its own, with what it comes to a month", async () => {
+    const html = await render("en", {
+      billing: onFree,
+      consented: true,
+      interval: "year",
+    });
+
+    expect(
+      missing(html, [
+        "€90.00 a year, VAT incl.",
+        "€75.00 excl. VAT",
+        "That is €7.50 a month",
+        "you are reminded 45 days before",
+      ])
+    ).toStrictEqual([]);
+    expect(html).not.toMatch(
+      /<button[^>]*aria-disabled="true"[^>]*>Order with obligation to pay/u
+    );
+  });
+
+  it("offers to cancel and, within 14 days, to withdraw, in French", async () => {
+    const html = await render("fr", { billing: onStarter });
+
+    expect(
+      missing(html, [
+        "Commander avec obligation de paiement",
+        "9,00\u00A0€ TTC par mois",
+        "7,50\u00A0€ HT",
+        "Résilier l’abonnement",
+        "Se rétracter du contrat ici",
+        "Jusqu’au 23 novembre 2026",
+        "Renouvelé le 9 décembre 2026, chaque mois",
+      ])
+    ).toStrictEqual([]);
+    expect(html).not.toContain("Commencer l’essai gratuit");
+  });
+
+  it("asks to confirm a cancellation, then says when it ends", async () => {
+    const asking = await render("fr", {
+      billing: onStarter,
+      step: { _tag: "confirmCancel" },
+    });
+
+    expect(
+      missing(asking, [
+        "L’abonnement Starter prend fin le 9 décembre 2026",
+        "Confirmer la résiliation",
+        "Garder l’abonnement",
+      ])
+    ).toStrictEqual([]);
+
+    const done = await render("en", {
+      billing: onStarter,
+      step: {
+        _tag: "cancelled",
+        endsAt: DateTime.makeUnsafe("2026-12-09T10:00:00Z"),
+      },
+    });
+
+    expect(done).toContain("It ends on December 9, 2026.");
+  });
+
+  it("asks to confirm a withdrawal with its refund, then acknowledges it", async () => {
+    const asking = await render("en", {
+      billing: onStarter,
+      step: {
+        _tag: "confirmWithdrawal",
+        preview: {
+          endsAt: DateTime.makeUnsafe("2026-11-23T10:00:00Z"),
+          plan: "starter",
+          refund: { amount: 810, currency: "eur" },
+          startedAt: DateTime.makeUnsafe("2026-11-09T10:00:00Z"),
         },
       },
     });
 
     expect(
-      missing(html, [
-        "Paiement en retard",
-        "Prend fin le 9 décembre 2026",
-        "Le dernier paiement n’est pas passé.",
-        "Gérer la facturation",
-        "12, sans limite",
+      missing(asking, [
+        "Withdraw from the contract",
+        "You subscribed to Starter on November 9, 2026.",
+        "€8.10 is refunded",
+        "Confirm withdrawal",
       ])
     ).toStrictEqual([]);
-    expect(html).not.toContain("Passer à");
+
+    const done = await render("fr", {
+      billing: onStarter,
+      step: { _tag: "withdrawn", refunded: { amount: 810, currency: "eur" } },
+    });
+
+    expect(done).toContain("Rétractation reçue");
+    expect(done).toContain("8,10\u00A0€ vous est remboursé");
   });
 
-  it("leaves plan changes to owners and admins", async () => {
+  it("leaves orders to owners and admins", async () => {
     const html = await render("en", { billing: onFree, canManage: false });
 
-    expect(html).not.toContain("Move to Pro");
+    expect(html).not.toContain("Order with obligation to pay");
+    expect(html).not.toContain("I ask Peal");
     expect(html).toContain(
-      "Owners and admins of the workspace change its plan."
+      "Owners and admins of the workspace order and cancel its plan."
     );
   });
 
@@ -160,17 +281,18 @@ describe(BillingView, () => {
 
     expect(html).toContain("Nothing is limited");
     expect(html).toContain("3, no limit");
-    expect(html).not.toContain("Move to");
+    expect(html).toContain("125 MB, no limit");
+    expect(html).not.toContain("Order");
   });
 
   it("thanks the person back from checkout, and explains a refusal", async () => {
     const html = await render("en", {
       billing: onFree,
       checkedOut: true,
-      error: "forbidden",
+      error: "trialUsed",
     });
 
     expect(html).toContain("The plan changes as soon as Stripe confirms");
-    expect(html).toContain("Only owners and admins of the workspace");
+    expect(html).toContain("already had its trial");
   });
 });

@@ -56,6 +56,7 @@
       "name": "peal-docs",
       "dependencies": {
         "blume": "2.2.7",
+        "peal-contract": "workspace:*",
       },
       "devDependencies": {
         "@types/bun": "1.4.4",
@@ -118,6 +119,7 @@
         "@tailwindcss/typography": "0.5.20",
         "@tailwindcss/vite": "4.3.5",
         "astro": "7.4.7",
+        "peal-contract": "workspace:*",
         "react": "19.3.1",
         "react-dom": "19.3.1",
         "tailwindcss": "4.3.5",

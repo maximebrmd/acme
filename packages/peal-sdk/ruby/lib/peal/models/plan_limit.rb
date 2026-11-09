@@ -19,9 +19,10 @@ module Peal
     MEMBERS = "members".freeze
     SCHEDULED_POSTS = "scheduledPosts".freeze
     ASSISTANT_REQUESTS = "assistantRequests".freeze
+    MEDIA_STORAGE = "mediaStorage".freeze
 
     def self.all_vars
-      @all_vars ||= [CHANNELS, MEMBERS, SCHEDULED_POSTS, ASSISTANT_REQUESTS].freeze
+      @all_vars ||= [CHANNELS, MEMBERS, SCHEDULED_POSTS, ASSISTANT_REQUESTS, MEDIA_STORAGE].freeze
     end
 
     # Builds the enum from string

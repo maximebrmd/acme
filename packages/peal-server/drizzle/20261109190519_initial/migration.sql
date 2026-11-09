@@ -61,6 +61,18 @@ CREATE TABLE "assistant"."daily_usage" (
 	CONSTRAINT "daily_usage_requests" CHECK ("requests" >= 0)
 );
 --> statement-breakpoint
+CREATE TABLE "billing"."orders" (
+	"consent_version" text NOT NULL,
+	"created_at" timestamp with time zone NOT NULL,
+	"id" uuid PRIMARY KEY,
+	"interval" text NOT NULL,
+	"plan" text NOT NULL,
+	"trial" boolean NOT NULL,
+	"used_at" timestamp with time zone,
+	"user_id" text,
+	"workspace_id" uuid NOT NULL
+);
+--> statement-breakpoint
 CREATE TABLE "billing"."stripe_events" (
 	"id" text PRIMARY KEY,
 	"received_at" timestamp with time zone NOT NULL
@@ -69,13 +81,34 @@ CREATE TABLE "billing"."stripe_events" (
 CREATE TABLE "billing"."subscriptions" (
 	"cancel_at_period_end" boolean NOT NULL,
 	"current_period_end" timestamp with time zone,
+	"current_period_start" timestamp with time zone,
+	"interval" text DEFAULT 'month' NOT NULL,
 	"last_event_at" timestamp with time zone NOT NULL,
 	"last_event_id" text NOT NULL,
 	"plan" text NOT NULL,
 	"status" text NOT NULL,
 	"stripe_customer_id" text NOT NULL,
+	"started_at" timestamp with time zone,
 	"stripe_subscription_id" text PRIMARY KEY,
+	"trial_end" timestamp with time zone,
 	"updated_at" timestamp with time zone NOT NULL,
+	"workspace_id" uuid NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "billing"."trials" (
+	"plan" text NOT NULL,
+	"started_at" timestamp with time zone NOT NULL,
+	"stripe_subscription_id" text PRIMARY KEY,
+	"user_id" text,
+	"workspace_id" uuid
+);
+--> statement-breakpoint
+CREATE TABLE "billing"."withdrawals" (
+	"currency" text NOT NULL,
+	"refunded" bigint NOT NULL,
+	"requested_at" timestamp with time zone NOT NULL,
+	"stripe_subscription_id" text PRIMARY KEY,
+	"user_id" text,
 	"workspace_id" uuid NOT NULL
 );
 --> statement-breakpoint
@@ -580,7 +613,12 @@ CREATE INDEX "tracked_posts_due" ON "analytics"."tracked_posts" ("next_collectio
 CREATE INDEX "tracked_posts_workspace_published" ON "analytics"."tracked_posts" ("workspace_id","published_at");--> statement-breakpoint
 CREATE INDEX "tracked_posts_post" ON "analytics"."tracked_posts" ("post_id");--> statement-breakpoint
 CREATE INDEX "tracked_posts_published" ON "analytics"."tracked_posts" ("published_at","target_id");--> statement-breakpoint
+CREATE INDEX "orders_workspace" ON "billing"."orders" ("workspace_id");--> statement-breakpoint
 CREATE INDEX "subscriptions_workspace" ON "billing"."subscriptions" ("workspace_id");--> statement-breakpoint
+CREATE INDEX "subscriptions_reminders" ON "billing"."subscriptions" ("status","current_period_end");--> statement-breakpoint
+CREATE UNIQUE INDEX "trials_user" ON "billing"."trials" ("user_id");--> statement-breakpoint
+CREATE UNIQUE INDEX "trials_workspace" ON "billing"."trials" ("workspace_id");--> statement-breakpoint
+CREATE INDEX "withdrawals_workspace" ON "billing"."withdrawals" ("workspace_id");--> statement-breakpoint
 CREATE INDEX "channels_token_expiry" ON "channels"."channels" ("token_expires_at") WHERE "status" = 'active' AND "token_kind" <> 'nonExpiring';--> statement-breakpoint
 CREATE INDEX "channels_granted_by" ON "channels"."channels" ("granted_by") WHERE "granted_by" IS NOT NULL;--> statement-breakpoint
 CREATE INDEX "connect_attempts_expires_at" ON "channels"."connect_attempts" ("expires_at");--> statement-breakpoint

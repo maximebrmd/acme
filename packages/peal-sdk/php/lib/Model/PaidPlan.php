@@ -43,9 +43,13 @@ class PaidPlan
     /**
      * Possible values of this enum
      */
+    public const STARTER = 'starter';
+
     public const PRO = 'pro';
 
     public const BUSINESS = 'business';
+
+    public const AGENCY = 'agency';
 
     /**
      * Gets allowable values of the enum
@@ -54,8 +58,10 @@ class PaidPlan
     public static function getAllowableEnumValues()
     {
         return [
+            self::STARTER,
             self::PRO,
-            self::BUSINESS
+            self::BUSINESS,
+            self::AGENCY
         ];
     }
 }

@@ -6,14 +6,17 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **CancelAtPeriodEnd** | **bool** |  | 
 **CurrentPeriodEnd** | **NullableString** |  | 
+**Interval** | [**BillingInterval**](BillingInterval.md) |  | 
 **Plan** | [**PaidPlan**](PaidPlan.md) |  | 
+**StartedAt** | **NullableString** |  | 
 **Status** | [**SubscriptionStatus**](SubscriptionStatus.md) |  | 
+**TrialEnd** | **NullableString** |  | 
 
 ## Methods
 
 ### NewBillingSubscription
 
-`func NewBillingSubscription(cancelAtPeriodEnd bool, currentPeriodEnd NullableString, plan PaidPlan, status SubscriptionStatus, ) *BillingSubscription`
+`func NewBillingSubscription(cancelAtPeriodEnd bool, currentPeriodEnd NullableString, interval BillingInterval, plan PaidPlan, startedAt NullableString, status SubscriptionStatus, trialEnd NullableString, ) *BillingSubscription`
 
 NewBillingSubscription instantiates a new BillingSubscription object
 This constructor will assign default values to properties that have it defined,
@@ -78,6 +81,26 @@ SetCurrentPeriodEnd sets CurrentPeriodEnd field to given value.
 `func (o *BillingSubscription) UnsetCurrentPeriodEnd()`
 
 UnsetCurrentPeriodEnd ensures that no value is present for CurrentPeriodEnd, not even an explicit nil
+### GetInterval
+
+`func (o *BillingSubscription) GetInterval() BillingInterval`
+
+GetInterval returns the Interval field if non-nil, zero value otherwise.
+
+### GetIntervalOk
+
+`func (o *BillingSubscription) GetIntervalOk() (*BillingInterval, bool)`
+
+GetIntervalOk returns a tuple with the Interval field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetInterval
+
+`func (o *BillingSubscription) SetInterval(v BillingInterval)`
+
+SetInterval sets Interval field to given value.
+
+
 ### GetPlan
 
 `func (o *BillingSubscription) GetPlan() PaidPlan`
@@ -98,6 +121,36 @@ and a boolean to check if the value has been set.
 SetPlan sets Plan field to given value.
 
 
+### GetStartedAt
+
+`func (o *BillingSubscription) GetStartedAt() string`
+
+GetStartedAt returns the StartedAt field if non-nil, zero value otherwise.
+
+### GetStartedAtOk
+
+`func (o *BillingSubscription) GetStartedAtOk() (*string, bool)`
+
+GetStartedAtOk returns a tuple with the StartedAt field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetStartedAt
+
+`func (o *BillingSubscription) SetStartedAt(v string)`
+
+SetStartedAt sets StartedAt field to given value.
+
+
+### SetStartedAtNil
+
+`func (o *BillingSubscription) SetStartedAtNil(b bool)`
+
+ SetStartedAtNil sets the value for StartedAt to be an explicit nil
+
+### UnsetStartedAt
+`func (o *BillingSubscription) UnsetStartedAt()`
+
+UnsetStartedAt ensures that no value is present for StartedAt, not even an explicit nil
 ### GetStatus
 
 `func (o *BillingSubscription) GetStatus() SubscriptionStatus`
@@ -118,6 +171,36 @@ and a boolean to check if the value has been set.
 SetStatus sets Status field to given value.
 
 
+### GetTrialEnd
+
+`func (o *BillingSubscription) GetTrialEnd() string`
+
+GetTrialEnd returns the TrialEnd field if non-nil, zero value otherwise.
+
+### GetTrialEndOk
+
+`func (o *BillingSubscription) GetTrialEndOk() (*string, bool)`
+
+GetTrialEndOk returns a tuple with the TrialEnd field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetTrialEnd
+
+`func (o *BillingSubscription) SetTrialEnd(v string)`
+
+SetTrialEnd sets TrialEnd field to given value.
+
+
+### SetTrialEndNil
+
+`func (o *BillingSubscription) SetTrialEndNil(b bool)`
+
+ SetTrialEndNil sets the value for TrialEnd to be an explicit nil
+
+### UnsetTrialEnd
+`func (o *BillingSubscription) UnsetTrialEnd()`
+
+UnsetTrialEnd ensures that no value is present for TrialEnd, not even an explicit nil
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

@@ -14,25 +14,31 @@ use serde::{Deserialize, Serialize};
 /// 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize)]
 pub enum PaidPlan {
+    #[serde(rename = "starter")]
+    Starter,
     #[serde(rename = "pro")]
     Pro,
     #[serde(rename = "business")]
     Business,
+    #[serde(rename = "agency")]
+    Agency,
 
 }
 
 impl std::fmt::Display for PaidPlan {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
+            Self::Starter => write!(f, "starter"),
             Self::Pro => write!(f, "pro"),
             Self::Business => write!(f, "business"),
+            Self::Agency => write!(f, "agency"),
         }
     }
 }
 
 impl Default for PaidPlan {
     fn default() -> PaidPlan {
-        Self::Pro
+        Self::Starter
     }
 }
 

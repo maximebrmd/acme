@@ -190,6 +190,14 @@ const signedInGroupsLive = (
     ),
     HttpApiBuilder.group(Api, "workspaces", (handlers) =>
       handlers.handleAll({ delete: () => refusing })
+    ),
+    HttpApiBuilder.group(Api, "billingActions", (handlers) =>
+      handlers.handleAll({
+        cancel: () => refusing,
+        order: () => refusing,
+        withdraw: () => refusing,
+        withdrawal: () => refusing,
+      })
     )
   ).pipe(Layer.provideMerge(securityLive(authorization, studio)));
 

@@ -7,8 +7,11 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **cancel_at_period_end** | **bool** |  | 
 **current_period_end** | **str** |  | 
+**interval** | [**BillingInterval**](BillingInterval.md) |  | 
 **plan** | [**PaidPlan**](PaidPlan.md) |  | 
+**started_at** | **str** |  | 
 **status** | [**SubscriptionStatus**](SubscriptionStatus.md) |  | 
+**trial_end** | **str** |  | 
 
 ## Example
 

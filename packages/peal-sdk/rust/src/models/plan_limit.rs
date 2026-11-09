@@ -22,6 +22,8 @@ pub enum PlanLimit {
     ScheduledPosts,
     #[serde(rename = "assistantRequests")]
     AssistantRequests,
+    #[serde(rename = "mediaStorage")]
+    MediaStorage,
 
 }
 
@@ -32,6 +34,7 @@ impl std::fmt::Display for PlanLimit {
             Self::Members => write!(f, "members"),
             Self::ScheduledPosts => write!(f, "scheduledPosts"),
             Self::AssistantRequests => write!(f, "assistantRequests"),
+            Self::MediaStorage => write!(f, "mediaStorage"),
         }
     }
 }

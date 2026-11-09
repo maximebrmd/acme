@@ -6,6 +6,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **AssistantRequests** | [**PeriodUsage**](PeriodUsage.md) |  | 
 **Channels** | **int32** |  | 
+**MediaStorage** | **int32** |  | 
 **Members** | **int32** |  | 
 **ScheduledPosts** | [**PeriodUsage**](PeriodUsage.md) |  | 
 
@@ -13,7 +14,7 @@ Name | Type | Description | Notes
 
 ### NewUsage
 
-`func NewUsage(assistantRequests PeriodUsage, channels int32, members int32, scheduledPosts PeriodUsage, ) *Usage`
+`func NewUsage(assistantRequests PeriodUsage, channels int32, mediaStorage int32, members int32, scheduledPosts PeriodUsage, ) *Usage`
 
 NewUsage instantiates a new Usage object
 This constructor will assign default values to properties that have it defined,
@@ -66,6 +67,26 @@ and a boolean to check if the value has been set.
 `func (o *Usage) SetChannels(v int32)`
 
 SetChannels sets Channels field to given value.
+
+
+### GetMediaStorage
+
+`func (o *Usage) GetMediaStorage() int32`
+
+GetMediaStorage returns the MediaStorage field if non-nil, zero value otherwise.
+
+### GetMediaStorageOk
+
+`func (o *Usage) GetMediaStorageOk() (*int32, bool)`
+
+GetMediaStorageOk returns a tuple with the MediaStorage field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetMediaStorage
+
+`func (o *Usage) SetMediaStorage(v int32)`
+
+SetMediaStorage sets MediaStorage field to given value.
 
 
 ### GetMembers

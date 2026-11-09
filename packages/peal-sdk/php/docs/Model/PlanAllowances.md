@@ -6,6 +6,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **assistant_requests** | **int** |  |
 **channels** | **int** |  |
+**media_storage** | **int** |  |
 **members** | **int** |  |
 **scheduled_posts** | **int** |  |
 

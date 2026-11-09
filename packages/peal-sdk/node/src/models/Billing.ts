@@ -34,6 +34,13 @@ import {
     PlanAllowancesToJSON,
     PlanAllowancesToJSONTyped,
 } from './PlanAllowances.js';
+import type { TrialOffer } from './TrialOffer.js';
+import {
+    TrialOfferFromJSON,
+    TrialOfferFromJSONTyped,
+    TrialOfferToJSON,
+    TrialOfferToJSONTyped,
+} from './TrialOffer.js';
 import type { Plan } from './Plan.js';
 import {
     PlanFromJSON,
@@ -62,6 +69,10 @@ export interface Billing {
     /**
      * 
      */
+    currency: string;
+    /**
+     * 
+     */
     enabled: boolean;
     /**
      * 
@@ -78,7 +89,19 @@ export interface Billing {
     /**
      * 
      */
+    trial: TrialOffer | null;
+    /**
+     * 
+     */
     usage: Usage;
+    /**
+     * 
+     */
+    vatRate: number;
+    /**
+     * 
+     */
+    withdrawableUntil: string | null;
 }
 
 
@@ -88,11 +111,15 @@ export interface Billing {
  */
 export function instanceOfBilling(value: object): value is Billing {
     if (!('allowances' in value) || value['allowances'] === undefined) return false;
+    if (!('currency' in value) || value['currency'] === undefined) return false;
     if (!('enabled' in value) || value['enabled'] === undefined) return false;
     if (!('plan' in value) || value['plan'] === undefined) return false;
     if (!('plans' in value) || value['plans'] === undefined) return false;
     if (!('subscription' in value) || value['subscription'] === undefined) return false;
+    if (!('trial' in value) || value['trial'] === undefined) return false;
     if (!('usage' in value) || value['usage'] === undefined) return false;
+    if (!('vatRate' in value) || value['vatRate'] === undefined) return false;
+    if (!('withdrawableUntil' in value) || value['withdrawableUntil'] === undefined) return false;
     return true;
 }
 
@@ -107,11 +134,15 @@ export function BillingFromJSONTyped(json: any, ignoreDiscriminator: boolean): B
     return {
         
         'allowances': PlanAllowancesFromJSON(json['allowances']),
+        'currency': json['currency'],
         'enabled': json['enabled'],
         'plan': PlanFromJSON(json['plan']),
         'plans': ((json['plans'] as Array<any>).map(PlanOfferFromJSON)),
         'subscription': BillingSubscriptionFromJSON(json['subscription']),
+        'trial': TrialOfferFromJSON(json['trial']),
         'usage': UsageFromJSON(json['usage']),
+        'vatRate': json['vatRate'],
+        'withdrawableUntil': json['withdrawableUntil'],
     };
 }
 
@@ -127,11 +158,15 @@ export function BillingToJSONTyped(value?: Billing | null, ignoreDiscriminator: 
     return {
         
         'allowances': PlanAllowancesToJSON(value['allowances']),
+        'currency': value['currency'],
         'enabled': value['enabled'],
         'plan': PlanToJSON(value['plan']),
         'plans': ((value['plans'] as Array<any>).map(PlanOfferToJSON)),
         'subscription': BillingSubscriptionToJSON(value['subscription']),
+        'trial': TrialOfferToJSON(value['trial']),
         'usage': UsageToJSON(value['usage']),
+        'vatRate': value['vatRate'],
+        'withdrawableUntil': value['withdrawableUntil'],
     };
 }
 

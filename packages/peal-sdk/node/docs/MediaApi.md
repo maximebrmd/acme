@@ -100,7 +100,7 @@ example().catch(console.error);
 
 Start an upload
 
-Records pending media and signs the upload of its file: one PUT for an image or a video up to 16 MiB, one PUT per part for a larger video. Send the file with them, then complete the upload. The requests only take the declared size and content type. Needs media:upload.
+Records pending media and signs the upload of its file: one PUT for an image or a video up to 16 MiB, one PUT per part for a larger video. Send the file with them, then complete the upload. The requests only take the declared size and content type. On a server that bills, the declared size must fit the plan\&#39;s media storage with what the workspace stores (PlanLimitReached &#x60;mediaStorage&#x60;). Needs media:upload.
 
 ### Example
 
@@ -165,6 +165,7 @@ example().catch(console.error);
 |-------------|-------------|------------------|
 | **201** | PreparedUpload |  -  |
 | **401** | Sign in, or send an API key as a bearer token: the request has no valid credentials. |  -  |
+| **402** | The workspace\&#39;s plan allows no more of &#x60;limit&#x60;: it has &#x60;allowed&#x60; already. A larger plan, or removing some, makes room. Nothing was changed. |  -  |
 | **403** | The credentials are valid but do not allow this request. |  -  |
 | **404** | No workspace with this id is open to the caller. |  -  |
 | **422** | Peal does not store files of this content type. It takes JPEG, PNG, GIF and WebP images, and MP4 and QuickTime videos. | The file is larger than Peal stores for its kind: 16 MiB for an image, 1 GiB for a video. | The description is longer than Peal keeps. |  -  |

@@ -9,7 +9,7 @@ import {
 import type { Subscription } from "#billing/domain/subscription.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import type { BillingRecord } from "#shared/application/personal-data.ts";
-import type { WorkspaceId } from "#shared/domain/ids.ts";
+import type { UserId, WorkspaceId } from "#shared/domain/ids.ts";
 
 import { BillingMode } from "./ports/billing-mode.ts";
 import { Checkouts } from "./ports/checkouts.ts";
@@ -132,6 +132,12 @@ export class BillingRecords extends Context.Service<
       void,
       DatabaseError | StripeUnreachable | WorkspaceStillBilled
     >;
+    /**
+     * Leaves billing's records without the user, in the caller's
+     * transaction, as their account closes: the orders and withdrawals
+     * they made, the trial they started, which stays the workspace's.
+     */
+    readonly forgetUser: (userId: UserId) => Effect.Effect<void, DatabaseError>;
   }
 >()("peal-server/billing/application/BillingRecords") {
   static readonly layer = Layer.effect(
@@ -262,6 +268,7 @@ export class BillingRecords extends Context.Service<
         billedBy,
         eraseWorkspace,
         exportWorkspace,
+        forgetUser: subscriptions.forgetUser,
         settleWorkspace,
       });
     })

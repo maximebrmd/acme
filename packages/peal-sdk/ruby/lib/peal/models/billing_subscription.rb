@@ -19,9 +19,15 @@ module Peal
 
     attr_accessor :current_period_end
 
+    attr_accessor :interval
+
     attr_accessor :plan
 
+    attr_accessor :started_at
+
     attr_accessor :status
+
+    attr_accessor :trial_end
 
     class EnumAttributeValidator
       attr_reader :datatype
@@ -50,8 +56,11 @@ module Peal
       {
         :'cancel_at_period_end' => :'cancelAtPeriodEnd',
         :'current_period_end' => :'currentPeriodEnd',
+        :'interval' => :'interval',
         :'plan' => :'plan',
-        :'status' => :'status'
+        :'started_at' => :'startedAt',
+        :'status' => :'status',
+        :'trial_end' => :'trialEnd'
       }
     end
 
@@ -70,8 +79,11 @@ module Peal
       {
         :'cancel_at_period_end' => :'Boolean',
         :'current_period_end' => :'String',
+        :'interval' => :'BillingInterval',
         :'plan' => :'PaidPlan',
-        :'status' => :'SubscriptionStatus'
+        :'started_at' => :'String',
+        :'status' => :'SubscriptionStatus',
+        :'trial_end' => :'String'
       }
     end
 
@@ -79,6 +91,8 @@ module Peal
     def self.openapi_nullable
       Set.new([
         :'current_period_end',
+        :'started_at',
+        :'trial_end'
       ])
     end
 
@@ -120,16 +134,34 @@ module Peal
         self.current_period_end = nil
       end
 
+      if attributes.key?(:'interval')
+        self.interval = attributes[:'interval']
+      else
+        self.interval = nil
+      end
+
       if attributes.key?(:'plan')
         self.plan = attributes[:'plan']
       else
         self.plan = nil
       end
 
+      if attributes.key?(:'started_at')
+        self.started_at = attributes[:'started_at']
+      else
+        self.started_at = nil
+      end
+
       if attributes.key?(:'status')
         self.status = attributes[:'status']
       else
         self.status = nil
+      end
+
+      if attributes.key?(:'trial_end')
+        self.trial_end = attributes[:'trial_end']
+      else
+        self.trial_end = nil
       end
     end
 
@@ -140,6 +172,10 @@ module Peal
       invalid_properties = Array.new
       if @cancel_at_period_end.nil?
         invalid_properties.push('invalid value for "cancel_at_period_end", cancel_at_period_end cannot be nil.')
+      end
+
+      if @interval.nil?
+        invalid_properties.push('invalid value for "interval", interval cannot be nil.')
       end
 
       if @plan.nil?
@@ -158,6 +194,7 @@ module Peal
     def valid?
       warn '[DEPRECATED] the `valid?` method is obsolete'
       return false if @cancel_at_period_end.nil?
+      return false if @interval.nil?
       return false if @plan.nil?
       return false if @status.nil?
       true
@@ -171,6 +208,16 @@ module Peal
       end
 
       @cancel_at_period_end = cancel_at_period_end
+    end
+
+    # Custom attribute writer method with validation
+    # @param [Object] interval Value to be assigned
+    def interval=(interval)
+      if interval.nil?
+        fail ArgumentError, 'interval cannot be nil'
+      end
+
+      @interval = interval
     end
 
     # Custom attribute writer method with validation
@@ -200,8 +247,11 @@ module Peal
       self.class == o.class &&
           cancel_at_period_end == o.cancel_at_period_end &&
           current_period_end == o.current_period_end &&
+          interval == o.interval &&
           plan == o.plan &&
-          status == o.status
+          started_at == o.started_at &&
+          status == o.status &&
+          trial_end == o.trial_end
     end
 
     # @see the `==` method
@@ -213,7 +263,7 @@ module Peal
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [cancel_at_period_end, current_period_end, plan, status].hash
+      [cancel_at_period_end, current_period_end, interval, plan, started_at, status, trial_end].hash
     end
 
     # Builds the object from hash

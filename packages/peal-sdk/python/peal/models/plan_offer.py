@@ -19,9 +19,10 @@ import re  # noqa: F401
 import json
 
 from pydantic import BaseModel, ConfigDict
-from typing import Any, ClassVar, Dict, List
+from typing import Any, ClassVar, Dict, List, Optional
 from peal.models.plan import Plan
 from peal.models.plan_allowances import PlanAllowances
+from peal.models.plan_price import PlanPrice
 from typing import Optional, Set
 from typing_extensions import Self
 from pydantic_core import to_jsonable_python
@@ -32,7 +33,8 @@ class PlanOffer(BaseModel):
     """ # noqa: E501
     allowances: PlanAllowances
     plan: Plan
-    __properties: ClassVar[List[str]] = ["allowances", "plan"]
+    price: Optional[PlanPrice]
+    __properties: ClassVar[List[str]] = ["allowances", "plan", "price"]
 
     model_config = ConfigDict(
         validate_by_name=True,
@@ -76,6 +78,14 @@ class PlanOffer(BaseModel):
         # override the default output from pydantic by calling `to_dict()` of allowances
         if self.allowances:
             _dict['allowances'] = self.allowances.to_dict()
+        # override the default output from pydantic by calling `to_dict()` of price
+        if self.price:
+            _dict['price'] = self.price.to_dict()
+        # set to None if price (nullable) is None
+        # and model_fields_set contains the field
+        if self.price is None and "price" in self.model_fields_set:
+            _dict['price'] = None
+
         return _dict
 
     @classmethod
@@ -89,7 +99,8 @@ class PlanOffer(BaseModel):
 
         _obj = cls.model_validate({
             "allowances": PlanAllowances.from_dict(obj["allowances"]) if obj.get("allowances") is not None else None,
-            "plan": obj.get("plan")
+            "plan": obj.get("plan"),
+            "price": PlanPrice.from_dict(obj["price"]) if obj.get("price") is not None else None
         })
         return _obj
 

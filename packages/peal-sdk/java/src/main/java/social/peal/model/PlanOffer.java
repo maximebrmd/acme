@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import social.peal.model.Plan;
 import social.peal.model.PlanAllowances;
+import social.peal.model.PlanPrice;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -62,6 +63,11 @@ public class PlanOffer {
   @SerializedName(SERIALIZED_NAME_PLAN)
   @javax.annotation.Nonnull
   private Plan plan;
+
+  public static final String SERIALIZED_NAME_PRICE = "price";
+  @SerializedName(SERIALIZED_NAME_PRICE)
+  @javax.annotation.Nullable
+  private PlanPrice price;
 
   public PlanOffer() {
   }
@@ -104,6 +110,25 @@ public class PlanOffer {
   }
 
 
+  public PlanOffer price(@javax.annotation.Nullable PlanPrice price) {
+    this.price = price;
+    return this;
+  }
+
+  /**
+   * Get price
+   * @return price
+   */
+  @javax.annotation.Nullable
+  public PlanPrice getPrice() {
+    return price;
+  }
+
+  public void setPrice(@javax.annotation.Nullable PlanPrice price) {
+    this.price = price;
+  }
+
+
 
   @Override
   public boolean equals(Object o) {
@@ -115,12 +140,13 @@ public class PlanOffer {
     }
     PlanOffer planOffer = (PlanOffer) o;
     return Objects.equals(this.allowances, planOffer.allowances) &&
-        Objects.equals(this.plan, planOffer.plan);
+        Objects.equals(this.plan, planOffer.plan) &&
+        Objects.equals(this.price, planOffer.price);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(allowances, plan);
+    return Objects.hash(allowances, plan, price);
   }
 
   @Override
@@ -129,6 +155,7 @@ public class PlanOffer {
     sb.append("class PlanOffer {\n");
     sb.append("    allowances: ").append(toIndentedString(allowances)).append("\n");
     sb.append("    plan: ").append(toIndentedString(plan)).append("\n");
+    sb.append("    price: ").append(toIndentedString(price)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -147,10 +174,10 @@ public class PlanOffer {
 
   static {
     // a set of all properties/fields (JSON key names)
-    openapiFields = new HashSet<String>(Arrays.asList("allowances", "plan"));
+    openapiFields = new HashSet<String>(Arrays.asList("allowances", "plan", "price"));
 
     // a set of required properties/fields (JSON key names)
-    openapiRequiredFields = new HashSet<String>(Arrays.asList("allowances", "plan"));
+    openapiRequiredFields = new HashSet<String>(Arrays.asList("allowances", "plan", "price"));
   }
 
   /**
@@ -185,6 +212,10 @@ public class PlanOffer {
       PlanAllowances.validateJsonElement(jsonObj.get("allowances"));
       // validate the required field `plan`
       Plan.validateJsonElement(jsonObj.get("plan"));
+      if (jsonObj.get("price") != null && !jsonObj.get("price").isJsonNull()) {
+      // validate the required field `price`
+      PlanPrice.validateJsonElement(jsonObj.get("price"));
+      }
   }
 
   public static class CustomTypeAdapterFactory implements TypeAdapterFactory {

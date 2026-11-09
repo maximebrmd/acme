@@ -27,6 +27,7 @@ docs/AttemptResult.md
 docs/Authorization.md
 docs/Billing.md
 docs/BillingApi.md
+docs/BillingInterval.md
 docs/BillingSubscription.md
 docs/Channel.md
 docs/ChannelCannotPostEncoded.md
@@ -119,6 +120,7 @@ docs/MembersApi.md
 docs/Membership.md
 docs/MetricTotals.md
 docs/MetricsSnapshot.md
+docs/Money.md
 docs/NewApiKey.md
 docs/NewInvitation.md
 docs/NewUpload.md
@@ -131,6 +133,11 @@ docs/NoticeEventAnyOf1.md
 docs/NoticeEventAnyOf2.md
 docs/NoticeEventAnyOf3.md
 docs/NoticeEventAnyOf4.md
+docs/NoticeEventAnyOf5.md
+docs/NoticeEventAnyOf6.md
+docs/NoticeEventAnyOf7.md
+docs/NoticeEventAnyOf8.md
+docs/NoticeEventAnyOf9.md
 docs/NoticePage.md
 docs/NoticesApi.md
 docs/NotificationPreferences.md
@@ -146,6 +153,7 @@ docs/PlanAllowances.md
 docs/PlanLimit.md
 docs/PlanLimitReachedEncoded.md
 docs/PlanOffer.md
+docs/PlanPrice.md
 docs/Platform.md
 docs/PlatformUnreachableEncoded.md
 docs/Post.md
@@ -201,6 +209,7 @@ docs/TiktokApi.md
 docs/TooManyInvitationsEncoded.md
 docs/TopPost.md
 docs/TranslationLanguage.md
+docs/TrialOffer.md
 docs/UnauthenticatedEncoded.md
 docs/UnconfirmedReason.md
 docs/UnknownChannelsEncoded.md
@@ -257,6 +266,7 @@ lib/peal/models/assistant_unavailable_encoded.rb
 lib/peal/models/attempt_result.rb
 lib/peal/models/authorization.rb
 lib/peal/models/billing.rb
+lib/peal/models/billing_interval.rb
 lib/peal/models/billing_subscription.rb
 lib/peal/models/channel.rb
 lib/peal/models/channel_cannot_post_encoded.rb
@@ -345,6 +355,7 @@ lib/peal/models/media_usage.rb
 lib/peal/models/membership.rb
 lib/peal/models/metric_totals.rb
 lib/peal/models/metrics_snapshot.rb
+lib/peal/models/money.rb
 lib/peal/models/new_api_key.rb
 lib/peal/models/new_invitation.rb
 lib/peal/models/new_upload.rb
@@ -357,6 +368,11 @@ lib/peal/models/notice_event_any_of1.rb
 lib/peal/models/notice_event_any_of2.rb
 lib/peal/models/notice_event_any_of3.rb
 lib/peal/models/notice_event_any_of4.rb
+lib/peal/models/notice_event_any_of5.rb
+lib/peal/models/notice_event_any_of6.rb
+lib/peal/models/notice_event_any_of7.rb
+lib/peal/models/notice_event_any_of8.rb
+lib/peal/models/notice_event_any_of9.rb
 lib/peal/models/notice_page.rb
 lib/peal/models/notification_preferences.rb
 lib/peal/models/notification_preferences_change.rb
@@ -370,6 +386,7 @@ lib/peal/models/plan_allowances.rb
 lib/peal/models/plan_limit.rb
 lib/peal/models/plan_limit_reached_encoded.rb
 lib/peal/models/plan_offer.rb
+lib/peal/models/plan_price.rb
 lib/peal/models/platform.rb
 lib/peal/models/platform_unreachable_encoded.rb
 lib/peal/models/post.rb
@@ -421,6 +438,7 @@ lib/peal/models/tik_tok_privacy_level.rb
 lib/peal/models/too_many_invitations_encoded.rb
 lib/peal/models/top_post.rb
 lib/peal/models/translation_language.rb
+lib/peal/models/trial_offer.rb
 lib/peal/models/unauthenticated_encoded.rb
 lib/peal/models/unconfirmed_reason.rb
 lib/peal/models/unknown_channels_encoded.rb

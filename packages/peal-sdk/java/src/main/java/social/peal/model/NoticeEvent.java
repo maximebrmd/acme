@@ -21,13 +21,21 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 import java.util.Arrays;
+import social.peal.model.BillingInterval;
 import social.peal.model.FailureReason;
+import social.peal.model.Money;
 import social.peal.model.NoticeChannel;
 import social.peal.model.NoticeEventAnyOf;
 import social.peal.model.NoticeEventAnyOf1;
 import social.peal.model.NoticeEventAnyOf2;
 import social.peal.model.NoticeEventAnyOf3;
 import social.peal.model.NoticeEventAnyOf4;
+import social.peal.model.NoticeEventAnyOf5;
+import social.peal.model.NoticeEventAnyOf6;
+import social.peal.model.NoticeEventAnyOf7;
+import social.peal.model.NoticeEventAnyOf8;
+import social.peal.model.NoticeEventAnyOf9;
+import social.peal.model.PaidPlan;
 
 
 
@@ -81,6 +89,11 @@ public class NoticeEvent extends AbstractOpenApiSchema {
             final TypeAdapter<NoticeEventAnyOf2> adapterNoticeEventAnyOf2 = gson.getDelegateAdapter(this, TypeToken.get(NoticeEventAnyOf2.class));
             final TypeAdapter<NoticeEventAnyOf3> adapterNoticeEventAnyOf3 = gson.getDelegateAdapter(this, TypeToken.get(NoticeEventAnyOf3.class));
             final TypeAdapter<NoticeEventAnyOf4> adapterNoticeEventAnyOf4 = gson.getDelegateAdapter(this, TypeToken.get(NoticeEventAnyOf4.class));
+            final TypeAdapter<NoticeEventAnyOf5> adapterNoticeEventAnyOf5 = gson.getDelegateAdapter(this, TypeToken.get(NoticeEventAnyOf5.class));
+            final TypeAdapter<NoticeEventAnyOf6> adapterNoticeEventAnyOf6 = gson.getDelegateAdapter(this, TypeToken.get(NoticeEventAnyOf6.class));
+            final TypeAdapter<NoticeEventAnyOf7> adapterNoticeEventAnyOf7 = gson.getDelegateAdapter(this, TypeToken.get(NoticeEventAnyOf7.class));
+            final TypeAdapter<NoticeEventAnyOf8> adapterNoticeEventAnyOf8 = gson.getDelegateAdapter(this, TypeToken.get(NoticeEventAnyOf8.class));
+            final TypeAdapter<NoticeEventAnyOf9> adapterNoticeEventAnyOf9 = gson.getDelegateAdapter(this, TypeToken.get(NoticeEventAnyOf9.class));
 
             return (TypeAdapter<T>) new TypeAdapter<NoticeEvent>() {
                 @Override
@@ -120,7 +133,37 @@ public class NoticeEvent extends AbstractOpenApiSchema {
                         elementAdapter.write(out, element);
                         return;
                     }
-                    throw new IOException("Failed to serialize as the type doesn't match anyOf schemas: NoticeEventAnyOf, NoticeEventAnyOf1, NoticeEventAnyOf2, NoticeEventAnyOf3, NoticeEventAnyOf4");
+                    // check if the actual instance is of the type `NoticeEventAnyOf5`
+                    if (value.getActualInstance() instanceof NoticeEventAnyOf5) {
+                        JsonElement element = adapterNoticeEventAnyOf5.toJsonTree((NoticeEventAnyOf5)value.getActualInstance());
+                        elementAdapter.write(out, element);
+                        return;
+                    }
+                    // check if the actual instance is of the type `NoticeEventAnyOf6`
+                    if (value.getActualInstance() instanceof NoticeEventAnyOf6) {
+                        JsonElement element = adapterNoticeEventAnyOf6.toJsonTree((NoticeEventAnyOf6)value.getActualInstance());
+                        elementAdapter.write(out, element);
+                        return;
+                    }
+                    // check if the actual instance is of the type `NoticeEventAnyOf7`
+                    if (value.getActualInstance() instanceof NoticeEventAnyOf7) {
+                        JsonElement element = adapterNoticeEventAnyOf7.toJsonTree((NoticeEventAnyOf7)value.getActualInstance());
+                        elementAdapter.write(out, element);
+                        return;
+                    }
+                    // check if the actual instance is of the type `NoticeEventAnyOf8`
+                    if (value.getActualInstance() instanceof NoticeEventAnyOf8) {
+                        JsonElement element = adapterNoticeEventAnyOf8.toJsonTree((NoticeEventAnyOf8)value.getActualInstance());
+                        elementAdapter.write(out, element);
+                        return;
+                    }
+                    // check if the actual instance is of the type `NoticeEventAnyOf9`
+                    if (value.getActualInstance() instanceof NoticeEventAnyOf9) {
+                        JsonElement element = adapterNoticeEventAnyOf9.toJsonTree((NoticeEventAnyOf9)value.getActualInstance());
+                        elementAdapter.write(out, element);
+                        return;
+                    }
+                    throw new IOException("Failed to serialize as the type doesn't match anyOf schemas: NoticeEventAnyOf, NoticeEventAnyOf1, NoticeEventAnyOf2, NoticeEventAnyOf3, NoticeEventAnyOf4, NoticeEventAnyOf5, NoticeEventAnyOf6, NoticeEventAnyOf7, NoticeEventAnyOf8, NoticeEventAnyOf9");
                 }
 
                 @Override
@@ -196,6 +239,71 @@ public class NoticeEvent extends AbstractOpenApiSchema {
                         errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for NoticeEventAnyOf4 failed with `%s`.", e.getMessage()));
                         log.log(Level.FINER, "Input data does not match schema 'NoticeEventAnyOf4'", e);
                     }
+                    // deserialize NoticeEventAnyOf5
+                    try {
+                        // validate the JSON object to see if any exception is thrown
+                        NoticeEventAnyOf5.validateJsonElement(jsonElement);
+                        actualAdapter = adapterNoticeEventAnyOf5;
+                        NoticeEvent ret = new NoticeEvent();
+                        ret.setActualInstance(actualAdapter.fromJsonTree(jsonElement));
+                        return ret;
+                    } catch (Exception e) {
+                        // deserialization failed, continue
+                        errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for NoticeEventAnyOf5 failed with `%s`.", e.getMessage()));
+                        log.log(Level.FINER, "Input data does not match schema 'NoticeEventAnyOf5'", e);
+                    }
+                    // deserialize NoticeEventAnyOf6
+                    try {
+                        // validate the JSON object to see if any exception is thrown
+                        NoticeEventAnyOf6.validateJsonElement(jsonElement);
+                        actualAdapter = adapterNoticeEventAnyOf6;
+                        NoticeEvent ret = new NoticeEvent();
+                        ret.setActualInstance(actualAdapter.fromJsonTree(jsonElement));
+                        return ret;
+                    } catch (Exception e) {
+                        // deserialization failed, continue
+                        errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for NoticeEventAnyOf6 failed with `%s`.", e.getMessage()));
+                        log.log(Level.FINER, "Input data does not match schema 'NoticeEventAnyOf6'", e);
+                    }
+                    // deserialize NoticeEventAnyOf7
+                    try {
+                        // validate the JSON object to see if any exception is thrown
+                        NoticeEventAnyOf7.validateJsonElement(jsonElement);
+                        actualAdapter = adapterNoticeEventAnyOf7;
+                        NoticeEvent ret = new NoticeEvent();
+                        ret.setActualInstance(actualAdapter.fromJsonTree(jsonElement));
+                        return ret;
+                    } catch (Exception e) {
+                        // deserialization failed, continue
+                        errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for NoticeEventAnyOf7 failed with `%s`.", e.getMessage()));
+                        log.log(Level.FINER, "Input data does not match schema 'NoticeEventAnyOf7'", e);
+                    }
+                    // deserialize NoticeEventAnyOf8
+                    try {
+                        // validate the JSON object to see if any exception is thrown
+                        NoticeEventAnyOf8.validateJsonElement(jsonElement);
+                        actualAdapter = adapterNoticeEventAnyOf8;
+                        NoticeEvent ret = new NoticeEvent();
+                        ret.setActualInstance(actualAdapter.fromJsonTree(jsonElement));
+                        return ret;
+                    } catch (Exception e) {
+                        // deserialization failed, continue
+                        errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for NoticeEventAnyOf8 failed with `%s`.", e.getMessage()));
+                        log.log(Level.FINER, "Input data does not match schema 'NoticeEventAnyOf8'", e);
+                    }
+                    // deserialize NoticeEventAnyOf9
+                    try {
+                        // validate the JSON object to see if any exception is thrown
+                        NoticeEventAnyOf9.validateJsonElement(jsonElement);
+                        actualAdapter = adapterNoticeEventAnyOf9;
+                        NoticeEvent ret = new NoticeEvent();
+                        ret.setActualInstance(actualAdapter.fromJsonTree(jsonElement));
+                        return ret;
+                    } catch (Exception e) {
+                        // deserialization failed, continue
+                        errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for NoticeEventAnyOf9 failed with `%s`.", e.getMessage()));
+                        log.log(Level.FINER, "Input data does not match schema 'NoticeEventAnyOf9'", e);
+                    }
 
                     throw new IOException(String.format(java.util.Locale.ROOT, "Failed deserialization for NoticeEvent: no class matches result, expected at least 1. Detailed failure message for anyOf schemas: %s. JSON: %s", errorMessages, jsonElement.toString()));
                 }
@@ -221,6 +329,11 @@ public class NoticeEvent extends AbstractOpenApiSchema {
         schemas.put("NoticeEventAnyOf2", NoticeEventAnyOf2.class);
         schemas.put("NoticeEventAnyOf3", NoticeEventAnyOf3.class);
         schemas.put("NoticeEventAnyOf4", NoticeEventAnyOf4.class);
+        schemas.put("NoticeEventAnyOf5", NoticeEventAnyOf5.class);
+        schemas.put("NoticeEventAnyOf6", NoticeEventAnyOf6.class);
+        schemas.put("NoticeEventAnyOf7", NoticeEventAnyOf7.class);
+        schemas.put("NoticeEventAnyOf8", NoticeEventAnyOf8.class);
+        schemas.put("NoticeEventAnyOf9", NoticeEventAnyOf9.class);
     }
 
     @Override
@@ -231,7 +344,7 @@ public class NoticeEvent extends AbstractOpenApiSchema {
     /**
      * Set the instance that matches the anyOf child schema, check
      * the instance parameter is valid against the anyOf child schemas:
-     * NoticeEventAnyOf, NoticeEventAnyOf1, NoticeEventAnyOf2, NoticeEventAnyOf3, NoticeEventAnyOf4
+     * NoticeEventAnyOf, NoticeEventAnyOf1, NoticeEventAnyOf2, NoticeEventAnyOf3, NoticeEventAnyOf4, NoticeEventAnyOf5, NoticeEventAnyOf6, NoticeEventAnyOf7, NoticeEventAnyOf8, NoticeEventAnyOf9
      *
      * It could be an instance of the 'anyOf' schemas.
      */
@@ -262,14 +375,39 @@ public class NoticeEvent extends AbstractOpenApiSchema {
             return;
         }
 
-        throw new RuntimeException("Invalid instance type. Must be NoticeEventAnyOf, NoticeEventAnyOf1, NoticeEventAnyOf2, NoticeEventAnyOf3, NoticeEventAnyOf4");
+        if (instance instanceof NoticeEventAnyOf5) {
+            super.setActualInstance(instance);
+            return;
+        }
+
+        if (instance instanceof NoticeEventAnyOf6) {
+            super.setActualInstance(instance);
+            return;
+        }
+
+        if (instance instanceof NoticeEventAnyOf7) {
+            super.setActualInstance(instance);
+            return;
+        }
+
+        if (instance instanceof NoticeEventAnyOf8) {
+            super.setActualInstance(instance);
+            return;
+        }
+
+        if (instance instanceof NoticeEventAnyOf9) {
+            super.setActualInstance(instance);
+            return;
+        }
+
+        throw new RuntimeException("Invalid instance type. Must be NoticeEventAnyOf, NoticeEventAnyOf1, NoticeEventAnyOf2, NoticeEventAnyOf3, NoticeEventAnyOf4, NoticeEventAnyOf5, NoticeEventAnyOf6, NoticeEventAnyOf7, NoticeEventAnyOf8, NoticeEventAnyOf9");
     }
 
     /**
      * Get the actual instance, which can be the following:
-     * NoticeEventAnyOf, NoticeEventAnyOf1, NoticeEventAnyOf2, NoticeEventAnyOf3, NoticeEventAnyOf4
+     * NoticeEventAnyOf, NoticeEventAnyOf1, NoticeEventAnyOf2, NoticeEventAnyOf3, NoticeEventAnyOf4, NoticeEventAnyOf5, NoticeEventAnyOf6, NoticeEventAnyOf7, NoticeEventAnyOf8, NoticeEventAnyOf9
      *
-     * @return The actual instance (NoticeEventAnyOf, NoticeEventAnyOf1, NoticeEventAnyOf2, NoticeEventAnyOf3, NoticeEventAnyOf4)
+     * @return The actual instance (NoticeEventAnyOf, NoticeEventAnyOf1, NoticeEventAnyOf2, NoticeEventAnyOf3, NoticeEventAnyOf4, NoticeEventAnyOf5, NoticeEventAnyOf6, NoticeEventAnyOf7, NoticeEventAnyOf8, NoticeEventAnyOf9)
      */
     @SuppressWarnings("unchecked")
     @Override
@@ -333,6 +471,61 @@ public class NoticeEvent extends AbstractOpenApiSchema {
     }
 
     /**
+     * Get the actual instance of `NoticeEventAnyOf5`. If the actual instance is not `NoticeEventAnyOf5`,
+     * the ClassCastException will be thrown.
+     *
+     * @return The actual instance of `NoticeEventAnyOf5`
+     * @throws ClassCastException if the instance is not `NoticeEventAnyOf5`
+     */
+    public NoticeEventAnyOf5 getNoticeEventAnyOf5() throws ClassCastException {
+        return (NoticeEventAnyOf5)super.getActualInstance();
+    }
+
+    /**
+     * Get the actual instance of `NoticeEventAnyOf6`. If the actual instance is not `NoticeEventAnyOf6`,
+     * the ClassCastException will be thrown.
+     *
+     * @return The actual instance of `NoticeEventAnyOf6`
+     * @throws ClassCastException if the instance is not `NoticeEventAnyOf6`
+     */
+    public NoticeEventAnyOf6 getNoticeEventAnyOf6() throws ClassCastException {
+        return (NoticeEventAnyOf6)super.getActualInstance();
+    }
+
+    /**
+     * Get the actual instance of `NoticeEventAnyOf7`. If the actual instance is not `NoticeEventAnyOf7`,
+     * the ClassCastException will be thrown.
+     *
+     * @return The actual instance of `NoticeEventAnyOf7`
+     * @throws ClassCastException if the instance is not `NoticeEventAnyOf7`
+     */
+    public NoticeEventAnyOf7 getNoticeEventAnyOf7() throws ClassCastException {
+        return (NoticeEventAnyOf7)super.getActualInstance();
+    }
+
+    /**
+     * Get the actual instance of `NoticeEventAnyOf8`. If the actual instance is not `NoticeEventAnyOf8`,
+     * the ClassCastException will be thrown.
+     *
+     * @return The actual instance of `NoticeEventAnyOf8`
+     * @throws ClassCastException if the instance is not `NoticeEventAnyOf8`
+     */
+    public NoticeEventAnyOf8 getNoticeEventAnyOf8() throws ClassCastException {
+        return (NoticeEventAnyOf8)super.getActualInstance();
+    }
+
+    /**
+     * Get the actual instance of `NoticeEventAnyOf9`. If the actual instance is not `NoticeEventAnyOf9`,
+     * the ClassCastException will be thrown.
+     *
+     * @return The actual instance of `NoticeEventAnyOf9`
+     * @throws ClassCastException if the instance is not `NoticeEventAnyOf9`
+     */
+    public NoticeEventAnyOf9 getNoticeEventAnyOf9() throws ClassCastException {
+        return (NoticeEventAnyOf9)super.getActualInstance();
+    }
+
+    /**
      * Validates the JSON Element and throws an exception if issues found
      *
      * @param jsonElement JSON Element
@@ -381,7 +574,47 @@ public class NoticeEvent extends AbstractOpenApiSchema {
             errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for NoticeEventAnyOf4 failed with `%s`.", e.getMessage()));
             // continue to the next one
         }
-        throw new IOException(String.format(java.util.Locale.ROOT, "The JSON string is invalid for NoticeEvent with anyOf schemas: NoticeEventAnyOf, NoticeEventAnyOf1, NoticeEventAnyOf2, NoticeEventAnyOf3, NoticeEventAnyOf4. no class match the result, expected at least 1. Detailed failure message for anyOf schemas: %s. JSON: %s", errorMessages, jsonElement.toString()));
+        // validate the json string with NoticeEventAnyOf5
+        try {
+            NoticeEventAnyOf5.validateJsonElement(jsonElement);
+            return;
+        } catch (Exception e) {
+            errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for NoticeEventAnyOf5 failed with `%s`.", e.getMessage()));
+            // continue to the next one
+        }
+        // validate the json string with NoticeEventAnyOf6
+        try {
+            NoticeEventAnyOf6.validateJsonElement(jsonElement);
+            return;
+        } catch (Exception e) {
+            errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for NoticeEventAnyOf6 failed with `%s`.", e.getMessage()));
+            // continue to the next one
+        }
+        // validate the json string with NoticeEventAnyOf7
+        try {
+            NoticeEventAnyOf7.validateJsonElement(jsonElement);
+            return;
+        } catch (Exception e) {
+            errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for NoticeEventAnyOf7 failed with `%s`.", e.getMessage()));
+            // continue to the next one
+        }
+        // validate the json string with NoticeEventAnyOf8
+        try {
+            NoticeEventAnyOf8.validateJsonElement(jsonElement);
+            return;
+        } catch (Exception e) {
+            errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for NoticeEventAnyOf8 failed with `%s`.", e.getMessage()));
+            // continue to the next one
+        }
+        // validate the json string with NoticeEventAnyOf9
+        try {
+            NoticeEventAnyOf9.validateJsonElement(jsonElement);
+            return;
+        } catch (Exception e) {
+            errorMessages.add(String.format(java.util.Locale.ROOT, "Deserialization for NoticeEventAnyOf9 failed with `%s`.", e.getMessage()));
+            // continue to the next one
+        }
+        throw new IOException(String.format(java.util.Locale.ROOT, "The JSON string is invalid for NoticeEvent with anyOf schemas: NoticeEventAnyOf, NoticeEventAnyOf1, NoticeEventAnyOf2, NoticeEventAnyOf3, NoticeEventAnyOf4, NoticeEventAnyOf5, NoticeEventAnyOf6, NoticeEventAnyOf7, NoticeEventAnyOf8, NoticeEventAnyOf9. no class match the result, expected at least 1. Detailed failure message for anyOf schemas: %s. JSON: %s", errorMessages, jsonElement.toString()));
     }
 
     /**

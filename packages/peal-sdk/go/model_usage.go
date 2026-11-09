@@ -24,6 +24,7 @@ var _ MappedNullable = &Usage{}
 type Usage struct {
 	AssistantRequests PeriodUsage `json:"assistantRequests"`
 	Channels int32 `json:"channels"`
+	MediaStorage int32 `json:"mediaStorage"`
 	Members int32 `json:"members"`
 	ScheduledPosts PeriodUsage `json:"scheduledPosts"`
 }
@@ -34,10 +35,11 @@ type _Usage Usage
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewUsage(assistantRequests PeriodUsage, channels int32, members int32, scheduledPosts PeriodUsage) *Usage {
+func NewUsage(assistantRequests PeriodUsage, channels int32, mediaStorage int32, members int32, scheduledPosts PeriodUsage) *Usage {
 	this := Usage{}
 	this.AssistantRequests = assistantRequests
 	this.Channels = channels
+	this.MediaStorage = mediaStorage
 	this.Members = members
 	this.ScheduledPosts = scheduledPosts
 	return &this
@@ -97,6 +99,30 @@ func (o *Usage) GetChannelsOk() (*int32, bool) {
 // SetChannels sets field value
 func (o *Usage) SetChannels(v int32) {
 	o.Channels = v
+}
+
+// GetMediaStorage returns the MediaStorage field value
+func (o *Usage) GetMediaStorage() int32 {
+	if o == nil {
+		var ret int32
+		return ret
+	}
+
+	return o.MediaStorage
+}
+
+// GetMediaStorageOk returns a tuple with the MediaStorage field value
+// and a boolean to check if the value has been set.
+func (o *Usage) GetMediaStorageOk() (*int32, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return &o.MediaStorage, true
+}
+
+// SetMediaStorage sets field value
+func (o *Usage) SetMediaStorage(v int32) {
+	o.MediaStorage = v
 }
 
 // GetMembers returns the Members field value
@@ -159,6 +185,7 @@ func (o Usage) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
 	toSerialize["assistantRequests"] = o.AssistantRequests
 	toSerialize["channels"] = o.Channels
+	toSerialize["mediaStorage"] = o.MediaStorage
 	toSerialize["members"] = o.Members
 	toSerialize["scheduledPosts"] = o.ScheduledPosts
 	return toSerialize, nil
@@ -171,6 +198,7 @@ func (o *Usage) UnmarshalJSON(data []byte) (err error) {
 	requiredProperties := []string{
 		"assistantRequests",
 		"channels",
+		"mediaStorage",
 		"members",
 		"scheduledPosts",
 	}

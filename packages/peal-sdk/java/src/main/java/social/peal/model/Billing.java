@@ -27,6 +27,7 @@ import social.peal.model.BillingSubscription;
 import social.peal.model.Plan;
 import social.peal.model.PlanAllowances;
 import social.peal.model.PlanOffer;
+import social.peal.model.TrialOffer;
 import social.peal.model.Usage;
 
 import com.google.gson.Gson;
@@ -63,6 +64,11 @@ public class Billing {
   @javax.annotation.Nonnull
   private PlanAllowances allowances;
 
+  public static final String SERIALIZED_NAME_CURRENCY = "currency";
+  @SerializedName(SERIALIZED_NAME_CURRENCY)
+  @javax.annotation.Nonnull
+  private String currency;
+
   public static final String SERIALIZED_NAME_ENABLED = "enabled";
   @SerializedName(SERIALIZED_NAME_ENABLED)
   @javax.annotation.Nonnull
@@ -83,10 +89,25 @@ public class Billing {
   @javax.annotation.Nullable
   private BillingSubscription subscription;
 
+  public static final String SERIALIZED_NAME_TRIAL = "trial";
+  @SerializedName(SERIALIZED_NAME_TRIAL)
+  @javax.annotation.Nullable
+  private TrialOffer trial;
+
   public static final String SERIALIZED_NAME_USAGE = "usage";
   @SerializedName(SERIALIZED_NAME_USAGE)
   @javax.annotation.Nonnull
   private Usage usage;
+
+  public static final String SERIALIZED_NAME_VAT_RATE = "vatRate";
+  @SerializedName(SERIALIZED_NAME_VAT_RATE)
+  @javax.annotation.Nonnull
+  private Integer vatRate;
+
+  public static final String SERIALIZED_NAME_WITHDRAWABLE_UNTIL = "withdrawableUntil";
+  @SerializedName(SERIALIZED_NAME_WITHDRAWABLE_UNTIL)
+  @javax.annotation.Nullable
+  private String withdrawableUntil;
 
   public Billing() {
   }
@@ -107,6 +128,25 @@ public class Billing {
 
   public void setAllowances(@javax.annotation.Nonnull PlanAllowances allowances) {
     this.allowances = allowances;
+  }
+
+
+  public Billing currency(@javax.annotation.Nonnull String currency) {
+    this.currency = currency;
+    return this;
+  }
+
+  /**
+   * Get currency
+   * @return currency
+   */
+  @javax.annotation.Nonnull
+  public String getCurrency() {
+    return currency;
+  }
+
+  public void setCurrency(@javax.annotation.Nonnull String currency) {
+    this.currency = currency;
   }
 
 
@@ -194,6 +234,25 @@ public class Billing {
   }
 
 
+  public Billing trial(@javax.annotation.Nullable TrialOffer trial) {
+    this.trial = trial;
+    return this;
+  }
+
+  /**
+   * Get trial
+   * @return trial
+   */
+  @javax.annotation.Nullable
+  public TrialOffer getTrial() {
+    return trial;
+  }
+
+  public void setTrial(@javax.annotation.Nullable TrialOffer trial) {
+    this.trial = trial;
+  }
+
+
   public Billing usage(@javax.annotation.Nonnull Usage usage) {
     this.usage = usage;
     return this;
@@ -213,6 +272,46 @@ public class Billing {
   }
 
 
+  public Billing vatRate(@javax.annotation.Nonnull Integer vatRate) {
+    this.vatRate = vatRate;
+    return this;
+  }
+
+  /**
+   * Get vatRate
+   * minimum: -9007199254740991
+   * maximum: 9007199254740991
+   * @return vatRate
+   */
+  @javax.annotation.Nonnull
+  public Integer getVatRate() {
+    return vatRate;
+  }
+
+  public void setVatRate(@javax.annotation.Nonnull Integer vatRate) {
+    this.vatRate = vatRate;
+  }
+
+
+  public Billing withdrawableUntil(@javax.annotation.Nullable String withdrawableUntil) {
+    this.withdrawableUntil = withdrawableUntil;
+    return this;
+  }
+
+  /**
+   * Get withdrawableUntil
+   * @return withdrawableUntil
+   */
+  @javax.annotation.Nullable
+  public String getWithdrawableUntil() {
+    return withdrawableUntil;
+  }
+
+  public void setWithdrawableUntil(@javax.annotation.Nullable String withdrawableUntil) {
+    this.withdrawableUntil = withdrawableUntil;
+  }
+
+
 
   @Override
   public boolean equals(Object o) {
@@ -224,16 +323,20 @@ public class Billing {
     }
     Billing billing = (Billing) o;
     return Objects.equals(this.allowances, billing.allowances) &&
+        Objects.equals(this.currency, billing.currency) &&
         Objects.equals(this.enabled, billing.enabled) &&
         Objects.equals(this.plan, billing.plan) &&
         Objects.equals(this.plans, billing.plans) &&
         Objects.equals(this.subscription, billing.subscription) &&
-        Objects.equals(this.usage, billing.usage);
+        Objects.equals(this.trial, billing.trial) &&
+        Objects.equals(this.usage, billing.usage) &&
+        Objects.equals(this.vatRate, billing.vatRate) &&
+        Objects.equals(this.withdrawableUntil, billing.withdrawableUntil);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(allowances, enabled, plan, plans, subscription, usage);
+    return Objects.hash(allowances, currency, enabled, plan, plans, subscription, trial, usage, vatRate, withdrawableUntil);
   }
 
   @Override
@@ -241,11 +344,15 @@ public class Billing {
     StringBuilder sb = new StringBuilder();
     sb.append("class Billing {\n");
     sb.append("    allowances: ").append(toIndentedString(allowances)).append("\n");
+    sb.append("    currency: ").append(toIndentedString(currency)).append("\n");
     sb.append("    enabled: ").append(toIndentedString(enabled)).append("\n");
     sb.append("    plan: ").append(toIndentedString(plan)).append("\n");
     sb.append("    plans: ").append(toIndentedString(plans)).append("\n");
     sb.append("    subscription: ").append(toIndentedString(subscription)).append("\n");
+    sb.append("    trial: ").append(toIndentedString(trial)).append("\n");
     sb.append("    usage: ").append(toIndentedString(usage)).append("\n");
+    sb.append("    vatRate: ").append(toIndentedString(vatRate)).append("\n");
+    sb.append("    withdrawableUntil: ").append(toIndentedString(withdrawableUntil)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -264,10 +371,10 @@ public class Billing {
 
   static {
     // a set of all properties/fields (JSON key names)
-    openapiFields = new HashSet<String>(Arrays.asList("allowances", "enabled", "plan", "plans", "subscription", "usage"));
+    openapiFields = new HashSet<String>(Arrays.asList("allowances", "currency", "enabled", "plan", "plans", "subscription", "trial", "usage", "vatRate", "withdrawableUntil"));
 
     // a set of required properties/fields (JSON key names)
-    openapiRequiredFields = new HashSet<String>(Arrays.asList("allowances", "enabled", "plan", "plans", "subscription", "usage"));
+    openapiRequiredFields = new HashSet<String>(Arrays.asList("allowances", "currency", "enabled", "plan", "plans", "subscription", "trial", "usage", "vatRate", "withdrawableUntil"));
   }
 
   /**
@@ -300,6 +407,9 @@ public class Billing {
         JsonObject jsonObj = jsonElement.getAsJsonObject();
       // validate the required field `allowances`
       PlanAllowances.validateJsonElement(jsonObj.get("allowances"));
+      if (!jsonObj.get("currency").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `currency` to be a primitive type in the JSON string but got `%s`", jsonObj.get("currency").toString()));
+      }
       if (jsonObj.get("plan") != null && !jsonObj.get("plan").isJsonNull()) {
       // validate the required field `plan`
       Plan.validateJsonElement(jsonObj.get("plan"));
@@ -318,8 +428,15 @@ public class Billing {
       // validate the required field `subscription`
       BillingSubscription.validateJsonElement(jsonObj.get("subscription"));
       }
+      if (jsonObj.get("trial") != null && !jsonObj.get("trial").isJsonNull()) {
+      // validate the required field `trial`
+      TrialOffer.validateJsonElement(jsonObj.get("trial"));
+      }
       // validate the required field `usage`
       Usage.validateJsonElement(jsonObj.get("usage"));
+      if ((jsonObj.get("withdrawableUntil") != null && !jsonObj.get("withdrawableUntil").isJsonNull()) && !jsonObj.get("withdrawableUntil").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `withdrawableUntil` to be a primitive type in the JSON string but got `%s`", jsonObj.get("withdrawableUntil").toString()));
+      }
   }
 
   public static class CustomTypeAdapterFactory implements TypeAdapterFactory {

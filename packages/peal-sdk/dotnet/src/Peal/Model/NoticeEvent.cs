@@ -39,13 +39,23 @@ namespace Peal.Model
         /// <param name="noticeEventAnyOf2"></param>
         /// <param name="noticeEventAnyOf3"></param>
         /// <param name="noticeEventAnyOf4"></param>
-        public NoticeEvent(Option<NoticeEventAnyOf?> noticeEventAnyOf, Option<NoticeEventAnyOf1?> noticeEventAnyOf1, Option<NoticeEventAnyOf2?> noticeEventAnyOf2, Option<NoticeEventAnyOf3?> noticeEventAnyOf3, Option<NoticeEventAnyOf4?> noticeEventAnyOf4)
+        /// <param name="noticeEventAnyOf5"></param>
+        /// <param name="noticeEventAnyOf6"></param>
+        /// <param name="noticeEventAnyOf7"></param>
+        /// <param name="noticeEventAnyOf8"></param>
+        /// <param name="noticeEventAnyOf9"></param>
+        public NoticeEvent(Option<NoticeEventAnyOf?> noticeEventAnyOf, Option<NoticeEventAnyOf1?> noticeEventAnyOf1, Option<NoticeEventAnyOf2?> noticeEventAnyOf2, Option<NoticeEventAnyOf3?> noticeEventAnyOf3, Option<NoticeEventAnyOf4?> noticeEventAnyOf4, Option<NoticeEventAnyOf5?> noticeEventAnyOf5, Option<NoticeEventAnyOf6?> noticeEventAnyOf6, Option<NoticeEventAnyOf7?> noticeEventAnyOf7, Option<NoticeEventAnyOf8?> noticeEventAnyOf8, Option<NoticeEventAnyOf9?> noticeEventAnyOf9)
         {
             NoticeEventAnyOfOption = noticeEventAnyOf;
             NoticeEventAnyOf1Option = noticeEventAnyOf1;
             NoticeEventAnyOf2Option = noticeEventAnyOf2;
             NoticeEventAnyOf3Option = noticeEventAnyOf3;
             NoticeEventAnyOf4Option = noticeEventAnyOf4;
+            NoticeEventAnyOf5Option = noticeEventAnyOf5;
+            NoticeEventAnyOf6Option = noticeEventAnyOf6;
+            NoticeEventAnyOf7Option = noticeEventAnyOf7;
+            NoticeEventAnyOf8Option = noticeEventAnyOf8;
+            NoticeEventAnyOf9Option = noticeEventAnyOf9;
             OnCreated();
         }
 
@@ -112,6 +122,66 @@ namespace Peal.Model
         public NoticeEventAnyOf4? NoticeEventAnyOf4 { get { return this.NoticeEventAnyOf4Option.Value; } set { this.NoticeEventAnyOf4Option = new(value); } }
 
         /// <summary>
+        /// Used to track the state of NoticeEventAnyOf5
+        /// </summary>
+        [JsonIgnore]
+        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
+        public Option<NoticeEventAnyOf5?> NoticeEventAnyOf5Option { get; private set; }
+
+        /// <summary>
+        /// Gets or Sets NoticeEventAnyOf5
+        /// </summary>
+        public NoticeEventAnyOf5? NoticeEventAnyOf5 { get { return this.NoticeEventAnyOf5Option.Value; } set { this.NoticeEventAnyOf5Option = new(value); } }
+
+        /// <summary>
+        /// Used to track the state of NoticeEventAnyOf6
+        /// </summary>
+        [JsonIgnore]
+        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
+        public Option<NoticeEventAnyOf6?> NoticeEventAnyOf6Option { get; private set; }
+
+        /// <summary>
+        /// Gets or Sets NoticeEventAnyOf6
+        /// </summary>
+        public NoticeEventAnyOf6? NoticeEventAnyOf6 { get { return this.NoticeEventAnyOf6Option.Value; } set { this.NoticeEventAnyOf6Option = new(value); } }
+
+        /// <summary>
+        /// Used to track the state of NoticeEventAnyOf7
+        /// </summary>
+        [JsonIgnore]
+        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
+        public Option<NoticeEventAnyOf7?> NoticeEventAnyOf7Option { get; private set; }
+
+        /// <summary>
+        /// Gets or Sets NoticeEventAnyOf7
+        /// </summary>
+        public NoticeEventAnyOf7? NoticeEventAnyOf7 { get { return this.NoticeEventAnyOf7Option.Value; } set { this.NoticeEventAnyOf7Option = new(value); } }
+
+        /// <summary>
+        /// Used to track the state of NoticeEventAnyOf8
+        /// </summary>
+        [JsonIgnore]
+        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
+        public Option<NoticeEventAnyOf8?> NoticeEventAnyOf8Option { get; private set; }
+
+        /// <summary>
+        /// Gets or Sets NoticeEventAnyOf8
+        /// </summary>
+        public NoticeEventAnyOf8? NoticeEventAnyOf8 { get { return this.NoticeEventAnyOf8Option.Value; } set { this.NoticeEventAnyOf8Option = new(value); } }
+
+        /// <summary>
+        /// Used to track the state of NoticeEventAnyOf9
+        /// </summary>
+        [JsonIgnore]
+        [global::System.ComponentModel.EditorBrowsable(global::System.ComponentModel.EditorBrowsableState.Never)]
+        public Option<NoticeEventAnyOf9?> NoticeEventAnyOf9Option { get; private set; }
+
+        /// <summary>
+        /// Gets or Sets NoticeEventAnyOf9
+        /// </summary>
+        public NoticeEventAnyOf9? NoticeEventAnyOf9 { get { return this.NoticeEventAnyOf9Option.Value; } set { this.NoticeEventAnyOf9Option = new(value); } }
+
+        /// <summary>
         /// Returns the string presentation of the object
         /// </summary>
         /// <returns>String presentation of the object</returns>
@@ -171,6 +241,11 @@ namespace Peal.Model
             NoticeEventAnyOf2? noticeEventAnyOf2 = default;
             NoticeEventAnyOf3? noticeEventAnyOf3 = default;
             NoticeEventAnyOf4? noticeEventAnyOf4 = default;
+            NoticeEventAnyOf5? noticeEventAnyOf5 = default;
+            NoticeEventAnyOf6? noticeEventAnyOf6 = default;
+            NoticeEventAnyOf7? noticeEventAnyOf7 = default;
+            NoticeEventAnyOf8? noticeEventAnyOf8 = default;
+            NoticeEventAnyOf9? noticeEventAnyOf9 = default;
 
             Utf8JsonReader utf8JsonReaderAnyOf = utf8JsonReader;
             while (utf8JsonReaderAnyOf.Read())
@@ -197,6 +272,21 @@ namespace Peal.Model
 
                     Utf8JsonReader utf8JsonReaderNoticeEventAnyOf4 = utf8JsonReader;
                     ClientUtils.TryDeserialize<NoticeEventAnyOf4?>(ref utf8JsonReaderNoticeEventAnyOf4, jsonSerializerOptions, out noticeEventAnyOf4);
+
+                    Utf8JsonReader utf8JsonReaderNoticeEventAnyOf5 = utf8JsonReader;
+                    ClientUtils.TryDeserialize<NoticeEventAnyOf5?>(ref utf8JsonReaderNoticeEventAnyOf5, jsonSerializerOptions, out noticeEventAnyOf5);
+
+                    Utf8JsonReader utf8JsonReaderNoticeEventAnyOf6 = utf8JsonReader;
+                    ClientUtils.TryDeserialize<NoticeEventAnyOf6?>(ref utf8JsonReaderNoticeEventAnyOf6, jsonSerializerOptions, out noticeEventAnyOf6);
+
+                    Utf8JsonReader utf8JsonReaderNoticeEventAnyOf7 = utf8JsonReader;
+                    ClientUtils.TryDeserialize<NoticeEventAnyOf7?>(ref utf8JsonReaderNoticeEventAnyOf7, jsonSerializerOptions, out noticeEventAnyOf7);
+
+                    Utf8JsonReader utf8JsonReaderNoticeEventAnyOf8 = utf8JsonReader;
+                    ClientUtils.TryDeserialize<NoticeEventAnyOf8?>(ref utf8JsonReaderNoticeEventAnyOf8, jsonSerializerOptions, out noticeEventAnyOf8);
+
+                    Utf8JsonReader utf8JsonReaderNoticeEventAnyOf9 = utf8JsonReader;
+                    ClientUtils.TryDeserialize<NoticeEventAnyOf9?>(ref utf8JsonReaderNoticeEventAnyOf9, jsonSerializerOptions, out noticeEventAnyOf9);
                 }
             }
 
@@ -236,8 +326,23 @@ namespace Peal.Model
             Option<NoticeEventAnyOf4?> noticeEventAnyOf4ParsedValue = noticeEventAnyOf4 == null
                 ? default
                 : new Option<NoticeEventAnyOf4?>(noticeEventAnyOf4);
+            Option<NoticeEventAnyOf5?> noticeEventAnyOf5ParsedValue = noticeEventAnyOf5 == null
+                ? default
+                : new Option<NoticeEventAnyOf5?>(noticeEventAnyOf5);
+            Option<NoticeEventAnyOf6?> noticeEventAnyOf6ParsedValue = noticeEventAnyOf6 == null
+                ? default
+                : new Option<NoticeEventAnyOf6?>(noticeEventAnyOf6);
+            Option<NoticeEventAnyOf7?> noticeEventAnyOf7ParsedValue = noticeEventAnyOf7 == null
+                ? default
+                : new Option<NoticeEventAnyOf7?>(noticeEventAnyOf7);
+            Option<NoticeEventAnyOf8?> noticeEventAnyOf8ParsedValue = noticeEventAnyOf8 == null
+                ? default
+                : new Option<NoticeEventAnyOf8?>(noticeEventAnyOf8);
+            Option<NoticeEventAnyOf9?> noticeEventAnyOf9ParsedValue = noticeEventAnyOf9 == null
+                ? default
+                : new Option<NoticeEventAnyOf9?>(noticeEventAnyOf9);
 
-            return new NoticeEvent(noticeEventAnyOfParsedValue, noticeEventAnyOf1ParsedValue, noticeEventAnyOf2ParsedValue, noticeEventAnyOf3ParsedValue, noticeEventAnyOf4ParsedValue);
+            return new NoticeEvent(noticeEventAnyOfParsedValue, noticeEventAnyOf1ParsedValue, noticeEventAnyOf2ParsedValue, noticeEventAnyOf3ParsedValue, noticeEventAnyOf4ParsedValue, noticeEventAnyOf5ParsedValue, noticeEventAnyOf6ParsedValue, noticeEventAnyOf7ParsedValue, noticeEventAnyOf8ParsedValue, noticeEventAnyOf9ParsedValue);
         }
 
         /// <summary>
@@ -278,6 +383,36 @@ namespace Peal.Model
             {
                 NoticeEventAnyOf4JsonConverter noticeEventAnyOf4JsonConverter = (NoticeEventAnyOf4JsonConverter) jsonSerializerOptions.Converters.First(c => c.CanConvert(noticeEvent.NoticeEventAnyOf4Option.Value.GetType()));
                 noticeEventAnyOf4JsonConverter.WriteProperties(writer, noticeEvent.NoticeEventAnyOf4Option.Value, jsonSerializerOptions);
+            }
+
+            if (noticeEvent.NoticeEventAnyOf5Option.IsSet && noticeEvent.NoticeEventAnyOf5Option.Value != null)
+            {
+                NoticeEventAnyOf5JsonConverter noticeEventAnyOf5JsonConverter = (NoticeEventAnyOf5JsonConverter) jsonSerializerOptions.Converters.First(c => c.CanConvert(noticeEvent.NoticeEventAnyOf5Option.Value.GetType()));
+                noticeEventAnyOf5JsonConverter.WriteProperties(writer, noticeEvent.NoticeEventAnyOf5Option.Value, jsonSerializerOptions);
+            }
+
+            if (noticeEvent.NoticeEventAnyOf6Option.IsSet && noticeEvent.NoticeEventAnyOf6Option.Value != null)
+            {
+                NoticeEventAnyOf6JsonConverter noticeEventAnyOf6JsonConverter = (NoticeEventAnyOf6JsonConverter) jsonSerializerOptions.Converters.First(c => c.CanConvert(noticeEvent.NoticeEventAnyOf6Option.Value.GetType()));
+                noticeEventAnyOf6JsonConverter.WriteProperties(writer, noticeEvent.NoticeEventAnyOf6Option.Value, jsonSerializerOptions);
+            }
+
+            if (noticeEvent.NoticeEventAnyOf7Option.IsSet && noticeEvent.NoticeEventAnyOf7Option.Value != null)
+            {
+                NoticeEventAnyOf7JsonConverter noticeEventAnyOf7JsonConverter = (NoticeEventAnyOf7JsonConverter) jsonSerializerOptions.Converters.First(c => c.CanConvert(noticeEvent.NoticeEventAnyOf7Option.Value.GetType()));
+                noticeEventAnyOf7JsonConverter.WriteProperties(writer, noticeEvent.NoticeEventAnyOf7Option.Value, jsonSerializerOptions);
+            }
+
+            if (noticeEvent.NoticeEventAnyOf8Option.IsSet && noticeEvent.NoticeEventAnyOf8Option.Value != null)
+            {
+                NoticeEventAnyOf8JsonConverter noticeEventAnyOf8JsonConverter = (NoticeEventAnyOf8JsonConverter) jsonSerializerOptions.Converters.First(c => c.CanConvert(noticeEvent.NoticeEventAnyOf8Option.Value.GetType()));
+                noticeEventAnyOf8JsonConverter.WriteProperties(writer, noticeEvent.NoticeEventAnyOf8Option.Value, jsonSerializerOptions);
+            }
+
+            if (noticeEvent.NoticeEventAnyOf9Option.IsSet && noticeEvent.NoticeEventAnyOf9Option.Value != null)
+            {
+                NoticeEventAnyOf9JsonConverter noticeEventAnyOf9JsonConverter = (NoticeEventAnyOf9JsonConverter) jsonSerializerOptions.Converters.First(c => c.CanConvert(noticeEvent.NoticeEventAnyOf9Option.Value.GetType()));
+                noticeEventAnyOf9JsonConverter.WriteProperties(writer, noticeEvent.NoticeEventAnyOf9Option.Value, jsonSerializerOptions);
             }
 
             WriteProperties(writer, noticeEvent, jsonSerializerOptions);

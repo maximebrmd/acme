@@ -60,6 +60,7 @@ class PlanAllowances implements ModelInterface, ArrayAccess, \JsonSerializable
     protected static $openAPITypes = [
         'assistant_requests' => 'int',
         'channels' => 'int',
+        'media_storage' => 'int',
         'members' => 'int',
         'scheduled_posts' => 'int'
     ];
@@ -74,6 +75,7 @@ class PlanAllowances implements ModelInterface, ArrayAccess, \JsonSerializable
     protected static $openAPIFormats = [
         'assistant_requests' => null,
         'channels' => null,
+        'media_storage' => null,
         'members' => null,
         'scheduled_posts' => null
     ];
@@ -86,6 +88,7 @@ class PlanAllowances implements ModelInterface, ArrayAccess, \JsonSerializable
     protected static array $openAPINullables = [
         'assistant_requests' => true,
         'channels' => true,
+        'media_storage' => true,
         'members' => true,
         'scheduled_posts' => true
     ];
@@ -178,6 +181,7 @@ class PlanAllowances implements ModelInterface, ArrayAccess, \JsonSerializable
     protected static $attributeMap = [
         'assistant_requests' => 'assistantRequests',
         'channels' => 'channels',
+        'media_storage' => 'mediaStorage',
         'members' => 'members',
         'scheduled_posts' => 'scheduledPosts'
     ];
@@ -190,6 +194,7 @@ class PlanAllowances implements ModelInterface, ArrayAccess, \JsonSerializable
     protected static $setters = [
         'assistant_requests' => 'setAssistantRequests',
         'channels' => 'setChannels',
+        'media_storage' => 'setMediaStorage',
         'members' => 'setMembers',
         'scheduled_posts' => 'setScheduledPosts'
     ];
@@ -202,6 +207,7 @@ class PlanAllowances implements ModelInterface, ArrayAccess, \JsonSerializable
     protected static $getters = [
         'assistant_requests' => 'getAssistantRequests',
         'channels' => 'getChannels',
+        'media_storage' => 'getMediaStorage',
         'members' => 'getMembers',
         'scheduled_posts' => 'getScheduledPosts'
     ];
@@ -265,6 +271,7 @@ class PlanAllowances implements ModelInterface, ArrayAccess, \JsonSerializable
     {
         $this->setIfExists('assistant_requests', $data ?? [], null);
         $this->setIfExists('channels', $data ?? [], null);
+        $this->setIfExists('media_storage', $data ?? [], null);
         $this->setIfExists('members', $data ?? [], null);
         $this->setIfExists('scheduled_posts', $data ?? [], null);
     }
@@ -316,6 +323,17 @@ class PlanAllowances implements ModelInterface, ArrayAccess, \JsonSerializable
 
         if (!is_null($this->container['channels']) && ($this->container['channels'] < -9007199254740991)) {
             $invalidProperties[] = "invalid value for 'channels', must be bigger than or equal to -9007199254740991.";
+        }
+
+        if ($this->container['media_storage'] === null && !$this->isNullableSetToNull('media_storage')) {
+            $invalidProperties[] = "'media_storage' is required";
+        }
+        if (!is_null($this->container['media_storage']) && ($this->container['media_storage'] > 9007199254740991)) {
+            $invalidProperties[] = "invalid value for 'media_storage', must be smaller than or equal to 9007199254740991.";
+        }
+
+        if (!is_null($this->container['media_storage']) && ($this->container['media_storage'] < -9007199254740991)) {
+            $invalidProperties[] = "invalid value for 'media_storage', must be bigger than or equal to -9007199254740991.";
         }
 
         if ($this->container['members'] === null && !$this->isNullableSetToNull('members')) {
@@ -433,6 +451,47 @@ class PlanAllowances implements ModelInterface, ArrayAccess, \JsonSerializable
         }
 
         $this->container['channels'] = $channels;
+
+        return $this;
+    }
+
+    /**
+     * Gets media_storage
+     *
+     * @return int|null
+     */
+    public function getMediaStorage()
+    {
+        return $this->container['media_storage'];
+    }
+
+    /**
+     * Sets media_storage
+     *
+     * @param int|null $media_storage media_storage
+     *
+     * @return self
+     */
+    public function setMediaStorage($media_storage)
+    {
+        if (is_null($media_storage)) {
+            array_push($this->openAPINullablesSetToNull, 'media_storage');
+        } else {
+            $nullablesSetToNull = $this->getOpenAPINullablesSetToNull();
+            $index = array_search('media_storage', $nullablesSetToNull);
+            if ($index !== FALSE) {
+                unset($nullablesSetToNull[$index]);
+                $this->setOpenAPINullablesSetToNull($nullablesSetToNull);
+            }
+        }
+        if (!is_null($media_storage) && ($media_storage > 9007199254740991)) {
+            throw new \InvalidArgumentException('invalid value for $media_storage when calling PlanAllowances., must be smaller than or equal to 9007199254740991.');
+        }
+        if (!is_null($media_storage) && ($media_storage < -9007199254740991)) {
+            throw new \InvalidArgumentException('invalid value for $media_storage when calling PlanAllowances., must be bigger than or equal to -9007199254740991.');
+        }
+
+        $this->container['media_storage'] = $media_storage;
 
         return $this;
     }

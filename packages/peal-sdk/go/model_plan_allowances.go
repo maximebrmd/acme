@@ -24,6 +24,7 @@ var _ MappedNullable = &PlanAllowances{}
 type PlanAllowances struct {
 	AssistantRequests NullableInt32 `json:"assistantRequests"`
 	Channels NullableInt32 `json:"channels"`
+	MediaStorage NullableInt32 `json:"mediaStorage"`
 	Members NullableInt32 `json:"members"`
 	ScheduledPosts NullableInt32 `json:"scheduledPosts"`
 }
@@ -34,10 +35,11 @@ type _PlanAllowances PlanAllowances
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewPlanAllowances(assistantRequests NullableInt32, channels NullableInt32, members NullableInt32, scheduledPosts NullableInt32) *PlanAllowances {
+func NewPlanAllowances(assistantRequests NullableInt32, channels NullableInt32, mediaStorage NullableInt32, members NullableInt32, scheduledPosts NullableInt32) *PlanAllowances {
 	this := PlanAllowances{}
 	this.AssistantRequests = assistantRequests
 	this.Channels = channels
+	this.MediaStorage = mediaStorage
 	this.Members = members
 	this.ScheduledPosts = scheduledPosts
 	return &this
@@ -101,6 +103,32 @@ func (o *PlanAllowances) GetChannelsOk() (*int32, bool) {
 // SetChannels sets field value
 func (o *PlanAllowances) SetChannels(v int32) {
 	o.Channels.Set(&v)
+}
+
+// GetMediaStorage returns the MediaStorage field value
+// If the value is explicit nil, the zero value for int32 will be returned
+func (o *PlanAllowances) GetMediaStorage() int32 {
+	if o == nil || o.MediaStorage.Get() == nil {
+		var ret int32
+		return ret
+	}
+
+	return *o.MediaStorage.Get()
+}
+
+// GetMediaStorageOk returns a tuple with the MediaStorage field value
+// and a boolean to check if the value has been set.
+// NOTE: If the value is an explicit nil, `nil, true` will be returned
+func (o *PlanAllowances) GetMediaStorageOk() (*int32, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return o.MediaStorage.Get(), o.MediaStorage.IsSet()
+}
+
+// SetMediaStorage sets field value
+func (o *PlanAllowances) SetMediaStorage(v int32) {
+	o.MediaStorage.Set(&v)
 }
 
 // GetMembers returns the Members field value
@@ -167,6 +195,7 @@ func (o PlanAllowances) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
 	toSerialize["assistantRequests"] = o.AssistantRequests.Get()
 	toSerialize["channels"] = o.Channels.Get()
+	toSerialize["mediaStorage"] = o.MediaStorage.Get()
 	toSerialize["members"] = o.Members.Get()
 	toSerialize["scheduledPosts"] = o.ScheduledPosts.Get()
 	return toSerialize, nil
@@ -179,6 +208,7 @@ func (o *PlanAllowances) UnmarshalJSON(data []byte) (err error) {
 	requiredProperties := []string{
 		"assistantRequests",
 		"channels",
+		"mediaStorage",
 		"members",
 		"scheduledPosts",
 	}

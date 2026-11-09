@@ -24,6 +24,7 @@ var _ MappedNullable = &PlanOffer{}
 type PlanOffer struct {
 	Allowances PlanAllowances `json:"allowances"`
 	Plan Plan `json:"plan"`
+	Price NullablePlanPrice `json:"price"`
 }
 
 type _PlanOffer PlanOffer
@@ -32,10 +33,11 @@ type _PlanOffer PlanOffer
 // This constructor will assign default values to properties that have it defined,
 // and makes sure properties required by API are set, but the set of arguments
 // will change when the set of required properties is changed
-func NewPlanOffer(allowances PlanAllowances, plan Plan) *PlanOffer {
+func NewPlanOffer(allowances PlanAllowances, plan Plan, price NullablePlanPrice) *PlanOffer {
 	this := PlanOffer{}
 	this.Allowances = allowances
 	this.Plan = plan
+	this.Price = price
 	return &this
 }
 
@@ -95,6 +97,32 @@ func (o *PlanOffer) SetPlan(v Plan) {
 	o.Plan = v
 }
 
+// GetPrice returns the Price field value
+// If the value is explicit nil, the zero value for PlanPrice will be returned
+func (o *PlanOffer) GetPrice() PlanPrice {
+	if o == nil || o.Price.Get() == nil {
+		var ret PlanPrice
+		return ret
+	}
+
+	return *o.Price.Get()
+}
+
+// GetPriceOk returns a tuple with the Price field value
+// and a boolean to check if the value has been set.
+// NOTE: If the value is an explicit nil, `nil, true` will be returned
+func (o *PlanOffer) GetPriceOk() (*PlanPrice, bool) {
+	if o == nil {
+		return nil, false
+	}
+	return o.Price.Get(), o.Price.IsSet()
+}
+
+// SetPrice sets field value
+func (o *PlanOffer) SetPrice(v PlanPrice) {
+	o.Price.Set(&v)
+}
+
 func (o PlanOffer) MarshalJSON() ([]byte, error) {
 	toSerialize,err := o.ToMap()
 	if err != nil {
@@ -107,6 +135,7 @@ func (o PlanOffer) ToMap() (map[string]interface{}, error) {
 	toSerialize := map[string]interface{}{}
 	toSerialize["allowances"] = o.Allowances
 	toSerialize["plan"] = o.Plan
+	toSerialize["price"] = o.Price.Get()
 	return toSerialize, nil
 }
 
@@ -117,6 +146,7 @@ func (o *PlanOffer) UnmarshalJSON(data []byte) (err error) {
 	requiredProperties := []string{
 		"allowances",
 		"plan",
+		"price",
 	}
 
 	allProperties := make(map[string]interface{})

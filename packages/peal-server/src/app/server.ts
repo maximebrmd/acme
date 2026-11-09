@@ -21,6 +21,7 @@ import { SystemHandlers } from "#app/system.ts";
 import { AssistantApiLive, AssistantLive } from "#assistant/container.ts";
 import {
   BillingApiLive,
+  BillingActionsApiLive,
   BillingLive,
   BillingOverviewLive,
 } from "#billing/container.ts";
@@ -75,6 +76,7 @@ const WorkspaceGroupsLive = Layer.mergeAll(
   NotificationPreferencesApiLive,
   AssistantApiLive,
   BillingApiLive,
+  BillingActionsApiLive,
   AnalyticsApiLive,
   TikTokApiLive,
   StaffApiLive
@@ -120,8 +122,10 @@ const ChannelsWithNoticesLive = ChannelsLive.pipe(
 );
 
 // The media context, which asks publishing which posts show an asset before
-// deleting it.
-const MediaContextLive = MediaLive.pipe(Layer.provide(MediaInPostsLive));
+// deleting it, and billing how much a workspace may store.
+const MediaContextLive = MediaLive.pipe(
+  Layer.provide(Layer.mergeAll(MediaInPostsLive, BillingContextsLive))
+);
 
 // Publishing posts to the channels the channels context lists, with the
 // media the media context holds.
@@ -157,12 +161,15 @@ const StaffContextLive = StaffLive.pipe(
   Layer.provide(Layer.mergeAll(ChannelsWithNoticesLive, PublishingContextLive))
 );
 
-// The billing page, which counts what each context holds.
+// The billing page, which counts what each context holds, and its
+// orders, cancellations and withdrawals, which tell members through the
+// notices.
 const BillingContextLive = BillingOverviewLive.pipe(
   Layer.provide(
     Layer.mergeAll(
       ChannelsWithNoticesLive,
       PublishingContextLive,
+      MediaContextLive,
       AssistantContextLive
     )
   )

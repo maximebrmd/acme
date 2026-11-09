@@ -1,4 +1,4 @@
-import { Schema } from "effect";
+import { Option, Schema } from "effect";
 
 import { emailKindOf } from "./notice-event.ts";
 import type { EmailKind, NoticeEvent } from "./notice-event.ts";
@@ -60,8 +60,15 @@ export const changePreferences = (
   });
 };
 
-/** Whether the user wants the event by email too. */
+/**
+ * Whether the user wants the event by email too: always for billing's,
+ * which no preference covers.
+ */
 export const wantsEmail = (
   preferences: NotificationPreferences,
   event: NoticeEvent
-): boolean => preferences.email[emailKindOf(event)];
+): boolean =>
+  Option.match(emailKindOf(event), {
+    onNone: () => true,
+    onSome: (kind) => preferences.email[kind],
+  });

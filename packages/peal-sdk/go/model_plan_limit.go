@@ -25,6 +25,7 @@ const (
 	PLANLIMIT_MEMBERS PlanLimit = "members"
 	PLANLIMIT_SCHEDULED_POSTS PlanLimit = "scheduledPosts"
 	PLANLIMIT_ASSISTANT_REQUESTS PlanLimit = "assistantRequests"
+	PLANLIMIT_MEDIA_STORAGE PlanLimit = "mediaStorage"
 )
 
 // All allowed values of PlanLimit enum
@@ -33,6 +34,7 @@ var AllowedPlanLimitEnumValues = []PlanLimit{
 	"members",
 	"scheduledPosts",
 	"assistantRequests",
+	"mediaStorage",
 }
 
 func (v *PlanLimit) UnmarshalJSON(src []byte) error {

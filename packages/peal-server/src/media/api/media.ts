@@ -1,6 +1,7 @@
 import { Duration, Effect, Match, Option, Schema } from "effect";
 import { HttpApiBuilder, HttpApiError } from "effect/http-api";
 import {
+  PlanLimitReached,
   AltTextTooLong,
   Api,
   CurrentMember,
@@ -126,6 +127,8 @@ export const MediaHandlers = HttpApiBuilder.group(
                     new MediaTooLarge({ byteSize, kind, maxByteSize })
                   ),
                 MissingPermission: forbidden,
+                PlanLimitReached: ({ allowed, limit }) =>
+                  Effect.fail(new PlanLimitReached({ allowed, limit })),
                 UnsupportedMediaType: ({ contentType }) =>
                   Effect.fail(new UnsupportedMediaType({ contentType })),
               })

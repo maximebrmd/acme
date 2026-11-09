@@ -22,6 +22,7 @@ export const PlanLimit = {
     Members: 'members',
     ScheduledPosts: 'scheduledPosts',
     AssistantRequests: 'assistantRequests',
+    MediaStorage: 'mediaStorage',
 } as const;
 export type PlanLimit = typeof PlanLimit[keyof typeof PlanLimit];
 

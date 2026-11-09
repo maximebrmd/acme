@@ -22,15 +22,19 @@ type Plan string
 // List of Plan
 const (
 	PLAN_FREE Plan = "free"
+	PLAN_STARTER Plan = "starter"
 	PLAN_PRO Plan = "pro"
 	PLAN_BUSINESS Plan = "business"
+	PLAN_AGENCY Plan = "agency"
 )
 
 // All allowed values of Plan enum
 var AllowedPlanEnumValues = []Plan{
 	"free",
+	"starter",
 	"pro",
 	"business",
+	"agency",
 }
 
 func (v *Plan) UnmarshalJSON(src []byte) error {

@@ -24,6 +24,7 @@ docs/AttemptResult.md
 docs/Authorization.md
 docs/Billing.md
 docs/BillingApi.md
+docs/BillingInterval.md
 docs/BillingSubscription.md
 docs/Channel.md
 docs/ChannelCannotPostEncoded.md
@@ -116,6 +117,7 @@ docs/MembersApi.md
 docs/Membership.md
 docs/MetricTotals.md
 docs/MetricsSnapshot.md
+docs/Money.md
 docs/NewApiKey.md
 docs/NewInvitation.md
 docs/NewUpload.md
@@ -128,6 +130,11 @@ docs/NoticeEventAnyOf1.md
 docs/NoticeEventAnyOf2.md
 docs/NoticeEventAnyOf3.md
 docs/NoticeEventAnyOf4.md
+docs/NoticeEventAnyOf5.md
+docs/NoticeEventAnyOf6.md
+docs/NoticeEventAnyOf7.md
+docs/NoticeEventAnyOf8.md
+docs/NoticeEventAnyOf9.md
 docs/NoticePage.md
 docs/NoticesApi.md
 docs/NotificationPreferences.md
@@ -143,6 +150,7 @@ docs/PlanAllowances.md
 docs/PlanLimit.md
 docs/PlanLimitReachedEncoded.md
 docs/PlanOffer.md
+docs/PlanPrice.md
 docs/Platform.md
 docs/PlatformUnreachableEncoded.md
 docs/Post.md
@@ -198,6 +206,7 @@ docs/TiktokApi.md
 docs/TooManyInvitationsEncoded.md
 docs/TopPost.md
 docs/TranslationLanguage.md
+docs/TrialOffer.md
 docs/UnauthenticatedEncoded.md
 docs/UnconfirmedReason.md
 docs/UnknownChannelsEncoded.md
@@ -251,6 +260,7 @@ src/models/AssistantUnavailableEncoded.ts
 src/models/AttemptResult.ts
 src/models/Authorization.ts
 src/models/Billing.ts
+src/models/BillingInterval.ts
 src/models/BillingSubscription.ts
 src/models/Channel.ts
 src/models/ChannelCannotPostEncoded.ts
@@ -339,6 +349,7 @@ src/models/MediaUsage.ts
 src/models/Membership.ts
 src/models/MetricTotals.ts
 src/models/MetricsSnapshot.ts
+src/models/Money.ts
 src/models/NewApiKey.ts
 src/models/NewInvitation.ts
 src/models/NewUpload.ts
@@ -351,6 +362,11 @@ src/models/NoticeEventAnyOf1.ts
 src/models/NoticeEventAnyOf2.ts
 src/models/NoticeEventAnyOf3.ts
 src/models/NoticeEventAnyOf4.ts
+src/models/NoticeEventAnyOf5.ts
+src/models/NoticeEventAnyOf6.ts
+src/models/NoticeEventAnyOf7.ts
+src/models/NoticeEventAnyOf8.ts
+src/models/NoticeEventAnyOf9.ts
 src/models/NoticePage.ts
 src/models/NotificationPreferences.ts
 src/models/NotificationPreferencesChange.ts
@@ -364,6 +380,7 @@ src/models/PlanAllowances.ts
 src/models/PlanLimit.ts
 src/models/PlanLimitReachedEncoded.ts
 src/models/PlanOffer.ts
+src/models/PlanPrice.ts
 src/models/Platform.ts
 src/models/PlatformUnreachableEncoded.ts
 src/models/Post.ts
@@ -415,6 +432,7 @@ src/models/TikTokPrivacyLevel.ts
 src/models/TooManyInvitationsEncoded.ts
 src/models/TopPost.ts
 src/models/TranslationLanguage.ts
+src/models/TrialOffer.ts
 src/models/UnauthenticatedEncoded.ts
 src/models/UnconfirmedReason.ts
 src/models/UnknownChannelsEncoded.ts

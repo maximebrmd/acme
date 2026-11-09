@@ -6,6 +6,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **assistant_requests** | [**models::PeriodUsage**](PeriodUsage.md) |  | 
 **channels** | **i32** |  | 
+**media_storage** | **i32** |  | 
 **members** | **i32** |  | 
 **scheduled_posts** | [**models::PeriodUsage**](PeriodUsage.md) |  | 
 

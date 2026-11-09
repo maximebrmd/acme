@@ -35,20 +35,32 @@ namespace Peal.Model
         /// Initializes a new instance of the <see cref="BillingSubscription" /> class.
         /// </summary>
         /// <param name="cancelAtPeriodEnd">cancelAtPeriodEnd</param>
+        /// <param name="interval">interval</param>
         /// <param name="plan">plan</param>
         /// <param name="status">status</param>
         /// <param name="currentPeriodEnd">currentPeriodEnd</param>
+        /// <param name="startedAt">startedAt</param>
+        /// <param name="trialEnd">trialEnd</param>
         [JsonConstructor]
-        public BillingSubscription(bool cancelAtPeriodEnd, PaidPlan plan, SubscriptionStatus status, string? currentPeriodEnd = default)
+        public BillingSubscription(bool cancelAtPeriodEnd, BillingInterval interval, PaidPlan plan, SubscriptionStatus status, string? currentPeriodEnd = default, string? startedAt = default, string? trialEnd = default)
         {
             CancelAtPeriodEnd = cancelAtPeriodEnd;
+            Interval = interval;
             Plan = plan;
             Status = status;
             CurrentPeriodEnd = currentPeriodEnd;
+            StartedAt = startedAt;
+            TrialEnd = trialEnd;
             OnCreated();
         }
 
         partial void OnCreated();
+
+        /// <summary>
+        /// Gets or Sets Interval
+        /// </summary>
+        [JsonPropertyName("interval")]
+        public BillingInterval Interval { get; set; }
 
         /// <summary>
         /// Gets or Sets Plan
@@ -75,6 +87,18 @@ namespace Peal.Model
         public string? CurrentPeriodEnd { get; set; }
 
         /// <summary>
+        /// Gets or Sets StartedAt
+        /// </summary>
+        [JsonPropertyName("startedAt")]
+        public string? StartedAt { get; set; }
+
+        /// <summary>
+        /// Gets or Sets TrialEnd
+        /// </summary>
+        [JsonPropertyName("trialEnd")]
+        public string? TrialEnd { get; set; }
+
+        /// <summary>
         /// Returns the string presentation of the object
         /// </summary>
         /// <returns>String presentation of the object</returns>
@@ -83,9 +107,12 @@ namespace Peal.Model
             StringBuilder sb = new StringBuilder();
             sb.Append("class BillingSubscription {\n");
             sb.Append("  CancelAtPeriodEnd: ").Append(CancelAtPeriodEnd).Append("\n");
+            sb.Append("  Interval: ").Append(Interval).Append("\n");
             sb.Append("  Plan: ").Append(Plan).Append("\n");
             sb.Append("  Status: ").Append(Status).Append("\n");
             sb.Append("  CurrentPeriodEnd: ").Append(CurrentPeriodEnd).Append("\n");
+            sb.Append("  StartedAt: ").Append(StartedAt).Append("\n");
+            sb.Append("  TrialEnd: ").Append(TrialEnd).Append("\n");
             sb.Append("}\n");
             return sb.ToString();
         }
@@ -134,9 +161,12 @@ namespace Peal.Model
             JsonTokenType startingTokenType = utf8JsonReader.TokenType;
 
             Option<bool?> cancelAtPeriodEnd = default;
+            Option<BillingInterval?> interval = default;
             Option<PaidPlan?> plan = default;
             Option<SubscriptionStatus?> status = default;
             Option<string?> currentPeriodEnd = default;
+            Option<string?> startedAt = default;
+            Option<string?> trialEnd = default;
 
             while (utf8JsonReader.Read())
             {
@@ -156,6 +186,9 @@ namespace Peal.Model
                         case "cancelAtPeriodEnd":
                             cancelAtPeriodEnd = new Option<bool?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (bool?)null : utf8JsonReader.GetBoolean());
                             break;
+                        case "interval":
+                            interval = new Option<BillingInterval?>(JsonSerializer.Deserialize<BillingInterval?>(ref utf8JsonReader, jsonSerializerOptions));
+                            break;
                         case "plan":
                             plan = new Option<PaidPlan?>(JsonSerializer.Deserialize<PaidPlan?>(ref utf8JsonReader, jsonSerializerOptions));
                             break;
@@ -164,6 +197,12 @@ namespace Peal.Model
                             break;
                         case "currentPeriodEnd":
                             currentPeriodEnd = new Option<string?>(utf8JsonReader.GetString());
+                            break;
+                        case "startedAt":
+                            startedAt = new Option<string?>(utf8JsonReader.GetString());
+                            break;
+                        case "trialEnd":
+                            trialEnd = new Option<string?>(utf8JsonReader.GetString());
                             break;
                         default:
                             break;
@@ -174,6 +213,9 @@ namespace Peal.Model
             if (!cancelAtPeriodEnd.IsSet)
                 throw new JsonException("Property is required for class BillingSubscription: cancelAtPeriodEnd.");
 
+            if (!interval.IsSet)
+                throw new JsonException("Property is required for class BillingSubscription: interval.");
+
             if (!plan.IsSet)
                 throw new JsonException("Property is required for class BillingSubscription: plan.");
 
@@ -183,8 +225,17 @@ namespace Peal.Model
             if (!currentPeriodEnd.IsSet)
                 throw new JsonException("Property is required for class BillingSubscription: currentPeriodEnd.");
 
+            if (!startedAt.IsSet)
+                throw new JsonException("Property is required for class BillingSubscription: startedAt.");
+
+            if (!trialEnd.IsSet)
+                throw new JsonException("Property is required for class BillingSubscription: trialEnd.");
+
             if (cancelAtPeriodEnd.IsSet && cancelAtPeriodEnd.Value == null)
                 throw new JsonException("Property is not nullable for class BillingSubscription: cancelAtPeriodEnd.");
+
+            if (interval.IsSet && interval.Value == null)
+                throw new JsonException("Property is not nullable for class BillingSubscription: interval.");
 
             if (plan.IsSet && plan.Value == null)
                 throw new JsonException("Property is not nullable for class BillingSubscription: plan.");
@@ -192,7 +243,7 @@ namespace Peal.Model
             if (status.IsSet && status.Value == null)
                 throw new JsonException("Property is not nullable for class BillingSubscription: status.");
 
-            return new BillingSubscription(cancelAtPeriodEnd.Value!.Value!, plan.Value!.Value!, status.Value!.Value!, currentPeriodEnd.Value!);
+            return new BillingSubscription(cancelAtPeriodEnd.Value!.Value!, interval.Value!.Value!, plan.Value!.Value!, status.Value!.Value!, currentPeriodEnd.Value!, startedAt.Value!, trialEnd.Value!);
         }
 
         /// <summary>
@@ -219,6 +270,9 @@ namespace Peal.Model
         {
             writer.WriteBoolean("cancelAtPeriodEnd", billingSubscription.CancelAtPeriodEnd);
 
+            var intervalRawValue = BillingIntervalValueConverter.ToJsonValue(billingSubscription.Interval);
+            writer.WriteString("interval", intervalRawValue);
+
             var planRawValue = PaidPlanValueConverter.ToJsonValue(billingSubscription.Plan);
             writer.WriteString("plan", planRawValue);
 
@@ -229,6 +283,16 @@ namespace Peal.Model
                 writer.WriteString("currentPeriodEnd", billingSubscription.CurrentPeriodEnd);
             else
                 writer.WriteNull("currentPeriodEnd");
+
+            if (billingSubscription.StartedAt != null)
+                writer.WriteString("startedAt", billingSubscription.StartedAt);
+            else
+                writer.WriteNull("startedAt");
+
+            if (billingSubscription.TrialEnd != null)
+                writer.WriteString("trialEnd", billingSubscription.TrialEnd);
+            else
+                writer.WriteNull("trialEnd");
         }
     }
 }

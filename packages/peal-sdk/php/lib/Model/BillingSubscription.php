@@ -60,8 +60,11 @@ class BillingSubscription implements ModelInterface, ArrayAccess, \JsonSerializa
     protected static $openAPITypes = [
         'cancel_at_period_end' => 'bool',
         'current_period_end' => 'string',
+        'interval' => '\Peal\Model\BillingInterval',
         'plan' => '\Peal\Model\PaidPlan',
-        'status' => '\Peal\Model\SubscriptionStatus'
+        'started_at' => 'string',
+        'status' => '\Peal\Model\SubscriptionStatus',
+        'trial_end' => 'string'
     ];
 
     /**
@@ -74,8 +77,11 @@ class BillingSubscription implements ModelInterface, ArrayAccess, \JsonSerializa
     protected static $openAPIFormats = [
         'cancel_at_period_end' => null,
         'current_period_end' => null,
+        'interval' => null,
         'plan' => null,
-        'status' => null
+        'started_at' => null,
+        'status' => null,
+        'trial_end' => null
     ];
 
     /**
@@ -86,8 +92,11 @@ class BillingSubscription implements ModelInterface, ArrayAccess, \JsonSerializa
     protected static array $openAPINullables = [
         'cancel_at_period_end' => false,
         'current_period_end' => true,
+        'interval' => false,
         'plan' => false,
-        'status' => false
+        'started_at' => true,
+        'status' => false,
+        'trial_end' => true
     ];
 
     /**
@@ -178,8 +187,11 @@ class BillingSubscription implements ModelInterface, ArrayAccess, \JsonSerializa
     protected static $attributeMap = [
         'cancel_at_period_end' => 'cancelAtPeriodEnd',
         'current_period_end' => 'currentPeriodEnd',
+        'interval' => 'interval',
         'plan' => 'plan',
-        'status' => 'status'
+        'started_at' => 'startedAt',
+        'status' => 'status',
+        'trial_end' => 'trialEnd'
     ];
 
     /**
@@ -190,8 +202,11 @@ class BillingSubscription implements ModelInterface, ArrayAccess, \JsonSerializa
     protected static $setters = [
         'cancel_at_period_end' => 'setCancelAtPeriodEnd',
         'current_period_end' => 'setCurrentPeriodEnd',
+        'interval' => 'setInterval',
         'plan' => 'setPlan',
-        'status' => 'setStatus'
+        'started_at' => 'setStartedAt',
+        'status' => 'setStatus',
+        'trial_end' => 'setTrialEnd'
     ];
 
     /**
@@ -202,8 +217,11 @@ class BillingSubscription implements ModelInterface, ArrayAccess, \JsonSerializa
     protected static $getters = [
         'cancel_at_period_end' => 'getCancelAtPeriodEnd',
         'current_period_end' => 'getCurrentPeriodEnd',
+        'interval' => 'getInterval',
         'plan' => 'getPlan',
-        'status' => 'getStatus'
+        'started_at' => 'getStartedAt',
+        'status' => 'getStatus',
+        'trial_end' => 'getTrialEnd'
     ];
 
     /**
@@ -265,8 +283,11 @@ class BillingSubscription implements ModelInterface, ArrayAccess, \JsonSerializa
     {
         $this->setIfExists('cancel_at_period_end', $data ?? [], null);
         $this->setIfExists('current_period_end', $data ?? [], null);
+        $this->setIfExists('interval', $data ?? [], null);
         $this->setIfExists('plan', $data ?? [], null);
+        $this->setIfExists('started_at', $data ?? [], null);
         $this->setIfExists('status', $data ?? [], null);
+        $this->setIfExists('trial_end', $data ?? [], null);
     }
 
     /**
@@ -302,11 +323,20 @@ class BillingSubscription implements ModelInterface, ArrayAccess, \JsonSerializa
         if ($this->container['current_period_end'] === null && !$this->isNullableSetToNull('current_period_end')) {
             $invalidProperties[] = "'current_period_end' is required";
         }
+        if ($this->container['interval'] === null) {
+            $invalidProperties[] = "'interval' can't be null";
+        }
         if ($this->container['plan'] === null) {
             $invalidProperties[] = "'plan' can't be null";
         }
+        if ($this->container['started_at'] === null && !$this->isNullableSetToNull('started_at')) {
+            $invalidProperties[] = "'started_at' is required";
+        }
         if ($this->container['status'] === null) {
             $invalidProperties[] = "'status' can't be null";
+        }
+        if ($this->container['trial_end'] === null && !$this->isNullableSetToNull('trial_end')) {
+            $invalidProperties[] = "'trial_end' is required";
         }
         return $invalidProperties;
     }
@@ -385,6 +415,33 @@ class BillingSubscription implements ModelInterface, ArrayAccess, \JsonSerializa
     }
 
     /**
+     * Gets interval
+     *
+     * @return \Peal\Model\BillingInterval
+     */
+    public function getInterval()
+    {
+        return $this->container['interval'];
+    }
+
+    /**
+     * Sets interval
+     *
+     * @param \Peal\Model\BillingInterval $interval interval
+     *
+     * @return self
+     */
+    public function setInterval($interval)
+    {
+        if (is_null($interval)) {
+            throw new \InvalidArgumentException('non-nullable interval cannot be null');
+        }
+        $this->container['interval'] = $interval;
+
+        return $this;
+    }
+
+    /**
      * Gets plan
      *
      * @return \Peal\Model\PaidPlan
@@ -412,6 +469,40 @@ class BillingSubscription implements ModelInterface, ArrayAccess, \JsonSerializa
     }
 
     /**
+     * Gets started_at
+     *
+     * @return string|null
+     */
+    public function getStartedAt()
+    {
+        return $this->container['started_at'];
+    }
+
+    /**
+     * Sets started_at
+     *
+     * @param string|null $started_at started_at
+     *
+     * @return self
+     */
+    public function setStartedAt($started_at)
+    {
+        if (is_null($started_at)) {
+            array_push($this->openAPINullablesSetToNull, 'started_at');
+        } else {
+            $nullablesSetToNull = $this->getOpenAPINullablesSetToNull();
+            $index = array_search('started_at', $nullablesSetToNull);
+            if ($index !== FALSE) {
+                unset($nullablesSetToNull[$index]);
+                $this->setOpenAPINullablesSetToNull($nullablesSetToNull);
+            }
+        }
+        $this->container['started_at'] = $started_at;
+
+        return $this;
+    }
+
+    /**
      * Gets status
      *
      * @return \Peal\Model\SubscriptionStatus
@@ -434,6 +525,40 @@ class BillingSubscription implements ModelInterface, ArrayAccess, \JsonSerializa
             throw new \InvalidArgumentException('non-nullable status cannot be null');
         }
         $this->container['status'] = $status;
+
+        return $this;
+    }
+
+    /**
+     * Gets trial_end
+     *
+     * @return string|null
+     */
+    public function getTrialEnd()
+    {
+        return $this->container['trial_end'];
+    }
+
+    /**
+     * Sets trial_end
+     *
+     * @param string|null $trial_end trial_end
+     *
+     * @return self
+     */
+    public function setTrialEnd($trial_end)
+    {
+        if (is_null($trial_end)) {
+            array_push($this->openAPINullablesSetToNull, 'trial_end');
+        } else {
+            $nullablesSetToNull = $this->getOpenAPINullablesSetToNull();
+            $index = array_search('trial_end', $nullablesSetToNull);
+            if ($index !== FALSE) {
+                unset($nullablesSetToNull[$index]);
+                $this->setOpenAPINullablesSetToNull($nullablesSetToNull);
+            }
+        }
+        $this->container['trial_end'] = $trial_end;
 
         return $this;
     }

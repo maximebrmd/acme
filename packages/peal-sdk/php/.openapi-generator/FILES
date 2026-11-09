@@ -36,6 +36,7 @@ docs/Model/AssistantUnavailableEncoded.md
 docs/Model/AttemptResult.md
 docs/Model/Authorization.md
 docs/Model/Billing.md
+docs/Model/BillingInterval.md
 docs/Model/BillingSubscription.md
 docs/Model/Channel.md
 docs/Model/ChannelCannotPostEncoded.md
@@ -124,6 +125,7 @@ docs/Model/MediaUsage.md
 docs/Model/Membership.md
 docs/Model/MetricTotals.md
 docs/Model/MetricsSnapshot.md
+docs/Model/Money.md
 docs/Model/NewApiKey.md
 docs/Model/NewInvitation.md
 docs/Model/NewUpload.md
@@ -136,6 +138,11 @@ docs/Model/NoticeEventAnyOf1.md
 docs/Model/NoticeEventAnyOf2.md
 docs/Model/NoticeEventAnyOf3.md
 docs/Model/NoticeEventAnyOf4.md
+docs/Model/NoticeEventAnyOf5.md
+docs/Model/NoticeEventAnyOf6.md
+docs/Model/NoticeEventAnyOf7.md
+docs/Model/NoticeEventAnyOf8.md
+docs/Model/NoticeEventAnyOf9.md
 docs/Model/NoticePage.md
 docs/Model/NotificationPreferences.md
 docs/Model/NotificationPreferencesChange.md
@@ -149,6 +156,7 @@ docs/Model/PlanAllowances.md
 docs/Model/PlanLimit.md
 docs/Model/PlanLimitReachedEncoded.md
 docs/Model/PlanOffer.md
+docs/Model/PlanPrice.md
 docs/Model/Platform.md
 docs/Model/PlatformUnreachableEncoded.md
 docs/Model/Post.md
@@ -200,6 +208,7 @@ docs/Model/TikTokPrivacyLevel.md
 docs/Model/TooManyInvitationsEncoded.md
 docs/Model/TopPost.md
 docs/Model/TranslationLanguage.md
+docs/Model/TrialOffer.md
 docs/Model/UnauthenticatedEncoded.md
 docs/Model/UnconfirmedReason.md
 docs/Model/UnknownChannelsEncoded.md
@@ -255,6 +264,7 @@ lib/Model/AssistantUnavailableEncoded.php
 lib/Model/AttemptResult.php
 lib/Model/Authorization.php
 lib/Model/Billing.php
+lib/Model/BillingInterval.php
 lib/Model/BillingSubscription.php
 lib/Model/Channel.php
 lib/Model/ChannelCannotPostEncoded.php
@@ -344,6 +354,7 @@ lib/Model/Membership.php
 lib/Model/MetricTotals.php
 lib/Model/MetricsSnapshot.php
 lib/Model/ModelInterface.php
+lib/Model/Money.php
 lib/Model/NewApiKey.php
 lib/Model/NewInvitation.php
 lib/Model/NewUpload.php
@@ -356,6 +367,11 @@ lib/Model/NoticeEventAnyOf1.php
 lib/Model/NoticeEventAnyOf2.php
 lib/Model/NoticeEventAnyOf3.php
 lib/Model/NoticeEventAnyOf4.php
+lib/Model/NoticeEventAnyOf5.php
+lib/Model/NoticeEventAnyOf6.php
+lib/Model/NoticeEventAnyOf7.php
+lib/Model/NoticeEventAnyOf8.php
+lib/Model/NoticeEventAnyOf9.php
 lib/Model/NoticePage.php
 lib/Model/NotificationPreferences.php
 lib/Model/NotificationPreferencesChange.php
@@ -369,6 +385,7 @@ lib/Model/PlanAllowances.php
 lib/Model/PlanLimit.php
 lib/Model/PlanLimitReachedEncoded.php
 lib/Model/PlanOffer.php
+lib/Model/PlanPrice.php
 lib/Model/Platform.php
 lib/Model/PlatformUnreachableEncoded.php
 lib/Model/Post.php
@@ -420,6 +437,7 @@ lib/Model/TikTokPrivacyLevel.php
 lib/Model/TooManyInvitationsEncoded.php
 lib/Model/TopPost.php
 lib/Model/TranslationLanguage.php
+lib/Model/TrialOffer.php
 lib/Model/UnauthenticatedEncoded.php
 lib/Model/UnconfirmedReason.php
 lib/Model/UnknownChannelsEncoded.php

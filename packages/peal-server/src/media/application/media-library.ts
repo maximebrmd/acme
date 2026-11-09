@@ -11,6 +11,7 @@ import type { MediaProbe } from "#media/application/ports/media-probe.ts";
 import type { MediaStorage } from "#media/application/ports/media-storage.ts";
 import { MediaUsage } from "#media/application/ports/media-usage.ts";
 import type { AssetUse } from "#media/application/ports/media-usage.ts";
+import type { StorageAllowance } from "#media/application/ports/storage-allowance.ts";
 import type { UploadIncomplete } from "#media/application/upload-incomplete.ts";
 import type { UploadRejected } from "#media/application/upload-rejected.ts";
 import { completeUpload } from "#media/application/use-cases/complete-upload.ts";
@@ -43,8 +44,15 @@ import type { Actor, Permission } from "#shared/domain/access.ts";
 import { authorize } from "#shared/domain/authorize.ts";
 import type { PostId } from "#shared/domain/ids.ts";
 import type { MissingPermission } from "#shared/domain/missing-permission.ts";
+import type { PlanLimitReached } from "#shared/domain/plan-limit-reached.ts";
 
-type MediaPorts = Ids | MediaAssets | MediaProbe | MediaStorage | MediaUsage;
+type MediaPorts =
+  | Ids
+  | MediaAssets
+  | MediaProbe
+  | MediaStorage
+  | MediaUsage
+  | StorageAllowance;
 
 /** A file to upload into the actor's workspace. */
 export type NewUpload = Omit<CreateUploadRequest, "workspaceId">;
@@ -94,6 +102,7 @@ export class MediaLibrary extends Context.Service<
       | MediaStorageFailed
       | MediaTooLarge
       | MissingPermission
+      | PlanLimitReached
       | UnsupportedMediaType
     >;
     /** Checks the stored file, without probing it (see `finishUpload`). */

@@ -5,6 +5,7 @@ import {
   MediaStorage,
   SignedRequestSchema,
 } from "#media/application/ports/media-storage.ts";
+import { StorageAllowance } from "#media/application/ports/storage-allowance.ts";
 import { CurrentUploadPolicy } from "#media/application/upload-policy.ts";
 import { altTextOf } from "#media/domain/alt-text.ts";
 import { MediaAssetIdSchema } from "#media/domain/media-asset-id.ts";
@@ -23,6 +24,7 @@ import {
   planUpload,
 } from "#media/domain/upload-plan.ts";
 import { newId } from "#shared/application/ids.ts";
+import { roomFor } from "#shared/domain/allowance.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
 
 /** A file the client is about to upload, as it declares it. */
@@ -71,7 +73,10 @@ export type PreparedUpload = typeof PreparedUploadSchema.Type;
  * Checks the declared content type and size, records a pending asset, and
  * signs the upload: one PUT for small files, parts for large videos. The
  * file then goes from the client straight to the store, and
- * `completeUpload` checks it arrived.
+ * `completeUpload` checks it arrived. The declared size must fit the
+ * workspace's storage allowance with what it stores and uploads still in
+ * progress (`PlanLimitReached` `mediaStorage` otherwise): the store refuses
+ * a file of another size, so the declared one is what is stored.
  */
 export const createUpload = Effect.fn("Media.createUpload")(
   function* createUpload(request: CreateUploadRequest) {
@@ -91,13 +96,34 @@ export const createUpload = Effect.fn("Media.createUpload")(
     const { workspaceId } = request;
     const plan = planUpload(accepted.byteSize, policy);
 
+    const allowance = yield* StorageAllowance.use((allowed) =>
+      allowed.bytes(workspaceId)
+    );
+
+    // An upload not finished within its URLs' life never will be.
+    const pendingSince = DateTime.subtractDuration(
+      now,
+      policy.partUploadExpiry
+    );
+
+    // Checked once before the store opens a multipart upload, and again,
+    // under the workspace's lock, when the asset is recorded.
+    yield* Effect.fromResult(
+      roomFor(
+        "mediaStorage",
+        allowance,
+        yield* assets.storedBytes(workspaceId, pendingSince),
+        accepted.byteSize
+      )
+    );
+
     if (plan._tag === "single") {
       const asset = startUpload(
         { accepted, altText, id, upload: { _tag: "single" }, workspaceId },
         now
       );
 
-      yield* assets.insert(asset);
+      yield* assets.insertWithin(asset, allowance, pendingSince);
 
       const signed = yield* storage.signUpload({
         byteSize: asset.byteSize,
@@ -135,7 +161,7 @@ export const createUpload = Effect.fn("Media.createUpload")(
       now
     );
 
-    yield* assets.insert(asset);
+    yield* assets.insertWithin(asset, allowance, pendingSince);
 
     const upload = { key: asset.storageKey, uploadId };
 

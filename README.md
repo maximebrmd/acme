@@ -266,20 +266,23 @@ directly, so a model server on this machine or your network works.
 ### Billing and captcha
 
 Billing and the captcha are off until the server has their keys. To try
-billing, use a Stripe account in test mode, with a monthly price for each
-paid plan, and forward its webhooks with the Stripe CLI:
+billing, use a Stripe account in test mode, with a monthly and a yearly
+EUR price for each paid plan, tax-exclusive, whose lookup keys are
+`peal_<plan>_monthly` and `peal_<plan>_yearly` (`peal_starter_monthly`,
+`peal_pro_yearly`…), and forward its webhooks with the Stripe CLI:
 
 ```sh
 stripe listen --forward-to localhost:3001/api/auth/stripe/webhook   # prints the signing secret
-export STRIPE_SECRET_KEY=sk_test_... STRIPE_WEBHOOK_SECRET=whsec_... \
-  STRIPE_PRICE_PRO=price_... STRIPE_PRICE_BUSINESS=price_...
+export STRIPE_SECRET_KEY=sk_test_... STRIPE_WEBHOOK_SECRET=whsec_...
 ```
 
 On each workspace's **Billing** page, linked from its card, owners and
-admins then move to a paid plan through Stripe's checkout and manage the
-subscription in its customer portal. Every workspace starts on the free
-plan: 3 channels, 2 members, 30 posts a month and 10 assistant requests a
-day.
+admins then tick the box asking to start at once, order a plan or start
+the trial through Stripe's checkout, cancel, or withdraw within 14 days,
+and manage the subscription in its customer portal. Every workspace starts
+on the free plan: 3 channels, 2 members, 30 posts a month, 3 assistant
+requests a day and 500 MB of media; the docs' **Plans and billing** page
+lists the others.
 
 For the captcha, Cloudflare's test keys pass every check without a real
 widget: `TURNSTILE_SITE_KEY=1x00000000000000000000AA` and

@@ -339,8 +339,6 @@ const BillingLive = Layer.unwrap(
 
     return TestApp.layerWith({
       STRIPE_API_URL: apiUrl,
-      STRIPE_PRICE_BUSINESS: "price_synthetic_business",
-      STRIPE_PRICE_PRO: "price_synthetic_pro",
       STRIPE_SECRET_KEY: "sk_test_0123456789syntheticmembers",
       STRIPE_WEBHOOK_SECRET: "whsec_synthetic_members_test_secret",
     });

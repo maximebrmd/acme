@@ -6,6 +6,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **assistant_requests** | [**\Peal\Model\PeriodUsage**](PeriodUsage.md) |  |
 **channels** | **int** |  |
+**media_storage** | **int** |  |
 **members** | **int** |  |
 **scheduled_posts** | [**\Peal\Model\PeriodUsage**](PeriodUsage.md) |  |
 

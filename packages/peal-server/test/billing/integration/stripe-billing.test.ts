@@ -39,8 +39,6 @@ const billingApp = Layer.unwrap(
     return TestApp.layerWith({
       STRIPE_API_URL: apiUrl,
       STRIPE_AUTOMATIC_TAX: "true",
-      STRIPE_PRICE_BUSINESS: "price_synthetic_business",
-      STRIPE_PRICE_PRO: "price_synthetic_pro",
       STRIPE_SECRET_KEY: "sk_test_0123456789syntheticbilling",
       STRIPE_WEBHOOK_SECRET: webhookSecret,
     });
@@ -203,6 +201,75 @@ const CheckoutSchema = Schema.Struct({
   url: Schema.String,
 });
 
+const OrderSchema = Schema.Struct({ id: Schema.String });
+
+// An order on the billing page, the box ticked: what a checkout needs.
+const ordered = Effect.fn("ordered")(function* ordered(
+  person: Person,
+  workspaceId: string,
+  order: {
+    readonly interval: "month" | "year";
+    readonly plan: string;
+    readonly trial: boolean;
+  }
+) {
+  const app = yield* TestApp;
+
+  const reply = yield* app.request(
+    `/api/workspaces/${workspaceId}/billing/orders`,
+    {
+      body: { ...order, startNow: true },
+      headers: { cookie: person.cookies },
+    }
+  );
+
+  assert.strictEqual(reply.status, 200);
+
+  return yield* bodyOf(OrderSchema, reply);
+});
+
+// The created event, starting `daysAgo` days ago, as Stripe dates it.
+const startedDaysAgo = (payload: string, daysAgo: number) => {
+  const start = nowInSeconds() - daysAgo * 86_400;
+
+  return payload
+    .replaceAll('"start_date": 1793268000', `"start_date": ${start}`)
+    .replaceAll(
+      '"current_period_start": 1793268000',
+      `"current_period_start": ${start}`
+    )
+    .replaceAll(
+      '"current_period_end": 1795860000',
+      `"current_period_end": ${start + 30 * 86_400}`
+    );
+};
+
+// The created event as a trial a member started, ending in `days` days.
+const trialFor = (payload: string, userId: string, days: number) =>
+  payload
+    .replace('"status": "active"', '"status": "trialing"')
+    .replace(
+      '"trial_end": null',
+      `"trial_end": ${nowInSeconds() + days * 86_400}`
+    )
+    .replace(
+      /"metadata": \{\},(?<rest>\s+"schedule")/u,
+      `"metadata": { "userId": "${userId}" },$<rest>`
+    );
+
+// A JSON body of plain values, as the billing endpoints take.
+type JsonBody = Readonly<Record<string, boolean | number | string>>;
+
+// A POST as the person, with a body or none.
+const post = (person: Person, route: string, body?: JsonBody) =>
+  TestApp.use((app) =>
+    app.request(route, {
+      body,
+      headers: { cookie: person.cookies },
+      method: "POST",
+    })
+  );
+
 layer(BillingIntegration, {
   excludeTestServices: true,
   timeout: "180 seconds",
@@ -217,17 +284,25 @@ layer(BillingIntegration, {
       assert.strictEqual(billing.plan, "free");
       assert.isNull(billing.subscription);
       assert.deepStrictEqual(billing.allowances, {
-        assistantRequests: 10,
+        assistantRequests: 3,
         channels: 3,
+        mediaStorage: 500_000_000,
         members: 2,
         scheduledPosts: 30,
       });
       assert.strictEqual(billing.usage.members, 1);
       assert.strictEqual(billing.usage.channels, 0);
+      assert.strictEqual(billing.usage.mediaStorage, 0);
       assert.deepStrictEqual(
         billing.plans.map(({ plan }) => plan),
-        ["free", "pro", "business"]
+        ["free", "starter", "pro", "business", "agency"]
       );
+      // A new workspace of a new account may try the paid plan.
+      assert.deepStrictEqual(billing.trial, {
+        available: true,
+        days: 14,
+        plan: "pro",
+      });
     })
   );
 
@@ -242,7 +317,9 @@ layer(BillingIntegration, {
         const upgrade = (
           person: Person,
           body: {
+            readonly annual?: boolean;
             readonly customerType?: string;
+            readonly metadata?: { readonly orderId: string };
             readonly referenceId?: string;
           }
         ) =>
@@ -258,13 +335,52 @@ layer(BillingIntegration, {
             headers: { cookie: person.cookies },
           });
 
-        const started = yield* upgrade(owner, {
+        // Without an order, which records the consent, no checkout.
+        const unordered = yield* upgrade(owner, {
           customerType: "organization",
+          referenceId: workspaceId,
+        });
+
+        assert.strictEqual(unordered.status, 400);
+        assert.strictEqual(
+          (yield* bodyOf(ErrorSchema, unordered)).code,
+          "CHECKOUT_ORDER_REQUIRED"
+        );
+
+        const order = yield* ordered(owner, workspaceId, {
+          interval: "year",
+          plan: "pro",
+          trial: false,
+        });
+
+        // An order is for its plan and interval only.
+        const otherInterval = yield* upgrade(owner, {
+          customerType: "organization",
+          metadata: { orderId: order.id },
+          referenceId: workspaceId,
+        });
+
+        assert.strictEqual(otherInterval.status, 400);
+
+        const started = yield* upgrade(owner, {
+          annual: true,
+          customerType: "organization",
+          metadata: { orderId: order.id },
           referenceId: workspaceId,
         });
 
         assert.strictEqual(started.status, 200);
         assert.match((yield* bodyOf(CheckoutSchema, started)).url, /^https:/u);
+
+        // An order is used once.
+        const again = yield* upgrade(owner, {
+          annual: true,
+          customerType: "organization",
+          metadata: { orderId: order.id },
+          referenceId: workspaceId,
+        });
+
+        assert.strictEqual(again.status, 400);
 
         const portal = yield* app.request(
           "/api/auth/subscription/billing-portal",
@@ -369,6 +485,7 @@ layer(BillingIntegration, {
         DateTime.makeUnsafe(1_795_860_000_000)
       );
       assert.strictEqual(pro.allowances.channels, 10);
+      assert.strictEqual(pro.subscription?.interval, "month");
 
       // The assistant's quota is the plan's.
       const app = yield* TestApp;
@@ -381,7 +498,7 @@ layer(BillingIntegration, {
       assert.strictEqual(
         (yield* bodyOf(Schema.Struct({ dailyLimit: Schema.Int }), assistant))
           .dailyLimit,
-        100
+        20
       );
 
       // Cancelled at the end of the period, then ended.
@@ -756,6 +873,303 @@ layer(BillingIntegration, {
 
       // Inviting the same person again replaces their invitation.
       assert.strictEqual((yield* invite(first)).status, 200);
+    })
+  );
+  it.effect(
+    "takes an order only from a member who manages billing, in person, who asked to start now",
+    () =>
+      Effect.gen(function* orders() {
+        const app = yield* TestApp;
+        const owner = yield* signedUp("orderer");
+        const workspaceId = yield* workspaceOf(owner, "Orders");
+        const ordersRoute = `/api/workspaces/${workspaceId}/billing/orders`;
+
+        // The box left unticked.
+        const unticked = yield* post(owner, ordersRoute, {
+          interval: "month",
+          plan: "starter",
+          startNow: false,
+          trial: false,
+        });
+
+        assert.strictEqual(unticked.status, 400);
+
+        const editor = yield* signedUp("order-editor");
+        const sql = yield* SqlClient.SqlClient;
+
+        yield* sql`INSERT INTO auth.member (organization_id, user_id, role, created_at) VALUES (${workspaceId}, ${editor.id}, 'editor', now())`;
+
+        const byEditor = yield* post(editor, ordersRoute, {
+          interval: "month",
+          plan: "starter",
+          startNow: true,
+          trial: false,
+        });
+
+        assert.strictEqual(byEditor.status, 403);
+
+        const { key } = yield* apiKeyOf(owner, workspaceId, ["billing:read"]);
+
+        const byKey = yield* app.request(ordersRoute, {
+          body: {
+            interval: "month",
+            plan: "starter",
+            startNow: true,
+            trial: false,
+          },
+          headers: { authorization: `Bearer ${key}` },
+        });
+
+        assert.strictEqual(byKey.status, 403);
+
+        // The trial is the trial plan's, monthly.
+        const otherTrial = yield* post(owner, ordersRoute, {
+          interval: "year",
+          plan: "agency",
+          startNow: true,
+          trial: true,
+        });
+
+        assert.strictEqual(otherTrial.status, 409);
+        assert.deepInclude(otherTrial.body, {
+          _tag: "TrialUnavailable",
+          reason: "notOffered",
+        });
+
+        const consents =
+          yield* sql`SELECT count(*)::int AS count FROM billing.orders WHERE workspace_id = ${workspaceId}`;
+
+        assert.deepStrictEqual(consents, [{ count: 0 }]);
+      })
+  );
+
+  it.effect(
+    "starts one trial per account and per workspace, without a payment method, then falls back to the free plan",
+    () =>
+      Effect.gen(function* trial() {
+        const app = yield* TestApp;
+        const delivery = newDelivery();
+
+        const { owner, workspaceId } = yield* billedWorkspace(
+          "trial",
+          delivery.customerId
+        );
+
+        const order = yield* ordered(owner, workspaceId, {
+          interval: "month",
+          plan: "pro",
+          trial: true,
+        });
+
+        const checkout = yield* app.request("/api/auth/subscription/upgrade", {
+          body: {
+            cancelUrl: `/app/${workspaceId}/billing`,
+            customerType: "organization",
+            disableRedirect: true,
+            metadata: { orderId: order.id },
+            plan: "pro",
+            referenceId: workspaceId,
+            successUrl: `/app/${workspaceId}/billing?checkout=done`,
+          },
+          headers: { cookie: owner.cookies },
+        });
+
+        assert.strictEqual(checkout.status, 200);
+
+        assert.strictEqual(
+          yield* deliver(
+            trialFor(
+              payloadOf("customer.subscription.created", delivery),
+              owner.id,
+              14
+            )
+          ),
+          200
+        );
+
+        const trying = yield* billingOf(owner, workspaceId);
+
+        assert.strictEqual(trying.plan, "pro");
+        assert.strictEqual(trying.subscription?.status, "trialing");
+        assert.isNotNull(trying.subscription?.trialEnd);
+        assert.isFalse(trying.trial?.available);
+
+        // The same account, in another workspace: no second trial.
+        const second = yield* workspaceOf(owner, "Second");
+
+        const refused = yield* post(
+          owner,
+          `/api/workspaces/${second}/billing/orders`,
+          { interval: "month", plan: "pro", startNow: true, trial: true }
+        );
+
+        assert.strictEqual(refused.status, 409);
+        assert.deepInclude(refused.body, {
+          _tag: "TrialUnavailable",
+          reason: "used",
+        });
+
+        // Ended without a payment method, Stripe cancels it.
+        assert.strictEqual(
+          yield* deliver(payloadOf("customer.subscription.deleted", delivery)),
+          200
+        );
+
+        const after = yield* billingOf(owner, workspaceId);
+
+        assert.strictEqual(after.plan, "free");
+        assert.isFalse(after.trial?.available);
+      })
+  );
+
+  it.effect("lets an account own one workspace on the free plan", () =>
+    Effect.gen(function* oneFree() {
+      const app = yield* TestApp;
+      const owner = yield* signedUp("one-free");
+
+      yield* workspaceOf(owner, "First");
+
+      const refused = yield* app.request("/api/auth/organization/create", {
+        body: { name: "Second", slug: `second-${randomUUID()}` },
+        headers: { cookie: owner.cookies },
+      });
+
+      assert.strictEqual(refused.status, 402);
+      assert.strictEqual(
+        (yield* bodyOf(ErrorSchema, refused)).code,
+        "FREE_WORKSPACE_LIMIT_REACHED"
+      );
+    })
+  );
+
+  // Cancelling and withdrawing tell the members by notice and email, which
+  // the app's engine without workers cannot send: the use cases' tests
+  // cover what they do, these what the endpoints refuse and preview.
+  it.effect(
+    "refuses to cancel nothing, and to cancel or withdraw for a member who does not manage billing",
+    () =>
+      Effect.gen(function* refusesCancelling() {
+        const sql = yield* SqlClient.SqlClient;
+        const delivery = newDelivery();
+
+        const { owner, workspaceId } = yield* billedWorkspace(
+          "canceller",
+          delivery.customerId
+        );
+
+        const cancellation = `/api/workspaces/${workspaceId}/billing/cancellation`;
+        const nothing = yield* post(owner, cancellation);
+
+        assert.strictEqual(nothing.status, 409);
+        assert.deepInclude(nothing.body, { _tag: "NothingToCancel" });
+
+        assert.strictEqual(
+          yield* deliver(payloadOf("customer.subscription.created", delivery)),
+          200
+        );
+
+        const editor = yield* signedUp("cancel-editor");
+
+        yield* sql`INSERT INTO auth.member (organization_id, user_id, role, created_at) VALUES (${workspaceId}, ${editor.id}, 'editor', now())`;
+
+        assert.strictEqual((yield* post(editor, cancellation)).status, 403);
+        assert.strictEqual(
+          (yield* post(
+            editor,
+            `/api/workspaces/${workspaceId}/billing/withdrawal`
+          )).status,
+          403
+        );
+      })
+  );
+
+  it.effect(
+    "previews a consumer's withdrawal within 14 days, and refuses one after",
+    () =>
+      Effect.gen(function* withdrawal() {
+        const app = yield* TestApp;
+        const delivery = newDelivery();
+
+        const { owner, workspaceId } = yield* billedWorkspace(
+          "withdrawing",
+          delivery.customerId
+        );
+
+        assert.strictEqual(
+          yield* deliver(
+            startedDaysAgo(
+              payloadOf("customer.subscription.created", delivery),
+              2
+            )
+          ),
+          200
+        );
+
+        const preview = yield* app.request(
+          `/api/workspaces/${workspaceId}/billing/withdrawal`,
+          { headers: { cookie: owner.cookies } }
+        );
+
+        // stripe-mock's invoices hold nothing paid: nothing to refund.
+        assert.strictEqual(preview.status, 200);
+        assert.deepInclude(preview.body, {
+          plan: "pro",
+          refund: { amount: 0, currency: "eur" },
+        });
+        assert.isNotNull(
+          (yield* billingOf(owner, workspaceId)).withdrawableUntil
+        );
+
+        const late = newDelivery();
+
+        const other = yield* billedWorkspace(
+          "withdrawing-late",
+          late.customerId
+        );
+
+        assert.strictEqual(
+          yield* deliver(
+            startedDaysAgo(payloadOf("customer.subscription.created", late), 20)
+          ),
+          200
+        );
+
+        const expired = yield* post(
+          other.owner,
+          `/api/workspaces/${other.workspaceId}/billing/withdrawal`
+        );
+
+        assert.strictEqual(expired.status, 409);
+        assert.deepInclude(expired.body, {
+          _tag: "WithdrawalUnavailable",
+          reason: "expired",
+        });
+        assert.isNull(
+          (yield* billingOf(other.owner, other.workspaceId)).withdrawableUntil
+        );
+      })
+  );
+
+  it.effect("refuses an upload the plan's storage has no room for", () =>
+    Effect.gen(function* storage() {
+      const owner = yield* signedUp("storage");
+      const workspaceId = yield* workspaceOf(owner, "Storage");
+
+      const refused = yield* post(
+        owner,
+        `/api/workspaces/${workspaceId}/media`,
+        {
+          byteSize: 600_000_000,
+          contentType: "video/mp4",
+        }
+      );
+
+      assert.strictEqual(refused.status, 402);
+      assert.deepInclude(refused.body, {
+        _tag: "PlanLimitReached",
+        allowed: 500_000_000,
+        limit: "mediaStorage",
+      });
     })
   );
 });

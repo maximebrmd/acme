@@ -7,6 +7,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **assistant_requests** | [**PeriodUsage**](PeriodUsage.md) |  | 
 **channels** | **int** |  | 
+**media_storage** | **int** |  | 
 **members** | **int** |  | 
 **scheduled_posts** | [**PeriodUsage**](PeriodUsage.md) |  | 
 

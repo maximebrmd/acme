@@ -59,11 +59,15 @@ class Billing implements ModelInterface, ArrayAccess, \JsonSerializable
      */
     protected static $openAPITypes = [
         'allowances' => '\Peal\Model\PlanAllowances',
+        'currency' => 'string',
         'enabled' => 'bool',
         'plan' => '\Peal\Model\Plan',
         'plans' => '\Peal\Model\PlanOffer[]',
         'subscription' => '\Peal\Model\BillingSubscription',
-        'usage' => '\Peal\Model\Usage'
+        'trial' => '\Peal\Model\TrialOffer',
+        'usage' => '\Peal\Model\Usage',
+        'vat_rate' => 'int',
+        'withdrawable_until' => 'string'
     ];
 
     /**
@@ -75,11 +79,15 @@ class Billing implements ModelInterface, ArrayAccess, \JsonSerializable
      */
     protected static $openAPIFormats = [
         'allowances' => null,
+        'currency' => null,
         'enabled' => null,
         'plan' => null,
         'plans' => null,
         'subscription' => null,
-        'usage' => null
+        'trial' => null,
+        'usage' => null,
+        'vat_rate' => null,
+        'withdrawable_until' => null
     ];
 
     /**
@@ -89,11 +97,15 @@ class Billing implements ModelInterface, ArrayAccess, \JsonSerializable
      */
     protected static array $openAPINullables = [
         'allowances' => false,
+        'currency' => false,
         'enabled' => false,
         'plan' => true,
         'plans' => false,
         'subscription' => true,
-        'usage' => false
+        'trial' => true,
+        'usage' => false,
+        'vat_rate' => false,
+        'withdrawable_until' => true
     ];
 
     /**
@@ -183,11 +195,15 @@ class Billing implements ModelInterface, ArrayAccess, \JsonSerializable
      */
     protected static $attributeMap = [
         'allowances' => 'allowances',
+        'currency' => 'currency',
         'enabled' => 'enabled',
         'plan' => 'plan',
         'plans' => 'plans',
         'subscription' => 'subscription',
-        'usage' => 'usage'
+        'trial' => 'trial',
+        'usage' => 'usage',
+        'vat_rate' => 'vatRate',
+        'withdrawable_until' => 'withdrawableUntil'
     ];
 
     /**
@@ -197,11 +213,15 @@ class Billing implements ModelInterface, ArrayAccess, \JsonSerializable
      */
     protected static $setters = [
         'allowances' => 'setAllowances',
+        'currency' => 'setCurrency',
         'enabled' => 'setEnabled',
         'plan' => 'setPlan',
         'plans' => 'setPlans',
         'subscription' => 'setSubscription',
-        'usage' => 'setUsage'
+        'trial' => 'setTrial',
+        'usage' => 'setUsage',
+        'vat_rate' => 'setVatRate',
+        'withdrawable_until' => 'setWithdrawableUntil'
     ];
 
     /**
@@ -211,11 +231,15 @@ class Billing implements ModelInterface, ArrayAccess, \JsonSerializable
      */
     protected static $getters = [
         'allowances' => 'getAllowances',
+        'currency' => 'getCurrency',
         'enabled' => 'getEnabled',
         'plan' => 'getPlan',
         'plans' => 'getPlans',
         'subscription' => 'getSubscription',
-        'usage' => 'getUsage'
+        'trial' => 'getTrial',
+        'usage' => 'getUsage',
+        'vat_rate' => 'getVatRate',
+        'withdrawable_until' => 'getWithdrawableUntil'
     ];
 
     /**
@@ -276,11 +300,15 @@ class Billing implements ModelInterface, ArrayAccess, \JsonSerializable
     public function __construct(?array $data = null)
     {
         $this->setIfExists('allowances', $data ?? [], null);
+        $this->setIfExists('currency', $data ?? [], null);
         $this->setIfExists('enabled', $data ?? [], null);
         $this->setIfExists('plan', $data ?? [], null);
         $this->setIfExists('plans', $data ?? [], null);
         $this->setIfExists('subscription', $data ?? [], null);
+        $this->setIfExists('trial', $data ?? [], null);
         $this->setIfExists('usage', $data ?? [], null);
+        $this->setIfExists('vat_rate', $data ?? [], null);
+        $this->setIfExists('withdrawable_until', $data ?? [], null);
     }
 
     /**
@@ -313,6 +341,9 @@ class Billing implements ModelInterface, ArrayAccess, \JsonSerializable
         if ($this->container['allowances'] === null) {
             $invalidProperties[] = "'allowances' can't be null";
         }
+        if ($this->container['currency'] === null) {
+            $invalidProperties[] = "'currency' can't be null";
+        }
         if ($this->container['enabled'] === null) {
             $invalidProperties[] = "'enabled' can't be null";
         }
@@ -325,8 +356,25 @@ class Billing implements ModelInterface, ArrayAccess, \JsonSerializable
         if ($this->container['subscription'] === null && !$this->isNullableSetToNull('subscription')) {
             $invalidProperties[] = "'subscription' is required";
         }
+        if ($this->container['trial'] === null && !$this->isNullableSetToNull('trial')) {
+            $invalidProperties[] = "'trial' is required";
+        }
         if ($this->container['usage'] === null) {
             $invalidProperties[] = "'usage' can't be null";
+        }
+        if ($this->container['vat_rate'] === null) {
+            $invalidProperties[] = "'vat_rate' can't be null";
+        }
+        if (($this->container['vat_rate'] > 9007199254740991)) {
+            $invalidProperties[] = "invalid value for 'vat_rate', must be smaller than or equal to 9007199254740991.";
+        }
+
+        if (($this->container['vat_rate'] < -9007199254740991)) {
+            $invalidProperties[] = "invalid value for 'vat_rate', must be bigger than or equal to -9007199254740991.";
+        }
+
+        if ($this->container['withdrawable_until'] === null && !$this->isNullableSetToNull('withdrawable_until')) {
+            $invalidProperties[] = "'withdrawable_until' is required";
         }
         return $invalidProperties;
     }
@@ -366,6 +414,33 @@ class Billing implements ModelInterface, ArrayAccess, \JsonSerializable
             throw new \InvalidArgumentException('non-nullable allowances cannot be null');
         }
         $this->container['allowances'] = $allowances;
+
+        return $this;
+    }
+
+    /**
+     * Gets currency
+     *
+     * @return string
+     */
+    public function getCurrency()
+    {
+        return $this->container['currency'];
+    }
+
+    /**
+     * Sets currency
+     *
+     * @param string $currency currency
+     *
+     * @return self
+     */
+    public function setCurrency($currency)
+    {
+        if (is_null($currency)) {
+            throw new \InvalidArgumentException('non-nullable currency cannot be null');
+        }
+        $this->container['currency'] = $currency;
 
         return $this;
     }
@@ -493,6 +568,40 @@ class Billing implements ModelInterface, ArrayAccess, \JsonSerializable
     }
 
     /**
+     * Gets trial
+     *
+     * @return \Peal\Model\TrialOffer|null
+     */
+    public function getTrial()
+    {
+        return $this->container['trial'];
+    }
+
+    /**
+     * Sets trial
+     *
+     * @param \Peal\Model\TrialOffer|null $trial trial
+     *
+     * @return self
+     */
+    public function setTrial($trial)
+    {
+        if (is_null($trial)) {
+            array_push($this->openAPINullablesSetToNull, 'trial');
+        } else {
+            $nullablesSetToNull = $this->getOpenAPINullablesSetToNull();
+            $index = array_search('trial', $nullablesSetToNull);
+            if ($index !== FALSE) {
+                unset($nullablesSetToNull[$index]);
+                $this->setOpenAPINullablesSetToNull($nullablesSetToNull);
+            }
+        }
+        $this->container['trial'] = $trial;
+
+        return $this;
+    }
+
+    /**
      * Gets usage
      *
      * @return \Peal\Model\Usage
@@ -515,6 +624,74 @@ class Billing implements ModelInterface, ArrayAccess, \JsonSerializable
             throw new \InvalidArgumentException('non-nullable usage cannot be null');
         }
         $this->container['usage'] = $usage;
+
+        return $this;
+    }
+
+    /**
+     * Gets vat_rate
+     *
+     * @return int
+     */
+    public function getVatRate()
+    {
+        return $this->container['vat_rate'];
+    }
+
+    /**
+     * Sets vat_rate
+     *
+     * @param int $vat_rate vat_rate
+     *
+     * @return self
+     */
+    public function setVatRate($vat_rate)
+    {
+        if (is_null($vat_rate)) {
+            throw new \InvalidArgumentException('non-nullable vat_rate cannot be null');
+        }
+        if (($vat_rate > 9007199254740991)) {
+            throw new \InvalidArgumentException('invalid value for $vat_rate when calling Billing., must be smaller than or equal to 9007199254740991.');
+        }
+        if (($vat_rate < -9007199254740991)) {
+            throw new \InvalidArgumentException('invalid value for $vat_rate when calling Billing., must be bigger than or equal to -9007199254740991.');
+        }
+
+        $this->container['vat_rate'] = $vat_rate;
+
+        return $this;
+    }
+
+    /**
+     * Gets withdrawable_until
+     *
+     * @return string|null
+     */
+    public function getWithdrawableUntil()
+    {
+        return $this->container['withdrawable_until'];
+    }
+
+    /**
+     * Sets withdrawable_until
+     *
+     * @param string|null $withdrawable_until withdrawable_until
+     *
+     * @return self
+     */
+    public function setWithdrawableUntil($withdrawable_until)
+    {
+        if (is_null($withdrawable_until)) {
+            array_push($this->openAPINullablesSetToNull, 'withdrawable_until');
+        } else {
+            $nullablesSetToNull = $this->getOpenAPINullablesSetToNull();
+            $index = array_search('withdrawable_until', $nullablesSetToNull);
+            if ($index !== FALSE) {
+                unset($nullablesSetToNull[$index]);
+                $this->setOpenAPINullablesSetToNull($nullablesSetToNull);
+            }
+        }
+        $this->container['withdrawable_until'] = $withdrawable_until;
 
         return $this;
     }

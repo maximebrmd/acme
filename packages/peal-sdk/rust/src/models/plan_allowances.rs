@@ -17,6 +17,8 @@ pub struct PlanAllowances {
     pub assistant_requests: Option<i32>,
     #[serde(rename = "channels", deserialize_with = "Option::deserialize")]
     pub channels: Option<i32>,
+    #[serde(rename = "mediaStorage", deserialize_with = "Option::deserialize")]
+    pub media_storage: Option<i32>,
     #[serde(rename = "members", deserialize_with = "Option::deserialize")]
     pub members: Option<i32>,
     #[serde(rename = "scheduledPosts", deserialize_with = "Option::deserialize")]
@@ -24,10 +26,11 @@ pub struct PlanAllowances {
 }
 
 impl PlanAllowances {
-    pub fn new(assistant_requests: Option<i32>, channels: Option<i32>, members: Option<i32>, scheduled_posts: Option<i32>) -> PlanAllowances {
+    pub fn new(assistant_requests: Option<i32>, channels: Option<i32>, media_storage: Option<i32>, members: Option<i32>, scheduled_posts: Option<i32>) -> PlanAllowances {
         PlanAllowances {
             assistant_requests,
             channels,
+            media_storage,
             members,
             scheduled_posts,
         }

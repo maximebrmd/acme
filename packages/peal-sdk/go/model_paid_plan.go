@@ -21,14 +21,18 @@ type PaidPlan string
 
 // List of PaidPlan
 const (
+	PAIDPLAN_STARTER PaidPlan = "starter"
 	PAIDPLAN_PRO PaidPlan = "pro"
 	PAIDPLAN_BUSINESS PaidPlan = "business"
+	PAIDPLAN_AGENCY PaidPlan = "agency"
 )
 
 // All allowed values of PaidPlan enum
 var AllowedPaidPlanEnumValues = []PaidPlan{
+	"starter",
 	"pro",
 	"business",
+	"agency",
 }
 
 func (v *PaidPlan) UnmarshalJSON(src []byte) error {

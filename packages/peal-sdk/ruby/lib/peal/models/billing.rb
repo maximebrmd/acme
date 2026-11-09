@@ -17,6 +17,8 @@ module Peal
   class Billing < ApiModelBase
     attr_accessor :allowances
 
+    attr_accessor :currency
+
     attr_accessor :enabled
 
     attr_accessor :plan
@@ -25,7 +27,13 @@ module Peal
 
     attr_accessor :subscription
 
+    attr_accessor :trial
+
     attr_accessor :usage
+
+    attr_accessor :vat_rate
+
+    attr_accessor :withdrawable_until
 
     class EnumAttributeValidator
       attr_reader :datatype
@@ -53,11 +61,15 @@ module Peal
     def self.attribute_map
       {
         :'allowances' => :'allowances',
+        :'currency' => :'currency',
         :'enabled' => :'enabled',
         :'plan' => :'plan',
         :'plans' => :'plans',
         :'subscription' => :'subscription',
-        :'usage' => :'usage'
+        :'trial' => :'trial',
+        :'usage' => :'usage',
+        :'vat_rate' => :'vatRate',
+        :'withdrawable_until' => :'withdrawableUntil'
       }
     end
 
@@ -75,11 +87,15 @@ module Peal
     def self.openapi_types
       {
         :'allowances' => :'PlanAllowances',
+        :'currency' => :'String',
         :'enabled' => :'Boolean',
         :'plan' => :'Plan',
         :'plans' => :'Array<PlanOffer>',
         :'subscription' => :'BillingSubscription',
-        :'usage' => :'Usage'
+        :'trial' => :'TrialOffer',
+        :'usage' => :'Usage',
+        :'vat_rate' => :'Integer',
+        :'withdrawable_until' => :'String'
       }
     end
 
@@ -88,6 +104,8 @@ module Peal
       Set.new([
         :'plan',
         :'subscription',
+        :'trial',
+        :'withdrawable_until'
       ])
     end
 
@@ -123,6 +141,12 @@ module Peal
         self.allowances = nil
       end
 
+      if attributes.key?(:'currency')
+        self.currency = attributes[:'currency']
+      else
+        self.currency = nil
+      end
+
       if attributes.key?(:'enabled')
         self.enabled = attributes[:'enabled']
       else
@@ -149,10 +173,28 @@ module Peal
         self.subscription = nil
       end
 
+      if attributes.key?(:'trial')
+        self.trial = attributes[:'trial']
+      else
+        self.trial = nil
+      end
+
       if attributes.key?(:'usage')
         self.usage = attributes[:'usage']
       else
         self.usage = nil
+      end
+
+      if attributes.key?(:'vat_rate')
+        self.vat_rate = attributes[:'vat_rate']
+      else
+        self.vat_rate = nil
+      end
+
+      if attributes.key?(:'withdrawable_until')
+        self.withdrawable_until = attributes[:'withdrawable_until']
+      else
+        self.withdrawable_until = nil
       end
     end
 
@@ -163,6 +205,10 @@ module Peal
       invalid_properties = Array.new
       if @allowances.nil?
         invalid_properties.push('invalid value for "allowances", allowances cannot be nil.')
+      end
+
+      if @currency.nil?
+        invalid_properties.push('invalid value for "currency", currency cannot be nil.')
       end
 
       if @enabled.nil?
@@ -177,6 +223,18 @@ module Peal
         invalid_properties.push('invalid value for "usage", usage cannot be nil.')
       end
 
+      if @vat_rate.nil?
+        invalid_properties.push('invalid value for "vat_rate", vat_rate cannot be nil.')
+      end
+
+      if @vat_rate > 9007199254740991
+        invalid_properties.push('invalid value for "vat_rate", must be smaller than or equal to 9007199254740991.')
+      end
+
+      if @vat_rate < -9007199254740991
+        invalid_properties.push('invalid value for "vat_rate", must be greater than or equal to -9007199254740991.')
+      end
+
       invalid_properties
     end
 
@@ -185,9 +243,13 @@ module Peal
     def valid?
       warn '[DEPRECATED] the `valid?` method is obsolete'
       return false if @allowances.nil?
+      return false if @currency.nil?
       return false if @enabled.nil?
       return false if @plans.nil?
       return false if @usage.nil?
+      return false if @vat_rate.nil?
+      return false if @vat_rate > 9007199254740991
+      return false if @vat_rate < -9007199254740991
       true
     end
 
@@ -199,6 +261,16 @@ module Peal
       end
 
       @allowances = allowances
+    end
+
+    # Custom attribute writer method with validation
+    # @param [Object] currency Value to be assigned
+    def currency=(currency)
+      if currency.nil?
+        fail ArgumentError, 'currency cannot be nil'
+      end
+
+      @currency = currency
     end
 
     # Custom attribute writer method with validation
@@ -231,17 +303,39 @@ module Peal
       @usage = usage
     end
 
+    # Custom attribute writer method with validation
+    # @param [Object] vat_rate Value to be assigned
+    def vat_rate=(vat_rate)
+      if vat_rate.nil?
+        fail ArgumentError, 'vat_rate cannot be nil'
+      end
+
+      if vat_rate > 9007199254740991
+        fail ArgumentError, 'invalid value for "vat_rate", must be smaller than or equal to 9007199254740991.'
+      end
+
+      if vat_rate < -9007199254740991
+        fail ArgumentError, 'invalid value for "vat_rate", must be greater than or equal to -9007199254740991.'
+      end
+
+      @vat_rate = vat_rate
+    end
+
     # Checks equality by comparing each attribute.
     # @param [Object] Object to be compared
     def ==(o)
       return true if self.equal?(o)
       self.class == o.class &&
           allowances == o.allowances &&
+          currency == o.currency &&
           enabled == o.enabled &&
           plan == o.plan &&
           plans == o.plans &&
           subscription == o.subscription &&
-          usage == o.usage
+          trial == o.trial &&
+          usage == o.usage &&
+          vat_rate == o.vat_rate &&
+          withdrawable_until == o.withdrawable_until
     end
 
     # @see the `==` method
@@ -253,7 +347,7 @@ module Peal
     # Calculates hash code according to all attributes.
     # @return [Integer] Hash code
     def hash
-      [allowances, enabled, plan, plans, subscription, usage].hash
+      [allowances, currency, enabled, plan, plans, subscription, trial, usage, vat_rate, withdrawable_until].hash
     end
 
     # Builds the object from hash

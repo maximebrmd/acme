@@ -15,6 +15,8 @@ use serde::{Deserialize, Serialize};
 pub struct Billing {
     #[serde(rename = "allowances")]
     pub allowances: Box<models::PlanAllowances>,
+    #[serde(rename = "currency")]
+    pub currency: String,
     #[serde(rename = "enabled")]
     pub enabled: bool,
     #[serde(rename = "plan", deserialize_with = "Option::deserialize")]
@@ -23,19 +25,29 @@ pub struct Billing {
     pub plans: Vec<models::PlanOffer>,
     #[serde(rename = "subscription", deserialize_with = "Option::deserialize")]
     pub subscription: Option<Box<models::BillingSubscription>>,
+    #[serde(rename = "trial", deserialize_with = "Option::deserialize")]
+    pub trial: Option<Box<models::TrialOffer>>,
     #[serde(rename = "usage")]
     pub usage: Box<models::Usage>,
+    #[serde(rename = "vatRate")]
+    pub vat_rate: i32,
+    #[serde(rename = "withdrawableUntil", deserialize_with = "Option::deserialize")]
+    pub withdrawable_until: Option<String>,
 }
 
 impl Billing {
-    pub fn new(allowances: models::PlanAllowances, enabled: bool, plan: Option<models::Plan>, plans: Vec<models::PlanOffer>, subscription: Option<models::BillingSubscription>, usage: models::Usage) -> Billing {
+    pub fn new(allowances: models::PlanAllowances, currency: String, enabled: bool, plan: Option<models::Plan>, plans: Vec<models::PlanOffer>, subscription: Option<models::BillingSubscription>, trial: Option<models::TrialOffer>, usage: models::Usage, vat_rate: i32, withdrawable_until: Option<String>) -> Billing {
         Billing {
             allowances: Box::new(allowances),
+            currency,
             enabled,
             plan,
             plans,
             subscription: if let Some(x) = subscription {Some(Box::new(x))} else {None},
+            trial: if let Some(x) = trial {Some(Box::new(x))} else {None},
             usage: Box::new(usage),
+            vat_rate,
+            withdrawable_until,
         }
     }
 }

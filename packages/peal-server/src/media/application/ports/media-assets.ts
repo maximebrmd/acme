@@ -6,7 +6,9 @@ import type { AltText } from "#media/domain/alt-text.ts";
 import type { MediaAssetId } from "#media/domain/media-asset-id.ts";
 import type { MediaAsset } from "#media/domain/media-asset.ts";
 import type { MediaStatusName } from "#media/domain/media-status.ts";
+import type { Allowance } from "#shared/domain/allowance.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
+import type { PlanLimitReached } from "#shared/domain/plan-limit-reached.ts";
 
 /** A page of a workspace's assets, newest first. */
 export interface MediaPageRequest {
@@ -38,6 +40,25 @@ export class MediaAssets extends Context.Service<
       page: MediaPageRequest
     ) => Effect.Effect<MediaPage>;
     readonly insert: (asset: MediaAsset) => Effect.Effect<void>;
+    /**
+     * Inserts the asset if its bytes fit the workspace's storage allowance
+     * with what it stores (`storedBytes`), under the workspace's lock, so
+     * uploads started together never pass it: PlanLimitReached otherwise.
+     */
+    readonly insertWithin: (
+      asset: MediaAsset,
+      allowance: Allowance,
+      pendingSince: DateTime.Utc
+    ) => Effect.Effect<void, PlanLimitReached>;
+    /**
+     * The bytes the workspace stores: its uploaded and ready files, and the
+     * uploads started after `pendingSince`, which may still arrive.
+     * Rejected files are gone from the store, and count for nothing.
+     */
+    readonly storedBytes: (
+      workspaceId: WorkspaceId,
+      pendingSince: DateTime.Utc
+    ) => Effect.Effect<number>;
     /**
      * Saves the asset's description, whatever its status, and returns the
      * asset as stored.

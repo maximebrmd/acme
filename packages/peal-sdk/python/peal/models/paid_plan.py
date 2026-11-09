@@ -27,8 +27,10 @@ class PaidPlan(str, Enum):
     """
     allowed enum values
     """
+    STARTER = 'starter'
     PRO = 'pro'
     BUSINESS = 'business'
+    AGENCY = 'agency'
 
     @classmethod
     def from_json(cls, json_str: str) -> Self:

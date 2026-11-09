@@ -7,13 +7,12 @@ import { StripeUnreachable } from "#billing/application/stripe-unreachable.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
+import { stripeClientOf } from "#shared/infrastructure/stripe-client.ts";
 import { stripeSettingsConfig } from "#shared/infrastructure/stripe-settings.ts";
 import {
   organization,
   subscription,
 } from "#workspace/infrastructure/auth-schema.generated.ts";
-
-import { stripeClientOf } from "./stripe-client.ts";
 
 const failed = (cause: unknown) => new DatabaseError({ cause });
 

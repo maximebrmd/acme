@@ -12,6 +12,15 @@ Name | Type
 `postId` | string
 `reason` | [FailureReason](FailureReason.md)
 `expiresAt` | string
+`interval` | [BillingInterval](BillingInterval.md)
+`plan` | [PaidPlan](PaidPlan.md)
+`price` | [Money](Money.md)
+`startedAt` | string
+`trialEnd` | string
+`endsAt` | string
+`renewsAt` | string
+`refunded` | [Money](Money.md)
+`withdrawnAt` | string
 
 ## Example
 
@@ -26,6 +35,15 @@ const example = {
   "postId": null,
   "reason": null,
   "expiresAt": null,
+  "interval": null,
+  "plan": null,
+  "price": null,
+  "startedAt": null,
+  "trialEnd": null,
+  "endsAt": null,
+  "renewsAt": null,
+  "refunded": null,
+  "withdrawnAt": null,
 } satisfies NoticeEvent
 
 console.log(example)

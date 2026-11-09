@@ -49,7 +49,12 @@ namespace Peal.Model
         /// <summary>
         /// Enum AssistantRequests for value: assistantRequests
         /// </summary>
-        AssistantRequests = 4
+        AssistantRequests = 4,
+
+        /// <summary>
+        /// Enum MediaStorage for value: mediaStorage
+        /// </summary>
+        MediaStorage = 5
     }
 
     /// <summary>
@@ -76,6 +81,9 @@ namespace Peal.Model
             if (value.Equals("assistantRequests"))
                 return PlanLimit.AssistantRequests;
 
+            if (value.Equals("mediaStorage"))
+                return PlanLimit.MediaStorage;
+
             throw new NotImplementedException($"Could not convert value to type PlanLimit: '{value}'");
         }
 
@@ -97,6 +105,9 @@ namespace Peal.Model
 
             if (value.Equals("assistantRequests"))
                 return PlanLimit.AssistantRequests;
+
+            if (value.Equals("mediaStorage"))
+                return PlanLimit.MediaStorage;
 
             return null;
         }
@@ -120,6 +131,9 @@ namespace Peal.Model
 
             if (value == PlanLimit.AssistantRequests)
                 return "assistantRequests";
+
+            if (value == PlanLimit.MediaStorage)
+                return "mediaStorage";
 
             throw new NotImplementedException($"Value could not be handled: '{value}'");
         }

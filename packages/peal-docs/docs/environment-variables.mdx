@@ -95,14 +95,13 @@ A provider named without the settings it needs stops the server at startup, and 
 
 ### Billing [#billing]
 
-| Variable                | Default               | What it does                                                                                                                                                                                                |
-| ----------------------- | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `STRIPE_SECRET_KEY`     | unset: billing is off | The Stripe API key that bills workspaces, such as `sk_live_…`. Unset or empty, there are no plans and nothing is limited. Keep it secret.                                                                   |
-| `STRIPE_WEBHOOK_SECRET` | required with a key   | The signing secret of the webhook endpoint that sends `PUBLIC_URL/api/auth/stripe/webhook` the `customer.subscription.*` events, such as `whsec_…`. Set without a key, it stops the server. Keep it secret. |
-| `STRIPE_PRICE_PRO`      | required with a key   | The id of the monthly price the Pro plan is sold at, such as `price_…`.                                                                                                                                     |
-| `STRIPE_PRICE_BUSINESS` | required with a key   | The id of the monthly price the Business plan is sold at.                                                                                                                                                   |
-| `STRIPE_AUTOMATIC_TAX`  | `false`               | `true` has Stripe Tax compute the tax at checkout, such as EU VAT, from the customer's address and VAT number, which checkout then asks for. Turn Stripe Tax on in the Stripe account first.                |
-| `STRIPE_API_URL`        | Stripe's API          | Another address for Stripe's API, such as `http://127.0.0.1:12111` for stripe-mock in tests.                                                                                                                |
+| Variable                   | Default               | What it does                                                                                                                                                                                                |
+| -------------------------- | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `STRIPE_SECRET_KEY`        | unset: billing is off | The Stripe API key that bills workspaces, such as `sk_live_…`. Unset or empty, there are no plans and nothing is limited. Keep it secret.                                                                   |
+| `STRIPE_WEBHOOK_SECRET`    | required with a key   | The signing secret of the webhook endpoint that sends `PUBLIC_URL/api/auth/stripe/webhook` the `customer.subscription.*` events, such as `whsec_…`. Set without a key, it stops the server. Keep it secret. |
+| `STRIPE_LOOKUP_KEY_PREFIX` | `peal`                | The start of the lookup keys of the plans' Stripe prices: `<prefix>_<plan>_monthly` and `<prefix>_<plan>_yearly`. Lowercase letters, digits and underscores; another value stops the server at startup.     |
+| `STRIPE_AUTOMATIC_TAX`     | `false`               | `true` has Stripe Tax compute the tax at checkout, such as EU VAT, from the customer's address and VAT number, which checkout then asks for. Turn Stripe Tax on in the Stripe account first.                |
+| `STRIPE_API_URL`           | Stripe's API          | Another address for Stripe's API, such as `http://127.0.0.1:12111` for stripe-mock in tests.                                                                                                                |
 
 [Billing](/self-hosting#billing) explains the plans and what they limit.
 
@@ -143,6 +142,7 @@ The library that runs Peal's jobs also reads its own settings from the environme
 | `HOSTNAME`           | `0.0.0.0`                                       | The address the web app listens on. In a container, where Docker sets `HOSTNAME` to the container id, set it to `0.0.0.0`, as the web app's image does.                                                                |
 | `KEEP_ALIVE_TIMEOUT` | Node's                                          | How long, in milliseconds, an idle connection stays open, for a proxy in front that keeps connections longer.                                                                                                          |
 | `PEAL_RELEASE`       | `unknown`                                       | The release the web app's [error reports](/self-hosting#web-errors) name, such as `2026.11.0`. Read at each request. The production stack sets it to `PEAL_VERSION`.                                                   |
+| `PEAL_TERMS_URL`     | unset                                           | The address of your terms of service, such as `https://peal.example.com/terms`, which the billing page links to before an order. Read at each request. Unset, the page names the terms without a link.                 |
 | `NODE_ENV`           | `production` for a build                        | The built web app always runs in production mode, where `PEAL_API_URL` is required.                                                                                                                                    |
 
 ## Command line [#command-line]

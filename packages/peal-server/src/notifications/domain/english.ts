@@ -62,6 +62,7 @@ export const english: EmailCatalog = {
       "the account’s authorization stopped working. Reconnect it, then post again.",
     unavailable: "the platform could not be reached.",
   },
+  intervals: { month: "month", year: "year" },
   invitation: {
     action: "Accept the invitation",
     body: "{inviterName} invited you to join {workspaceName} on Peal {role}.",
@@ -73,6 +74,12 @@ export const english: EmailCatalog = {
     linkFallback: "If the button does not work, open this link:",
     signature: "The Peal team",
     textLink: "{action}: {url}",
+  },
+  plans: {
+    agency: "Agency",
+    business: "Business",
+    pro: "Pro",
+    starter: "Starter",
   },
   platforms: {
     bluesky: "Bluesky",
@@ -120,6 +127,48 @@ export const english: EmailCatalog = {
     editor: "as an editor",
     owner: "as an owner",
     viewer: "as a viewer",
+  },
+  subscriptionCancelled: {
+    action: "Open billing",
+    body: "The {plan} subscription of {workspaceName} is cancelled. It ends on {endsAt}, and nothing more is charged after it: until then the workspace keeps its plan, then it moves to the free plan with its content. This email confirms the cancellation and the date it takes effect.",
+    ignore:
+      "You receive this email because you manage billing for {workspaceName} on Peal. Billing emails are always sent: keep this one, it is your record.",
+    subject: "Your {plan} subscription is cancelled: it ends on {endsAt}",
+  },
+  subscriptionRenewing: {
+    action: "Open billing",
+    body: "The yearly {plan} plan of {workspaceName} renews on {renewsAt} for {price} excluding VAT, with the VAT of your country added. To stop it, cancel the subscription on the billing page before that date: it then ends on {renewsAt} and nothing more is charged.",
+    ignore:
+      "You receive this email because you manage billing for {workspaceName} on Peal. Billing emails are always sent: keep this one, it is your record.",
+    subject: "Your yearly {plan} plan renews on {renewsAt}",
+  },
+  subscriptionStarted: {
+    action: "Open billing",
+    body: "Thank you: {workspaceName} is subscribed to {plan} since {startedAt}, for {price} excluding VAT a {interval}, with the VAT of your country added, renewed until cancelled. You asked for it to start at once: as a consumer you may still withdraw within 14 days, from the billing page (Withdraw from contract here), and then pay only for the days used. You can cancel it there at any time; the terms of service apply.",
+    ignore:
+      "You receive this email because you manage billing for {workspaceName} on Peal. Billing emails are always sent: keep this one, it is your record.",
+    subject: "Your {plan} subscription has started",
+  },
+  subscriptionWithdrawn: {
+    action: "Open billing",
+    body: "We received your withdrawal from the {plan} subscription of {workspaceName} on {withdrawnAt}. The subscription ended then, and {refunded} is refunded to the payment method you used, within 14 days. This email acknowledges your withdrawal.",
+    ignore:
+      "You receive this email because you manage billing for {workspaceName} on Peal. Billing emails are always sent: keep this one, it is your record.",
+    subject: "Withdrawal received: your {plan} subscription has ended",
+  },
+  trialEnding: {
+    action: "Choose a plan",
+    body: "The {plan} trial of {workspaceName} ends on {endsAt}. Nothing is charged: unless someone orders a plan before then, the workspace moves to the free plan. It keeps its content, but must disconnect the channels above the free plan's before it can schedule posts again.",
+    ignore:
+      "You receive this email because you manage billing for {workspaceName} on Peal. Billing emails are always sent: keep this one, it is your record.",
+    subject: "Your {plan} trial ends on {endsAt}",
+  },
+  trialStarted: {
+    action: "Open billing",
+    body: "{workspaceName} is trying {plan} since {startedAt}, until {endsAt}. Nothing is charged, and no payment method was asked for. Unless someone orders {plan} ({price} excluding VAT a month) before then, the workspace moves back to the free plan when the trial ends. You can end the trial at any time from the billing page.",
+    ignore:
+      "You receive this email because you manage billing for {workspaceName} on Peal. Billing emails are always sent: keep this one, it is your record.",
+    subject: "Your {plan} trial has started: it ends on {endsAt}",
   },
   unknownChannel: "a disconnected channel",
   verifyEmail: {

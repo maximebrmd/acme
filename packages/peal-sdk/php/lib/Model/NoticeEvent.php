@@ -63,7 +63,16 @@ class NoticeEvent implements ModelInterface, ArrayAccess, \JsonSerializable
         'permalink' => 'string',
         'post_id' => 'string',
         'reason' => '\Peal\Model\FailureReason',
-        'expires_at' => 'string'
+        'expires_at' => 'string',
+        'interval' => '\Peal\Model\BillingInterval',
+        'plan' => '\Peal\Model\PaidPlan',
+        'price' => '\Peal\Model\Money',
+        'started_at' => 'string',
+        'trial_end' => 'string',
+        'ends_at' => 'string',
+        'renews_at' => 'string',
+        'refunded' => '\Peal\Model\Money',
+        'withdrawn_at' => 'string'
     ];
 
     /**
@@ -79,7 +88,16 @@ class NoticeEvent implements ModelInterface, ArrayAccess, \JsonSerializable
         'permalink' => null,
         'post_id' => null,
         'reason' => null,
-        'expires_at' => null
+        'expires_at' => null,
+        'interval' => null,
+        'plan' => null,
+        'price' => null,
+        'started_at' => null,
+        'trial_end' => null,
+        'ends_at' => null,
+        'renews_at' => null,
+        'refunded' => null,
+        'withdrawn_at' => null
     ];
 
     /**
@@ -93,7 +111,16 @@ class NoticeEvent implements ModelInterface, ArrayAccess, \JsonSerializable
         'permalink' => true,
         'post_id' => false,
         'reason' => false,
-        'expires_at' => false
+        'expires_at' => false,
+        'interval' => false,
+        'plan' => false,
+        'price' => false,
+        'started_at' => false,
+        'trial_end' => true,
+        'ends_at' => false,
+        'renews_at' => false,
+        'refunded' => false,
+        'withdrawn_at' => false
     ];
 
     /**
@@ -187,7 +214,16 @@ class NoticeEvent implements ModelInterface, ArrayAccess, \JsonSerializable
         'permalink' => 'permalink',
         'post_id' => 'postId',
         'reason' => 'reason',
-        'expires_at' => 'expiresAt'
+        'expires_at' => 'expiresAt',
+        'interval' => 'interval',
+        'plan' => 'plan',
+        'price' => 'price',
+        'started_at' => 'startedAt',
+        'trial_end' => 'trialEnd',
+        'ends_at' => 'endsAt',
+        'renews_at' => 'renewsAt',
+        'refunded' => 'refunded',
+        'withdrawn_at' => 'withdrawnAt'
     ];
 
     /**
@@ -201,7 +237,16 @@ class NoticeEvent implements ModelInterface, ArrayAccess, \JsonSerializable
         'permalink' => 'setPermalink',
         'post_id' => 'setPostId',
         'reason' => 'setReason',
-        'expires_at' => 'setExpiresAt'
+        'expires_at' => 'setExpiresAt',
+        'interval' => 'setInterval',
+        'plan' => 'setPlan',
+        'price' => 'setPrice',
+        'started_at' => 'setStartedAt',
+        'trial_end' => 'setTrialEnd',
+        'ends_at' => 'setEndsAt',
+        'renews_at' => 'setRenewsAt',
+        'refunded' => 'setRefunded',
+        'withdrawn_at' => 'setWithdrawnAt'
     ];
 
     /**
@@ -215,7 +260,16 @@ class NoticeEvent implements ModelInterface, ArrayAccess, \JsonSerializable
         'permalink' => 'getPermalink',
         'post_id' => 'getPostId',
         'reason' => 'getReason',
-        'expires_at' => 'getExpiresAt'
+        'expires_at' => 'getExpiresAt',
+        'interval' => 'getInterval',
+        'plan' => 'getPlan',
+        'price' => 'getPrice',
+        'started_at' => 'getStartedAt',
+        'trial_end' => 'getTrialEnd',
+        'ends_at' => 'getEndsAt',
+        'renews_at' => 'getRenewsAt',
+        'refunded' => 'getRefunded',
+        'withdrawn_at' => 'getWithdrawnAt'
     ];
 
     /**
@@ -259,7 +313,7 @@ class NoticeEvent implements ModelInterface, ArrayAccess, \JsonSerializable
         return self::$openAPIModelName;
     }
 
-    public const _TAG_CHANNEL_RECONNECT_SOON = 'ChannelReconnectSoon';
+    public const _TAG_SUBSCRIPTION_WITHDRAWN = 'SubscriptionWithdrawn';
 
     /**
      * Gets allowable values of the enum
@@ -269,7 +323,7 @@ class NoticeEvent implements ModelInterface, ArrayAccess, \JsonSerializable
     public function getTagAllowableValues()
     {
         return [
-            self::_TAG_CHANNEL_RECONNECT_SOON,
+            self::_TAG_SUBSCRIPTION_WITHDRAWN,
         ];
     }
 
@@ -294,6 +348,15 @@ class NoticeEvent implements ModelInterface, ArrayAccess, \JsonSerializable
         $this->setIfExists('post_id', $data ?? [], null);
         $this->setIfExists('reason', $data ?? [], null);
         $this->setIfExists('expires_at', $data ?? [], null);
+        $this->setIfExists('interval', $data ?? [], null);
+        $this->setIfExists('plan', $data ?? [], null);
+        $this->setIfExists('price', $data ?? [], null);
+        $this->setIfExists('started_at', $data ?? [], null);
+        $this->setIfExists('trial_end', $data ?? [], null);
+        $this->setIfExists('ends_at', $data ?? [], null);
+        $this->setIfExists('renews_at', $data ?? [], null);
+        $this->setIfExists('refunded', $data ?? [], null);
+        $this->setIfExists('withdrawn_at', $data ?? [], null);
     }
 
     /**
@@ -349,6 +412,33 @@ class NoticeEvent implements ModelInterface, ArrayAccess, \JsonSerializable
         }
         if ($this->container['expires_at'] === null) {
             $invalidProperties[] = "'expires_at' can't be null";
+        }
+        if ($this->container['interval'] === null) {
+            $invalidProperties[] = "'interval' can't be null";
+        }
+        if ($this->container['plan'] === null) {
+            $invalidProperties[] = "'plan' can't be null";
+        }
+        if ($this->container['price'] === null) {
+            $invalidProperties[] = "'price' can't be null";
+        }
+        if ($this->container['started_at'] === null) {
+            $invalidProperties[] = "'started_at' can't be null";
+        }
+        if ($this->container['trial_end'] === null && !$this->isNullableSetToNull('trial_end')) {
+            $invalidProperties[] = "'trial_end' is required";
+        }
+        if ($this->container['ends_at'] === null) {
+            $invalidProperties[] = "'ends_at' can't be null";
+        }
+        if ($this->container['renews_at'] === null) {
+            $invalidProperties[] = "'renews_at' can't be null";
+        }
+        if ($this->container['refunded'] === null) {
+            $invalidProperties[] = "'refunded' can't be null";
+        }
+        if ($this->container['withdrawn_at'] === null) {
+            $invalidProperties[] = "'withdrawn_at' can't be null";
         }
         return $invalidProperties;
     }
@@ -540,6 +630,256 @@ class NoticeEvent implements ModelInterface, ArrayAccess, \JsonSerializable
             throw new \InvalidArgumentException('non-nullable expires_at cannot be null');
         }
         $this->container['expires_at'] = $expires_at;
+
+        return $this;
+    }
+
+    /**
+     * Gets interval
+     *
+     * @return \Peal\Model\BillingInterval
+     */
+    public function getInterval()
+    {
+        return $this->container['interval'];
+    }
+
+    /**
+     * Sets interval
+     *
+     * @param \Peal\Model\BillingInterval $interval interval
+     *
+     * @return self
+     */
+    public function setInterval($interval)
+    {
+        if (is_null($interval)) {
+            throw new \InvalidArgumentException('non-nullable interval cannot be null');
+        }
+        $this->container['interval'] = $interval;
+
+        return $this;
+    }
+
+    /**
+     * Gets plan
+     *
+     * @return \Peal\Model\PaidPlan
+     */
+    public function getPlan()
+    {
+        return $this->container['plan'];
+    }
+
+    /**
+     * Sets plan
+     *
+     * @param \Peal\Model\PaidPlan $plan plan
+     *
+     * @return self
+     */
+    public function setPlan($plan)
+    {
+        if (is_null($plan)) {
+            throw new \InvalidArgumentException('non-nullable plan cannot be null');
+        }
+        $this->container['plan'] = $plan;
+
+        return $this;
+    }
+
+    /**
+     * Gets price
+     *
+     * @return \Peal\Model\Money
+     */
+    public function getPrice()
+    {
+        return $this->container['price'];
+    }
+
+    /**
+     * Sets price
+     *
+     * @param \Peal\Model\Money $price price
+     *
+     * @return self
+     */
+    public function setPrice($price)
+    {
+        if (is_null($price)) {
+            throw new \InvalidArgumentException('non-nullable price cannot be null');
+        }
+        $this->container['price'] = $price;
+
+        return $this;
+    }
+
+    /**
+     * Gets started_at
+     *
+     * @return string
+     */
+    public function getStartedAt()
+    {
+        return $this->container['started_at'];
+    }
+
+    /**
+     * Sets started_at
+     *
+     * @param string $started_at started_at
+     *
+     * @return self
+     */
+    public function setStartedAt($started_at)
+    {
+        if (is_null($started_at)) {
+            throw new \InvalidArgumentException('non-nullable started_at cannot be null');
+        }
+        $this->container['started_at'] = $started_at;
+
+        return $this;
+    }
+
+    /**
+     * Gets trial_end
+     *
+     * @return string|null
+     */
+    public function getTrialEnd()
+    {
+        return $this->container['trial_end'];
+    }
+
+    /**
+     * Sets trial_end
+     *
+     * @param string|null $trial_end trial_end
+     *
+     * @return self
+     */
+    public function setTrialEnd($trial_end)
+    {
+        if (is_null($trial_end)) {
+            array_push($this->openAPINullablesSetToNull, 'trial_end');
+        } else {
+            $nullablesSetToNull = $this->getOpenAPINullablesSetToNull();
+            $index = array_search('trial_end', $nullablesSetToNull);
+            if ($index !== FALSE) {
+                unset($nullablesSetToNull[$index]);
+                $this->setOpenAPINullablesSetToNull($nullablesSetToNull);
+            }
+        }
+        $this->container['trial_end'] = $trial_end;
+
+        return $this;
+    }
+
+    /**
+     * Gets ends_at
+     *
+     * @return string
+     */
+    public function getEndsAt()
+    {
+        return $this->container['ends_at'];
+    }
+
+    /**
+     * Sets ends_at
+     *
+     * @param string $ends_at ends_at
+     *
+     * @return self
+     */
+    public function setEndsAt($ends_at)
+    {
+        if (is_null($ends_at)) {
+            throw new \InvalidArgumentException('non-nullable ends_at cannot be null');
+        }
+        $this->container['ends_at'] = $ends_at;
+
+        return $this;
+    }
+
+    /**
+     * Gets renews_at
+     *
+     * @return string
+     */
+    public function getRenewsAt()
+    {
+        return $this->container['renews_at'];
+    }
+
+    /**
+     * Sets renews_at
+     *
+     * @param string $renews_at renews_at
+     *
+     * @return self
+     */
+    public function setRenewsAt($renews_at)
+    {
+        if (is_null($renews_at)) {
+            throw new \InvalidArgumentException('non-nullable renews_at cannot be null');
+        }
+        $this->container['renews_at'] = $renews_at;
+
+        return $this;
+    }
+
+    /**
+     * Gets refunded
+     *
+     * @return \Peal\Model\Money
+     */
+    public function getRefunded()
+    {
+        return $this->container['refunded'];
+    }
+
+    /**
+     * Sets refunded
+     *
+     * @param \Peal\Model\Money $refunded refunded
+     *
+     * @return self
+     */
+    public function setRefunded($refunded)
+    {
+        if (is_null($refunded)) {
+            throw new \InvalidArgumentException('non-nullable refunded cannot be null');
+        }
+        $this->container['refunded'] = $refunded;
+
+        return $this;
+    }
+
+    /**
+     * Gets withdrawn_at
+     *
+     * @return string
+     */
+    public function getWithdrawnAt()
+    {
+        return $this->container['withdrawn_at'];
+    }
+
+    /**
+     * Sets withdrawn_at
+     *
+     * @param string $withdrawn_at withdrawn_at
+     *
+     * @return self
+     */
+    public function setWithdrawnAt($withdrawn_at)
+    {
+        if (is_null($withdrawn_at)) {
+            throw new \InvalidArgumentException('non-nullable withdrawn_at cannot be null');
+        }
+        $this->container['withdrawn_at'] = $withdrawn_at;
 
         return $this;
     }

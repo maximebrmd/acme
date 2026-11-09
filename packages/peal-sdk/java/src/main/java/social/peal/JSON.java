@@ -202,6 +202,7 @@ public class JSON {
         gsonBuilder.registerTypeAdapterFactory(new social.peal.model.Membership.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new social.peal.model.MetricTotals.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new social.peal.model.MetricsSnapshot.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.Money.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new social.peal.model.NewApiKey.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new social.peal.model.NewInvitation.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new social.peal.model.NewUpload.CustomTypeAdapterFactory());
@@ -213,6 +214,11 @@ public class JSON {
         gsonBuilder.registerTypeAdapterFactory(new social.peal.model.NoticeEventAnyOf2.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new social.peal.model.NoticeEventAnyOf3.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new social.peal.model.NoticeEventAnyOf4.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.NoticeEventAnyOf5.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.NoticeEventAnyOf6.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.NoticeEventAnyOf7.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.NoticeEventAnyOf8.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.NoticeEventAnyOf9.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new social.peal.model.NoticePage.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new social.peal.model.NotificationPreferences.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new social.peal.model.NotificationPreferencesChange.CustomTypeAdapterFactory());
@@ -222,6 +228,7 @@ public class JSON {
         gsonBuilder.registerTypeAdapterFactory(new social.peal.model.PlanAllowances.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new social.peal.model.PlanLimitReachedEncoded.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new social.peal.model.PlanOffer.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.PlanPrice.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new social.peal.model.PlatformUnreachableEncoded.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new social.peal.model.Post.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new social.peal.model.PostAnalytics.CustomTypeAdapterFactory());
@@ -261,6 +268,7 @@ public class JSON {
         gsonBuilder.registerTypeAdapterFactory(new social.peal.model.TikTokOptions.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new social.peal.model.TooManyInvitationsEncoded.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new social.peal.model.TopPost.CustomTypeAdapterFactory());
+        gsonBuilder.registerTypeAdapterFactory(new social.peal.model.TrialOffer.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new social.peal.model.UnauthenticatedEncoded.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new social.peal.model.UnknownChannelsEncoded.CustomTypeAdapterFactory());
         gsonBuilder.registerTypeAdapterFactory(new social.peal.model.UnknownMediaEncoded.CustomTypeAdapterFactory());

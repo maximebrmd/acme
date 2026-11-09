@@ -16,10 +16,14 @@ use serde::{Deserialize, Serialize};
 pub enum Plan {
     #[serde(rename = "free")]
     Free,
+    #[serde(rename = "starter")]
+    Starter,
     #[serde(rename = "pro")]
     Pro,
     #[serde(rename = "business")]
     Business,
+    #[serde(rename = "agency")]
+    Agency,
 
 }
 
@@ -27,8 +31,10 @@ impl std::fmt::Display for Plan {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             Self::Free => write!(f, "free"),
+            Self::Starter => write!(f, "starter"),
             Self::Pro => write!(f, "pro"),
             Self::Business => write!(f, "business"),
+            Self::Agency => write!(f, "agency"),
         }
     }
 }

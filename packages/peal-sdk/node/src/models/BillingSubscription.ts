@@ -13,6 +13,13 @@
  */
 
 import { mapValues } from '../runtime.js';
+import type { BillingInterval } from './BillingInterval.js';
+import {
+    BillingIntervalFromJSON,
+    BillingIntervalFromJSONTyped,
+    BillingIntervalToJSON,
+    BillingIntervalToJSONTyped,
+} from './BillingInterval.js';
 import type { SubscriptionStatus } from './SubscriptionStatus.js';
 import {
     SubscriptionStatusFromJSON,
@@ -45,11 +52,23 @@ export interface BillingSubscription {
     /**
      * 
      */
+    interval: BillingInterval;
+    /**
+     * 
+     */
     plan: PaidPlan;
     /**
      * 
      */
+    startedAt: string | null;
+    /**
+     * 
+     */
     status: SubscriptionStatus;
+    /**
+     * 
+     */
+    trialEnd: string | null;
 }
 
 
@@ -60,8 +79,11 @@ export interface BillingSubscription {
 export function instanceOfBillingSubscription(value: object): value is BillingSubscription {
     if (!('cancelAtPeriodEnd' in value) || value['cancelAtPeriodEnd'] === undefined) return false;
     if (!('currentPeriodEnd' in value) || value['currentPeriodEnd'] === undefined) return false;
+    if (!('interval' in value) || value['interval'] === undefined) return false;
     if (!('plan' in value) || value['plan'] === undefined) return false;
+    if (!('startedAt' in value) || value['startedAt'] === undefined) return false;
     if (!('status' in value) || value['status'] === undefined) return false;
+    if (!('trialEnd' in value) || value['trialEnd'] === undefined) return false;
     return true;
 }
 
@@ -77,8 +99,11 @@ export function BillingSubscriptionFromJSONTyped(json: any, ignoreDiscriminator:
         
         'cancelAtPeriodEnd': json['cancelAtPeriodEnd'],
         'currentPeriodEnd': json['currentPeriodEnd'],
+        'interval': BillingIntervalFromJSON(json['interval']),
         'plan': PaidPlanFromJSON(json['plan']),
+        'startedAt': json['startedAt'],
         'status': SubscriptionStatusFromJSON(json['status']),
+        'trialEnd': json['trialEnd'],
     };
 }
 
@@ -95,8 +120,11 @@ export function BillingSubscriptionToJSONTyped(value?: BillingSubscription | nul
         
         'cancelAtPeriodEnd': value['cancelAtPeriodEnd'],
         'currentPeriodEnd': value['currentPeriodEnd'],
+        'interval': BillingIntervalToJSON(value['interval']),
         'plan': PaidPlanToJSON(value['plan']),
+        'startedAt': value['startedAt'],
         'status': SubscriptionStatusToJSON(value['status']),
+        'trialEnd': value['trialEnd'],
     };
 }
 

@@ -15,6 +15,7 @@ import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 import { Actor } from "#shared/domain/access.ts";
 import type { Permission } from "#shared/domain/access.ts";
 import { UserIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
+import { NoTrialsTest } from "#test/billing/support.ts";
 
 const workspaceId = WorkspaceIdSchema.make(
   "3c4d5e6f-7a8b-4c9d-8e0f-1a2b3c4d5e6f"
@@ -41,11 +42,13 @@ const SubscriptionsInMemory = Layer.effect(
 
     return Subscriptions.of({
       eraseWorkspace: () => Ref.set(saved, []),
+      forgetUser: () => Effect.void,
       ofWorkspace: () => Ref.get(saved),
       record: (change) =>
         Ref.update(saved, (all) => [...all, change.subscription]).pipe(
           Effect.as("recorded" as const)
         ),
+      remindable: () => Ref.get(saved),
     });
   })
 );
@@ -57,6 +60,7 @@ const UsageTest = Layer.succeed(
       Effect.succeed({
         assistantRequests: { resetsAt: midnight, used: 4 },
         channels: 2,
+        mediaStorage: 0,
         members: 1,
         scheduledPosts: { resetsAt: midnight, used: 12 },
       }),
@@ -85,7 +89,7 @@ const billingWith = (enabled: boolean) =>
     Layer.provideMerge(
       Layer.mergeAll(WorkspaceEntitlements.layer, RecordSubscription.layer)
     ),
-    Layer.provide(SubscriptionsInMemory),
+    Layer.provide(Layer.mergeAll(SubscriptionsInMemory, NoTrialsTest)),
     Layer.provide(Layer.mergeAll(TransactionsTest, WorkspacesTest)),
     Layer.provide(Layer.succeed(BillingMode, BillingMode.of({ enabled })))
   );
@@ -93,12 +97,17 @@ const billingWith = (enabled: boolean) =>
 const event = (status: string): SubscriptionEvent => ({
   cancelAtPeriodEnd: false,
   currentPeriodEnd: Option.some(DateTime.makeUnsafe("2026-12-09T10:00:00Z")),
+  currentPeriodStart: Option.some(DateTime.makeUnsafe("2026-11-09T10:00:00Z")),
   eventId: `evt_synthetic_${status}`,
+  interval: "month",
   occurredAt: DateTime.makeUnsafe("2026-11-09T10:00:00Z"),
   plan: "business",
+  startedAt: Option.some(DateTime.makeUnsafe("2026-11-09T10:00:00Z")),
+  startedBy: Option.none(),
   status,
   stripeCustomerId: "cus_synthetic",
   stripeSubscriptionId: "sub_synthetic",
+  trialEnd: Option.none(),
   workspaceId,
 });
 
@@ -153,7 +162,7 @@ layer(billingWith(true))("billing on a server that bills", (it) => {
 
       assert.deepStrictEqual(
         found.plans.map(({ plan }) => plan),
-        ["free", "pro", "business"]
+        ["free", "starter", "pro", "business", "agency"]
       );
       assert.strictEqual(found.usage.channels, 2);
 
@@ -257,7 +266,7 @@ const CheckoutsInMemory = Layer.effect(
 // server that bills or not.
 const recordsWith = (enabled: boolean) =>
   Layer.mergeAll(BillingRecords.layer, RecordSubscription.layer).pipe(
-    Layer.provide(SubscriptionsInMemory),
+    Layer.provide(Layer.mergeAll(SubscriptionsInMemory, NoTrialsTest)),
     Layer.provide(TransactionsTest),
     Layer.provideMerge(CheckoutsInMemory),
     Layer.provide(Layer.succeed(BillingMode, BillingMode.of({ enabled })))
@@ -550,8 +559,10 @@ const UnreadTest = Layer.mergeAll(
         Subscriptions,
         Subscriptions.of({
           eraseWorkspace: () => Effect.void,
+          forgetUser: () => Effect.void,
           ofWorkspace: () => Effect.die("read while billing is off"),
           record: () => Effect.die("not used"),
+          remindable: () => Effect.die("not used"),
         })
       )
     )

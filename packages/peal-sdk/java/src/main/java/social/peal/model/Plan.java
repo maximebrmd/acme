@@ -31,9 +31,13 @@ public enum Plan {
   
   FREE("free"),
   
+  STARTER("starter"),
+  
   PRO("pro"),
   
-  BUSINESS("business");
+  BUSINESS("business"),
+  
+  AGENCY("agency");
 
   private String value;
 

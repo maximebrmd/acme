@@ -68,7 +68,7 @@ namespace Peal.Api
         /// Start an upload
         /// </summary>
         /// <remarks>
-        /// Records pending media and signs the upload of its file: one PUT for an image or a video up to 16 MiB, one PUT per part for a larger video. Send the file with them, then complete the upload. The requests only take the declared size and content type. Needs media:upload.
+        /// Records pending media and signs the upload of its file: one PUT for an image or a video up to 16 MiB, one PUT per part for a larger video. Send the file with them, then complete the upload. The requests only take the declared size and content type. On a server that bills, the declared size must fit the plan&#39;s media storage with what the workspace stores (PlanLimitReached &#x60;mediaStorage&#x60;). Needs media:upload.
         /// </remarks>
         /// <exception cref="ApiException">Thrown when fails to make API call</exception>
         /// <param name="workspaceId"></param>
@@ -81,7 +81,7 @@ namespace Peal.Api
         /// Start an upload
         /// </summary>
         /// <remarks>
-        /// Records pending media and signs the upload of its file: one PUT for an image or a video up to 16 MiB, one PUT per part for a larger video. Send the file with them, then complete the upload. The requests only take the declared size and content type. Needs media:upload.
+        /// Records pending media and signs the upload of its file: one PUT for an image or a video up to 16 MiB, one PUT per part for a larger video. Send the file with them, then complete the upload. The requests only take the declared size and content type. On a server that bills, the declared size must fit the plan&#39;s media storage with what the workspace stores (PlanLimitReached &#x60;mediaStorage&#x60;). Needs media:upload.
         /// </remarks>
         /// <param name="workspaceId"></param>
         /// <param name="newUpload"></param>
@@ -270,7 +270,7 @@ namespace Peal.Api
     /// <summary>
     /// The <see cref="IMediaCreateApiResponse"/>
     /// </summary>
-    public interface IMediaCreateApiResponse : Peal.Client.IApiResponse, ICreated<Peal.Model.PreparedUpload?>, IUnauthorized<Peal.Model.UnauthenticatedEncoded?>, IForbidden<Peal.Model.ForbiddenEncoded?>, INotFound<Peal.Model.WorkspaceNotFoundEncoded?>, IUnprocessableContent<Peal.Model.MediaCreate422Response?>, IServiceUnavailable<Peal.Model.MediaStoreUnavailableEncoded?>
+    public interface IMediaCreateApiResponse : Peal.Client.IApiResponse, ICreated<Peal.Model.PreparedUpload?>, IUnauthorized<Peal.Model.UnauthenticatedEncoded?>, IPaymentRequired<Peal.Model.PlanLimitReachedEncoded?>, IForbidden<Peal.Model.ForbiddenEncoded?>, INotFound<Peal.Model.WorkspaceNotFoundEncoded?>, IUnprocessableContent<Peal.Model.MediaCreate422Response?>, IServiceUnavailable<Peal.Model.MediaStoreUnavailableEncoded?>
     {
         /// <summary>
         /// Returns true if the response is 201 Created
@@ -283,6 +283,12 @@ namespace Peal.Api
         /// </summary>
         /// <returns></returns>
         bool IsUnauthorized { get; }
+
+        /// <summary>
+        /// Returns true if the response is 402 PaymentRequired
+        /// </summary>
+        /// <returns></returns>
+        bool IsPaymentRequired { get; }
 
         /// <summary>
         /// Returns true if the response is 403 Forbidden
@@ -1331,7 +1337,7 @@ namespace Peal.Api
         partial void OnErrorMediaCreate(ref bool suppressDefaultLogLocalVar, Exception exceptionLocalVar, string pathFormatLocalVar, string pathLocalVar, string workspaceId, NewUpload newUpload);
 
         /// <summary>
-        /// Start an upload Records pending media and signs the upload of its file: one PUT for an image or a video up to 16 MiB, one PUT per part for a larger video. Send the file with them, then complete the upload. The requests only take the declared size and content type. Needs media:upload.
+        /// Start an upload Records pending media and signs the upload of its file: one PUT for an image or a video up to 16 MiB, one PUT per part for a larger video. Send the file with them, then complete the upload. The requests only take the declared size and content type. On a server that bills, the declared size must fit the plan&#39;s media storage with what the workspace stores (PlanLimitReached &#x60;mediaStorage&#x60;). Needs media:upload.
         /// </summary>
         /// <param name="workspaceId"></param>
         /// <param name="newUpload"></param>
@@ -1350,7 +1356,7 @@ namespace Peal.Api
         }
 
         /// <summary>
-        /// Start an upload Records pending media and signs the upload of its file: one PUT for an image or a video up to 16 MiB, one PUT per part for a larger video. Send the file with them, then complete the upload. The requests only take the declared size and content type. Needs media:upload.
+        /// Start an upload Records pending media and signs the upload of its file: one PUT for an image or a video up to 16 MiB, one PUT per part for a larger video. Send the file with them, then complete the upload. The requests only take the declared size and content type. On a server that bills, the declared size must fit the plan&#39;s media storage with what the workspace stores (PlanLimitReached &#x60;mediaStorage&#x60;). Needs media:upload.
         /// </summary>
         /// <exception cref="ApiException">Thrown when fails to make API call</exception>
         /// <param name="workspaceId"></param>
@@ -1584,6 +1590,56 @@ namespace Peal.Api
                 } catch (Exception e)
                 {
                     OnDeserializationErrorDefaultImplementation(e, (HttpStatusCode)401);
+                }
+
+                return result != null;
+            }
+
+            /// <summary>
+            /// Returns true if the response is 402 PaymentRequired
+            /// </summary>
+            /// <returns></returns>
+            public bool IsPaymentRequired => 402 == (int)StatusCode;
+
+            /// <summary>
+            /// Deserializes the response if the response is 402 PaymentRequired
+            /// </summary>
+            /// <returns></returns>
+            public Peal.Model.PlanLimitReachedEncoded? PaymentRequired()
+            {
+                bool suppressDefault = false;
+                Peal.Model.PlanLimitReachedEncoded? result = null;
+                OnPaymentRequired(ref suppressDefault, ref result);
+                if (!suppressDefault)
+                    result = DefaultPaymentRequired();
+                return result;
+            }
+
+            private Peal.Model.PlanLimitReachedEncoded? DefaultPaymentRequired()
+            {
+                // NOTICE: Consider this AsModel template deprecated. Implement the appropriate partial method instead
+                return IsPaymentRequired
+                    ? System.Text.Json.JsonSerializer.Deserialize<Peal.Model.PlanLimitReachedEncoded>(RawContent, _jsonSerializerOptions)
+                    : null;
+            }
+
+            partial void OnPaymentRequired(ref bool suppressDefault, ref Peal.Model.PlanLimitReachedEncoded? result);
+
+            /// <summary>
+            /// Returns true if the response is 402 PaymentRequired and the deserialized response is not null
+            /// </summary>
+            /// <param name="result"></param>
+            /// <returns></returns>
+            public bool TryPaymentRequired([NotNullWhen(true)]out Peal.Model.PlanLimitReachedEncoded? result)
+            {
+                result = null;
+
+                try
+                {
+                    result = PaymentRequired();
+                } catch (Exception e)
+                {
+                    OnDeserializationErrorDefaultImplementation(e, (HttpStatusCode)402);
                 }
 
                 return result != null;

@@ -30,6 +30,10 @@ export interface PlanAllowances {
     /**
      * 
      */
+    mediaStorage: number | null;
+    /**
+     * 
+     */
     members: number | null;
     /**
      * 
@@ -43,6 +47,7 @@ export interface PlanAllowances {
 export function instanceOfPlanAllowances(value: object): value is PlanAllowances {
     if (!('assistantRequests' in value) || value['assistantRequests'] === undefined) return false;
     if (!('channels' in value) || value['channels'] === undefined) return false;
+    if (!('mediaStorage' in value) || value['mediaStorage'] === undefined) return false;
     if (!('members' in value) || value['members'] === undefined) return false;
     if (!('scheduledPosts' in value) || value['scheduledPosts'] === undefined) return false;
     return true;
@@ -60,6 +65,7 @@ export function PlanAllowancesFromJSONTyped(json: any, ignoreDiscriminator: bool
         
         'assistantRequests': json['assistantRequests'],
         'channels': json['channels'],
+        'mediaStorage': json['mediaStorage'],
         'members': json['members'],
         'scheduledPosts': json['scheduledPosts'],
     };
@@ -78,6 +84,7 @@ export function PlanAllowancesToJSONTyped(value?: PlanAllowances | null, ignoreD
         
         'assistantRequests': value['assistantRequests'],
         'channels': value['channels'],
+        'mediaStorage': value['mediaStorage'],
         'members': value['members'],
         'scheduledPosts': value['scheduledPosts'],
     };

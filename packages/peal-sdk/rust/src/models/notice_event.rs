@@ -25,10 +25,28 @@ pub struct NoticeEvent {
     pub reason: models::FailureReason,
     #[serde(rename = "expiresAt")]
     pub expires_at: String,
+    #[serde(rename = "interval")]
+    pub interval: models::BillingInterval,
+    #[serde(rename = "plan")]
+    pub plan: models::PaidPlan,
+    #[serde(rename = "price")]
+    pub price: Box<models::Money>,
+    #[serde(rename = "startedAt")]
+    pub started_at: String,
+    #[serde(rename = "trialEnd", deserialize_with = "Option::deserialize")]
+    pub trial_end: Option<String>,
+    #[serde(rename = "endsAt")]
+    pub ends_at: String,
+    #[serde(rename = "renewsAt")]
+    pub renews_at: String,
+    #[serde(rename = "refunded")]
+    pub refunded: Box<models::Money>,
+    #[serde(rename = "withdrawnAt")]
+    pub withdrawn_at: String,
 }
 
 impl NoticeEvent {
-    pub fn new(_tag: Tag, channel: models::NoticeChannel, permalink: Option<String>, post_id: String, reason: models::FailureReason, expires_at: String) -> NoticeEvent {
+    pub fn new(_tag: Tag, channel: models::NoticeChannel, permalink: Option<String>, post_id: String, reason: models::FailureReason, expires_at: String, interval: models::BillingInterval, plan: models::PaidPlan, price: models::Money, started_at: String, trial_end: Option<String>, ends_at: String, renews_at: String, refunded: models::Money, withdrawn_at: String) -> NoticeEvent {
         NoticeEvent {
             _tag,
             channel: Box::new(channel),
@@ -36,19 +54,28 @@ impl NoticeEvent {
             post_id,
             reason,
             expires_at,
+            interval,
+            plan,
+            price: Box::new(price),
+            started_at,
+            trial_end,
+            ends_at,
+            renews_at,
+            refunded: Box::new(refunded),
+            withdrawn_at,
         }
     }
 }
 /// 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash, Serialize, Deserialize)]
 pub enum Tag {
-    #[serde(rename = "ChannelReconnectSoon")]
-    ChannelReconnectSoon,
+    #[serde(rename = "SubscriptionWithdrawn")]
+    SubscriptionWithdrawn,
 }
 
 impl Default for Tag {
     fn default() -> Tag {
-        Self::ChannelReconnectSoon
+        Self::SubscriptionWithdrawn
     }
 }
 

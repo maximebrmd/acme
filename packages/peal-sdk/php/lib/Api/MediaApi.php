@@ -544,7 +544,7 @@ class MediaApi
      *
      * @throws \Peal\ApiException on non-2xx response or if the response body is not in the expected format
      * @throws \InvalidArgumentException
-     * @return \Peal\Model\PreparedUpload|\Peal\Model\UnauthenticatedEncoded|\Peal\Model\ForbiddenEncoded|\Peal\Model\WorkspaceNotFoundEncoded|\Peal\Model\MediaCreate422Response|\Peal\Model\MediaStoreUnavailableEncoded
+     * @return \Peal\Model\PreparedUpload|\Peal\Model\UnauthenticatedEncoded|\Peal\Model\PlanLimitReachedEncoded|\Peal\Model\ForbiddenEncoded|\Peal\Model\WorkspaceNotFoundEncoded|\Peal\Model\MediaCreate422Response|\Peal\Model\MediaStoreUnavailableEncoded
      */
     public function mediaCreate($workspace_id, $new_upload, string $contentType = self::contentTypes['mediaCreate'][0])
     {
@@ -563,7 +563,7 @@ class MediaApi
      *
      * @throws \Peal\ApiException on non-2xx response or if the response body is not in the expected format
      * @throws \InvalidArgumentException
-     * @return array of \Peal\Model\PreparedUpload|\Peal\Model\UnauthenticatedEncoded|\Peal\Model\ForbiddenEncoded|\Peal\Model\WorkspaceNotFoundEncoded|\Peal\Model\MediaCreate422Response|\Peal\Model\MediaStoreUnavailableEncoded, HTTP status code, HTTP response headers (array of strings)
+     * @return array of \Peal\Model\PreparedUpload|\Peal\Model\UnauthenticatedEncoded|\Peal\Model\PlanLimitReachedEncoded|\Peal\Model\ForbiddenEncoded|\Peal\Model\WorkspaceNotFoundEncoded|\Peal\Model\MediaCreate422Response|\Peal\Model\MediaStoreUnavailableEncoded, HTTP status code, HTTP response headers (array of strings)
      */
     public function mediaCreateWithHttpInfo($workspace_id, $new_upload, string $contentType = self::contentTypes['mediaCreate'][0])
     {
@@ -603,6 +603,12 @@ class MediaApi
                 case 401:
                     return $this->handleResponseWithDataType(
                         '\Peal\Model\UnauthenticatedEncoded',
+                        $request,
+                        $response,
+                    );
+                case 402:
+                    return $this->handleResponseWithDataType(
+                        '\Peal\Model\PlanLimitReachedEncoded',
                         $request,
                         $response,
                     );
@@ -666,6 +672,14 @@ class MediaApi
                     $data = ObjectSerializer::deserialize(
                         $e->getResponseBody(),
                         '\Peal\Model\UnauthenticatedEncoded',
+                        $e->getResponseHeaders()
+                    );
+                    $e->setResponseObject($data);
+                    throw $e;
+                case 402:
+                    $data = ObjectSerializer::deserialize(
+                        $e->getResponseBody(),
+                        '\Peal\Model\PlanLimitReachedEncoded',
                         $e->getResponseHeaders()
                     );
                     $e->setResponseObject($data);

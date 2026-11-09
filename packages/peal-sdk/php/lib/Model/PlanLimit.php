@@ -51,6 +51,8 @@ class PlanLimit
 
     public const ASSISTANT_REQUESTS = 'assistantRequests';
 
+    public const MEDIA_STORAGE = 'mediaStorage';
+
     /**
      * Gets allowable values of the enum
      * @return string[]
@@ -61,7 +63,8 @@ class PlanLimit
             self::CHANNELS,
             self::MEMBERS,
             self::SCHEDULED_POSTS,
-            self::ASSISTANT_REQUESTS
+            self::ASSISTANT_REQUESTS,
+            self::MEDIA_STORAGE
         ];
     }
 }

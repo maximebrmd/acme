@@ -82,8 +82,16 @@ const workspaceRows = {
     sql`SELECT count(*)::int AS count FROM auth.session WHERE active_organization_id = ${id}`,
   "auth.subscription": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM auth.subscription WHERE reference_id = ${id}`,
+  "billing.orders": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM billing.orders WHERE workspace_id = ${id}`,
   "billing.subscriptions": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM billing.subscriptions WHERE workspace_id = ${id}`,
+  // A trial an account started stays, without the workspace, so the
+  // account starts no second one.
+  "billing.trials": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM billing.trials WHERE workspace_id = ${id}`,
+  "billing.withdrawals": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM billing.withdrawals WHERE workspace_id = ${id}`,
   "channels.channels": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM channels.channels WHERE workspace_id = ${id}`,
   "channels.connect_attempts": (sql, id) =>
@@ -135,6 +143,14 @@ const userRows = {
   // Password reset tokens hold their user's id.
   "auth.verification": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM auth.verification WHERE value = ${id}`,
+  // Orders, trials and withdrawals stay with their workspaces, without the
+  // user.
+  "billing.orders": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM billing.orders WHERE user_id = ${id}`,
+  "billing.trials": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM billing.trials WHERE user_id = ${id}`,
+  "billing.withdrawals": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM billing.withdrawals WHERE user_id = ${id}`,
   "channels.connect_attempts": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM channels.connect_attempts WHERE started_by = ${`user:${id}`}`,
   "channels.connect_choices": (sql, id) =>
@@ -260,6 +276,17 @@ const fill = Effect.fn("fill")(function* fill(
   yield* seedTrackedPost(workspaceId, channelId, postId);
   yield* seedUsage(workspaceId, 2);
   yield* seedSubscription(workspaceId, "canceled");
+
+  // An order with its consent, a trial (one per account: the user's
+  // first workspace has it) and a withdrawal.
+  yield* sql`INSERT INTO billing.orders (id, workspace_id, user_id, plan, interval, trial, consent_version, created_at)
+    VALUES (${uuid7()}, ${workspaceId}, ${person.id}, 'pro', 'month', true, '2026-11-09', now())`;
+
+  yield* sql`INSERT INTO billing.trials (stripe_subscription_id, workspace_id, user_id, plan, started_at)
+    VALUES (${`sub_${randomUUID()}`}, ${workspaceId}, (SELECT CASE WHEN EXISTS (SELECT 1 FROM billing.trials WHERE user_id = ${person.id}) THEN NULL ELSE ${person.id} END), 'pro', now())`;
+
+  yield* sql`INSERT INTO billing.withdrawals (stripe_subscription_id, workspace_id, user_id, refunded, currency, requested_at)
+    VALUES (${`sub_${randomUUID()}`}, ${workspaceId}, ${person.id}, 0, 'eur', now())`;
 
   yield* sql`INSERT INTO media.media_assets (id, workspace_id, storage_key, content_type, byte_size, status, created_at, updated_at)
     VALUES (${randomUUID()}, ${workspaceId}, ${`media/${workspaceId}/${randomUUID()}.png`}, 'image/png', 128, 'pending', now(), now())`;

@@ -56,6 +56,7 @@ export type ApiFailure =
 const limits: Readonly<Record<PlanLimitReached["limit"], string>> = {
   assistantRequests: "assistant requests a day",
   channels: "channels",
+  mediaStorage: "bytes of media stored, uploads in progress included",
   members: "members, pending invitations included",
   scheduledPosts: "posts going out a month",
 };

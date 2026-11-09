@@ -6,6 +6,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **AssistantRequests** | [**PeriodUsage**](PeriodUsage.md) |  | 
 **Channels** | **long** |  | 
+**MediaStorage** | **long** |  | 
 **Members** | **long** |  | 
 **ScheduledPosts** | [**PeriodUsage**](PeriodUsage.md) |  | 
 

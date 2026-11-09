@@ -24,6 +24,11 @@ type NoticeEvent struct {
 	NoticeEventAnyOf2 *NoticeEventAnyOf2
 	NoticeEventAnyOf3 *NoticeEventAnyOf3
 	NoticeEventAnyOf4 *NoticeEventAnyOf4
+	NoticeEventAnyOf5 *NoticeEventAnyOf5
+	NoticeEventAnyOf6 *NoticeEventAnyOf6
+	NoticeEventAnyOf7 *NoticeEventAnyOf7
+	NoticeEventAnyOf8 *NoticeEventAnyOf8
+	NoticeEventAnyOf9 *NoticeEventAnyOf9
 }
 
 // Unmarshal JSON data into any of the pointers in the struct
@@ -94,6 +99,71 @@ func (dst *NoticeEvent) UnmarshalJSON(data []byte) error {
 		dst.NoticeEventAnyOf4 = nil
 	}
 
+	// try to unmarshal JSON data into NoticeEventAnyOf5
+	err = json.Unmarshal(data, &dst.NoticeEventAnyOf5);
+	if err == nil {
+		jsonNoticeEventAnyOf5, _ := json.Marshal(dst.NoticeEventAnyOf5)
+		if string(jsonNoticeEventAnyOf5) == "{}" { // empty struct
+			dst.NoticeEventAnyOf5 = nil
+		} else {
+			return nil // data stored in dst.NoticeEventAnyOf5, return on the first match
+		}
+	} else {
+		dst.NoticeEventAnyOf5 = nil
+	}
+
+	// try to unmarshal JSON data into NoticeEventAnyOf6
+	err = json.Unmarshal(data, &dst.NoticeEventAnyOf6);
+	if err == nil {
+		jsonNoticeEventAnyOf6, _ := json.Marshal(dst.NoticeEventAnyOf6)
+		if string(jsonNoticeEventAnyOf6) == "{}" { // empty struct
+			dst.NoticeEventAnyOf6 = nil
+		} else {
+			return nil // data stored in dst.NoticeEventAnyOf6, return on the first match
+		}
+	} else {
+		dst.NoticeEventAnyOf6 = nil
+	}
+
+	// try to unmarshal JSON data into NoticeEventAnyOf7
+	err = json.Unmarshal(data, &dst.NoticeEventAnyOf7);
+	if err == nil {
+		jsonNoticeEventAnyOf7, _ := json.Marshal(dst.NoticeEventAnyOf7)
+		if string(jsonNoticeEventAnyOf7) == "{}" { // empty struct
+			dst.NoticeEventAnyOf7 = nil
+		} else {
+			return nil // data stored in dst.NoticeEventAnyOf7, return on the first match
+		}
+	} else {
+		dst.NoticeEventAnyOf7 = nil
+	}
+
+	// try to unmarshal JSON data into NoticeEventAnyOf8
+	err = json.Unmarshal(data, &dst.NoticeEventAnyOf8);
+	if err == nil {
+		jsonNoticeEventAnyOf8, _ := json.Marshal(dst.NoticeEventAnyOf8)
+		if string(jsonNoticeEventAnyOf8) == "{}" { // empty struct
+			dst.NoticeEventAnyOf8 = nil
+		} else {
+			return nil // data stored in dst.NoticeEventAnyOf8, return on the first match
+		}
+	} else {
+		dst.NoticeEventAnyOf8 = nil
+	}
+
+	// try to unmarshal JSON data into NoticeEventAnyOf9
+	err = json.Unmarshal(data, &dst.NoticeEventAnyOf9);
+	if err == nil {
+		jsonNoticeEventAnyOf9, _ := json.Marshal(dst.NoticeEventAnyOf9)
+		if string(jsonNoticeEventAnyOf9) == "{}" { // empty struct
+			dst.NoticeEventAnyOf9 = nil
+		} else {
+			return nil // data stored in dst.NoticeEventAnyOf9, return on the first match
+		}
+	} else {
+		dst.NoticeEventAnyOf9 = nil
+	}
+
 	return fmt.Errorf("data failed to match schemas in anyOf(NoticeEvent)")
 }
 
@@ -117,6 +187,26 @@ func (src NoticeEvent) MarshalJSON() ([]byte, error) {
 
 	if src.NoticeEventAnyOf4 != nil {
 		return json.Marshal(&src.NoticeEventAnyOf4)
+	}
+
+	if src.NoticeEventAnyOf5 != nil {
+		return json.Marshal(&src.NoticeEventAnyOf5)
+	}
+
+	if src.NoticeEventAnyOf6 != nil {
+		return json.Marshal(&src.NoticeEventAnyOf6)
+	}
+
+	if src.NoticeEventAnyOf7 != nil {
+		return json.Marshal(&src.NoticeEventAnyOf7)
+	}
+
+	if src.NoticeEventAnyOf8 != nil {
+		return json.Marshal(&src.NoticeEventAnyOf8)
+	}
+
+	if src.NoticeEventAnyOf9 != nil {
+		return json.Marshal(&src.NoticeEventAnyOf9)
 	}
 
 	return nil, nil // no data in anyOf schemas

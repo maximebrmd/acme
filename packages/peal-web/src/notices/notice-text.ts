@@ -1,5 +1,5 @@
 import { DateTime, Match } from "effect";
-import { useTranslations } from "next-intl";
+import { useFormatter, useTranslations } from "next-intl";
 import type { NoticeChannel, NoticeEvent } from "peal-contract";
 
 /** What a notice says, and where the reader acts on it. */
@@ -18,6 +18,7 @@ export interface NoticeText {
  */
 export const useNoticeText = (workspaces: ReadonlyMap<string, string>) => {
   const t = useTranslations("Notices");
+  const format = useFormatter();
 
   const channelName = (channel: NoticeChannel | null) =>
     channel === null
@@ -27,9 +28,15 @@ export const useNoticeText = (workspaces: ReadonlyMap<string, string>) => {
           platform: t("platform", { platform: channel.platform }),
         });
 
+  const money = (amount: number, currency: string) =>
+    format.number(amount / 100, {
+      currency: currency.toUpperCase(),
+      style: "currency",
+    });
+
   return (event: NoticeEvent, workspaceId: string): NoticeText => {
     const workspace = workspaces.get(workspaceId) ?? t("unknownWorkspace");
-    const channel = channelName(event.channel);
+    const channel = "channel" in event ? channelName(event.channel) : "";
 
     const post = (postId: string, text: string): NoticeText => ({
       href: `/app/${workspaceId}/posts/${postId}`,
@@ -42,6 +49,14 @@ export const useNoticeText = (workspaces: ReadonlyMap<string, string>) => {
       open: t("open", { page: "channels" }),
       text,
     });
+
+    const billing = (text: string): NoticeText => ({
+      href: `/app/${workspaceId}/billing`,
+      open: t("open", { page: "billing" }),
+      text,
+    });
+
+    const plan = (name: string) => t("plan", { plan: name });
 
     return Match.valueTags(event, {
       ChannelReconnectRequired: () =>
@@ -67,6 +82,62 @@ export const useNoticeText = (workspaces: ReadonlyMap<string, string>) => {
         post(postId, t("event.PostPublished", { channel, workspace })),
       PostUnconfirmed: ({ postId }) =>
         post(postId, t("event.PostUnconfirmed", { channel, workspace })),
+      SubscriptionCancelled: ({ endsAt, plan: name }) =>
+        billing(
+          t("event.SubscriptionCancelled", {
+            endsAt: DateTime.toDate(endsAt),
+            plan: plan(name),
+            workspace,
+          })
+        ),
+      SubscriptionRenewing: ({ plan: name, price, renewsAt }) =>
+        billing(
+          t("event.SubscriptionRenewing", {
+            plan: plan(name),
+            price: money(price.amount, price.currency),
+            renewsAt: DateTime.toDate(renewsAt),
+            workspace,
+          })
+        ),
+      SubscriptionStarted: ({
+        interval,
+        plan: name,
+        price,
+        startedAt,
+        trialEnd,
+      }) =>
+        billing(
+          trialEnd === null
+            ? t("event.SubscriptionStarted", {
+                interval,
+                plan: plan(name),
+                price: money(price.amount, price.currency),
+                startedAt: DateTime.toDate(startedAt),
+                workspace,
+              })
+            : t("event.TrialStarted", {
+                endsAt: DateTime.toDate(trialEnd),
+                plan: plan(name),
+                workspace,
+              })
+        ),
+      SubscriptionWithdrawn: ({ plan: name, refunded, withdrawnAt }) =>
+        billing(
+          t("event.SubscriptionWithdrawn", {
+            plan: plan(name),
+            refunded: money(refunded.amount, refunded.currency),
+            withdrawnAt: DateTime.toDate(withdrawnAt),
+            workspace,
+          })
+        ),
+      TrialEnding: ({ endsAt, plan: name }) =>
+        billing(
+          t("event.TrialEnding", {
+            endsAt: DateTime.toDate(endsAt),
+            plan: plan(name),
+            workspace,
+          })
+        ),
     });
   };
 };

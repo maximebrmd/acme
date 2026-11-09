@@ -61,6 +61,11 @@ public class PlanAllowances {
   @javax.annotation.Nullable
   private Integer channels;
 
+  public static final String SERIALIZED_NAME_MEDIA_STORAGE = "mediaStorage";
+  @SerializedName(SERIALIZED_NAME_MEDIA_STORAGE)
+  @javax.annotation.Nullable
+  private Integer mediaStorage;
+
   public static final String SERIALIZED_NAME_MEMBERS = "members";
   @SerializedName(SERIALIZED_NAME_MEMBERS)
   @javax.annotation.Nullable
@@ -113,6 +118,27 @@ public class PlanAllowances {
 
   public void setChannels(@javax.annotation.Nullable Integer channels) {
     this.channels = channels;
+  }
+
+
+  public PlanAllowances mediaStorage(@javax.annotation.Nullable Integer mediaStorage) {
+    this.mediaStorage = mediaStorage;
+    return this;
+  }
+
+  /**
+   * Get mediaStorage
+   * minimum: -9007199254740991
+   * maximum: 9007199254740991
+   * @return mediaStorage
+   */
+  @javax.annotation.Nullable
+  public Integer getMediaStorage() {
+    return mediaStorage;
+  }
+
+  public void setMediaStorage(@javax.annotation.Nullable Integer mediaStorage) {
+    this.mediaStorage = mediaStorage;
   }
 
 
@@ -170,13 +196,14 @@ public class PlanAllowances {
     PlanAllowances planAllowances = (PlanAllowances) o;
     return Objects.equals(this.assistantRequests, planAllowances.assistantRequests) &&
         Objects.equals(this.channels, planAllowances.channels) &&
+        Objects.equals(this.mediaStorage, planAllowances.mediaStorage) &&
         Objects.equals(this.members, planAllowances.members) &&
         Objects.equals(this.scheduledPosts, planAllowances.scheduledPosts);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(assistantRequests, channels, members, scheduledPosts);
+    return Objects.hash(assistantRequests, channels, mediaStorage, members, scheduledPosts);
   }
 
   @Override
@@ -185,6 +212,7 @@ public class PlanAllowances {
     sb.append("class PlanAllowances {\n");
     sb.append("    assistantRequests: ").append(toIndentedString(assistantRequests)).append("\n");
     sb.append("    channels: ").append(toIndentedString(channels)).append("\n");
+    sb.append("    mediaStorage: ").append(toIndentedString(mediaStorage)).append("\n");
     sb.append("    members: ").append(toIndentedString(members)).append("\n");
     sb.append("    scheduledPosts: ").append(toIndentedString(scheduledPosts)).append("\n");
     sb.append("}");
@@ -205,10 +233,10 @@ public class PlanAllowances {
 
   static {
     // a set of all properties/fields (JSON key names)
-    openapiFields = new HashSet<String>(Arrays.asList("assistantRequests", "channels", "members", "scheduledPosts"));
+    openapiFields = new HashSet<String>(Arrays.asList("assistantRequests", "channels", "mediaStorage", "members", "scheduledPosts"));
 
     // a set of required properties/fields (JSON key names)
-    openapiRequiredFields = new HashSet<String>(Arrays.asList("assistantRequests", "channels", "members", "scheduledPosts"));
+    openapiRequiredFields = new HashSet<String>(Arrays.asList("assistantRequests", "channels", "mediaStorage", "members", "scheduledPosts"));
   }
 
   /**

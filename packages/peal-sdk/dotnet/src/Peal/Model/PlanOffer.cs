@@ -36,11 +36,13 @@ namespace Peal.Model
         /// </summary>
         /// <param name="allowances">allowances</param>
         /// <param name="plan">plan</param>
+        /// <param name="price">price</param>
         [JsonConstructor]
-        public PlanOffer(PlanAllowances allowances, Plan plan)
+        public PlanOffer(PlanAllowances allowances, Plan plan, PlanPrice? price = default)
         {
             Allowances = allowances;
             Plan = plan;
+            Price = price;
             OnCreated();
         }
 
@@ -59,6 +61,12 @@ namespace Peal.Model
         public PlanAllowances Allowances { get; set; }
 
         /// <summary>
+        /// Gets or Sets Price
+        /// </summary>
+        [JsonPropertyName("price")]
+        public PlanPrice? Price { get; set; }
+
+        /// <summary>
         /// Returns the string presentation of the object
         /// </summary>
         /// <returns>String presentation of the object</returns>
@@ -68,6 +76,7 @@ namespace Peal.Model
             sb.Append("class PlanOffer {\n");
             sb.Append("  Allowances: ").Append(Allowances).Append("\n");
             sb.Append("  Plan: ").Append(Plan).Append("\n");
+            sb.Append("  Price: ").Append(Price).Append("\n");
             sb.Append("}\n");
             return sb.ToString();
         }
@@ -117,6 +126,7 @@ namespace Peal.Model
 
             Option<PlanAllowances?> allowances = default;
             Option<Plan?> plan = default;
+            Option<PlanPrice?> price = default;
 
             while (utf8JsonReader.Read())
             {
@@ -139,6 +149,9 @@ namespace Peal.Model
                         case "plan":
                             plan = new Option<Plan?>(JsonSerializer.Deserialize<Plan?>(ref utf8JsonReader, jsonSerializerOptions));
                             break;
+                        case "price":
+                            price = new Option<PlanPrice?>(JsonSerializer.Deserialize<PlanPrice>(ref utf8JsonReader, jsonSerializerOptions));
+                            break;
                         default:
                             break;
                     }
@@ -151,13 +164,16 @@ namespace Peal.Model
             if (!plan.IsSet)
                 throw new JsonException("Property is required for class PlanOffer: plan.");
 
+            if (!price.IsSet)
+                throw new JsonException("Property is required for class PlanOffer: price.");
+
             if (allowances.IsSet && allowances.Value == null)
                 throw new JsonException("Property is not nullable for class PlanOffer: allowances.");
 
             if (plan.IsSet && plan.Value == null)
                 throw new JsonException("Property is not nullable for class PlanOffer: plan.");
 
-            return new PlanOffer(allowances.Value!, plan.Value!.Value!);
+            return new PlanOffer(allowances.Value!, plan.Value!.Value!, price.Value!);
         }
 
         /// <summary>
@@ -186,6 +202,14 @@ namespace Peal.Model
             JsonSerializer.Serialize(writer, planOffer.Allowances, jsonSerializerOptions);
             var planRawValue = PlanValueConverter.ToJsonValue(planOffer.Plan);
             writer.WriteString("plan", planRawValue);
+
+            if (planOffer.Price != null)
+            {
+                writer.WritePropertyName("price");
+                JsonSerializer.Serialize(writer, planOffer.Price, jsonSerializerOptions);
+            }
+            else
+                writer.WriteNull("price");
         }
     }
 }

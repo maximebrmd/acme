@@ -13,6 +13,15 @@
 |**postId** | **String** |  |  |
 |**reason** | **FailureReason** |  |  |
 |**expiresAt** | **String** |  |  |
+|**interval** | **BillingInterval** |  |  |
+|**plan** | **PaidPlan** |  |  |
+|**price** | [**Money**](Money.md) |  |  |
+|**startedAt** | **String** |  |  |
+|**trialEnd** | **String** |  |  |
+|**endsAt** | **String** |  |  |
+|**renewsAt** | **String** |  |  |
+|**refunded** | [**Money**](Money.md) |  |  |
+|**withdrawnAt** | **String** |  |  |
 
 
 
@@ -20,7 +29,7 @@
 
 | Name | Value |
 |---- | -----|
-| CHANNEL_RECONNECT_SOON | &quot;ChannelReconnectSoon&quot; |
+| SUBSCRIPTION_WITHDRAWN | &quot;SubscriptionWithdrawn&quot; |
 
 
 

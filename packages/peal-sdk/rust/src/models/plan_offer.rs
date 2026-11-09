@@ -17,13 +17,16 @@ pub struct PlanOffer {
     pub allowances: Box<models::PlanAllowances>,
     #[serde(rename = "plan")]
     pub plan: models::Plan,
+    #[serde(rename = "price", deserialize_with = "Option::deserialize")]
+    pub price: Option<Box<models::PlanPrice>>,
 }
 
 impl PlanOffer {
-    pub fn new(allowances: models::PlanAllowances, plan: models::Plan) -> PlanOffer {
+    pub fn new(allowances: models::PlanAllowances, plan: models::Plan, price: Option<models::PlanPrice>) -> PlanOffer {
         PlanOffer {
             allowances: Box::new(allowances),
             plan,
+            price: if let Some(x) = price {Some(Box::new(x))} else {None},
         }
     }
 }

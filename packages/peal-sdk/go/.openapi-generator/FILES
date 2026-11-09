@@ -40,6 +40,7 @@ docs/AttemptResult.md
 docs/Authorization.md
 docs/Billing.md
 docs/BillingAPI.md
+docs/BillingInterval.md
 docs/BillingSubscription.md
 docs/Channel.md
 docs/ChannelCannotPostEncoded.md
@@ -134,6 +135,7 @@ docs/MembersAPI.md
 docs/Membership.md
 docs/MetricTotals.md
 docs/MetricsSnapshot.md
+docs/Money.md
 docs/NewUpload.md
 docs/NonFiniteNumber.md
 docs/Notice.md
@@ -144,6 +146,11 @@ docs/NoticeEventAnyOf1.md
 docs/NoticeEventAnyOf2.md
 docs/NoticeEventAnyOf3.md
 docs/NoticeEventAnyOf4.md
+docs/NoticeEventAnyOf5.md
+docs/NoticeEventAnyOf6.md
+docs/NoticeEventAnyOf7.md
+docs/NoticeEventAnyOf8.md
+docs/NoticeEventAnyOf9.md
 docs/NoticePage.md
 docs/NoticesAPI.md
 docs/NotificationPreferences.md
@@ -159,6 +166,7 @@ docs/PlanAllowances.md
 docs/PlanLimit.md
 docs/PlanLimitReachedEncoded.md
 docs/PlanOffer.md
+docs/PlanPrice.md
 docs/Platform.md
 docs/PlatformUnreachableEncoded.md
 docs/Post.md
@@ -214,6 +222,7 @@ docs/TiktokAPI.md
 docs/TooManyInvitationsEncoded.md
 docs/TopPost.md
 docs/TranslationLanguage.md
+docs/TrialOffer.md
 docs/UnauthenticatedEncoded.md
 docs/UnconfirmedReason.md
 docs/UnknownChannelsEncoded.md
@@ -253,6 +262,7 @@ model_assistant_unavailable_encoded.go
 model_attempt_result.go
 model_authorization.go
 model_billing.go
+model_billing_interval.go
 model_billing_subscription.go
 model_channel.go
 model_channel_cannot_post_encoded.go
@@ -343,6 +353,7 @@ model_media_usage.go
 model_membership.go
 model_metric_totals.go
 model_metrics_snapshot.go
+model_money.go
 model_new_upload.go
 model_non_finite_number.go
 model_notice.go
@@ -353,6 +364,11 @@ model_notice_event_any_of_1.go
 model_notice_event_any_of_2.go
 model_notice_event_any_of_3.go
 model_notice_event_any_of_4.go
+model_notice_event_any_of_5.go
+model_notice_event_any_of_6.go
+model_notice_event_any_of_7.go
+model_notice_event_any_of_8.go
+model_notice_event_any_of_9.go
 model_notice_page.go
 model_notification_preferences.go
 model_notification_preferences_change.go
@@ -366,6 +382,7 @@ model_plan_allowances.go
 model_plan_limit.go
 model_plan_limit_reached_encoded.go
 model_plan_offer.go
+model_plan_price.go
 model_platform.go
 model_platform_unreachable_encoded.go
 model_post.go
@@ -417,6 +434,7 @@ model_tik_tok_privacy_level.go
 model_too_many_invitations_encoded.go
 model_top_post.go
 model_translation_language.go
+model_trial_offer.go
 model_unauthenticated_encoded.go
 model_unconfirmed_reason.go
 model_unknown_channels_encoded.go

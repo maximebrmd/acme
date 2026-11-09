@@ -1,27 +1,35 @@
 import { Context, Effect, Layer, Option, Schema } from "effect";
 import type { DateTime } from "effect";
 
+import type { BillingInterval } from "#billing/domain/billing-interval.ts";
 import { SubscriptionChange } from "#billing/domain/subscription-change.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import { TransactionRunner } from "#shared/application/transaction-runner.ts";
-import type { WorkspaceId } from "#shared/domain/ids.ts";
+import type { UserId, WorkspaceId } from "#shared/domain/ids.ts";
 import type { PaidPlan } from "#shared/domain/plan.ts";
 
 import { Checkouts } from "./ports/checkouts.ts";
 import { Subscriptions } from "./ports/subscriptions.ts";
 import type { RecordOutcome } from "./ports/subscriptions.ts";
+import { Trials } from "./ports/trials.ts";
 
 /** What a Stripe webhook event says of a workspace's subscription. */
 export interface SubscriptionEvent {
   readonly cancelAtPeriodEnd: boolean;
   readonly currentPeriodEnd: Option.Option<DateTime.Utc>;
+  readonly currentPeriodStart: Option.Option<DateTime.Utc>;
   readonly eventId: string;
+  readonly interval: BillingInterval;
   readonly occurredAt: DateTime.Utc;
   readonly plan: PaidPlan;
+  /** The member whose checkout started it, as its metadata names them. */
+  readonly startedBy: Option.Option<UserId>;
+  readonly startedAt: Option.Option<DateTime.Utc>;
   /** Stripe's status, which may be one this server does not know yet. */
   readonly status: string;
   readonly stripeCustomerId: string;
   readonly stripeSubscriptionId: string;
+  readonly trialEnd: Option.Option<DateTime.Utc>;
   readonly workspaceId: WorkspaceId;
 }
 
@@ -38,6 +46,8 @@ const decodeChange = Schema.decodeUnknownOption(SubscriptionChange);
  * the event again later; an event this server cannot read, as with a status
  * Stripe added since, is logged and ignored, since sending it again would
  * change nothing. An event about a workspace deleted meanwhile is ignored.
+ * A subscription in its trial records the trial too, so neither the
+ * workspace nor the member who started it gets another.
  */
 export class RecordSubscription extends Context.Service<
   RecordSubscription,
@@ -52,12 +62,13 @@ export class RecordSubscription extends Context.Service<
     Effect.gen(function* RecordSubscriptionLive() {
       const subscriptions = yield* Subscriptions;
       const checkouts = yield* Checkouts;
+      const trials = yield* Trials;
       const { transaction } = yield* TransactionRunner;
 
       const record = Effect.fn("RecordSubscription.record")(function* record(
         event: SubscriptionEvent
       ) {
-        const { eventId, occurredAt, ...subscription } = event;
+        const { eventId, occurredAt, startedBy, ...subscription } = event;
 
         const change = decodeChange({ eventId, occurredAt, subscription });
 
@@ -82,7 +93,27 @@ export class RecordSubscription extends Context.Service<
               return gone;
             }
 
-            return yield* subscriptions.record(change.value);
+            const recorded = yield* subscriptions.record(change.value);
+            const { value } = change;
+
+            if (
+              value.subscription.status === "trialing" &&
+              Option.isSome(value.subscription.trialEnd) &&
+              Option.isSome(startedBy)
+            ) {
+              yield* trials.record({
+                plan: value.subscription.plan,
+                startedAt: Option.getOrElse(
+                  value.subscription.startedAt,
+                  () => occurredAt
+                ),
+                stripeSubscriptionId: value.subscription.stripeSubscriptionId,
+                userId: startedBy.value,
+                workspaceId: value.subscription.workspaceId,
+              });
+            }
+
+            return recorded;
           })
         );
 

@@ -42,7 +42,7 @@ export const PostAnalytics = Tool.make("post_analytics", {
 export const GetBilling = Tool.make("get_billing", {
   dependencies: [CurrentMember],
   description:
-    "Answers with the workspace's plan, the subscription that buys it, what each limit allows (channels, members, posts going out a month, assistant requests a day), how much of each the workspace uses, and every plan to compare. On a server that does not bill, nothing is limited. Changing the plan is for owners and admins, in the web app.",
+    "Answers with the workspace's plan, the subscription that buys it, what each limit allows (channels, members, posts going out a month, assistant requests a day, bytes of media stored), how much of each the workspace uses, every plan to compare with its prices in cents excluding VAT, and whether the trial is open. On a server that does not bill, nothing is limited. Ordering, cancelling and withdrawing are for owners and admins, in person, in the web app.",
   failure: ToolRefused,
   success: BillingSchema,
 })

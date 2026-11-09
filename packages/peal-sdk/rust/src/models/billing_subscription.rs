@@ -17,19 +17,28 @@ pub struct BillingSubscription {
     pub cancel_at_period_end: bool,
     #[serde(rename = "currentPeriodEnd", deserialize_with = "Option::deserialize")]
     pub current_period_end: Option<String>,
+    #[serde(rename = "interval")]
+    pub interval: models::BillingInterval,
     #[serde(rename = "plan")]
     pub plan: models::PaidPlan,
+    #[serde(rename = "startedAt", deserialize_with = "Option::deserialize")]
+    pub started_at: Option<String>,
     #[serde(rename = "status")]
     pub status: models::SubscriptionStatus,
+    #[serde(rename = "trialEnd", deserialize_with = "Option::deserialize")]
+    pub trial_end: Option<String>,
 }
 
 impl BillingSubscription {
-    pub fn new(cancel_at_period_end: bool, current_period_end: Option<String>, plan: models::PaidPlan, status: models::SubscriptionStatus) -> BillingSubscription {
+    pub fn new(cancel_at_period_end: bool, current_period_end: Option<String>, interval: models::BillingInterval, plan: models::PaidPlan, started_at: Option<String>, status: models::SubscriptionStatus, trial_end: Option<String>) -> BillingSubscription {
         BillingSubscription {
             cancel_at_period_end,
             current_period_end,
+            interval,
             plan,
+            started_at,
             status,
+            trial_end,
         }
     }
 }

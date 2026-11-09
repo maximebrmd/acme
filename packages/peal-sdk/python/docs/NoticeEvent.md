@@ -11,6 +11,15 @@ Name | Type | Description | Notes
 **post_id** | **str** |  | 
 **reason** | [**FailureReason**](FailureReason.md) |  | 
 **expires_at** | **str** |  | 
+**interval** | [**BillingInterval**](BillingInterval.md) |  | 
+**plan** | [**PaidPlan**](PaidPlan.md) |  | 
+**price** | [**Money**](Money.md) |  | 
+**started_at** | **str** |  | 
+**trial_end** | **str** |  | 
+**ends_at** | **str** |  | 
+**renews_at** | **str** |  | 
+**refunded** | [**Money**](Money.md) |  | 
+**withdrawn_at** | **str** |  | 
 
 ## Example
 

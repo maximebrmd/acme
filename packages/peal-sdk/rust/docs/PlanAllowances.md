@@ -6,6 +6,7 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **assistant_requests** | Option<**i32**> |  | 
 **channels** | Option<**i32**> |  | 
+**media_storage** | Option<**i32**> |  | 
 **members** | Option<**i32**> |  | 
 **scheduled_posts** | Option<**i32**> |  | 
 

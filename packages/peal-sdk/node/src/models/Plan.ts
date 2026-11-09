@@ -19,8 +19,10 @@
  */
 export const Plan = {
     Free: 'free',
+    Starter: 'starter',
     Pro: 'pro',
     Business: 'business',
+    Agency: 'agency',
 } as const;
 export type Plan = typeof Plan[keyof typeof Plan];
 

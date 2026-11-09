@@ -1,6 +1,7 @@
 import { Context, Effect, FiberSet, Layer, Option, Schema } from "effect";
 import type { LogLevel } from "effect";
 
+import { CheckoutOrders } from "#billing/application/checkout-orders.ts";
 import { RecordSubscription } from "#billing/application/record-subscription.ts";
 import { WorkspaceEntitlements } from "#billing/application/workspace-entitlements.ts";
 import { SendAuthEmail } from "#notifications/application/send-auth-email.ts";
@@ -9,6 +10,7 @@ import { ImpersonationGuard } from "#workspace/application/impersonation-guard.t
 import { UserPrincipal } from "#workspace/domain/user-principal.ts";
 
 import { AuthStartFailed } from "./auth-start-failed.ts";
+import type { CheckoutAnswer } from "./billing.ts";
 import { makeAuthDatabase } from "./database.ts";
 import type { ImpersonatedAuthRequest } from "./impersonation.ts";
 import { servesMcp } from "./oauth.ts";
@@ -37,6 +39,11 @@ const drainTimeout = "10 seconds";
 const decodeUserId = Schema.decodeUnknownEffect(UserIdSchema);
 
 const decodeWorkspaceId = Schema.decodeUnknownOption(WorkspaceIdSchema);
+
+const orderRequired: CheckoutAnswer = {
+  _tag: "refused",
+  code: "ORDER_REQUIRED",
+};
 
 // A request staff send while acting as someone, through the guard: false
 // when it is refused. Better Auth's sessions hold the ids it issued.
@@ -88,6 +95,7 @@ export const BetterAuthLive = Layer.effect(
     const emails = yield* SendAuthEmail;
     const entitlements = yield* WorkspaceEntitlements;
     const subscriptions = yield* RecordSubscription;
+    const checkouts = yield* CheckoutOrders;
     const guard = yield* ImpersonationGuard;
 
     // Better Auth calls back outside any fiber. Work it starts runs on fibers
@@ -104,6 +112,36 @@ export const BetterAuthLive = Layer.effect(
     );
 
     const hooks: AuthHooks = {
+      // Awaited: checkout starts only for an order the member placed. A
+      // database failure refuses the request.
+      checkout: async (start) =>
+        await runPromise(
+          checkouts.take(start).pipe(
+            Effect.map(({ trialDays }): CheckoutAnswer => ({
+              _tag: "start",
+              trialDays: Option.getOrNull(trialDays),
+            })),
+            Effect.catchTags({
+              OrderRequired: () => Effect.succeed(orderRequired),
+              TrialUnavailable: () =>
+                Effect.succeed<CheckoutAnswer>({
+                  _tag: "refused",
+                  code: "TRIAL_UNAVAILABLE",
+                }),
+            })
+          )
+        ),
+      // Read while a workspace is created. A database failure refuses it.
+      freeWorkspace: async (workspaceId) =>
+        await runPromise(
+          entitlements
+            .of(workspaceId)
+            .pipe(
+              Effect.map(({ plan }) =>
+                Option.exists(plan, (current) => current === "free")
+              )
+            )
+        ),
       // Awaited: the route runs only once the request is admitted and
       // recorded. A database failure refuses it.
       impersonatedRequest: async (request) =>

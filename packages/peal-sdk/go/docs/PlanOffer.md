@@ -6,12 +6,13 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **Allowances** | [**PlanAllowances**](PlanAllowances.md) |  | 
 **Plan** | [**Plan**](Plan.md) |  | 
+**Price** | [**NullablePlanPrice**](PlanPrice.md) |  | 
 
 ## Methods
 
 ### NewPlanOffer
 
-`func NewPlanOffer(allowances PlanAllowances, plan Plan, ) *PlanOffer`
+`func NewPlanOffer(allowances PlanAllowances, plan Plan, price NullablePlanPrice, ) *PlanOffer`
 
 NewPlanOffer instantiates a new PlanOffer object
 This constructor will assign default values to properties that have it defined,
@@ -66,6 +67,36 @@ and a boolean to check if the value has been set.
 SetPlan sets Plan field to given value.
 
 
+### GetPrice
+
+`func (o *PlanOffer) GetPrice() PlanPrice`
+
+GetPrice returns the Price field if non-nil, zero value otherwise.
+
+### GetPriceOk
+
+`func (o *PlanOffer) GetPriceOk() (*PlanPrice, bool)`
+
+GetPriceOk returns a tuple with the Price field if it's non-nil, zero value otherwise
+and a boolean to check if the value has been set.
+
+### SetPrice
+
+`func (o *PlanOffer) SetPrice(v PlanPrice)`
+
+SetPrice sets Price field to given value.
+
+
+### SetPriceNil
+
+`func (o *PlanOffer) SetPriceNil(b bool)`
+
+ SetPriceNil sets the value for Price to be an explicit nil
+
+### UnsetPrice
+`func (o *PlanOffer) UnsetPrice()`
+
+UnsetPrice ensures that no value is present for Price, not even an explicit nil
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

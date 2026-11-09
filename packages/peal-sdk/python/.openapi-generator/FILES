@@ -24,6 +24,7 @@ docs/AttemptResult.md
 docs/Authorization.md
 docs/Billing.md
 docs/BillingApi.md
+docs/BillingInterval.md
 docs/BillingSubscription.md
 docs/Channel.md
 docs/ChannelCannotPostEncoded.md
@@ -116,6 +117,7 @@ docs/MembersApi.md
 docs/Membership.md
 docs/MetricTotals.md
 docs/MetricsSnapshot.md
+docs/Money.md
 docs/NewApiKey.md
 docs/NewInvitation.md
 docs/NewUpload.md
@@ -128,6 +130,11 @@ docs/NoticeEventAnyOf1.md
 docs/NoticeEventAnyOf2.md
 docs/NoticeEventAnyOf3.md
 docs/NoticeEventAnyOf4.md
+docs/NoticeEventAnyOf5.md
+docs/NoticeEventAnyOf6.md
+docs/NoticeEventAnyOf7.md
+docs/NoticeEventAnyOf8.md
+docs/NoticeEventAnyOf9.md
 docs/NoticePage.md
 docs/NoticesApi.md
 docs/NotificationPreferences.md
@@ -143,6 +150,7 @@ docs/PlanAllowances.md
 docs/PlanLimit.md
 docs/PlanLimitReachedEncoded.md
 docs/PlanOffer.md
+docs/PlanPrice.md
 docs/Platform.md
 docs/PlatformUnreachableEncoded.md
 docs/Post.md
@@ -198,6 +206,7 @@ docs/TiktokApi.md
 docs/TooManyInvitationsEncoded.md
 docs/TopPost.md
 docs/TranslationLanguage.md
+docs/TrialOffer.md
 docs/UnauthenticatedEncoded.md
 docs/UnconfirmedReason.md
 docs/UnknownChannelsEncoded.md
@@ -256,6 +265,7 @@ peal/models/assistant_unavailable_encoded.py
 peal/models/attempt_result.py
 peal/models/authorization.py
 peal/models/billing.py
+peal/models/billing_interval.py
 peal/models/billing_subscription.py
 peal/models/channel.py
 peal/models/channel_cannot_post_encoded.py
@@ -344,6 +354,7 @@ peal/models/media_usage.py
 peal/models/membership.py
 peal/models/metric_totals.py
 peal/models/metrics_snapshot.py
+peal/models/money.py
 peal/models/new_api_key.py
 peal/models/new_invitation.py
 peal/models/new_upload.py
@@ -356,6 +367,11 @@ peal/models/notice_event_any_of1.py
 peal/models/notice_event_any_of2.py
 peal/models/notice_event_any_of3.py
 peal/models/notice_event_any_of4.py
+peal/models/notice_event_any_of5.py
+peal/models/notice_event_any_of6.py
+peal/models/notice_event_any_of7.py
+peal/models/notice_event_any_of8.py
+peal/models/notice_event_any_of9.py
 peal/models/notice_page.py
 peal/models/notification_preferences.py
 peal/models/notification_preferences_change.py
@@ -369,6 +385,7 @@ peal/models/plan_allowances.py
 peal/models/plan_limit.py
 peal/models/plan_limit_reached_encoded.py
 peal/models/plan_offer.py
+peal/models/plan_price.py
 peal/models/platform.py
 peal/models/platform_unreachable_encoded.py
 peal/models/post.py
@@ -420,6 +437,7 @@ peal/models/tik_tok_privacy_level.py
 peal/models/too_many_invitations_encoded.py
 peal/models/top_post.py
 peal/models/translation_language.py
+peal/models/trial_offer.py
 peal/models/unauthenticated_encoded.py
 peal/models/unconfirmed_reason.py
 peal/models/unknown_channels_encoded.py

@@ -36,13 +36,15 @@ namespace Peal.Model
         /// </summary>
         /// <param name="assistantRequests">assistantRequests</param>
         /// <param name="channels">channels</param>
+        /// <param name="mediaStorage">mediaStorage</param>
         /// <param name="members">members</param>
         /// <param name="scheduledPosts">scheduledPosts</param>
         [JsonConstructor]
-        public Usage(PeriodUsage assistantRequests, long channels, long members, PeriodUsage scheduledPosts)
+        public Usage(PeriodUsage assistantRequests, long channels, long mediaStorage, long members, PeriodUsage scheduledPosts)
         {
             AssistantRequests = assistantRequests;
             Channels = channels;
+            MediaStorage = mediaStorage;
             Members = members;
             ScheduledPosts = scheduledPosts;
             OnCreated();
@@ -61,6 +63,12 @@ namespace Peal.Model
         /// </summary>
         [JsonPropertyName("channels")]
         public long Channels { get; set; }
+
+        /// <summary>
+        /// Gets or Sets MediaStorage
+        /// </summary>
+        [JsonPropertyName("mediaStorage")]
+        public long MediaStorage { get; set; }
 
         /// <summary>
         /// Gets or Sets Members
@@ -84,6 +92,7 @@ namespace Peal.Model
             sb.Append("class Usage {\n");
             sb.Append("  AssistantRequests: ").Append(AssistantRequests).Append("\n");
             sb.Append("  Channels: ").Append(Channels).Append("\n");
+            sb.Append("  MediaStorage: ").Append(MediaStorage).Append("\n");
             sb.Append("  Members: ").Append(Members).Append("\n");
             sb.Append("  ScheduledPosts: ").Append(ScheduledPosts).Append("\n");
             sb.Append("}\n");
@@ -107,6 +116,18 @@ namespace Peal.Model
             if (this.Channels < (long)-9007199254740991)
             {
                 yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for Channels, must be a value greater than or equal to -9007199254740991.", new [] { "Channels" });
+            }
+
+            // MediaStorage (long) maximum
+            if (this.MediaStorage > (long)9007199254740991)
+            {
+                yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for MediaStorage, must be a value less than or equal to 9007199254740991.", new [] { "MediaStorage" });
+            }
+
+            // MediaStorage (long) minimum
+            if (this.MediaStorage < (long)-9007199254740991)
+            {
+                yield return new System.ComponentModel.DataAnnotations.ValidationResult("Invalid value for MediaStorage, must be a value greater than or equal to -9007199254740991.", new [] { "MediaStorage" });
             }
 
             // Members (long) maximum
@@ -159,6 +180,7 @@ namespace Peal.Model
 
             Option<PeriodUsage?> assistantRequests = default;
             Option<long?> channels = default;
+            Option<long?> mediaStorage = default;
             Option<long?> members = default;
             Option<PeriodUsage?> scheduledPosts = default;
 
@@ -183,6 +205,9 @@ namespace Peal.Model
                         case "channels":
                             channels = new Option<long?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (int?)null : utf8JsonReader.GetInt32());
                             break;
+                        case "mediaStorage":
+                            mediaStorage = new Option<long?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (int?)null : utf8JsonReader.GetInt32());
+                            break;
                         case "members":
                             members = new Option<long?>(utf8JsonReader.TokenType == JsonTokenType.Null ? (int?)null : utf8JsonReader.GetInt32());
                             break;
@@ -201,6 +226,9 @@ namespace Peal.Model
             if (!channels.IsSet)
                 throw new JsonException("Property is required for class Usage: channels.");
 
+            if (!mediaStorage.IsSet)
+                throw new JsonException("Property is required for class Usage: mediaStorage.");
+
             if (!members.IsSet)
                 throw new JsonException("Property is required for class Usage: members.");
 
@@ -213,13 +241,16 @@ namespace Peal.Model
             if (channels.IsSet && channels.Value == null)
                 throw new JsonException("Property is not nullable for class Usage: channels.");
 
+            if (mediaStorage.IsSet && mediaStorage.Value == null)
+                throw new JsonException("Property is not nullable for class Usage: mediaStorage.");
+
             if (members.IsSet && members.Value == null)
                 throw new JsonException("Property is not nullable for class Usage: members.");
 
             if (scheduledPosts.IsSet && scheduledPosts.Value == null)
                 throw new JsonException("Property is not nullable for class Usage: scheduledPosts.");
 
-            return new Usage(assistantRequests.Value!, channels.Value!.Value!, members.Value!.Value!, scheduledPosts.Value!);
+            return new Usage(assistantRequests.Value!, channels.Value!.Value!, mediaStorage.Value!.Value!, members.Value!.Value!, scheduledPosts.Value!);
         }
 
         /// <summary>
@@ -247,6 +278,8 @@ namespace Peal.Model
             writer.WritePropertyName("assistantRequests");
             JsonSerializer.Serialize(writer, usage.AssistantRequests, jsonSerializerOptions);
             writer.WriteNumber("channels", usage.Channels);
+
+            writer.WriteNumber("mediaStorage", usage.MediaStorage);
 
             writer.WriteNumber("members", usage.Members);
 

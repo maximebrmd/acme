@@ -37,14 +37,24 @@ namespace Peal.Model
         Free = 1,
 
         /// <summary>
+        /// Enum Starter for value: starter
+        /// </summary>
+        Starter = 2,
+
+        /// <summary>
         /// Enum Pro for value: pro
         /// </summary>
-        Pro = 2,
+        Pro = 3,
 
         /// <summary>
         /// Enum Business for value: business
         /// </summary>
-        Business = 3
+        Business = 4,
+
+        /// <summary>
+        /// Enum Agency for value: agency
+        /// </summary>
+        Agency = 5
     }
 
     /// <summary>
@@ -62,11 +72,17 @@ namespace Peal.Model
             if (value.Equals("free"))
                 return Plan.Free;
 
+            if (value.Equals("starter"))
+                return Plan.Starter;
+
             if (value.Equals("pro"))
                 return Plan.Pro;
 
             if (value.Equals("business"))
                 return Plan.Business;
+
+            if (value.Equals("agency"))
+                return Plan.Agency;
 
             throw new NotImplementedException($"Could not convert value to type Plan: '{value}'");
         }
@@ -81,11 +97,17 @@ namespace Peal.Model
             if (value.Equals("free"))
                 return Plan.Free;
 
+            if (value.Equals("starter"))
+                return Plan.Starter;
+
             if (value.Equals("pro"))
                 return Plan.Pro;
 
             if (value.Equals("business"))
                 return Plan.Business;
+
+            if (value.Equals("agency"))
+                return Plan.Agency;
 
             return null;
         }
@@ -101,11 +123,17 @@ namespace Peal.Model
             if (value == Plan.Free)
                 return "free";
 
+            if (value == Plan.Starter)
+                return "starter";
+
             if (value == Plan.Pro)
                 return "pro";
 
             if (value == Plan.Business)
                 return "business";
+
+            if (value == Plan.Agency)
+                return "agency";
 
             throw new NotImplementedException($"Value could not be handled: '{value}'");
         }

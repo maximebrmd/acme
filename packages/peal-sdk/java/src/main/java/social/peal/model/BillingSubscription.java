@@ -21,6 +21,7 @@ import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
 import java.io.IOException;
 import java.util.Arrays;
+import social.peal.model.BillingInterval;
 import social.peal.model.PaidPlan;
 import social.peal.model.SubscriptionStatus;
 
@@ -63,15 +64,30 @@ public class BillingSubscription {
   @javax.annotation.Nullable
   private String currentPeriodEnd;
 
+  public static final String SERIALIZED_NAME_INTERVAL = "interval";
+  @SerializedName(SERIALIZED_NAME_INTERVAL)
+  @javax.annotation.Nonnull
+  private BillingInterval interval;
+
   public static final String SERIALIZED_NAME_PLAN = "plan";
   @SerializedName(SERIALIZED_NAME_PLAN)
   @javax.annotation.Nonnull
   private PaidPlan plan;
 
+  public static final String SERIALIZED_NAME_STARTED_AT = "startedAt";
+  @SerializedName(SERIALIZED_NAME_STARTED_AT)
+  @javax.annotation.Nullable
+  private String startedAt;
+
   public static final String SERIALIZED_NAME_STATUS = "status";
   @SerializedName(SERIALIZED_NAME_STATUS)
   @javax.annotation.Nonnull
   private SubscriptionStatus status;
+
+  public static final String SERIALIZED_NAME_TRIAL_END = "trialEnd";
+  @SerializedName(SERIALIZED_NAME_TRIAL_END)
+  @javax.annotation.Nullable
+  private String trialEnd;
 
   public BillingSubscription() {
   }
@@ -114,6 +130,25 @@ public class BillingSubscription {
   }
 
 
+  public BillingSubscription interval(@javax.annotation.Nonnull BillingInterval interval) {
+    this.interval = interval;
+    return this;
+  }
+
+  /**
+   * Get interval
+   * @return interval
+   */
+  @javax.annotation.Nonnull
+  public BillingInterval getInterval() {
+    return interval;
+  }
+
+  public void setInterval(@javax.annotation.Nonnull BillingInterval interval) {
+    this.interval = interval;
+  }
+
+
   public BillingSubscription plan(@javax.annotation.Nonnull PaidPlan plan) {
     this.plan = plan;
     return this;
@@ -130,6 +165,25 @@ public class BillingSubscription {
 
   public void setPlan(@javax.annotation.Nonnull PaidPlan plan) {
     this.plan = plan;
+  }
+
+
+  public BillingSubscription startedAt(@javax.annotation.Nullable String startedAt) {
+    this.startedAt = startedAt;
+    return this;
+  }
+
+  /**
+   * Get startedAt
+   * @return startedAt
+   */
+  @javax.annotation.Nullable
+  public String getStartedAt() {
+    return startedAt;
+  }
+
+  public void setStartedAt(@javax.annotation.Nullable String startedAt) {
+    this.startedAt = startedAt;
   }
 
 
@@ -152,6 +206,25 @@ public class BillingSubscription {
   }
 
 
+  public BillingSubscription trialEnd(@javax.annotation.Nullable String trialEnd) {
+    this.trialEnd = trialEnd;
+    return this;
+  }
+
+  /**
+   * Get trialEnd
+   * @return trialEnd
+   */
+  @javax.annotation.Nullable
+  public String getTrialEnd() {
+    return trialEnd;
+  }
+
+  public void setTrialEnd(@javax.annotation.Nullable String trialEnd) {
+    this.trialEnd = trialEnd;
+  }
+
+
 
   @Override
   public boolean equals(Object o) {
@@ -164,13 +237,16 @@ public class BillingSubscription {
     BillingSubscription billingSubscription = (BillingSubscription) o;
     return Objects.equals(this.cancelAtPeriodEnd, billingSubscription.cancelAtPeriodEnd) &&
         Objects.equals(this.currentPeriodEnd, billingSubscription.currentPeriodEnd) &&
+        Objects.equals(this.interval, billingSubscription.interval) &&
         Objects.equals(this.plan, billingSubscription.plan) &&
-        Objects.equals(this.status, billingSubscription.status);
+        Objects.equals(this.startedAt, billingSubscription.startedAt) &&
+        Objects.equals(this.status, billingSubscription.status) &&
+        Objects.equals(this.trialEnd, billingSubscription.trialEnd);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(cancelAtPeriodEnd, currentPeriodEnd, plan, status);
+    return Objects.hash(cancelAtPeriodEnd, currentPeriodEnd, interval, plan, startedAt, status, trialEnd);
   }
 
   @Override
@@ -179,8 +255,11 @@ public class BillingSubscription {
     sb.append("class BillingSubscription {\n");
     sb.append("    cancelAtPeriodEnd: ").append(toIndentedString(cancelAtPeriodEnd)).append("\n");
     sb.append("    currentPeriodEnd: ").append(toIndentedString(currentPeriodEnd)).append("\n");
+    sb.append("    interval: ").append(toIndentedString(interval)).append("\n");
     sb.append("    plan: ").append(toIndentedString(plan)).append("\n");
+    sb.append("    startedAt: ").append(toIndentedString(startedAt)).append("\n");
     sb.append("    status: ").append(toIndentedString(status)).append("\n");
+    sb.append("    trialEnd: ").append(toIndentedString(trialEnd)).append("\n");
     sb.append("}");
     return sb.toString();
   }
@@ -199,10 +278,10 @@ public class BillingSubscription {
 
   static {
     // a set of all properties/fields (JSON key names)
-    openapiFields = new HashSet<String>(Arrays.asList("cancelAtPeriodEnd", "currentPeriodEnd", "plan", "status"));
+    openapiFields = new HashSet<String>(Arrays.asList("cancelAtPeriodEnd", "currentPeriodEnd", "interval", "plan", "startedAt", "status", "trialEnd"));
 
     // a set of required properties/fields (JSON key names)
-    openapiRequiredFields = new HashSet<String>(Arrays.asList("cancelAtPeriodEnd", "currentPeriodEnd", "plan", "status"));
+    openapiRequiredFields = new HashSet<String>(Arrays.asList("cancelAtPeriodEnd", "currentPeriodEnd", "interval", "plan", "startedAt", "status", "trialEnd"));
   }
 
   /**
@@ -236,10 +315,18 @@ public class BillingSubscription {
       if ((jsonObj.get("currentPeriodEnd") != null && !jsonObj.get("currentPeriodEnd").isJsonNull()) && !jsonObj.get("currentPeriodEnd").isJsonPrimitive()) {
         throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `currentPeriodEnd` to be a primitive type in the JSON string but got `%s`", jsonObj.get("currentPeriodEnd").toString()));
       }
+      // validate the required field `interval`
+      BillingInterval.validateJsonElement(jsonObj.get("interval"));
       // validate the required field `plan`
       PaidPlan.validateJsonElement(jsonObj.get("plan"));
+      if ((jsonObj.get("startedAt") != null && !jsonObj.get("startedAt").isJsonNull()) && !jsonObj.get("startedAt").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `startedAt` to be a primitive type in the JSON string but got `%s`", jsonObj.get("startedAt").toString()));
+      }
       // validate the required field `status`
       SubscriptionStatus.validateJsonElement(jsonObj.get("status"));
+      if ((jsonObj.get("trialEnd") != null && !jsonObj.get("trialEnd").isJsonNull()) && !jsonObj.get("trialEnd").isJsonPrimitive()) {
+        throw new IllegalArgumentException(String.format(java.util.Locale.ROOT, "Expected the field `trialEnd` to be a primitive type in the JSON string but got `%s`", jsonObj.get("trialEnd").toString()));
+      }
   }
 
   public static class CustomTypeAdapterFactory implements TypeAdapterFactory {

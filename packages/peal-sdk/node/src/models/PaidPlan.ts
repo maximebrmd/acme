@@ -18,8 +18,10 @@
  * @export
  */
 export const PaidPlan = {
+    Starter: 'starter',
     Pro: 'pro',
     Business: 'business',
+    Agency: 'agency',
 } as const;
 export type PaidPlan = typeof PaidPlan[keyof typeof PaidPlan];
 

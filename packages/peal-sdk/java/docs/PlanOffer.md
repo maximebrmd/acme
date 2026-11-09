@@ -9,6 +9,7 @@
 |------------ | ------------- | ------------- | -------------|
 |**allowances** | [**PlanAllowances**](PlanAllowances.md) |  |  |
 |**plan** | **Plan** |  |  |
+|**price** | [**PlanPrice**](PlanPrice.md) |  |  |
 
 
 

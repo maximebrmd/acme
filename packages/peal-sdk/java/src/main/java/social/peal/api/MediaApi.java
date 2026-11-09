@@ -39,6 +39,7 @@ import social.peal.model.MediaPage;
 import social.peal.model.MediaStoreUnavailableEncoded;
 import social.peal.model.MediaUsage;
 import social.peal.model.NewUpload;
+import social.peal.model.PlanLimitReachedEncoded;
 import social.peal.model.PreparedUpload;
 import social.peal.model.UnauthenticatedEncoded;
 import social.peal.model.UploadIncompleteEncoded;
@@ -262,6 +263,7 @@ public class MediaApi {
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 201 </td><td> PreparedUpload </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 402 </td><td> The workspace&#39;s plan allows no more of &#x60;limit&#x60;: it has &#x60;allowed&#x60; already. A larger plan, or removing some, makes room. Nothing was changed. </td><td>  -  </td></tr>
         <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> No workspace with this id is open to the caller. </td><td>  -  </td></tr>
         <tr><td> 422 </td><td> Peal does not store files of this content type. It takes JPEG, PNG, GIF and WebP images, and MP4 and QuickTime videos. | The file is larger than Peal stores for its kind: 16 MiB for an image, 1 GiB for a video. | The description is longer than Peal keeps. </td><td>  -  </td></tr>
@@ -332,7 +334,7 @@ public class MediaApi {
 
     /**
      * Start an upload
-     * Records pending media and signs the upload of its file: one PUT for an image or a video up to 16 MiB, one PUT per part for a larger video. Send the file with them, then complete the upload. The requests only take the declared size and content type. Needs media:upload.
+     * Records pending media and signs the upload of its file: one PUT for an image or a video up to 16 MiB, one PUT per part for a larger video. Send the file with them, then complete the upload. The requests only take the declared size and content type. On a server that bills, the declared size must fit the plan&#39;s media storage with what the workspace stores (PlanLimitReached &#x60;mediaStorage&#x60;). Needs media:upload.
      * @param workspaceId  (required)
      * @param newUpload  (required)
      * @return PreparedUpload
@@ -343,6 +345,7 @@ public class MediaApi {
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 201 </td><td> PreparedUpload </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 402 </td><td> The workspace&#39;s plan allows no more of &#x60;limit&#x60;: it has &#x60;allowed&#x60; already. A larger plan, or removing some, makes room. Nothing was changed. </td><td>  -  </td></tr>
         <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> No workspace with this id is open to the caller. </td><td>  -  </td></tr>
         <tr><td> 422 </td><td> Peal does not store files of this content type. It takes JPEG, PNG, GIF and WebP images, and MP4 and QuickTime videos. | The file is larger than Peal stores for its kind: 16 MiB for an image, 1 GiB for a video. | The description is longer than Peal keeps. </td><td>  -  </td></tr>
@@ -356,7 +359,7 @@ public class MediaApi {
 
     /**
      * Start an upload
-     * Records pending media and signs the upload of its file: one PUT for an image or a video up to 16 MiB, one PUT per part for a larger video. Send the file with them, then complete the upload. The requests only take the declared size and content type. Needs media:upload.
+     * Records pending media and signs the upload of its file: one PUT for an image or a video up to 16 MiB, one PUT per part for a larger video. Send the file with them, then complete the upload. The requests only take the declared size and content type. On a server that bills, the declared size must fit the plan&#39;s media storage with what the workspace stores (PlanLimitReached &#x60;mediaStorage&#x60;). Needs media:upload.
      * @param workspaceId  (required)
      * @param newUpload  (required)
      * @return ApiResponse&lt;PreparedUpload&gt;
@@ -367,6 +370,7 @@ public class MediaApi {
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 201 </td><td> PreparedUpload </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 402 </td><td> The workspace&#39;s plan allows no more of &#x60;limit&#x60;: it has &#x60;allowed&#x60; already. A larger plan, or removing some, makes room. Nothing was changed. </td><td>  -  </td></tr>
         <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> No workspace with this id is open to the caller. </td><td>  -  </td></tr>
         <tr><td> 422 </td><td> Peal does not store files of this content type. It takes JPEG, PNG, GIF and WebP images, and MP4 and QuickTime videos. | The file is larger than Peal stores for its kind: 16 MiB for an image, 1 GiB for a video. | The description is longer than Peal keeps. </td><td>  -  </td></tr>
@@ -381,7 +385,7 @@ public class MediaApi {
 
     /**
      * Start an upload (asynchronously)
-     * Records pending media and signs the upload of its file: one PUT for an image or a video up to 16 MiB, one PUT per part for a larger video. Send the file with them, then complete the upload. The requests only take the declared size and content type. Needs media:upload.
+     * Records pending media and signs the upload of its file: one PUT for an image or a video up to 16 MiB, one PUT per part for a larger video. Send the file with them, then complete the upload. The requests only take the declared size and content type. On a server that bills, the declared size must fit the plan&#39;s media storage with what the workspace stores (PlanLimitReached &#x60;mediaStorage&#x60;). Needs media:upload.
      * @param workspaceId  (required)
      * @param newUpload  (required)
      * @param _callback The callback to be executed when the API call finishes
@@ -393,6 +397,7 @@ public class MediaApi {
         <tr><td> Status Code </td><td> Description </td><td> Response Headers </td></tr>
         <tr><td> 201 </td><td> PreparedUpload </td><td>  -  </td></tr>
         <tr><td> 401 </td><td> Sign in, or send an API key as a bearer token: the request has no valid credentials. </td><td>  -  </td></tr>
+        <tr><td> 402 </td><td> The workspace&#39;s plan allows no more of &#x60;limit&#x60;: it has &#x60;allowed&#x60; already. A larger plan, or removing some, makes room. Nothing was changed. </td><td>  -  </td></tr>
         <tr><td> 403 </td><td> The credentials are valid but do not allow this request. </td><td>  -  </td></tr>
         <tr><td> 404 </td><td> No workspace with this id is open to the caller. </td><td>  -  </td></tr>
         <tr><td> 422 </td><td> Peal does not store files of this content type. It takes JPEG, PNG, GIF and WebP images, and MP4 and QuickTime videos. | The file is larger than Peal stores for its kind: 16 MiB for an image, 1 GiB for a video. | The description is longer than Peal keeps. </td><td>  -  </td></tr>
