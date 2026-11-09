@@ -72,14 +72,16 @@
     quiet: true
 
 # Names only: the values never leave the file. Read-only, so it runs in check
-# mode too.
+# mode too. A value counts once it holds a character, quoted or not: as in
+# the vault, NAME= and NAME='' leave it unset.
 - name: Find the credentials not set on the server
   ansible.builtin.shell: |
     set -eu
+    value="=['\"]?[^'\"[:space:]]"
     for name in {{ acme_runtime_required_credentials | join(' ') }}; do
-      grep -Eq "^${name}=.+" {{ acme_root }}/credentials.env || echo "$name"
+      grep -Eq "^${name}${value}" {{ acme_root }}/credentials.env || echo "$name"
     done
-    grep -Eq '^({{ acme_mail_credentials | join('|') }})=.+' {{ acme_root }}/credentials.env ||
+    grep -Eq "^({{ acme_mail_credentials | join('|') }})${value}" {{ acme_root }}/credentials.env ||
       echo '{{ acme_mail_credentials | join(' or ') }}'
   register: acme_runtime_unset
   changed_when: false
@@ -117,7 +119,7 @@
   vars:
     acme_runtime_misread: >-
       {{ (acme_runtime_host_settings | dict2items
-          | rejectattr('key', 'match', '^[A-Za-z_][A-Za-z0-9_]*$') | map(attribute='key') | list)
+          | rejectattr('key', 'match', '^[A-Za-z_][A-Za-z0-9_]*\Z') | map(attribute='key') | list)
          + (acme_runtime_host_settings | dict2items
             | rejectattr('value', 'string') | rejectattr('value', 'number') | map(attribute='key') | list)
          + (acme_runtime_host_settings | dict2items | selectattr('value', 'string')

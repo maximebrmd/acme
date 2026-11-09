@@ -221,6 +221,25 @@ def test_each_environment_gets_a_token_of_its_own(tmp_path: Path) -> None:
     assert both["PRODUCTION_HEARTBEAT_TOKEN"] != both["SANDBOX_HEARTBEAT_TOKEN"]
 
 
+def _unset(root: Path, credentials: str) -> list[str]:
+    """Runs the role's check of a credentials.env written by hand, as root
+    would on the server, and returns the names it reports unset."""
+    (root / "credentials.env").write_text(credentials)
+    found = task("uptime", "Find the credentials not set on the server")
+    script = render(
+        found["ansible.builtin.shell"],
+        uptime_root=str(root),
+        uptime_required_credentials=["TELEGRAM_BOT_TOKEN", "TELEGRAM_CHAT_ID"],
+    )
+    return subprocess.run(["sh", "-c", script], check=True, capture_output=True, text=True).stdout.splitlines()
+
+
+@pytest.mark.parametrize("empty", ["", "''", '""'])
+def test_an_empty_credential_written_by_hand_is_unset(tmp_path: Path, empty: str) -> None:
+    """As in the vault, where an empty value counts as unset."""
+    assert _unset(tmp_path, f"TELEGRAM_BOT_TOKEN={empty}\nTELEGRAM_CHAT_ID='-100'\n") == ["TELEGRAM_BOT_TOKEN"]
+
+
 def test_ssh_forwards_to_the_dashboard_only() -> None:
     """The admin reaches Gatus's dashboard through SSH, and nothing else
     through it."""

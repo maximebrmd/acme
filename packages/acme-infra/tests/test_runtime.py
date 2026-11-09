@@ -4,12 +4,13 @@ the credentials, as Ansible renders them for each server."""
 from __future__ import annotations
 
 import re
+import subprocess
 from pathlib import Path
 from typing import Any
 
 import pytest
 
-from conftest import INFRA, ansible_render, role_file, settings, task
+from conftest import INFRA, ansible_render, render, role_file, settings, task
 
 ENVIRONMENTS = ["production", "sandbox"]
 
@@ -61,7 +62,7 @@ def test_host_settings_refuse_what_compose_would_misread(value: Any) -> None:
     assert _misread({"PUBLIC_URL": "https://app.example.com", "ACME_AI_PROVIDER": value}) == ["ACME_AI_PROVIDER"]
 
 
-@pytest.mark.parametrize("name", ["1ST", "WITH SPACE", "WITH-DASH", "A=B", ""])
+@pytest.mark.parametrize("name", ["1ST", "WITH SPACE", "WITH-DASH", "A=B", "", "TRAILING\n", "TWO\nLINES"])
 def test_host_settings_refuse_names_compose_would_misread(name: str) -> None:
     assert _misread({name: "value"}) == [name]
 
@@ -92,3 +93,29 @@ def test_production_requires_the_heartbeat_token() -> None:
 
 def test_the_sandbox_does_not() -> None:
     assert "ACME_HEARTBEAT_TOKEN" not in _required("sandbox")
+
+
+def _unset(tmp_path: Path, credentials: str) -> list[str]:
+    """Runs the role's check of a credentials.env written by hand, as root
+    would on the server, and returns the names it reports unset."""
+    (tmp_path / "credentials.env").write_text(credentials)
+    found = task("acme_runtime", "Find the credentials not set on the server")
+    script = render(
+        found["ansible.builtin.shell"],
+        acme_root=str(tmp_path),
+        acme_runtime_required_credentials=["ACME_S3_ACCESS_KEY_ID", "TELEGRAM_BOT_TOKEN"],
+        acme_mail_credentials=["RESEND_API_KEY", "SMTP_URL"],
+    )
+    return subprocess.run(["sh", "-c", script], check=True, capture_output=True, text=True).stdout.splitlines()
+
+
+def test_credentials_written_by_hand_are_set_with_a_value(tmp_path: Path) -> None:
+    assert _unset(tmp_path, "ACME_S3_ACCESS_KEY_ID='synthetic'\nTELEGRAM_BOT_TOKEN=synthetic\nSMTP_URL=\"smtp://mail\"\n") == []
+
+
+@pytest.mark.parametrize("empty", ["", "''", '""'])
+def test_an_empty_credential_written_by_hand_is_unset(tmp_path: Path, empty: str) -> None:
+    """As in the vault, where an empty value counts as unset."""
+    credentials = f"ACME_S3_ACCESS_KEY_ID={empty}\nTELEGRAM_BOT_TOKEN='synthetic'\nRESEND_API_KEY={empty}\n"
+
+    assert _unset(tmp_path, credentials) == ["ACME_S3_ACCESS_KEY_ID", "RESEND_API_KEY or SMTP_URL"]
