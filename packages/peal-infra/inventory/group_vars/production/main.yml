@@ -5,6 +5,16 @@
 server_hostname: peal-production
 peal_environment: production
 
+# Where the server is hosted: the provider, a European company, in lowercase
+# as its own site writes it, and the city of its data centre, in lowercase
+# English (paris, not the provider's zone, which differs between providers
+# for one city). No provider is chosen yet: these are placeholders, which
+# the preflight refuses. Nothing else reads them but the uptime server's
+# check that it shares neither (group_vars/uptime). README.md, "Choosing a
+# provider and a size", says what the stack needs of any provider.
+hosting_provider: REPLACE-WITH-THE-PROVIDER-OF-PRODUCTION
+hosting_location: REPLACE-WITH-THE-CITY-OF-PRODUCTION
+
 # Host names on the Cloudflare zone. Cloudflare's free certificate covers the
 # zone and its first-level subdomains only, so no name goes deeper.
 peal_hostnames:

@@ -1700,8 +1700,12 @@ self-hoster needs only Postgres and an S3-compatible store:
 
 ## Infrastructure
 
-- Production runs on a Hetzner server managed with Ansible from `peal-infra`,
-  reachable only through a Cloudflare Tunnel: no inbound ports, SSH included.
+- Production runs on a server at a European provider, managed with Ansible
+  from `peal-infra`, reachable only through a Cloudflare Tunnel: no inbound
+  ports, SSH included. No provider is chosen yet, and the repository names
+  none: each group's `hosting_provider` and `hosting_location` (a city) are
+  placeholders `peal_preflight` refuses, and the infra README's "Choosing a
+  provider and a size" says what the stack needs of any of them.
   Cloudflare Zero Trust Access guards Grafana, the admin (`/api/auth/admin`,
   the staff console's `/api/admin`, `/admin`, `/en/admin` and `/fr/admin`) and the
   sandbox, and cloudflared checks the Access token on those routes too. Caddy fronts the
@@ -1732,8 +1736,10 @@ self-hoster needs only Postgres and an S3-compatible store:
   of their own, and the server's error-log alert leaves them out. The
   heartbeat rule (`alerting/heartbeat.yaml`) is apart: it always fires, to
   its own contact point, never to Telegram.
-- A separate Hetzner server checks uptime (`uptime.yml`, inventory group
-  `uptime`): Gatus, its configuration generated from the inventory, checks
+- A separate server checks uptime (`uptime.yml`, inventory group
+  `uptime`), at another provider and in another city than production and
+  the sandbox, which the `uptime` role refuses to run without and
+  `tests/test_hosting.py` checks: Gatus, its configuration generated from the inventory, checks
   the public endpoints of production and the sandbox and alerts on a
   Telegram bot of its own; Caddy is its only public entry, for the heartbeat
   production's Grafana posts every few minutes, on `uptime_hostname`, and

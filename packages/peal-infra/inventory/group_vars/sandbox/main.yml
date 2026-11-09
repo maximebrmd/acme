@@ -6,6 +6,11 @@
 server_hostname: peal-sandbox
 peal_environment: sandbox
 
+# Where it is hosted (group_vars/production says how to write them). The
+# sandbox may share production's provider and city: it does not watch it.
+hosting_provider: REPLACE-WITH-THE-PROVIDER-OF-THE-SANDBOX
+hosting_location: REPLACE-WITH-THE-CITY-OF-THE-SANDBOX
+
 # First-level subdomains only: Cloudflare's free certificate covers no
 # deeper name, such as app.sandbox.peal.social.
 peal_hostnames:

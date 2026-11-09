@@ -21,7 +21,7 @@ Peal's own instance runs the stack a [self-hosted](/self-hosting) one runs, on s
 | Sandbox    | The same, before production, with its own database, buckets, Stripe account and platform apps                      |
 | Uptime     | [Gatus](#uptime), which checks the other two from outside, and Caddy, its one public entry                         |
 
-Each is a Hetzner Cloud server on Ubuntu LTS, with security updates every day, an admin account that signs in with a key, and a firewall that refuses every connection it does not need. Production and the sandbox are reached only through a Cloudflare Tunnel, which they dial out to, SSH included, and Cloudflare Access guards Grafana, SSH, the admin and the whole sandbox. The staff Access lets into Grafana are its admins, with full access. The uptime server has no tunnel, no private network and no secret of theirs.
+Each is a server at a European provider, on Ubuntu LTS, with security updates every day, an admin account that signs in with a key, and a firewall that refuses every connection it does not need. Production and the sandbox are reached only through a Cloudflare Tunnel, which they dial out to, SSH included, and Cloudflare Access guards Grafana, SSH, the admin and the whole sandbox. The staff Access lets into Grafana are its admins, with full access. The uptime server has no tunnel, no private network and no secret of theirs, and is at another provider and in another city than production, so an outage at one company, or in one data centre, never takes both.
 
 Secrets are generated on the server that uses them and stay there. What outside services issue, such as storage keys or a Telegram bot's token, comes from an encrypted vault or is written on the server, and Ansible checks it by name only.
 

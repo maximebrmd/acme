@@ -1,10 +1,12 @@
 # Infrastructure
 
 Ansible for the servers Peal runs on, production and the sandbox, each a
-Hetzner Cloud server reachable only through a Cloudflare Tunnel, and for the
-uptime server that watches them from outside. Nothing here has been applied
-yet: the inventory names the hosts on `peal.social` but holds placeholders for
-the rest (`203.0.113.0/24`, `example-team`, `REPLACE…`), and every playbook
+server at a European provider reachable only through a Cloudflare Tunnel,
+and for the uptime server that watches them from outside, at another
+provider and in another city. Nothing here has been applied yet, and no
+provider is chosen: the inventory names the hosts on `peal.social` but holds
+placeholders for the rest (`203.0.113.0/24`, `example-team`, `REPLACE…`,
+each server's `hosting_provider` and `hosting_location`), and every playbook
 refuses to run until they are replaced.
 
 Self-hosters do not need this folder: Caddy and Compose are enough (the docs'
@@ -12,16 +14,16 @@ self-hosting page, and [`peal-docker`](../peal-docker)).
 
 ## How it fits together
 
-| Piece     | What it is                                                                                                                         |
-| --------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| Server    | Ubuntu LTS on Hetzner Cloud, security updates daily, the `ops` account with an SSH key                                             |
-| Edge      | `cloudflared` on the host dials out to Cloudflare; no inbound port is open, SSH included                                           |
-| Access    | Cloudflare Zero Trust Access guards Grafana, SSH, the admin and the whole sandbox                                                  |
-| Stack     | [`compose.production.yaml`](../peal-docker/compose.production.yaml) as the Compose project `peal`, every port on 127.0.0.1         |
-| Telemetry | The OpenTelemetry Collector, Loki, Tempo, Prometheus and Grafana, in the stack                                                     |
-| Alerts    | Grafana's alert rules, sent to a Telegram chat                                                                                     |
-| Backups   | pgBackRest archives the write-ahead log and backs Postgres up to Cloudflare R2                                                     |
-| Uptime    | Gatus on a server of its own checks the public endpoints, hears Grafana's heartbeat and serves the status page ([Uptime](#uptime)) |
+| Piece     | What it is                                                                                                                                  |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| Server    | Ubuntu LTS at a European provider ([which one](#choosing-a-provider-and-a-size)), security updates daily, the `ops` account with an SSH key |
+| Edge      | `cloudflared` on the host dials out to Cloudflare; no inbound port is open, SSH included                                                    |
+| Access    | Cloudflare Zero Trust Access guards Grafana, SSH, the admin and the whole sandbox                                                           |
+| Stack     | [`compose.production.yaml`](../peal-docker/compose.production.yaml) as the Compose project `peal`, every port on 127.0.0.1                  |
+| Telemetry | The OpenTelemetry Collector, Loki, Tempo, Prometheus and Grafana, in the stack                                                              |
+| Alerts    | Grafana's alert rules, sent to a Telegram chat                                                                                              |
+| Backups   | pgBackRest archives the write-ahead log and backs Postgres up to Cloudflare R2                                                              |
+| Uptime    | Gatus on a server of its own checks the public endpoints, hears Grafana's heartbeat and serves the status page ([Uptime](#uptime))          |
 
 The tunnel's routes, for production (`roles/cloudflared/templates/config.yml.j2`):
 
@@ -247,12 +249,13 @@ password manager: the backups cannot be read without it.
 
 ### A new server
 
-1. Create it in the Hetzner console, with your SSH key for root, a Hetzner
-   firewall with no inbound rule, and its address in `inventory/hosts.yml`.
+1. Create it in the provider's console, with your SSH key for root, the
+   provider's firewall with no inbound rule, and its address in
+   `inventory/hosts.yml`.
 2. `uv run ansible-playbook playbooks/bootstrap.yml --limit production -e ansible_user=root -e ssh_via_tunnel=false`
 3. `uv run ansible-playbook playbooks/site.yml --limit production -e ssh_via_tunnel=false`:
-   port 22 stays open while the tunnel comes up. With a Hetzner firewall in
-   front, open 22 there for your address for these two runs.
+   port 22 stays open while the tunnel comes up. With the provider's
+   firewall in front, open 22 there for your address for these two runs.
 4. Check SSH through the tunnel: `ssh ops@ssh.peal.social true`.
 5. `uv run ansible-playbook playbooks/site.yml --limit production`: Ansible
    now connects through the tunnel, and port 22 closes.
@@ -265,7 +268,8 @@ password manager: the backups cannot be read without it.
    `""` in `group_vars/production/main.yml`: while it names the uptime
    server, `site.yml` requires the credential `PEAL_HEARTBEAT_TOKEN`.
 
-If the tunnel ever stops carrying SSH, use the Hetzner console.
+If the tunnel ever stops carrying SSH, use the provider's serial or rescue
+console.
 
 ## Releases
 
@@ -331,10 +335,16 @@ database, to its latest state or to a time.
 
 ## Uptime
 
-A separate Hetzner server watches production and the sandbox from outside,
-as people reach them, with [Gatus](https://github.com/TwiN/gatus): if
+A separate server watches production and the sandbox from outside, as
+people reach them, with [Gatus](https://github.com/TwiN/gatus): if
 Cloudflare, the tunnel or a server is down, its alerts still go out. It is
 not linked to them: no tunnel, no private network, and no secret of theirs.
+It is at another provider than theirs, and in another city: another
+company's network, console and account, which an outage or a suspension
+takes whole, and another power supply. The `uptime` role refuses to run
+while its `hosting_provider` or `hosting_location` is one production or the
+sandbox has, and [`tests/test_hosting.py`](tests/test_hosting.py) checks
+the inventory.
 `uptime.yml` sets it up with the same roles (`ops`, key-only SSH, ufw,
 unattended upgrades, Docker), then the `uptime` role runs Gatus and Caddy in
 Docker, each pinned by digest, as the Compose project `uptime` in
@@ -369,9 +379,11 @@ successes; of a certificate, a host name or a heartbeat at once.
 The server costs money, so it needs the owner's approval, like any paid
 resource. Then:
 
-1. Create it in the Hetzner console, with your SSH key for root and a
-   Hetzner firewall that lets in port 443 from anywhere and port 22 from the
-   addresses you work from, and put its address in `inventory/hosts.yml`.
+1. Create it in the console of a provider other than production's, in
+   another city, with your SSH key for root and a firewall that lets in
+   port 443 from anywhere and port 22 from the addresses you work from. Put
+   its address in `inventory/hosts.yml`, and its provider and city in
+   `group_vars/uptime/main.yml`.
    Give it a name, `uptime_hostname`, with A and AAAA records that Cloudflare
    does not proxy, so it answers even when Cloudflare does not, and the
    status page its own, `uptime_status_hostname` ([The status

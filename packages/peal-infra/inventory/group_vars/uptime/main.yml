@@ -1,10 +1,19 @@
 ---
-# The uptime server: another Hetzner server, which checks the public
-# endpoints of production and the sandbox from outside and alerts on
-# Telegram, and hears production's Grafana's heartbeat. It shares nothing
-# with them: no secret, no tunnel, no private network. Its address is a
-# placeholder until the server exists.
+# The uptime server: a server at another European provider than production's
+# and the sandbox's, in another city, which checks their public endpoints
+# from outside and alerts on Telegram, and hears production's Grafana's
+# heartbeat. It shares nothing with them: no secret, no tunnel, no private
+# network, no provider. Its address is a placeholder until the server
+# exists.
 server_hostname: peal-uptime
+
+# Where it is hosted, as for the other servers (group_vars/production): a
+# provider and a city of its own, since an outage, or a suspended account,
+# at production's provider must not silence the server that reports it. The
+# uptime role refuses a provider or a city that production or the sandbox
+# has, and tests/test_hosting.py checks the inventory.
+hosting_provider: REPLACE-WITH-THE-PROVIDER-OF-THE-UPTIME-SERVER
+hosting_location: REPLACE-WITH-THE-CITY-OF-THE-UPTIME-SERVER
 
 # No tunnel: SSH listens on port 22, key-only and rate limited, and the admin
 # user may forward one local port, to Gatus's dashboard on 127.0.0.1:
@@ -21,6 +30,8 @@ unattended_reboot_time: "04:30"
 # The settings peal_preflight searches for placeholders.
 peal_preflight_names:
   - ansible_host
+  - hosting_provider
+  - hosting_location
   - admin_ssh_public_keys
   - uptime_hostname
   - uptime_status_hostname
