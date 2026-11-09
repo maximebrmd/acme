@@ -412,6 +412,7 @@ const CalendarView = ({
   workspaceId,
 }: CalendarViewProps) => {
   const t = useTranslations("Posts.Calendar");
+  const billing = useTranslations("Billing");
   const format = useFormatter();
   const locale = useLocale();
   const firstDay = firstDayOfWeek(locale);
@@ -494,6 +495,10 @@ const CalendarView = ({
         onSome: (tag) => {
           if (tag === "ScheduleInPast") {
             return t("moveInPast");
+          }
+
+          if (tag === "PlanLimitReached") {
+            return billing("limitReached", { limit: "scheduledPosts" });
           }
 
           return tag === "Forbidden" ? t("moveForbidden") : t("moveFailed");

@@ -74,9 +74,30 @@ Better Auth also reads `BETTER_AUTH_TRUSTED_ORIGINS`, which adds origins as `TRU
 | `ACME_AI_API_KEY`        | unset                              | The provider's key. Required with `anthropic`; with `openai-compatible`, only for an endpoint that asks for one. Keep it secret.                                                                                                                                                        |
 | `ACME_AI_MODEL`          | `claude-opus-5-5` with `anthropic` | The model the assistant asks. Required with `openai-compatible`.                                                                                                                                                                                                                        |
 | `ACME_AI_BASE_URL`       | Anthropic's API                    | The API's base URL, which `/chat/completions` follows, such as `http://127.0.0.1:8000/v1`. Required with `openai-compatible`; with `anthropic`, only to go through a proxy. The server calls it directly, so it may be on a private network.                                            |
-| `ACME_AI_DAILY_REQUESTS` | `100`                              | How many requests each workspace may send the assistant per UTC day. `0` lets none through. A negative or malformed value stops the server at startup.                                                                                                                                  |
+| `ACME_AI_DAILY_REQUESTS` | `100`                              | How many requests each workspace may send the assistant per UTC day, on an instance that does not bill; with billing, each plan sets its own. `0` lets none through. A negative or malformed value stops the server at startup.                                                         |
 
 A provider named without the settings it needs stops the server at startup, and the error names the variable missing. [Writing assistant](/self-hosting#ai) explains the rest.
+
+### Billing [#billing]
+
+| Variable                | Default               | What it does                                                                                                                                                                                                |
+| ----------------------- | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `STRIPE_SECRET_KEY`     | unset: billing is off | The Stripe API key that bills workspaces, such as `sk_live_…`. Unset or empty, there are no plans and nothing is limited. Keep it secret.                                                                   |
+| `STRIPE_WEBHOOK_SECRET` | required with a key   | The signing secret of the webhook endpoint that sends `PUBLIC_URL/api/auth/stripe/webhook` the `customer.subscription.*` events, such as `whsec_…`. Set without a key, it stops the server. Keep it secret. |
+| `STRIPE_PRICE_PRO`      | required with a key   | The id of the monthly price the Pro plan is sold at, such as `price_…`.                                                                                                                                     |
+| `STRIPE_PRICE_BUSINESS` | required with a key   | The id of the monthly price the Business plan is sold at.                                                                                                                                                   |
+| `STRIPE_AUTOMATIC_TAX`  | `false`               | `true` has Stripe Tax compute the tax at checkout, such as EU VAT, from the customer's address and VAT number, which checkout then asks for. Turn Stripe Tax on in the Stripe account first.                |
+| `STRIPE_API_URL`        | Stripe's API          | Another address for Stripe's API, such as `http://127.0.0.1:12111` for stripe-mock in tests.                                                                                                                |
+
+[Billing](/self-hosting#billing) explains the plans and what they limit.
+
+### Captcha [#captcha]
+
+| Variable               | Default                   | What it does                                                                                                                                                                |
+| ---------------------- | ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `TURNSTILE_SITE_KEY`   | unset: the captcha is off | The site key of a Cloudflare Turnstile widget, which the sign-up and password reset forms show. Set it with `TURNSTILE_SECRET_KEY`: one without the other stops the server. |
+| `TURNSTILE_SECRET_KEY` | unset: the captcha is off | The widget's secret key, which the server checks tokens with. Keep it secret.                                                                                               |
+| `TURNSTILE_VERIFY_URL` | Cloudflare's `siteverify` | Another address to check tokens at, such as a fake one in tests.                                                                                                            |
 
 ### Telemetry [#telemetry]
 

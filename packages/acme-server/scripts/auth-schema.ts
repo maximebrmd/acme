@@ -7,7 +7,7 @@
 import path from "node:path";
 
 import { drizzle } from "drizzle-orm/node-postgres";
-import { Redacted } from "effect";
+import { Option, Redacted } from "effect";
 import { format } from "oxfmt";
 
 import { makeAuth } from "#workspace/infrastructure/auth/options.ts";
@@ -27,17 +27,27 @@ const ignore = () => {
   // Generating the schema sends nothing and logs nothing.
 };
 
+// Nor does it bill anyone.
+const nothing = async (): Promise<void> => {
+  await Promise.resolve();
+};
+
 // Tables depend on the plugins and the options that shape columns, never on
-// these settings, which only need to be valid.
+// these settings, which only need to be valid. Billing is on, so the tables
+// include Stripe's: a server without billing has them too, unused.
 const auth = makeAuth({
   database: { db: drizzle.mock(), tables: {} },
   hooks: {
     invitation: ignore,
     log: ignore,
+    memberAllowance: async () => await Promise.resolve(Option.none()),
     resetPassword: ignore,
+    subscribed: async () => await Promise.resolve(false),
+    subscriptionChanged: nothing,
     verifyEmail: ignore,
   },
   settings: {
+    captcha: Option.none(),
     databasePoolMax: 1,
     dynamicClientRegistration: true,
     ipAddressHeaders: ["x-forwarded-for"],
@@ -45,6 +55,13 @@ const auth = makeAuth({
     publicUrl: "http://localhost:3001",
     requireEmailVerification: true,
     secret: Redacted.make("auth-schema-generator-only-0123456789abcdef"),
+    stripe: Option.some({
+      apiUrl: Option.none(),
+      automaticTax: false,
+      prices: { business: "price_schema_only", pro: "price_schema_only" },
+      secretKey: Redacted.make("sk_test_schema_only"),
+      webhookSecret: Redacted.make("whsec_schema_only"),
+    }),
     trustedOrigins: [],
     trustedProxies: [],
   },

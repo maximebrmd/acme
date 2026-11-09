@@ -9,6 +9,13 @@ describe(authErrorKey, () => {
     ).toBe("INVALID_EMAIL_OR_PASSWORD");
   });
 
+  it.each(["MEMBER_LIMIT_REACHED", "MISSING_RESPONSE", "VERIFICATION_FAILED"])(
+    "explains %s, from billing and the captcha",
+    (code) => {
+      expect(authErrorKey({ code, status: 400 })).toBe(code);
+    }
+  );
+
   it("explains rate limiting by its status", () => {
     expect(authErrorKey({ status: 429 })).toBe("TOO_MANY_REQUESTS");
   });

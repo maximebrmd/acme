@@ -66,8 +66,9 @@ jobs:
       - run: bun run check
       - run: bun run typecheck
       # The media tests store files in the development stack's S3 store, on
-      # the port and synthetic credentials compose.yaml defaults to.
-      - run: docker compose --file packages/acme-docker/compose.yaml up --detach --wait seaweedfs
+      # the port and synthetic credentials compose.yaml defaults to, and the
+      # billing tests call its stripe-mock.
+      - run: docker compose --file packages/acme-docker/compose.yaml up --detach --wait seaweedfs stripe-mock
       - run: bun run test
         env:
           DATABASE_URL: postgres://acme:acme@localhost:5432/acme

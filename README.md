@@ -26,9 +26,13 @@ It is not released yet. Today you can:
   delete it with everything in it;
 - choose your language, see your sessions and connected applications,
   download your data or delete your account;
+- bill workspaces through Stripe, with plans that limit channels, members,
+  posts a month and assistant requests a day, when the server has a Stripe
+  key, and ask for a Cloudflare Turnstile check on sign-up when it has
+  Turnstile's keys; without them, nothing is limited or checked;
 - sign in from the command line, and let MCP clients read a workspace.
 
-Analytics, billing and the other platforms are still to come.
+Analytics and the other platforms are still to come.
 
 ## Set up
 
@@ -58,6 +62,7 @@ nothing.
 | SeaweedFS file browser         | <http://127.0.0.1:18888>                              |                                                                   |
 | SMTP (Mailpit)                 | `127.0.0.1:11025`                                     | any user and password                                             |
 | Mailpit inbox                  | <http://127.0.0.1:18025>                              |                                                                   |
+| Stripe API mock (stripe-mock)  | <http://127.0.0.1:12111>                              | any key that starts with `sk_test_`                               |
 | OTLP (OpenTelemetry Collector) | gRPC `127.0.0.1:14317`, HTTP <http://127.0.0.1:14318> |                                                                   |
 | Grafana                        | <http://127.0.0.1:13000>                              | anonymous admin                                                   |
 | Prometheus                     | <http://127.0.0.1:19090>                              |                                                                   |
@@ -196,6 +201,28 @@ Each workspace may send it 100 requests per UTC day
 Acme never logs it, nor the suggestion. The server calls the provider
 directly, so a model server on this machine or your network works.
 
+### Billing and captcha
+
+Billing and the captcha are off until the server has their keys. To try
+billing, use a Stripe account in test mode, with a monthly price for each
+paid plan, and forward its webhooks with the Stripe CLI:
+
+```sh
+stripe listen --forward-to localhost:3001/api/auth/stripe/webhook   # prints the signing secret
+export STRIPE_SECRET_KEY=sk_test_... STRIPE_WEBHOOK_SECRET=whsec_... \
+  STRIPE_PRICE_PRO=price_... STRIPE_PRICE_BUSINESS=price_...
+```
+
+On each workspace's **Billing** page, linked from its card, owners and
+admins then move to a paid plan through Stripe's checkout and manage the
+subscription in its customer portal. Every workspace starts on the free
+plan: 3 channels, 2 members, 30 posts a month and 10 assistant requests a
+day.
+
+For the captcha, Cloudflare's test keys pass every check without a real
+widget: `TURNSTILE_SITE_KEY=1x00000000000000000000AA` and
+`TURNSTILE_SECRET_KEY=1x0000000000000000000000000000000AA`.
+
 ### Telemetry
 
 To send the server's telemetry to the stack, and see it in Grafana:
@@ -277,6 +304,8 @@ In development, these are the ones you may want:
 | `ACME_AI_BASE_URL`            | Anthropic's API                  | The API's base URL: required for an OpenAI-compatible server   |
 | `ACME_AI_MODEL`               | `claude-opus-5-5` with Anthropic | The model: required for an OpenAI-compatible server            |
 | `ACME_AI_DAILY_REQUESTS`      | `100`                            | Assistant requests each workspace may send per UTC day         |
+| `STRIPE_SECRET_KEY`           | unset: no billing, no limits     | Bills workspaces through Stripe, with the variables it needs   |
+| `TURNSTILE_SITE_KEY`          | unset: no captcha                | With `TURNSTILE_SECRET_KEY`, Turnstile on sign-up and resets   |
 | `MCP_DYNAMIC_REGISTRATION`    | `false`                          | Lets MCP clients register themselves                           |
 | `PUBLIC_URL`                  | `http://localhost:3001`          | The origin people open Acme at                                 |
 | `TRUSTED_ORIGINS`             | none                             | More origins allowed to send signed-in requests and uploads    |
@@ -296,9 +325,10 @@ bun run test        # the server's tests write to DATABASE_URL
 bun run build
 ```
 
-The server's tests also read the emails they send from Mailpit, and store
-media in SeaweedFS under `tests/media/`. `SMTP_URL` and `MAILPIT_URL`, and the
-`ACME_S3_*` variables, point them elsewhere. Run the tests on a database of
+The server's tests also read the emails they send from Mailpit, store media
+in SeaweedFS under `tests/media/`, and check billing against stripe-mock.
+`SMTP_URL` and `MAILPIT_URL`, the `ACME_S3_*` variables and `STRIPE_MOCK_URL`
+point them elsewhere. Run the tests on a database of
 their own when a dev server uses the stack's: it would run the jobs they leave
 behind.
 

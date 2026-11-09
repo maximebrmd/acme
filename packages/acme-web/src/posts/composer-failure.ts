@@ -1,6 +1,7 @@
 import type {
   Forbidden,
   InvalidTimeZone,
+  PlanLimitReached,
   PostContentInvalid,
   PostNotFound,
   PostStatusConflict,
@@ -15,6 +16,7 @@ import type {
 export type ComposerFailure =
   | Forbidden
   | InvalidTimeZone
+  | PlanLimitReached
   | PostContentInvalid
   | PostNotFound
   | PostStatusConflict

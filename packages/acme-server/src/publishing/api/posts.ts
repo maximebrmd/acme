@@ -4,6 +4,7 @@ import {
   defaultDraftPageSize,
   Forbidden,
   InvalidTimeRange,
+  PlanLimitReached,
   PostContentInvalid,
   PostNotFound,
   PostStatusConflict,
@@ -68,6 +69,14 @@ const followUpFailures = {
   MissingPermission: forbidden,
   PostNotFound: notFound,
 } as const;
+
+const limitReached = ({
+  allowed,
+  limit,
+}: {
+  readonly allowed: number;
+  readonly limit: PlanLimitReached["limit"];
+}) => Effect.fail(new PlanLimitReached({ allowed, limit }));
 
 export const PostsHandlers = HttpApiBuilder.group(
   Api,
@@ -246,6 +255,7 @@ export const PostsHandlers = HttpApiBuilder.group(
               DatabaseError: Effect.die,
               InvalidPostTransition: conflict,
               MissingPermission: forbidden,
+              PlanLimitReached: limitReached,
               PostContentRejected: contentInvalid,
               PostNotFound: notFound,
               ScheduleInPast: inPast,
@@ -270,6 +280,7 @@ export const PostsHandlers = HttpApiBuilder.group(
                 DatabaseError: Effect.die,
                 InvalidPostTransition: conflict,
                 MissingPermission: forbidden,
+                PlanLimitReached: limitReached,
                 PostContentRejected: contentInvalid,
                 PostNotFound: notFound,
                 ScheduleInPast: inPast,

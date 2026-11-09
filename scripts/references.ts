@@ -45,6 +45,13 @@ const references: readonly Reference[] = [
     tag: (version) => `@atproto/oauth-client-node@${version}`,
   },
   {
+    // The client the Stripe plugin calls, and its webhook signatures.
+    name: "stripe-node",
+    packageName: "stripe",
+    repository: "stripe/stripe-node",
+    tag: (version) => `v${version}`,
+  },
+  {
     name: "tiptap",
     packageName: "@tiptap/react",
     repository: "ueberdosis/tiptap",

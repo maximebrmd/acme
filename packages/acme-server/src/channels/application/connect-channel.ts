@@ -16,13 +16,16 @@ import { tokenLifetimeOf } from "#channels/domain/token-policy.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import { Ids, newId } from "#shared/application/ids.ts";
 import type { Actor } from "#shared/domain/access.ts";
+import { roomForOneMore } from "#shared/domain/allowance.ts";
 import { authorize } from "#shared/domain/authorize.ts";
 import { ChannelIdSchema } from "#shared/domain/ids.ts";
-import type { ChannelId } from "#shared/domain/ids.ts";
+import type { ChannelId, WorkspaceId } from "#shared/domain/ids.ts";
 import type { MissingPermission } from "#shared/domain/missing-permission.ts";
+import type { PlanLimitReached } from "#shared/domain/plan-limit-reached.ts";
 
 import { AuthorizationDenied } from "./authorization-denied.ts";
 import { AuthorizationFailed } from "./authorization-failed.ts";
+import { ChannelAllowance } from "./channel-allowance.ts";
 import { ChannelLocks } from "./channel-locks.ts";
 import { ChannelNotFound } from "./channel-not-found.ts";
 import { ChannelRepository } from "./channel-repository.ts";
@@ -52,6 +55,7 @@ export type StartFailure =
   | DatabaseError
   | MissingPermission
   | MissingTokenKey
+  | PlanLimitReached
   | PlatformNotConnectable;
 
 export type CompleteConnectFailure =
@@ -61,6 +65,7 @@ export type CompleteConnectFailure =
   | InvalidConnectState
   | MissingPermission
   | MissingTokenKey
+  | PlanLimitReached
   | PlatformNotConnectable
   | ReconnectAccountMismatch;
 
@@ -79,6 +84,10 @@ export interface ConnectRequest {
  * The attempt between them is bound to the actor and the workspace, expires
  * after a quarter of an hour, and completes once. Its secret, like the
  * channel's tokens, is stored encrypted.
+ *
+ * A new account needs room in the workspace's plan (`ChannelAllowance`):
+ * checked when the connection starts, and again before the channel is
+ * added. Reconnecting adds nothing, so it needs none.
  */
 export class ConnectChannel extends Context.Service<
   ConnectChannel,
@@ -115,6 +124,7 @@ export class ConnectChannel extends Context.Service<
       const channels = yield* ChannelRepository;
       const cipher = yield* TokenCipher;
       const locks = yield* ChannelLocks;
+      const allowance = yield* ChannelAllowance;
       const ids = yield* Ids;
       const tokenServices = Effect.provideService(TokenCipher, cipher);
 
@@ -133,6 +143,23 @@ export class ConnectChannel extends Context.Service<
             ),
           onSome: Effect.succeed,
         });
+
+      // Room for one more channel in the workspace's plan.
+      const roomForChannel = Effect.fn("ConnectChannel.roomForChannel")(
+        function* roomForChannel(workspaceId: WorkspaceId) {
+          const allowed = yield* allowance.channels(workspaceId);
+
+          if (Option.isNone(allowed)) {
+            return;
+          }
+
+          const connected = yield* channels.list(workspaceId);
+
+          yield* Effect.fromResult(
+            roomForOneMore("channels", allowed, connected.length)
+          );
+        }
+      );
 
       const saveAttempt = Effect.fn("ConnectChannel.saveAttempt")(
         function* saveAttempt(
@@ -173,6 +200,8 @@ export class ConnectChannel extends Context.Service<
         yield* Effect.fromResult(authorize(actor, "channel:connect"));
 
         const authorizer = yield* authorizerFor(platform);
+
+        yield* roomForChannel(actor.workspaceId);
 
         const pending = yield* authorizer.begin({
           handle: request.handle,
@@ -270,6 +299,8 @@ export class ConnectChannel extends Context.Service<
           account: AuthorizedAccount,
           connected: ConnectedAccount
         ) {
+          yield* roomForChannel(actor.workspaceId);
+
           const id = yield* newId(ChannelIdSchema).pipe(
             Effect.provideService(Ids, ids)
           );

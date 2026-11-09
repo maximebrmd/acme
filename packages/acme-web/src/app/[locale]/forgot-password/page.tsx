@@ -1,11 +1,19 @@
-import { useTranslations } from "next-intl";
+import { Option } from "effect";
+import { getTranslations } from "next-intl/server";
+import { connection } from "next/server";
 
+import { captchaSiteKey } from "#auth/captcha.ts";
 import { AuthCard } from "#components/auth/auth-card.tsx";
 import { ForgotPasswordForm } from "#components/auth/forgot-password-form.tsx";
 import { Link } from "#i18n/navigation.ts";
 
-const ForgotPasswordPage = () => {
-  const t = useTranslations("ForgotPasswordPage");
+// Read at request time: whether the server wants a captcha is its setting,
+// not the build's.
+const ForgotPasswordPage = async () => {
+  await connection();
+
+  const t = await getTranslations("ForgotPasswordPage");
+  const siteKey = await captchaSiteKey();
 
   return (
     <AuthCard
@@ -17,7 +25,7 @@ const ForgotPasswordPage = () => {
         </Link>
       }
     >
-      <ForgotPasswordForm />
+      <ForgotPasswordForm captchaSiteKey={Option.getOrNull(siteKey)} />
     </AuthCard>
   );
 };

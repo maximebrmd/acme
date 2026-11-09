@@ -5,11 +5,13 @@ import { FetchHttpClient } from "effect/http";
 import type { AttachableMedia } from "#publishing/application/attachable-media.ts";
 import { MediaInPosts } from "#publishing/application/media-in-posts.ts";
 import type { PlatformPublisher } from "#publishing/application/platform-publisher.ts";
+import type { PostAllowance } from "#publishing/application/post-allowance.ts";
 import { PostDrafts } from "#publishing/application/post-drafts.ts";
 import { PostFollowUp } from "#publishing/application/post-follow-up.ts";
 import { PostQueries } from "#publishing/application/post-queries.ts";
 import { PostRecords } from "#publishing/application/post-records.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
+import { PostUsage } from "#publishing/application/post-usage.ts";
 import { RoutedPlatformPublisher } from "#publishing/application/routed-platform-publisher.ts";
 import type { WorkspaceChannels } from "#publishing/application/workspace-channels.ts";
 import { ChannelAccessCredentials } from "#publishing/infrastructure/channel-access-credentials.ts";
@@ -25,6 +27,7 @@ import { LibraryMediaForPublishing } from "#publishing/infrastructure/library-me
 import { ListedWorkspaceChannels } from "#publishing/infrastructure/listed-workspace-channels.ts";
 import { LoggedChannelHealth } from "#publishing/infrastructure/logged-channel-health.ts";
 import { NotifiedPublicationOutcomes } from "#publishing/infrastructure/notified-publication-outcomes.ts";
+import { PlanPostAllowanceLive } from "#publishing/infrastructure/plan-post-allowance.ts";
 import { PlatformClientsLive } from "#publishing/infrastructure/platforms/platform-clients-live.ts";
 import { WorkflowPublicationScheduler } from "#publishing/infrastructure/workflow-publication-scheduler.ts";
 import { PublishPostV1Live } from "#publishing/infrastructure/workflows/publish-post.ts";
@@ -33,21 +36,27 @@ import { OutboundGuard } from "#shared/infrastructure/platforms/outbound-guard.t
 
 /**
  * The publishing context's use cases (`PostDrafts`, `PostQueries`,
- * `PostScheduling`, `PostFollowUp`, for the handlers, and `PostRecords`, for
- * the workspace context's exports and erasures) and the adapters behind its
- * ports, with `references` for the channels and media posts refer to. Needs
- * the database (Drizzle), the workflow engine, a TransactionRunner and Ids,
- * and PublicationOutcomes for PostFollowUp.
+ * `PostScheduling`, `PostFollowUp`, for the handlers, `PostRecords`, for the
+ * workspace context's exports and erasures, and `PostUsage`, for billing) and
+ * the adapters behind its ports, with `references` for the channels and media
+ * posts refer to and the posts a month allows. Needs the database (Drizzle),
+ * the workflow engine, a TransactionRunner and Ids, and PublicationOutcomes
+ * for PostFollowUp.
  */
 export const publishingWith = <E, R>(
-  references: Layer.Layer<AttachableMedia | WorkspaceChannels, E, R>
+  references: Layer.Layer<
+    AttachableMedia | PostAllowance | WorkspaceChannels,
+    E,
+    R
+  >
 ) =>
   Layer.mergeAll(
     PostDrafts.layer,
     PostQueries.layer,
     PostRecords.layer,
     PostScheduling.layer,
-    PostFollowUp.layer
+    PostFollowUp.layer,
+    PostUsage.layer
   ).pipe(
     Layer.provideMerge(
       Layer.mergeAll(
@@ -63,13 +72,18 @@ export const publishingWith = <E, R>(
 
 /**
  * The use cases as the server runs them: channels are those the channels
- * context lists, and media the ready media its library holds, which the
- * composition root provides (ListChannels, MediaLibrary). How each target
- * ends is told through the notifications context (Notify), naming channels
- * as the channels context has them (ChannelRepository).
+ * context lists, media the ready media its library holds, and the posts a
+ * month allows the workspace's plan, which the composition root provides
+ * (ListChannels, MediaLibrary, WorkspaceEntitlements). How each target ends
+ * is told through the notifications context (Notify), naming channels as
+ * the channels context has them (ChannelRepository).
  */
 export const PublishingLive = publishingWith(
-  Layer.mergeAll(ListedWorkspaceChannels, LibraryAttachableMedia)
+  Layer.mergeAll(
+    ListedWorkspaceChannels,
+    LibraryAttachableMedia,
+    PlanPostAllowanceLive
+  )
 ).pipe(
   Layer.provideMerge(
     NotifiedPublicationOutcomes.pipe(Layer.provide(DrizzlePostRepository))

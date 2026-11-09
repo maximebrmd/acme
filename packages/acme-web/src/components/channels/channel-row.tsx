@@ -21,6 +21,7 @@ import { useTranslations } from "next-intl";
 import { useTransition } from "react";
 import { toast } from "sonner";
 
+import { useChannelErrorText } from "#channels/channel-error-text.ts";
 import {
   channelsChanged,
   disconnectChannel,
@@ -51,6 +52,7 @@ export const ChannelRow = ({
   workspaceId,
 }: ChannelRowProps) => {
   const t = useTranslations("ChannelsPage");
+  const errorText = useChannelErrorText();
   const reconnect = useAtomSet(reconnectChannel, { mode: "promiseExit" });
   const disconnect = useAtomSet(disconnectChannel, { mode: "promiseExit" });
   const [isReconnecting, startReconnect] = useTransition();
@@ -71,7 +73,7 @@ export const ChannelRow = ({
           }
         },
         onSome: (key) => {
-          toast.error(t(`errors.${key}`));
+          toast.error(errorText(key));
         },
       });
     });
@@ -89,7 +91,7 @@ export const ChannelRow = ({
           toast.success(t("disconnected", { handle: channel.handle }));
         },
         onSome: (key) => {
-          toast.error(t(`errors.${key}`));
+          toast.error(errorText(key));
         },
       });
     });

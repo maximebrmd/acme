@@ -8,10 +8,12 @@ import type { PlatformAuthorizer } from "#channels/application/platform-authoriz
 import type { Platform } from "#channels/domain/platform.ts";
 import { DrizzleChannelRepository } from "#channels/infrastructure/drizzle-channel-repository.ts";
 import { DrizzleConnectAttempts } from "#channels/infrastructure/drizzle-connect-attempts.ts";
+import { PlanChannelAllowanceLive } from "#channels/infrastructure/plan-channel-allowance.ts";
 import { MastodonApps } from "#channels/infrastructure/platforms/mastodon/mastodon-apps.ts";
 import { mastodonAuthorizer } from "#channels/infrastructure/platforms/mastodon/mastodon-authorizer.ts";
 import { SqlChannelLocks } from "#channels/infrastructure/sql-channel-locks.ts";
 import { publicHttpClient } from "#shared/infrastructure/platforms/public-http.ts";
+import { UnmeteredTest } from "#test/billing/support.ts";
 import {
   DatabaseTest,
   OpenOutboundGuard,
@@ -61,10 +63,12 @@ export const MastodonAuthorizersTest = Layer.effect(
 
 /**
  * ConnectChannel with the real adapters on the test database, the synthetic
- * keyring, and the authorizers given.
+ * keyring, and the authorizers given, on a server whose plans are
+ * `entitlements` (none, by default: nothing is limited).
  */
 export const connectChannelWith = <E, R>(
-  authorizers: Layer.Layer<PlatformAuthorizers, E, R>
+  authorizers: Layer.Layer<PlatformAuthorizers, E, R>,
+  entitlements: typeof UnmeteredTest = UnmeteredTest
 ) =>
   ConnectChannel.layer.pipe(
     Layer.provideMerge(
@@ -72,6 +76,7 @@ export const connectChannelWith = <E, R>(
         DrizzleChannelRepository,
         DrizzleConnectAttempts,
         SqlChannelLocks,
+        PlanChannelAllowanceLive.pipe(Layer.provide(entitlements)),
         authorizers
       )
     ),

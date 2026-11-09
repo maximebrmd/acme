@@ -11,6 +11,7 @@ import { Authentication } from "./authentication.ts";
 import { Forbidden } from "./forbidden.ts";
 import { InvalidTimeRange } from "./invalid-time-range.ts";
 import { InvalidTimeZone } from "./invalid-time-zone.ts";
+import { PlanLimitReached } from "./plan-limit-reached.ts";
 import { PostContentInvalid } from "./post-content-invalid.ts";
 import { PostNotFound } from "./post-not-found.ts";
 import { PostStatusConflict } from "./post-status-conflict.ts";
@@ -303,6 +304,7 @@ const scheduling = [
   PostContentInvalid,
   UnknownChannels,
   UnknownMedia,
+  PlanLimitReached,
 ];
 
 /** A workspace's posts: drafts, the calendar, scheduling, and outcomes. */
@@ -409,7 +411,7 @@ export class PostsApi extends HttpApiGroup.make("posts")
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Schedules a draft on some of the workspace's channels at an instant, kept with the IANA time zone it was chosen in. The content must fit each platform's rules, its media included: file types, sizes, durations, dimensions, alt text, how many videos, and whether images and videos go together. A time up to a minute ago publishes now. Needs post:schedule and channel:read, and media:read when it shows media.",
+          "Schedules a draft on some of the workspace's channels at an instant, kept with the IANA time zone it was chosen in. The content must fit each platform's rules, its media included: file types, sizes, durations, dimensions, alt text, how many videos, and whether images and videos go together. A time up to a minute ago publishes now. On a server that bills, the posts going out in that month (UTC) must fit the workspace's plan (PlanLimitReached). Needs post:schedule and channel:read, and media:read when it shows media.",
         summary: "Schedule a draft",
       })
     ),
@@ -421,7 +423,7 @@ export class PostsApi extends HttpApiGroup.make("posts")
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Moves a scheduled post to another instant, or schedules a draft on the channels it has. Needs post:schedule, and channel:read for a draft.",
+          "Moves a scheduled post to another instant, or schedules a draft on the channels it has. Moved to another month, or scheduled, it must fit that month's posts in the workspace's plan (PlanLimitReached). Needs post:schedule, and channel:read for a draft.",
         summary: "Reschedule a post",
       })
     ),

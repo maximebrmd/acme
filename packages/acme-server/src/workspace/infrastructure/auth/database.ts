@@ -20,6 +20,7 @@ import {
   organization,
   rateLimit,
   session,
+  subscription,
   user,
   verification,
 } from "#workspace/infrastructure/auth-schema.generated.ts";
@@ -44,6 +45,7 @@ const authTables = {
   organization,
   rateLimit,
   session,
+  subscription,
   user,
   verification,
 };

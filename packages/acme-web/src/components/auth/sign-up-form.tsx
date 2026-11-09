@@ -11,11 +11,17 @@ import { authErrorKey } from "#auth/errors.ts";
 import type { AuthErrorKey } from "#auth/errors.ts";
 import { FormError } from "#components/auth/form-error.tsx";
 import { FormField } from "#components/auth/form-field.tsx";
+import { useCaptcha } from "#components/auth/turnstile-field.tsx";
 import { getPathname } from "#i18n/navigation.ts";
 
 // Creates the account, in the page's language, which its emails will use.
 // The confirmation link signs the new user in on the verify-email page.
-export const SignUpForm = () => {
+// With a Turnstile site key, the server wants the widget's token too.
+export const SignUpForm = ({
+  captchaSiteKey,
+}: {
+  readonly captchaSiteKey: string | null;
+}) => {
   const t = useTranslations("SignUpPage");
   const fields = useTranslations("Auth");
   const locale = useLocale();
@@ -25,6 +31,7 @@ export const SignUpForm = () => {
   const [error, setError] = useState<AuthErrorKey | null>(null);
   const [sentTo, setSentTo] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const captcha = useCaptcha(captchaSiteKey);
 
   const handleSubmit = (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -33,10 +40,14 @@ export const SignUpForm = () => {
       const result = await authClient.signUp.email({
         callbackURL: getPathname({ href: "/verify-email", locale }),
         email,
+        fetchOptions: { headers: captcha.headers },
         locale,
         name,
         password,
       });
+
+      // The token is spent, whatever the answer.
+      captcha.reset();
 
       if (result.error === null) {
         setError(null);
@@ -85,7 +96,12 @@ export const SignUpForm = () => {
         value={password}
         onChange={setPassword}
       />
-      <Button type="submit" disabled={isPending} focusableWhenDisabled>
+      {captcha.widget}
+      <Button
+        type="submit"
+        disabled={isPending || !captcha.ready}
+        focusableWhenDisabled
+      >
         {isPending ? t("submitting") : t("submit")}
       </Button>
     </form>

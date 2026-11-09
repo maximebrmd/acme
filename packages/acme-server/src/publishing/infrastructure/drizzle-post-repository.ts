@@ -1,11 +1,13 @@
 import {
   and,
   asc,
+  count,
   desc,
   eq,
   gte,
   inArray,
   lt,
+  ne,
   notInArray,
   sql,
 } from "drizzle-orm";
@@ -307,6 +309,27 @@ export const DrizzlePostRepository = Layer.effect(
       });
 
     return PostRepository.of({
+      countGoingOut: (workspaceId, { from, to }, except) =>
+        db
+          .select({ going: count() })
+          .from(posts)
+          .where(
+            and(
+              eq(posts.workspaceId, workspaceId),
+              gte(posts.scheduledAt, date(from)),
+              lt(posts.scheduledAt, date(to)),
+              notInArray(posts.status, ["draft", "cancelled"]),
+              ...except.pipe(
+                Option.map((postId) => ne(posts.id, postId)),
+                Option.toArray
+              )
+            )
+          )
+          .pipe(
+            Effect.mapError(failed),
+            Effect.map((rows) => rows[0]?.going ?? 0),
+            Effect.withSpan("PostRepository.countGoingOut")
+          ),
       find: (postId) =>
         selectPost(postId).pipe(
           Effect.mapError(failed),

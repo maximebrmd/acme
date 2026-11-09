@@ -32,6 +32,7 @@ export const user = authSchema.table("user", {
   banned: boolean("banned").default(false),
   banReason: text("ban_reason"),
   banExpires: timestamp("ban_expires", { withTimezone: true }),
+  stripeCustomerId: text("stripe_customer_id"),
   locale: text("locale", { enum: ["en", "fr"] }).default("en"),
 });
 
@@ -116,6 +117,7 @@ export const organization = authSchema.table(
     logo: text("logo"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
     metadata: text("metadata"),
+    stripeCustomerId: text("stripe_customer_id"),
   },
   (table) => [uniqueIndex("organization_slug_uidx").on(table.slug)]
 );
@@ -442,6 +444,28 @@ export const deviceCode = authSchema.table(
   ]
 );
 
+export const subscription = authSchema.table("subscription", {
+  id: uuid("id")
+    .default(sql`pg_catalog.gen_random_uuid()`)
+    .primaryKey(),
+  plan: text("plan").notNull(),
+  referenceId: text("reference_id").notNull(),
+  stripeCustomerId: text("stripe_customer_id"),
+  stripeSubscriptionId: text("stripe_subscription_id"),
+  status: text("status").default("incomplete"),
+  periodStart: timestamp("period_start", { withTimezone: true }),
+  periodEnd: timestamp("period_end", { withTimezone: true }),
+  trialStart: timestamp("trial_start", { withTimezone: true }),
+  trialEnd: timestamp("trial_end", { withTimezone: true }),
+  cancelAtPeriodEnd: boolean("cancel_at_period_end").default(false),
+  cancelAt: timestamp("cancel_at", { withTimezone: true }),
+  canceledAt: timestamp("canceled_at", { withTimezone: true }),
+  endedAt: timestamp("ended_at", { withTimezone: true }),
+  seats: integer("seats"),
+  billingInterval: text("billing_interval"),
+  stripeScheduleId: text("stripe_schedule_id"),
+});
+
 export const rateLimit = authSchema.table("rate_limit", {
   id: uuid("id")
     .default(sql`pg_catalog.gen_random_uuid()`)
@@ -470,6 +494,7 @@ export const authRelations = defineRelationsPart(
     oauthConsent,
     oauthClientAssertion,
     deviceCode,
+    subscription,
     rateLimit,
   },
   (r) => ({

@@ -2,6 +2,7 @@ import { Layer } from "effect";
 
 import { AccountHandlers } from "#workspace/api/account.ts";
 import { ApiKeysHandlers } from "#workspace/api/api-keys.ts";
+import { CaptchaHandlers } from "#workspace/api/captcha.ts";
 import { ConnectedAppsHandlers } from "#workspace/api/connected-apps.ts";
 import {
   AuthenticationLive,
@@ -19,8 +20,10 @@ import { ConnectedApps } from "#workspace/application/connected-apps.ts";
 import { DeleteWorkspace } from "#workspace/application/delete-workspace.ts";
 import { ResolveMember } from "#workspace/application/resolve-member.ts";
 import { WorkspaceContacts } from "#workspace/application/workspace-contacts.ts";
+import { WorkspaceSeats } from "#workspace/application/workspace-seats.ts";
 import { ApiKeyIssuerLive } from "#workspace/infrastructure/auth/api-key-issuer.ts";
 import { BetterAuthLive } from "#workspace/infrastructure/auth/better-auth.ts";
+import { CaptchaChallengeLive } from "#workspace/infrastructure/auth/captcha-challenge.ts";
 import { CliClientLive } from "#workspace/infrastructure/auth/cli-client.ts";
 import { AuthGatewayLive } from "#workspace/infrastructure/auth/gateway.ts";
 import { PasswordCheckLive } from "#workspace/infrastructure/auth/password-check.ts";
@@ -46,16 +49,21 @@ const UseCasesLive = Layer.mergeAll(
   ApiKeys.layer,
   Authenticate.layer,
   ResolveMember.layer,
-  WorkspaceContacts.layer
+  WorkspaceContacts.layer,
+  WorkspaceSeats.layer
 );
 
 /**
  * The workspace context's services: Better Auth, configured from the
  * environment, with the command line's OAuth client registered, and the use
  * cases behind the API and the MCP endpoint. It needs the database,
- * migrated, and the notifications context's SendAuthEmail.
+ * migrated, the notifications context's SendAuthEmail, and the billing
+ * context's WorkspaceEntitlements, RecordSubscription and BilledWorkspaces.
  */
-export const WorkspaceLive = UseCasesLive.pipe(
+export const WorkspaceLive = Layer.merge(
+  UseCasesLive,
+  CaptchaChallengeLive
+).pipe(
   Layer.provide(AdaptersLive),
   Layer.provideMerge(BetterAuthLive),
   Layer.provideMerge(AuthSettings.layer)
@@ -97,7 +105,8 @@ export const WorkspaceApiLive = Layer.mergeAll(
   ApiKeysHandlers,
   WorkspacesHandlers,
   AccountHandlers,
-  ConnectedAppsHandlers
+  ConnectedAppsHandlers,
+  CaptchaHandlers
 ).pipe(
   Layer.provideMerge(Layer.mergeAll(AuthenticationLive, WorkspaceAccessLive))
 );

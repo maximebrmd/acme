@@ -74,9 +74,30 @@ Better Auth lit aussi `BETTER_AUTH_TRUSTED_ORIGINS`, qui ajoute des origines com
 | `ACME_AI_API_KEY`        | non définie                             | La clé du fournisseur. Obligatoire avec `anthropic` ; avec `openai-compatible`, seulement pour un point d’accès qui en demande une. Gardez-la secrète.                                                                                                                                                                                               |
 | `ACME_AI_MODEL`          | `claude-opus-5-5` avec `anthropic`      | Le modèle qu’interroge l’assistant. Obligatoire avec `openai-compatible`.                                                                                                                                                                                                                                                                            |
 | `ACME_AI_BASE_URL`       | l’API d’Anthropic                       | L’URL de base de l’API, que suit `/chat/completions`, comme `http://127.0.0.1:8000/v1`. Obligatoire avec `openai-compatible` ; avec `anthropic`, seulement pour passer par un proxy. Le serveur l’appelle directement : elle peut se trouver sur un réseau privé.                                                                                    |
-| `ACME_AI_DAILY_REQUESTS` | `100`                                   | Combien de demandes chaque espace de travail peut envoyer à l’assistant par jour UTC. `0` n’en laisse passer aucune. Une valeur négative ou mal formée arrête le serveur au démarrage.                                                                                                                                                               |
+| `ACME_AI_DAILY_REQUESTS` | `100`                                   | Combien de demandes chaque espace de travail peut envoyer à l’assistant par jour UTC, sur une instance qui ne facture pas ; avec la facturation, chaque abonnement fixe la sienne. `0` n’en laisse passer aucune. Une valeur négative ou mal formée arrête le serveur au démarrage.                                                                  |
 
 Un fournisseur nommé sans les réglages qu’il demande arrête le serveur au démarrage, et l’erreur nomme la variable manquante. [Assistant de rédaction](/self-hosting#ai) explique le reste.
+
+### Facturation [#billing]
+
+| Variable                | Par défaut                       | Rôle                                                                                                                                                                                                                |
+| ----------------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `STRIPE_SECRET_KEY`     | non définie : pas de facturation | La clé d’API Stripe qui facture les espaces de travail, comme `sk_live_…`. Non définie ou vide, il n’y a pas d’abonnement et rien n’est limité. Gardez-la secrète.                                                  |
+| `STRIPE_WEBHOOK_SECRET` | obligatoire avec une clé         | Le secret de signature du webhook qui envoie à `PUBLIC_URL/api/auth/stripe/webhook` les événements `customer.subscription.*`, comme `whsec_…`. Définie sans clé, elle arrête le serveur. Gardez-la secrète.         |
+| `STRIPE_PRICE_PRO`      | obligatoire avec une clé         | L’identifiant du prix mensuel de l’abonnement Pro, comme `price_…`.                                                                                                                                                 |
+| `STRIPE_PRICE_BUSINESS` | obligatoire avec une clé         | L’identifiant du prix mensuel de l’abonnement Business.                                                                                                                                                             |
+| `STRIPE_AUTOMATIC_TAX`  | `false`                          | `true` fait calculer la taxe par Stripe Tax au paiement, comme la TVA européenne, d’après l’adresse et le numéro de TVA du client, que le paiement demande alors. Activez d’abord Stripe Tax dans le compte Stripe. |
+| `STRIPE_API_URL`        | l’API de Stripe                  | Une autre adresse pour l’API de Stripe, comme `http://127.0.0.1:12111` pour stripe-mock dans les tests.                                                                                                             |
+
+[Facturation](/self-hosting#billing) explique les abonnements et ce qu’ils limitent.
+
+### Captcha [#captcha]
+
+| Variable               | Par défaut                    | Rôle                                                                                                                                                                                                                  |
+| ---------------------- | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `TURNSTILE_SITE_KEY`   | non définie : pas de captcha  | La clé de site d’un widget Cloudflare Turnstile, que montrent les formulaires d’inscription et de réinitialisation du mot de passe. Définissez-la avec `TURNSTILE_SECRET_KEY` : l’une sans l’autre arrête le serveur. |
+| `TURNSTILE_SECRET_KEY` | non définie : pas de captcha  | La clé secrète du widget, avec laquelle le serveur vérifie les jetons. Gardez-la secrète.                                                                                                                             |
+| `TURNSTILE_VERIFY_URL` | le `siteverify` de Cloudflare | Une autre adresse où vérifier les jetons, comme une fausse dans les tests.                                                                                                                                            |
 
 ### Télémétrie [#telemetry]
 

@@ -6,6 +6,7 @@ import { MediaAttachment } from "#publishing/domain/media-attachment.ts";
 import { MediaFile } from "#publishing/domain/media-file.ts";
 import { PostContent } from "#publishing/domain/post-content.ts";
 import { TextOverride } from "#publishing/domain/text-override.ts";
+import { PlanPostAllowanceLive } from "#publishing/infrastructure/plan-post-allowance.ts";
 import { Actor } from "#shared/domain/access.ts";
 import type { Permission } from "#shared/domain/access.ts";
 import { UserIdSchema } from "#shared/domain/ids.ts";
@@ -16,6 +17,7 @@ import type {
   WorkspaceId,
 } from "#shared/domain/ids.ts";
 import type { Platform } from "#shared/domain/platform.ts";
+import { UnmeteredTest } from "#test/billing/support.ts";
 import { permissionsFor } from "#workspace/domain/roles.ts";
 
 // Stand-ins for what posts refer to in other contexts, and synthetic content.
@@ -61,8 +63,20 @@ export const mediaFile = (
 ): MediaFile =>
   new MediaFile({ byteSize, contentType, dimensions, duration, mediaId });
 
-/** Channels on Mastodon, and no media: what most tests need. */
-export const ReferencesTest = Layer.mergeAll(anyChannelOn(), attachableMedia());
+/**
+ * The posts a month allows, on a server whose plans are `entitlements`
+ * (none, by default: nothing is limited).
+ */
+export const postAllowance = (
+  entitlements: typeof UnmeteredTest = UnmeteredTest
+) => PlanPostAllowanceLive.pipe(Layer.provide(entitlements));
+
+/** Channels on Mastodon, no media, and no limit: what most tests need. */
+export const ReferencesTest = Layer.mergeAll(
+  anyChannelOn(),
+  attachableMedia(),
+  postAllowance()
+);
 
 const syntheticUser = UserIdSchema.make("5b1c5f7e-3d2a-4c1b-9e8f-7a6b5c4d3e2f");
 

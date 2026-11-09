@@ -1,0 +1,73 @@
+{
+  "id": "evt_synthetic_updated",
+  "object": "event",
+  "api_version": "2026-10-28.endive",
+  "created": 1793268600,
+  "data": {
+    "object": {
+      "id": "sub_synthetic",
+      "object": "subscription",
+      "billing_cycle_anchor": 1793268000,
+      "cancel_at": null,
+      "cancel_at_period_end": true,
+      "canceled_at": null,
+      "collection_method": "charge_automatically",
+      "created": 1793268000,
+      "currency": "eur",
+      "customer": "cus_synthetic",
+      "ended_at": null,
+      "items": {
+        "object": "list",
+        "data": [
+          {
+            "id": "si_synthetic",
+            "object": "subscription_item",
+            "created": 1793268000,
+            "current_period_end": 1795860000,
+            "current_period_start": 1793268000,
+            "metadata": {},
+            "price": {
+              "id": "price_synthetic_pro",
+              "object": "price",
+              "active": true,
+              "billing_scheme": "per_unit",
+              "currency": "eur",
+              "livemode": false,
+              "lookup_key": null,
+              "product": "prod_synthetic_pro",
+              "recurring": {
+                "interval": "month",
+                "interval_count": 1,
+                "usage_type": "licensed"
+              },
+              "tax_behavior": "exclusive",
+              "type": "recurring",
+              "unit_amount": 1900
+            },
+            "quantity": 1,
+            "subscription": "sub_synthetic"
+          }
+        ],
+        "has_more": false,
+        "url": "/v1/subscription_items?subscription=sub_synthetic"
+      },
+      "livemode": false,
+      "metadata": {},
+      "schedule": null,
+      "start_date": 1793268000,
+      "status": "active",
+      "trial_end": null,
+      "trial_start": null
+    },
+    "previous_attributes": {
+      "cancel_at_period_end": false
+    }
+  },
+  "livemode": false,
+  "pending_webhooks": 1,
+  "request": {
+    "id": null,
+    "idempotency_key": null
+  },
+  "type": "customer.subscription.updated"
+}

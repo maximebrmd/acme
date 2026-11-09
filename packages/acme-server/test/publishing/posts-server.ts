@@ -21,7 +21,11 @@ import {
   setTime,
 } from "#test/publishing/infrastructure/harness.ts";
 import { RecordingPublicationOutcomes } from "#test/publishing/infrastructure/recorded-outcomes.ts";
-import { attachableMedia, mediaFile } from "#test/publishing/support.ts";
+import {
+  attachableMedia,
+  mediaFile,
+  postAllowance,
+} from "#test/publishing/support.ts";
 
 // The publishing use cases as the server runs them, on an in-memory cluster
 // driven by TestClock: posts go to the channels the channels context lists
@@ -33,13 +37,17 @@ export const attachableImage: MediaAssetId = MediaAssetIdSchema.make(
   "00000000-0000-7000-8000-00000000a001"
 );
 
-/** The server, with the media posts may show from `media`. */
+/**
+ * The server, with the media posts may show from `media`, and the posts a
+ * month allows from `allowance` (no limit, by default).
+ */
 export const postsServerWith = <E, R>(
-  media: Layer.Layer<AttachableMedia, E, R>
+  media: Layer.Layer<AttachableMedia, E, R>,
+  allowance: ReturnType<typeof postAllowance> = postAllowance()
 ) =>
   publishingWorkers(FakePlatformPublisher).pipe(
     Layer.provideMerge(
-      publishingWith(Layer.mergeAll(ListedWorkspaceChannels, media))
+      publishingWith(Layer.mergeAll(ListedWorkspaceChannels, media, allowance))
     ),
     Layer.provideMerge(RecordingPublicationOutcomes),
     Layer.provideMerge(ListChannels.layer),

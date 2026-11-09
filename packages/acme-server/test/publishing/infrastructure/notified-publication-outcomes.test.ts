@@ -51,6 +51,7 @@ import {
   actorAs,
   apiKeyIn,
   attachableMedia,
+  postAllowance,
   syntheticContent,
 } from "#test/publishing/support.ts";
 import { permissionsFor } from "#workspace/domain/roles.ts";
@@ -70,7 +71,7 @@ import {
 // Publishing as the server runs it, with no media to attach: these posts
 // carry none, so the media context's library is not needed.
 const PublishingTest = publishingWith(
-  Layer.mergeAll(ListedWorkspaceChannels, attachableMedia())
+  Layer.mergeAll(ListedWorkspaceChannels, attachableMedia(), postAllowance())
 ).pipe(
   Layer.provideMerge(
     NotifiedPublicationOutcomes.pipe(Layer.provide(DrizzlePostRepository))

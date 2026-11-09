@@ -15,6 +15,7 @@ import {
   schedulePost,
 } from "#publishing/domain/post.ts";
 import type { Post } from "#publishing/domain/post.ts";
+import { postingMonthOf, sameMonth } from "#publishing/domain/posting-month.ts";
 import type { ScheduleInPast } from "#publishing/domain/schedule-in-past.ts";
 import type { Schedule } from "#publishing/domain/schedule.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
@@ -22,12 +23,15 @@ import { newId } from "#shared/application/ids.ts";
 import type { Ids } from "#shared/application/ids.ts";
 import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 import type { Actor } from "#shared/domain/access.ts";
+import { roomForOneMore } from "#shared/domain/allowance.ts";
 import { authorize } from "#shared/domain/authorize.ts";
 import { PostIdSchema } from "#shared/domain/ids.ts";
 import type { ChannelId, PostId } from "#shared/domain/ids.ts";
 import type { MissingPermission } from "#shared/domain/missing-permission.ts";
+import type { PlanLimitReached } from "#shared/domain/plan-limit-reached.ts";
 
 import type { AttachableMedia } from "./attachable-media.ts";
+import { PostAllowance } from "./post-allowance.ts";
 import type { PostNotFound } from "./post-not-found.ts";
 import { channelsFor, mediaFor } from "./post-references.ts";
 import { PostRepository } from "./post-repository.ts";
@@ -63,10 +67,22 @@ export interface ScheduleDraftRequest {
   readonly schedule: Schedule;
 }
 
-/** Why a post's channels, content or media keep it from being scheduled. */
-type Unpublishable = PostContentRejected | UnknownChannels | UnknownMedia;
+/**
+ * Why a post's channels, content or media keep it from being scheduled, or
+ * the workspace's plan from adding it to its month.
+ */
+type Unpublishable =
+  | PlanLimitReached
+  | PostContentRejected
+  | UnknownChannels
+  | UnknownMedia;
 
-type Ports = AttachableMedia | Ids | PostRepository | WorkspaceChannels;
+type Ports =
+  | AttachableMedia
+  | Ids
+  | PostAllowance
+  | PostRepository
+  | WorkspaceChannels;
 
 const mayPublish = (actor: Actor) =>
   Effect.fromResult(authorize(actor, "post:schedule"));
@@ -80,7 +96,9 @@ const mayPublish = (actor: Actor) =>
  *
  * A post is scheduled only on channels of its workspace, with ready media of
  * the workspace, and with content their platforms take, its media included
- * (`#publishing/domain/content-rules.ts`).
+ * (`#publishing/domain/content-rules.ts`). Its month (UTC) must have room
+ * for it in the workspace's plan (`PostAllowance`): a scheduled post moved
+ * within its month takes no more room.
  *
  * A post is only found in the workspace that owns it: another workspace's
  * post is PostNotFound, whatever its id.
@@ -186,6 +204,32 @@ export class PostScheduling extends Context.Service<
         withPorts
       );
 
+      // Room in the month the post goes out in, besides the post itself.
+      const roomInMonth = Effect.fn("PostScheduling.roomInMonth")(
+        function* roomInMonth(post: Post) {
+          const allowed = yield* PostAllowance.use((allowance) =>
+            allowance.scheduledPerMonth(post.workspaceId)
+          );
+
+          if (Option.isNone(allowed)) {
+            return;
+          }
+
+          const { at } = yield* scheduleOf(post);
+
+          const going = yield* posts.countGoingOut(
+            post.workspaceId,
+            postingMonthOf(at),
+            Option.some(post.id)
+          );
+
+          yield* Effect.fromResult(
+            roomForOneMore("scheduledPosts", allowed, going)
+          );
+        },
+        withPorts
+      );
+
       // Starts the job for the post's current revision, at the time it was
       // scheduled for (which may be later than asked), and records it.
       const startJob = Effect.fn("PostScheduling.startJob")(function* startJob(
@@ -216,6 +260,19 @@ export class PostScheduling extends Context.Service<
         const moved = yield* Effect.fromResult(
           schedulePost(current.post, at, yield* DateTime.now)
         );
+
+        // A scheduled post moved within its month takes no more room, even
+        // in a month already past a smaller plan's allowance.
+        const staysInMonth =
+          current.post.status._tag === "scheduled" &&
+          sameMonth(
+            current.post.status.schedule.at,
+            (yield* scheduleOf(moved)).at
+          );
+
+        if (!staysInMonth) {
+          yield* roomInMonth(moved);
+        }
 
         yield* applied(yield* posts.update(moved, current.post));
         yield* stopJob(current);
@@ -269,6 +326,7 @@ export class PostScheduling extends Context.Service<
 
         yield* transaction(
           Effect.gen(function* insertAndStart() {
+            yield* roomInMonth(post);
             yield* posts.insert(post, targets);
             yield* startJob(post);
           })

@@ -13,6 +13,11 @@ import { ObservabilityLive } from "#app/observability.ts";
 import { SystemHandlers } from "#app/system.ts";
 import { AssistantApiLive, AssistantLive } from "#assistant/container.ts";
 import {
+  BillingApiLive,
+  BillingLive,
+  BillingOverviewLive,
+} from "#billing/container.ts";
+import {
   ChannelOAuthApiLive,
   ChannelsApiLive,
   ChannelsLive,
@@ -51,7 +56,8 @@ const WorkspaceGroupsLive = Layer.mergeAll(
   MediaApiLive,
   NoticesApiLive,
   NotificationPreferencesApiLive,
-  AssistantApiLive
+  AssistantApiLive,
+  BillingApiLive
 ).pipe(Layer.provideMerge(WorkspaceApiLive));
 
 const ApiLive = HttpApiBuilder.layer(Api, {
@@ -66,12 +72,17 @@ const ApiLive = HttpApiBuilder.layer(Api, {
  */
 export const RoutesLive = Layer.mergeAll(ApiLive, AuthRoutesLive, McpLive);
 
-// The workspace context with the notifications it sends, then the notices,
-// which read the workspace's members, then the channels context, which
-// sends them, as publishing does.
+// The workspace context with the notifications it sends and the plans that
+// limit it, then the notices, which read the workspace's members, then the
+// channels context, which sends them, as publishing does.
 const ChannelsWithNoticesLive = ChannelsLive.pipe(
   Layer.provideMerge(NoticesLive),
-  Layer.provideMerge(WorkspaceLive.pipe(Layer.provideMerge(NotificationsLive)))
+  Layer.provideMerge(
+    WorkspaceLive.pipe(
+      Layer.provideMerge(NotificationsLive),
+      Layer.provideMerge(BillingLive)
+    )
+  )
 );
 
 // The media context, which asks publishing which posts show an asset before
@@ -84,6 +95,11 @@ const PublishingContextLive = PublishingLive.pipe(
   Layer.provide(Layer.mergeAll(ChannelsWithNoticesLive, MediaContextLive))
 );
 
+// The assistant, whose daily quota is the workspace plan's.
+const AssistantContextLive = AssistantLive.pipe(
+  Layer.provideMerge(BillingLive)
+);
+
 // Workspace and account settings, which erase and export what every context
 // keeps.
 const SettingsContextLive = WorkspaceSettingsLive.pipe(
@@ -92,7 +108,18 @@ const SettingsContextLive = WorkspaceSettingsLive.pipe(
       ChannelsWithNoticesLive,
       PublishingContextLive,
       MediaContextLive,
-      AssistantLive
+      AssistantContextLive
+    )
+  )
+);
+
+// The billing page, which counts what each context holds.
+const BillingContextLive = BillingOverviewLive.pipe(
+  Layer.provide(
+    Layer.mergeAll(
+      ChannelsWithNoticesLive,
+      PublishingContextLive,
+      AssistantContextLive
     )
   )
 );
@@ -122,8 +149,9 @@ const ServicesLive = Layer.mergeAll(
   ChannelsWithNoticesLive,
   PublishingContextLive,
   MediaContextLive,
-  AssistantLive,
-  SettingsContextLive
+  AssistantContextLive,
+  SettingsContextLive,
+  BillingContextLive
 ).pipe(
   Layer.provide(Layer.mergeAll(JobsWithoutWorkersLive, BunDns.layer)),
   Layer.provideMerge(MigrationsLive),
@@ -153,8 +181,9 @@ const ContextsLive = Layer.mergeAll(
   ChannelsWithNoticesLive,
   PublishingContextLive,
   MediaContextLive,
-  AssistantLive,
-  SettingsContextLive
+  AssistantContextLive,
+  SettingsContextLive,
+  BillingContextLive
 ).pipe(
   Layer.provideMerge(
     Layer.mergeAll(IdsLive, TransactionRunnerLive, BunDns.layer)

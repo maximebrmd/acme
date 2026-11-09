@@ -21,8 +21,8 @@ Acme reaches every outside service through a port with a self-hostable default. 
 | Postgres       | Yes      | All data, and the durable jobs that publish posts and refresh platform tokens. Acme needs no Redis.      | Any Postgres server                                                                    |
 | Object storage | Yes      | Uploaded media                                                                                           | Any S3-compatible API                                                                  |
 | Email          | Yes      | Confirming email addresses, resetting passwords, invitations, and notifications about posts and channels | Resend, or any SMTP server                                                             |
-| Billing        | Optional | Plans and subscriptions (not built yet)                                                                  | Stripe. Without a key, billing is off and no plan limits apply.                        |
-| Captcha        | Optional | Bot protection (not built yet)                                                                           | Cloudflare Turnstile. Without a key, the captcha is off.                               |
+| Billing        | Optional | Plans and subscriptions                                                                                  | Stripe. Without a key, billing is off and no plan limits apply.                        |
+| Captcha        | Optional | Bot protection on sign-up and password resets                                                            | Cloudflare Turnstile. Without its keys, the captcha is off.                            |
 | AI             | Optional | The writing assistant in the composer                                                                    | Anthropic's API, or any OpenAI-compatible endpoint. Without one, the assistant is off. |
 | Telemetry      | Optional | Logs, metrics and traces                                                                                 | Any OpenTelemetry (OTLP) collector. Nothing is exported unless an endpoint is set.     |
 
@@ -162,9 +162,31 @@ The composer's writing assistant rewrites a post in a tone, shortens it to fit a
 
 A provider named without the settings it needs stops the server at startup, and the error names the variable missing. The server calls the provider directly, not through the guard that keeps platform calls on public addresses, so the endpoint may run on the same machine or your private network.
 
-Each workspace may send the assistant `ACME_AI_DAILY_REQUESTS` requests per UTC day, 100 unless set; `0` lets none through. Every workspace gets that many: on an instance where anyone may sign up, each new workspace adds to what your provider can bill. A request the provider could not be reached for does not count. One that gets no answer within 90 seconds fails and counts, as the provider may have run it.
+Each workspace may send the assistant `ACME_AI_DAILY_REQUESTS` requests per UTC day, 100 unless set; `0` lets none through. With [billing](#billing) on, each plan sets its own instead. Without it, every workspace gets that many: on an instance where anyone may sign up, each new workspace adds to what your provider can bill. A request the provider could not be reached for does not count. One that gets no answer within 90 seconds fails and counts, as the provider may have run it.
 
 What members send is the post's text, up to 5,000 characters, and answers are capped at 4,096 tokens. The text is sent as data, with instructions the text cannot change. The server never logs or traces the text or the answer, saves neither, and sends the provider no trace context: its logs and traces name the provider, the model, the token counts and the kind of failure only.
+
+## Billing [#billing]
+
+Billing is off until `STRIPE_SECRET_KEY` is set: there are no plans, nothing is limited, and the workspaces' billing page says so. With a key, every workspace starts on the free plan, and a Stripe subscription moves it to Pro or Business:
+
+| Plan     | Channels | Members | Posts a month | Assistant requests a day |
+| -------- | -------- | ------- | ------------- | ------------------------ |
+| Free     | 3        | 2       | 30            | 10                       |
+| Pro      | 10       | 5       | 300           | 100                      |
+| Business | 30       | 20      | Unlimited     | 500                      |
+
+Posts count in the calendar month (UTC) they go out in; cancelled ones do not. Members count with the invitations still pending when inviting. A limit applies when something is added, so a workspace on a smaller plan than it needs keeps what it has.
+
+1. In Stripe, create a product for each paid plan with a monthly price, and set `STRIPE_PRICE_PRO` and `STRIPE_PRICE_BUSINESS` to their ids.
+2. Add a webhook endpoint for `PUBLIC_URL/api/auth/stripe/webhook` with the `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted` and `checkout.session.completed` events, and set `STRIPE_WEBHOOK_SECRET` to its signing secret. Leave this path open to Stripe if something guards the rest of `/api/auth`.
+3. Turn on the customer portal, where members update their payment method and cancel. For EU VAT, turn on Stripe Tax and set `STRIPE_AUTOMATIC_TAX=true`.
+
+Owners and admins open checkout and the portal from the workspace's billing page; staff impersonating them cannot. A subscription's state comes only from its webhook events, checked against the signing secret: an event sent twice is recorded once, and an older one never replaces a newer one. A subscription stays paid for while Stripe retries a failed payment; unpaid, paused or cancelled, the workspace is back on the free plan.
+
+## Captcha [#captcha]
+
+With `TURNSTILE_SITE_KEY` and `TURNSTILE_SECRET_KEY`, signing up and asking for a password reset need a Cloudflare Turnstile token: the forms show the widget, and the server checks each token with Cloudflare before going on. Signing in relies on its rate limits. Add your public address to the widget's hostnames in Cloudflare. Cloudflare's test keys let you try it without a real widget.
 
 ## The command line and MCP clients [#mcp]
 
