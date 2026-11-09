@@ -370,7 +370,9 @@ and no socket, for tests.
   Stripe plugin's `auth.subscription` holds that `billsAt` bills, as a
   checkout can complete before Stripe's events come), before anything
   goes, then expires the workspace's open Checkout Sessions at Stripe
-  (`Checkouts`, which the workspace context's `StripeCheckoutsLive` backs).
+  (`Checkouts`, which the workspace context's `StripeCheckoutsLive` backs),
+  and refuses still while Stripe itself holds a subscription that `billsAt`
+  bills (`Checkouts.atStripe`), as a checkout completed unseen leaves one.
   `DeleteWorkspace` and `CloseAccount`, for the workspaces it deletes,
   answer `WorkspaceSubscribed` (409), or `BillingUnavailable` (503) when
   Stripe does not answer. Closing an account leaves the
@@ -1165,7 +1167,10 @@ self-hoster needs only Postgres and an S3-compatible store:
   workspace `--workspace`, then `ACME_WORKSPACE`, names by slug or id
   (`inWorkspace`, `src/workspace.ts`; a user's only workspace otherwise),
   and `account`, which exports the user's data to a file only they may read
-  and lists their connected applications. Turn a request's failure into
+  and lists their connected applications (an exclusive create, never
+  through a link or over a file made meanwhile). `runWith` and `run` print
+  through `printableConsole` (`src/print.ts`), which shows control
+  characters as U+FFFD, since what the server holds was written by others. Turn a request's failure into
   what the user reads with `explain` (`src/explain.ts`). Positional
   arguments are read in the order of their config's keys, which the linters
   sort: name the keys so the order reads right. Commands that act as the
