@@ -199,7 +199,7 @@
     "disconnectAccount": "Disconnect {handle}",
     "disconnecting": "Disconnecting…",
     "disconnectTitle": "Disconnect {handle}?",
-    "disconnectDescription": "Acme deletes the tokens it holds for this {platform, select, bluesky {Bluesky} mastodon {Mastodon} other {{platform}}} account and posts nothing more on it. You can connect it again later.",
+    "disconnectDescription": "Acme deletes the tokens it holds for this {platform, select, bluesky {Bluesky} facebook {Facebook} instagram {Instagram} linkedin {LinkedIn} mastodon {Mastodon} pinterest {Pinterest} threads {Threads} tiktok {TikTok} x {X} youtube {YouTube} other {{platform}}} account and posts nothing more on it. You can connect it again later.",
     "cancel": "Cancel",
     "disconnected": "{handle} is disconnected.",
     "connectTitle": "Connect an account",
@@ -230,6 +230,20 @@
       "forbidden": "You may not do this in this workspace.",
       "notFound": "This channel is no longer connected.",
       "unknown": "Something went wrong. Try again."
+    }
+  },
+  "PlatformConnect": {
+    "connecting": "Opening…",
+    "loadFailed": "The platforms you can connect could not be loaded. Try again.",
+    "linkedin": {
+      "title": "LinkedIn",
+      "description": "Your LinkedIn profile. LinkedIn asks you to sign in again every 60 days: Acme reminds you a week before.",
+      "connect": "Connect LinkedIn"
+    },
+    "x": {
+      "title": "X",
+      "description": "Your X account. You sign in on X and allow Acme to post and upload media for you.",
+      "connect": "Connect X"
     }
   },
   "ConnectCallbackPage": {
