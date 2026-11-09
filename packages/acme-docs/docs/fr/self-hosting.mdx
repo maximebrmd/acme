@@ -1,83 +1,90 @@
 ---
 title: Auto-hébergement
-description: Les services nécessaires à une instance Acme auto-hébergée, les services facultatifs, et les variables d’environnement qu’elle lit.
+description: Les services nécessaires à une instance Acme auto-hébergée, comment faire tourner le serveur et l’application web derrière une seule adresse, et comment configurer l’e-mail, les médias, les canaux et MCP.
 sidebar:
-  order: 2
+  order: 7
 ---
 
-Acme accède à chaque service extérieur par un port doté d’une option par défaut auto-hébergeable : une instance auto-hébergée n’a donc besoin que de deux services à elle, Postgres et un stockage objet compatible S3. Tout le reste est facultatif et reste désactivé tant que vous ne le configurez pas.
+Acme accède à chaque service extérieur par un port doté d’une option par défaut auto-hébergeable. Une instance auto-hébergée fait tourner deux programmes à elle, le serveur et l’application web, et a besoin de Postgres, d’un stockage objet compatible S3 et d’un moyen d’envoyer des e-mails. Tout le reste est facultatif et reste désactivé tant que vous ne le configurez pas.
 
 <Callout type="warning" title="Avant la première version">
-  Acme n’est pas encore sorti et aucune image n’est publiée. Cette page décrit
-  le modèle d’auto-hébergement que suit le code. Les variables absentes de la
-  liste ci-dessous ne sont pas encore fixées, et toutes les valeurs indiquées
-  sont des exemples.
+  Acme n’est pas encore sorti et aucune image n’est publiée : construisez
+  l’image du serveur et l’application web depuis le dépôt, comme l’explique son
+  README. Cette page décrit le modèle d’auto-hébergement que suit le code, et
+  toutes les valeurs indiquées sont des exemples.
 </Callout>
 
 ## Services [#services]
 
-| Service        | Requis     | Usage dans Acme                                                                                                                                                                  | Options                                                                                          |
-| -------------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| Postgres       | Oui        | Toutes les données, et les tâches durables qui diffusent les publications, renouvellent les jetons des plateformes et récupèrent les statistiques. Acme n’a pas besoin de Redis. | N’importe quel serveur Postgres                                                                  |
-| Stockage objet | Oui        | Médias téléversés                                                                                                                                                                | N’importe quelle API compatible S3                                                               |
-| E-mail         | Facultatif | Notifications par e-mail                                                                                                                                                         | Resend, ou n’importe quel serveur SMTP                                                           |
-| Facturation    | Facultatif | Offres et abonnements                                                                                                                                                            | Stripe. Sans clé, la facturation est désactivée et aucune limite d’offre ne s’applique.          |
-| Captcha        | Facultatif | Protection contre les robots                                                                                                                                                     | Cloudflare Turnstile. Sans clé, le captcha est désactivé.                                        |
-| IA             | Facultatif | Fonctionnalités d’IA                                                                                                                                                             | N’importe quel point d’accès compatible OpenAI, ou une clé d’API Anthropic                       |
-| Télémétrie     | Facultatif | Journaux, métriques et traces                                                                                                                                                    | N’importe quel collecteur OpenTelemetry (OTLP). Rien n’est exporté sans point d’accès configuré. |
+| Service        | Requis     | Usage dans Acme                                                                                                                                     | Options                                                                                          |
+| -------------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| Postgres       | Oui        | Toutes les données, et les tâches durables qui diffusent les publications et renouvellent les jetons des plateformes. Acme n’a pas besoin de Redis. | N’importe quel serveur Postgres                                                                  |
+| Stockage objet | Oui        | Médias importés                                                                                                                                     | N’importe quelle API compatible S3                                                               |
+| E-mail         | Oui        | Confirmer les adresses e-mail, réinitialiser les mots de passe, inviter, et prévenir des canaux à reconnecter                                       | Resend, ou n’importe quel serveur SMTP                                                           |
+| Facturation    | Facultatif | Offres et abonnements (pas encore développés)                                                                                                       | Stripe. Sans clé, la facturation est désactivée et aucune limite d’offre ne s’applique.          |
+| Captcha        | Facultatif | Protection contre les robots (pas encore développée)                                                                                                | Cloudflare Turnstile. Sans clé, le captcha est désactivé.                                        |
+| IA             | Facultatif | Fonctionnalités d’IA (pas encore développées)                                                                                                       | N’importe quel point d’accès compatible OpenAI, ou une clé d’API Anthropic                       |
+| Télémétrie     | Facultatif | Journaux, métriques et traces                                                                                                                       | N’importe quel collecteur OpenTelemetry (OTLP). Rien n’est exporté sans point d’accès configuré. |
 
 Le déploiement d’Acme stocke les médias sur Cloudflare R2, et son environnement de développement utilise SeaweedFS pour le stockage et Mailpit pour l’e-mail. Une instance auto-hébergée peut utiliser ceux-ci, ou tout autre stockage et serveur de messagerie qui parle les mêmes protocoles.
 
-## Variables d’environnement [#environment-variables]
+## Ce qu’il faut faire tourner [#run]
 
-Le serveur et l’application web lisent de simples variables d’environnement : leurs images tournent sur n’importe quel hôte. Voici les variables qu’ils lisent aujourd’hui.
+- **Le serveur** (`acme-server`) : l’API HTTP sous `/api`, la connexion sous `/api/auth`, le point d’accès MCP à `/api/mcp`, et les tâches qui diffusent les publications et renouvellent les jetons. Son image écoute sur le port 3000 et tourne sous un utilisateur sans privilèges.
+- **L’application web** (`acme-web`) : toutes les pages, sur Node. Elle transmet `/api/*` et les documents de découverte OAuth (`/.well-known/oauth-*`) au serveur, à `ACME_API_URL` : les personnes, la ligne de commande et les clients MCP utilisent tous une seule adresse, `PUBLIC_URL`.
 
-### Serveur [#server]
+Faites tourner un seul processus serveur par instance : les clients MCP des anciennes révisions du protocole gardent leurs sessions dans sa mémoire. Chaque processus qui tourne a besoin de son propre `HOSTNAME`.
 
-| Variable                      | Par défaut                                             | Exemple                                     | Rôle                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| ----------------------------- | ------------------------------------------------------ | ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `DATABASE_URL`                | aucune                                                 | `postgres://acme:acme@postgres:5432/acme`   | La base de données Postgres. Obligatoire : le serveur ne démarre pas sans elle.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| `PORT`                        | `3000`                                                 | `8080`                                      | Le port d’écoute du serveur HTTP.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| `OTEL_EXPORTER_OTLP_ENDPOINT` | non définie                                            | `http://otel-collector:4318`                | Le point d’accès OTLP/HTTP du collecteur OpenTelemetry qui reçoit les journaux, métriques et traces. Non définie, rien n’est exporté.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| `OTEL_SERVICE_NAME`           | `acme-server`                                          | `acme-sandbox`                              | Le nom de service sous lequel la télémétrie est envoyée.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
-| `OTEL_TRACES_EXPORTER`        | `otlp`                                                 | `none`                                      | `none` arrête l’export des traces une fois un point d’accès défini. `OTEL_METRICS_EXPORTER` et `OTEL_LOGS_EXPORTER` font de même pour les métriques et les journaux.                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| `ACME_CLUSTER_RETENTION`      | `30 days`                                              | `7 days`                                    | Combien de temps les traces des tâches terminées, comme celle d’une publication diffusée, sont gardées dans la base avant qu’un nettoyage quotidien les supprime. Les tâches encore en attente sont toujours gardées.                                                                                                                                                                                                                                                                                                                                                                                                |
-| `HOSTNAME`                    | `acme-server`                                          | `acme-1`                                    | Le nom du serveur parmi les exécuteurs de tâches enregistrés dans la base. Chaque processus serveur a besoin du sien ; Docker y met l’identifiant du conteneur.                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| `ACME_TOKEN_KEYS`             | non définie                                            | `k2:<clé>,k1:<clé>`                         | Les clés qui chiffrent les jetons des canaux connectés : des entrées `idDeClé:clé` séparées par des virgules, chaque clé faisant 32 octets aléatoires en base64 (`openssl rand -base64 32`). La première clé chiffre et toutes les clés listées déchiffrent : pour en changer, placez une nouvelle clé en tête et gardez les anciennes. Nécessaire seulement pour connecter des canaux : non définie, le serveur démarre, et la connexion d’un canal échoue. Une valeur mal formée arrête le serveur au démarrage. Gardez les clés secrètes, et gardez-en une copie : sans elles, chaque canal doit être reconnecté. |
-| `ACME_S3_ENDPOINT`            | aucune en production, `http://127.0.0.1:18333` sinon   | `https://<compte>.r2.cloudflarestorage.com` | L’URL de l’API S3 qui stocke les médias. Obligatoire en production, comme les trois suivantes : le serveur n’y démarre pas sans elles. Ailleurs, elles valent par défaut le SeaweedFS de l’environnement de développement.                                                                                                                                                                                                                                                                                                                                                                                           |
-| `ACME_S3_BUCKET`              | aucune en production, `acme-media` sinon               | `acme-media`                                | Le bucket où vont les médias.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| `ACME_S3_ACCESS_KEY_ID`       | aucune en production, la clé de développement sinon    | `<id de clé>`                               | La clé d’accès du stockage. Gardez-la secrète.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| `ACME_S3_SECRET_ACCESS_KEY`   | aucune en production, le secret de développement sinon | `<secret>`                                  | Le secret de cette clé. Gardez-le secret.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| `ACME_S3_REGION`              | `auto`                                                 | `eu-west-1`                                 | La région pour laquelle les requêtes sont signées. `auto` convient à Cloudflare R2.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| `ACME_S3_FORCE_PATH_STYLE`    | `false` en production, `true` sinon                    | `true`                                      | `true` met le bucket dans le chemin de l’URL plutôt que dans son nom d’hôte, comme SeaweedFS le demande.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
-| `ACME_S3_KEY_PREFIX`          | aucune                                                 | `staging/`                                  | Un dossier sous lequel va chaque clé, pour que des instances partagent un bucket. Il finit par `/`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| `ACME_MEDIA_PUBLIC_BASE_URL`  | non définie                                            | `https://media.example.com`                 | L’adresse où le bucket est servi publiquement, s’il l’est. Non définie, les plateformes et les navigateurs lisent les médias par des URL présignées.                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| `ACME_FFPROBE_PATH`           | `ffprobe`                                              | `/usr/local/bin/ffprobe`                    | Le programme ffprobe qui lit les dimensions, la durée et le codec d’une vidéo. L’image du serveur en contient un. Sans lui, les vidéos restent importées et ne sont pas prêtes pour les publications.                                                                                                                                                                                                                                                                                                                                                                                                                |
+En production (`NODE_ENV=production`, que l’image du serveur définit), le serveur refuse de démarrer sans ces variables, et son erreur nomme celle qui manque :
 
-Au démarrage, le serveur applique les migrations de la base de données qu’il n’a pas encore appliquées, et n’écoute qu’une fois qu’elles sont terminées.
+| Variable                                                                                   | Ce que c’est                                                   |
+| ------------------------------------------------------------------------------------------ | -------------------------------------------------------------- |
+| `DATABASE_URL`                                                                             | La base de données Postgres                                    |
+| `PUBLIC_URL`                                                                               | L’adresse où l’on ouvre Acme, comme `https://acme.example.com` |
+| `BETTER_AUTH_SECRET`                                                                       | Le secret qui signe les sessions : `openssl rand -base64 32`   |
+| `AUTH_IP_HEADERS`                                                                          | L’en-tête où votre frontal met l’adresse du client             |
+| `MAIL_FROM`, et `SMTP_URL` ou `RESEND_API_KEY`                                             | L’expéditeur des e-mails, et le moyen de les envoyer           |
+| `ACME_S3_ENDPOINT`, `ACME_S3_BUCKET`, `ACME_S3_ACCESS_KEY_ID`, `ACME_S3_SECRET_ACCESS_KEY` | Le stockage des médias                                         |
 
-Le serveur exécute ses tâches durables depuis la même base, et les garde par des verrous consultatifs de session tant qu’il tourne. Connectez-le à Postgres directement, ou par un pooler en mode session : un pooler en mode transaction donne une autre connexion à chaque requête, ce qui perd ces verrous.
+L’application web a besoin de `ACME_API_URL`. Pour connecter des canaux, le serveur a aussi besoin de `ACME_TOKEN_KEYS`. [Variables d’environnement](/environment-variables) liste chaque réglage, avec sa valeur par défaut.
+
+## Devant Acme [#reverse-proxy]
+
+Placez devant l’application web un proxy inverse qui termine TLS, comme Caddy, et n’exposez que le proxy. Envoyez toutes les requêtes à l’application web, qui transmet les chemins du serveur, ou envoyez `/api/*` et `/.well-known/oauth-*` directement au serveur et tout le reste à l’application web.
+
+La connexion est limitée en débit par adresse du client, que le serveur lit dans l’en-tête que nomme `AUTH_IP_HEADERS`. Ne nommez qu’un en-tête que votre frontal définit en remplaçant ce que le client a envoyé :
+
+- derrière Cloudflare, `cf-connecting-ip` ;
+- derrière Caddy, qui remplace `X-Forwarded-For` sauf si on lui dit de faire confiance aux proxies placés avant lui, `x-forwarded-for` ;
+- derrière des proxies qui ajoutent à `X-Forwarded-For`, `x-forwarded-for`, avec leurs adresses dans `AUTH_TRUSTED_PROXIES`, pour que l’adresse du client soit lue depuis la droite, après eux.
+
+L’application web transmet ces en-têtes tels qu’ils arrivent : sans proxy devant elle, aucune adresse n’est fiable, et les limites ne distinguent pas les clients.
+
+Le serveur répond à deux sondes :
+
+- `GET /api/health` répond `204 No Content` dès que le serveur a démarré, quel que soit l’état de sa base de données, ce qui convient à un contrôle de santé de conteneur. L’image du serveur l’utilise.
+- `GET /api/ready` répond `204 No Content` quand la base de données répond elle aussi, et `503 Service Unavailable` avec une erreur `DatabaseUnavailable` sinon : un répartiteur de charge peut ainsi retenir le trafic jusque-là.
+
+## Base de données [#database]
+
+Au démarrage, le serveur applique les migrations de la base de données qu’il n’a pas encore appliquées, un serveur à la fois, et n’écoute qu’une fois qu’elles sont terminées. Chaque partie d’Acme range ses tables dans un schéma Postgres à elle (`auth`, `channels`, `media`, `notifications`, `publishing`) ; les tables de l’exécuteur de tâches (`cluster_*`) sont dans `public`.
+
+Le serveur exécute ses tâches durables depuis la même base, et les garde par des verrous consultatifs de session tant qu’il tourne. Connectez-le à Postgres directement, ou par un pooler en mode session : un pooler en mode transaction donne une autre connexion à chaque requête, ce qui perd ces verrous. Chaque processus serveur ouvre jusqu’à 10 connexions, et jusqu’à 5 de plus pour la connexion des utilisateurs (`AUTH_DB_POOL_MAX`).
+
+Un nettoyage quotidien supprime les traces des tâches terminées depuis plus de 30 jours (`ACME_CLUSTER_RETENTION`). Les tâches encore en attente sont toujours gardées.
+
+## Arrêt [#stopping]
 
 À l’arrêt, le serveur attend jusqu’à 60 secondes que les appels en cours aux plateformes répondent. Laissez-lui au moins 75 secondes avant de l’interrompre, avec `docker stop --time 75` ou `stop_grace_period: 75s` dans Compose : un appel coupé est marqué non confirmé, et sa publication doit être vérifiée à la main sur la plateforme.
 
-Le serveur exporte la télémétrie en JSON sur HTTP : faites pointer le point d’accès vers le port OTLP/HTTP du collecteur, 4318 par défaut, et non vers son port gRPC. Il lit aussi ces variables OpenTelemetry, et aucune autre (`OTEL_EXPORTER_OTLP_PROTOCOL` comprise) :
+## E-mail [#email]
 
-- `OTEL_EXPORTER_OTLP_HEADERS`, `OTEL_EXPORTER_OTLP_COMPRESSION` et `OTEL_EXPORTER_OTLP_TIMEOUT`, ainsi que leurs variantes par signal et celles du point d’accès, comme `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` ;
-- `OTEL_RESOURCE_ATTRIBUTES` et `OTEL_SERVICE_VERSION` ;
-- `OTEL_SDK_DISABLED` ;
-- les réglages de regroupement `OTEL_BSP_*` pour les traces et `OTEL_BLRP_*` pour les journaux ;
-- `OTEL_METRIC_EXPORT_INTERVAL`, `OTEL_METRIC_EXPORT_TIMEOUT` et `OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE`.
+Définissez `MAIL_FROM`, l’expéditeur, comme `Acme <noreply@example.com>` ou une adresse depuis laquelle votre service de messagerie peut envoyer, et un moyen d’envoi :
 
-### Application web [#web-app]
+- `RESEND_API_KEY`, pour envoyer par l’API de Resend ;
+- sinon `SMTP_URL`, comme `smtp://utilisateur:motdepasse@mail.example.com:587`, ou `smtps://…:465` pour du TLS dès le premier octet.
 
-| Variable       | Par défaut                                          | Exemple                   | Rôle                                                                                                                                             |
-| -------------- | --------------------------------------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `ACME_API_URL` | aucune en production, `http://localhost:3000` sinon | `http://acme-server:3000` | L’adresse à laquelle l’application web joint le serveur. Elle y transmet les requêtes `/api/*` du navigateur et s’en sert pour rendre les pages. |
-| `PORT`         | `3000`                                              | `8080`                    | Le port d’écoute de l’application web.                                                                                                           |
-
-L’outil en ligne de commande lit aussi `ACME_API_URL`, sauf si `--api-url` est indiqué.
-
-Les variables de l’e-mail, de la facturation, du captcha et de l’IA seront listées ici à mesure que chaque adaptateur sera livré.
+Acme envoie l’e-mail qui confirme une adresse, les réinitialisations de mot de passe, les invitations à un espace de travail, et les avis sur les canaux à reconnecter, chacun dans la langue du lecteur. Avec `AUTH_REQUIRE_EMAIL_VERIFICATION=false`, on peut se connecter avant d’avoir confirmé son adresse.
 
 ## Stockage des médias [#media-storage]
 
@@ -89,13 +96,54 @@ bun nx run acme-server:media-cors
 
 La relancer ne change rien. Sa clé d’accès doit pouvoir modifier les réglages du bucket ; celle du serveur n’a besoin que de lire et d’écrire des objets.
 
-Une fois un fichier stocké, le serveur le lit : les dimensions d’une image avec sharp, les dimensions, la durée et le codec d’une vidéo avec ffprobe. Une vidéo importée sur un serveur sans ffprobe reste importée, marquée comme non lue, jusqu’à ce qu’elle soit complétée à nouveau sur un serveur qui en dispose.
+Les grandes vidéos partent en plusieurs morceaux. Un import laissé inachevé garde ses morceaux dans le stockage : ajoutez une règle de cycle de vie qui abandonne les envois en plusieurs parties inachevés après un jour, si votre stockage le permet.
 
-## Devant Acme [#reverse-proxy]
+Une fois un fichier stocké, le serveur le lit : les dimensions d’une image avec sharp, les dimensions, la durée et le codec d’une vidéo avec ffprobe, que l’image du serveur contient. Une vidéo importée sur un serveur sans ffprobe reste importée, marquée comme non lue, jusqu’à ce qu’elle soit complétée à nouveau sur un serveur qui en dispose.
 
-Placez devant le serveur un proxy inverse qui termine TLS, comme Caddy, et n’exposez que le proxy.
+Les pages montrent les médias par des liens signés de courte durée. Si le bucket est aussi servi publiquement, par exemple par un domaine personnalisé R2, mettez cette adresse dans `ACME_MEDIA_PUBLIC_BASE_URL`, et les liens vers les médias l’utilisent à la place.
 
-Le serveur répond à deux sondes :
+## Canaux [#channels]
 
-- `GET /api/health` répond `204 No Content` dès que le serveur a démarré, quel que soit l’état de sa base de données, ce qui convient à un contrôle de santé de conteneur.
-- `GET /api/ready` répond `204 No Content` quand la base de données répond elle aussi, et `503 Service Unavailable` avec une erreur `DatabaseUnavailable` sinon : un répartiteur de charge peut ainsi retenir le trafic jusque-là.
+Le serveur chiffre les jetons des comptes connectés avec les clés de `ACME_TOKEN_KEYS`. Sans elle, le serveur démarre, et la connexion d’un compte échoue. Créez une clé avec :
+
+```sh
+echo "k1:$(openssl rand -base64 32)"
+```
+
+La valeur liste des entrées `idDeClé:clé` séparées par des virgules, comme `k2:<clé>,k1:<clé>`. La première clé chiffre et toutes les clés listées déchiffrent : pour en changer, placez une nouvelle clé en tête et gardez les anciennes. Une valeur mal formée arrête le serveur au démarrage. Gardez les clés secrètes, et gardez-en une copie : sans elles, chaque canal doit être reconnecté.
+
+Le serveur joint lui-même les plateformes, en HTTPS : il doit donc accéder à Internet. Il n’appelle que des serveurs aux adresses publiques, sur le port HTTPS par défaut, ce qui empêche de le diriger vers votre réseau privé. Les plateformes renvoient les personnes vers `PUBLIC_URL/connect/<plateforme>/callback`.
+
+### Bluesky [#bluesky]
+
+Un serveur en production ne connecte des comptes Bluesky qu’avec des clés à lui, qui l’identifient auprès de Bluesky. `PUBLIC_URL` doit être en HTTPS, sans port. Créez une clé, depuis le dépôt :
+
+```sh
+bun nx run acme-server:bluesky-key
+```
+
+Mettez la ligne qu’elle affiche dans `BLUESKY_CLIENT_KEYS`. Les entrées sont séparées par des virgules : pour en changer, placez une nouvelle clé en tête, et gardez les anciennes jusqu’à ce que les sessions qu’elles ont signées aient été rafraîchies. Bluesky lit la description du client d’Acme à `PUBLIC_URL/api/channels/oauth/bluesky/client-metadata.json`, et ses clés publiques à côté.
+
+Sans clés, un serveur lancé depuis les sources sur `localhost` utilise le client de développement de Bluesky, dont les sessions durent deux semaines, et tout autre serveur ne peut pas connecter Bluesky.
+
+## La ligne de commande et les clients MCP [#mcp]
+
+La [ligne de commande](/cli) se connecte avec un code que l’on approuve à `PUBLIC_URL/device`, et n’a besoin de rien d’autre.
+
+Les [clients MCP](/mcp) se connectent avec OAuth, qui demande `PUBLIC_URL` en HTTPS, ou sur `localhost` pour le développement. Sur une adresse en HTTP simple ailleurs, comme `http://192.168.1.20:3001`, le serveur démarre, journalise un avertissement, et son point d’accès MCP refuse toutes les requêtes.
+
+La plupart des clients MCP s’enregistrent eux-mêmes avant de se connecter, ce que le serveur n’autorise qu’avec `MCP_DYNAMIC_REGISTRATION=true`. N’importe qui peut alors enregistrer un client, sous n’importe quel nom : la page de consentement prévient qu’Acme ne l’a pas vérifié, et indique où il renvoie ensuite.
+
+## Comptes d’équipe [#staff]
+
+L’équipe, le rôle d’administrateur de Better Auth, peut se faire passer pour un membre pendant une heure et bannir des comptes, par les points d’accès d’administration de Better Auth sous `/api/auth/admin/`. Donnez ce rôle à un compte dans la base de données, puis reconnectez-vous :
+
+```sql
+UPDATE auth."user" SET role = 'admin' WHERE email = 'vous@example.com';
+```
+
+En se faisant passer pour un membre, l’équipe ne peut ni connecter de canaux, ni publier, ni gérer les clés d’API ou la facturation, ni modifier les espaces de travail, ni laisser une application agir pour le membre.
+
+## Télémétrie [#telemetry]
+
+Mettez dans `OTEL_EXPORTER_OTLP_ENDPOINT` l’adresse OTLP/HTTP d’un collecteur OpenTelemetry, comme `http://otel-collector:4318`, et le serveur y exporte ses journaux, métriques et traces, en JSON. [Variables d’environnement](/environment-variables#telemetry) liste les autres réglages OpenTelemetry qu’il lit.

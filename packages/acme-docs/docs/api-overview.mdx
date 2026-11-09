@@ -1,11 +1,11 @@
 ---
 title: API overview
-description: How the Acme HTTP API is organised, where its OpenAPI document lives, and where to find the reference for every endpoint.
+description: How the Acme HTTP API is organised, how to authenticate to it, where its OpenAPI document lives, and where to find the reference for every endpoint.
 sidebar:
-  order: 3
+  order: 6
 ---
 
-The web app, the command-line tool and the MCP server are built on the same HTTP API, so anything they do, your own code can do too.
+The web app, the command line and the MCP endpoint are built on the same HTTP API, so anything they do, your own code can do too.
 
 <Callout type="warning" title="Not stable yet">
   The API changes with every commit until the first release. Expect endpoints to
@@ -18,15 +18,37 @@ The API is defined once, in the `acme-contract` package. The server implements t
 
 ## Base URL [#base-url]
 
-Requests go to the origin your instance is served from, and every endpoint's path starts with `/api`. In these docs, `https://api.example.com` stands for that origin; replace it with your own.
+Requests go to the address you open Acme at, and every endpoint's path starts with `/api`: the web app forwards `/api/*` to the server. In these docs, `https://api.example.com` stands for that address; replace it with your own.
 
 ```bash
 curl -i https://api.example.com/api/health
 ```
 
+## Authentication [#authentication]
+
+Apart from the health checks and the documents platforms read about Acme, every endpoint needs one of these:
+
+- **An API key**, for scripts and integrations: send it as `Authorization: Bearer acme_…`. A key belongs to one workspace and holds some of the permissions of the member who created it, never more. Members who may manage keys (owners and admins) create one with `POST /api/workspaces/{workspaceId}/api-keys` while signed in, and see the key only in that answer. A key may send 600 requests a minute.
+- **An OAuth access token**, which the [command line](/cli) and [MCP clients](/mcp) obtain when you sign them in, sent the same way. It acts as you, limited to what you agreed to.
+- **The session cookie** of the web app, for the web app itself. A request that changes something with it must come from the web app's own origin.
+
+With a session or an OAuth token, `GET /api/me` tells who you are, and lists your workspaces, with your role and permissions in each. An API key belongs to a workspace, not to a person, and gets 403 there.
+
+## Workspaces [#workspaces]
+
+A workspace's resources live under `/api/workspaces/{workspaceId}/`: `channels`, `posts`, `media` and `api-keys`. Each endpoint's reference names the permission it needs, such as `post:schedule` or `channel:connect`.
+
+| Status | Meaning                                                                        |
+| ------ | ------------------------------------------------------------------------------ |
+| 401    | No credentials, or credentials that no longer work.                            |
+| 403    | The credentials work, but do not allow this request, or the account is banned. |
+| 404    | No such resource, or a workspace the caller does not belong to.                |
+
+Errors answer with a JSON body whose `_tag` names the error, such as `PostContentInvalid` or `ConnectFailed`, with the details the reference lists.
+
 ## OpenAPI document [#openapi]
 
-Each server publishes its OpenAPI 3.1 document at `/openapi.json`, for example `https://api.example.com/openapi.json`. Use it to generate a client in another language or to import the API into an HTTP tool.
+The server publishes its OpenAPI 3.1 document at `/openapi.json` on its own address, such as `http://localhost:3000/openapi.json` for a server running from source; the web app does not forward it. Use it to generate a client in another language or to import the API into an HTTP tool.
 
 ## Reference [#reference]
 

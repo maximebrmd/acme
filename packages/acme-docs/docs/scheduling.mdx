@@ -1,0 +1,107 @@
+---
+title: Schedule posts
+description: Write a post, give it its own text on some channels, schedule it in your time zone, and move or cancel it from the composer or the calendar.
+sidebar:
+  order: 3
+---
+
+A post has one text, which each of its channels may replace with its own, and a time it goes out, kept in the time zone you scheduled it in. Write it in the composer, then find it on the calendar.
+
+<Callout type="warning" title="Posts do not go out yet">
+  Acme does not publish to any platform yet. A scheduled post comes due like any
+  other, then ends as failed on each channel, which the composer shows.
+  Scheduling, moving and cancelling already work as described here.
+</Callout>
+
+## Who can do what [#roles]
+
+| Role        | Posts                                  |
+| ----------- | -------------------------------------- |
+| Owner       | Write, schedule, move and cancel       |
+| Admin       | Write, schedule, move and cancel       |
+| Editor      | Write, schedule, move and cancel       |
+| Contributor | Write and save drafts; cannot schedule |
+| Viewer      | Read                                   |
+
+Cancelling a post, a draft included, takes the same right as scheduling it.
+
+## Write a post [#write]
+
+From a workspace's card on **Workspaces**, choose **New post**.
+
+1. Under **Channels**, tick the accounts the post goes to. The list holds the workspace's [channels](/channels).
+2. Write in **Text for all channels**. Mentions, hashtags and links stand out as you type, and are kept as plain text.
+3. To say something else on one channel, open its tab and write its own text there. Left empty, a channel uses the text for all channels.
+4. Choose **Save as draft** to keep the post without a time. The composer's address then names the post: keep it to come back to the draft, which the calendar does not show.
+
+Below the text, a counter per platform shows how much room is left. Platforms count differently, so the same text can fit on one and not on another:
+
+| Platform  | Text limit                                                                                                      | Images and videos |
+| --------- | --------------------------------------------------------------------------------------------------------------- | ----------------- |
+| Bluesky   | 300 characters, and 3,000 bytes                                                                                 | 4                 |
+| Mastodon  | 500 characters (the default of a server)                                                                        | 4                 |
+| X         | 280, where a link counts 23, and an emoji or a character outside the Latin, Greek and Cyrillic scripts counts 2 | 4                 |
+| Threads   | 500 characters                                                                                                  | 20                |
+| LinkedIn  | 3,000 characters                                                                                                | 20                |
+| Instagram | 2,200 characters, 30 hashtags, 20 mentions; an image or a video is required                                     | 20                |
+
+Bluesky counts what a reader sees as one character, so an emoji made of several code points counts once. Facebook, TikTok, YouTube and Pinterest have no limit in Acme yet. Acme checks the limits when you schedule a post, not while you write a draft.
+
+## Schedule it [#schedule]
+
+Under **When**, pick the **Date**, the **Time** and the **Time zone**, which starts as your browser's. Then choose **Schedule**. It stays off while the post breaks a limit on one of its channels, and the composer lists what to fix.
+
+The time is the wall-clock time in that zone, daylight saving included:
+
+- a time the clocks skip, such as 02:30 on the night they go forward, moves to the moment they jump, 03:00;
+- a time that happens twice, on the night they go back, is the first one, so the post goes out once.
+
+A time up to a minute ago counts as now. An earlier one is refused: pick a time to come.
+
+## Move or cancel it [#move-cancel]
+
+Once a post is scheduled, its text is locked; its time is not.
+
+- In the composer, change the date, the time or the zone, then choose **Move to this time**.
+- On the calendar, drag the post by its handle to another hour or day. It keeps the time zone it was scheduled in.
+- To stop it, choose **Cancel the post** in the composer and confirm. It goes out on no channel, and cannot be scheduled again.
+
+Moving a post does not check its text against its channels again.
+
+## The calendar [#calendar]
+
+From a workspace's card, choose **Calendar**. It shows the scheduled posts by **Week** or by **Month**, at their times in your browser's time zone, with each post's status. Choose a post to open it in the composer. To open the calendar on a given week, add `?date=` with a day of that week to its address, as in `?date=2026-11-09`.
+
+## When a post comes due [#publishing]
+
+At its time, Acme sends the post to each of its channels on its own, one post at a time per account, and records how each one ended:
+
+| On a channel | What happened                                                                                                    |
+| ------------ | ---------------------------------------------------------------------------------------------------------------- |
+| Published    | The platform took the post, and gave its address when it has one.                                                |
+| Failed       | The platform refused the post, the account needs reconnecting, or the post went out too late, as below.          |
+| To check     | Acme cannot tell whether the platform published it. Check the platform before posting again: Acme never retries. |
+| Cancelled    | The post was cancelled before it went out there.                                                                 |
+
+The post as a whole then reads **Published**, **Partly published**, **To check**, **Failed** or **Cancelled**.
+
+Acme waits rather than gives up when a platform is busy:
+
+- a platform that does not answer is tried again after 1, 5, 15, 60 and 60 minutes, then the post fails there;
+- a platform that limits how often Acme posts is tried again when it says, up to 8 times and no later than a day after the post's time;
+- a platform that no longer accepts the account's access fails the post there, and the channel must be [reconnected](/channels#reconnect).
+
+A post that could not start within an hour of its time, for example because the server was down, is marked missed and does not go out.
+
+## Media [#media]
+
+From a workspace's card, **Media library** holds the workspace's images and videos. Drop files there, or choose them; large videos go up in parts, and an upload can be cancelled or tried again. Give each file a description for people who cannot see it, of up to 2,000 characters.
+
+| Kind   | Formats               | Largest file |
+| ------ | --------------------- | ------------ |
+| Images | JPEG, PNG, GIF, WebP  | 16 MiB       |
+| Videos | MP4, QuickTime (.mov) | 1 GiB        |
+
+Acme reads each file once it is stored: an image's dimensions, a video's dimensions, duration and codec. An image whose content is not of the type it was uploaded as is refused, and deleted. Contributors and above upload; editors and above delete.
+
+Posts cannot show media yet: the composer marks the place where they will go.

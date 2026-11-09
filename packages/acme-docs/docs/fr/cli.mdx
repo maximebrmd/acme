@@ -1,0 +1,103 @@
+---
+title: Ligne de commande
+description: Construisez la ligne de commande acme, pointez-la vers votre instance, connectez-vous avec acme login, et vérifiez qui vous êtes avec acme whoami.
+sidebar:
+  order: 4
+---
+
+`acme` travaille avec une instance Acme depuis un terminal. Il se connecte en votre nom, dans un navigateur, puis agit avec votre rôle dans chacun de vos espaces de travail. Ses messages sont en anglais.
+
+## L’obtenir [#install]
+
+Il n’y a pas encore de version publiée. Construisez-le depuis un clone du dépôt, avec Bun installé :
+
+```sh
+bun install --frozen-lockfile
+bun nx run acme-cli:build
+packages/acme-cli/dist/acme --help
+```
+
+`packages/acme-cli/dist/acme` est un seul fichier qui embarque Bun : copiez-le n’importe où dans votre `PATH`.
+
+## Choisir l’instance [#instance]
+
+Pointez `acme` vers l’adresse où vous ouvrez Acme, comme `https://acme.example.com`, avec `--api-url` ou `ACME_API_URL`. L’option l’emporte ; sans l’une ni l’autre, `acme` utilise `http://localhost:3000`, un serveur lancé depuis les sources.
+
+```sh
+export ACME_API_URL=https://acme.example.com
+acme health
+```
+
+`acme health` dit si l’instance répond. Il se termine avec le code 0 quand elle répond, et avec 1 quand elle est injoignable (après 5 secondes) ou répond par une erreur : un script peut donc l’attendre.
+
+## Se connecter [#login]
+
+```sh
+acme login
+```
+
+`acme login` affiche une adresse et un code de huit lettres et chiffres :
+
+```text
+To sign in to https://acme.example.com, open https://acme.example.com/device in a browser and enter the code WDJB-MJHT.
+Or open https://acme.example.com/device?user_code=WDJBMJHT, where the code is filled in.
+Waiting for you to approve the sign-in (the code works for 10m)…
+```
+
+1. Ouvrez l’adresse. Connectez-vous à Acme si ce n’est pas déjà fait.
+2. Vérifiez que le code est celui de votre terminal, puis choisissez **Autoriser**. N’approuvez qu’un code que vous avez demandé vous-même : la personne qui a lancé la connexion reçoit votre accès.
+3. De retour dans le terminal, `acme login` indique où il a enregistré la connexion.
+
+Le code reste valable 10 minutes. **Refuser** rejette la connexion, et `acme login` s’arrête.
+
+`acme` demande à faire ce que votre rôle permet dans vos espaces de travail, et à rester connecté. Il enregistre la connexion à cette instance dans `credentials.json`, que vous seul pouvez lire, dans le premier de ces dossiers qui est défini :
+
+- `ACME_CONFIG_DIR` ;
+- `$XDG_CONFIG_HOME/acme` ;
+- `%APPDATA%\acme`, sous Windows ;
+- `~/.config/acme`.
+
+Chaque instance a sa propre connexion, rangée sous son adresse : vous pouvez être connecté à plusieurs. `acme` renouvelle son accès de lui-même, et n’affiche jamais ses jetons.
+
+## Qui suis-je [#whoami]
+
+```sh
+acme whoami
+```
+
+```text
+Signed in to https://acme.example.com as Sam Example <sam@example.com>.
+Workspaces:
+  Studio (owner)
+  Clients (editor)
+```
+
+Quand la connexion ne fonctionne plus, parce qu’elle a été révoquée ou que votre compte a été banni, `acme whoami` le dit et vous demande de relancer `acme login`. Avant toute connexion, il répond que vous n’êtes pas connecté.
+
+## Se déconnecter [#logout]
+
+```sh
+acme logout
+```
+
+`acme logout` demande à l’instance de révoquer la connexion, puis l’oublie, même si l’instance ne répond pas dans les 5 secondes.
+
+## Connecter un client MCP [#mcp]
+
+```sh
+acme mcp
+```
+
+`acme mcp` affiche le point d’accès MCP de l’instance et une configuration que la plupart des clients MCP acceptent, et prévient quand l’instance ne laisse pas les clients MCP s’enregistrer eux-mêmes. [Connecter un client MCP](/mcp) explique la suite.
+
+## Réglages [#settings]
+
+| Variable          | Rôle                                                                                            |
+| ----------------- | ----------------------------------------------------------------------------------------------- |
+| `ACME_API_URL`    | L’adresse de l’instance, sauf si `--api-url` est indiqué. Par défaut : `http://localhost:3000`. |
+| `ACME_CONFIG_DIR` | Le dossier où est enregistré `credentials.json`.                                                |
+| `XDG_CONFIG_HOME` | Sans `ACME_CONFIG_DIR`, la connexion va dans son dossier `acme`.                                |
+| `APPDATA`         | Sans l’une ni l’autre, sous Windows, la connexion va dans son dossier `acme`.                   |
+| `HOME`            | Sinon, la connexion va dans `~/.config/acme`.                                                   |
+
+`acme --help` liste les commandes, et `acme <commande> --help` en décrit une.

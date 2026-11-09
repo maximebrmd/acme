@@ -8,22 +8,33 @@ sidebar:
 Acme est une plateforme de planification pour les réseaux sociaux. « Acme » est un nom provisoire.
 
 <Callout type="warning" title="En cours de développement">
-  Acme se construit en public et n’est pas encore sorti. Ces pages décrivent le
-  fonctionnement prévu et s’étofferont au fil des fonctionnalités.
+  Acme se construit en public et n’est pas encore sorti. Vous pouvez déjà créer
+  des espaces de travail, connecter des comptes Mastodon et Bluesky, importer
+  des médias, rédiger des publications et les programmer sur un calendrier, mais
+  les publications ne partent pas encore : aucune plateforme ne les diffuse, et
+  une publication programmée finit en échec à son heure. Ces pages décrivent ce
+  qui fonctionne aujourd’hui, et s’étofferont au fil des fonctionnalités.
 </Callout>
 
 ## Ce que fait Acme [#what-it-does]
 
-- **Écrire une fois.** Rédigez une publication dans un seul éditeur, puis adaptez-la à chaque plateforme là où elle doit différer.
+- **Écrire une fois.** Rédigez une publication dans un seul éditeur, puis donnez-lui un texte propre sur chaque canal où elle doit différer. Des compteurs montrent la place que laisse chaque plateforme.
 - **Planifier sur plusieurs plateformes.** Choisissez les comptes et l’heure. Acme met en ligne chaque publication à l’heure prévue, dans le fuseau horaire choisi, changements d’heure compris.
-- **Suivre les résultats.** Acme recueille les statistiques de chaque plateforme pour vos publications, pour voir au même endroit ce qui a fonctionné.
-- **Travailler en équipe.** Les organisations ont des membres et des rôles : plusieurs personnes peuvent rédiger, relire et planifier ensemble.
+- **Suivre les résultats.** Acme recueillera les statistiques de chaque plateforme pour vos publications, pour voir au même endroit ce qui a fonctionné.
+- **Travailler en équipe.** Les espaces de travail ont des membres et des rôles : plusieurs personnes peuvent rédiger, relire et planifier ensemble.
 
 Acme ne republie jamais à l’aveugle : quand une plateforme ne confirme pas qu’une publication est partie, Acme la marque comme non confirmée et vous invite à vérifier sur la plateforme avant de republier.
 
+## Guides [#guides]
+
+- [Connecter des canaux](/channels) : ajoutez les comptes sociaux sur lesquels publie un espace de travail.
+- [Programmer des publications](/scheduling) : rédigez une publication, choisissez ses canaux et son heure, et déplacez-la sur le calendrier.
+- [Ligne de commande](/cli) : connectez-vous depuis un terminal avec `acme login`, et vérifiez qui vous êtes avec `acme whoami`.
+- [Connecter un client MCP](/mcp) : laissez un assistant IA lire votre espace de travail.
+
 ## Auto-hébergeable [#self-hostable]
 
-Chaque service extérieur dont Acme dépend a une option par défaut auto-hébergeable. Une instance auto-hébergée n’a besoin que de Postgres et d’un stockage compatible S3 ; l’e-mail, la facturation, le captcha, l’IA et la télémétrie sont facultatifs. La page [Auto-hébergement](/self-hosting) liste les services et les réglages qu’ils lisent.
+Chaque service extérieur dont Acme dépend a une option par défaut auto-hébergeable. Une instance auto-hébergée a besoin de Postgres, d’un stockage compatible S3 et d’un moyen d’envoyer des e-mails ; la facturation, le captcha, l’IA et la télémétrie sont facultatifs. La page [Auto-hébergement](/self-hosting) explique comment la faire tourner, et [Variables d’environnement](/environment-variables) liste chaque réglage.
 
 ## Fair source [#fair-source]
 
@@ -31,4 +42,4 @@ Le code source est public, sous la Functional Source License (FSL-1.1-ALv2). Vou
 
 ## Construire sur l’API [#api]
 
-Tout ce que fait l’application web passe par la même API HTTP. [La présentation de l’API](/api-overview) explique son organisation, et la [référence de l’API](/reference) liste chaque point d’accès.
+Tout ce que fait l’application web passe par la même API HTTP. [La présentation de l’API](/api-overview) explique son organisation et comment s’authentifier, et la [référence de l’API](/reference) liste chaque point d’accès.

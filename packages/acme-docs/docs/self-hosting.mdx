@@ -1,82 +1,90 @@
 ---
 title: Self-hosting
-description: The services a self-hosted Acme instance needs, the optional ones, and the environment variables it reads.
+description: The services a self-hosted Acme instance needs, how to run the server and the web app behind one address, and how to set up email, media, channels and MCP.
 sidebar:
-  order: 2
+  order: 7
 ---
 
-Acme reaches every outside service through a port with a self-hostable default, so a self-hosted instance needs only two services of its own: Postgres and an S3-compatible object store. Everything else is optional and stays off until you configure it.
+Acme reaches every outside service through a port with a self-hostable default. A self-hosted instance runs two programs of its own, the server and the web app, and needs Postgres, an S3-compatible object store and a way to send email. Everything else is optional and stays off until you configure it.
 
 <Callout type="warning" title="Before the first release">
-  Acme has not been released yet, and there are no published images to run. This
-  page describes the self-hosting model the code follows. Variables that are not
-  listed below are not settled yet, and every value shown is an example.
+  Acme has not been released yet, and there are no published images to run:
+  build the server's image and the web app from the repository, as its README
+  explains. This page describes the self-hosting model the code follows, and
+  every value shown is an example.
 </Callout>
 
 ## Services [#services]
 
-| Service        | Needed   | What Acme uses it for                                                                                               | Options                                                                            |
-| -------------- | -------- | ------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| Postgres       | Yes      | All data, and the durable jobs that publish posts, refresh platform tokens and pull analytics. Acme needs no Redis. | Any Postgres server                                                                |
-| Object storage | Yes      | Uploaded media                                                                                                      | Any S3-compatible API                                                              |
-| Email          | Optional | Email notifications                                                                                                 | Resend, or any SMTP server                                                         |
-| Billing        | Optional | Plans and subscriptions                                                                                             | Stripe. Without a key, billing is off and no plan limits apply.                    |
-| Captcha        | Optional | Bot protection                                                                                                      | Cloudflare Turnstile. Without a key, the captcha is off.                           |
-| AI             | Optional | AI features                                                                                                         | Any OpenAI-compatible endpoint, or an Anthropic API key                            |
-| Telemetry      | Optional | Logs, metrics and traces                                                                                            | Any OpenTelemetry (OTLP) collector. Nothing is exported unless an endpoint is set. |
+| Service        | Needed   | What Acme uses it for                                                                                 | Options                                                                            |
+| -------------- | -------- | ----------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| Postgres       | Yes      | All data, and the durable jobs that publish posts and refresh platform tokens. Acme needs no Redis.   | Any Postgres server                                                                |
+| Object storage | Yes      | Uploaded media                                                                                        | Any S3-compatible API                                                              |
+| Email          | Yes      | Confirming email addresses, resetting passwords, invitations, and notices about channels to reconnect | Resend, or any SMTP server                                                         |
+| Billing        | Optional | Plans and subscriptions (not built yet)                                                               | Stripe. Without a key, billing is off and no plan limits apply.                    |
+| Captcha        | Optional | Bot protection (not built yet)                                                                        | Cloudflare Turnstile. Without a key, the captcha is off.                           |
+| AI             | Optional | AI features (not built yet)                                                                           | Any OpenAI-compatible endpoint, or an Anthropic API key                            |
+| Telemetry      | Optional | Logs, metrics and traces                                                                              | Any OpenTelemetry (OTLP) collector. Nothing is exported unless an endpoint is set. |
 
 Acme's own deployment stores media on Cloudflare R2, and its development stack runs SeaweedFS for storage and Mailpit for email. A self-hosted instance can use any of these, or any other store and mail server that speaks the same protocols.
 
-## Environment variables [#environment-variables]
+## What to run [#run]
 
-The server and the web app read plain environment variables, so their images run on any host. The variables they read today follow.
+- **The server** (`acme-server`): the HTTP API under `/api`, sign-in under `/api/auth`, the MCP endpoint at `/api/mcp`, and the jobs that publish posts and refresh tokens. Its image listens on port 3000 and runs as an unprivileged user.
+- **The web app** (`acme-web`): every page, on Node. It forwards `/api/*` and the OAuth discovery documents (`/.well-known/oauth-*`) to the server at `ACME_API_URL`, so people, the command line and MCP clients all use one address: `PUBLIC_URL`.
 
-### Server [#server]
+Run one server process per instance: MCP clients on older protocol revisions keep their sessions in its memory. Each process that runs needs its own `HOSTNAME`.
 
-| Variable                      | Default                                                | Example                                      | What it does                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| ----------------------------- | ------------------------------------------------------ | -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `DATABASE_URL`                | none                                                   | `postgres://acme:acme@postgres:5432/acme`    | The Postgres database. Required: the server does not start without it.                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| `PORT`                        | `3000`                                                 | `8080`                                       | The port the HTTP server listens on.                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| `OTEL_EXPORTER_OTLP_ENDPOINT` | unset                                                  | `http://otel-collector:4318`                 | The OTLP/HTTP endpoint of the OpenTelemetry collector that receives logs, metrics and traces. Unset, nothing is exported.                                                                                                                                                                                                                                                                                                                                                                                         |
-| `OTEL_SERVICE_NAME`           | `acme-server`                                          | `acme-sandbox`                               | The service name that telemetry is reported under.                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| `OTEL_TRACES_EXPORTER`        | `otlp`                                                 | `none`                                       | `none` stops exporting traces once an endpoint is set. `OTEL_METRICS_EXPORTER` and `OTEL_LOGS_EXPORTER` do the same for metrics and logs.                                                                                                                                                                                                                                                                                                                                                                         |
-| `ACME_CLUSTER_RETENTION`      | `30 days`                                              | `7 days`                                     | How long the records of finished jobs, such as a published post's, are kept in the database before a daily cleanup deletes them. Jobs still waiting are always kept.                                                                                                                                                                                                                                                                                                                                              |
-| `HOSTNAME`                    | `acme-server`                                          | `acme-1`                                     | The server's name among the job runners recorded in the database. Each server process needs its own; Docker sets it to the container id.                                                                                                                                                                                                                                                                                                                                                                          |
-| `ACME_TOKEN_KEYS`             | unset                                                  | `k2:<key>,k1:<key>`                          | The keys that encrypt the tokens of connected channels: `keyId:key` entries separated by commas, each key 32 random bytes in base64 (`openssl rand -base64 32`). The first key encrypts and every listed key decrypts, so to rotate, put a new key first and keep the old ones. Needed only to connect channels: unset, the server starts, and connecting a channel fails. A malformed value stops the server at startup. Keep the keys secret, and keep a copy: without them, every channel must be reconnected. |
-| `ACME_S3_ENDPOINT`            | none in production, `http://127.0.0.1:18333` otherwise | `https://<account>.r2.cloudflarestorage.com` | The URL of the S3 API that stores media. Required in production, like the three below: the server does not start there without them. Elsewhere they default to the development stack's SeaweedFS.                                                                                                                                                                                                                                                                                                                 |
-| `ACME_S3_BUCKET`              | none in production, `acme-media` otherwise             | `acme-media`                                 | The bucket media goes in.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| `ACME_S3_ACCESS_KEY_ID`       | none in production, the development key otherwise      | `<key id>`                                   | The access key of the store. Keep it secret.                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| `ACME_S3_SECRET_ACCESS_KEY`   | none in production, the development secret otherwise   | `<secret>`                                   | The secret of that key. Keep it secret.                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| `ACME_S3_REGION`              | `auto`                                                 | `eu-west-1`                                  | The region requests are signed for. `auto` suits Cloudflare R2.                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| `ACME_S3_FORCE_PATH_STYLE`    | `false` in production, `true` otherwise                | `true`                                       | `true` puts the bucket in the URL's path rather than its host name, as SeaweedFS needs.                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| `ACME_S3_KEY_PREFIX`          | none                                                   | `staging/`                                   | A folder every key goes under, so instances can share a bucket. It ends with `/`.                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| `ACME_MEDIA_PUBLIC_BASE_URL`  | unset                                                  | `https://media.example.com`                  | Where the bucket is served publicly, if it is. Unset, platforms and browsers read media through presigned URLs.                                                                                                                                                                                                                                                                                                                                                                                                   |
-| `ACME_FFPROBE_PATH`           | `ffprobe`                                              | `/usr/local/bin/ffprobe`                     | The ffprobe program that reads a video's dimensions, duration and codec. The server image ships one. Without it, videos stay uploaded and are not ready for posts.                                                                                                                                                                                                                                                                                                                                                |
+In production (`NODE_ENV=production`, which the server's image sets), the server refuses to start without these, and its error names the variable missing:
 
-At startup, the server applies the database migrations it has not applied yet, and only listens once they are done.
+| Variable                                                                                   | What it is                                                          |
+| ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------- |
+| `DATABASE_URL`                                                                             | The Postgres database                                               |
+| `PUBLIC_URL`                                                                               | The address people open Acme at, such as `https://acme.example.com` |
+| `BETTER_AUTH_SECRET`                                                                       | The secret that signs sessions: `openssl rand -base64 32`           |
+| `AUTH_IP_HEADERS`                                                                          | The header your edge puts the client's address in                   |
+| `MAIL_FROM`, and `SMTP_URL` or `RESEND_API_KEY`                                            | Who emails come from, and how they leave                            |
+| `ACME_S3_ENDPOINT`, `ACME_S3_BUCKET`, `ACME_S3_ACCESS_KEY_ID`, `ACME_S3_SECRET_ACCESS_KEY` | The media store                                                     |
 
-The server runs its durable jobs from the same database, and holds them with session advisory locks for as long as it runs. Connect it to Postgres directly, or through a pooler in session mode: a pooler in transaction mode gives each statement another connection, which loses those locks.
+The web app needs `ACME_API_URL`. To connect channels, the server also needs `ACME_TOKEN_KEYS`. [Environment variables](/environment-variables) lists every setting, with its default.
+
+## In front of Acme [#reverse-proxy]
+
+Run a reverse proxy that terminates TLS, such as Caddy, in front of the web app, and expose only the proxy. Send every request to the web app, which forwards the server's paths, or send `/api/*` and `/.well-known/oauth-*` straight to the server and everything else to the web app.
+
+Sign-in is rate limited by the client's address, which the server reads from the header `AUTH_IP_HEADERS` names. Name only a header your edge sets and replaces whatever the client sent:
+
+- behind Cloudflare, `cf-connecting-ip`;
+- behind Caddy, which replaces `X-Forwarded-For` unless told to trust the proxies before it, `x-forwarded-for`;
+- behind proxies that append to `X-Forwarded-For`, `x-forwarded-for`, with their addresses in `AUTH_TRUSTED_PROXIES`, so the client's address is read from the right, past them.
+
+The web app passes these headers on as they come, so with no proxy in front of it there is no address to trust, and rate limits cannot tell clients apart.
+
+The server answers two probes:
+
+- `GET /api/health` answers `204 No Content` as soon as the server is up, whatever the state of its database, which suits a container health check. The server's image checks it.
+- `GET /api/ready` answers `204 No Content` when the database answers as well, and `503 Service Unavailable` with a `DatabaseUnavailable` error when it does not, so a load balancer can hold traffic back until then.
+
+## Database [#database]
+
+At startup, the server applies the database migrations it has not applied yet, one server at a time, and only listens once they are done. Each part of Acme keeps its tables in a Postgres schema of its own (`auth`, `channels`, `media`, `notifications`, `publishing`); the job runner's tables (`cluster_*`) are in `public`.
+
+The server runs its durable jobs from the same database, and holds them with session advisory locks for as long as it runs. Connect it to Postgres directly, or through a pooler in session mode: a pooler in transaction mode gives each statement another connection, which loses those locks. Each server process opens up to 10 connections, and up to 5 more for sign-in (`AUTH_DB_POOL_MAX`).
+
+A daily cleanup deletes the records of jobs that finished more than 30 days ago (`ACME_CLUSTER_RETENTION`). Jobs still waiting are always kept.
+
+## Stopping [#stopping]
 
 When it stops, the server waits up to 60 seconds for the calls to the platforms in flight to answer. Give it at least 75 seconds before it is killed, with `docker stop --time 75` or `stop_grace_period: 75s` in Compose: a call cut short is marked unconfirmed, and its post has to be checked on the platform by hand.
 
-The server exports telemetry as JSON over HTTP, so point the endpoint at the collector's OTLP/HTTP port, 4318 by default, rather than its gRPC one. It also reads these OpenTelemetry variables, and no others (`OTEL_EXPORTER_OTLP_PROTOCOL` included):
+## Email [#email]
 
-- `OTEL_EXPORTER_OTLP_HEADERS`, `OTEL_EXPORTER_OTLP_COMPRESSION` and `OTEL_EXPORTER_OTLP_TIMEOUT`, and the per-signal forms of these and of the endpoint, such as `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT`;
-- `OTEL_RESOURCE_ATTRIBUTES` and `OTEL_SERVICE_VERSION`;
-- `OTEL_SDK_DISABLED`;
-- the batching settings `OTEL_BSP_*` for traces and `OTEL_BLRP_*` for logs;
-- `OTEL_METRIC_EXPORT_INTERVAL`, `OTEL_METRIC_EXPORT_TIMEOUT` and `OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE`.
+Set `MAIL_FROM` to the sender, as `Acme <noreply@example.com>` or an address your mail service may send from, and one way to send:
 
-### Web app [#web-app]
+- `RESEND_API_KEY`, to send through Resend's API;
+- otherwise `SMTP_URL`, such as `smtp://user:password@mail.example.com:587`, or `smtps://…:465` for TLS from the first byte.
 
-| Variable       | Default                                               | Example                   | What it does                                                                                                       |
-| -------------- | ----------------------------------------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| `ACME_API_URL` | none in production, `http://localhost:3000` otherwise | `http://acme-server:3000` | Where the web app reaches the server. It forwards the browser's `/api/*` requests there and renders pages with it. |
-| `PORT`         | `3000`                                                | `8080`                    | The port the web app listens on.                                                                                   |
-
-The command-line tool reads `ACME_API_URL` too, unless `--api-url` is given.
-
-The variables for email, billing, captcha and AI will be listed here as each adapter ships.
+Acme sends the email that confirms an address, password resets, invitations to a workspace, and notices about channels that must be reconnected, each in the reader's language. With `AUTH_REQUIRE_EMAIL_VERIFICATION=false`, people can sign in before they confirm their address.
 
 ## Media storage [#media-storage]
 
@@ -88,13 +96,54 @@ bun nx run acme-server:media-cors
 
 Running it again changes nothing. Its access key must be allowed to change the bucket's settings; the server's own key needs only to read and write objects.
 
-Once a file is stored, the server reads it: an image's dimensions with sharp, a video's dimensions, duration and codec with ffprobe. A video uploaded to a server without ffprobe stays uploaded, marked as unread, until it is completed again on a server that has it.
+Large videos go up in parts. An upload left unfinished keeps its parts in the store, so add a lifecycle rule that aborts incomplete multipart uploads after a day, where your store supports one.
 
-## In front of Acme [#reverse-proxy]
+Once a file is stored, the server reads it: an image's dimensions with sharp, a video's dimensions, duration and codec with ffprobe, which the server's image ships. A video uploaded to a server without ffprobe stays uploaded, marked as unread, until it is completed again on a server that has it.
 
-Run a reverse proxy that terminates TLS, such as Caddy, in front of the server, and expose only the proxy.
+Pages show media through short-lived signed links. If the bucket is also served publicly, as through an R2 custom domain, set `ACME_MEDIA_PUBLIC_BASE_URL` to that address, and links to media use it instead.
 
-The server answers two probes:
+## Channels [#channels]
 
-- `GET /api/health` answers `204 No Content` as soon as the server is up, whatever the state of its database, which suits a container health check.
-- `GET /api/ready` answers `204 No Content` when the database answers as well, and `503 Service Unavailable` with a `DatabaseUnavailable` error when it does not, so a load balancer can hold traffic back until then.
+The server encrypts the tokens of connected accounts with the keys in `ACME_TOKEN_KEYS`. Without it, the server starts, and connecting an account fails. Create a key with:
+
+```sh
+echo "k1:$(openssl rand -base64 32)"
+```
+
+The value lists `keyId:key` entries separated by commas, such as `k2:<key>,k1:<key>`. The first key encrypts and every listed key decrypts: to rotate, put a new key first and keep the old ones. A malformed value stops the server at startup. Keep the keys secret, and keep a copy: without them, every channel must be reconnected.
+
+The server reaches the platforms itself, over HTTPS, so it needs to reach the internet. It only calls servers on public addresses, on the default HTTPS port, which keeps people from pointing it at your private network. The platforms send people back to `PUBLIC_URL/connect/<platform>/callback`.
+
+### Bluesky [#bluesky]
+
+A production server connects Bluesky accounts only with keys of its own, which identify it to Bluesky. `PUBLIC_URL` must be HTTPS, without a port. Create a key, from the repository:
+
+```sh
+bun nx run acme-server:bluesky-key
+```
+
+Put the line it prints in `BLUESKY_CLIENT_KEYS`. Entries are separated by commas: to rotate, put a new key first, and keep the old ones until the sessions they signed for have been refreshed. Bluesky reads Acme's client description at `PUBLIC_URL/api/channels/oauth/bluesky/client-metadata.json`, and its public keys beside it.
+
+Without keys, a server running from source on `localhost` uses Bluesky's development client, whose sessions last two weeks, and any other server cannot connect Bluesky.
+
+## The command line and MCP clients [#mcp]
+
+The [command line](/cli) signs in with a code that people approve at `PUBLIC_URL/device`, and needs nothing more.
+
+[MCP clients](/mcp) sign in with OAuth, which needs `PUBLIC_URL` on HTTPS, or `localhost` for development. On a plain HTTP address elsewhere, such as `http://192.168.1.20:3001`, the server starts, logs a warning, and its MCP endpoint refuses every request.
+
+Most MCP clients register themselves before they sign in, which the server allows only with `MCP_DYNAMIC_REGISTRATION=true`. Anyone may then register a client, under any name: the consent page tells people that Acme has not checked it, and where it sends them back to.
+
+## Staff accounts [#staff]
+
+Staff, Better Auth's admin role, may impersonate members for an hour and ban accounts, through Better Auth's admin endpoints under `/api/auth/admin/`. Make an account staff in the database, then sign in again:
+
+```sql
+UPDATE auth."user" SET role = 'admin' WHERE email = 'you@example.com';
+```
+
+While impersonating, staff cannot connect channels, publish, manage API keys or billing, change workspaces, or let an application act for the member.
+
+## Telemetry [#telemetry]
+
+Set `OTEL_EXPORTER_OTLP_ENDPOINT` to an OpenTelemetry collector's OTLP/HTTP address, such as `http://otel-collector:4318`, and the server exports its logs, metrics and traces there, as JSON. [Environment variables](/environment-variables#telemetry) lists the other OpenTelemetry settings it reads.

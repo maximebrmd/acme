@@ -1,0 +1,75 @@
+---
+title: Connecter un client MCP
+description: Connectez un assistant IA ou tout autre client MCP à Acme, connectez-le à un espace de travail, et voyez ce que ses outils peuvent lire.
+sidebar:
+  order: 5
+---
+
+Acme sert le Model Context Protocol (MCP) : un assistant IA, ou tout autre client MCP, peut lire un espace de travail pour vous. Le client se connecte en votre nom, dans un navigateur, et agit dans le seul espace de travail que vous choisissez.
+
+## Le point d’accès [#endpoint]
+
+Le point d’accès est `/api/mcp`, à l’adresse où vous ouvrez Acme, comme `https://acme.example.com/api/mcp`. Il parle Streamable HTTP, dans les révisions 2026-07-28, 2025-11-25 et 2025-06-18 du protocole.
+
+`acme mcp`, depuis la [ligne de commande](/cli#mcp), affiche le point d’accès et une configuration que la plupart des clients MCP acceptent :
+
+```json
+{
+  "mcpServers": {
+    "acme": {
+      "type": "http",
+      "url": "https://acme.example.com/api/mcp"
+    }
+  }
+}
+```
+
+Donnez au client cette adresse, ou cette configuration, comme sa documentation l’indique pour un serveur distant en HTTP.
+
+## Connecter le client [#sign-in]
+
+Acme connecte les clients MCP avec OAuth. Vous ne donnez aucune clé au client : à sa première requête, Acme lui répond qu’il lui faut un jeton, et lui indique où le demander.
+
+1. Le client s’enregistre auprès d’Acme, puis ouvre un navigateur sur la page de connexion d’Acme. Connectez-vous si ce n’est pas déjà fait.
+2. **Choisissez un espace de travail.** Le client n’agit que dans celui-là. Pour l’utiliser dans un autre, connectez-le de nouveau et choisissez l’autre.
+3. Acme montre ce que le client demande, et où il vous renvoie ensuite. Vérifiez les deux, puis choisissez **Autoriser**, ou **Refuser**. Acme ne vérifie pas qui a fait un client qui s’est enregistré lui-même, et le dit : n’en autorisez un que si vous lui faites confiance et avez lancé la connexion vous-même.
+
+De retour dans le client, ses outils fonctionnent. Acme retient votre réponse pour ce client et cet espace de travail : le connecter de nouveau ne repose pas la question.
+
+<Callout type="note" title="Si le client ne peut pas s’enregistrer">
+  La plupart des clients MCP s’enregistrent eux-mêmes avant de se connecter, ce
+  qu’un serveur Acme n’autorise que si son administrateur l’active
+  (`MCP_DYNAMIC_REGISTRATION`, voir [Auto-hébergement](/self-hosting#mcp)).
+  `acme mcp` prévient quand ce n’est pas le cas.
+</Callout>
+
+## Ce que le client peut faire [#scopes]
+
+La page de consentement liste ce que le client demande :
+
+| Permission                                                              | Ce qu’elle permet                                                    |
+| ----------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| Savoir que c’est vous                                                   | L’identifiant de votre compte                                        |
+| Voir votre nom et votre photo, voir votre adresse e-mail                | Votre profil                                                         |
+| Rester connectée en votre absence, jusqu’à ce que vous la déconnectiez  | Renouveler son accès sans vous                                       |
+| Lire l’espace de travail : publications, canaux, médias et statistiques | Lire, sans rien changer                                              |
+| Faire ce que votre rôle permet dans l’espace de travail                 | Tout ce que votre [rôle](/scheduling#roles) permet, lecture comprise |
+
+Un client qui n’a aucune des deux permissions sur l’espace de travail ne peut rien faire. Son accès dure 15 minutes à la fois, et le client le renouvelle de lui-même. Chaque requête vérifie que vous appartenez toujours à l’espace de travail et n’êtes pas banni.
+
+## Outils [#tools]
+
+Chaque outil lit, et ne change rien :
+
+| Outil             | Ce qu’il répond                                                                                                |
+| ----------------- | -------------------------------------------------------------------------------------------------------------- |
+| `whoami`          | Vous, et l’espace de travail où agit le client, avec votre rôle et ce que le client peut y faire               |
+| `list_workspaces` | Vos espaces de travail et votre rôle dans chacun, en marquant celui où agit le client                          |
+| `list_channels`   | Les [canaux](/channels) de l’espace de travail, et si chacun publie ou est à reconnecter. Jamais leurs jetons. |
+| `server_health`   | Si le serveur Acme tourne et joint sa base de données                                                          |
+
+## Limites [#limits]
+
+- Une instance Acme ne sert les clients MCP que si son adresse est en HTTPS, ou sur `localhost` pour le développement. Ailleurs, le point d’accès refuse toutes les requêtes.
+- Le point d’accès refuse les requêtes envoyées depuis des pages web (avec un en-tête `Origin`) : connectez un client qui tourne sur votre ordinateur ou sur un serveur.
+- Il n’y a pas encore de page pour lister les clients que vous avez autorisés, ni pour en déconnecter un. Quitter l’espace de travail arrête tous les clients qui y agissent.

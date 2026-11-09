@@ -1,0 +1,74 @@
+---
+title: Connect an MCP client
+description: Connect an AI assistant or any other MCP client to Acme, sign it in to one workspace, and see what its tools can read.
+sidebar:
+  order: 5
+---
+
+Acme serves the Model Context Protocol (MCP), so an AI assistant, or any other MCP client, can read a workspace for you. The client signs in as you, in a browser, and acts in the one workspace you pick.
+
+## The endpoint [#endpoint]
+
+The endpoint is `/api/mcp` at the address you open Acme at, such as `https://acme.example.com/api/mcp`. It speaks Streamable HTTP, in the protocol revisions 2026-07-28, 2025-11-25 and 2025-06-18.
+
+`acme mcp`, from the [command line](/cli#mcp), prints the endpoint and a configuration most MCP clients take:
+
+```json
+{
+  "mcpServers": {
+    "acme": {
+      "type": "http",
+      "url": "https://acme.example.com/api/mcp"
+    }
+  }
+}
+```
+
+Give the client this address, or this configuration, as its documentation says for a remote server over HTTP.
+
+## Sign the client in [#sign-in]
+
+Acme signs MCP clients in with OAuth. You give the client no key: on its first request, Acme answers that it needs a token, and tells it where to ask for one.
+
+1. The client registers itself with Acme, then opens a browser on Acme's sign-in page. Sign in if you are not signed in yet.
+2. **Pick a workspace.** The client acts in that one workspace only. To use it in another, connect it again and pick the other one.
+3. Acme shows what the client asks for, and where it sends you back afterwards. Check both, then choose **Allow**, or **Deny**. Acme does not check who made a client that registered itself, and says so: allow one only if you trust it and started the connection yourself.
+
+Back in the client, its tools work. Acme remembers your answer for that client and workspace, so connecting it again skips the question.
+
+<Callout type="note" title="If the client cannot register">
+  Most MCP clients register themselves before they sign in, which an Acme server
+  allows only when its administrator turns it on (`MCP_DYNAMIC_REGISTRATION`,
+  see [Self-hosting](/self-hosting#mcp)). `acme mcp` warns when it is off.
+</Callout>
+
+## What the client may do [#scopes]
+
+The consent page lists what the client asks for:
+
+| Permission                                                 | What it allows                                                   |
+| ---------------------------------------------------------- | ---------------------------------------------------------------- |
+| Know that it is you                                        | Your account's id                                                |
+| See your name and picture, see your email address          | Your profile                                                     |
+| Stay connected while you are away, until you disconnect it | Renew its access without you                                     |
+| Read the workspace: posts, channels, media and analytics   | Read, and change nothing                                         |
+| Do what your role allows in the workspace                  | Anything your [role](/scheduling#roles) allows, reading included |
+
+A client that has neither of the two workspace permissions can do nothing. Its access lasts 15 minutes at a time, and the client renews it on its own. Every request checks that you still belong to the workspace and are not banned.
+
+## Tools [#tools]
+
+Every tool reads, and changes nothing:
+
+| Tool              | What it answers                                                                                                |
+| ----------------- | -------------------------------------------------------------------------------------------------------------- |
+| `whoami`          | You, and the workspace the client acts in, with your role and what the client may do there                     |
+| `list_workspaces` | Your workspaces and your role in each, marking the one the client acts in                                      |
+| `list_channels`   | The workspace's [channels](/channels), with whether each one posts or must be reconnected. Never their tokens. |
+| `server_health`   | Whether the Acme server is up and reaches its database                                                         |
+
+## Limits [#limits]
+
+- An Acme instance serves MCP clients only when its address is HTTPS, or `localhost` for development. Elsewhere, the endpoint refuses every request.
+- The endpoint refuses requests sent from web pages (with an `Origin` header): connect a client that runs on your computer or on a server.
+- There is no page yet to list the clients you allowed, or to disconnect one. Leaving the workspace stops every client that acts in it.
