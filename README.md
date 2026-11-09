@@ -9,12 +9,12 @@ two years after it ships.
 
 It is not released yet. Today you can:
 
-- create an account and workspaces, and connect Mastodon and Bluesky
-  accounts to them;
+- create an account and workspaces, and connect Mastodon, Bluesky, Threads
+  and Instagram accounts and Facebook Pages to them;
 - upload images and videos to a workspace's media library;
 - write a post, with its own text on some channels and images or videos
   with alt text, then schedule it, move it on a calendar or cancel it;
-- have it published to Mastodon and Bluesky at its time, with its media;
+- have it published on those channels at its time, with its media;
 - hear how each post ended, and which channels need reconnecting, under a
   bell in the app and by email, as each member chooses;
 - ask a writing assistant to rewrite, shorten or translate a post, or to
@@ -145,6 +145,14 @@ be read, and their channels must be reconnected.
   finish there, and `next dev` does not hydrate pages on `127.0.0.1`. The
   confidential client needs `PUBLIC_URL` on HTTPS without a port, and keys
   from `bun nx run acme-server:bluesky-key`.
+- **Threads**, **Instagram** and **Facebook Pages** need an app in Meta's
+  developer dashboard, in development mode with you in its roles, and its ids
+  and secrets in `META_APP_ID`, `META_APP_SECRET`, `THREADS_APP_ID` and
+  `THREADS_APP_SECRET`; the docs' self-hosting page lists its permissions and
+  addresses. Facebook and Instagram come back with the accounts the sign-in
+  reached, to tick. Meta fetches the media it publishes from the store, which
+  it cannot reach on this machine: text posts work, media needs a public
+  store.
 
 The server refreshes tokens due for it every 10 minutes and, daily at 08:00
 UTC, tells a workspace's owners and admins about accounts that must be
@@ -264,6 +272,8 @@ In development, these are the ones you may want:
 | `DATABASE_URL`                | none: required                   | The Postgres database                                          |
 | `ACME_TOKEN_KEYS`             | unset: channels cannot connect   | `keyId:base64key` entries that encrypt channel tokens          |
 | `BLUESKY_CLIENT_KEYS`         | unset: the loopback client       | Keys of the confidential Bluesky client                        |
+| `META_APP_ID`                 | unset: no Facebook nor Instagram | Meta's app, with `META_APP_SECRET`                             |
+| `THREADS_APP_ID`              | unset: no Threads                | The app's Threads id, with `THREADS_APP_SECRET`                |
 | `ACME_AI_PROVIDER`            | unset: no writing assistant      | `anthropic` or `openai-compatible`                             |
 | `ACME_AI_API_KEY`             | unset                            | The provider's key: required for Anthropic                     |
 | `ACME_AI_BASE_URL`            | Anthropic's API                  | The API's base URL: required for an OpenAI-compatible server   |

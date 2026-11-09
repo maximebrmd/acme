@@ -1,17 +1,18 @@
 ---
 title: Connect channels
-description: Connect the Mastodon and Bluesky accounts a workspace posts to, reconnect them when a platform asks, and disconnect them.
+description: Connect the Mastodon, Bluesky, Threads, Instagram and Facebook Page accounts a workspace posts to, reconnect them when a platform asks, and disconnect them.
 sidebar:
   order: 2
 ---
 
-A channel is a social account connected to a workspace: a Mastodon or Bluesky account today. Posts go to channels, so connect at least one before you schedule anything.
+A channel is a social account connected to a workspace: a Mastodon, Bluesky, Threads or Instagram account, or a Facebook Page, today. Posts go to channels, so connect at least one before you schedule anything.
 
 Open a workspace from **Workspaces**, then **Channels**. Every member sees the workspace's channels; only owners and admins connect, reconnect and disconnect them.
 
-<Callout type="note" title="Two platforms so far">
-  Acme connects Mastodon and Bluesky accounts. The other platforms it knows,
-  such as X, LinkedIn, Threads, Instagram and Facebook, cannot be connected yet.
+<Callout type="note" title="Five platforms so far">
+  Acme connects Mastodon, Bluesky, Threads, Instagram and Facebook Pages. X and
+  LinkedIn cannot be connected yet. The page offers only the platforms the
+  server is set up for.
 </Callout>
 
 ## Connect an account [#connect]
@@ -32,6 +33,18 @@ Under **Bluesky**, give your handle, such as `you.bsky.social`, to go straight t
 
 The Acme server must be set up for Bluesky: on a self-hosted instance, see [Bluesky](/self-hosting#bluesky). Until then, connecting answers that the server is not set up for this platform.
 
+### Facebook Pages [#facebook]
+
+Under **Facebook Pages**, choose **Connect Facebook Pages**, sign in with Facebook, and allow Acme to list your Pages and post on them. Back in Acme, tick the Pages the workspace posts to, then **Connect**: each becomes a channel. A sign-in that reaches one Page connects it straight away. Only Pages you may create content on are listed, and those the workspace already has are marked: choosing one reconnects it.
+
+### Instagram [#instagram]
+
+Acme posts to Instagram professional accounts, business or creator, linked to a Facebook Page. Under **Instagram**, choose **Connect Instagram** and sign in with Facebook, as for Pages, then tick the Instagram accounts linked to your Pages. An account posts with its Page's access, so it stays connected as long as you manage the Page.
+
+### Threads [#threads]
+
+Under **Threads**, choose **Connect Threads**, sign in with your Threads account, and allow Acme to read your profile and publish.
+
 ## Statuses [#statuses]
 
 Each channel shows one of these:
@@ -46,7 +59,7 @@ A channel whose access cannot be renewed also shows the date by which it must be
 
 ## Keep channels connected [#keep-connected]
 
-Acme renews each account's access on its own before it runs out: it refreshes a Bluesky session a month before it would lapse. Mastodon access does not expire until someone revokes it.
+Acme renews each account's access on its own before it runs out: it refreshes a Bluesky session a month before it would lapse, and Threads access, which lasts 60 days, a week before. Mastodon access, and the Page access Facebook Pages and Instagram accounts post with, do not expire until someone revokes them; Facebook also withdraws a Page's access when the person who connected it changes their password or loses their role on the Page.
 
 When a platform refuses Acme's access while Acme posts, Acme renews the access where the platform allows it, and tries once more. When the platform refuses again, or the access cannot be renewed, for example because the account's owner revoked it, the channel turns to **Reconnect needed**, and the workspace's owners and admins are told once, under the bell and by email unless they turned that email off (see [Notifications](/notifications)). When a platform does not answer, Acme tries again later and leaves the channel as it is.
 
@@ -56,6 +69,8 @@ At a post's time, Acme posts it as the channel's account, with its text on that 
 
 - **Mastodon**: Acme posts on the account's server, with the account's default visibility. The server turns mentions, hashtags and links into links itself, and may process a video before the post can show it.
 - **Bluesky**: Acme posts on the server that holds the account. Links and hashtags become links; mentions stay plain text for now. Videos go through Bluesky's video service, which processes them before the post goes out.
+- **Threads** and **Instagram**: Meta fetches each image and video from the media store, processes it, then Acme publishes the post: several files make a carousel. An Instagram video goes out as a reel. Acme checks the account's daily publishing limit before it starts.
+- **Facebook Pages**: Acme posts the text on the Page, a photo with it, several photos in one post, or a video, which Facebook fetches from the media store.
 
 ## Reconnect [#reconnect]
 
@@ -78,4 +93,5 @@ Disconnecting does not tell the platform. To remove Acme's access there too, rev
 | This connection expired or was started elsewhere                 | Start again from the workspace's channels, in this tab.                          |
 | The connection was cancelled on the platform                     | You, or the platform, refused. Start again if you meant to connect.              |
 | You signed in to another account than this channel's             | Reconnect with the channel's own account.                                        |
+| The sign-in reached no account to connect                        | Manage a Facebook Page, or link your Instagram professional account to one.      |
 | The platform did not answer                                      | Try again in a moment.                                                           |

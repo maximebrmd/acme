@@ -1,6 +1,6 @@
 ---
 title: Images and videos
-description: Upload images and videos to a workspace's media library, attach them to posts with alt text, and see what Mastodon and Bluesky accept before a post goes out.
+description: Upload images and videos to a workspace's media library, attach them to posts with alt text, and see what each platform accepts before a post goes out.
 sidebar:
   order: 4
 ---
@@ -36,7 +36,7 @@ Write alt text for every file. When one has none, the composer names the platfor
 
 ## What each platform accepts [#platforms]
 
-Acme publishes to Mastodon and Bluesky. When you schedule a post, it checks the post's images and videos against these limits:
+Acme publishes to Mastodon, Bluesky, Threads, Instagram and Facebook Pages. When you schedule a post, it checks the post's images and videos against these limits:
 
 | Limit                         | Bluesky                                             | Mastodon                                                                  |
 | ----------------------------- | --------------------------------------------------- | ------------------------------------------------------------------------- |
@@ -48,7 +48,17 @@ Acme publishes to Mastodon and Bluesky. When you schedule a post, it checks the 
 
 The Mastodon limits are those of a Mastodon server as it comes. When the post goes out, Acme also reads the limits of the account's own server, the file types it takes and its largest image and video, and does not send a file the server would refuse: the post then fails on that channel.
 
-Acme knows the limits of X, LinkedIn, Threads and Instagram too, and will check them once their accounts can be connected. It checks only what it read from each file: a fact it could not read, such as a video's duration, is not checked, and the platform may still refuse the file.
+On Meta's platforms:
+
+| Limit                         | Threads                                             | Instagram                                                | Facebook Pages                  |
+| ----------------------------- | --------------------------------------------------- | -------------------------------------------------------- | ------------------------------- |
+| Images and videos in one post | 20, as a carousel                                   | 20, as a carousel; at least one                          | Several photos, or one video    |
+| Images                        | JPEG and PNG, up to 8 MiB, at most 10:1 either way  | JPEG only, up to 8 MiB, from 4:5 to 1.91:1               | JPEG, PNG and GIF, up to 10 MiB |
+| Videos                        | MP4 or QuickTime, up to 1 GiB and 5 minutes         | MP4 or QuickTime, 3 seconds to 15 minutes, up to 300 MiB | One MP4 or QuickTime            |
+| Images and a video together   | Yes                                                 | Yes                                                      | No                              |
+| Alt text                      | Shown to people who need it, up to 1,000 characters | Not sent                                                 | Shown to people who need it     |
+
+Acme knows the limits of X and LinkedIn too, and will check them once their accounts can be connected. It checks only what it read from each file: a fact it could not read, such as a video's duration, is not checked, and the platform may still refuse the file.
 
 ## When you schedule [#schedule]
 
@@ -62,6 +72,7 @@ At the post's time, Acme sends each file from the library to the platform, then 
 
 - **Mastodon**: each file goes to the account's server, which may process it before the post can show it.
 - **Bluesky**: images go to the server that holds the account, and a video to Bluesky's video service, which processes it.
+- **Threads**, **Instagram** and **Facebook Pages**: Acme gives Meta a link to each file in the media store, valid for two hours, and Meta fetches it. On Threads and Instagram, Meta then processes the files before the post goes out.
 
 Acme waits up to 15 minutes for a platform to process a file. Past that, it tries the post again later, as for a platform that does not answer.
 

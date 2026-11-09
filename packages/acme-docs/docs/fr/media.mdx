@@ -1,6 +1,6 @@
 ---
 title: Images et vidéos
-description: Importez des images et des vidéos dans la médiathèque d’un espace de travail, ajoutez-les aux publications avec un texte alternatif, et voyez ce que Mastodon et Bluesky acceptent avant qu’une publication parte.
+description: Importez des images et des vidéos dans la médiathèque d’un espace de travail, ajoutez-les aux publications avec un texte alternatif, et voyez ce que chaque plateforme accepte avant qu’une publication parte.
 sidebar:
   order: 4
 ---
@@ -36,7 +36,7 @@ Chaque image ou vidéo d’une publication a son propre texte alternatif, qui pa
 
 ## Ce que chaque plateforme accepte [#platforms]
 
-Acme publie sur Mastodon et Bluesky. Quand vous programmez une publication, il vérifie ses images et vidéos selon ces limites :
+Acme publie sur Mastodon, Bluesky, Threads, Instagram et les Pages Facebook. Quand vous programmez une publication, il vérifie ses images et vidéos selon ces limites :
 
 | Limite                           | Bluesky                                                  | Mastodon                                                                  |
 | -------------------------------- | -------------------------------------------------------- | ------------------------------------------------------------------------- |
@@ -48,7 +48,17 @@ Acme publie sur Mastodon et Bluesky. Quand vous programmez une publication, il v
 
 Les limites de Mastodon sont celles d’un serveur Mastodon tel qu’il est livré. Quand la publication part, Acme lit aussi les limites du serveur du compte, les types de fichiers qu’il accepte et sa plus grande image et vidéo, et n’envoie pas un fichier que le serveur refuserait : la publication échoue alors sur ce canal.
 
-Acme connaît aussi les limites de X, LinkedIn, Threads et Instagram, et les vérifiera dès que leurs comptes pourront être connectés. Il ne vérifie que ce qu’il a lu de chaque fichier : un fait qu’il n’a pas pu lire, comme la durée d’une vidéo, n’est pas vérifié, et la plateforme peut encore refuser le fichier.
+Sur les plateformes de Meta :
+
+| Limite                           | Threads                                                          | Instagram                                                     | Pages Facebook                   |
+| -------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------- | -------------------------------- |
+| Images et vidéos par publication | 20, en carrousel                                                 | 20, en carrousel ; au moins une                               | Plusieurs photos, ou une vidéo   |
+| Images                           | JPEG et PNG, jusqu’à 8 Mio, au plus 10:1 dans un sens ou l’autre | JPEG seulement, jusqu’à 8 Mio, de 4:5 à 1,91:1                | JPEG, PNG et GIF, jusqu’à 10 Mio |
+| Vidéos                           | MP4 ou QuickTime, jusqu’à 1 Gio et 5 minutes                     | MP4 ou QuickTime, de 3 secondes à 15 minutes, jusqu’à 300 Mio | Une MP4 ou QuickTime             |
+| Images et vidéo ensemble         | Oui                                                              | Oui                                                           | Non                              |
+| Texte alternatif                 | Montré à qui en a besoin, jusqu’à 1 000 caractères               | Pas envoyé                                                    | Montré à qui en a besoin         |
+
+Acme connaît aussi les limites de X et LinkedIn, et les vérifiera dès que leurs comptes pourront être connectés. Il ne vérifie que ce qu’il a lu de chaque fichier : un fait qu’il n’a pas pu lire, comme la durée d’une vidéo, n’est pas vérifié, et la plateforme peut encore refuser le fichier.
 
 ## Quand vous programmez [#schedule]
 
@@ -62,6 +72,7 @@ Un brouillon peut contenir n’importe quel média prêt de son espace de travai
 
 - **Mastodon** : chaque fichier va au serveur du compte, qui peut le traiter avant que la publication puisse le montrer.
 - **Bluesky** : les images vont au serveur qui héberge le compte, et une vidéo au service vidéo de Bluesky, qui la traite.
+- **Threads**, **Instagram** et **Pages Facebook** : Acme donne à Meta un lien vers chaque fichier du stockage des médias, valable deux heures, et Meta va le chercher. Sur Threads et Instagram, Meta traite ensuite les fichiers avant que la publication parte.
 
 Acme attend jusqu’à 15 minutes qu’une plateforme traite un fichier. Au-delà, il réessaie la publication plus tard, comme pour une plateforme qui ne répond pas.
 
