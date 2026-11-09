@@ -39,6 +39,7 @@ import type { ScheduleChoice } from "#components/posts/schedule-fields.tsx";
 import { TargetStatuses } from "#components/posts/target-statuses.tsx";
 import { TextTabs } from "#components/posts/text-tabs.tsx";
 import { getPathname, useRouter } from "#i18n/navigation.ts";
+import { connectedTargets } from "#posts/channel-selection.ts";
 import { fitOn, fits } from "#posts/character-count.ts";
 import { usePostRequests } from "#posts/use-post-requests.ts";
 import {
@@ -115,10 +116,14 @@ const contentOf = (
   text,
 });
 
-/** What the member may do with the post, as it is. */
+/**
+ * What the member may do with the post, as it is. A new post is created by
+ * its first save, and updated by the next ones.
+ */
 const capabilitiesOf = (
   permissions: readonly Permission[],
-  post: Post | undefined
+  post: Post | undefined,
+  saved: boolean
 ) => {
   const status = post?.status ?? "draft";
   const can = (permission: Permission) => permissions.includes(permission);
@@ -130,9 +135,7 @@ const capabilitiesOf = (
     canCancel: post !== undefined && canSchedule,
     canReschedule: status === "scheduled" && canSchedule,
     canSchedule,
-    canWrite:
-      status === "draft" &&
-      can(post === undefined ? "post:create" : "post:update"),
+    canWrite: status === "draft" && can(saved ? "post:update" : "post:create"),
     status,
   };
 };
@@ -208,16 +211,20 @@ export const Composer = ({
     post?.content.media ?? []
   );
 
-  const [channelIds, setChannelIds] = useState<readonly string[]>(
-    post?.targets.map(({ channelId }) => channelId) ?? []
+  const [channelIds, setChannelIds] = useState<readonly string[]>(() =>
+    connectedTargets(post, channels)
   );
 
   const [choice, setChoice] = useState<ScheduleChoice>(() =>
     choiceOf(post?.schedule ?? null)
   );
 
+  // A new post is saved once, then updated. It gets its own address, without
+  // leaving the page, so what the composer shows, errors included, stays.
+  const [postId, setPostId] = useState(post?.id);
+
   const { canCancel, canReschedule, canSchedule, canWrite, status } =
-    capabilitiesOf(permissions, post);
+    capabilitiesOf(permissions, post, postId !== undefined);
 
   const busy = isPending ? action : null;
   const locked = !canWrite || busy !== null;
@@ -245,10 +252,6 @@ export const Composer = ({
       timeStyle: "short",
       timeZone: choice.timeZone,
     });
-
-  // A new post is saved once, then updated. It gets its own address, without
-  // leaving the page, so what the composer shows, errors included, stays.
-  const [postId, setPostId] = useState(post?.id);
 
   const opened = (saved: Post) => {
     if (postId === undefined) {
