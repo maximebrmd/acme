@@ -1,4 +1,8 @@
 import {
+  oauthDeviceAuthorizationClient,
+  oauthProviderClient,
+} from "@better-auth/oauth-provider/client";
+import {
   adminClient,
   inferAdditionalFields,
   organizationClient,
@@ -16,5 +20,11 @@ export const authClient = createAuthClient({
     }),
     organizationClient(),
     adminClient(),
+    // During an OAuth authorization, sends the page's signed query with
+    // each request (sign-in, workspace picker, consent), so Better Auth
+    // resumes it; its answers then redirect the browser onwards.
+    oauthProviderClient(),
+    // The /device page, where the command line's code is approved.
+    oauthDeviceAuthorizationClient(),
   ],
 });

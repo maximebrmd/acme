@@ -49,6 +49,10 @@ export type { Member, OAuthGrant, Principal } from "./principal.ts";
 
 export { cliClientId, OAuthApi } from "./oauth.ts";
 
+export { PublicClientSchema } from "./oauth-clients.ts";
+
+export type { PublicClient } from "./oauth-clients.ts";
+
 export {
   AuthorizationServerSchema,
   ProtectedResourceSchema,

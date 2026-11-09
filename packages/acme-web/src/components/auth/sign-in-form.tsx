@@ -9,11 +9,15 @@ import type { SubmitEvent } from "react";
 import { authClient } from "#auth/client.ts";
 import { authErrorKey } from "#auth/errors.ts";
 import type { AuthErrorKey } from "#auth/errors.ts";
+import { isOAuthRedirect } from "#auth/oauth-redirect.ts";
 import { FormError } from "#components/auth/form-error.tsx";
 import { FormField } from "#components/auth/form-field.tsx";
 import { getPathname, useRouter } from "#i18n/navigation.ts";
 
-export const SignInForm = () => {
+// `next` is where to go once signed in. During an OAuth authorization, Better
+// Auth answers the sign-in with the next step instead, which its client
+// follows.
+export const SignInForm = ({ next }: { readonly next: string }) => {
   const t = useTranslations("SignInPage");
   const fields = useTranslations("Auth");
   const locale = useLocale();
@@ -31,7 +35,11 @@ export const SignInForm = () => {
       const result = await authClient.signIn.email({ email, password });
 
       if (result.error === null) {
-        router.push("/app");
+        if (isOAuthRedirect(result.data)) {
+          return;
+        }
+
+        router.push(next);
         router.refresh();
       } else {
         setResentTo(null);

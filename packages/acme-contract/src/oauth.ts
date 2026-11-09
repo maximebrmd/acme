@@ -1,5 +1,6 @@
 import { HttpApi } from "effect/http-api";
 
+import { OAuthClientsApi } from "./oauth-clients.ts";
 import { OAuthDiscoveryApi } from "./oauth-discovery.ts";
 import { OAuthTokensApi } from "./oauth-tokens.ts";
 
@@ -14,10 +15,12 @@ import { OAuthTokensApi } from "./oauth-tokens.ts";
 export const cliClientId = "acme-cli";
 
 /**
- * The OAuth endpoints of an Acme server that its command line calls, beside
- * the HTTP API: discovery, the device authorization grant, and token
- * renewal and revocation.
+ * The OAuth endpoints of an Acme server that its command line and web app
+ * call, beside the HTTP API: discovery, the device authorization grant,
+ * token renewal and revocation, and what the authorization pages show of a
+ * client.
  */
 export class OAuthApi extends HttpApi.make("acme-oauth")
   .add(OAuthDiscoveryApi)
-  .add(OAuthTokensApi) {}
+  .add(OAuthTokensApi)
+  .add(OAuthClientsApi) {}

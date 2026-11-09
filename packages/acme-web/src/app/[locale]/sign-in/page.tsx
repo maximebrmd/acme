@@ -1,11 +1,15 @@
-import { useTranslations } from "next-intl";
+import { Option } from "effect";
+import { getTranslations } from "next-intl/server";
 
+import { nextPathOf } from "#auth/next-path.ts";
 import { AuthCard } from "#components/auth/auth-card.tsx";
 import { SignInForm } from "#components/auth/sign-in-form.tsx";
 import { Link } from "#i18n/navigation.ts";
 
-const SignInPage = () => {
-  const t = useTranslations("SignInPage");
+// ?next= names where to go once signed in, as the /device page asks.
+const SignInPage = async ({ searchParams }: PageProps<"/[locale]/sign-in">) => {
+  const { next } = await searchParams;
+  const t = await getTranslations("SignInPage");
 
   return (
     <AuthCard
@@ -25,7 +29,7 @@ const SignInPage = () => {
         </>
       }
     >
-      <SignInForm />
+      <SignInForm next={Option.getOrElse(nextPathOf(next), () => "/app")} />
     </AuthCard>
   );
 };

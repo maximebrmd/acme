@@ -151,6 +151,14 @@ export const makeAuthorizationServer = Effect.fn("makeAuthorizationServer")(
       })
     );
 
+    // The command line never asks for it; the web app's consent page does.
+    const clients = HttpApiBuilder.group(OAuthApi, "clients", (handlers) =>
+      handlers.handleAll({
+        publicClient: ({ query }) =>
+          Effect.succeed({ client_id: query.client_id }),
+      })
+    );
+
     return {
       /** The access token the API accepts, once one was issued. */
       acceptedToken: Ref.get(state).pipe(
@@ -160,7 +168,7 @@ export const makeAuthorizationServer = Effect.fn("makeAuthorizationServer")(
             : Option.some(accessTokenOf(generation))
         )
       ),
-      handlers: Layer.mergeAll(discovery, tokens),
+      handlers: Layer.mergeAll(discovery, tokens, clients),
       state: Ref.get(state),
     };
   }

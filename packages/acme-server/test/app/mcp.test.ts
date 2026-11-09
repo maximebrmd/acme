@@ -4,6 +4,7 @@ import { assert, layer } from "@effect/vitest";
 import {
   AuthorizationServerSchema,
   ProtectedResourceSchema,
+  PublicClientSchema,
 } from "acme-contract";
 import { Context, Effect, Layer, Option, Schema } from "effect";
 import { McpClient, McpProtocol } from "effect/ai";
@@ -139,6 +140,16 @@ const authorize = Effect.fn("authorize")(function* authorize(
   const consentPage = new URL(continued.url, origin);
 
   assert.strictEqual(consentPage.pathname, "/oauth/consent");
+
+  // What the consent page shows of the client.
+  const described = yield* bodyOf(
+    PublicClientSchema,
+    yield* app.request(`/api/auth/oauth2/public-client?client_id=${clientId}`, {
+      headers: { cookie },
+    })
+  );
+
+  assert.strictEqual(described.client_name, "Synthetic agent");
 
   const consented = yield* bodyOf(
     RedirectSchema,
