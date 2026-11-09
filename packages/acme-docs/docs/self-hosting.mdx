@@ -69,7 +69,7 @@ Caddy (`self-host/Caddyfile`) sends `/api/*` and `/.well-known/oauth-*` to the s
 
 Grafana listens on `127.0.0.1:13000` only: reach it through an SSH tunnel, such as `ssh -L 13000:127.0.0.1:13000 you@your-server`, and sign in as `admin` with `GRAFANA_ADMIN_PASSWORD`. Its alert rules come provisioned, and notify no one until you add a contact point.
 
-To back the database up, set `ACME_POSTGRES_ARCHIVE_MODE=on` and the `PGBACKREST_REPO1_*` settings the example file lists. Postgres then archives its write-ahead log to that bucket with pgBackRest, which the stack's Postgres image ships, and you take backups on a schedule with `docker compose … exec --user postgres postgres pgbackrest backup --type=full`. Acme's own servers do so with the Ansible in `packages/acme-infra`, whose README and restore runbook show every command. [Environment variables](/environment-variables#compose) lists the stack's settings.
+To back the database up, set `ACME_POSTGRES_ARCHIVE_MODE=on` and the `PGBACKREST_REPO1_*` settings the example file lists. Postgres then archives its write-ahead log to that bucket with pgBackRest, which the stack's Postgres image ships. Create the backup repository once with `docker compose … exec --user postgres postgres pgbackrest stanza-create`, then take backups on a schedule with `… pgbackrest backup --type=full`. Acme's own servers do so with the Ansible in `packages/acme-infra`, whose README and restore runbook show every command. [Environment variables](/environment-variables#compose) lists the stack's settings.
 
 ## In front of Acme [#reverse-proxy]
 
