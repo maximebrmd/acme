@@ -133,6 +133,10 @@ export const publicationAttempts = publishing.table(
  * One row per attempt of a round, whatever its key: a second job for the same
  * attempt, as after a change to how keys are made, finds the first one's call
  * instead of sending again.
+ *
+ * `progress` is how far a call of several requests got, as its adapter
+ * recorded it before each request that matters (TikTok's `publish_id`):
+ * ids and states, never content. Null until an adapter records something.
  */
 export const publicationCalls = publishing.table(
   "publication_calls",
@@ -142,6 +146,7 @@ export const publicationCalls = publishing.table(
     idempotencyKey: text("idempotency_key").primaryKey(),
     operation: text("operation").notNull(),
     outcome: jsonb("outcome"),
+    progress: jsonb("progress"),
     round: integer("round").notNull(),
     startedAt: instant("started_at").notNull(),
     targetId: uuid("target_id")

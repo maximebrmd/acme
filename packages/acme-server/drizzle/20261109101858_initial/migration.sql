@@ -249,6 +249,7 @@ CREATE TABLE "publishing"."publication_calls" (
 	"idempotency_key" text PRIMARY KEY,
 	"operation" text NOT NULL,
 	"outcome" jsonb,
+	"progress" jsonb,
 	"round" integer NOT NULL,
 	"started_at" timestamp with time zone NOT NULL,
 	"target_id" uuid NOT NULL,
