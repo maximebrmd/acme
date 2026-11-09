@@ -28,15 +28,27 @@ const allowedWhileImpersonating: ReadonlySet<string> = new Set([
   "/organization/set-active-team",
 ]);
 
+// The routes that let an OAuth client act as the member: authorizing it,
+// agreeing to what it asks, and approving the command line's sign-in. Their
+// tokens would outlive the impersonation.
+const grantsAccess: ReadonlySet<string> = new Set([
+  "/device/approve",
+  "/oauth2/authorize",
+  "/oauth2/consent",
+  "/oauth2/continue",
+]);
+
 /**
  * Whether staff impersonating a member are refused a Better Auth route: every
- * workspace route but those that only read. Creating, inviting, accepting,
- * changing roles, removing and deleting all outlive the impersonation, as
- * what `withheldWhileImpersonating` lists does, and these routes never reach
+ * workspace route but those that only read, and those that give an OAuth
+ * client access. Creating, inviting, accepting, changing roles, removing,
+ * deleting and granting access all outlive the impersonation, as what
+ * `withheldWhileImpersonating` lists does, and these routes never reach
  * Acme's API, which applies that list.
  */
 export const refusedWhileImpersonating = (path: string): boolean =>
-  path.startsWith("/organization/") && !allowedWhileImpersonating.has(path);
+  grantsAccess.has(path) ||
+  (path.startsWith("/organization/") && !allowedWhileImpersonating.has(path));
 
 const isImpersonation = Schema.is(
   Schema.Struct({
@@ -53,7 +65,8 @@ export const refuseImpersonatedChanges = createAuthMiddleware(async (ctx) => {
   if (isImpersonation(await getSessionFromCtx(ctx))) {
     throw APIError.from("FORBIDDEN", {
       code: "IMPERSONATION_READ_ONLY",
-      message: "Staff impersonating a member cannot change workspaces",
+      message:
+        "Staff impersonating a member cannot change workspaces or give access to them",
     });
   }
 });

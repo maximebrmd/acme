@@ -5,18 +5,31 @@ import {
 } from "@better-auth/core/context";
 import { drizzleAdapter } from "@better-auth/drizzle-adapter/relations-v2";
 import type { DrizzleAdapterConfig } from "@better-auth/drizzle-adapter/relations-v2";
+import { mcp } from "@better-auth/mcp";
+import type { McpOptions } from "@better-auth/mcp";
+import { oauthDeviceAuthorization } from "@better-auth/oauth-provider";
 import { betterAuth } from "better-auth";
-import type { User } from "better-auth";
+import type { Session, User } from "better-auth";
 import { APIError } from "better-auth/api";
-import { admin, organization } from "better-auth/plugins";
+import { admin, jwt, organization } from "better-auth/plugins";
 import { Option, Redacted, Schema } from "effect";
 
+import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
+import type { WorkspaceId } from "#shared/domain/ids.ts";
 import { defaultLocale, LocaleSchema } from "#shared/domain/locale.ts";
 import type { Locale } from "#shared/domain/locale.ts";
 import { RoleSchema } from "#workspace/domain/roles.ts";
 
 import { accessControl, roles } from "./access-control.ts";
 import { refuseImpersonatedChanges } from "./impersonation.ts";
+import {
+  apiResourceOf,
+  cliClientId,
+  mcpResourceOf,
+  oauthPages,
+  oauthScopes,
+  workspaceClaim,
+} from "./oauth.ts";
 import type { AuthConfiguration } from "./settings.ts";
 
 /** A link Better Auth wants mailed, in the recipient's language. */
@@ -112,10 +125,120 @@ const oneHour = 60 * 60;
 
 const oneWeek = 7 * oneDay;
 
+const fifteenMinutes = 15 * 60;
+
+const decodeWorkspaceId = Schema.decodeUnknownOption(WorkspaceIdSchema);
+
+const decodePickedWorkspace = Schema.decodeUnknownOption(
+  Schema.Struct({ activeOrganizationId: WorkspaceIdSchema })
+);
+
+// The workspace the user picked for an OAuth client: the one they made their
+// session's active workspace on the picker page.
+const pickedWorkspace = (session: Session): Option.Option<WorkspaceId> =>
+  decodePickedWorkspace(session).pipe(
+    Option.map(({ activeOrganizationId }) => activeOrganizationId)
+  );
+
+const isMember = async (
+  userId: string,
+  workspaceId: WorkspaceId
+): Promise<boolean> => {
+  const { adapter } = getCurrentAuthEndpointContext().context;
+
+  const found = await adapter.findOne({
+    model: "member",
+    select: ["id"],
+    where: [
+      { field: "userId", value: userId },
+      { field: "organizationId", value: workspaceId },
+    ],
+  });
+
+  return found !== null;
+};
+
+// MCP clients register themselves, when the server allows it, with the
+// right to ask for reading; writing they may ask for too, and the user then
+// agrees to it or not on the consent page.
+const dynamicClientRegistration: Partial<McpOptions> = {
+  allowDynamicClientRegistration: true,
+  allowUnauthenticatedClientRegistration: true,
+  clientRegistrationAllowedScopes: ["workspace:write"],
+  clientRegistrationDefaultApplicationType: "infer",
+  clientRegistrationDefaultScopes: [
+    "openid",
+    "profile",
+    "email",
+    "offline_access",
+    "workspace:read",
+  ],
+};
+
+/**
+ * The OAuth authorization server, for the HTTP API and the MCP endpoint.
+ * Access tokens are JWTs that resource servers check locally, so they are
+ * short-lived; refresh tokens renew them, once each.
+ */
+const oauthServer = (settings: AuthConfiguration) => {
+  const options: McpOptions = {
+    accessTokenExpiresIn: fifteenMinutes,
+    cachedTrustedClients: new Set([cliClientId]),
+    consentPage: oauthPages.consent,
+    // A token issued after the user picked a workspace is bound to it.
+    // Renewing a token passes the reference it was stored with, which
+    // is null for the command line's.
+    customAccessTokenClaims: ({ referenceId }) =>
+      Option.match(decodeWorkspaceId(referenceId), {
+        onNone: () => ({}),
+        onSome: (workspaceId) => ({ [workspaceClaim]: workspaceId }),
+      }),
+    // No client credentials grant: scripts use API keys.
+    grantTypes: ["authorization_code", "refresh_token"],
+    loginPage: oauthPages.signIn,
+    // The workspace picker. Every authorization asks which workspace the
+    // client may use, rather than taking the one the user last opened,
+    // and the consent is kept per workspace.
+    postLogin: {
+      consentReferenceId: ({ session }) =>
+        Option.getOrThrowWith(pickedWorkspace(session), () =>
+          APIError.from("BAD_REQUEST", {
+            code: "WORKSPACE_REQUIRED",
+            message: "Pick the workspace the client may use",
+          })
+        ),
+      page: oauthPages.workspace,
+      // Coming back from the picker, the user must still belong to the
+      // workspace they picked.
+      shouldRedirect: async ({ isContinuation, session, user }) => {
+        const picked = pickedWorkspace(session);
+
+        return (
+          !isContinuation ||
+          Option.isNone(picked) ||
+          !(await isMember(user.id, picked.value))
+        );
+      },
+    },
+    refreshTokenReuseInterval: 0,
+    resource: mcpResourceOf(settings.publicUrl),
+    resources: [apiResourceOf(settings.publicUrl)],
+    scopes: oauthScopes,
+  };
+
+  return mcp(
+    settings.dynamicClientRegistration
+      ? { ...options, ...dynamicClientRegistration }
+      : options
+  );
+};
+
 /**
  * The Better Auth instance: email and password with verification, workspaces
- * (the organization plugin), staff tools (the admin plugin) and API keys owned
- * by workspaces.
+ * (the organization plugin), staff tools (the admin plugin), API keys owned
+ * by workspaces, and the OAuth authorization server that MCP clients and the
+ * command line sign in with (the MCP and device authorization plugins, which
+ * sign their tokens with the JWT plugin's keys).
  *
  * Every plugin is always on, and options that shape tables are constants, so
  * `scripts/auth-schema.ts` generates the same tables for every deployment.
@@ -143,12 +266,25 @@ export const makeAuth = ({ database, hooks, settings }: AuthDependencies) =>
     // API keys go through Acme's own API only (/api/workspaces/:id/api-keys):
     // their permissions are the server's to set, and staff impersonating a
     // member may not see or revoke them, which Better Auth's routes ignore.
+    //
+    // The JWT plugin's session tokens would be signed with the keys that sign
+    // OAuth access tokens; the device grant's session tokens bypass OAuth.
+    // OAuth clients are registered by the server (the command line's) or by
+    // MCP clients themselves, never by signed-in users.
     disabledPaths: [
       "/api-key/create",
       "/api-key/delete",
       "/api-key/get",
       "/api-key/list",
       "/api-key/update",
+      "/device/token",
+      "/oauth2/client/rotate-secret",
+      "/oauth2/create-client",
+      "/oauth2/delete-client",
+      "/oauth2/get-client",
+      "/oauth2/get-clients",
+      "/oauth2/update-client",
+      "/token",
     ],
     emailAndPassword: {
       // A sign-up for an email that already has an account answers with a
@@ -264,6 +400,16 @@ export const makeAuth = ({ database, hooks, settings }: AuthDependencies) =>
         rateLimit: { enabled: true, maxRequests: 600, timeWindow: 60_000 },
         references: "organization",
         requireName: true,
+      }),
+      // Signs OAuth access tokens and publishes its keys at /api/auth/jwks.
+      jwt({ disableSettingJwtHeader: true }),
+      oauthServer(settings),
+      // The command line's sign-in (RFC 8628): it shows a code, which the
+      // user enters on the web app's /device page.
+      oauthDeviceAuthorization({
+        expiresIn: "10m",
+        interval: "5s",
+        verificationUri: oauthPages.device,
       }),
     ],
     rateLimit: { enabled: settings.production, storage: "database" },

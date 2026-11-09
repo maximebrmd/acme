@@ -12,6 +12,7 @@ import { Authenticate } from "#workspace/application/authenticate.ts";
 import { ResolveMember } from "#workspace/application/resolve-member.ts";
 import { ApiKeyIssuerLive } from "#workspace/infrastructure/auth/api-key-issuer.ts";
 import { BetterAuthLive } from "#workspace/infrastructure/auth/better-auth.ts";
+import { CliClientLive } from "#workspace/infrastructure/auth/cli-client.ts";
 import { AuthGatewayLive } from "#workspace/infrastructure/auth/gateway.ts";
 import { AuthSettings } from "#workspace/infrastructure/auth/settings.ts";
 import { MemberDirectoryLive } from "#workspace/infrastructure/drizzle-member-directory.ts";
@@ -19,7 +20,8 @@ import { MemberDirectoryLive } from "#workspace/infrastructure/drizzle-member-di
 const AdaptersLive = Layer.mergeAll(
   AuthGatewayLive,
   MemberDirectoryLive,
-  ApiKeyIssuerLive
+  ApiKeyIssuerLive,
+  CliClientLive
 );
 
 const UseCasesLive = Layer.mergeAll(
@@ -31,13 +33,14 @@ const UseCasesLive = Layer.mergeAll(
 
 /**
  * The workspace context's services: Better Auth, configured from the
- * environment, and the use cases behind the API. It needs the database,
+ * environment, with the command line's OAuth client registered, and the use
+ * cases behind the API and the MCP endpoint. It needs the database,
  * migrated, and the notifications context's SendAuthEmail.
  */
 export const WorkspaceLive = UseCasesLive.pipe(
   Layer.provide(AdaptersLive),
   Layer.provideMerge(BetterAuthLive),
-  Layer.provide(AuthSettings.layer)
+  Layer.provideMerge(AuthSettings.layer)
 );
 
 /**
@@ -51,5 +54,14 @@ export const WorkspaceApiLive = Layer.mergeAll(
   Layer.provideMerge(Layer.mergeAll(AuthenticationLive, WorkspaceAccessLive))
 );
 
-/** Better Auth's routes under /api/auth. */
+/**
+ * The MCP endpoint's authentication: its routes act as the member an OAuth
+ * access token issued for it is bound to.
+ */
+export { McpAuthenticationLive } from "#workspace/api/mcp-authentication.ts";
+
+/**
+ * Better Auth's routes under /api/auth, and the OAuth discovery documents
+ * at the root.
+ */
 export { AuthRoutesLive } from "#workspace/infrastructure/auth/routes.ts";

@@ -19,7 +19,9 @@ const gateway = Effect.gen(function* makeGateway() {
         AuthGateway,
         AuthGateway.of({
           apiKey: () => counted.pipe(Effect.as(Option.none())),
+          apiToken: () => counted.pipe(Effect.andThen(Effect.die("unused"))),
           isTrustedOrigin: (origin) => origin === "https://app.example.test",
+          mcpToken: () => counted.pipe(Effect.andThen(Effect.die("unused"))),
           session: (cookies) =>
             counted.pipe(
               Effect.as(

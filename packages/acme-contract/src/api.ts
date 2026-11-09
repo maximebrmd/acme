@@ -39,9 +39,43 @@ export { PlatformSchema } from "./platform.ts";
 
 export type { Platform } from "./platform.ts";
 
-export { MemberSchema, PrincipalSchema } from "./principal.ts";
+export {
+  MemberSchema,
+  OAuthGrantSchema,
+  PrincipalSchema,
+} from "./principal.ts";
 
-export type { Member, Principal } from "./principal.ts";
+export type { Member, OAuthGrant, Principal } from "./principal.ts";
+
+export { OAuthApi } from "./oauth.ts";
+
+export {
+  AuthorizationServerSchema,
+  ProtectedResourceSchema,
+} from "./oauth-discovery.ts";
+
+export type {
+  AuthorizationServer,
+  ProtectedResource,
+} from "./oauth-discovery.ts";
+
+export {
+  DeviceAuthorizationRequestSchema,
+  DeviceAuthorizationSchema,
+  deviceCodeGrantType,
+  OAuthClientErrorSchema,
+  OAuthErrorSchema,
+  RevocationRequestSchema,
+  TokenRequestSchema,
+  TokenSchema,
+} from "./oauth-tokens.ts";
+
+export type {
+  DeviceAuthorization,
+  OAuthError,
+  Token,
+  TokenRequest,
+} from "./oauth-tokens.ts";
 
 export { MeSchema, MembershipSchema } from "./session.ts";
 
