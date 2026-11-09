@@ -1,4 +1,4 @@
-import { createHash } from "node:crypto";
+import { createHash, createPublicKey, verify } from "node:crypto";
 
 import { Effect, Option, Schema } from "effect";
 
@@ -48,16 +48,75 @@ export interface FakeBlueskyOptions {
   readonly videoFailure?: string;
 }
 
+// A DPoP proof's header: an ES256 JWS carrying the public key it is signed
+// with (RFC 9449, 4.2).
+const ProofHeaderSchema = Schema.fromJsonString(
+  Schema.Struct({
+    alg: Schema.Literal("ES256"),
+    jwk: Schema.Struct({
+      crv: Schema.Literal("P-256"),
+      d: Schema.optionalKey(Schema.String),
+      kty: Schema.Literal("EC"),
+      x: Schema.String,
+      y: Schema.String,
+    }),
+    typ: Schema.Literal("dpop+jwt"),
+  })
+);
+
 const ProofSchema = Schema.fromJsonString(
   Schema.Struct({
     ath: Schema.String,
     htm: Schema.String,
     htu: Schema.String,
+    iat: Schema.Number,
+    jti: Schema.NonEmptyString,
     nonce: Schema.optionalKey(Schema.String),
   })
 );
 
+const decodeProofHeader = Schema.decodeUnknownOption(ProofHeaderSchema);
+
 const decodeProof = Schema.decodeUnknownOption(ProofSchema);
+
+type ProofKey = (typeof ProofHeaderSchema.Type)["jwk"];
+
+// How far, in seconds, a proof's `iat` may be from the server's clock.
+const proofTolerance = 60;
+
+const fromBase64Url = (text: string) => Buffer.from(text, "base64url");
+
+// The key's JWK thumbprint (RFC 7638), which a token is bound to.
+const thumbprintOf = ({ crv, kty, x, y }: ProofKey) =>
+  createHash("sha256")
+    .update(JSON.stringify({ crv, kty, x, y }))
+    .digest("base64url");
+
+// The proof's claims, if it is a JWS that the public key in its header
+// signed, and the key's thumbprint.
+const verifiedProof = (jwt: string) => {
+  const [header = "", payload = "", signature = ""] = jwt.split(".");
+
+  return decodeProofHeader(fromBase64Url(header).toString()).pipe(
+    Option.filter(({ jwk }) => jwk.d === undefined),
+    Option.filter(({ jwk }) =>
+      verify(
+        "sha256",
+        Buffer.from(`${header}.${payload}`),
+        {
+          dsaEncoding: "ieee-p1363",
+          key: createPublicKey({ format: "jwk", key: jwk }),
+        },
+        fromBase64Url(signature)
+      )
+    ),
+    Option.flatMap(({ jwk }) =>
+      decodeProof(fromBase64Url(payload).toString()).pipe(
+        Option.map((claims) => ({ claims, thumbprint: thumbprintOf(jwk) }))
+      )
+    )
+  );
+};
 
 const CreateSchema = Schema.Struct({
   collection: Schema.String,
@@ -73,17 +132,16 @@ const tidPattern = /^[234567a-j][234567a-z]{12}$/u;
 const sha256 = (text: string) =>
   createHash("sha256").update(text).digest("base64url");
 
-const payloadOf = (jwt: string) =>
-  decodeProof(Buffer.from(jwt.split(".")[1] ?? "", "base64url").toString());
-
 /**
  * One server playing the PDS of a Bluesky account and the video service.
  * The PDS checks DPoP as a resource server does: the token must be one it
- * issued, and each proof must name the request, hash the token and carry
- * the current nonce, which a request without it is told (401
- * use_dpop_nonce). Records are kept by key, and a second create with a key
- * is refused with 500, as the reference PDS does. Video jobs complete
- * after `videoPolls` looks.
+ * issued, and each proof must be an ES256 JWS signed by the public key in
+ * its header, made just now and never seen before, by the key the token
+ * was first used with (a token is bound to its session's key); it must
+ * name the request, hash the token and carry the current nonce, which a
+ * request without it is told (401 use_dpop_nonce). Records are kept by
+ * key, and a second create with a key is refused with 500, as the
+ * reference PDS does. Video jobs complete after `videoPolls` looks.
  */
 export const fakeBluesky = Effect.fnUntraced(function* fakeBluesky(
   options: FakeBlueskyOptions = {}
@@ -95,6 +153,9 @@ export const fakeBluesky = Effect.fnUntraced(function* fakeBluesky(
   const jobs = new Map<string, { blob: FakeBlob; polls: number }>();
   const serviceTokens = new Set<string>();
   const scripts = scripted<BlueskyScript>();
+  // The key each token was first used with, and the proofs already taken.
+  const boundKeys = new Map<string, string>();
+  const seenProofs = new Set<string>();
 
   // The DPoP check, as a resource server makes it: none when it passes.
   const dpopRefusal = (
@@ -104,26 +165,46 @@ export const fakeBluesky = Effect.fnUntraced(function* fakeBluesky(
     const authorization = headerOf(request, "authorization");
     const token = authorization.replace(/^DPoP /u, "");
 
+    const invalidToken = json(
+      { error: "InvalidToken", message: "Bad token" },
+      401,
+      { "www-authenticate": 'DPoP error="invalid_token"' }
+    );
+
     if (!authorization.startsWith("DPoP ") || !validTokens.has(token)) {
-      return Option.some(
-        json({ error: "InvalidToken", message: "Bad token" }, 401, {
-          "www-authenticate": 'DPoP error="invalid_token"',
-        })
-      );
+      return Option.some(invalidToken);
     }
 
-    const proof = payloadOf(headerOf(request, "dpop"));
+    const verified = verifiedProof(headerOf(request, "dpop"));
+    const now = Math.floor(Date.now() / 1000);
 
     if (
-      proof._tag === "None" ||
-      proof.value.ath !== sha256(token) ||
-      proof.value.htm !== request.method ||
-      proof.value.htu !== `${origin}${request.path}`
+      Option.isNone(verified) ||
+      seenProofs.has(verified.value.claims.jti) ||
+      Math.abs(verified.value.claims.iat - now) > proofTolerance
     ) {
       return Option.some(json({ error: "InvalidDPoPProof" }, 400));
     }
 
-    return proof.value.nonce === nonce
+    const { claims: proof, thumbprint } = verified.value;
+
+    seenProofs.add(proof.jti);
+
+    if ((boundKeys.get(token) ?? thumbprint) !== thumbprint) {
+      return Option.some(invalidToken);
+    }
+
+    boundKeys.set(token, thumbprint);
+
+    if (
+      proof.ath !== sha256(token) ||
+      proof.htm !== request.method ||
+      proof.htu !== `${origin}${request.path}`
+    ) {
+      return Option.some(json({ error: "InvalidDPoPProof" }, 400));
+    }
+
+    return proof.nonce === nonce
       ? Option.none()
       : Option.some(
           json({ error: "use_dpop_nonce" }, 401, {

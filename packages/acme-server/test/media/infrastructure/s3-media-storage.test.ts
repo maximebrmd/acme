@@ -1,5 +1,5 @@
 import { assert, layer } from "@effect/vitest";
-import { Duration, Effect, Layer, Option } from "effect";
+import { Duration, Effect, Layer, Option, Stream } from "effect";
 
 import { MediaStorage } from "#media/application/ports/media-storage.ts";
 import { MediaAssetIdSchema } from "#media/domain/media-asset-id.ts";
@@ -294,6 +294,35 @@ layer(StorageTest)("the S3 media store", (it) => {
       assert.deepStrictEqual(bytes, body);
 
       yield* storage.remove(key);
+    })
+  );
+
+  it.effect("streams a stored file's bytes, and fails for one not there", () =>
+    Effect.gen(function* reads() {
+      const storage = yield* MediaStorage;
+      const key = yield* freshKey;
+      const body = syntheticBytes(mebibytes(1) + 17);
+
+      yield* sendSigned(
+        yield* storage.signUpload({
+          byteSize: body.length,
+          contentType: "image/png",
+          expiresIn,
+          key,
+        }),
+        body
+      );
+
+      const bytes = yield* Stream.mkUint8Array(storage.read(key));
+
+      yield* storage.remove(key);
+
+      const missing = yield* Stream.runDrain(
+        storage.read(yield* freshKey)
+      ).pipe(Effect.flip);
+
+      assert.deepStrictEqual(bytes, body);
+      assert.strictEqual(missing._tag, "MediaStorageFailed");
     })
   );
 
