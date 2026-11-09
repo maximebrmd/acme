@@ -6,6 +6,7 @@ import {
   Layer,
   Option,
   Redacted,
+  Result,
   Schema,
 } from "effect";
 import { Mac, SecureRandom } from "effect/crypto";
@@ -26,7 +27,9 @@ import { facebookAuthorizer } from "#channels/infrastructure/platforms/meta/face
 import { instagramAuthorizer } from "#channels/infrastructure/platforms/meta/instagram-authorizer.ts";
 import { threadsAuthorizer } from "#channels/infrastructure/platforms/meta/threads-authorizer.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
+import { PlanLimitReached } from "#shared/domain/plan-limit-reached.ts";
 import { publicHttpClient } from "#shared/infrastructure/platforms/public-http.ts";
+import { everyWorkspaceOn } from "#test/billing/support.ts";
 import {
   authorizersOf,
   connectChannelWith,
@@ -44,9 +47,11 @@ import {
 import type { FakePage } from "#test/channels/fakes/fake-meta.ts";
 import {
   actorIn,
+  freshChannel,
   freshWorkspace,
   OpenOutboundGuard,
   RecordedNotices,
+  syntheticCredentials,
 } from "#test/channels/support.ts";
 
 // One fake Meta for the file, whose Pages each test sets.
@@ -622,5 +627,107 @@ layer(MetaConnectTest)("connecting Meta accounts", (it) => {
 
       assert.strictEqual(refused._tag, "MissingPermission");
     })
+  );
+});
+
+// The free plan, which allows 3 channels.
+const FreePlanMetaTest = connectChannelWith(
+  MetaAuthorizersTest,
+  everyWorkspaceOn("free")
+).pipe(Layer.provideMerge(FakeMeta.layer));
+
+layer(FreePlanMetaTest)("choosing Meta accounts on the free plan", (it) => {
+  it.effect(
+    "connects none of the accounts chosen when the plan has no room for all, and lets the member choose fewer",
+    () =>
+      Effect.gen(function* tooMany() {
+        const meta = yield* FakeMeta;
+        const workspaceId = yield* freshWorkspace;
+        const connect = yield* ConnectChannel;
+        const repository = yield* ChannelRepository;
+
+        const mastodon = yield* freshChannel(workspaceId);
+
+        yield* repository.insert(mastodon, syntheticCredentials(mastodon));
+
+        meta.setPages([page("701"), page("702"), page("703"), page("704")]);
+
+        const offered = yield* signIn(workspaceId, "facebook").pipe(
+          Effect.flatMap(choiceOf)
+        );
+
+        // One channel and three Pages would make four.
+        const refused = yield* Effect.flip(
+          connect.choose(manager(workspaceId), "facebook", {
+            accountIds: ["701", "702", "703"],
+            selection: offered.selection,
+          })
+        );
+
+        assert.deepStrictEqual(
+          refused,
+          new PlanLimitReached({ allowed: 3, limit: "channels" })
+        );
+        assert.lengthOf(yield* repository.list(workspaceId), 1);
+
+        // The choice is still there, for fewer accounts.
+        const chosen = yield* connect.choose(manager(workspaceId), "facebook", {
+          accountIds: ["701", "702"],
+          selection: offered.selection,
+        });
+
+        assert.deepStrictEqual(
+          chosen.map(({ accountId }) => accountId),
+          ["701", "702"]
+        );
+        assert.lengthOf(yield* repository.list(workspaceId), 3);
+      })
+  );
+
+  it.effect(
+    "lets in no more channels than the plan allows when two choices are made at once",
+    () =>
+      Effect.gen(function* together() {
+        const meta = yield* FakeMeta;
+        const workspaceId = yield* freshWorkspace;
+        const connect = yield* ConnectChannel;
+        const repository = yield* ChannelRepository;
+
+        meta.setPages([page("801"), page("802")]);
+
+        const first = yield* signIn(workspaceId, "facebook").pipe(
+          Effect.flatMap(choiceOf)
+        );
+
+        const second = yield* signIn(workspaceId, "facebook").pipe(
+          Effect.flatMap(choiceOf)
+        );
+
+        for (const added of [1, 2]) {
+          const channel = yield* freshChannel(workspaceId, {
+            accountId: `synthetic-${added}`,
+          });
+
+          yield* repository.insert(channel, syntheticCredentials(channel));
+        }
+
+        // From two tabs: each finds room for one more before either adds.
+        const results = yield* Effect.all(
+          [
+            connect.choose(manager(workspaceId), "facebook", {
+              accountIds: ["801"],
+              selection: first.selection,
+            }),
+            connect.choose(manager(workspaceId), "facebook", {
+              accountIds: ["802"],
+              selection: second.selection,
+            }),
+          ].map(Effect.result),
+          { concurrency: "unbounded" }
+        );
+
+        assert.strictEqual(results.filter(Result.isSuccess).length, 1);
+        assert.lengthOf(yield* repository.list(workspaceId), 3);
+      })
   );
 });

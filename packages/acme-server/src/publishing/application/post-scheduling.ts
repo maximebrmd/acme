@@ -206,6 +206,8 @@ export class PostScheduling extends Context.Service<
       );
 
       // Room in the month the post goes out in, besides the post itself.
+      // Run in the transaction that saves the post: the month stays claimed
+      // until it commits, so posts scheduled together are counted in turn.
       const roomInMonth = Effect.fn("PostScheduling.roomInMonth")(
         function* roomInMonth(post: Post) {
           const allowed = yield* PostAllowance.use((allowance) =>
@@ -217,10 +219,13 @@ export class PostScheduling extends Context.Service<
           }
 
           const { at } = yield* scheduleOf(post);
+          const month = postingMonthOf(at);
+
+          yield* posts.claimMonth(post.workspaceId, month);
 
           const going = yield* posts.countGoingOut(
             post.workspaceId,
-            postingMonthOf(at),
+            month,
             Option.some(post.id)
           );
 

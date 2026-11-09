@@ -410,4 +410,54 @@ describe("the monthly post limit", () => {
       ),
     60_000
   );
+
+  it.effect(
+    "lets no more posts into a month than it allows, scheduled all at once",
+    () =>
+      onServerAt(
+        "2026-06-10T07:00:00Z",
+        Effect.gen(function* together() {
+          const scheduling = yield* PostScheduling;
+          const workspaceId = yield* freshWorkspace;
+          const actor = actorIn(workspaceId);
+          const channel = yield* connect(workspaceId, "mastodon");
+
+          const drafts = yield* Effect.forEach([1, 2, 3, 4, 5], () =>
+            PostDrafts.use((posts) =>
+              posts.create(actor, {
+                channelIds: [channel],
+                content: contentOf("Hi"),
+              })
+            ).pipe(Effect.orDie)
+          );
+
+          // Sent together, as from several tabs: each counts the month
+          // before any is saved.
+          const results = yield* Effect.forEach(
+            drafts,
+            ({ post }) =>
+              scheduling
+                .scheduleDraft(actor, post.id, {
+                  channelIds: [channel],
+                  schedule: scheduleIn("2026-06-20T08:00:00Z"),
+                })
+                .pipe(Effect.result),
+            { concurrency: "unbounded" }
+          );
+
+          assert.strictEqual(results.filter(Result.isSuccess).length, allowed);
+          assert.deepStrictEqual(
+            results.flatMap((result) =>
+              Result.isFailure(result) ? [result.failure] : []
+            ),
+            [limitReached, limitReached, limitReached]
+          );
+
+          for (const { post } of drafts) {
+            yield* scheduling.cancel(actor, post.id).pipe(Effect.ignore);
+          }
+        })
+      ),
+    60_000
+  );
 });

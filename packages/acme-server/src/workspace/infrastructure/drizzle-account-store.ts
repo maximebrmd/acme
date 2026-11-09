@@ -326,6 +326,13 @@ export const DrizzleAccountStore = Layer.effect(
           .where(eq(subscription.referenceId, userId))
           .pipe(Effect.mapError(failed));
 
+        // Sessions they opened as staff to act as someone else hang on that
+        // person's account, and would outlive them: they end with them.
+        yield* db
+          .delete(session)
+          .where(eq(session.impersonatedBy, userId))
+          .pipe(Effect.mapError(failed));
+
         // Password reset tokens hold the user's id as their value.
         yield* db
           .delete(verification)

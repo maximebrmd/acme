@@ -314,7 +314,10 @@ and no socket, for tests.
   transaction, Better Auth's included (the server's Drizzle on the `auth`
   tables, the Stripe plugin's `subscription` too), and the workspace's media
   folder once it commits. A context that keeps new data about a workspace or
-  a user adds it to its records.
+  a user adds it to its records, and its tables to
+  `test/workspace/integration/erasure.test.ts`, which fails on a table that
+  does not say what becomes of its rows (deleted, left without the user, or
+  kept because they name nobody).
 - `ContextRecords.eraseWorkspace` asks billing first: `BillingRecords`
   refuses a workspace Stripe may still bill (`stillBills`), before anything
   goes, and `DeleteWorkspace` and `CloseAccount`, for the workspaces it
@@ -322,9 +325,10 @@ and no socket, for tests.
   posts its user wrote in the workspaces that remain without an author
   (`PostRecords.forgetAuthor`: `author_id` has no foreign key), and drops the
   connections and account choices they had in progress
-  (`ChannelRecords.eraseUser`). The channels they connected, with the
-  Facebook user a Page's token rests on (`granted_by`), stay with their
-  workspaces, which erasing deletes. `data_deletions` names nobody, and stays.
+  (`ChannelRecords.eraseUser`), and the sessions they opened as staff to act
+  as someone else. The channels they connected, with the Facebook user a
+  Page's token rests on (`granted_by`), stay with their workspaces, which
+  erasing deletes. `data_deletions` names nobody, and stays.
 - `AccountData` exports what is tied to the user, the posts they wrote in
   the workspaces they share (`exportAuthored`), and the content of the
   workspaces where they are the only member, with their analytics and
@@ -606,7 +610,8 @@ and no socket, for tests.
   can act on it (`audienceOf`: `channel:connect`); for a post, its author
   (`NoticeRequest.author`), whatever their role, and the members with
   `post:schedule` who chose `everyPost`, off by default; for a post without
-  an author, every member with `post:schedule`. Every notice reaches the
+  an author, or whose author left the workspace, every member with
+  `post:schedule`. Every notice reaches the
   app; `NotificationPreferences` say which are also emailed (failed and
   unconfirmed posts and channels to reconnect by default, not published
   posts). A preferences change writes only what it names.
@@ -679,12 +684,15 @@ and no socket, for tests.
 - Each context checks its own limit when something is added, through a port
   of its own backed by the billing context's `WorkspaceEntitlements`:
   `ChannelAllowance` (connecting a new account: on start, and again before
-  the channel is added), `PostAllowance` (a post scheduled or moved into a
-  month, UTC: drafts and cancelled posts are left out, and a repost adds
-  nothing, as `countGoingOut` counts posts, not rounds), `AssistantAllowance`,
-  and members in
-  Better Auth's organization hooks (`workspace/infrastructure/auth/billing.ts`:
-  pending invitations count when inviting). A workspace over a smaller
+  the channel is added; accounts chosen together need room for all of them,
+  checked before the choice is taken), `PostAllowance` (a post scheduled or
+  moved into a month, UTC: drafts and cancelled posts are left out, and a
+  repost adds nothing, as `countGoingOut` counts posts, not rounds),
+  `AssistantAllowance`, and members in Better Auth's organization hooks
+  (`workspace/infrastructure/auth/billing.ts`: pending invitations count when
+  inviting). Channels and posts are counted and added under a transaction's
+  advisory lock (`ChannelRepository.addingTo`, `PostRepository.claimMonth`),
+  so requests sent together never pass a limit. A workspace over a smaller
   plan's limits keeps what it has. Each context also counts for the billing
   page (`ChannelUsage`, `PostUsage`, `WorkspaceSeats`, `AssistantRequests`),
   so `BillingOverviewLive` is built after the contexts it reads.
