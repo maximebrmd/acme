@@ -29,13 +29,15 @@ const allowedWhileImpersonating: ReadonlySet<string> = new Set([
 ]);
 
 // The routes that let an OAuth client act as the member: authorizing it,
-// agreeing to what it asks, and approving the command line's sign-in. Their
-// tokens would outlive the impersonation.
+// agreeing to what it asks or widening what it was agreed to (the client is
+// then given it without asking), and approving the command line's sign-in.
+// Their tokens would outlive the impersonation.
 const grantsAccess: ReadonlySet<string> = new Set([
   "/device/approve",
   "/oauth2/authorize",
   "/oauth2/consent",
   "/oauth2/continue",
+  "/oauth2/update-consent",
 ]);
 
 /**

@@ -9,6 +9,7 @@ describe(refusedWhileImpersonating, () => {
     "/oauth2/authorize",
     "/oauth2/consent",
     "/oauth2/continue",
+    "/oauth2/update-consent",
   ])("refuses %s, which gives a client access", (path) => {
     expect(refusedWhileImpersonating(path)).toBeTruthy();
   });
