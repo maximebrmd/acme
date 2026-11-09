@@ -8,6 +8,7 @@ import type { Request, Target } from "#staff/domain/account-rules.ts";
 const staffId = UserIdSchema.make("0b6f2f3e-6c1e-4f0e-8a3b-1d2c3e4f5a60");
 
 const member: Target = {
+  banned: false,
   emailVerified: true,
   id: UserIdSchema.make("7c9e6679-7425-40de-944b-e07fc1f90ae7"),
   staff: false,
@@ -51,6 +52,13 @@ describe(mayAct, () => {
     assert.strictEqual(
       refusal({ ...member, staff: true }, { action: "impersonate" }),
       "staff"
+    );
+  });
+
+  it("never acts as a banned account", () => {
+    assert.strictEqual(
+      refusal({ ...member, banned: true }, { action: "impersonate" }),
+      "banned"
     );
   });
 

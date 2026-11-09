@@ -2,6 +2,7 @@ import { Cause, Exit, Option, Schema } from "effect";
 
 /** Why a staff action failed, as the Staff.errors catalogue explains it. */
 export const StaffErrorKeySchema = Schema.Literals([
+  "banned",
   "expired",
   "gone",
   "notStaff",
@@ -15,7 +16,7 @@ export type StaffErrorKey = typeof StaffErrorKeySchema.Type;
 
 const RefusedSchema = Schema.Struct({
   _tag: Schema.Literal("StaffActionRefused"),
-  reason: Schema.Literals(["expired", "self", "staff", "verified"]),
+  reason: Schema.Literals(["banned", "expired", "self", "staff", "verified"]),
 });
 
 const decodeRefused = Schema.decodeUnknownOption(RefusedSchema);

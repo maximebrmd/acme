@@ -453,6 +453,14 @@ layer(StaffedLive, { excludeTestServices: true, timeout: "180 seconds" })(
         assert.strictEqual(user.ban?.reason, "Synthetic spam report");
         assert.isNotNull(user.ban?.expiresAt);
 
+        const actAs = yield* app.request(
+          `/api/admin/users/${banned.id}/impersonate`,
+          { body: { reason: "Synthetic check" }, headers }
+        );
+
+        assert.strictEqual(actAs.status, 409);
+        assert.deepInclude(actAs.body, { reason: "banned" });
+
         const unban = yield* app.request(
           `/api/admin/users/${banned.id}/unban`,
           {

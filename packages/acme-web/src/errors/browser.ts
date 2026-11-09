@@ -13,7 +13,7 @@ export const rememberRelease = (): void => {
   served.release =
     document
       .querySelector(`meta[name="${releaseMeta}"]`)
-      ?.getAttribute("content") ?? "unknown";
+      ?.getAttribute("content") ?? served.release;
 };
 
 // Without cookies: a report names nobody. A report that fails to go is
@@ -37,6 +37,11 @@ export const reportBrowserError = (
   cause: unknown,
   kind: Exclude<ClientErrorKind, "server">
 ): void => {
+  // The tag may stream in after the page started: look again.
+  if (served.release === "unknown") {
+    rememberRelease();
+  }
+
   report(
     reportOf(cause, {
       kind,

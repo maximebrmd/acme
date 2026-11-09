@@ -7,6 +7,8 @@ import type { StaffAction } from "./staff-action.ts";
 
 /** What the rules read of the account staff act on. */
 export interface Target {
+  /** Whether a ban holds now. */
+  readonly banned: boolean;
   readonly emailVerified: boolean;
   readonly id: UserId;
   readonly staff: boolean;
@@ -32,7 +34,8 @@ const notOnSelf: ReadonlySet<StaffAction> = new Set([
  * Whether staff may do this to the account at `now`. Staff never ban, sign
  * out or impersonate themselves, never impersonate other staff, who would
  * then act with their rights, and only resend a confirmation the account
- * still needs. A ban ends in the future, if it ends.
+ * still needs. A ban ends in the future, if it ends, and a banned account,
+ * which cannot sign in, cannot be signed in as either.
  */
 export const mayAct = (
   staffId: UserId,
@@ -46,6 +49,10 @@ export const mayAct = (
 
   if (request.action === "impersonate" && target.staff) {
     return refuse("staff");
+  }
+
+  if (request.action === "impersonate" && target.banned) {
+    return refuse("banned");
   }
 
   if (request.action === "resendVerification" && target.emailVerified) {

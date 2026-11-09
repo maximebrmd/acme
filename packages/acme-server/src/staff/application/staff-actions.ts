@@ -9,6 +9,7 @@ import type { Request } from "#staff/domain/account-rules.ts";
 import type { ActionRefused } from "#staff/domain/action-refused.ts";
 import { AuditEventIdSchema } from "#staff/domain/audit-event-id.ts";
 import { AuditEvent } from "#staff/domain/audit-event.ts";
+import { banHolds } from "#staff/domain/ban-term.ts";
 import type { StaffReason } from "#staff/domain/staff-reason.ts";
 
 import type { ModerationFailed } from "./moderation-failed.ts";
@@ -77,7 +78,13 @@ export class StaffActions extends Context.Service<
 
         const target = found.value;
 
-        yield* Effect.fromResult(mayAct(staff.userId, target, request, now));
+        const banned = Option.exists(target.ban, ({ expiresAt }) =>
+          banHolds(expiresAt, now)
+        );
+
+        yield* Effect.fromResult(
+          mayAct(staff.userId, { ...target, banned }, request, now)
+        );
 
         yield* log.record(
           new AuditEvent({

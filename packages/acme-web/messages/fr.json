@@ -1195,6 +1195,7 @@
       }
     },
     "errors": {
+      "banned": "On ne peut pas se connecter avec un compte banni. Levez d’abord le bannissement.",
       "expired": "Un bannissement doit prendre fin dans le futur.",
       "gone": "Ce compte n’existe plus.",
       "notStaff": "Votre session d’équipe a pris fin. Reconnectez-vous.",

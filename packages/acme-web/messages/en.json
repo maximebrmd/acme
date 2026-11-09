@@ -1195,6 +1195,7 @@
       }
     },
     "errors": {
+      "banned": "A banned account cannot be signed in as. Lift the ban first.",
       "expired": "A ban must end in the future.",
       "gone": "This account no longer exists.",
       "notStaff": "Your staff session has ended. Sign in again.",

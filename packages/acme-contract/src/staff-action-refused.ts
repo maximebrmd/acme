@@ -6,13 +6,15 @@ import { Schema } from "effect";
  * - `self`: staff do not ban, sign out or impersonate themselves.
  * - `staff`: staff do not impersonate other staff.
  * - `verified`: the address is confirmed already.
- * - `expired`: a ban must end in the future.
+ * - `expired`: a ban must end in the future;
+ * - `banned`: a banned account cannot be signed in as, by staff either.
  */
 export const StaffRefusalSchema = Schema.Literals([
   "self",
   "staff",
   "verified",
   "expired",
+  "banned",
 ]).annotate({ identifier: "StaffRefusal" });
 
 export type StaffRefusal = typeof StaffRefusalSchema.Type;
@@ -23,7 +25,7 @@ export class StaffActionRefused extends Schema.TaggedError<StaffActionRefused>()
   { reason: StaffRefusalSchema },
   {
     description:
-      "The action does not apply to this account: staff acting on themselves, impersonating other staff, an address already confirmed, or a ban that would end in the past.",
+      "The action does not apply to this account: staff acting on themselves, impersonating other staff, an address already confirmed, a ban that would end in the past, or acting as a banned account.",
     httpApiStatus: 409,
   }
 ) {}
