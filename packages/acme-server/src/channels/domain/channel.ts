@@ -1,8 +1,12 @@
 import { DateTime, Duration, Option, Schema } from "effect";
 
 import { ChannelIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
+import type { ChannelId, WorkspaceId } from "#shared/domain/ids.ts";
 
+import { AvatarUrlSchema } from "./avatar-url.ts";
+import type { AvatarUrl } from "./avatar-url.ts";
 import { PlatformSchema } from "./platform.ts";
+import type { Platform } from "./platform.ts";
 
 /**
  * - `active`: posts go out.
@@ -38,29 +42,86 @@ export type TokenLifetime = typeof TokenLifetimeSchema.Type;
 export class Channel extends Schema.Class<Channel>(
   "acme-server/channels/domain/Channel"
 )({
-  // The account's own id on the platform.
+  // The account's own id on the platform, which never changes: a workspace
+  // connects each account once.
   accountId: Schema.NonEmptyString,
+  avatarUrl: Schema.Option(AvatarUrlSchema),
+  createdAt: Schema.DateTimeUtc,
+  // The account's name as the platform shows it, if it has one besides its
+  // handle.
+  displayName: Schema.Option(Schema.NonEmptyString),
+  // The name people mention the account by, such as "@acme_example".
+  handle: Schema.NonEmptyString,
   id: ChannelIdSchema,
-  // The account's name or handle, as the platform shows it.
-  name: Schema.NonEmptyString,
   platform: PlatformSchema,
+  // What the account allowed Acme to do, in the platform's own words.
+  scopes: Schema.Array(Schema.NonEmptyString),
   status: ChannelStatusSchema,
   token: TokenLifetimeSchema,
+  updatedAt: Schema.DateTimeUtc,
   workspaceId: WorkspaceIdSchema,
 }) {}
 
-const withChange = (
-  channel: Channel,
-  status: ChannelStatus,
-  token: TokenLifetime
+/**
+ * What the platform tells about an account each time it is connected: its
+ * profile, the scopes it granted and how long its new token lasts.
+ */
+export interface ConnectedAccount {
+  readonly avatarUrl: Option.Option<AvatarUrl>;
+  readonly displayName: Option.Option<string>;
+  readonly handle: string;
+  readonly scopes: readonly string[];
+  readonly token: TokenLifetime;
+}
+
+/** An account connected to a workspace for the first time. */
+export interface NewChannel extends ConnectedAccount {
+  readonly accountId: string;
+  readonly id: ChannelId;
+  readonly platform: Platform;
+  readonly workspaceId: WorkspaceId;
+}
+
+/** Records a newly connected account, ready to post. */
+export const connectChannel = (
+  channel: NewChannel,
+  now: DateTime.Utc
 ): Channel =>
   new Channel({
     accountId: channel.accountId,
+    avatarUrl: channel.avatarUrl,
+    createdAt: now,
+    displayName: channel.displayName,
+    handle: channel.handle,
     id: channel.id,
-    name: channel.name,
     platform: channel.platform,
+    scopes: channel.scopes,
+    status: { _tag: "active" },
+    token: channel.token,
+    updatedAt: now,
+    workspaceId: channel.workspaceId,
+  });
+
+// The channel with its status, and possibly what the platform last told about
+// the account, changed at `now`.
+const withChange = (
+  channel: Channel,
+  status: ChannelStatus,
+  now: DateTime.Utc,
+  account: ConnectedAccount = channel
+): Channel =>
+  new Channel({
+    accountId: channel.accountId,
+    avatarUrl: account.avatarUrl,
+    createdAt: channel.createdAt,
+    displayName: account.displayName,
+    handle: account.handle,
+    id: channel.id,
+    platform: channel.platform,
+    scopes: account.scopes,
     status,
-    token,
+    token: account.token,
+    updatedAt: now,
     workspaceId: channel.workspaceId,
   });
 
@@ -73,39 +134,44 @@ export const isTokenExpired = (channel: Channel, now: DateTime.Utc): boolean =>
  * The token stopped working: the user must reconnect. A disabled channel
  * stays disabled and asks for it once it is turned back on.
  */
-export const markRefreshNeeded = (channel: Channel): Channel => {
+export const markRefreshNeeded = (
+  channel: Channel,
+  now: DateTime.Utc
+): Channel => {
   const { status } = channel;
 
   if (status._tag === "active") {
-    return withChange(channel, { _tag: "refreshNeeded" }, channel.token);
+    return withChange(channel, { _tag: "refreshNeeded" }, now);
   }
 
   if (status._tag === "disabled" && !status.refreshNeeded) {
-    return withChange(
-      channel,
-      { _tag: "disabled", refreshNeeded: true },
-      channel.token
-    );
+    return withChange(channel, { _tag: "disabled", refreshNeeded: true }, now);
   }
 
   return channel;
 };
 
 /**
- * The user connected the account again, with a new token. A disabled channel
- * keeps its new token and stays disabled, with nothing left to refresh.
+ * The user connected the account again: it takes the new token, and the
+ * profile and scopes the platform gave with it. A disabled channel stays
+ * disabled, with nothing left to refresh.
  */
-export const reconnect = (channel: Channel, token: TokenLifetime): Channel =>
+export const reconnect = (
+  channel: Channel,
+  account: ConnectedAccount,
+  now: DateTime.Utc
+): Channel =>
   withChange(
     channel,
     channel.status._tag === "disabled"
       ? { _tag: "disabled", refreshNeeded: false }
       : { _tag: "active" },
-    token
+    now,
+    account
   );
 
 /** Turns a channel off. It keeps whether its token needs a refresh. */
-export const disable = (channel: Channel): Channel =>
+export const disable = (channel: Channel, now: DateTime.Utc): Channel =>
   channel.status._tag === "disabled"
     ? channel
     : withChange(
@@ -114,7 +180,7 @@ export const disable = (channel: Channel): Channel =>
           _tag: "disabled",
           refreshNeeded: channel.status._tag === "refreshNeeded",
         },
-        channel.token
+        now
       );
 
 /**
@@ -133,7 +199,7 @@ export const enable = (channel: Channel, now: DateTime.Utc): Channel => {
     status.refreshNeeded || isTokenExpired(channel, now)
       ? { _tag: "refreshNeeded" }
       : { _tag: "active" },
-    channel.token
+    now
   );
 };
 

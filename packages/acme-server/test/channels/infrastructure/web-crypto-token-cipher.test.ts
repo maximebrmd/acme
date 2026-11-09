@@ -231,12 +231,32 @@ describe("the token keyring", () => {
       assert.notInclude(String(error), secondKey);
     })
   );
+});
 
-  it.effect("fails at startup when ACME_TOKEN_KEYS is unset", () =>
-    Effect.gen(function* unset() {
-      const error = yield* startup({});
+describe("a server without token keys", () => {
+  // A token another server stored with its key k1.
+  const stored = "k1.AAAAAAAAAAAAAAAA.AAAAAAAAAAAAAAAAAAAAAA";
 
-      assert.strictEqual(error._tag, "ConfigError");
+  const unset = (keys: Record<string, string>) =>
+    TokenCipher.use((cipher) =>
+      Effect.all({
+        decrypted: Effect.flip(
+          cipher.decrypt(EncryptedTokenSchema.make(stored), channel)
+        ),
+        encrypted: Effect.flip(cipher.encrypt(token, channel)),
+      })
+    ).pipe(Effect.provide(cipherWith(keys)));
+
+  it.effect.each([
+    { keys: {}, label: "ACME_TOKEN_KEYS unset" },
+    { keys: { ACME_TOKEN_KEYS: "" }, label: "ACME_TOKEN_KEYS empty" },
+    { keys: { ACME_TOKEN_KEYS: "  " }, label: "ACME_TOKEN_KEYS blank" },
+  ])("starts with $label, and stores no token until keys are set", ({ keys }) =>
+    Effect.gen(function* withoutKeys() {
+      const { decrypted, encrypted } = yield* unset(keys);
+
+      assert.strictEqual(encrypted._tag, "MissingTokenKey");
+      assert.deepInclude(decrypted, { _tag: "UnknownTokenKey", keyId: "k1" });
     })
   );
 });

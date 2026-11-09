@@ -3,6 +3,7 @@ import { Aead, SecureRandom } from "effect/crypto";
 import { Base64, Base64Url } from "effect/encoding";
 
 import { MalformedEncryptedToken } from "#channels/application/malformed-encrypted-token.ts";
+import { MissingTokenKey } from "#channels/application/missing-token-key.ts";
 import { TokenAuthenticationFailed } from "#channels/application/token-authentication-failed.ts";
 import {
   EncryptedTokenSchema,
@@ -20,6 +21,11 @@ import { InvalidTokenKeyring } from "./invalid-token-keyring.ts";
 // key 32 random bytes in standard base64 (`openssl rand -base64 32`). The
 // first key encrypts; every listed key decrypts. To rotate, put a new key
 // first and keep the old ones until every token has been re-encrypted.
+//
+// The keyring is optional, so a server that connects no channel needs none:
+// left unset or blank, encrypting fails with MissingTokenKey and decrypting
+// with UnknownTokenKey. A keyring that is set but malformed still stops the
+// server at startup, rather than when the first channel is connected.
 //
 // A token is stored as "<keyId>.<iv>.<ciphertext>", the last two in
 // unpadded base64url. The IV is 12 random bytes per value, and the ciphertext
@@ -43,7 +49,8 @@ interface KeyringEntry {
 }
 
 interface Keyring {
-  readonly current: KeyringEntry;
+  // The key that encrypts, absent when no keyring is set.
+  readonly current: Option.Option<KeyringEntry>;
   readonly keys: ReadonlyMap<string, Aead.Key>;
 }
 
@@ -119,10 +126,17 @@ const parseKeyring = Effect.fnUntraced(function* parseKeyring(
     keys.set(id, key);
   }
 
-  const keyring: Keyring = { current, keys };
+  const keyring: Keyring = { current: Option.some(current), keys };
 
   return keyring;
 });
+
+const emptyKeyring: Keyring = { current: Option.none(), keys: new Map() };
+
+// ACME_TOKEN_KEYS, unless it is unset or blank, as `KEY=` in an env file.
+const keyringConfig = Config.option(Config.Redacted("ACME_TOKEN_KEYS")).pipe(
+  Config.map(Option.filter((value) => Redacted.value(value).trim() !== ""))
+);
 
 const decodeSegment = (segment: string): Option.Option<Uint8Array> =>
   segmentPattern.test(segment)
@@ -156,12 +170,20 @@ const encoder = new TextEncoder();
 
 const decoder = new TextDecoder("utf-8");
 
-/** Reads the keyring from ACME_TOKEN_KEYS, and fails at startup if it is malformed. */
+/**
+ * Reads the keyring from ACME_TOKEN_KEYS, if it is set, and fails at startup
+ * if it is malformed.
+ */
 export const TokenCipherLive = Layer.effect(
   TokenCipher,
   Effect.gen(function* TokenCipherLive() {
-    const keyring = yield* Config.Redacted("ACME_TOKEN_KEYS").pipe(
-      Effect.flatMap(parseKeyring)
+    const keyring = yield* keyringConfig.pipe(
+      Effect.flatMap(
+        Option.match({
+          onNone: () => Effect.succeed(emptyKeyring),
+          onSome: parseKeyring,
+        })
+      )
     );
 
     const aead = yield* Aead.Aead;
@@ -171,7 +193,11 @@ export const TokenCipherLive = Layer.effect(
       token: Redacted.Redacted,
       channelId: ChannelId
     ) {
-      const { id, key } = keyring.current;
+      if (Option.isNone(keyring.current)) {
+        return yield* new MissingTokenKey();
+      }
+
+      const { id, key } = keyring.current.value;
       const iv = yield* random.randomBytes(ivLength);
 
       // Aead only fails on a wrong IV length or a plaintext over 64 GiB.

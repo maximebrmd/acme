@@ -1,0 +1,15 @@
+import { Schema } from "effect";
+
+import { EncryptedTokenSchema } from "./token-cipher.ts";
+
+/**
+ * A channel's tokens as stored, each encrypted by the TokenCipher for the
+ * channel. Both are encrypted with the same key. The refresh token is there
+ * when the platform gave one.
+ */
+export class ChannelCredentials extends Schema.Class<ChannelCredentials>(
+  "acme-server/channels/application/ChannelCredentials"
+)({
+  accessToken: EncryptedTokenSchema,
+  refreshToken: Schema.Option(EncryptedTokenSchema),
+}) {}
