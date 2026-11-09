@@ -109,7 +109,11 @@ Work from the repository root unless a command names another directory.
   `ansible-playbook --syntax-check` and the pytest suite in `tests/` on
   `packages/peal-infra`, through uv (`nx run peal-infra:test`). Its release
   and uptime tests run images in Docker (Postgres's base image, Gatus, Caddy,
-  BusyBox), and skip without Docker.
+  BusyBox), and skip without Docker. Each of its commands reads stdin from
+  `/dev/null`: Nx gives every task the same stdin, a Node task reading it
+  makes it non-blocking for all of them while it runs, and Ansible then
+  refuses to start ("requires blocking IO"), which ansible-lint reports as
+  "Unable to find a working copy of ansible executable".
 - Define Nx target defaults in [`nx.json`](nx.json) and package targets in
   `project.json`. Declare build dependencies and cache outputs there. Keep
   tests uncached.
