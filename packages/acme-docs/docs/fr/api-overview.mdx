@@ -36,7 +36,7 @@ Avec une session ou un jeton OAuth, `GET /api/me` dit qui vous êtes, et liste v
 
 ## Espaces de travail [#workspaces]
 
-Les ressources d’un espace de travail se trouvent sous `/api/workspaces/{workspaceId}/` : `channels`, `posts`, `media`, `assistant` et `api-keys`. La référence de chaque point d’accès nomme la permission qu’il demande, comme `post:schedule` ou `channel:connect`.
+Les ressources d’un espace de travail se trouvent sous `/api/workspaces/{workspaceId}/` : `channels`, `posts`, `media`, `assistant` et `api-keys` ; `DELETE /api/workspaces/{workspaceId}` supprime l’espace de travail lui-même, avec tout son contenu ([Espaces de travail et compte](/settings#delete-workspace)). La référence de chaque point d’accès nomme la permission qu’il demande, comme `post:schedule` ou `channel:connect`.
 
 | Code | Signification                                                                                |
 | ---- | -------------------------------------------------------------------------------------------- |
@@ -49,6 +49,8 @@ Les erreurs répondent par un corps JSON dont `_tag` nomme l’erreur, comme `Po
 ## Votre compte [#me]
 
 Ce qui vous appartient, plutôt qu’à un espace de travail, se trouve sous `/api/me` : qui vous êtes (`GET /api/me`), vos [notifications](/notifications#api) sous `/api/me/notices`, et celles qui partent par e-mail, sous `/api/me/notification-preferences`. Les points d’accès des notifications répondent 403 aux clés d’API, qui appartiennent à un espace de travail, et aux jetons OAuth liés à un seul espace de travail, comme celui d’un client MCP.
+
+Une copie de vos données (`GET /api/me/export`), la suppression de votre compte (`DELETE /api/me`) et vos applications connectées (`/api/me/connected-apps`) ne répondent qu’à votre propre session dans l’application web : les clés d’API, les jetons OAuth et l’équipe qui agit à votre place reçoivent 403 ([Espaces de travail et compte](/settings#api)).
 
 ## Document OpenAPI [#openapi]
 

@@ -19,10 +19,13 @@ It is not released yet. Today you can:
   bell in the app and by email, as each member chooses;
 - ask a writing assistant to rewrite, shorten or translate a post, or to
   suggest hashtags, when the server has an AI provider;
+- manage a workspace's members, invitations and API keys, rename it or
+  delete it with everything in it;
+- choose your language, see your sessions and connected applications,
+  download your data or delete your account;
 - sign in from the command line, and let MCP clients read a workspace.
 
-Analytics, billing, the other platforms, and managing members, invitations
-and API keys from the app are still to come. Saved drafts are not listed
+Analytics, billing and the other platforms are still to come. Saved drafts are not listed
 anywhere yet: keep a draft's address to come back to it.
 
 ## Set up
@@ -112,8 +115,9 @@ that hostname only, so on `127.0.0.1` pages never hydrate.
 3. On <http://localhost:3001/app>, create a workspace. You own it.
 
 Each workspace's card links to its **Calendar**, **New post** (the composer),
-**Channels** and **Media library**. Password reset and invitation emails land
-in Mailpit too.
+**Channels**, **Media library** and **Settings**, where you invite people.
+Your own settings are under **Account settings** in the account menu.
+Password reset and invitation emails land in Mailpit too.
 
 To make an account staff (Better Auth's admin role, which may impersonate
 members and ban accounts), set its role in the database, then sign in again:
@@ -299,7 +303,9 @@ behind.
 `packages/acme-e2e` drives a new member's first steps in Chromium: signing
 up through the emailed link, creating a workspace, writing a draft,
 scheduling it on a synthetic channel, finding it on the calendar and
-cancelling it, then switching to French and signing out. Each run builds
+cancelling it, inviting a second member, switching to French and keeping it
+in the account settings, signing out and in again, then the second member
+signing up and joining. Each run builds
 the web app, starts the server and the web app's production build on free
 ports, and writes to the database you give it, so give it one of its own:
 
