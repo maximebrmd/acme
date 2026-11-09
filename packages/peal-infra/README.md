@@ -183,7 +183,9 @@ the owner's approval.
    cloudflared tunnel token peal-production              # the token for the vault
    ```
 
-4. **R2**: a media bucket and a backup bucket per environment, an API token
+4. **R2**: a media bucket and a backup bucket per environment, created in
+   R2's EU jurisdiction (their endpoint is
+   `<account>.eu.r2.cloudflarestorage.com`), an API token
    with Object Read & Write on each bucket alone, and on the media bucket a
    lifecycle rule that aborts incomplete multipart uploads after a day. Put
    the upload CORS rule on it with `bun nx run peal-server:media-cors`, from
@@ -284,6 +286,12 @@ version and for both architectures, while WAL-G would be a binary checked by
 hand-kept digests; it releases more often (2.60.0 in October 2026); and its
 `check`, `info` and `verify` commands, retention by full backup and
 `--type=time` restores make the runbook short.
+
+Deleted data leaves the backups once the oldest backup that holds it expires,
+within five weeks. A restore brings back the accounts and workspaces deleted
+after its point in time, and nothing records them outside the database yet:
+[the runbook](runbooks/restore-database.md#deletions-since-the-restore-point)
+says what to do until it does.
 
 Media live in R2 and are not backed up again; telemetry is not backed up. The
 secrets are on the server only: [restoring onto a new server](runbooks/restore-database.md#a-new-server)

@@ -25,9 +25,9 @@ peal_access_everything: true
 
 peal_mail_from: Peal Sandbox <notifications@mail.peal.social>
 
-peal_media_endpoint: https://0123456789abcdef0123456789abcdef.r2.cloudflarestorage.com
+peal_media_endpoint: https://0123456789abcdef0123456789abcdef.eu.r2.cloudflarestorage.com
 peal_media_bucket: peal-sandbox-media
-peal_backup_endpoint: 0123456789abcdef0123456789abcdef.r2.cloudflarestorage.com
+peal_backup_endpoint: 0123456789abcdef0123456789abcdef.eu.r2.cloudflarestorage.com
 peal_backup_bucket: peal-sandbox-backups
 peal_backup_path: /sandbox
 
