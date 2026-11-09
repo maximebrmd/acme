@@ -35,8 +35,8 @@ It is not released yet. Today you can:
   Turnstile's keys; without them, nothing is limited or checked;
 - sign in from the command line, and let MCP clients read a workspace.
 
-Analytics on LinkedIn, X and Meta's platforms, and the other platforms, are
-still to come.
+Analytics on LinkedIn, X and Meta's platforms, and the other platforms Acme
+knows (TikTok, YouTube, Pinterest), are still to come.
 
 ## Set up
 
@@ -267,10 +267,10 @@ bun nx run acme-server:auth-schema   # regenerate Better Auth's tables after cha
 ```
 
 Each context keeps its tables in a Postgres schema of its own (`analytics`,
-`assistant`, `auth`, `channels`, `media`, `notifications`, `publishing`); the
-job runner's `cluster_*` tables are in `public`. The server keeps finished jobs for 30 days
-(`ACME_CLUSTER_RETENTION` changes it), and names itself among the job runners
-with `HOSTNAME`.
+`assistant`, `auth`, `billing`, `channels`, `media`, `notifications`,
+`publishing`); the job runner's `cluster_*` tables are in `public`. The server
+keeps finished jobs for 30 days (`ACME_CLUSTER_RETENTION` changes it), and
+names itself among the job runners with `HOSTNAME`.
 
 ### Command line
 

@@ -36,7 +36,6 @@ Nx projects live directly under `packages/`:
 - `acme-e2e`: end-to-end browser tests with the e2e runner (`e2e`,
   `@e2e-dev/web`). Each run starts the server and the web app's production
   build itself (`scripts/serve.ts`).
-
 - `acme-infra`: Ansible for Acme's servers, production and the sandbox, and
   their releases. Python, managed with uv.
 
@@ -764,9 +763,9 @@ and no socket, for tests.
   SQL.
 - Each context keeps its tables in a Postgres schema named after it
   (`publishing`, `channels`, `media`, `notifications`, `assistant`,
-  `billing`; the
-  workspace context's are Better Auth's, in `auth`). Effect creates its
-  `cluster_*` tables in `public`; drizzle-kit never manages them.
+  `analytics`, `billing`; the workspace context's are Better Auth's, in
+  `auth`). Effect creates its `cluster_*` tables in `public`; drizzle-kit
+  never manages them.
 - Declare a context's tables in `src/<context>/infrastructure/schema.ts`, then
   run `nx run acme-server:db:generate`, which writes a migration folder under
   `packages/acme-server/drizzle/`. Commit the folder as drizzle-kit wrote it;
