@@ -107,19 +107,22 @@ const useErrorMessage = () => {
 
 // The description of the media an upload made, saved when the field loses
 // focus with a change. Each change applies to the field as it then stands,
-// so what is typed while a save runs is kept.
+// so what is typed while a save runs is kept. Without media, as after a
+// failure, what is typed is only kept, for the next try to send.
 const AltTextField = ({
   description,
   entryId,
   mediaId,
   onChange,
   workspaceId,
+  writable,
 }: {
   readonly description: AltTextDraft;
   readonly entryId: string;
   readonly mediaId: Option.Option<string>;
   readonly onChange: Dispatch<SetStateAction<AltTextDraft>>;
   readonly workspaceId: string;
+  readonly writable: boolean;
 }) => {
   const t = useTranslations("Media.uploader");
   const id = useId();
@@ -176,13 +179,13 @@ const AltTextField = ({
         id={id}
         value={text}
         maxLength={maxAltTextLength}
-        disabled={Option.isNone(mediaId)}
+        disabled={!writable}
         aria-describedby={`${id}-hint`}
         onChange={handleChange}
         onBlur={handleBlur}
       />
       <p id={`${id}-hint`} className="text-muted-foreground text-xs">
-        {Option.isNone(mediaId) ? t("altTextWaiting") : t("altTextHint")}
+        {writable ? t("altTextHint") : t("altTextWaiting")}
       </p>
       <output
         className={
@@ -224,6 +227,13 @@ const UploadItem = ({
 
   const phase = outcome._tag === "running" ? progress.phase : outcome._tag;
   const { sent } = progress;
+  const failed = outcome._tag === "failed";
+
+  // A failed upload deleted its media: a description written now goes with
+  // the next try.
+  const mediaId = failed
+    ? Option.none()
+    : progress.media.pipe(Option.map((media) => media.id));
 
   const size = useFileSize()(entry.file.size);
 
@@ -293,8 +303,9 @@ const UploadItem = ({
         <AltTextField
           description={description}
           entryId={entry.id}
-          mediaId={progress.media.pipe(Option.map((media) => media.id))}
+          mediaId={mediaId}
           workspaceId={workspaceId}
+          writable={failed || Option.isSome(mediaId)}
           onChange={setDescription}
         />
       )}
