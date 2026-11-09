@@ -1,9 +1,10 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Duration, Effect, Exit, Option } from "effect";
+import { DateTime, Duration, Effect, Exit, Option } from "effect";
 import { TestClock } from "effect/testing";
 
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
 import { PublicationScheduler } from "#publishing/application/publication-scheduler.ts";
+import { Schedule } from "#publishing/domain/schedule.ts";
 import { FakePlatform } from "#publishing/infrastructure/fake-platform-publisher.ts";
 import { RateLimited } from "#shared/domain/rate-limited.ts";
 
@@ -78,6 +79,44 @@ describe("ReschedulePost", () => {
           assert.lengthOf(yield* platform.calls, 0);
 
           yield* setTime("2026-06-15T09:00:00Z");
+          yield* eventually("the post finishes", isFinished(post.id));
+
+          assert.lengthOf(yield* callsOn(channel), 1);
+          assert.strictEqual(yield* outcomeOf(post.id), "published");
+        })
+      ),
+    timeout
+  );
+
+  it.effect(
+    "publishes now when asked for the time the caller read a moment before",
+    () =>
+      onServerAt(
+        "2026-06-15T07:00:00Z",
+        Effect.gen(function* publishesNow() {
+          const scheduling = yield* PostScheduling;
+          const channel = yield* newChannel;
+          const later = scheduleIn("2026-06-15T08:00:00Z");
+          const post = yield* schedulePost([channel], later);
+
+          yield* eventually("the job sleeps", isSuspended(post.id));
+
+          // The caller reads the clock; the use case reads it a little later.
+          const asked = yield* DateTime.now;
+
+          yield* TestClock.adjust(Duration.millis(40));
+
+          const moved = yield* scheduling.reschedule(
+            post.id,
+            new Schedule({ at: asked, timeZone: later.timeZone })
+          );
+
+          assert(moved.status._tag === "scheduled");
+          assert.deepStrictEqual(
+            moved.status.schedule.at,
+            DateTime.addDuration(asked, Duration.millis(40))
+          );
+
           yield* eventually("the post finishes", isFinished(post.id));
 
           assert.lengthOf(yield* callsOn(channel), 1);

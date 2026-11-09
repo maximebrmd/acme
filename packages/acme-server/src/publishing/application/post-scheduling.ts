@@ -28,6 +28,11 @@ import { PublicationScheduler } from "./publication-scheduler.ts";
 const applied = (written: boolean) =>
   written ? Effect.void : Effect.die("A post changed under its row lock");
 
+const scheduleOf = (post: Post) =>
+  post.status._tag === "scheduled"
+    ? Effect.succeed(post.status.schedule)
+    : Effect.die(`Post ${post.id} is ${post.status._tag}, not scheduled`);
+
 /** A new post for some channels, at a time. */
 export interface SchedulePostRequest {
   // At least one; a channel listed twice gets one target.
@@ -51,7 +56,8 @@ export class PostScheduling extends Context.Service<
     /**
      * Moves a scheduled post, or schedules a draft. The job for the old time
      * is stopped and one for the new time started; "publish now" is a move to
-     * the current time.
+     * the current time, which a time read a moment earlier still is (see
+     * `scheduleGrace`).
      */
     readonly reschedule: (
       postId: PostId,
@@ -94,15 +100,17 @@ export class PostScheduling extends Context.Service<
           )
         );
 
-      // Starts the job for the post's current revision and records it.
+      // Starts the job for the post's current revision, at the time it was
+      // scheduled for (which may be later than asked), and records it.
       const startJob = Effect.fn("PostScheduling.startJob")(function* startJob(
-        post: Post,
-        schedule: Schedule
+        post: Post
       ) {
+        const { at } = yield* scheduleOf(post);
+
         const executionId = yield* scheduler.schedule({
           postId: post.id,
           revision: post.scheduleRevision,
-          scheduledAt: schedule.at,
+          scheduledAt: at,
         });
 
         yield* applied(yield* posts.setExecution(post, executionId));
@@ -161,7 +169,7 @@ export class PostScheduling extends Context.Service<
         yield* transaction(
           Effect.gen(function* insertAndStart() {
             yield* posts.insert(post, targets);
-            yield* startJob(post, at);
+            yield* startJob(post);
           })
         );
 
@@ -181,7 +189,7 @@ export class PostScheduling extends Context.Service<
 
               yield* applied(yield* posts.update(moved, current.post));
               yield* stopJob(current);
-              yield* startJob(moved, at);
+              yield* startJob(moved);
 
               return moved;
             })

@@ -1,4 +1,4 @@
-import { DateTime, Option, Result, Schema } from "effect";
+import { DateTime, Duration, Option, Result, Schema } from "effect";
 
 import { PostIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import type { PostId, WorkspaceId } from "#shared/domain/ids.ts";
@@ -10,7 +10,7 @@ import { PostStatusSchema } from "./post-status.ts";
 import type { PostOutcome, PostStatus } from "./post-status.ts";
 import type { PostTarget } from "./post-target.ts";
 import { ScheduleInPast } from "./schedule-in-past.ts";
-import type { Schedule } from "./schedule.ts";
+import { Schedule } from "./schedule.ts";
 
 /**
  * A post, sent to one or more channels (its targets, `./post-target.ts`), and
@@ -77,9 +77,15 @@ export const createDraft = (id: PostId, workspaceId: WorkspaceId): Post =>
   });
 
 /**
+ * How long before `now` a time may be and still mean now: a caller that
+ * publishes now read the clock a moment before the use case did.
+ */
+export const scheduleGrace = Duration.minutes(1);
+
+/**
  * Schedules a draft, or moves a scheduled post to another time. Either way the
  * post gets a new revision, which the job for its previous time does not
- * publish.
+ * publish. A time up to `scheduleGrace` before `now` is scheduled at `now`.
  */
 export const schedulePost = (
   post: Post,
@@ -92,14 +98,27 @@ export const schedulePost = (
     return rejected(post, "schedule");
   }
 
-  if (DateTime.isLessThan(schedule.at, now)) {
+  if (
+    DateTime.isLessThan(
+      schedule.at,
+      DateTime.subtractDuration(now, scheduleGrace)
+    )
+  ) {
     return Result.fail(
       new ScheduleInPast({ at: schedule.at, now, postId: post.id })
     );
   }
 
+  const at = DateTime.isLessThan(schedule.at, now)
+    ? new Schedule({ at: now, timeZone: schedule.timeZone })
+    : schedule;
+
   return Result.succeed(
-    withStatus(post, { _tag: "scheduled", schedule }, post.scheduleRevision + 1)
+    withStatus(
+      post,
+      { _tag: "scheduled", schedule: at },
+      post.scheduleRevision + 1
+    )
   );
 };
 

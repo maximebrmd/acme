@@ -135,9 +135,23 @@ describe(schedulePost, () => {
     ).toBeTruthy();
   });
 
+  it.each(["2026-06-15T06:59:59.950Z", "2026-06-15T06:59:00Z"])(
+    "takes %s, a moment before now, as now",
+    (at) => {
+      const moment = new Schedule({ at: utc(at), timeZone: inAnHour.timeZone });
+
+      expect(
+        successOf(schedulePost(statuses.draft, moment, now))?.status
+      ).toStrictEqual({
+        _tag: "scheduled",
+        schedule: new Schedule({ at: now, timeZone: inAnHour.timeZone }),
+      });
+    }
+  );
+
   it("refuses an instant that has passed", () => {
     const earlier = new Schedule({
-      at: utc("2026-06-15T06:59:59Z"),
+      at: utc("2026-06-15T06:58:59.999Z"),
       timeZone: inAnHour.timeZone,
     });
 
