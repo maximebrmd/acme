@@ -1,0 +1,187 @@
+import { describe, expect, it } from "@effect/vitest";
+import type { Media } from "acme-contract";
+import { DateTime, Option } from "effect";
+
+import { mediaFitOn, mediaFits, showsAltText } from "#posts/media-fit.ts";
+import type { AttachedMedia } from "#posts/media-fit.ts";
+
+const created = DateTime.makeUnsafe("2026-06-15T07:00:00Z");
+
+const mebibyte = 1024 * 1024;
+
+const file = (
+  id: string,
+  facts: Partial<
+    Pick<Media, "byteSize" | "contentType" | "dimensions" | "durationMs">
+  > = {}
+): Media => {
+  const contentType = facts.contentType ?? "image/jpeg";
+
+  return {
+    altText: null,
+    byteSize: facts.byteSize ?? 200_000,
+    codec: null,
+    contentType,
+    createdAt: created,
+    dimensions: facts.dimensions ?? { height: 800, width: 1200 },
+    durationMs: facts.durationMs ?? null,
+    id,
+    kind: contentType.startsWith("video/") ? "video" : "image",
+    status: { _tag: "ready" },
+    updatedAt: created,
+    url: null,
+  };
+};
+
+const video = (id: string, durationMs = 30_000) =>
+  file(id, {
+    byteSize: 20 * mebibyte,
+    contentType: "video/mp4",
+    dimensions: { height: 1920, width: 1080 },
+    durationMs,
+  });
+
+const loaded = (
+  media: Media,
+  altText = "A synthetic picture"
+): AttachedMedia => ({
+  altText,
+  media: Option.some(media),
+  mediaId: media.id,
+});
+
+describe(mediaFitOn, () => {
+  it("takes a common photo and video where media rules are known", () => {
+    for (const platform of [
+      "bluesky",
+      "instagram",
+      "linkedin",
+      "mastodon",
+      "threads",
+      "x",
+    ] as const) {
+      expect(mediaFits(mediaFitOn(platform, [loaded(file("a"))]))).toBeTruthy();
+      expect(
+        mediaFits(mediaFitOn(platform, [loaded(video("a"))]))
+      ).toBeTruthy();
+    }
+  });
+
+  it("names each refused file by its place in the post", () => {
+    const fit = mediaFitOn("instagram", [
+      loaded(file("a")),
+      loaded(file("b", { contentType: "image/gif" })),
+      loaded(file("c", { dimensions: { height: 1000, width: 3000 } })),
+    ]);
+
+    expect(fit.problems).toStrictEqual([
+      {
+        _tag: "mediaTypeUnsupported",
+        contentType: "image/gif",
+        kind: "image",
+        position: 2,
+      },
+      {
+        _tag: "aspectRatioUnsupported",
+        height: 1000,
+        kind: "image",
+        maximum: 1.91,
+        minimum: 0.8,
+        position: 3,
+        width: 3000,
+      },
+    ]);
+    expect(mediaFits(fit)).toBeFalsy();
+  });
+
+  it("weighs each file against its own type's limit", () => {
+    expect(
+      mediaFitOn("x", [loaded(file("a", { byteSize: 6 * mebibyte }))]).problems
+    ).toStrictEqual([
+      {
+        _tag: "mediaTooLarge",
+        byteSize: 6 * mebibyte,
+        kind: "image",
+        maximum: 5 * mebibyte,
+        position: 1,
+      },
+    ]);
+    expect(
+      mediaFitOn("x", [
+        loaded(file("a", { byteSize: 6 * mebibyte, contentType: "image/gif" })),
+      ]).problems
+    ).toStrictEqual([]);
+  });
+
+  it("keeps videos within the platform's durations and counts", () => {
+    expect(
+      mediaFitOn("x", [loaded(video("a", 150_000)), loaded(video("b", 400))])
+        .problems
+    ).toStrictEqual([
+      {
+        _tag: "videoTooLong",
+        durationMs: 150_000,
+        kind: "video",
+        maximumMs: 140_000,
+        position: 1,
+      },
+      {
+        _tag: "videoTooShort",
+        durationMs: 400,
+        kind: "video",
+        minimumMs: 500,
+        position: 2,
+      },
+      { _tag: "tooManyVideos", count: 2, maximum: 1 },
+    ]);
+  });
+
+  it("keeps a video apart from images where the platform must", () => {
+    const both = [loaded(file("a")), loaded(video("b"))];
+
+    expect(mediaFitOn("mastodon", both).problems).toStrictEqual([
+      { _tag: "mixedMedia" },
+    ]);
+    expect(mediaFitOn("threads", both).problems).toStrictEqual([]);
+  });
+
+  it("checks the alt text against the platform's limit", () => {
+    expect(
+      mediaFitOn("x", [loaded(file("a"), "😀".repeat(1001))]).problems
+    ).toStrictEqual([
+      {
+        _tag: "altTextTooLong",
+        kind: "image",
+        length: 1001,
+        maximum: 1000,
+        position: 1,
+      },
+    ]);
+  });
+
+  it("warns of missing alt text where the platform shows it", () => {
+    const attached = [
+      loaded(file("a"), " "),
+      loaded(file("b")),
+      { altText: "", media: Option.none(), mediaId: "c" },
+    ];
+
+    expect(mediaFitOn("bluesky", attached).missingAltText).toBe(2);
+    expect(mediaFitOn("instagram", attached).missingAltText).toBe(0);
+    expect(showsAltText("mastodon")).toBeTruthy();
+    expect(showsAltText("tiktok")).toBeFalsy();
+  });
+
+  it("checks media once the API described it, and none where no rule is known", () => {
+    const pending: AttachedMedia = {
+      altText: "",
+      media: Option.none(),
+      mediaId: "a",
+    };
+
+    expect(mediaFitOn("instagram", [pending]).problems).toStrictEqual([]);
+    expect(
+      mediaFitOn("facebook", [loaded(video("b", 7_200_000))]).problems
+    ).toStrictEqual([]);
+  });
+});
