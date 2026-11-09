@@ -49,7 +49,6 @@
     acme_release_tag: "{{ acme_release_checkout.after[:12] }}"
     acme_release_postgres_tag: "{{ acme_release_postgres_dockerfile.stat.checksum[:12] }}"
     acme_release_dir: "{{ acme_root }}/releases/{{ acme_release_checkout.after[:12] }}"
-    acme_release_archive: "{{ acme_release_local_dir }}/images-{{ acme_environment }}-{{ acme_release_checkout.after[:12] }}.tar.gz"
 
 - name: Name the release's images
   ansible.builtin.set_fact:
@@ -59,15 +58,41 @@
       web: acme-web:{{ acme_release_tag }}
       static: acme-static:{{ acme_release_tag }}
 
-- name: Check for the images on the server
+# Its id only: an image's full description is long, and the release needs
+# nothing else from it.
+- name: Check for each image on the server
   ansible.builtin.command:
-    argv: "{{ ['docker', 'image', 'inspect'] + acme_release_built.values() | list }}"
+    argv:
+      - docker
+      - image
+      - inspect
+      - --format
+      - "{% raw %}{{.Id}}{% endraw %}"
+      - "{{ item.value }}"
+  loop: "{{ acme_release_built | dict2items }}"
+  loop_control:
+    label: "{{ item.value }}"
   register: acme_release_present
   changed_when: false
   failed_when: false
 
-# Built and saved once per commit and environment: `creates` skips the build
-# when the archive is there, such as when a release is run again.
+# Only the images the server lacks are built and uploaded. Loading one it
+# has would move its tag to a new build of the same Dockerfile, and Compose
+# would recreate the container, Postgres's included, for nothing.
+- name: Name the images to upload
+  ansible.builtin.set_fact:
+    acme_release_missing: >-
+      {{ acme_release_present.results | rejectattr('rc', 'equalto', 0)
+         | map(attribute='item.key') | list }}
+
+# Built and saved once per set of images and environment: `creates` skips
+# the build when the archive is there, such as when an upload is run again.
+- name: Name the archive
+  ansible.builtin.set_fact:
+    acme_release_archive: >-
+      {{ acme_release_local_dir }}/images-{{ acme_environment }}-{{
+         (acme_release_missing | map('extract', acme_release_built) | join(' ') | hash('sha256'))[:12] }}.tar.gz
+
 - name: Look for the release's archive
   ansible.builtin.stat:
     path: "{{ acme_release_archive }}"
@@ -76,7 +101,7 @@
   register: acme_release_local_archive
 
 - name: Build and upload the images
-  when: acme_release_present.rc != 0
+  when: acme_release_missing | length > 0
   block:
     - name: Build the images
       ansible.builtin.command:
@@ -93,7 +118,7 @@
           - --load
           - .
         chdir: "{{ acme_release_local_dir }}/checkout"
-      loop: [postgres, server, web]
+      loop: "{{ acme_release_missing | difference(['static']) }}"
       delegate_to: localhost
       become: false
       changed_when: true
@@ -115,12 +140,12 @@
       delegate_to: localhost
       become: false
       changed_when: true
-      when: not acme_release_local_archive.stat.exists
+      when: not acme_release_local_archive.stat.exists and 'static' in acme_release_missing
 
     - name: Save the images
       ansible.builtin.shell: |
         set -euo pipefail
-        docker save {{ acme_release_built.values() | join(' ') }} \
+        docker save {{ acme_release_missing | map('extract', acme_release_built) | join(' ') }} \
           | gzip -1 > {{ acme_release_archive }}.part
         mv {{ acme_release_archive }}.part {{ acme_release_archive }}
       args:
@@ -347,8 +372,10 @@
   loop_control:
     label: "{{ item.path | basename }}"
 
-# The images of the last week's releases stay, so releasing one of them again
-# needs no upload.
+# Removes the images no container uses that were built more than a week ago
+# (`until` reads when an image was built, not when it was last used): a
+# release built within the week goes back out without an upload, and an
+# older one is built and uploaded again.
 - name: Remove images unused for a week
   ansible.builtin.command: docker image prune --all --force --filter until=168h
   tags: [prune]
