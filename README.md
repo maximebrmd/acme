@@ -33,7 +33,12 @@ It is not released yet. Today you can:
   posts a month and assistant requests a day, when the server has a Stripe
   key, and ask for a Cloudflare Turnstile check on sign-up when it has
   Turnstile's keys; without them, nothing is limited or checked;
-- sign in from the command line, and let MCP clients read a workspace.
+- sign in from the command line, and let MCP clients read a workspace;
+- run the server from a staff console at `/admin`: find accounts and
+  workspaces, see the system's health, ban, sign out or act as an account,
+  each action in an audit log;
+- have the web app's errors, in browsers and on its server, logged and
+  counted by the server, with a Grafana alert on a spike.
 
 Analytics on LinkedIn, X and Meta's platforms, and the other platforms Acme
 knows (TikTok, YouTube, Pinterest), are still to come.
@@ -139,6 +144,10 @@ docker compose --file packages/acme-docker/compose.yaml exec postgres \
   psql --username acme --dbname acme \
   --command "UPDATE auth.\"user\" SET role = 'admin' WHERE email = 'you@example.test'"
 ```
+
+The staff console is then at <http://localhost:3001/admin>: the system's
+health, accounts, workspaces and the audit log of what staff did. Anyone
+else gets the not-found page there.
 
 ### Channels
 
@@ -268,7 +277,7 @@ bun nx run acme-server:auth-schema   # regenerate Better Auth's tables after cha
 
 Each context keeps its tables in a Postgres schema of its own (`analytics`,
 `assistant`, `auth`, `billing`, `channels`, `media`, `notifications`,
-`publishing`); the job runner's `cluster_*` tables are in `public`. The server
+`publishing`, `staff`); the job runner's `cluster_*` tables are in `public`. The server
 keeps finished jobs for 30 days (`ACME_CLUSTER_RETENTION` changes it), and
 names itself among the job runners with `HOSTNAME`.
 
@@ -371,7 +380,10 @@ finding it on the drafts page, scheduling it on a synthetic channel,
 finding it on the calendar, taking it back to draft to edit and schedule
 it again, cancelling it, inviting a second member, switching to French and
 keeping it in the account settings, signing out and in again, then the
-second member signing up and joining. Each run builds
+second member signing up and joining. It also walks the staff console: a
+member gets the not-found page, then staff find the member, ban them and
+lift the ban, act as them and come back, and read each action in the
+audit log. Each run builds
 the web app, starts the server and the web app's production build on free
 ports, and writes to the database you give it, so give it one of its own:
 
@@ -450,9 +462,9 @@ a target of `acme-docker`.
 [`compose.production.yaml`](packages/acme-docker/compose.production.yaml)
 runs the whole stack: Postgres with pgBackRest, the server, the web app, the
 site and docs (profile `static`), the OpenTelemetry Collector, Loki, Tempo,
-Prometheus and Grafana with its alert rules. Every port listens on 127.0.0.1,
-every service restarts when it stops and runs on a read-only file system, and
-the server gets 75 seconds to stop.
+Prometheus and Grafana with its alert rules and dashboards. Every port
+listens on 127.0.0.1, every service restarts when it stops and runs on a
+read-only file system, and the server gets 75 seconds to stop.
 
 ### Production, behind Cloudflare
 

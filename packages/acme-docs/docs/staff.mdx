@@ -1,0 +1,56 @@
+---
+title: Staff console
+description: Give the people who run your server the staff role, then find accounts and workspaces, ban, sign out or act as an account, and read the audit log of every action, from /admin.
+sidebar:
+  order: 13
+---
+
+The staff console is for the people who run an Acme server: it finds an account or a workspace, tells how the server is doing, and lets staff act on accounts. It lives at `/admin` on your Acme address (`/fr/admin` in French), and its API under `/api/admin`.
+
+## Make an account staff [#make-staff]
+
+Staff are accounts with Better Auth's admin role. No page grants it: set it in the database, then sign in again, as a session keeps the role it started with.
+
+```sql
+UPDATE auth."user" SET role = 'admin' WHERE email = 'you@example.com';
+```
+
+To take the role back, set `role` to `NULL` and end the account's sessions. The console refuses anyone but staff in their own session, signed in or not, answering 404 as if it were not there: an API key, an application acting through OAuth, or staff while they act as someone else are refused too. A banned staff account is refused at once.
+
+Acme's own servers also put `/admin`, `/fr/admin` and `/api/admin` behind Cloudflare Access. Behind your own edge, you may restrict them to your team's addresses the same way.
+
+## What the console shows [#screens]
+
+| Page        | What it shows                                                                                                                                                                      |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| System      | Whether the database answers, the release the server runs (`OTEL_SERVICE_VERSION`), the posts due within the hour, those overdue, and the channels to reconnect in every workspace |
+| Accounts    | Accounts by email, name or id, newest first, 25 a page                                                                                                                             |
+| An account  | Its name and email, whether the address is confirmed, its language, when it was created and last signed in, its ban, its workspaces and roles, and how many sessions it has open   |
+| Workspaces  | Workspaces by name, slug or id, with their members                                                                                                                                 |
+| A workspace | Its members and roles, its plan and subscription, its channels and whether each works, how many posts it has in each status, and the latest posts that failed or went unconfirmed  |
+| Audit log   | What staff did, newest first                                                                                                                                                       |
+
+Staff see who an account is, never what it wrote: no post's text, no image or video, no token. A failed post shows as its ids, its platform, why it failed and the platform's code. To see what a member sees, staff act as them (see below).
+
+"Last signed in" is when the newest session the account opened itself started, while one is left; sessions staff open to act as it do not count.
+
+## What staff do [#actions]
+
+Each action asks why, and keeps the reason in the audit log with the staff member's name. Write what was asked, not more about the person than needed.
+
+- **Ban**, for a day, a week, 30 days or until lifted: the account is signed out everywhere, and can neither sign in nor use its API keys meanwhile. **Lift the ban** undoes it.
+- **Sign out everywhere** ends every session of the account, on every device, those staff opened included. Its API keys keep working.
+- **Send the confirmation again** emails a new link to confirm the address, in the account's language, while it is not confirmed.
+- **Act as this account** signs the staff member's browser in as the account for an hour. A banner at the top of every page says whose account it is, with **Stop acting as them**, which brings back the staff member's own session.
+
+While acting as an account, staff see its posts and media, and cannot connect channels, publish, manage API keys or billing, change its workspaces or the account, or let an application act for it. They can read its notifications, not mark them read. They can ask the writing assistant in its workspaces, which counts toward those workspaces' daily requests.
+
+Staff never ban, sign out or act as themselves, and never act as other staff. No one deletes an account but its owner, from [their account settings](/settings#delete-account).
+
+Better Auth's own admin endpoints under `/api/auth/admin/` are off, so nothing staff do bypasses the audit log; only `POST /api/auth/admin/stop-impersonating` stays, which the banner calls.
+
+## The audit log [#audit-log]
+
+Each action is recorded before it is carried out, so nothing staff do goes unrecorded: who did it, what, to which account, why, and when, with a ban's end. An action that then failed still shows what staff asked for. The log keeps ids, never what anyone wrote, and keeps entries for good.
+
+When an account is closed, the log forgets it: entries about it lose its id and the reason given, and those it made as staff lose their author. What was done, and when, stays.

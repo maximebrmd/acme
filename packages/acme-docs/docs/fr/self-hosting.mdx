@@ -238,7 +238,7 @@ La plupart des clients MCP s’enregistrent eux-mêmes avant de se connecter, ce
 
 ## Comptes d’équipe [#staff]
 
-L’équipe, le rôle d’administrateur de Better Auth, peut se faire passer pour un membre pendant une heure et bannir des comptes, par les points d’accès d’administration de Better Auth sous `/api/auth/admin/`. Elle ne peut pas supprimer un compte : seul son titulaire le peut, depuis [ses paramètres de compte](/settings#delete-account), ce qui supprime ce qu’Acme conserve à son sujet. Donnez ce rôle à un compte dans la base de données, puis reconnectez-vous :
+L’équipe, le rôle d’administrateur de Better Auth, fait tourner le serveur depuis la [console de l’équipe](/staff) à `/admin` : elle trouve des comptes et des espaces de travail, bannit ou déconnecte des comptes, renvoie une confirmation, et agit à la place d’un membre pendant une heure, chaque action étant inscrite à un journal d’audit. Les points d’accès d’administration de Better Auth sont désactivés, sauf pour cesser d’agir à la place d’un membre. L’équipe ne peut pas supprimer un compte : seul son titulaire le peut, depuis [ses paramètres de compte](/settings#delete-account), ce qui supprime ce qu’Acme conserve à son sujet. Donnez ce rôle à un compte dans la base de données, puis reconnectez-vous :
 
 ```sql
 UPDATE auth."user" SET role = 'admin' WHERE email = 'vous@example.com';
@@ -249,3 +249,11 @@ En se faisant passer pour un membre, l’équipe ne peut ni connecter de canaux,
 ## Télémétrie [#telemetry]
 
 Mettez dans `OTEL_EXPORTER_OTLP_ENDPOINT` l’adresse OTLP/HTTP d’un collecteur OpenTelemetry, comme `http://otel-collector:4318`, et le serveur y exporte ses journaux, métriques et traces, en JSON. [Variables d’environnement](/environment-variables#telemetry) liste les autres réglages OpenTelemetry qu’il lit.
+
+### Erreurs de l’application web [#web-errors]
+
+L’application web signale ses erreurs au serveur, à `POST /api/client-errors` : ce que rien n’a intercepté dans un navigateur, les promesses rejetées sans gestionnaire, les pages d’erreur que montrent ses limites d’erreur, et les pages que son propre serveur n’a pas su rendre. Un signalement ne nomme personne. Il n’envoie aucun cookie, et contient le message et la pile de l’erreur, le chemin de la page sans sa requête ni son fragment et avec ses identifiants remplacés, la route de la page, la version et l’agent utilisateur du navigateur ; le serveur remplace toute adresse e-mail, tout identifiant ou toute clé d’API que le texte cite encore. Un navigateur envoie chaque erreur une fois, et dix au plus par page.
+
+Le serveur accepte 30 signalements par minute de chaque adresse, qu’il lit dans l’en-tête que nomme `AUTH_IP_HEADERS`, et 16 Kio au plus chacun. Il les inscrit chacun au journal au niveau erreur, avec le nom d’événement `acme.client_error` et les noms d’attributs d’OpenTelemetry (`exception.message`, `exception.stacktrace`, `url.path`, `http.route`, `user_agent.original`, ainsi que `acme.client_error.kind` et `acme.web.release`), et les compte dans `acme.client_errors`, par type ; ceux qu’il écarte, dans `acme.client_errors.dropped`, par raison. Dans Prometheus, ce sont `acme_client_errors_total` et `acme_client_errors_dropped_total`, et dans Loki `{service_name="acme-server"} | event_name="acme.client_error"`.
+
+Le Grafana de la pile de production les montre sur son tableau de bord **Web app errors**, et prévient quand plus de 20 signalements arrivent en 10 minutes ; son alerte sur les journaux d’erreurs du serveur lui-même les laisse de côté. Définissez `ACME_RELEASE` sur l’application web pour nommer la version d’où viennent ses signalements : la pile de production y met `ACME_VERSION`.
