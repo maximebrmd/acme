@@ -1,10 +1,12 @@
-import { eq } from "drizzle-orm";
+import { and, eq, isNotNull, or } from "drizzle-orm";
 import { DateTime, Duration, Effect, Layer, Option, Redacted } from "effect";
 
+import { UserIdSchema } from "#shared/domain/ids.ts";
 import type { UserId } from "#shared/domain/ids.ts";
 import { defaultLocale } from "#shared/domain/locale.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 import { AccountModeration } from "#workspace/application/account-moderation.ts";
+import type { EndedImpersonation } from "#workspace/application/account-moderation.ts";
 import { AuthUnavailable } from "#workspace/application/auth-unavailable.ts";
 import { session } from "#workspace/infrastructure/auth-schema.generated.ts";
 
@@ -43,6 +45,37 @@ export const AccountModerationLive = Layer.effect(
           Effect.asVoid
         );
 
+    // The impersonations open now that ending the account's sessions ends:
+    // staff's of the account, and the account's of others.
+    const impersonationsOf = (userId: UserId) =>
+      db
+        .select({
+          staffId: session.impersonatedBy,
+          userId: session.userId,
+        })
+        .from(session)
+        .where(
+          and(
+            isNotNull(session.impersonatedBy),
+            or(eq(session.userId, userId), eq(session.impersonatedBy, userId))
+          )
+        )
+        .pipe(
+          Effect.mapError((cause) => new AuthUnavailable({ cause })),
+          Effect.map((rows) =>
+            rows.flatMap(({ staffId, userId: actedAs }) =>
+              staffId === null
+                ? []
+                : [
+                    {
+                      staffId: UserIdSchema.make(staffId),
+                      userId: UserIdSchema.make(actedAs),
+                    } satisfies EndedImpersonation,
+                  ]
+            )
+          )
+        );
+
     return AccountModeration.of({
       ban: Effect.fn("AccountModeration.ban")(function* ban({
         expiresAt,
@@ -51,6 +84,7 @@ export const AccountModerationLive = Layer.effect(
         userId,
       }) {
         const now = yield* DateTime.now;
+        const ending = yield* impersonationsOf(userId);
 
         yield* attempt(
           async () =>
@@ -68,6 +102,8 @@ export const AccountModerationLive = Layer.effect(
         );
 
         yield* endImpersonations(userId);
+
+        return ending;
       }),
       impersonate: ({ staffSession, userId }) =>
         attempt(
@@ -94,17 +130,23 @@ export const AccountModerationLive = Layer.effect(
           Effect.asVoid,
           Effect.withSpan("AccountModeration.resendVerification")
         ),
-      revokeSessions: ({ staffSession, userId }) =>
-        attempt(
-          async () =>
-            await auth.api.revokeUserSessions({
-              body: { userId },
-              headers: headersOf(staffSession),
-            })
-        ).pipe(
-          Effect.andThen(endImpersonations(userId)),
-          Effect.withSpan("AccountModeration.revokeSessions")
-        ),
+      revokeSessions: Effect.fn("AccountModeration.revokeSessions")(
+        function* revokeSessions({ staffSession, userId }) {
+          const ending = yield* impersonationsOf(userId);
+
+          yield* attempt(
+            async () =>
+              await auth.api.revokeUserSessions({
+                body: { userId },
+                headers: headersOf(staffSession),
+              })
+          );
+
+          yield* endImpersonations(userId);
+
+          return ending;
+        }
+      ),
       unban: ({ staffSession, userId }) =>
         attempt(
           async () =>

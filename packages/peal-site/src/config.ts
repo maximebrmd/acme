@@ -33,6 +33,9 @@ export const docsLink = (locale: Locale, path = ""): string | undefined => {
   return `${docsOrigin}${prefix}/${path}`;
 };
 
+/** The public repository, which the footer links to on every page. */
+export const repositoryUrl = "https://github.com/peal-social/peal";
+
 export interface PlausibleScript {
   readonly domain: string;
   readonly src: string;

@@ -22,10 +22,14 @@ import { toast } from "sonner";
 import { authClient } from "#auth/client.ts";
 import { FormField } from "#components/auth/form-field.tsx";
 import { SettingsError } from "#components/settings/settings-error.tsx";
+import { SubscriptionCancellation } from "#components/settings/subscription-cancellation.tsx";
 import { Link, useRouter } from "#i18n/navigation.ts";
 import { deleteAccount } from "#settings/atoms.ts";
-import { apiErrorKey } from "#settings/errors.ts";
-import type { SettingsErrorKey } from "#settings/errors.ts";
+import { apiErrorKey, subscriptionsToCancel } from "#settings/errors.ts";
+import type {
+  SettingsErrorKey,
+  SubscriptionToCancel,
+} from "#settings/errors.ts";
 
 interface Workspace {
   readonly id: string;
@@ -68,7 +72,9 @@ export const LastOwnerOf = ({
 /**
  * The right to erasure: deletes the account once its password confirms it,
  * then signs out. The server refuses while the user alone owns a workspace
- * others use, which the dialog lists.
+ * others use, which the dialog lists, and while a workspace it deletes has
+ * a subscription, which the dialog describes until the user agrees to
+ * cancel it.
  */
 export const DeleteAccount = () => {
   const t = useTranslations("AccountSettings.delete");
@@ -79,6 +85,12 @@ export const DeleteAccount = () => {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<SettingsErrorKey | null>(null);
   const [owned, setOwned] = useState<readonly Workspace[]>([]);
+
+  const [subscriptions, setSubscriptions] = useState<
+    Option.Option<readonly SubscriptionToCancel[]>
+  >(Option.none());
+
+  const [agreed, setAgreed] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   const handleOpenChange = (open: boolean) => {
@@ -86,6 +98,8 @@ export const DeleteAccount = () => {
       setPassword("");
       setError(null);
       setOwned([]);
+      setSubscriptions(Option.none());
+      setAgreed(false);
     }
   };
 
@@ -93,7 +107,9 @@ export const DeleteAccount = () => {
     event.preventDefault();
 
     startTransition(async () => {
-      const exit = await remove({ payload: { password } });
+      const exit = await remove({
+        payload: { cancelSubscriptions: agreed, password },
+      });
 
       if (Exit.isSuccess(exit)) {
         // The session went with the account: this clears its cookies.
@@ -101,6 +117,16 @@ export const DeleteAccount = () => {
         toast.success(t("deleted"));
         router.push("/");
         router.refresh();
+
+        return;
+      }
+
+      const toCancel = subscriptionsToCancel(exit);
+
+      if (Option.isSome(toCancel)) {
+        setSubscriptions(toCancel);
+        setOwned([]);
+        setError(null);
 
         return;
       }
@@ -136,6 +162,25 @@ export const DeleteAccount = () => {
           ) : (
             <SettingsError error={error} />
           )}
+          {Option.isSome(subscriptions) ? (
+            <SubscriptionCancellation
+              agreed={agreed}
+              onAgreedChange={setAgreed}
+              subscriptions={subscriptions.value}
+              billingLinks={Object.fromEntries(
+                subscriptions.value.map(({ workspaceId: billed }) => [
+                  billed,
+                  <Link
+                    key={billed}
+                    href={`/app/${billed}/billing`}
+                    className="underline underline-offset-4"
+                  >
+                    {t("billingPage")}
+                  </Link>,
+                ])
+              )}
+            />
+          ) : null}
           <FormField
             id="delete-account-password"
             type="password"
@@ -151,7 +196,11 @@ export const DeleteAccount = () => {
             <Button
               type="submit"
               variant="destructive"
-              disabled={isPending || password === ""}
+              disabled={
+                isPending ||
+                password === "" ||
+                (Option.isSome(subscriptions) && !agreed)
+              }
               focusableWhenDisabled
             >
               {isPending ? t("deleting") : t("confirm")}

@@ -1,7 +1,14 @@
 {
   "name": "peal-docker",
   "private": true,
+  "homepage": "https://peal.social",
+  "bugs": "https://github.com/peal-social/peal/issues",
   "license": "FSL-1.1-ALv2",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/peal-social/peal.git",
+    "directory": "packages/peal-docker"
+  },
   "type": "module",
   "devDependencies": {
     "@types/bun": "1.4.4",

@@ -48,13 +48,15 @@
         path: "{{ render_dir }}/{{ inventory_hostname }}/{{ item }}"
         state: directory
         mode: "0700"
-      loop: [gatus, caddy]
+      loop: [gatus, status, caddy]
 
     - name: Render the configuration as the role does
       ansible.builtin.set_fact:
         uptime_gatus_config: "{{ lookup('ansible.builtin.template', uptime_templates ~ '/config.yaml.j2') }}"
+        uptime_status_config: "{{ lookup('ansible.builtin.template', uptime_templates ~ '/status-config.yaml.j2') }}"
         uptime_caddyfile: "{{ lookup('ansible.builtin.template', uptime_templates ~ '/Caddyfile.j2') }}"
         uptime_caddy_routes: "{{ lookup('ansible.builtin.template', uptime_templates ~ '/routes.caddy.j2') }}"
+        uptime_caddy_status: "{{ lookup('ansible.builtin.template', uptime_templates ~ '/status.caddy.j2') }}"
 
     - name: Write the configuration
       ansible.builtin.copy:
@@ -63,8 +65,10 @@
         mode: "0600"
       loop:
         - { path: gatus/config.yaml, content: "{{ uptime_gatus_config }}" }
+        - { path: status/config.yaml, content: "{{ uptime_status_config }}" }
         - { path: caddy/Caddyfile, content: "{{ uptime_caddyfile }}" }
         - { path: caddy/routes.caddy, content: "{{ uptime_caddy_routes }}" }
+        - { path: caddy/status.caddy, content: "{{ uptime_caddy_status }}" }
       loop_control:
         label: "{{ item.path }}"
 

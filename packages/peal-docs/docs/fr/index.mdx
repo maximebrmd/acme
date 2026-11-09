@@ -46,6 +46,17 @@ Chaque service extérieur dont Peal dépend a une option par défaut auto-héber
 
 Le code source est public, sous la Functional Source License (FSL-1.1-ALv2). Vous pouvez utiliser, modifier et auto-héberger Peal pour tout usage, sauf le proposer à d’autres comme produit ou service commercial concurrent, et chaque version passe aussi sous licence Apache 2.0 deux ans après sa sortie. C’est pourquoi Peal se dit « fair source » plutôt qu’open source.
 
+## Licences [#licensing]
+
+Peal, le concédant, publie le code source sur [GitHub](https://github.com/peal-social/peal) sous deux licences :
+
+| Partie                                                                               | Licence                                                           |
+| ------------------------------------------------------------------------------------ | ----------------------------------------------------------------- |
+| Le serveur, l’application web, la ligne de commande, cette documentation et le reste | FSL-1.1-ALv2, comme ci-dessus                                     |
+| Les SDK, et le contrat de l’API à partir duquel ils sont générés                     | [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0) |
+
+Une application qui appelle Peal par un SDK peut donc l’utiliser pour tout usage, service concurrent compris, aux conditions de la licence Apache. Un dossier qui a son propre fichier `LICENSE` relève de cette licence ; le reste du dépôt relève de `LICENSE.md`.
+
 ## Construire sur l’API [#api]
 
 Tout ce que fait l’application web passe par la même API HTTP. [La présentation de l’API](/api-overview) explique son organisation et comment s’authentifier, et la [référence de l’API](/reference) liste chaque point d’accès.

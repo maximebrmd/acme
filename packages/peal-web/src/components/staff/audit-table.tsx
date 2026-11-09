@@ -30,6 +30,35 @@ const Account = async ({
   return <Link href={`/admin/users/${id}`}>{email ?? id}</Link>;
 };
 
+// What a change made while acting as an account was, where, and on which
+// ids: its endpoint or route, its workspace, and the ids it named.
+const Change = async ({ event }: { readonly event: StaffAuditEvent }) => {
+  const t = await getTranslations("Staff.audit");
+  const ids = Object.entries(event.objectIds);
+
+  if (event.operation === null && event.workspaceId === null) {
+    return null;
+  }
+
+  return (
+    <span className="text-muted-foreground block text-sm">
+      {event.operation === null ? null : (
+        <code className="block font-mono">{event.operation}</code>
+      )}
+      {event.workspaceId === null ? null : (
+        <Link className="block" href={`/admin/workspaces/${event.workspaceId}`}>
+          {t("workspace")}
+        </Link>
+      )}
+      {ids.map(([name, id]) => (
+        <code className="block font-mono" key={name}>
+          {name} {id}
+        </code>
+      ))}
+    </span>
+  );
+};
+
 // What staff did, newest first.
 export const AuditTable = async ({
   events,
@@ -70,6 +99,7 @@ export const AuditTable = async ({
                   <Instant value={DateTime.formatIso(event.banExpiresAt)} />
                 </span>
               )}
+              <Change event={event} />
             </TableCell>
             <TableCell>
               <Account email={event.targetEmail} id={event.targetId} />

@@ -19,21 +19,35 @@ export interface Act {
   readonly userId: UserId;
 }
 
+/**
+ * A session a staff member was acting as an account in, which an action
+ * ended: theirs, when they are banned or signed out everywhere, or the
+ * account's.
+ */
+export interface EndedImpersonation {
+  readonly staffId: UserId;
+  readonly userId: UserId;
+}
+
 /** What staff do to accounts, once the use case checked and recorded it. */
 export class Moderation extends Context.Service<
   Moderation,
   {
-    /** Bans the account and ends its sessions. */
+    /**
+     * Bans the account and ends its sessions: the impersonations that
+     * ended with them.
+     */
     readonly ban: (
       act: Act & {
         readonly expiresAt: Option.Option<DateTime.Utc>;
         readonly reason: StaffReason;
       }
-    ) => Effect.Effect<void, ModerationFailed>;
+    ) => Effect.Effect<readonly EndedImpersonation[], ModerationFailed>;
     readonly unban: (act: Act) => Effect.Effect<void, ModerationFailed>;
+    /** Ends the account's sessions: the impersonations that ended with them. */
     readonly revokeSessions: (
       act: Act
-    ) => Effect.Effect<void, ModerationFailed>;
+    ) => Effect.Effect<readonly EndedImpersonation[], ModerationFailed>;
     readonly resendVerification: (account: {
       readonly email: string;
       readonly locale: Locale;

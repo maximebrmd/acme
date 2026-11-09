@@ -8,6 +8,12 @@ export const french: EmailCatalog = {
       "Si vous n’êtes pas à l’origine de cette demande, prévenez la personne qui gère ce serveur Peal. Peal n’envoie plus d’e-mail à cette adresse.",
     subject: "Votre compte Peal est supprimé",
   },
+  billingEnded: {
+    account:
+      "Les abonnements des espaces de travail supprimés ont été résiliés immédiatement : plus rien n’est facturé, et la période déjà payée n’est pas remboursée, sauf lorsque la loi prévoit un remboursement : si vous avez souscrit en tant que consommateur il y a moins de 14 jours, vous pouvez vous rétracter et être remboursé de la part non utilisée. Leurs factures sont conservées comme le droit comptable l’exige ; demandez-en une copie à la personne qui gère ce serveur Peal.",
+    workspace:
+      "Son abonnement a été résilié immédiatement : plus rien n’est facturé, et la période déjà payée n’est pas remboursée, sauf lorsque la loi prévoit un remboursement : si vous avez souscrit en tant que consommateur il y a moins de 14 jours, vous pouvez vous rétracter et être remboursé de la part non utilisée. Ses factures sont conservées comme le droit comptable l’exige ; demandez-en une copie à la personne qui gère ce serveur Peal.",
+  },
   channel: "{platform} ({handle})",
   channelReconnectRequired: {
     action: "Reconnecter le compte",
@@ -22,6 +28,17 @@ export const french: EmailCatalog = {
     ignore:
       "Vous recevez cet e-mail parce que vous gérez les canaux de {workspaceName} sur Peal. Choisissez les notifications que vous recevez par e-mail dans vos préférences de notification.",
     subject: "Reconnectez {handle} sur {platform} avant le {expiresAt}",
+  },
+  dataExported: {
+    action: "Ouvrir les paramètres de mon compte",
+    body: "Une copie des données de votre compte Peal vient d’être téléchargée {via}. Elle contient votre profil, vos sessions avec leurs adresses, et le contenu de vos espaces de travail.",
+    ignore:
+      "Si ce n’était pas vous, changez votre mot de passe et déconnectez vos autres sessions depuis les paramètres de votre compte, puis prévenez la personne qui gère ce serveur Peal.",
+    subject: "Une copie de vos données Peal a été téléchargée",
+  },
+  exportChannels: {
+    commandLine: "depuis la ligne de commande",
+    web: "depuis l’application web",
   },
   failureReasons: {
     appNotAudited:
@@ -112,5 +129,12 @@ export const french: EmailCatalog = {
     ignore:
       "Si vous n’avez pas créé de compte Peal, ignorez cet e-mail. Le lien expire dans une heure.",
     subject: "Confirmez votre adresse e-mail pour Peal",
+  },
+  workspaceDeleted: {
+    action: "Ouvrir mes espaces de travail",
+    body: "L’espace de travail {workspaceName} a été supprimé à votre demande, avec tout son contenu : ses canaux, publications, médias, statistiques, membres et clés d’API.",
+    ignore:
+      "Si vous n’êtes pas à l’origine de cette demande, prévenez la personne qui gère ce serveur Peal.",
+    subject: "L’espace de travail {workspaceName} est supprimé",
   },
 };

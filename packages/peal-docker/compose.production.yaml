@@ -287,13 +287,13 @@ services:
       <<: *healthcheck
       test: [CMD, /usr/bin/loki, -health]
 
-  # The development configuration: Tempo keeps traces for 14 days by default.
+  # Tempo keeps traces for 14 days, stated in its production configuration.
   tempo:
     <<: *service
     image: grafana/tempo:3.1.1@sha256:64e2fbd56d9c2b3412a4b430a58ea59e91a670b1e75f920a0c702213ad145044
     command: [-target=all, -config.file=/etc/tempo/config.yaml]
     volumes:
-      - ./config/tempo.yaml:/etc/tempo/config.yaml:ro
+      - ./config/production/tempo.yaml:/etc/tempo/config.yaml:ro
       - tempo:/var/tempo
     healthcheck:
       <<: *healthcheck
@@ -318,7 +318,10 @@ services:
 
   # Signed in through Cloudflare Access when PEAL_GRAFANA_ACCESS_TEAM is set:
   # Grafana checks the token Access adds to each request, and signs its
-  # email in as an editor. Otherwise, the admin account and its password.
+  # email in as an Admin of its organisation, with full access: the Access
+  # application's policy decides who that is, the staff. Grafana sets the
+  # role again at each sign-in. Otherwise, the admin account and its
+  # password.
   grafana:
     <<: *service
     image: grafana/grafana:13.3.0@sha256:488984b716c0862639f91a698adbe2862677a5a07bad42da5f03f3030883b205
@@ -336,7 +339,7 @@ services:
       GF_AUTH_JWT_EXPECT_CLAIMS: '{"aud": "${PEAL_GRAFANA_ACCESS_AUD:-}", "iss": "https://${PEAL_GRAFANA_ACCESS_TEAM:-}.cloudflareaccess.com"}'
       GF_AUTH_JWT_CACHE_TTL: 60m
       GF_AUTH_JWT_AUTO_SIGN_UP: "true"
-      GF_AUTH_JWT_ROLE_ATTRIBUTE_PATH: "'Editor'"
+      GF_AUTH_JWT_ROLE_ATTRIBUTE_PATH: "'Admin'"
       GF_ANALYTICS_REPORTING_ENABLED: "false"
       GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
       GF_ANALYTICS_CHECK_FOR_PLUGIN_UPDATES: "false"

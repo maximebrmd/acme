@@ -8,8 +8,10 @@ import { ConfigProvider, Effect, Layer } from "effect";
 
 import { BillingLive } from "#billing/container.ts";
 import { SendAuthEmail } from "#notifications/application/send-auth-email.ts";
+import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 import { DatabaseLive } from "#shared/infrastructure/database.ts";
 import { MigrationsLive } from "#shared/infrastructure/migrations.ts";
+import { ImpersonationGuard } from "#workspace/application/impersonation-guard.ts";
 import {
   BetterAuth,
   BetterAuthLive,
@@ -44,9 +46,29 @@ const authWith = (env: Record<string, string>) =>
         SendAuthEmail.of({ send: () => Effect.void })
       )
     ),
+    // Nobody signs in here, as staff or anyone.
+    Layer.provide(
+      Layer.succeed(
+        ImpersonationGuard,
+        ImpersonationGuard.of({
+          admit: () => Effect.void,
+          changed: () => Effect.void,
+          stopped: () => Effect.void,
+        })
+      )
+    ),
     Layer.provide(
       Layer.mergeAll(
-        BillingLive.pipe(Layer.provide(StripeCheckoutsLive)),
+        BillingLive.pipe(
+          Layer.provide(StripeCheckoutsLive),
+          // Signing in records no subscription.
+          Layer.provide(
+            Layer.succeed(
+              TransactionRunner,
+              TransactionRunner.of({ transaction: (effect) => effect })
+            )
+          )
+        ),
         MigrationsLive
       ).pipe(Layer.provide(DatabaseLive))
     )

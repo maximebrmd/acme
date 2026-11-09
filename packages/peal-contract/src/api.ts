@@ -73,7 +73,12 @@ export type { DeleteWorkspace } from "./workspaces.ts";
 
 export { WorkspaceBusy } from "./workspace-busy.ts";
 
-export { WorkspaceSubscribed } from "./workspace-subscribed.ts";
+export {
+  SubscriptionToCancelSchema,
+  WorkspaceSubscribed,
+} from "./workspace-subscribed.ts";
+
+export type { SubscriptionToCancel } from "./workspace-subscribed.ts";
 
 export { BillingUnavailable } from "./billing-unavailable.ts";
 
@@ -607,4 +612,11 @@ export class Api extends HttpApi.make("peal")
   .add(TikTokApi)
   .add(StaffApi)
   .add(ClientErrorsApi)
-  .annotateMerge(OpenApi.annotations({ title: "Peal API" })) {}
+  // The contract is Apache-2.0, unlike the rest of Peal, so the clients
+  // generated from this document may be too.
+  .annotateMerge(
+    OpenApi.annotations({
+      license: { identifier: "Apache-2.0", name: "Apache-2.0" },
+      title: "Peal API",
+    })
+  ) {}

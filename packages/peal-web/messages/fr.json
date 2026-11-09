@@ -964,10 +964,19 @@
       "notFound": "Cet élément n’existe déjà plus.",
       "passwordTooLong": "Le mot de passe est trop long.",
       "passwordTooShort": "Le mot de passe doit compter au moins 12 caractères.",
-      "subscribed": "Un espace de travail que ceci supprimerait a encore un abonnement susceptible d’être facturé. Résiliez-le d’abord depuis la page de facturation de l’espace de travail : il pourra être supprimé une fois l’abonnement terminé.",
+      "subscribed": "Un espace de travail que cette action supprimerait a un abonnement. Acceptez sa résiliation pour continuer.",
       "tooManyRequests": "Trop de tentatives. Patientez une minute, puis réessayez.",
       "unknown": "Une erreur est survenue. Réessayez.",
       "billingUnavailable": "Stripe n’a pas pu être joint pour clore les paiements encore ouverts d’un espace de travail que ceci supprimerait, donc rien n’a été supprimé. Réessayez dans quelques minutes."
+    },
+    "cancellation": {
+      "title": "{count, plural, one {La suppression résilie un abonnement} other {La suppression résilie # abonnements}}",
+      "ends": "{plan, select, other {L’abonnement {plan}} none {L’abonnement}} prend fin maintenant : plus rien n’est facturé.",
+      "notRefunded": "La période déjà payée n’est pas remboursée, sauf lorsque la loi prévoit un remboursement.",
+      "notRefundedUntil": "La période déjà payée, jusqu’au {date}, n’est pas remboursée, sauf lorsque la loi prévoit un remboursement.",
+      "withdrawal": "Si vous avez souscrit en tant que consommateur il y a moins de 14 jours, vous pouvez vous rétracter et être remboursé de la part non utilisée : adressez-vous à la personne qui gère ce serveur Peal.",
+      "invoices": "Téléchargez d’abord vos factures depuis la page de facturation : elle disparaît avec l’espace de travail. Les factures sont conservées comme le droit comptable l’exige, et une confirmation vous est envoyée par e-mail.",
+      "agree": "{count, plural, one {Résilier l’abonnement maintenant} other {Résilier ces # abonnements maintenant}}, sans remboursement de la période payée, sauf lorsque la loi en prévoit un"
     }
   },
   "WorkspaceSettings": {
@@ -997,11 +1006,12 @@
       "description": "Supprime définitivement l’espace de travail, avec tout son contenu. Seuls les propriétaires le peuvent.",
       "open": "Supprimer cet espace de travail…",
       "confirmTitle": "Supprimer définitivement {name} ?",
-      "confirmDescription": "Ses canaux et leurs autorisations, ses publications, programmées ou non, sa médiathèque, ses notifications, ses membres et invitations, et ses clés d’API disparaissent, sans retour possible. Plus rien n’en est publié.",
+      "confirmDescription": "Ses canaux et leurs autorisations, ses publications, programmées ou non, sa médiathèque, ses notifications, ses membres et invitations, et ses clés d’API disparaissent, sans retour possible. Plus rien n’en est publié, et son abonnement, s’il en a un, est résilié.",
       "typeName": "Saisissez {name} pour confirmer",
       "confirm": "Supprimer l’espace de travail",
       "deleting": "Suppression…",
-      "deleted": "L’espace de travail {name} est supprimé."
+      "deleted": "L’espace de travail {name} est supprimé.",
+      "billingPage": "Ouvrir la page de facturation"
     },
     "members": {
       "description": "Toutes les personnes de l’espace de travail, et leur rôle. Les propriétaires et les administrateurs changent les rôles et retirent des membres ; seuls les propriétaires nomment ou retirent des propriétaires.",
@@ -1129,7 +1139,7 @@
     },
     "export": {
       "title": "Vos données",
-      "description": "Un fichier JSON de tout ce que Peal conserve sur vous : votre compte, vos sessions, vos adhésions, vos invitations, vos applications connectées, vos notifications et préférences, et le contenu des espaces de travail dont vous êtes le seul membre. Il ne contient aucun mot de passe, jeton ni clé.",
+      "description": "Un fichier JSON de tout ce que Peal conserve sur vous : votre compte, vos sessions, vos adhésions, vos invitations, vos applications connectées, vos notifications et préférences, ce que l’équipe de Peal a fait sur votre compte, les publications que vous avez écrites dans les espaces de travail partagés, et le contenu des espaces de travail dont vous êtes le seul membre. Il ne contient aucun mot de passe, jeton ni clé. Nous vous prévenons par e-mail à chaque téléchargement.",
       "download": "Télécharger mes données"
     },
     "delete": {
@@ -1137,12 +1147,13 @@
       "description": "Supprime définitivement votre compte, avec les espaces de travail dont vous êtes le seul membre et tout leur contenu. Vous quittez les autres.",
       "open": "Supprimer mon compte…",
       "confirmTitle": "Supprimer définitivement votre compte ?",
-      "confirmDescription": "Votre profil, vos sessions, notifications, préférences et applications connectées disparaissent, avec les espaces de travail dont vous êtes le seul membre. C’est définitif. Saisissez votre mot de passe pour confirmer.",
+      "confirmDescription": "Votre profil, vos sessions, notifications, préférences et applications connectées disparaissent, avec les espaces de travail dont vous êtes le seul membre, dont les abonnements sont résiliés. C’est définitif. Saisissez votre mot de passe pour confirmer.",
       "confirm": "Supprimer mon compte",
       "deleting": "Suppression…",
       "deleted": "Votre compte est supprimé. Une confirmation arrive dans votre boîte de réception.",
       "lastOwnerTitle": "Ces espaces de travail ont besoin d’un autre propriétaire",
-      "lastOwnerDescription": "Vous êtes le seul propriétaire d’espaces de travail que d’autres membres utilisent. Nommez l’un d’eux propriétaire, ou supprimez l’espace de travail, puis réessayez :"
+      "lastOwnerDescription": "Vous êtes le seul propriétaire d’espaces de travail que d’autres membres utilisent. Nommez l’un d’eux propriétaire, ou supprimez l’espace de travail, puis réessayez :",
+      "billingPage": "Ouvrir la page de facturation de l’espace de travail"
     }
   },
   "Staff": {
@@ -1345,7 +1356,7 @@
     },
     "audit": {
       "title": "Journal d’audit",
-      "description": "Ce que l’équipe a fait, du plus récent au plus ancien : qui, quoi, sur quel compte, pourquoi et quand. Les identifiants des comptes fermés, et les motifs donnés à leur sujet, sont oubliés.",
+      "description": "Ce que l’équipe a fait, du plus récent au plus ancien : qui, quoi, sur quel compte, pourquoi et quand, et chaque modification faite à la place d’un compte, avec sa nature et son lieu, jamais son contenu. Les identifiants des comptes fermés, et les motifs donnés à leur sujet, sont oubliés.",
       "columns": {
         "at": "Quand",
         "staff": "Équipe",
@@ -1357,7 +1368,8 @@
       "closedAccount": "Un compte fermé",
       "noReason": "Non conservé",
       "until": "Jusqu’au",
-      "action": "{action, select, ban {A banni} unban {A levé le bannissement} revokeSessions {A déconnecté partout} resendVerification {A renvoyé la confirmation} impersonate {A agi à la place du compte} other {{action}}}"
+      "workspace": "Dans un espace de travail",
+      "action": "{action, select, ban {A banni} unban {A levé le bannissement} revokeSessions {A déconnecté partout} resendVerification {A renvoyé la confirmation} impersonate {A agi à la place du compte} impersonatedChange {A modifié quelque chose à la place du compte} stopImpersonating {A cessé d’agir à la place du compte} impersonationEnded {Le serveur a mis fin à la session à la place du compte} other {{action}}}"
     },
     "channelStatus": {
       "active": "Fonctionne",

@@ -7,6 +7,7 @@ import { ownSessionOrCommandLine } from "#workspace/domain/own-session.ts";
 import type { SessionRequired } from "#workspace/domain/session-required.ts";
 import type { UserPrincipal } from "#workspace/domain/user-principal.ts";
 
+import { AccountMail } from "./account-mail.ts";
 import { AccountStore } from "./account-store.ts";
 import type { AccountRecords, WorkspaceSummary } from "./account-store.ts";
 import { ApiKeyIssuer } from "./api-key-issuer.ts";
@@ -38,7 +39,9 @@ export interface AccountExport extends UserContent {
  * Workspaces they share hold the team's work: of those, only their
  * memberships and the posts they wrote are part of it. The workspaces where
  * they are the only member are theirs, and come whole, as deleting the
- * account would delete them.
+ * account would delete them. Each copy is told to the account's address,
+ * so a copy someone else took with a stolen session or a phished command
+ * line is noticed.
  */
 export class AccountData extends Context.Service<
   AccountData,
@@ -58,6 +61,7 @@ export class AccountData extends Context.Service<
       const records = yield* ContextRecords;
       const apps = yield* ConnectedAppStore;
       const keys = yield* ApiKeyIssuer;
+      const mail = yield* AccountMail;
 
       const ownWorkspace = Effect.fn("AccountData.ownWorkspace")(
         function* ownWorkspace(summary: WorkspaceSummary) {
@@ -114,6 +118,12 @@ export class AccountData extends Context.Service<
             exportedAt: now,
             workspaces,
           };
+
+          yield* mail.exported({
+            email: account.user.email,
+            locale: account.user.locale,
+            via: Option.isSome(principal.oauth) ? "commandLine" : "web",
+          });
 
           return exported;
         }

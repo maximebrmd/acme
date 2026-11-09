@@ -1,0 +1,45 @@
+# Managed by Ansible (peal-infra): the public status page's own Gatus, when
+# uptime_public_status is on. It checks the customer-facing endpoints of the
+# environments uptime_environments marks public, and nothing else: no
+# sandbox, no certificate or DNS check, no heartbeat, no alert and no
+# secret, and it shows no URL, condition or error, so the page shows the
+# world whether Peal answers and nothing more. The private dashboard, which
+# alerts, is the uptime Gatus's.
+{% macro text(value) %}{{ value | string | replace('$', '$$') | to_json }}{% endmacro %}
+
+storage:
+  type: sqlite
+  path: /data/data.db
+
+web:
+  port: 8080
+
+ui:
+  title: Peal status
+  description: Whether Peal answers, checked from outside every minute
+  header: Peal status
+  link: https://peal.social
+  dashboard-heading: Peal status
+  dashboard-subheading: Peal, checked from outside every minute
+  default-sort-by: group
+
+endpoints:
+{% for environment in uptime_environments | selectattr('public', 'defined') | selectattr('public') %}
+{% for check in uptime_checks %}
+  - name: {{ text(check.name) }}
+    group: {{ text(environment.name) }}
+    url: {{ text('https://' ~ environment.hostnames[check.host] ~ check.path) }}
+    interval: {{ uptime_check_interval }}
+    client:
+      ignore-redirect: true
+    conditions:
+      - "[STATUS] == {{ check.status }}"
+      - "[RESPONSE_TIME] < {{ check.max_ms }}"
+    ui:
+      hide-conditions: true
+      hide-errors: true
+      hide-hostname: true
+      hide-port: true
+      hide-url: true
+{% endfor %}
+{% endfor %}

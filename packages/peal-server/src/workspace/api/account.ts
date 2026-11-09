@@ -12,7 +12,6 @@ import {
   TooManyPasswordAttempts,
   Unauthenticated,
   WorkspaceBusy,
-  WorkspaceSubscribed,
 } from "peal-contract";
 import type { AccountExport as AccountExportView } from "peal-contract";
 
@@ -22,6 +21,7 @@ import type { AccountExport } from "#workspace/application/account-data.ts";
 import { CloseAccount } from "#workspace/application/close-account.ts";
 
 import { currentUser } from "./connected-apps.ts";
+import { subscribedOf } from "./subscribed.ts";
 
 const forbidden = () => Effect.fail(new Forbidden());
 
@@ -132,7 +132,9 @@ export const AccountHandlers = HttpApiBuilder.group(
       delete: ({ payload }) =>
         Effect.gen(function* remove() {
           yield* closing
-            .close(yield* currentUser, Redacted.make(payload.password))
+            .close(yield* currentUser, Redacted.make(payload.password), {
+              cancelSubscriptions: payload.cancelSubscriptions === true,
+            })
             .pipe(
               Effect.catchTags({
                 AuthUnavailable: Effect.die,
@@ -155,8 +157,8 @@ export const AccountHandlers = HttpApiBuilder.group(
                   Effect.fail(new TooManyPasswordAttempts()),
                 WorkspaceBusy: ({ workspaceId }) =>
                   Effect.fail(new WorkspaceBusy({ workspaceId })),
-                WorkspaceSubscribed: ({ workspaceId }) =>
-                  Effect.fail(new WorkspaceSubscribed({ workspaceId })),
+                WorkspaceSubscribed: (refused) =>
+                  Effect.fail(subscribedOf(refused)),
               })
             );
         }),

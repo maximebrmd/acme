@@ -287,9 +287,12 @@ CREATE TABLE "staff"."audit_events" (
 	"at" timestamp with time zone NOT NULL,
 	"ban_expires_at" timestamp with time zone,
 	"id" uuid PRIMARY KEY,
+	"object_ids" jsonb DEFAULT '{}' NOT NULL,
+	"operation" text,
 	"reason" text,
 	"staff_id" uuid,
-	"target_id" uuid
+	"target_id" uuid,
+	"workspace_id" uuid
 );
 --> statement-breakpoint
 CREATE TABLE "auth"."account" (
@@ -592,6 +595,7 @@ CREATE INDEX "posts_workspace_drafts" ON "publishing"."posts" ("workspace_id","i
 CREATE INDEX "audit_events_at" ON "staff"."audit_events" ("at","id");--> statement-breakpoint
 CREATE INDEX "audit_events_target" ON "staff"."audit_events" ("target_id","at");--> statement-breakpoint
 CREATE INDEX "audit_events_staff" ON "staff"."audit_events" ("staff_id");--> statement-breakpoint
+CREATE INDEX "audit_events_workspace" ON "staff"."audit_events" ("workspace_id","at");--> statement-breakpoint
 CREATE INDEX "account_userId_idx" ON "auth"."account" ("user_id");--> statement-breakpoint
 CREATE INDEX "apikey_configId_idx" ON "auth"."apikey" ("config_id");--> statement-breakpoint
 CREATE INDEX "apikey_referenceId_idx" ON "auth"."apikey" ("reference_id");--> statement-breakpoint

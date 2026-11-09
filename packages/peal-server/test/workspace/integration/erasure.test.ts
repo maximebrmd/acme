@@ -147,8 +147,12 @@ const userRows = {
     sql`SELECT count(*)::int AS count FROM publishing.posts WHERE author_id = ${id}`,
   // What staff did to them: the events stay, without them and without the
   // reason given about them. What they did as staff keeps their id (below).
+  // An id the user is named by in a change staff made as someone else goes
+  // too.
   "staff.audit_events": (sql, id) =>
-    sql`SELECT count(*)::int AS count FROM staff.audit_events WHERE target_id = ${id}`,
+    sql`SELECT count(*)::int AS count FROM staff.audit_events
+      WHERE target_id = ${id}
+        OR EXISTS (SELECT 1 FROM jsonb_each_text(object_ids) AS named(name, value) WHERE value = ${id})`,
 } satisfies Readonly<Record<string, Count>>;
 
 // Tables that name neither a workspace nor a user, and why they stay.
@@ -315,6 +319,12 @@ const fillPerson = Effect.fn("fillPerson")(function* fillPerson(
     VALUES (${uuid7()}, 'ban', now(), 'Synthetic reason naming the user', ${randomUUID()}, ${person.id}),
       (${uuid7()}, 'unban', now(), 'Synthetic reason', ${person.id}, ${randomUUID()})`;
 
+  // Changes staff made as the user, in one of their workspaces, and as
+  // someone else, removing the user from a workspace.
+  yield* sql`INSERT INTO staff.audit_events (id, action, at, staff_id, target_id, workspace_id, operation, object_ids)
+    VALUES (${uuid7()}, 'impersonatedChange', now(), ${randomUUID()}, ${person.id}, ${randomUUID()}, 'posts.create', ${JSON.stringify({ postId: randomUUID() })}::jsonb),
+      (${uuid7()}, 'impersonatedChange', now(), ${randomUUID()}, ${randomUUID()}, ${randomUUID()}, 'auth:/organization/remove-member', ${JSON.stringify({ memberIdOrEmail: person.id, postId: randomUUID() })}::jsonb)`;
+
   // A subscription made for the user rather than a workspace, as Better
   // Auth's Stripe plugin would without Peal's guard.
   yield* sql`INSERT INTO auth.subscription (plan, reference_id, status)
@@ -439,6 +449,14 @@ layer(IntegrationLive, {
         );
 
         assert.strictEqual(reasons, 0);
+
+        // So did the workspace and the ids of what staff changed as her,
+        // which would tie the events back to her.
+        const linked = yield* count(
+          sql`SELECT count(*)::int AS count FROM staff.audit_events WHERE target_id IS NULL AND (workspace_id IS NOT NULL OR object_ids <> '{}'::jsonb)`
+        );
+
+        assert.strictEqual(linked, 0);
 
         // What she did as staff keeps her id: the server answers for what
         // staff did to other people's accounts, a legitimate interest.

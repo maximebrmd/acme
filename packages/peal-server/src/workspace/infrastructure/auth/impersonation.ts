@@ -1,6 +1,6 @@
 import type { GenericEndpointContext } from "better-auth";
 import { APIError, getSessionFromCtx } from "better-auth/api";
-import { Schema } from "effect";
+import { Option, Schema } from "effect";
 
 // Better Auth's workspace routes that read, or change only the session that
 // calls them.
@@ -78,6 +78,137 @@ const isImpersonation = Schema.is(
     session: Schema.Struct({ impersonatedBy: Schema.NonEmptyString }),
   })
 );
+
+// What the guard reads of a session staff act as someone in.
+const decodeImpersonation = Schema.decodeUnknownOption(
+  Schema.Struct({
+    session: Schema.Struct({
+      activeOrganizationId: Schema.optional(Schema.NullOr(Schema.String)),
+      impersonatedBy: Schema.NonEmptyString,
+    }),
+    user: Schema.Struct({ id: Schema.NonEmptyString }),
+  })
+);
+
+// The routes that end the session staff act as someone in.
+const stopsImpersonating: ReadonlySet<string> = new Set([
+  "/admin/stop-impersonating",
+  "/sign-out",
+]);
+
+// The routes that are not GET but only read.
+const readsOnly: ReadonlySet<string> = new Set([
+  "/organization/check-slug",
+  "/organization/has-permission",
+]);
+
+/** A request to Better Auth's routes in a session staff act as someone in. */
+export interface ImpersonatedAuthRequest {
+  /** Whether it reads, changes something, or stops the impersonation. */
+  readonly kind: "change" | "read" | "stop";
+  /** The ids its body names (`organizationId`, `memberId`…), never more. */
+  readonly objectIds: Readonly<Record<string, string | undefined>>;
+  /** `auth:` and the route's path. */
+  readonly operation: string;
+  readonly staffId: string;
+  readonly userId: string;
+  /** The session's active workspace, or the one the body names. */
+  readonly workspaceId: string | null;
+}
+
+/**
+ * Checks a request in a session staff act as someone in, and records it:
+ * false when it must be refused, as its staff member is no longer staff.
+ */
+export type ImpersonationCheck = (
+  request: ImpersonatedAuthRequest
+) => Promise<boolean>;
+
+const kindOf = (
+  method: string,
+  path: string
+): ImpersonatedAuthRequest["kind"] => {
+  if (method === "GET" || method === "HEAD" || readsOnly.has(path)) {
+    return "read";
+  }
+
+  return stopsImpersonating.has(path) ? "stop" : "change";
+};
+
+// The ids a body of the sign-in service's routes may name. The audit log
+// keeps only values shaped like ids.
+const bodyIdFields = [
+  "invitationId",
+  "memberId",
+  "organizationId",
+  "referenceId",
+  "subscriptionId",
+  "teamId",
+  "userId",
+] as const;
+
+const bodyIdDecoders = bodyIdFields.map(
+  (name) =>
+    [
+      name,
+      Schema.decodeUnknownOption(Schema.Struct({ [name]: Schema.String })),
+    ] as const
+);
+
+/**
+ * Part of Better Auth's before hook: a request to its routes, sent by a
+ * browser, in a session staff act as someone in, goes through `check` before
+ * the route runs, which refuses it once the staff member is no longer
+ * staff, and records each change it asks for. Better Auth's calls from
+ * Peal's own API carry no request: the API's Authentication checked and
+ * recorded them.
+ */
+export const guardImpersonatedRequest = async (
+  ctx: GenericEndpointContext,
+  check: ImpersonationCheck
+): Promise<void> => {
+  const { request } = ctx;
+
+  if (request === undefined || !request.headers.has("cookie")) {
+    return;
+  }
+
+  // Refreshing is left to the route, which reads the session again or
+  // reuses this one: get-session would otherwise refresh it twice.
+  const found = decodeImpersonation(
+    await getSessionFromCtx(ctx, { disableRefresh: true })
+  );
+
+  if (Option.isNone(found)) {
+    return;
+  }
+
+  const { session, user } = found.value;
+
+  const objectIds: Readonly<Record<string, string | undefined>> =
+    Object.fromEntries(
+      bodyIdDecoders.flatMap(([name, decode]) =>
+        Option.toArray(decode(ctx.body)).map((fields) => [name, fields[name]])
+      )
+    );
+
+  const admitted = await check({
+    kind: kindOf(request.method, ctx.path),
+    objectIds,
+    operation: `auth:${ctx.path}`,
+    staffId: session.impersonatedBy,
+    userId: user.id,
+    workspaceId:
+      objectIds["organizationId"] ?? session.activeOrganizationId ?? null,
+  });
+
+  if (!admitted) {
+    throw APIError.from("UNAUTHORIZED", {
+      code: "IMPERSONATION_ENDED",
+      message: "The staff member acting as this account is no longer staff",
+    });
+  }
+};
 
 /** Part of Better Auth's before hook: refuses those routes to an impersonation. */
 export const refuseImpersonatedChanges = async (

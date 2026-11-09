@@ -57,6 +57,11 @@ export interface MediaRecord {
   readonly byteSize: number;
   readonly contentType: string;
   readonly createdAt: DateTime.Utc;
+  /**
+   * A link that downloads the file for a few days, for a file the store
+   * holds; null for one never uploaded, or refused.
+   */
+  readonly downloadUrl: string | null;
   readonly durationMs: number | null;
   readonly height: number | null;
   readonly id: string;
@@ -177,5 +182,11 @@ export interface StaffActionRecord {
   readonly action: string;
   readonly at: DateTime.Utc;
   readonly banExpiresAt: DateTime.Utc | null;
+  /** The ids a change staff made while acting as the user named. */
+  readonly objectIds: Readonly<Record<string, string>>;
+  /** What staff asked for while acting as the user, or stopped it with. */
+  readonly operation: string | null;
   readonly reason: string | null;
+  /** The workspace a change staff made while acting as the user was in. */
+  readonly workspaceId: string | null;
 }

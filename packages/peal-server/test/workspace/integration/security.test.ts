@@ -372,11 +372,16 @@ layer(MatrixLive, { excludeTestServices: true, timeout: "180 seconds" })(
 
           assert.strictEqual(me.user.id, member.id);
           assert.strictEqual(me.impersonatedBy, staff.id);
+          // Scheduling and publishing reach the member's real accounts.
           assert.notInclude(
             me.workspaces[0]?.permissions ?? [],
             "post:publish"
           );
-          assert.include(me.workspaces[0]?.permissions ?? [], "post:schedule");
+          assert.notInclude(
+            me.workspaces[0]?.permissions ?? [],
+            "post:schedule"
+          );
+          assert.include(me.workspaces[0]?.permissions ?? [], "post:create");
 
           const created = yield* app.request(apiKeys(workspaceId), {
             body: newKey,

@@ -1,4 +1,4 @@
-import { asc, count, desc, eq } from "drizzle-orm";
+import { asc, count, desc, eq, sql } from "drizzle-orm";
 import { DateTime, Effect, Layer, Option, Schema } from "effect";
 
 import { DatabaseError } from "#shared/application/database-error.ts";
@@ -30,9 +30,12 @@ const eventOf = (row: Row) =>
     at: DateTime.makeUnsafe(row.at),
     banExpiresAt: utc(row.banExpiresAt),
     id: row.id,
+    objectIds: row.objectIds,
+    operation: Option.fromNullOr(row.operation),
     reason: Option.fromNullOr(row.reason),
     staffId: Option.fromNullOr(row.staffId),
     targetId: Option.fromNullOr(row.targetId),
+    workspaceId: Option.fromNullOr(row.workspaceId),
   }).pipe(Effect.orDie);
 
 const date = (instant: DateTime.Utc) => DateTime.toDateUtc(instant);
@@ -89,9 +92,12 @@ export const DrizzleAuditLog = Layer.effect(
               Option.getOrNull
             ),
             id: event.id,
+            objectIds: event.objectIds,
+            operation: Option.getOrNull(event.operation),
             reason: Option.getOrNull(event.reason),
             staffId: Option.getOrNull(event.staffId),
             targetId: Option.getOrNull(event.targetId),
+            workspaceId: Option.getOrNull(event.workspaceId),
           })
           .pipe(
             Effect.mapError(failed),
@@ -120,21 +126,46 @@ export const DrizzleStaffRecords = Layer.effect(
 
           const events = yield* Effect.all(rows.map(eventOf));
 
+          // Who did it is left out: it is staff's.
           return events.map((event): StaffActionRecord => ({
             action: event.action,
             at: event.at,
             banExpiresAt: Option.getOrNull(event.banExpiresAt),
+            objectIds: event.objectIds,
+            operation: Option.getOrNull(event.operation),
             reason: Option.getOrNull(event.reason),
+            workspaceId: Option.getOrNull(event.workspaceId),
           }));
         }
       ),
       // What the user did as staff keeps their id: see the port.
       forgetUser: Effect.fn("StaffRecords.forgetUser")(
         function* forgetUser(userId) {
+          // The events about them, with what would tie them back: the
+          // workspace and the ids staff's changes named.
           yield* db
             .update(auditEvents)
-            .set({ reason: null, targetId: null })
+            .set({
+              objectIds: {},
+              reason: null,
+              targetId: null,
+              workspaceId: null,
+            })
             .where(eq(auditEvents.targetId, userId))
+            .pipe(Effect.mapError(failed));
+
+          // Their id wherever another event names it, as a member staff
+          // removed while acting as someone else.
+          const named = sql`select name, value from jsonb_each_text(${auditEvents.objectIds}) as named(name, value)`;
+
+          yield* db
+            .update(auditEvents)
+            .set({
+              objectIds: sql`coalesce((select jsonb_object_agg(name, value) from (${named}) as kept where value <> ${userId}), '{}'::jsonb)`,
+            })
+            .where(
+              sql`exists (select 1 from (${named}) as found where value = ${userId})`
+            )
             .pipe(Effect.mapError(failed));
         }
       ),

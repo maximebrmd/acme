@@ -1,6 +1,7 @@
 ---
 import { getRelativeLocaleUrl } from "astro:i18n";
 
+import { repositoryUrl } from "../config.ts";
 import type { Locale } from "../i18n/locales.ts";
 import { messages } from "../i18n/messages.ts";
 import { legalDocuments } from "../legal.ts";
@@ -39,6 +40,12 @@ const t = messages(locale);
     <div class="flex flex-col gap-4 sm:items-end">
       <LanguageLinks label={t.footer.language} locale={locale} path={path} />
       <p class="max-w-sm sm:text-right">{t.footer.license}</p>
+      <a
+        href={repositoryUrl}
+        class="hover:text-neutral-900 hover:underline dark:hover:text-neutral-100"
+      >
+        {t.footer.source}
+      </a>
     </div>
   </div>
 </footer>

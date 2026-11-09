@@ -18,6 +18,7 @@ import type { Member } from "peal-contract";
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import type { UserId } from "#shared/domain/ids.ts";
 import { Authenticate } from "#workspace/application/authenticate.ts";
+import { ImpersonationGuard } from "#workspace/application/impersonation-guard.ts";
 import { ResolveMember } from "#workspace/application/resolve-member.ts";
 import { StaffStanding } from "#workspace/application/staff-standing.ts";
 import type { Principal } from "#workspace/domain/principal.ts";
@@ -37,15 +38,32 @@ const forbidden = () => Effect.fail(new Forbidden());
 const as = (principal: Principal) =>
   Effect.provideService(CurrentPrincipal, toContractPrincipal(principal));
 
+// The ids a request's path names, but its workspace's, which the record
+// keeps apart.
+const objectIdsOf = (
+  params: Readonly<Record<string, string | undefined>>
+): Readonly<Record<string, string | undefined>> =>
+  Object.fromEntries(
+    Object.entries(params).filter(([name]) => name !== "workspaceId")
+  );
+
 /**
  * Authentication: a bearer token (an OAuth access token issued for the API,
  * or an API key), or the session cookies. Better Auth failing is a server
  * error, not a reason to refuse.
+ *
+ * A session staff act as someone in goes through the ImpersonationGuard
+ * here, before any handler runs: refused once the staff member is no longer
+ * staff, and every change it asks for recorded in the audit log under the
+ * staff member's name, with the endpoint and the ids its path names. Bearer
+ * tokens never act for staff: OAuth tokens carry no impersonation, and
+ * staff acting as someone may not grant a client access or create a key.
  */
 export const AuthenticationLive = Layer.effect(
   Authentication,
   Effect.gen(function* authentication() {
     const authenticate = yield* Authenticate;
+    const guard = yield* ImpersonationGuard;
 
     return Authentication.of({
       bearer: (httpEffect, { credential }) =>
@@ -67,7 +85,7 @@ export const AuthenticationLive = Layer.effect(
 
           return yield* httpEffect.pipe(as(principal));
         }),
-      session: (httpEffect) =>
+      session: (httpEffect, { endpoint, group }) =>
         Effect.gen(function* session() {
           const request = yield* HttpServerRequest.HttpServerRequest;
           const cookies = request.headers["cookie"];
@@ -97,6 +115,27 @@ export const AuthenticationLive = Layer.effect(
                 NotSignedIn: unauthenticated,
               })
             );
+
+          yield* guard.admit(principal).pipe(
+            Effect.catchTags({
+              AuthUnavailable: Effect.die,
+              DatabaseError: Effect.die,
+              DirectoryUnavailable: Effect.die,
+              NotSignedIn: unauthenticated,
+            })
+          );
+
+          if (write) {
+            const params = yield* HttpRouter.params;
+
+            yield* guard
+              .changed(principal, {
+                objectIds: objectIdsOf(params),
+                operation: `${group.identifier}.${endpoint.identifier}`,
+                workspaceId: decodeWorkspaceId(params["workspaceId"]),
+              })
+              .pipe(Effect.orDie);
+          }
 
           return yield* httpEffect.pipe(as(principal));
         }),

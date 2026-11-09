@@ -3,8 +3,15 @@
 Peal is a social media scheduling platform: teams write posts once, schedule
 them across platforms, and see how they perform, at [peal.social](https://peal.social). The
 source is public under the Functional Source License (FSL-1.1-ALv2, in
-[`LICENSE.md`](LICENSE.md)): anyone may self-host it, and each release becomes
-Apache-2.0 two years after it ships. Call it "fair source", not open source.
+[`LICENSE.md`](LICENSE.md)), with Peal as its licensor: anyone may self-host
+it, and each release becomes Apache-2.0 two years after it ships. Call it
+"fair source", not open source. The SDKs (`peal-sdk`) are
+Apache-2.0, as `peal-contract` is, which they are generated from, each
+with its own `LICENSE` and a `NOTICE` (Copyright 2026 Peal): keep anything an SDK user installs or generates from free of FSL
+code, so an SDK never depends on another workspace package but the contract.
+Every `package.json` names its licence (SPDX), the repository
+(https://github.com/peal-social/peal, with its folder), its homepage and where
+issues go; README.md's "Licensing" says which part is under which.
 
 Until its rename, the product carried the placeholder name "acme". That name
 is gone from the repository and must not come back, in any case or form; the
@@ -360,7 +367,35 @@ and no socket, for tests.
   (`workspace/domain/membership.ts`), and Better Auth refuses them every route
   that changes a workspace or the account (name, language, password,
   sessions), grants an OAuth client access or approves a device code
-  (`impersonation.ts`).
+  (`impersonation.ts`). They may write and edit drafts, not schedule or
+  publish them: a scheduled post goes out after the impersonation ends, to
+  the member's real accounts. What they write keeps the member as its author
+  (`author_id`), and the audit log keeps the staff member behind it.
+- Every request in an impersonation session goes through
+  `ImpersonationGuard` (`workspace/application/impersonation-guard.ts`)
+  before its handler, so no handler can skip it: `Authentication` (session
+  cookies) for Peal's API, and Better Auth's before hook
+  (`guardImpersonatedRequest`, browser requests only: its calls from Peal's
+  API carry no request) for its routes. The guard reads the staff member's
+  standing fresh on every request, reads included; once they are no longer
+  staff or are banned, it deletes every session they impersonate in
+  (`ImpersonationSessions`), records each end and answers 401, so removing
+  the role in the database works at once. Each change it records
+  (`impersonatedChange`) holds the staff member, the account, the
+  workspace, the operation (`group.endpoint` from the contract, or
+  `auth:/path`) and the ids the path or the body named (`objectIds`, only
+  id-shaped values), recorded before the handler runs, refused or not;
+  never a body or a query. Reads are not recorded. Stopping
+  (`/admin/stop-impersonating`, `/sign-out`) records `stopImpersonating`;
+  a ban or a sign-out everywhere that ends impersonations records
+  `impersonationEnded` for each (`AccountModeration` answers with them).
+  One left to run out is not recorded: it ends an hour after its
+  `impersonate` event. The guard reaches the audit log through
+  `ImpersonationLog`, which the staff context's `ImpersonationAudit` backs.
+  Bearer tokens never carry an impersonation, so MCP tools, the CLI and API
+  keys never act for staff. A new route that changes something under a
+  cookie session needs nothing more; one outside `Authentication` and
+  `/api/auth` must call the guard itself.
 - Workspaces and accounts are deleted through Peal's API only
   (`DeleteWorkspace`, `CloseAccount`): Better Auth's `/organization/delete`
   and the admin plugin's `/admin/remove-user` are disabled and its
@@ -380,17 +415,42 @@ and no socket, for tests.
   `test/workspace/integration/erasure.test.ts`, which fails on a table that
   does not say what becomes of its rows (deleted, left without the user, or
   kept because they name nobody).
-- `ContextRecords.eraseWorkspace` asks billing first: `BillingRecords`
-  refuses a workspace Stripe may still bill (`stillBills`, or a status the
-  Stripe plugin's `auth.subscription` holds that `billsAt` bills, as a
-  checkout can complete before Stripe's events come), before anything
-  goes, then expires the workspace's open Checkout Sessions at Stripe
+- Erasing workspaces takes two steps, as Stripe cannot be rolled back.
+  First, outside any transaction, `ContextRecords.settleWorkspaces` checks
+  every workspace the deletion erases: it refuses while one of their posts
+  goes out (`PostRecords.ensureErasable`), and, without the person's
+  agreement (`cancelSubscriptions`, in `DeleteWorkspaceSchema` and
+  `DeleteAccountSchema`), while Stripe may bill any of them, listing every
+  subscription at once. `BillingRecords.billedBy` finds what may bill
+  (`stillBills`, a status the Stripe plugin's `auth.subscription` holds that
+  `billsAt` bills, as a checkout can complete before Stripe's events come);
+  `settleWorkspace` then expires the workspace's open Checkout Sessions
   (`Checkouts`, which the workspace context's `StripeCheckoutsLive` backs),
-  and refuses still while Stripe itself holds a subscription that `billsAt`
-  bills (`Checkouts.atStripe`), as a checkout completed unseen leaves one.
-  `DeleteWorkspace` and `CloseAccount`, for the workspaces it deletes,
-  answer `WorkspaceSubscribed` (409), or `BillingUnavailable` (503) when
-  Stripe does not answer. Closing an account leaves the
+  refuses when Stripe itself holds a subscription that may bill
+  (`Checkouts.atStripe`, as a checkout completed unseen leaves one) and,
+  agreed, cancels each one once (`Checkouts.cancelBilled`, with an
+  idempotency key per workspace and subscription), at once,
+  `prorate: false` and `invoice_now: false`. `DeleteWorkspace` checks the
+  typed name before it. Then the erasure's transaction erases posts first,
+  which refuse while one goes out, and billing last, which asks Stripe again
+  and refuses while anything still bills, as a checkout completed in between
+  would. `DeleteWorkspace` and `CloseAccount` answer `WorkspaceSubscribed`
+  (409) with each subscription's workspace, plan and `paidUntil`, which the
+  web app's dialogs list (`SubscriptionCancellation`) until the box is
+  ticked. The period paid for is not refunded, except where the law gives
+  a refund (a consumer who withdraws within 14 days of subscribing): every
+  surface that says so says that too. The Stripe customer and its invoices
+  stay with Stripe (accounting law keeps invoices 10 years). Stripe's
+  event for a cancellation is recorded under the workspace's row
+  (`Checkouts.holdWorkspace`, FOR KEY SHARE, in `RecordSubscription`'s
+  transaction): one that comes during the erasure waits for it, then finds
+  no workspace and is left alone. Stripe not answering is
+  `BillingUnavailable` (503). A failure after settling, as the transaction
+  failing, leaves the workspaces, on the free plan once Stripe's events
+  come, and is logged; deleting them again cancels nothing more. The owner is emailed
+  (`AccountMail.workspaceDeleted`, `deleted`), saying what was cancelled,
+  and each erasure is logged by id (`event.name` `peal.erasure`) for the
+  restore runbook. Closing an account leaves the
   posts its user wrote in the workspaces that remain without an author
   (`PostRecords.forgetAuthor`: `author_id` has no foreign key), and drops the
   connections and account choices they had in progress
@@ -399,9 +459,16 @@ and no socket, for tests.
   Page's token rests on (`granted_by`), stay with their workspaces, which
   erasing deletes. `data_deletions` names nobody, and stays. In the staff
   audit log (`StaffRecords.forgetUser`), the events about the account lose
-  its id and the reason given; the events its user made as staff keep
+  its id, the reason given, their workspace and object ids, and its id
+  leaves the object ids of every other event; the events its user made as staff keep
   their id, a legitimate interest: the operator answers for what staff did
-  to other people's accounts. YouTube's upload journal goes with its
+  to other people's accounts; their workspace, operation and object ids
+  stay too. The log keeps an event 12 months, impersonation records
+  included, a ban or unban 3 years or 12 months past a longer ban's end, a
+  ban until lifted as long as it holds: 12 months past a later unban, or
+  once its account is closed (`staff/domain/audit-retention.ts`); the `staff.audit-retention` cron
+  (`PurgeAuditLog`) deletes the rest daily, the log's one deletion besides
+  `forgetUser`. YouTube's upload journal goes with its
   publication calls, and `publishing.quota_usage`, the server's daily
   units, names nobody.
 - `AccountData` exports what is tied to the user, the posts they wrote in
@@ -410,10 +477,15 @@ and no socket, for tests.
   billing state (plan and subscription statuses, never a card or Stripe's
   ids): those `CloseAccount` deletes. Posts come with each target's
   platform options and whether YouTube kept the video private, and the
-  export lists what staff did to the account (action, time, reason),
+  export lists what staff did to the account (action, time, reason, and
+  for changes made as it the operation, workspace and object ids),
   without who did it. Sessions staff opened to impersonate
   the user are left out, as Better Auth's own list leaves them out: their
-  browser and address are staff's. Closing an account is refused while its
+  browser and address are staff's. Each media file the store holds comes
+  with a link that downloads it for 7 days (`downloadUrl`), and each export
+  is emailed to the account (`AccountMail.exported`, saying web or command
+  line), so a copy taken with a stolen session or a phished device code is
+  noticed. Closing an account is refused while its
   user alone owns a workspace others use (`planClosure`), and its
   confirmation is emailed in their language. `PasswordCheck` checks a
   password three times within 10 seconds per account at most, as Better
@@ -874,9 +946,12 @@ and no socket, for tests.
   when `STRIPE_AUTOMATIC_TAX` is on. A workspace Stripe may still bill
   (`billsAt`: any status but cancelled or incomplete, unpaid and paused
   included, in `billing.subscriptions` or the plugin's `auth.subscription`)
-  is not deleted: Peal's own deletions ask `BillingRecords` first (see
-  Accounts and access), which also expires its open checkouts. Better
-  Auth's `/organization/delete` is disabled, so its hook refuses nothing.
+  is deleted only once the person agrees to cancel its subscriptions, which
+  `BillingRecords` then does at Stripe at once, without proration (see
+  Accounts and access); it also expires its open checkouts. Better Auth's
+  `/organization/delete` is disabled, so its hook refuses nothing. To stop
+  paying and keep the workspace, members use the portal, which cancels at
+  the period's end.
 - Never call Stripe in tests: checkout and the portal run against
   stripe-mock, and webhooks post the payloads in
   `test/billing/fixtures/webhooks`, signed in the test.
@@ -963,7 +1038,9 @@ and no socket, for tests.
   `reports-tools.ts`, `people-tools.ts`) and its handlers beside it, merged
   into `PealTools`. Annotate every tool with `reading`, or
   `changing({ destructive, idempotent, openWorld })` from `annotations.ts`,
-  and say in its description what it changes. Refusals are `ToolRefused`,
+  and say in its description what it changes. `list_members` answers
+  members' email addresses only with `includeEmails`: hand an AI model no
+  more personal data than the task needs. Refusals are `ToolRefused`,
   with a message the user can act on (`refusals.ts`). The account's own
   data (its export, its applications) has no tool.
 - What the web app's composer sends, the CLI and the tools send too: a
@@ -1355,6 +1432,12 @@ self-hoster needs only Postgres and an S3-compatible store:
   the staff console's `/api/admin`, `/admin`, `/en/admin` and `/fr/admin`) and the
   sandbox, and cloudflared checks the Access token on those routes too. Caddy fronts the
   stack for self-hosters.
+- Staff have full access to Grafana: in production, Grafana signs in whoever
+  its Access application lets through (the staff) as an organisation Admin,
+  from the Access token (`GF_AUTH_JWT_ROLE_ATTRIBUTE_PATH` in
+  `compose.production.yaml`), and sets the role again at each sign-in. Who
+  gets in is the Access policy's business; do not grant roles in Grafana by
+  hand.
 - Change the servers only through the playbooks in `packages/peal-infra`; SSH
   is for reading (`sudo peal-compose ps`). Run `site.yml` with `--check
   --diff` before applying it, and keep every task idempotent: a second run
@@ -1379,19 +1462,33 @@ self-hoster needs only Postgres and an S3-compatible store:
   `uptime`): Gatus, its configuration generated from the inventory, checks
   the public endpoints of production and the sandbox and alerts on a
   Telegram bot of its own; Caddy is its only public entry, for the heartbeat
-  production's Grafana posts every few minutes. It shares no secret, tunnel
-  or network with them: it generates the heartbeat token, which production
-  holds as a credential (`PEAL_HEARTBEAT_TOKEN`). Keep `uptime_environments`
-  equal to each environment's host names; Gatus's dashboard stays on
-  127.0.0.1, and a public status page is the owner's decision.
+  production's Grafana posts every few minutes, on `uptime_hostname`, and
+  for the public status page, on `uptime_status_hostname`
+  (status.peal.social, `uptime_public_status: true`). It shares no secret,
+  tunnel or network with them: it generates the heartbeat token, which
+  production holds as a credential (`PEAL_HEARTBEAT_TOKEN`). Keep
+  `uptime_environments` equal to each environment's host names. Gatus
+  publishes its dashboard on 127.0.0.1 only. The status page is a Gatus of
+  its own (`status`, `status-config.yaml.j2`) that checks the
+  customer-facing endpoints of the environments marked `public`
+  (production; never one behind Access), with no alert or secret, and
+  hides URLs, conditions and errors; Caddy serves it by GET and HEAD alone
+  (`status.caddy`), and the heartbeats never go through its name. Both names have DNS
+  records Cloudflare does not proxy (the infra README's "The status page").
 - Secrets are generated on the server and stay there. Do not copy them, print
   them, or give the server's credentials to other systems, GitHub included:
   `release.yml` builds the images on the machine running Ansible and uploads
   them. Credentials outside services issue come from a Git-ignored vault or
   are written on the server, and Ansible checks them by name only.
+- Telemetry keeps logs 31 days (Loki), traces 14 days
+  (`config/production/tempo.yaml`, whose `block_retention` is set for both
+  the backend scheduler and worker) and metrics 30 days, as the privacy
+  policy says: change both together.
 - Postgres archives its write-ahead log and is backed up to R2 with
   pgBackRest; the backup passphrase is the one secret kept outside the server
-  too. `runbooks/restore-database.md` restores it. The server migrates when it
+  too. R2 buckets are in its EU jurisdiction (`<account>.eu.r2…`). A restore
+  brings back deletions made since its point in time: the runbook lists them
+  from the `peal.erasure` logs, which nothing yet applies again. `runbooks/restore-database.md` restores it. The server migrates when it
   starts, so write migrations that the previous release can still run
   against, and roll back by releasing the previous commit.
 - Changing a server's size or adding any paid resource needs the owner's

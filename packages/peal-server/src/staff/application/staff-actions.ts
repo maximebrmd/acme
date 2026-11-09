@@ -15,7 +15,7 @@ import type { StaffReason } from "#staff/domain/staff-reason.ts";
 import type { ModerationFailed } from "./moderation-failed.ts";
 import { AuditLog } from "./ports/audit-log.ts";
 import { Moderation } from "./ports/moderation.ts";
-import type { StaffMember } from "./ports/moderation.ts";
+import type { EndedImpersonation, StaffMember } from "./ports/moderation.ts";
 import { StaffDirectory } from "./ports/staff-directory.ts";
 import type { UserProfile } from "./ports/staff-directory.ts";
 import { UserNotFound } from "./user-not-found.ts";
@@ -33,8 +33,9 @@ type Failure = ActionRefused | DatabaseError | ModerationFailed | UserNotFound;
  * What staff do to accounts. Each action reads the account, checks the
  * rules (`mayAct`), records itself in the audit log, and only then is
  * carried out: nothing staff do goes unrecorded, and a record whose action
- * then failed says what staff asked for. Its callers are staff, which the
- * API's StaffAccess checked.
+ * then failed says what staff asked for. A ban or a sign-out that ends
+ * sessions staff were acting as someone in records each of them as ended.
+ * Its callers are staff, which the API's StaffAccess checked.
  */
 export class StaffActions extends Context.Service<
   StaffActions,
@@ -102,6 +103,30 @@ export class StaffActions extends Context.Service<
         return target;
       });
 
+      // The impersonations an action ended, each recorded under the staff
+      // member who was acting.
+      const recordEnded = (ended: readonly EndedImpersonation[]) =>
+        Effect.forEach(
+          ended,
+          Effect.fnUntraced(function* endedImpersonation({
+            staffId,
+            userId,
+          }: EndedImpersonation) {
+            yield* log.record(
+              new AuditEvent({
+                action: "impersonationEnded",
+                at: yield* DateTime.now,
+                banExpiresAt: Option.none(),
+                id: yield* newId(AuditEventIdSchema),
+                reason: Option.none(),
+                staffId: Option.some(staffId),
+                targetId: Option.some(userId),
+              })
+            );
+          }),
+          { discard: true }
+        ).pipe(Effect.provideContext(ports));
+
       const act = <A>(
         action: Action,
         request: Request,
@@ -126,7 +151,10 @@ export class StaffActions extends Context.Service<
               staff: action.staff,
               userId: action.userId,
             })
-          ).pipe(Effect.withSpan("StaffActions.ban")),
+          ).pipe(
+            Effect.flatMap(recordEnded),
+            Effect.withSpan("StaffActions.ban")
+          ),
         impersonate: (action) =>
           act(action, { action: "impersonate" }, () =>
             moderation.impersonate(action)
@@ -138,7 +166,10 @@ export class StaffActions extends Context.Service<
         revokeSessions: (action) =>
           act(action, { action: "revokeSessions" }, () =>
             moderation.revokeSessions(action)
-          ).pipe(Effect.withSpan("StaffActions.revokeSessions")),
+          ).pipe(
+            Effect.flatMap(recordEnded),
+            Effect.withSpan("StaffActions.revokeSessions")
+          ),
         unban: (action) =>
           act(action, { action: "unban" }, () => moderation.unban(action)).pipe(
             Effect.withSpan("StaffActions.unban")

@@ -42,16 +42,16 @@ These categories follow the service as it is designed. [Confirm each one against
 
 ## Purposes and legal bases
 
-| Purpose                                                                 | Data                                                 | Legal basis (GDPR Article 6(1))                                                                                                                                                           |
-| ----------------------------------------------------------------------- | ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Provide the service: accounts, organisations, scheduling and publishing | Account, organisation, connected accounts, content   | Performance of a contract, point (b)                                                                                                                                                      |
-| Show how your posts perform                                             | Connected accounts, performance data                 | Performance of a contract, point (b)                                                                                                                                                      |
-| Bill your subscription and keep accounting records                      | Billing data                                         | Performance of a contract, point (b); legal obligation, point (c)                                                                                                                         |
-| Send service emails, such as the notifications you turn on              | Account data, communications                         | Performance of a contract, point (b)                                                                                                                                                      |
-| Keep the service secure and prevent abuse                               | Technical data                                       | Legitimate interests, point (f): [Describe the interest]                                                                                                                                  |
-| Record what Peal's staff do to accounts, and answer for it              | Account identifiers, the action, its time and reason | Legitimate interests, point (f): accountability for staff's access to accounts, kept after an account or a staff member leaves, without the reason once the account it concerns is closed |
-| Measure visits to this website                                          | [Data collected by the analytics tool]               | [Legitimate interests, point (f), or consent, point (a)]                                                                                                                                  |
-| [Other purposes, such as AI features]                                   | [Data]                                               | [Legal basis]                                                                                                                                                                             |
+| Purpose                                                                 | Data                                                                                                                                                                          | Legal basis (GDPR Article 6(1))                                                                                                                                                           |
+| ----------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Provide the service: accounts, organisations, scheduling and publishing | Account, organisation, connected accounts, content                                                                                                                            | Performance of a contract, point (b)                                                                                                                                                      |
+| Show how your posts perform                                             | Connected accounts, performance data                                                                                                                                          | Performance of a contract, point (b)                                                                                                                                                      |
+| Bill your subscription and keep accounting records                      | Billing data                                                                                                                                                                  | Performance of a contract, point (b); legal obligation, point (c)                                                                                                                         |
+| Send service emails, such as the notifications you turn on              | Account data, communications                                                                                                                                                  | Performance of a contract, point (b)                                                                                                                                                      |
+| Keep the service secure and prevent abuse                               | Technical data                                                                                                                                                                | Legitimate interests, point (f): [Describe the interest]                                                                                                                                  |
+| Record what Peal's staff do to accounts, and answer for it              | Account identifiers, the action, its time and reason, and for each change staff make while acting as an account, the operation, workspace and ids it named, never its content | Legitimate interests, point (f): accountability for staff's access to accounts, kept after an account or a staff member leaves, without the reason once the account it concerns is closed |
+| Measure visits to this website                                          | [Data collected by the analytics tool]                                                                                                                                        | [Legitimate interests, point (f), or consent, point (a)]                                                                                                                                  |
+| [Other purposes, such as AI features]                                   | [Data]                                                                                                                                                                        | [Legal basis]                                                                                                                                                                             |
 
 Where processing relies on legitimate interests, you can object to it at any time (see Your rights).
 
@@ -77,20 +77,23 @@ Personal data is shared with the service providers that help run Peal and, where
 
 The platforms you publish to receive the content you publish there. They process it as controllers, under their own privacy policies.
 
+Members of an organisation see each other's name, email address and role. A member can let an application they choose, such as an AI assistant connected through MCP, read what they can see in the organisation, this list included; that application's provider processes it under its own terms. Peal's MCP tools give members' email addresses only when the application asks for them.
+
 ## International transfers
 
 [State whether personal data leaves the European Economic Area, to which countries, and the safeguard for each transfer, such as an adequacy decision or standard contractual clauses.]
 
 ## Retention
 
-| Data                          | Kept for                                                       |
-| ----------------------------- | -------------------------------------------------------------- |
-| Account and organisation data | [Period]                                                       |
-| Content and performance data  | [Period]                                                       |
-| Connected account tokens      | [Period]                                                       |
-| Billing records               | [Period required by accounting law]                            |
-| Technical logs                | [Period]                                                       |
-| Backups                       | [Period after which deleted data no longer appears in backups] |
+| Data                                | Kept for                                                                                                                                                                          |
+| ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Account and organisation data       | [Period]                                                                                                                                                                          |
+| Content and performance data        | [Period]                                                                                                                                                                          |
+| Connected account tokens            | [Period]                                                                                                                                                                          |
+| Billing records                     | [Period required by accounting law]                                                                                                                                               |
+| Technical logs                      | Server logs 31 days, traces 14 days, metrics 30 days                                                                                                                              |
+| Record of staff actions on accounts | 12 months; a ban and its lifting 3 years, or 12 months after a longer ban ends, and a ban until lifted as long as it holds. Closing an account removes it from the record at once |
+| Backups                             | Deleted data leaves the encrypted backups within 5 weeks. A backup is restored only to recover from an incident                                                                   |
 
 ## Your rights
 
@@ -104,7 +107,7 @@ Under the GDPR, you have the right to:
 - object to processing based on legitimate interests (Article 21);
 - withdraw your consent at any time where processing relies on it, without affecting the processing that came before (Article 7(3)).
 
-To exercise these rights, write to privacy@peal.social. The GDPR requires an answer within one month, which can be extended in some cases (Article 12(3)). [Describe how a requester's identity is checked.]
+You can download a copy of your data at any time from your account settings, or with the command line; we email you each time a copy is downloaded, so a copy someone else took does not go unnoticed. To exercise these rights, write to privacy@peal.social. The GDPR requires an answer within one month, which can be extended in some cases (Article 12(3)). [Describe how a requester's identity is checked.]
 
 You also have the right to lodge a complaint with a supervisory authority, in particular in the EU country where you live, where you work or where you think the infringement took place (Article 77). [Name the lead supervisory authority.]
 
