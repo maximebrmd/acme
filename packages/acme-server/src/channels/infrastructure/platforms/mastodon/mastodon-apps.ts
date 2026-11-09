@@ -1,0 +1,122 @@
+import { and, eq } from "drizzle-orm";
+import type { Redacted } from "effect";
+import { Context, DateTime, Effect, Layer, Option, Schema } from "effect";
+
+import type { MissingTokenKey } from "#channels/application/missing-token-key.ts";
+import {
+  appSecretContext,
+  EncryptedTokenSchema,
+  TokenCipher,
+} from "#channels/application/token-cipher.ts";
+import { mastodonApps } from "#channels/infrastructure/schema.ts";
+import { DatabaseError } from "#shared/application/database-error.ts";
+import { Drizzle } from "#shared/infrastructure/database.ts";
+
+/** Acme's app on one instance, for one redirect URI. */
+export interface MastodonApp {
+  readonly clientId: string;
+  readonly clientSecret: Redacted.Redacted;
+  readonly instance: string;
+  readonly redirectUri: string;
+  readonly scopes: string;
+}
+
+const decodeSecret = Schema.decodeUnknownEffect(EncryptedTokenSchema);
+
+const failed = (cause: unknown) => new DatabaseError({ cause });
+
+/**
+ * The apps Acme registered on Mastodon instances: registered once per
+ * instance and redirect URI, then reused by every workspace. Instances no
+ * longer delete unused apps (since 4.3), so they are kept for good.
+ */
+export class MastodonApps extends Context.Service<
+  MastodonApps,
+  {
+    readonly registered: (
+      instance: string,
+      redirectUri: string
+    ) => Effect.Effect<Option.Option<MastodonApp>, DatabaseError>;
+    /**
+     * Keeps a newly registered app, unless another process registered one
+     * first: the one kept is returned, and the other is never used.
+     */
+    readonly save: (
+      app: MastodonApp
+    ) => Effect.Effect<MastodonApp, DatabaseError | MissingTokenKey>;
+  }
+>()("acme-server/channels/infrastructure/MastodonApps") {
+  static readonly layer = Layer.effect(
+    MastodonApps,
+    Effect.gen(function* MastodonAppsLive() {
+      const db = yield* Drizzle;
+      const cipher = yield* TokenCipher;
+
+      const registered = Effect.fn("MastodonApps.registered")(
+        function* registered(instance: string, redirectUri: string) {
+          const [row] = yield* db
+            .select()
+            .from(mastodonApps)
+            .where(
+              and(
+                eq(mastodonApps.instance, instance),
+                eq(mastodonApps.redirectUri, redirectUri)
+              )
+            )
+            .pipe(Effect.mapError(failed));
+
+          if (row === undefined) {
+            return Option.none<MastodonApp>();
+          }
+
+          const clientSecret = yield* decodeSecret(row.clientSecret).pipe(
+            Effect.flatMap((encrypted) =>
+              cipher.decryptSecret(encrypted, appSecretContext(instance))
+            ),
+            Effect.orDie
+          );
+
+          const app: MastodonApp = {
+            clientId: row.clientId,
+            clientSecret,
+            instance,
+            redirectUri,
+            scopes: row.scopes,
+          };
+
+          return Option.some(app);
+        }
+      );
+
+      const save = Effect.fn("MastodonApps.save")(function* save(
+        app: MastodonApp
+      ) {
+        const clientSecret = yield* cipher.encryptSecret(
+          app.clientSecret,
+          appSecretContext(app.instance)
+        );
+
+        const now = yield* DateTime.now;
+
+        yield* db
+          .insert(mastodonApps)
+          .values({
+            clientId: app.clientId,
+            clientSecret,
+            createdAt: DateTime.toDateUtc(now),
+            instance: app.instance,
+            redirectUri: app.redirectUri,
+            scopes: app.scopes,
+          })
+          .onConflictDoNothing()
+          .pipe(Effect.mapError(failed));
+
+        const kept = yield* registered(app.instance, app.redirectUri);
+
+        return Option.getOrElse(kept, () => app);
+      });
+
+      return MastodonApps.of({ registered, save });
+    })
+  );
+}

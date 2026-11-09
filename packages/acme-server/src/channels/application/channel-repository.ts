@@ -1,5 +1,5 @@
 import { Context } from "effect";
-import type { Effect, Option } from "effect";
+import type { DateTime, Duration, Effect, Option } from "effect";
 
 import type { Channel } from "#channels/domain/channel.ts";
 import type { Platform } from "#channels/domain/platform.ts";
@@ -31,9 +31,38 @@ export class ChannelRepository extends Context.Service<
       platform: Platform,
       accountId: string
     ) => Effect.Effect<Option.Option<Channel>, DatabaseError>;
+    /** Any workspace's channel, for jobs that act on channels by id. */
+    readonly get: (
+      channelId: ChannelId
+    ) => Effect.Effect<Option.Option<Channel>, DatabaseError>;
     readonly credentials: (
       channelId: ChannelId
     ) => Effect.Effect<Option.Option<ChannelCredentials>, DatabaseError>;
+    /**
+     * Active channels whose token renews itself and expires before the
+     * cutoff given for their platform, soonest first, at most `limit`.
+     * Platforms without a cutoff are left out.
+     */
+    readonly dueForRefresh: (request: {
+      readonly cutoffs: readonly {
+        readonly before: DateTime.Utc;
+        readonly platform: Platform;
+      }[];
+      readonly limit: number;
+    }) => Effect.Effect<readonly Channel[], DatabaseError>;
+    /**
+     * Channels the user must reconnect, at most `limit`: the active ones
+     * whose token cannot be renewed and is within `leadTime` of expiring, or
+     * half its lifetime when that is shorter (`reconnectWarningFrom` in the
+     * domain), expired or not; then those that already need a refresh. Each
+     * group comes oldest change first. The active ones come first, so the
+     * marked channels nobody reconnects never crowd them out.
+     */
+    readonly needingReconnect: (request: {
+      readonly leadTime: Duration.Duration;
+      readonly limit: number;
+      readonly now: DateTime.Utc;
+    }) => Effect.Effect<readonly Channel[], DatabaseError>;
     /**
      * Saves a newly connected channel with its tokens. Fails with
      * ChannelAlreadyConnected, saving nothing, when the workspace already has

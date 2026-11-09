@@ -2,6 +2,7 @@ import { Config, Context, Effect, Layer, Redacted, Schema } from "effect";
 
 import {
   isProduction,
+  publicUrlConfig,
   requiredInProduction,
 } from "#shared/infrastructure/environment.ts";
 
@@ -11,9 +12,6 @@ import {
 const developmentSecret = Redacted.make(
   "acme-development-secret-9f3c1e7a4b2d8f6e0a5c3b1d7e9f2a4c"
 );
-
-// The web app's address in development (`nx run acme-web:dev`).
-const developmentPublicUrl = "http://localhost:3001";
 
 // A comma-separated list, without the spaces around its entries or empty ones.
 const trimmed = (entries: readonly string[]): readonly string[] =>
@@ -52,10 +50,7 @@ export const authSettingsConfig = Config.all({
   production: isProduction,
   // The origin people open Acme at. Better Auth lives under /api/auth there,
   // and writes the links in its emails from it.
-  publicUrl: requiredInProduction(
-    Config.URL("PUBLIC_URL"),
-    new URL(developmentPublicUrl)
-  ).pipe(Config.map((url) => url.origin)),
+  publicUrl: publicUrlConfig,
   requireEmailVerification: Config.Boolean(
     "AUTH_REQUIRE_EMAIL_VERIFICATION"
   ).pipe(Config.withDefault(true)),

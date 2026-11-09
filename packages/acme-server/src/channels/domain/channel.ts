@@ -170,6 +170,27 @@ export const reconnect = (
     account
   );
 
+/**
+ * The platform renewed the channel's token without the user: the channel
+ * takes the new token's lifetime and the scopes granted with it, and keeps
+ * its status and profile.
+ */
+export const renewToken = (
+  channel: Channel,
+  renewed: {
+    readonly scopes: readonly string[];
+    readonly token: TokenLifetime;
+  },
+  now: DateTime.Utc
+): Channel =>
+  withChange(channel, channel.status, now, {
+    avatarUrl: channel.avatarUrl,
+    displayName: channel.displayName,
+    handle: channel.handle,
+    scopes: renewed.scopes,
+    token: renewed.token,
+  });
+
 /** Turns a channel off. It keeps whether its token needs a refresh. */
 export const disable = (channel: Channel, now: DateTime.Utc): Channel =>
   channel.status._tag === "disabled"

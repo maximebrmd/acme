@@ -10,15 +10,18 @@ import { Accounts } from "#workspace/application/accounts.ts";
 import { ApiKeys } from "#workspace/application/api-keys.ts";
 import { Authenticate } from "#workspace/application/authenticate.ts";
 import { ResolveMember } from "#workspace/application/resolve-member.ts";
+import { WorkspaceContacts } from "#workspace/application/workspace-contacts.ts";
 import { ApiKeyIssuerLive } from "#workspace/infrastructure/auth/api-key-issuer.ts";
 import { BetterAuthLive } from "#workspace/infrastructure/auth/better-auth.ts";
 import { AuthGatewayLive } from "#workspace/infrastructure/auth/gateway.ts";
 import { AuthSettings } from "#workspace/infrastructure/auth/settings.ts";
 import { MemberDirectoryLive } from "#workspace/infrastructure/drizzle-member-directory.ts";
+import { WorkspaceRosterLive } from "#workspace/infrastructure/drizzle-workspace-roster.ts";
 
 const AdaptersLive = Layer.mergeAll(
   AuthGatewayLive,
   MemberDirectoryLive,
+  WorkspaceRosterLive,
   ApiKeyIssuerLive
 );
 
@@ -26,7 +29,8 @@ const UseCasesLive = Layer.mergeAll(
   Accounts.layer,
   ApiKeys.layer,
   Authenticate.layer,
-  ResolveMember.layer
+  ResolveMember.layer,
+  WorkspaceContacts.layer
 );
 
 /**

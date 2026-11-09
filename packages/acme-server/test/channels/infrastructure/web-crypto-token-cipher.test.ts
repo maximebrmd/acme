@@ -3,10 +3,15 @@ import { ConfigProvider, Effect, Layer, Redacted, Result } from "effect";
 import { Base64, Base64Url } from "effect/encoding";
 
 import {
+  appSecretContext,
+  connectAttemptContext,
   EncryptedTokenSchema,
   TokenCipher,
 } from "#channels/application/token-cipher.ts";
-import type { EncryptedToken } from "#channels/application/token-cipher.ts";
+import type {
+  EncryptedToken,
+  SecretContext,
+} from "#channels/application/token-cipher.ts";
 import { TokenCipherLive } from "#channels/infrastructure/web-crypto-token-cipher.ts";
 import { ChannelIdSchema } from "#shared/domain/ids.ts";
 
@@ -257,6 +262,50 @@ describe("a server without token keys", () => {
 
       assert.strictEqual(encrypted._tag, "MissingTokenKey");
       assert.deepInclude(decrypted, { _tag: "UnknownTokenKey", keyId: "k1" });
+    })
+  );
+});
+
+const secret = Redacted.make("synthetic-pkce-verifier-0123456789");
+
+const sealedFor = (context: SecretContext) =>
+  TokenCipher.use((cipher) => cipher.encryptSecret(secret, context)).pipe(
+    Effect.provide(keyring(`k1:${firstKey}`))
+  );
+
+const openedFor = (encrypted: EncryptedToken, context: SecretContext) =>
+  TokenCipher.use((cipher) => cipher.decryptSecret(encrypted, context)).pipe(
+    Effect.provide(keyring(`k1:${firstKey}`))
+  );
+
+describe("secrets that belong to no channel", () => {
+  it.effect("decrypt for the context they were encrypted for", () =>
+    Effect.gen(function* roundTrips() {
+      const context = connectAttemptContext("state-1");
+      const encrypted = yield* sealedFor(context);
+
+      assert.isTrue(encrypted.startsWith("k1."));
+      assert.notInclude(encrypted, "verifier");
+      assert.strictEqual(
+        Redacted.value(yield* openedFor(encrypted, context)),
+        Redacted.value(secret)
+      );
+    })
+  );
+
+  it.effect("decrypt for no other context, nor as a channel's token", () =>
+    Effect.gen(function* bound() {
+      const encrypted = yield* sealedFor(connectAttemptContext("state-1"));
+
+      for (const opened of [
+        openedFor(encrypted, connectAttemptContext("state-2")),
+        openedFor(encrypted, appSecretContext("https://mastodon.example")),
+        decryptWith(`k1:${firstKey}`, encrypted),
+      ]) {
+        const failure = yield* Effect.flip(opened);
+
+        assert.strictEqual(failure._tag, "TokenAuthenticationFailed");
+      }
     })
   );
 });

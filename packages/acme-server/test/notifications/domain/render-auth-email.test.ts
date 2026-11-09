@@ -3,12 +3,10 @@ import { Predicate, Schema } from "effect";
 
 import type { AuthEmail } from "#notifications/domain/auth-email.ts";
 import type { EmailCatalog } from "#notifications/domain/email-catalog.ts";
+import { escapeHtml } from "#notifications/domain/email-layout.ts";
 import { english } from "#notifications/domain/english.ts";
 import { french } from "#notifications/domain/french.ts";
-import {
-  escapeHtml,
-  renderAuthEmail,
-} from "#notifications/domain/render-auth-email.ts";
+import { renderAuthEmail } from "#notifications/domain/render-auth-email.ts";
 
 const url =
   "https://app.example.test/api/auth/verify-email?token=abc&callbackURL=%2F";

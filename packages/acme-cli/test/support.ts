@@ -1,6 +1,7 @@
 import {
   Api,
   Authentication,
+  OAuthClientNotPublished,
   Unauthenticated,
   WorkspaceAccess,
   WorkspaceNotFound,
@@ -103,11 +104,24 @@ const SignedInGroupsLive = Layer.mergeAll(
   ),
   HttpApiBuilder.group(Api, "channels", (handlers) =>
     handlers.handleAll({
+      completeConnect: () => refusing,
+      connect: () => refusing,
       disconnect: () => refusing,
       list: () => refusing,
+      reconnect: () => refusing,
     })
   )
 ).pipe(Layer.provideMerge(SecurityLive));
+
+// Public, like the server's: this one runs no Bluesky client.
+const notPublished = Effect.fail(new OAuthClientNotPublished());
+
+const ChannelOAuthLive = HttpApiBuilder.group(Api, "channelOAuth", (handlers) =>
+  handlers.handleAll({
+    blueskyClientMetadata: () => notPublished,
+    blueskyJwks: () => notPublished,
+  })
+);
 
 // An Acme server in memory: acme-contract served by test handlers, without
 // a socket. The CLI never imports acme-server, so its tests answer for it.
@@ -127,6 +141,7 @@ export const inMemoryServer = (health: Effect.Effect<void>) =>
                 )
               ),
               Layer.provide(SignedInGroupsLive),
+              Layer.provide(ChannelOAuthLive),
               Layer.provide(HttpServer.layerServices)
             ),
             { disableLogger: true }

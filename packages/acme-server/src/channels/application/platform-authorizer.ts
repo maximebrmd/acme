@@ -1,0 +1,152 @@
+import { Context } from "effect";
+import type { DateTime, Effect, Option, Redacted } from "effect";
+
+import type { AvatarUrl } from "#channels/domain/avatar-url.ts";
+import type { Channel } from "#channels/domain/channel.ts";
+import type { ConnectAttempt } from "#channels/domain/connect-attempt.ts";
+import type { InvalidInstance } from "#channels/domain/invalid-instance.ts";
+import type { Platform } from "#channels/domain/platform.ts";
+import type { TokenPolicy } from "#channels/domain/token-policy.ts";
+import type { DatabaseError } from "#shared/application/database-error.ts";
+import type { PlatformUnavailable } from "#shared/domain/platform-unavailable.ts";
+import type { TokenExpired } from "#shared/domain/token-expired.ts";
+
+import type { AuthorizationDenied } from "./authorization-denied.ts";
+import type { AuthorizationFailed } from "./authorization-failed.ts";
+import type { InstanceNotAllowed } from "./instance-not-allowed.ts";
+import type { InvalidHandle } from "./invalid-handle.ts";
+import type { MissingTokenKey } from "./missing-token-key.ts";
+
+/** What a member asked to connect. */
+export interface AuthorizationRequest {
+  /** A handle, DID or server to sign in with (Bluesky). */
+  readonly handle: Option.Option<string>;
+  /** The server the account lives on, as typed (Mastodon). */
+  readonly instance: Option.Option<string>;
+  /** The channel being reconnected, whose account the sign-in is for. */
+  readonly reconnecting: Option.Option<Channel>;
+}
+
+/** A sign-in the platform now waits on. */
+export interface PendingAuthorization {
+  /** The platform's page to send the browser to. */
+  readonly authorizationUrl: string;
+  /** The server the sign-in happens on, for platforms with many. */
+  readonly instance: Option.Option<string>;
+  /**
+   * What completing the sign-in needs, which nobody else may read: a PKCE
+   * verifier, or the OAuth client's own pending state. It is stored
+   * encrypted until the callback.
+   */
+  readonly secret: Redacted.Redacted;
+  /** Names the sign-in in the platform's callback. */
+  readonly state: string;
+}
+
+/** What the platform added to the callback page's address. */
+export interface AuthorizationCallback {
+  readonly code: Option.Option<string>;
+  readonly error: Option.Option<string>;
+  readonly issuer: Option.Option<string>;
+  readonly state: string;
+}
+
+/**
+ * Tokens the platform issued, in the clear, as they leave it: everything to
+ * store for the channel from now on, replacing what it had.
+ */
+export interface IssuedTokens {
+  /**
+   * The credential calls are made with: an access token, or a whole session
+   * for platforms whose client library keeps one (Bluesky).
+   */
+  readonly accessToken: Redacted.Redacted;
+  /** When the credential expires, if the platform said. */
+  readonly expiresAt: Option.Option<DateTime.Utc>;
+  readonly refreshToken: Option.Option<Redacted.Redacted>;
+  /** Whether Acme can renew the credential without the user. */
+  readonly renewable: boolean;
+  /** What the account allowed, in the platform's words. */
+  readonly scopes: readonly string[];
+}
+
+/** An account the platform handed over: who it is, and its tokens. */
+export interface AuthorizedAccount {
+  /** The account's id on the platform, which never changes. */
+  readonly accountId: string;
+  readonly avatarUrl: Option.Option<AvatarUrl>;
+  readonly displayName: Option.Option<string>;
+  readonly handle: string;
+  readonly tokens: IssuedTokens;
+}
+
+/** A channel's tokens, decrypted for the platform call that needs them. */
+export interface StoredTokens {
+  readonly accessToken: Redacted.Redacted;
+  readonly refreshToken: Option.Option<Redacted.Redacted>;
+}
+
+export type BeginFailure =
+  | AuthorizationFailed
+  | DatabaseError
+  | InstanceNotAllowed
+  | InvalidHandle
+  | InvalidInstance
+  | MissingTokenKey
+  | PlatformUnavailable;
+
+export type CompleteFailure =
+  | AuthorizationDenied
+  | AuthorizationFailed
+  | InstanceNotAllowed
+  | PlatformUnavailable;
+
+/**
+ * A refresh failing for good (`TokenExpired`: revoked, or past what the
+ * platform renews) or for now (`PlatformUnavailable`: try again later).
+ */
+export type RefreshFailure = PlatformUnavailable | TokenExpired;
+
+/**
+ * One platform's sign-in flow and token renewal. Adapters call the platform;
+ * they keep nothing themselves: the use cases store attempts and tokens,
+ * encrypted, and hold the channel's lock around a refresh.
+ */
+export interface PlatformAuthorizer {
+  readonly platform: Platform;
+  /** How the tokens this adapter issues live. */
+  readonly policy: TokenPolicy;
+  /** Prepares a sign-in and says where to send the browser. */
+  readonly begin: (
+    request: AuthorizationRequest
+  ) => Effect.Effect<PendingAuthorization, BeginFailure>;
+  /** Exchanges what the callback brought for the account and its tokens. */
+  readonly complete: (request: {
+    readonly attempt: ConnectAttempt;
+    readonly callback: AuthorizationCallback;
+    readonly secret: Redacted.Redacted;
+  }) => Effect.Effect<AuthorizedAccount, CompleteFailure>;
+  /**
+   * Renews the channel's tokens. When the policy rotates refresh tokens, the
+   * ones given stop working as soon as the platform answers, so the caller
+   * saves the new ones before anything else.
+   */
+  readonly refresh: (
+    channel: Channel,
+    tokens: StoredTokens
+  ) => Effect.Effect<IssuedTokens, RefreshFailure>;
+}
+
+/** The authorizers this server has, by platform. */
+export class PlatformAuthorizers extends Context.Service<
+  PlatformAuthorizers,
+  {
+    /** The platform's authorizer, if this server can connect it. */
+    readonly for: (platform: Platform) => Option.Option<PlatformAuthorizer>;
+    /**
+     * Platforms Acme supports but this server cannot connect for want of a
+     * setting, as Bluesky without client keys in production.
+     */
+    readonly unconfigured: ReadonlySet<Platform>;
+  }
+>()("acme-server/channels/application/PlatformAuthorizers") {}

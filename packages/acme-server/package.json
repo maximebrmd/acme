@@ -8,6 +8,7 @@
     "#*": "./src/*"
   },
   "dependencies": {
+    "@atproto/oauth-client-node": "0.5.16",
     "@aws-sdk/client-s3": "3.1164.0",
     "@aws-sdk/s3-request-presigner": "3.1164.0",
     "@better-auth/api-key": "1.7.18",

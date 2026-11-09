@@ -1,0 +1,160 @@
+import {
+  AtprotoHandleResolverNode,
+  buildAtprotoLoopbackClientMetadata,
+  NodeOAuthClient,
+  requestLocalLock,
+} from "@atproto/oauth-client-node";
+import type {
+  JoseKey,
+  NodeSavedSession,
+  NodeSavedState,
+  OAuthClientMetadataInput,
+} from "@atproto/oauth-client-node";
+import { Option } from "effect";
+
+import type { PublicFetch } from "#shared/infrastructure/platforms/public-http.ts";
+
+/**
+ * What Acme asks Bluesky accounts for: to create and delete posts, upload
+ * images and videos, and check video upload limits. `atproto` is required.
+ */
+export const blueskyScope = [
+  "atproto",
+  "repo:app.bsky.feed.post?action=create&action=delete",
+  "blob:image/*",
+  "blob:video/*",
+  "rpc:com.atproto.repo.uploadBlob?aud=*",
+  "rpc:app.bsky.video.getUploadLimits?aud=*",
+].join(" ");
+
+/** Where the web app's callback page is, and the client documents. */
+export const blueskyPaths = {
+  callback: "/connect/bluesky/callback",
+  jwks: "/api/channels/oauth/bluesky/jwks.json",
+  metadata: "/api/channels/oauth/bluesky/client-metadata.json",
+} as const;
+
+/**
+ * How Acme runs its Bluesky client:
+ *
+ * - `confidential`, with keys: the client publishes its metadata and keys
+ *   at the public URL, which must be HTTPS without a port, and signs its
+ *   token requests (`private_key_jwt`). Sessions last up to two years.
+ * - `loopback`, for development: a public client at `http://localhost`
+ *   whose redirect is `http://127.0.0.1` on the web app's port. Sessions
+ *   last two weeks.
+ */
+export type BlueskyClientMode =
+  | { readonly _tag: "confidential"; readonly keys: readonly JoseKey[] }
+  | { readonly _tag: "loopback" };
+
+export interface BlueskyClientOptions {
+  /** Only for tests against a local fake: allows plain HTTP servers. */
+  readonly allowHttp: boolean;
+  /** Resolves handles with `com.atproto.identity.resolveHandle` here; none resolves them with DNS and HTTPS, as the protocol says. */
+  readonly handleResolver: Option.Option<string>;
+  readonly mode: BlueskyClientMode;
+  /** Where did:plc documents are read. */
+  readonly plcDirectoryUrl: string;
+  /** The web app's origin (PUBLIC_URL). */
+  readonly publicUrl: string;
+  readonly fetch: PublicFetch;
+}
+
+/** A store the client reads and writes in memory, seeded by the caller. */
+export interface MemoryStore<V> {
+  readonly values: Map<string, V>;
+  readonly store: {
+    readonly del: (key: string) => Promise<void>;
+    readonly get: (key: string) => Promise<V | undefined>;
+    readonly set: (key: string, value: V) => Promise<void>;
+  };
+}
+
+export const memoryStore = <V>(
+  initial: Iterable<readonly [string, V]> = []
+): MemoryStore<V> => {
+  const values = new Map<string, V>(initial);
+
+  return {
+    store: {
+      del: async (key) => {
+        values.delete(key);
+        await Promise.resolve();
+      },
+      get: async (key) => await Promise.resolve(values.get(key)),
+      set: async (key, value) => {
+        values.set(key, value);
+        await Promise.resolve();
+      },
+    },
+    values,
+  };
+};
+
+/** The client's metadata for the mode, as the client and servers see it. */
+export const clientMetadataOf = (
+  options: Pick<BlueskyClientOptions, "mode" | "publicUrl">
+): OAuthClientMetadataInput => {
+  const { mode, publicUrl } = options;
+
+  if (mode._tag === "loopback") {
+    const redirect = new URL(blueskyPaths.callback, publicUrl);
+
+    redirect.hostname = "127.0.0.1";
+
+    return buildAtprotoLoopbackClientMetadata({
+      redirect_uris: [redirect.href],
+      scope: blueskyScope,
+    });
+  }
+
+  return {
+    application_type: "web",
+    client_id: new URL(blueskyPaths.metadata, publicUrl).href,
+    client_name: "Acme",
+    client_uri: publicUrl,
+    dpop_bound_access_tokens: true,
+    grant_types: ["authorization_code", "refresh_token"],
+    jwks_uri: new URL(blueskyPaths.jwks, publicUrl).href,
+    redirect_uris: [new URL(blueskyPaths.callback, publicUrl).href],
+    response_types: ["code"],
+    scope: blueskyScope,
+    token_endpoint_auth_method: "private_key_jwt",
+    token_endpoint_auth_signing_alg: "ES256",
+  };
+};
+
+/**
+ * A client for one operation, over stores the operation seeds and reads
+ * back: Acme persists pending sign-ins and sessions itself, encrypted, keyed
+ * by its own attempts and channels, so two workspaces can hold the same
+ * account without sharing a session. Refreshes run under the channel's lock,
+ * so the client's own lock only needs to cover this process.
+ */
+export const makeBlueskyClient = (
+  options: BlueskyClientOptions,
+  stores: {
+    readonly sessions: MemoryStore<NodeSavedSession>;
+    readonly states: MemoryStore<NodeSavedState>;
+  }
+): NodeOAuthClient =>
+  new NodeOAuthClient({
+    allowHttp: options.allowHttp,
+    clientMetadata: clientMetadataOf(options),
+    fetch: options.fetch,
+    // Handles resolve through DNS, and HTTPS through Acme's guarded fetch.
+    // The library's default wraps fetch in an undici dispatcher for its own
+    // SSRF checks, which only Node has: on Bun, building it throws.
+    handleResolver: options.handleResolver.pipe(
+      Option.getOrElse(
+        () => new AtprotoHandleResolverNode({ safeFetch: options.fetch })
+      )
+    ),
+    keyset: options.mode._tag === "confidential" ? options.mode.keys : [],
+    plcDirectoryUrl: options.plcDirectoryUrl,
+    requestLock: requestLocalLock,
+    responseMode: "query",
+    sessionStore: stores.sessions.store,
+    stateStore: stores.states.store,
+  });

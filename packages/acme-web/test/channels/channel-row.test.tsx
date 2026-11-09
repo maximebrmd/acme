@@ -1,0 +1,91 @@
+import { RegistryProvider } from "@effect/atom-react";
+import { describe, expect, it } from "@effect/vitest";
+import type { Channel } from "acme-contract";
+import { DateTime } from "effect";
+import { NextIntlClientProvider } from "next-intl";
+import { renderToStaticMarkup } from "react-dom/server";
+
+import { ChannelRow } from "#components/channels/channel-row.tsx";
+import { loadMessages } from "#i18n/messages.ts";
+
+const channel: Channel = {
+  avatarUrl: null,
+  displayName: "Acme Example",
+  handle: "@acme_example@social.example",
+  id: "00000000-0000-7000-8000-000000000001",
+  platform: "mastodon",
+  status: { _tag: "refreshNeeded" },
+  tokenExpiresAt: null,
+};
+
+const render = async (
+  locale: "en" | "fr",
+  props: Partial<Parameters<typeof ChannelRow>[0]> = {}
+) => {
+  const messages = await loadMessages(locale);
+
+  return renderToStaticMarkup(
+    <NextIntlClientProvider locale={locale} messages={messages} timeZone="UTC">
+      <RegistryProvider>
+        <ChannelRow
+          channel={channel}
+          workspaceId="5b1c5f7e-3d2a-4c1b-9e8f-7a6b5c4d3e2f"
+          canConnect
+          canDisconnect
+          {...props}
+        />
+      </RegistryProvider>
+    </NextIntlClientProvider>
+  );
+};
+
+describe(ChannelRow, () => {
+  it("says the channel needs reconnecting, and offers to", async () => {
+    const html = await render("en");
+
+    expect(html).toContain("Reconnect needed");
+    expect(html).toContain("Mastodon · @acme_example@social.example");
+    expect(html).toContain(">Reconnect<");
+    expect(html).toContain(">Disconnect<");
+  });
+
+  it("names the account in each button, for rows read out of order", async () => {
+    const [english, french] = await Promise.all([render("en"), render("fr")]);
+
+    expect(english).toContain(
+      'aria-label="Reconnect @acme_example@social.example"'
+    );
+    expect(english).toContain(
+      'aria-label="Disconnect @acme_example@social.example"'
+    );
+    expect(french).toContain(
+      'aria-label="Reconnecter @acme_example@social.example"'
+    );
+    expect(french).toContain(
+      'aria-label="Déconnecter @acme_example@social.example"'
+    );
+  });
+
+  it("gives the date by which a token must be renewed, in French", async () => {
+    const html = await render("fr", {
+      channel: {
+        ...channel,
+        status: { _tag: "active" },
+        tokenExpiresAt: DateTime.makeUnsafe("2026-12-01T09:30:00Z"),
+      },
+    });
+
+    expect(html).toContain("Connecté");
+    expect(html).toContain("À reconnecter avant le 1 décembre 2026");
+  });
+
+  it("offers nothing a member may not do", async () => {
+    const html = await render("en", {
+      canConnect: false,
+      canDisconnect: false,
+    });
+
+    expect(html).not.toContain(">Reconnect<");
+    expect(html).not.toContain(">Disconnect<");
+  });
+});

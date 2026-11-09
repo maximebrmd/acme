@@ -1,5 +1,13 @@
-import { and, asc, eq } from "drizzle-orm";
-import { DateTime, Effect, Layer, Match, Option, Schema } from "effect";
+import { and, asc, eq, lte, or, sql } from "drizzle-orm";
+import {
+  DateTime,
+  Duration,
+  Effect,
+  Layer,
+  Match,
+  Option,
+  Schema,
+} from "effect";
 
 import { ChannelAlreadyConnected } from "#channels/application/channel-already-connected.ts";
 import { ChannelCredentials } from "#channels/application/channel-credentials.ts";
@@ -137,6 +145,33 @@ export const DrizzleChannelRepository = Layer.effect(
                   }).pipe(Effect.orDie, Effect.map(Option.some))
             )
           ),
+      dueForRefresh: ({ cutoffs, limit }) => {
+        const due = cutoffs.map(({ before, platform }) =>
+          and(
+            eq(channels.platform, platform),
+            lte(channels.tokenExpiresAt, date(before))
+          )
+        );
+
+        return due.length === 0
+          ? Effect.succeed([])
+          : db
+              .select()
+              .from(channels)
+              .where(
+                and(
+                  eq(channels.status, "active"),
+                  eq(channels.tokenKind, "refreshable"),
+                  or(...due)
+                )
+              )
+              .orderBy(asc(channels.tokenExpiresAt), asc(channels.id))
+              .limit(limit)
+              .pipe(
+                Effect.mapError(failed),
+                Effect.flatMap(Effect.forEach(toChannel))
+              );
+      },
       findByAccount: (workspaceId, platform, accountId) =>
         db
           .select()
@@ -154,6 +189,12 @@ export const DrizzleChannelRepository = Layer.effect(
           .select()
           .from(channels)
           .where(byId(workspaceId, channelId))
+          .pipe(Effect.mapError(failed), Effect.flatMap(firstChannel)),
+      get: (channelId) =>
+        db
+          .select()
+          .from(channels)
+          .where(eq(channels.id, channelId))
           .pipe(Effect.mapError(failed), Effect.flatMap(firstChannel)),
       insert: (channel, credentials) =>
         db
@@ -189,6 +230,33 @@ export const DrizzleChannelRepository = Layer.effect(
           .from(channels)
           .where(eq(channels.workspaceId, workspaceId))
           .orderBy(asc(channels.createdAt), asc(channels.id))
+          .pipe(
+            Effect.mapError(failed),
+            Effect.flatMap(Effect.forEach(toChannel))
+          ),
+      // The warning window of `reconnectWarningFrom`: the lead time, or half
+      // the token's lifetime when that is shorter, before it expires.
+      needingReconnect: ({ leadTime, limit, now }) =>
+        db
+          .select()
+          .from(channels)
+          .where(
+            or(
+              eq(channels.status, "refreshNeeded"),
+              and(
+                eq(channels.status, "active"),
+                eq(channels.tokenKind, "nonRefreshable"),
+                sql`${channels.tokenExpiresAt} - LEAST(make_interval(secs => ${Duration.toSeconds(leadTime)}), (${channels.tokenExpiresAt} - ${channels.tokenIssuedAt}) / 2) <= ${DateTime.formatIso(now)}::timestamptz`
+              )
+            )
+          )
+          // False sorts first: the active channels, then the marked ones.
+          .orderBy(
+            sql`${channels.status} = 'refreshNeeded'`,
+            asc(channels.updatedAt),
+            asc(channels.id)
+          )
+          .limit(limit)
           .pipe(
             Effect.mapError(failed),
             Effect.flatMap(Effect.forEach(toChannel))
