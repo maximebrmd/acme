@@ -25,8 +25,9 @@ export const seedVideo = async (
         width, height, codec, alt_text, storage_key, created_at, updated_at
       )
       SELECT
-        asset.id, $1, 'ready', 'video/mp4', 2000000, 30000, 1920, 1080,
-        'h264', $2, 'e2e/media/' || $1 || '/' || asset.id || '.mp4', now(),
+        asset.id, $1::uuid, 'ready', 'video/mp4', 2000000, 30000, 1920, 1080,
+        'h264', $2::text,
+        'e2e/media/' || $1::text || '/' || asset.id::text || '.mp4', now(),
         now()
       FROM asset`,
       [workspaceId, description]
