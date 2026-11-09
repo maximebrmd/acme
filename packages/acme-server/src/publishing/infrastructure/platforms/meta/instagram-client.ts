@@ -406,22 +406,7 @@ export const instagramClient = Effect.fn("InstagramClient.make")(
           onSome: (containerId) =>
             statusOf(post, containerId).pipe(
               Effect.flatMap(({ status }) =>
-                lookUpOf(status, () =>
-                  foundAmong(post).pipe(
-                    Effect.map(
-                      Option.match({
-                        // Published, but not listed yet: the container
-                        // names the post until analytics need its own id.
-                        onNone: (): Published => ({
-                          _tag: "published",
-                          platformPostId:
-                            PlatformPostIdSchema.make(containerId),
-                        }),
-                        onSome: publishedOf,
-                      })
-                    )
-                  )
-                )
+                lookUpOf(status, containerId, () => foundAmong(post))
               )
             ),
         }

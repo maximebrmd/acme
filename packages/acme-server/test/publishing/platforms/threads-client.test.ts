@@ -340,6 +340,30 @@ describe("publishing on Threads", () => {
     }).pipe(Effect.scoped)
   );
 
+  it.live("takes a published container as the post, its list down", () =>
+    Effect.gen(function* listingDown() {
+      const { client, graph } = yield* onThreads();
+
+      graph.loseAnswer(`POST /v1.0/${threadsUserId}/threads_publish`);
+      graph.script.push(
+        `GET /v1.0/${threadsUserId}/threads`,
+        Array.from({ length: 5 }, () => metaError(2, 500))
+      );
+
+      const result = yield* client.publish(
+        yield* outgoing({ accountId: threadsUserId, text: "Not listed" })
+      );
+
+      const [container] = graph.containers();
+
+      assert.deepStrictEqual(result, {
+        _tag: "published",
+        platformPostId: PlatformPostIdSchema.make(container?.id ?? ""),
+      });
+      assert.lengthOf(publishCalls(graph), 1);
+    }).pipe(Effect.scoped)
+  );
+
   it.live("resumes an attempt by finding its post, or leaves it to check", () =>
     Effect.gen(function* resumes() {
       const { client, graph } = yield* onThreads();
