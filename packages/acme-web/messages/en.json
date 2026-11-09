@@ -11,6 +11,15 @@
     "trigger": "Language: {locale, select, en {English} fr {Français} other {{locale}}}",
     "locale": "{locale, select, en {English} fr {Français} other {{locale}}}"
   },
+  "UserMenu": {
+    "signIn": "Sign in",
+    "signUp": "Create an account",
+    "trigger": "Account of {name}",
+    "signedInAs": "Signed in as {email}",
+    "app": "Workspaces",
+    "signOut": "Sign out",
+    "signOutFailed": "Signing out failed. Try again."
+  },
   "HomePage": {
     "title": "Welcome to Acme",
     "description": "Write posts once, schedule them across platforms and see how they perform."
@@ -35,5 +44,98 @@
     "title": "Page not found",
     "description": "There is nothing at this address.",
     "home": "Back to the home page"
+  },
+  "Auth": {
+    "name": "Name",
+    "email": "Email",
+    "password": "Password",
+    "passwordHint": "At least 12 characters.",
+    "newPassword": "New password",
+    "confirmPassword": "New password, again",
+    "errors": {
+      "BANNED_USER": "This account has been suspended.",
+      "EMAIL_NOT_VERIFIED": "Confirm your email address first, with the link we sent you.",
+      "INVALID_EMAIL": "Enter a valid email address.",
+      "INVALID_EMAIL_OR_PASSWORD": "The email or the password is incorrect.",
+      "INVALID_TOKEN": "This link is invalid or has expired.",
+      "PASSWORD_TOO_LONG": "The password is too long.",
+      "PASSWORD_TOO_SHORT": "The password needs at least 12 characters.",
+      "USER_ALREADY_EXISTS": "An account already uses this email address.",
+      "TOO_MANY_REQUESTS": "Too many attempts. Wait a minute, then try again.",
+      "UNKNOWN": "Something went wrong. Try again."
+    }
+  },
+  "SignInPage": {
+    "title": "Sign in",
+    "description": "Welcome back to Acme.",
+    "submit": "Sign in",
+    "submitting": "Signing in…",
+    "forgotPassword": "Forgot your password?",
+    "noAccount": "No account yet?",
+    "signUp": "Create one",
+    "resend": "Send the confirmation link again",
+    "resent": "We sent a new confirmation link to {email}."
+  },
+  "SignUpPage": {
+    "title": "Create your account",
+    "description": "Write posts once, schedule them everywhere.",
+    "submit": "Create my account",
+    "submitting": "Creating your account…",
+    "haveAccount": "Already have an account?",
+    "signIn": "Sign in",
+    "checkInbox": "Check your inbox",
+    "sent": "We sent a link to {email}. Open it to confirm your address: it signs you in."
+  },
+  "VerifyEmailPage": {
+    "title": "Email confirmed",
+    "description": "Your address is confirmed, and you are signed in.",
+    "continue": "Go to your workspaces",
+    "invalidTitle": "This link no longer works",
+    "invalidDescription": "A confirmation link works once, for an hour. Enter your email to get a new one.",
+    "resend": "Send a new link",
+    "sending": "Sending…",
+    "sent": "If {email} has an account waiting for confirmation, a new link is on its way."
+  },
+  "ForgotPasswordPage": {
+    "title": "Reset your password",
+    "description": "Enter your account's email, and we will send you a link to choose a new password.",
+    "submit": "Send the link",
+    "submitting": "Sending…",
+    "sent": "If {email} has an account, a link to reset its password is on its way.",
+    "back": "Back to sign in"
+  },
+  "ResetPasswordPage": {
+    "title": "Choose a new password",
+    "description": "Signing in again will need it. Every other session of your account is signed out.",
+    "submit": "Save the new password",
+    "submitting": "Saving…",
+    "mismatch": "The two passwords differ.",
+    "done": "Your password is changed. Sign in with the new one.",
+    "signIn": "Sign in",
+    "invalidTitle": "This link no longer works",
+    "invalidDescription": "A reset link works once, for an hour.",
+    "requestAgain": "Ask for a new link"
+  },
+  "AppPage": {
+    "title": "Hello, {name}",
+    "description": "Your workspaces, and what you may do in each.",
+    "empty": "You do not belong to any workspace yet. Create one, or ask for an invitation.",
+    "role": "{role, select, owner {Owner} admin {Admin} editor {Editor} contributor {Contributor} viewer {Viewer} other {{role}}}",
+    "permissions": "{count, plural, one {# permission} other {# permissions}}",
+    "createTitle": "Create a workspace",
+    "createDescription": "You will own it, and can invite people to it.",
+    "workspaceName": "Workspace name",
+    "create": "Create the workspace",
+    "creating": "Creating…"
+  },
+  "InvitationPage": {
+    "title": "Join a workspace",
+    "description": "Someone invited you to a workspace on Acme.",
+    "accept": "Accept the invitation",
+    "accepting": "Joining…",
+    "signedOut": "Sign in, or create an account with the address the invitation went to, then open the link again.",
+    "signIn": "Sign in",
+    "signUp": "Create an account",
+    "failed": "This invitation is no longer valid, or it is for another email address."
   }
 }

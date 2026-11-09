@@ -44,9 +44,9 @@ USER nonroot
 
 EXPOSE 3000
 
-# Bun is the only program in the image, so it probes /health itself.
+# Bun is the only program in the image, so it probes /api/health itself.
 HEALTHCHECK --interval=10s --timeout=5s --start-period=30s --start-interval=1s --retries=3 \
-    CMD ["bun", "--eval", "const response = await fetch(`http://127.0.0.1:${process.env.PORT ?? 3000}/health`); process.exit(response.ok ? 0 : 1);"]
+    CMD ["bun", "--eval", "const response = await fetch(`http://127.0.0.1:${process.env.PORT ?? 3000}/api/health`); process.exit(response.ok ? 0 : 1);"]
 
 ENTRYPOINT ["bun"]
 CMD ["packages/acme-server/src/main.ts"]

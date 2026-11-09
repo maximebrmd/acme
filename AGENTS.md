@@ -131,9 +131,10 @@ them:
 - Domain and application code never touches `Date`, `crypto`, `process` or
   `Bun`: time comes from `DateTime` and `Clock` (tests use `TestClock`), ids
   and randomness from ports, configuration from `Config`.
-- The shared kernel holds the ids several contexts use (`WorkspaceIdSchema`,
-  `ChannelIdSchema`, `PostIdSchema`: branded lowercase UUIDv7s), IANA zones
-  (`TimeZoneIdSchema`) and wall-clock time (`LocalDateSchema`,
+- The shared kernel holds the ids several contexts use (`ChannelIdSchema`,
+  `PostIdSchema`: branded lowercase UUIDv7s; `UserIdSchema`,
+  `WorkspaceIdSchema`: the random lowercase UUIDs Better Auth issues), IANA
+  zones (`TimeZoneIdSchema`) and wall-clock time (`LocalDateSchema`,
   `LocalTimeSchema`, `WeekdaySchema`, `fromWallClock`).
 - Take ids from the `Ids` port: `yield* newId(PostIdSchema)`. Tests provide
   `Ids.layerTest`, which issues `00000000-0000-7000-8000-000000000001`, then
@@ -178,9 +179,9 @@ them:
 - The server applies pending migrations before it listens, under an advisory
   lock, so servers starting together take turns. `nx run acme-server:db:migrate`
   applies them without starting the server.
-- `GET /health` is liveness: keep it free of the database. `GET /ready` is
-  readiness: `SELECT 1` within 2 seconds, otherwise `DatabaseUnavailable`
-  (503).
+- `GET /api/health` is liveness: keep it free of the database.
+  `GET /api/ready` is readiness: `SELECT 1` within 2 seconds, otherwise
+  `DatabaseUnavailable` (503).
 
 ## Self-hosting
 

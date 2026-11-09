@@ -92,7 +92,7 @@ describe("the API URL", () => {
   it.effect("defaults to the local server", () =>
     Effect.gen(function* defaultUrl() {
       assert.deepStrictEqual(yield* healthUrls(["health"]), [
-        "http://localhost:3000/health",
+        "http://localhost:3000/api/health",
       ]);
     })
   );
@@ -103,7 +103,7 @@ describe("the API URL", () => {
         ACME_API_URL: "https://api.acme.test",
       });
 
-      assert.deepStrictEqual(urls, ["https://api.acme.test/health"]);
+      assert.deepStrictEqual(urls, ["https://api.acme.test/api/health"]);
     })
   );
 
@@ -121,8 +121,8 @@ describe("the API URL", () => {
         env
       );
 
-      assert.deepStrictEqual(after, ["http://127.0.0.1:4000/health"]);
-      assert.deepStrictEqual(before, ["http://127.0.0.1:4000/health"]);
+      assert.deepStrictEqual(after, ["http://127.0.0.1:4000/api/health"]);
+      assert.deepStrictEqual(before, ["http://127.0.0.1:4000/api/health"]);
     })
   );
 
@@ -131,10 +131,10 @@ describe("the API URL", () => {
       const urls = yield* healthUrls([
         "health",
         "--api-url",
-        "https://acme.test/api/",
+        "https://acme.test/acme/",
       ]);
 
-      assert.deepStrictEqual(urls, ["https://acme.test/api/health"]);
+      assert.deepStrictEqual(urls, ["https://acme.test/acme/api/health"]);
     })
   );
 

@@ -9,12 +9,24 @@
     },
     "test": {
       "command": "vitest run",
-      "options": { "cwd": "{projectRoot}" }
+      "options": { "cwd": "{projectRoot}" },
+      "dependsOn": ["auth-schema-check"]
     },
     "dev": {
       "command": "bun --watch src/main.ts",
       "options": { "cwd": "{projectRoot}" },
       "continuous": true
+    },
+    "auth-schema": {
+      "command": "bun scripts/auth-schema.ts",
+      "options": { "cwd": "{projectRoot}" },
+      "cache": false
+    },
+    "auth-schema-check": {
+      "command": "bun scripts/auth-schema.ts --check",
+      "options": { "cwd": "{projectRoot}" },
+      "cache": true,
+      "inputs": ["default", "^default", "{workspaceRoot}/oxfmt.config.ts"]
     },
     "db:generate": {
       "command": "drizzle-kit generate",

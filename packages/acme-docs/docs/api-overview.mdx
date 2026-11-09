@@ -18,10 +18,10 @@ The API is defined once, in the `acme-contract` package. The server implements t
 
 ## Base URL [#base-url]
 
-Requests go to the origin your instance is served from. In these docs, `https://api.example.com` stands for that origin; replace it with your own.
+Requests go to the origin your instance is served from, and every endpoint's path starts with `/api`. In these docs, `https://api.example.com` stands for that origin; replace it with your own.
 
 ```bash
-curl -i https://api.example.com/health
+curl -i https://api.example.com/api/health
 ```
 
 ## OpenAPI document [#openapi]

@@ -56,8 +56,8 @@ bun nx run acme-web:dev      # http://localhost:3001, French under /fr
 
 The server applies pending database migrations when it starts, then listens on
 port 3000 (`PORT` changes it). It serves its OpenAPI document at
-`/openapi.json`, `GET /health` (liveness) and `GET /ready` (readiness: 503
-while the database is unreachable).
+`/openapi.json`, `GET /api/health` (liveness) and `GET /api/ready`
+(readiness: 503 while the database is unreachable).
 
 The web app forwards `/api/*` to `ACME_API_URL` (default
 `http://localhost:3000`), read at request time. Open it on `localhost`: Next's
@@ -132,16 +132,26 @@ PORT=3001 ACME_API_URL=http://localhost:3000 node packages/acme-web/server.js
 ```
 
 The server image runs the sources with Bun as an unprivileged user, and reads
-`PORT` (default 3000) and plain environment variables. To build it and run it
-against the development stack:
+`PORT` (default 3000) and plain environment variables. It runs in production
+mode, which has no defaults for its address, secret, mail or client-address
+header. To build it and run it against the development stack:
 
 ```sh
 bun nx run acme-docker:build-server-image   # tags acme-server:local
 docker run --rm --network acme_default -p 127.0.0.1:3000:3000 \
   -e DATABASE_URL=postgres://acme:acme@postgres:5432/acme \
+  -e PUBLIC_URL=http://localhost:3001 \
+  -e BETTER_AUTH_SECRET="$(openssl rand -base64 32)" \
+  -e MAIL_FROM="Acme <noreply@acme.localhost>" \
+  -e SMTP_URL=smtp://mailpit:1025 \
+  -e AUTH_IP_HEADERS=x-forwarded-for \
   -e OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318 \
   acme-server:local
 ```
+
+`AUTH_IP_HEADERS` names the header sign-in rate limits read the client's
+address from. Behind a real edge, name the one it sets and overwrites, such
+as `cf-connecting-ip` behind Cloudflare.
 
 ## Layout
 

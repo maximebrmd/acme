@@ -15,7 +15,7 @@ const Address = Schema.Struct({ port: Schema.Number });
 const fakeApi = Effect.acquireRelease(
   Effect.callback<Server>((resume) => {
     const server = createServer((request, response) => {
-      response.statusCode = request.url === "/health" ? 204 : 404;
+      response.statusCode = request.url === "/api/health" ? 204 : 404;
       response.end();
     });
 

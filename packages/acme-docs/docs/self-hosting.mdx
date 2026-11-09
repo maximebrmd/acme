@@ -68,5 +68,5 @@ Run a reverse proxy that terminates TLS, such as Caddy, in front of the server, 
 
 The server answers two probes:
 
-- `GET /health` answers `204 No Content` as soon as the server is up, whatever the state of its database, which suits a container health check.
-- `GET /ready` answers `204 No Content` when the database answers as well, and `503 Service Unavailable` with a `DatabaseUnavailable` error when it does not, so a load balancer can hold traffic back until then.
+- `GET /api/health` answers `204 No Content` as soon as the server is up, whatever the state of its database, which suits a container health check.
+- `GET /api/ready` answers `204 No Content` when the database answers as well, and `503 Service Unavailable` with a `DatabaseUnavailable` error when it does not, so a load balancer can hold traffic back until then.

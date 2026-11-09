@@ -6,6 +6,7 @@ import ultracite from "ultracite/oxfmt";
 export const generated = [
   "packages/acme-contract/openapi.json",
   "packages/acme-server/drizzle/**",
+  "packages/acme-server/src/*/infrastructure/*.generated.ts",
   ".local/**",
 ];
 
