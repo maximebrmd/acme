@@ -17,8 +17,9 @@ import {
   MediaAsset,
   markReady,
   markRejected,
+  markUnprobed,
 } from "#media/domain/media-asset.ts";
-import { MediaMetadata } from "#media/domain/media-metadata.ts";
+import type { ProbeState } from "#media/domain/media-status.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
 
 /** The uploaded asset to probe. */
@@ -27,7 +28,10 @@ export interface ProbeMediaRequest {
   readonly workspaceId: WorkspaceId;
 }
 
-/** The ready asset, and what the probe found or why it was skipped. */
+/**
+ * The asset as the probe left it, ready or still uploaded, and what the
+ * probe found or why it was skipped.
+ */
 export const ProbedMediaSchema = Schema.Struct({
   asset: MediaAsset,
   outcome: ProbeOutcomeSchema,
@@ -69,11 +73,32 @@ const rejectMismatch = Effect.fn("Media.rejectMismatch")(
 );
 
 /**
+ * Records why an uploaded asset could not be probed. It stays uploaded, and
+ * probing it again can still make it ready.
+ */
+const recordUnprobed = Effect.fn("Media.recordUnprobed")(
+  function* recordUnprobed(
+    asset: MediaAsset,
+    probe: Exclude<ProbeState, "pending">
+  ) {
+    const unprobed = yield* Effect.fromResult(
+      markUnprobed(asset, probe, yield* DateTime.now)
+    );
+
+    return yield* MediaAssets.use((assets) =>
+      assets.update(unprobed, "uploaded")
+    );
+  }
+);
+
+/**
  * Probes an uploaded file and marks the asset ready with what the probe
- * found. Without a probe for its kind, the asset is ready with nothing
- * known, and the outcome says the probe was skipped. When another call
- * marked the asset ready first, that version is kept and returned. A file
- * in another format than declared is deleted and the asset rejected.
+ * found. Without a probe for its kind, such as a video on a server without
+ * ffprobe, the asset stays uploaded, marked unavailable, and the outcome
+ * says the probe was skipped. A probe that fails leaves it uploaded with the
+ * reason, and fails. When another call marked the asset ready first, that
+ * version is kept and returned. A file in another format than declared is
+ * deleted and the asset rejected.
  */
 export const probeMedia = Effect.fn("Media.probeMedia")(function* probeMedia({
   assetId,
@@ -95,13 +120,27 @@ export const probeMedia = Effect.fn("Media.probeMedia")(function* probeMedia({
 
   const outcome = yield* MediaProbe.use((probe) =>
     probe.probe({ contentType: asset.contentType, url })
-  ).pipe(Effect.catchTag("MediaTypeMismatch", () => rejectMismatch(asset)));
+  ).pipe(
+    Effect.catchTags({
+      MediaProbeFailed: (failure) =>
+        recordUnprobed(asset, failure.reason).pipe(
+          Effect.andThen(Effect.fail(failure))
+        ),
+      MediaTypeMismatch: () => rejectMismatch(asset),
+    })
+  );
 
-  const metadata =
-    outcome._tag === "probed" ? outcome.metadata : MediaMetadata.unknown;
+  if (outcome._tag === "skipped") {
+    const unprobed: ProbedMedia = {
+      asset: yield* recordUnprobed(asset, "unavailable"),
+      outcome,
+    };
+
+    return unprobed;
+  }
 
   const ready = yield* Effect.fromResult(
-    markReady(asset, metadata, yield* DateTime.now)
+    markReady(asset, outcome.metadata, yield* DateTime.now)
   );
 
   const saved = yield* MediaAssets.use((assets) =>

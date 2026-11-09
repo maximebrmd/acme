@@ -33,21 +33,52 @@ export const RejectionReasonSchema = Schema.Literals([
 
 export type RejectionReason = typeof RejectionReasonSchema.Type;
 
+/** Why a probe could not read a file. */
+export const ProbeFailureReasonSchema = Schema.Literals([
+  // The file is damaged, or not in a format the probe reads.
+  "unreadable",
+  // Reading it took longer than the probe allows.
+  "timedOut",
+  // The store served more bytes than acme stores for the file's kind.
+  "tooLarge",
+  // The probing program could not run, or printed nothing it understands.
+  "toolFailed",
+]);
+
+export type ProbeFailureReason = typeof ProbeFailureReasonSchema.Type;
+
+/**
+ * Why an uploaded file is not ready yet: it has not been probed, this server
+ * has no probe for its kind (ffprobe is not installed, for a video), or the
+ * probe could not read it. Probing it again, once the cause is gone, can
+ * still make it ready.
+ */
+export const ProbeStateSchema = Schema.Literals([
+  "pending",
+  "unavailable",
+  ...ProbeFailureReasonSchema.literals,
+]);
+
+export type ProbeState = typeof ProbeStateSchema.Type;
+
 /**
  * Where a file is in its life:
  *
  * | From     | To                                   |
  * | -------- | ------------------------------------ |
  * | pending  | uploaded, rejected                   |
- * | uploaded | ready, rejected                      |
+ * | uploaded | uploaded, ready, rejected            |
  * | ready    | nothing                              |
  * | rejected | nothing: the stored file was deleted |
+ *
+ * An uploaded file stays uploaded, with the reason, when it cannot be
+ * probed.
  */
 export const MediaStatusSchema = Schema.Union([
   // Recorded, and waiting for the client to upload the file.
   Schema.TaggedStruct("pending", { upload: UploadMethodSchema }),
-  // Stored with the declared size and content type.
-  Schema.TaggedStruct("uploaded", {}),
+  // Stored with the declared size and content type, and not probed yet.
+  Schema.TaggedStruct("uploaded", { probe: ProbeStateSchema }),
   // Probed, and usable in posts.
   Schema.TaggedStruct("ready", {}),
   Schema.TaggedStruct("rejected", { reason: RejectionReasonSchema }),

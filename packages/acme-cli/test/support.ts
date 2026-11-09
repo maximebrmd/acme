@@ -121,6 +121,16 @@ const SignedInGroupsLive = Layer.mergeAll(
       schedule: () => refusing,
       update: () => refusing,
     })
+  ),
+  HttpApiBuilder.group(Api, "media", (handlers) =>
+    handlers.handleAll({
+      complete: () => refusing,
+      create: () => refusing,
+      delete: () => refusing,
+      describe: () => refusing,
+      get: () => refusing,
+      list: () => refusing,
+    })
   )
 ).pipe(Layer.provideMerge(SecurityLive));
 

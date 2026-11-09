@@ -1,5 +1,5 @@
 import { assert, describe, expect, it } from "@effect/vitest";
-import { ConfigProvider, Effect, Option } from "effect";
+import { ConfigProvider, Effect, Option, Redacted } from "effect";
 
 import {
   publicObjectUrl,
@@ -14,6 +14,7 @@ const required = {
   ACME_S3_BUCKET: "media",
   ACME_S3_ENDPOINT: "https://storage.example.test",
   ACME_S3_SECRET_ACCESS_KEY: "synthetic-secret",
+  NODE_ENV: "production",
 };
 
 describe("the S3 store's settings", () => {
@@ -25,6 +26,31 @@ describe("the S3 store's settings", () => {
       assert.isFalse(settings.forcePathStyle);
       assert.strictEqual(settings.keyPrefix, "");
       assert.isTrue(Option.isNone(settings.publicBaseUrl));
+    })
+  );
+
+  it.effect.each([
+    "ACME_S3_ACCESS_KEY_ID",
+    "ACME_S3_BUCKET",
+    "ACME_S3_ENDPOINT",
+    "ACME_S3_SECRET_ACCESS_KEY",
+  ] as const)("need %s in production", (name) =>
+    Effect.gen(function* missing() {
+      const { [name]: _missing, ...others } = required;
+      const error = yield* Effect.flip(settingsFrom(others));
+
+      assert.strictEqual(error._tag, "ConfigError");
+    })
+  );
+
+  it.effect("default to the development stack's SeaweedFS elsewhere", () =>
+    Effect.gen(function* development() {
+      const settings = yield* settingsFrom({});
+
+      assert.strictEqual(settings.endpoint.href, "http://127.0.0.1:18333/");
+      assert.strictEqual(settings.bucket, "acme-media");
+      assert.strictEqual(Redacted.value(settings.accessKeyId), "acme");
+      assert.isTrue(settings.forcePathStyle);
     })
   );
 

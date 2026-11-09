@@ -1,6 +1,7 @@
 // The whole server, without a socket, for tests that sign people up: the
 // HTTP API and Better Auth on the database DATABASE_URL names, sending email
-// to the development stack's Mailpit (SMTP_URL and MAILPIT_URL override it).
+// to the development stack's Mailpit (SMTP_URL and MAILPIT_URL override it)
+// and storing media in its SeaweedFS, under tests/media/.
 import { randomUUID } from "node:crypto";
 
 import {
@@ -18,6 +19,7 @@ import { SqlClient } from "effect/sql";
 
 import { AppLive } from "#app/server.ts";
 import { SqlLive } from "#shared/infrastructure/database.ts";
+import { storageSettings } from "#test/media/support.ts";
 
 /** The web app's origin, which the server trusts by default. */
 export const origin = "http://localhost:3001";
@@ -69,7 +71,10 @@ export class TestApp extends Context.Service<
       const app = yield* Effect.acquireRelease(
         Effect.sync(() =>
           HttpRouter.toWebHandler(
-            AppLive.pipe(Layer.provide(HttpServer.layerServices)),
+            AppLive.pipe(
+              Layer.provide(HttpServer.layerServices),
+              Layer.provide(storageSettings)
+            ),
             { disableLogger: true }
           )
         ),

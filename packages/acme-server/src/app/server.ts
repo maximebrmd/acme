@@ -15,6 +15,7 @@ import {
   ChannelsApiLive,
   ChannelsLive,
 } from "#channels/container.ts";
+import { MediaApiLive, MediaLive } from "#media/container.ts";
 import {
   ChannelNoticesLive,
   NotificationsLive,
@@ -36,9 +37,11 @@ import {
 
 // The groups of the workspace endpoints, behind the Authentication and
 // WorkspaceAccess middleware that WorkspaceApiLive provides.
-const WorkspaceGroupsLive = Layer.mergeAll(ChannelsApiLive, PostsApiLive).pipe(
-  Layer.provideMerge(WorkspaceApiLive)
-);
+const WorkspaceGroupsLive = Layer.mergeAll(
+  ChannelsApiLive,
+  PostsApiLive,
+  MediaApiLive
+).pipe(Layer.provideMerge(WorkspaceApiLive));
 
 const ApiLive = HttpApiBuilder.layer(Api, {
   openapiPath: "/openapi.json",
@@ -77,10 +80,13 @@ const PublishingWithoutJobsLive = PublishingContextLive.pipe(
 
 // The services the routes need, each built after the ones below it: the
 // database pool, the migrations, then the contexts. Better Auth checks its
-// tables against the database, so it starts once they are migrated.
+// tables against the database, so it starts once they are migrated. The
+// media store's settings are read here: in production, a server without
+// them does not start (see src/media/infrastructure/s3-media-storage.ts).
 const ServicesLive = Layer.mergeAll(
   ChannelsWithNoticesLive,
-  PublishingWithoutJobsLive
+  PublishingWithoutJobsLive,
+  MediaLive
 ).pipe(
   Layer.provide(Layer.mergeAll(IdsLive, BunDns.layer)),
   Layer.provideMerge(MigrationsLive),
@@ -104,7 +110,8 @@ const WorkersLive = Layer.mergeAll(PublishingWorkersLive, CronsLive);
 // The contexts' use cases and adapters, which handlers and workers share.
 const ContextsLive = Layer.mergeAll(
   ChannelsWithNoticesLive,
-  PublishingContextLive
+  PublishingContextLive,
+  MediaLive
 ).pipe(
   Layer.provideMerge(
     Layer.mergeAll(IdsLive, TransactionRunnerLive, BunDns.layer)

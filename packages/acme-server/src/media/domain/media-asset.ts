@@ -4,6 +4,8 @@ import type { DateTime } from "effect";
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
 
+import { AltTextSchema } from "./alt-text.ts";
+import type { AltText } from "./alt-text.ts";
 import { InvalidMediaTransition } from "./invalid-media-transition.ts";
 import type { MediaAction } from "./invalid-media-transition.ts";
 import { MediaAssetIdSchema } from "./media-asset-id.ts";
@@ -21,6 +23,7 @@ import { MediaMetadata } from "./media-metadata.ts";
 import { MediaStatusSchema } from "./media-status.ts";
 import type {
   MediaStatus,
+  ProbeState,
   RejectionReason,
   UploadMethod,
 } from "./media-status.ts";
@@ -32,7 +35,8 @@ import { UnsupportedMediaType } from "./unsupported-media-type.ts";
  * An image or video a workspace uploaded, and where it is in its life (see
  * `MediaStatusSchema`). The client declares the content type and size before
  * uploading, and both are checked against the stored file before the asset
- * counts as uploaded.
+ * counts as uploaded. Its description, for people who cannot see it, can be
+ * written at any time.
  *
  * Transitions are pure: each takes the asset and the facts it needs, and
  * returns the next asset or a typed error. Time comes in as `now`.
@@ -40,6 +44,7 @@ import { UnsupportedMediaType } from "./unsupported-media-type.ts";
 export class MediaAsset extends Schema.Class<MediaAsset>(
   "acme-server/media/domain/MediaAsset"
 )({
+  altText: Schema.Option(AltTextSchema),
   byteSize: ByteSizeSchema,
   contentType: MediaContentTypeSchema,
   createdAt: Schema.DateTimeUtc,
@@ -91,6 +96,7 @@ export const acceptUpload = (
 /** What a new pending asset is made of. */
 export interface NewUpload {
   readonly accepted: AcceptedUpload;
+  readonly altText: Option.Option<AltText>;
   readonly id: MediaAssetId;
   readonly upload: UploadMethod;
   readonly workspaceId: WorkspaceId;
@@ -98,10 +104,11 @@ export interface NewUpload {
 
 /** Records an accepted file that the client is about to upload. */
 export const startUpload = (
-  { accepted, id, upload, workspaceId }: NewUpload,
+  { accepted, altText, id, upload, workspaceId }: NewUpload,
   now: DateTime.Utc
 ): MediaAsset =>
   new MediaAsset({
+    altText,
     byteSize: accepted.byteSize,
     contentType: accepted.contentType,
     createdAt: now,
@@ -148,6 +155,7 @@ const withChange = (
   now: DateTime.Utc
 ): MediaAsset =>
   new MediaAsset({
+    altText: asset.altText,
     byteSize: asset.byteSize,
     contentType: asset.contentType,
     createdAt: asset.createdAt,
@@ -178,9 +186,29 @@ export const markUploaded = (
 ): Transition =>
   asset.status._tag === "pending"
     ? Result.succeed(
-        withChange(asset, { _tag: "uploaded" }, asset.metadata, now)
+        withChange(
+          asset,
+          { _tag: "uploaded", probe: "pending" },
+          asset.metadata,
+          now
+        )
       )
     : refused(asset, "markUploaded");
+
+/**
+ * The uploaded file could not be probed, for this reason: it stays uploaded
+ * until a probe reads it.
+ */
+export const markUnprobed = (
+  asset: MediaAsset,
+  probe: Exclude<ProbeState, "pending">,
+  now: DateTime.Utc
+): Transition =>
+  asset.status._tag === "uploaded"
+    ? Result.succeed(
+        withChange(asset, { _tag: "uploaded", probe }, asset.metadata, now)
+      )
+    : refused(asset, "markUnprobed");
 
 /** The uploaded file was probed: it can go into posts. */
 export const markReady = (
@@ -208,3 +236,22 @@ export const markRejected = (
     withChange(asset, { _tag: "rejected", reason }, asset.metadata, now)
   );
 };
+
+/** The asset with this description, or none, whatever its status. */
+export const describe = (
+  asset: MediaAsset,
+  altText: Option.Option<AltText>,
+  now: DateTime.Utc
+): MediaAsset =>
+  new MediaAsset({
+    altText,
+    byteSize: asset.byteSize,
+    contentType: asset.contentType,
+    createdAt: asset.createdAt,
+    id: asset.id,
+    metadata: asset.metadata,
+    status: asset.status,
+    storageKey: asset.storageKey,
+    updatedAt: now,
+    workspaceId: asset.workspaceId,
+  });

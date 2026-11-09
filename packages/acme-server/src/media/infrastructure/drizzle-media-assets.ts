@@ -1,8 +1,13 @@
-import { and, eq } from "drizzle-orm";
+import { and, desc, eq, lt } from "drizzle-orm";
 import { DateTime, Duration, Effect, Layer, Option, Schema } from "effect";
 
 import { MediaAssetNotFound } from "#media/application/media-asset-not-found.ts";
 import { MediaAssets } from "#media/application/ports/media-assets.ts";
+import type {
+  MediaPage,
+  MediaPageRequest,
+} from "#media/application/ports/media-assets.ts";
+import type { AltText } from "#media/domain/alt-text.ts";
 import type { MediaAssetId } from "#media/domain/media-asset-id.ts";
 import { MediaAsset } from "#media/domain/media-asset.ts";
 import type { MediaStatusName } from "#media/domain/media-status.ts";
@@ -17,7 +22,8 @@ type NewRow = typeof mediaAssets.$inferInsert;
 
 const decodeAsset = Schema.decodeUnknownEffect(MediaAsset);
 
-const toRow = (asset: MediaAsset): NewRow => {
+// Every column but the description, which changes on its own.
+const stateColumns = (asset: MediaAsset): Omit<NewRow, "altText"> => {
   const { metadata, status } = asset;
   const dimensions = Option.getOrNull(metadata.dimensions);
 
@@ -39,6 +45,7 @@ const toRow = (asset: MediaAsset): NewRow => {
     id: asset.id,
     multipartPartSize: multipart?.partSize ?? null,
     multipartUploadId: multipart?.uploadId ?? null,
+    probeState: status._tag === "uploaded" ? status.probe : null,
     rejectionReason: status._tag === "rejected" ? status.reason : null,
     status: status._tag,
     storageKey: asset.storageKey,
@@ -47,6 +54,11 @@ const toRow = (asset: MediaAsset): NewRow => {
     workspaceId: asset.workspaceId,
   };
 };
+
+const toRow = (asset: MediaAsset): NewRow => ({
+  ...stateColumns(asset),
+  altText: Option.getOrNull(asset.altText),
+});
 
 // The status in MediaStatus's encoded form, checked when the asset decodes.
 const statusOf = (row: Row) => {
@@ -68,6 +80,10 @@ const statusOf = (row: Row) => {
     return { _tag: "rejected", reason: row.rejectionReason };
   }
 
+  if (row.status === "uploaded") {
+    return { _tag: "uploaded", probe: row.probeState ?? "pending" };
+  }
+
   return { _tag: row.status };
 };
 
@@ -80,6 +96,7 @@ const dimensionsOf = (row: Row) =>
 // repository: a bug, not a failure callers can handle.
 const fromRow = (row: Row): Effect.Effect<MediaAsset> =>
   decodeAsset({
+    altText: Option.fromNullOr(row.altText),
     byteSize: row.byteSize,
     contentType: row.contentType,
     createdAt: DateTime.fromDateUnsafe(row.createdAt),
@@ -127,11 +144,69 @@ export const DrizzleMediaAssetsLive = Layer.effect(
     });
 
     return MediaAssets.of({
+      describe: Effect.fn("MediaAssets.describe")(function* describe(
+        workspaceId: WorkspaceId,
+        assetId: MediaAssetId,
+        altText: Option.Option<AltText>,
+        now: DateTime.Utc
+      ) {
+        const [row] = yield* db
+          .update(mediaAssets)
+          .set({
+            altText: Option.getOrNull(altText),
+            updatedAt: DateTime.toDate(now),
+          })
+          .where(byId(workspaceId, assetId))
+          .returning()
+          .pipe(Effect.orDie);
+
+        return row === undefined
+          ? yield* new MediaAssetNotFound({ assetId })
+          : yield* fromRow(row);
+      }),
       findById,
       insert: Effect.fn("MediaAssets.insert")(function* insert(
         asset: MediaAsset
       ) {
         yield* db.insert(mediaAssets).values(toRow(asset)).pipe(Effect.orDie);
+      }),
+      list: Effect.fn("MediaAssets.list")(function* list(
+        workspaceId: WorkspaceId,
+        { after, limit }: MediaPageRequest
+      ) {
+        // One row past the page tells whether another page follows.
+        const rows = yield* db
+          .select()
+          .from(mediaAssets)
+          .where(
+            Option.match(after, {
+              onNone: () => eq(mediaAssets.workspaceId, workspaceId),
+              onSome: (id) =>
+                and(
+                  eq(mediaAssets.workspaceId, workspaceId),
+                  lt(mediaAssets.id, id)
+                ),
+            })
+          )
+          .orderBy(desc(mediaAssets.id))
+          .limit(limit + 1)
+          .pipe(Effect.orDie);
+
+        const assets = yield* Effect.forEach(rows.slice(0, limit), (row) =>
+          fromRow(row)
+        );
+
+        const last = assets.at(-1);
+
+        const page: MediaPage = {
+          assets,
+          next:
+            rows.length > limit && last !== undefined
+              ? Option.some(last.id)
+              : Option.none(),
+        };
+
+        return page;
       }),
       remove: Effect.fn("MediaAssets.remove")(function* remove(
         workspaceId: WorkspaceId,
@@ -146,19 +221,21 @@ export const DrizzleMediaAssetsLive = Layer.effect(
         asset: MediaAsset,
         from: MediaStatusName
       ) {
-        // Statuses only move forward, so a row still in `from` has not been
-        // changed since the caller read it.
-        const updated = yield* db
+        // A row still in `from` has not changed status since the caller read
+        // it: statuses only move forward, and an uploaded asset that cannot
+        // be probed stays uploaded with the reason, which the last write
+        // gives. The description is left as it is: it changes on its own.
+        const [updated] = yield* db
           .update(mediaAssets)
-          .set(toRow(asset))
+          .set(stateColumns(asset))
           .where(
             and(byId(asset.workspaceId, asset.id), eq(mediaAssets.status, from))
           )
-          .returning({ id: mediaAssets.id })
+          .returning()
           .pipe(Effect.orDie);
 
-        if (updated.length > 0) {
-          return asset;
+        if (updated !== undefined) {
+          return yield* fromRow(updated);
         }
 
         const current = yield* findById(asset.workspaceId, asset.id);

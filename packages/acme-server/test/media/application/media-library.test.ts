@@ -1,5 +1,6 @@
 import { assert, layer } from "@effect/vitest";
 import {
+  ConfigProvider,
   DateTime,
   Duration,
   Effect,
@@ -29,11 +30,14 @@ import {
   damagedPng,
   DatabaseTest,
   fetchBytes,
+  hasFfmpeg,
   mebibytes,
   sendSigned,
   storageSettings,
   syntheticBytes,
   syntheticSvg,
+  syntheticVideo,
+  memberIn,
 } from "#test/media/support.ts";
 
 // The container's layer, plus the ports themselves so tests can look behind
@@ -43,6 +47,17 @@ const LibraryTest = Layer.mergeAll(
   S3MediaStorageLive,
   DrizzleMediaAssetsLive
 ).pipe(Layer.provideMerge(DatabaseTest), Layer.provide(storageSettings));
+
+// The same, on a server without ffprobe.
+const WithoutFfprobeTest = LibraryTest.pipe(
+  Layer.provide(
+    ConfigProvider.layerAdd(
+      ConfigProvider.fromUnknown({
+        ACME_FFPROBE_PATH: "/nonexistent/acme-test/ffprobe",
+      })
+    )
+  )
+);
 
 // Parts of the stores' 5 MiB minimum, so a multipart test moves 11 MiB.
 const smallParts = {
@@ -64,10 +79,10 @@ const prepare = Effect.fn("prepare")(function* prepare(
   const library = yield* MediaLibrary;
   const storage = yield* MediaStorage;
 
-  const prepared = yield* library.createUpload({
+  const prepared = yield* library.createUpload(memberIn(workspaceId), {
+    altText: Option.none(),
     byteSize,
     contentType,
-    workspaceId,
   });
 
   const { status, storageKey } = prepared.asset;
@@ -100,10 +115,10 @@ const multipartParts = (prepared: PreparedUpload) =>
 
 const complete = (prepared: PreparedUpload) =>
   MediaLibrary.use((library) =>
-    library.completeUpload({
-      assetId: prepared.asset.id,
-      workspaceId: prepared.asset.workspaceId,
-    })
+    library.completeUpload(
+      memberIn(prepared.asset.workspaceId),
+      prepared.asset.id
+    )
   );
 
 const recorded = (prepared: PreparedUpload) =>
@@ -154,7 +169,10 @@ layer(LibraryTest)("the media library", (it) => {
 
       const uploaded = yield* complete(prepared);
 
-      assert.deepStrictEqual(uploaded.status, { _tag: "uploaded" });
+      assert.deepStrictEqual(uploaded.status, {
+        _tag: "uploaded",
+        probe: "pending",
+      });
       assert.deepStrictEqual(yield* recorded(prepared), Option.some(uploaded));
 
       // Completing again changes nothing.
@@ -254,7 +272,10 @@ layer(LibraryTest)("the media library", (it) => {
 
       const uploaded = yield* complete(prepared);
 
-      assert.deepStrictEqual(uploaded.status, { _tag: "uploaded" });
+      assert.deepStrictEqual(uploaded.status, {
+        _tag: "uploaded",
+        probe: "pending",
+      });
       assert.deepStrictEqual(
         yield* storedObject(prepared),
         Option.some({
@@ -313,7 +334,10 @@ layer(LibraryTest)("the media library", (it) => {
 
       const uploaded = yield* complete(prepared);
 
-      assert.deepStrictEqual(uploaded.status, { _tag: "uploaded" });
+      assert.deepStrictEqual(uploaded.status, {
+        _tag: "uploaded",
+        probe: "pending",
+      });
       assert.deepStrictEqual(yield* recorded(prepared), Option.some(uploaded));
     })
   );
@@ -326,6 +350,7 @@ layer(LibraryTest)("the media library", (it) => {
       const body = yield* whitePng(16, 9);
       const prepared = yield* prepare(workspaceId, "image/png", body.length);
       const target = { assetId: prepared.asset.id, workspaceId };
+      const member = memberIn(workspaceId);
 
       yield* sendSigned(yield* singleRequest(prepared), body);
 
@@ -350,9 +375,12 @@ layer(LibraryTest)("the media library", (it) => {
       yield* reached.await;
 
       // Meanwhile a retry completes it, and the probe marks it ready.
-      yield* library.completeUpload(target);
+      yield* library.completeUpload(member, prepared.asset.id);
 
-      const { asset: ready } = yield* library.probeMedia(target);
+      const { asset: ready } = yield* library.probeMedia(
+        member,
+        prepared.asset.id
+      );
 
       yield* resume.open;
 
@@ -434,14 +462,14 @@ layer(LibraryTest)("the media library", (it) => {
         storage.publicUrl(prepared.asset.storageKey, Duration.minutes(5))
       );
 
-      yield* library.deleteMedia({ assetId: prepared.asset.id, workspaceId });
+      yield* library.deleteMedia(memberIn(workspaceId), prepared.asset.id);
 
       assert.deepStrictEqual(yield* recorded(prepared), Option.none());
       assert.deepStrictEqual(yield* storedObject(prepared), Option.none());
       assert.strictEqual((yield* fetchBytes(url)).response.status, 404);
 
       const again = yield* Effect.flip(
-        library.deleteMedia({ assetId: prepared.asset.id, workspaceId })
+        library.deleteMedia(memberIn(workspaceId), prepared.asset.id)
       );
 
       assert.strictEqual(again._tag, "MediaAssetNotFound");
@@ -466,7 +494,7 @@ layer(LibraryTest)("the media library", (it) => {
           : yield* Effect.die("expected a multipart upload");
 
       yield* MediaLibrary.use((library) =>
-        library.deleteMedia({ assetId: prepared.asset.id, workspaceId })
+        library.deleteMedia(memberIn(workspaceId), prepared.asset.id)
       );
 
       const listed = yield* Effect.flip(
@@ -488,13 +516,27 @@ layer(LibraryTest)("the media library", (it) => {
       const prepared = yield* prepare(yield* freshWorkspace, "image/png", 10);
       const stranger = yield* freshWorkspace;
       const library = yield* MediaLibrary;
-      const target = { assetId: prepared.asset.id, workspaceId: stranger };
+      const member = memberIn(stranger);
+      const { id } = prepared.asset;
 
-      const completed = yield* Effect.flip(library.completeUpload(target));
-      const deleted = yield* Effect.flip(library.deleteMedia(target));
+      const completed = yield* Effect.flip(library.completeUpload(member, id));
+      const deleted = yield* Effect.flip(library.deleteMedia(member, id));
+      const read = yield* Effect.flip(library.getMedia(member, id));
+
+      const described = yield* Effect.flip(
+        library.describeMedia(member, id, Option.some("Not theirs"))
+      );
+
+      const listed = yield* library.listMedia(member, {
+        after: Option.none(),
+        limit: 10,
+      });
 
       assert.strictEqual(completed._tag, "MediaAssetNotFound");
       assert.strictEqual(deleted._tag, "MediaAssetNotFound");
+      assert.strictEqual(read._tag, "MediaAssetNotFound");
+      assert.strictEqual(described._tag, "MediaAssetNotFound");
+      assert.deepStrictEqual(listed.items, []);
       assert.isTrue(Option.isSome(yield* recorded(prepared)));
     })
   );
@@ -506,16 +548,18 @@ layer(LibraryTest)("the media library", (it) => {
       const body = yield* whitePng(16, 9);
       const prepared = yield* prepare(workspaceId, "image/png", body.length);
       const library = yield* MediaLibrary;
-      const target = { assetId: prepared.asset.id, workspaceId };
 
-      const early = yield* Effect.flip(library.probeMedia(target));
+      const probe = () =>
+        library.probeMedia(memberIn(workspaceId), prepared.asset.id);
+
+      const early = yield* Effect.flip(probe());
 
       assert.strictEqual(early._tag, "InvalidMediaTransition");
 
       yield* sendSigned(yield* singleRequest(prepared), body);
       yield* complete(prepared);
 
-      const probed = yield* library.probeMedia(target);
+      const probed = yield* probe();
 
       const metadata = new MediaMetadata({
         codec: Option.none(),
@@ -539,21 +583,21 @@ layer(LibraryTest)("the media library", (it) => {
       const body = damagedPng(64);
       const prepared = yield* prepare(workspaceId, "image/png", body.length);
       const library = yield* MediaLibrary;
-      const target = { assetId: prepared.asset.id, workspaceId };
-
       yield* sendSigned(yield* singleRequest(prepared), body);
       yield* complete(prepared);
 
       // A damaged PNG: the probe fails and the asset stays uploaded.
-      const failed = yield* Effect.flip(library.probeMedia(target));
+      const failed = yield* Effect.flip(
+        library.probeMedia(memberIn(workspaceId), prepared.asset.id)
+      );
 
       assert.include(failed, {
         _tag: "MediaProbeFailed",
         reason: "unreadable",
       });
-      assert.strictEqual(
-        Option.getOrUndefined(yield* recorded(prepared))?.status._tag,
-        "uploaded"
+      assert.deepStrictEqual(
+        Option.getOrUndefined(yield* recorded(prepared))?.status,
+        { _tag: "uploaded", probe: "unreadable" }
       );
     })
   );
@@ -564,13 +608,13 @@ layer(LibraryTest)("the media library", (it) => {
       const body = syntheticSvg();
       const prepared = yield* prepare(workspaceId, "image/png", body.length);
       const library = yield* MediaLibrary;
-      const target = { assetId: prepared.asset.id, workspaceId };
-
       yield* sendSigned(yield* singleRequest(prepared), body);
       yield* complete(prepared);
 
       // The store took it as a PNG of the declared size, but it is an SVG.
-      const rejected = yield* Effect.flip(library.probeMedia(target));
+      const rejected = yield* Effect.flip(
+        library.probeMedia(memberIn(workspaceId), prepared.asset.id)
+      );
 
       assert.include(rejected, {
         _tag: "UploadRejected",
@@ -586,5 +630,242 @@ layer(LibraryTest)("the media library", (it) => {
         reason: "typeMismatch",
       });
     })
+  );
+
+  it.effect("finishes an image upload by probing it at once", () =>
+    Effect.gen(function* finishesImage() {
+      const workspaceId = yield* freshWorkspace;
+      const body = yield* whitePng(16, 9);
+      const prepared = yield* prepare(workspaceId, "image/png", body.length);
+      const library = yield* MediaLibrary;
+
+      const finish = () =>
+        library.finishUpload(memberIn(workspaceId), prepared.asset.id);
+
+      yield* sendSigned(yield* singleRequest(prepared), body);
+
+      const { asset: ready, url } = yield* finish();
+
+      assert.deepStrictEqual(ready.status, { _tag: "ready" });
+      assert.deepStrictEqual(
+        ready.metadata.dimensions,
+        Option.some({ height: 9, width: 16 })
+      );
+
+      const { bytes } = yield* fetchBytes(Option.getOrElse(url, () => ""));
+
+      assert.deepStrictEqual(bytes, body);
+
+      // Finishing again answers the same.
+      assert.deepStrictEqual((yield* finish()).asset, ready);
+    })
+  );
+
+  it.effect.skipIf(!hasFfmpeg)("finishes a video upload with ffprobe", () =>
+    Effect.gen(function* withFfprobe() {
+      const workspaceId = yield* freshWorkspace;
+      const body = syntheticVideo();
+      const prepared = yield* prepare(workspaceId, "video/mp4", body.length);
+
+      yield* sendSigned(yield* singleRequest(prepared), body);
+
+      const { asset: ready } = yield* MediaLibrary.use((library) =>
+        library.finishUpload(memberIn(workspaceId), prepared.asset.id)
+      );
+
+      assert.deepStrictEqual(ready.status, { _tag: "ready" });
+      assert.deepStrictEqual(
+        ready.metadata.dimensions,
+        Option.some({ height: 240, width: 320 })
+      );
+      assert.deepStrictEqual(ready.metadata.codec, Option.some("mpeg4"));
+    })
+  );
+
+  it.effect("keeps a damaged file uploaded with why it was not probed", () =>
+    Effect.gen(function* damaged() {
+      const workspaceId = yield* freshWorkspace;
+      const body = damagedPng(64);
+      const prepared = yield* prepare(workspaceId, "image/png", body.length);
+
+      yield* sendSigned(yield* singleRequest(prepared), body);
+
+      const { asset: finished } = yield* MediaLibrary.use((library) =>
+        library.finishUpload(memberIn(workspaceId), prepared.asset.id)
+      );
+
+      assert.deepStrictEqual(finished.status, {
+        _tag: "uploaded",
+        probe: "unreadable",
+      });
+    })
+  );
+
+  it.effect("refuses what the actor's permissions do not allow", () =>
+    Effect.gen(function* permissions() {
+      const workspaceId = yield* freshWorkspace;
+      const library = yield* MediaLibrary;
+      const prepared = yield* prepare(workspaceId, "image/png", 10);
+      const { id } = prepared.asset;
+      const viewer = memberIn(workspaceId, ["media:read"]);
+      const stranger = memberIn(workspaceId, ["post:read"]);
+
+      const upload = {
+        altText: Option.none(),
+        byteSize: 10,
+        contentType: "image/png",
+      };
+
+      const refusals = [
+        yield* Effect.flip(library.createUpload(viewer, upload)),
+        yield* Effect.flip(library.finishUpload(viewer, id)),
+        yield* Effect.flip(library.describeMedia(viewer, id, Option.none())),
+        yield* Effect.flip(library.deleteMedia(viewer, id)),
+        yield* Effect.flip(library.getMedia(stranger, id)),
+        yield* Effect.flip(
+          library.listMedia(stranger, { after: Option.none(), limit: 10 })
+        ),
+      ];
+
+      assert.deepStrictEqual(
+        refusals.map((refusal) =>
+          refusal._tag === "MissingPermission"
+            ? refusal.permission
+            : refusal._tag
+        ),
+        [
+          "media:upload",
+          "media:upload",
+          "media:upload",
+          "media:delete",
+          "media:read",
+          "media:read",
+        ]
+      );
+      assert.deepStrictEqual(
+        yield* recorded(prepared),
+        Option.some(prepared.asset)
+      );
+    })
+  );
+
+  it.effect("describes media, also while it uploads", () =>
+    Effect.gen(function* describes() {
+      const workspaceId = yield* freshWorkspace;
+      const library = yield* MediaLibrary;
+      const member = memberIn(workspaceId);
+
+      const prepared = yield* library.createUpload(member, {
+        altText: Option.some("  A white square  "),
+        byteSize: 100,
+        contentType: "image/png",
+      });
+
+      const { id } = prepared.asset;
+
+      assert.deepStrictEqual(
+        prepared.asset.altText,
+        Option.some("A white square")
+      );
+
+      const { asset: described } = yield* library.describeMedia(
+        member,
+        id,
+        Option.some("A white square on white")
+      );
+
+      assert.deepStrictEqual(
+        described.altText,
+        Option.some("A white square on white")
+      );
+      assert.deepStrictEqual(described.status, prepared.asset.status);
+
+      const { asset: cleared } = yield* library.describeMedia(
+        member,
+        id,
+        Option.some(" ")
+      );
+
+      assert.deepStrictEqual(cleared.altText, Option.none());
+
+      const tooLong = yield* Effect.flip(
+        library.describeMedia(member, id, Option.some("a".repeat(2001)))
+      );
+
+      assert.strictEqual(tooLong._tag, "AltTextTooLong");
+      yield* library.deleteMedia(member, id);
+    })
+  );
+
+  it.effect("lists media newest first, with URLs for stored files", () =>
+    Effect.gen(function* lists() {
+      const workspaceId = yield* freshWorkspace;
+      const library = yield* MediaLibrary;
+      const member = memberIn(workspaceId);
+      const body = syntheticBytes(300);
+      const stored = yield* prepare(workspaceId, "image/gif", body.length);
+      const waiting = yield* prepare(workspaceId, "image/png", 10);
+
+      yield* sendSigned(yield* singleRequest(stored), body);
+      yield* complete(stored);
+
+      const page = yield* library.listMedia(member, {
+        after: Option.none(),
+        limit: 1,
+      });
+
+      assert.deepStrictEqual(
+        page.items.map(({ asset, url }) => [asset.id, Option.isSome(url)]),
+        [[waiting.asset.id, false]]
+      );
+
+      const next = yield* library.listMedia(member, {
+        after: page.next,
+        limit: 1,
+      });
+
+      const [item] = next.items;
+
+      assert.strictEqual(item?.asset.id, stored.asset.id);
+      assert.deepStrictEqual(next.next, Option.none());
+
+      const { bytes } = yield* fetchBytes(
+        Option.getOrElse(item?.url ?? Option.none(), () => "")
+      );
+
+      assert.deepStrictEqual(bytes, body);
+
+      const shown = yield* library.getMedia(member, stored.asset.id);
+
+      assert.isTrue(Option.isSome(shown.url));
+    })
+  );
+});
+
+layer(WithoutFfprobeTest)("the media library without ffprobe", (it) => {
+  it.effect(
+    "leaves a video uploaded, its probe unavailable, without ffprobe",
+    () =>
+      Effect.gen(function* noFfprobe() {
+        const workspaceId = yield* freshWorkspace;
+        const body = syntheticBytes(4096);
+        const prepared = yield* prepare(workspaceId, "video/mp4", body.length);
+
+        yield* sendSigned(yield* singleRequest(prepared), body);
+
+        const { asset: finished } = yield* MediaLibrary.use((library) =>
+          library.finishUpload(memberIn(workspaceId), prepared.asset.id)
+        );
+
+        assert.deepStrictEqual(finished.status, {
+          _tag: "uploaded",
+          probe: "unavailable",
+        });
+        assert.deepStrictEqual(finished.metadata, MediaMetadata.unknown);
+        assert.deepStrictEqual(
+          yield* recorded(prepared),
+          Option.some(finished)
+        );
+      })
   );
 });

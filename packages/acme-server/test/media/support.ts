@@ -1,5 +1,14 @@
-import { ConfigProvider, Effect, Layer } from "effect";
+import { execFileSync, spawnSync } from "node:child_process";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import os from "node:os";
+import path from "node:path";
 
+import { ConfigProvider, Effect, Layer, Option } from "effect";
+
+import { Actor } from "#shared/domain/access.ts";
+import type { Permission } from "#shared/domain/access.ts";
+import { UserIdSchema } from "#shared/domain/ids.ts";
+import type { WorkspaceId } from "#shared/domain/ids.ts";
 import { DatabaseLive } from "#shared/infrastructure/database.ts";
 import { MigrationsLive } from "#shared/infrastructure/migrations.ts";
 import { IdsLive } from "#shared/infrastructure/secure-random-ids.ts";
@@ -76,3 +85,62 @@ export const fetchBytes = (
 
     return { bytes: new Uint8Array(await response.arrayBuffer()), response };
   });
+
+const syntheticUser = UserIdSchema.make("5b1c5f7e-3d2a-4c1b-9e8f-7a6b5c4d3e2f");
+
+const mediaPermissions: readonly Permission[] = [
+  "media:read",
+  "media:upload",
+  "media:delete",
+];
+
+/** Someone signed in, acting in the workspace with these permissions. */
+export const memberIn = (
+  workspaceId: WorkspaceId,
+  permissions: readonly Permission[] = mediaPermissions
+): Actor =>
+  new Actor({
+    permissions,
+    subject: {
+      _tag: "user",
+      impersonatedBy: Option.none(),
+      userId: syntheticUser,
+    },
+    workspaceId,
+  });
+
+// CI runners may lack FFmpeg; the parsing tests below cover its output.
+export const hasFfmpeg =
+  spawnSync("ffmpeg", ["-version"]).status === 0 &&
+  spawnSync("ffprobe", ["-version"]).status === 0;
+
+// A one-second 320×240 test pattern, encoded with FFmpeg's own MPEG-4 encoder,
+// which every build has.
+export const syntheticVideo = (): Uint8Array<ArrayBuffer> => {
+  const folder = mkdtempSync(path.join(os.tmpdir(), "acme-probe-"));
+  const file = path.join(folder, "pattern.mp4");
+
+  try {
+    execFileSync(
+      "ffmpeg",
+      [
+        "-v",
+        "error",
+        "-f",
+        "lavfi",
+        "-i",
+        "testsrc=size=320x240:rate=25",
+        "-t",
+        "1",
+        "-c:v",
+        "mpeg4",
+        file,
+      ],
+      { stdio: "ignore" }
+    );
+
+    return new Uint8Array(readFileSync(file));
+  } finally {
+    rmSync(folder, { force: true, recursive: true });
+  }
+};

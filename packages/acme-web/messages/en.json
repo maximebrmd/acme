@@ -325,5 +325,98 @@
       "moveHandle": "Move the post at {time}: {post}",
       "hour": "Time"
     }
+  },
+  "Media": {
+    "page": {
+      "title": "Media",
+      "description": "The images and videos of {workspace}, to put in posts.",
+      "open": "Media library",
+      "openLabel": "Media library of {workspace}"
+    },
+    "uploader": {
+      "title": "Upload media",
+      "description": "Images and videos go straight to storage. Describe each one for people who cannot see it.",
+      "dropzone": "Drop images or videos here, or click to choose them.",
+      "choose": "Choose images or videos to upload",
+      "accepted": "JPEG, PNG, GIF and WebP images up to 16 MB, MP4 and QuickTime videos up to 1 GB.",
+      "dropping": "Drop to upload",
+      "uploads": "Uploads",
+      "phase": {
+        "preparing": "Preparing",
+        "sending": "Uploading",
+        "completing": "Checking the file",
+        "done": "Uploaded",
+        "canceled": "Canceled",
+        "failed": "Failed"
+      },
+      "altText": "Description",
+      "altTextHint": "What it shows, for people who cannot see it. Platforms show it with the media.",
+      "altTextWaiting": "You can write it as soon as the upload starts.",
+      "altTextSaving": "Saving the description…",
+      "altTextSaved": "Description saved.",
+      "altTextFailed": "The description could not be saved. Try again.",
+      "cancel": "Cancel",
+      "cancelLabel": "Cancel the upload of {name}",
+      "retry": "Try again",
+      "retryLabel": "Upload {name} again",
+      "remove": "Remove",
+      "removeLabel": "Remove {name} from the list",
+      "errors": {
+        "unsupportedType": "Acme does not take this type of file. Upload a JPEG, PNG, GIF or WebP image, or an MP4 or QuickTime video.",
+        "tooLarge": "This file is larger than the {limit, number} MB Acme takes for its kind.",
+        "altTextTooLong": "The description is longer than {limit, number} characters.",
+        "forbidden": "You may not upload media in this workspace.",
+        "signedOut": "You are signed out. Sign in, then upload the file again.",
+        "workspaceNotFound": "This workspace no longer exists, or you no longer belong to it.",
+        "network": "The connection dropped while the file was being sent. Check it, then try again.",
+        "linkExpired": "The upload took too long and its link expired. Try again.",
+        "storeRefused": "The media store refused the file. Try again.",
+        "storeUnavailable": "The media store cannot be reached right now. Try again in a moment.",
+        "incomplete": "Part of the file did not arrive. Try again.",
+        "rejectedSize": "The file that arrived does not have the size it was sent with. Try again.",
+        "rejectedType": "The file’s content does not match its type: it may have been renamed, or be damaged.",
+        "unexpected": "Something went wrong. Try again."
+      }
+    },
+    "status": {
+      "pending": "Uploading",
+      "uploaded": "Processing",
+      "ready": "Ready",
+      "rejected": "Rejected"
+    },
+    "probe": {
+      "pending": "Uploaded, and waiting to be read.",
+      "unavailable": "Uploaded, but this server cannot read videos, so it is not ready for posts yet.",
+      "unreadable": "Uploaded, but the file could not be read: it may be damaged.",
+      "timedOut": "Uploaded, but reading the file took too long.",
+      "tooLarge": "Uploaded, but the stored file is larger than declared.",
+      "toolFailed": "Uploaded, but the server failed to read it."
+    },
+    "rejected": {
+      "sizeMismatch": "The file did not have the declared size, and was deleted.",
+      "typeMismatch": "The file was not of its declared type, and was deleted."
+    },
+    "library": {
+      "title": "Library",
+      "empty": "No media yet. Upload images or videos to use them in posts.",
+      "loading": "Loading the media…",
+      "loadFailed": "The media could not be loaded.",
+      "reload": "Try again",
+      "loadMore": "Show more",
+      "kind": "{kind, select, image {Image} other {Video}}",
+      "dimensions": "{width} × {height}",
+      "duration": "{seconds, number} s",
+      "noAltText": "No description",
+      "added": "Added on {date, date, medium}",
+      "delete": "Delete",
+      "deleteLabel": "Delete this {kind, select, image {image} other {video}}",
+      "deleteTitle": "Delete this {kind, select, image {image} other {video}}?",
+      "deleteDescription": "Its file is deleted from storage, and it can no longer go into posts. Posts already published keep it on their platforms. This cannot be undone.",
+      "deleteConfirm": "Delete",
+      "deleting": "Deleting…",
+      "keep": "Keep it",
+      "deleteFailed": "The media could not be deleted. Try again.",
+      "deleted": "The media was deleted."
+    }
   }
 }

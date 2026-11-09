@@ -37,6 +37,10 @@ import type { MediaContentType } from "#media/domain/media-format.ts";
 import { MultipartUploadIdSchema } from "#media/domain/media-status.ts";
 import type { StorageKey } from "#media/domain/storage-key.ts";
 import { PartNumberSchema } from "#media/domain/upload-plan.ts";
+import {
+  isProduction,
+  requiredInProduction,
+} from "#shared/infrastructure/environment.ts";
 
 // The media store, on any S3-compatible API: Cloudflare R2 in production,
 // SeaweedFS in development, or the store a self-hoster runs.
@@ -48,16 +52,19 @@ import { PartNumberSchema } from "#media/domain/upload-plan.ts";
 // the tests, which run on Node. Presigned POST is never used, because R2
 // does not support it; presigned PUTs and part URLs work on every store.
 //
-// Settings, from the environment:
+// Settings, from the environment. Production must name the store; elsewhere
+// it defaults to the development stack's SeaweedFS
+// (packages/acme-docker/compose.yaml), so the server runs without setup.
 //
 // | Variable                     | Meaning                                         |
 // | ---------------------------- | ----------------------------------------------- |
-// | ACME_S3_ENDPOINT             | the S3 API's URL (required)                     |
+// | ACME_S3_ENDPOINT             | the S3 API's URL (required in production)       |
 // | ACME_S3_REGION               | signing region, "auto" by default (R2)          |
-// | ACME_S3_BUCKET               | the bucket (required)                           |
-// | ACME_S3_ACCESS_KEY_ID        | access key (required, redacted)                 |
-// | ACME_S3_SECRET_ACCESS_KEY    | secret key (required, redacted)                 |
-// | ACME_S3_FORCE_PATH_STYLE     | "true" for bucket-in-path URLs (SeaweedFS)      |
+// | ACME_S3_BUCKET               | the bucket (required in production)             |
+// | ACME_S3_ACCESS_KEY_ID        | access key (required in production, redacted)   |
+// | ACME_S3_SECRET_ACCESS_KEY    | secret key (required in production, redacted)   |
+// | ACME_S3_FORCE_PATH_STYLE     | "true" for bucket-in-path URLs (SeaweedFS), the |
+// |                              | default outside production                      |
 // | ACME_S3_KEY_PREFIX           | prefix for every key, such as "staging/"        |
 // | ACME_MEDIA_PUBLIC_BASE_URL   | where the bucket is served publicly, if it is   |
 
@@ -67,11 +74,24 @@ const KeyPrefixSchema = Schema.String.check(
 );
 
 export const S3StorageConfig = Config.all({
-  accessKeyId: Config.Redacted("ACME_S3_ACCESS_KEY_ID"),
-  bucket: Config.NonEmptyString("ACME_S3_BUCKET"),
-  endpoint: Config.URL("ACME_S3_ENDPOINT"),
-  forcePathStyle: Config.Boolean("ACME_S3_FORCE_PATH_STYLE").pipe(
-    Config.withDefault(false)
+  accessKeyId: requiredInProduction(
+    Config.Redacted("ACME_S3_ACCESS_KEY_ID"),
+    Redacted.make("acme")
+  ),
+  bucket: requiredInProduction(
+    Config.NonEmptyString("ACME_S3_BUCKET"),
+    "acme-media"
+  ),
+  endpoint: requiredInProduction(
+    Config.URL("ACME_S3_ENDPOINT"),
+    new URL("http://127.0.0.1:18333")
+  ),
+  forcePathStyle: isProduction.pipe(
+    Config.flatMap((production) =>
+      Config.Boolean("ACME_S3_FORCE_PATH_STYLE").pipe(
+        Config.withDefault(!production)
+      )
+    )
   ),
   keyPrefix: Config.schema(KeyPrefixSchema, "ACME_S3_KEY_PREFIX").pipe(
     Config.withDefault("")
@@ -80,7 +100,10 @@ export const S3StorageConfig = Config.all({
   region: Config.NonEmptyString("ACME_S3_REGION").pipe(
     Config.withDefault("auto")
   ),
-  secretAccessKey: Config.Redacted("ACME_S3_SECRET_ACCESS_KEY"),
+  secretAccessKey: requiredInProduction(
+    Config.Redacted("ACME_S3_SECRET_ACCESS_KEY"),
+    Redacted.make("acme-development-secret")
+  ),
 });
 
 export type S3StorageSettings = Config.Success<typeof S3StorageConfig>;
@@ -317,7 +340,13 @@ export const makeS3MediaStorage = Effect.fn("S3MediaStorage.make")(
           more = page.IsTruncated === true && marker !== undefined;
         }
 
-        return parts.toSorted(
+        // A part sent again replaces the one before. SeaweedFS lists every
+        // upload of it all the same, so each part number is kept once: the
+        // last listed. Each upload of a part comes from the same URL, which
+        // only takes the part's planned size.
+        const byNumber = new Map(parts.map((part) => [part.partNumber, part]));
+
+        return [...byNumber.values()].toSorted(
           (left, right) => left.partNumber - right.partNumber
         );
       }

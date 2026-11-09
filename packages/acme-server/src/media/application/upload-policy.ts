@@ -19,6 +19,8 @@ export interface UploadPolicy extends UploadSizing {
   readonly partUploadExpiry: Duration.Duration;
   /** How long a probe may read the file. */
   readonly probeExpiry: Duration.Duration;
+  /** How long the URL a client shows a stored file from works. */
+  readonly viewExpiry: Duration.Duration;
 }
 
 /**
@@ -27,7 +29,8 @@ export interface UploadPolicy extends UploadSizing {
  * connection costs one part rather than the whole file. Part URLs last six
  * hours, enough for 1 GiB at about 0.4 Mbit/s. A single upload URL lasts ten
  * minutes: the store only checks that a request starts in time, so a slow
- * line still finishes its 16 MiB.
+ * line still finishes its 16 MiB. A URL to show a stored file lasts an
+ * hour: a page that lists media is read again well before then.
  */
 export const defaultUploadPolicy: UploadPolicy = {
   multipartThreshold: 16 * mebibyte,
@@ -35,6 +38,7 @@ export const defaultUploadPolicy: UploadPolicy = {
   partUploadExpiry: Duration.hours(6),
   probeExpiry: Duration.minutes(15),
   singleUploadExpiry: Duration.minutes(10),
+  viewExpiry: Duration.hours(1),
 };
 
 /** The upload policy in effect. Tests provide smaller parts. */
