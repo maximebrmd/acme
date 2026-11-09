@@ -23,10 +23,12 @@ interface AccountMenuViewProps {
   readonly name: string;
 }
 
-// The signed-in user's menu: who they are, their workspaces, and signing
-// out, after which the page renders again without the session.
+// The signed-in user's menu: who they are, their workspaces, their account
+// settings, and signing out, after which the page renders again without the
+// session.
 export const AccountMenuView = ({ email, name }: AccountMenuViewProps) => {
   const t = useTranslations("UserMenu");
+  const account = useTranslations("AccountSettings");
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
@@ -52,6 +54,10 @@ export const AccountMenuView = ({ email, name }: AccountMenuViewProps) => {
     router.push("/app");
   };
 
+  const handleOpenAccount = () => {
+    router.push("/app/account");
+  };
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
@@ -74,6 +80,9 @@ export const AccountMenuView = ({ email, name }: AccountMenuViewProps) => {
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleOpenApp}>{t("app")}</DropdownMenuItem>
+        <DropdownMenuItem onClick={handleOpenAccount}>
+          {account("menu")}
+        </DropdownMenuItem>
         <DropdownMenuItem onClick={handleSignOut}>
           {t("signOut")}
         </DropdownMenuItem>

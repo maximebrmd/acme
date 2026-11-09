@@ -38,6 +38,7 @@ const AppPage = async ({ params }: PageProps<"/[locale]/app">) => {
   const channels = await getTranslations("ChannelsPage");
   const tPosts = await getTranslations("Posts.nav");
   const media = await getTranslations("Media.page");
+  const settings = await getTranslations("WorkspaceSettings");
 
   return (
     <div className="flex flex-col gap-8">
@@ -103,6 +104,15 @@ const AppPage = async ({ params }: PageProps<"/[locale]/app">) => {
                         {media("open")}
                       </Link>
                     ) : null}
+                    <Link
+                      href={`/app/${workspace.id}/settings`}
+                      aria-label={settings("openLabel", {
+                        workspace: workspace.name,
+                      })}
+                      className="underline-offset-4 hover:underline"
+                    >
+                      {settings("open")}
+                    </Link>
                   </nav>
                 </CardFooter>
               </Card>
