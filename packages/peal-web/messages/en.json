@@ -1345,7 +1345,7 @@
     },
     "audit": {
       "title": "Audit log",
-      "description": "What staff did, newest first: who, what, to which account, why and when. Ids of closed accounts, and the reasons given about them, are forgotten.",
+      "description": "What staff did, newest first: who, what, to which account, why and when, and every change staff made while acting as an account, with what it was and where, never what it said. Ids of closed accounts, and the reasons given about them, are forgotten.",
       "columns": {
         "at": "When",
         "staff": "Staff",
@@ -1357,7 +1357,8 @@
       "closedAccount": "A closed account",
       "noReason": "Not kept",
       "until": "Until",
-      "action": "{action, select, ban {Banned} unban {Lifted the ban} revokeSessions {Signed out everywhere} resendVerification {Sent the confirmation again} impersonate {Acted as the account} other {{action}}}"
+      "workspace": "In a workspace",
+      "action": "{action, select, ban {Banned} unban {Lifted the ban} revokeSessions {Signed out everywhere} resendVerification {Sent the confirmation again} impersonate {Acted as the account} impersonatedChange {Changed something as the account} stopImpersonating {Stopped acting as the account} impersonationEnded {Acting as the account ended, by the server} other {{action}}}"
     },
     "channelStatus": {
       "active": "Works",

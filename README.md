@@ -46,7 +46,8 @@ It is not released yet. Today you can:
   but for your data, which no MCP tool hands out;
 - run the server from a staff console at `/admin`: find accounts and
   workspaces, see the system's health, ban, sign out or act as an account,
-  each action in an audit log;
+  each action, and each change made while acting as an account, in an
+  audit log;
 - have the web app's errors, in browsers and on its server, logged and
   counted by the server, with a Grafana alert on a spike.
 

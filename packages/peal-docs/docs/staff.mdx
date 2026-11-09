@@ -1,6 +1,6 @@
 ---
 title: Staff console
-description: Give the people who run your server the staff role, then find accounts and workspaces, ban, sign out or act as an account, and read the audit log of every action, from /admin.
+description: Give the people who run your server the staff role, then find accounts and workspaces, ban, sign out or act as an account, and read the audit log of every action and every change made as an account, from /admin.
 sidebar:
   order: 14
 ---
@@ -15,7 +15,7 @@ Staff are accounts with Better Auth's admin role. No page grants it: set it in t
 UPDATE auth."user" SET role = 'admin' WHERE email = 'you@example.com';
 ```
 
-To take the role back, set `role` to `NULL`, then have other staff **Sign out everywhere** the account, which also ends the sessions it opened to act as someone else. The console refuses anyone but staff in their own session, signed in or not, answering 404 as if it were not there: an API key, an application acting through OAuth, or staff while they act as someone else are refused too. A banned staff account is refused at once.
+To take the role back, set `role` to `NULL`, then have other staff **Sign out everywhere** the account. The sessions it opened to act as someone else end on their next request, whatever it is, as the server checks on each one that their staff member is still staff and not banned, and the audit log records each end. The console refuses anyone but staff in their own session, signed in or not, answering 404 as if it were not there: an API key, an application acting through OAuth, or staff while they act as someone else are refused too. A banned staff account is refused at once.
 
 Peal's own servers also put `/admin`, `/en/admin`, `/fr/admin` and `/api/admin` behind Cloudflare Access. Behind your own edge, you may restrict them to your team's addresses the same way.
 
@@ -43,7 +43,7 @@ Each action asks why, and keeps the reason in the audit log with the staff membe
 - **Send the confirmation again** emails a new link to confirm the address, in the account's language, while it is not confirmed.
 - **Act as this account** signs the staff member's browser in as the account for an hour. A banner at the top of every page says whose account it is, with **Stop acting as them**, which brings back the staff member's own session.
 
-While acting as an account, staff see its posts and media, and cannot connect channels, publish, manage API keys or billing, change its workspaces or the account, or let an application act for it. They can read its notifications, not mark them read. They can ask the writing assistant in its workspaces, which counts toward those workspaces' daily requests.
+While acting as an account, staff see its posts and media, and can write, schedule and publish posts in its name; they cannot connect channels, manage API keys or billing, change its workspaces or the account, or let an application act for it. They can read its notifications, not mark them read. They can ask the writing assistant in its workspaces, which counts toward those workspaces' daily requests. What they make carries the account's name, as its author, and the audit log keeps who made it (see below).
 
 Staff never ban, sign out or act as themselves, and never act as other staff. No one deletes an account but its owner, from [their account settings](/settings#delete-account).
 
@@ -53,4 +53,20 @@ Better Auth's own admin endpoints under `/api/auth/admin/` are off, so nothing s
 
 Each action is recorded before it is carried out, so nothing staff do goes unrecorded: who did it, what, to which account, why, and when, with a ban's end. An action that then failed still shows what staff asked for. The log keeps ids, never what anyone wrote, and keeps entries for good.
 
-When an account is closed, the log forgets it as the account acted on: entries about it lose its id and the reason given. Entries it made as staff keep their author, as a legitimate interest: whoever runs the server answers for what staff did to other people's accounts, after staff leave too. What was done, and when, stays. The account's data download lists what staff did to it, with the reason given, but not who did it.
+While staff act as an account, the server records every request that changes something, before it runs, whichever way it comes: Peal's API (`/api/…`) and the sign-in service's routes (`/api/auth/…`) alike. The handler of the request has no say in it, so a change cannot skip its record, and a change the server then refuses is recorded too. Each entry says:
+
+| Field     | What it holds                                                                                                                   |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| Staff     | The staff member who acted                                                                                                      |
+| Account   | The account they acted as                                                                                                       |
+| Action    | Changed something as the account                                                                                                |
+| Operation | The API's endpoint, as `group.endpoint` (`posts.create`, `posts.schedule`), or the sign-in route, as `auth:/path`               |
+| Workspace | The workspace it was in                                                                                                         |
+| Ids       | The ids the request named, by name (`postId`, `channelId`, `organizationId`); never the text, media or anything else it carried |
+| When      | When it was asked for                                                                                                           |
+
+Reads are not recorded. MCP clients, the command line and API keys never act for staff: their tokens carry no impersonation, and staff acting as an account may not let an application act for it or create a key.
+
+The log also records how each impersonation ended: **Stopped acting as the account** when staff stop it from the banner or sign out, and **Acting as the account ended, by the server** when the server ends it, as its staff member was banned, signed out everywhere or is no longer staff, or the account was banned or signed out everywhere. One that is never stopped ends an hour after it began, as its start in the log shows.
+
+When an account is closed, the log forgets it as the account acted on: entries about it lose its id and the reason given. Entries it made as staff keep their author, as a legitimate interest: whoever runs the server answers for what staff did to other people's accounts, after staff leave too. What was done, and when, stays. The account's data download lists what staff did to it, with the reason given and the changes staff made as it (what, where and on which ids), but not who did it.

@@ -50,7 +50,12 @@ import { DatabaseLive } from "#shared/infrastructure/database.ts";
 import { MigrationsLive } from "#shared/infrastructure/migrations.ts";
 import { IdsLive } from "#shared/infrastructure/secure-random-ids.ts";
 import { TransactionRunnerLive } from "#shared/infrastructure/transaction-runner-live.ts";
-import { StaffApiLive, StaffLive, StaffRecordsLive } from "#staff/container.ts";
+import {
+  ImpersonationAuditLive,
+  StaffApiLive,
+  StaffLive,
+  StaffRecordsLive,
+} from "#staff/container.ts";
 import {
   AuthRoutesLive,
   StripeCheckoutsLive,
@@ -99,15 +104,17 @@ const BillingContextsLive = BillingLive.pipe(
   Layer.provide(StripeCheckoutsLive)
 );
 
-// The workspace context with the notifications it sends and the plans that
-// limit it, then the notices, which read the workspace's members, then the
-// channels context, which sends them, as publishing does.
+// The workspace context with the notifications it sends, the plans that
+// limit it and the audit log of staff's impersonations it records, then the
+// notices, which read the workspace's members, then the channels context,
+// which sends them, as publishing does.
 const ChannelsWithNoticesLive = ChannelsLive.pipe(
   Layer.provideMerge(NoticesLive),
   Layer.provideMerge(
     WorkspaceLive.pipe(
       Layer.provideMerge(NotificationsLive),
-      Layer.provideMerge(BillingContextsLive)
+      Layer.provideMerge(BillingContextsLive),
+      Layer.provide(ImpersonationAuditLive)
     )
   )
 );

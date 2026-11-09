@@ -23,9 +23,12 @@ export const MembershipSchema = Schema.Struct({
 export type Membership = typeof MembershipSchema.Type;
 
 /**
- * What staff impersonating a member may not do in the member's name: publish,
- * connect accounts, change billing, handle API keys or delete the workspace,
- * which all outlive the impersonation or reach outside Peal.
+ * What staff impersonating a member may not do in the member's name: connect
+ * accounts, change billing, handle API keys or delete the workspace, which
+ * all outlive the impersonation or reach outside Peal. They may write,
+ * schedule and publish posts, each change recorded in the audit log under
+ * their own name (the ImpersonationGuard), while the posts carry the
+ * member's.
  */
 export const withheldWhileImpersonating: ReadonlySet<Permission> = new Set([
   "apiKey:create",
@@ -35,7 +38,6 @@ export const withheldWhileImpersonating: ReadonlySet<Permission> = new Set([
   "billing:manage",
   "channel:connect",
   "organization:delete",
-  "post:publish",
 ]);
 
 export type AccessDenied = BannedUser | NotAMember | WorkspaceMismatch;

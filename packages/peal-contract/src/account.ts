@@ -15,7 +15,7 @@ import { IncorrectPassword } from "./incorrect-password.ts";
 import { LastOwner } from "./last-owner.ts";
 import { NoticeEventSchema } from "./notices.ts";
 import { NotificationPreferencesSchema } from "./notification-preferences.ts";
-import { StaffActionSchema } from "./staff.ts";
+import { StaffActionSchema, StaffObjectIdsSchema } from "./staff.ts";
 import { TargetOptionsSchema } from "./target-options.ts";
 import { TooManyPasswordAttempts } from "./too-many-password-attempts.ts";
 import { WorkspaceBusy } from "./workspace-busy.ts";
@@ -114,14 +114,22 @@ const ExportedPostSchema = Schema.Struct({
   timeZone: nullable(Schema.String),
 });
 
-// Something staff did to the account, from the audit log: who did it is
-// left out, as it is staff's.
+// Something staff did to the account, from the audit log, changes they
+// made while acting as it included: who did it is left out, as it is
+// staff's.
 const ExportedStaffActionSchema = Schema.Struct({
   action: StaffActionSchema,
   at: instant,
   // When a ban was to end; null for any other action, or a ban for good.
   banExpiresAt: nullable(instant),
+  // The ids a change made while acting as the account named.
+  objectIds: StaffObjectIdsSchema,
+  // What staff asked for while acting as the account (`posts.update`,
+  // `auth:/organization/set-active`), or stopped it with.
+  operation: nullable(Schema.String),
   reason: nullable(Schema.String),
+  // The workspace such a change was in.
+  workspaceId: nullable(Schema.String),
 });
 
 const ExportedMediaSchema = Schema.Struct({

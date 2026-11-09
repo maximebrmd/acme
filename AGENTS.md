@@ -357,7 +357,34 @@ and no socket, for tests.
   (`workspace/domain/membership.ts`), and Better Auth refuses them every route
   that changes a workspace or the account (name, language, password,
   sessions), grants an OAuth client access or approves a device code
-  (`impersonation.ts`).
+  (`impersonation.ts`). They may write, schedule and publish posts: what
+  they make keeps the member as its author (`author_id`), and the audit log
+  keeps the staff member behind it.
+- Every request in an impersonation session goes through
+  `ImpersonationGuard` (`workspace/application/impersonation-guard.ts`)
+  before its handler, so no handler can skip it: `Authentication` (session
+  cookies) for Peal's API, and Better Auth's before hook
+  (`guardImpersonatedRequest`, browser requests only: its calls from Peal's
+  API carry no request) for its routes. The guard reads the staff member's
+  standing fresh on every request, reads included; once they are no longer
+  staff or are banned, it deletes every session they impersonate in
+  (`ImpersonationSessions`), records each end and answers 401, so removing
+  the role in the database works at once. Each change it records
+  (`impersonatedChange`) holds the staff member, the account, the
+  workspace, the operation (`group.endpoint` from the contract, or
+  `auth:/path`) and the ids the path or the body named (`objectIds`, only
+  id-shaped values), recorded before the handler runs, refused or not;
+  never a body or a query. Reads are not recorded. Stopping
+  (`/admin/stop-impersonating`, `/sign-out`) records `stopImpersonating`;
+  a ban or a sign-out everywhere that ends impersonations records
+  `impersonationEnded` for each (`AccountModeration` answers with them).
+  One left to run out is not recorded: it ends an hour after its
+  `impersonate` event. The guard reaches the audit log through
+  `ImpersonationLog`, which the staff context's `ImpersonationAudit` backs.
+  Bearer tokens never carry an impersonation, so MCP tools, the CLI and API
+  keys never act for staff. A new route that changes something under a
+  cookie session needs nothing more; one outside `Authentication` and
+  `/api/auth` must call the guard itself.
 - Workspaces and accounts are deleted through Peal's API only
   (`DeleteWorkspace`, `CloseAccount`): Better Auth's `/organization/delete`
   and the admin plugin's `/admin/remove-user` are disabled and its
@@ -398,7 +425,8 @@ and no socket, for tests.
   audit log (`StaffRecords.forgetUser`), the events about the account lose
   its id and the reason given; the events its user made as staff keep
   their id, a legitimate interest: the operator answers for what staff did
-  to other people's accounts. YouTube's upload journal goes with its
+  to other people's accounts; their workspace, operation and object ids
+  stay too. YouTube's upload journal goes with its
   publication calls, and `publishing.quota_usage`, the server's daily
   units, names nobody.
 - `AccountData` exports what is tied to the user, the posts they wrote in
@@ -407,7 +435,8 @@ and no socket, for tests.
   billing state (plan and subscription statuses, never a card or Stripe's
   ids): those `CloseAccount` deletes. Posts come with each target's
   platform options and whether YouTube kept the video private, and the
-  export lists what staff did to the account (action, time, reason),
+  export lists what staff did to the account (action, time, reason, and
+  for changes made as it the operation, workspace and object ids),
   without who did it. Sessions staff opened to impersonate
   the user are left out, as Better Auth's own list leaves them out: their
   browser and address are staff's. Closing an account is refused while its

@@ -151,6 +151,8 @@ const auditView = ({ event, staff, target }: AuditEntry): StaffAuditEvent => ({
   at: event.at,
   banExpiresAt: orNull(event.banExpiresAt),
   id: event.id,
+  objectIds: event.objectIds,
+  operation: orNull(event.operation),
   reason: orNull(event.reason),
   staffEmail: staff.pipe(
     Option.map(({ email }) => email),
@@ -162,6 +164,7 @@ const auditView = ({ event, staff, target }: AuditEntry): StaffAuditEvent => ({
     Option.getOrNull
   ),
   targetId: orNull(event.targetId),
+  workspaceId: orNull(event.workspaceId),
 });
 
 const userNotFound = () => Effect.fail(new UserNotFound());

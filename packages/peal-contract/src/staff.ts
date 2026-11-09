@@ -50,14 +50,32 @@ export const StaffReasonSchema = Schema.Trim.check(
   Schema.isMaxLength(maxStaffReasonLength)
 ).annotate({ identifier: "StaffReason" });
 
-/** What staff did, as the audit log records it. */
+/**
+ * What staff did, as the audit log records it: an action on an account, a
+ * change made while acting as it (`impersonatedChange`), and the end of an
+ * impersonation, by staff (`stopImpersonating`) or by the server, as its
+ * staff member or the account was banned or signed out everywhere, or the
+ * staff member lost the role (`impersonationEnded`).
+ */
 export const StaffActionSchema = Schema.Literals([
   "ban",
   "unban",
   "revokeSessions",
   "resendVerification",
   "impersonate",
+  "impersonatedChange",
+  "stopImpersonating",
+  "impersonationEnded",
 ]).annotate({ identifier: "StaffAction" });
+
+/**
+ * The ids a change staff made while acting as an account named, by the
+ * name its route gives them (`postId`, `organizationId`).
+ */
+export const StaffObjectIdsSchema = Schema.Record(
+  Schema.String,
+  Schema.String
+).annotate({ identifier: "StaffObjectIds" });
 
 export type StaffAction = typeof StaffActionSchema.Type;
 
@@ -242,7 +260,9 @@ export type StaffSystem = typeof StaffSystemSchema.Type;
 /**
  * Something staff did, as the audit log keeps it. The account acted on has
  * a null id once it was closed, and so is the reason given about it; the
- * staff member's id stays, as the server answers for what staff did.
+ * staff member's id stays, as the server answers for what staff did. A
+ * change made while acting as the account names the staff member behind
+ * it, though what it made carries the account's name.
  */
 export const StaffAuditEventSchema = Schema.Struct({
   action: StaffActionSchema,
@@ -250,11 +270,19 @@ export const StaffAuditEventSchema = Schema.Struct({
   // How long a ban was to last.
   banExpiresAt: Schema.NullOr(Schema.DateTimeUtc),
   id: Schema.String,
+  // The ids a change made while acting as the account named.
+  objectIds: StaffObjectIdsSchema,
+  // What staff asked for while acting as the account: an endpoint, as
+  // `group.endpoint` (`posts.update`), or a route of the sign-in service,
+  // as `auth:/path`; or the route that stopped the impersonation.
+  operation: Schema.NullOr(Schema.String),
   reason: Schema.NullOr(Schema.String),
   staffEmail: Schema.NullOr(Schema.String),
   staffId: Schema.NullOr(Schema.String),
   targetEmail: Schema.NullOr(Schema.String),
   targetId: Schema.NullOr(Schema.String),
+  // The workspace a change made while acting as the account was in.
+  workspaceId: Schema.NullOr(Schema.String),
 }).annotate({ identifier: "StaffAuditEvent" });
 
 export type StaffAuditEvent = typeof StaffAuditEventSchema.Type;
@@ -375,7 +403,7 @@ export class StaffApi extends HttpApiGroup.make("staff")
       "impersonate",
       "/impersonate",
       "Act as an account",
-      "Signs the browser in as the account for an hour, and keeps the staff member's own session to come back to (`POST /api/auth/admin/stop-impersonating`). Staff then cannot change the account or its workspaces. Staff are never impersonated."
+      "Signs the browser in as the account for an hour, and keeps the staff member's own session to come back to (`POST /api/auth/admin/stop-impersonating`). Staff then cannot change the account or its workspaces, and every change they make is recorded in the audit log under their name. Staff are never impersonated."
     )
   )
   .add(
@@ -417,7 +445,7 @@ export class StaffApi extends HttpApiGroup.make("staff")
       success: StaffAuditPageSchema,
     }).annotateMerge(
       OpenApi.annotations({
-        description: `Lists what staff did, newest first, ${staffPageSize} a page: who, what, to which account, why and when.`,
+        description: `Lists what staff did, newest first, ${staffPageSize} a page: who, what, to which account, why and when, and each change staff made while acting as an account, with the endpoint or route, its workspace and the ids it named, never what it carried.`,
         summary: "Read the audit log",
       })
     )

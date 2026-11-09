@@ -5,9 +5,11 @@ import { Context, DateTime, Effect, Layer, Option, Ref } from "effect";
 import { Ids } from "#shared/application/ids.ts";
 import { UserIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import type { UserId } from "#shared/domain/ids.ts";
+import { ImpersonationAudit } from "#staff/application/impersonation-audit.ts";
 import { ModerationFailed } from "#staff/application/moderation-failed.ts";
 import { AuditLog } from "#staff/application/ports/audit-log.ts";
 import { Moderation } from "#staff/application/ports/moderation.ts";
+import type { EndedImpersonation } from "#staff/application/ports/moderation.ts";
 import { StaffDirectory } from "#staff/application/ports/staff-directory.ts";
 import type { UserProfile } from "#staff/application/ports/staff-directory.ts";
 import { SystemHealth } from "#staff/application/ports/system-health.ts";
@@ -79,13 +81,17 @@ const sameTarget = (event: AuditEvent, targetId: Option.Option<UserId>) =>
   });
 
 /**
- * The console's use cases on ports in memory, with these accounts, and a
- * moderation that fails when `failing` is set. StaffMemory reads what they
- * kept.
+ * The console's use cases, and the audit of impersonations, on ports in
+ * memory, with these accounts, and a moderation that fails when `failing`
+ * is set, and whose bans and sign-outs end the impersonations `ending`
+ * lists. StaffMemory reads what they kept.
  */
 export const memoryStaff = (
   accounts: readonly UserProfile[],
-  options: { readonly failing?: boolean } = {}
+  options: {
+    readonly ending?: readonly EndedImpersonation[];
+    readonly failing?: boolean;
+  } = {}
 ) => {
   const find = (userId: UserId) =>
     Option.fromNullishOr(accounts.find(({ id }) => id === userId));
@@ -116,7 +122,10 @@ export const memoryStaff = (
         Layer.succeed(
           Moderation,
           Moderation.of({
-            ban: ({ userId }) => carry({ action: "ban", userId }),
+            ban: ({ userId }) =>
+              carry({ action: "ban", userId }).pipe(
+                Effect.as(options.ending ?? [])
+              ),
             impersonate: ({ userId }) =>
               carry({ action: "impersonate", userId }).pipe(
                 Effect.as(cookiesOfImpersonation)
@@ -129,7 +138,9 @@ export const memoryStaff = (
                   memberId,
               }),
             revokeSessions: ({ userId }) =>
-              carry({ action: "revokeSessions", userId }),
+              carry({ action: "revokeSessions", userId }).pipe(
+                Effect.as(options.ending ?? [])
+              ),
             unban: ({ userId }) => carry({ action: "unban", userId }),
           })
         ),
@@ -185,7 +196,11 @@ export const memoryStaff = (
         Ids.layerTest
       );
 
-      return Layer.mergeAll(StaffActions.layer, StaffConsole.layer).pipe(
+      return Layer.mergeAll(
+        StaffActions.layer,
+        StaffConsole.layer,
+        ImpersonationAudit.layer
+      ).pipe(
         Layer.provideMerge(ports),
         Layer.merge(
           Layer.succeed(StaffMemory, StaffMemory.of({ events, moderated }))

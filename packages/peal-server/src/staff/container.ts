@@ -1,5 +1,6 @@
 import { Layer } from "effect";
 
+import { ImpersonationAudit } from "#staff/application/impersonation-audit.ts";
 import { StaffActions } from "#staff/application/staff-actions.ts";
 import { StaffConsole } from "#staff/application/staff-console.ts";
 import { AccountsModeration } from "#staff/infrastructure/account-moderation.ts";
@@ -28,6 +29,14 @@ export const StaffLive = Layer.mergeAll(
   StaffActions.layer,
   StaffConsole.layer
 ).pipe(Layer.provide(AdaptersLive));
+
+/**
+ * The audit log of what staff do while acting as someone, for the workspace
+ * context, which sees every request. Needs the database (Drizzle) and Ids.
+ */
+export const ImpersonationAuditLive = ImpersonationAudit.layer.pipe(
+  Layer.provide(DrizzleAuditLog)
+);
 
 /**
  * What the audit log keeps about a user, for the workspace context when
