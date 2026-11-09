@@ -505,10 +505,16 @@ and no socket, for tests.
   subject, counts) in the transaction that reads it, and in the staff
   audit log (`legalDisclosure`, through the staff context's
   `LegalDisclosureAudit`), so the rest of staff see it. The export carries the user's connections
-  and what closing would leave (`legalHold`). `PEAL_LEGAL_RETENTION=false`
-  (`LegalRecords.layerOff`) keeps nothing, for an operator outside France;
-  `legalHold` is then null. A new way to change content (a group, a tool)
-  goes through the journal too.
+  and what closing would leave (`legalHold`). The software keeps none of
+  it unless `PEAL_LEGAL_RETENTION=true`: only an operator the law obliges
+  may hold it (GDPR minimisation), so the default is off
+  (`LegalRecords.layerOff`: nothing is written to the `legal` schema, and
+  `legalHold` is null), and `peal-infra` turns it on for Peal's servers
+  (`peal_legal_retention`). A server that turns it off after it was on
+  keeps what it holds until its term: the purge cron and `LegalRequests`
+  run whatever the setting, and `legalHold` still lists the connections
+  held. A new way to change content (a group, a tool) goes through the
+  journal too.
 - `AccountData` exports what is tied to the user, the posts they wrote in
   the workspaces they share (`exportAuthored`), and the content of the
   workspaces where they are the only member, with their analytics and

@@ -3,14 +3,25 @@
 import { randomUUID } from "node:crypto";
 
 import { assert, layer } from "@effect/vitest";
-import { Context, DateTime, Effect, Layer, Schema } from "effect";
+import {
+  ConfigProvider,
+  Context,
+  DateTime,
+  Effect,
+  Layer,
+  Schema,
+} from "effect";
 import { SqlClient } from "effect/sql";
+import { TestClock } from "effect/testing";
 
+import { LegalRecords } from "#legal/application/legal-records.ts";
 import { LegalStore } from "#legal/application/ports/legal-store.ts";
 import type {
   ConnectionEntry,
   HeldAccount,
 } from "#legal/application/ports/legal-store.ts";
+import { PurgeLegalRecords } from "#legal/application/purge-legal-records.ts";
+import { LegalLive } from "#legal/container.ts";
 import { LegalRecordIdSchema } from "#legal/domain/legal-record-id.ts";
 import { legalCutoffs } from "#legal/domain/legal-retention.ts";
 import { DrizzleLegalStore } from "#legal/infrastructure/drizzle-legal-store.ts";
@@ -200,6 +211,68 @@ layer(StoreTest)("the legal records", (it) => {
         yield* sql`DELETE FROM legal.identification_holds WHERE closed_at < '1891-01-01'`;
         yield* sql`DELETE FROM legal.connections WHERE at < '1891-01-01'`;
         yield* sql`DELETE FROM legal.disclosures WHERE at < '1891-01-01'`;
+      })
+  );
+});
+
+// A server that kept legal records, then turned the retention off
+// (`PEAL_LEGAL_RETENTION=false`): the daily purge still ends what it holds.
+// In this file, so no other suite's purge runs meanwhile; its records are
+// written in the 1840s and purged at 1850.
+const TurnedOff = LegalLive.pipe(
+  Layer.provide(
+    ConfigProvider.layerAdd(
+      ConfigProvider.fromUnknown({ PEAL_LEGAL_RETENTION: "false" }),
+      { asPrimary: true }
+    )
+  ),
+  Layer.provideMerge(DatabaseTest)
+);
+
+layer(TurnedOff)("legal retention turned off", (it) => {
+  it.effect(
+    "keeps nothing new, and still purges what it kept once its time is up",
+    () =>
+      Effect.gen(function* purges() {
+        const sql = yield* SqlClient.SqlClient;
+        const records = yield* LegalRecords;
+        const purging = yield* PurgeLegalRecords;
+        const userId = randomUUID();
+
+        yield* TestClock.setTime(
+          DateTime.toEpochMillis(DateTime.makeUnsafe("1850-01-01T00:00:00Z"))
+        );
+
+        // Kept while it was on: one past its year, one within it.
+        yield* sql`INSERT INTO legal.connections (id, access, at, protocol, user_id)
+          VALUES (${uuid7()}, 'session', ${new Date("1848-06-01T00:00:00Z")}, 'https', ${userId}),
+                 (${uuid7()}, 'session', ${new Date("1849-06-01T00:00:00Z")}, 'https', ${userId})`;
+
+        yield* records.connected({
+          access: "session",
+          apiKeyId: null,
+          ipAddress: "192.0.2.10",
+          protocol: "https",
+          userId,
+          workspaceId: null,
+        });
+
+        assert.strictEqual(yield* purging.purge, 1);
+
+        const left =
+          yield* sql`SELECT count(*)::int AS count FROM legal.connections WHERE user_id = ${userId}`.pipe(
+            Effect.flatMap(Schema.decodeUnknownEffect(CountSchema))
+          );
+
+        assert.deepStrictEqual(left, [{ count: 1 }]);
+        assert.strictEqual(
+          (yield* records.exportUser(userId))?.connections.length,
+          1
+        );
+
+        yield* sql`DELETE FROM legal.connections WHERE user_id = ${userId}`;
+
+        assert.isNull(yield* records.exportUser(userId));
       })
   );
 });

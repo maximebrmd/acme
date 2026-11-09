@@ -92,6 +92,7 @@ const ToolsFixtureLive = Layer.effect(
       TestApp.layerWith({
         ...unconfirmedEmails,
         MCP_DYNAMIC_REGISTRATION: "true",
+        PEAL_LEGAL_RETENTION: "true",
       }),
       DrizzleChannelRepository.pipe(
         Layer.provideMerge(IdsLive),

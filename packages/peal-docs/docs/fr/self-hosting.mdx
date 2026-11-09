@@ -301,14 +301,27 @@ En se faisant passer pour un membre, l’équipe ne peut ni connecter de canaux,
 
 ## Conservation légale [#legal-retention]
 
-La loi française impose à un hébergeur de conserver les données permettant d’identifier quiconque a contribué à la création d’un contenu, afin que l’autorité judiciaire puisse les requérir (loi n° 2004-575, article 6, V, et décret n° 2021-1362). Peal le fait par défaut, dans le schéma `legal`, que rien d’autre dans le serveur ne lit :
+La loi française impose à un hébergeur de conserver les données permettant d’identifier quiconque a contribué à la création d’un contenu, afin que l’autorité judiciaire puisse les requérir (loi n° 2004-575, article 6, V, et décret n° 2021-1362). Peal sait le faire, et ne le fait pas par défaut : `PEAL_LEGAL_RETENTION` vaut `false` tant que vous ne le définissez pas.
 
-- chaque requête qui crée, modifie ou supprime des publications ou des médias, depuis l’application web, une clé d’API, la ligne de commande ou un client MCP : quand, depuis quelle adresse (lue comme la connexion la lit, depuis `AUTH_IP_HEADERS`), par quel protocole et avec quel moyen de connexion, conservée 1 an ;
+**Qui doit l’activer.** Vous, si ces deux conditions sont réunies :
+
+- vous êtes établi en France, ou vous proposez votre Peal à des personnes qui s’y trouvent ;
+- votre Peal stocke des contenus pour d’autres que vous : des clients, le public, toute personne extérieure à votre organisation.
+
+Définissez alors `PEAL_LEGAL_RETENTION=true`. Ne pas conserver ces données est un délit (même article 6, V, B). Si vous n’êtes pas certain que la loi s’applique à vous, consultez un avocat avant d’ouvrir votre serveur à d’autres.
+
+**Qui doit la laisser désactivée.** Tous les autres : une équipe qui exploite Peal pour ses propres publications, ou un exploitant sans lien avec la France. Le droit de la protection des données (RGPD, article 5, paragraphe 1, point c) interdit de conserver ces données sans y être obligé.
+
+**Ce qu’elle conserve**, dans le schéma `legal`, que rien d’autre dans le serveur ne lit :
+
+- chaque requête qui crée, modifie ou supprime des publications ou des médias, depuis l’application web, une clé d’API, la ligne de commande ou un client MCP : quand, depuis quelle adresse (lue comme la connexion la lit, depuis `AUTH_IP_HEADERS`), par quel protocole et avec quel moyen de connexion, conservée 1 an. Jamais ce que la requête contenait ;
 - à la fermeture d’un compte, les nom et adresse e-mail de son titulaire, conservés 5 ans, et ses moyens de connexion (l’identifiant de chaque méthode de connexion, jamais le mot de passe ni son empreinte) et ses clients Stripe, conservés 1 an.
 
-Une tâche quotidienne (`legal.retention`, à 03 h 47 UTC) supprime chaque donnée une fois sa durée écoulée. L’équipe ne lit ces données qu’en répondant à une réquisition dans la [console de l’équipe](/staff#legal-requests), et chaque réponse est consignée. L’export de chaque utilisateur liste ses connexions et ce que la fermeture de son compte laisserait.
+Une tâche quotidienne (`legal.retention`, à 03 h 47 UTC) supprime chaque donnée une fois sa durée écoulée. L’équipe ne lit ces données qu’en répondant à une réquisition dans la [console de l’équipe](/staff#legal-requests), et chaque réponse est consignée et conservée 5 ans. L’export de chaque utilisateur liste ses connexions et ce que la fermeture de son compte laisserait. Votre propre politique de confidentialité doit dire que vous les conservez.
 
-Si vous exploitez Peal hors de France et qu’aucune loi ne vous oblige à les conserver, définissez `PEAL_LEGAL_RETENTION=false` : le serveur n’en conserve alors aucune, et la fermeture d’un compte ne laisse rien. Votre propre politique de confidentialité doit dire ce que vous avez choisi.
+**Désactivée**, le serveur n’écrit rien dans le schéma `legal`, et la fermeture d’un compte efface tout.
+
+**La désactiver après l’avoir activée** ne conserve plus rien de nouveau, et ne supprime rien sur-le-champ : ce que le serveur détient déjà reste jusqu’à son terme, puisque la loi vous imposait de le conserver aussi longtemps, et la tâche quotidienne continue de le supprimer. D’ici là, l’équipe dotée du rôle juridique peut encore répondre à une réquisition qui le concerne, et l’export de chaque utilisateur liste encore les connexions conservées à son sujet.
 
 ## Télémétrie [#telemetry]
 

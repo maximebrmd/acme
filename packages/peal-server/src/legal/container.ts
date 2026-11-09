@@ -8,13 +8,14 @@ import { LegalRecordsLive } from "#legal/infrastructure/legal-records-live.ts";
 import { StaffLegalOfficers } from "#legal/infrastructure/staff-legal-officers.ts";
 
 /**
- * What the law has Peal keep so that whoever contributed content can be
- * identified: the daily retention (PurgeLegalRecords), and, for the
- * workspace context, which
- * closes accounts and sees each request, keeping a closed account's
- * identity and each connection that made content (LegalRecords), unless
- * `PEAL_LEGAL_RETENTION` is `false`. Needs the
- * database (Drizzle), a TransactionRunner and Ids.
+ * What French law has some hosts keep so that whoever contributed content
+ * can be identified: the daily retention (PurgeLegalRecords), which runs
+ * whatever the setting, so what a server kept ends at its term once it is
+ * turned off; and, for the workspace context, which closes accounts and
+ * sees each request, keeping a closed account's identity and each
+ * connection that made content (LegalRecords), only when
+ * `PEAL_LEGAL_RETENTION` is `true`. Needs the database (Drizzle), a
+ * TransactionRunner and Ids.
  */
 export const LegalLive = Layer.mergeAll(
   LegalRecordsLive,

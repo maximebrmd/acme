@@ -33,6 +33,13 @@ def test_host_env_holds_one_setting_a_line(rendered: Path, environment: str) -> 
     assert host_env["PUBLIC_URL"] == f"https://{settings(environment)['peal_hostnames']['app']}"
 
 
+@pytest.mark.parametrize("environment", ENVIRONMENTS)
+def test_peals_servers_keep_what_french_law_has_a_host_keep(rendered: Path, environment: str) -> None:
+    """The software keeps nothing by default; Peal, a host established in
+    France, must (loi n° 2004-575, art. 6, V, A)."""
+    assert _host_env(rendered, environment)["PEAL_LEGAL_RETENTION"] == "true"
+
+
 def test_production_sends_its_heartbeat(rendered: Path) -> None:
     host_env = _host_env(rendered, "production")
 

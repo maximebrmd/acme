@@ -1,6 +1,8 @@
 // What the law has a host keep, through the app: the connections that make
 // content, what closing an account leaves, and the one way to read them, a
 // legal request staff answer, itself recorded.
+import { randomUUID } from "node:crypto";
+
 import { assert, layer } from "@effect/vitest";
 import { Effect, Layer, Schema } from "effect";
 import { SqlClient } from "effect/sql";
@@ -72,7 +74,13 @@ const DisclosureSchema = Schema.Array(
   })
 );
 
-layer(IntegrationLive, { excludeTestServices: true, timeout: "120 seconds" })(
+// A server whose operator the law obliges turns the retention on.
+const RetainingLive = Layer.mergeAll(
+  TestApp.layerWith({ PEAL_LEGAL_RETENTION: "true" }),
+  SqlLive
+);
+
+layer(RetainingLive, { excludeTestServices: true, timeout: "120 seconds" })(
   "legal requests",
   (it) => {
     it.effect(
@@ -261,56 +269,143 @@ layer(IntegrationLive, { excludeTestServices: true, timeout: "120 seconds" })(
   }
 );
 
-// A server whose operator is under no such obligation keeps nothing.
+// A random UUID with the version digit of v7 reads as a record's id.
+const uuid7 = () => {
+  const random = randomUUID();
+
+  return `${random.slice(0, 14)}7${random.slice(15)}`;
+};
+
+const countOf = Schema.decodeUnknownEffect(
+  Schema.Array(Schema.Struct({ count: Schema.Number }))
+);
+
+// A server keeps nothing unless its operator turns the retention on: the
+// law obliges some operators, and nobody else should hold this.
+layer(IntegrationLive, { excludeTestServices: true, timeout: "120 seconds" })(
+  "legal retention left off, as the software ships",
+  (it) => {
+    it.effect(
+      "keeps no connection and nothing of a closed account, and says so in the export",
+      () =>
+        Effect.gen(function* off() {
+          const app = yield* TestApp;
+          const sql = yield* SqlClient.SqlClient;
+          const ben = yield* signedUp("legal-off");
+          const workspaceId = yield* workspaceOf(ben, "Elsewhere");
+
+          const created = yield* app.request(
+            `/api/workspaces/${workspaceId}/posts`,
+            {
+              body: draftOf("A synthetic draft kept for nobody."),
+              headers: {
+                cookie: ben.cookies,
+                "x-forwarded-for": clientAddress,
+              },
+            }
+          );
+
+          assert.strictEqual(created.status, 201);
+
+          const exported = yield* app.request("/api/me/export", {
+            headers: { cookie: ben.cookies },
+          });
+
+          assert.isNull(
+            (yield* bodyOf(Schema.Struct({ legalHold: Schema.Null }), exported))
+              .legalHold
+          );
+
+          yield* app.request("/api/me", {
+            body: { password },
+            headers: { cookie: ben.cookies },
+            method: "DELETE",
+          });
+
+          const kept =
+            yield* sql`SELECT (SELECT count(*) FROM legal.connections WHERE user_id = ${ben.id})::int + (SELECT count(*) FROM legal.identification_holds WHERE user_id = ${ben.id})::int AS count`.pipe(
+              Effect.flatMap(countOf),
+              Effect.orDie
+            );
+
+          assert.strictEqual(kept[0]?.count, 0);
+        })
+    );
+  }
+);
+
+// A server that kept these records, then turned the retention off: what it
+// holds stays until its term, and the user still reads it in their export.
 layer(
   Layer.mergeAll(TestApp.layerWith({ PEAL_LEGAL_RETENTION: "false" }), SqlLive),
   { excludeTestServices: true, timeout: "120 seconds" }
-)("legal retention turned off", (it) => {
+)("legal retention turned off after it was on", (it) => {
   it.effect(
-    "keeps no connection and nothing of a closed account, and says so in the export",
+    "keeps nothing more, and still tells the user what it kept before",
     () =>
-      Effect.gen(function* off() {
+      Effect.gen(function* turnedOff() {
         const app = yield* TestApp;
         const sql = yield* SqlClient.SqlClient;
-        const ben = yield* signedUp("legal-off");
-        const workspaceId = yield* workspaceOf(ben, "Elsewhere");
+        const cleo = yield* signedUp("legal-turned-off");
+        const workspaceId = yield* workspaceOf(cleo, "Before");
+
+        // A connection kept while the retention was on.
+        yield* sql`INSERT INTO legal.connections (id, access, at, protocol, ip_address, user_id, workspace_id)
+          VALUES (${uuid7()}, 'session', ${new Date()}, 'https', ${clientAddress}, ${cleo.id}, ${workspaceId})`;
 
         const created = yield* app.request(
           `/api/workspaces/${workspaceId}/posts`,
           {
-            body: draftOf("A synthetic draft kept for nobody."),
-            headers: { cookie: ben.cookies, "x-forwarded-for": clientAddress },
+            body: draftOf("A synthetic draft written once it was off."),
+            headers: { cookie: cleo.cookies, "x-forwarded-for": clientAddress },
           }
         );
 
         assert.strictEqual(created.status, 201);
 
-        const exported = yield* app.request("/api/me/export", {
-          headers: { cookie: ben.cookies },
-        });
-
-        assert.isNull(
-          (yield* bodyOf(Schema.Struct({ legalHold: Schema.Null }), exported))
-            .legalHold
+        const exported = yield* bodyOf(
+          ExportSchema,
+          yield* app.request("/api/me/export", {
+            headers: { cookie: cleo.cookies },
+          })
         );
+
+        // The one kept before, not the write made since; closing the
+        // account would leave nothing new.
+        assert.deepStrictEqual(exported.legalHold.connections, [
+          {
+            access: "session",
+            ipAddress: clientAddress,
+            protocol: "https",
+            workspaceId,
+          },
+        ]);
+        assert.strictEqual(exported.legalHold.connectionYears, 1);
+        assert.deepStrictEqual(exported.legalHold.keptAfterClosure, []);
 
         yield* app.request("/api/me", {
           body: { password },
-          headers: { cookie: ben.cookies },
+          headers: { cookie: cleo.cookies },
           method: "DELETE",
         });
 
         const kept =
-          yield* sql`SELECT (SELECT count(*) FROM legal.connections WHERE user_id = ${ben.id})::int + (SELECT count(*) FROM legal.identification_holds WHERE user_id = ${ben.id})::int AS count`.pipe(
+          yield* sql`SELECT (SELECT count(*) FROM legal.connections WHERE user_id = ${cleo.id})::int AS connections, (SELECT count(*) FROM legal.identification_holds WHERE user_id = ${cleo.id})::int AS holds`.pipe(
             Effect.flatMap(
               Schema.decodeUnknownEffect(
-                Schema.Array(Schema.Struct({ count: Schema.Number }))
+                Schema.Array(
+                  Schema.Struct({
+                    connections: Schema.Number,
+                    holds: Schema.Number,
+                  })
+                )
               )
             ),
             Effect.orDie
           );
 
-        assert.strictEqual(kept[0]?.count, 0);
+        // What was kept stays until the purge ends it; nothing is added.
+        assert.deepStrictEqual(kept, [{ connections: 1, holds: 0 }]);
       })
   );
 });

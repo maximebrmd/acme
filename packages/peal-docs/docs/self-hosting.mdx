@@ -301,14 +301,27 @@ While impersonating, staff cannot connect channels, publish, manage API keys or 
 
 ## Legal retention [#legal-retention]
 
-French law has a host keep the data that identifies whoever contributed content, so that a judicial authority can ask for it (loi n° 2004-575, Article 6, V, and décret n° 2021-1362). Peal does it by default, in the `legal` schema, which nothing else in the server reads:
+French law has a host keep the data that identifies whoever contributed content, so that a judicial authority can ask for it (loi n° 2004-575, Article 6, V, and décret n° 2021-1362). Peal can do it, and does not by default: `PEAL_LEGAL_RETENTION` is `false` unless you set it.
 
-- each request that creates, changes or deletes posts or media, through the web app, an API key, the command line or an MCP client: when, from which address (read as sign-in reads it, from `AUTH_IP_HEADERS`), over which protocol and how it signed in, kept 1 year;
+**Who must turn it on.** You, if both are true:
+
+- you are established in France, or offer your Peal to people there;
+- your Peal stores content for other people: customers, clients, the public, anyone but your own organisation.
+
+Set `PEAL_LEGAL_RETENTION=true` then. Not keeping the data is an offence (the same Article 6, V, B). If you are not sure the law applies to you, ask a lawyer before you open your server to others.
+
+**Who must leave it off.** Everyone else: a team that runs Peal for its own posts, or an operator with no tie to France. Data protection law (GDPR, Article 5(1)(c)) forbids keeping this data without an obligation to.
+
+**What it keeps**, in the `legal` schema, which nothing else in the server reads:
+
+- each request that creates, changes or deletes posts or media, through the web app, an API key, the command line or an MCP client: when, from which address (read as sign-in reads it, from `AUTH_IP_HEADERS`), over which protocol and how it signed in, kept 1 year. Never what the request carried;
 - when an account closes, its holder's name and email address, kept 5 years, and how they signed in (each sign-in method's identifier, never the password or its hash) and their Stripe customers, kept 1 year.
 
-A daily job (`legal.retention`, at 03:47 UTC) deletes each record once its time is up. Staff read these records only by answering a legal request in the [staff console](/staff#legal-requests), and each answer is recorded. Each user's export lists their connections and what closing their account would leave.
+A daily job (`legal.retention`, at 03:47 UTC) deletes each record once its time is up. Staff read these records only by answering a legal request in the [staff console](/staff#legal-requests), and each answer is recorded and kept 5 years. Each user's export lists their connections and what closing their account would leave. Your own privacy notice should say that you keep them.
 
-If you run Peal outside France and no law obliges you to keep these, set `PEAL_LEGAL_RETENTION=false`: the server then keeps none of them, and closing an account leaves nothing. Your own privacy notice should say which you chose.
+**Off**, the server writes nothing to the `legal` schema, and closing an account erases everything.
+
+**Turning it off after it was on** keeps nothing more, and deletes nothing at once: what the server already holds stays until its time is up, as the law had you keep it for that long, and the daily job goes on deleting it. Meanwhile staff with the legal role can still answer a request about it, and each user's export still lists the connections kept about them.
 
 ## Telemetry [#telemetry]
 

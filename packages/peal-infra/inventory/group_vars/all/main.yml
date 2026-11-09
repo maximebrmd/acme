@@ -68,6 +68,12 @@ peal_required_credentials:
   - TELEGRAM_CHAT_ID
 peal_mail_credentials: [RESEND_API_KEY, SMTP_URL]
 
+# Peal is a host established in France: the law has it keep what identifies
+# whoever contributed content (loi n° 2004-575, art. 6, V, A; décret
+# n° 2021-1362), which the software does only when told to
+# (PEAL_LEGAL_RETENTION). Both environments are Peal's, and keep it.
+peal_legal_retention: true
+
 # The uptime server's address that Grafana sends its heartbeat to, every few
 # minutes, so the uptime server says when this server's alerting goes silent
 # (README.md, "Uptime"). Empty: no heartbeat.

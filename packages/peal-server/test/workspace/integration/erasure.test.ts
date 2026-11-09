@@ -6,13 +6,14 @@
 import { randomUUID } from "node:crypto";
 
 import { assert, layer } from "@effect/vitest";
-import { Effect, Schema } from "effect";
+import { Effect, Layer, Schema } from "effect";
 import { SqlClient } from "effect/sql";
+
+import { SqlLive } from "#shared/infrastructure/database.ts";
 
 import {
   apiKeyOf,
   bodyOf,
-  IntegrationLive,
   password,
   signedUp,
   TestApp,
@@ -399,7 +400,14 @@ const countsOf = Effect.fn("countsOf")(function* countsOf(
 const none = (rows: Readonly<Record<string, Count>>) =>
   Object.fromEntries(Object.keys(rows).map((table) => [table, 0]));
 
-layer(IntegrationLive, {
+// On a server that keeps what French law has a host keep, so the legal
+// records are covered too.
+const RetainingLive = Layer.mergeAll(
+  TestApp.layerWith({ PEAL_LEGAL_RETENTION: "true" }),
+  SqlLive
+);
+
+layer(RetainingLive, {
   excludeTestServices: true,
   timeout: "180 seconds",
 })("erasing workspaces and accounts", (it) => {

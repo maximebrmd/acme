@@ -23,6 +23,46 @@ export interface ContentConnection {
   readonly workspaceId: string | null;
 }
 
+// What closing an account leaves on a server that keeps these records.
+const keptAfterClosure: LegalHoldRecord["keptAfterClosure"] = [
+  {
+    data: ["name", "email", "accountCreatedAt"],
+    years: legalRetention.identity.years,
+  },
+  {
+    data: ["signInIdentifiers", "stripeCustomerIds"],
+    years: legalRetention.account.years,
+  },
+];
+
+// The user's connections that made content, oldest first, as their export
+// shows them: without who made each, which is them.
+const connectionsOf = (store: LegalStore["Service"], userId: string) =>
+  store.connections({ userIds: [userId], workspaceIds: [] }).pipe(
+    Effect.map((entries) =>
+      entries.map(({ access, at, ipAddress, protocol, workspaceId }) => ({
+        access,
+        at,
+        ipAddress,
+        protocol,
+        workspaceId,
+      }))
+    )
+  );
+
+const legalHoldOf = (
+  connections: LegalHoldRecord["connections"],
+  afterClosure: LegalHoldRecord["keptAfterClosure"]
+): LegalHoldRecord => ({
+  basis:
+    "Loi n° 2004-575 du 21 juin 2004 (LCEN), article 6, V, A, and décret n° 2021-1362 du 20 octobre 2021; GDPR Article 6(1)(c)",
+  connectionYears: legalRetention.connections.years,
+  connections,
+  disclosedTo:
+    "Only judicial authorities, and the authorities French law empowers, on a written request, each answer recorded",
+  keptAfterClosure: afterClosure,
+});
+
 /**
  * What the law has Peal keep so that whoever contributed content can be
  * identified (loi n° 2004-575, art. 6, V, A; décret n° 2021-1362), for the
@@ -48,7 +88,8 @@ export class LegalRecords extends Context.Service<
     /**
      * What the user's export tells of it: their connections that made
      * content, oldest first, and what closing the account would leave;
-     * null on a server that keeps nothing for the law.
+     * null on a server that keeps nothing for the law, and holds nothing
+     * of them from a time it did.
      */
     readonly exportUser: (
       userId: string
@@ -82,33 +123,10 @@ export class LegalRecords extends Context.Service<
       }, Effect.provideContext(ports));
 
       const exportUser = (userId: string) =>
-        store.connections({ userIds: [userId], workspaceIds: [] }).pipe(
-          Effect.map((entries): LegalHoldRecord => ({
-            basis:
-              "Loi n° 2004-575 du 21 juin 2004 (LCEN), article 6, V, A, and décret n° 2021-1362 du 20 octobre 2021; GDPR Article 6(1)(c)",
-            connectionYears: legalRetention.connections.years,
-            connections: entries.map(
-              ({ access, at, ipAddress, protocol, workspaceId }) => ({
-                access,
-                at,
-                ipAddress,
-                protocol,
-                workspaceId,
-              })
-            ),
-            disclosedTo:
-              "Only judicial authorities, and the authorities French law empowers, on a written request, each answer recorded",
-            keptAfterClosure: [
-              {
-                data: ["name", "email", "accountCreatedAt"],
-                years: legalRetention.identity.years,
-              },
-              {
-                data: ["signInIdentifiers", "stripeCustomerIds"],
-                years: legalRetention.account.years,
-              },
-            ],
-          }))
+        connectionsOf(store, userId).pipe(
+          Effect.map((connections) =>
+            legalHoldOf(connections, keptAfterClosure)
+          )
         );
 
       return LegalRecords.of({ connected, exportUser, hold });
@@ -116,15 +134,26 @@ export class LegalRecords extends Context.Service<
   );
 
   /**
-   * For a server whose operator is under no such obligation (a self-hosted
-   * server outside France): nothing is kept, and the export says so.
+   * For a server whose operator is under no such obligation: nothing more
+   * is kept. What it kept while it was on stays until its term, which the
+   * daily purge ends, so the user's export still lists the connections it
+   * holds; null once it holds none. Needs LegalStore.
    */
-  static readonly layerOff = Layer.succeed(
+  static readonly layerOff = Layer.effect(
     LegalRecords,
-    LegalRecords.of({
-      connected: () => Effect.void,
-      exportUser: () => Effect.succeed(null),
-      hold: () => Effect.void,
+    Effect.gen(function* LegalRecordsOff() {
+      const store = yield* LegalStore;
+
+      return LegalRecords.of({
+        connected: () => Effect.void,
+        exportUser: (userId) =>
+          connectionsOf(store, userId).pipe(
+            Effect.map((connections) =>
+              connections.length === 0 ? null : legalHoldOf(connections, [])
+            )
+          ),
+        hold: () => Effect.void,
+      });
     })
   );
 }

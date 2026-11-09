@@ -9,6 +9,7 @@ peal_runtime_host_settings: >-
        'PEAL_TERMS_URL': 'https://' ~ peal_hostnames.site ~ '/terms/',
        'AUTH_IP_HEADERS': 'cf-connecting-ip',
        'MAIL_FROM': peal_mail_from,
+       'PEAL_LEGAL_RETENTION': peal_legal_retention,
        'PEAL_S3_ENDPOINT': peal_media_endpoint,
        'PEAL_S3_BUCKET': peal_media_bucket,
        'PEAL_POSTGRES_ARCHIVE_MODE': 'on',
