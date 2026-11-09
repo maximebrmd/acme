@@ -1,0 +1,13 @@
+{
+  "cliVersion": "5.201.0",
+  "generatorName": "fernapi/fern-java-sdk",
+  "generatorVersion": "4.37.11",
+  "generatorConfig": {
+    "client-class-name": "PealClient",
+    "package-prefix": "social.peal"
+  },
+  "originGitCommit": "481c513edbbedc16b1f5c2e747ca06ba92c4414c",
+  "originGitCommitIsDirty": true,
+  "invokedBy": "manual",
+  "requestedVersion": "0.3.0"
+}

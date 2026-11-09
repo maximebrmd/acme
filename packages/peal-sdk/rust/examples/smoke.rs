@@ -1,25 +1,33 @@
 //! The smoke test, which scripts/test.ts runs against a stand-in API: the
-//! health check, then the signed-in user with a bearer token.
+//! health check, the signed-in user with a bearer token, and the error a
+//! refused token raises.
+use peal_sdk::prelude::*;
 
-use peal_sdk::apis::{configuration::Configuration, session_api, system_api};
+fn client(base_url: &str, token: &str) -> PealClient {
+    PealClient::new(ClientConfig {
+        base_url: base_url.to_string(),
+        token: Some(token.to_string()),
+        ..Default::default()
+    })
+    .expect("the client builds")
+}
 
 #[tokio::main]
 async fn main() {
-    let configuration = Configuration {
-        base_path: std::env::var("PEAL_API_URL").expect("PEAL_API_URL is not set"),
-        bearer_access_token: Some("peal_test".to_owned()),
-        ..Configuration::default()
-    };
+    let base_url = std::env::var("PEAL_API_URL").expect("scripts/test.ts sets PEAL_API_URL");
+    let peal = client(&base_url, "peal_test");
 
-    system_api::health(&configuration).await.expect("health check");
-    let me = session_api::session_me(&configuration).await.expect("signed-in user");
+    peal.system.health(None).await.expect("the health check answers");
+    let me = peal.session.me(None).await.expect("GET /api/me answers");
 
     assert_eq!(me.user.email, "ada@example.test");
     assert!(me.impersonated_by.is_none() && me.user.image.is_none());
-    let permissions = serde_json::to_value(&me.workspaces[0].permissions).expect("permissions");
+    assert!(me.workspaces[0].permissions.contains(&Permission::PostSchedule));
+
+    let refused = client(&base_url, "refused").session.me(None).await;
     assert!(
-        permissions.as_array().is_some_and(|all| all.iter().any(|p| p == "post:schedule")),
-        "unexpected permissions: {permissions}"
+        matches!(refused, Err(ApiError::UnauthorizedError { .. })),
+        "a refused token: {refused:?}"
     );
 
     println!("ok");

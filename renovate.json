@@ -23,6 +23,11 @@
       "description": "The SDKs' manifests are generated, and keep the generator's ranges: a library leaves its dependencies' versions to its users.",
       "matchFileNames": ["packages/peal-sdk/**"],
       "enabled": false
+    },
+    {
+      "description": "Fern's CLI writes the committed SDKs, with the generators packages/peal-sdk/scripts/languages.ts pins: upgrade it with them, regenerating and reading the diff.",
+      "matchPackageNames": ["fern-api"],
+      "enabled": false
     }
   ]
 }

@@ -1,0 +1,15 @@
+{
+  "cliVersion": "5.201.0",
+  "generatorName": "fernapi/fern-php-sdk",
+  "generatorVersion": "2.30.18",
+  "generatorConfig": {
+    "clientName": "PealClient",
+    "namespace": "Peal",
+    "packageName": "peal-social/peal"
+  },
+  "originGitCommit": "481c513edbbedc16b1f5c2e747ca06ba92c4414c",
+  "originGitCommitIsDirty": true,
+  "invokedBy": "manual",
+  "requestedVersion": "0.3.0",
+  "sdkVersion": "0.3.0"
+}

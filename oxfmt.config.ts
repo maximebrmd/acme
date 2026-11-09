@@ -3,7 +3,7 @@ import ultracite from "ultracite/oxfmt";
 
 // Generated files and the reference clones in .local stay as their tools wrote
 // them. drizzle-kit reads back the snapshots it writes next to each migration.
-// Each SDK's folder is openapi-generator's (packages/peal-sdk/scripts is ours).
+// Each SDK's folder is Fern's (packages/peal-sdk/scripts is ours).
 export const generated = [
   "packages/peal-contract/openapi.json",
   "packages/peal-sdk/openapi.json",

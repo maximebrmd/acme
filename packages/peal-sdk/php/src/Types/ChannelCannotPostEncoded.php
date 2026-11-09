@@ -1,0 +1,42 @@
+<?php
+
+namespace Peal\Types;
+
+use Peal\Core\Json\JsonSerializableType;
+use Peal\Core\Json\JsonProperty;
+
+class ChannelCannotPostEncoded extends JsonSerializableType
+{
+    /**
+     * @var value-of<ChannelCannotPostEncodedTag> $tag
+     */
+    #[JsonProperty('_tag')]
+    public string $tag;
+
+    /**
+     * @var value-of<ChannelCannotPostEncodedReason> $reason
+     */
+    #[JsonProperty('reason')]
+    public string $reason;
+
+    /**
+     * @param array{
+     *   tag: value-of<ChannelCannotPostEncodedTag>,
+     *   reason: value-of<ChannelCannotPostEncodedReason>,
+     * } $values
+     */
+    public function __construct(
+        array $values,
+    ) {
+        $this->tag = $values['tag'];
+        $this->reason = $values['reason'];
+    }
+
+    /**
+     * @return string
+     */
+    public function __toString(): string
+    {
+        return $this->toJson();
+    }
+}

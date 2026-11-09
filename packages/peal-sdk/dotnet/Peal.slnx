@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="src/Peal.Test/Peal.Test.csproj" />
+  <Project Path="src/Peal/Peal.csproj" />
+</Solution>

@@ -1,0 +1,17 @@
+# frozen_string_literal: true
+
+require_relative "../../peal"
+
+module Peal
+  module Types
+    class BillingSubscription < Internal::Types::Model
+      field :cancel_at_period_end, -> { Internal::Types::Boolean }, optional: false, nullable: false, api_name: "cancelAtPeriodEnd"
+
+      field :current_period_end, -> { String }, optional: false, nullable: true, api_name: "currentPeriodEnd"
+
+      field :plan, -> { Peal::Types::PaidPlan }, optional: false, nullable: false
+
+      field :status, -> { Peal::Types::SubscriptionStatus }, optional: false, nullable: false
+    end
+  end
+end

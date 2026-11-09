@@ -1,41 +1,229 @@
 {
   "name": "peal-sdk",
-  "version": "0.2.0",
-  "description": "TypeScript and JavaScript client for the Peal API: schedule social media posts across platforms.",
-  "keywords": [
-    "peal",
-    "social media",
-    "scheduling",
-    "api",
-    "sdk"
-  ],
-  "homepage": "https://peal.social",
-  "bugs": "https://github.com/peal-social/peal/issues",
-  "license": "Apache-2.0",
-  "author": "Peal <hello@peal.social>",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/peal-social/peal.git",
-    "directory": "packages/peal-sdk/node"
+  "version": "0.3.0",
+  "private": false,
+  "type": "commonjs",
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.mjs",
+  "types": "./dist/cjs/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/esm/index.d.mts",
+        "default": "./dist/esm/index.mjs"
+      },
+      "require": {
+        "types": "./dist/cjs/index.d.ts",
+        "default": "./dist/cjs/index.js"
+      },
+      "default": "./dist/cjs/index.js"
+    },
+    "./system": {
+      "import": {
+        "types": "./dist/esm/api/resources/system/exports.d.mts",
+        "default": "./dist/esm/api/resources/system/exports.mjs"
+      },
+      "require": {
+        "types": "./dist/cjs/api/resources/system/exports.d.ts",
+        "default": "./dist/cjs/api/resources/system/exports.js"
+      },
+      "default": "./dist/cjs/api/resources/system/exports.js"
+    },
+    "./session": {
+      "import": {
+        "types": "./dist/esm/api/resources/session/exports.d.mts",
+        "default": "./dist/esm/api/resources/session/exports.mjs"
+      },
+      "require": {
+        "types": "./dist/cjs/api/resources/session/exports.d.ts",
+        "default": "./dist/cjs/api/resources/session/exports.js"
+      },
+      "default": "./dist/cjs/api/resources/session/exports.js"
+    },
+    "./apiKeys": {
+      "import": {
+        "types": "./dist/esm/api/resources/apiKeys/exports.d.mts",
+        "default": "./dist/esm/api/resources/apiKeys/exports.mjs"
+      },
+      "require": {
+        "types": "./dist/cjs/api/resources/apiKeys/exports.d.ts",
+        "default": "./dist/cjs/api/resources/apiKeys/exports.js"
+      },
+      "default": "./dist/cjs/api/resources/apiKeys/exports.js"
+    },
+    "./channels": {
+      "import": {
+        "types": "./dist/esm/api/resources/channels/exports.d.mts",
+        "default": "./dist/esm/api/resources/channels/exports.mjs"
+      },
+      "require": {
+        "types": "./dist/cjs/api/resources/channels/exports.d.ts",
+        "default": "./dist/cjs/api/resources/channels/exports.js"
+      },
+      "default": "./dist/cjs/api/resources/channels/exports.js"
+    },
+    "./posts": {
+      "import": {
+        "types": "./dist/esm/api/resources/posts/exports.d.mts",
+        "default": "./dist/esm/api/resources/posts/exports.mjs"
+      },
+      "require": {
+        "types": "./dist/cjs/api/resources/posts/exports.d.ts",
+        "default": "./dist/cjs/api/resources/posts/exports.js"
+      },
+      "default": "./dist/cjs/api/resources/posts/exports.js"
+    },
+    "./media": {
+      "import": {
+        "types": "./dist/esm/api/resources/media/exports.d.mts",
+        "default": "./dist/esm/api/resources/media/exports.mjs"
+      },
+      "require": {
+        "types": "./dist/cjs/api/resources/media/exports.d.ts",
+        "default": "./dist/cjs/api/resources/media/exports.js"
+      },
+      "default": "./dist/cjs/api/resources/media/exports.js"
+    },
+    "./notices": {
+      "import": {
+        "types": "./dist/esm/api/resources/notices/exports.d.mts",
+        "default": "./dist/esm/api/resources/notices/exports.mjs"
+      },
+      "require": {
+        "types": "./dist/cjs/api/resources/notices/exports.d.ts",
+        "default": "./dist/cjs/api/resources/notices/exports.js"
+      },
+      "default": "./dist/cjs/api/resources/notices/exports.js"
+    },
+    "./notificationPreferences": {
+      "import": {
+        "types": "./dist/esm/api/resources/notificationPreferences/exports.d.mts",
+        "default": "./dist/esm/api/resources/notificationPreferences/exports.mjs"
+      },
+      "require": {
+        "types": "./dist/cjs/api/resources/notificationPreferences/exports.d.ts",
+        "default": "./dist/cjs/api/resources/notificationPreferences/exports.js"
+      },
+      "default": "./dist/cjs/api/resources/notificationPreferences/exports.js"
+    },
+    "./assistant": {
+      "import": {
+        "types": "./dist/esm/api/resources/assistant/exports.d.mts",
+        "default": "./dist/esm/api/resources/assistant/exports.mjs"
+      },
+      "require": {
+        "types": "./dist/cjs/api/resources/assistant/exports.d.ts",
+        "default": "./dist/cjs/api/resources/assistant/exports.js"
+      },
+      "default": "./dist/cjs/api/resources/assistant/exports.js"
+    },
+    "./members": {
+      "import": {
+        "types": "./dist/esm/api/resources/members/exports.d.mts",
+        "default": "./dist/esm/api/resources/members/exports.mjs"
+      },
+      "require": {
+        "types": "./dist/cjs/api/resources/members/exports.d.ts",
+        "default": "./dist/cjs/api/resources/members/exports.js"
+      },
+      "default": "./dist/cjs/api/resources/members/exports.js"
+    },
+    "./invitations": {
+      "import": {
+        "types": "./dist/esm/api/resources/invitations/exports.d.mts",
+        "default": "./dist/esm/api/resources/invitations/exports.mjs"
+      },
+      "require": {
+        "types": "./dist/cjs/api/resources/invitations/exports.d.ts",
+        "default": "./dist/cjs/api/resources/invitations/exports.js"
+      },
+      "default": "./dist/cjs/api/resources/invitations/exports.js"
+    },
+    "./billing": {
+      "import": {
+        "types": "./dist/esm/api/resources/billing/exports.d.mts",
+        "default": "./dist/esm/api/resources/billing/exports.mjs"
+      },
+      "require": {
+        "types": "./dist/cjs/api/resources/billing/exports.d.ts",
+        "default": "./dist/cjs/api/resources/billing/exports.js"
+      },
+      "default": "./dist/cjs/api/resources/billing/exports.js"
+    },
+    "./analytics": {
+      "import": {
+        "types": "./dist/esm/api/resources/analytics/exports.d.mts",
+        "default": "./dist/esm/api/resources/analytics/exports.mjs"
+      },
+      "require": {
+        "types": "./dist/cjs/api/resources/analytics/exports.d.ts",
+        "default": "./dist/cjs/api/resources/analytics/exports.js"
+      },
+      "default": "./dist/cjs/api/resources/analytics/exports.js"
+    },
+    "./tiktok": {
+      "import": {
+        "types": "./dist/esm/api/resources/tiktok/exports.d.mts",
+        "default": "./dist/esm/api/resources/tiktok/exports.mjs"
+      },
+      "require": {
+        "types": "./dist/cjs/api/resources/tiktok/exports.d.ts",
+        "default": "./dist/cjs/api/resources/tiktok/exports.js"
+      },
+      "default": "./dist/cjs/api/resources/tiktok/exports.js"
+    },
+    "./package.json": "./package.json"
   },
   "files": [
     "dist",
-    "src",
+    "reference.md",
+    "README.md",
     "LICENSE",
-    "NOTICE",
-    "README.md"
+    "NOTICE"
   ],
-  "type": "module",
-  "sideEffects": false,
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
-    }
+  "scripts": {
+    "format": "echo 'No formatter configured.'",
+    "format:check": "echo 'No formatter configured.'",
+    "lint": "echo 'No linter configured.'",
+    "lint:fix": "echo 'No linter configured.'",
+    "check": "echo 'No formatter or linter configured.'",
+    "check:fix": "echo 'No formatter or linter configured.'",
+    "build": "pnpm build:cjs && pnpm build:esm",
+    "build:cjs": "tsc --project ./tsconfig.cjs.json",
+    "build:esm": "tsc --project ./tsconfig.esm.json && node scripts/rename-to-esm-files.js dist/esm",
+    "test": "vitest",
+    "test:unit": "vitest --project unit"
   },
+  "dependencies": {},
+  "devDependencies": {
+    "webpack": "^5.105.4",
+    "ts-loader": "^9.5.4",
+    "vitest": "^4.1.1",
+    "@types/node": "^20.0.0",
+    "typescript": "~5.9.3"
+  },
+  "browser": {
+    "fs": false,
+    "os": false,
+    "path": false,
+    "stream": false,
+    "crypto": false
+  },
+  "packageManager": "pnpm@10.33.0",
   "engines": {
-    "node": ">=20"
+    "node": ">=18.0.0"
+  },
+  "sideEffects": false,
+  "author": "Peal <hello@peal.social>",
+  "description": "Client for the Peal API: schedule social media posts across platforms.",
+  "homepage": "https://peal.social",
+  "license": "Apache-2.0",
+  "repository": {
+    "directory": "packages/peal-sdk/node",
+    "type": "git",
+    "url": "git+https://github.com/peal-social/peal.git"
+  },
+  "nx": {
+    "includedScripts": []
   }
 }

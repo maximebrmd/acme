@@ -44,7 +44,7 @@
     },
     "sdk:build": {
       "cache": true,
-      "inputs": ["default"]
+      "inputs": ["default", "{workspaceRoot}/packages/peal-sdk/scripts/**/*"]
     },
     "sdk:test": {
       "dependsOn": ["sdk:build"],

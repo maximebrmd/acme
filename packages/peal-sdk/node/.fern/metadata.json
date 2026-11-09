@@ -1,0 +1,30 @@
+{
+  "cliVersion": "5.201.0",
+  "generatorName": "fernapi/fern-typescript-sdk",
+  "generatorVersion": "3.108.15",
+  "generatorConfig": {
+    "formatter": "none",
+    "generateWireTests": false,
+    "linter": "none",
+    "namespaceExport": "Peal",
+    "omitFernHeaders": true,
+    "packageJson": {
+      "author": "Peal <hello@peal.social>",
+      "description": "Client for the Peal API: schedule social media posts across platforms.",
+      "homepage": "https://peal.social",
+      "license": "Apache-2.0",
+      "name": "peal-sdk",
+      "repository": {
+        "directory": "packages/peal-sdk/node",
+        "type": "git",
+        "url": "git+https://github.com/peal-social/peal.git"
+      }
+    },
+    "writeUnitTests": false
+  },
+  "originGitCommit": "481c513edbbedc16b1f5c2e747ca06ba92c4414c",
+  "originGitCommitIsDirty": true,
+  "invokedBy": "manual",
+  "requestedVersion": "0.3.0",
+  "sdkVersion": "0.3.0"
+}

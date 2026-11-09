@@ -1,39 +1,67 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
-    <GenerateAssemblyInfo>true</GenerateAssemblyInfo> <!-- setting GenerateAssemblyInfo to false causes this bug https://github.com/dotnet/project-system/issues/3934 -->
-    <TargetFramework>net10.0</TargetFramework>
-    <AssemblyName>Peal</AssemblyName>
     <PackageId>Peal</PackageId>
-    <OutputType>Library</OutputType>
-    <Authors>Peal</Authors>
-    <Company>Peal</Company>
-    <AssemblyTitle>Peal</AssemblyTitle>
-    <Description>Client for the Peal API: schedule social media posts across platforms.</Description>
-    <PackageProjectUrl>https://peal.social</PackageProjectUrl>
-    <Copyright>Copyright 2026 Peal</Copyright>
-    <RootNamespace>Peal</RootNamespace>
-    <Version>0.2.0</Version>
-    <DocumentationFile>bin\$(Configuration)\$(TargetFramework)\Peal.xml</DocumentationFile>
-    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
-    <RepositoryUrl>https://github.com/peal-social/peal.git</RepositoryUrl>
-    <RepositoryType>git</RepositoryType>
-    <PackageReadmeFile>README.md</PackageReadmeFile>
-    <PackageTags>peal;social-media;scheduling;api</PackageTags>
+    <TargetFrameworks>net462;net8.0;net9.0;netstandard2.0</TargetFrameworks>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>12</LangVersion>
     <Nullable>enable</Nullable>
-    <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+    <Version>0.3.0</Version>
+    <AssemblyVersion>$(Version)</AssemblyVersion>
+    <FileVersion>$(Version)</FileVersion>
+    <PackageReadmeFile Condition="Exists('..\..\README.md')">README.md</PackageReadmeFile>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <PolySharpIncludeRuntimeSupportedAttributes>true</PolySharpIncludeRuntimeSupportedAttributes>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <UsePortableDateOnly>false</UsePortableDateOnly>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net462' Or '$(TargetFramework)' == 'netstandard2.0'">
+    <DefineConstants>$(DefineConstants);USE_PORTABLE_DATE_ONLY</DefineConstants>
+    <UsePortableDateOnly>true</UsePortableDateOnly>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'net462' Or '$(TargetFramework)' == 'netstandard2.0'">
+    <Using Include="System.Net.Http" />
+    <Using Include="System.Collections.Generic" />
+    <Using Include="System.Linq" />
+    <Using Include="System.Threading" />
+    <Using Include="System.Threading.Tasks" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(UsePortableDateOnly)' == 'true'">
+    <PackageReference Include="Portable.System.DateTimeOnly" Version="9.0.1" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(UsePortableDateOnly)' == 'false'">
+    <Compile Remove="Core\DateOnlyConverter.cs" />
+  </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.Http" Condition="'$(TargetFramework)' == 'net10.0'" Version="10.0.1" />
-    <PackageReference Include="Microsoft.Extensions.Hosting" Condition="'$(TargetFramework)' == 'net10.0'" Version="10.0.1" />
-    <PackageReference Include="Microsoft.Extensions.Http.Polly" Condition="'$(TargetFramework)' == 'net10.0'" Version="10.0.1" />
-    <PackageReference Include="Microsoft.Net.Http.Headers" Condition="'$(TargetFramework)' == 'net10.0'" Version="10.0.1" />
+    <PackageReference Include="PolySharp" Version="1.15.0">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="OneOf" Version="3.0.271" />
+    <PackageReference Include="OneOf.Extended" Version="3.0.271" />
+    <PackageReference Include="System.Net.Http" Version="[4.3.4,)" />
+    <PackageReference Include="System.Text.RegularExpressions" Version="[4.3.1,)" />
+  </ItemGroup>
+  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">
+    <PackageReference Include="System.Text.Json" Version="9.0.9" />
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
-    <None Include="..\..\LICENSE" Pack="true" PackagePath="\" />
-    <None Include="..\..\NOTICE" Pack="true" PackagePath="\" />
+    <None
+      Include="..\..\README.md"
+      Pack="true"
+      PackagePath=""
+      Condition="Exists('..\..\README.md')"
+    />
   </ItemGroup>
+
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>Peal.Test</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+  <Import Project="Peal.Custom.props" Condition="Exists('Peal.Custom.props')" />
 </Project>

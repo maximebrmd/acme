@@ -1,0 +1,15 @@
+{
+  "cliVersion": "5.201.0",
+  "generatorName": "fernapi/fern-csharp-sdk",
+  "generatorVersion": "2.92.17",
+  "generatorConfig": {
+    "client-class-name": "PealClient",
+    "namespace": "Peal",
+    "package-id": "Peal"
+  },
+  "originGitCommit": "481c513edbbedc16b1f5c2e747ca06ba92c4414c",
+  "originGitCommitIsDirty": true,
+  "invokedBy": "manual",
+  "requestedVersion": "0.3.0",
+  "sdkVersion": "0.3.0"
+}

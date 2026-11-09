@@ -1,11 +1,8 @@
 // The SDKs: one folder, Nx project (peal-sdk-<name>) and registry package per
-// language, generated from openapi.json by openapi-generator. A language's
-// version is its package's: bump it here to release it. Every image is pinned
-// by digest, as the compose stack's are.
-
-/** openapi-generator, which writes every SDK. */
-export const generatorImage =
-  "openapitools/openapi-generator-cli:v7.27.0@sha256:949efd0d5cf3c093ef169887b2ebe0879ee2e8074b6476264232ce4fd8ef46d0";
+// language, generated from openapi.json by Fern's generator for the language.
+// A language's version is its package's: bump it here to release it. Every
+// image is pinned by digest, as the compose stack's are.
+import type { Schema } from "effect";
 
 export const repository = "https://github.com/peal-social/peal";
 export const homepage = "https://peal.social";
@@ -38,17 +35,23 @@ export type LanguageName =
   | "ruby"
   | "rust";
 
+/**
+ * A Fern generator: scripts/generate.ts runs the image the digest pins, under
+ * the name and version Fern asks Docker for.
+ */
+interface Generator {
+  /** Its options, generators.yml's `config` (Fern's docs list each language's). */
+  readonly config: Schema.JsonObject;
+  readonly digest: string;
+  readonly image: string;
+  readonly version: string;
+}
+
 export interface Language {
   readonly build: ContainerBuild | HostBuild;
-  /** openapi-generator's generator. */
-  readonly generator: string;
-  /** The path under github.com/peal-social that READMEs and Go's module name. */
-  readonly gitRepoId: string;
-  readonly library?: string;
+  readonly generator: Generator;
   /** The folder under packages/peal-sdk. */
   readonly name: LanguageName;
-  /** The generator's options for this language (`config-help -g <generator>`). */
-  readonly options: Readonly<Record<string, string | boolean>>;
   /** What developers install: the registry and the package's name there. */
   readonly package: { readonly name: string; readonly registry: string };
   /**
@@ -59,34 +62,62 @@ export interface Language {
   readonly version: string;
 }
 
-const python = "0.2.0";
-const node = "0.2.0";
-const go = "0.2.0";
-const ruby = "0.2.0";
-const java = "0.2.0";
-const php = "0.2.0";
-const dotnet = "0.2.0";
-const rust = "0.2.0";
+const python = "0.3.0";
+const node = "0.3.0";
+const go = "0.3.0";
+const ruby = "0.3.0";
+const java = "0.3.0";
+const php = "0.3.0";
+const dotnet = "0.3.0";
+const rust = "0.3.0";
+
+/** Where the SDKs' source lives, for the manifests that link to it. */
+export const sourceUrl = (language: LanguageName): string =>
+  `${repository}/tree/main/packages/peal-sdk/${language}`;
 
 export const languages: readonly Language[] = [
   {
     build: {
-      kind: "host",
-      // The workspace's TypeScript compiles the ES modules npm ships.
+      environment: { npm_config_cache: "/cache/npm" },
+      image:
+        "node:26.13.0-alpine@sha256:8996bb5821d62a8fd9bb27c1cb07462f3fdce6e47d640c6a881ead0b064ce216",
+      kind: "container",
+      // The TypeScript and Node types the package.json names, at one version
+      // each, compile the CommonJS and ES modules npm ships, as the package's
+      // own build script would with pnpm.
       script:
-        "rm -rf dist && \"$TSC\" -p tsconfig.json && node --input-type=module -e \"const sdk = await import('./dist/index.js'); if (typeof sdk.SystemApi !== 'function') { throw new Error('SystemApi is missing'); }\"",
+        "rm -rf dist && npm install --silent --no-save --no-package-lock --prefix /cache/node-tools typescript@5.9.3 @types/node@20.19.43 && for build in cjs esm; do /cache/node-tools/node_modules/.bin/tsc -p tsconfig.$build.json --typeRoots /cache/node-tools/node_modules/@types --types node --extendedDiagnostics false || exit 1; done && node scripts/rename-to-esm-files.js dist/esm && node -e \"if (typeof require('./dist/cjs/index.js').PealClient !== 'function') { throw new Error('PealClient is missing'); }\"",
     },
-    generator: "typescript-fetch",
-    gitRepoId: "peal",
+    generator: {
+      config: {
+        // Fern's linter and formatter would only add development tools.
+        formatter: "none",
+        generateWireTests: false,
+        linter: "none",
+        namespaceExport: "Peal",
+        // No X-Fern-* headers on Peal's requests.
+        omitFernHeaders: true,
+        packageJson: {
+          author: `Peal <${contactEmail}>`,
+          description,
+          homepage,
+          license: "Apache-2.0",
+          // npm refuses `peal` as too close to other packages' names.
+          name: "peal-sdk",
+          repository: {
+            directory: "packages/peal-sdk/node",
+            type: "git",
+            url: `git+${repository}.git`,
+          },
+        },
+        writeUnitTests: false,
+      },
+      digest:
+        "sha256:025b8637bd2b1e8f3b6e40a985f45c64bb580ded78926d8930e9d42913f41966",
+      image: "fernapi/fern-typescript-sdk",
+      version: "3.108.15",
+    },
     name: "node",
-    options: {
-      hideGenerationTimestamp: true,
-      importFileExtension: ".js",
-      // npm refuses `peal` as too close to other packages' names.
-      npmName: "peal-sdk",
-      npmVersion: node,
-      supportsES6: true,
-    },
     package: { name: "peal-sdk", registry: "npm" },
     test: "node test/smoke.mjs",
     version: node,
@@ -94,22 +125,21 @@ export const languages: readonly Language[] = [
   {
     build: {
       kind: "host",
-      script: `rm -rf dist && uv build --quiet --out-dir dist && uv run --quiet --isolated --no-project --with "$(ls dist/*.whl)" python -c "import peal; assert peal.__version__ == '${
-        python
-      }'"`,
+      script: `rm -rf dist && uv build --quiet --out-dir dist && uv run --quiet --isolated --no-project --with "$(ls dist/*.whl)" python -c "import peal; from importlib.metadata import version; assert version('peal-sdk') == '${python}'"`,
     },
-    generator: "python",
-    gitRepoId: "peal",
+    generator: {
+      config: {
+        client: { class_name: "Peal" },
+        package_name: "peal",
+      },
+      digest:
+        "sha256:b78aa8836f2d79766c8c2c1ba5f8fa7abf20837ebfdee6a0dfe3f563dc8433a7",
+      image: "fernapi/fern-python-sdk",
+      version: "5.41.26",
+    },
     name: "python",
-    options: {
-      hideGenerationTimestamp: true,
-      packageName: "peal",
-      packageUrl: `${repository}/tree/main/packages/peal-sdk/python`,
-      packageVersion: python,
-      projectName: "peal-sdk",
-    },
     package: { name: "peal-sdk", registry: "PyPI" },
-    test: 'uv run --quiet --isolated --no-project --with "$(ls dist/*.whl)" python tests/smoke_test.py',
+    test: 'uv run --quiet --isolated --no-project --with "$(ls dist/*.whl)" python smoke.py',
     version: python,
   },
   {
@@ -125,59 +155,48 @@ export const languages: readonly Language[] = [
       kind: "container",
       script: "go build ./... && go vet ./...",
     },
-    generator: "go",
-    // Go names a module after where its source lives.
-    gitRepoId: "peal/packages/peal-sdk/go",
-    name: "go",
-    options: {
-      enumClassPrefix: true,
-      hideGenerationTimestamp: true,
-      isGoSubmodule: false,
-      packageName: "peal",
-      packageVersion: go,
+    generator: {
+      config: {
+        // Go names a module after where its source lives.
+        module: { path: "github.com/peal-social/peal/packages/peal-sdk/go" },
+        packageName: "peal",
+      },
+      digest:
+        "sha256:9cd760baee12ab2515e4f53c25bba8374fd0e31c4a98e112f43e0f344603ea25",
+      image: "fernapi/fern-go-sdk",
+      version: "1.70.22",
     },
+    name: "go",
     package: {
       name: "github.com/peal-social/peal/packages/peal-sdk/go",
       registry: "Go",
     },
+    // Fern's own tests call a WireMock server, which the smoke test has no
+    // need of.
     test: "go test -count=1 -run TestSmoke .",
     version: go,
   },
   {
     build: {
-      // The Gemfile's development tools need a C compiler, and building the gem
-      // needs none of them.
-      environment: {
-        BUNDLE_PATH: "/cache/bundle",
-        BUNDLE_WITHOUT: "development:test",
-      },
-      // The full image, with a C compiler: Faraday's json gem builds an extension.
+      environment: {},
       image:
         "ruby:4.0.9@sha256:07042b74555ff2eef7365abd72d39cba6e499ab63e2d2942fd34d4778338495b",
       kind: "container",
-      // The gemspec packs every file it finds, so the gem is built before
-      // dist/ holds anything.
-      script: `rm -rf dist && bundle install --quiet && gem build --silent peal.gemspec && mkdir dist && mv peal-${ruby}.gem dist/ && bundle exec ruby -Ilib -e 'require "peal"; abort("wrong version") unless Peal::VERSION == "${ruby}"'`,
+      // custom.gemspec.rb lists the gem's files, so dist/ can wait.
+      script: `rm -rf dist && gem build --silent peal.gemspec && mkdir dist && mv peal-${ruby}.gem dist/ && ruby -Ilib -e 'require "peal"; abort("wrong version") unless Peal::VERSION == "${ruby}"'`,
     },
-    generator: "ruby",
-    gitRepoId: "peal",
-    // Faraday is pure Ruby: the default, Typhoeus, needs the system's libcurl.
-    library: "faraday",
+    generator: {
+      // The gem, its folder and its module take the organization's name:
+      // `peal`, lib/peal.rb, Peal.
+      config: {},
+      digest:
+        "sha256:dac31ba390287148731bbd5076605b2c2f45db2aa94f93aa4846bbb1bb936ead",
+      image: "fernapi/fern-ruby-sdk",
+      version: "1.41.3",
+    },
     name: "ruby",
-    options: {
-      gemAuthor: "Peal",
-      gemAuthorEmail: contactEmail,
-      gemDescription: description,
-      gemHomepage: homepage,
-      gemLicense: "Apache-2.0",
-      gemName: "peal",
-      gemSummary: description,
-      gemVersion: ruby,
-      hideGenerationTimestamp: true,
-      moduleName: "Peal",
-    },
     package: { name: "peal", registry: "RubyGems" },
-    test: "bundle exec ruby -Ilib smoke.rb",
+    test: "ruby -Ilib smoke.rb",
     version: ruby,
   },
   {
@@ -189,32 +208,17 @@ export const languages: readonly Language[] = [
       script:
         "mvn --batch-mode --quiet -Dmaven.repo.local=/cache/m2 -DskipTests package",
     },
-    generator: "java",
-    gitRepoId: "peal",
-    // OkHttp with Gson, the generator's default, sends the bearer token its docs
-    // show (HttpBearerAuth); its `native` library has no authentication.
-    library: "okhttp-gson",
-    name: "java",
-    options: {
-      apiPackage: "social.peal.api",
-      artifactDescription: description,
-      artifactId: "peal",
-      artifactUrl: homepage,
-      artifactVersion: java,
-      developerEmail: contactEmail,
-      developerName: "Peal",
-      developerOrganization: "Peal",
-      developerOrganizationUrl: homepage,
-      groupId: "social.peal",
-      hideGenerationTimestamp: true,
-      invokerPackage: "social.peal",
-      licenseName: "Apache-2.0",
-      licenseUrl: "https://www.apache.org/licenses/LICENSE-2.0.txt",
-      modelPackage: "social.peal.model",
-      scmConnection: `scm:git:${repository}.git`,
-      scmDeveloperConnection: `scm:git:${repository}.git`,
-      scmUrl: repository,
+    generator: {
+      config: {
+        "client-class-name": "PealClient",
+        "package-prefix": "social.peal",
+      },
+      digest:
+        "sha256:5b7d1aadb2919a017b149262e7ee408b1b7ed543a8f28ffe61a83f1ede347a60",
+      image: "fernapi/fern-java-sdk",
+      version: "4.37.11",
     },
+    name: "java",
     package: { name: "social.peal:peal", registry: "Maven Central" },
     test: "mvn --batch-mode --quiet -Dmaven.repo.local=/cache/m2 -Dtest=SmokeTest -Dsurefire.failIfNoSpecifiedTests=false test",
     version: java,
@@ -226,21 +230,20 @@ export const languages: readonly Language[] = [
         "composer:2.11.1@sha256:8de2184c6de224f4689e8f80ed5f5edaf0030b6b8b7839a22a2bcb6722ac87d0",
       kind: "container",
       script:
-        "composer validate --no-check-publish --no-check-lock --strict --quiet && composer update --no-interaction --no-progress --quiet && find lib -name '*.php' -print0 | xargs -0 -n 1 php --syntax-check > /dev/null && php -r 'require \"vendor/autoload.php\"; exit(class_exists(\"Peal\\\\Api\\\\SystemApi\") ? 0 : 1);'",
+        "composer validate --no-check-publish --no-check-lock --strict --quiet && composer update --no-interaction --no-progress --quiet && find src -name '*.php' -print0 | xargs -0 -n 1 php --syntax-check > /dev/null && php -r 'require \"vendor/autoload.php\"; exit(class_exists(\"Peal\\\\PealClient\") ? 0 : 1);'",
     },
-    generator: "php",
-    gitRepoId: "peal",
+    generator: {
+      config: {
+        clientName: "PealClient",
+        namespace: "Peal",
+        packageName: "peal-social/peal",
+      },
+      digest:
+        "sha256:1cb277c2d847d0eb226993a9d2836b5db4cc8a13efd75ad6730ff4971d4705a8",
+      image: "fernapi/fern-php-sdk",
+      version: "2.30.18",
+    },
     name: "php",
-    options: {
-      artifactUrl: homepage,
-      artifactVersion: php,
-      composerPackageName: "peal-social/peal",
-      developerOrganization: "Peal",
-      developerOrganizationUrl: homepage,
-      hideGenerationTimestamp: true,
-      invokerPackage: "Peal",
-      licenseName: "Apache-2.0",
-    },
     package: { name: "peal-social/peal", registry: "Packagist" },
     test: "php smoke.php",
     version: php,
@@ -258,20 +261,18 @@ export const languages: readonly Language[] = [
       script:
         "dotnet pack src/Peal/Peal.csproj --configuration Release --output dist --nologo --verbosity quiet",
     },
-    generator: "csharp",
-    gitRepoId: "peal",
-    name: "dotnet",
-    options: {
-      hideGenerationTimestamp: true,
-      licenseId: "Apache-2.0",
-      nullableReferenceTypes: true,
-      // Fixed, or the generator makes up a new one on every run.
-      packageGuid: "{9D55A421-FCE8-44D9-9F93-A157BC7E7872}",
-      packageName: "Peal",
-      packageTags: "peal;social-media;scheduling;api",
-      packageVersion: dotnet,
-      targetFramework: "net10.0",
+    generator: {
+      config: {
+        "client-class-name": "PealClient",
+        namespace: "Peal",
+        "package-id": "Peal",
+      },
+      digest:
+        "sha256:382b1dbd6fd6663c074b43d27bce8224fbab3c5023f00d1ae98ce23aed14be87",
+      image: "fernapi/fern-csharp-sdk",
+      version: "2.92.17",
     },
+    name: "dotnet",
     package: { name: "Peal", registry: "NuGet" },
     test: "dotnet run --project smoke/Smoke.csproj --nologo --verbosity quiet",
     version: dotnet,
@@ -285,16 +286,23 @@ export const languages: readonly Language[] = [
       script:
         "cargo build --quiet && cargo package --quiet --allow-dirty --no-verify",
     },
-    generator: "rust",
-    gitRepoId: "peal",
-    name: "rust",
-    options: {
-      hideGenerationTimestamp: true,
-      packageName: "peal-sdk",
-      packageVersion: rust,
-      // rustls, so nobody needs OpenSSL to build the crate.
-      reqwestDefaultFeatures: "rustls",
+    generator: {
+      config: {
+        clientClassName: "PealClient",
+        crateName: "peal-sdk",
+        packageDescription: description,
+        packageDocumentation: "https://docs.rs/peal-sdk",
+        packageLicense: "Apache-2.0",
+        packageRepository: repository,
+        // crates.io names the crate peal-sdk, and the code imports peal_sdk.
+        preserveCrateNameHyphens: true,
+      },
+      digest:
+        "sha256:6ad85636c2529e2b3998190113b7bd769af74a0658b0d1d56bc1466e8641ed13",
+      image: "fernapi/fern-rust-sdk",
+      version: "0.53.6",
     },
+    name: "rust",
     package: { name: "peal-sdk", registry: "crates.io" },
     test: "cargo run --quiet --example smoke",
     version: rust,

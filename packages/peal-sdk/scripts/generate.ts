@@ -1,136 +1,111 @@
 // Generates one language's SDK from openapi.json:
-// `bun scripts/generate.ts <language>`. It deletes what the previous run
-// wrote (listed in .openapi-generator/FILES), so a schema or an operation the
-// contract drops leaves no file behind, runs openapi-generator, then copies
-// the SDKs' license in and fills what the generator leaves out of the
-// package's manifest. The files a language's .openapi-generator-ignore names
-// are ours, and the generator never writes them.
-import { copyFile, mkdir, readdir, rm, rmdir } from "node:fs/promises";
+// `bun scripts/generate.ts <language>`. Fern's CLI runs the language's
+// generator in Docker and replaces the SDK's folder with what it writes,
+// keeping only the files the folder's .fernignore names, which are ours. The
+// SDKs' license and notice then go in, and scripts/finish.ts fills what the
+// generator leaves out of the package's manifest.
+import { copyFile, mkdir } from "node:fs/promises";
 import path from "node:path";
 
+import { $ } from "bun";
 import { Schema } from "effect";
 
-import { cacheRoot, runInContainer, sdkRoot } from "./container.ts";
+import { cacheRoot, sdkRoot, workspaceRoot } from "./container.ts";
 import { finish } from "./finish.ts";
-import { generatorImage, languageNamed } from "./languages.ts";
+import { languageNamed } from "./languages.ts";
 
 const language = languageNamed(Bun.argv[2]);
+const { generator } = language;
 const output = path.join(sdkRoot, language.name);
-const filesList = path.join(output, ".openapi-generator", "FILES");
+const specification = path.join(sdkRoot, "openapi.json");
 
-/** Removes the folders under `folder` that hold nothing, deepest first. */
-const removeEmptyFolders = async (folder: string): Promise<boolean> => {
-  const entries = await readdir(folder, { withFileTypes: true });
-
-  const removed = await Promise.all(
-    entries.map(async (entry) =>
-      entry.isDirectory()
-        ? await removeEmptyFolders(path.join(folder, entry.name))
-        : false
-    )
-  );
-
-  const empty = removed.every(Boolean);
-
-  if (empty && folder !== output) {
-    await rmdir(folder);
-  }
-
-  return empty;
-};
-
-// Without the document, the generator would fail after the previous run's
-// files are gone, and leave the SDK empty.
-if (!(await Bun.file(path.join(sdkRoot, "openapi.json")).exists())) {
+// Fern would empty the SDK's folder and then fail without the document.
+if (!(await Bun.file(specification).exists())) {
   throw new Error(
     "packages/peal-sdk/openapi.json is missing: generate through Nx (`bun run sdk:generate`), which writes it first."
   );
 }
 
-const previousFiles = Bun.file(filesList);
+const cliFolder = path.join(workspaceRoot, "node_modules", "fern-api");
 
-if (await previousFiles.exists()) {
-  const list = await previousFiles.text();
-  const listed = list.split("\n").filter((line) => line.trim() !== "");
-
-  await Promise.all(
-    listed.map(async (file) => {
-      await rm(path.join(output, file), { force: true });
-    })
-  );
-  await removeEmptyFolders(output);
-}
-
-const decodeSchemaNames = Schema.decodeUnknownSync(
-  Schema.fromJsonString(
-    Schema.Struct({
-      components: Schema.Struct({
-        schemas: Schema.Record(Schema.String, Schema.Unknown),
-      }),
-    })
-  )
+const decodeCliManifest = Schema.decodeUnknownSync(
+  Schema.fromJsonString(Schema.Struct({ version: Schema.String }))
 );
 
-/**
- * Go names each model's constructor New<Model>, so a schema New<X> next to a
- * schema <X> would declare the same name twice. Go's SDK calls it
- * Create<X>Request, as it is the body that creates an <X>.
- */
-const goModelNames = async (): Promise<readonly string[]> => {
-  const document = decodeSchemaNames(
-    await Bun.file(path.join(sdkRoot, "openapi.json")).text()
-  );
+// A fern.config.json naming another version makes the CLI download that one.
+const cliVersion = decodeCliManifest(
+  await Bun.file(path.join(cliFolder, "package.json")).text()
+).version;
 
-  const names = new Set(Object.keys(document.components.schemas));
+// A Fern workspace per language, so Nx can run the eight at once. Fern wants
+// the paths in generators.yml relative to it.
+const fernFolder = path.join(cacheRoot, "fern", language.name, "fern");
 
-  return [...names]
-    .filter(
-      (name) => name.startsWith("New") && names.has(name.slice("New".length))
-    )
-    .toSorted()
-    .map((name) => `${name}=Create${name.slice("New".length)}Request`);
-};
-
-const configFolder = path.join(cacheRoot, "generator");
-
-await mkdir(configFolder, { recursive: true });
+await mkdir(fernFolder, { recursive: true });
 
 await Bun.write(
-  path.join(configFolder, `${language.name}.json`),
-  `${JSON.stringify(language.options, null, 2)}\n`
+  path.join(fernFolder, "fern.config.json"),
+  `${JSON.stringify({ organization: "peal", version: cliVersion }, null, 2)}\n`
 );
 
-const mappings = language.name === "go" ? await goModelNames() : [];
+// JSON is YAML, which generators.yml is.
+await Bun.write(
+  path.join(fernFolder, "generators.yml"),
+  `${JSON.stringify(
+    {
+      api: {
+        specs: [{ openapi: path.relative(fernFolder, specification) }],
+      },
+      groups: {
+        [language.name]: {
+          generators: [
+            {
+              config: generator.config,
+              name: generator.image,
+              output: {
+                location: "local-file-system",
+                path: path.relative(fernFolder, output),
+              },
+              version: generator.version,
+            },
+          ],
+        },
+      },
+    },
+    null,
+    2
+  )}\n`
+);
 
-await runInContainer({
-  arguments: [
-    "generate",
-    "--input-spec",
-    "/sdk/openapi.json",
-    "--generator-name",
-    language.generator,
-    "--output",
-    `/sdk/${language.name}`,
-    "--config",
-    `/cache/generator/${language.name}.json`,
-    "--git-host",
-    "github.com",
-    "--git-user-id",
-    "peal-social",
-    "--git-repo-id",
-    language.gitRepoId,
-    // The generator's tests are empty stubs.
-    "--global-property",
-    "apiTests=false,modelTests=false",
-    ...(language.library === undefined ? [] : ["--library", language.library]),
-    ...(mappings.length === 0
-      ? []
-      : ["--model-name-mappings", mappings.join(",")]),
-  ],
-  image: generatorImage,
-  quiet: true,
-  workdir: "/sdk",
-});
+// Fern runs <image>:<version>, which Docker takes from its own images when it
+// has one: the pinned image goes there under that name.
+const pinned = `${generator.image}@${generator.digest}`;
+
+await $`docker pull --quiet ${pinned}`.quiet();
+
+await $`docker tag ${pinned} ${generator.image}:${generator.version}`;
+
+// --generate-tests makes Fern write the whole project (manifest, build
+// files, its unit tests) rather than the client's source alone.
+const result =
+  await $`node ${path.join(cliFolder, "cli.cjs")} generate --local --group ${language.name} --version ${language.version} --generate-tests --force --no-prompt --log-level warn`
+    .cwd(path.dirname(fernFolder))
+    .env({
+      ...process.env,
+      FERN_DISABLE_AUTO_BOOTSTRAP: "true",
+      FERN_DISABLE_TELEMETRY: "true",
+      FERN_DISABLE_UPGRADE_CHECK: "true",
+      FERN_NO_VERSION_REDIRECTION: "true",
+      FERN_TELEMETRY_DISABLED: "true",
+    })
+    .quiet()
+    .nothrow();
+
+if (result.exitCode !== 0) {
+  process.stderr.write(result.stdout);
+  process.stderr.write(result.stderr);
+  throw new Error(`Fern could not generate the ${language.name} SDK`);
+}
 
 // Apache-2.0 asks every copy to carry the license and the notice.
 await Promise.all(
