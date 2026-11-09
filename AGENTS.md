@@ -712,6 +712,9 @@ and no socket, for tests.
   `analytics.metric_snapshots`: ids and counts, never content. A workspace's
   go with it (`AnalyticsRecords`), and a reading saved after its post was
   erased keeps nothing (`saveReading` updates the post first).
+- Platforms without a reader (LinkedIn, X and Meta's so far) answer
+  `ChannelUnreadable` `unsupported`: their posts end at their first turn,
+  with no warning, and the reports leave them out.
 - `CollectMetrics` runs on the `analytics.collect-metrics` cron, hourly at
   minute 7: a post is read every hour for 48 hours, then every day until it
   is 30 days old (`analytics/domain/collection-schedule.ts`), each next read

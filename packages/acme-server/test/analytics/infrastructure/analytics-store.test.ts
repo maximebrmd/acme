@@ -6,6 +6,7 @@ import { AnalyticsReports } from "#analytics/application/analytics-reports.ts";
 import { TrackedPosts } from "#analytics/application/tracked-posts.ts";
 import { dayStarts, reportRange } from "#analytics/domain/report-range.ts";
 import {
+  endCollection,
   recordReading,
   trackPublication,
 } from "#analytics/domain/tracked-post.ts";
@@ -313,6 +314,52 @@ layer(StoreTest)("the analytics store", (it) => {
 
           assert.deepStrictEqual(
             yield* analytics.exportWorkspace(workspaceId),
+            []
+          );
+        }).pipe(Effect.ensuring(forgetWorkspace(workspaceId)));
+      })
+  );
+
+  it.effect(
+    "leaves out of its reports the posts of a platform it reads no counts on",
+    () =>
+      Effect.gen(function* unreadable() {
+        const workspaceId = yield* freshWorkspace;
+        const tracked = yield* TrackedPosts;
+        const linkedin = yield* newChannelId;
+
+        yield* Effect.gen(function* checks() {
+          const publication = yield* publicationOf(
+            workspaceId,
+            linkedin,
+            "2043-02-10T09:00:00Z"
+          );
+
+          const post = trackPublication(publication);
+
+          yield* tracked.track([post]);
+          yield* tracked.saveSchedule(
+            endCollection(post, "unsupported", utc("2043-02-10T09:07:00Z"))
+          );
+
+          const range = yield* Effect.fromResult(
+            reportRange({
+              from: { day: 10, month: 2, year: 2043 },
+              timeZone: paris,
+              to: { day: 10, month: 2, year: 2043 },
+            })
+          );
+
+          const rows = yield* AnalyticsReports.use((reports) =>
+            reports.report(workspaceId, dayStarts(range), 5)
+          );
+
+          assert.deepStrictEqual(rows.channels, []);
+          assert.deepStrictEqual(rows.top, []);
+          assert.deepStrictEqual(
+            yield* AnalyticsReports.use((reports) =>
+              reports.history(workspaceId, publication.postId)
+            ),
             []
           );
         }).pipe(Effect.ensuring(forgetWorkspace(workspaceId)));

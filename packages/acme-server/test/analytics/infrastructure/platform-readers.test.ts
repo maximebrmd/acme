@@ -397,19 +397,22 @@ describe("reading counts on a channel", () => {
     })
   );
 
-  it.live("reads nothing on a platform it has no reader for", () =>
-    Effect.gen(function* unsupported() {
-      const { batch } = yield* reading(posts, {
-        accountId: "urn:li:person:synthetic",
-        channelId,
-        platform: "linkedin",
-        scopes: [],
-      });
+  // The platforms Acme publishes to but reads no counts on yet.
+  it.live.each(["linkedin", "x", "threads", "instagram", "facebook"] as const)(
+    "reads nothing on %s, which it has no reader for",
+    (platform) =>
+      Effect.gen(function* unsupported() {
+        const { batch } = yield* reading(posts, {
+          accountId: `synthetic-${platform}-account`,
+          channelId,
+          platform,
+          scopes: [],
+        });
 
-      assert.deepStrictEqual(
-        failureOf(batch),
-        Option.some(new ChannelUnreadable({ reason: "unsupported" }))
-      );
-    })
+        assert.deepStrictEqual(
+          failureOf(batch),
+          Option.some(new ChannelUnreadable({ reason: "unsupported" }))
+        );
+      })
   );
 });

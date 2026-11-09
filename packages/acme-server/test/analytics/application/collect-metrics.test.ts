@@ -339,6 +339,51 @@ describe("collecting post metrics", () => {
     )
   );
 
+  it.effect(
+    "stops reading the posts of a platform it reads no counts on, at their first turn",
+    () =>
+      Effect.gen(function* unsupported() {
+        const post = yield* publicationOf(
+          workspaceId,
+          yield* newChannelId,
+          "2026-11-02T10:20:00.000Z"
+        );
+
+        yield* published(post);
+
+        const report = yield* runAt("2026-11-02T11:07:00.000Z");
+        const next = yield* runAt("2026-11-02T12:07:00.000Z");
+
+        assert.strictEqual(report.ended, 1);
+        assert.strictEqual(
+          next.deferred + next.ended + next.read + next.skipped,
+          0
+        );
+        assert.lengthOf(yield* requested, 1);
+
+        const stored = yield* StoredPosts.use((posts) =>
+          posts.post(post.targetId)
+        );
+
+        assert.deepStrictEqual(
+          stored.pipe(
+            Option.flatMap(({ collection }) =>
+              collection._tag === "ended"
+                ? Option.some(collection.reason)
+                : Option.none()
+            )
+          ),
+          Option.some("unsupported")
+        );
+      }).pipe(
+        Effect.provide(
+          collectionWith(() =>
+            Effect.fail(new ChannelUnreadable({ reason: "unsupported" }))
+          )
+        )
+      )
+  );
+
   it.effect("passes over a channel that is off until its next turn", () =>
     Effect.gen(function* paused() {
       const post = yield* publicationOf(

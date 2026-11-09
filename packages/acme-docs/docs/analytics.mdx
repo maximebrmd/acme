@@ -28,6 +28,8 @@ Readings take turns with the channel's publishing: Acme makes one call at a time
 - **Mastodon**: Acme reads each post on the account's server, with the account's access when the account allowed Acme to read its posts. Accounts connected before Acme asked for that are read without it, which shows public and unlisted posts; [reconnect](/channels#reconnect) one to read its followers-only posts too.
 - **Bluesky**: Acme reads posts from Bluesky's public service, 25 at a time, without the account's session: a post's counts are public on Bluesky.
 
+Acme reads no counts on LinkedIn, X, Threads, Instagram or Facebook Pages yet. It finds so at a post's first turn, stops there, and leaves the post out of **Analytics**, rather than show it with no counts.
+
 ## The analytics page [#page]
 
 Pick the last 7, 30 or 90 days. Days run in your browser's time zone, and the range takes the posts published in it:

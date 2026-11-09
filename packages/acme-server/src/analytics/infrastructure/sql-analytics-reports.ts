@@ -6,7 +6,10 @@ import {
   gte,
   inArray,
   isNotNull,
+  isNull,
   lt,
+  ne,
+  or,
   sql,
 } from "drizzle-orm";
 import { DateTime, Effect, Layer, Schema } from "effect";
@@ -20,6 +23,7 @@ import type {
   ReportRows,
 } from "#analytics/application/analytics-reports.ts";
 import { PostMetrics } from "#analytics/domain/post-metrics.ts";
+import type { CollectionEnd } from "#analytics/domain/tracked-post.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
 import { ChannelIdSchema } from "#shared/domain/ids.ts";
 import type { PostId, WorkspaceId } from "#shared/domain/ids.ts";
@@ -77,6 +81,16 @@ const snapshotOf = (snapshot: SnapshotRow) =>
     }))
   );
 
+// A post on a platform Acme reads no counts on, which it stopped reading at
+// its first turn: it holds no counts and never will, so reports leave it
+// out rather than show it with none.
+const unreadable: CollectionEnd = "unsupported";
+
+const readable = or(
+  isNull(trackedPosts.endReason),
+  ne(trackedPosts.endReason, unreadable)
+);
+
 /**
  * Reports on what analytics stored, in Postgres. The days of a range are
  * the instants each starts at, which the domain computes in the reader's
@@ -99,7 +113,8 @@ export const SqlAnalyticsReports = Layer.effect(
         .where(
           and(
             eq(trackedPosts.workspaceId, workspaceId),
-            eq(trackedPosts.postId, postId)
+            eq(trackedPosts.postId, postId),
+            readable
           )
         )
         .orderBy(asc(trackedPosts.publishedAt), asc(trackedPosts.targetId))
@@ -177,6 +192,7 @@ export const SqlAnalyticsReports = Layer.effect(
         WHERE workspace_id = ${workspaceId}
           AND published_at >= ${start}
           AND published_at < ${end}
+          AND end_reason IS DISTINCT FROM ${unreadable}
         GROUP BY channel_id
         ORDER BY channel_id
       `.pipe(Effect.flatMap(decodeChannels), Effect.mapError(failed));
