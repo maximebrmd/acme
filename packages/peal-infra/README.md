@@ -119,6 +119,112 @@ Host ssh.peal.social sandbox-ssh.peal.social
   ProxyCommand cloudflared access ssh --hostname %h
 ```
 
+## Choosing a provider and a size
+
+No provider is chosen, and nothing in this folder depends on one: the roles
+use no provider's API, module or collection, and the servers are created by
+hand in a console. What a choice changes is the inventory: each server's
+address in `hosts.yml`, and its `hosting_provider` and `hosting_location`
+(the city) in its group's `main.yml`, placeholders until then. Production
+and the sandbox may share a provider; the uptime server shares neither a
+provider nor a city with them ([Uptime](#uptime)).
+
+### What the stack needs of a provider
+
+| Need                         | Why                                                                                                                                                                                                                                                                        |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A European company           | Production holds customers' data: the provider is a processor, with a data processing agreement, and its data centres are in the EU                                                                                                                                        |
+| An Ubuntu LTS image          | The roles are written for it: apt, unattended upgrades, ufw, sshd's drop-in folder, and Docker's packages, pinned for the release the server runs (`docker_packages`: 24.04 or 26.04)                                                                                      |
+| x86-64 or Arm64              | Either: `release.yml` builds the images for each server's own architecture, and cloudflared's package is pinned for both ([Architecture](#architecture))                                                                                                                   |
+| A public IPv4 address        | The servers dial out over it: GitHub, which cloudflared's package comes from, has no IPv6 address. The uptime server is reached on it                                                                                                                                      |
+| An IPv6 address              | For the uptime server, whose name has an AAAA record beside its A record. Production and the sandbox need none                                                                                                                                                             |
+| A firewall in front          | Beside ufw on the server: no inbound rule for production and the sandbox, but port 22 from your address while one is bootstrapped; for the uptime server, port 443 from anywhere and port 22 from the addresses you work from                                              |
+| Snapshots                    | Before a change that is hard to undo, such as a Docker Engine or Ubuntu upgrade. A snapshot holds the server's secrets: keep it at the provider, and delete it after. It replaces no backup ([Backups](#backups))                                                          |
+| A rescue system or a console | The way in when the tunnel stops carrying SSH, with port 22 closed. Neither root nor `ops` has a password, so a console that only offers a login prompt lets nobody in: it takes a rescue system that mounts the server's disk ([Without the tunnel](#without-the-tunnel)) |
+| A disk that grows            | Postgres's and the telemetry's volumes are on the root disk, under `/var/lib/docker`; media are in the bucket                                                                                                                                                              |
+
+Nothing else: no load balancer, as the tunnel is the one entry; no private
+network while one server runs the stack; no managed database, as Postgres
+runs in the stack with its own backups. Outgoing connections are all the
+servers open, to the tunnel, the platforms, the bucket, the mail service
+and the package repositories.
+
+### Architecture
+
+`release.yml` builds each image on the machine running Ansible for the
+server it goes to, from the server's facts: `linux/amd64` on an x86-64
+server, `linux/arm64` on an Arm one. Built on a machine of the same
+architecture, as an Apple silicon Mac for an Arm server, the build is
+native. For the other architecture, Buildx emulates it, more slowly: Docker
+Desktop and OrbStack ship the emulation, and on Linux
+`docker run --privileged --rm tonistiigi/binfmt --install arm64` (or
+`amd64`) installs it. `-e peal_image_platform=linux/arm64`, or the same in
+the inventory, builds for a platform whatever the server's facts say. Each
+platform has its own archive under `.ansible/release`, so one built for the
+other is never uploaded.
+
+Choose the architecture for good. PostgreSQL restores a backup on the
+hardware architecture it was taken on and no other
+([its documentation](https://www.postgresql.org/docs/18/warm-standby.html#STANDBY-PLANNING)),
+so [the runbook](runbooks/restore-database.md#a-new-server) carries a
+database to a new server of the same architecture only. Moving to the other
+one takes a dump of the database (`pg_dump`) loaded into a new server, with
+the stack stopped meanwhile, which nothing here does yet.
+
+### Size
+
+These sizes come from a model of the load the code puts on a server, not
+from measurements: each account, idle ones included, counted as four
+channels and thirty posts a month to two or three of them, read by the
+hourly analytics for thirty days. The model gives a database of about 15 GB
+after a year for 1,000 users, 45 GB for 3,000 and 150 GB for 10,000, and a
+few requests a second at most: memory and the disk fill long before the
+processors do. Check a provider's current plans against the shapes, and
+measure before moving up.
+
+| Users        | Production                                          | Postgres                                                                                                                            |
+| ------------ | --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| About 1,000  | One server: 4 vCPUs, 16 GB of memory, a 100 GB disk | On it, with the rest of the stack                                                                                                   |
+| About 3,000  | One server: 8 vCPUs, 32 GB of memory, a 200 GB disk | On it                                                                                                                               |
+| About 10,000 | The app's server: 8 vCPUs, 32 GB, a 100 GB disk     | A machine of its own: 6 dedicated cores or more, 32 GB, two local NVMe disks mirrored, and a standby like it in another data centre |
+
+The sandbox is a small copy at any size, 2 vCPUs, 8 GB and a 50 GB disk,
+and the uptime server needs 1 vCPU, 1 GB and 10 GB. Shared vCPUs do for the
+first two sizes. Going from the first to the second is a resize in the
+provider's console, a few minutes down, with nothing to change here but
+`swap_size_mb` if you want more.
+
+Move up when one of these holds for days:
+
+- the hourly analytics run takes more than 30 minutes;
+- Postgres reads from disk more than 1 time in 100, or the database is
+  larger than half the memory;
+- memory stays above 80%, or swap is used every day;
+- the disk is 70% full (Grafana alerts at 85%);
+- the processors lose more than 10% of their time to other tenants
+  (steal): take dedicated vCPUs.
+
+One process runs every job, so the app grows by taking a bigger server, not
+a second one.
+
+**The third size is not built yet.** Everything here runs one server per
+environment: `compose.production.yaml` starts Postgres beside the server,
+the inventory has one host for each environment, `release.yml` stops and
+starts both on that host, and `peal_backup` runs where Postgres does.
+Putting Postgres on its own machine takes, before any is ordered:
+
+- the stack's Compose file split, so a database host runs Postgres alone,
+  and the app's `DATABASE_URL` naming it;
+- a `database` group in the inventory, a private network between the two
+  hosts, and a firewall rule that opens Postgres's port to it alone;
+- `release.yml` stopping the old server on one host before Postgres
+  restarts on the other;
+- a standby that follows the primary, built from the backups, and a runbook
+  to promote it.
+
+Until then, a larger single server, with more memory than the second size,
+is the way past 3,000 users.
+
 ## Run the playbooks
 
 You need [uv](https://docs.astral.sh/uv/), `cloudflared` (`brew install
@@ -268,8 +374,23 @@ password manager: the backups cannot be read without it.
    `""` in `group_vars/production/main.yml`: while it names the uptime
    server, `site.yml` requires the credential `PEAL_HEARTBEAT_TOKEN`.
 
-If the tunnel ever stops carrying SSH, use the provider's serial or rescue
-console.
+### Without the tunnel
+
+Once the tunnel carries SSH, port 22 is closed, and no account has a
+password: when the tunnel stops for good (its token revoked, cloudflared
+broken), the provider's rescue system is the way back in.
+
+1. Open port 22 to your address alone in the provider's firewall.
+2. Boot the server into the rescue system, mount its disk, and set
+   `ENABLED=no` in its `etc/ufw/ufw.conf`: ufw then stays off when the
+   server starts. Boot the server from its disk again.
+3. `ssh ops@<address>` answers, with your key. Run
+   `site.yml --limit production -e ssh_via_tunnel=false`, which turns ufw
+   back on with port 22 open, rate limited, and writes the tunnel's routes
+   again, and its token when the vault holds a new one.
+4. Once `ssh ops@ssh.peal.social true` works again, run `site.yml` without
+   the setting, which closes port 22, and close it in the provider's
+   firewall.
 
 ## Releases
 

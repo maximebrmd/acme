@@ -95,6 +95,8 @@ the backup passphrase, which you kept outside the server.
 
 1. Set up a new server as `README.md` says, through `site.yml`, with the same
    credentials, the backup passphrase included. It generates new secrets.
+   Take one of the architecture the backups were made on, x86-64 or Arm64:
+   PostgreSQL restores its files on that architecture and no other.
 2. Release the commit that ran before, with `release.yml`. The new database is
    empty; stop the server and the web app, and Postgres, as in steps 2 and 4
    above.
