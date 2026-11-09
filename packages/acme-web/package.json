@@ -18,7 +18,8 @@
     "next-intl": "4.14.9",
     "react": "19.3.1",
     "react-dom": "19.3.1",
-    "scheduler": "0.28.0"
+    "scheduler": "0.28.0",
+    "sonner": "2.0.8"
   },
   "devDependencies": {
     "@effect/vitest": "4.1.2",

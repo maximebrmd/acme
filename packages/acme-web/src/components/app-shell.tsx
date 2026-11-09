@@ -1,11 +1,13 @@
 import { useTranslations } from "next-intl";
+import { Suspense } from "react";
 import type { ReactNode } from "react";
 
+import { AccountMenu } from "#components/account-menu.tsx";
 import { LanguageSwitcher } from "#components/language-switcher.tsx";
 import { Link } from "#i18n/navigation.ts";
 
-// The frame around every page: a header with the product name and the
-// language switcher, then the page itself.
+// The frame around every page: a header with the product name, the
+// language switcher and the account menu, then the page itself.
 export const AppShell = ({ children }: { readonly children: ReactNode }) => {
   const t = useTranslations("AppShell");
 
@@ -16,7 +18,12 @@ export const AppShell = ({ children }: { readonly children: ReactNode }) => {
           <Link href="/" className="font-semibold tracking-tight">
             {t("productName")}
           </Link>
-          <LanguageSwitcher />
+          <div className="flex items-center gap-1">
+            <LanguageSwitcher />
+            <Suspense fallback={null}>
+              <AccountMenu />
+            </Suspense>
+          </div>
         </div>
       </header>
       <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-10">

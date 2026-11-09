@@ -11,6 +11,15 @@
     "trigger": "Langue : {locale, select, en {English} fr {Français} other {{locale}}}",
     "locale": "{locale, select, en {English} fr {Français} other {{locale}}}"
   },
+  "UserMenu": {
+    "signIn": "Se connecter",
+    "signUp": "Créer un compte",
+    "trigger": "Compte de {name}",
+    "signedInAs": "Session ouverte : {email}",
+    "app": "Espaces de travail",
+    "signOut": "Se déconnecter",
+    "signOutFailed": "La déconnexion a échoué. Réessayez."
+  },
   "HomePage": {
     "title": "Bienvenue sur Acme",
     "description": "Rédigez vos publications une fois, planifiez-les sur toutes les plateformes et suivez leurs résultats."
@@ -35,5 +44,98 @@
     "title": "Page introuvable",
     "description": "Il n’y a rien à cette adresse.",
     "home": "Retour à l’accueil"
+  },
+  "Auth": {
+    "name": "Nom",
+    "email": "Adresse e-mail",
+    "password": "Mot de passe",
+    "passwordHint": "Au moins 12 caractères.",
+    "newPassword": "Nouveau mot de passe",
+    "confirmPassword": "Nouveau mot de passe, à nouveau",
+    "errors": {
+      "BANNED_USER": "Ce compte a été suspendu.",
+      "EMAIL_NOT_VERIFIED": "Confirmez d’abord votre adresse e-mail, avec le lien que nous vous avons envoyé.",
+      "INVALID_EMAIL": "Saisissez une adresse e-mail valide.",
+      "INVALID_EMAIL_OR_PASSWORD": "L’adresse e-mail ou le mot de passe est incorrect.",
+      "INVALID_TOKEN": "Ce lien n’est pas valide ou a expiré.",
+      "PASSWORD_TOO_LONG": "Le mot de passe est trop long.",
+      "PASSWORD_TOO_SHORT": "Le mot de passe doit compter au moins 12 caractères.",
+      "USER_ALREADY_EXISTS": "Un compte utilise déjà cette adresse e-mail.",
+      "TOO_MANY_REQUESTS": "Trop de tentatives. Patientez une minute, puis réessayez.",
+      "UNKNOWN": "Une erreur est survenue. Réessayez."
+    }
+  },
+  "SignInPage": {
+    "title": "Se connecter",
+    "description": "Bon retour sur Acme.",
+    "submit": "Se connecter",
+    "submitting": "Connexion…",
+    "forgotPassword": "Mot de passe oublié ?",
+    "noAccount": "Pas encore de compte ?",
+    "signUp": "Créez-en un",
+    "resend": "Renvoyer le lien de confirmation",
+    "resent": "Nous avons envoyé un nouveau lien de confirmation à {email}."
+  },
+  "SignUpPage": {
+    "title": "Créez votre compte",
+    "description": "Rédigez une fois, planifiez partout.",
+    "submit": "Créer mon compte",
+    "submitting": "Création du compte…",
+    "haveAccount": "Vous avez déjà un compte ?",
+    "signIn": "Se connecter",
+    "checkInbox": "Consultez votre boîte de réception",
+    "sent": "Nous avons envoyé un lien à {email}. Ouvrez-le pour confirmer votre adresse : il vous connecte."
+  },
+  "VerifyEmailPage": {
+    "title": "Adresse confirmée",
+    "description": "Votre adresse est confirmée, et votre session est ouverte.",
+    "continue": "Aller à vos espaces de travail",
+    "invalidTitle": "Ce lien ne fonctionne plus",
+    "invalidDescription": "Un lien de confirmation fonctionne une fois, pendant une heure. Saisissez votre adresse pour en recevoir un nouveau.",
+    "resend": "Envoyer un nouveau lien",
+    "sending": "Envoi…",
+    "sent": "Si {email} correspond à un compte en attente de confirmation, un nouveau lien est en route."
+  },
+  "ForgotPasswordPage": {
+    "title": "Réinitialisez votre mot de passe",
+    "description": "Saisissez l’adresse e-mail de votre compte, et nous vous enverrons un lien pour choisir un nouveau mot de passe.",
+    "submit": "Envoyer le lien",
+    "submitting": "Envoi…",
+    "sent": "Si {email} correspond à un compte, un lien pour réinitialiser son mot de passe est en route.",
+    "back": "Retour à la connexion"
+  },
+  "ResetPasswordPage": {
+    "title": "Choisissez un nouveau mot de passe",
+    "description": "Il vous servira à vous reconnecter. Toutes les autres sessions de votre compte sont déconnectées.",
+    "submit": "Enregistrer le nouveau mot de passe",
+    "submitting": "Enregistrement…",
+    "mismatch": "Les deux mots de passe diffèrent.",
+    "done": "Votre mot de passe est modifié. Connectez-vous avec le nouveau.",
+    "signIn": "Se connecter",
+    "invalidTitle": "Ce lien ne fonctionne plus",
+    "invalidDescription": "Un lien de réinitialisation fonctionne une fois, pendant une heure.",
+    "requestAgain": "Demander un nouveau lien"
+  },
+  "AppPage": {
+    "title": "Bonjour, {name}",
+    "description": "Vos espaces de travail, et ce que vous pouvez y faire.",
+    "empty": "Vous n’appartenez encore à aucun espace de travail. Créez-en un, ou demandez une invitation.",
+    "role": "{role, select, owner {Propriétaire} admin {Administrateur} editor {Éditeur} contributor {Contributeur} viewer {Lecteur} other {{role}}}",
+    "permissions": "{count, plural, one {# permission} other {# permissions}}",
+    "createTitle": "Créer un espace de travail",
+    "createDescription": "Vous en serez propriétaire, et pourrez y inviter des personnes.",
+    "workspaceName": "Nom de l’espace de travail",
+    "create": "Créer l’espace de travail",
+    "creating": "Création…"
+  },
+  "InvitationPage": {
+    "title": "Rejoindre un espace de travail",
+    "description": "Vous avez reçu une invitation dans un espace de travail sur Acme.",
+    "accept": "Accepter l’invitation",
+    "accepting": "Acceptation…",
+    "signedOut": "Connectez-vous, ou créez un compte avec l’adresse qui a reçu l’invitation, puis rouvrez le lien.",
+    "signIn": "Se connecter",
+    "signUp": "Créer un compte",
+    "failed": "Cette invitation n’est plus valide, ou elle a été envoyée à une autre adresse."
   }
 }

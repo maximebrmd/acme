@@ -1,0 +1,84 @@
+import { Badge } from "acme-ui/components/badge";
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "acme-ui/components/card";
+import { Option } from "effect";
+import { hasLocale } from "next-intl";
+import { getTranslations } from "next-intl/server";
+import { notFound } from "next/navigation";
+
+import { currentUser } from "#auth/session.ts";
+import { CreateWorkspaceForm } from "#components/create-workspace-form.tsx";
+import { redirect } from "#i18n/navigation.ts";
+import { routing } from "#i18n/routing.ts";
+
+// The signed-in home: the user's workspaces, read from GET /api/me with the
+// visitor's cookies. Anyone else is sent to sign in.
+const AppPage = async ({ params }: PageProps<"/[locale]/app">) => {
+  const { locale } = await params;
+
+  if (!hasLocale(routing.locales, locale)) {
+    notFound();
+  }
+
+  const me = await currentUser();
+
+  if (Option.isNone(me)) {
+    return redirect({ href: "/sign-in", locale });
+  }
+
+  const { user, workspaces } = me.value;
+  const t = await getTranslations("AppPage");
+
+  return (
+    <div className="flex flex-col gap-8">
+      <div className="flex flex-col gap-2">
+        <h1 className="text-3xl font-semibold tracking-tight">
+          {t("title", { name: user.name })}
+        </h1>
+        <p className="text-muted-foreground">{t("description")}</p>
+      </div>
+      {workspaces.length === 0 ? (
+        <p className="text-muted-foreground">{t("empty")}</p>
+      ) : (
+        <ul className="grid gap-4 sm:grid-cols-2">
+          {workspaces.map((workspace) => (
+            <li key={workspace.id}>
+              <Card>
+                <CardHeader>
+                  <CardTitle>{workspace.name}</CardTitle>
+                  <CardDescription>
+                    {t("permissions", { count: workspace.permissions.length })}
+                  </CardDescription>
+                  <CardAction>
+                    <Badge variant="outline">
+                      {t("role", { role: workspace.role })}
+                    </Badge>
+                  </CardAction>
+                </CardHeader>
+              </Card>
+            </li>
+          ))}
+        </ul>
+      )}
+      <Card className="max-w-sm">
+        <CardHeader>
+          <CardTitle>
+            <h2>{t("createTitle")}</h2>
+          </CardTitle>
+          <CardDescription>{t("createDescription")}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <CreateWorkspaceForm />
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+export default AppPage;
