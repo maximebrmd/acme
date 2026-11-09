@@ -3,7 +3,7 @@ import { DateTime, Duration, Result, Schema } from "effect";
 
 import type { Actor, ActorSubject } from "#shared/domain/access.ts";
 import { ChannelIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
-import type { ChannelId } from "#shared/domain/ids.ts";
+import type { ChannelId, UserId } from "#shared/domain/ids.ts";
 
 import { InvalidConnectState } from "./invalid-connect-state.ts";
 import { PlatformSchema } from "./platform.ts";
@@ -15,6 +15,9 @@ import type { Platform } from "./platform.ts";
  */
 export const connectAttemptLifetime = Duration.minutes(15);
 
+/** How an attempt, or a choice, a user started names them. */
+export const userStarter = (userId: UserId): string => `user:${userId}`;
+
 /**
  * Who started an attempt, in a form that compares as text: the user, or the
  * API key. Staff impersonating a user cannot connect accounts, so a user's
@@ -22,7 +25,7 @@ export const connectAttemptLifetime = Duration.minutes(15);
  */
 export const starterOf = (subject: ActorSubject): string =>
   subject._tag === "user"
-    ? `user:${subject.userId}`
+    ? userStarter(subject.userId)
     : `apiKey:${subject.apiKeyId}`;
 
 /**

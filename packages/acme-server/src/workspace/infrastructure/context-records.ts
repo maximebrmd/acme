@@ -33,6 +33,7 @@ export const ContextRecordsLive = Layer.effect(
         function* eraseUser(userId) {
           yield* notices.eraseUser(userId);
           yield* posts.forgetAuthor(userId);
+          yield* channels.eraseUser(userId);
         }
       ),
       eraseWorkspace: Effect.fn("ContextRecords.eraseWorkspace")(

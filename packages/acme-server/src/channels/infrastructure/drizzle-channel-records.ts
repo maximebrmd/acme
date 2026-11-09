@@ -2,10 +2,11 @@ import { asc, eq } from "drizzle-orm";
 import { DateTime, Effect, Layer } from "effect";
 
 import { ChannelRecords } from "#channels/application/channel-records.ts";
+import { userStarter } from "#channels/domain/connect-attempt.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 
-import { channels, connectAttempts } from "./schema.ts";
+import { channels, connectAttempts, connectChoices } from "./schema.ts";
 
 const failed = (cause: unknown) => new DatabaseError({ cause });
 
@@ -16,11 +17,32 @@ export const DrizzleChannelRecords = Layer.effect(
     const db = yield* Drizzle;
 
     return ChannelRecords.of({
+      eraseUser: Effect.fn("ChannelRecords.eraseUser")(
+        function* eraseUser(userId) {
+          const starter = userStarter(userId);
+
+          yield* db
+            .delete(connectAttempts)
+            .where(eq(connectAttempts.startedBy, starter))
+            .pipe(Effect.mapError(failed));
+
+          yield* db
+            .delete(connectChoices)
+            .where(eq(connectChoices.startedBy, starter))
+            .pipe(Effect.mapError(failed));
+        }
+      ),
       eraseWorkspace: Effect.fn("ChannelRecords.eraseWorkspace")(
         function* eraseWorkspace(workspaceId) {
           yield* db
             .delete(connectAttempts)
             .where(eq(connectAttempts.workspaceId, workspaceId))
+            .pipe(Effect.mapError(failed));
+
+          // A choice holds the accounts' tokens, encrypted.
+          yield* db
+            .delete(connectChoices)
+            .where(eq(connectChoices.workspaceId, workspaceId))
             .pipe(Effect.mapError(failed));
 
           yield* db

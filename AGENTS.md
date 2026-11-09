@@ -317,7 +317,11 @@ and no socket, for tests.
   goes, and `DeleteWorkspace` and `CloseAccount`, for the workspaces it
   deletes, answer `WorkspaceSubscribed` (409). Closing an account leaves the
   posts its user wrote in the workspaces that remain without an author
-  (`PostRecords.forgetAuthor`: `author_id` has no foreign key).
+  (`PostRecords.forgetAuthor`: `author_id` has no foreign key), and drops the
+  connections and account choices they had in progress
+  (`ChannelRecords.eraseUser`). The channels they connected, with the
+  Facebook user a Page's token rests on (`granted_by`), stay with their
+  workspaces, which erasing deletes. `data_deletions` names nobody, and stays.
 - `AccountData` exports what is tied to the user, the posts they wrote in
   the workspaces they share (`exportAuthored`), and the content of the
   workspaces where they are the only member, with their analytics and

@@ -68,8 +68,9 @@ export class ContextRecords extends Context.Service<
       DatabaseError | WorkspaceBusy | WorkspaceSubscribed
     >;
     /**
-     * Deletes the user's notices and preferences, and forgets them as the
-     * author of posts in the workspaces that remain.
+     * Deletes the user's notices and preferences, and the connections they
+     * have in progress, and forgets them as the author of posts in the
+     * workspaces that remain.
      */
     readonly eraseUser: (userId: UserId) => Effect.Effect<void, DatabaseError>;
     readonly removeWorkspaceFiles: (

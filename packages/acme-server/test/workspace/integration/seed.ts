@@ -33,6 +33,19 @@ const firstId = (rows: Rows) =>
     Effect.orDie
   );
 
+/**
+ * The accounts a Facebook sign-in reached, kept for the user to choose
+ * among in the workspace, with synthetic encrypted tokens.
+ */
+export const seedConnectChoice = Effect.fn("seedConnectChoice")(
+  function* seedConnectChoice(workspaceId: string, userId: string) {
+    const sql = yield* SqlClient.SqlClient;
+
+    yield* sql`INSERT INTO channels.connect_choices (selection_hash, workspace_id, started_by, platform, accounts, created_at, expires_at)
+      VALUES (${randomUUID().replaceAll("-", "")}, ${workspaceId}, ${`user:${userId}`}, 'facebook', 'synthetic.iv.ciphertext', now(), now() + interval '15 minutes')`;
+  }
+);
+
 /** A connected Mastodon account, with a synthetic encrypted token. */
 export const seedChannel = Effect.fn("seedChannel")(function* seedChannel(
   workspaceId: string,

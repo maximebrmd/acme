@@ -31,6 +31,7 @@ import type { Person } from "./harness.ts";
 import {
   countOf,
   seedChannel,
+  seedConnectChoice,
   seedNotice,
   seedOAuthGrant,
   seedPost,
@@ -124,7 +125,7 @@ const rowsIn = Effect.fn("rowsIn")(function* rowsIn(workspaceId: string) {
       yield* sql`SELECT count(*)::int AS count FROM auth.apikey WHERE reference_id = ${workspaceId}`
     ),
     channels: yield* countOf(
-      yield* sql`SELECT count(*)::int AS count FROM channels.channels WHERE workspace_id = ${workspaceId}`
+      yield* sql`SELECT ((SELECT count(*) FROM channels.channels WHERE workspace_id = ${workspaceId}) + (SELECT count(*) FROM channels.connect_choices WHERE workspace_id = ${workspaceId}))::int AS count`
     ),
     invitations: yield* countOf(
       yield* sql`SELECT count(*)::int AS count FROM auth.invitation WHERE organization_id = ${workspaceId}`
@@ -205,6 +206,7 @@ layer(Layer.mergeAll(IntegrationLive, StoreLive), {
         );
 
         yield* seedTrackedPost(workspaceId, channelId, published);
+        yield* seedConnectChoice(workspaceId, owner.id);
         yield* seedNotice(owner.id, workspaceId, "@harbour@social.example");
         yield* seedUsage(workspaceId, 3);
         // Ended: Stripe bills it no more.
@@ -224,7 +226,7 @@ layer(Layer.mergeAll(IntegrationLive, StoreLive), {
         assert.deepStrictEqual(before, {
           analytics: 2,
           apiKeys: 1,
-          channels: 1,
+          channels: 2,
           invitations: 2,
           media: 1,
           members: 2,
@@ -321,8 +323,11 @@ layer(Layer.mergeAll(IntegrationLive, StoreLive), {
         yield* seedNotice(alex.id, team, "@team@social.example");
         yield* join(sam, team, alex, "editor");
 
-        // Alex wrote a post in Team, which stays with Sam.
+        // Alex wrote a post in Team, which stays with Sam, and was choosing
+        // Pages to connect there.
         const teamChannel = yield* seedChannel(team, "@team@social.example");
+
+        yield* seedConnectChoice(team, alex.id);
 
         const alexInTeam = yield* seedPost(
           team,
@@ -412,6 +417,13 @@ layer(Layer.mergeAll(IntegrationLive, StoreLive), {
           sessions: 0,
           users: 0,
         });
+
+        assert.strictEqual(
+          yield* countOf(
+            yield* sql`SELECT count(*)::int AS count FROM channels.connect_choices WHERE started_by = ${`user:${alex.id}`}`
+          ),
+          0
+        );
 
         // The post stays in Team, without an author: nothing names Alex.
         assert.deepStrictEqual(
