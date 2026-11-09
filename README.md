@@ -57,7 +57,9 @@ bun nx run acme-web:dev      # http://localhost:3001, French under /fr
 The server applies pending database migrations when it starts, then listens on
 port 3000 (`PORT` changes it). It serves its OpenAPI document at
 `/openapi.json`, `GET /health` (liveness) and `GET /ready` (readiness: 503
-while the database is unreachable).
+while the database is unreachable). It keeps finished jobs in the database for
+30 days (`ACME_CLUSTER_RETENTION` changes it), and names itself among the job
+runners with `HOSTNAME`.
 
 The web app forwards `/api/*` to `ACME_API_URL` (default
 `http://localhost:3000`), read at request time. Open it on `localhost`: Next's
@@ -133,11 +135,12 @@ PORT=3001 ACME_API_URL=http://localhost:3000 node packages/acme-web/server.js
 
 The server image runs the sources with Bun as an unprivileged user, and reads
 `PORT` (default 3000) and plain environment variables. To build it and run it
-against the development stack:
+against the development stack, with 75 seconds to stop (`--stop-timeout`) so
+calls to the platforms in flight can answer:
 
 ```sh
 bun nx run acme-docker:build-server-image   # tags acme-server:local
-docker run --rm --network acme_default -p 127.0.0.1:3000:3000 \
+docker run --rm --network acme_default -p 127.0.0.1:3000:3000 --stop-timeout 75 \
   -e DATABASE_URL=postgres://acme:acme@postgres:5432/acme \
   -e OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318 \
   acme-server:local

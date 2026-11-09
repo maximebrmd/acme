@@ -33,15 +33,21 @@ The server and the web app read plain environment variables, so their images run
 
 ### Server [#server]
 
-| Variable                      | Default       | Example                                   | What it does                                                                                                                              |
-| ----------------------------- | ------------- | ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| `DATABASE_URL`                | none          | `postgres://acme:acme@postgres:5432/acme` | The Postgres database. Required: the server does not start without it.                                                                    |
-| `PORT`                        | `3000`        | `8080`                                    | The port the HTTP server listens on.                                                                                                      |
-| `OTEL_EXPORTER_OTLP_ENDPOINT` | unset         | `http://otel-collector:4318`              | The OTLP/HTTP endpoint of the OpenTelemetry collector that receives logs, metrics and traces. Unset, nothing is exported.                 |
-| `OTEL_SERVICE_NAME`           | `acme-server` | `acme-sandbox`                            | The service name that telemetry is reported under.                                                                                        |
-| `OTEL_TRACES_EXPORTER`        | `otlp`        | `none`                                    | `none` stops exporting traces once an endpoint is set. `OTEL_METRICS_EXPORTER` and `OTEL_LOGS_EXPORTER` do the same for metrics and logs. |
+| Variable                      | Default       | Example                                   | What it does                                                                                                                                                         |
+| ----------------------------- | ------------- | ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`                | none          | `postgres://acme:acme@postgres:5432/acme` | The Postgres database. Required: the server does not start without it.                                                                                               |
+| `PORT`                        | `3000`        | `8080`                                    | The port the HTTP server listens on.                                                                                                                                 |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | unset         | `http://otel-collector:4318`              | The OTLP/HTTP endpoint of the OpenTelemetry collector that receives logs, metrics and traces. Unset, nothing is exported.                                            |
+| `OTEL_SERVICE_NAME`           | `acme-server` | `acme-sandbox`                            | The service name that telemetry is reported under.                                                                                                                   |
+| `OTEL_TRACES_EXPORTER`        | `otlp`        | `none`                                    | `none` stops exporting traces once an endpoint is set. `OTEL_METRICS_EXPORTER` and `OTEL_LOGS_EXPORTER` do the same for metrics and logs.                            |
+| `ACME_CLUSTER_RETENTION`      | `30 days`     | `7 days`                                  | How long the records of finished jobs, such as a published post's, are kept in the database before a daily cleanup deletes them. Jobs still waiting are always kept. |
+| `HOSTNAME`                    | `acme-server` | `acme-1`                                  | The server's name among the job runners recorded in the database. Each server process needs its own; Docker sets it to the container id.                             |
 
 At startup, the server applies the database migrations it has not applied yet, and only listens once they are done.
+
+The server runs its durable jobs from the same database, and holds them with session advisory locks for as long as it runs. Connect it to Postgres directly, or through a pooler in session mode: a pooler in transaction mode gives each statement another connection, which loses those locks.
+
+When it stops, the server waits up to 60 seconds for the calls to the platforms in flight to answer. Give it at least 75 seconds before it is killed, with `docker stop --time 75` or `stop_grace_period: 75s` in Compose: a call cut short is marked unconfirmed, and its post has to be checked on the platform by hand.
 
 The server exports telemetry as JSON over HTTP, so point the endpoint at the collector's OTLP/HTTP port, 4318 by default, rather than its gRPC one. It also reads these OpenTelemetry variables, and no others (`OTEL_EXPORTER_OTLP_PROTOCOL` included):
 
