@@ -131,6 +131,8 @@ const oneWeek = 7 * oneDay;
 
 const fifteenMinutes = 15 * 60;
 
+const refreshReplayWindow = 30;
+
 const decodeWorkspaceId = Schema.decodeUnknownOption(WorkspaceIdSchema);
 
 const decodePickedWorkspace = Schema.decodeUnknownOption(
@@ -230,7 +232,12 @@ const oauthServer = (settings: AuthConfiguration) => {
         );
       },
     },
-    refreshTokenReuseInterval: 0,
+    // A refresh token sent again within this window gets the answer it got
+    // the first time, as when two commands renew the same saved sign-in or
+    // a client retries after losing the answer. Sent again later, it reads
+    // as stolen, and every refresh token of its user and client is revoked:
+    // for the command line, its sign-ins on every machine.
+    refreshTokenReuseInterval: refreshReplayWindow,
     resources: [apiResourceOf(settings.publicUrl)],
     scopes: oauthScopes,
   };

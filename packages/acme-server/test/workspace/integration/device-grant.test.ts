@@ -311,6 +311,55 @@ layer(DeviceGrantLive, { excludeTestServices: true, timeout: "180 seconds" })(
       })
     );
 
+    it.effect(
+      "keeps every sign-in when two commands renew the same one at once",
+      () =>
+        Effect.gen(function* renewTwice() {
+          const app = yield* TestApp;
+          const oauth = yield* OAuth;
+          const owner = yield* signedUp("two-commands");
+
+          const signIn = Effect.gen(function* signIn() {
+            const device = yield* startSignIn;
+
+            yield* review(owner, device.user_code);
+            yield* decide(owner, "approve", device.user_code);
+
+            return yield* poll(device.device_code);
+          });
+
+          // The same user, signed in on a laptop and on a server.
+          const laptop = yield* signIn;
+          const server = yield* signIn;
+
+          const renew = (refreshToken: string | undefined) =>
+            oauth.tokens.token({
+              payload: {
+                client_id: "acme-cli",
+                grant_type: "refresh_token",
+                refresh_token: refreshToken ?? "",
+              },
+            });
+
+          // Two commands on the laptop read the same saved sign-in, and
+          // both renew it: the second gets the answer the first got.
+          const first = yield* renew(laptop.refresh_token);
+          const second = yield* renew(laptop.refresh_token);
+
+          assert.strictEqual(second.refresh_token, first.refresh_token);
+          assert.strictEqual(
+            (yield* app.request("/api/me", {
+              headers: bearer(second.access_token),
+            })).status,
+            200
+          );
+
+          // Neither the laptop's sign-in nor the server's was revoked.
+          assert.isString((yield* renew(first.refresh_token)).access_token);
+          assert.isString((yield* renew(server.refresh_token)).access_token);
+        })
+    );
+
     it.effect("refuses a code its user denied", () =>
       Effect.gen(function* denied() {
         const owner = yield* signedUp("denier");
