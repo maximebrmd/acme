@@ -13,8 +13,8 @@ import { mediaAssets } from "./schema.ts";
 const failed = (cause: unknown) => new DatabaseError({ cause });
 
 // A copy of the data holds a link to each file the user uploaded, as
-// portability asks for what they provided: the longest a presigned GET
-// works.
+// portability asks for what they provided: presigned, even when the bucket
+// is served publicly, for the longest a presigned GET works.
 const downloadLifetime = Duration.days(7);
 
 // The statuses whose file the store holds.
@@ -38,7 +38,7 @@ export const DrizzleMediaRecords = Layer.effect(
     const downloadUrlOf = (storageKey: string, status: string) =>
       stored.has(status)
         ? decodeKey(storageKey).pipe(
-            Effect.flatMap((key) => storage.publicUrl(key, downloadLifetime)),
+            Effect.flatMap((key) => storage.downloadUrl(key, downloadLifetime)),
             Effect.catch(() =>
               Effect.logWarning(
                 "A media file's download link could not be made for an export"

@@ -6,7 +6,11 @@ import { MediaAssetIdSchema } from "#media/domain/media-asset-id.ts";
 import { MultipartUploadIdSchema } from "#media/domain/media-status.ts";
 import { storageKeyFor } from "#media/domain/storage-key.ts";
 import { plannedParts } from "#media/domain/upload-plan.ts";
-import { S3MediaStorageLive } from "#media/infrastructure/s3-media-storage.ts";
+import {
+  makeS3MediaStorage,
+  S3MediaStorageLive,
+  S3StorageConfig,
+} from "#media/infrastructure/s3-media-storage.ts";
 import { Ids } from "#shared/application/ids.ts";
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import { IdsLive } from "#shared/infrastructure/secure-random-ids.ts";
@@ -295,6 +299,51 @@ layer(StorageTest)("the S3 media store", (it) => {
 
       yield* storage.remove(key);
     })
+  );
+
+  it.effect(
+    "signs downloads that expire, even when the bucket is served publicly",
+    () =>
+      Effect.gen(function* signs() {
+        const storage = yield* MediaStorage;
+        const key = yield* freshKey;
+        const body = syntheticBytes(64);
+
+        // The same store, as a server that serves the bucket publicly
+        // sees it.
+        const settings = yield* S3StorageConfig;
+        const served = yield* makeS3MediaStorage({
+          ...settings,
+          publicBaseUrl: Option.some(new URL("https://media.example.test")),
+        });
+
+        yield* sendSigned(
+          yield* storage.signUpload({
+            byteSize: body.length,
+            contentType: "image/png",
+            expiresIn,
+            key,
+          }),
+          body
+        );
+
+        assert.isTrue(
+          (yield* served.publicUrl(key, expiresIn)).startsWith(
+            "https://media.example.test/"
+          )
+        );
+
+        const signed = new URL(yield* served.downloadUrl(key, expiresIn));
+
+        assert.strictEqual(signed.searchParams.get("X-Amz-Expires"), "300");
+
+        const { bytes, response } = yield* fetchBytes(signed.toString());
+
+        assert.strictEqual(response.status, 200);
+        assert.deepStrictEqual(bytes, body);
+
+        yield* storage.remove(key);
+      }).pipe(Effect.scoped)
   );
 
   it.effect("streams a stored file's bytes, and fails for one not there", () =>

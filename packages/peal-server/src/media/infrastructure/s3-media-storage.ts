@@ -451,6 +451,17 @@ export const makeS3MediaStorage = Effect.fn("S3MediaStorage.make")(
       });
     });
 
+    const downloadUrl = (key: StorageKey, expiresIn: Duration.Duration) =>
+      request(
+        "sign a download",
+        async () =>
+          await getSignedUrl(
+            client,
+            new GetObjectCommand({ Bucket: bucket, Key: objectKey(key) }),
+            { expiresIn: presignedSeconds(expiresIn) }
+          )
+      ).pipe(Effect.withSpan("S3MediaStorage.downloadUrl"));
+
     const publicUrl = Effect.fn("S3MediaStorage.publicUrl")(function* publicUrl(
       key: StorageKey,
       expiresIn: Duration.Duration
@@ -459,15 +470,7 @@ export const makeS3MediaStorage = Effect.fn("S3MediaStorage.make")(
         return publicObjectUrl(publicBaseUrl.value, objectKey(key));
       }
 
-      return yield* request(
-        "sign a download",
-        async () =>
-          await getSignedUrl(
-            client,
-            new GetObjectCommand({ Bucket: bucket, Key: objectKey(key) }),
-            { expiresIn: presignedSeconds(expiresIn) }
-          )
-      );
+      return yield* downloadUrl(key, expiresIn);
     });
 
     // The body streams once the answer's headers arrive, so the request is
@@ -510,6 +513,7 @@ export const makeS3MediaStorage = Effect.fn("S3MediaStorage.make")(
     return MediaStorage.of({
       abortMultipartUpload,
       completeMultipartUpload,
+      downloadUrl,
       head,
       listUploadedParts,
       publicUrl,
