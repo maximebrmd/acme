@@ -1,5 +1,7 @@
 import { Context, DateTime, Effect, Layer, Option, Schema } from "effect";
+import type { DateTime as DateTimeType } from "effect";
 
+import type { AvatarUrl } from "#channels/domain/avatar-url.ts";
 import {
   connectChannel,
   reconnect as reconnectChannel,
@@ -10,7 +12,9 @@ import {
   startAttempt,
   starterOf,
 } from "#channels/domain/connect-attempt.ts";
+import { choosableBy, offerChoice } from "#channels/domain/connect-choice.ts";
 import { InvalidConnectState } from "#channels/domain/invalid-connect-state.ts";
+import { platforms } from "#channels/domain/platform.ts";
 import type { Platform } from "#channels/domain/platform.ts";
 import { tokenLifetimeOf } from "#channels/domain/token-policy.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
@@ -28,7 +32,10 @@ import { ChannelNotFound } from "./channel-not-found.ts";
 import { ChannelRepository } from "./channel-repository.ts";
 import { encryptTokens } from "./channel-tokens.ts";
 import { ConnectAttempts } from "./connect-attempts.ts";
+import { ConnectChoices } from "./connect-choices.ts";
 import type { MissingTokenKey } from "./missing-token-key.ts";
+import { NoAccountsToConnect } from "./no-accounts-to-connect.ts";
+import { openOffered, sealOffered } from "./offered-accounts.ts";
 import { PlatformAuthorizers } from "./platform-authorizer.ts";
 import type {
   AuthorizationCallback,
@@ -40,7 +47,11 @@ import type {
 } from "./platform-authorizer.ts";
 import { PlatformNotConnectable } from "./platform-not-connectable.ts";
 import { ReconnectAccountMismatch } from "./reconnect-account-mismatch.ts";
-import { connectAttemptContext, TokenCipher } from "./token-cipher.ts";
+import {
+  choiceContext,
+  connectAttemptContext,
+  TokenCipher,
+} from "./token-cipher.ts";
 
 const decodeChannelId = Schema.decodeUnknownOption(ChannelIdSchema);
 
@@ -61,6 +72,17 @@ export type CompleteConnectFailure =
   | InvalidConnectState
   | MissingPermission
   | MissingTokenKey
+  | NoAccountsToConnect
+  | PlatformNotConnectable
+  | ReconnectAccountMismatch;
+
+export type ChooseFailure =
+  | AuthorizationFailed
+  | ChannelNotFound
+  | DatabaseError
+  | InvalidConnectState
+  | MissingPermission
+  | MissingTokenKey
   | PlatformNotConnectable
   | ReconnectAccountMismatch;
 
@@ -70,6 +92,48 @@ export interface ConnectRequest {
   readonly instance: Option.Option<string>;
 }
 
+/** An account a member may choose to connect, as the member sees it. */
+export interface ChoosableAccount {
+  readonly accountId: string;
+  readonly avatarUrl: Option.Option<AvatarUrl>;
+  /** Whether the workspace has it already: choosing it reconnects it. */
+  readonly connected: boolean;
+  readonly displayName: Option.Option<string>;
+  readonly handle: string;
+}
+
+/**
+ * How completing a sign-in ended: the account became a channel, or the
+ * sign-in reached several accounts, which the member chooses among with
+ * `selection` before `expiresAt`.
+ */
+export type ConnectOutcome =
+  | { readonly _tag: "connected"; readonly channel: Channel }
+  | {
+      readonly _tag: "choose";
+      readonly accounts: readonly ChoosableAccount[];
+      readonly expiresAt: DateTimeType.Utc;
+      readonly selection: string;
+    };
+
+// What the platform told about the account, as the channel keeps it.
+const connectedOf = (
+  authorizer: PlatformAuthorizer,
+  account: AuthorizedAccount,
+  now: DateTimeType.Utc
+): ConnectedAccount => ({
+  avatarUrl: account.avatarUrl,
+  displayName: account.displayName,
+  handle: account.handle,
+  scopes: account.tokens.scopes,
+  token: tokenLifetimeOf(authorizer.policy, account.tokens, now),
+});
+
+const connectedTo = (channel: Channel): ConnectOutcome => ({
+  _tag: "connected",
+  channel,
+});
+
 /**
  * Connects social accounts to the actor's workspace, in two steps around the
  * platform's sign-in page: `start` (or `reconnect`, for a channel that has
@@ -78,7 +142,9 @@ export interface ConnectRequest {
  *
  * The attempt between them is bound to the actor and the workspace, expires
  * after a quarter of an hour, and completes once. Its secret, like the
- * channel's tokens, is stored encrypted.
+ * channel's tokens, is stored encrypted. A sign-in that reaches several
+ * accounts (a Facebook user's Pages) ends with a choice, kept the same way,
+ * which `choose` completes.
  */
 export class ConnectChannel extends Context.Service<
   ConnectChannel,
@@ -95,15 +161,35 @@ export class ConnectChannel extends Context.Service<
       channelId: string
     ) => Effect.Effect<string, ChannelNotFound | StartFailure>;
     /**
-     * The channel the account became, or the one it reconnected. An account
-     * the workspace already has is reconnected rather than added twice.
+     * The channel the account became, or the one it reconnected, or the
+     * accounts to choose from. An account the workspace already has is
+     * reconnected rather than added twice.
      */
     readonly complete: (
       actor: Actor,
       platform: Platform,
       callback: AuthorizationCallback
-    ) => Effect.Effect<Channel, CompleteConnectFailure>;
-    /** Forgets the attempts nobody completed in time, and says how many. */
+    ) => Effect.Effect<ConnectOutcome, CompleteConnectFailure>;
+    /**
+     * Connects the accounts the member chose among those a sign-in
+     * reached, once: the channels they became or reconnected, in order.
+     */
+    readonly choose: (
+      actor: Actor,
+      platform: Platform,
+      choice: {
+        readonly accountIds: readonly string[];
+        readonly selection: string;
+      }
+    ) => Effect.Effect<readonly Channel[], ChooseFailure>;
+    /** The platforms this server can connect accounts of now. */
+    readonly connectable: (
+      actor: Actor
+    ) => Effect.Effect<readonly Platform[], MissingPermission>;
+    /**
+     * Forgets the attempts and choices nobody completed in time, and says
+     * how many.
+     */
     readonly purgeExpired: Effect.Effect<number, DatabaseError>;
   }
 >()("acme-server/channels/application/ConnectChannel") {
@@ -112,6 +198,7 @@ export class ConnectChannel extends Context.Service<
     Effect.gen(function* ConnectChannelLive() {
       const authorizers = yield* PlatformAuthorizers;
       const attempts = yield* ConnectAttempts;
+      const choices = yield* ConnectChoices;
       const channels = yield* ChannelRepository;
       const cipher = yield* TokenCipher;
       const locks = yield* ChannelLocks;
@@ -297,6 +384,107 @@ export class ConnectChannel extends Context.Service<
         }
       );
 
+      // The account as a channel of the workspace: the one it has, which
+      // takes the new tokens, or a new one.
+      const connectAccount = Effect.fn("ConnectChannel.connectAccount")(
+        function* connectAccount(
+          actor: Actor,
+          platform: Platform,
+          authorizer: PlatformAuthorizer,
+          account: AuthorizedAccount
+        ) {
+          const connected = connectedOf(
+            authorizer,
+            account,
+            yield* DateTime.now
+          );
+
+          const existing = yield* channels.findByAccount(
+            actor.workspaceId,
+            platform,
+            account.accountId
+          );
+
+          if (Option.isSome(existing)) {
+            return yield* reconnectTo(
+              existing.value.id,
+              actor,
+              account,
+              connected
+            );
+          }
+
+          return yield* addChannel(actor, platform, account, connected).pipe(
+            // Connected from another tab meanwhile: this one reconnects it.
+            Effect.catchTag("ChannelAlreadyConnected", () =>
+              Effect.gen(function* raced() {
+                const other = yield* channels.findByAccount(
+                  actor.workspaceId,
+                  platform,
+                  account.accountId
+                );
+
+                if (Option.isNone(other)) {
+                  return yield* new AuthorizationFailed({
+                    reason: "the channel was removed while connecting",
+                  });
+                }
+
+                return yield* reconnectTo(
+                  other.value.id,
+                  actor,
+                  account,
+                  connected
+                );
+              })
+            )
+          );
+        }
+      );
+
+      // Keeps the accounts for the member to choose from, encrypted with
+      // their tokens, and says what the member sees of them.
+      const offer = Effect.fn("ConnectChannel.offer")(function* offer(
+        actor: Actor,
+        platform: Platform,
+        accounts: readonly AuthorizedAccount[]
+      ) {
+        const selection = yield* ids.next;
+
+        const choice = offerChoice(
+          { actor, platform, selection },
+          yield* DateTime.now
+        );
+
+        const sealed = yield* cipher.encryptSecret(
+          yield* sealOffered(accounts),
+          choiceContext(selection)
+        );
+
+        yield* choices.save(choice, sealed);
+
+        const known = yield* channels.list(actor.workspaceId);
+
+        const outcome: ConnectOutcome = {
+          _tag: "choose",
+          accounts: accounts.map((account) => ({
+            accountId: account.accountId,
+            avatarUrl: account.avatarUrl,
+            connected: known.some(
+              (channel) =>
+                channel.platform === platform &&
+                channel.accountId === account.accountId
+            ),
+            displayName: account.displayName,
+            handle: account.handle,
+          })),
+          expiresAt: choice.expiresAt,
+          selection,
+        };
+
+        return outcome;
+      });
+
       const complete = Effect.fn("ConnectChannel.complete")(function* complete(
         actor: Actor,
         platform: Platform,
@@ -338,77 +526,127 @@ export class ConnectChannel extends Context.Service<
           )
           .pipe(Effect.orDie);
 
-        const account = yield* authorizer.complete({
+        const authorized = yield* authorizer.complete({
           attempt,
           callback: returned,
           secret,
         });
 
-        const connected: ConnectedAccount = {
-          avatarUrl: account.avatarUrl,
-          displayName: account.displayName,
-          handle: account.handle,
-          scopes: account.tokens.scopes,
-          token: tokenLifetimeOf(authorizer.policy, account.tokens, now),
-        };
+        const reached =
+          "_tag" in authorized ? authorized.accounts : [authorized];
 
+        // Reconnecting takes the channel's own account among those reached.
         if (Option.isSome(attempt.channelId)) {
-          return yield* reconnectTo(
-            attempt.channelId.value,
-            actor,
-            account,
-            connected
+          const channelId = attempt.channelId.value;
+          const channel = yield* findChannel(actor, channelId);
+
+          const account = reached.find(
+            ({ accountId }) => accountId === channel.accountId
+          );
+
+          if (account === undefined) {
+            return yield* new ReconnectAccountMismatch({ channelId });
+          }
+
+          return connectedTo(
+            yield* reconnectTo(
+              channel.id,
+              actor,
+              account,
+              connectedOf(authorizer, account, now)
+            )
           );
         }
 
-        const existing = yield* channels.findByAccount(
-          actor.workspaceId,
-          platform,
-          account.accountId
-        );
+        const [only, ...others] = reached;
 
-        if (Option.isSome(existing)) {
-          return yield* reconnectTo(
-            existing.value.id,
-            actor,
-            account,
-            connected
-          );
+        if (only === undefined) {
+          return yield* new NoAccountsToConnect({ platform });
         }
 
-        return yield* addChannel(actor, platform, account, connected).pipe(
-          // Connected from another tab meanwhile: this one reconnects it.
-          Effect.catchTag("ChannelAlreadyConnected", () =>
-            Effect.gen(function* raced() {
-              const other = yield* channels.findByAccount(
-                actor.workspaceId,
-                platform,
-                account.accountId
-              );
+        if (others.length > 0) {
+          return yield* offer(actor, platform, reached);
+        }
 
-              if (Option.isNone(other)) {
-                return yield* new AuthorizationFailed({
-                  reason: "the channel was removed while connecting",
-                });
-              }
-
-              return yield* reconnectTo(
-                other.value.id,
-                actor,
-                account,
-                connected
-              );
-            })
-          )
+        return connectedTo(
+          yield* connectAccount(actor, platform, authorizer, only)
         );
       });
 
+      const choose = Effect.fn("ConnectChannel.choose")(function* choose(
+        actor: Actor,
+        platform: Platform,
+        request: {
+          readonly accountIds: readonly string[];
+          readonly selection: string;
+        }
+      ) {
+        yield* Effect.fromResult(authorize(actor, "channel:connect"));
+
+        const taken = yield* choices.take(request.selection, {
+          platform,
+          startedBy: starterOf(actor.subject),
+          workspaceId: actor.workspaceId,
+        });
+
+        if (Option.isNone(taken)) {
+          return yield* new InvalidConnectState();
+        }
+
+        const choice = yield* Effect.fromResult(
+          choosableBy(taken.value.choice, actor, platform, yield* DateTime.now)
+        );
+
+        const authorizer = yield* authorizerFor(platform);
+
+        // Sealed by this server a few minutes ago, as an attempt's secret.
+        const offered = yield* cipher
+          .decryptSecret(taken.value.accounts, choiceContext(choice.selection))
+          .pipe(Effect.orDie, Effect.flatMap(openOffered));
+
+        const chosen = [...new Set(request.accountIds)].map((accountId) =>
+          offered.find((account) => account.accountId === accountId)
+        );
+
+        // Only accounts the choice offered: anything else is a forged choice.
+        if (chosen.length === 0 || chosen.includes(undefined)) {
+          return yield* new InvalidConnectState();
+        }
+
+        return yield* Effect.forEach(
+          chosen.filter((account) => account !== undefined),
+          (account) => connectAccount(actor, platform, authorizer, account)
+        );
+      });
+
+      const connectable = Effect.fn("ConnectChannel.connectable")(
+        function* connectable(actor: Actor) {
+          yield* Effect.fromResult(authorize(actor, "channel:connect"));
+
+          return platforms.filter((platform) =>
+            Option.isSome(authorizers.for(platform))
+          );
+        }
+      );
+
       const purgeExpired = DateTime.now.pipe(
-        Effect.flatMap((now) => attempts.purgeExpired(now)),
+        Effect.flatMap((now) =>
+          Effect.all([attempts.purgeExpired(now), choices.purgeExpired(now)])
+        ),
+        Effect.map(
+          ([purgedAttempts, purgedChoices]) => purgedAttempts + purgedChoices
+        ),
         Effect.withSpan("ConnectChannel.purgeExpired")
       );
 
-      return ConnectChannel.of({ complete, purgeExpired, reconnect, start });
+      return ConnectChannel.of({
+        choose,
+        complete,
+        connectable,
+        purgeExpired,
+        reconnect,
+        start,
+      });
     })
   );
 }

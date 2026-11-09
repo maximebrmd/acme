@@ -68,6 +68,13 @@ export interface IssuedTokens {
   readonly renewable: boolean;
   /** What the account allowed, in the platform's words. */
   readonly scopes: readonly string[];
+  /**
+   * The platform user whose grant the tokens rest on, when it is not the
+   * account itself: the Facebook user who manages a Page. A request to
+   * delete that user's data finds the channel by it. A refresh gives the
+   * same again.
+   */
+  readonly grantedBy?: string;
 }
 
 /** An account the platform handed over: who it is, and its tokens. */
@@ -79,6 +86,19 @@ export interface AuthorizedAccount {
   readonly handle: string;
   readonly tokens: IssuedTokens;
 }
+
+/**
+ * Several accounts a sign-in reached, for the member to choose from: the
+ * Facebook Pages a user manages, or the Instagram accounts linked to them.
+ * None at all when the user manages nothing Acme can post to.
+ */
+export interface AccountChoice {
+  readonly _tag: "choice";
+  readonly accounts: readonly AuthorizedAccount[];
+}
+
+/** What a completed sign-in handed over: an account, or a choice of them. */
+export type Authorized = AccountChoice | AuthorizedAccount;
 
 /** A channel's tokens, decrypted for the platform call that needs them. */
 export interface StoredTokens {
@@ -120,12 +140,15 @@ export interface PlatformAuthorizer {
   readonly begin: (
     request: AuthorizationRequest
   ) => Effect.Effect<PendingAuthorization, BeginFailure>;
-  /** Exchanges what the callback brought for the account and its tokens. */
+  /**
+   * Exchanges what the callback brought for the account and its tokens, or
+   * for the accounts the sign-in reached when it reaches several.
+   */
   readonly complete: (request: {
     readonly attempt: ConnectAttempt;
     readonly callback: AuthorizationCallback;
     readonly secret: Redacted.Redacted;
-  }) => Effect.Effect<AuthorizedAccount, CompleteFailure>;
+  }) => Effect.Effect<Authorized, CompleteFailure>;
   /**
    * Renews the channel's tokens. When the policy rotates refresh tokens, the
    * ones given stop working as soon as the platform answers, so the caller

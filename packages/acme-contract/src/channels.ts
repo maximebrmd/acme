@@ -88,6 +88,56 @@ export const ConnectCallbackSchema = Schema.Struct({
 
 export type ConnectCallback = typeof ConnectCallbackSchema.Type;
 
+/**
+ * An account a sign-in reached, which the member may choose to connect: a
+ * Facebook Page, or an Instagram account linked to one.
+ */
+export const ChoosableAccountSchema = Schema.Struct({
+  // The account's id on the platform, which choosing it names.
+  accountId: Schema.String,
+  avatarUrl: Schema.NullOr(Schema.String),
+  // Whether the workspace has a channel for it: choosing it reconnects that
+  // channel.
+  connected: Schema.Boolean,
+  displayName: Schema.NullOr(Schema.String),
+  handle: Schema.String,
+}).annotate({ identifier: "ChoosableAccount" });
+
+export type ChoosableAccount = typeof ChoosableAccountSchema.Type;
+
+/**
+ * How completing a connection ended: the account became a channel
+ * (`connected`), or the sign-in reached several accounts (`choose`), among
+ * which the member picks before `expiresAt`, sending back `selection`.
+ */
+export const ConnectOutcomeSchema = Schema.Union([
+  Schema.TaggedStruct("connected", { channel: ChannelSchema }),
+  Schema.TaggedStruct("choose", {
+    accounts: Schema.Array(ChoosableAccountSchema),
+    expiresAt: Schema.DateTimeUtc,
+    selection: Schema.String,
+  }),
+]).annotate({ identifier: "ConnectOutcome" });
+
+export type ConnectOutcome = typeof ConnectOutcomeSchema.Type;
+
+/** The accounts a member chose among those a sign-in reached. */
+export const ChooseAccountsSchema = Schema.Struct({
+  accountIds: Schema.Array(
+    Schema.String.check(Schema.isBetweenLength(1, 256))
+  ).check(Schema.isMinLength(1), Schema.isMaxLength(100)),
+  selection: Schema.String.check(Schema.isBetweenLength(1, 256)),
+}).annotate({ identifier: "ChooseAccounts" });
+
+export type ChooseAccounts = typeof ChooseAccountsSchema.Type;
+
+/** The platforms this server can connect accounts of now. */
+export const ConnectablePlatformsSchema = Schema.Struct({
+  platforms: Schema.Array(PlatformSchema),
+}).annotate({ identifier: "ConnectablePlatforms" });
+
+export type ConnectablePlatforms = typeof ConnectablePlatformsSchema.Type;
+
 const workspace = { workspaceId: Schema.String };
 
 const connectErrors = [Forbidden, ConnectFailed, PlatformUnreachable] as const;
@@ -106,6 +156,17 @@ export class ChannelsApi extends HttpApiGroup.make("channels")
         summary: "List channels",
       })
     ),
+    HttpApiEndpoint.get("platforms", "/platforms", {
+      error: Forbidden,
+      params: workspace,
+      success: ConnectablePlatformsSchema,
+    }).annotateMerge(
+      OpenApi.annotations({
+        description:
+          "Lists the platforms this server can connect accounts of: those Acme supports whose settings the server has. Needs channel:connect.",
+        summary: "List connectable platforms",
+      })
+    ),
     HttpApiEndpoint.post("connect", "/connect/:platform", {
       error: connectErrors,
       params: { ...workspace, platform: PlatformSchema },
@@ -122,12 +183,24 @@ export class ChannelsApi extends HttpApiGroup.make("channels")
       error: [...connectErrors, ChannelNotFound],
       params: { ...workspace, platform: PlatformSchema },
       payload: ConnectCallbackSchema,
-      success: ChannelSchema,
+      success: ConnectOutcomeSchema,
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Completes a connection with what the platform sent back: the account becomes a channel of the workspace, or the channel it reconnects takes its new tokens. Only the member who started the connection can complete it, once. Needs channel:connect.",
+          "Completes a connection with what the platform sent back: the account becomes a channel of the workspace, or the channel it reconnects takes its new tokens. When the sign-in reached several accounts, as the Pages a Facebook user manages, the answer lists them instead, to choose with chooseAccounts. Only the member who started the connection can complete it, once. Needs channel:connect.",
         summary: "Complete connecting an account",
+      })
+    ),
+    HttpApiEndpoint.post("chooseAccounts", "/connect/:platform/accounts", {
+      error: [...connectErrors, ChannelNotFound],
+      params: { ...workspace, platform: PlatformSchema },
+      payload: ChooseAccountsSchema,
+      success: Schema.Array(ChannelSchema),
+    }).annotateMerge(
+      OpenApi.annotations({
+        description:
+          "Connects the accounts the member chose among those a completed sign-in listed: each becomes a channel of the workspace, or reconnects the one it has. Only the member who completed the sign-in can choose, once, within 15 minutes. Needs channel:connect.",
+        summary: "Choose the accounts to connect",
       })
     ),
     HttpApiEndpoint.post("reconnect", "/:channelId/reconnect", {

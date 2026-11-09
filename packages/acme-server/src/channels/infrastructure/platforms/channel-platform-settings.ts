@@ -15,6 +15,13 @@ import {
   isProduction,
   publicUrlConfig,
 } from "#shared/infrastructure/environment.ts";
+import {
+  metaAppConfig,
+  threadsAppConfig,
+} from "#shared/infrastructure/platforms/meta-apps.ts";
+import type { MetaApp } from "#shared/infrastructure/platforms/meta-apps.ts";
+import { metaHosts } from "#shared/infrastructure/platforms/meta-graph.ts";
+import type { MetaHosts } from "#shared/infrastructure/platforms/meta-graph.ts";
 
 import type { BlueskyAuthorizerOptions } from "./bluesky/bluesky-authorizer.ts";
 import type { BlueskyClientMode } from "./bluesky/bluesky-client.ts";
@@ -23,8 +30,17 @@ import type { BlueskyClientMode } from "./bluesky/bluesky-client.ts";
 export interface ChannelPlatformSettings {
   /** None when this server cannot connect Bluesky accounts. */
   readonly bluesky: Option.Option<BlueskyAuthorizerOptions>;
+  /**
+   * Meta's main app, whose Facebook Login connects Facebook Pages and
+   * Instagram accounts; none when this server connects neither.
+   */
+  readonly meta: Option.Option<MetaApp>;
+  /** Where Meta's services are. */
+  readonly metaHosts: MetaHosts;
   /** The web app's origin, where the platforms send members back. */
   readonly publicUrl: string;
+  /** The app's Threads credentials; none when this server has none. */
+  readonly threads: Option.Option<MetaApp>;
 }
 
 export class ChannelPlatforms extends Context.Service<
@@ -132,6 +148,10 @@ const blueskyModeOf = Effect.fnUntraced(function* blueskyModeOf(settings: {
  *   runs a confidential Bluesky client, which needs PUBLIC_URL on HTTPS.
  *   Without them, a server on localhost runs the development client, and any
  *   other server cannot connect Bluesky.
+ * - `META_APP_ID` and `META_APP_SECRET`: Meta's app, for Facebook Pages and
+ *   Instagram professional accounts.
+ * - `THREADS_APP_ID` and `THREADS_APP_SECRET`: the same app's Threads
+ *   credentials, for Threads accounts.
  */
 export const channelPlatformsConfig = Effect.gen(function* settings() {
   const publicUrl = yield* publicUrlConfig;
@@ -144,6 +164,8 @@ export const channelPlatformsConfig = Effect.gen(function* settings() {
   );
 
   const mode = yield* blueskyModeOf({ keys, production, publicUrl });
+  const meta = yield* metaAppConfig;
+  const threads = yield* threadsAppConfig;
 
   const platforms: ChannelPlatformSettings = {
     bluesky: mode.pipe(
@@ -153,7 +175,10 @@ export const channelPlatformsConfig = Effect.gen(function* settings() {
         publicUrl,
       }))
     ),
+    meta,
+    metaHosts,
     publicUrl,
+    threads,
   };
 
   return platforms;

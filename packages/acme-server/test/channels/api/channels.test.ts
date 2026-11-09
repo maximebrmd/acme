@@ -288,10 +288,14 @@ layer(UseCasesTest)("the channels endpoints", (it) => {
 
       const back = instance.approve(authorizationUrl);
 
-      const channel = yield* client.channels.completeConnect({
+      const outcome = yield* client.channels.completeConnect({
         params,
         payload: { code: back.code, state: back.state },
       });
+
+      assert(outcome._tag === "connected");
+
+      const { channel } = outcome;
 
       assert.strictEqual(channel.platform, "mastodon");
       assert.strictEqual(
@@ -327,6 +331,44 @@ layer(UseCasesTest)("the channels endpoints", (it) => {
       });
 
       assert.strictEqual(response.status, 422);
+    })
+  );
+
+  it.effect(
+    "list the platforms the server connects, to those who connect",
+    () =>
+      Effect.gen(function* platforms() {
+        const workspaceId = yield* freshWorkspace;
+        const params = { workspaceId };
+
+        const listed = yield* (yield* clientAs(
+          owner(workspaceId)
+        )).channels.platforms({ params });
+
+        assert.deepStrictEqual(listed, { platforms: ["mastodon"] });
+
+        const refused = yield* Effect.flip(
+          (yield* clientAs(viewer(workspaceId))).channels.platforms({ params })
+        );
+
+        assert.instanceOf(refused, Forbidden);
+      })
+  );
+
+  it.effect("answer 422 invalidState to a choice nobody was offered", () =>
+    Effect.gen(function* badChoice() {
+      const workspaceId = yield* freshWorkspace;
+      const client = yield* clientAs(owner(workspaceId));
+
+      const error = yield* Effect.flip(
+        client.channels.chooseAccounts({
+          params: { platform: "facebook", workspaceId },
+          payload: { accountIds: ["101"], selection: "made-up" },
+        })
+      );
+
+      assert.instanceOf(error, ConnectFailed);
+      assert.strictEqual(error.reason, "invalidState");
     })
   );
 

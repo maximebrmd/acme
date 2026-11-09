@@ -68,14 +68,11 @@ export const tokenPolicies = {
     lifetime: Option.none(),
     refresh: { _tag: "none" },
   }),
-  // Long-lived tokens last 60 days, and are renewed once at least a day old.
+  // Through Facebook Login, an Instagram account publishes with the token
+  // of the Page it is linked to, which never expires either.
   instagram: new TokenPolicy({
-    lifetime: Option.some(Duration.days(60)),
-    refresh: {
-      _tag: "refreshToken",
-      ahead: Duration.days(7),
-      rotates: false,
-    },
+    lifetime: Option.none(),
+    refresh: { _tag: "none" },
   }),
   // Self-serve apps get no refresh token: members reconnect every 60 days.
   linkedin: new TokenPolicy({
@@ -87,6 +84,7 @@ export const tokenPolicies = {
     lifetime: Option.none(),
     refresh: { _tag: "none" },
   }),
+  // Long-lived tokens last 60 days, and are renewed once at least a day old.
   threads: new TokenPolicy({
     lifetime: Option.some(Duration.days(60)),
     refresh: {

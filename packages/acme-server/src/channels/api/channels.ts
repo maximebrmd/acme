@@ -7,14 +7,20 @@ import {
   OAuthClientNotPublished,
   PlatformUnreachable,
 } from "acme-contract";
-import type { ConnectCallback, ConnectFailureReason } from "acme-contract";
+import type {
+  ConnectCallback,
+  ConnectFailureReason,
+  ConnectOutcome as ConnectOutcomeView,
+} from "acme-contract";
 import { Effect, Match, Option } from "effect";
 import { HttpApiBuilder } from "effect/http-api";
 
 import type { ChannelNotFound as MissingChannel } from "#channels/application/channel-not-found.ts";
 import { ConnectChannel } from "#channels/application/connect-channel.ts";
 import type {
+  ChooseFailure,
   CompleteConnectFailure,
+  ConnectOutcome,
   StartFailure,
 } from "#channels/application/connect-channel.ts";
 import { DisconnectChannel } from "#channels/application/disconnect-channel.ts";
@@ -83,10 +89,41 @@ const completeFailure = (failure: CompleteConnectFailure): Refusal =>
     InvalidConnectState: () => refused("invalidState"),
     MissingPermission: startFailure,
     MissingTokenKey: startFailure,
+    NoAccountsToConnect: () => refused("noAccounts"),
     PlatformNotConnectable: startFailure,
     PlatformUnavailable: startFailure,
     ReconnectAccountMismatch: () => refused("accountMismatch"),
   });
+
+// Choosing fails as completing does: the choice, like the attempt, is the
+// member's own and is used once.
+const chooseFailure = (failure: ChooseFailure): Refusal =>
+  Match.valueTags(failure, {
+    AuthorizationFailed: startFailure,
+    ChannelNotFound: () => Effect.fail(new ChannelNotFound()),
+    DatabaseError: startFailure,
+    InvalidConnectState: () => refused("invalidState"),
+    MissingPermission: startFailure,
+    MissingTokenKey: startFailure,
+    PlatformNotConnectable: startFailure,
+    ReconnectAccountMismatch: () => refused("accountMismatch"),
+  });
+
+const outcomeView = (outcome: ConnectOutcome): ConnectOutcomeView =>
+  outcome._tag === "connected"
+    ? { _tag: "connected", channel: toChannelView(outcome.channel) }
+    : {
+        _tag: "choose",
+        accounts: outcome.accounts.map((account) => ({
+          accountId: account.accountId,
+          avatarUrl: Option.getOrNull(account.avatarUrl),
+          connected: account.connected,
+          displayName: Option.getOrNull(account.displayName),
+          handle: account.handle,
+        })),
+        expiresAt: outcome.expiresAt,
+        selection: outcome.selection,
+      };
 
 export const ChannelsHandlers = HttpApiBuilder.group(
   Api,
@@ -97,15 +134,25 @@ export const ChannelsHandlers = HttpApiBuilder.group(
     const connectChannel = yield* ConnectChannel;
 
     return handlers.handleAll({
+      chooseAccounts: ({ params, payload }) =>
+        Effect.gen(function* chooseAccounts() {
+          const actor = actorOf(yield* CurrentMember);
+
+          const channels = yield* connectChannel
+            .choose(actor, params.platform, payload)
+            .pipe(Effect.catch(chooseFailure));
+
+          return channels.map(toChannelView);
+        }),
       completeConnect: ({ params, payload }) =>
         Effect.gen(function* completeConnect() {
           const actor = actorOf(yield* CurrentMember);
 
-          const channel = yield* connectChannel
+          const outcome = yield* connectChannel
             .complete(actor, params.platform, callbackOf(payload))
             .pipe(Effect.catch(completeFailure));
 
-          return toChannelView(channel);
+          return outcomeView(outcome);
         }),
       connect: ({ params, payload }) =>
         Effect.gen(function* connect() {
@@ -144,6 +191,16 @@ export const ChannelsHandlers = HttpApiBuilder.group(
           );
 
           return channels.map(toChannelView);
+        }),
+      platforms: () =>
+        Effect.gen(function* platforms() {
+          const actor = actorOf(yield* CurrentMember);
+
+          const connectable = yield* connectChannel
+            .connectable(actor)
+            .pipe(Effect.catchTag("MissingPermission", forbidden));
+
+          return { platforms: connectable };
         }),
       reconnect: ({ params }) =>
         Effect.gen(function* reconnect() {
