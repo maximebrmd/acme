@@ -7,7 +7,9 @@ import {
   isTooLate,
 } from "#publishing/domain/publication-policy.ts";
 import type {
+  AttemptContext,
   AttemptOutcome,
+  EarlierRefusals,
   PublicationDecision,
 } from "#publishing/domain/publication-policy.ts";
 import { needsReconnect } from "#publishing/domain/target-settlement.ts";
@@ -21,7 +23,16 @@ import { TokenExpired } from "#shared/domain/token-expired.ts";
 
 const onTime = Duration.zero;
 
-const first = { attempt: 1, sinceScheduled: onTime };
+// After earlier attempts refused as `earlier` says, none by default.
+const after = (
+  earlier: Partial<EarlierRefusals> = {},
+  sinceScheduled = onTime
+): AttemptContext => ({
+  earlier: { rateLimited: 0, unavailable: 0, ...earlier },
+  sinceScheduled,
+});
+
+const first = after();
 
 const retry = (delay: Duration.Duration): PublicationDecision => ({
   _tag: "retry",
@@ -66,9 +77,12 @@ describe(decide, () => {
   ])("never retries an unconfirmed post ($reason)", ({ reason }) => {
     const unconfirmed: AttemptOutcome = { _tag: "unconfirmed", reason };
 
-    for (const attempt of [1, 2, 8, 20]) {
+    for (const earlier of [0, 1, 7, 20]) {
       expect(
-        decide(unconfirmed, { attempt, sinceScheduled: onTime })
+        decide(
+          unconfirmed,
+          after({ rateLimited: earlier, unavailable: earlier })
+        )
       ).toStrictEqual({
         _tag: "settle",
         settlement: unconfirmed,
@@ -85,14 +99,29 @@ describe(decide, () => {
       { attempt: 5, delay: Duration.hours(1) },
     ])("waits before attempt $attempt + 1", ({ attempt, delay }) => {
       expect(
-        decide(new PlatformUnavailable(), { attempt, sinceScheduled: onTime })
+        decide(new PlatformUnavailable(), after({ unavailable: attempt - 1 }))
       ).toStrictEqual(retry(delay));
     });
 
     it.each([6, 7, 100])("gives up after attempt %i", (attempt) => {
       expect(
-        decide(new PlatformUnavailable(), { attempt, sinceScheduled: onTime })
+        decide(new PlatformUnavailable(), after({ unavailable: attempt - 1 }))
       ).toStrictEqual(giveUp("unavailable"));
+    });
+
+    it("counts only the attempts the platform was unavailable for", () => {
+      expect(
+        decide(new PlatformUnavailable(), after({ rateLimited: 5 }))
+      ).toStrictEqual(retry(Duration.minutes(1)));
+      expect(
+        decide(new PlatformUnavailable(), after({ rateLimited: 1 }))
+      ).toStrictEqual(retry(Duration.minutes(1)));
+      expect(
+        decide(
+          new PlatformUnavailable(),
+          after({ rateLimited: 7, unavailable: 4 })
+        )
+      ).toStrictEqual(retry(Duration.hours(1)));
     });
   });
 
@@ -122,11 +151,25 @@ describe(decide, () => {
     it("retries up to the eighth attempt", () => {
       const limited = new RateLimited({ retryAfter: Duration.minutes(1) });
 
+      expect(decide(limited, after({ rateLimited: 6 }))).toStrictEqual(
+        retry(Duration.minutes(1))
+      );
+      expect(decide(limited, after({ rateLimited: 7 }))).toStrictEqual(
+        giveUp("rateLimited")
+      );
+    });
+
+    it("counts only the attempts that were rate limited", () => {
+      const limited = new RateLimited({ retryAfter: Duration.minutes(1) });
+
       expect(
-        decide(limited, { attempt: 7, sinceScheduled: onTime })
+        decide(limited, after({ rateLimited: 2, unavailable: 5 }))
       ).toStrictEqual(retry(Duration.minutes(1)));
       expect(
-        decide(limited, { attempt: 8, sinceScheduled: onTime })
+        decide(limited, after({ rateLimited: 6, unavailable: 5 }))
+      ).toStrictEqual(retry(Duration.minutes(1)));
+      expect(
+        decide(limited, after({ rateLimited: 7, unavailable: 1 }))
       ).toStrictEqual(giveUp("rateLimited"));
     });
 
@@ -134,24 +177,27 @@ describe(decide, () => {
       const limited = new RateLimited({ retryAfter: Duration.hours(2) });
 
       expect(
-        decide(limited, { attempt: 2, sinceScheduled: Duration.hours(22) })
+        decide(limited, after({ rateLimited: 1 }, Duration.hours(22)))
       ).toStrictEqual(retry(Duration.hours(2)));
       expect(
-        decide(limited, {
-          attempt: 2,
-          sinceScheduled: Duration.sum(Duration.hours(22), Duration.millis(1)),
-        })
+        decide(
+          limited,
+          after(
+            { rateLimited: 1 },
+            Duration.sum(Duration.hours(22), Duration.millis(1))
+          )
+        )
       ).toStrictEqual(giveUp("rateLimited"));
     });
   });
 
-  it.each([1, 3])(
-    "fails a refused token at once, attempt %i, and asks for a reconnect",
-    (attempt) => {
-      const decision = decide(new TokenExpired(), {
-        attempt,
-        sinceScheduled: onTime,
-      });
+  it.each([0, 2])(
+    "fails a refused token at once, after %i refusals, and asks for a reconnect",
+    (earlier) => {
+      const decision = decide(
+        new TokenExpired(),
+        after({ rateLimited: earlier, unavailable: earlier })
+      );
 
       expect(decision).toStrictEqual(giveUp("tokenExpired"));
       expect(
@@ -203,11 +249,7 @@ describe(decide, () => {
       retry(Duration.seconds(30))
     );
     expect(
-      decide(
-        new PlatformUnavailable(),
-        { attempt: 2, sinceScheduled: onTime },
-        policy
-      )
+      decide(new PlatformUnavailable(), after({ unavailable: 1 }), policy)
     ).toStrictEqual(giveUp("unavailable"));
   });
 });

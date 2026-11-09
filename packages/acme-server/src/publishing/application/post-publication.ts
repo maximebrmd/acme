@@ -350,8 +350,11 @@ export const publishAttemptRun = Effect.fn("Publishing.publishAttempt")(
     const startedAt = yield* DateTime.now;
     const { finishedAt, outcome } = yield* callPlatform(attempt);
 
+    // Read from the journal, so a run after a crash decides as the first did.
+    const earlier = yield* journal.earlierRefusals(attempt);
+
     const decision: PublicationDecision = decide(outcome, {
-      attempt: attempt.attempt,
+      earlier,
       sinceScheduled: DateTime.distance(attempt.scheduledAt, finishedAt),
     });
 

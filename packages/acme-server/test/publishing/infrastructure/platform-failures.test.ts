@@ -213,6 +213,52 @@ describe("PublishTargetV1 when the platform refuses", () => {
   );
 
   it.effect(
+    "gives a rate limit and an unavailable platform their own retries",
+    () =>
+      onServerAt(
+        "2026-06-15T07:00:00Z",
+        Effect.gen(function* countsEachRefusal() {
+          const { channel, post } = yield* scriptedPost([
+            {
+              _tag: "fail",
+              failure: new RateLimited({ retryAfter: Duration.minutes(1) }),
+            },
+            { _tag: "fail", failure: new PlatformUnavailable() },
+          ]);
+
+          const target = yield* onlyTarget(post.id);
+          const waiting = isTargetWaiting(target.id);
+
+          yield* setTime(scheduledAt);
+          yield* eventually("the first call", callCount(channel, 1));
+          yield* eventually("the job waits", waiting);
+          yield* TestClock.adjust(Duration.minutes(1));
+          yield* eventually("the second call", callCount(channel, 2));
+          yield* eventually("the job waits again", waiting);
+
+          // The first time the platform is unavailable: a minute, however
+          // many attempts were rate limited before.
+          yield* TestClock.adjust(Duration.minutes(1));
+          yield* eventually("the post finishes", isFinished(post.id));
+
+          assert.strictEqual(yield* outcomeOf(post.id), "published");
+          assert.deepStrictEqual(
+            (yield* attemptsOf(target.id)).map((attempt) => [
+              attempt.outcome,
+              attempt.retry_delay_millis,
+            ]),
+            [
+              ["RateLimited", 60_000],
+              ["PlatformUnavailable", 60_000],
+              ["published", null],
+            ]
+          );
+        })
+      ),
+    timeout
+  );
+
+  it.effect(
     "fails and asks for a reconnect when the token is refused",
     () =>
       onServerAt(

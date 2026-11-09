@@ -1,4 +1,4 @@
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, isNull, lt } from "drizzle-orm";
 import { DateTime, Duration, Effect, Layer, Option, Schema } from "effect";
 
 import { PublicationJournal } from "#publishing/application/publication-journal.ts";
@@ -8,6 +8,10 @@ import type {
   CallStart,
 } from "#publishing/application/publication-journal.ts";
 import { AttemptOutcomeSchema } from "#publishing/domain/publication-policy.ts";
+import type {
+  AttemptOutcome,
+  EarlierRefusals,
+} from "#publishing/domain/publication-policy.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 
@@ -26,6 +30,16 @@ const failed = (cause: unknown) => new DatabaseError({ cause });
 const date = (instant: DateTime.Utc) => DateTime.toDateUtc(instant);
 
 type CallRow = typeof publicationCalls.$inferSelect;
+
+// publication_attempts.outcome holds the outcome's tag.
+const rateLimited: AttemptOutcome["_tag"] = "RateLimited";
+
+const unavailable: AttemptOutcome["_tag"] = "PlatformUnavailable";
+
+const refusalsIn = (outcomes: readonly string[]): EarlierRefusals => ({
+  rateLimited: outcomes.filter((outcome) => outcome === rateLimited).length,
+  unavailable: outcomes.filter((outcome) => outcome === unavailable).length,
+});
 
 const begunCall = (row: CallRow) =>
   Effect.gen(function* decodingCall() {
@@ -113,6 +127,21 @@ export const DrizzlePublicationJournal = Layer.effect(
 
     return PublicationJournal.of({
       begin,
+      earlierRefusals: (call) =>
+        db
+          .select({ outcome: publicationAttempts.outcome })
+          .from(publicationAttempts)
+          .where(
+            and(
+              eq(publicationAttempts.targetId, call.targetId),
+              eq(publicationAttempts.round, call.round),
+              lt(publicationAttempts.attempt, call.attempt)
+            )
+          )
+          .pipe(
+            Effect.mapError(failed),
+            Effect.map((rows) => refusalsIn(rows.map(({ outcome }) => outcome)))
+          ),
       find,
       finish: (idempotencyKey, outcome, finishedAt) =>
         Effect.gen(function* finish() {

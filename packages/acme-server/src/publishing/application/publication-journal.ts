@@ -4,6 +4,7 @@ import type { DateTime, Effect, Option } from "effect";
 import type { PostTargetId } from "#publishing/domain/post-target-id.ts";
 import type {
   AttemptOutcome,
+  EarlierRefusals,
   PublicationDecision,
 } from "#publishing/domain/publication-policy.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
@@ -72,6 +73,13 @@ export class PublicationJournal extends Context.Service<
       outcome: AttemptOutcome,
       finishedAt: DateTime.Utc
     ) => Effect.Effect<void, DatabaseError>;
+    /**
+     * How the attempts recorded before this call's, in its round, were
+     * refused.
+     */
+    readonly earlierRefusals: (
+      call: CallId
+    ) => Effect.Effect<EarlierRefusals, DatabaseError>;
     /** Records an attempt. Recording one again leaves the first record. */
     readonly recordAttempt: (
       attempt: AttemptRecord

@@ -24,6 +24,10 @@ import type { TargetSettlement } from "./target-settlement.ts";
  * | MediaRejected       | give up: mediaRejected                             |
  * | BadRequest          | give up: contentRejected                           |
  *
+ * PlatformUnavailable and RateLimited each count only the attempts that
+ * ended that way: a rate limit uses none of the unavailable retries, and the
+ * other way round.
+ *
  * Every retry is a new attempt with a new idempotency key: the platform
  * refused the previous one, so nothing went live.
  */
@@ -91,10 +95,18 @@ export const AttemptOutcomeSchema = Schema.Union([
 
 export type AttemptOutcome = typeof AttemptOutcomeSchema.Type;
 
+/**
+ * How many earlier attempts of a round ended in each refusal that is retried,
+ * the attempt that just ended left out.
+ */
+export interface EarlierRefusals {
+  readonly rateLimited: number;
+  readonly unavailable: number;
+}
+
 /** Where the attempt stands. */
 export interface AttemptContext {
-  /** The attempt that just ended, from 1. */
-  readonly attempt: number;
+  readonly earlier: EarlierRefusals;
   /** From the scheduled time to the end of the attempt. */
   readonly sinceScheduled: Duration.Duration;
 }
@@ -120,7 +132,7 @@ const afterUnavailable = (
   context: AttemptContext,
   policy: PublicationPolicy
 ): PublicationDecision => {
-  const delay = policy.unavailableBackoff[context.attempt - 1];
+  const delay = policy.unavailableBackoff[context.earlier.unavailable];
 
   return delay === undefined ? giveUp("unavailable") : retry(delay);
 };
@@ -139,7 +151,7 @@ const afterRateLimit = (
 
   const retryAt = Duration.sum(context.sinceScheduled, delay);
 
-  return context.attempt >= limits.maxAttempts ||
+  return context.earlier.rateLimited + 1 >= limits.maxAttempts ||
     Duration.isGreaterThan(retryAt, limits.deadline)
     ? giveUp("rateLimited")
     : retry(delay);
