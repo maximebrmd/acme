@@ -31,6 +31,12 @@ import { accountSessions, currentSession } from "#settings/atoms.ts";
 import type { AccountSession } from "#settings/atoms.ts";
 import { settingsErrorKey } from "#settings/errors.ts";
 
+// A value of a session's request, if it had one.
+const known = (value: string | null | undefined): string | undefined =>
+  value === null || value === undefined || value.trim() === ""
+    ? undefined
+    : value;
+
 // One session: the browser it runs in, from where, since when, and signing
 // it out, unless it is this one.
 const SessionRow = ({
@@ -50,7 +56,9 @@ const SessionRow = ({
   const when = (date: Date) =>
     format.dateTime(date, { dateStyle: "medium", timeStyle: "short" });
 
-  const device = session.userAgent ?? t("unknownDevice");
+  // Better Auth stores what the request told, which may be nothing.
+  const device = known(session.userAgent) ?? t("unknownDevice");
+  const address = known(session.ipAddress) ?? "none";
 
   const handleRevoke = () => {
     startRevoke(async () => {
@@ -74,7 +82,7 @@ const SessionRow = ({
         </span>
         <span className="text-muted-foreground text-sm">
           {t("details", {
-            address: session.ipAddress ?? "none",
+            address,
             lastActive: when(session.updatedAt),
             signedIn: when(session.createdAt),
           })}
