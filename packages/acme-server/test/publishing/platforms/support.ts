@@ -21,7 +21,9 @@ import type { CredentialFailure } from "#publishing/application/platform-credent
 import type { StepTiming } from "#publishing/application/publication-steps.ts";
 import { MediaAttachment } from "#publishing/domain/media-attachment.ts";
 import { blueskyClient } from "#publishing/infrastructure/platforms/bluesky/bluesky-client.ts";
+import { linkedinClient } from "#publishing/infrastructure/platforms/linkedin/linkedin-client.ts";
 import { mastodonClient } from "#publishing/infrastructure/platforms/mastodon/mastodon-client.ts";
+import { xClient } from "#publishing/infrastructure/platforms/x/x-client.ts";
 import {
   ChannelIdSchema,
   MediaAssetIdSchema,
@@ -239,6 +241,52 @@ export const mastodonClientWith = Effect.fn("test.mastodonClient")(
     return yield* mastodonClient({
       api,
       scheme: "http:",
+      timing: testTiming,
+      uploads: api,
+    }).pipe(
+      Effect.provide(
+        Layer.mergeAll(options.credentials, mediaOf(options.files ?? []))
+      )
+    );
+  }
+);
+
+/** The LinkedIn client, with the fake as API, in the version it serves. */
+export const linkedinClientWith = Effect.fn("test.linkedinClient")(
+  function* linkedinClientWith(options: {
+    readonly api: string;
+    readonly credentials: Layer.Layer<CredentialLog | PlatformCredentials>;
+    readonly files?: readonly TestFile[];
+    readonly version: string;
+  }) {
+    const api = yield* httpClient;
+
+    return yield* linkedinClient({
+      api,
+      apiUrl: new URL(options.api),
+      timing: testTiming,
+      uploads: api,
+      version: options.version,
+    }).pipe(
+      Effect.provide(
+        Layer.mergeAll(options.credentials, mediaOf(options.files ?? []))
+      )
+    );
+  }
+);
+
+/** The X client, with the fake as API. */
+export const xClientWith = Effect.fn("test.xClient")(
+  function* xClientWith(options: {
+    readonly api: string;
+    readonly credentials: Layer.Layer<CredentialLog | PlatformCredentials>;
+    readonly files?: readonly TestFile[];
+  }) {
+    const api = yield* httpClient;
+
+    return yield* xClient({
+      api,
+      apiUrl: new URL(options.api),
       timing: testTiming,
       uploads: api,
     }).pipe(

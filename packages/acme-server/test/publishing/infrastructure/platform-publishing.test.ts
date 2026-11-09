@@ -44,9 +44,11 @@ const platformsOn = (instanceUrl: string) =>
   RoutedPlatformPublisher.pipe(
     Layer.provide(
       platformClientsWith({
+        linkedinApi: new URL(instanceUrl),
         mastodonScheme: "http:",
         timing: testTiming,
         videoService: new URL(instanceUrl),
+        xApi: new URL(instanceUrl),
       })
     ),
     Layer.provideMerge(

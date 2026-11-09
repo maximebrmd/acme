@@ -1,4 +1,4 @@
-import { DateTime, Duration, Effect, Result } from "effect";
+import { DateTime, Duration, Effect, Match, Result } from "effect";
 
 import { PlatformUnavailable } from "#shared/domain/platform-unavailable.ts";
 import type { Platform } from "#shared/domain/platform.ts";
@@ -39,6 +39,12 @@ export type LookUp =
  * - `resend`: sending the post again with the attempt's idempotency key
  *   answers with the post that key made, or makes it once, for `window`
  *   after the attempt started (Mastodon keeps keys for an hour).
+ * - `none`: nothing reads the post back, and nothing makes sending it again
+ *   safe (LinkedIn members' posts): an unknown outcome is unconfirmed at
+ *   once, and a resumed attempt too.
+ *
+ * A `lookUp` that can only search, never prove a post absent (X's recent
+ * posts), answers `found` or `unknown`: the post is then never sent again.
  */
 export type Confirmation =
   | {
@@ -47,7 +53,8 @@ export type Confirmation =
         post: OutgoingPost
       ) => Effect.Effect<LookUp, PublishFailure>;
     }
-  | { readonly _tag: "resend"; readonly window: Duration.Duration };
+  | { readonly _tag: "resend"; readonly window: Duration.Duration }
+  | { readonly _tag: "none" };
 
 /**
  * Publishing on a platform, in four steps. `prepare` uploads the media, and
@@ -200,8 +207,15 @@ export const sequenced = <P>(
       Effect.catch(roundAfterRefusal)
     );
 
-  const confirmOnce = (post: OutgoingPost, prepared: P): Effect.Effect<Round> =>
-    confirmation._tag === "lookUp"
+  const confirmOnce = (
+    post: OutgoingPost,
+    prepared: P
+  ): Effect.Effect<Round> => {
+    if (confirmation._tag === "none") {
+      return Effect.succeed(stop);
+    }
+
+    return confirmation._tag === "lookUp"
       ? confirmation.lookUp(post).pipe(
           Effect.orElseSucceed((): LookUp => ({ _tag: "unknown" })),
           Effect.flatMap((found) => {
@@ -219,15 +233,19 @@ export const sequenced = <P>(
             within ? resend(post, prepared) : Effect.succeed(stop)
           )
         );
+  };
 
   // The commit's outcome is unknown: confirm it, waiting before each try.
+  // Without a way to confirm, it is unconfirmed at once.
   const confirmAfter = Effect.fn(`Publishing.${platform}.confirm`)(
     function* confirmAfter(
       post: OutgoingPost,
       prepared: P,
       reason: UnconfirmedReason
     ) {
-      for (const delay of timing.confirmDelays) {
+      const delays = confirmation._tag === "none" ? [] : timing.confirmDelays;
+
+      for (const delay of delays) {
         yield* Effect.sleep(delay);
 
         const round = yield* confirmOnce(post, prepared);
@@ -300,34 +318,45 @@ export const sequenced = <P>(
       })
     );
 
+  // Reads the earlier run's post back, and publishes only when it is not
+  // there.
+  const resumeLookingUp = (
+    post: OutgoingPost,
+    lookUp: (post: OutgoingPost) => Effect.Effect<LookUp, PublishFailure>
+  ): Effect.Effect<PublishResult, PublishFailure> =>
+    lookUp(post).pipe(
+      Effect.orElseSucceed((): LookUp => ({ _tag: "unknown" })),
+      Effect.flatMap((found): Effect.Effect<PublishResult, PublishFailure> => {
+        if (found._tag === "found") {
+          return Effect.succeed(found.published);
+        }
+
+        // Not there: the earlier run never made it, and the key keeps this
+        // one from making it twice.
+        return found._tag === "absent"
+          ? publish(post)
+          : Effect.succeed(interrupted);
+      })
+    );
+
+  const resumed = (
+    post: OutgoingPost
+  ): Effect.Effect<PublishResult, PublishFailure> =>
+    Match.valueTags(confirmation, {
+      lookUp: ({ lookUp }) => resumeLookingUp(post, lookUp),
+      none: () => Effect.succeed(interrupted),
+      resend: ({ window }) =>
+        isWithinWindow(post, window).pipe(
+          Effect.flatMap((within) =>
+            within ? resendResumed(post, window) : Effect.succeed(interrupted)
+          )
+        ),
+    });
+
   const resume = (
     post: OutgoingPost
   ): Effect.Effect<PublishResult, PublishFailure> =>
-    (confirmation._tag === "lookUp"
-      ? confirmation.lookUp(post).pipe(
-          Effect.orElseSucceed((): LookUp => ({ _tag: "unknown" })),
-          Effect.flatMap(
-            (found): Effect.Effect<PublishResult, PublishFailure> => {
-              if (found._tag === "found") {
-                return Effect.succeed(found.published);
-              }
-
-              // Not there: the earlier run never made it, and the key keeps
-              // this one from making it twice.
-              return found._tag === "absent"
-                ? publish(post)
-                : Effect.succeed(interrupted);
-            }
-          )
-        )
-      : isWithinWindow(post, confirmation.window).pipe(
-          Effect.flatMap((within) =>
-            within
-              ? resendResumed(post, confirmation.window)
-              : Effect.succeed(interrupted)
-          )
-        )
-    ).pipe(Effect.withSpan(`Publishing.${platform}.resume`));
+    resumed(post).pipe(Effect.withSpan(`Publishing.${platform}.resume`));
 
   return { platform, publish, resume };
 };
