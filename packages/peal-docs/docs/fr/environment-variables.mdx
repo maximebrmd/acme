@@ -117,11 +117,21 @@ Un fournisseur nommé sans les réglages qu’il demande arrête le serveur au d
 
 ### Télémétrie [#telemetry]
 
-| Variable                      | Par défaut    | Rôle                                                                                                                                                                 |
-| ----------------------------- | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `OTEL_EXPORTER_OTLP_ENDPOINT` | non définie   | L’adresse OTLP/HTTP du collecteur OpenTelemetry qui reçoit les journaux, métriques et traces, comme `http://otel-collector:4318`. Non définie, rien n’est exporté.   |
-| `OTEL_SERVICE_NAME`           | `peal-server` | Le nom de service sous lequel la télémétrie est envoyée.                                                                                                             |
-| `OTEL_TRACES_EXPORTER`        | `otlp`        | `none` arrête l’export des traces une fois un point d’accès défini. `OTEL_METRICS_EXPORTER` et `OTEL_LOGS_EXPORTER` font de même pour les métriques et les journaux. |
+| Variable                      | Par défaut                                                                 | Rôle                                                                                                                                                                                                                                                                                                                 |
+| ----------------------------- | -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | non définie                                                                | L’adresse OTLP/HTTP du collecteur OpenTelemetry qui reçoit les journaux, métriques et traces, comme `http://otel-collector:4318`. Non définie, rien n’est exporté.                                                                                                                                                   |
+| `OTEL_SERVICE_NAME`           | `peal-server`                                                              | Le nom de service sous lequel la télémétrie est envoyée.                                                                                                                                                                                                                                                             |
+| `OTEL_TRACES_EXPORTER`        | `otlp`                                                                     | `none` arrête l’export des traces une fois un point d’accès défini. `OTEL_METRICS_EXPORTER` et `OTEL_LOGS_EXPORTER` font de même pour les métriques et les journaux.                                                                                                                                                 |
+| `OTEL_TRACES_SAMPLER`         | `parentbased_traceidratio` en production, `parentbased_always_on` ailleurs | Les traces exportées, par les noms d’échantillonneurs d’OpenTelemetry : `always_on`, `always_off`, `traceidratio`, `parentbased_always_on`, `parentbased_always_off` ou `parentbased_traceidratio`. Ceux en `parentbased_` suivent la décision avec laquelle une requête arrive. Une autre valeur arrête le serveur. |
+| `OTEL_TRACES_SAMPLER_ARG`     | `0.1` en production, `1` ailleurs                                          | La part des traces que gardent les échantillonneurs `traceidratio`, de `0` à `1`. La production garde une trace sur dix sauf indication contraire.                                                                                                                                                                   |
+
+L’échantillonneur décide au début d’une trace, avant que l’on sache comment elle finit. Pour que les traces que vous cherchez soient là, quel que soit le taux :
+
+- chaque tentative de publication sur un canal est tracée, avec les appels à la plateforme qu’elle fait ;
+- d’une trace non échantillonnée, le serveur exporte quand même les spans terminés par un bogue, les requêtes auxquelles il a répondu par un `5xx` et les spans qui ont duré 10 secondes ou plus, chacun avec ceux au-dessus de lui ;
+- les journaux et les métriques ne sont jamais échantillonnés : chaque erreur est journalisée avec l’identifiant de sa trace, et chaque requête est comptée dans la métrique `peal.http.requests`, par classe de statut, que lisent les alertes de la pile.
+
+`always_off` et `parentbased_always_off` désactivent tout cela : aucune trace ne commence sur le serveur.
 
 Le serveur exporte la télémétrie en JSON sur HTTP : faites pointer le point d’accès vers le port OTLP/HTTP du collecteur, 4318 par défaut, et non vers son port gRPC. Il lit aussi ces variables OpenTelemetry, et aucune autre (`OTEL_EXPORTER_OTLP_PROTOCOL` comprise) :
 

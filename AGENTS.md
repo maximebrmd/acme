@@ -1350,7 +1350,15 @@ self-hoster needs only Postgres and an S3-compatible store:
 - telemetry: OTLP export of logs, metrics and traces only when
   `OTEL_EXPORTER_OTLP_ENDPOINT` is set (`src/app/observability.ts` defaults
   each `OTEL_<SIGNAL>_EXPORTER` to `otlp`; set one to `none` to turn that
-  signal off).
+  signal off). Traces are head-sampled as `OTEL_TRACES_SAMPLER` and
+  `OTEL_TRACES_SAMPLER_ARG` say (`src/app/trace-sampling.ts`): one in ten
+  in production, all elsewhere. Whatever the ratio, the spans in
+  `alwaysSampledSpans` (each publishing attempt) are sampled, and a span of
+  an unsampled trace is still exported when it ended in a defect, when the
+  server failed the request (5xx) or when it lasted `slowSpan` (10 s), with
+  its parents (`SampledSpan`). Never alert or count on spans, which are a
+  sample: count in a metric (`peal.http.requests`, which the request alerts
+  read) or a log.
 
 - Images read `PORT` and plain environment variables and run anywhere.
 - Self-hosters run `compose.production.yaml` with `compose.self-host.yaml`:

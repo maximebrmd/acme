@@ -117,11 +117,21 @@ A provider named without the settings it needs stops the server at startup, and 
 
 ### Telemetry [#telemetry]
 
-| Variable                      | Default       | What it does                                                                                                                                                   |
-| ----------------------------- | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `OTEL_EXPORTER_OTLP_ENDPOINT` | unset         | The OTLP/HTTP address of the OpenTelemetry collector that receives logs, metrics and traces, such as `http://otel-collector:4318`. Unset, nothing is exported. |
-| `OTEL_SERVICE_NAME`           | `peal-server` | The service name telemetry is reported under.                                                                                                                  |
-| `OTEL_TRACES_EXPORTER`        | `otlp`        | `none` stops exporting traces once an endpoint is set. `OTEL_METRICS_EXPORTER` and `OTEL_LOGS_EXPORTER` do the same for metrics and logs.                      |
+| Variable                      | Default                                                                     | What it does                                                                                                                                                                                                                                                                              |
+| ----------------------------- | --------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | unset                                                                       | The OTLP/HTTP address of the OpenTelemetry collector that receives logs, metrics and traces, such as `http://otel-collector:4318`. Unset, nothing is exported.                                                                                                                            |
+| `OTEL_SERVICE_NAME`           | `peal-server`                                                               | The service name telemetry is reported under.                                                                                                                                                                                                                                             |
+| `OTEL_TRACES_EXPORTER`        | `otlp`                                                                      | `none` stops exporting traces once an endpoint is set. `OTEL_METRICS_EXPORTER` and `OTEL_LOGS_EXPORTER` do the same for metrics and logs.                                                                                                                                                 |
+| `OTEL_TRACES_SAMPLER`         | `parentbased_traceidratio` in production, `parentbased_always_on` elsewhere | Which traces are exported, by OpenTelemetry's sampler names: `always_on`, `always_off`, `traceidratio`, `parentbased_always_on`, `parentbased_always_off` or `parentbased_traceidratio`. The `parentbased_` ones follow the decision a request came with. Another value stops the server. |
+| `OTEL_TRACES_SAMPLER_ARG`     | `0.1` in production, `1` elsewhere                                          | The share of traces the `traceidratio` samplers keep, from `0` to `1`. Production keeps one trace in ten unless you say otherwise.                                                                                                                                                        |
+
+The sampler decides when a trace begins, before anyone knows how it ends. So that the traces you look for are there, whatever the ratio:
+
+- every attempt to publish a post on a channel is traced, with the calls to the platform under it;
+- from a trace that was not sampled, the server still exports the spans that ended in a bug, the requests it answered with a `5xx`, and the spans that lasted 10 seconds or more, each with the spans above it;
+- logs and metrics are never sampled: every error is logged with its trace id, and every request is counted in the metric `peal.http.requests`, by status class, which the stack's alerts read.
+
+`always_off` and `parentbased_always_off` turn all of this off: no trace begins on the server.
 
 The server exports telemetry as JSON over HTTP, so point the endpoint at the collector's OTLP/HTTP port, 4318 by default, rather than its gRPC one. It also reads these OpenTelemetry variables, and no others (`OTEL_EXPORTER_OTLP_PROTOCOL` included):
 

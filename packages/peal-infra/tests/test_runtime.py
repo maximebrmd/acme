@@ -41,6 +41,20 @@ def test_production_sends_its_heartbeat(rendered: Path) -> None:
     assert (INFRA.parent / "peal-docker" / host_env["PEAL_GRAFANA_HEARTBEAT"]).is_file()
 
 
+def test_production_samples_one_trace_in_ten(rendered: Path) -> None:
+    host_env = _host_env(rendered, "production")
+
+    assert host_env["OTEL_TRACES_SAMPLER"] == "parentbased_traceidratio"
+    assert host_env["OTEL_TRACES_SAMPLER_ARG"] == "0.1"
+
+
+def test_the_sandbox_samples_every_trace(rendered: Path) -> None:
+    host_env = _host_env(rendered, "sandbox")
+
+    assert host_env["OTEL_TRACES_SAMPLER"] == "parentbased_always_on"
+    assert "OTEL_TRACES_SAMPLER_ARG" not in host_env
+
+
 def test_the_sandbox_sends_none(rendered: Path) -> None:
     host_env = _host_env(rendered, "sandbox")
 

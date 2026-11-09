@@ -31,6 +31,10 @@ peal_backup_endpoint: 0123456789abcdef0123456789abcdef.eu.r2.cloudflarestorage.c
 peal_backup_bucket: peal-sandbox-backups
 peal_backup_path: /sandbox
 
+# Few people use the sandbox: the server traces every request there.
+peal_settings:
+  OTEL_TRACES_SAMPLER: parentbased_always_on
+
 peal_static_build_args:
   SITE_URL: https://sandbox-site.peal.social
   SITE_DOCS_URL: https://sandbox-docs.peal.social

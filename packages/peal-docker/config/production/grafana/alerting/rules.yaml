@@ -2,9 +2,10 @@
 # file mounted beside this one says: Telegram in Peal's production
 # (telegram.yaml), Grafana's default otherwise (none.yaml).
 #
-# Requests are counted from the server's spans, which Tempo's
-# metrics-generator turns into traces_spanmetrics_* series; the container
-# health checks alone keep them above zero while the server runs.
+# Requests are counted by the server itself (peal.http.requests, by status
+# class), every one of them: its traces are sampled, so the span metrics
+# Tempo derives from them show a share of the requests only. The container
+# health checks alone keep the count moving while the server runs.
 
 apiVersion: 1
 
@@ -34,7 +35,7 @@ groups:
             model:
               refId: A
               instant: true
-              expr: sum(rate(traces_spanmetrics_calls_total{service="peal-server", span_kind="SPAN_KIND_SERVER"}[10m]))
+              expr: sum(rate(peal_http_requests_total[10m]))
           - refId: B
             datasourceUid: __expr__
             model:
@@ -65,7 +66,7 @@ groups:
             model:
               refId: A
               instant: true
-              expr: sum(rate(traces_spanmetrics_calls_total{service="peal-server", span_kind="SPAN_KIND_SERVER", status_code="STATUS_CODE_ERROR"}[5m]))
+              expr: sum(rate(peal_http_requests_total{status="5xx"}[5m]))
           - refId: B
             datasourceUid: __expr__
             model:
