@@ -4,6 +4,10 @@ import type { ClientErrorReport } from "acme-contract";
 // (users', workspaces' and posts' are UUIDs), an API key.
 const emails = /[^\s@"'<>()[\]]+@[^\s@"'<>()[\]]+\.[a-z]{2,}/giu;
 
+// Addresses are looked for word by word, in the words that hold an @, so a
+// long text without one costs one pass.
+const words = /\S+/gu;
+
 const uuids =
   /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/giu;
 
@@ -17,7 +21,9 @@ const idSegment =
 /** Text with the addresses, ids and keys it quotes replaced. */
 export const redactText = (text: string): string =>
   text
-    .replaceAll(emails, "[email]")
+    .replaceAll(words, (word) =>
+      word.includes("@") ? word.replaceAll(emails, "[email]") : word
+    )
     .replaceAll(uuids, "[id]")
     .replaceAll(apiKeys, "[key]");
 

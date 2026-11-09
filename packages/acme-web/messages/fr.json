@@ -1284,5 +1284,11 @@
     "stop": "Cesser d’agir à sa place",
     "stopping": "Retour…",
     "stopFailed": "Le retour à votre compte a échoué. Réessayez, ou déconnectez-vous."
+  },
+  "ErrorPage": {
+    "title": "Une erreur s’est produite",
+    "description": "Cette page a rencontré une erreur, qui a été signalée. Réessayez, ou revenez dans un instant.",
+    "retry": "Réessayer",
+    "home": "Retour à l’accueil"
   }
 }

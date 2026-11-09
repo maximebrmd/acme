@@ -1284,5 +1284,11 @@
     "stop": "Stop acting as them",
     "stopping": "Coming back…",
     "stopFailed": "Coming back to your account failed. Try again, or sign out."
+  },
+  "ErrorPage": {
+    "title": "Something went wrong",
+    "description": "This page ran into an error, which was reported. Try again, or come back in a moment.",
+    "retry": "Try again",
+    "home": "Back to the home page"
   }
 }

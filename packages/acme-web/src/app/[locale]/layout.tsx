@@ -1,4 +1,5 @@
 import { GeistMono, GeistSans } from "acme-ui/lib/fonts";
+import { Effect } from "effect";
 import type { Metadata } from "next";
 import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { getTranslations } from "next-intl/server";
@@ -7,6 +8,8 @@ import { notFound } from "next/navigation";
 import { AppShell } from "#components/app-shell.tsx";
 import { Providers } from "#components/providers.tsx";
 import { ViewerTimeZone } from "#components/viewer-time-zone.tsx";
+import { releaseMeta } from "#errors/release-meta.ts";
+import { releaseConfig } from "#errors/server.ts";
 import { routing } from "#i18n/routing.ts";
 
 import "#app/globals.css";
@@ -25,7 +28,14 @@ export const generateMetadata = async ({
 
   const t = await getTranslations({ locale, namespace: "Metadata" });
 
-  return { description: t("description"), title: t("title") };
+  // The release, which error reports from the browser name.
+  const release = await Effect.runPromise(releaseConfig);
+
+  return {
+    description: t("description"),
+    other: { [releaseMeta]: release },
+    title: t("title"),
+  };
 };
 
 const LocaleLayout = async ({ children, params }: LayoutProps<"/[locale]">) => {
