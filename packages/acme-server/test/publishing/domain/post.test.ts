@@ -1,6 +1,8 @@
 import { describe, expect, it } from "@effect/vitest";
 import { DateTime, Option, Result } from "effect";
 
+import { InvalidPostTransition } from "#publishing/domain/invalid-post-transition.ts";
+import { emptyContent } from "#publishing/domain/post-content.ts";
 import type { PostStatus } from "#publishing/domain/post-status.ts";
 import { PostTargetIdSchema } from "#publishing/domain/post-target-id.ts";
 import type { PostTargetStatus } from "#publishing/domain/post-target-status.ts";
@@ -8,6 +10,7 @@ import { PostTarget } from "#publishing/domain/post-target.ts";
 import {
   cancelPost,
   createDraft,
+  editDraft,
   finishPost,
   moveToDraft,
   outcomeOf,
@@ -23,6 +26,7 @@ import {
 } from "#shared/domain/ids.ts";
 import { PlatformPostIdSchema } from "#shared/domain/publish-result.ts";
 import { TimeZoneIdSchema } from "#shared/domain/time-zone.ts";
+import { contentOf } from "#test/publishing/support.ts";
 
 const postId = PostIdSchema.make("00000000-0000-7000-8000-000000000001");
 
@@ -40,7 +44,13 @@ const inAnHour = new Schedule({
 });
 
 const postIn = (status: PostStatus, scheduleRevision = 1): Post =>
-  new Post({ id: postId, scheduleRevision, status, workspaceId });
+  new Post({
+    content: emptyContent,
+    id: postId,
+    scheduleRevision,
+    status,
+    workspaceId,
+  });
 
 const statuses = {
   cancelled: postIn({
@@ -105,11 +115,39 @@ const cancelled = targetIn("d", { _tag: "cancelled", cancelledAt: now });
 
 describe(createDraft, () => {
   it("starts a post as a draft at revision 0", () => {
-    const post = createDraft(postId, workspaceId);
+    const post = createDraft(postId, workspaceId, emptyContent);
 
     expect(post.status).toStrictEqual({ _tag: "draft" });
     expect(post.scheduleRevision).toBe(0);
     expect(post.workspaceId).toBe(workspaceId);
+    expect(post.content).toStrictEqual(emptyContent);
+  });
+});
+
+describe(editDraft, () => {
+  const written = contentOf("Launch day, at last.");
+
+  it("gives a draft new content, keeping its revision", () => {
+    const edited = successOf(editDraft(statuses.draft, written));
+
+    expect(edited?.content).toStrictEqual(written);
+    expect(edited?.status).toStrictEqual({ _tag: "draft" });
+    expect(edited?.scheduleRevision).toBe(statuses.draft.scheduleRevision);
+  });
+
+  it.each([
+    statuses.scheduled,
+    statuses.publishing,
+    statuses.finished,
+    statuses.cancelled,
+  ])("refuses to change a post once $status._tag", (post) => {
+    expect(failureOf(editDraft(post, written))).toStrictEqual(
+      new InvalidPostTransition({
+        action: "edit",
+        from: post.status._tag,
+        postId,
+      })
+    );
   });
 });
 

@@ -1,8 +1,11 @@
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, gte, inArray, lt, notInArray } from "drizzle-orm";
 import { DateTime, Effect, Layer, Match, Option, Schema } from "effect";
 
 import { PostRepository } from "#publishing/application/post-repository.ts";
-import type { StoredPost } from "#publishing/application/post-repository.ts";
+import type {
+  PostWithTargets,
+  StoredPost,
+} from "#publishing/application/post-repository.ts";
 import { ExecutionIdSchema } from "#publishing/application/publication-scheduler.ts";
 import type { ExecutionId } from "#publishing/application/publication-scheduler.ts";
 import type { PostStatus } from "#publishing/domain/post-status.ts";
@@ -12,7 +15,7 @@ import { PostTarget } from "#publishing/domain/post-target.ts";
 import { Post } from "#publishing/domain/post.ts";
 import type { Schedule } from "#publishing/domain/schedule.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
-import type { PostId } from "#shared/domain/ids.ts";
+import type { PostId, WorkspaceId } from "#shared/domain/ids.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 
 import { posts, postTargets } from "./schema.ts";
@@ -60,6 +63,11 @@ const toStored = (row: PostRow) =>
   Effect.all({
     execution: decodeExecution(row.executionId),
     post: decodePost({
+      content: {
+        media: row.media,
+        overrides: row.textOverrides,
+        text: row.text,
+      },
       id: row.id,
       scheduleRevision: row.scheduleRevision,
       status: postStatusOf(row),
@@ -99,11 +107,22 @@ const scheduleColumns = (schedule: Option.Option<Schedule>) =>
     }),
   });
 
+// What the post says, as its columns hold it.
+const contentColumns = ({ content }: Post) => ({
+  media: content.media.map(({ altText, mediaId }) => ({ altText, mediaId })),
+  text: content.text,
+  textOverrides: content.overrides.map(({ channelId, text }) => ({
+    channelId,
+    text,
+  })),
+});
+
 // Every column a status decides, so a write leaves no stale value behind.
 const postColumns = (post: Post) => {
   const { status } = post;
 
   const cleared = {
+    ...contentColumns(post),
     cancelledAt: null,
     finishedAt: null,
     outcome: null,
@@ -201,6 +220,32 @@ const storedFrom = (rows: readonly PostRow[]) => {
 
 const failed = (cause: unknown) => new DatabaseError({ cause });
 
+const targetRow = (target: PostTarget) => ({
+  ...targetColumns(target.status),
+  channelId: target.channelId,
+  id: target.id,
+  postId: target.postId,
+  round: target.round,
+});
+
+// Each post with its targets, in the order the posts came.
+const withTargets = (
+  postRows: readonly PostRow[],
+  targetRows: readonly TargetRow[]
+) =>
+  Effect.all(
+    postRows.map((row) =>
+      Effect.all({
+        post: toStored(row).pipe(Effect.map(({ post }) => post)),
+        targets: Effect.all(
+          targetRows.flatMap((target) =>
+            target.postId === row.id ? [toTarget(target)] : []
+          )
+        ),
+      })
+    )
+  );
+
 const statusName = (status: PostStatus | PostTargetStatus) => status._tag;
 
 /** Posts and targets in the publishing schema, through Drizzle. */
@@ -242,16 +287,45 @@ export const DrizzlePostRepository = Layer.effect(
           });
 
           if (targets.length > 0) {
-            yield* db.insert(postTargets).values(
-              targets.map((target) => ({
-                ...targetColumns(target.status),
-                channelId: target.channelId,
-                id: target.id,
-                postId: target.postId,
-                round: target.round,
-              }))
-            );
+            yield* db.insert(postTargets).values(targets.map(targetRow));
           }
+        }).pipe(Effect.mapError(failed)),
+      listScheduled: (
+        workspaceId: WorkspaceId,
+        from: DateTime.Utc,
+        to: DateTime.Utc
+      ) =>
+        Effect.gen(function* listScheduled() {
+          const postRows = yield* db
+            .select()
+            .from(posts)
+            .where(
+              and(
+                eq(posts.workspaceId, workspaceId),
+                gte(posts.scheduledAt, date(from)),
+                lt(posts.scheduledAt, date(to))
+              )
+            )
+            .orderBy(asc(posts.scheduledAt), asc(posts.id));
+
+          if (postRows.length === 0) {
+            const none: readonly PostWithTargets[] = [];
+
+            return none;
+          }
+
+          const targetRows = yield* db
+            .select()
+            .from(postTargets)
+            .where(
+              inArray(
+                postTargets.postId,
+                postRows.map(({ id }) => id)
+              )
+            )
+            .orderBy(asc(postTargets.id));
+
+          return yield* withTargets(postRows, targetRows);
         }).pipe(Effect.mapError(failed)),
       lock: (postId) =>
         selectPost(postId)
@@ -283,6 +357,26 @@ export const DrizzlePostRepository = Layer.effect(
             Effect.mapError(failed),
             Effect.map((rows) => rows.length === 1)
           ),
+      setTargets: (postId, targets) =>
+        Effect.gen(function* setTargets() {
+          const kept = targets.map(({ id }) => id);
+
+          yield* db
+            .delete(postTargets)
+            .where(
+              and(
+                eq(postTargets.postId, postId),
+                kept.length === 0 ? undefined : notInArray(postTargets.id, kept)
+              )
+            );
+
+          if (targets.length > 0) {
+            yield* db
+              .insert(postTargets)
+              .values(targets.map(targetRow))
+              .onConflictDoNothing({ target: postTargets.id });
+          }
+        }).pipe(Effect.mapError(failed)),
       targets: (postId) =>
         selectTargets(postId).pipe(
           Effect.mapError(failed),

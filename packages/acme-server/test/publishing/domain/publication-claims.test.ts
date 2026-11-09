@@ -1,6 +1,7 @@
 import { describe, expect, it } from "@effect/vitest";
 import { DateTime, Option, Result } from "effect";
 
+import { emptyContent } from "#publishing/domain/post-content.ts";
 import type { PostStatus } from "#publishing/domain/post-status.ts";
 import { PostTargetIdSchema } from "#publishing/domain/post-target-id.ts";
 import type { PostTargetStatus } from "#publishing/domain/post-target-status.ts";
@@ -35,7 +36,13 @@ const schedule = new Schedule({
 });
 
 const postIn = (status: PostStatus, scheduleRevision = 2): Post =>
-  new Post({ id: postId, scheduleRevision, status, workspaceId });
+  new Post({
+    content: emptyContent,
+    id: postId,
+    scheduleRevision,
+    status,
+    workspaceId,
+  });
 
 const decisionOf = <A, E>(result: Result.Result<A, E>): A | undefined =>
   Option.getOrUndefined(Result.getSuccess(result));

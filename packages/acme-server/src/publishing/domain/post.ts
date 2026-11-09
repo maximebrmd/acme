@@ -5,6 +5,7 @@ import type { PostId, WorkspaceId } from "#shared/domain/ids.ts";
 
 import { InvalidPostTransition } from "./invalid-post-transition.ts";
 import type { PostAction } from "./invalid-post-transition.ts";
+import { PostContent } from "./post-content.ts";
 import { PostNotDue } from "./post-not-due.ts";
 import { PostStatusSchema } from "./post-status.ts";
 import type { PostOutcome, PostStatus } from "./post-status.ts";
@@ -18,12 +19,15 @@ import { Schedule } from "./schedule.ts";
  *
  * | From       | To                                           |
  * | ---------- | -------------------------------------------- |
- * | draft      | scheduled, cancelled                         |
+ * | draft      | draft (edited), scheduled, cancelled         |
  * | scheduled  | scheduled (moved), draft, publishing,        |
  * |            | cancelled                                    |
  * | publishing | finished                                     |
  * | finished   | nothing                                      |
  * | cancelled  | nothing                                      |
+ *
+ * What the post says is its content (`./post-content.ts`), which only a
+ * draft may change.
  *
  * `scheduleRevision` counts the times the post was scheduled or taken back
  * to draft. The job that publishes a post is started for one revision, and
@@ -36,6 +40,7 @@ import { Schedule } from "./schedule.ts";
 export class Post extends Schema.Class<Post>(
   "acme-server/publishing/domain/Post"
 )({
+  content: PostContent,
   id: PostIdSchema,
   scheduleRevision: Schema.Int.check(Schema.isGreaterThanOrEqualTo(0)),
   status: PostStatusSchema,
@@ -50,6 +55,7 @@ const withStatus = (
   scheduleRevision = post.scheduleRevision
 ): Post =>
   new Post({
+    content: post.content,
     id: post.id,
     scheduleRevision,
     status,
@@ -68,13 +74,35 @@ const rejected = (
     })
   );
 
-export const createDraft = (id: PostId, workspaceId: WorkspaceId): Post =>
+export const createDraft = (
+  id: PostId,
+  workspaceId: WorkspaceId,
+  content: PostContent
+): Post =>
   new Post({
+    content,
     id,
     scheduleRevision: 0,
     status: { _tag: "draft" },
     workspaceId,
   });
+
+/**
+ * Gives a draft new content. Once scheduled, a post keeps what it says: the
+ * user takes it back to draft to change it.
+ */
+export const editDraft = (post: Post, content: PostContent): Transition =>
+  post.status._tag === "draft"
+    ? Result.succeed(
+        new Post({
+          content,
+          id: post.id,
+          scheduleRevision: post.scheduleRevision,
+          status: post.status,
+          workspaceId: post.workspaceId,
+        })
+      )
+    : rejected(post, "edit");
 
 /**
  * How long before `now` a time may be and still mean now: a caller that

@@ -1,5 +1,4 @@
 import { Badge } from "acme-ui/components/badge";
-import { Button } from "acme-ui/components/button";
 import {
   Card,
   CardAction,
@@ -37,6 +36,7 @@ const AppPage = async ({ params }: PageProps<"/[locale]/app">) => {
   const { user, workspaces } = me.value;
   const t = await getTranslations("AppPage");
   const channels = await getTranslations("ChannelsPage");
+  const tPosts = await getTranslations("Posts.nav");
 
   return (
     <div className="flex flex-col gap-8">
@@ -65,14 +65,33 @@ const AppPage = async ({ params }: PageProps<"/[locale]/app">) => {
                   </CardAction>
                 </CardHeader>
                 <CardFooter>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    render={<Link href={`/app/${workspace.id}/channels`} />}
-                    nativeButton={false}
+                  <nav
+                    aria-label={tPosts("workspaceLinks", {
+                      workspace: workspace.name,
+                    })}
+                    className="flex gap-4 text-sm"
                   >
-                    {channels("open")}
-                  </Button>
+                    <Link
+                      href={`/app/${workspace.id}/calendar`}
+                      className="underline-offset-4 hover:underline"
+                    >
+                      {tPosts("calendar")}
+                    </Link>
+                    {workspace.permissions.includes("post:create") ? (
+                      <Link
+                        href={`/app/${workspace.id}/posts/new`}
+                        className="underline-offset-4 hover:underline"
+                      >
+                        {tPosts("newPost")}
+                      </Link>
+                    ) : null}
+                    <Link
+                      href={`/app/${workspace.id}/channels`}
+                      className="underline-offset-4 hover:underline"
+                    >
+                      {channels("open")}
+                    </Link>
+                  </nav>
                 </CardFooter>
               </Card>
             </li>

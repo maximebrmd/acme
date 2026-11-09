@@ -4,7 +4,8 @@
   "license": "FSL-1.1-ALv2",
   "type": "module",
   "exports": {
-    ".": "./src/api.ts"
+    ".": "./src/api.ts",
+    "./post-text": "./src/post-text.ts"
   },
   "dependencies": {
     "effect": "4.1.2"

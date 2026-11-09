@@ -1,19 +1,4 @@
-import { Schema } from "effect";
+// The platform list belongs to the shared kernel, which publishing reads too.
+export { PlatformSchema, platforms } from "#shared/domain/platform.ts";
 
-/** The social networks a channel can connect to. */
-export const PlatformSchema = Schema.Literals([
-  "x",
-  "linkedin",
-  "bluesky",
-  "mastodon",
-  "threads",
-  "instagram",
-  "facebook",
-  "tiktok",
-  "youtube",
-  "pinterest",
-]);
-
-export type Platform = typeof PlatformSchema.Type;
-
-export const platforms: readonly Platform[] = PlatformSchema.literals;
+export type { Platform } from "#shared/domain/platform.ts";

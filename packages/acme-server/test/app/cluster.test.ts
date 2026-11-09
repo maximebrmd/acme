@@ -22,7 +22,7 @@ import { WarnChannelsNeedingReconnect } from "#channels/application/warn-channel
 import { PostRepository } from "#publishing/application/post-repository.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
 import { PublicationScheduler } from "#publishing/application/publication-scheduler.ts";
-import { PublishingLive, publishingWorkers } from "#publishing/container.ts";
+import { publishingWith, publishingWorkers } from "#publishing/container.ts";
 import { PostTargetIdSchema } from "#publishing/domain/post-target-id.ts";
 import { createTarget } from "#publishing/domain/post-target.ts";
 import { createDraft, schedulePost } from "#publishing/domain/post.ts";
@@ -46,6 +46,11 @@ import { DatabaseLive } from "#shared/infrastructure/database.ts";
 import { MigrationsLive } from "#shared/infrastructure/migrations.ts";
 import { IdsLive } from "#shared/infrastructure/secure-random-ids.ts";
 import { TransactionRunnerLive } from "#shared/infrastructure/transaction-runner-live.ts";
+import {
+  actorIn,
+  ReferencesTest,
+  syntheticContent,
+} from "#test/publishing/support.ts";
 
 // The cluster as the server runs it: SingleRunner with SQL message and
 // runner storage, on the Postgres that DATABASE_URL names, with the real
@@ -123,7 +128,7 @@ const serverWith = <E, R>(
   > = CronsLive
 ) =>
   Layer.mergeAll(publishingWorkers(platforms), crons).pipe(
-    Layer.provideMerge(PublishingLive),
+    Layer.provideMerge(publishingWith(ReferencesTest)),
     Layer.provideMerge(ChannelJobsTest),
     Layer.provideMerge(Layer.mergeAll(IdsLive, TransactionRunnerLive)),
     Layer.provideMerge(Cluster),
@@ -198,14 +203,14 @@ const scheduleSoon = (delay: Duration.Duration) =>
     const channelId = yield* newId(ChannelIdSchema);
     const at = DateTime.addDuration(yield* DateTime.now, delay);
 
-    const post = yield* PostScheduling.use((scheduling) =>
-      scheduling.schedule({
+    const { post } = yield* PostScheduling.use((scheduling) =>
+      scheduling.schedule(actorIn(workspaceId), {
         channelIds: [channelId],
+        content: syntheticContent,
         schedule: new Schedule({
           at,
           timeZone: TimeZoneIdSchema.make("Europe/Paris"),
         }),
-        workspaceId,
       })
     );
 
@@ -276,7 +281,11 @@ describe("the cluster on Postgres", () => {
 
           const post = yield* Effect.fromResult(
             schedulePost(
-              createDraft(postId, yield* newId(WorkspaceIdSchema)),
+              createDraft(
+                postId,
+                yield* newId(WorkspaceIdSchema),
+                syntheticContent
+              ),
               new Schedule({
                 at,
                 timeZone: TimeZoneIdSchema.make("Europe/Paris"),
@@ -426,7 +435,10 @@ describe("the cluster on Postgres", () => {
 
           // Leaves no job waiting for a dev server to run.
           yield* PostScheduling.use((scheduling) =>
-            scheduling.cancel(waiting.post.workspaceId, waiting.post.id)
+            scheduling.cancel(
+              actorIn(waiting.post.workspaceId),
+              waiting.post.id
+            )
           );
         }).pipe(
           Effect.provide(

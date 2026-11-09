@@ -10,6 +10,7 @@ import { newId } from "#shared/application/ids.ts";
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import { RateLimited } from "#shared/domain/rate-limited.ts";
 import { IdsLive } from "#shared/infrastructure/secure-random-ids.ts";
+import { actorIn } from "#test/publishing/support.ts";
 
 import {
   callsOn,
@@ -58,12 +59,15 @@ describe("ReschedulePost", () => {
           const oldJob = yield* executionOf(post.id);
 
           const moved = yield* scheduling.reschedule(
-            post.workspaceId,
+            actorIn(post.workspaceId),
             post.id,
             scheduleIn("2026-06-15T09:00:00Z")
           );
 
-          assert.strictEqual(moved.scheduleRevision, post.scheduleRevision + 1);
+          assert.strictEqual(
+            moved.post.scheduleRevision,
+            post.scheduleRevision + 1
+          );
 
           const newJob = yield* executionOf(post.id);
 
@@ -111,14 +115,14 @@ describe("ReschedulePost", () => {
           yield* TestClock.adjust(Duration.millis(40));
 
           const moved = yield* scheduling.reschedule(
-            post.workspaceId,
+            actorIn(post.workspaceId),
             post.id,
             new Schedule({ at: asked, timeZone: later.timeZone })
           );
 
-          assert(moved.status._tag === "scheduled");
+          assert(moved.post.status._tag === "scheduled");
           assert.deepStrictEqual(
-            moved.status.schedule.at,
+            moved.post.status.schedule.at,
             DateTime.addDuration(asked, Duration.millis(40))
           );
 
@@ -157,7 +161,7 @@ describe("ReschedulePost", () => {
 
           const refused = yield* scheduling
             .reschedule(
-              post.workspaceId,
+              actorIn(post.workspaceId),
               post.id,
               scheduleIn("2026-06-15T10:00:00Z")
             )
@@ -196,7 +200,7 @@ describe("ReschedulePost", () => {
 
           // This scheduler loses the interrupt: the old job keeps sleeping.
           yield* scheduling.reschedule(
-            post.workspaceId,
+            actorIn(post.workspaceId),
             post.id,
             scheduleIn("2026-06-15T09:00:00Z")
           );
@@ -275,9 +279,13 @@ describe("CancelPost", () => {
           yield* eventually("the job sleeps", isSuspended(post.id));
 
           const job = yield* executionOf(post.id);
-          const cancelled = yield* scheduling.cancel(post.workspaceId, post.id);
 
-          assert.strictEqual(cancelled.status._tag, "cancelled");
+          const cancelled = yield* scheduling.cancel(
+            actorIn(post.workspaceId),
+            post.id
+          );
+
+          assert.strictEqual(cancelled.post.status._tag, "cancelled");
           assert.deepStrictEqual(targetStatuses(yield* targetsOf(post.id)), [
             "cancelled",
             "cancelled",
@@ -294,7 +302,7 @@ describe("CancelPost", () => {
           );
 
           const again = yield* scheduling
-            .cancel(post.workspaceId, post.id)
+            .cancel(actorIn(post.workspaceId), post.id)
             .pipe(Effect.flip);
 
           assert.strictEqual(again._tag, "InvalidPostTransition");
@@ -354,11 +362,11 @@ describe("CancelPost", () => {
           yield* eventually("its job waits", isTargetWaiting(waiting.id));
 
           const stillPublishing = yield* scheduling.cancel(
-            post.workspaceId,
+            actorIn(post.workspaceId),
             post.id
           );
 
-          assert.strictEqual(stillPublishing.status._tag, "publishing");
+          assert.strictEqual(stillPublishing.post.status._tag, "publishing");
 
           yield* TestClock.adjust(Duration.minutes(15));
           yield* eventually("the post finishes", isFinished(post.id));
@@ -400,11 +408,15 @@ describe("PostScheduling across workspaces", () => {
           );
 
           const moved = yield* scheduling
-            .reschedule(other, post.id, scheduleIn("2026-06-15T09:00:00Z"))
+            .reschedule(
+              actorIn(other),
+              post.id,
+              scheduleIn("2026-06-15T09:00:00Z")
+            )
             .pipe(Effect.flip);
 
           const cancelled = yield* scheduling
-            .cancel(other, post.id)
+            .cancel(actorIn(other), post.id)
             .pipe(Effect.flip);
 
           assert.strictEqual(moved._tag, "PostNotFound");

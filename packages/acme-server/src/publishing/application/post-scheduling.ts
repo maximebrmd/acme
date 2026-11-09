@@ -1,8 +1,10 @@
 import { Context, DateTime, Effect, Layer, Option, Result } from "effect";
 
-import type { InvalidPostTransition } from "#publishing/domain/invalid-post-transition.ts";
-import { PostTargetIdSchema } from "#publishing/domain/post-target-id.ts";
-import { cancelTarget, createTarget } from "#publishing/domain/post-target.ts";
+import { checkPublishable } from "#publishing/domain/content-rules.ts";
+import { InvalidPostTransition } from "#publishing/domain/invalid-post-transition.ts";
+import type { PostContentRejected } from "#publishing/domain/post-content-rejected.ts";
+import type { PostContent } from "#publishing/domain/post-content.ts";
+import { cancelTarget } from "#publishing/domain/post-target.ts";
 import type { PostTarget } from "#publishing/domain/post-target.ts";
 import {
   cancelPost,
@@ -13,15 +15,25 @@ import type { Post } from "#publishing/domain/post.ts";
 import type { ScheduleInPast } from "#publishing/domain/schedule-in-past.ts";
 import type { Schedule } from "#publishing/domain/schedule.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
-import { Ids, newId } from "#shared/application/ids.ts";
+import { newId } from "#shared/application/ids.ts";
+import type { Ids } from "#shared/application/ids.ts";
 import { TransactionRunner } from "#shared/application/transaction-runner.ts";
+import type { Actor } from "#shared/domain/access.ts";
+import { authorize } from "#shared/domain/authorize.ts";
 import { PostIdSchema } from "#shared/domain/ids.ts";
-import type { ChannelId, PostId, WorkspaceId } from "#shared/domain/ids.ts";
+import type { ChannelId, PostId } from "#shared/domain/ids.ts";
+import type { MissingPermission } from "#shared/domain/missing-permission.ts";
 
-import { PostNotFound } from "./post-not-found.ts";
+import type { AttachableMedia } from "./attachable-media.ts";
+import type { PostNotFound } from "./post-not-found.ts";
+import { channelsFor, checkMedia } from "./post-references.ts";
 import { PostRepository } from "./post-repository.ts";
-import type { StoredPost } from "./post-repository.ts";
+import type { PostWithTargets, StoredPost } from "./post-repository.ts";
 import { PublicationScheduler } from "./publication-scheduler.ts";
+import type { UnknownChannels } from "./unknown-channels.ts";
+import type { UnknownMedia } from "./unknown-media.ts";
+import type { WorkspaceChannels } from "./workspace-channels.ts";
+import { lockInWorkspace, targetsOn } from "./workspace-posts.ts";
 
 // A compare and set that misses under the row lock means the lock was not
 // held: a bug, not a conflict to report.
@@ -37,14 +49,35 @@ const scheduleOf = (post: Post) =>
 export interface SchedulePostRequest {
   // At least one; a channel listed twice gets one target.
   readonly channelIds: readonly [ChannelId, ...ChannelId[]];
+  readonly content: PostContent;
   readonly schedule: Schedule;
-  readonly workspaceId: WorkspaceId;
 }
 
+/** A draft to send to some channels, at a time. */
+export interface ScheduleDraftRequest {
+  // A channel listed twice gets one target.
+  readonly channelIds: readonly ChannelId[];
+  readonly schedule: Schedule;
+}
+
+/** Why a post's channels, content or media keep it from being scheduled. */
+type Unpublishable = PostContentRejected | UnknownChannels | UnknownMedia;
+
+type Ports = AttachableMedia | Ids | PostRepository | WorkspaceChannels;
+
+const mayPublish = (actor: Actor) =>
+  Effect.fromResult(authorize(actor, "post:schedule"));
+
 /**
- * Scheduling posts: create one for a time, move it, cancel it. Each use case
- * changes the post and starts or stops its job in one transaction, so a post
- * is scheduled exactly when its job exists.
+ * Scheduling posts: create one for a time, schedule a draft, move a post,
+ * cancel it. Each use case changes the post and starts or stops its job in
+ * one transaction, so a post is scheduled exactly when its job exists. Each
+ * needs post:schedule, and scheduling reads the workspace's channels, which
+ * needs channel:read.
+ *
+ * A post is scheduled only on channels of its workspace, with content their
+ * platforms take (`#publishing/domain/content-rules.ts`) and media the
+ * workspace may show.
  *
  * A post is only found in the workspace that owns it: another workspace's
  * post is PostNotFound, whatever its id.
@@ -54,21 +87,47 @@ export class PostScheduling extends Context.Service<
   {
     /** Creates a post scheduled on the given channels. */
     readonly schedule: (
+      actor: Actor,
       request: SchedulePostRequest
-    ) => Effect.Effect<Post, DatabaseError | ScheduleInPast>;
+    ) => Effect.Effect<
+      PostWithTargets,
+      DatabaseError | MissingPermission | ScheduleInPast | Unpublishable
+    >;
     /**
-     * Moves a scheduled post, or schedules a draft. The job for the old time
-     * is stopped and one for the new time started; "publish now" is a move to
-     * the current time, which a time read a moment earlier still is (see
-     * `scheduleGrace`).
+     * Schedules a draft on the given channels, which become its targets.
+     * Its content is checked against their platforms.
+     */
+    readonly scheduleDraft: (
+      actor: Actor,
+      postId: PostId,
+      request: ScheduleDraftRequest
+    ) => Effect.Effect<
+      PostWithTargets,
+      | DatabaseError
+      | InvalidPostTransition
+      | MissingPermission
+      | PostNotFound
+      | ScheduleInPast
+      | Unpublishable
+    >;
+    /**
+     * Moves a scheduled post, or schedules a draft on the channels it has.
+     * The job for the old time is stopped and one for the new time started;
+     * "publish now" is a move to the current time, which a time read a
+     * moment earlier still is (see `scheduleGrace`).
      */
     readonly reschedule: (
-      workspaceId: WorkspaceId,
+      actor: Actor,
       postId: PostId,
       schedule: Schedule
     ) => Effect.Effect<
-      Post,
-      DatabaseError | InvalidPostTransition | PostNotFound | ScheduleInPast
+      PostWithTargets,
+      | DatabaseError
+      | InvalidPostTransition
+      | MissingPermission
+      | PostNotFound
+      | ScheduleInPast
+      | Unpublishable
     >;
     /**
      * Cancels a post. Once it is publishing, the post itself finishes with
@@ -77,11 +136,11 @@ export class PostScheduling extends Context.Service<
      * still counts.
      */
     readonly cancel: (
-      workspaceId: WorkspaceId,
+      actor: Actor,
       postId: PostId
     ) => Effect.Effect<
-      Post,
-      DatabaseError | InvalidPostTransition | PostNotFound
+      PostWithTargets,
+      DatabaseError | InvalidPostTransition | MissingPermission | PostNotFound
     >;
   }
 >()("acme-server/publishing/application/PostScheduling") {
@@ -91,22 +150,26 @@ export class PostScheduling extends Context.Service<
       const posts = yield* PostRepository;
       const scheduler = yield* PublicationScheduler;
       const { transaction } = yield* TransactionRunner;
-      const ids = yield* Ids;
+      const ports = yield* Effect.context<Ports>();
 
-      const withIds = Effect.provideService(Ids, ids);
+      const withPorts = Effect.provideContext(ports);
 
-      const stored = (workspaceId: WorkspaceId, postId: PostId) =>
-        posts.lock(postId).pipe(
-          Effect.map(
-            Option.filter((found) => found.post.workspaceId === workspaceId)
-          ),
-          Effect.flatMap(
-            Option.match({
-              onNone: () => Effect.fail(new PostNotFound({ postId })),
-              onSome: Effect.succeed,
-            })
-          )
-        );
+      // The channels to send the content to, once their platforms take it.
+      const publishableOn = Effect.fn("PostScheduling.publishableOn")(
+        function* publishableOn(
+          actor: Actor,
+          content: PostContent,
+          channelIds: readonly ChannelId[]
+        ) {
+          const channels = yield* channelsFor(actor, channelIds);
+
+          yield* Effect.fromResult(checkPublishable(content, channels));
+          yield* checkMedia(actor, content);
+
+          return channels.map(({ channelId }) => channelId);
+        },
+        withPorts
+      );
 
       // Starts the job for the post's current revision, at the time it was
       // scheduled for (which may be later than asked), and records it.
@@ -130,49 +193,60 @@ export class PostScheduling extends Context.Service<
           onSome: scheduler.cancel,
         });
 
+      // Saves the post at its new time, and swaps its job for one then.
+      const move = Effect.fn("PostScheduling.move")(function* move(
+        current: StoredPost,
+        at: Schedule
+      ) {
+        const moved = yield* Effect.fromResult(
+          schedulePost(current.post, at, yield* DateTime.now)
+        );
+
+        yield* applied(yield* posts.update(moved, current.post));
+        yield* stopJob(current);
+        yield* startJob(moved);
+
+        return moved;
+      });
+
       const cancelTargets = Effect.fn("PostScheduling.cancelTargets")(
         function* cancelTargets(postId: PostId, now: DateTime.Utc) {
           const targets = yield* posts.lockTargets(postId);
 
-          yield* Effect.forEach(
-            targets,
-            (target: PostTarget) =>
+          return yield* Effect.all(
+            targets.map((target: PostTarget) =>
               Result.match(cancelTarget(target, now), {
                 // A settled target stays as it ended.
-                onFailure: () => Effect.void,
+                onFailure: () => Effect.succeed(target),
                 onSuccess: (cancelled) =>
                   posts
                     .updateTarget(cancelled, target)
-                    .pipe(Effect.flatMap(applied)),
-              }),
-            { discard: true }
+                    .pipe(Effect.flatMap(applied), Effect.as(cancelled)),
+              })
+            )
           );
         }
       );
 
-      const schedule = Effect.fn("PostScheduling.schedule")(function* schedule({
-        channelIds,
-        schedule: at,
-        workspaceId,
-      }: SchedulePostRequest) {
+      const lockPost = (actor: Actor, postId: PostId) =>
+        lockInWorkspace(actor.workspaceId, postId).pipe(withPorts);
+
+      const schedule = Effect.fn("PostScheduling.schedule")(function* schedule(
+        actor: Actor,
+        { channelIds, content, schedule: at }: SchedulePostRequest
+      ) {
+        yield* mayPublish(actor);
+
+        const channels = yield* publishableOn(actor, content, channelIds);
         const now = yield* DateTime.now;
-        const postId = yield* newId(PostIdSchema).pipe(withIds);
+        const postId = yield* newId(PostIdSchema).pipe(withPorts);
 
         // A new draft can always be scheduled.
         const post = yield* Effect.fromResult(
-          schedulePost(createDraft(postId, workspaceId), at, now)
+          schedulePost(createDraft(postId, actor.workspaceId, content), at, now)
         ).pipe(Effect.catchTag("InvalidPostTransition", Effect.die));
 
-        const targets = yield* Effect.forEach(
-          [...new Set(channelIds)],
-          (channelId) =>
-            newId(PostTargetIdSchema).pipe(
-              withIds,
-              Effect.map((targetId) =>
-                createTarget(targetId, postId, channelId)
-              )
-            )
-        );
+        const targets = yield* targetsOn(postId, channels).pipe(withPorts);
 
         yield* transaction(
           Effect.gen(function* insertAndStart() {
@@ -181,48 +255,95 @@ export class PostScheduling extends Context.Service<
           })
         );
 
-        return post;
+        return { post, targets };
       });
 
-      const reschedule = Effect.fn("PostScheduling.reschedule")(
-        function* reschedule(
-          workspaceId: WorkspaceId,
+      const scheduleDraft = Effect.fn("PostScheduling.scheduleDraft")(
+        function* scheduleDraft(
+          actor: Actor,
           postId: PostId,
-          at: Schedule
+          { channelIds, schedule: at }: ScheduleDraftRequest
         ) {
-          return yield* transaction(
-            Effect.gen(function* moveAndRestart() {
-              const current = yield* stored(workspaceId, postId);
-              const now = yield* DateTime.now;
+          yield* mayPublish(actor);
 
-              const moved = yield* Effect.fromResult(
-                schedulePost(current.post, at, now)
+          return yield* transaction(
+            Effect.gen(function* retargetAndStart() {
+              const current = yield* lockPost(actor, postId);
+
+              // Only a draft takes new channels: a scheduled post moves.
+              if (current.post.status._tag !== "draft") {
+                return yield* new InvalidPostTransition({
+                  action: "schedule",
+                  from: current.post.status._tag,
+                  postId,
+                });
+              }
+
+              const channels = yield* publishableOn(
+                actor,
+                current.post.content,
+                channelIds
               );
 
-              yield* applied(yield* posts.update(moved, current.post));
-              yield* stopJob(current);
-              yield* startJob(moved);
+              const targets = yield* targetsOn(
+                postId,
+                channels,
+                yield* posts.lockTargets(postId)
+              ).pipe(withPorts);
 
-              return moved;
+              yield* posts.setTargets(postId, targets);
+
+              const post = yield* move(current, at);
+
+              return { post, targets };
+            })
+          );
+        }
+      );
+
+      const reschedule = Effect.fn("PostScheduling.reschedule")(
+        function* reschedule(actor: Actor, postId: PostId, at: Schedule) {
+          yield* mayPublish(actor);
+
+          return yield* transaction(
+            Effect.gen(function* moveAndRestart() {
+              const current = yield* lockPost(actor, postId);
+              const targets = yield* posts.targets(postId);
+
+              // A draft is checked as it is scheduled. A scheduled post was
+              // checked then, and moving it changes nothing it says.
+              if (current.post.status._tag === "draft") {
+                yield* publishableOn(
+                  actor,
+                  current.post.content,
+                  targets.map(({ channelId }) => channelId)
+                );
+              }
+
+              const post = yield* move(current, at);
+
+              return { post, targets };
             })
           );
         }
       );
 
       const cancel = Effect.fn("PostScheduling.cancel")(function* cancel(
-        workspaceId: WorkspaceId,
+        actor: Actor,
         postId: PostId
       ) {
+        yield* mayPublish(actor);
+
         return yield* transaction(
           Effect.gen(function* cancelAndStop() {
-            const current = yield* stored(workspaceId, postId);
+            const current = yield* lockPost(actor, postId);
             const now = yield* DateTime.now;
 
             // The job already woke: it finishes with the targets it sent.
             if (current.post.status._tag === "publishing") {
-              yield* cancelTargets(postId, now);
+              const targets = yield* cancelTargets(postId, now);
 
-              return current.post;
+              return { post: current.post, targets };
             }
 
             const cancelled = yield* Effect.fromResult(
@@ -230,15 +351,17 @@ export class PostScheduling extends Context.Service<
             );
 
             yield* applied(yield* posts.update(cancelled, current.post));
-            yield* cancelTargets(postId, now);
+
+            const targets = yield* cancelTargets(postId, now);
+
             yield* stopJob(current);
 
-            return cancelled;
+            return { post: cancelled, targets };
           })
         );
       });
 
-      return PostScheduling.of({ cancel, reschedule, schedule });
+      return PostScheduling.of({ cancel, reschedule, schedule, scheduleDraft });
     })
   );
 }

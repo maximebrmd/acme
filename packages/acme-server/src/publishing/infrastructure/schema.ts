@@ -25,6 +25,9 @@ const instant = (name: string) => timestamp(name, { withTimezone: true });
  * UTC and the IANA zone it was chosen in. `schedule_revision` goes up with
  * every schedule and every move back to draft: the job started for a
  * revision (`execution_id`) only publishes while the post still has it.
+ *
+ * Its content: `text`, the `media` it shows in order (media ids with their
+ * alt text) and `text_overrides`, the text it has instead on some channels.
  */
 export const posts = publishing.table(
   "posts",
@@ -33,12 +36,15 @@ export const posts = publishing.table(
     executionId: text("execution_id"),
     finishedAt: instant("finished_at"),
     id: uuid("id").primaryKey(),
+    media: jsonb("media").notNull().default([]),
     outcome: text("outcome"),
     scheduleRevision: integer("schedule_revision").notNull().default(0),
     scheduleZone: text("schedule_zone"),
     scheduledAt: instant("scheduled_at"),
     startedAt: instant("started_at"),
     status: text("status").notNull(),
+    text: text("text").notNull().default(""),
+    textOverrides: jsonb("text_overrides").notNull().default([]),
     workspaceId: uuid("workspace_id").notNull(),
   },
   (table) => [

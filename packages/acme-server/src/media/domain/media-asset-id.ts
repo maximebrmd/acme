@@ -1,10 +1,5 @@
-import { Schema } from "effect";
+// A stored image or video. Posts refer to media too, so the id lives in the
+// shared kernel.
+export { MediaAssetIdSchema } from "#shared/domain/ids.ts";
 
-import { Uuid7Schema } from "#shared/domain/ids.ts";
-
-/** A stored image or video. */
-export const MediaAssetIdSchema = Uuid7Schema.pipe(
-  Schema.brand("MediaAssetId")
-);
-
-export type MediaAssetId = typeof MediaAssetIdSchema.Type;
+export type { MediaAssetId } from "#shared/domain/ids.ts";
