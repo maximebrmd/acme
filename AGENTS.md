@@ -521,7 +521,9 @@ and no socket, for tests.
   `MediaForPublishing`, which the media context's `MediaForPlatforms` backs:
   ready assets of the post's workspace. Fail with `TokenRejected` only when
   the platform refused the token before doing anything: the token is renewed
-  and the call made once more.
+  and the call made once more. Mastodon's adapter takes a 401 or 403 as a
+  refused token only with Mastodon's JSON error; without it, a proxy on the
+  way answered, and the call is `PlatformUnavailable`.
 - Adapters reach platforms only through `publicHttpClient`, or
   `publicHttpClientWith({ timeout })` for uploads. Test them against the
   loopback fakes in `test/publishing/fakes/` (and the sign-in flows against

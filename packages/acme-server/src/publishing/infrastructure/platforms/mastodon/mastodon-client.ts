@@ -1,4 +1,4 @@
-import { DateTime, Duration, Effect, Option, Schema, Stream } from "effect";
+import { Duration, Effect, Option, Schema, Stream } from "effect";
 import type { Redacted } from "effect";
 import { HttpClientRequest, HttpClientResponse } from "effect/http";
 import type { HttpClient, HttpClientError } from "effect/http";
@@ -89,16 +89,6 @@ const InstanceSchema = Schema.Struct({
 
 type MediaLimits =
   (typeof InstanceSchema.Type)["configuration"]["media_attachments"];
-
-const refusedMedia = (response: HttpClientResponse.HttpClientResponse) =>
-  DateTime.now.pipe(
-    Effect.flatMap((now) => Effect.fail(mediaRefusal(response, now)))
-  );
-
-const refusedStatus = (response: HttpClientResponse.HttpClientResponse) =>
-  DateTime.now.pipe(
-    Effect.flatMap((now) => Effect.fail(statusRefusal(response, now)))
-  );
 
 /** The media of a post on the instance: every id, and those processing. */
 interface MastodonMedia {
@@ -302,7 +292,7 @@ export const mastodonClient = Effect.fn("MastodonClient.make")(
                   processing: response.status === 202,
                 }))
               )
-            : refusedMedia(response)
+            : mediaRefusal(response)
       );
     });
 
@@ -353,7 +343,7 @@ export const mastodonClient = Effect.fn("MastodonClient.make")(
           // The instance could not process the file.
           return response.status === 422
             ? Effect.fail(new MediaRejected({ code: "processingFailed" }))
-            : refusedMedia(response);
+            : mediaRefusal(response);
         }
       );
 
@@ -401,7 +391,7 @@ export const mastodonClient = Effect.fn("MastodonClient.make")(
                   platformPostId: PlatformPostIdSchema.make(id),
                 }))
               )
-            : refusedStatus(response)
+            : statusRefusal(response)
       );
     });
 

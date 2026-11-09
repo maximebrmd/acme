@@ -231,6 +231,47 @@ describe("publishing on Mastodon", () => {
     }).pipe(Effect.scoped)
   );
 
+  // A reconnect stops the channel's publishing: a proxy in front of the
+  // instance, refusing with a page of its own, must not ask for one.
+  it.live(
+    "keeps the token when a 401 or 403 is not Mastodon's own, and tries again later",
+    () =>
+      Effect.gen(function* notMastodon() {
+        const image = testFile("image", 512);
+
+        for (const [route, answer] of [
+          ["POST /api/v1/statuses", empty(403)],
+          [
+            "POST /api/v1/statuses",
+            json("Checking your browser before accessing", 403),
+          ],
+          ["POST /api/v1/statuses", empty(401)],
+          ["POST /api/v2/media", empty(403)],
+        ] as const) {
+          const { accountId, client, instance, log } = yield* onInstance({
+            files: [image],
+            tokens: ["token-1", "token-2"],
+          });
+
+          instance.script(route, [answer]);
+
+          const failure = yield* client
+            .publish(
+              yield* outgoing({
+                accountId,
+                media: route === "POST /api/v2/media" ? [attached(image)] : [],
+              })
+            )
+            .pipe(Effect.flip);
+
+          assert.deepStrictEqual(failure, new PlatformUnavailable());
+          assert.strictEqual(yield* log.renewals, 0);
+          assert.deepStrictEqual(yield* log.handed, ["token-1"]);
+          assert.lengthOf(instance.statuses(), 0);
+        }
+      }).pipe(Effect.scoped)
+  );
+
   it.live("posts with the renewed token once the first is refused", () =>
     Effect.gen(function* renewed() {
       const { accountId, client, instance, log } = yield* onInstance({
