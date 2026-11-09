@@ -40,8 +40,8 @@ them at your own server's address when you self-host.
    contact and server the packages carry.
 2. Each `peal-sdk-<language>:sdk:generate` (`scripts/generate.ts`) deletes the
    files its previous run wrote, runs openapi-generator in Docker, copies
-   `LICENSE` in and fills what the generator leaves out of the package's
-   manifest (`scripts/finish.ts`).
+   `LICENSE` and `NOTICE` in, which every package carries, and fills what the
+   generator leaves out of the package's manifest (`scripts/finish.ts`).
 
 `scripts/languages.ts` holds each language's generator options, version and
 build, and pins every image by digest. Bump a language's version there to
@@ -102,6 +102,7 @@ read-only copy of [`php`](php): `sdk-php-mirror.yml` updates it whenever
 
 ## License
 
-The SDKs are licensed under the [Apache License 2.0](LICENSE), unlike the rest
+The SDKs are licensed under the [Apache License 2.0](LICENSE), with the
+[NOTICE](NOTICE) every package carries, unlike the rest
 of this repository, which is under the Functional Source License: use them in
 any project, commercial or not.

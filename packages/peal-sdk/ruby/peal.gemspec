@@ -34,7 +34,7 @@ Gem::Specification.new do |s|
 
   s.add_development_dependency 'rspec', '~> 3.6', '>= 3.6.0'
 
-  s.files         = Dir["lib/**/*.rb", "README.md", "LICENSE"]
+  s.files         = Dir["lib/**/*.rb", "README.md", "LICENSE", "NOTICE"]
   s.executables   = []
   s.require_paths = ["lib"]
 end

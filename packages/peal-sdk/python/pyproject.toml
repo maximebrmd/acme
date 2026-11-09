@@ -6,7 +6,7 @@ authors = [
   {name = "Peal",email = "hello@peal.social"},
 ]
 license = "Apache-2.0"
-license-files = ["LICENSE"]
+license-files = ["LICENSE", "NOTICE"]
 readme = "README.md"
 keywords = ["peal", "social media", "scheduling", "api", "sdk"]
 requires-python = ">=3.11"

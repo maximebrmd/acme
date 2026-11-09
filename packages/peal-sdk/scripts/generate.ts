@@ -132,6 +132,11 @@ await runInContainer({
   workdir: "/sdk",
 });
 
-await copyFile(path.join(sdkRoot, "LICENSE"), path.join(output, "LICENSE"));
+// Apache-2.0 asks every copy to carry the license and the notice.
+await Promise.all(
+  ["LICENSE", "NOTICE"].map(async (file) => {
+    await copyFile(path.join(sdkRoot, file), path.join(output, file));
+  })
+);
 
 await finish(language, output);

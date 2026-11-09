@@ -50,7 +50,7 @@ const python = async (_language: Language, folder: string): Promise<void> => {
     ['description = "Peal API"\n', `description = "${description}"\n`],
     [
       'license = { text = "Apache-2.0" }\n',
-      'license = "Apache-2.0"\nlicense-files = ["LICENSE"]\n',
+      'license = "Apache-2.0"\nlicense-files = ["LICENSE", "NOTICE"]\n',
     ],
     [
       'keywords = ["OpenAPI", "OpenAPI-Generator", "Peal API"]\n',
@@ -78,14 +78,15 @@ const dotnet = async (_language: Language, folder: string): Promise<void> => {
     ],
     // The generator's notes say "Minor update" whatever changed.
     ["    <PackageReleaseNotes>Minor update</PackageReleaseNotes>\n", ""],
-    // NuGet shows the README in the package: ours, beside src/.
+    // NuGet shows the README in the package: ours, beside src/. The license
+    // and the notice go in beside it.
     [
       "<PackageTags>",
       "<PackageReadmeFile>README.md</PackageReadmeFile>\n    <PackageTags>",
     ],
     [
       "</Project>",
-      '  <ItemGroup>\n    <None Include="..\\..\\README.md" Pack="true" PackagePath="\\" />\n  </ItemGroup>\n</Project>',
+      '  <ItemGroup>\n    <None Include="..\\..\\README.md" Pack="true" PackagePath="\\" />\n    <None Include="..\\..\\LICENSE" Pack="true" PackagePath="\\" />\n    <None Include="..\\..\\NOTICE" Pack="true" PackagePath="\\" />\n  </ItemGroup>\n</Project>',
     ],
   ]);
 
@@ -113,7 +114,7 @@ const ruby = async (_language: Language, folder: string): Promise<void> => {
   await replaceIn(path.join(folder, "peal.gemspec"), [
     [
       '  s.files         = `find *`.split("\\n").uniq.sort.select { |f| !f.empty? }\n',
-      '  s.files         = Dir["lib/**/*.rb", "README.md", "LICENSE"]\n',
+      '  s.files         = Dir["lib/**/*.rb", "README.md", "LICENSE", "NOTICE"]\n',
     ],
     ['  s.test_files    = `find spec/*`.split("\\n")\n', ""],
   ]);
@@ -123,10 +124,15 @@ const ruby = async (_language: Language, folder: string): Promise<void> => {
  * Maven Central takes signed artifacts through its portal: the profile that
  * signs them, now `release`, signs with BouncyCastle (no gpg binary; the key
  * and its passphrase come from MAVEN_GPG_KEY and MAVEN_GPG_PASSPHRASE) and
- * uploads them with Sonatype's plugin, to the server `central`.
+ * uploads them with Sonatype's plugin, to the server `central`. The jar
+ * carries the license and the notice in META-INF, as Apache's own jars do.
  */
 const java = async (_language: Language, folder: string): Promise<void> => {
   await replaceIn(path.join(folder, "pom.xml"), [
+    [
+      "    <build>\n        <plugins>\n",
+      "    <build>\n        <resources>\n            <resource>\n                <directory>src/main/resources</directory>\n            </resource>\n            <resource>\n                <directory>.</directory>\n                <targetPath>META-INF</targetPath>\n                <includes>\n                    <include>LICENSE</include>\n                    <include>NOTICE</include>\n                </includes>\n            </resource>\n        </resources>\n        <plugins>\n",
+    ],
     [
       "<id>sign-artifacts</id>\n            <build>",
       "<id>release</id>\n            <build>",
