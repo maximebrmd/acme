@@ -4,8 +4,12 @@ import type { Effect, Redacted } from "effect";
 import type { UserId } from "#shared/domain/ids.ts";
 
 import type { AuthUnavailable } from "./auth-unavailable.ts";
+import type { TooManyPasswordAttempts } from "./too-many-password-attempts.ts";
 
-/** Checks a password against the account's, for actions that ask again. */
+/**
+ * Checks a password against the account's, for actions that ask again, as
+ * often as signing in allows: three tries within 10 seconds per account.
+ */
 export class PasswordCheck extends Context.Service<
   PasswordCheck,
   {
@@ -13,6 +17,6 @@ export class PasswordCheck extends Context.Service<
     readonly matches: (
       userId: UserId,
       password: Redacted.Redacted
-    ) => Effect.Effect<boolean, AuthUnavailable>;
+    ) => Effect.Effect<boolean, AuthUnavailable | TooManyPasswordAttempts>;
   }
 >()("acme-server/workspace/application/PasswordCheck") {}

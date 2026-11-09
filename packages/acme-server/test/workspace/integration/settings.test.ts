@@ -396,6 +396,40 @@ layer(Layer.mergeAll(IntegrationLive, StoreLive), {
   );
 
   it.effect(
+    "check an account's password no more often than signing in does",
+    () =>
+      Effect.gen(function* limitsTries() {
+        const app = yield* TestApp;
+        const sql = yield* SqlClient.SqlClient;
+        const uma = yield* signedUp("uma");
+
+        const close = (typed: string) =>
+          app.request("/api/me", {
+            body: { password: typed },
+            headers: { cookie: uma.cookies },
+            method: "DELETE",
+          });
+
+        for (const guess of ["first guess", "second guess", "third guess"]) {
+          assert.strictEqual((yield* close(guess)).status, 400, guess);
+        }
+
+        // Even the right one waits now: guessing goes no faster than
+        // through the sign-in form.
+        const waited = yield* close(password);
+
+        assert.strictEqual(waited.status, 429);
+        assert.deepInclude(waited.body, { _tag: "TooManyPasswordAttempts" });
+        assert.strictEqual(
+          yield* countOf(
+            yield* sql`SELECT count(*)::int AS count FROM auth."user" WHERE id = ${uma.id}`
+          ),
+          1
+        );
+      })
+  );
+
+  it.effect(
     "close one at a time the accounts of two owners who leave together",
     () =>
       Effect.gen(function* closesInTurn() {

@@ -31,6 +31,7 @@ describe(apiErrorKey, () => {
     ["WorkspaceBusy", "busy"],
     ["LastOwner", "lastOwner"],
     ["IncorrectPassword", "incorrectPassword"],
+    ["TooManyPasswordAttempts", "tooManyRequests"],
     ["Forbidden", "forbidden"],
     ["Unauthenticated", "unknown"],
   ])("explains %s as %s", (tag, key) => {

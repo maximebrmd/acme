@@ -4,6 +4,7 @@ import {
   IncorrectPassword,
   LastOwner,
   NoticeEventSchema,
+  TooManyPasswordAttempts,
   Unauthenticated,
   WorkspaceBusy,
 } from "acme-contract";
@@ -96,6 +97,8 @@ export const AccountHandlers = HttpApiBuilder.group(
                   Effect.fail(new LastOwner({ workspaces })),
                 NotSignedIn: () => Effect.fail(new Unauthenticated()),
                 SessionRequired: forbidden,
+                TooManyPasswordAttempts: () =>
+                  Effect.fail(new TooManyPasswordAttempts()),
                 WorkspaceBusy: ({ workspaceId }) =>
                   Effect.fail(new WorkspaceBusy({ workspaceId })),
               })

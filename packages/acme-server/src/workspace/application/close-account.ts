@@ -16,6 +16,7 @@ import { ContextRecords } from "./context-records.ts";
 import { IncorrectPassword } from "./incorrect-password.ts";
 import { NotSignedIn } from "./not-signed-in.ts";
 import { PasswordCheck } from "./password-check.ts";
+import type { TooManyPasswordAttempts } from "./too-many-password-attempts.ts";
 import type { WorkspaceBusy } from "./workspace-busy.ts";
 import { eraseWorkspace, removeWorkspaceFiles } from "./workspace-erasure.ts";
 
@@ -42,6 +43,7 @@ export class CloseAccount extends Context.Service<
       | LastOwner
       | NotSignedIn
       | SessionRequired
+      | TooManyPasswordAttempts
       | WorkspaceBusy
     >;
   }

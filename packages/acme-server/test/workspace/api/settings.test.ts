@@ -34,6 +34,7 @@ import { ConnectedApps } from "#workspace/application/connected-apps.ts";
 import { ContextRecords } from "#workspace/application/context-records.ts";
 import { DeleteWorkspace } from "#workspace/application/delete-workspace.ts";
 import { PasswordCheck } from "#workspace/application/password-check.ts";
+import { TooManyPasswordAttempts } from "#workspace/application/too-many-password-attempts.ts";
 import { WorkspaceBusy } from "#workspace/application/workspace-busy.ts";
 import type { MembershipStanding } from "#workspace/domain/account-closure.ts";
 import { permissionsFor } from "#workspace/domain/roles.ts";
@@ -177,8 +178,11 @@ const PortsLive = Layer.mergeAll(
   Layer.succeed(
     PasswordCheck,
     PasswordCheck.of({
+      // A password tried too often is not checked.
       matches: (_, password) =>
-        Effect.succeed(Redacted.value(password) === "correct horse"),
+        Redacted.value(password) === "too often"
+          ? Effect.fail(new TooManyPasswordAttempts())
+          : Effect.succeed(Redacted.value(password) === "correct horse"),
     })
   ),
   Layer.effect(
@@ -480,6 +484,13 @@ layer(Fakes.layer)("the settings endpoints", (it) => {
             client.account.delete({ payload: { password: "wrong" } })
           ),
           "IncorrectPassword"
+        );
+
+        assert.strictEqual(
+          yield* failureOf(
+            client.account.delete({ payload: { password: "too often" } })
+          ),
+          "TooManyPasswordAttempts"
         );
 
         const lastOwner = yield* client.account

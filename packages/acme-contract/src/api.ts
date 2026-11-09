@@ -34,6 +34,8 @@ export { IncorrectPassword } from "./incorrect-password.ts";
 
 export { LastOwner } from "./last-owner.ts";
 
+export { TooManyPasswordAttempts } from "./too-many-password-attempts.ts";
+
 export { DeleteWorkspaceSchema, WorkspacesApi } from "./workspaces.ts";
 
 export type { DeleteWorkspace } from "./workspaces.ts";

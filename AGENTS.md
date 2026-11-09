@@ -290,6 +290,8 @@ and no socket, for tests.
   Auth's own list leaves them out: their browser and address are staff's.
   Closing an account is refused while its user alone owns a workspace others
   use (`planClosure`), and its confirmation is emailed in their language.
+  `PasswordCheck` checks a password three times within 10 seconds per
+  account at most, as Better Auth's own routes do.
 - Better Auth is also the OAuth authorization server for the CLI (device
   grant, the `acme-cli` public client registered at startup) and MCP clients
   (authorization code with PKCE, and dynamic registration when

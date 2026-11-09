@@ -14,6 +14,7 @@ import { IncorrectPassword } from "./incorrect-password.ts";
 import { LastOwner } from "./last-owner.ts";
 import { NoticeEventSchema } from "./notices.ts";
 import { NotificationPreferencesSchema } from "./notification-preferences.ts";
+import { TooManyPasswordAttempts } from "./too-many-password-attempts.ts";
 import { WorkspaceBusy } from "./workspace-busy.ts";
 
 const instant = Schema.DateTimeUtc;
@@ -190,13 +191,19 @@ export class AccountApi extends HttpApiGroup.make("account")
       })
     ),
     HttpApiEndpoint.delete("delete", "/", {
-      error: [Forbidden, IncorrectPassword, LastOwner, WorkspaceBusy],
+      error: [
+        Forbidden,
+        IncorrectPassword,
+        LastOwner,
+        TooManyPasswordAttempts,
+        WorkspaceBusy,
+      ],
       payload: DeleteAccountSchema,
       success: HttpApiSchema.NoContent,
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Deletes the account for good, once `password` confirms it is the user asking: the workspaces where they are the only member, with everything in them, their memberships of the others, their sessions, notices, preferences, invitations and connected applications. Refused (409) while they are the only owner of a workspace that has other members. A confirmation is emailed to the address the account had.",
+          "Deletes the account for good, once `password` confirms it is the user asking: the workspaces where they are the only member, with everything in them, their memberships of the others, their sessions, notices, preferences, invitations and connected applications. Refused (409) while they are the only owner of a workspace that has other members, and (429) for a few seconds after three passwords tried within 10 seconds, as signing in is. A confirmation is emailed to the address the account had.",
         summary: "Delete my account",
       })
     )

@@ -59,6 +59,7 @@ const apiReasons = new Map<string, SettingsErrorKey>([
   ["Forbidden", "forbidden"],
   ["IncorrectPassword", "incorrectPassword"],
   ["LastOwner", "lastOwner"],
+  ["TooManyPasswordAttempts", "tooManyRequests"],
   ["WorkspaceBusy", "busy"],
   ["WorkspaceNameMismatch", "nameMismatch"],
 ]);
