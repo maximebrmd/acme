@@ -1381,9 +1381,12 @@ self-hoster needs only Postgres and an S3-compatible store:
   tunnel or network with them: it generates the heartbeat token, which
   production holds as a credential (`PEAL_HEARTBEAT_TOKEN`). Keep
   `uptime_environments` equal to each environment's host names. Gatus
-  publishes its dashboard on 127.0.0.1 only; the status page is that
-  dashboard through Caddy, by GET and HEAD alone (`status.caddy`), and the
-  heartbeats never go through the status page's name. Both names have DNS
+  publishes its dashboard on 127.0.0.1 only. The status page is a Gatus of
+  its own (`status`, `status-config.yaml.j2`) that checks the
+  customer-facing endpoints of the environments marked `public`
+  (production; never one behind Access), with no alert or secret, and
+  hides URLs, conditions and errors; Caddy serves it by GET and HEAD alone
+  (`status.caddy`), and the heartbeats never go through its name. Both names have DNS
   records Cloudflare does not proxy (the infra README's "The status page").
 - Secrets are generated on the server and stay there. Do not copy them, print
   them, or give the server's credentials to other systems, GitHub included:
