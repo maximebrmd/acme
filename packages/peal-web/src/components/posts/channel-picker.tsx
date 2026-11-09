@@ -1,11 +1,11 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import type { Channel } from "peal-contract";
 import { Avatar, AvatarFallback, AvatarImage } from "peal-ui/components/avatar";
 import { Badge } from "peal-ui/components/badge";
 import { Checkbox } from "peal-ui/components/checkbox";
 import { Label } from "peal-ui/components/label";
-import { useTranslations } from "next-intl";
 
 interface ChannelPickerProps {
   readonly channels: readonly Channel[];

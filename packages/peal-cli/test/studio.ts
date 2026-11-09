@@ -1,3 +1,6 @@
+import { DateTime, Effect, Layer, Option, Ref } from "effect";
+import { HttpRouter } from "effect/http";
+import { HttpApiBuilder, HttpApiSchema } from "effect/http-api";
 import {
   AlreadyMember,
   Api,
@@ -26,9 +29,6 @@ import type {
   PostTarget,
   TikTokAccount,
 } from "peal-contract";
-import { DateTime, Effect, Layer, Option, Ref } from "effect";
-import { HttpRouter } from "effect/http";
-import { HttpApiBuilder, HttpApiSchema } from "effect/http-api";
 
 // A synthetic Peal instance's data, in memory, for the commands that act in
 // a workspace: two workspaces, their channels, posts, members and

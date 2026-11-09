@@ -7,9 +7,9 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 
 import { assert, layer } from "@effect/vitest";
-import { BillingSchema } from "peal-contract";
 import { Config, DateTime, Effect, Layer, Schema } from "effect";
 import { SqlClient } from "effect/sql";
+import { BillingSchema } from "peal-contract";
 import { Stripe } from "stripe";
 
 import { SqlLive } from "#shared/infrastructure/database.ts";

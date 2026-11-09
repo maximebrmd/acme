@@ -1,7 +1,7 @@
 import { describe, expect, it } from "@effect/vitest";
-import { StaffActionRefused, UserNotFound } from "peal-contract";
 import { Exit } from "effect";
 import { HttpApiError } from "effect/http-api";
+import { StaffActionRefused, UserNotFound } from "peal-contract";
 
 import { staffErrorKey } from "#staff/errors.ts";
 

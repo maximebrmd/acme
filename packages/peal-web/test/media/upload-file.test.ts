@@ -1,12 +1,12 @@
 import { assert, describe, it } from "@effect/vitest";
+import { DateTime, Effect, Fiber, Latch, Ref } from "effect";
+import { TestClock } from "effect/testing";
 import type {
   Media,
   NewUpload,
   SignedRequest,
   UploadTarget,
 } from "peal-contract";
-import { DateTime, Effect, Fiber, Latch, Ref } from "effect";
-import { TestClock } from "effect/testing";
 
 import { TransferFailed } from "#media/transfer-failed.ts";
 import { Transfer } from "#media/transfer.ts";

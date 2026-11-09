@@ -1,4 +1,7 @@
 import { assert, describe, it } from "@effect/vitest";
+import { Effect, Layer } from "effect";
+import { HttpServer } from "effect/http";
+import { HttpApiTest } from "effect/http-api";
 import {
   Api,
   Forbidden,
@@ -12,9 +15,6 @@ import {
   UnknownMedia,
 } from "peal-contract";
 import type { Member, PostContent, SchedulePost } from "peal-contract";
-import { Effect, Layer } from "effect";
-import { HttpServer } from "effect/http";
-import { HttpApiTest } from "effect/http-api";
 
 import { PostsHandlers } from "#publishing/api/posts.ts";
 import { newId } from "#shared/application/ids.ts";

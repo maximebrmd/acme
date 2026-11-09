@@ -1,5 +1,5 @@
-import type { Media, NewUpload, PreparedUpload } from "peal-contract";
 import { Effect, Option } from "effect";
+import type { Media, NewUpload, PreparedUpload } from "peal-contract";
 
 import { withRetry } from "#media/retry.ts";
 import type { TransferFailed } from "#media/transfer-failed.ts";

@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto";
 
 import { assert, layer } from "@effect/vitest";
-import { MeSchema } from "peal-contract";
 import { Context, Effect, Layer, Schema } from "effect";
+import { MeSchema } from "peal-contract";
 
 import {
   apiKeyOf,

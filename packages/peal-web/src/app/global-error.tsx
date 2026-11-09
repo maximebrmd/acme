@@ -1,8 +1,8 @@
 "use client";
 
-import { GeistMono, GeistSans } from "peal-ui/lib/fonts";
 import { NextIntlClientProvider } from "next-intl";
 import { usePathname } from "next/navigation";
+import { GeistMono, GeistSans } from "peal-ui/lib/fonts";
 import { useEffect, useState } from "react";
 
 import { ErrorView } from "#components/error-view.tsx";

@@ -1,3 +1,5 @@
+import { Effect, Match, Option, Schema } from "effect";
+import { HttpApiBuilder, HttpApiError } from "effect/http-api";
 import {
   Api,
   CurrentPrincipal,
@@ -11,8 +13,6 @@ import type {
   NotificationPreferences as PreferencesView,
   Principal,
 } from "peal-contract";
-import { Effect, Match, Option, Schema } from "effect";
-import { HttpApiBuilder, HttpApiError } from "effect/http-api";
 
 import { NoticeInbox } from "#notifications/application/notice-inbox.ts";
 import { NotificationSettings } from "#notifications/application/notification-settings.ts";

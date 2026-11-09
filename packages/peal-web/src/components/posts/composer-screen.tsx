@@ -1,11 +1,11 @@
 "use client";
 
 import { useAtomRefresh, useAtomValue } from "@effect/atom-react";
+import { AsyncResult } from "effect/reactivity";
+import { useTranslations } from "next-intl";
 import type { Channel, Permission } from "peal-contract";
 import { Button } from "peal-ui/components/button";
 import { Skeleton } from "peal-ui/components/skeleton";
-import { AsyncResult } from "effect/reactivity";
-import { useTranslations } from "next-intl";
 
 import { Composer } from "#components/posts/composer.tsx";
 import { PostDetail } from "#components/posts/post-detail.tsx";

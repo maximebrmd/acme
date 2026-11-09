@@ -1,9 +1,9 @@
-import { GeistMono, GeistSans } from "peal-ui/lib/fonts";
 import { Effect } from "effect";
 import type { Metadata } from "next";
 import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
+import { GeistMono, GeistSans } from "peal-ui/lib/fonts";
 
 import { AppShell } from "#components/app-shell.tsx";
 import { Providers } from "#components/providers.tsx";

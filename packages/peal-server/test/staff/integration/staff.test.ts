@@ -4,6 +4,8 @@
 import { randomUUID } from "node:crypto";
 
 import { assert, layer } from "@effect/vitest";
+import { Config, Context, Effect, Layer, Schedule, Schema } from "effect";
+import { SqlClient } from "effect/sql";
 import {
   MeSchema,
   StaffAuditPageSchema,
@@ -13,8 +15,6 @@ import {
   StaffWorkspacePageSchema,
   StaffWorkspaceSchema,
 } from "peal-contract";
-import { Config, Context, Effect, Layer, Schedule, Schema } from "effect";
-import { SqlClient } from "effect/sql";
 
 import { SqlLive } from "#shared/infrastructure/database.ts";
 import {

@@ -1,10 +1,10 @@
+import { DateTime, Match, Option, Schema } from "effect";
 import type {
   AttemptResult,
   Post as PostView,
   PublicationAttempt as AttemptView,
   PostTarget as TargetView,
 } from "peal-contract";
-import { DateTime, Match, Option, Schema } from "effect";
 
 import type { PostWithTargets } from "#publishing/application/post-repository.ts";
 import type { RecordedAttempt } from "#publishing/application/publication-journal.ts";

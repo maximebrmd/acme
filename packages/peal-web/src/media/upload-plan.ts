@@ -1,5 +1,5 @@
-import type { SignedRequest, UploadTarget } from "peal-contract";
 import { Option } from "effect";
+import type { SignedRequest, UploadTarget } from "peal-contract";
 
 /** One request of an upload, and the bytes of the file it sends. */
 export interface FileSlice {

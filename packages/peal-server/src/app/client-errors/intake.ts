@@ -1,10 +1,4 @@
 import {
-  ClientErrorIntake,
-  ClientErrorTooLarge,
-  maxClientErrorBytes,
-  TooManyClientErrors,
-} from "peal-contract";
-import {
   ByteSize,
   Config,
   Effect,
@@ -15,6 +9,12 @@ import {
 } from "effect";
 import { HttpIncomingMessage, HttpServerRequest } from "effect/http";
 import { RateLimiter } from "effect/persistence";
+import {
+  ClientErrorIntake,
+  ClientErrorTooLarge,
+  maxClientErrorBytes,
+  TooManyClientErrors,
+} from "peal-contract";
 
 import { requiredInProduction } from "#shared/infrastructure/environment.ts";
 

@@ -1,10 +1,10 @@
 "use client";
 
 import { useAtomSet } from "@effect/atom-react";
-import type { ChoosableAccount, Platform } from "peal-contract";
-import { Button } from "peal-ui/components/button";
 import { Option } from "effect";
 import { useTranslations } from "next-intl";
+import type { ChoosableAccount, Platform } from "peal-contract";
+import { Button } from "peal-ui/components/button";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 

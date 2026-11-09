@@ -1,5 +1,7 @@
 "use client";
 
+import { DateTime, Match } from "effect";
+import { useFormatter, useLocale, useTranslations } from "next-intl";
 import type { AssistantAction, Suggestion } from "peal-contract";
 import { Alert, AlertTitle } from "peal-ui/components/alert";
 import { Badge } from "peal-ui/components/badge";
@@ -11,8 +13,6 @@ import {
   DialogTitle,
 } from "peal-ui/components/dialog";
 import { Skeleton } from "peal-ui/components/skeleton";
-import { DateTime, Match } from "effect";
-import { useFormatter, useLocale, useTranslations } from "next-intl";
 
 import type { AssistantFailure } from "#assistant/suggestion.ts";
 import { fitOn } from "#posts/character-count.ts";

@@ -1,6 +1,6 @@
+import { getTranslations } from "next-intl/server";
 import type { ChannelStatus } from "peal-contract";
 import { Badge } from "peal-ui/components/badge";
-import { getTranslations } from "next-intl/server";
 
 // Whether a channel posts, as a badge.
 export const ChannelHealth = async ({

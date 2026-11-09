@@ -1,7 +1,7 @@
+import { Option } from "effect";
 import type { Media, MediaKind, Platform } from "peal-contract";
 import { measureText, platformRules } from "peal-contract/post-text";
 import type { FormatLimits, MediaRules } from "peal-contract/post-text";
-import { Option } from "effect";
 
 // What each platform would refuse in the post's images and videos, checked
 // as the server checks them (src/publishing/domain/content-rules.ts in

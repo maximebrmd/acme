@@ -1,7 +1,7 @@
-import { Api } from "peal-contract";
 import { Effect, Layer } from "effect";
 import { FetchHttpClient, HttpClient, HttpClientRequest } from "effect/http";
 import { Atom, AtomHttpApi } from "effect/reactivity";
+import { Api } from "peal-contract";
 
 // Where API requests go. Every endpoint's path starts with /api, so browsers
 // keep this default and stay same-origin: Next forwards /api/* to the

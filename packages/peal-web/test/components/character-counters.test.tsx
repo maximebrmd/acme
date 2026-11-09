@@ -1,7 +1,7 @@
 import { describe, expect, it } from "@effect/vitest";
-import type { Channel } from "peal-contract";
 import { NextIntlClientProvider } from "next-intl";
 import type { Locale } from "next-intl";
+import type { Channel } from "peal-contract";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import { CharacterCounters } from "#components/posts/character-counters.tsx";

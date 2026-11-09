@@ -1,6 +1,6 @@
-import type { Membership } from "peal-contract";
 import { Config, Effect, Option } from "effect";
 import { Flag } from "effect/cli";
+import type { Membership } from "peal-contract";
 
 import { PealApi } from "#api.ts";
 import { display } from "#display.ts";

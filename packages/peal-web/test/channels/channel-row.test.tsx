@@ -1,8 +1,8 @@
 import { RegistryProvider } from "@effect/atom-react";
 import { describe, expect, it } from "@effect/vitest";
-import type { Channel } from "peal-contract";
 import { DateTime } from "effect";
 import { NextIntlClientProvider } from "next-intl";
+import type { Channel } from "peal-contract";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import { ChannelRow } from "#components/channels/channel-row.tsx";

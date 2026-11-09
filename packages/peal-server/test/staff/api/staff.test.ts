@@ -1,8 +1,8 @@
 import { assert, layer } from "@effect/vitest";
-import { Api } from "peal-contract";
 import { Effect, Layer } from "effect";
 import { Cookies, HttpServer } from "effect/http";
 import { HttpApiTest } from "effect/http-api";
+import { Api } from "peal-contract";
 
 import { StaffApiLive } from "#staff/container.ts";
 import {

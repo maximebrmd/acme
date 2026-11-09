@@ -1,5 +1,7 @@
 "use client";
 
+import { CircleUserIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "peal-ui/components/button";
 import {
   DropdownMenu,
@@ -10,8 +12,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "peal-ui/components/dropdown-menu";
-import { CircleUserIcon } from "lucide-react";
-import { useTranslations } from "next-intl";
 import { useTransition } from "react";
 import { toast } from "sonner";
 

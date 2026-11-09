@@ -141,8 +141,8 @@ describe("the server URL", () => {
       assert.strictEqual(
         yield* serverUrl.pipe(
           withEnv({
-            PEAL_API_URL: "http://peal-server:8080",
             NODE_ENV: "production",
+            PEAL_API_URL: "http://peal-server:8080",
           })
         ),
         "http://peal-server:8080"

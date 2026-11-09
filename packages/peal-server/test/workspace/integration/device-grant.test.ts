@@ -1,7 +1,7 @@
 import { assert, layer } from "@effect/vitest";
-import { deviceCodeGrantType, MeSchema, OAuthApi } from "peal-contract";
 import { Context, Effect, Layer } from "effect";
 import { HttpApiClient } from "effect/http-api";
+import { deviceCodeGrantType, MeSchema, OAuthApi } from "peal-contract";
 
 import {
   bodyOf,

@@ -1,12 +1,12 @@
 import { RegistryProvider } from "@effect/atom-react";
 import { describe, expect, it } from "@effect/vitest";
-import { PostContentInvalid } from "peal-contract";
-import type { Channel, Media, Platform } from "peal-contract";
-import { maxMediaPerPost } from "peal-contract/post-text";
 import { DateTime, Option } from "effect";
 import { AsyncResult } from "effect/reactivity";
 import { NextIntlClientProvider } from "next-intl";
 import type { Locale } from "next-intl";
+import { PostContentInvalid } from "peal-contract";
+import type { Channel, Media, Platform } from "peal-contract";
+import { maxMediaPerPost } from "peal-contract/post-text";
 import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 

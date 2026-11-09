@@ -1,8 +1,8 @@
 "use client";
 
 import { useAtomSet } from "@effect/atom-react";
-import type { Platform } from "peal-contract";
 import { Option } from "effect";
+import type { Platform } from "peal-contract";
 import { useState, useTransition } from "react";
 
 import { connectChannel, failureOf } from "#channels/channels-api.ts";

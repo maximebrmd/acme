@@ -1,6 +1,9 @@
 "use client";
 
 import { useAtomRefresh, useAtomValue } from "@effect/atom-react";
+import { constVoid } from "effect/Function";
+import { AsyncResult } from "effect/reactivity";
+import { useTranslations } from "next-intl";
 import type { Channel } from "peal-contract";
 import { Alert, AlertDescription } from "peal-ui/components/alert";
 import { Button } from "peal-ui/components/button";
@@ -11,9 +14,6 @@ import {
   CardTitle,
 } from "peal-ui/components/card";
 import { Skeleton } from "peal-ui/components/skeleton";
-import { constVoid } from "effect/Function";
-import { AsyncResult } from "effect/reactivity";
-import { useTranslations } from "next-intl";
 import { useSyncExternalStore } from "react";
 
 import { channelsOf, connectablePlatformsOf } from "#channels/channels-api.ts";

@@ -1,12 +1,6 @@
 "use client";
 
 import { useAtomValue } from "@effect/atom-react";
-import type { Media, MediaAttachment, Platform } from "peal-contract";
-import { maxAltTextLength, maxMediaPerPost } from "peal-contract/post-text";
-import { Button } from "peal-ui/components/button";
-import { Label } from "peal-ui/components/label";
-import { Skeleton } from "peal-ui/components/skeleton";
-import { Textarea } from "peal-ui/components/textarea";
 import { Array as Arr, Option } from "effect";
 import { AsyncResult } from "effect/reactivity";
 import {
@@ -16,6 +10,12 @@ import {
   XIcon,
 } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
+import type { Media, MediaAttachment, Platform } from "peal-contract";
+import { maxAltTextLength, maxMediaPerPost } from "peal-contract/post-text";
+import { Button } from "peal-ui/components/button";
+import { Label } from "peal-ui/components/label";
+import { Skeleton } from "peal-ui/components/skeleton";
+import { Textarea } from "peal-ui/components/textarea";
 import { useId, useRef, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { flushSync } from "react-dom";

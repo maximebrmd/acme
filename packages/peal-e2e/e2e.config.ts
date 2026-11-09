@@ -41,6 +41,9 @@ export default {
         command: {
           args: ["scripts/serve.ts", "{port}"],
           env: {
+            BETTER_AUTH_SECRET: authSecret,
+            DATABASE_URL: databaseUrl,
+            MAIL_FROM: "Peal <noreply@peal.test>",
             PEAL_S3_ACCESS_KEY_ID: setting("PEAL_S3_ACCESS_KEY_ID", "peal"),
             PEAL_S3_BUCKET: setting("PEAL_S3_BUCKET", "peal-media"),
             PEAL_S3_ENDPOINT: setting(
@@ -53,9 +56,6 @@ export default {
               "peal-development-secret"
             ),
             PEAL_TOKEN_KEYS: tokenKeys,
-            BETTER_AUTH_SECRET: authSecret,
-            DATABASE_URL: databaseUrl,
-            MAIL_FROM: "Peal <noreply@peal.test>",
             PUBLIC_URL: "http://127.0.0.1:{port}",
             SMTP_URL: setting("SMTP_URL", "smtp://127.0.0.1:11025"),
           },

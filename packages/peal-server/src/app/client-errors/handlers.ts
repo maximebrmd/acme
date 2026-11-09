@@ -1,7 +1,7 @@
-import { Api } from "peal-contract";
-import type { ClientErrorReport } from "peal-contract";
 import { Effect, Metric } from "effect";
 import { HttpApiBuilder } from "effect/http-api";
+import { Api } from "peal-contract";
+import type { ClientErrorReport } from "peal-contract";
 
 import { redacted } from "./redaction.ts";
 
@@ -22,10 +22,10 @@ const annotateIf =
 const logOf = (report: ClientErrorReport) =>
   Effect.logError("The web app reported an error").pipe(
     Effect.annotateLogs({
-      "peal.client_error.kind": report.kind,
-      "peal.web.release": report.release,
       "event.name": "peal.client_error",
       "exception.message": report.message,
+      "peal.client_error.kind": report.kind,
+      "peal.web.release": report.release,
       "url.path": report.path,
     }),
     annotateIf("peal.client_error.digest", report.digest),

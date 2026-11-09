@@ -1,4 +1,7 @@
 import { assert, describe, it } from "@effect/vitest";
+import { Duration, Effect, Layer, Option } from "effect";
+import { HttpServer } from "effect/http";
+import { HttpApiTest } from "effect/http-api";
 import {
   Api,
   ChannelCannotPost,
@@ -7,9 +10,6 @@ import {
   PlatformUnreachable,
 } from "peal-contract";
 import type { Member } from "peal-contract";
-import { Duration, Effect, Layer, Option } from "effect";
-import { HttpServer } from "effect/http";
-import { HttpApiTest } from "effect/http-api";
 
 import { TikTokHandlers } from "#publishing/api/tiktok.ts";
 import { TikTokCreatorInfo } from "#publishing/application/tiktok-creator-info.ts";

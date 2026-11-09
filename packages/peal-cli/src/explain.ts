@@ -1,3 +1,7 @@
+import { Match } from "effect";
+import type { Schema } from "effect";
+import type { HttpClientError } from "effect/http";
+import type { HttpApiError } from "effect/http-api";
 import type {
   AlreadyMember,
   ChannelCannotPost,
@@ -19,10 +23,6 @@ import type {
   UnknownMedia,
   WorkspaceNotFound,
 } from "peal-contract";
-import { Match } from "effect";
-import type { Schema } from "effect";
-import type { HttpClientError } from "effect/http";
-import type { HttpApiError } from "effect/http-api";
 
 import { requestFailed } from "#api-request-failed.ts";
 import type { ApiRequestFailed } from "#api-request-failed.ts";

@@ -1,6 +1,6 @@
-import { Api, DatabaseUnavailable } from "peal-contract";
 import { Effect } from "effect";
 import { HttpApiBuilder } from "effect/http-api";
+import { Api, DatabaseUnavailable } from "peal-contract";
 
 import { makeDatabasePing } from "#shared/infrastructure/database-ping.ts";
 

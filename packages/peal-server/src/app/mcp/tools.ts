@@ -1,6 +1,6 @@
-import { ChannelSchema, CurrentMember, PermissionSchema } from "peal-contract";
 import { Schema } from "effect";
 import { Tool, Toolkit } from "effect/ai";
+import { ChannelSchema, CurrentMember, PermissionSchema } from "peal-contract";
 
 import { reading } from "#app/mcp/annotations.ts";
 import { PeopleTools } from "#app/mcp/people-tools.ts";

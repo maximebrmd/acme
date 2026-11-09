@@ -1,6 +1,6 @@
-import { Button } from "peal-ui/components/button";
 import { Schema } from "effect";
 import { getTranslations } from "next-intl/server";
+import { Button } from "peal-ui/components/button";
 
 import { AuthCard } from "#components/auth/auth-card.tsx";
 import { ResetPasswordForm } from "#components/auth/reset-password-form.tsx";

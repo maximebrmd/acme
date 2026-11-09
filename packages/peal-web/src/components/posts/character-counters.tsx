@@ -1,8 +1,8 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import type { Channel } from "peal-contract";
 import { Badge } from "peal-ui/components/badge";
-import { useTranslations } from "next-intl";
 
 import { MediaFitBadges } from "#components/posts/media-fit-badges.tsx";
 import { fits as takesPost } from "#posts/character-count.ts";

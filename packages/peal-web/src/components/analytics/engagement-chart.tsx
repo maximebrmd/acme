@@ -1,5 +1,6 @@
 "use client";
 
+import { useFormatter, useTranslations } from "next-intl";
 import type { EngagementDay } from "peal-contract";
 import {
   ChartContainer,
@@ -24,7 +25,6 @@ import {
   TabsList,
   TabsTrigger,
 } from "peal-ui/components/tabs";
-import { useFormatter, useTranslations } from "next-intl";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 
 import { dayDate } from "#analytics/report.ts";

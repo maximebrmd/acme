@@ -10,11 +10,11 @@ const settingsFrom = (values: Readonly<Record<string, string>>) =>
   S3StorageConfig.parse(ConfigProvider.fromUnknown(values));
 
 const required = {
+  NODE_ENV: "production",
   PEAL_S3_ACCESS_KEY_ID: "synthetic-key",
   PEAL_S3_BUCKET: "media",
   PEAL_S3_ENDPOINT: "https://storage.example.test",
   PEAL_S3_SECRET_ACCESS_KEY: "synthetic-secret",
-  NODE_ENV: "production",
 };
 
 describe("the S3 store's settings", () => {

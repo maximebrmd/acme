@@ -1,6 +1,6 @@
 import { describe, expect, it } from "@effect/vitest";
-import type { TikTokAccount } from "peal-contract";
 import { Option } from "effect";
+import type { TikTokAccount } from "peal-contract";
 
 import { initialValues } from "#posts/target-options.ts";
 import { creatorLimits, fittedToCreator } from "#posts/tiktok-account.ts";

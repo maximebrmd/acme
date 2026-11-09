@@ -11,8 +11,7 @@ const en = {
   footer: {
     language: "Language",
     legal: "Legal",
-    license:
-      "Fair source under the Functional Source License (FSL-1.1-ALv2).",
+    license: "Fair source under the Functional Source License (FSL-1.1-ALv2).",
   },
   home: {
     description:
@@ -82,8 +81,7 @@ const fr: Messages = {
   footer: {
     language: "Langue",
     legal: "Informations juridiques",
-    license:
-      "Fair source sous la Functional Source License (FSL-1.1-ALv2).",
+    license: "Fair source sous la Functional Source License (FSL-1.1-ALv2).",
   },
   home: {
     description:

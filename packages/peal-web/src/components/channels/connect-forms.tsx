@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import type { Platform } from "peal-contract";
 import { Alert, AlertDescription } from "peal-ui/components/alert";
 import { Button } from "peal-ui/components/button";
@@ -12,7 +13,6 @@ import {
 } from "peal-ui/components/card";
 import { Input } from "peal-ui/components/input";
 import { Label } from "peal-ui/components/label";
-import { useTranslations } from "next-intl";
 import { useState } from "react";
 import type { ChangeEvent, SubmitEvent } from "react";
 

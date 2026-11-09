@@ -1,5 +1,5 @@
-import { CurrentMember } from "peal-contract";
 import { Effect, Option, Schema } from "effect";
+import { CurrentMember } from "peal-contract";
 
 import {
   dateFrom,

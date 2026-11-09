@@ -1,6 +1,9 @@
 "use client";
 
 import { useAtomValue } from "@effect/atom-react";
+import { Cause, Match, Option, Schema } from "effect";
+import { AsyncResult } from "effect/reactivity";
+import { useTranslations } from "next-intl";
 import type {
   Channel,
   ContentViolation,
@@ -18,9 +21,6 @@ import {
   SelectValue,
 } from "peal-ui/components/select";
 import { Separator } from "peal-ui/components/separator";
-import { Cause, Match, Option, Schema } from "effect";
-import { AsyncResult } from "effect/reactivity";
-import { useTranslations } from "next-intl";
 import { useEffect } from "react";
 import type { ChangeEvent, ReactNode } from "react";
 

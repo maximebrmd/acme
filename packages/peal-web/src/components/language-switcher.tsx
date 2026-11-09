@@ -1,5 +1,8 @@
 "use client";
 
+import { Schema } from "effect";
+import { LanguagesIcon } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import { Button } from "peal-ui/components/button";
 import {
   DropdownMenu,
@@ -9,9 +12,6 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "peal-ui/components/dropdown-menu";
-import { Schema } from "effect";
-import { LanguagesIcon } from "lucide-react";
-import { useLocale, useTranslations } from "next-intl";
 import { useTransition } from "react";
 
 import { usePathname, useRouter } from "#i18n/navigation.ts";

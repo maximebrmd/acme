@@ -1,13 +1,13 @@
 import { assert, layer } from "@effect/vitest";
+import { Context, Effect, Layer, Option, Schema } from "effect";
+import { McpClient } from "effect/ai";
+import type { McpSchema } from "effect/ai";
 import {
   InvitationSchema,
   PostSchema,
   WorkspaceMemberSchema,
 } from "peal-contract";
 import type { TargetOptions } from "peal-contract";
-import { Context, Effect, Layer, Option, Schema } from "effect";
-import { McpClient } from "effect/ai";
-import type { McpSchema } from "effect/ai";
 
 import { ChannelRepository } from "#channels/application/channel-repository.ts";
 import { DrizzleChannelRepository } from "#channels/infrastructure/drizzle-channel-repository.ts";

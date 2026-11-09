@@ -1,5 +1,5 @@
-import type { Channel } from "peal-contract";
 import { Console, DateTime, Effect, Layer, Predicate } from "effect";
+import type { Channel } from "peal-contract";
 
 const { isString } = Predicate;
 

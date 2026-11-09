@@ -1,10 +1,10 @@
 import { assert, layer } from "@effect/vitest";
-import { Api } from "peal-contract";
 import type { Redacted } from "effect";
 import { Effect, Layer, Option } from "effect";
 import { Mac, SecureRandom } from "effect/crypto";
 import { HttpServer } from "effect/http";
 import { HttpApiTest } from "effect/http-api";
+import { Api } from "peal-contract";
 
 import { DataDeletionHandlers } from "#channels/api/data-deletion.ts";
 import { ChannelCredentials } from "#channels/application/channel-credentials.ts";

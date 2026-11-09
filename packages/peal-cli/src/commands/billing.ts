@@ -1,6 +1,6 @@
-import type { Billing, PeriodUsage } from "peal-contract";
 import { Console, Effect } from "effect";
 import { Command } from "effect/cli";
+import type { Billing, PeriodUsage } from "peal-contract";
 
 import { explain } from "#explain.ts";
 import { columns, instant } from "#print.ts";

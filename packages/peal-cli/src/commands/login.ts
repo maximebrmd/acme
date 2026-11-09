@@ -1,7 +1,7 @@
-import { cliClientId, deviceCodeGrantType } from "peal-contract";
-import type { DeviceAuthorization, OAuthError, Token } from "peal-contract";
 import { Console, DateTime, Duration, Effect, Result } from "effect";
 import { Command } from "effect/cli";
+import { cliClientId, deviceCodeGrantType } from "peal-contract";
+import type { DeviceAuthorization, OAuthError, Token } from "peal-contract";
 
 import { requestFailed } from "#api-request-failed.ts";
 import type { ApiRequestFailed } from "#api-request-failed.ts";

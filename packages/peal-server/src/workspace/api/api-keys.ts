@@ -1,7 +1,7 @@
-import { Api, ApiKeyNotFound, CurrentMember, Forbidden } from "peal-contract";
-import type { ApiKey as ApiKeyView } from "peal-contract";
 import { Effect, Option, Redacted } from "effect";
 import { HttpApiBuilder } from "effect/http-api";
+import { Api, ApiKeyNotFound, CurrentMember, Forbidden } from "peal-contract";
+import type { ApiKey as ApiKeyView } from "peal-contract";
 
 import { actorOf } from "#shared/api/actor.ts";
 import { ApiKeys } from "#workspace/application/api-keys.ts";

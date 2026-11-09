@@ -1,4 +1,3 @@
-import type { Member } from "peal-contract";
 import {
   ConfigProvider,
   Context,
@@ -9,6 +8,7 @@ import {
   Ref,
 } from "effect";
 import { Base64 } from "effect/encoding";
+import type { Member } from "peal-contract";
 
 import { ChannelCredentials } from "#channels/application/channel-credentials.ts";
 import { ChannelNotices } from "#channels/application/channel-notices.ts";

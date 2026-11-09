@@ -1,6 +1,6 @@
-import type { NoticeChannel, NoticeEvent } from "peal-contract";
 import { DateTime, Match } from "effect";
 import { useTranslations } from "next-intl";
+import type { NoticeChannel, NoticeEvent } from "peal-contract";
 
 /** What a notice says, and where the reader acts on it. */
 export interface NoticeText {

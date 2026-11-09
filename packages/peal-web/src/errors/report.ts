@@ -1,6 +1,6 @@
+import { Option, Schema } from "effect";
 import { clientErrorLimits } from "peal-contract";
 import type { ClientErrorKind, ClientErrorReport } from "peal-contract";
-import { Option, Schema } from "effect";
 
 // What could name someone in an error's text, which the server replaces
 // too: an email address, an id, an API key, a token (a JWT, such as an

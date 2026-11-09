@@ -60,8 +60,8 @@ const withoutApps = {
 const channelsWith = (keys: string) =>
   channelsWithSettings({
     ...withoutApps,
-    PEAL_TOKEN_KEYS: keys,
     BLUESKY_CLIENT_KEYS: "",
+    PEAL_TOKEN_KEYS: keys,
   });
 
 // A Bluesky client key, as `bun nx run peal-server:bluesky-key` prints it.

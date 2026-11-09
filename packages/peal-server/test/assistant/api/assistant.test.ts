@@ -1,4 +1,7 @@
 import { assert, layer } from "@effect/vitest";
+import { DateTime, Effect, Layer } from "effect";
+import { HttpServer } from "effect/http";
+import { HttpApiTest } from "effect/http-api";
 import {
   Api,
   AssistantFailed,
@@ -8,9 +11,6 @@ import {
   Forbidden,
 } from "peal-contract";
 import type { Member, SuggestionRequest } from "peal-contract";
-import { DateTime, Effect, Layer } from "effect";
-import { HttpServer } from "effect/http";
-import { HttpApiTest } from "effect/http-api";
 
 import { AssistantApiLive } from "#assistant/container.ts";
 import type { Permission } from "#shared/domain/access.ts";

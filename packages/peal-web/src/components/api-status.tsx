@@ -1,6 +1,7 @@
 "use client";
 
 import { useAtomRefresh, useAtomValue } from "@effect/atom-react";
+import { useTranslations } from "next-intl";
 import { Badge } from "peal-ui/components/badge";
 import { Button } from "peal-ui/components/button";
 import {
@@ -12,7 +13,6 @@ import {
   CardHeader,
   CardTitle,
 } from "peal-ui/components/card";
-import { useTranslations } from "next-intl";
 
 import { apiStatus, health } from "#api/health.ts";
 import type { ApiStatus } from "#api/health.ts";

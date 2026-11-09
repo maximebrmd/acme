@@ -1,4 +1,5 @@
 import { describe, expect, it } from "@effect/vitest";
+import { Exit, Option } from "effect";
 import {
   ChannelNotFound,
   ConnectFailed,
@@ -6,7 +7,6 @@ import {
   PlanLimitReached,
   PlatformUnreachable,
 } from "peal-contract";
-import { Exit, Option } from "effect";
 
 import { failureOf } from "#channels/channels-api.ts";
 

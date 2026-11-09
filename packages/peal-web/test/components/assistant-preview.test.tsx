@@ -1,4 +1,7 @@
 import { describe, expect, it } from "@effect/vitest";
+import { DateTime } from "effect";
+import { NextIntlClientProvider } from "next-intl";
+import type { Locale } from "next-intl";
 import {
   AssistantFailed,
   AssistantInputRejected,
@@ -7,9 +10,6 @@ import {
 } from "peal-contract";
 import type { AssistantAction } from "peal-contract";
 import { Dialog } from "peal-ui/components/dialog";
-import { DateTime } from "effect";
-import { NextIntlClientProvider } from "next-intl";
-import type { Locale } from "next-intl";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import { AssistantPreview } from "#components/posts/assistant-preview.tsx";

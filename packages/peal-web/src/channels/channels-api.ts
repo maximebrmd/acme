@@ -1,6 +1,6 @@
-import type { ConnectFailureReason } from "peal-contract";
 import { Cause, Exit, Option } from "effect";
 import { Atom } from "effect/reactivity";
+import type { ConnectFailureReason } from "peal-contract";
 
 import { PealApi } from "#api/client.ts";
 

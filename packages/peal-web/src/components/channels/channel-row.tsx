@@ -1,6 +1,8 @@
 "use client";
 
 import { useAtomSet } from "@effect/atom-react";
+import { DateTime, Option } from "effect";
+import { useTranslations } from "next-intl";
 import type { Channel, ChannelStatus } from "peal-contract";
 import {
   AlertDialog,
@@ -16,8 +18,6 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "peal-ui/components/avatar";
 import { Badge } from "peal-ui/components/badge";
 import { Button } from "peal-ui/components/button";
-import { DateTime, Option } from "effect";
-import { useTranslations } from "next-intl";
 import { useTransition } from "react";
 import { toast } from "sonner";
 

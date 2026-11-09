@@ -1,10 +1,10 @@
 "use client";
 
 import { useAtomValue } from "@effect/atom-react";
-import type { Channel, TopPost } from "peal-contract";
 import { DateTime, Option } from "effect";
 import { AsyncResult } from "effect/reactivity";
 import { useFormatter, useTranslations } from "next-intl";
+import type { Channel, TopPost } from "peal-contract";
 
 import { MetricList } from "#components/analytics/metric-list.tsx";
 import { Link } from "#i18n/navigation.ts";

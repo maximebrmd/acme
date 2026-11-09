@@ -1,3 +1,6 @@
+import { hasLocale } from "next-intl";
+import { getTranslations } from "next-intl/server";
+import { notFound } from "next/navigation";
 import {
   Card,
   CardContent,
@@ -5,9 +8,6 @@ import {
   CardHeader,
   CardTitle,
 } from "peal-ui/components/card";
-import { hasLocale } from "next-intl";
-import { getTranslations } from "next-intl/server";
-import { notFound } from "next/navigation";
 
 import { DeleteWorkspace } from "#components/settings/delete-workspace.tsx";
 import { RenameWorkspaceForm } from "#components/settings/rename-workspace-form.tsx";

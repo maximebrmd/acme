@@ -1,5 +1,6 @@
 "use client";
 
+import { useFormatter, useTranslations } from "next-intl";
 import type { AnalyticsSummary, Channel, MetricTotals } from "peal-contract";
 import {
   Table,
@@ -11,7 +12,6 @@ import {
   TableHeader,
   TableRow,
 } from "peal-ui/components/table";
-import { useFormatter, useTranslations } from "next-intl";
 
 type Column = keyof MetricTotals;
 

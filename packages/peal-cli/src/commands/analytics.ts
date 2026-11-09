@@ -1,7 +1,7 @@
-import { CalendarDaySchema, countedPlatforms } from "peal-contract";
-import type { AnalyticsSummary, MetricTotals } from "peal-contract";
 import { Config, Console, DateTime, Effect, Option } from "effect";
 import { Argument, Command, Flag } from "effect/cli";
+import { CalendarDaySchema, countedPlatforms } from "peal-contract";
+import type { AnalyticsSummary, MetricTotals } from "peal-contract";
 
 import { explain } from "#explain.ts";
 import { columns, count, instant } from "#print.ts";

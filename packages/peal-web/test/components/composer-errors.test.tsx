@@ -1,8 +1,8 @@
 import { describe, expect, it } from "@effect/vitest";
-import { PlanLimitReached, PostContentInvalid } from "peal-contract";
-import type { Channel, ContentViolation } from "peal-contract";
 import { NextIntlClientProvider } from "next-intl";
 import type { Locale } from "next-intl";
+import { PlanLimitReached, PostContentInvalid } from "peal-contract";
+import type { Channel, ContentViolation } from "peal-contract";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import {

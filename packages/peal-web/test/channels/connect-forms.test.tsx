@@ -1,7 +1,7 @@
 import { RegistryProvider } from "@effect/atom-react";
 import { describe, expect, it } from "@effect/vitest";
-import type { Platform } from "peal-contract";
 import { NextIntlClientProvider } from "next-intl";
+import type { Platform } from "peal-contract";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import { ConnectForms } from "#components/channels/connect-forms.tsx";

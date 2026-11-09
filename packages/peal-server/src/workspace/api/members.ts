@@ -1,3 +1,5 @@
+import { Effect } from "effect";
+import { HttpApiBuilder, HttpApiError } from "effect/http-api";
 import {
   AlreadyMember,
   Api,
@@ -11,8 +13,6 @@ import type {
   Invitation as InvitationView,
   WorkspaceMember as MemberView,
 } from "peal-contract";
-import { Effect } from "effect";
-import { HttpApiBuilder, HttpApiError } from "effect/http-api";
 
 import { actorOf } from "#shared/api/actor.ts";
 import { WorkspaceMembers } from "#workspace/application/workspace-members.ts";

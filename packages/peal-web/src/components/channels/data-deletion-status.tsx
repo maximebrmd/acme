@@ -1,7 +1,7 @@
 "use client";
 
-import { Alert, AlertDescription } from "peal-ui/components/alert";
 import { useTranslations } from "next-intl";
+import { Alert, AlertDescription } from "peal-ui/components/alert";
 
 import type { DeletionLookup } from "#channels/data-deletion-status.ts";
 import { InTimeZone } from "#components/notices/in-time-zone.tsx";

@@ -1,9 +1,9 @@
 "use client";
 
-import type { Channel, ContentViolation, Platform } from "peal-contract";
-import { Alert, AlertDescription, AlertTitle } from "peal-ui/components/alert";
 import { Match, Option } from "effect";
 import { useTranslations } from "next-intl";
+import type { Channel, ContentViolation, Platform } from "peal-contract";
+import { Alert, AlertDescription, AlertTitle } from "peal-ui/components/alert";
 
 import { useMediaViolationTexts } from "#components/posts/media-text.ts";
 import type { ComposerFailure } from "#posts/composer-failure.ts";

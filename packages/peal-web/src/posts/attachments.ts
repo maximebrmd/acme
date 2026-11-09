@@ -1,6 +1,6 @@
+import { Array as Arr } from "effect";
 import type { Media, MediaAttachment } from "peal-contract";
 import { maxMediaPerPost } from "peal-contract/post-text";
-import { Array as Arr } from "effect";
 
 // The images and videos a post shows, in order, as the composer edits them.
 // Each function returns a new list and leaves the one it is given alone.

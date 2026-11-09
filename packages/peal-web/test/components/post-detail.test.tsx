@@ -1,12 +1,12 @@
 import { describe, expect, it } from "@effect/vitest";
+import { DateTime } from "effect";
+import { NextIntlClientProvider } from "next-intl";
 import type {
   Channel,
   Post,
   PostTarget,
   PublicationAttempt,
 } from "peal-contract";
-import { DateTime } from "effect";
-import { NextIntlClientProvider } from "next-intl";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import { PostDetailView } from "#components/posts/post-detail.tsx";

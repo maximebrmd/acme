@@ -60,10 +60,10 @@ const web = spawn(
   {
     cwd: path.join(packages, "peal-web"),
     env: {
-      PEAL_API_URL: `http://127.0.0.1:${serverPort}`,
       HOME: process.env["HOME"] ?? "",
       NEXT_TELEMETRY_DISABLED: "1",
       PATH: process.env["PATH"] ?? "",
+      PEAL_API_URL: `http://127.0.0.1:${serverPort}`,
     },
     stdio: "inherit",
   }

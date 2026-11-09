@@ -1,6 +1,6 @@
 import { describe, expect, it } from "@effect/vitest";
-import type { AnalyticsSummary } from "peal-contract";
 import { DateTime } from "effect";
+import type { AnalyticsSummary } from "peal-contract";
 
 import {
   dayDate,

@@ -1,9 +1,9 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Button } from "peal-ui/components/button";
 import { Checkbox } from "peal-ui/components/checkbox";
 import { Label } from "peal-ui/components/label";
-import { useTranslations } from "next-intl";
 import { useId, useState, useTransition } from "react";
 import type { SubmitEvent } from "react";
 import { toast } from "sonner";

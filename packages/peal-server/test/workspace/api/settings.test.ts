@@ -1,6 +1,4 @@
 import { assert, layer } from "@effect/vitest";
-import { Api } from "peal-contract";
-import type { Member, Principal } from "peal-contract";
 import {
   Context,
   DateTime,
@@ -12,6 +10,8 @@ import {
 } from "effect";
 import { HttpServer } from "effect/http";
 import { HttpApiTest } from "effect/http-api";
+import { Api } from "peal-contract";
+import type { Member, Principal } from "peal-contract";
 
 import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 import { UserIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";

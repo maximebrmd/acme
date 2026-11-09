@@ -1,10 +1,10 @@
 "use client";
 
-import { Badge } from "peal-ui/components/badge";
-import { Button } from "peal-ui/components/button";
 import { Option } from "effect";
 import { BellIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { Badge } from "peal-ui/components/badge";
+import { Button } from "peal-ui/components/button";
 import type { ReactElement } from "react";
 
 /**

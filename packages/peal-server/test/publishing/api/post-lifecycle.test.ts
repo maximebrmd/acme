@@ -1,4 +1,7 @@
 import { assert, describe, it } from "@effect/vitest";
+import { Effect, Layer } from "effect";
+import { HttpServer } from "effect/http";
+import { HttpApiTest } from "effect/http-api";
 import {
   Api,
   Forbidden,
@@ -7,9 +10,6 @@ import {
   TargetStatusConflict,
 } from "peal-contract";
 import type { Member, Permission, PostContent } from "peal-contract";
-import { Effect, Layer } from "effect";
-import { HttpServer } from "effect/http";
-import { HttpApiTest } from "effect/http-api";
 
 import { PostsHandlers } from "#publishing/api/posts.ts";
 import { FakePlatform } from "#publishing/infrastructure/fake-platform-publisher.ts";

@@ -1,13 +1,13 @@
 "use client";
 
 import { useAtomRefresh, useAtomValue } from "@effect/atom-react";
+import { DateTime } from "effect";
+import { AsyncResult } from "effect/reactivity";
+import { useFormatter, useTranslations } from "next-intl";
 import { countedPlatforms } from "peal-contract";
 import type { Channel, Platform, Post, PostAnalytics } from "peal-contract";
 import { Button } from "peal-ui/components/button";
 import { Skeleton } from "peal-ui/components/skeleton";
-import { DateTime } from "effect";
-import { AsyncResult } from "effect/reactivity";
-import { useFormatter, useTranslations } from "next-intl";
 
 import { postAnalytics } from "#analytics/api.ts";
 import { MetricList } from "#components/analytics/metric-list.tsx";

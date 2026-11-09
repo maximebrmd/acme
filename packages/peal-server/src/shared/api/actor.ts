@@ -1,5 +1,5 @@
-import type { Member } from "peal-contract";
 import { Option } from "effect";
+import type { Member } from "peal-contract";
 
 import { Actor } from "#shared/domain/access.ts";
 import { UserIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";

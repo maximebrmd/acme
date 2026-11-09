@@ -1,6 +1,9 @@
 "use client";
 
 import { useAtomSet } from "@effect/atom-react";
+import { Option } from "effect";
+import { constVoid } from "effect/Function";
+import { useTranslations } from "next-intl";
 import type {
   ChoosableAccount,
   ConnectCallback,
@@ -8,9 +11,6 @@ import type {
 } from "peal-contract";
 import { Alert, AlertDescription, AlertTitle } from "peal-ui/components/alert";
 import { Button } from "peal-ui/components/button";
-import { Option } from "effect";
-import { constVoid } from "effect/Function";
-import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { toast } from "sonner";
 

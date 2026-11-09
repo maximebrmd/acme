@@ -1,6 +1,6 @@
+import { Option, Schema } from "effect";
 import { PlatformSchema } from "peal-contract";
 import type { Platform } from "peal-contract";
-import { Option, Schema } from "effect";
 
 // The platform sends the browser back to one callback page for every
 // workspace, so the tab remembers, between leaving for the platform and

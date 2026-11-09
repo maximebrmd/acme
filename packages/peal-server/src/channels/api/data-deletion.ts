@@ -1,11 +1,11 @@
+import { Effect, Option } from "effect";
+import { HttpApiBuilder } from "effect/http-api";
 import {
   Api,
   DataDeletionNotFound,
   MetaAppNotConfigured,
   SignedRequestRefused,
 } from "peal-contract";
-import { Effect, Option } from "effect";
-import { HttpApiBuilder } from "effect/http-api";
 
 import { DeletePlatformUserData } from "#channels/application/delete-platform-user-data.ts";
 

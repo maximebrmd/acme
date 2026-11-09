@@ -1,7 +1,7 @@
-import type { Membership } from "peal-contract";
 import { Option } from "effect";
 import type { Locale } from "next-intl";
 import { notFound } from "next/navigation";
+import type { Membership } from "peal-contract";
 
 import { currentUser } from "#auth/session.ts";
 import { redirect } from "#i18n/navigation.ts";

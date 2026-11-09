@@ -1,7 +1,7 @@
 import { describe, expect, it } from "@effect/vitest";
+import { Option } from "effect";
 import { optionsPlatforms, TargetOptionsSchema } from "peal-contract";
 import type { ContentViolation, Platform } from "peal-contract";
-import { Option } from "effect";
 
 import {
   channelOptionsOf,

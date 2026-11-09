@@ -1,5 +1,5 @@
-import { TargetConfirmationSchema } from "peal-contract";
 import { Option, Schema } from "effect";
+import { TargetConfirmationSchema } from "peal-contract";
 
 const decodeConfirmation = Schema.decodeUnknownOption(TargetConfirmationSchema);
 

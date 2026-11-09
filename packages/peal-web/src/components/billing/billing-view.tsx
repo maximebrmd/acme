@@ -1,5 +1,7 @@
 "use client";
 
+import { DateTime, Schema } from "effect";
+import { useFormatter, useTranslations } from "next-intl";
 import type {
   Billing,
   BillingSubscription,
@@ -25,8 +27,6 @@ import {
   ProgressLabel,
   ProgressValue,
 } from "peal-ui/components/progress";
-import { DateTime, Schema } from "effect";
-import { useFormatter, useTranslations } from "next-intl";
 
 /** What the person asked Stripe for, while it opens. */
 export type BillingAction =

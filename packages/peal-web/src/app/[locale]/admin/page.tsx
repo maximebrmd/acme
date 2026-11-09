@@ -1,3 +1,7 @@
+import { DateTime } from "effect";
+import { hasLocale } from "next-intl";
+import { getTranslations } from "next-intl/server";
+import { notFound } from "next/navigation";
 import { Badge } from "peal-ui/components/badge";
 import {
   Table,
@@ -7,10 +11,6 @@ import {
   TableHeader,
   TableRow,
 } from "peal-ui/components/table";
-import { DateTime } from "effect";
-import { hasLocale } from "next-intl";
-import { getTranslations } from "next-intl/server";
-import { notFound } from "next/navigation";
 
 import { ChannelHealth } from "#components/staff/channel-health.tsx";
 import { Instant } from "#components/staff/instant.tsx";

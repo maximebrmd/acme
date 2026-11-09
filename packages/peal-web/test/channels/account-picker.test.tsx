@@ -1,7 +1,7 @@
 import { describe, expect, it } from "@effect/vitest";
-import type { ChoosableAccount } from "peal-contract";
 import { constVoid } from "effect/Function";
 import { NextIntlClientProvider } from "next-intl";
+import type { ChoosableAccount } from "peal-contract";
 import type { ComponentProps } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 

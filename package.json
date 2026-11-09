@@ -1,8 +1,8 @@
 {
   "name": "peal",
   "private": true,
-  "license": "FSL-1.1-ALv2",
   "homepage": "https://peal.social",
+  "license": "FSL-1.1-ALv2",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/peal-social/peal.git"

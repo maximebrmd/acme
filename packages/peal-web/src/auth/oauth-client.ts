@@ -1,8 +1,8 @@
-import { OAuthApi } from "peal-contract";
 import { Effect, Exit, Option } from "effect";
 import { FetchHttpClient, HttpClient, HttpClientRequest } from "effect/http";
 import { HttpApiClient } from "effect/http-api";
 import { headers } from "next/headers";
+import { OAuthApi } from "peal-contract";
 
 import { serverUrl } from "#api/server-url.ts";
 

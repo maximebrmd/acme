@@ -1,3 +1,5 @@
+import { Effect, Match } from "effect";
+import { HttpApiBuilder } from "effect/http-api";
 import {
   Api,
   ChannelCannotPost,
@@ -6,8 +8,6 @@ import {
   Forbidden,
   PlatformUnreachable,
 } from "peal-contract";
-import { Effect, Match } from "effect";
-import { HttpApiBuilder } from "effect/http-api";
 
 import { TikTokCreatorInfo } from "#publishing/application/tiktok-creator-info.ts";
 import { ownRefusalCodes } from "#publishing/domain/own-refusals.ts";

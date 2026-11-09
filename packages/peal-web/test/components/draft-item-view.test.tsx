@@ -1,6 +1,6 @@
 import { describe, expect, it } from "@effect/vitest";
-import type { Post } from "peal-contract";
 import { NextIntlClientProvider } from "next-intl";
+import type { Post } from "peal-contract";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import {

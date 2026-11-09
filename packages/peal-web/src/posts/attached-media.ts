@@ -1,9 +1,9 @@
 "use client";
 
 import { useAtomValue } from "@effect/atom-react";
-import type { MediaAttachment } from "peal-contract";
 import { Option } from "effect";
 import { AsyncResult, Atom } from "effect/reactivity";
+import type { MediaAttachment } from "peal-contract";
 
 import { PealApi } from "#api/client.ts";
 import { mediaKey } from "#media/atoms.ts";

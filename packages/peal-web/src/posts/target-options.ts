@@ -1,3 +1,5 @@
+import { Match, Option, Schema } from "effect";
+import type { useTranslations } from "next-intl";
 import { maxYouTubeTitleLength, TargetOptionsSchema } from "peal-contract";
 import type {
   ChannelOptions,
@@ -7,8 +9,6 @@ import type {
   Post,
   TargetOptions,
 } from "peal-contract";
-import { Match, Option, Schema } from "effect";
-import type { useTranslations } from "next-intl";
 
 // The options a post has on a channel whose platform takes some, as the
 // composer shows them: a field description per platform, the values the

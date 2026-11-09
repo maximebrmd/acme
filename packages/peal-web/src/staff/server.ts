@@ -1,9 +1,9 @@
-import { Api } from "peal-contract";
 import { Effect, Option } from "effect";
 import { FetchHttpClient, HttpClient, HttpClientRequest } from "effect/http";
 import { HttpApiClient } from "effect/http-api";
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
+import { Api } from "peal-contract";
 
 import { serverUrl } from "#api/server-url.ts";
 

@@ -1,8 +1,8 @@
-import { Button } from "peal-ui/components/button";
 import { Option } from "effect";
 import { hasLocale } from "next-intl";
 import { getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
+import { Button } from "peal-ui/components/button";
 
 import { currentUser } from "#auth/session.ts";
 import { NoticeList } from "#components/notices/notice-list.tsx";

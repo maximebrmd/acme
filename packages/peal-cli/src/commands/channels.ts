@@ -1,6 +1,6 @@
-import type { ChannelStatus, TikTokAccount } from "peal-contract";
 import { Console, Effect, Match } from "effect";
 import { Argument, Command } from "effect/cli";
+import type { ChannelStatus, TikTokAccount } from "peal-contract";
 
 import { explain } from "#explain.ts";
 import { columns, instant } from "#print.ts";

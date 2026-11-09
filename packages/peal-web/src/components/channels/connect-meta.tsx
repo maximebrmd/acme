@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import type { Platform } from "peal-contract";
 import { Alert, AlertDescription } from "peal-ui/components/alert";
 import { Button } from "peal-ui/components/button";
@@ -10,7 +11,6 @@ import {
   CardHeader,
   CardTitle,
 } from "peal-ui/components/card";
-import { useTranslations } from "next-intl";
 
 import { useChannelErrorText } from "#channels/channel-error-text.ts";
 import type { ChannelErrorKey } from "#channels/channels-api.ts";

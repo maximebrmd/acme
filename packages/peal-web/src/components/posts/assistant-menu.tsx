@@ -1,6 +1,10 @@
 "use client";
 
 import { useAtomRefresh, useAtomSet, useAtomValue } from "@effect/atom-react";
+import { Exit, Option } from "effect";
+import { AsyncResult } from "effect/reactivity";
+import { SparklesIcon } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import { AssistantToneSchema, TranslationLanguageSchema } from "peal-contract";
 import type {
   AssistantAction,
@@ -23,10 +27,6 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "peal-ui/components/dropdown-menu";
-import { Exit, Option } from "effect";
-import { AsyncResult } from "effect/reactivity";
-import { SparklesIcon } from "lucide-react";
-import { useLocale, useTranslations } from "next-intl";
 import { useId, useRef, useState } from "react";
 import { toast } from "sonner";
 

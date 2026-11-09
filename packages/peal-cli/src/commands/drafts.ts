@@ -1,11 +1,11 @@
+import { Console, Effect, Option, Schema } from "effect";
+import { Argument, Command, Flag } from "effect/cli";
 import {
   maxDraftPageSize,
   PostDraftSchema,
   TargetOptionsSchema,
 } from "peal-contract";
 import type { ChannelOptions, Post, PostDraft } from "peal-contract";
-import { Console, Effect, Option, Schema } from "effect";
-import { Argument, Command, Flag } from "effect/cli";
 
 import { explain } from "#explain.ts";
 import { columns, excerpt } from "#print.ts";

@@ -1,9 +1,9 @@
 import { assert, layer } from "@effect/vitest";
-import { Api, Forbidden, Unauthenticated } from "peal-contract";
-import type { Member, Principal } from "peal-contract";
 import { Effect, Layer, Option } from "effect";
 import { HttpServer } from "effect/http";
 import { HttpApiError, HttpApiTest } from "effect/http-api";
+import { Api, Forbidden, Unauthenticated } from "peal-contract";
+import type { Member, Principal } from "peal-contract";
 
 import { Notify } from "#notifications/application/notify.ts";
 import {

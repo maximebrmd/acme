@@ -1,9 +1,9 @@
+import { Option } from "effect";
 import type {
   Member,
   OAuthGrant as ContractGrant,
   Principal as ContractPrincipal,
 } from "peal-contract";
-import { Option } from "effect";
 
 import type { Actor } from "#shared/domain/access.ts";
 import { UserIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";

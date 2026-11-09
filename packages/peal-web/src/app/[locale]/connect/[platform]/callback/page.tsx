@@ -1,7 +1,7 @@
-import { ConnectCallbackSchema, PlatformSchema } from "peal-contract";
 import { Option, Schema } from "effect";
 import { getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
+import { ConnectCallbackSchema, PlatformSchema } from "peal-contract";
 
 import { AuthCard } from "#components/auth/auth-card.tsx";
 import { CompleteConnection } from "#components/channels/complete-connection.tsx";

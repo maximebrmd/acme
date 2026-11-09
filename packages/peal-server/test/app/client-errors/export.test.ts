@@ -2,10 +2,10 @@
 // the log, with its attributes, and the counter Prometheus reads as
 // peal_client_errors_total, which the alert and the dashboard query.
 import { assert, describe, it } from "@effect/vitest";
-import { Api } from "peal-contract";
 import { ConfigProvider, Effect, Layer } from "effect";
 import { HttpClient, HttpClientResponse, HttpServer } from "effect/http";
 import { HttpApiTest } from "effect/http-api";
+import { Api } from "peal-contract";
 
 import { ClientErrorsHandlers } from "#app/client-errors/handlers.ts";
 import { OtlpExport } from "#app/observability.ts";

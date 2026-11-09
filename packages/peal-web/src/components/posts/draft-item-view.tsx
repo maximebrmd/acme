@@ -1,7 +1,7 @@
 "use client";
 
-import type { Post } from "peal-contract";
 import { useTranslations } from "next-intl";
+import type { Post } from "peal-contract";
 import type { ReactNode } from "react";
 
 /** What a draft is called in the list: the start of its text. */

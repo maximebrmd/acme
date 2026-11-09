@@ -1,8 +1,8 @@
-import { Api, OAuthApi } from "peal-contract";
 import { Context, Effect, Layer } from "effect";
 import type { Redacted } from "effect";
 import { HttpClient, HttpClientRequest } from "effect/http";
 import { HttpApiClient } from "effect/http-api";
+import { Api, OAuthApi } from "peal-contract";
 
 // The typed clients derived from peal-contract, bound to the server the
 // command line points at: the HTTP API, and the OAuth endpoints its sign-in

@@ -1,3 +1,4 @@
+import { Effect } from "effect";
 import {
   AltTextTooLong,
   Forbidden,
@@ -9,7 +10,6 @@ import {
   UploadRejected,
   WorkspaceNotFound,
 } from "peal-contract";
-import { Effect } from "effect";
 
 import type { PealApi } from "#api/client.ts";
 import { UploadFailed } from "#media/upload-failed.ts";

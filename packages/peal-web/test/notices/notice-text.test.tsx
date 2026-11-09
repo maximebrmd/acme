@@ -1,7 +1,7 @@
 import { describe, expect, it } from "@effect/vitest";
-import type { NoticeEvent } from "peal-contract";
 import { DateTime } from "effect";
 import { NextIntlClientProvider } from "next-intl";
+import type { NoticeEvent } from "peal-contract";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import { loadMessages } from "#i18n/messages.ts";

@@ -1,5 +1,5 @@
-import { Button } from "peal-ui/components/button";
 import { getTranslations } from "next-intl/server";
+import { Button } from "peal-ui/components/button";
 
 import { AuthCard } from "#components/auth/auth-card.tsx";
 import { Link } from "#i18n/navigation.ts";

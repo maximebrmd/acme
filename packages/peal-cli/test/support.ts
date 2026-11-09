@@ -1,17 +1,4 @@
 import {
-  Api,
-  Authentication,
-  ClientErrorIntake,
-  CurrentPrincipal,
-  DataDeletionNotFound,
-  MetaAppNotConfigured,
-  OAuthApi,
-  OAuthClientNotPublished,
-  StaffAccess,
-  Unauthenticated,
-} from "peal-contract";
-import type { Me } from "peal-contract";
-import {
   ConfigProvider,
   Effect,
   FileSystem,
@@ -28,6 +15,19 @@ import { FetchHttpClient, HttpRouter, HttpServer } from "effect/http";
 import { HttpApiBuilder, HttpApiError } from "effect/http-api";
 import { ChildProcessSpawner } from "effect/process";
 import { TestConsole } from "effect/testing";
+import {
+  Api,
+  Authentication,
+  ClientErrorIntake,
+  CurrentPrincipal,
+  DataDeletionNotFound,
+  MetaAppNotConfigured,
+  OAuthApi,
+  OAuthClientNotPublished,
+  StaffAccess,
+  Unauthenticated,
+} from "peal-contract";
+import type { Me } from "peal-contract";
 
 import { makeAuthorizationServer } from "./authorization-server.ts";
 import type { AuthorizationServer } from "./authorization-server.ts";

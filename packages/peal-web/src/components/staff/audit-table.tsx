@@ -1,3 +1,5 @@
+import { DateTime } from "effect";
+import { getTranslations } from "next-intl/server";
 import type { StaffAuditEvent } from "peal-contract";
 import {
   Table,
@@ -7,8 +9,6 @@ import {
   TableHeader,
   TableRow,
 } from "peal-ui/components/table";
-import { DateTime } from "effect";
-import { getTranslations } from "next-intl/server";
 
 import { Instant } from "#components/staff/instant.tsx";
 import { Link } from "#i18n/navigation.ts";

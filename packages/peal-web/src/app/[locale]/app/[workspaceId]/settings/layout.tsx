@@ -1,7 +1,7 @@
-import { Button } from "peal-ui/components/button";
 import { hasLocale } from "next-intl";
 import { getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
+import { Button } from "peal-ui/components/button";
 
 import { SettingsNav } from "#components/settings/settings-nav.tsx";
 import type { SettingsSection } from "#components/settings/settings-nav.tsx";

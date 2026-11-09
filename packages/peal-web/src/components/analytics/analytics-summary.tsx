@@ -1,7 +1,7 @@
 "use client";
 
-import type { AnalyticsSummary, Channel, MetricTotals } from "peal-contract";
 import { useFormatter, useTranslations } from "next-intl";
+import type { AnalyticsSummary, Channel, MetricTotals } from "peal-contract";
 
 import { isEmpty, shownKeys } from "#analytics/report.ts";
 import { ChannelTotals } from "#components/analytics/channel-totals.tsx";

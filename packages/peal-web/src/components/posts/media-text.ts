@@ -1,8 +1,8 @@
 "use client";
 
-import type { ContentViolation } from "peal-contract";
 import { Match, Option } from "effect";
 import { useFormatter, useTranslations } from "next-intl";
+import type { ContentViolation } from "peal-contract";
 
 import { useFileSize } from "#components/media/use-file-size.ts";
 import type { AttachedMedia, MediaProblem } from "#posts/media-fit.ts";

@@ -1,3 +1,11 @@
+import { Effect, Option, Redacted, Schema } from "effect";
+import {
+  Cookies,
+  HttpEffect,
+  HttpServerRequest,
+  HttpServerResponse,
+} from "effect/http";
+import { HttpApiBuilder } from "effect/http-api";
 import {
   Api,
   CurrentStaff,
@@ -15,14 +23,6 @@ import type {
   StaffUserSummary,
   StaffWorkspace,
 } from "peal-contract";
-import { Effect, Option, Redacted, Schema } from "effect";
-import {
-  Cookies,
-  HttpEffect,
-  HttpServerRequest,
-  HttpServerResponse,
-} from "effect/http";
-import { HttpApiBuilder } from "effect/http-api";
 
 import { UserIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import type { UserId } from "#shared/domain/ids.ts";

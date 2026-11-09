@@ -1,10 +1,10 @@
 import { BunDns, BunHttpServer } from "@effect/platform-bun";
-import { Api } from "peal-contract";
 import { Config, Effect, Layer } from "effect";
 import { MessageStorage, ShardingConfig } from "effect/cluster";
 import { HttpRouter } from "effect/http";
 import { HttpApiBuilder } from "effect/http-api";
 import { WorkflowEngine } from "effect/workflow";
+import { Api } from "peal-contract";
 
 import {
   AnalyticsApiLive,

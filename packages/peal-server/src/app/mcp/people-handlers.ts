@@ -1,5 +1,5 @@
-import { CurrentMember } from "peal-contract";
 import { Effect } from "effect";
+import { CurrentMember } from "peal-contract";
 
 import { PeopleTools } from "#app/mcp/people-tools.ts";
 import { notAllowed, refuse } from "#app/mcp/refusals.ts";

@@ -1,9 +1,9 @@
 import { assert, describe, it } from "@effect/vitest";
-import { Api, PostContentInvalid, UnknownChannels } from "peal-contract";
-import type { Member, PostContent } from "peal-contract";
 import { Effect, Layer, Schema } from "effect";
 import { HttpServer } from "effect/http";
 import { HttpApiTest } from "effect/http-api";
+import { Api, PostContentInvalid, UnknownChannels } from "peal-contract";
+import type { Member, PostContent } from "peal-contract";
 
 import { PostsHandlers } from "#publishing/api/posts.ts";
 import { newId } from "#shared/application/ids.ts";

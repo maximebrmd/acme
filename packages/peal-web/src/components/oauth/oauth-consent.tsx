@@ -1,8 +1,8 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Alert, AlertDescription } from "peal-ui/components/alert";
 import { Button } from "peal-ui/components/button";
-import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 
 import { authClient } from "#auth/client.ts";

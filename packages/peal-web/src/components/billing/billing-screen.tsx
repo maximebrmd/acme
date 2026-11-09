@@ -1,13 +1,13 @@
 "use client";
 
 import { useAtomRefresh, useAtomValue } from "@effect/atom-react";
+import { Option, Schema } from "effect";
+import { AsyncResult } from "effect/reactivity";
+import { useLocale, useTranslations } from "next-intl";
 import type { PaidPlan } from "peal-contract";
 import { Alert, AlertDescription } from "peal-ui/components/alert";
 import { Button } from "peal-ui/components/button";
 import { Skeleton } from "peal-ui/components/skeleton";
-import { Option, Schema } from "effect";
-import { AsyncResult } from "effect/reactivity";
-import { useLocale, useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 
 import { billingClient } from "#auth/billing-client.ts";

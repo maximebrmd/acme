@@ -1,6 +1,4 @@
 import { assert, layer } from "@effect/vitest";
-import { Api } from "peal-contract";
-import type { ClientErrorReport } from "peal-contract";
 import {
   Effect,
   Layer,
@@ -12,6 +10,8 @@ import {
 } from "effect";
 import { HttpServer } from "effect/http";
 import { HttpApiTest } from "effect/http-api";
+import { Api } from "peal-contract";
+import type { ClientErrorReport } from "peal-contract";
 
 import {
   clientErrors,
@@ -75,12 +75,12 @@ layer(HandlersLive)("the error reports' handler", (it) => {
 
       assert.strictEqual(entry?.level, "Error");
       assert.deepStrictEqual(entry?.annotations, {
-        "peal.client_error.digest": "2154981321",
-        "peal.client_error.kind": "boundary",
-        "peal.web.release": "2026.11.0",
         "event.name": "peal.client_error",
         "exception.message": "No workspace [id] for [email]",
         "http.route": "/[locale]/app/[workspaceId]/calendar",
+        "peal.client_error.digest": "2154981321",
+        "peal.client_error.kind": "boundary",
+        "peal.web.release": "2026.11.0",
         "url.path": "/app/:id/calendar",
         "user_agent.original": "Mozilla/5.0 (Synthetic)",
       });

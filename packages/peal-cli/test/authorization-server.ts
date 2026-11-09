@@ -1,7 +1,7 @@
-import { deviceCodeGrantType, OAuthApi } from "peal-contract";
-import type { DeviceAuthorization, Token } from "peal-contract";
 import { Effect, Layer, Option, Ref } from "effect";
 import { HttpApiBuilder } from "effect/http-api";
+import { deviceCodeGrantType, OAuthApi } from "peal-contract";
+import type { DeviceAuthorization, Token } from "peal-contract";
 
 // An OAuth authorization server for the command line's tests, answering
 // peal-contract's OAuthApi as Better Auth does on a Peal server whose

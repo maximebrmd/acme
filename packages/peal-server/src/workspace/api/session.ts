@@ -1,3 +1,5 @@
+import { Effect, Option } from "effect";
+import { HttpApiBuilder } from "effect/http-api";
 import {
   Api,
   CurrentPrincipal,
@@ -5,8 +7,6 @@ import {
   Unauthenticated,
 } from "peal-contract";
 import type { Me } from "peal-contract";
-import { Effect, Option } from "effect";
-import { HttpApiBuilder } from "effect/http-api";
 
 import { Accounts } from "#workspace/application/accounts.ts";
 import type { CurrentAccount } from "#workspace/application/accounts.ts";

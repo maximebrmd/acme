@@ -1,10 +1,10 @@
+import { DateTime, Option, Schema } from "effect";
 import type {
   AnalyticsSummary,
   CalendarDay,
   MetricsSnapshot,
   PostMetrics,
 } from "peal-contract";
-import { DateTime, Option, Schema } from "effect";
 
 import { addDays, dateKey, wallClockOf, zoneOf } from "#posts/zoned-time.ts";
 import type { CalendarDate } from "#posts/zoned-time.ts";

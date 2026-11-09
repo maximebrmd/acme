@@ -1,8 +1,8 @@
 // Turnstile on signing up and asking for a password reset, with Cloudflare's
 // test keys, checked by a fake siteverify endpoint; and a server without it.
 import { assert, layer } from "@effect/vitest";
-import { CaptchaSchema } from "peal-contract";
 import { Effect, Schema } from "effect";
+import { CaptchaSchema } from "peal-contract";
 
 import {
   appWithTurnstile,

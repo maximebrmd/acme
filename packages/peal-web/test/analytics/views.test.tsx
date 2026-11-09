@@ -1,7 +1,7 @@
 import { describe, expect, it } from "@effect/vitest";
-import type { AnalyticsSummary, Channel, PostAnalytics } from "peal-contract";
 import { DateTime } from "effect";
 import { NextIntlClientProvider } from "next-intl";
+import type { AnalyticsSummary, Channel, PostAnalytics } from "peal-contract";
 import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 

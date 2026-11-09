@@ -1,4 +1,5 @@
 import { describe, expect, it } from "@effect/vitest";
+import { HttpApi } from "effect/http-api";
 import {
   Api,
   cliClientId,
@@ -10,7 +11,6 @@ import {
   RoleSchema,
   WorkspaceAccess,
 } from "peal-contract";
-import { HttpApi } from "effect/http-api";
 
 import { PlatformSchema as DomainPlatformSchema } from "#channels/domain/platform.ts";
 import { MediaContentTypeSchema as DomainContentTypeSchema } from "#media/domain/media-format.ts";

@@ -1,3 +1,6 @@
+import { Effect, Layer, Option, Redacted, Schema } from "effect";
+import { HttpRouter, HttpServerRequest } from "effect/http";
+import { HttpApiError } from "effect/http-api";
 import {
   Authentication,
   ClientErrorIntake,
@@ -11,9 +14,6 @@ import {
   WorkspaceNotFound,
 } from "peal-contract";
 import type { Member } from "peal-contract";
-import { Effect, Layer, Option, Redacted, Schema } from "effect";
-import { HttpRouter, HttpServerRequest } from "effect/http";
-import { HttpApiError } from "effect/http-api";
 
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import type { UserId } from "#shared/domain/ids.ts";

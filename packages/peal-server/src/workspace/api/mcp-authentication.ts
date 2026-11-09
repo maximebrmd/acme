@@ -1,6 +1,6 @@
-import { CurrentMember } from "peal-contract";
 import { Effect, Option, Redacted } from "effect";
 import { HttpRouter, HttpServerRequest, HttpServerResponse } from "effect/http";
+import { CurrentMember } from "peal-contract";
 
 import { Authenticate } from "#workspace/application/authenticate.ts";
 import { ResolveMember } from "#workspace/application/resolve-member.ts";

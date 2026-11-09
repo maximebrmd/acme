@@ -1,3 +1,5 @@
+import { Effect, Match, Option } from "effect";
+import { HttpApiBuilder } from "effect/http-api";
 import {
   Api,
   ChannelNotFound,
@@ -13,8 +15,6 @@ import type {
   ConnectFailureReason,
   ConnectOutcome as ConnectOutcomeView,
 } from "peal-contract";
-import { Effect, Match, Option } from "effect";
-import { HttpApiBuilder } from "effect/http-api";
 
 import { ConnectChannel } from "#channels/application/connect-channel.ts";
 import type {

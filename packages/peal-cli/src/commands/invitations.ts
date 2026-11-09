@@ -1,6 +1,6 @@
-import { RoleSchema } from "peal-contract";
 import { Console, DateTime, Effect } from "effect";
 import { Argument, Command, Flag } from "effect/cli";
+import { RoleSchema } from "peal-contract";
 
 import { explain } from "#explain.ts";
 import { columns, instant } from "#print.ts";

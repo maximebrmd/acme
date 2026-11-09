@@ -1,6 +1,6 @@
 import { assert, layer } from "@effect/vitest";
-import { InvitationSchema, WorkspaceMemberSchema } from "peal-contract";
 import { Config, Effect, Layer, Schema } from "effect";
+import { InvitationSchema, WorkspaceMemberSchema } from "peal-contract";
 
 import {
   apiKeyOf,

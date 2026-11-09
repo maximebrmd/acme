@@ -1,6 +1,6 @@
-import { Api } from "peal-contract";
 import { Effect, Option } from "effect";
 import { HttpApiBuilder } from "effect/http-api";
+import { Api } from "peal-contract";
 
 import { CaptchaChallenge } from "#workspace/application/captcha-challenge.ts";
 

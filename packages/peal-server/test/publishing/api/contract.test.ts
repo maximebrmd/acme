@@ -1,4 +1,5 @@
 import { describe, expect, it } from "@effect/vitest";
+import { Exit, Schema } from "effect";
 import {
   ContentViolationSchema,
   maxYouTubeTagsLength as contractMaxTagsLength,
@@ -10,7 +11,6 @@ import {
 } from "peal-contract";
 import type { ContentViolation as ContractViolation } from "peal-contract";
 import * as ContractText from "peal-contract/post-text";
-import { Exit, Schema } from "effect";
 
 import type { ContentViolation } from "#publishing/domain/content-violation.ts";
 import { maxAltTextLength } from "#publishing/domain/media-attachment.ts";

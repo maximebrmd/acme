@@ -1,5 +1,5 @@
-import type { TikTokAccount, TikTokCreator } from "peal-contract";
 import { Option } from "effect";
+import type { TikTokAccount, TikTokCreator } from "peal-contract";
 
 import type { OptionsText, OptionValues } from "./target-options.ts";
 

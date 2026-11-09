@@ -1,7 +1,7 @@
+import { getTranslations } from "next-intl/server";
 import { Button } from "peal-ui/components/button";
 import { Input } from "peal-ui/components/input";
 import { Label } from "peal-ui/components/label";
-import { getTranslations } from "next-intl/server";
 
 import { Link } from "#i18n/navigation.ts";
 

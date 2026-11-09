@@ -1,10 +1,10 @@
 import { assert, layer } from "@effect/vitest";
+import { Context, Effect, Layer, Option, Schema } from "effect";
+import { McpClient, McpProtocol } from "effect/ai";
 import {
   AuthorizationServerSchema,
   ProtectedResourceSchema,
 } from "peal-contract";
-import { Context, Effect, Layer, Option, Schema } from "effect";
-import { McpClient, McpProtocol } from "effect/ai";
 
 import { ChannelRepository } from "#channels/application/channel-repository.ts";
 import { DrizzleChannelRepository } from "#channels/infrastructure/drizzle-channel-repository.ts";

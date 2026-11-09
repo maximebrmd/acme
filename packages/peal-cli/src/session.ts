@@ -1,6 +1,6 @@
+import { DateTime, Duration, Effect, Option, Redacted, Schema } from "effect";
 import { cliClientId, OAuthErrorSchema } from "peal-contract";
 import type { Token } from "peal-contract";
-import { DateTime, Duration, Effect, Option, Redacted, Schema } from "effect";
 
 import { requestFailed } from "#api-request-failed.ts";
 import { PealApi } from "#api.ts";

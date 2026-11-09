@@ -1,10 +1,10 @@
 import { describe, expect, it } from "@effect/vitest";
+import { Predicate } from "effect";
 import {
   AttemptResultSchema,
   FailureReasonSchema,
   UnconfirmedReasonSchema,
 } from "peal-contract";
-import { Predicate } from "effect";
 
 import { loadMessages } from "#i18n/messages.ts";
 import { routing } from "#i18n/routing.ts";

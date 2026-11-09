@@ -1,3 +1,7 @@
+import { Option } from "effect";
+import { hasLocale } from "next-intl";
+import { getTranslations } from "next-intl/server";
+import { notFound } from "next/navigation";
 import {
   Card,
   CardContent,
@@ -5,10 +9,6 @@ import {
   CardHeader,
   CardTitle,
 } from "peal-ui/components/card";
-import { Option } from "effect";
-import { hasLocale } from "next-intl";
-import { getTranslations } from "next-intl/server";
-import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
 
 import { currentUser } from "#auth/session.ts";

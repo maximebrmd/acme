@@ -2,11 +2,11 @@ import { createServer } from "node:net";
 import type { Server, Socket } from "node:net";
 
 import { assert, layer } from "@effect/vitest";
-import { Api, DatabaseUnavailable } from "peal-contract";
 import { ConfigProvider, Effect, Layer, Schema } from "effect";
 import { HttpServer } from "effect/http";
 import { HttpApiTest } from "effect/http-api";
 import type { SqlClient } from "effect/sql";
+import { Api, DatabaseUnavailable } from "peal-contract";
 
 import { SystemHandlers } from "#app/system.ts";
 import { SqlLive } from "#shared/infrastructure/database.ts";

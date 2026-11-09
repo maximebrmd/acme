@@ -1,6 +1,10 @@
 "use client";
 
 import { useAtomRefresh, useAtomValue } from "@effect/atom-react";
+import { DateTime, Option } from "effect";
+import { AsyncResult } from "effect/reactivity";
+import { CheckIcon, LibraryIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 import type { Media } from "peal-contract";
 import { Alert, AlertDescription } from "peal-ui/components/alert";
 import { Badge } from "peal-ui/components/badge";
@@ -15,10 +19,6 @@ import {
   DialogTrigger,
 } from "peal-ui/components/dialog";
 import { Skeleton } from "peal-ui/components/skeleton";
-import { DateTime, Option } from "effect";
-import { AsyncResult } from "effect/reactivity";
-import { CheckIcon, LibraryIcon } from "lucide-react";
-import { useTranslations } from "next-intl";
 import { useState } from "react";
 
 import { MediaThumbnail } from "#components/media/media-thumbnail.tsx";

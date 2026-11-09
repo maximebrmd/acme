@@ -1,6 +1,8 @@
 "use client";
 
 import { useAtomSet } from "@effect/atom-react";
+import { Cause, Exit, Option } from "effect";
+import { useTranslations } from "next-intl";
 import { Alert, AlertDescription, AlertTitle } from "peal-ui/components/alert";
 import {
   AlertDialog,
@@ -13,8 +15,6 @@ import {
   AlertDialogTrigger,
 } from "peal-ui/components/alert-dialog";
 import { Button } from "peal-ui/components/button";
-import { Cause, Exit, Option } from "effect";
-import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import type { SubmitEvent } from "react";
 import { toast } from "sonner";

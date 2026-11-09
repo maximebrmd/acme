@@ -1,3 +1,7 @@
+import { Option } from "effect";
+import { hasLocale } from "next-intl";
+import { getTranslations } from "next-intl/server";
+import { notFound } from "next/navigation";
 import { Badge } from "peal-ui/components/badge";
 import {
   Card,
@@ -8,10 +12,6 @@ import {
   CardHeader,
   CardTitle,
 } from "peal-ui/components/card";
-import { Option } from "effect";
-import { hasLocale } from "next-intl";
-import { getTranslations } from "next-intl/server";
-import { notFound } from "next/navigation";
 
 import { currentUser } from "#auth/session.ts";
 import { CreateWorkspaceForm } from "#components/create-workspace-form.tsx";

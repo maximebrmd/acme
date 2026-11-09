@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import type { ChoosableAccount, Platform } from "peal-contract";
 import { Alert, AlertDescription } from "peal-ui/components/alert";
 import { Avatar, AvatarFallback, AvatarImage } from "peal-ui/components/avatar";
@@ -7,7 +8,6 @@ import { Badge } from "peal-ui/components/badge";
 import { Button } from "peal-ui/components/button";
 import { Checkbox } from "peal-ui/components/checkbox";
 import { Label } from "peal-ui/components/label";
-import { useTranslations } from "next-intl";
 import type { ReactNode, SubmitEvent } from "react";
 
 import { useChannelErrorText } from "#channels/channel-error-text.ts";

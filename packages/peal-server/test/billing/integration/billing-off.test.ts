@@ -1,8 +1,8 @@
 // A server without a Stripe key, as most self-hosted ones run: no plan and
 // no limit, exactly as before billing existed.
 import { assert, layer } from "@effect/vitest";
-import { BillingSchema } from "peal-contract";
 import { Effect, Schema } from "effect";
+import { BillingSchema } from "peal-contract";
 
 import {
   bodyOf,

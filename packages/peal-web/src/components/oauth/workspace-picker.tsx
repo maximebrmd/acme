@@ -1,9 +1,9 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Alert, AlertDescription } from "peal-ui/components/alert";
 import { Badge } from "peal-ui/components/badge";
 import { Button } from "peal-ui/components/button";
-import { useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 
 import { authClient, workspaceClient } from "#auth/client.ts";

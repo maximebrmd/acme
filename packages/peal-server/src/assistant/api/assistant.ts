@@ -1,3 +1,5 @@
+import { Effect } from "effect";
+import { HttpApiBuilder } from "effect/http-api";
 import {
   Api,
   AssistantFailed,
@@ -7,8 +9,6 @@ import {
   CurrentMember,
   Forbidden,
 } from "peal-contract";
-import { Effect } from "effect";
-import { HttpApiBuilder } from "effect/http-api";
 
 import { WritingAssistant } from "#assistant/application/writing-assistant.ts";
 import { actorOf } from "#shared/api/actor.ts";

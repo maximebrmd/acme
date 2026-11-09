@@ -1,10 +1,10 @@
+import { Option, Schema } from "effect";
 import type {
   AnalyticsSummary as SummaryView,
   CalendarDay,
   PostMetrics as MetricsView,
   TargetMetrics,
 } from "peal-contract";
-import { Option, Schema } from "effect";
 
 import type { AnalyticsSummary } from "#analytics/application/analytics-queries.ts";
 import type {

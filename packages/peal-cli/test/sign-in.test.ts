@@ -2,10 +2,10 @@ import { setTimeout as delay } from "node:timers/promises";
 
 import { NodeFileSystem } from "@effect/platform-node-shared";
 import { assert, describe, it } from "@effect/vitest";
-import { cliClientId } from "peal-contract";
 import { Effect, Fiber, FileSystem, Layer, Path, Runtime } from "effect";
 import type { HttpClient } from "effect/http";
 import { TestClock } from "effect/testing";
+import { cliClientId } from "peal-contract";
 
 import { runWith } from "#cli.ts";
 import { loginScope } from "#commands/login.ts";

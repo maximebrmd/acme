@@ -1,5 +1,6 @@
 "use client";
 
+import { useFormatter, useTranslations } from "next-intl";
 import type { MetricsSnapshot } from "peal-contract";
 import {
   ChartContainer,
@@ -24,7 +25,6 @@ import {
   TabsList,
   TabsTrigger,
 } from "peal-ui/components/tabs";
-import { useFormatter, useTranslations } from "next-intl";
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from "recharts";
 
 import { readingRows } from "#analytics/report.ts";

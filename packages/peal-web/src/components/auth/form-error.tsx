@@ -1,7 +1,7 @@
 "use client";
 
-import { Alert, AlertDescription } from "peal-ui/components/alert";
 import { useTranslations } from "next-intl";
+import { Alert, AlertDescription } from "peal-ui/components/alert";
 
 import type { AuthErrorKey } from "#auth/errors.ts";
 

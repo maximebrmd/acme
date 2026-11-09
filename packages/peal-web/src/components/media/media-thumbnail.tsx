@@ -1,8 +1,8 @@
 "use client";
 
-import type { Media } from "peal-contract";
 import { FilmIcon, ImageIcon } from "lucide-react";
 import Image from "next/image";
+import type { Media } from "peal-contract";
 
 /**
  * The file itself, shown small and filling its box: images as they are,

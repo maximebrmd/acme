@@ -1,3 +1,5 @@
+import type { DateTime } from "effect";
+import { Array as Arr, Effect, Option, Schema } from "effect";
 import {
   InvalidTimeZone,
   PostNotFound,
@@ -8,8 +10,6 @@ import type {
   ChannelOptions as OptionsInput,
   PostContent as ContentInput,
 } from "peal-contract";
-import type { DateTime } from "effect";
-import { Array as Arr, Effect, Option, Schema } from "effect";
 
 import { ChannelOptionsListSchema } from "#publishing/domain/channel-options.ts";
 import { PostContent } from "#publishing/domain/post-content.ts";

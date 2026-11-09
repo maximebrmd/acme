@@ -1,3 +1,5 @@
+import { Effect } from "effect";
+import { HttpApiBuilder } from "effect/http-api";
 import {
   Api,
   BillingUnavailable,
@@ -8,8 +10,6 @@ import {
   WorkspaceNotFound,
   WorkspaceSubscribed,
 } from "peal-contract";
-import { Effect } from "effect";
-import { HttpApiBuilder } from "effect/http-api";
 
 import { actorOf } from "#shared/api/actor.ts";
 import { DeleteWorkspace } from "#workspace/application/delete-workspace.ts";

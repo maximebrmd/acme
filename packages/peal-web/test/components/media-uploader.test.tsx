@@ -1,7 +1,7 @@
 import { RegistryProvider } from "@effect/atom-react";
 import { describe, expect, it } from "@effect/vitest";
-import { MediaContentTypeSchema } from "peal-contract";
 import { NextIntlClientProvider } from "next-intl";
+import { MediaContentTypeSchema } from "peal-contract";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import { MediaUploader } from "#components/media/media-uploader.tsx";

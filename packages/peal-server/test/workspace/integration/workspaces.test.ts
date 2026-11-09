@@ -1,7 +1,7 @@
 import { assert, layer } from "@effect/vitest";
-import { MeSchema, PermissionSchema } from "peal-contract";
 import { DateTime, Duration, Effect, Schema } from "effect";
 import { SqlClient } from "effect/sql";
+import { MeSchema, PermissionSchema } from "peal-contract";
 
 import {
   apiKeyOf,

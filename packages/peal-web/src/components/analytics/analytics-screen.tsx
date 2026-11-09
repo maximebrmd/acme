@@ -1,6 +1,9 @@
 "use client";
 
 import { useAtomRefresh, useAtomValue } from "@effect/atom-react";
+import { Option, Schema } from "effect";
+import { AsyncResult } from "effect/reactivity";
+import { useTranslations } from "next-intl";
 import { Button } from "peal-ui/components/button";
 import { Label } from "peal-ui/components/label";
 import {
@@ -11,9 +14,6 @@ import {
   SelectValue,
 } from "peal-ui/components/select";
 import { Skeleton } from "peal-ui/components/skeleton";
-import { Option, Schema } from "effect";
-import { AsyncResult } from "effect/reactivity";
-import { useTranslations } from "next-intl";
 import { useState } from "react";
 
 import { analyticsSummary } from "#analytics/api.ts";

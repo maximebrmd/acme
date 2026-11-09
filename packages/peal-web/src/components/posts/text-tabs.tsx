@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import type { Channel } from "peal-contract";
 import { Button } from "peal-ui/components/button";
 import {
@@ -8,7 +9,6 @@ import {
   TabsList,
   TabsTrigger,
 } from "peal-ui/components/tabs";
-import { useTranslations } from "next-intl";
 import { useState } from "react";
 
 import { PlainTextEditor } from "#components/posts/plain-text-editor.tsx";

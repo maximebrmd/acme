@@ -1,10 +1,10 @@
 import { createHash, randomBytes } from "node:crypto";
 
 import { assert } from "@effect/vitest";
-import { PublicClientSchema } from "peal-contract";
 import { Effect, Layer, Option, Schema } from "effect";
 import { McpClient, McpProtocol } from "effect/ai";
 import type { McpSchema } from "effect/ai";
+import { PublicClientSchema } from "peal-contract";
 
 import {
   bodyOf,

@@ -1,8 +1,8 @@
 import { describe, expect, it } from "@effect/vitest";
-import type { Billing, PlanAllowances } from "peal-contract";
 import { DateTime } from "effect";
 import { NextIntlClientProvider } from "next-intl";
 import type { Locale } from "next-intl";
+import type { Billing, PlanAllowances } from "peal-contract";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import { BillingView } from "#components/billing/billing-view.tsx";

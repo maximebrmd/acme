@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { Button } from "peal-ui/components/button";
 import {
   Dialog,
@@ -11,7 +12,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "peal-ui/components/dialog";
-import { useTranslations } from "next-intl";
 
 /** What the composer is doing. */
 export type ComposerAction =

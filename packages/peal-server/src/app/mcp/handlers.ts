@@ -1,5 +1,5 @@
-import { CurrentMember } from "peal-contract";
 import { Array, Effect, Layer, Option } from "effect";
+import { CurrentMember } from "peal-contract";
 
 import { PeopleToolsLive } from "#app/mcp/people-handlers.ts";
 import { PostToolsLive } from "#app/mcp/posts-handlers.ts";

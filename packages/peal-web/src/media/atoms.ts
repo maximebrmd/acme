@@ -1,6 +1,6 @@
-import type { Media } from "peal-contract";
 import { Effect, Option } from "effect";
 import { Atom, Reactivity } from "effect/reactivity";
+import type { Media } from "peal-contract";
 
 import { PealApi } from "#api/client.ts";
 import { browserTransfer, Transfer } from "#media/transfer.ts";

@@ -1,5 +1,7 @@
 "use client";
 
+import { DateTime, Option } from "effect";
+import { useFormatter, useLocale, useTranslations } from "next-intl";
 import { PostContentInvalid } from "peal-contract";
 import type {
   Channel,
@@ -20,8 +22,6 @@ import {
   CardTitle,
 } from "peal-ui/components/card";
 import { Separator } from "peal-ui/components/separator";
-import { DateTime, Option } from "effect";
-import { useFormatter, useLocale, useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 

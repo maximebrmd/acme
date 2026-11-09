@@ -1,6 +1,6 @@
 import { describe, expect, it } from "@effect/vitest";
-import { Api } from "peal-contract";
 import { OpenApi } from "effect/http-api";
+import { Api } from "peal-contract";
 
 // What the API reference tells clients each endpoint may answer.
 const documentedStatuses = (path: string) =>

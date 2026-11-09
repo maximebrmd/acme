@@ -1,7 +1,7 @@
-import { TargetConfirmationSchema } from "peal-contract";
-import type { FailureReason, Post, PostTarget } from "peal-contract";
 import { Console, Effect, Option, Schema } from "effect";
 import { Argument, Command, Flag } from "effect/cli";
+import { TargetConfirmationSchema } from "peal-contract";
+import type { FailureReason, Post, PostTarget } from "peal-contract";
 
 import { explain } from "#explain.ts";
 import { columns, excerpt, instant } from "#print.ts";

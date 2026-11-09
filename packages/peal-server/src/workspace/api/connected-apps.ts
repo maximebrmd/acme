@@ -1,11 +1,11 @@
+import { Effect } from "effect";
+import { HttpApiBuilder } from "effect/http-api";
 import {
   Api,
   ConnectedAppNotFound,
   CurrentPrincipal,
   Forbidden,
 } from "peal-contract";
-import { Effect } from "effect";
-import { HttpApiBuilder } from "effect/http-api";
 
 import { ConnectedApps } from "#workspace/application/connected-apps.ts";
 

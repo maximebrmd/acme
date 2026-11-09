@@ -1,6 +1,9 @@
 "use client";
 
 import { useAtomRefresh, useAtomSet, useAtomValue } from "@effect/atom-react";
+import { Exit } from "effect";
+import { AsyncResult } from "effect/reactivity";
+import { useTranslations } from "next-intl";
 import type {
   NotificationPreferences,
   NotificationPreferencesChange,
@@ -10,9 +13,6 @@ import { Button } from "peal-ui/components/button";
 import { Checkbox } from "peal-ui/components/checkbox";
 import { Label } from "peal-ui/components/label";
 import { Skeleton } from "peal-ui/components/skeleton";
-import { Exit } from "effect";
-import { AsyncResult } from "effect/reactivity";
-import { useTranslations } from "next-intl";
 import { useId, useTransition } from "react";
 import { toast } from "sonner";
 

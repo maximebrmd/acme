@@ -1,8 +1,8 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import type { Channel, Post } from "peal-contract";
 import { Badge } from "peal-ui/components/badge";
-import { useTranslations } from "next-intl";
 
 interface TargetStatusesProps {
   readonly channels: readonly Channel[];

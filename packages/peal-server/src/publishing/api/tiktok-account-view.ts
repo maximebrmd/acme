@@ -1,5 +1,5 @@
-import type { TikTokAccount as TikTokAccountView } from "peal-contract";
 import { Duration, Option } from "effect";
+import type { TikTokAccount as TikTokAccountView } from "peal-contract";
 
 import type { TikTokAccount } from "#publishing/application/tiktok-creator-info.ts";
 

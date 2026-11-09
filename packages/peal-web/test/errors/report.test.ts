@@ -1,6 +1,6 @@
 import { describe, expect, it } from "@effect/vitest";
-import { ClientErrorReportSchema, clientErrorLimits } from "peal-contract";
 import { Schema } from "effect";
+import { ClientErrorReportSchema, clientErrorLimits } from "peal-contract";
 
 import { pathOf, reportOf } from "#errors/report.ts";
 import type { ErrorPlace } from "#errors/report.ts";

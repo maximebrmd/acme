@@ -1,5 +1,5 @@
-import type { Billing, PlanAllowances } from "peal-contract";
 import { Option } from "effect";
+import type { Billing, PlanAllowances } from "peal-contract";
 
 import type { Overview } from "#billing/application/billing-overview.ts";
 import type { Allowances } from "#billing/domain/plans.ts";

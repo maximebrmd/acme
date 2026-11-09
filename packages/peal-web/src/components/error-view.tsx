@@ -1,7 +1,7 @@
 "use client";
 
-import { Button } from "peal-ui/components/button";
 import { useTranslations } from "next-intl";
+import { Button } from "peal-ui/components/button";
 import type { ReactElement } from "react";
 
 // What a page that failed shows: that it was reported, a way to try again,

@@ -1,6 +1,6 @@
-import { cliClientId } from "peal-contract";
 import { Console, Duration, Effect, Option, Redacted } from "effect";
 import { Command } from "effect/cli";
+import { cliClientId } from "peal-contract";
 
 import { PealApi } from "#api.ts";
 import { CredentialStore } from "#credentials.ts";
