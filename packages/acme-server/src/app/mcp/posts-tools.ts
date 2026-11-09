@@ -1,9 +1,9 @@
 import {
-  ChannelOptionsSchema,
   CurrentMember,
   DraftPageSchema,
   maxDraftPageSize,
   PostContentSchema,
+  PostDraftSchema,
   PostSchema,
   TargetConfirmationSchema,
   TikTokAccountSchema,
@@ -28,7 +28,8 @@ const channelIds = Schema.Array(Schema.String).annotate({
     "The channels the post is for, as list_channels answers their ids. A draft may be for none yet.",
 });
 
-const options = Schema.Array(ChannelOptionsSchema).annotate({
+// The API's draft options, each channel's once.
+const options = PostDraftSchema.fields.options.schema.annotate({
   description:
     "What the post sets on the platforms that ask for more than text and media, one entry per channel, tagged by the channel's `platform`: YouTube's title (required), madeForKids (required), privacy, tags, categoryId, notifySubscribers and containsSyntheticMedia; TikTok's privacyLevel (required: one of the levels get_tiktok_creator answers), disableComment, disableDuet, disableStitch, commercialContent, brandOrganic, brandContent and aiGenerated. A draft keeps them unfinished; scheduling needs the required ones.",
 });
