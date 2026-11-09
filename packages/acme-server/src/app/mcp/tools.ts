@@ -1,16 +1,12 @@
 import { ChannelSchema, CurrentMember, PermissionSchema } from "acme-contract";
-import { Context, Schema } from "effect";
+import { Schema } from "effect";
 import { Tool, Toolkit } from "effect/ai";
 
+import { reading } from "#app/mcp/annotations.ts";
+import { PeopleTools } from "#app/mcp/people-tools.ts";
+import { PostTools } from "#app/mcp/posts-tools.ts";
+import { ReportTools } from "#app/mcp/reports-tools.ts";
 import { ToolRefused } from "#app/mcp/tool-refused.ts";
-
-// The tools only read, within Acme: MCP clients may call them without
-// asking, and as often as they like.
-const reading = Context.make(Tool.Readonly, true).pipe(
-  Context.add(Tool.Destructive, false),
-  Context.add(Tool.Idempotent, true),
-  Context.add(Tool.OpenWorld, false)
-);
 
 const UserSchema = Schema.Struct({
   email: Schema.String,
@@ -84,10 +80,23 @@ export const ServerHealth = Tool.make("server_health", {
   .annotateMerge(reading)
   .annotate(Tool.Title, "Server health");
 
-/** Every tool the MCP endpoint offers. */
-export const AcmeTools = Toolkit.make(
+/** Who the connection is, its workspaces and channels, and the server. */
+export const BasicTools = Toolkit.make(
   WhoAmI,
   ListWorkspaces,
   ListChannels,
   ServerHealth
+);
+
+/**
+ * Every tool the MCP endpoint offers. The account's own data (its export,
+ * the applications acting for it) is not among them: a tool would hand it
+ * all to an AI model. The command line, which saves it in the user's files,
+ * reads it instead.
+ */
+export const AcmeTools = Toolkit.merge(
+  BasicTools,
+  PostTools,
+  ReportTools,
+  PeopleTools
 );

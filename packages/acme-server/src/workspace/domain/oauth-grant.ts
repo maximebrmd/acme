@@ -17,6 +17,8 @@ export const WorkspaceScopeSchema = Schema.Literals([
 
 export type WorkspaceScope = typeof WorkspaceScopeSchema.Type;
 
+const isWorkspaceScope = Schema.is(WorkspaceScopeSchema);
+
 /**
  * An OAuth access token's grant: the client it was issued to, the scopes the
  * user agreed to, and the workspace it is bound to. Tokens of MCP clients are
@@ -30,6 +32,22 @@ export const OAuthGrantSchema = Schema.Struct({
 });
 
 export type OAuthGrant = typeof OAuthGrantSchema.Type;
+
+/**
+ * The command line's OAuth client, which every Acme server registers under
+ * this id (the contract's `cliClientId`, kept equal by a test).
+ */
+export const commandLineClientId = "acme-cli";
+
+/**
+ * Whether a grant is Acme's own command line's: the user signed it in at
+ * their terminal, through the device grant, and its tokens are bound to no
+ * workspace.
+ */
+export const isCommandLine = (grant: OAuthGrant): boolean =>
+  grant.clientId === commandLineClientId &&
+  Option.isNone(grant.workspaceId) &&
+  grant.scopes.some(isWorkspaceScope);
 
 const reads = (permission: Permission): boolean => permission.endsWith(":read");
 

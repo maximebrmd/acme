@@ -3,7 +3,7 @@ import { Context, DateTime, Effect, Layer, Option } from "effect";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import type { AuthoredPostRecord } from "#shared/application/personal-data.ts";
 import type { ApiKey } from "#workspace/domain/api-key.ts";
-import { ownSession } from "#workspace/domain/own-session.ts";
+import { ownSessionOrCommandLine } from "#workspace/domain/own-session.ts";
 import type { SessionRequired } from "#workspace/domain/session-required.ts";
 import type { UserPrincipal } from "#workspace/domain/user-principal.ts";
 
@@ -34,7 +34,8 @@ export interface AccountExport extends UserContent {
 
 /**
  * The right of access: a copy of everything tied to the user, for them in
- * person. Workspaces they share hold the team's work: of those, only their
+ * person or through Acme's command line, which saves it in their files.
+ * Workspaces they share hold the team's work: of those, only their
  * memberships and the posts they wrote are part of it. The workspaces where
  * they are the only member are theirs, and come whole, as deleting the
  * account would delete them.
@@ -70,7 +71,9 @@ export class AccountData extends Context.Service<
 
       const exportAccount = Effect.fn("AccountData.export")(
         function* exportAccount(principal: UserPrincipal) {
-          const userId = yield* Effect.fromResult(ownSession(principal));
+          const userId = yield* Effect.fromResult(
+            ownSessionOrCommandLine(principal)
+          );
 
           const account = yield* store.records(userId).pipe(
             Effect.flatMap(

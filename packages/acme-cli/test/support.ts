@@ -9,8 +9,6 @@ import {
   OAuthClientNotPublished,
   StaffAccess,
   Unauthenticated,
-  WorkspaceAccess,
-  WorkspaceNotFound,
 } from "acme-contract";
 import type { Me } from "acme-contract";
 import {
@@ -33,6 +31,8 @@ import { TestConsole } from "effect/testing";
 
 import { makeAuthorizationServer } from "./authorization-server.ts";
 import type { AuthorizationServer } from "./authorization-server.ts";
+import { makeStudio, studioAccessLive, studioGroupsLive } from "./studio.ts";
+import type { Studio } from "./studio.ts";
 
 const unused = Effect.die("not used by the CLI tests");
 
@@ -117,8 +117,9 @@ export const syntheticMe: Me = {
 const refusing = Effect.fail(new Unauthenticated());
 
 // Bearer tokens work when they are the authorization server's latest access
-// token; nothing else signs in.
-const securityLive = (authorization: AuthorizationServer) =>
+// token; nothing else signs in. Workspace routes act as the user, as a
+// member of the studio's workspaces.
+const securityLive = (authorization: AuthorizationServer, studio: Studio) =>
   Layer.mergeAll(
     Layer.succeed(
       Authentication,
@@ -142,50 +143,21 @@ const securityLive = (authorization: AuthorizationServer) =>
         session: () => refusing,
       })
     ),
-    Layer.succeed(
-      WorkspaceAccess,
-      WorkspaceAccess.of(() => Effect.fail(new WorkspaceNotFound()))
-    )
+    studioAccessLive(studio)
   );
 
-const signedInGroupsLive = (authorization: AuthorizationServer) =>
+// The groups the studio does not answer refuse every request.
+const signedInGroupsLive = (
+  authorization: AuthorizationServer,
+  studio: Studio
+) =>
   Layer.mergeAll(
-    HttpApiBuilder.group(Api, "session", (handlers) =>
-      handlers.handleAll({ me: () => Effect.succeed(syntheticMe) })
-    ),
+    studioGroupsLive(studio),
     HttpApiBuilder.group(Api, "apiKeys", (handlers) =>
       handlers.handleAll({
         create: () => refusing,
         list: () => refusing,
         revoke: () => refusing,
-      })
-    ),
-    HttpApiBuilder.group(Api, "channels", (handlers) =>
-      handlers.handleAll({
-        chooseAccounts: () => refusing,
-        completeConnect: () => refusing,
-        connect: () => refusing,
-        disconnect: () => refusing,
-        list: () => refusing,
-        platforms: () => refusing,
-        reconnect: () => refusing,
-      })
-    ),
-    HttpApiBuilder.group(Api, "posts", (handlers) =>
-      handlers.handleAll({
-        attempts: () => refusing,
-        cancel: () => refusing,
-        confirm: () => refusing,
-        create: () => refusing,
-        discard: () => refusing,
-        drafts: () => refusing,
-        get: () => refusing,
-        list: () => refusing,
-        repost: () => refusing,
-        reschedule: () => refusing,
-        schedule: () => refusing,
-        unschedule: () => refusing,
-        update: () => refusing,
       })
     ),
     HttpApiBuilder.group(Api, "media", (handlers) =>
@@ -218,23 +190,8 @@ const signedInGroupsLive = (authorization: AuthorizationServer) =>
     ),
     HttpApiBuilder.group(Api, "workspaces", (handlers) =>
       handlers.handleAll({ delete: () => refusing })
-    ),
-    HttpApiBuilder.group(Api, "account", (handlers) =>
-      handlers.handleAll({ delete: () => refusing, export: () => refusing })
-    ),
-    HttpApiBuilder.group(Api, "connectedApps", (handlers) =>
-      handlers.handleAll({ list: () => refusing, revoke: () => refusing })
-    ),
-    HttpApiBuilder.group(Api, "billing", (handlers) =>
-      handlers.handleAll({ get: () => refusing })
-    ),
-    HttpApiBuilder.group(Api, "analytics", (handlers) =>
-      handlers.handleAll({ post: () => refusing, summary: () => refusing })
-    ),
-    HttpApiBuilder.group(Api, "tiktok", (handlers) =>
-      handlers.handleAll({ creator: () => refusing })
     )
-  ).pipe(Layer.provideMerge(securityLive(authorization)));
+  ).pipe(Layer.provideMerge(securityLive(authorization, studio)));
 
 const notPublished = Effect.fail(new OAuthClientNotPublished());
 
@@ -298,15 +255,18 @@ const DataDeletionLive = HttpApiBuilder.group(Api, "dataDeletion", (handlers) =>
 );
 
 // An Acme server in memory: acme-contract served by test handlers, without
-// a socket, with an OAuth authorization server. The CLI never imports
-// acme-server, so its tests answer for it.
+// a socket, with an OAuth authorization server and a studio of synthetic
+// workspaces, where the user belongs to syntheticMe's unless a test brings
+// its own. The CLI never imports acme-server, so its tests answer for it.
 export const inMemoryServer = (
   health: Effect.Effect<void>,
-  authorization?: AuthorizationServer
+  authorization?: AuthorizationServer,
+  studio?: Studio
 ) =>
   Layer.unwrap(
     Effect.gen(function* inMemory() {
       const server = authorization ?? (yield* makeAuthorizationServer());
+      const workspaces = studio ?? (yield* makeStudio(syntheticMe));
 
       const app = yield* Effect.acquireRelease(
         Effect.sync(() =>
@@ -321,7 +281,7 @@ export const inMemoryServer = (
                     })
                   )
                 ),
-                Layer.provide(signedInGroupsLive(server)),
+                Layer.provide(signedInGroupsLive(server, workspaces)),
                 Layer.provide(ChannelOAuthLive),
                 Layer.provide(CaptchaLive),
                 Layer.provide(DataDeletionLive),

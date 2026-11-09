@@ -1,7 +1,10 @@
 import { Context, DateTime, Effect, Layer } from "effect";
 
 import type { DatabaseError } from "#shared/application/database-error.ts";
-import { ownSession } from "#workspace/domain/own-session.ts";
+import {
+  ownSession,
+  ownSessionOrCommandLine,
+} from "#workspace/domain/own-session.ts";
 import type { SessionRequired } from "#workspace/domain/session-required.ts";
 import type { UserPrincipal } from "#workspace/domain/user-principal.ts";
 
@@ -10,9 +13,9 @@ import { ConnectedAppStore } from "./connected-app-store.ts";
 import type { ConnectedAppRecord } from "./connected-app-store.ts";
 
 /**
- * The OAuth clients that act for the user, which only they, in person, see
- * and revoke: a client could otherwise revoke the others, or itself be kept
- * from being revoked.
+ * The OAuth clients that act for the user, which only they see, in person or
+ * from Acme's command line, and only they revoke, in person: a client could
+ * otherwise revoke the others, or itself be kept from being revoked.
  */
 export class ConnectedApps extends Context.Service<
   ConnectedApps,
@@ -40,7 +43,9 @@ export class ConnectedApps extends Context.Service<
       const list = Effect.fn("ConnectedApps.list")(function* list(
         principal: UserPrincipal
       ) {
-        const userId = yield* Effect.fromResult(ownSession(principal));
+        const userId = yield* Effect.fromResult(
+          ownSessionOrCommandLine(principal)
+        );
 
         return yield* store.list(userId, yield* DateTime.now);
       });

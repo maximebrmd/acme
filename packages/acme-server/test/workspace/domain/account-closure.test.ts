@@ -4,7 +4,11 @@ import { Option, Result } from "effect";
 import { UserIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import { planClosure } from "#workspace/domain/account-closure.ts";
 import type { MembershipStanding } from "#workspace/domain/account-closure.ts";
-import { ownSession } from "#workspace/domain/own-session.ts";
+import type { OAuthGrant } from "#workspace/domain/oauth-grant.ts";
+import {
+  ownSession,
+  ownSessionOrCommandLine,
+} from "#workspace/domain/own-session.ts";
 import { UserPrincipal } from "#workspace/domain/user-principal.ts";
 
 const workspace = (
@@ -96,5 +100,65 @@ describe(ownSession, () => {
 
     expect(Result.isFailure(ownSession(throughClient))).toBeTruthy();
     expect(Result.isFailure(ownSession(impersonated))).toBeTruthy();
+  });
+});
+
+describe(ownSessionOrCommandLine, () => {
+  const userId = UserIdSchema.make("7a2b3c4d-0000-4000-8000-000000000007");
+
+  const studio = WorkspaceIdSchema.make("8a2b3c4d-0000-4000-8000-000000000008");
+
+  const through = (grant: OAuthGrant) =>
+    new UserPrincipal({
+      impersonatedBy: Option.none(),
+      oauth: Option.some(grant),
+      userId,
+    });
+
+  it("is the user in person, or through the command line", () => {
+    expect(
+      ownSessionOrCommandLine(
+        new UserPrincipal({ impersonatedBy: Option.none(), userId })
+      )
+    ).toStrictEqual(Result.succeed(userId));
+    expect(
+      ownSessionOrCommandLine(
+        through({
+          clientId: "acme-cli",
+          scopes: ["offline_access", "workspace:read"],
+          workspaceId: Option.none(),
+        })
+      )
+    ).toStrictEqual(Result.succeed(userId));
+  });
+
+  it("is nobody through another client, one bound to a workspace, one granted no workspace scope, or staff", () => {
+    const refused = [
+      through({
+        clientId: "synthetic-agent",
+        scopes: ["workspace:write"],
+        workspaceId: Option.none(),
+      }),
+      through({
+        clientId: "acme-cli",
+        scopes: ["workspace:write"],
+        workspaceId: Option.some(studio),
+      }),
+      through({
+        clientId: "acme-cli",
+        scopes: ["openid"],
+        workspaceId: Option.none(),
+      }),
+      new UserPrincipal({
+        impersonatedBy: Option.some(
+          UserIdSchema.make("9a2b3c4d-0000-4000-8000-000000000009")
+        ),
+        userId,
+      }),
+    ];
+
+    for (const principal of refused) {
+      expect(Result.isFailure(ownSessionOrCommandLine(principal))).toBeTruthy();
+    }
   });
 });

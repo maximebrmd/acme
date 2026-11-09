@@ -285,6 +285,53 @@ layer(DeviceGrantLive, { excludeTestServices: true, timeout: "180 seconds" })(
       })
     );
 
+    it.effect(
+      "copies out the account and lists its applications, but revokes none and deletes nothing",
+      () =>
+        Effect.gen(function* ownData() {
+          const app = yield* TestApp;
+          const owner = yield* signedUp("exporter");
+
+          const device = yield* startSignIn;
+
+          yield* review(owner, device.user_code);
+          yield* decide(owner, "approve", device.user_code);
+
+          const { access_token: token } = yield* poll(device.device_code);
+
+          const exported = yield* app.request("/api/me/export", {
+            headers: bearer(token),
+          });
+
+          assert.strictEqual(exported.status, 200);
+          assert.include(
+            exported.headers.get("content-disposition") ?? "",
+            "attachment"
+          );
+
+          const apps = yield* app.request("/api/me/connected-apps", {
+            headers: bearer(token),
+          });
+
+          assert.strictEqual(apps.status, 200);
+
+          const revoked = yield* app.request(
+            "/api/me/connected-apps/acme-cli",
+            { headers: bearer(token), method: "DELETE" }
+          );
+
+          assert.strictEqual(revoked.status, 403);
+
+          const deleted = yield* app.request("/api/me", {
+            body: { password: "correct horse battery staple" },
+            headers: bearer(token),
+            method: "DELETE",
+          });
+
+          assert.strictEqual(deleted.status, 403);
+        })
+    );
+
     it.effect("refuses a token that grants no workspace scope", () =>
       Effect.gen(function* identityOnly() {
         const app = yield* TestApp;

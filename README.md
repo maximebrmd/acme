@@ -36,7 +36,10 @@ It is not released yet. Today you can:
   posts a month and assistant requests a day, when the server has a Stripe
   key, and ask for a Cloudflare Turnstile check on sign-up when it has
   Turnstile's keys; without them, nothing is limited or checked;
-- sign in from the command line, and let MCP clients read a workspace;
+- sign in from the command line and work in a workspace from it: drafts,
+  following up on posts, analytics, billing, members and invitations, and
+  a copy of your data; and let MCP clients do the same in one workspace,
+  but for your data, which no MCP tool hands out;
 - run the server from a staff console at `/admin`: find accounts and
   workspaces, see the system's health, ban, sign out or act as an account,
   each action in an audit log;
@@ -305,6 +308,8 @@ bun nx run acme-cli:run -- health   # from source, against http://localhost:3000
 bun nx run acme-cli:run -- login    # sign in: approve the code at http://localhost:3001/device
 bun nx run acme-cli:run -- whoami   # who you are signed in as, and your workspaces
 bun nx run acme-cli:run -- mcp      # how to connect an MCP client
+bun nx run acme-cli:run -- drafts list --workspace <slug>   # or set ACME_WORKSPACE
+bun nx run acme-cli:run -- account export                   # your data, in a file only you may read
 bun nx run acme-cli:run -- logout
 bun nx run acme-cli:build           # compile packages/acme-cli/dist/acme
 packages/acme-cli/dist/acme --help
@@ -314,7 +319,10 @@ packages/acme-cli/dist/acme --help
 with 0 when the API answers, and with 1 when it is unreachable (5-second
 timeout) or answers with an error. `acme login` saves the sign-in in
 `credentials.json`, which only you may read, in `ACME_CONFIG_DIR`, else
-`$XDG_CONFIG_HOME/acme`, `%APPDATA%\acme` or `~/.config/acme`.
+`$XDG_CONFIG_HOME/acme`, `%APPDATA%\acme` or `~/.config/acme`. `acme --help`
+lists the commands that act in a workspace (`channels`, `drafts`, `posts`,
+`analytics`, `billing`, `members`, `invitations`) and on your account
+(`account`).
 
 ### MCP clients
 
@@ -322,7 +330,9 @@ The server answers MCP clients at `/api/mcp` on the web app's origin:
 `http://localhost:3001/api/mcp` in development. Most MCP clients register
 themselves before they sign in, which the server allows only with
 `MCP_DYNAMIC_REGISTRATION=true`. The client then opens a browser, where you
-sign in, pick the workspace it may use, and allow it.
+sign in, pick the workspace it may use, and allow it. Its tools read the
+workspace, and, when you let it do what your role allows, write drafts,
+follow up on posts and invite people; each says what it changes.
 
 ### Docs and marketing site
 

@@ -11,7 +11,9 @@ import { ChannelsApi } from "./channels.ts";
 import { ClientErrorsApi } from "./client-errors.ts";
 import { ConnectedAppsApi } from "./connected-apps.ts";
 import { DataDeletionApi } from "./data-deletion.ts";
+import { InvitationsApi } from "./invitations.ts";
 import { MediaApi } from "./media.ts";
+import { MembersApi } from "./members.ts";
 import { NoticesApi } from "./notices.ts";
 import { NotificationPreferencesApi } from "./notification-preferences.ts";
 import { PostsApi } from "./posts.ts";
@@ -44,6 +46,28 @@ export { LastOwner } from "./last-owner.ts";
 export { TooManyPasswordAttempts } from "./too-many-password-attempts.ts";
 
 export { DeleteWorkspaceSchema, WorkspacesApi } from "./workspaces.ts";
+
+export { AlreadyMember } from "./already-member.ts";
+
+export {
+  InvitationSchema,
+  InvitationsApi,
+  NewInvitationSchema,
+} from "./invitations.ts";
+
+export type { Invitation, NewInvitation } from "./invitations.ts";
+
+export { InvitationNotFound } from "./invitation-not-found.ts";
+
+export { MembersApi, WorkspaceMemberSchema } from "./members.ts";
+
+export type { WorkspaceMember } from "./members.ts";
+
+export { RoleSchema } from "./role.ts";
+
+export type { Role } from "./role.ts";
+
+export { TooManyInvitations } from "./too-many-invitations.ts";
 
 export type { DeleteWorkspace } from "./workspaces.ts";
 
@@ -570,6 +594,8 @@ export class Api extends HttpApi.make("acme")
   .add(NotificationPreferencesApi)
   .add(AssistantApi)
   .add(WorkspacesApi)
+  .add(MembersApi)
+  .add(InvitationsApi)
   .add(AccountApi)
   .add(ConnectedAppsApi)
   .add(BillingApi)

@@ -113,6 +113,13 @@ const localeOf = (user: User): Locale =>
 const localePrefix = (locale: Locale): string =>
   locale === defaultLocale ? "" : `/${locale}`;
 
+/** The web app's page that answers an invitation, in the reader's language. */
+export const invitationUrl = (
+  publicUrl: string,
+  locale: Locale,
+  invitationId: string
+): string => `${publicUrl}${localePrefix(locale)}/invitations/${invitationId}`;
+
 const isRole = Schema.is(RoleSchema);
 
 // A member holds one role. Better Auth would store several, comma-separated,
@@ -137,6 +144,12 @@ const fiveMinutes = 5 * 60;
 const oneHour = 60 * 60;
 
 const oneWeek = 7 * oneDay;
+
+/** How long an invitation's link works, in seconds. */
+export const invitationLifetime = oneWeek;
+
+/** How many invitations a workspace may have pending, unexpired, at once. */
+export const pendingInvitationLimit = 100;
 
 const fifteenMinutes = 15 * 60;
 
@@ -397,7 +410,8 @@ export const makeAuth = ({ database, hooks, settings }: AuthDependencies) =>
         allowUserToCreateOrganization: true,
         cancelPendingInvitationsOnReInvite: true,
         creatorRole: "owner",
-        invitationExpiresIn: oneWeek,
+        invitationExpiresIn: invitationLifetime,
+        invitationLimit: pendingInvitationLimit,
         organizationHooks: {
           // An invitation is accepted, or a member added, only while the
           // workspace's plan has room for one more.
@@ -466,7 +480,7 @@ export const makeAuth = ({ database, hooks, settings }: AuthDependencies) =>
             locale,
             role: invitation.role,
             to: email,
-            url: `${settings.publicUrl}${localePrefix(locale)}/invitations/${id}`,
+            url: invitationUrl(settings.publicUrl, locale, id),
             workspaceName: workspace.name,
           });
         },

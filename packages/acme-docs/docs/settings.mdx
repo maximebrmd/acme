@@ -75,4 +75,13 @@ While you are the only owner of a workspace that other members use, the account 
 | `GET /api/me/connected-apps`             | Lists your connected applications                |
 | `DELETE /api/me/connected-apps/{client}` | Revokes one                                      |
 
-They answer only you, signed in to the web app with your own session: API keys, OAuth tokens and staff acting as you get 403. Renaming a workspace, its members and its invitations go through the sign-in service's routes under `/api/auth/organization/`, and API keys through `/api/workspaces/{workspaceId}/api-keys`.
+They answer only you, signed in to the web app with your own session: API keys, OAuth tokens and staff acting as you get 403. Your data and the list of your connected applications also answer the [command line](/cli#account) (`acme account`), which you sign in at your own terminal; never an MCP client or another OAuth client.
+
+| Endpoint                                                        | What it does                                                      |
+| --------------------------------------------------------------- | ----------------------------------------------------------------- |
+| `GET /api/workspaces/{workspaceId}/members`                     | Lists the members, to every member                                |
+| `GET /api/workspaces/{workspaceId}/invitations`                 | Lists the pending invitations, to those who may invite            |
+| `POST /api/workspaces/{workspaceId}/invitations`                | Invites an `email` with a `role`, as **Send the invitation** does |
+| `DELETE /api/workspaces/{workspaceId}/invitations/{invitation}` | Revokes a pending invitation                                      |
+
+They answer members in person, through the web app, the command line or an MCP client allowed to, never an API key or staff acting as you. Renaming a workspace, changing a member's role and removing a member go through the sign-in service's routes under `/api/auth/organization/`, and API keys through `/api/workspaces/{workspaceId}/api-keys`.

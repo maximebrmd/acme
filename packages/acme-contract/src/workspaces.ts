@@ -21,8 +21,9 @@ export const DeleteWorkspaceSchema = Schema.Struct({
 export type DeleteWorkspace = typeof DeleteWorkspaceSchema.Type;
 
 /**
- * A workspace itself. Renaming it, its members and its invitations go
- * through the sign-in service's organization routes, under /api/auth.
+ * A workspace itself. Renaming it, changing its members' roles and removing
+ * members go through the sign-in service's organization routes, under
+ * /api/auth; MembersApi and InvitationsApi list its members and invite.
  */
 export class WorkspacesApi extends HttpApiGroup.make("workspaces")
   .add(
