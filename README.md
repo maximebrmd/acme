@@ -576,9 +576,10 @@ licences:
 | ------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------- |
 | Everything, unless a folder below has a `LICENSE` of its own | [FSL-1.1-ALv2](LICENSE.md): any use but a competing service, and Apache-2.0 two years after each release |
 | [`peal-contract`](packages/peal-contract), the API contract  | [Apache-2.0](packages/peal-contract/LICENSE)                                                             |
-| `peal-sdk`, the SDKs                                         | Apache-2.0, in `packages/peal-sdk/LICENSE`                                                               |
+| `peal-sdk`, the SDKs, still to come                          | Apache-2.0, in `packages/peal-sdk/LICENSE` once they exist                                               |
 
 The SDKs are generated from the contract's OpenAPI document, so the contract
 is Apache-2.0 with them: what an SDK user installs, and the API description
 it comes from, carry no FSL terms. Each `package.json` says which licence
-applies.
+applies, and each Apache-2.0 package has a `NOTICE` naming Peal as its
+copyright holder.

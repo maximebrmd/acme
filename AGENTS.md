@@ -5,9 +5,9 @@ them across platforms, and see how they perform, at [peal.social](https://peal.s
 source is public under the Functional Source License (FSL-1.1-ALv2, in
 [`LICENSE.md`](LICENSE.md)), with Peal as its licensor: anyone may self-host
 it, and each release becomes Apache-2.0 two years after it ships. Call it
-"fair source", not open source. The SDKs (`peal-sdk`) are Apache-2.0, and so
-is `peal-contract`, which they are generated from, each with its own
-`LICENSE`: keep anything an SDK user installs or generates from free of FSL
+"fair source", not open source. The SDKs (`peal-sdk`, still to come) will
+be Apache-2.0, as `peal-contract` is, which they are generated from, each
+with its own `LICENSE` and a `NOTICE` (Copyright 2026 Peal): keep anything an SDK user installs or generates from free of FSL
 code, so an SDK never depends on another workspace package but the contract.
 Every `package.json` names its licence (SPDX), the repository
 (https://github.com/peal-social/peal, with its folder), its homepage and where
