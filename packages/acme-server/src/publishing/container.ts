@@ -1,24 +1,30 @@
 import { Layer } from "effect";
+import { Digest, SecureRandom } from "effect/crypto";
+import { FetchHttpClient } from "effect/http";
 
 import type { AttachableMedia } from "#publishing/application/attachable-media.ts";
 import type { PlatformPublisher } from "#publishing/application/platform-publisher.ts";
 import { PostDrafts } from "#publishing/application/post-drafts.ts";
 import { PostQueries } from "#publishing/application/post-queries.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
+import { RoutedPlatformPublisher } from "#publishing/application/routed-platform-publisher.ts";
 import type { WorkspaceChannels } from "#publishing/application/workspace-channels.ts";
+import { ChannelAccessCredentials } from "#publishing/infrastructure/channel-access-credentials.ts";
 import {
   ChannelGateLive,
   GatedPlatformPublisher,
 } from "#publishing/infrastructure/channel-gate.ts";
 import { DrizzlePostRepository } from "#publishing/infrastructure/drizzle-post-repository.ts";
 import { DrizzlePublicationJournal } from "#publishing/infrastructure/drizzle-publication-journal.ts";
+import { LibraryMediaForPublishing } from "#publishing/infrastructure/library-media-for-publishing.ts";
 import { ListedWorkspaceChannels } from "#publishing/infrastructure/listed-workspace-channels.ts";
 import { LoggedChannelHealth } from "#publishing/infrastructure/logged-channel-health.ts";
+import { PlatformClientsLive } from "#publishing/infrastructure/platforms/platform-clients-live.ts";
 import { UnavailableAttachableMedia } from "#publishing/infrastructure/unavailable-attachable-media.ts";
-import { UnsupportedPlatformPublisher } from "#publishing/infrastructure/unsupported-platform-publisher.ts";
 import { WorkflowPublicationScheduler } from "#publishing/infrastructure/workflow-publication-scheduler.ts";
 import { PublishPostV1Live } from "#publishing/infrastructure/workflows/publish-post.ts";
 import { PublishTargetV1Live } from "#publishing/infrastructure/workflows/publish-target.ts";
+import { OutboundGuard } from "#shared/infrastructure/platforms/outbound-guard.ts";
 
 /**
  * The publishing context's use cases (`PostDrafts`, `PostQueries`,
@@ -72,7 +78,26 @@ export const publishingWorkers = <E, R>(
     Layer.merge(ChannelGateLive.pipe(Layer.provide(platforms)))
   );
 
-/** The workers as the server runs them, with no platform adapter yet. */
-export const PublishingWorkersLive = publishingWorkers(
-  UnsupportedPlatformPublisher
+/**
+ * The platforms the gates publish to, Mastodon and Bluesky, with the tokens
+ * the channels context hands out (ChannelAccess) and the files the media
+ * context does (MediaForPlatforms), which the composition root provides
+ * with Dns and the PostRepository.
+ */
+export const PlatformsLive = RoutedPlatformPublisher.pipe(
+  Layer.provide(PlatformClientsLive),
+  Layer.provide(
+    Layer.mergeAll(ChannelAccessCredentials, LibraryMediaForPublishing)
+  ),
+  Layer.provide(OutboundGuard.layer),
+  Layer.provide(
+    Layer.mergeAll(
+      FetchHttpClient.layer,
+      SecureRandom.layerWebCrypto,
+      Digest.layerWebCrypto
+    )
+  )
 );
+
+/** The workers as the server runs them, publishing to the platforms. */
+export const PublishingWorkersLive = publishingWorkers(PlatformsLive);

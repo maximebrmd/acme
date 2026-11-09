@@ -277,8 +277,10 @@ const writeOutcome = (
   );
 
 // The journal row is written, and committed, before the call: a run that
-// finds it begun and not ended does not call again. A row that ended returns
-// what it recorded, so a run after a crash decides as the first one did.
+// finds it begun and not ended does not send it blindly again, but asks the
+// publisher to resume it, which looks for the post where the platform allows
+// and answers unconfirmed otherwise. A row that ended returns what it
+// recorded, so a run after a crash decides as the first one did.
 const callPlatform = Effect.fn("Publishing.callPlatform")(
   function* callPlatform(attempt: PublishAttempt) {
     const journal = yield* PublicationJournal;
@@ -301,17 +303,19 @@ const callPlatform = Effect.fn("Publishing.callPlatform")(
     // When the call was made, by this run or the one that began it.
     const startedAt = start._tag === "inFlight" ? start.startedAt : now;
 
-    const outcome: AttemptOutcome =
+    const request = {
+      channelId: attempt.channelId,
+      idempotencyKey: attempt.idempotencyKey,
+      postId: attempt.postId,
+      startedAt,
+      targetId: attempt.targetId,
+    };
+
+    const outcome: AttemptOutcome = yield* (
       start._tag === "inFlight"
-        ? { _tag: "unconfirmed", reason: "interrupted" }
-        : yield* publisher
-            .publish({
-              channelId: attempt.channelId,
-              idempotencyKey: attempt.idempotencyKey,
-              postId: attempt.postId,
-              targetId: attempt.targetId,
-            })
-            .pipe(Effect.catch((error) => Effect.succeed(error)));
+        ? publisher.resume(request)
+        : publisher.publish(request)
+    ).pipe(Effect.catch((error) => Effect.succeed(error)));
 
     const finishedAt = yield* DateTime.now;
 

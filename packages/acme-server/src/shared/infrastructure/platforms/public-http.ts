@@ -1,4 +1,5 @@
 import { Effect, Result } from "effect";
+import type { Duration } from "effect";
 import { FetchHttpClient, HttpClient } from "effect/http";
 
 import { OutboundGuard } from "./outbound-guard.ts";
@@ -69,29 +70,41 @@ const boundedFetch = withPreconnect(async (input, init) =>
 );
 
 /**
+ * The public HTTP client (see `publicHttpClient`), with requests timing out
+ * after `timeout`: for uploads of images and videos, which take longer than
+ * the default allows.
+ */
+export const publicHttpClientWith = (options: {
+  readonly timeout: Duration.Input;
+}) =>
+  Effect.gen(function* publicHttpClient() {
+    const client = yield* HttpClient.HttpClient;
+    const guard = yield* OutboundGuard;
+
+    return client.pipe(
+      HttpClient.mapRequestEffect((request) =>
+        guard.check(new URL(request.url)).pipe(Effect.as(request))
+      ),
+      HttpClient.transform((response) =>
+        response.pipe(
+          Effect.provideService(FetchHttpClient.RequestInit, noRedirects),
+          Effect.provideService(FetchHttpClient.Fetch, boundedFetch),
+          Effect.provideService(HttpClient.TracerPropagationEnabled, false)
+        )
+      ),
+      HttpClient.timeout(options.timeout)
+    );
+  });
+
+/**
  * The HTTP client for hosts a user chose: every request is checked by the
  * OutboundGuard before it is sent, redirects are answered as they come
  * rather than followed (a redirect could lead past the guard), answers are
  * cut off past a megabyte, requests time out, and the host is not sent
  * Acme's trace context. Built on the fetch HttpClient, whose fetch it bounds.
  */
-export const publicHttpClient = Effect.gen(function* publicHttpClient() {
-  const client = yield* HttpClient.HttpClient;
-  const guard = yield* OutboundGuard;
-
-  return client.pipe(
-    HttpClient.mapRequestEffect((request) =>
-      guard.check(new URL(request.url)).pipe(Effect.as(request))
-    ),
-    HttpClient.transform((response) =>
-      response.pipe(
-        Effect.provideService(FetchHttpClient.RequestInit, noRedirects),
-        Effect.provideService(FetchHttpClient.Fetch, boundedFetch),
-        Effect.provideService(HttpClient.TracerPropagationEnabled, false)
-      )
-    ),
-    HttpClient.timeout(requestTimeout)
-  );
+export const publicHttpClient = publicHttpClientWith({
+  timeout: requestTimeout,
 });
 
 /**
