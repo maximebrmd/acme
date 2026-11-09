@@ -83,9 +83,10 @@ Work from the repository root unless a command names another directory.
   `packages/acme-cli/scripts/build.ts`.
 - Pin every dependency to the exact latest release, and commit `bun.lock` with
   dependency changes, `packages/acme-infra/uv.lock` with Python ones.
-- `bun run test` also runs ansible-lint (production profile) and
-  `ansible-playbook --syntax-check` on `packages/acme-infra`, through uv
-  (`nx run acme-infra:test`).
+- `bun run test` also runs ansible-lint (production profile),
+  `ansible-playbook --syntax-check` and the pytest suite in `tests/` on
+  `packages/acme-infra`, through uv (`nx run acme-infra:test`). Its release
+  tests run Postgres's base image in Docker, and skip without Docker.
 - Define Nx target defaults in [`nx.json`](nx.json) and package targets in
   `project.json`. Declare build dependencies and cache outputs there. Keep
   tests uncached.

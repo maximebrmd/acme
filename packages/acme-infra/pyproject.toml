@@ -1,5 +1,6 @@
 # The Ansible toolchain for the servers that run Acme, managed with uv:
-# `uv sync --locked` installs it in .venv.
+# `uv sync --locked` installs it in .venv, with the test suite's own
+# packages (the dev group).
 [project]
 name = "acme-infra"
 version = "0.0.0"
@@ -8,5 +9,14 @@ license = "FSL-1.1-ALv2"
 requires-python = ">=3.14"
 dependencies = ["ansible-core==2.22.0", "ansible-lint==26.11.0"]
 
+# tests/ reads the roles' tasks and templates with these, as Ansible does.
+[dependency-groups]
+dev = ["jinja2==3.1.6", "pytest==9.2.0", "pyyaml==6.0.3"]
+
 [tool.uv]
 package = false
+
+# No cache folder in the package; tests that need Docker skip without it.
+[tool.pytest]
+testpaths = ["tests"]
+addopts = ["-p", "no:cacheprovider"]

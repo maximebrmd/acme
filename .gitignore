@@ -15,6 +15,7 @@ packages/acme-contract/openapi.json
 # Tool caches and local state
 .nx/
 .venv/
+__pycache__/
 .ansible/
 .e2e/
 .cache/

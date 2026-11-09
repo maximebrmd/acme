@@ -263,4 +263,6 @@ A second run of `site.yml` reports no change:
 `release.yml` changes what a release changes. Run again for the same commit,
 it builds and uploads nothing (the images are on the server), creates no
 Bluesky key (one is in `secrets.env`), leaves the database password alone
-(the server's is accepted), and Compose recreates nothing.
+(the server's is accepted, over the network as the server signs in), and
+Compose recreates nothing. What it reads of the running containers is their
+image and settings' hash, never their environment, which holds secrets.

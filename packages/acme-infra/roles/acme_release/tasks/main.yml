@@ -197,15 +197,43 @@
   register: acme_release_bluesky_key
   changed_when: acme_release_bluesky_key.stdout == 'created'
 
-# When Postgres's image changes, the old server stops first, with 75 seconds
-# to finish its platform calls, so it never runs against a Postgres that
-# restarts. Pages stay up meanwhile. Otherwise Postgres keeps running, and
-# Compose replaces the server below only if its image changed.
+# Compose recreates Postgres when its image or its settings changed: the old
+# server then stops first, with 75 seconds to finish its platform calls, so
+# it never runs against a Postgres that restarts. Pages stay up meanwhile.
+# Otherwise Postgres keeps running, and Compose replaces the server below
+# only if its image changed. These read what Compose compares, the image and
+# the hash of the service's settings, and never the container's environment,
+# which holds the database password and the backup passphrase.
 - name: Read what Postgres runs
-  ansible.builtin.command: docker inspect {{ acme_compose_project }}-postgres-1
+  ansible.builtin.command:
+    argv:
+      - docker
+      - container
+      - inspect
+      - --format
+      - '{% raw %}{{.Image}} {{index .Config.Labels "com.docker.compose.config-hash"}}{% endraw %}'
+      - "{{ acme_compose_project }}-postgres-1"
   register: acme_release_running_postgres
   changed_when: false
   failed_when: false
+
+- name: Read what Postgres is to run
+  ansible.builtin.command:
+    argv:
+      - docker
+      - image
+      - inspect
+      - --format
+      - "{% raw %}{{.Id}}{% endraw %}"
+      - "{{ acme_release_built.postgres }}"
+  register: acme_release_postgres_image
+  changed_when: false
+
+- name: Read the settings Postgres is to run with
+  ansible.builtin.command:
+    argv: ["{{ acme_compose_bin }}", config, --hash, postgres]
+  register: acme_release_postgres_settings
+  changed_when: false
 
 - name: Stop the old server before Postgres restarts
   ansible.builtin.command: "{{ acme_compose_bin }} stop server"
@@ -213,7 +241,8 @@
   changed_when: acme_release_stop.stderr is search('Stopped')
   when: >-
     acme_release_running_postgres.rc != 0
-    or (acme_release_running_postgres.stdout | from_json)[0].Config.Image != acme_release_built.postgres
+    or acme_release_running_postgres.stdout.split()
+       != [acme_release_postgres_image.stdout, acme_release_postgres_settings.stdout.split() | last]
 
 - name: Start Postgres
   ansible.builtin.command: "{{ acme_compose_bin }} up --no-build --detach --wait --wait-timeout 300 postgres"
@@ -221,7 +250,10 @@
   changed_when: acme_release_postgres.stderr is search('(Started|Recreated)')
 
 # A database restored onto a new server keeps the password of the one it
-# came from. Read-only unless the generated password is refused.
+# came from. The check signs in over the network, by the service's name, as
+# the server does: the image trusts every connection from inside its
+# container, over 127.0.0.1 too, whatever the password. Read-only unless the
+# generated password is refused.
 - name: Check the database password
   ansible.builtin.command:
     argv:
@@ -231,11 +263,13 @@
       - postgres
       - sh
       - -c
-      - PGPASSWORD="$POSTGRES_PASSWORD" psql --host 127.0.0.1 --username acme --dbname acme --no-psqlrc --quiet --command 'SELECT 1'
+      - PGPASSWORD="$POSTGRES_PASSWORD" psql --host postgres --username acme --dbname acme --no-psqlrc --quiet --command 'SELECT 1'
   register: acme_release_password
   changed_when: false
   failed_when: false
 
+# psql reads the password from its own environment (\getenv), so it is on no
+# command line, and the statement is kept out of Postgres's log.
 - name: Set the database password to the generated one
   ansible.builtin.command:
     argv:
@@ -243,9 +277,19 @@
       - exec
       - -T
       - postgres
-      - sh
-      - -c
-      - psql --username acme --dbname acme --no-psqlrc --quiet --set ON_ERROR_STOP=1 --command "ALTER ROLE acme PASSWORD '$POSTGRES_PASSWORD'"
+      - psql
+      - --username
+      - acme
+      - --dbname
+      - acme
+      - --no-psqlrc
+      - --quiet
+      - --set
+      - ON_ERROR_STOP=1
+    stdin: |
+      \getenv password POSTGRES_PASSWORD
+      SET log_statement = 'none';
+      ALTER ROLE acme PASSWORD :'password';
   when: acme_release_password.rc != 0
   changed_when: true
 
