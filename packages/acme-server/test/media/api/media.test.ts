@@ -3,11 +3,12 @@ import {
   Api,
   Forbidden,
   MediaNotFound,
+  MediaStoreUnavailable,
   UploadIncomplete,
   UploadRejected,
 } from "acme-contract";
 import type { Member, PreparedUpload } from "acme-contract";
-import { Effect, Layer } from "effect";
+import { ConfigProvider, Effect, Layer, Logger } from "effect";
 import { HttpServer } from "effect/http";
 import { HttpApiError, HttpApiTest } from "effect/http-api";
 import sharp from "sharp";
@@ -22,6 +23,7 @@ import { memberOf } from "#test/channels/support.ts";
 import {
   damagedPng,
   DatabaseTest,
+  mebibytes,
   sendSigned,
   storageSettings,
   syntheticSvg,
@@ -34,6 +36,19 @@ import { permissionsFor } from "#workspace/domain/roles.ts";
 const UseCasesTest = Layer.mergeAll(MediaLive, S3MediaStorageLive).pipe(
   Layer.provideMerge(DatabaseTest),
   Layer.provide(storageSettings)
+);
+
+// The same, on a store that answers nothing: no server listens on the
+// loopback's port 9.
+const UnreachableStoreTest = MediaLive.pipe(
+  Layer.provideMerge(DatabaseTest),
+  Layer.provide(storageSettings),
+  Layer.provide(
+    ConfigProvider.layerAdd(
+      ConfigProvider.fromUnknown({ ACME_S3_ENDPOINT: "http://127.0.0.1:9" }),
+      { asPrimary: true }
+    )
+  )
 );
 
 const clientAs = (member: Member) =>
@@ -505,6 +520,64 @@ layer(UseCasesTest)("the media endpoints", (it) => {
         (yield* theirs.client.media.get({ params })).id,
         prepared.media.id
       );
+    })
+  );
+});
+
+layer(UnreachableStoreTest)("the media endpoints without a store", (it) => {
+  it.effect("answer 503, and log why for whoever runs the server", () =>
+    Effect.gen(function* storeDown() {
+      const { client, workspaceId } = yield* as("owner");
+      const warnings: string[] = [];
+
+      const capture = Logger.layer([
+        Logger.make(({ logLevel, message }) => {
+          if (logLevel === "Warn") {
+            warnings.push(String(message));
+          }
+        }),
+      ]);
+
+      // Signing needs no store, so an image can still be recorded.
+      const image = yield* client.media.create({
+        params: { workspaceId },
+        payload: { byteSize: 10, contentType: "image/png" },
+      });
+
+      const params = { mediaId: image.media.id, workspaceId };
+
+      const failures = yield* Effect.all([
+        // A large video opens its upload on the store first.
+        Effect.flip(
+          client.media.create({
+            params: { workspaceId },
+            payload: { byteSize: mebibytes(20), contentType: "video/mp4" },
+          })
+        ),
+        Effect.flip(client.media.complete({ params })),
+        Effect.flip(client.media.delete({ params })),
+      ]).pipe(Effect.provide(capture));
+
+      for (const failure of failures) {
+        assert.instanceOf(failure, MediaStoreUnavailable);
+      }
+
+      assert.lengthOf(warnings, 3);
+
+      for (const [index, operation] of [
+        "start a multipart upload",
+        "read a file's size and type",
+        "delete a file",
+      ].entries()) {
+        assert.include(warnings[index], "The media store failed");
+        assert.include(warnings[index], operation);
+      }
+
+      // The media is still there, to complete or delete once the store is
+      // back.
+      assert.deepStrictEqual((yield* client.media.get({ params })).status, {
+        _tag: "pending",
+      });
     })
   );
 });

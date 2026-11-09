@@ -20,6 +20,7 @@ import { Duration, Effect, Match, Option, Schema } from "effect";
 import { HttpApiBuilder, HttpApiError } from "effect/http-api";
 
 import { MediaLibrary } from "#media/application/media-library.ts";
+import type { MediaStorageFailed } from "#media/application/media-storage-failed.ts";
 import type { MediaItem } from "#media/application/use-cases/view-media.ts";
 import { MediaAssetIdSchema } from "#media/domain/media-asset-id.ts";
 import type { MediaAsset } from "#media/domain/media-asset.ts";
@@ -61,7 +62,12 @@ const forbidden = () => Effect.fail(new Forbidden());
 
 const notFound = () => Effect.fail(new MediaNotFound());
 
-const storeUnavailable = () => Effect.fail(new MediaStoreUnavailable());
+// The answer says only that the store is down; the log says why, for
+// whoever runs the server.
+const storeUnavailable = (failure: MediaStorageFailed) =>
+  Effect.logWarning("The media store failed", failure).pipe(
+    Effect.andThen(Effect.fail(new MediaStoreUnavailable()))
+  );
 
 /**
  * The asset an id in a path names. An id that is not a media id at all
