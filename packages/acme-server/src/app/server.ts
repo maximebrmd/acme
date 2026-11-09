@@ -1,8 +1,10 @@
 import { BunHttpServer } from "@effect/platform-bun";
 import { Api } from "acme-contract";
 import { Config, Effect, Layer } from "effect";
+import { MessageStorage, ShardingConfig } from "effect/cluster";
 import { HttpRouter } from "effect/http";
 import { HttpApiBuilder } from "effect/http-api";
+import { WorkflowEngine } from "effect/workflow";
 
 import { ClusterLive } from "#app/cluster.ts";
 import { CronsLive } from "#app/crons.ts";
@@ -11,6 +13,7 @@ import { SystemHandlers } from "#app/system.ts";
 import { ChannelsApiLive, ChannelsLive } from "#channels/container.ts";
 import { NotificationsLive } from "#notifications/container.ts";
 import {
+  PostsApiLive,
   PublishingLive,
   PublishingWorkersLive,
 } from "#publishing/container.ts";
@@ -26,8 +29,23 @@ import {
 
 // The groups of the workspace endpoints, behind the Authentication and
 // WorkspaceAccess middleware that WorkspaceApiLive provides.
-const WorkspaceGroupsLive = ChannelsApiLive.pipe(
+const WorkspaceGroupsLive = Layer.mergeAll(ChannelsApiLive, PostsApiLive).pipe(
   Layer.provideMerge(WorkspaceApiLive)
+);
+
+// Publishing posts to the channels the channels context lists.
+const PublishingContextLive = PublishingLive.pipe(Layer.provide(ChannelsLive));
+
+// Publishing as AppLive runs it: jobs go to an engine in memory that runs
+// none of them, since tests through AppLive publish nothing.
+const PublishingWithoutJobsLive = PublishingContextLive.pipe(
+  Layer.provide(Layer.mergeAll(IdsLive, TransactionRunnerLive)),
+  Layer.provide(
+    Layer.mergeAll(
+      WorkflowEngine.layerMemory,
+      MessageStorage.layerMemory.pipe(Layer.provide(ShardingConfig.layer()))
+    )
+  )
 );
 
 const ApiLive = HttpApiBuilder.layer(Api, {
@@ -40,7 +58,11 @@ export const RoutesLive = Layer.mergeAll(ApiLive, AuthRoutesLive);
 // The services the routes need, each built after the ones below it: the
 // database pool, the migrations, then the contexts. Better Auth checks its
 // tables against the database, so it starts once they are migrated.
-const ServicesLive = Layer.mergeAll(WorkspaceLive, ChannelsLive).pipe(
+const ServicesLive = Layer.mergeAll(
+  WorkspaceLive,
+  ChannelsLive,
+  PublishingWithoutJobsLive
+).pipe(
   Layer.provideMerge(NotificationsLive),
   Layer.provideMerge(MigrationsLive),
   Layer.provideMerge(DatabaseLive)
@@ -63,7 +85,7 @@ const WorkersLive = Layer.mergeAll(PublishingWorkersLive, CronsLive);
 // The contexts' use cases and adapters, which handlers and workers share.
 const ContextsLive = Layer.mergeAll(
   WorkspaceLive.pipe(Layer.provideMerge(NotificationsLive)),
-  PublishingLive,
+  PublishingContextLive,
   ChannelsLive
 ).pipe(Layer.provideMerge(Layer.mergeAll(IdsLive, TransactionRunnerLive)));
 

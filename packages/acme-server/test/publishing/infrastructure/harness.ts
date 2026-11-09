@@ -51,6 +51,11 @@ import { DatabaseLive } from "#shared/infrastructure/database.ts";
 import { MigrationsLive } from "#shared/infrastructure/migrations.ts";
 import { IdsLive } from "#shared/infrastructure/secure-random-ids.ts";
 import { TransactionRunnerLive } from "#shared/infrastructure/transaction-runner-live.ts";
+import {
+  actorIn,
+  ReferencesTest,
+  syntheticContent,
+} from "#test/publishing/support.ts";
 
 // The publishing workflows on an in-memory cluster, driven by TestClock, with
 // the real repositories on the Postgres that DATABASE_URL names. Ids are
@@ -81,7 +86,7 @@ export const DatabaseTest = MigrationsLive.pipe(
   Layer.provideMerge(DatabaseLive)
 );
 
-const clusterOver = <S, E, R>(storage: Layer.Layer<S, E, R>) =>
+export const clusterOver = <S, E, R>(storage: Layer.Layer<S, E, R>) =>
   ClusterWorkflowEngine.layer.pipe(
     Layer.provideMerge(Sharding.layer),
     Layer.provide(Runners.layerNoop),
@@ -131,7 +136,8 @@ export const deployWith = <S, E, R, EP, RP, RJ>(
         DrizzlePostRepository,
         journal,
         RecordingChannelHealth,
-        WorkflowPublicationScheduler
+        WorkflowPublicationScheduler,
+        ReferencesTest
       )
     ),
     Layer.provideMerge(Layer.mergeAll(IdsLive, TransactionRunnerLive)),
@@ -218,7 +224,13 @@ export const schedulePost = Effect.fn("test.schedulePost")(
 
     const scheduling = yield* PostScheduling;
 
-    return yield* scheduling.schedule({ channelIds, schedule, workspaceId });
+    const { post } = yield* scheduling.schedule(actorIn(workspaceId), {
+      channelIds,
+      content: syntheticContent,
+      schedule,
+    });
+
+    return post;
   }
 );
 

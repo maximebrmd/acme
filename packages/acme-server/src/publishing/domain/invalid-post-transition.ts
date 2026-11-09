@@ -6,6 +6,7 @@ import { PostStatusNameSchema } from "./post-status.ts";
 
 /** The transitions of `./post.ts`, by name. */
 export const PostActionSchema = Schema.Literals([
+  "edit",
   "schedule",
   "moveToDraft",
   "startPublishing",

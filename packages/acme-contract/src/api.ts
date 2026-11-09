@@ -2,6 +2,7 @@ import { HttpApi, OpenApi } from "effect/http-api";
 
 import { ApiKeysApi } from "./api-keys.ts";
 import { ChannelsApi } from "./channels.ts";
+import { PostsApi } from "./posts.ts";
 import { SessionApi } from "./session.ts";
 import { SystemApi } from "./system.ts";
 
@@ -31,6 +32,10 @@ export { CurrentPrincipal } from "./current-principal.ts";
 
 export { Forbidden } from "./forbidden.ts";
 
+export { InvalidTimeRange } from "./invalid-time-range.ts";
+
+export { InvalidTimeZone } from "./invalid-time-zone.ts";
+
 export { PermissionSchema } from "./permission.ts";
 
 export type { Permission } from "./permission.ts";
@@ -38,6 +43,49 @@ export type { Permission } from "./permission.ts";
 export { PlatformSchema } from "./platform.ts";
 
 export type { Platform } from "./platform.ts";
+
+export {
+  ContentViolationSchema,
+  PostContentInvalid,
+} from "./post-content-invalid.ts";
+
+export type { ContentViolation } from "./post-content-invalid.ts";
+
+export { PostNotFound } from "./post-not-found.ts";
+
+export { PostStatusConflict } from "./post-status-conflict.ts";
+
+export { PostStatusSchema } from "./post-status.ts";
+
+export type { PostStatus } from "./post-status.ts";
+
+export {
+  FailureReasonSchema,
+  MediaAttachmentSchema,
+  PostContentSchema,
+  PostDraftSchema,
+  PostOutcomeSchema,
+  PostScheduleSchema,
+  PostSchema,
+  PostTargetSchema,
+  PostTargetStatusSchema,
+  SchedulePostSchema,
+  TextOverrideSchema,
+} from "./posts.ts";
+
+export type {
+  FailureReason,
+  MediaAttachment,
+  Post,
+  PostContent,
+  PostDraft,
+  PostOutcome,
+  PostSchedule,
+  PostTarget,
+  PostTargetStatus,
+  SchedulePost,
+  TextOverride,
+} from "./posts.ts";
 
 export { MemberSchema, PrincipalSchema } from "./principal.ts";
 
@@ -47,7 +95,13 @@ export { MeSchema, MembershipSchema } from "./session.ts";
 
 export type { Me, Membership } from "./session.ts";
 
+export { ScheduleInPast } from "./schedule-in-past.ts";
+
 export { Unauthenticated } from "./unauthenticated.ts";
+
+export { UnknownChannels } from "./unknown-channels.ts";
+
+export { UnknownMedia } from "./unknown-media.ts";
 
 export { WorkspaceAccess } from "./workspace-access.ts";
 
@@ -61,4 +115,5 @@ export class Api extends HttpApi.make("acme")
   .add(SessionApi)
   .add(ApiKeysApi)
   .add(ChannelsApi)
+  .add(PostsApi)
   .annotateMerge(OpenApi.annotations({ title: "Acme API" })) {}

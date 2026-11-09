@@ -4,6 +4,7 @@ import { DateTime, Effect, Layer, Option, Scope } from "effect";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
 import { PublicationJournal } from "#publishing/application/publication-journal.ts";
 import { FakePlatform } from "#publishing/infrastructure/fake-platform-publisher.ts";
+import { actorIn } from "#test/publishing/support.ts";
 
 import {
   callsOn,
@@ -344,10 +345,10 @@ describe("restarts", () => {
         ).pipe(Effect.provideContext(first));
 
         const cancelled = yield* PostScheduling.use((scheduling) =>
-          scheduling.cancel(post.workspaceId, post.id)
+          scheduling.cancel(actorIn(post.workspaceId), post.id)
         ).pipe(Effect.provideContext(first));
 
-        assert.strictEqual(cancelled.status._tag, "publishing");
+        assert.strictEqual(cancelled.post.status._tag, "publishing");
 
         yield* shutDown(before);
 
@@ -426,10 +427,10 @@ describe("restarts", () => {
         ).pipe(Effect.provideContext(first));
 
         const cancelled = yield* PostScheduling.use((scheduling) =>
-          scheduling.cancel(post.workspaceId, post.id)
+          scheduling.cancel(actorIn(post.workspaceId), post.id)
         ).pipe(Effect.provideContext(first));
 
-        assert.strictEqual(cancelled.status._tag, "publishing");
+        assert.strictEqual(cancelled.post.status._tag, "publishing");
 
         yield* shutDown(before);
 

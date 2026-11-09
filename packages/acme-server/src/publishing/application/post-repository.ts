@@ -1,11 +1,11 @@
 import { Context } from "effect";
-import type { Effect, Option } from "effect";
+import type { DateTime, Effect, Option } from "effect";
 
 import type { PostTargetId } from "#publishing/domain/post-target-id.ts";
 import type { PostTarget } from "#publishing/domain/post-target.ts";
 import type { Post } from "#publishing/domain/post.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
-import type { PostId } from "#shared/domain/ids.ts";
+import type { PostId, WorkspaceId } from "#shared/domain/ids.ts";
 
 import type { ExecutionId } from "./publication-scheduler.ts";
 
@@ -13,6 +13,12 @@ import type { ExecutionId } from "./publication-scheduler.ts";
 export interface StoredPost {
   readonly execution: Option.Option<ExecutionId>;
   readonly post: Post;
+}
+
+/** A post and its targets, oldest target first. */
+export interface PostWithTargets {
+  readonly post: Post;
+  readonly targets: readonly PostTarget[];
 }
 
 /**
@@ -62,5 +68,23 @@ export class PostRepository extends Context.Service<
       next: PostTarget,
       current: PostTarget
     ) => Effect.Effect<boolean, DatabaseError>;
+    /**
+     * Makes these the post's targets: those it had and that are not listed
+     * are deleted, the listed ones it lacked are added, and the others stay
+     * as they are.
+     */
+    readonly setTargets: (
+      postId: PostId,
+      targets: readonly PostTarget[]
+    ) => Effect.Effect<void, DatabaseError>;
+    /**
+     * The workspace's posts scheduled from `from` (included) to `to`
+     * (excluded), whatever happened to them since, by scheduled instant.
+     */
+    readonly listScheduled: (
+      workspaceId: WorkspaceId,
+      from: DateTime.Utc,
+      to: DateTime.Utc
+    ) => Effect.Effect<readonly PostWithTargets[], DatabaseError>;
   }
 >()("acme-server/publishing/application/PostRepository") {}
