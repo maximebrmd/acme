@@ -120,7 +120,22 @@ jobs:
       - uses: ruby/setup-ruby@b3aaceaef7e0ee231b499e7b5f49c03fc1d32199 # v1.338.0
         with:
           ruby-version: 4.0.9
-      - uses: rubygems/configure-rubygems-credentials@dc5a8d8553e6ee01fc26761a49e99e733d17954a # v2.1.0
+      # Trades this run's OIDC token for a RubyGems key that pushes gems for
+      # 15 minutes. RubyGems lets a pending trusted publisher create the gem
+      # only for the account the exchange names as its owner (RUBYGEMS_OWNER,
+      # an immutable account id), which rubygems/configure-rubygems-credentials
+      # cannot send yet, so the run makes the exchange itself.
+      - run: |
+          jwt=$(curl --fail --silent --show-error \
+            --header "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=rubygems.org" | jq --raw-output .value)
+          key=$(jq --null-input --arg jwt "$jwt" --arg owner "$RUBYGEMS_OWNER" '{jwt: $jwt, owner: $owner}' |
+            curl --fail --silent --show-error --header "Content-Type: application/json" --data @- \
+              https://rubygems.org/api/v1/oidc/trusted_publisher/exchange_token | jq --raw-output .rubygems_api_key)
+          echo "::add-mask::$key"
+          echo "GEM_HOST_API_KEY=$key" >> "$GITHUB_ENV"
+        env:
+          RUBYGEMS_OWNER: "255818"
       - run: gem push "packages/peal-sdk/ruby/dist/peal-${VERSION}.gem"
         env:
           VERSION: ${{ needs.resolve.outputs.version }}
