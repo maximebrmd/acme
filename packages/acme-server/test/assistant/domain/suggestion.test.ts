@@ -104,6 +104,17 @@ describe(acceptHashtags, () => {
     expect(hashtagsOf(["not a tag", "#"])).toBe("noHashtags");
     expect(hashtagsOf([])).toBe("noHashtags");
   });
+
+  // A pattern that can read a run of letters several ways takes quadratic
+  // time over an answer it does not match: seconds for this one.
+  it("reads a long answer in linear time", () => {
+    const started = performance.now();
+
+    expect(hashtagsOf([`#${"a".repeat(200_000)}!`, "#launch"])).toStrictEqual([
+      "#launch",
+    ]);
+    expect(performance.now() - started).toBeLessThan(1000);
+  });
 });
 
 describe(usageWindowAt, () => {

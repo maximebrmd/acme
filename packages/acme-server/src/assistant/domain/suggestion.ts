@@ -34,10 +34,12 @@ export type HashtagsAnswer = typeof HashtagsAnswerSchema.Type;
 export const maxSuggestionLength = 2 * maxDraftLength;
 
 // A hashtag as publishing counts them: letters, digits and underscores
-// after the #, with at least one letter.
-const hashtagPattern = /^#[\p{L}\p{N}_]*\p{L}[\p{L}\p{N}_]*$/u;
+// after the #, with at least one letter. Digits and underscores lead up to
+// the first letter, so each character can be read only one way and a long
+// answer is read in linear time.
+const hashtagPattern = /^#[\p{N}_]*\p{L}[\p{L}\p{N}_]*$/u;
 
-const hashtagsIn = /(?<![\p{L}\p{N}_&#])#[\p{L}\p{N}_]*\p{L}[\p{L}\p{N}_]*/gu;
+const hashtagsIn = /(?<![\p{L}\p{N}_&#])#[\p{N}_]*\p{L}[\p{L}\p{N}_]*/gu;
 
 export const HashtagSchema = Schema.String.check(
   Schema.isPattern(hashtagPattern),
