@@ -244,7 +244,7 @@ A server connects YouTube channels once you make an OAuth client for it in a Goo
 3. Under **Clients**, create a **Web application** client, with `PUBLIC_URL/connect/youtube/callback` as an authorized redirect URI, such as `https://peal.example.com/connect/youtube/callback`.
 4. Put the client id in `YOUTUBE_CLIENT_ID` and its secret in `YOUTUBE_CLIENT_SECRET`.
 
-One of the two settings without the other stops the server at startup; without both, **Channels** does not offer YouTube. Members sign in with Google and pick the channel, a brand account's included, on Google's account chooser: one connection is one channel. Peal asks to upload videos and to read the channel and its videos, nothing more, and renews its access every hour. Disconnecting a channel revokes that access at Google, unless another workspace still connects the same channel.
+One of the two settings without the other stops the server at startup; without both, **Channels** does not offer YouTube. Members sign in with Google and pick the channel, a brand account's included, on Google's account chooser: one connection is one channel. Peal asks to upload videos and to read the channel and its videos, nothing more, and renews its access, which lasts an hour, when it uploads or reads counts, and once a month for a channel it does nothing with. Disconnecting a channel revokes that access at Google, unless another workspace still connects the same channel.
 
 While the project's consent screen is in **Testing**, only the test users you list can sign in, and Google ends their access seven days after they connect: their channels must then be reconnected, and Peal tells the workspace. Publish the consent screen, and have Google verify the app for its scopes, to serve anyone for good.
 

@@ -6,6 +6,8 @@ import {
   Effect,
   Fiber,
   Layer,
+  Logger,
+  Metric,
   Option,
   Redacted,
   Ref,
@@ -18,12 +20,16 @@ import type {
   IssuedTokens,
   PlatformAuthorizer,
 } from "#channels/application/platform-authorizer.ts";
-import { RefreshChannelTokens } from "#channels/application/refresh-channel-tokens.ts";
+import {
+  RefreshChannelTokens,
+  tokenSweepDuration,
+  tokenSweepLeft,
+} from "#channels/application/refresh-channel-tokens.ts";
 import { TokenCipher } from "#channels/application/token-cipher.ts";
 import { disable, markRefreshNeeded } from "#channels/domain/channel.ts";
 import type { Channel, TokenLifetime } from "#channels/domain/channel.ts";
 import type { Platform } from "#channels/domain/platform.ts";
-import { tokenPolicies } from "#channels/domain/token-policy.ts";
+import { TokenPolicy, tokenPolicies } from "#channels/domain/token-policy.ts";
 import { DrizzleChannelRepository } from "#channels/infrastructure/drizzle-channel-repository.ts";
 import { SqlChannelLocks } from "#channels/infrastructure/sql-channel-locks.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
@@ -48,6 +54,24 @@ const FileTest = Layer.mergeAll(
 
 type Answer = "refuse" | "renew" | "unreachable";
 
+// Tokens of two hours that the sweep renews half an hour ahead, as a
+// platform whose tokens lapse when nobody renews them.
+const aheadOfExpiry = new TokenPolicy({
+  lifetime: Option.some(Duration.hours(2)),
+  refresh: {
+    _tag: "refreshToken",
+    rotates: true,
+    sweep: { _tag: "beforeExpiry", ahead: Duration.minutes(30) },
+  },
+});
+
+// Long enough for any run of these tests.
+const budget = Duration.minutes(8);
+
+const sweeping = RefreshChannelTokens.use((refresh) =>
+  refresh.sweep({ budget })
+);
+
 // A platform whose refreshes follow a script, one answer per call (renewing
 // once the script runs out), and that counts them. `delay` holds each call,
 // to see two of them overlap or not.
@@ -58,10 +82,13 @@ const scripted = Effect.fn("scripted")(function* scripted(
 ) {
   const script = yield* Ref.make(answers);
   const calls = yield* Ref.make(0);
+  const asked = yield* Ref.make<readonly Channel["id"][]>([]);
 
-  const refresh: PlatformAuthorizer["refresh"] = () =>
+  const refresh: PlatformAuthorizer["refresh"] = (channel) =>
     Effect.gen(function* refreshing() {
       const call = yield* Ref.updateAndGet(calls, (count) => count + 1);
+
+      yield* Ref.update(asked, (ids) => [...ids, channel.id]);
 
       const answer = yield* Ref.modify(script, ([next, ...rest]) => [
         next ?? "renew",
@@ -95,23 +122,25 @@ const scripted = Effect.fn("scripted")(function* scripted(
     begin: () => Effect.die("not used"),
     complete: () => Effect.die("not used"),
     platform,
-    // X's policy keeps unused tokens alive; the others' here is TikTok's,
-    // which renews them ahead of expiry.
-    policy: platform === "x" ? tokenPolicies.x : tokenPolicies.tiktok,
+    // X's policy keeps unused tokens alive; the others here are renewed
+    // ahead of expiry.
+    policy: platform === "x" ? tokenPolicies.x : aheadOfExpiry,
     refresh,
   };
 
-  return { authorizer, calls: Ref.get(calls) };
+  return { asked: Ref.get(asked), authorizer, calls: Ref.get(calls) };
 });
 
 // The use case over the workspace's channels only, with the authorizer.
 const refresherFor = (
   workspaceId: WorkspaceId,
-  authorizer: PlatformAuthorizer
+  ...authorizers: readonly PlatformAuthorizer[]
 ) =>
   Layer.fresh(RefreshChannelTokens.layer).pipe(
     Layer.provide(repositoryScopedTo(workspaceId)),
-    Layer.provide(Layer.succeed(PlatformAuthorizers, authorizersOf(authorizer)))
+    Layer.provide(
+      Layer.succeed(PlatformAuthorizers, authorizersOf(...authorizers))
+    )
   );
 
 const expiringIn = (now: DateTime.Utc, duration: Duration.Input) =>
@@ -230,13 +259,14 @@ layer(FileTest)("refreshing channel tokens", (it) => {
         ])
       );
 
-      const report = yield* RefreshChannelTokens.use(
-        (refresh) => refresh.sweep
-      ).pipe(Effect.provide(refresherFor(workspaceId, platform.authorizer)));
+      const report = yield* sweeping.pipe(
+        Effect.provide(refresherFor(workspaceId, platform.authorizer))
+      );
 
       assert.deepStrictEqual(report, {
         due: 2,
         failed: 0,
+        left: 0,
         reconnectRequired: 0,
         refreshed: 2,
         unavailable: 0,
@@ -280,9 +310,9 @@ layer(FileTest)("refreshing channel tokens", (it) => {
       const expired = yield* tokenOf("-1 day");
       const unused = yield* tokenOf("-31 days");
 
-      const report = yield* RefreshChannelTokens.use(
-        (refresh) => refresh.sweep
-      ).pipe(Effect.provide(refresherFor(workspaceId, platform.authorizer)));
+      const report = yield* sweeping.pipe(
+        Effect.provide(refresherFor(workspaceId, platform.authorizer))
+      );
 
       assert.strictEqual(report.refreshed, 1);
       assert.strictEqual(yield* platform.calls, 1);
@@ -299,6 +329,159 @@ layer(FileTest)("refreshing channel tokens", (it) => {
         expiresAt: expiringIn(now, "2 hours"),
       });
     })
+  );
+
+  it.effect(
+    "refreshes every channel due, a page at a time, however many there are",
+    () =>
+      Effect.gen(function* everyChannel() {
+        const workspaceId = yield* freshWorkspace;
+        const now = yield* DateTime.now;
+        const platform = yield* scripted("threads");
+
+        // Five times what a run used to take, and ten pages of it.
+        const many = 1000;
+
+        const due = yield* Effect.forEach(
+          Array.from({ length: many }, (_, index) => index),
+          (index) =>
+            stored(workspaceId, {
+              platform: "threads",
+              token: {
+                _tag: "refreshable",
+                // Several share each expiry, as channels connected together.
+                expiresAt: expiringIn(now, Duration.seconds(index % 50)),
+              },
+            }),
+          { concurrency: 8 }
+        );
+
+        const report = yield* sweeping.pipe(
+          Effect.provide(refresherFor(workspaceId, platform.authorizer))
+        );
+
+        assert.deepStrictEqual(report, {
+          due: many,
+          failed: 0,
+          left: 0,
+          reconnectRequired: 0,
+          refreshed: many,
+          unavailable: 0,
+        });
+
+        // Each once: a rotating refresh token works a single time.
+        assert.sameMembers(
+          [...(yield* platform.asked)],
+          due.map(({ id }) => id)
+        );
+
+        // Nothing is left for the next run.
+        assert.strictEqual(
+          (yield* sweeping.pipe(
+            Effect.provide(refresherFor(workspaceId, platform.authorizer))
+          )).due,
+          0
+        );
+      }),
+    120_000
+  );
+
+  it.effect(
+    "tries a channel its platform did not answer for once a run, and goes on to the others",
+    () =>
+      Effect.gen(function* unanswered() {
+        const workspaceId = yield* freshWorkspace;
+        const now = yield* DateTime.now;
+
+        // The platform answers nobody: every channel stays due.
+        const platform = yield* scripted(
+          "threads",
+          Array.from({ length: 1000 }, () => "unreachable" as const)
+        );
+
+        yield* Effect.forEach(
+          Array.from({ length: 250 }, (_, index) => index),
+          () =>
+            stored(workspaceId, {
+              platform: "threads",
+              token: {
+                _tag: "refreshable",
+                expiresAt: expiringIn(now, "5 minutes"),
+              },
+            }),
+          { concurrency: 8 }
+        );
+
+        const report = yield* sweeping.pipe(
+          Effect.provide(refresherFor(workspaceId, platform.authorizer))
+        );
+
+        assert.strictEqual(report.due, 250);
+        assert.strictEqual(report.unavailable, 250);
+        assert.strictEqual(yield* platform.calls, 250);
+      }),
+    120_000
+  );
+
+  it.effect(
+    "renews the tokens about to lapse before it keeps unused ones alive",
+    () =>
+      Effect.gen(function* urgentFirst() {
+        const workspaceId = yield* freshWorkspace;
+        const now = yield* DateTime.now;
+        const lapsing = yield* scripted("threads");
+        const idle = yield* scripted("x");
+
+        // The unused tokens expired long before the others will: by expiry
+        // alone, they would come first.
+        const unused = yield* Effect.forEach([1, 2, 3, 4, 5], () =>
+          stored(workspaceId, {
+            platform: "x",
+            token: {
+              _tag: "refreshable",
+              expiresAt: expiringIn(now, "-40 days"),
+            },
+          })
+        );
+
+        const soon = yield* Effect.forEach([1, 2, 3, 4, 5], () =>
+          stored(workspaceId, {
+            platform: "threads",
+            token: {
+              _tag: "refreshable",
+              expiresAt: expiringIn(now, "10 minutes"),
+            },
+          })
+        );
+
+        const order = yield* Ref.make<readonly Platform[]>([]);
+
+        const recording = (
+          authorizer: PlatformAuthorizer
+        ): PlatformAuthorizer => ({
+          ...authorizer,
+          refresh: (channel, tokens) =>
+            Ref.update(order, (seen) => [...seen, channel.platform]).pipe(
+              Effect.andThen(authorizer.refresh(channel, tokens))
+            ),
+        });
+
+        const report = yield* sweeping.pipe(
+          Effect.provide(
+            refresherFor(
+              workspaceId,
+              recording(lapsing.authorizer),
+              recording(idle.authorizer)
+            )
+          )
+        );
+
+        assert.strictEqual(report.refreshed, unused.length + soon.length);
+        assert.deepStrictEqual(yield* Ref.get(order), [
+          ...soon.map((): Platform => "threads"),
+          ...unused.map((): Platform => "x"),
+        ]);
+      })
   );
 
   it.effect("saves the new tokens, encrypted for the channel", () =>
@@ -400,7 +583,7 @@ layer(FileTest)("refreshing channel tokens", (it) => {
         token: { _tag: "refreshable", expiresAt: expiringIn(now, "5 minutes") },
       });
 
-      const sweep = RefreshChannelTokens.use((refresh) => refresh.sweep).pipe(
+      const sweep = sweeping.pipe(
         Effect.provide(refresherFor(workspaceId, platform.authorizer))
       );
 
@@ -469,6 +652,92 @@ layer(FileTest)("refreshing channel tokens", (it) => {
     })
   );
 });
+
+// On the real clock, as a run's budget is time that really passes.
+layer(FileTest, { excludeTestServices: true })(
+  "a refresh run that cannot finish",
+  (it) => {
+    it.effect(
+      "stops at its budget, leaves the rest due and says how many",
+      () =>
+        Effect.gen(function* stops() {
+          const workspaceId = yield* freshWorkspace;
+          const now = yield* DateTime.now;
+
+          // Each refresh takes the platform 150 ms: a run of 600 ms gets
+          // through a dozen of the 60 due, three at a time.
+          const platform = yield* scripted("threads", [], Duration.millis(150));
+
+          const many = 60;
+
+          yield* Effect.forEach(
+            Array.from({ length: many }, (_, index) => index),
+            () =>
+              stored(workspaceId, {
+                platform: "threads",
+                token: {
+                  _tag: "refreshable",
+                  expiresAt: expiringIn(now, "5 minutes"),
+                },
+              }),
+            { concurrency: 8 }
+          );
+
+          const logs: string[] = [];
+
+          const capture = Logger.layer([
+            Logger.make(({ logLevel, message }) => {
+              if (logLevel === "Warn") {
+                logs.push(String(message));
+              }
+            }),
+          ]);
+
+          const startedAt = yield* DateTime.now;
+
+          const report = yield* RefreshChannelTokens.use((refresh) =>
+            refresh.sweep({ budget: Duration.millis(600) })
+          ).pipe(
+            Effect.provide(refresherFor(workspaceId, platform.authorizer)),
+            Effect.provide(capture)
+          );
+
+          const took = DateTime.distance(startedAt, yield* DateTime.now);
+
+          // It stopped starting refreshes at its budget, and waited only
+          // for those under way.
+          assert.isTrue(Duration.isLessThan(took, Duration.seconds(5)));
+          assert.isAtLeast(report.refreshed, 3);
+          assert.isBelow(report.refreshed, many);
+          assert.strictEqual(report.left, many - report.refreshed);
+          assert.strictEqual(yield* platform.calls, report.refreshed);
+
+          assert.strictEqual(
+            (yield* Metric.value(tokenSweepLeft)).value,
+            report.left
+          );
+          assert.isAtLeast(
+            (yield* Metric.value(tokenSweepDuration)).value,
+            0.6
+          );
+          assert.lengthOf(
+            logs.filter((line) => line.includes("could not finish")),
+            1
+          );
+
+          // The next run takes what it left.
+          const next = yield* sweeping.pipe(
+            Effect.provide(refresherFor(workspaceId, platform.authorizer))
+          );
+
+          assert.strictEqual(next.refreshed, report.left);
+          assert.strictEqual(next.left, 0);
+          assert.strictEqual((yield* Metric.value(tokenSweepLeft)).value, 0);
+        }),
+      60_000
+    );
+  }
+);
 
 // On the real clock: the second refresh polls for the lock while the first
 // waits on the platform.

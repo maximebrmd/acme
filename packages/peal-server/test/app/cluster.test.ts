@@ -121,13 +121,15 @@ const ChannelJobsTest = Layer.mergeAll(
     RefreshChannelTokens,
     RefreshChannelTokens.of({
       refresh: () => Effect.succeed("skipped"),
-      sweep: Effect.succeed({
-        due: 0,
-        failed: 0,
-        reconnectRequired: 0,
-        refreshed: 0,
-        unavailable: 0,
-      }),
+      sweep: () =>
+        Effect.succeed({
+          due: 0,
+          failed: 0,
+          left: 0,
+          reconnectRequired: 0,
+          refreshed: 0,
+          unavailable: 0,
+        }),
     })
   ),
   Layer.succeed(

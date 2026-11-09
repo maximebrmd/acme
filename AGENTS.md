@@ -584,8 +584,20 @@ and no socket, for tests.
   refreshable policy's `sweep` renews tokens `beforeExpiry` (`ahead` of it)
   or keeps them alive (`keepAlive`: only once `unused` that long past their
   expiry, the access being renewed when a call needs it, through
-  `ChannelAccess`). X's keep alive after 30 days, rather than rotating every
-  two hours: its refresh tokens have no stated lifetime.
+  `ChannelAccess`). X's, TikTok's and YouTube's keep alive after 30 days,
+  rather than being renewed ahead of every expiry: a hours-long token is
+  never swept `beforeExpiry`, which would refresh every channel a dozen
+  times a day (a test lists each policy's sweep).
+- `RefreshChannelTokens.sweep` (every 10 minutes) and
+  `WarnChannelsNeedingReconnect` (daily) page through what is due by
+  cursor (`dueForRefresh`, `needingReconnect`: `after`), never with a cap,
+  which would leave the same channels behind at every run. The sweep takes
+  the tokens about to lapse before the keep-alives, three channels at a
+  time (one channel lock stays free for a post's renewal), and stops
+  starting refreshes at its budget (8 minutes): it then logs a warning and
+  sets `peal.channels.token_sweep.left` (with `.duration` and
+  `.unfinished`). No publish depends on it: `ChannelAccess` renews an
+  expired refreshable token however long ago it ran out.
 - TikTok's Login Kit for Web takes no PKCE (TikTok asks it of desktop and
   mobile apps only): the state, bound to member and workspace, guards the
   callback, and a token answer naming an `error` is a refusal whatever its
