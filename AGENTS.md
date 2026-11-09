@@ -377,8 +377,9 @@ and no socket, for tests.
   `channels/domain/token-policy.ts`, which the refresh sweep and the
   reconnect warnings follow: LinkedIn's tokens are not renewed and expire
   after 60 days, X's last two hours and rotate on refresh.
-- `GET …/channels/platforms` (`ConnectChannel.connectable`) lists the
-  platforms the server has an authorizer for; the web app offers only those.
+- `GET …/channels/platforms` (`ConnectChannel.connectable`, channel:connect)
+  lists the platforms the server has an authorizer for, every platform's
+  through the one registry; the web app's connect forms offer only those.
   Map a platform's own denial codes (LinkedIn's `user_cancelled_*`) to
   `AuthorizationDenied` in `connect-channel.ts`.
 - Facebook Pages and Instagram share Facebook Login
