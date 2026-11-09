@@ -6,14 +6,14 @@ export const english: EmailCatalog = {
     action: "Reconnect the account",
     body: "Acme can no longer post as {handle} on {platform} in {workspaceName}: the account’s authorization stopped working. Nothing is posted there until someone reconnects it.",
     ignore:
-      "You receive this email because you manage the channels of {workspaceName} on Acme.",
+      "You receive this email because you manage the channels of {workspaceName} on Acme. Choose which notifications you receive by email in your notification preferences.",
     subject: "Reconnect {handle} on {platform}",
   },
   channelReconnectSoon: {
     action: "Reconnect the account",
     body: "The authorization Acme holds for {handle} on {platform}, in {workspaceName}, ends on {expiresAt}, and {platform} does not let Acme renew it. Reconnect the account before then to keep posting.",
     ignore:
-      "You receive this email because you manage the channels of {workspaceName} on Acme.",
+      "You receive this email because you manage the channels of {workspaceName} on Acme. Choose which notifications you receive by email in your notification preferences.",
     subject: "Reconnect {handle} on {platform} by {expiresAt}",
   },
   failureReasons: {
@@ -56,21 +56,21 @@ export const english: EmailCatalog = {
     action: "Open the post",
     body: "A post of {workspaceName} did not go out on {channel}: {reason}",
     ignore:
-      "You receive this email because you schedule posts in {workspaceName} on Acme. Choose which notices you receive by email in your notification preferences.",
+      "You receive this email because you schedule posts in {workspaceName} on Acme. Choose which notifications you receive by email in your notification preferences.",
     subject: "A post did not go out on {channel}",
   },
   postPublished: {
     action: "See the post",
     body: "A post of {workspaceName} is live on {channel}.",
     ignore:
-      "You receive this email because you schedule posts in {workspaceName} on Acme. Choose which notices you receive by email in your notification preferences.",
+      "You receive this email because you schedule posts in {workspaceName} on Acme. Choose which notifications you receive by email in your notification preferences.",
     subject: "Published on {channel}",
   },
   postUnconfirmed: {
     action: "Open the post",
     body: "Acme sent a post of {workspaceName} to {channel} but got no answer, so it may or may not be live. Check the platform before you post it again, then tell Acme what you found.",
     ignore:
-      "You receive this email because you schedule posts in {workspaceName} on Acme. Choose which notices you receive by email in your notification preferences.",
+      "You receive this email because you schedule posts in {workspaceName} on Acme. Choose which notifications you receive by email in your notification preferences.",
     subject: "Check {channel}: a post may have gone out",
   },
   resetPassword: {

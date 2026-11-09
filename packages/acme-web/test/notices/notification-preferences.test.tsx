@@ -55,7 +55,7 @@ describe(PreferencesFields, () => {
 
     expect(english).toContain("<legend");
     expect(english).toContain("Email me when");
-    expect(french).toContain("M’écrire quand");
+    expect(french).toContain("M’envoyer un e-mail quand");
 
     expect(choices(english)).toStrictEqual(
       new Map([

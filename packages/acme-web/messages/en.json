@@ -519,7 +519,6 @@
       "postUnconfirmed": "A post may have gone out, and needs checking on the platform",
       "channelReconnect": "A channel must be reconnected, now or soon",
       "postPublished": "A post went out",
-      "saving": "Saving…",
       "saved": "Preferences saved.",
       "saveFailed": "The preferences could not be saved. Try again.",
       "loading": "Loading your preferences…",

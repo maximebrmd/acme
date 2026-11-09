@@ -6,14 +6,14 @@ export const french: EmailCatalog = {
     action: "Reconnecter le compte",
     body: "Acme ne peut plus publier en tant que {handle} sur {platform} dans {workspaceName} : l’autorisation du compte ne fonctionne plus. Rien n’y est publié tant que personne ne le reconnecte.",
     ignore:
-      "Vous recevez cet e-mail parce que vous gérez les canaux de {workspaceName} sur Acme.",
+      "Vous recevez cet e-mail parce que vous gérez les canaux de {workspaceName} sur Acme. Choisissez les notifications que vous recevez par e-mail dans vos préférences de notification.",
     subject: "Reconnectez {handle} sur {platform}",
   },
   channelReconnectSoon: {
     action: "Reconnecter le compte",
     body: "L’autorisation qu’Acme détient pour {handle} sur {platform}, dans {workspaceName}, prend fin le {expiresAt}, et {platform} ne permet pas à Acme de la renouveler. Reconnectez le compte d’ici là pour continuer à publier.",
     ignore:
-      "Vous recevez cet e-mail parce que vous gérez les canaux de {workspaceName} sur Acme.",
+      "Vous recevez cet e-mail parce que vous gérez les canaux de {workspaceName} sur Acme. Choisissez les notifications que vous recevez par e-mail dans vos préférences de notification.",
     subject: "Reconnectez {handle} sur {platform} avant le {expiresAt}",
   },
   failureReasons: {
@@ -57,21 +57,21 @@ export const french: EmailCatalog = {
     action: "Ouvrir la publication",
     body: "Une publication de {workspaceName} n’est pas partie sur {channel} : {reason}",
     ignore:
-      "Vous recevez cet e-mail parce que vous programmez des publications dans {workspaceName} sur Acme. Choisissez les avis que vous recevez par e-mail dans vos préférences de notification.",
+      "Vous recevez cet e-mail parce que vous programmez des publications dans {workspaceName} sur Acme. Choisissez les notifications que vous recevez par e-mail dans vos préférences de notification.",
     subject: "Une publication n’est pas partie sur {channel}",
   },
   postPublished: {
     action: "Voir la publication",
     body: "Une publication de {workspaceName} est en ligne sur {channel}.",
     ignore:
-      "Vous recevez cet e-mail parce que vous programmez des publications dans {workspaceName} sur Acme. Choisissez les avis que vous recevez par e-mail dans vos préférences de notification.",
+      "Vous recevez cet e-mail parce que vous programmez des publications dans {workspaceName} sur Acme. Choisissez les notifications que vous recevez par e-mail dans vos préférences de notification.",
     subject: "Publié sur {channel}",
   },
   postUnconfirmed: {
     action: "Ouvrir la publication",
     body: "Acme a envoyé une publication de {workspaceName} sur {channel} sans recevoir de réponse : elle est peut-être en ligne, peut-être pas. Vérifiez sur la plateforme avant de la republier, puis indiquez à Acme ce que vous avez trouvé.",
     ignore:
-      "Vous recevez cet e-mail parce que vous programmez des publications dans {workspaceName} sur Acme. Choisissez les avis que vous recevez par e-mail dans vos préférences de notification.",
+      "Vous recevez cet e-mail parce que vous programmez des publications dans {workspaceName} sur Acme. Choisissez les notifications que vous recevez par e-mail dans vos préférences de notification.",
     subject: "Vérifiez {channel} : une publication est peut-être partie",
   },
   resetPassword: {
