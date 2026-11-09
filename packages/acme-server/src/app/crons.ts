@@ -1,5 +1,6 @@
 import { Layer } from "effect";
 
+import { AnalyticsCronsLive } from "#analytics/container.ts";
 import { ChannelsCronsLive } from "#channels/container.ts";
 import { ClusterRetentionCron } from "#shared/infrastructure/cluster-retention.ts";
 
@@ -11,5 +12,6 @@ import { ClusterRetentionCron } from "#shared/infrastructure/cluster-retention.t
  */
 export const CronsLive = Layer.mergeAll(
   ClusterRetentionCron,
-  ChannelsCronsLive
+  ChannelsCronsLive,
+  AnalyticsCronsLive
 );

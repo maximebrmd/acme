@@ -1,5 +1,6 @@
 import { HttpApi, OpenApi } from "effect/http-api";
 
+import { AnalyticsApi } from "./analytics.ts";
 import { ApiKeysApi } from "./api-keys.ts";
 import { AssistantApi } from "./assistant.ts";
 import { ChannelOAuthApi } from "./channel-oauth.ts";
@@ -14,6 +15,33 @@ import { SystemApi } from "./system.ts";
 export { DatabaseUnavailable } from "./database-unavailable.ts";
 
 export { AltTextTooLong } from "./alt-text-too-long.ts";
+
+export {
+  AnalyticsApi,
+  AnalyticsSummarySchema,
+  CalendarDaySchema,
+  ChannelMetricsSchema,
+  EngagementDaySchema,
+  MetricsSnapshotSchema,
+  MetricTotalsSchema,
+  PostAnalyticsSchema,
+  PostMetricsSchema,
+  TargetMetricsSchema,
+  TopPostSchema,
+} from "./analytics.ts";
+
+export type {
+  AnalyticsSummary,
+  CalendarDay,
+  ChannelMetrics,
+  EngagementDay,
+  MetricsSnapshot,
+  MetricTotals,
+  PostAnalytics,
+  PostMetrics,
+  TargetMetrics,
+  TopPost,
+} from "./analytics.ts";
 
 export { ApiKeyNotFound } from "./api-key-not-found.ts";
 
@@ -92,6 +120,8 @@ export { CurrentMember } from "./current-member.ts";
 export { CurrentPrincipal } from "./current-principal.ts";
 
 export { Forbidden } from "./forbidden.ts";
+
+export { InvalidDateRange } from "./invalid-date-range.ts";
 
 export { InvalidTimeRange } from "./invalid-time-range.ts";
 
@@ -308,4 +338,5 @@ export class Api extends HttpApi.make("acme")
   .add(NoticesApi)
   .add(NotificationPreferencesApi)
   .add(AssistantApi)
+  .add(AnalyticsApi)
   .annotateMerge(OpenApi.annotations({ title: "Acme API" })) {}

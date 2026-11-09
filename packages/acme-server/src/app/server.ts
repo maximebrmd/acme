@@ -6,6 +6,12 @@ import { HttpRouter } from "effect/http";
 import { HttpApiBuilder } from "effect/http-api";
 import { WorkflowEngine } from "effect/workflow";
 
+import {
+  AnalyticsApiLive,
+  analyticsCollection,
+  AnalyticsLive,
+  PlatformMetricsReaderLive,
+} from "#analytics/container.ts";
 import { ClusterLive } from "#app/cluster.ts";
 import { CronsLive } from "#app/crons.ts";
 import { McpLive } from "#app/mcp/server.ts";
@@ -26,9 +32,10 @@ import {
   NotificationsWorkersLive,
 } from "#notifications/container.ts";
 import {
+  GatedMetricsReader,
   PostsApiLive,
   PublishingLive,
-  PublishingWorkersLive,
+  publishingWorkersReading,
 } from "#publishing/container.ts";
 import { DatabaseLive } from "#shared/infrastructure/database.ts";
 import { MigrationsLive } from "#shared/infrastructure/migrations.ts";
@@ -49,7 +56,8 @@ const WorkspaceGroupsLive = Layer.mergeAll(
   MediaApiLive,
   NoticesApiLive,
   NotificationPreferencesApiLive,
-  AssistantApiLive
+  AssistantApiLive,
+  AnalyticsApiLive
 ).pipe(Layer.provideMerge(WorkspaceApiLive));
 
 const ApiLive = HttpApiBuilder.layer(Api, {
@@ -103,7 +111,8 @@ const ServicesLive = Layer.mergeAll(
   ChannelsWithNoticesLive,
   PublishingContextLive,
   MediaLive,
-  AssistantLive
+  AssistantLive,
+  AnalyticsLive
 ).pipe(
   Layer.provide(Layer.mergeAll(JobsWithoutWorkersLive, BunDns.layer)),
   Layer.provideMerge(MigrationsLive),
@@ -121,19 +130,28 @@ const HttpServerLive = Layer.unwrap(
   })
 );
 
-// The durable jobs: workflows, cluster entities and crons.
+// The durable jobs: workflows, cluster entities and crons. The channels'
+// gates publish, and read analytics' counts with the platforms' readers.
 const WorkersLive = Layer.mergeAll(
-  PublishingWorkersLive,
+  publishingWorkersReading(PlatformMetricsReaderLive),
   NotificationsWorkersLive,
   CronsLive
 );
+
+// Analytics follows the posts publishing lists, and reads their counts
+// through the channels' gates.
+const AnalyticsContextLive = Layer.merge(
+  AnalyticsLive,
+  analyticsCollection(GatedMetricsReader)
+).pipe(Layer.provide(PublishingContextLive));
 
 // The contexts' use cases and adapters, which handlers and workers share.
 const ContextsLive = Layer.mergeAll(
   ChannelsWithNoticesLive,
   PublishingContextLive,
   MediaLive,
-  AssistantLive
+  AssistantLive,
+  AnalyticsContextLive
 ).pipe(
   Layer.provideMerge(
     Layer.mergeAll(IdsLive, TransactionRunnerLive, BunDns.layer)

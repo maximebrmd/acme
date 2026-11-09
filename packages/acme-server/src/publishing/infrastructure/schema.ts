@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import {
   boolean,
   index,
@@ -80,6 +81,10 @@ export const postTargets = publishing.table(
   },
   (table) => [
     unique("post_targets_post_channel").on(table.postId, table.channelId),
+    // Targets in the order they went live, which analytics follows.
+    index("post_targets_published")
+      .on(table.finishedAt, table.id)
+      .where(sql`${table.status} = 'published'`),
   ]
 );
 
