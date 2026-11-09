@@ -176,6 +176,7 @@
       "countersEmpty": "Choisissez des canaux pour voir si le texte leur convient.",
       "count": "{length} sur {maximum} {unit, select, utf8Bytes {octets} other {caractères}}",
       "noLimit": "Aucune limite connue",
+      "fitSummary": "{count, plural, =0 {Tous les canaux acceptent la publication en l’état.} one {# canal refuserait la publication en l’état.} other {# canaux refuseraient la publication en l’état.}}",
       "problem": "{problem, select, empty {Rien à publier} mediaRequired {Une image ou une vidéo est nécessaire} tooManyMedia {Trop d’images ou de vidéos ({count} sur {maximum})} tooManyHashtags {Trop de hashtags ({count} sur {maximum})} tooManyMentions {Trop de mentions ({count} sur {maximum})} other {{problem}}}",
       "mediaLegend": "Images et vidéos",
       "mediaAttached": "{count, plural, one {# jointe} other {# jointes}}",

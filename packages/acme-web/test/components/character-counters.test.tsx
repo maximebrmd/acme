@@ -43,11 +43,24 @@ describe(CharacterCounters, () => {
     expect(html).toContain("Needs an image or a video");
   });
 
+  it("announces how many channels refuse the post, not every count", async () => {
+    const html = await render("en", "日".repeat(141));
+
+    // X is over its limit and Instagram needs media; Bluesky takes it.
+    // An output element is a status: a polite live region of its own.
+    expect(html).toContain(
+      '<output class="sr-only">2 channels would refuse the post as it is.</output>'
+    );
+    expect(html).not.toContain("aria-live");
+    expect(html.match(/<output/gu)).toHaveLength(1);
+  });
+
   it("speaks the reader's language", async () => {
     const html = await render("fr", "Bonjour");
 
     expect(html).toContain("7 sur 280 caractères");
     expect(html).toContain("@acme_x sur X");
+    expect(html).toContain("1 canal refuserait la publication en l’état.");
   });
 
   it("asks for channels before there is anything to count", async () => {
