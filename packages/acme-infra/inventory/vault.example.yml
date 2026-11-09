@@ -1,0 +1,31 @@
+---
+# The credentials outside services issue, for one environment. Copy this file
+# to group_vars/<environment>/vault.yml (Git ignores it), fill it in, and
+# encrypt it: `uv run ansible-vault encrypt group_vars/production/vault.yml`.
+# Or leave the vault out and write the same values on the server (README.md).
+# Values shown are placeholders.
+
+# The tunnel's token: `cloudflared tunnel token <tunnel name>` on your own
+# machine, for a tunnel created with `cloudflared tunnel create`.
+cloudflared_tunnel_token: REPLACE
+
+# Written to /srv/acme/credentials.env as NAME='value'. A single quote cannot
+# appear in a value.
+acme_credentials:
+  # An R2 API token with Object Read & Write on the media bucket only.
+  ACME_S3_ACCESS_KEY_ID: REPLACE
+  ACME_S3_SECRET_ACCESS_KEY: REPLACE
+  # An R2 API token with Object Read & Write on the backup bucket only.
+  PGBACKREST_REPO1_S3_KEY: REPLACE
+  PGBACKREST_REPO1_S3_KEY_SECRET: REPLACE
+  # Encrypts the backups: `openssl rand -base64 48`. Keep a copy outside the
+  # server, such as in a password manager: a restore needs it, and the
+  # backups cannot be read without it.
+  PGBACKREST_REPO1_CIPHER_PASS: REPLACE
+  # Email through Resend, or SMTP_URL.
+  RESEND_API_KEY: REPLACE
+  # The alert bot (from @BotFather) and the chat it writes to.
+  TELEGRAM_BOT_TOKEN: REPLACE
+  TELEGRAM_CHAT_ID: REPLACE
+  # Optional: the writing assistant's provider key.
+  # ACME_AI_API_KEY: REPLACE

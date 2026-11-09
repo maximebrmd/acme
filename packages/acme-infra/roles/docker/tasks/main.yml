@@ -1,0 +1,42 @@
+---
+# Docker Engine and Compose from Docker's repository: the stack needs Engine
+# 28 or later for image mounts, and Compose 2.35 or later.
+- name: Create the apt keyrings folder
+  ansible.builtin.file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: "0755"
+
+- name: Add Docker's signing key
+  ansible.builtin.get_url:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    dest: /etc/apt/keyrings/docker.asc
+    mode: "0644"
+
+- name: Add Docker's apt repository
+  ansible.builtin.deb822_repository:
+    name: docker
+    types: [deb]
+    uris: https://download.docker.com/linux/ubuntu
+    suites: ["{{ ansible_facts.distribution_release }}"]
+    components: [stable]
+    signed_by: /etc/apt/keyrings/docker.asc
+
+- name: Install Docker Engine and Compose
+  ansible.builtin.apt:
+    name: [docker-ce, docker-ce-cli, containerd.io, docker-buildx-plugin, docker-compose-plugin]
+    state: present
+    update_cache: true
+
+- name: Configure the Docker daemon
+  ansible.builtin.copy:
+    dest: /etc/docker/daemon.json
+    content: "{{ docker_daemon | to_nice_json }}\n"
+    mode: "0644"
+  notify: Restart Docker
+
+- name: Start Docker at boot
+  ansible.builtin.systemd_service:
+    name: docker
+    state: started
+    enabled: true

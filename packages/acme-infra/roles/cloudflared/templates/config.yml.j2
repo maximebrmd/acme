@@ -1,0 +1,48 @@
+# Managed by Ansible (acme-infra). The tunnel's routes, read in order: the
+# first rule whose host name and path match a request serves it. cloudflared
+# matches paths after resolving dot segments and repeated slashes.
+#
+# A rule with `access` refuses any request without a valid Cloudflare Access
+# token for that application, on top of the Access application at the edge,
+# which has to exist too (README.md, "Cloudflare"). Every service listens on
+# 127.0.0.1 (compose.production.yaml).
+{% set server = 'http://127.0.0.1:' ~ acme_ports.server %}
+{% set web = 'http://127.0.0.1:' ~ acme_ports.web %}
+{% set services = {'server': server, 'web': web} %}
+{% set team = cloudflare_access_team %}
+{% if acme_access_everything %}
+{% set everything = ', originRequest: {access: {required: true, teamName: ' ~ team ~ ', audTag: [' ~ cloudflare_access_aud.sandbox ~ ']}}' %}
+{% else %}
+{% set everything = '' %}
+{% endif %}
+metrics: {{ cloudflared_metrics }}
+
+ingress:
+  # Grafana and SSH, for the team only.
+  - {hostname: {{ acme_hostnames.grafana }}, service: "http://127.0.0.1:{{ acme_ports.grafana }}", originRequest: {access: {required: true, teamName: {{ team }}, audTag: [{{ cloudflare_access_aud.grafana }}]}}}
+  - {hostname: {{ acme_hostnames.ssh }}, service: "ssh://127.0.0.1:22", originRequest: {access: {required: true, teamName: {{ team }}, audTag: [{{ cloudflare_access_aud.ssh }}]}}}
+{% if acme_access_everything %}
+
+  # Behind Access throughout, but for what outside services fetch.
+{% for route in acme_access_bypass_paths %}
+  - {hostname: {{ acme_hostnames.app }}, path: '{{ route.path }}', service: "{{ services[route.to] }}"}
+{% endfor %}
+{% else %}
+
+  # The admin, for the team only.
+{% for route in acme_access_paths %}
+  - {hostname: {{ acme_hostnames.app }}, path: '{{ route.path }}', service: "{{ services[route.to] }}", originRequest: {access: {required: true, teamName: {{ team }}, audTag: [{{ cloudflare_access_aud.admin }}]}}}
+{% endfor %}
+{% endif %}
+
+  # The app: the server answers /api/* and the OAuth discovery documents, the
+  # web app everything else.
+  - {hostname: {{ acme_hostnames.app }}, path: "^/+(api/|\\.well-known/oauth-)", service: "{{ server }}"{{ everything }}}
+  - {hostname: {{ acme_hostnames.app }}, service: "{{ web }}"{{ everything }}}
+
+  # The marketing site and the docs (the static image).
+  - {hostname: {{ acme_hostnames.site }}, service: "http://127.0.0.1:{{ acme_ports.site }}"{{ everything }}}
+  - {hostname: {{ acme_hostnames.docs }}, service: "http://127.0.0.1:{{ acme_ports.docs }}"{{ everything }}}
+
+  # Anything else the tunnel receives.
+  - service: http_status:404

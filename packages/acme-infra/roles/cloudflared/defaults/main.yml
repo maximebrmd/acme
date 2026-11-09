@@ -1,0 +1,4 @@
+---
+cloudflared_config_dir: /etc/cloudflared
+# Where cloudflared answers /ready, on the server only.
+cloudflared_metrics: 127.0.0.1:20241

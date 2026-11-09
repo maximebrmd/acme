@@ -1,0 +1,20 @@
+---
+# The servers' baseline and Acme's runtime. Run after bootstrap.yml, as the
+# admin user, and again whenever this folder changes; a second run reports
+# no change:
+#   ansible-playbook playbooks/site.yml --limit production --check --diff
+#   ansible-playbook playbooks/site.yml --limit production --diff
+# The firewall comes after cloudflared, so the tunnel carries SSH before
+# port 22 closes.
+- name: Configure the servers
+  hosts: servers
+  become: true
+  roles:
+    - acme_preflight
+    - system
+    - ssh
+    - docker
+    - cloudflared
+    - firewall
+    - acme_runtime
+    - acme_backup

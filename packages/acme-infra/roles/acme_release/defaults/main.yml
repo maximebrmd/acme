@@ -1,0 +1,5 @@
+---
+# Working folder on the machine running Ansible (ignored by Git).
+acme_release_local_dir: "{{ playbook_dir | dirname }}/.ansible/release"
+# Release folders kept on the server, the running one included.
+acme_release_keep: 3

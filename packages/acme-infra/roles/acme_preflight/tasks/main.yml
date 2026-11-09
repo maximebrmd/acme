@@ -1,0 +1,27 @@
+---
+# The inventory ships with placeholders (example.com, 203.0.113.0/24,
+# REPLACE…), so nothing can be applied by mistake: every playbook stops here
+# until they are replaced.
+- name: Refuse an inventory that still holds placeholders
+  ansible.builtin.assert:
+    that: acme_preflight_placeholders | length == 0
+    fail_msg: >-
+      Replace the placeholder values of {{ acme_preflight_placeholders | join(', ') }}
+      in the inventory before running this playbook on {{ inventory_hostname }}.
+    quiet: true
+  vars:
+    acme_preflight_pattern: (REPLACE|example\.com|example-team|203\.0\.113\.|0123456789abcdef0123456789abcdef)
+    acme_preflight_settings:
+      ansible_host: "{{ ansible_host | default('') }}"
+      admin_ssh_public_keys: "{{ admin_ssh_public_keys | to_json }}"
+      acme_hostnames: "{{ acme_hostnames | to_json }}"
+      cloudflare_access_team: "{{ cloudflare_access_team }}"
+      cloudflare_access_aud: "{{ cloudflare_access_aud | to_json }}"
+      acme_mail_from: "{{ acme_mail_from }}"
+      acme_media_endpoint: "{{ acme_media_endpoint }}"
+      acme_backup_endpoint: "{{ acme_backup_endpoint }}"
+      acme_static_build_args: "{{ acme_static_build_args | to_json }}"
+    acme_preflight_placeholders: >-
+      {{ acme_preflight_settings | dict2items
+         | selectattr('value', 'search', acme_preflight_pattern)
+         | map(attribute='key') | list }}

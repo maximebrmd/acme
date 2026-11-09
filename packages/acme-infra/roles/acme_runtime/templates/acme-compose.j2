@@ -1,0 +1,17 @@
+#!/bin/sh
+# Managed by Ansible (acme-infra). Docker Compose on the release that runs,
+# with its settings: `sudo acme-compose ps`, `logs --tail 50 server`,
+# `exec postgres psql --username acme`. Later env files win.
+set -eu
+exec docker compose \
+  --project-name {{ acme_compose_project }} \
+  --project-directory {{ acme_root }}/current \
+  --file {{ acme_root }}/current/compose.production.yaml \
+{% for profile in acme_compose_profiles %}
+  --profile {{ profile }} \
+{% endfor %}
+  --env-file {{ acme_root }}/host.env \
+  --env-file {{ acme_root }}/credentials.env \
+  --env-file {{ acme_root }}/secrets.env \
+  --env-file {{ acme_root }}/release.env \
+  "$@"

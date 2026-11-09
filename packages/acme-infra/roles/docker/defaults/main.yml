@@ -1,0 +1,8 @@
+---
+# Rotated local logs, and containers keep running while the daemon restarts.
+docker_daemon:
+  log-driver: local
+  log-opts:
+    max-size: 10m
+    max-file: "3"
+  live-restore: true
