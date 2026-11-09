@@ -331,6 +331,10 @@ services:
       GF_ANALYTICS_REPORTING_ENABLED: "false"
       GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
       GF_ANALYTICS_CHECK_FOR_PLUGIN_UPDATES: "false"
+      # Grafana would otherwise replace the data source plugins its image
+      # ships, Prometheus's and Loki's that the alerts query included, with
+      # their latest release each time it starts: the image decides them.
+      GF_PLUGINS_PREINSTALL_AUTO_UPDATE: "false"
       GF_NEWS_NEWS_FEED_ENABLED: "false"
       # Read by the Telegram contact point, when it is mounted.
       TELEGRAM_BOT_TOKEN:
