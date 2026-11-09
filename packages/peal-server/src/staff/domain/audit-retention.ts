@@ -5,7 +5,8 @@ import { DateTime, Option } from "effect";
  * kept 12 months, the span the CNIL recommends for logs of what authorised
  * users did. A ban, and the lifting of one, is kept 3 years, so a user can
  * contest a restriction and Peal answer for it, or 12 months past the end
- * of a ban that lasted longer, whichever is later. Events about a closed
+ * of a ban that lasted longer, whichever is later. A ban until lifted ends
+ * when it is lifted: it is kept while it holds. Events about a closed
  * account lose its id and reason at once (StaffRecords.forgetUser); this
  * is the limit for every event.
  */
@@ -38,9 +39,19 @@ export interface RetainedEvent {
   readonly action: string;
   readonly at: DateTime.Utc;
   readonly banExpiresAt: Option.Option<DateTime.Utc>;
+  /**
+   * Whether it still names the account, which closing the account forgets:
+   * a ban until lifted then no longer holds.
+   */
+  readonly hasTarget: boolean;
+  /** For a ban, when a later unban of the same account lifted it, if one did. */
+  readonly liftedAt: Option.Option<DateTime.Utc>;
 }
 
-/** Whether the audit log no longer keeps the event at `now`. */
+/**
+ * Whether the audit log no longer keeps the event at `now`. A ban ends at
+ * its end, or, until lifted, once lifted; one that still holds is kept.
+ */
 export const isExpired = (event: RetainedEvent, now: DateTime.Utc): boolean => {
   const { bans, general } = auditCutoffs(now);
 
@@ -48,11 +59,18 @@ export const isExpired = (event: RetainedEvent, now: DateTime.Utc): boolean => {
     return DateTime.isLessThan(event.at, general);
   }
 
-  return (
-    DateTime.isLessThan(event.at, bans) &&
-    Option.match(event.banExpiresAt, {
-      onNone: () => true,
-      onSome: (end) => DateTime.isLessThan(end, general),
-    })
-  );
+  if (!DateTime.isLessThan(event.at, bans)) {
+    return false;
+  }
+
+  const ended =
+    event.action === "ban"
+      ? Option.orElse(event.banExpiresAt, () => event.liftedAt)
+      : event.banExpiresAt;
+
+  return Option.match(ended, {
+    // An unban, or a ban until lifted whose account is gone.
+    onNone: () => event.action !== "ban" || !event.hasTarget,
+    onSome: (end) => DateTime.isLessThan(end, general),
+  });
 };

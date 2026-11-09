@@ -442,8 +442,9 @@ and no socket, for tests.
   their id, a legitimate interest: the operator answers for what staff did
   to other people's accounts; their workspace, operation and object ids
   stay too. The log keeps an event 12 months, impersonation records
-  included, a ban or unban 3 years or 12 months past a longer ban's end
-  (`staff/domain/audit-retention.ts`); the `staff.audit-retention` cron
+  included, a ban or unban 3 years or 12 months past a longer ban's end, a
+  ban until lifted as long as it holds: 12 months past a later unban, or
+  once its account is closed (`staff/domain/audit-retention.ts`); the `staff.audit-retention` cron
   (`PurgeAuditLog`) deletes the rest daily, the log's one deletion besides
   `forgetUser`. YouTube's upload journal goes with its
   publication calls, and `publishing.quota_usage`, the server's daily

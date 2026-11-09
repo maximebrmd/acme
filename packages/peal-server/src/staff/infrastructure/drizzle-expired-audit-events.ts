@@ -1,4 +1,16 @@
-import { and, inArray, isNull, lt, notInArray, or } from "drizzle-orm";
+import {
+  and,
+  eq,
+  gt,
+  inArray,
+  isNotNull,
+  isNull,
+  lt,
+  notInArray,
+  or,
+  sql,
+} from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import { DateTime, Effect, Layer } from "effect";
 
 import { DatabaseError } from "#shared/application/database-error.ts";
@@ -11,10 +23,15 @@ import { auditEvents } from "./schema.ts";
 
 const failed = (cause: unknown) => new DatabaseError({ cause });
 
+// A later unban of the same account, which ends a ban until lifted.
+const unbans = alias(auditEvents, "unbans");
+
 /**
  * The audit log's expired events, in SQL as `isExpired` decides them:
- * older than 12 months, or, for bans, older than 3 years and ended (or
- * never to end) more than 12 months ago.
+ * older than 12 months, or, for bans and unbans, older than 3 years and
+ * ended more than 12 months ago. A ban until lifted ends when a later unban
+ * lifts it, or when its account is closed (its target forgotten); until
+ * then it is kept.
  */
 export const DrizzleExpiredAuditEvents = Layer.effect(
   ExpiredAuditEvents,
@@ -38,8 +55,26 @@ export const DrizzleExpiredAuditEvents = Layer.effect(
               inArray(auditEvents.action, [...banActions]),
               lt(auditEvents.at, bans),
               or(
-                isNull(auditEvents.banExpiresAt),
-                lt(auditEvents.banExpiresAt, general)
+                lt(auditEvents.banExpiresAt, general),
+                and(
+                  isNull(auditEvents.banExpiresAt),
+                  or(
+                    eq(auditEvents.action, "unban"),
+                    isNull(auditEvents.targetId),
+                    sql`exists ${db
+                      .select({ one: sql`1` })
+                      .from(unbans)
+                      .where(
+                        and(
+                          eq(unbans.action, "unban"),
+                          isNotNull(unbans.targetId),
+                          eq(unbans.targetId, auditEvents.targetId),
+                          gt(unbans.at, auditEvents.at),
+                          lt(unbans.at, general)
+                        )
+                      )}`
+                  )
+                )
               )
             )
           )

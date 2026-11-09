@@ -92,7 +92,7 @@ Les membres d’une organisation voient le nom, l’adresse e-mail et le rôle d
 | Jetons des comptes connectés                     | [Durée]                                                                                                                                           |
 | Pièces de facturation                            | [Durée imposée par le droit comptable]                                                                                                            |
 | Journaux techniques                              | Journaux du serveur 31 jours, traces 14 jours, métriques 30 jours                                                                                 |
-| Registre des actions de l’équipe sur les comptes | 12 mois ; un bannissement et sa levée 3 ans, ou 12 mois après la fin d’un bannissement plus long. La fermeture d’un compte l’en retire aussitôt   |
+| Registre des actions de l’équipe sur les comptes | 12 mois ; un bannissement et sa levée 3 ans, ou 12 mois après la fin d’un bannissement plus long, et un bannissement jusqu’à la levée tant qu’il s’applique. La fermeture d’un compte l’en retire aussitôt   |
 | Sauvegardes                                      | Les données supprimées disparaissent des sauvegardes chiffrées sous 5 semaines. Une sauvegarde n’est restaurée que pour se remettre d’un incident |
 
 ## Vos droits
