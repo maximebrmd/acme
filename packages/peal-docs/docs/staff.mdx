@@ -51,7 +51,7 @@ Better Auth's own admin endpoints under `/api/auth/admin/` are off, so nothing s
 
 ## The audit log [#audit-log]
 
-Each action is recorded before it is carried out, so nothing staff do goes unrecorded: who did it, what, to which account, why, and when, with a ban's end. An action that then failed still shows what staff asked for. The log keeps ids, never what anyone wrote. It keeps each entry 12 months, and a ban, or the lifting of one, 3 years, or 12 months past the end of a ban that lasted longer; a ban until lifted is kept as long as it holds, and ends when it is lifted or the account is closed: a daily job (`staff.audit-retention`, at 03:41 UTC) deletes older entries.
+Each action is recorded before it is carried out, so nothing staff do goes unrecorded: who did it, what, to which account, why, and when, with a ban's end. An action that then failed still shows what staff asked for. The log keeps ids, never what anyone wrote. It keeps each entry 12 months, and a ban, or the lifting of one, 5 years (the limitation period for a claim about it, art. 2224 of the French Code civil), or 12 months past the end of a ban that lasted longer; a ban until lifted is kept as long as it holds, and ends when it is lifted or the account is closed: a daily job (`staff.audit-retention`, at 03:41 UTC) deletes older entries.
 
 While staff act as an account, the server records every request that changes something, before it runs, whichever way it comes: Peal's API (`/api/…`) and the sign-in service's routes (`/api/auth/…`) alike. The handler of the request has no say in it, so a change cannot skip its record, and a change the server then refuses is recorded too. Each entry says:
 

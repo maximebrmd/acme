@@ -3,15 +3,17 @@ import { DateTime, Option } from "effect";
 /**
  * How long the audit log keeps an event. Staff's actions on accounts are
  * kept 12 months, the span the CNIL recommends for logs of what authorised
- * users did. A ban, and the lifting of one, is kept 3 years, so a user can
- * contest a restriction and Peal answer for it, or 12 months past the end
- * of a ban that lasted longer, whichever is later. A ban until lifted ends
- * when it is lifted: it is kept while it holds. Events about a closed
- * account lose its id and reason at once (StaffRecords.forgetUser); this
- * is the limit for every event.
+ * users did (délibération 2021-122). A ban, and the lifting of one, is kept
+ * 5 years: a user may sue over a restriction for 5 years from the day they
+ * learnt of it (art. 2224 of the Code civil), and Peal must then show what
+ * it did and why. A ban that lasted longer is kept 12 months past its end,
+ * whichever is later; a ban until lifted ends when it is lifted, and is
+ * kept while it holds. Events about a closed account lose its id and
+ * reason at once (StaffRecords.forgetUser); this is the limit for every
+ * event.
  */
 export const auditRetention = {
-  bans: { years: 3 },
+  bans: { years: 5 },
   general: { months: 12 },
 } as const;
 
