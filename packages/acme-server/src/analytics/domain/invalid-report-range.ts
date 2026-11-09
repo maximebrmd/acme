@@ -1,8 +1,8 @@
 import { Schema } from "effect";
 
 /**
- * A report's range ends before it starts (`days` below one), or spans more
- * than a year.
+ * A report's range ends before it starts (`days` below one), spans more
+ * than a year, or ends on the last day of the calendar Acme keeps.
  */
 export class InvalidReportRange extends Schema.TaggedError<InvalidReportRange>()(
   "InvalidReportRange",

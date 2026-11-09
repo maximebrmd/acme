@@ -62,6 +62,26 @@ describe(reportRange, () => {
       })
     ).toBe(367);
   });
+
+  it("refuses a range ending on the calendar's last day, whose end it has not", () => {
+    expect(
+      Result.isFailure(
+        rangeOf(
+          { day: 1, month: 12, year: 9999 },
+          { day: 31, month: 12, year: 9999 }
+        )
+      )
+    ).toBeTruthy();
+
+    expect(
+      Result.isSuccess(
+        rangeOf(
+          { day: 1, month: 12, year: 9999 },
+          { day: 30, month: 12, year: 9999 }
+        )
+      )
+    ).toBeTruthy();
+  });
 });
 
 const counts = (likes: number) =>
