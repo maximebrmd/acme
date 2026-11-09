@@ -136,14 +136,30 @@ export const publishedOf = (found: ListedPost): Published => ({
  * published, or definitely not (finished but unpublished, failed, or
  * expired: publishing it again posts at most once, as a container is
  * published once), or not yet known.
+ *
+ * Published, the post is looked for among the account's recent ones
+ * (`listed`), for its own id and address. When it is not listed yet, or the
+ * list does not answer, the container names it until analytics need its
+ * own id: Meta said it is live, which no failure to list undoes.
  */
 export const lookUpOf = (
   status: ContainerStatus,
-  published: () => Effect.Effect<Published, PublishFailure>
-): Effect.Effect<LookUp, PublishFailure> => {
+  containerId: string,
+  listed: () => Effect.Effect<Option.Option<ListedPost>, PublishFailure>
+): Effect.Effect<LookUp> => {
   if (status === "PUBLISHED") {
-    return published().pipe(
-      Effect.map((found): LookUp => ({ _tag: "found", published: found }))
+    return listed().pipe(
+      Effect.orElseSucceed(() => Option.none<ListedPost>()),
+      Effect.map((found): LookUp => ({
+        _tag: "found",
+        published: Option.match(found, {
+          onNone: (): Published => ({
+            _tag: "published",
+            platformPostId: PlatformPostIdSchema.make(containerId),
+          }),
+          onSome: publishedOf,
+        }),
+      }))
     );
   }
 

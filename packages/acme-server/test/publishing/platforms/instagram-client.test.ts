@@ -323,4 +323,37 @@ describe("publishing on Instagram", () => {
       assert.lengthOf(graph.posts(), 1);
     }).pipe(Effect.scoped)
   );
+
+  it.live(
+    "takes a container Meta says is published as the post, unlisted or not",
+    () =>
+      Effect.gen(function* listingDown() {
+        const photo = jpeg();
+        const { client, graph } = yield* onInstagram({ files: [photo] });
+
+        graph.loseAnswer(`POST /v27.0/${instagramUserId}/media_publish`);
+
+        // The account's posts cannot be listed meanwhile.
+        graph.script.push(
+          `GET /v27.0/${instagramUserId}/media`,
+          Array.from({ length: 5 }, () => metaError(2, 500))
+        );
+
+        const result = yield* client.publish(
+          yield* outgoing({
+            accountId: instagramUserId,
+            media: [attached(photo)],
+            text: "Published, not listed",
+          })
+        );
+
+        const [container] = graph.containers();
+
+        assert.deepStrictEqual(result, {
+          _tag: "published",
+          platformPostId: PlatformPostIdSchema.make(container?.id ?? ""),
+        });
+        assert.lengthOf(graph.posts(), 1);
+      }).pipe(Effect.scoped)
+  );
 });

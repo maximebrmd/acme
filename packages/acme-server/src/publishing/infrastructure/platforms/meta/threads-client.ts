@@ -405,20 +405,9 @@ export const threadsClient = Effect.fn("ThreadsClient.make")(
           onSome: (containerId) =>
             statusOf(post, containerId).pipe(
               Effect.flatMap(({ status }) =>
-                lookUpOf(status, () =>
+                lookUpOf(status, containerId, () =>
                   recentPosts(post).pipe(
-                    Effect.map((listed) =>
-                      Option.match(matchingPost(post, listed), {
-                        // Published, but not listed yet: the container
-                        // names the post until analytics need its own id.
-                        onNone: (): Published => ({
-                          _tag: "published",
-                          platformPostId:
-                            PlatformPostIdSchema.make(containerId),
-                        }),
-                        onSome: publishedOf,
-                      })
-                    )
+                    Effect.map((listed) => matchingPost(post, listed))
                   )
                 )
               )

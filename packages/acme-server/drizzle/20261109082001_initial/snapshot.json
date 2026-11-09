@@ -269,7 +269,8 @@
         "e|tbl|channels.data_deletions",
         "n|rel|channels.data_deletions",
         "n|type|channels.data_deletions",
-        "n|rel|channels.data_deletions_pkey"
+        "n|rel|channels.data_deletions_pkey",
+        "n|rel|channels.data_deletions_request_digest"
       ],
       "reads": [
         "n|sch|channels"
@@ -3443,6 +3444,19 @@
       "table": "data_deletions",
       "name": "completed_at",
       "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "channels",
+      "table": "data_deletions",
+      "name": "request_digest",
+      "type": "text",
       "typeSchema": null,
       "notNull": true,
       "dimensions": 0,
@@ -9231,6 +9245,17 @@
         "workspace_id",
         "platform",
         "account_id"
+      ],
+      "nullsNotDistinct": false,
+      "entityType": "uniques"
+    },
+    {
+      "schema": "channels",
+      "table": "data_deletions",
+      "name": "data_deletions_request_digest",
+      "nameExplicit": true,
+      "columns": [
+        "request_digest"
       ],
       "nullsNotDistinct": false,
       "entityType": "uniques"

@@ -10,7 +10,12 @@ import type { FormatLimits, MediaRules } from "./platform-rules.ts";
 import { PostContentRejected } from "./post-content-rejected.ts";
 import { textOn } from "./post-content.ts";
 import type { PostContent } from "./post-content.ts";
-import { countHashtags, countMentions, measureText } from "./text-length.ts";
+import {
+  countHashtags,
+  countLinks,
+  countMentions,
+  measureText,
+} from "./text-length.ts";
 
 /** A channel a post goes to, and the platform whose rules it follows. */
 export interface ChannelOnPlatform {
@@ -51,7 +56,12 @@ export const checkDraft = (
   checked(content, overridesWithoutChannel(content, channelIds));
 
 const atMost = (
-  tag: "tooManyHashtags" | "tooManyMedia" | "tooManyMentions" | "tooManyVideos",
+  tag:
+    | "tooManyHashtags"
+    | "tooManyLinks"
+    | "tooManyMedia"
+    | "tooManyMentions"
+    | "tooManyVideos",
   channel: ChannelOnPlatform,
   count: number,
   maximum: number | undefined
@@ -101,6 +111,7 @@ export const violationsOn = (
       countMentions(text),
       rules.maxMentions
     ),
+    ...atMost("tooManyLinks", channel, countLinks(text), rules.maxLinks),
   ];
 };
 

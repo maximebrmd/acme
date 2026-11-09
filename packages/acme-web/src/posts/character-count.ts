@@ -1,6 +1,7 @@
 import type { Platform } from "acme-contract";
 import {
   countHashtags,
+  countLinks,
   countMentions,
   measureText,
   platformRules,
@@ -24,7 +25,11 @@ export type ChannelProblem =
   | { readonly _tag: "empty" }
   | { readonly _tag: "mediaRequired" }
   | {
-      readonly _tag: "tooManyHashtags" | "tooManyMedia" | "tooManyMentions";
+      readonly _tag:
+        | "tooManyHashtags"
+        | "tooManyLinks"
+        | "tooManyMedia"
+        | "tooManyMentions";
       readonly count: number;
       readonly maximum: number;
     };
@@ -40,7 +45,7 @@ export interface ChannelFit {
 }
 
 const tooMany = (
-  tag: "tooManyHashtags" | "tooManyMedia" | "tooManyMentions",
+  tag: "tooManyHashtags" | "tooManyLinks" | "tooManyMedia" | "tooManyMentions",
   count: number,
   maximum: number | undefined
 ): readonly ChannelProblem[] =>
@@ -81,6 +86,7 @@ export const fitOn = (
       ...mediaRequired,
       ...tooMany("tooManyHashtags", countHashtags(text), rules.maxHashtags),
       ...tooMany("tooManyMentions", countMentions(text), rules.maxMentions),
+      ...tooMany("tooManyLinks", countLinks(text), rules.maxLinks),
     ],
     tightest,
   };

@@ -6,10 +6,13 @@ import { Schema } from "effect";
  * - `graphemes`: what a reader sees as one character, such as "👍🏽" or an
  *   "é" written as "e" and a combining accent (Bluesky).
  * - `codePoints`: Unicode code points, so an emoji built of several, such as
- *   a family, counts each of them (Threads, Instagram, and the platforms that
- *   only say "characters").
+ *   a family, counts each of them (Instagram, and the platforms that only
+ *   say "characters").
  * - `utf8Bytes`: the bytes of the text encoded as UTF-8 (Bluesky's second
  *   limit).
+ * - `emojiBytes`: code points, but an emoji counts the bytes it takes in
+ *   UTF-8, 4 for most and more for those built of several (Threads, whose
+ *   "Posts" page says "Emojis are counted as the number of UTF-8 bytes").
  * - `weighted`: X's open text-counting rules. The text is normalized to NFC;
  *   a link counts as 23, whatever its length; an emoji counts as 2; a code
  *   point counts as 1 in the ranges that hold Latin, Greek, Cyrillic and most
@@ -19,6 +22,7 @@ export const TextUnitSchema = Schema.Literals([
   "graphemes",
   "codePoints",
   "utf8Bytes",
+  "emojiBytes",
   "weighted",
 ]);
 
@@ -107,14 +111,29 @@ const weightedLength = (text: string): number => {
   );
 };
 
+const utf8BytesOf = (text: string): number =>
+  codePointsOf(text).reduce(
+    (bytes, codePoint) => bytes + utf8Length(codePoint),
+    0
+  );
+
+// Each emoji, as a reader sees one, by its bytes; anything else by its code
+// points.
+const emojiBytesLength = (text: string): number =>
+  segmentsOf(text).reduce(
+    (length, segment) =>
+      length +
+      (emoji.test(segment)
+        ? utf8BytesOf(segment)
+        : codePointsOf(segment).length),
+    0
+  );
+
 const measures: Readonly<Record<TextUnit, (text: string) => number>> = {
   codePoints: (text) => codePointsOf(text).length,
+  emojiBytes: emojiBytesLength,
   graphemes: (text) => segmentsOf(text).length,
-  utf8Bytes: (text) =>
-    codePointsOf(text).reduce(
-      (bytes, codePoint) => bytes + utf8Length(codePoint),
-      0
-    ),
+  utf8Bytes: utf8BytesOf,
   weighted: weightedLength,
 };
 
@@ -133,3 +152,15 @@ export const countHashtags = (text: string): number =>
 /** How many accounts the text mentions, such as "@acme_example". */
 export const countMentions = (text: string): number =>
   [...text.matchAll(mentions)].length;
+
+/**
+ * How many different links the text holds, each as X finds them: starting
+ * with a scheme or "www.", without the punctuation that ends a sentence.
+ * The same link twice counts once.
+ */
+export const countLinks = (text: string): number =>
+  new Set(
+    Array.from(text.matchAll(links), ([link]) =>
+      link.replace(trailingPunctuation, "")
+    )
+  ).size;

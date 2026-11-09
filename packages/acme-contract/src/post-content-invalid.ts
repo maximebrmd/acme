@@ -37,6 +37,8 @@ export const ContentViolationSchema = Schema.Union([
   Schema.TaggedStruct("mediaRequired", onChannel),
   Schema.TaggedStruct("tooManyHashtags", tooMany),
   Schema.TaggedStruct("tooManyMentions", tooMany),
+  // More different links than the platform takes in one post.
+  Schema.TaggedStruct("tooManyLinks", tooMany),
   // More videos than the platform shows in one post.
   Schema.TaggedStruct("tooManyVideos", tooMany),
   // Images and videos together, which the platform never shows in one post.

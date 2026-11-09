@@ -20,14 +20,16 @@ export const maxMediaPerPost = 20;
 
 /**
  * How a platform measures text: graphemes (what a reader sees as one
- * character), Unicode code points, UTF-8 bytes, or X's weighted count, where a
- * link counts as 23, an emoji as 2, and a code point outside Latin, Greek,
+ * character), Unicode code points, UTF-8 bytes, code points with each emoji
+ * counted by its UTF-8 bytes (Threads), or X's weighted count, where a link
+ * counts as 23, an emoji as 2, and a code point outside Latin, Greek,
  * Cyrillic and common punctuation as 2.
  */
 export const TextUnitSchema = Schema.Literals([
   "graphemes",
   "codePoints",
   "utf8Bytes",
+  "emojiBytes",
   "weighted",
 ]).annotate({
   description: "How a platform measures the length of a post's text.",
@@ -113,14 +115,27 @@ const weightedLength = (text: string): number => {
   );
 };
 
+const utf8BytesOf = (text: string): number =>
+  codePointsOf(text).reduce(
+    (bytes, codePoint) => bytes + utf8Length(codePoint),
+    0
+  );
+
+const emojiBytesLength = (text: string): number =>
+  segmentsOf(text).reduce(
+    (length, segment) =>
+      length +
+      (emoji.test(segment)
+        ? utf8BytesOf(segment)
+        : codePointsOf(segment).length),
+    0
+  );
+
 const measures: Readonly<Record<TextUnit, (text: string) => number>> = {
   codePoints: (text) => codePointsOf(text).length,
+  emojiBytes: emojiBytesLength,
   graphemes: (text) => segmentsOf(text).length,
-  utf8Bytes: (text) =>
-    codePointsOf(text).reduce(
-      (bytes, codePoint) => bytes + utf8Length(codePoint),
-      0
-    ),
+  utf8Bytes: utf8BytesOf,
   weighted: weightedLength,
 };
 
@@ -139,6 +154,18 @@ export const countHashtags = (text: string): number =>
 /** How many accounts the text mentions, such as "@acme_example". */
 export const countMentions = (text: string): number =>
   [...text.matchAll(mentions)].length;
+
+/**
+ * How many different links the text holds, each as X finds them: starting
+ * with a scheme or "www.", without the punctuation that ends a sentence.
+ * The same link twice counts once.
+ */
+export const countLinks = (text: string): number =>
+  new Set(
+    Array.from(text.matchAll(links), ([link]) =>
+      link.replace(trailingPunctuation, "")
+    )
+  ).size;
 
 /** At most `maximum` of `unit`. */
 export interface TextLimit {
@@ -183,6 +210,8 @@ export interface MediaRules {
  */
 export interface PlatformRules {
   readonly maxHashtags?: number;
+  /** Different links, counted by `countLinks`. */
+  readonly maxLinks?: number;
   readonly maxMedia?: number;
   readonly maxMentions?: number;
   readonly media?: MediaRules;
@@ -338,6 +367,7 @@ export const platformRules: Readonly<Record<Platform, PlatformRules>> = {
   },
   pinterest: { mediaRequired: false, textLimits: [] },
   threads: {
+    maxLinks: 5,
     maxMedia: 20,
     media: {
       formats: {
@@ -351,7 +381,7 @@ export const platformRules: Readonly<Record<Platform, PlatformRules>> = {
       showsAltText: true,
     },
     mediaRequired: false,
-    textLimits: [{ maximum: 500, unit: "codePoints" }],
+    textLimits: [{ maximum: 500, unit: "emojiBytes" }],
   },
   tiktok: { mediaRequired: false, textLimits: [] },
   x: {

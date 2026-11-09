@@ -19,12 +19,19 @@ export class DataDeletions extends Context.Service<
      * Deletes, in every workspace, the channels on these platforms whose
      * tokens rest on the user: granted by them, or their own account. Then
      * records the request under `code`: both happen, or neither.
+     *
+     * A signed request carried out before, sent again as Meta retries it or
+     * as anyone who kept it could, deletes nothing: the deletion it was
+     * comes back, with its code. Otherwise a request replayed after the
+     * user connected accounts again would delete them.
      */
     readonly erase: (request: {
       readonly app: MetaAppKind;
       readonly code: string;
       readonly now: DateTime.Utc;
       readonly platforms: readonly Platform[];
+      /** The request as Meta sent it, whose signature checked out. */
+      readonly signedRequest: string;
       readonly userId: string;
     }) => Effect.Effect<DataDeletion, DatabaseError>;
     /** The request recorded under `code`, if any. */

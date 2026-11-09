@@ -67,6 +67,7 @@ export class DeletePlatformUserData extends Context.Service<
             code,
             now: yield* DateTime.now,
             platforms: platformsSignedInWith(app),
+            signedRequest,
             userId,
           });
 

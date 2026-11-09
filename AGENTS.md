@@ -396,8 +396,10 @@ and no socket, for tests.
 - Meta's data deletion callbacks (`POST /api/data-deletion/:app`, no sign-in)
   check the `signed_request` HMAC with the app's secret (`SignedRequests`),
   delete the channels the user granted or owns in every workspace, record
-  only the code and counts (`data_deletions`), and answer the status page
-  `PUBLIC_URL/data-deletion/<code>`.
+  only the code, counts and the SHA-256 of the signed request
+  (`data_deletions`), and answer the status page
+  `PUBLIC_URL/data-deletion/<code>`. The same signed request sent again
+  answers its first receipt and deletes nothing more.
 - `ConnectChannel` stores each attempt under the SHA-256 of its state, bound
   to the member, the workspace and the platform, for 15 minutes, completed
   once. One channel per platform account per workspace: connecting an account
