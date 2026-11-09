@@ -4,6 +4,7 @@ import { FetchHttpClient } from "effect/http";
 import { ChannelUnreadable } from "#analytics/application/channel-unreadable.ts";
 import { MetricsReader } from "#analytics/application/metrics-reader.ts";
 import type { MetricsRequest } from "#analytics/application/metrics-reader.ts";
+import { isCounted } from "#analytics/domain/counted-platforms.ts";
 import { blueskyMetrics } from "#analytics/infrastructure/platforms/bluesky/bluesky-metrics.ts";
 import {
   databaseDown,
@@ -24,7 +25,7 @@ export interface MetricsReaderSettings {
 }
 
 /**
- * The platforms Acme reads counts on, Mastodon and Bluesky, each channel
+ * The platforms Acme reads counts on (`countedPlatforms`), each channel
  * found through the channels context (ChannelAccess), which says who it
  * posts as, what it allowed, and whether it still works. Every request
  * goes through the public HTTP client, so the outbound guard checks the
@@ -58,13 +59,13 @@ export const platformMetricsReaderWith = (settings: MetricsReaderSettings) =>
           })
         );
 
-        if (account.platform === "mastodon") {
-          return yield* mastodon.read(account, request.posts);
+        if (!isCounted(account.platform)) {
+          return yield* new ChannelUnreadable({ reason: "unsupported" });
         }
 
-        return account.platform === "bluesky"
-          ? yield* bluesky.read(request.posts)
-          : yield* new ChannelUnreadable({ reason: "unsupported" });
+        return account.platform === "mastodon"
+          ? yield* mastodon.read(account, request.posts)
+          : yield* bluesky.read(request.posts);
       });
 
       return MetricsReader.of({ read });

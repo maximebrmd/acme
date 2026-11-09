@@ -50,6 +50,7 @@
       "loading": "Chargement des chiffres de la publication…",
       "loadFailed": "Les chiffres de la publication n’ont pas pu être chargés.",
       "notYet": "Acme relève pour l’instant les chiffres sur Mastodon et Bluesky, dans l’heure qui suit la parution.",
+      "uncounted": "Les chiffres ne sont pas disponibles sur {platforms} : Acme ne les relève pour l’instant que sur Mastodon et Bluesky.",
       "notRead": "Pas encore relevée",
       "readAt": "Relevée le {at}",
       "stopped": "Plus relevée : les publications sont suivies pendant 30 jours.",

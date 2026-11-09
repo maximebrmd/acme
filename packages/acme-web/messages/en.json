@@ -50,6 +50,7 @@
       "loading": "Loading the post’s counts…",
       "loadFailed": "The post’s counts could not be loaded.",
       "notYet": "Acme reads counts on Mastodon and Bluesky so far, within the hour after a post goes live.",
+      "uncounted": "Counts are not available on {platforms}: Acme reads them on Mastodon and Bluesky only, so far.",
       "notRead": "Not read yet",
       "readAt": "Read {at}",
       "stopped": "No longer read: posts are followed for 30 days.",

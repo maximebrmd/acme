@@ -59,6 +59,7 @@ export {
   AnalyticsSummarySchema,
   CalendarDaySchema,
   ChannelMetricsSchema,
+  countedPlatforms,
   EngagementDaySchema,
   MetricsSnapshotSchema,
   MetricTotalsSchema,

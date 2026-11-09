@@ -745,7 +745,10 @@ and no socket, for tests.
   it was erased follows none of them after.
 - Platforms without a reader (LinkedIn, X and Meta's so far) answer
   `ChannelUnreadable` `unsupported`: their posts end at their first turn,
-  with no warning, and the reports leave them out.
+  with no warning, and the reports leave them out. The platforms with one
+  are `countedPlatforms` (`analytics/domain/counted-platforms.ts`), which
+  the contract copies, kept equal by `test/analytics/api/contract.test.ts`,
+  so a post's page says the others have no counts.
 - `CollectMetrics` runs on the `analytics.collect-metrics` cron, hourly at
   minute 7: a post is read every hour for 48 hours, then every day until it
   is 30 days old (`analytics/domain/collection-schedule.ts`), each next read
