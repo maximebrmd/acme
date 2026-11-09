@@ -23,6 +23,8 @@ import { TokenExpired } from "#shared/domain/token-expired.ts";
 
 const onTime = Duration.zero;
 
+const startedAt = DateTime.makeUnsafe("2026-06-15T08:00:00Z");
+
 // After earlier attempts refused as `earlier` says, none by default.
 const after = (
   earlier: Partial<EarlierRefusals> = {},
@@ -30,6 +32,7 @@ const after = (
 ): AttemptContext => ({
   earlier: { rateLimited: 0, unavailable: 0, ...earlier },
   sinceScheduled,
+  startedAt,
 });
 
 const first = after();
@@ -85,7 +88,7 @@ describe(decide, () => {
         )
       ).toStrictEqual({
         _tag: "settle",
-        settlement: unconfirmed,
+        settlement: { _tag: "unconfirmed", attemptedAt: startedAt, reason },
       });
     }
   });

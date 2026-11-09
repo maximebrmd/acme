@@ -284,17 +284,22 @@ const callPlatform = Effect.fn("Publishing.callPlatform")(
     const journal = yield* PublicationJournal;
     const publisher = yield* PlatformPublisher;
 
+    const now = yield* DateTime.now;
+
     const start = yield* journal.begin({
       attempt: attempt.attempt,
       idempotencyKey: attempt.idempotencyKey,
       round: attempt.round,
-      startedAt: yield* DateTime.now,
+      startedAt: now,
       targetId: attempt.targetId,
     });
 
     if (start._tag === "completed") {
-      return { finishedAt: start.finishedAt, outcome: start.outcome };
+      return start;
     }
+
+    // When the call was made, by this run or the one that began it.
+    const startedAt = start._tag === "inFlight" ? start.startedAt : now;
 
     const outcome: AttemptOutcome =
       start._tag === "inFlight"
@@ -312,7 +317,7 @@ const callPlatform = Effect.fn("Publishing.callPlatform")(
 
     yield* writeOutcome(attempt, outcome, finishedAt);
 
-    return { finishedAt, outcome };
+    return { finishedAt, outcome, startedAt };
   }
 );
 
@@ -347,8 +352,7 @@ export const publishAttemptRun = Effect.fn("Publishing.publishAttempt")(
       return cancelled;
     }
 
-    const startedAt = yield* DateTime.now;
-    const { finishedAt, outcome } = yield* callPlatform(attempt);
+    const { finishedAt, outcome, startedAt } = yield* callPlatform(attempt);
 
     // Read from the journal, so a run after a crash decides as the first did.
     const earlier = yield* journal.earlierRefusals(attempt);
@@ -356,6 +360,7 @@ export const publishAttemptRun = Effect.fn("Publishing.publishAttempt")(
     const decision: PublicationDecision = decide(outcome, {
       earlier,
       sinceScheduled: DateTime.distance(attempt.scheduledAt, finishedAt),
+      startedAt,
     });
 
     yield* journal.recordAttempt({

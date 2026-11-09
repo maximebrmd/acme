@@ -339,6 +339,50 @@ describe("PublishTargetV1 when the platform refuses", () => {
 
 describe("PublishTargetV1 when the outcome is unknown", () => {
   it.effect(
+    "marks an unconfirmed retry with when that attempt was made",
+    () =>
+      onServerAt(
+        "2026-06-15T07:00:00Z",
+        Effect.gen(function* keepsTheAttemptTime() {
+          const { channel, post } = yield* scriptedPost([
+            {
+              _tag: "fail",
+              failure: new RateLimited({ retryAfter: Duration.hours(2) }),
+            },
+            { _tag: "loseResponse" },
+          ]);
+
+          const target = yield* onlyTarget(post.id);
+
+          yield* setTime(scheduledAt);
+          yield* eventually("the first call is refused", callCount(channel, 1));
+          yield* eventually("the job waits", isTargetWaiting(target.id));
+          yield* TestClock.adjust(Duration.hours(2));
+          yield* eventually("the post finishes", isFinished(post.id));
+
+          const [, second] = yield* callsOn(channel);
+          const unconfirmed = yield* onlyTarget(post.id);
+
+          assert(second !== undefined);
+          assert(unconfirmed.status._tag === "unconfirmed");
+          assert.isTrue(
+            DateTime.isGreaterThanOrEqualTo(
+              unconfirmed.status.attemptedAt,
+              DateTime.subtract(second.at, { seconds: 1 })
+            )
+          );
+          assert.isTrue(
+            DateTime.isLessThanOrEqualTo(
+              unconfirmed.status.attemptedAt,
+              second.at
+            )
+          );
+        })
+      ),
+    timeout
+  );
+
+  it.effect(
     "marks a post whose answer was lost unconfirmed, and never sends it again",
     () =>
       onServerAt(

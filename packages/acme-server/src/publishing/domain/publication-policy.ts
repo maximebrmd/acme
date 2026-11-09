@@ -109,6 +109,8 @@ export interface AttemptContext {
   readonly earlier: EarlierRefusals;
   /** From the scheduled time to the end of the attempt. */
   readonly sinceScheduled: Duration.Duration;
+  /** When the attempt's call started: an unconfirmed post may be live since. */
+  readonly startedAt: DateTime.Utc;
 }
 
 const settle = (settlement: TargetSettlement): PublicationDecision => ({
@@ -171,7 +173,8 @@ export const decide = (
       afterRateLimit(retryAfter, context, policy),
     TokenExpired: () => giveUp("tokenExpired"),
     published: (published) => settle(published),
-    unconfirmed: (unconfirmed) => settle(unconfirmed),
+    unconfirmed: ({ reason }) =>
+      settle({ _tag: "unconfirmed", attemptedAt: context.startedAt, reason }),
   });
 
 /**

@@ -126,10 +126,23 @@ describe(settleTarget, () => {
     {
       expected: {
         _tag: "unconfirmed",
-        attemptedAt: startedAt,
+        attemptedAt: utc("2026-06-15T08:00:03Z"),
         reason: "noResponse",
       },
-      settlement: { _tag: "unconfirmed", reason: "noResponse" },
+      settlement: {
+        _tag: "unconfirmed",
+        attemptedAt: utc("2026-06-15T08:00:03Z"),
+        reason: "noResponse",
+      },
+    },
+    {
+      // Stored before settlements said when the attempt was made.
+      expected: {
+        _tag: "unconfirmed",
+        attemptedAt: startedAt,
+        reason: "interrupted",
+      },
+      settlement: { _tag: "unconfirmed", reason: "interrupted" },
     },
     {
       expected: {

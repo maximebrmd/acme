@@ -124,9 +124,9 @@ export const settleTarget = (
       platformPostId: Option.some(platformPostId),
       publishedAt: now,
     }),
-    unconfirmed: ({ reason }): PostTargetStatus => ({
+    unconfirmed: ({ attemptedAt, reason }): PostTargetStatus => ({
       _tag: "unconfirmed",
-      attemptedAt: status.startedAt,
+      attemptedAt: attemptedAt ?? status.startedAt,
       reason,
     }),
   });

@@ -35,6 +35,14 @@
   {
     "_tag": "settle",
     "settlement": {
+      "_tag": "unconfirmed",
+      "attemptedAt": "2026-06-15T13:00:00.000Z",
+      "reason": "noResponse"
+    }
+  },
+  {
+    "_tag": "settle",
+    "settlement": {
       "_tag": "failed",
       "reason": "rateLimited"
     }
