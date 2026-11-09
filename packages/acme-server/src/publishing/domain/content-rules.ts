@@ -104,31 +104,35 @@ export const violationsOn = (
   ];
 };
 
+// A video's duration is checked in whole milliseconds, rounded as the media
+// API shows it (`durationMs`), so a client that checks what the API shows
+// finds what the server finds, and a violation never reads "140 seconds, at
+// most 140 seconds".
 const durationViolations = (
   limits: FormatLimits,
   on: MediaOnChannel,
   duration: Duration.Duration
 ): readonly ContentViolation[] => {
   const { maxDurationMs, minDurationMs } = limits;
-  const ms = Duration.toMillis(duration);
+  const durationMs = Math.round(Duration.toMillis(duration));
 
   return [
-    ...(maxDurationMs !== undefined && ms > maxDurationMs
+    ...(maxDurationMs !== undefined && durationMs > maxDurationMs
       ? [
           {
             _tag: "videoTooLong" as const,
             ...on,
-            durationMs: Math.ceil(ms),
+            durationMs,
             maximumMs: maxDurationMs,
           },
         ]
       : []),
-    ...(minDurationMs !== undefined && ms < minDurationMs
+    ...(minDurationMs !== undefined && durationMs < minDurationMs
       ? [
           {
             _tag: "videoTooShort" as const,
             ...on,
-            durationMs: Math.floor(ms),
+            durationMs,
             minimumMs: minDurationMs,
           },
         ]

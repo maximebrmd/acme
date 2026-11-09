@@ -55,6 +55,10 @@ const video = (
 
 const sized = (width: number, height: number) => Option.some({ height, width });
 
+// A video lasting `ms` milliseconds, a fraction possibly.
+const lasting = (ms: number) =>
+  video(first, { duration: Option.some(Duration.millis(ms)) });
+
 describe(mediaViolationsOn, () => {
   it("takes a common photo and video on every platform with media rules", () => {
     const withRules = PlatformSchema.literals.filter(
@@ -148,7 +152,7 @@ describe(mediaViolationsOn, () => {
       video(first, { duration: Option.some(duration) });
 
     expect(violations("x", at(Duration.seconds(140)))).toStrictEqual([]);
-    expect(violations("x", at(Duration.millis(140_000.4)))).toStrictEqual([
+    expect(violations("x", at(Duration.millis(140_000.6)))).toStrictEqual([
       {
         _tag: "videoTooLong",
         ...on("x"),
@@ -157,7 +161,7 @@ describe(mediaViolationsOn, () => {
         mediaId: first,
       },
     ]);
-    expect(violations("x", at(Duration.millis(400.6)))).toStrictEqual([
+    expect(violations("x", at(Duration.millis(400.4)))).toStrictEqual([
       {
         _tag: "videoTooShort",
         ...on("x"),
@@ -176,6 +180,13 @@ describe(mediaViolationsOn, () => {
         mediaId: first,
       },
     ]);
+  });
+
+  it("measures durations in whole milliseconds, as the media API shows them", () => {
+    // The API shows 140,000 ms and 500 ms: a client checking those finds
+    // nothing, and neither does the server.
+    expect(violations("x", lasting(140_000.4))).toStrictEqual([]);
+    expect(violations("x", lasting(499.6))).toStrictEqual([]);
   });
 
   it("checks pixels and the aspect ratio", () => {
