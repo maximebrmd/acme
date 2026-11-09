@@ -303,7 +303,8 @@ bun nx run peal-server:auth-schema   # regenerate Better Auth's tables after cha
 
 Each context keeps its tables in a Postgres schema of its own (`analytics`,
 `assistant`, `auth`, `billing`, `channels`, `media`, `notifications`,
-`publishing`, `staff`); the job runner's `cluster_*` tables are in `public`. The server
+`publishing`, `staff`, and `legal`, what the law has a host keep); the job
+runner's `cluster_*` tables are in `public`. The server
 keeps finished jobs for 30 days (`PEAL_CLUSTER_RETENTION` changes it), and
 names itself among the job runners with `HOSTNAME`.
 

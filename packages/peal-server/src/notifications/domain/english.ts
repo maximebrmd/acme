@@ -3,7 +3,7 @@ import type { EmailCatalog } from "./email-catalog.ts";
 export const english: EmailCatalog = {
   accountDeleted: {
     action: "Open Peal",
-    body: "Your Peal account was deleted, as you asked, with the data tied to it: your profile, your sessions, your memberships, your notifications, and the workspaces where you were the only member, with everything in them.",
+    body: "Your Peal account was deleted, as you asked, with the data tied to it: your profile, your sessions, your memberships, your notifications, and the workspaces where you were the only member, with everything in them. As French law requires of a host, Peal keeps apart, for judicial authorities only, your name and email address for 5 years, and how you signed in and the connections that created content for 1 year, then deletes them.",
     ignore:
       "If you did not ask for this, tell whoever runs this Peal server. Peal sends no more email to this address.",
     subject: "Your Peal account is deleted",

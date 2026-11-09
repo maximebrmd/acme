@@ -101,7 +101,7 @@ The server answers two probes:
 
 ## Database [#database]
 
-At startup, the server applies the database migrations it has not applied yet, one server at a time, and only listens once they are done. Each part of Peal keeps its tables in a Postgres schema of its own (`assistant`, `auth`, `channels`, `media`, `notifications`, `publishing`); the job runner's tables (`cluster_*`) are in `public`.
+At startup, the server applies the database migrations it has not applied yet, one server at a time, and only listens once they are done. Each part of Peal keeps its tables in a Postgres schema of its own (`assistant`, `auth`, `channels`, `legal`, `media`, `notifications`, `publishing`); the job runner's tables (`cluster_*`) are in `public`.
 
 The server runs its durable jobs from the same database, and holds them with session advisory locks for as long as it runs. Connect it to Postgres directly, or through a pooler in session mode: a pooler in transaction mode gives each statement another connection, which loses those locks. Each server process opens up to 10 connections, and up to 5 more for sign-in (`AUTH_DB_POOL_MAX`).
 
@@ -283,6 +283,17 @@ UPDATE auth."user" SET role = 'admin' WHERE email = 'you@example.com';
 ```
 
 While impersonating, staff cannot connect channels, publish, manage API keys or billing, change workspaces, or let an application act for the member. They can read the member's notifications, but not mark them read or change the member's email preferences. They can ask the writing assistant in the member's workspaces, which counts toward those workspaces' daily requests.
+
+## Legal retention [#legal-retention]
+
+French law has a host keep the data that identifies whoever contributed content, so that a judicial authority can ask for it (loi n° 2004-575, Article 6, V, and décret n° 2021-1362). Peal does it by default, in the `legal` schema, which nothing else in the server reads:
+
+- each request that creates, changes or deletes posts or media, through the web app, an API key, the command line or an MCP client: when, from which address (read as sign-in reads it, from `AUTH_IP_HEADERS`), over which protocol and how it signed in, kept 1 year;
+- when an account closes, its holder's name and email address, kept 5 years, and how they signed in (each sign-in method's identifier, never the password or its hash) and their Stripe customers, kept 1 year.
+
+A daily job (`legal.retention`, at 03:47 UTC) deletes each record once its time is up. Staff read these records only by answering a legal request in the [staff console](/staff#legal-requests), and each answer is recorded. Each user's export lists their connections and what closing their account would leave.
+
+If you run Peal outside France and no law obliges you to keep these, set `PEAL_LEGAL_RETENTION=false`: the server then keeps none of them, and closing an account leaves nothing. Your own privacy notice should say which you chose.
 
 ## Telemetry [#telemetry]
 

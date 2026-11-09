@@ -20,6 +20,7 @@ const contexts = [
   "notifications",
   "assistant",
   "staff",
+  "legal",
 ] as const;
 
 type Kernel = (typeof contexts)[number] | "shared";

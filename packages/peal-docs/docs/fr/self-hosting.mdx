@@ -101,7 +101,7 @@ Le serveur répond à deux sondes :
 
 ## Base de données [#database]
 
-Au démarrage, le serveur applique les migrations de la base de données qu’il n’a pas encore appliquées, un serveur à la fois, et n’écoute qu’une fois qu’elles sont terminées. Chaque partie de Peal range ses tables dans un schéma Postgres à elle (`assistant`, `auth`, `channels`, `media`, `notifications`, `publishing`) ; les tables de l’exécuteur de tâches (`cluster_*`) sont dans `public`.
+Au démarrage, le serveur applique les migrations de la base de données qu’il n’a pas encore appliquées, un serveur à la fois, et n’écoute qu’une fois qu’elles sont terminées. Chaque partie de Peal range ses tables dans un schéma Postgres à elle (`assistant`, `auth`, `channels`, `legal`, `media`, `notifications`, `publishing`) ; les tables de l’exécuteur de tâches (`cluster_*`) sont dans `public`.
 
 Le serveur exécute ses tâches durables depuis la même base, et les garde par des verrous consultatifs de session tant qu’il tourne. Connectez-le à Postgres directement, ou par un pooler en mode session : un pooler en mode transaction donne une autre connexion à chaque requête, ce qui perd ces verrous. Chaque processus serveur ouvre jusqu’à 10 connexions, et jusqu’à 5 de plus pour la connexion des utilisateurs (`AUTH_DB_POOL_MAX`).
 
@@ -283,6 +283,17 @@ UPDATE auth."user" SET role = 'admin' WHERE email = 'vous@example.com';
 ```
 
 En se faisant passer pour un membre, l’équipe ne peut ni connecter de canaux, ni publier, ni gérer les clés d’API ou la facturation, ni modifier les espaces de travail, ni laisser une application agir pour le membre. Elle peut lire les notifications du membre, mais pas les marquer comme lues ni changer ses préférences d’e-mail. Elle peut demander de l’aide à l’assistant de rédaction dans les espaces de travail du membre, ce qui compte dans les demandes du jour de ces espaces.
+
+## Conservation légale [#legal-retention]
+
+La loi française impose à un hébergeur de conserver les données permettant d’identifier quiconque a contribué à la création d’un contenu, afin que l’autorité judiciaire puisse les requérir (loi n° 2004-575, article 6, V, et décret n° 2021-1362). Peal le fait par défaut, dans le schéma `legal`, que rien d’autre dans le serveur ne lit :
+
+- chaque requête qui crée, modifie ou supprime des publications ou des médias, depuis l’application web, une clé d’API, la ligne de commande ou un client MCP : quand, depuis quelle adresse (lue comme la connexion la lit, depuis `AUTH_IP_HEADERS`), par quel protocole et avec quel moyen de connexion, conservée 1 an ;
+- à la fermeture d’un compte, les nom et adresse e-mail de son titulaire, conservés 5 ans, et ses moyens de connexion (l’identifiant de chaque méthode de connexion, jamais le mot de passe ni son empreinte) et ses clients Stripe, conservés 1 an.
+
+Une tâche quotidienne (`legal.retention`, à 03 h 47 UTC) supprime chaque donnée une fois sa durée écoulée. L’équipe ne lit ces données qu’en répondant à une réquisition dans la [console de l’équipe](/fr/staff#legal-requests), et chaque réponse est consignée. L’export de chaque utilisateur liste ses connexions et ce que la fermeture de son compte laisserait.
+
+Si vous exploitez Peal hors de France et qu’aucune loi ne vous oblige à les conserver, définissez `PEAL_LEGAL_RETENTION=false` : le serveur n’en conserve alors aucune, et la fermeture d’un compte ne laisse rien. Votre propre politique de confidentialité doit dire ce que vous avez choisi.
 
 ## Télémétrie [#telemetry]
 

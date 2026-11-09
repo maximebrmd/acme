@@ -2,6 +2,7 @@ import { assert, layer } from "@effect/vitest";
 import { Context, Effect, Layer, Option, Schema } from "effect";
 import { McpClient } from "effect/ai";
 import type { McpSchema } from "effect/ai";
+import { SqlClient } from "effect/sql";
 import { InvitationSchema, PostSchema } from "peal-contract";
 import type { TargetOptions } from "peal-contract";
 
@@ -129,6 +130,26 @@ type ToolArguments = NonNullable<
   (typeof McpSchema.CallTool.payloadSchema.Type)["arguments"]
 >;
 
+// How many connections that made content the legal records keep for the
+// workspace, through the MCP endpoint.
+const mcpConnections = Effect.fn("mcpConnections")(function* mcpConnections(
+  workspaceId: string
+) {
+  const sql = yield* SqlClient.SqlClient;
+
+  const [row] =
+    yield* sql`SELECT count(*)::int AS count FROM legal.connections WHERE workspace_id = ${workspaceId} AND access = 'mcp'`.pipe(
+      Effect.flatMap(
+        Schema.decodeUnknownEffect(
+          Schema.Array(Schema.Struct({ count: Schema.Number }))
+        )
+      ),
+      Effect.orDie
+    );
+
+  return row?.count ?? 0;
+});
+
 // A client connected with the token for the test's scope, and its tools by
 // name: `call` decodes a success, `refused` answers the text of a refusal.
 // Requests read the in-process transport from the context, so each one
@@ -220,6 +241,7 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           const fixture = yield* ToolsFixture;
 
           const writer = yield* connected(fixture.writing);
+          const before = yield* mcpConnections(fixture.workspaceId);
 
           const created = yield* writer.call("create_draft", PostJsonSchema, {
             channelIds: [fixture.channelId],
@@ -227,6 +249,13 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           });
 
           assert.strictEqual(created.status, "draft");
+
+          // The law has Peal keep the connection that made it; reading
+          // keeps nothing.
+          assert.strictEqual(
+            yield* mcpConnections(fixture.workspaceId),
+            before + 1
+          );
           assert.deepStrictEqual(
             created.targets.map(({ channelId }) => channelId),
             [fixture.channelId]
@@ -239,6 +268,10 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           assert.include(
             page.items.map(({ id }) => id),
             created.id
+          );
+          assert.strictEqual(
+            yield* mcpConnections(fixture.workspaceId),
+            before + 1
           );
 
           const updated = yield* writer.call("update_draft", PostJsonSchema, {

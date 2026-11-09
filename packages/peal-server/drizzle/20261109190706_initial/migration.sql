@@ -6,6 +6,8 @@ CREATE SCHEMA "billing";
 --> statement-breakpoint
 CREATE SCHEMA "channels";
 --> statement-breakpoint
+CREATE SCHEMA "legal";
+--> statement-breakpoint
 CREATE SCHEMA "media";
 --> statement-breakpoint
 CREATE SCHEMA "notifications";
@@ -146,6 +148,39 @@ CREATE TABLE "channels"."mastodon_apps" (
 	"redirect_uri" text,
 	"scopes" text NOT NULL,
 	CONSTRAINT "mastodon_apps_pkey" PRIMARY KEY("instance","redirect_uri")
+);
+--> statement-breakpoint
+CREATE TABLE "legal"."connections" (
+	"access" text NOT NULL,
+	"api_key_id" text,
+	"at" timestamp with time zone NOT NULL,
+	"id" uuid PRIMARY KEY,
+	"ip_address" text,
+	"protocol" text NOT NULL,
+	"user_id" uuid,
+	"workspace_id" uuid
+);
+--> statement-breakpoint
+CREATE TABLE "legal"."disclosures" (
+	"at" timestamp with time zone NOT NULL,
+	"authority" text NOT NULL,
+	"connections" integer NOT NULL,
+	"held" integer NOT NULL,
+	"id" uuid PRIMARY KEY,
+	"reference" text NOT NULL,
+	"staff_id" uuid NOT NULL,
+	"subject" jsonb NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "legal"."identification_holds" (
+	"account_created_at" timestamp with time zone NOT NULL,
+	"closed_at" timestamp with time zone NOT NULL,
+	"email" text NOT NULL,
+	"id" uuid PRIMARY KEY,
+	"name" text NOT NULL,
+	"sign_in_methods" jsonb DEFAULT '[]' NOT NULL,
+	"stripe_customer_ids" jsonb DEFAULT '[]' NOT NULL,
+	"user_id" uuid NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "media"."media_assets" (
@@ -586,6 +621,12 @@ CREATE INDEX "channels_granted_by" ON "channels"."channels" ("granted_by") WHERE
 CREATE INDEX "connect_attempts_expires_at" ON "channels"."connect_attempts" ("expires_at");--> statement-breakpoint
 CREATE INDEX "connect_choices_expires_at" ON "channels"."connect_choices" ("expires_at");--> statement-breakpoint
 CREATE INDEX "connect_choices_granted_by" ON "channels"."connect_choices" ("granted_by") WHERE "granted_by" IS NOT NULL;--> statement-breakpoint
+CREATE INDEX "connections_at" ON "legal"."connections" ("at");--> statement-breakpoint
+CREATE INDEX "connections_user" ON "legal"."connections" ("user_id","at");--> statement-breakpoint
+CREATE INDEX "connections_workspace" ON "legal"."connections" ("workspace_id","at");--> statement-breakpoint
+CREATE INDEX "disclosures_at" ON "legal"."disclosures" ("at");--> statement-breakpoint
+CREATE INDEX "identification_holds_closed_at" ON "legal"."identification_holds" ("closed_at");--> statement-breakpoint
+CREATE INDEX "identification_holds_user" ON "legal"."identification_holds" ("user_id");--> statement-breakpoint
 CREATE INDEX "media_assets_workspace_id_id_index" ON "media"."media_assets" ("workspace_id","id" DESC NULLS LAST);--> statement-breakpoint
 CREATE INDEX "notices_user" ON "notifications"."notices" ("user_id","id");--> statement-breakpoint
 CREATE INDEX "notices_user_unread" ON "notifications"."notices" ("user_id") WHERE "read_at" IS NULL;--> statement-breakpoint

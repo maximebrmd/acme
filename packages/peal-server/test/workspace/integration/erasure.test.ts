@@ -48,6 +48,7 @@ const schemas = [
   "auth",
   "billing",
   "channels",
+  "legal",
   "media",
   "notifications",
   "publishing",
@@ -155,6 +156,18 @@ const userRows = {
         OR EXISTS (SELECT 1 FROM jsonb_each_text(object_ids) AS named(name, value) WHERE value = ${id})`,
 } satisfies Readonly<Record<string, Count>>;
 
+// The rows of each table that the law has Peal keep about a user once
+// their account closes, apart from everything else (loi n° 2004-575,
+// art. 6, V, A; décret n° 2021-1362): who held the account, and each
+// connection that made content, the workspace's included. Each is kept for
+// its period, then purged (`#legal/domain/legal-retention.ts`).
+const heldRows = {
+  "legal.connections": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM legal.connections WHERE user_id = ${id}`,
+  "legal.identification_holds": (sql, id) =>
+    sql`SELECT count(*)::int AS count FROM legal.identification_holds WHERE user_id = ${id}`,
+} satisfies Readonly<Record<string, Count>>;
+
 // Tables that name neither a workspace nor a user, and why they stay.
 const kept = {
   "analytics.erased_workspaces":
@@ -175,6 +188,8 @@ const kept = {
   "channels.data_deletions":
     "the codes and counts of Meta's deletion requests, which name nobody",
   "channels.mastodon_apps": "Peal's own app on each Mastodon instance",
+  "legal.disclosures":
+    "what staff handed over on legal requests, and on what grounds, kept 5 years",
   "notifications.sent_notices":
     "the keys of events already told, ids and instants only",
   "publishing.quota_usage":
@@ -265,6 +280,10 @@ const fill = Effect.fn("fill")(function* fill(
     VALUES (${randomUUID()}, ${workspaceId}, ${`media/${workspaceId}/${randomUUID()}.png`}, 'image/png', 128, 'pending', now(), now())`;
 
   yield* apiKeyOf(person, workspaceId, ["post:read"]);
+
+  // A connection that made content in the workspace.
+  yield* sql`INSERT INTO legal.connections (id, access, at, protocol, user_id, workspace_id)
+    VALUES (${uuid7()}, 'session', now(), 'https', ${person.id}, ${workspaceId})`;
   yield* seedOAuthGrant(person.id, workspaceId, "Synthetic erasure client");
   yield* seedConnectChoice(workspaceId, person.id);
   yield* seedNotice(person.id, workspaceId, "@erasure@social.example");
@@ -366,6 +385,7 @@ layer(IntegrationLive, {
       const accounted = new Set([
         ...Object.keys(workspaceRows),
         ...Object.keys(userRows),
+        ...Object.keys(heldRows),
         ...Object.keys(kept),
       ]);
 
@@ -436,6 +456,35 @@ layer(IntegrationLive, {
           yield* countsOf(userRows, ana.id),
           none(userRows)
         );
+
+        // Only what the law has a host keep is left, apart: who held the
+        // account, once, and the connections that made content.
+        assert.deepStrictEqual(yield* countsOf(heldRows, ana.id), {
+          "legal.connections": 2,
+          "legal.identification_holds": 1,
+        });
+
+        const holds =
+          yield* sql`SELECT email, sign_in_methods -> 0 ->> 'provider' AS sign_in FROM legal.identification_holds WHERE user_id = ${ana.id}`.pipe(
+            Effect.flatMap(
+              Schema.decodeUnknownEffect(
+                Schema.Array(
+                  Schema.Struct({
+                    email: Schema.String,
+                    sign_in: Schema.String,
+                  })
+                )
+              )
+            ),
+            Effect.orDie
+          );
+
+        assert.deepStrictEqual(holds, [
+          {
+            email: ana.email,
+            sign_in: "credential",
+          },
+        ]);
 
         const posts = yield* count(
           sql`SELECT count(*)::int AS count FROM publishing.posts WHERE workspace_id = ${shared} AND author_id IS NULL`

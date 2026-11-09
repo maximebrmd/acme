@@ -1139,7 +1139,7 @@
     },
     "export": {
       "title": "Vos données",
-      "description": "Un fichier JSON de tout ce que Peal conserve sur vous : votre compte, vos sessions, vos adhésions, vos invitations, vos applications connectées, vos notifications et préférences, ce que l’équipe de Peal a fait sur votre compte, les publications que vous avez écrites dans les espaces de travail partagés, et le contenu des espaces de travail dont vous êtes le seul membre. Il ne contient aucun mot de passe, jeton ni clé. Nous vous prévenons par e-mail à chaque téléchargement.",
+      "description": "Un fichier JSON de tout ce que Peal conserve sur vous : votre compte, vos sessions, vos adhésions, vos invitations, vos applications connectées, vos notifications et préférences, ce que l’équipe de Peal a fait sur votre compte, les publications que vous avez écrites dans les espaces de travail partagés, le contenu des espaces de travail dont vous êtes le seul membre, et les connexions ayant créé du contenu, que la loi française impose à Peal de conserver, avec ce qu’il conserve une fois votre compte fermé. Il ne contient aucun mot de passe, jeton ni clé. Nous vous prévenons par e-mail à chaque téléchargement.",
       "download": "Télécharger mes données"
     },
     "delete": {
@@ -1147,7 +1147,7 @@
       "description": "Supprime définitivement votre compte, avec les espaces de travail dont vous êtes le seul membre et tout leur contenu. Vous quittez les autres.",
       "open": "Supprimer mon compte…",
       "confirmTitle": "Supprimer définitivement votre compte ?",
-      "confirmDescription": "Votre profil, vos sessions, notifications, préférences et applications connectées disparaissent, avec les espaces de travail dont vous êtes le seul membre, dont les abonnements sont résiliés. C’est définitif. Saisissez votre mot de passe pour confirmer.",
+      "confirmDescription": "Votre profil, vos sessions, notifications, préférences et applications connectées disparaissent, avec les espaces de travail dont vous êtes le seul membre, dont les abonnements sont résiliés. C’est définitif. Comme la loi française l’impose à un hébergeur, Peal conserve à part, pour les seules autorités judiciaires, vos nom et adresse e-mail pendant 5 ans, et vos moyens de connexion ainsi que les connexions ayant créé du contenu pendant 1 an, puis les supprime. Saisissez votre mot de passe pour confirmer.",
       "confirm": "Supprimer mon compte",
       "deleting": "Suppression…",
       "deleted": "Votre compte est supprimé. Une confirmation arrive dans votre boîte de réception.",

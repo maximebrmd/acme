@@ -2,6 +2,7 @@ import { Context } from "effect";
 import type { DateTime, Effect, Option } from "effect";
 
 import type { DatabaseError } from "#shared/application/database-error.ts";
+import type { IdentificationRecord } from "#shared/application/personal-data.ts";
 import type { UserId, WorkspaceId } from "#shared/domain/ids.ts";
 import type { Locale } from "#shared/domain/locale.ts";
 import type { MembershipStanding } from "#workspace/domain/account-closure.ts";
@@ -98,6 +99,17 @@ export class AccountStore extends Context.Service<
     readonly deleteWorkspace: (
       workspaceId: WorkspaceId
     ) => Effect.Effect<void, DatabaseError>;
+    /**
+     * Who holds the account and how they sign in, as the law has Peal keep
+     * it once the account closes: its name, address and creation, each
+     * sign-in method's account id (never its password), and the Stripe
+     * customers of the account and of `workspaceIds`, the workspaces its
+     * closure deletes. Read before deleting them.
+     */
+    readonly identification: (
+      userId: UserId,
+      workspaceIds: readonly WorkspaceId[]
+    ) => Effect.Effect<Option.Option<IdentificationRecord>, DatabaseError>;
     /**
      * Deletes the user with their sessions, those they opened as staff to
      * act as someone else included, sign-in methods, memberships, the

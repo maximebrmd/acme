@@ -7,6 +7,14 @@ const now = DateTime.makeUnsafe("2026-11-09T03:00:00Z");
 
 const at = (iso: string) => DateTime.makeUnsafe(iso);
 
+const ban = (start: string, end: Option.Option<string>) => ({
+  action: "ban" as const,
+  at: at(start),
+  banExpiresAt: end.pipe(Option.map(at)),
+  hasTarget: true,
+  liftedAt: Option.none(),
+});
+
 describe(isExpired, () => {
   it("keeps staff actions 12 months, impersonations' records included", () => {
     for (const action of [
@@ -45,14 +53,6 @@ describe(isExpired, () => {
   });
 
   it("keeps bans 5 years, and 12 months past a ban's end when that is later", () => {
-    const ban = (start: string, end: Option.Option<string>) => ({
-      action: "ban" as const,
-      at: at(start),
-      banExpiresAt: end.pipe(Option.map(at)),
-      hasTarget: true,
-      liftedAt: Option.none(),
-    });
-
     expect(
       isExpired(ban("2022-01-01T00:00:00Z", Option.none()), now)
     ).toBeFalsy();
@@ -70,6 +70,9 @@ describe(isExpired, () => {
         now
       )
     ).toBeTruthy();
+  });
+
+  it("keeps a ban that lasted longer 12 months past its end", () => {
     // A ban that ended less than a year ago stays, however old.
     expect(
       isExpired(

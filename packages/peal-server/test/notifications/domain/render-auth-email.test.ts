@@ -21,6 +21,16 @@ const invitation = (locale: "en" | "fr", role: string): AuthEmail => ({
   workspaceName: 'Studio "Nord"',
 });
 
+// The text of a deletion's confirmation, in `locale`.
+const deleted = (locale: "en" | "fr") =>
+  renderAuthEmail({
+    _tag: "AccountDeleted",
+    locale,
+    subscriptionsCancelled: 0,
+    to: "ada@example.test",
+    url: "https://app.example.test",
+  }).text;
+
 describe(renderAuthEmail, () => {
   it("writes a verification email in English", () => {
     const email = renderAuthEmail({
@@ -72,6 +82,11 @@ describe(renderAuthEmail, () => {
     expect(inFrench.text).toContain(
       "Ouvrir Peal\u00A0: https://app.example.test/fr"
     );
+  });
+
+  it("says what French law has a host keep after an account's deletion, and for whom", () => {
+    expect(deleted("en")).toContain("for judicial authorities only");
+    expect(deleted("fr")).toContain("pour les seules autorités judiciaires");
   });
 
   it("says when deleting cancelled subscriptions, and that nothing more is charged", () => {

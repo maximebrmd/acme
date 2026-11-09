@@ -38,8 +38,12 @@ import type { WorkspaceSubscribed } from "./workspace-subscribed.ts";
  * one of the workspaces it deletes through is cancelled at once, when
  * `options` says the user agreed to, before the transaction and once
  * nothing else refuses; otherwise the closure is refused
- * (`WorkspaceSubscribed`, listing what cancelling would end in each). A confirmation
- * is emailed to the address the account had, in its language.
+ * (`WorkspaceSubscribed`, listing what cancelling would end in each).
+ * Only what the law has a host keep is left, apart from everything else
+ * and readable only on a legal request: who held the account, 5 years,
+ * and how they signed in and paid, 1 year (`holdIdentification`); with the
+ * connections that made content, each kept a year since it was made. A
+ * confirmation is emailed to the address the account had, in its language.
  */
 export class CloseAccount extends Context.Service<
   CloseAccount,
@@ -115,12 +119,26 @@ export class CloseAccount extends Context.Service<
               planClosure(yield* store.standings(userId))
             );
 
+            // Who held the account, as the law has Peal keep it, read
+            // before anything goes: the Stripe customers of the
+            // workspaces it deletes included.
+            const identification = yield* store.identification(
+              userId,
+              plan.deleted
+            );
+
             yield* Effect.forEach(plan.deleted, eraseWorkspace, {
               discard: true,
             });
 
             yield* records.eraseUser(userId);
             yield* store.deleteUser(userId);
+
+            yield* Effect.forEach(
+              Option.toArray(identification),
+              records.holdIdentification,
+              { discard: true }
+            );
 
             return plan.deleted;
           })

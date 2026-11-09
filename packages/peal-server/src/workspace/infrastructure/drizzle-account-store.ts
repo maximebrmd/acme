@@ -2,6 +2,7 @@ import { and, asc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { DateTime, Effect, Layer, Option } from "effect";
 
 import { DatabaseError } from "#shared/application/database-error.ts";
+import type { IdentificationRecord } from "#shared/application/personal-data.ts";
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import type { UserId, WorkspaceId } from "#shared/domain/ids.ts";
 import { defaultLocale } from "#shared/domain/locale.ts";
@@ -354,9 +355,66 @@ export const DrizzleAccountStore = Layer.effect(
       }
     );
 
+    const identification = Effect.fn("AccountStore.identification")(
+      function* identification(
+        userId: UserId,
+        workspaceIds: readonly WorkspaceId[]
+      ) {
+        const [found] = yield* db
+          .select({
+            createdAt: user.createdAt,
+            email: user.email,
+            name: user.name,
+            stripeCustomerId: user.stripeCustomerId,
+          })
+          .from(user)
+          .where(eq(user.id, userId))
+          .limit(1)
+          .pipe(Effect.mapError(failed));
+
+        if (found === undefined) {
+          return Option.none<IdentificationRecord>();
+        }
+
+        const methods = yield* db
+          .select({
+            accountId: account.accountId,
+            provider: account.providerId,
+          })
+          .from(account)
+          .where(eq(account.userId, userId))
+          .orderBy(asc(account.createdAt))
+          .pipe(Effect.mapError(failed));
+
+        const customers =
+          workspaceIds.length === 0
+            ? []
+            : yield* db
+                .select({ id: organization.stripeCustomerId })
+                .from(organization)
+                .where(inArray(organization.id, [...workspaceIds]))
+                .pipe(Effect.mapError(failed));
+
+        const stripeCustomerIds = [
+          found.stripeCustomerId,
+          ...customers.map(({ id }) => id),
+        ].filter((id): id is string => id !== null && id !== "");
+
+        return Option.some<IdentificationRecord>({
+          accountCreatedAt: utc(found.createdAt),
+          email: found.email,
+          name: found.name,
+          signInMethods: methods,
+          stripeCustomerIds: [...new Set(stripeCustomerIds)],
+          userId,
+        });
+      }
+    );
+
     return AccountStore.of({
       deleteUser,
       deleteWorkspace,
+      identification,
       records,
       standings,
       workspace,

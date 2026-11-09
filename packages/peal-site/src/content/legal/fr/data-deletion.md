@@ -32,7 +32,15 @@ Les publications déjà mises en ligne restent sur les plateformes où elles ont
 
 ## Ce qui peut être conservé
 
-[Les données conservées après la suppression et pourquoi, comme les factures qu’impose le droit comptable, et la durée pendant laquelle les sauvegardes conservent les données supprimées.]
+La loi française impose à un hébergeur de conserver les données permettant d’identifier quiconque a contribué à la création d’un contenu (loi n° 2004-575, article 6, V, et décret n° 2021-1362). Lorsque votre compte est supprimé, nous conservons donc, à l’écart du service et lisibles uniquement pour répondre à une réquisition écrite de l’autorité judiciaire :
+
+- vos nom et adresse e-mail, pendant 5 ans ;
+- vos moyens de connexion (l’identifiant de chaque méthode de connexion, jamais votre mot de passe) et les références de vos paiements, pendant 1 an ;
+- pour chaque connexion ayant créé, modifié ou supprimé un contenu, son heure, son adresse IP et son protocole, pendant 1 an à compter de cette connexion.
+
+Elles sont ensuite supprimées automatiquement. Rien d’autre de votre compte n’est conservé.
+
+[Les autres données conservées après la suppression et pourquoi, comme les factures qu’impose le droit comptable, et la durée pendant laquelle les sauvegardes conservent les données supprimées.]
 
 ## Instances auto-hébergées
 
