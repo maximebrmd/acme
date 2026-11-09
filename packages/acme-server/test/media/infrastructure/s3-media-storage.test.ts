@@ -188,6 +188,61 @@ layer(StorageTest)("the S3 media store", (it) => {
     })
   );
 
+  it.effect("lists a part sent twice once, and joins it", () =>
+    Effect.gen(function* resent() {
+      const storage = yield* MediaStorage;
+      const key = yield* freshKey;
+      const body = syntheticBytes(mebibytes(5) + 10);
+      const partSize = mebibytes(5);
+      const uploadId = yield* storage.startMultipartUpload(key, "video/mp4");
+      const upload = { key, uploadId };
+      const parts = plannedParts(body.length, partSize);
+
+      const send = Effect.fn("send")(function* send(index: number) {
+        const part = parts[index];
+
+        if (part === undefined) {
+          return yield* Effect.die("no such part");
+        }
+
+        const signed = yield* storage.signUploadPart({
+          expiresIn,
+          part,
+          upload,
+        });
+
+        const start = (part.partNumber - 1) * partSize;
+
+        return yield* sendSigned(
+          signed,
+          body.slice(start, start + part.byteSize)
+        );
+      });
+
+      // The first part again, as a client sends it when an answer was lost.
+      yield* send(0);
+      yield* send(1);
+      yield* send(0);
+
+      const stored = yield* storage.listUploadedParts(upload);
+
+      assert.deepStrictEqual(
+        stored.map(({ byteSize, partNumber }) => ({ byteSize, partNumber })),
+        parts
+      );
+
+      yield* storage.completeMultipartUpload(upload, stored);
+
+      const { bytes } = yield* fetchBytes(
+        yield* storage.publicUrl(key, expiresIn)
+      );
+
+      assert.deepStrictEqual(bytes, body);
+
+      yield* storage.remove(key);
+    })
+  );
+
   it.effect("aborts a multipart upload, and an unknown one", () =>
     Effect.gen(function* aborts() {
       const storage = yield* MediaStorage;

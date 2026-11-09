@@ -100,7 +100,7 @@ export class MediaLibrary extends Context.Service<
     readonly finishUpload: (
       actor: Actor,
       assetId: MediaAssetId
-    ) => Effect.Effect<MediaAsset, CompleteFailure>;
+    ) => Effect.Effect<MediaItem, CompleteFailure>;
     readonly probeMedia: (
       actor: Actor,
       assetId: MediaAssetId
@@ -118,8 +118,11 @@ export class MediaLibrary extends Context.Service<
       assetId: MediaAssetId,
       altText: Option.Option<string>
     ) => Effect.Effect<
-      MediaAsset,
-      AltTextTooLong | MediaAssetNotFound | MissingPermission
+      MediaItem,
+      | AltTextTooLong
+      | MediaAssetNotFound
+      | MediaStorageFailed
+      | MissingPermission
     >;
     readonly getMedia: (
       actor: Actor,

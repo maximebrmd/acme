@@ -1,13 +1,21 @@
 import { describe, expect, it } from "@effect/vitest";
 import {
   Api,
+  MediaContentTypeSchema,
   PermissionSchema,
   PlatformSchema,
+  ProbeStateSchema,
+  RejectionReasonSchema,
   WorkspaceAccess,
 } from "acme-contract";
 import { HttpApi } from "effect/http-api";
 
 import { PlatformSchema as DomainPlatformSchema } from "#channels/domain/platform.ts";
+import { MediaContentTypeSchema as DomainContentTypeSchema } from "#media/domain/media-format.ts";
+import {
+  ProbeStateSchema as DomainProbeStateSchema,
+  RejectionReasonSchema as DomainRejectionReasonSchema,
+} from "#media/domain/media-status.ts";
 import { PermissionSchema as DomainPermissionSchema } from "#shared/domain/access.ts";
 
 describe("the contract", () => {
@@ -20,6 +28,18 @@ describe("the contract", () => {
   it("lists the server's platforms", () => {
     expect(PlatformSchema.literals).toStrictEqual(
       DomainPlatformSchema.literals
+    );
+  });
+
+  it("lists the media the server stores, and how their probes and uploads end", () => {
+    expect(MediaContentTypeSchema.literals).toStrictEqual(
+      DomainContentTypeSchema.literals
+    );
+    expect(ProbeStateSchema.literals).toStrictEqual(
+      DomainProbeStateSchema.literals
+    );
+    expect(RejectionReasonSchema.literals).toStrictEqual(
+      DomainRejectionReasonSchema.literals
     );
   });
 

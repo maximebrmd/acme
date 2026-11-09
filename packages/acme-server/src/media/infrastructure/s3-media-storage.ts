@@ -317,7 +317,13 @@ export const makeS3MediaStorage = Effect.fn("S3MediaStorage.make")(
           more = page.IsTruncated === true && marker !== undefined;
         }
 
-        return parts.toSorted(
+        // A part sent again replaces the one before. SeaweedFS lists every
+        // upload of it all the same, so each part number is kept once: the
+        // last listed. Each upload of a part comes from the same URL, which
+        // only takes the part's planned size.
+        const byNumber = new Map(parts.map((part) => [part.partNumber, part]));
+
+        return [...byNumber.values()].toSorted(
           (left, right) => left.partNumber - right.partNumber
         );
       }

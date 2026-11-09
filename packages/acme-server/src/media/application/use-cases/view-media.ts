@@ -45,7 +45,9 @@ const hasFile = (asset: MediaAsset): boolean =>
  * view expiry: a pending asset has no file yet, and a rejected one had it
  * deleted.
  */
-const itemOf = Effect.fn("Media.itemOf")(function* itemOf(asset: MediaAsset) {
+export const itemOf = Effect.fn("Media.itemOf")(function* itemOf(
+  asset: MediaAsset
+) {
   if (!hasFile(asset)) {
     const item: MediaItem = { asset, url: Option.none() };
 

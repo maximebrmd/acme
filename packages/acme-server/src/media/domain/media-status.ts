@@ -53,9 +53,10 @@ export type ProbeFailureReason = typeof ProbeFailureReasonSchema.Type;
  * probe could not read it. Probing it again, once the cause is gone, can
  * still make it ready.
  */
-export const ProbeStateSchema = Schema.Union([
-  Schema.Literals(["pending", "unavailable"]),
-  ProbeFailureReasonSchema,
+export const ProbeStateSchema = Schema.Literals([
+  "pending",
+  "unavailable",
+  ...ProbeFailureReasonSchema.literals,
 ]);
 
 export type ProbeState = typeof ProbeStateSchema.Type;

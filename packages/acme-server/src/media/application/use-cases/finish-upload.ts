@@ -4,12 +4,14 @@ import { getAsset } from "#media/application/ports/media-assets.ts";
 import { completeUpload } from "#media/application/use-cases/complete-upload.ts";
 import type { CompleteUploadRequest } from "#media/application/use-cases/complete-upload.ts";
 import { probeMedia } from "#media/application/use-cases/probe-media.ts";
+import { itemOf } from "#media/application/use-cases/view-media.ts";
 
 /**
  * What a client calls once it sent the file: completes the upload, then
- * probes the file, and answers with the asset as both left it. A file that
- * cannot be probed is still uploaded: the asset stays uploaded with the
- * reason, and calling this again probes it again. When another call moved
+ * probes the file, and answers with the asset as both left it and where its
+ * file can be read for a while. A file that cannot be probed is still
+ * uploaded: the asset stays uploaded with the reason, and calling this
+ * again probes it again. When another call moved
  * the asset on meanwhile, the answer is the asset as it now stands.
  */
 export const finishUpload = Effect.fn("Media.finishUpload")(
@@ -17,10 +19,10 @@ export const finishUpload = Effect.fn("Media.finishUpload")(
     const completed = yield* completeUpload(request);
 
     if (completed.status._tag !== "uploaded") {
-      return completed;
+      return yield* itemOf(completed);
     }
 
-    return yield* probeMedia(request).pipe(
+    const probed = yield* probeMedia(request).pipe(
       Effect.map(({ asset }) => asset),
       Effect.catchTags({
         InvalidMediaTransition: () => completeUpload(request),
@@ -28,5 +30,7 @@ export const finishUpload = Effect.fn("Media.finishUpload")(
         MediaProbeFailed: () => getAsset(request.workspaceId, request.assetId),
       })
     );
+
+    return yield* itemOf(probed);
   }
 );

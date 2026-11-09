@@ -9,6 +9,7 @@ import { CronsLive } from "#app/crons.ts";
 import { ObservabilityLive } from "#app/observability.ts";
 import { SystemHandlers } from "#app/system.ts";
 import { ChannelsApiLive, ChannelsLive } from "#channels/container.ts";
+import { MediaApiLive, MediaLive } from "#media/container.ts";
 import { NotificationsLive } from "#notifications/container.ts";
 import {
   PublishingLive,
@@ -26,7 +27,7 @@ import {
 
 // The groups of the workspace endpoints, behind the Authentication and
 // WorkspaceAccess middleware that WorkspaceApiLive provides.
-const WorkspaceGroupsLive = ChannelsApiLive.pipe(
+const WorkspaceGroupsLive = Layer.mergeAll(ChannelsApiLive, MediaApiLive).pipe(
   Layer.provideMerge(WorkspaceApiLive)
 );
 
@@ -39,9 +40,16 @@ export const RoutesLive = Layer.mergeAll(ApiLive, AuthRoutesLive);
 
 // The services the routes need, each built after the ones below it: the
 // database pool, the migrations, then the contexts. Better Auth checks its
-// tables against the database, so it starts once they are migrated.
-const ServicesLive = Layer.mergeAll(WorkspaceLive, ChannelsLive).pipe(
+// tables against the database, so it starts once they are migrated. The
+// media store's settings are read here, so a server without them does not
+// start (see src/media/infrastructure/s3-media-storage.ts).
+const ServicesLive = Layer.mergeAll(
+  WorkspaceLive,
+  ChannelsLive,
+  MediaLive
+).pipe(
   Layer.provideMerge(NotificationsLive),
+  Layer.provideMerge(IdsLive),
   Layer.provideMerge(MigrationsLive),
   Layer.provideMerge(DatabaseLive)
 );
@@ -64,7 +72,8 @@ const WorkersLive = Layer.mergeAll(PublishingWorkersLive, CronsLive);
 const ContextsLive = Layer.mergeAll(
   WorkspaceLive.pipe(Layer.provideMerge(NotificationsLive)),
   PublishingLive,
-  ChannelsLive
+  ChannelsLive,
+  MediaLive
 ).pipe(Layer.provideMerge(Layer.mergeAll(IdsLive, TransactionRunnerLive)));
 
 // Each layer is built after the ones it is provided with, from the bottom up:

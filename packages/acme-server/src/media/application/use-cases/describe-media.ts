@@ -1,6 +1,7 @@
 import { DateTime, Effect, Option } from "effect";
 
 import { MediaAssets } from "#media/application/ports/media-assets.ts";
+import { itemOf } from "#media/application/use-cases/view-media.ts";
 import { altTextOf } from "#media/domain/alt-text.ts";
 import type { MediaAssetId } from "#media/domain/media-asset-id.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
@@ -29,8 +30,10 @@ export const describeMedia = Effect.fn("Media.describeMedia")(
 
     const now = yield* DateTime.now;
 
-    return yield* MediaAssets.use((assets) =>
+    const described = yield* MediaAssets.use((assets) =>
       assets.describe(workspaceId, assetId, description, now)
     );
+
+    return yield* itemOf(described);
   }
 );

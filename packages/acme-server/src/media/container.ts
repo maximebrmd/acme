@@ -7,6 +7,11 @@ import { S3MediaStorageLive } from "#media/infrastructure/s3-media-storage.ts";
 
 export { MediaLibrary } from "#media/application/media-library.ts";
 
+// The media endpoints. They need the use cases MediaLive provides, and the
+// Authentication and WorkspaceAccess middleware of the workspace context,
+// which the composition root brings.
+export { MediaHandlers as MediaApiLive } from "#media/api/media.ts";
+
 /**
  * The media context: its use cases on the S3 store, Postgres, sharp and
  * ffprobe. The composition root provides `Drizzle` and `Ids`, and the

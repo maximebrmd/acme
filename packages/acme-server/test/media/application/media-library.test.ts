@@ -644,7 +644,7 @@ layer(LibraryTest)("the media library", (it) => {
 
       yield* sendSigned(yield* singleRequest(prepared), body);
 
-      const ready = yield* finish();
+      const { asset: ready, url } = yield* finish();
 
       assert.deepStrictEqual(ready.status, { _tag: "ready" });
       assert.deepStrictEqual(
@@ -652,8 +652,12 @@ layer(LibraryTest)("the media library", (it) => {
         Option.some({ height: 9, width: 16 })
       );
 
+      const { bytes } = yield* fetchBytes(Option.getOrElse(url, () => ""));
+
+      assert.deepStrictEqual(bytes, body);
+
       // Finishing again answers the same.
-      assert.deepStrictEqual(yield* finish(), ready);
+      assert.deepStrictEqual((yield* finish()).asset, ready);
     })
   );
 
@@ -665,7 +669,7 @@ layer(LibraryTest)("the media library", (it) => {
 
       yield* sendSigned(yield* singleRequest(prepared), body);
 
-      const ready = yield* MediaLibrary.use((library) =>
+      const { asset: ready } = yield* MediaLibrary.use((library) =>
         library.finishUpload(memberIn(workspaceId), prepared.asset.id)
       );
 
@@ -686,7 +690,7 @@ layer(LibraryTest)("the media library", (it) => {
 
       yield* sendSigned(yield* singleRequest(prepared), body);
 
-      const finished = yield* MediaLibrary.use((library) =>
+      const { asset: finished } = yield* MediaLibrary.use((library) =>
         library.finishUpload(memberIn(workspaceId), prepared.asset.id)
       );
 
@@ -764,7 +768,7 @@ layer(LibraryTest)("the media library", (it) => {
         Option.some("A white square")
       );
 
-      const described = yield* library.describeMedia(
+      const { asset: described } = yield* library.describeMedia(
         member,
         id,
         Option.some("A white square on white")
@@ -776,7 +780,7 @@ layer(LibraryTest)("the media library", (it) => {
       );
       assert.deepStrictEqual(described.status, prepared.asset.status);
 
-      const cleared = yield* library.describeMedia(
+      const { asset: cleared } = yield* library.describeMedia(
         member,
         id,
         Option.some(" ")
@@ -849,7 +853,7 @@ layer(WithoutFfprobeTest)("the media library without ffprobe", (it) => {
 
         yield* sendSigned(yield* singleRequest(prepared), body);
 
-        const finished = yield* MediaLibrary.use((library) =>
+        const { asset: finished } = yield* MediaLibrary.use((library) =>
           library.finishUpload(memberIn(workspaceId), prepared.asset.id)
         );
 
