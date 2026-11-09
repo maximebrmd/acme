@@ -11,7 +11,7 @@ import type {
 } from "#analytics/application/metrics-reader.ts";
 import type { Publication } from "#analytics/domain/tracked-post.ts";
 import { Ids } from "#shared/application/ids.ts";
-import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
+import { PostTargetIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import { PlatformUnavailable } from "#shared/domain/platform-unavailable.ts";
 import {
   MemoryTrackedPosts,
@@ -311,6 +311,87 @@ describe("collecting post metrics", () => {
         )
       )
     )
+  );
+
+  it.effect(
+    "passes over a post its server keeps failing on, and reads the channel's others",
+    () =>
+      Effect.gen(function* failing() {
+        const channelId = yield* newChannelId;
+
+        // Due first, as it went live first.
+        const broken = yield* publicationOf(
+          workspaceId,
+          channelId,
+          "2026-11-02T10:00:00.000Z",
+          "110000000000000666"
+        );
+
+        const others = yield* Effect.forEach(
+          ["10:10", "10:20"],
+          (time) =>
+            publicationOf(workspaceId, channelId, `2026-11-02T${time}:00.000Z`),
+          { concurrency: 1 }
+        );
+
+        yield* published(broken, ...others);
+
+        const first = yield* runAt("2026-11-02T11:07:00.000Z");
+        const second = yield* runAt("2026-11-02T12:07:00.000Z");
+
+        assert.deepStrictEqual(
+          [first, second].map(({ deferred, read, skipped }) => ({
+            deferred,
+            read,
+            skipped,
+          })),
+          [
+            { deferred: 2, read: 0, skipped: 1 },
+            { deferred: 0, read: 2, skipped: 1 },
+          ]
+        );
+
+        for (const other of others) {
+          assert.lengthOf(yield* snapshotsOf(other), 1);
+        }
+
+        assert.deepStrictEqual(
+          yield* nextAtOf(broken),
+          Option.some("2026-11-02T13:07:00.000Z")
+        );
+      }).pipe(
+        Effect.provide(
+          // A reader going through the posts in turn, as Mastodon's does,
+          // which fails on the broken one and stops there.
+          collectionWith((request) => {
+            const at = request.posts.findIndex(
+              ({ platformPostId }) => platformPostId === "110000000000000666"
+            );
+
+            if (at === -1) {
+              return countingAll(request);
+            }
+
+            return countingAll({
+              ...request,
+              posts: request.posts.slice(0, at),
+            }).pipe(
+              Effect.map((batch): MetricsBatch => ({
+                halted: true,
+                readings: [
+                  ...batch.readings,
+                  {
+                    _tag: "failed",
+                    targetId:
+                      request.posts[at]?.targetId ??
+                      PostTargetIdSchema.make(""),
+                  },
+                ],
+              }))
+            );
+          })
+        )
+      )
   );
 
   it.effect("stops reading the posts of a channel that left", () =>

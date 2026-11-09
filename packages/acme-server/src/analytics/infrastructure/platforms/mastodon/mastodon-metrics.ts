@@ -67,12 +67,21 @@ const remainingOf = (response: HttpClientResponse.HttpClientResponse) =>
     Option.filter(Number.isFinite)
   );
 
-// What reading one status came to: a reading, or a reason to stop.
+// What reading one status came to: a reading to go on from, or a reason
+// to stop. A server that slows the read down leaves the status due; one
+// that fails on it, or answers what Acme cannot read, makes it wait for
+// its next turn, so a status the server cannot show holds nothing back.
 type Step =
   | { readonly _tag: "read"; readonly reading: PostReading }
+  | { readonly _tag: "failed"; readonly reading: PostReading }
   | { readonly _tag: "halt" };
 
 const halt: Step = { _tag: "halt" };
+
+const failedOn = (post: PostToRead): Step => ({
+  _tag: "failed",
+  reading: { _tag: "failed", targetId: post.targetId },
+});
 
 /**
  * Reads statuses on a Mastodon server, one GET /api/v1/statuses/:id at a
@@ -81,8 +90,9 @@ const halt: Step = { _tag: "halt" };
  * channels context hands it out; without one otherwise, which public and
  * unlisted statuses allow. A status the server no longer shows (404) is
  * missing. A refused token is refused once renewed: the channel needs
- * reconnecting. A server that answers 429, fails, or has few requests
- * left halts the read.
+ * reconnecting. A server that answers 429 or has few requests left halts
+ * the read; one that fails on a status, does not answer, or answers what
+ * Acme cannot read, marks it failed and halts.
  */
 export const mastodonMetrics = Effect.fn("MastodonMetrics.make")(
   function* mastodonMetrics(options: MastodonMetricsOptions) {
@@ -110,7 +120,7 @@ export const mastodonMetrics = Effect.fn("MastodonMetrics.make")(
       const sent = yield* http.execute(request).pipe(Effect.result);
 
       if (sent._tag === "Failure") {
-        return { remaining: Option.none<number>(), step: halt };
+        return { remaining: Option.none<number>(), step: failedOn(post) };
       }
 
       const response = sent.success;
@@ -120,7 +130,7 @@ export const mastodonMetrics = Effect.fn("MastodonMetrics.make")(
         const counts = yield* countsOf(response).pipe(Effect.option);
 
         const step: Step = Option.match(counts, {
-          onNone: () => halt,
+          onNone: () => failedOn(post),
           onSome: (status) => ({
             _tag: "read",
             reading: {
@@ -160,8 +170,12 @@ export const mastodonMetrics = Effect.fn("MastodonMetrics.make")(
           : new ChannelUnreadable({ reason: "paused" });
       }
 
-      // Rate limited, failing, or answering what Acme does not know.
-      return { remaining, step: halt };
+      if (response.status === 429) {
+        return { remaining, step: halt };
+      }
+
+      // Failing, or answering what Acme does not know.
+      return { remaining, step: failedOn(post) };
     });
 
     const readAll = Effect.fn("MastodonMetrics.readAll")(function* readAll(
@@ -188,6 +202,10 @@ export const mastodonMetrics = Effect.fn("MastodonMetrics.make")(
         }
 
         readings.push(step.reading);
+
+        if (step._tag === "failed") {
+          return { halted: true, readings };
+        }
 
         if (Option.exists(remaining, (left) => left <= budget.reserve)) {
           return { halted: readings.length < posts.length, readings };

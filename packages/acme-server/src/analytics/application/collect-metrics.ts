@@ -36,7 +36,7 @@ export interface CollectionReport {
   readonly discovered: number;
   /** Posts whose counts were read. */
   readonly read: number;
-  /** Posts passed over until their next turn: gone from the platform, or on a channel that is off. */
+  /** Posts passed over until their next turn: gone from the platform, unreadable there, or on a channel that is off. */
   readonly skipped: number;
   /** Posts no longer read, their channel gone or their platform unread. */
   readonly ended: number;
@@ -159,7 +159,8 @@ export class CollectMetrics extends Context.Service<
           { discard: true }
         ).pipe(Effect.as<Tally>({ ...emptyTally, skipped: posts.length }));
 
-      // Saves what a read found; the posts it says nothing of stay due.
+      // Saves what a read found: a post missing, or whose read failed,
+      // waits for its next turn; the posts it says nothing of stay due.
       const recordBatch = Effect.fn("CollectMetrics.recordBatch")(
         function* recordBatch(
           posts: readonly TrackedPost[],

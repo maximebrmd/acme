@@ -212,34 +212,89 @@ describe("reading counts on Mastodon", () => {
     }).pipe(Effect.scoped)
   );
 
-  it.live("halts when the server rate limits, fails or drops", () =>
+  it.live("halts when the server rate limits, leaving the status due", () =>
     Effect.gen(function* halts() {
-      for (const answer of [
+      const { account, instance } = yield* onInstance({
+        statuses,
+        tokens: ["token-1"],
+      });
+
+      instance.script("110000000000000002", [
         json({ error: "Too many requests" }, 429),
-        empty(503),
-        dropped,
-      ]) {
-        const { account, instance } = yield* onInstance({
-          statuses,
-          tokens: ["token-1"],
+      ]);
+
+      const { batch } = yield* reading(
+        postsToRead("110000000000000001", "110000000000000002"),
+        account,
+        { tokens: ["token-1"] }
+      );
+
+      assert.deepStrictEqual(
+        batch._tag === "Success"
+          ? [
+              batch.success.halted,
+              batch.success.readings.map(({ _tag }) => _tag),
+            ]
+          : undefined,
+        [true, ["counted"]]
+      );
+    }).pipe(Effect.scoped)
+  );
+
+  // A status its server cannot show, every time it is asked, would
+  // otherwise stay the channel's first due and halt every read.
+  it.live(
+    "marks a status failed and halts when the server fails, drops or answers what Acme cannot read",
+    () =>
+      Effect.gen(function* fails() {
+        // More favourites than any post has, as no Mastodon server counts.
+        const tooMany = json({
+          favourites_count: 2_147_483_648,
+          id: "110000000000000002",
+          reblogs_count: 0,
+          replies_count: 0,
         });
 
-        instance.script("110000000000000002", [answer]);
+        for (const answer of [
+          empty(503),
+          dropped,
+          json({ error: "Unprocessable" }, 422),
+          tooMany,
+        ]) {
+          const { account, instance } = yield* onInstance({
+            statuses,
+            tokens: ["token-1"],
+          });
 
-        const { batch } = yield* reading(
-          postsToRead("110000000000000001", "110000000000000002"),
-          account,
-          { tokens: ["token-1"] }
-        );
+          instance.script("110000000000000002", [answer]);
 
-        assert.deepStrictEqual(
-          batch._tag === "Success"
-            ? [batch.success.halted, batch.success.readings.length]
-            : undefined,
-          [true, 1]
-        );
-      }
-    }).pipe(Effect.scoped)
+          const posts = postsToRead(
+            "110000000000000001",
+            "110000000000000002",
+            "110000000000000001"
+          );
+
+          const { batch } = yield* reading(posts, account, {
+            tokens: ["token-1"],
+          });
+
+          assert.deepStrictEqual(
+            batch._tag === "Success"
+              ? [batch.success.halted, batch.success.readings.slice(1)]
+              : undefined,
+            [
+              true,
+              [
+                {
+                  _tag: "failed",
+                  targetId: posts[1]?.targetId ?? PostTargetIdSchema.make(""),
+                },
+              ],
+            ]
+          );
+          assert.lengthOf(instance.requests(), 2);
+        }
+      }).pipe(Effect.scoped)
   );
 
   it.live("leaves the account requests to post with", () =>
@@ -368,6 +423,49 @@ describe("reading counts on Bluesky", () => {
         }
       );
     }).pipe(Effect.scoped)
+  );
+
+  it.live(
+    "marks a call's posts failed and halts when the AppView fails, drops or answers what Acme cannot read",
+    () =>
+      Effect.gen(function* fails() {
+        const known = Object.fromEntries(
+          Array.from({ length: 30 }, (_, index) => [
+            uri(index),
+            { likeCount: index },
+          ])
+        );
+
+        const posts = postsToRead(
+          ...Array.from({ length: 30 }, (_, index) => uri(index))
+        );
+
+        for (const answer of [
+          empty(502),
+          dropped,
+          json({ posts: [{ likeCount: -1, uri: uri(25) }] }),
+        ]) {
+          const server = yield* fakeAppView(known);
+
+          // The first call reads; the second, the last five, fails.
+          server.script([json({ posts: [] }), answer]);
+
+          const { batch } = yield* reading(posts, account, {
+            appView: server.url,
+          });
+
+          const success = batch._tag === "Success" ? batch.success : undefined;
+
+          assert.strictEqual(success?.halted, true);
+          assert.deepStrictEqual(
+            success?.readings.slice(25),
+            posts.slice(25).map(({ targetId }) => ({
+              _tag: "failed" as const,
+              targetId,
+            }))
+          );
+        }
+      }).pipe(Effect.scoped)
   );
 });
 

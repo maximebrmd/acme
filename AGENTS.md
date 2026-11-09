@@ -731,11 +731,13 @@ and no socket, for tests.
 - Mastodon reads one status at a time, with the channel's token from
   `ChannelAccess` when its scopes include `read:statuses` (asked since
   analytics; an app registered without it is registered again), without one
-  otherwise. A read stops at 429, a failure, 60 requests left or 30 seconds.
+  otherwise. A read stops at 429, 60 requests left or 30 seconds, or at a
+  post it failed on (an error, no answer, or one that does not decode).
   Bluesky reads the public AppView's `getPosts` without the session, whose
   scope stays what posting needs.
-- A halted read leaves the rest due for the next run; a missing post, or a
-  channel off or to reconnect, waits for its next turn; a disconnected
+- A halted read leaves the rest due for the next run; a missing post, one a
+  read `failed` on (so one the server cannot show never stays first due),
+  or a channel off or to reconnect, waits for its next turn; a disconnected
   channel's posts, and a post still unread a day past its window, end.
 - Summaries take the posts published over a range of days in an IANA zone:
   the domain computes each day's start with `fromWallClock`, and Postgres

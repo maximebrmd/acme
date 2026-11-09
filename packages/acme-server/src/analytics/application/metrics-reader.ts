@@ -25,8 +25,11 @@ export const MetricsRequestSchema = Schema.Struct({
 export type MetricsRequest = typeof MetricsRequestSchema.Type;
 
 /**
- * What reading one post found: its counts, or that the platform no longer
- * shows it, deleted or not public.
+ * What reading one post found: its counts, that the platform no longer
+ * shows it, deleted or not public, or that reading it failed: the server
+ * erred, did not answer, or answered what Acme cannot read. A post whose
+ * read failed waits for its next turn like a missing one, so a post its
+ * server cannot show never holds back the channel's others.
  */
 export const PostReadingSchema = Schema.Union([
   Schema.TaggedStruct("counted", {
@@ -34,14 +37,15 @@ export const PostReadingSchema = Schema.Union([
     targetId: PostTargetIdSchema,
   }),
   Schema.TaggedStruct("missing", { targetId: PostTargetIdSchema }),
+  Schema.TaggedStruct("failed", { targetId: PostTargetIdSchema }),
 ]);
 
 export type PostReading = typeof PostReadingSchema.Type;
 
 /**
  * What a read found, post by post. A post it says nothing about was not
- * read: the platform asked to slow down or stopped answering, which
- * `halted` tells, so the run leaves the channel alone until the next one.
+ * read: the platform asked to slow down, or a read failed, which `halted`
+ * tells, so the run leaves the channel alone until the next one.
  */
 export const MetricsBatchSchema = Schema.Struct({
   halted: Schema.Boolean,
