@@ -188,6 +188,16 @@ const messagesOf = (entityId: string) =>
     )
   );
 
+// Whether the execution's run ended: it has a final reply, other than the
+// one a sleeping run gets, as the purge reads it. A post is finished a
+// moment before its job's reply is written.
+const hasEnded = (execution: string) =>
+  SqlClient.SqlClient.use((sql) =>
+    count(
+      sql`SELECT count(*)::int AS count FROM cluster_messages m JOIN cluster_replies r ON r.request_id = m.id AND r.kind = 0 WHERE m.entity_id = ${execution} AND m.kind = 0 AND m.tag = 'run' AND NOT r.payload::jsonb @> '{"_tag":"Success","value":{"_tag":"Suspended"}}'`
+    )
+  ).pipe(Effect.map((ended) => ended > 0));
+
 const cronRuns = (processed: boolean) =>
   SqlClient.SqlClient.use((sql) =>
     count(
@@ -429,6 +439,7 @@ describe("the cluster on Postgres", () => {
           const waiting = yield* scheduleSoon(Duration.hours(1));
 
           yield* waitUntil("a post finishes", isFinished(finished.post.id));
+          yield* waitUntil("its job ends", hasEnded(finished.execution));
           yield* waitUntil(
             "a cron run is processed",
             cronRuns(true).pipe(Effect.map((runs) => runs > 0))
