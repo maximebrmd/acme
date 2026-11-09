@@ -136,6 +136,9 @@ export const connectAttempts = channelsSchema.table(
  * - `started_by` and `workspace_id` bind it to the member, as attempts are.
  * - `accounts` are the accounts with their tokens, as JSON encrypted by the
  *   TokenCipher for `choice:<selection>`.
+ * - `granted_by` is the platform user those tokens rest on, as on
+ *   `channels`: the Facebook user who signed in. Meta's data deletion
+ *   requests name that user.
  */
 export const connectChoices = channelsSchema.table(
   "connect_choices",
@@ -143,12 +146,19 @@ export const connectChoices = channelsSchema.table(
     accounts: text("accounts").notNull(),
     createdAt: instant("created_at").notNull(),
     expiresAt: instant("expires_at").notNull(),
+    grantedBy: text("granted_by"),
     platform: text("platform").notNull(),
     selectionHash: text("selection_hash").primaryKey(),
     startedBy: text("started_by").notNull(),
     workspaceId: uuid("workspace_id").notNull(),
   },
-  (table) => [index("connect_choices_expires_at").on(table.expiresAt)]
+  (table) => [
+    index("connect_choices_expires_at").on(table.expiresAt),
+    // Meta's data deletion requests: the choices a user's sign-in offers.
+    index("connect_choices_granted_by")
+      .on(table.grantedBy)
+      .where(sql`${table.grantedBy} IS NOT NULL`),
+  ]
 );
 
 /**

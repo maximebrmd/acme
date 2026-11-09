@@ -140,6 +140,7 @@ export const fakeMeta = Effect.fnUntraced(function* fakeMeta(
   let issued = 0;
   let pages: readonly FakePage[] = [];
   let declined: readonly string[] = [];
+  let userId = facebookUserId;
 
   const issue = (tokens: Set<string>, prefix: string) => {
     issued += 1;
@@ -274,7 +275,7 @@ export const fakeMeta = Effect.fnUntraced(function* fakeMeta(
           ? json(threadsAccount)
           : graphError(190),
     ],
-    ["GET /v27.0/me", userRead(() => json({ id: facebookUserId }))],
+    ["GET /v27.0/me", userRead(() => json({ id: userId }))],
     ["GET /v27.0/me/accounts", userRead(accounts)],
     [
       "GET /v27.0/me/permissions",
@@ -331,6 +332,10 @@ export const fakeMeta = Effect.fnUntraced(function* fakeMeta(
     /** The Pages the user manages from now on. */
     setPages: (next: readonly FakePage[]) => {
       pages = next;
+    },
+    /** The Facebook user who signs in from now on. */
+    setUser: (next: string) => {
+      userId = next;
     },
   };
 });

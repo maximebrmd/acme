@@ -27,6 +27,7 @@ export interface DeletionReceipt {
  * Facebook or Threads, for the data Acme holds about them to be deleted,
  * Meta sends a request signed with the app's secret. Acme deletes the
  * channels that user connected, in every workspace, with their tokens, and
+ * the accounts their sign-in still offers a member to choose from, and
  * answers with a confirmation code whose status anyone holding it can read.
  *
  * Nobody signs in for these: the signature is the authorization.

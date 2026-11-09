@@ -187,7 +187,7 @@ In the dashboard, register these addresses:
 | Threads' redirect callback URL             | `PUBLIC_URL/connect/threads/callback`                                                           |
 | Data deletion request URL                  | `PUBLIC_URL/api/data-deletion/facebook`, and `PUBLIC_URL/api/data-deletion/threads` for Threads |
 
-When one of its users asks Meta to delete what Acme holds about them, Meta calls that address with a request signed with the app's secret. Acme checks the signature, deletes, in every workspace, the channels that person connected and their tokens, and answers with a confirmation code and the page where its status shows, `PUBLIC_URL/data-deletion/<code>`. The same request sent again, as Meta may retry it, gets the same answer and deletes nothing more.
+When one of its users asks Meta to delete what Acme holds about them, Meta calls that address with a request signed with the app's secret. Acme checks the signature, deletes, in every workspace, the channels that person connected and their tokens, and the accounts their sign-in still offers a member to choose from, and answers with a confirmation code and the page where its status shows, `PUBLIC_URL/data-deletion/<code>`. The same request sent again, as Meta may retry it, gets the same answer and deletes nothing more.
 
 Meta fetches the images and videos it publishes from links to the media store, valid for two hours: the store must answer Meta's servers on the internet, through presigned links or `ACME_MEDIA_PUBLIC_BASE_URL`. The server calls `graph.facebook.com` and `graph.threads.com`, and signs every Facebook and Instagram call with the app secret, so you may turn on **Require App Secret** in the app's advanced settings.
 

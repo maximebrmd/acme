@@ -1,4 +1,4 @@
-import { DateTime, Result, Schema } from "effect";
+import { DateTime, Option, Result, Schema } from "effect";
 
 import type { Actor } from "#shared/domain/access.ts";
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
@@ -12,13 +12,16 @@ import type { Platform } from "./platform.ts";
  * Accounts a sign-in reached, waiting for the member to pick those to
  * connect: the Pages a Facebook user manages, say. `selection` names it to
  * the member's browser; like an attempt, it is bound to the workspace and
- * the member, lasts a quarter of an hour and is used once.
+ * the member, lasts a quarter of an hour and is used once. `grantedBy` is
+ * the platform user whose grant the accounts' tokens rest on, the Facebook
+ * user who signed in, so a request to delete that user's data finds it.
  */
 export class ConnectChoice extends Schema.Class<ConnectChoice>(
   "acme-server/channels/domain/ConnectChoice"
 )({
   createdAt: Schema.DateTimeUtc,
   expiresAt: Schema.DateTimeUtc,
+  grantedBy: Schema.Option(Schema.NonEmptyString),
   platform: PlatformSchema,
   selection: Schema.NonEmptyString,
   startedBy: Schema.NonEmptyString,
@@ -29,6 +32,7 @@ export class ConnectChoice extends Schema.Class<ConnectChoice>(
 export const offerChoice = (
   choice: {
     readonly actor: Actor;
+    readonly grantedBy: Option.Option<string>;
     readonly platform: Platform;
     readonly selection: string;
   },
@@ -37,6 +41,7 @@ export const offerChoice = (
   new ConnectChoice({
     createdAt: now,
     expiresAt: DateTime.addDuration(now, connectAttemptLifetime),
+    grantedBy: Option.filter(choice.grantedBy, (user) => user !== ""),
     platform: choice.platform,
     selection: choice.selection,
     startedBy: starterOf(choice.actor.subject),

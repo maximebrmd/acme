@@ -543,8 +543,15 @@ export class ConnectChannel extends Context.Service<
       ) {
         const selection = yield* ids.next;
 
+        // One sign-in, so one user's grant: the Facebook user's, for Pages
+        // and the Instagram accounts linked to them.
+        const grantedBy = Option.fromUndefinedOr(
+          accounts.find(({ tokens }) => tokens.grantedBy !== undefined)?.tokens
+            .grantedBy
+        );
+
         const choice = offerChoice(
-          { actor, platform, selection },
+          { actor, grantedBy, platform, selection },
           yield* DateTime.now
         );
 

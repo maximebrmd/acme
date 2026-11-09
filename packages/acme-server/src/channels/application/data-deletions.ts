@@ -17,8 +17,10 @@ export class DataDeletions extends Context.Service<
   {
     /**
      * Deletes, in every workspace, the channels on these platforms whose
-     * tokens rest on the user: granted by them, or their own account. Then
-     * records the request under `code`: both happen, or neither.
+     * tokens rest on the user: granted by them, or their own account, and
+     * the accounts their sign-in offers a member to choose from, with their
+     * tokens. Then records the request under `code`, which counts the
+     * channels: all of it happens, or none.
      *
      * A signed request carried out before, sent again as Meta retries it or
      * as anyone who kept it could, deletes nothing: the deletion it was
