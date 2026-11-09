@@ -374,8 +374,13 @@ export const Composer = ({
         </CardTitle>
         <CardDescription>{t("description")}</CardDescription>
         {post === undefined ? null : (
-          <div>
+          <div className="flex gap-2">
             <Badge variant="outline">{tPosts("status", { status })}</Badge>
+            {post.outcome === null ? null : (
+              <Badge variant="secondary">
+                {tPosts("outcome", { outcome: post.outcome })}
+              </Badge>
+            )}
           </div>
         )}
       </CardHeader>
