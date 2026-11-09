@@ -112,9 +112,10 @@ and Next.js ships its docs in `packages/acme-web/node_modules/next/dist/docs`.
   it. With the stack up, use
   `DATABASE_URL=postgres://acme:acme@127.0.0.1:15432/acme`. They read the
   emails they send from the stack's Mailpit (`SMTP_URL` and `MAILPIT_URL`
-  override it), and store media in its SeaweedFS under `tests/media/`
-  (`ACME_S3_*` override it). CI runs its own Postgres and Mailpit, and starts
-  SeaweedFS from `compose.yaml`.
+  override it), store media in its SeaweedFS under `tests/media/`
+  (`ACME_S3_*` override it), and call its stripe-mock (`STRIPE_MOCK_URL`
+  overrides it). CI runs its own Postgres and Mailpit, and starts SeaweedFS
+  and stripe-mock from `compose.yaml`.
 - Tests that share a database with a running dev server share its jobs: leave
   no post scheduled or job waiting when a test ends, or the dev server runs
   it. Give each run its own database or `ACME_S3_KEY_PREFIX` when several run
@@ -147,7 +148,7 @@ them:
 | `assistant`     | the writing assistant: prompts, language models, the daily quota            |
 | `shared`        | the kernel the others build on                                              |
 | `analytics`     | per-platform metrics (planned: in the lint rules, no code)                  |
-| `billing`       | plans, subscriptions, entitlements (planned, likewise)                      |
+| `billing`       | plans, subscriptions, entitlements, the billing page's usage                |
 
 - `domain`: entities and rules on Effect's core (`effect`: Schema, DateTime,
   Data). No HTTP, SQL, cluster, workflow, AI, Drizzle or Better Auth.
@@ -252,7 +253,16 @@ and no socket, for tests.
 - Better Auth lives only in `src/workspace/infrastructure/auth/`. `makeAuth`
   in `options.ts` is its one configuration, and its routes are under
   `/api/auth`. Every plugin is always on and options that shape tables are
-  constants, so every deployment has the same tables.
+  constants, so every deployment has the same tables, but for two:
+  Stripe's, registered only with `STRIPE_SECRET_KEY` (`auth-schema` generates
+  its tables anyway, unused without it), and the captcha, which has none.
+- Turnstile (Better Auth's captcha plugin) guards `/sign-up/email` and
+  `/request-password-reset` when `TURNSTILE_SECRET_KEY` and
+  `TURNSTILE_SITE_KEY` are both set; one without the other stops the
+  server. `GET /api/captcha` gives clients the site key, and the web app
+  shows the widget only then. Tests check tokens with Cloudflare's test keys
+  against the fake siteverify in `test/workspace/fakes/fake-turnstile.ts`,
+  through `TURNSTILE_VERIFY_URL`.
 - Workspaces are Better Auth organizations. The five roles (owner, admin,
   editor, contributor, viewer) and their grants are in
   `workspace/domain/roles.ts`, translated for Better Auth in
@@ -498,8 +508,8 @@ and no socket, for tests.
   contributors; not viewers, nor read-only OAuth clients) and works in the
   actor's workspace only.
 - The quota is per workspace and UTC day: `AssistantAllowance` gives the
-  limit (`ACME_AI_DAILY_REQUESTS`, 100; billing will replace it behind that
-  port), and `AssistantUsage.claim` counts a request in one conditional
+  limit (the workspace plan's on a server that bills, otherwise
+  `ACME_AI_DAILY_REQUESTS`, 100), and `AssistantUsage.claim` counts a request in one conditional
   upsert before the call, so requests sent together never pass it. Give a
   request back only when the provider never ran it (`unreachable`); a
   timeout, a refusal or an unusable answer counts.
@@ -510,6 +520,43 @@ and no socket, for tests.
   port, from `publishing/application/platform-text-limits.ts`. Its tones and
   languages are listed in its domain and copied in the contract, kept equal
   by `test/assistant/api/contract.test.ts`.
+
+### Billing
+
+- Billing is on when `STRIPE_SECRET_KEY` is set
+  (`#shared/infrastructure/stripe-settings.ts`, read by the billing context
+  and by Better Auth). Off, every workspace is `unmetered`: no plan, no
+  limit, and the assistant keeps `ACME_AI_DAILY_REQUESTS`. Keep it so: a
+  self-hosted server limits nothing.
+- Plans are `billing/domain/plans.ts`; their ids (`#shared/domain/plan.ts`),
+  the limits' names (`plan-limit.ts`), `PlanLimitReached` and
+  `roomForOneMore` (`allowance.ts`) are in the shared kernel, since every
+  context checks a limit. The contract copies them, kept equal by
+  `test/billing/api/contract.test.ts`.
+- Each context checks its own limit when something is added, through a port
+  of its own backed by the billing context's `WorkspaceEntitlements`:
+  `ChannelAllowance` (connecting a new account: on start, and again before
+  the channel is added), `PostAllowance` (a post scheduled or moved into a
+  month, UTC, cancelled ones left out), `AssistantAllowance`, and members in
+  Better Auth's organization hooks (`workspace/infrastructure/auth/billing.ts`:
+  pending invitations count when inviting). A workspace over a smaller
+  plan's limits keeps what it has. Each context also counts for the billing
+  page (`ChannelUsage`, `PostUsage`, `WorkspaceSeats`, `AssistantRequests`),
+  so `BillingOverviewLive` is built after the contexts it reads.
+- Entitlements come only from `billing.subscriptions`, which
+  `RecordSubscription` keeps from Stripe's `customer.subscription.*` events:
+  Better Auth's webhook checks their signature, then its `onEvent` finds the
+  workspace by its Stripe customer and the plan by its price. An event is
+  recorded once (`billing.stripe_events`), never over a newer one, and a
+  failure answers the webhook an error, so Stripe sends it again. Active,
+  trialing and past due subscriptions give their plan.
+- Better Auth's subscription routes take `customerType: "organization"` and
+  the workspace as `referenceId` only, for members with `billing:manage`,
+  never staff impersonating them. Checkout sends Stripe Tax's parameters
+  when `STRIPE_AUTOMATIC_TAX` is on.
+- Never call Stripe in tests: checkout and the portal run against
+  stripe-mock, and webhooks post the payloads in
+  `test/billing/fixtures/webhooks`, signed in the test.
 
 ### MCP endpoint
 
@@ -531,7 +578,8 @@ and no socket, for tests.
   (`AUTH_DB_POOL_MAX`). Repositories use `Drizzle`, or `SqlClient` for raw
   SQL.
 - Each context keeps its tables in a Postgres schema named after it
-  (`publishing`, `channels`, `media`, `notifications`, `assistant`; the
+  (`publishing`, `channels`, `media`, `notifications`, `assistant`,
+  `billing`; the
   workspace context's are Better Auth's, in `auth`). Effect creates its
   `cluster_*` tables in `public`; drizzle-kit never manages them.
 - Declare a context's tables in `src/<context>/infrastructure/schema.ts`, then
@@ -560,8 +608,6 @@ self-hoster needs only Postgres and an S3-compatible store:
   each `OTEL_<SIGNAL>_EXPORTER` to `otlp`; set one to `none` to turn that
   signal off).
 
-Billing and captcha are not built yet.
-
 - Images read `PORT` and plain environment variables and run anywhere.
 - Route `/api/*` and `/.well-known/oauth-*` to the server, or let the web app
   forward them, and everything else to the web app.
@@ -587,8 +633,8 @@ Billing and captcha are not built yet.
   the OAuth pages (`device`, `oauth/workspace`, `oauth/consent`), the
   platforms' redirect URI `connect/[platform]/callback`, and the signed-in
   app: `app` (workspaces), `app/notices`, `app/notices/preferences`,
-  `app/[workspaceId]/channels`, `…/media`, `…/calendar`, `…/posts/new` and
-  `…/posts/[postId]`.
+  `app/[workspaceId]/channels`, `…/media`, `…/calendar`, `…/posts/new`,
+  `…/posts/[postId]` and `…/billing`.
 - Pages fetch through the client derived from `acme-contract`, with
   `@effect/atom-react`: query atoms come from `AcmeApi` in `src/api/client.ts`.
   Browsers call `/api`; server code calls `ACME_API_URL`.
@@ -634,6 +680,16 @@ Billing and captcha are not built yet.
   only while `GET …/assistant` answers `available`; refresh that status after
   every request, which can change the requests left. Show each suggestion in
   a preview the person accepts or discards: never apply one unasked.
+- The billing page shows `GET …/billing` (`BillingView` renders each state)
+  and opens Stripe's checkout and customer portal through `billingClient`
+  (`#auth/billing-client.ts`, Better Auth's Stripe client), with
+  `disableRedirect` and the page as the way back. Explain a
+  `PlanLimitReached`, and Better Auth's `MEMBER_LIMIT_REACHED`, wherever they
+  surface, from the `Billing` catalogue and `Auth.errors`.
+- The sign-up and password reset pages read the Turnstile site key at
+  request time (`captchaSiteKey()`, `GET /api/captcha`); `useCaptcha` shows
+  the widget only with one, sends its token as `x-captcha-response`, and
+  resets it after every call, since a token works once.
 - `src/proxy.ts` rewrites `/api/*` and `/.well-known/oauth-*` to
   `ACME_API_URL`, read per request. Keep it there, not in `next.config.ts`:
   Next resolves config rewrites at build time and writes the URL into the
