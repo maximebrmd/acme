@@ -4,28 +4,28 @@
   "projectType": "application",
   "targets": {
     "collections": {
-      "command": "uv run --locked ansible-galaxy collection install --requirements-file requirements.yml",
+      "command": "uv run --locked ansible-galaxy collection install --requirements-file requirements.yml < /dev/null",
       "options": { "cwd": "{projectRoot}" },
       "cache": true,
       "inputs": ["{projectRoot}/requirements.yml", "{projectRoot}/uv.lock"],
       "outputs": ["{projectRoot}/.ansible/collections"]
     },
     "lint": {
-      "command": "uv run --locked ansible-lint",
+      "command": "uv run --locked ansible-lint < /dev/null",
       "options": { "cwd": "{projectRoot}" },
       "dependsOn": ["collections"],
       "cache": true,
       "inputs": ["default"]
     },
     "syntax-check": {
-      "command": "uv run --locked ansible-playbook --syntax-check playbooks/*.yml",
+      "command": "uv run --locked ansible-playbook --syntax-check playbooks/*.yml < /dev/null",
       "options": { "cwd": "{projectRoot}" },
       "dependsOn": ["collections"],
       "cache": true,
       "inputs": ["default"]
     },
     "pytest": {
-      "command": "uv run --locked pytest",
+      "command": "uv run --locked pytest < /dev/null",
       "options": { "cwd": "{projectRoot}" },
       "cache": false
     },
