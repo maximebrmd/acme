@@ -270,20 +270,31 @@ export const sequenced = <P>(
   const interrupted = unconfirmed("interrupted");
 
   // Sends the post again with the attempt's key. Anything that fails before
-  // the platform decides on the post says nothing of the earlier run.
-  const resendResumed = (post: OutgoingPost) =>
+  // the platform decides on the post says nothing of the earlier run. The
+  // media is uploaded and processed again first, which takes time: the key
+  // must still hold when the post is sent, not only when the resume began.
+  const resendResumed = (
+    post: OutgoingPost,
+    window: Duration.Duration
+  ): Effect.Effect<PublishResult, PublishFailure> =>
     ready(post).pipe(
       Effect.matchEffect({
         onFailure: () => Effect.succeed(interrupted),
         onSuccess: (prepared) =>
-          steps.commit(post, prepared).pipe(
-            Effect.map((published): PublishResult => published),
-            Effect.catchTag("OutcomeUnknown", () =>
-              confirmAfter(post, prepared, "interrupted")
-            ),
-            Effect.catchIf(
-              (refusal) => !isDefinite(refusal),
-              () => Effect.succeed(interrupted)
+          isWithinWindow(post, window).pipe(
+            Effect.flatMap((within) =>
+              within
+                ? steps.commit(post, prepared).pipe(
+                    Effect.map((published): PublishResult => published),
+                    Effect.catchTag("OutcomeUnknown", () =>
+                      confirmAfter(post, prepared, "interrupted")
+                    ),
+                    Effect.catchIf(
+                      (refusal) => !isDefinite(refusal),
+                      () => Effect.succeed(interrupted)
+                    )
+                  )
+                : Effect.succeed(interrupted)
             )
           ),
       })
@@ -311,7 +322,9 @@ export const sequenced = <P>(
         )
       : isWithinWindow(post, confirmation.window).pipe(
           Effect.flatMap((within) =>
-            within ? resendResumed(post) : Effect.succeed(interrupted)
+            within
+              ? resendResumed(post, confirmation.window)
+              : Effect.succeed(interrupted)
           )
         )
     ).pipe(Effect.withSpan(`Publishing.${platform}.resume`));
