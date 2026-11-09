@@ -1,6 +1,7 @@
 import { HttpApi, OpenApi } from "effect/http-api";
 
 import { ApiKeysApi } from "./api-keys.ts";
+import { AssistantApi } from "./assistant.ts";
 import { ChannelOAuthApi } from "./channel-oauth.ts";
 import { ChannelsApi } from "./channels.ts";
 import { MediaApi } from "./media.ts";
@@ -21,6 +22,32 @@ export {
 } from "./api-keys.ts";
 
 export type { ApiKey, NewApiKey } from "./api-keys.ts";
+
+export {
+  AssistantActionSchema,
+  AssistantStatusSchema,
+  AssistantToneSchema,
+  SuggestionRequestSchema,
+  SuggestionSchema,
+  TranslationLanguageSchema,
+} from "./assistant.ts";
+
+export type {
+  AssistantAction,
+  AssistantStatus,
+  AssistantTone,
+  Suggestion,
+  SuggestionRequest,
+  TranslationLanguage,
+} from "./assistant.ts";
+
+export { AssistantFailed } from "./assistant-failed.ts";
+
+export { AssistantInputRejected } from "./assistant-input-rejected.ts";
+
+export { AssistantQuotaExceeded } from "./assistant-quota-exceeded.ts";
+
+export { AssistantUnavailable } from "./assistant-unavailable.ts";
 
 export { Authentication } from "./authentication.ts";
 
@@ -244,4 +271,5 @@ export class Api extends HttpApi.make("acme")
   .add(ChannelOAuthApi)
   .add(PostsApi)
   .add(MediaApi)
+  .add(AssistantApi)
   .annotateMerge(OpenApi.annotations({ title: "Acme API" })) {}

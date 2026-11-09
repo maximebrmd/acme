@@ -11,6 +11,7 @@ import { CronsLive } from "#app/crons.ts";
 import { McpLive } from "#app/mcp/server.ts";
 import { ObservabilityLive } from "#app/observability.ts";
 import { SystemHandlers } from "#app/system.ts";
+import { AssistantApiLive, AssistantLive } from "#assistant/container.ts";
 import {
   ChannelOAuthApiLive,
   ChannelsApiLive,
@@ -41,7 +42,8 @@ import {
 const WorkspaceGroupsLive = Layer.mergeAll(
   ChannelsApiLive,
   PostsApiLive,
-  MediaApiLive
+  MediaApiLive,
+  AssistantApiLive
 ).pipe(Layer.provideMerge(WorkspaceApiLive));
 
 const ApiLive = HttpApiBuilder.layer(Api, {
@@ -90,7 +92,8 @@ const PublishingWithoutJobsLive = PublishingContextLive.pipe(
 const ServicesLive = Layer.mergeAll(
   ChannelsWithNoticesLive,
   PublishingWithoutJobsLive,
-  MediaLive
+  MediaLive,
+  AssistantLive
 ).pipe(
   Layer.provide(Layer.mergeAll(IdsLive, BunDns.layer)),
   Layer.provideMerge(MigrationsLive),
@@ -115,7 +118,8 @@ const WorkersLive = Layer.mergeAll(PublishingWorkersLive, CronsLive);
 const ContextsLive = Layer.mergeAll(
   ChannelsWithNoticesLive,
   PublishingContextLive,
-  MediaLive
+  MediaLive,
+  AssistantLive
 ).pipe(
   Layer.provideMerge(
     Layer.mergeAll(IdsLive, TransactionRunnerLive, BunDns.layer)

@@ -1,0 +1,12 @@
+import { Schema } from "effect";
+
+/** The server has no language model configured: the assistant is off. */
+export class AssistantUnavailable extends Schema.TaggedError<AssistantUnavailable>()(
+  "AssistantUnavailable",
+  {},
+  {
+    description:
+      "The writing assistant is off on this server: no language model is configured.",
+    httpApiStatus: 503,
+  }
+) {}

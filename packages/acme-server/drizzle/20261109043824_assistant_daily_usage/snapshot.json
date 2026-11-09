@@ -1,0 +1,132 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "deed5e09-118d-4fb9-9931-1cbf8f520e49",
+  "prevIds": [
+    "837e598f-6a65-4a89-81ab-af4faf00eac4"
+  ],
+  "footprints": [
+    {
+      "statementType": "create_schema",
+      "statementTarget": [
+        "schema",
+        "assistant"
+      ],
+      "writes": [
+        "s|sch|assistant",
+        "n|sch|assistant",
+        "e|sch|assistant"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "assistant",
+        "daily_usage"
+      ],
+      "writes": [
+        "s|tbl|assistant.daily_usage",
+        "n|tbl|assistant.daily_usage",
+        "e|tbl|assistant.daily_usage",
+        "n|rel|assistant.daily_usage",
+        "n|type|assistant.daily_usage",
+        "n|rel|assistant.daily_usage_pkey"
+      ],
+      "reads": [
+        "n|sch|assistant"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "name": "assistant",
+        "entityType": "schemas"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "assistant",
+        "name": "daily_usage",
+        "isRlsEnabled": false,
+        "entityType": "tables"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "assistant",
+        "table": "daily_usage",
+        "name": "day",
+        "type": "date",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "assistant",
+        "table": "daily_usage",
+        "name": "requests",
+        "type": "integer",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "assistant",
+        "table": "daily_usage",
+        "name": "workspace_id",
+        "type": "uuid",
+        "typeSchema": null,
+        "notNull": true,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "assistant",
+        "table": "daily_usage",
+        "name": "daily_usage_pkey",
+        "columns": [
+          "workspace_id",
+          "day"
+        ],
+        "nameExplicit": false,
+        "entityType": "pks"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "assistant",
+        "table": "daily_usage",
+        "name": "daily_usage_requests",
+        "value": "\"requests\" >= 0",
+        "entityType": "checks"
+      }
+    }
+  ]
+}
