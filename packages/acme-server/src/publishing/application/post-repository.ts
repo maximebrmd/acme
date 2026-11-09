@@ -115,6 +115,15 @@ export class PostRepository extends Context.Service<
       statuses: readonly PostStatusName[]
     ) => Effect.Effect<readonly Post[], DatabaseError>;
     /**
+     * Holds back, until the transaction it runs in ends, any other
+     * transaction that claims the workspace's month: counting the posts
+     * going out in it, then adding one, takes turns.
+     */
+    readonly claimMonth: (
+      workspaceId: WorkspaceId,
+      month: PostingMonth
+    ) => Effect.Effect<void, DatabaseError>;
+    /**
      * How many of the workspace's posts go out in the month: scheduled,
      * publishing or finished there, `except` left out. Drafts, which have
      * no time, and cancelled posts take no room, and a post counts once,
