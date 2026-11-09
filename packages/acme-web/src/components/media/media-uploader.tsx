@@ -13,7 +13,7 @@ import {
 import { Label } from "acme-ui/components/label";
 import { Progress } from "acme-ui/components/progress";
 import { Textarea } from "acme-ui/components/textarea";
-import { Cause, Option } from "effect";
+import { Cause, Exit, Option } from "effect";
 import { AsyncResult, Atom } from "effect/reactivity";
 import { UploadIcon } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
@@ -25,8 +25,16 @@ import {
   useState,
   useTransition,
 } from "react";
-import type { ChangeEvent } from "react";
+import type { ChangeEvent, Dispatch, SetStateAction } from "react";
 
+import {
+  carriedOver,
+  emptyDraft,
+  hasChange,
+  savedAs,
+  saveFailed,
+} from "#media/alt-text-draft.ts";
+import type { AltTextDraft, AltTextSaving } from "#media/alt-text-draft.ts";
 import { describeUpload, upload, uploadProgress } from "#media/atoms.ts";
 import { UploadFailed } from "#media/upload-failed.ts";
 
@@ -97,18 +105,9 @@ const useErrorMessage = () => {
   };
 };
 
-type Saving = "idle" | "saving" | "saved" | "failed";
-
-interface Description {
-  // As typed.
-  readonly text: string;
-  // As the media holds it.
-  readonly saved: string;
-  readonly saving: Saving;
-}
-
 // The description of the media an upload made, saved when the field loses
-// focus with a change.
+// focus with a change. Each change applies to the field as it then stands,
+// so what is typed while a save runs is kept.
 const AltTextField = ({
   description,
   entryId,
@@ -116,10 +115,10 @@ const AltTextField = ({
   onChange,
   workspaceId,
 }: {
-  readonly description: Description;
+  readonly description: AltTextDraft;
   readonly entryId: string;
   readonly mediaId: Option.Option<string>;
-  readonly onChange: (description: Description) => void;
+  readonly onChange: Dispatch<SetStateAction<AltTextDraft>>;
   readonly workspaceId: string;
 }) => {
   const t = useTranslations("Media.uploader");
@@ -128,29 +127,37 @@ const AltTextField = ({
   const { saving, text } = description;
 
   const handleChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
-    onChange({ ...description, text: event.target.value });
+    const { value } = event.target;
+
+    onChange((current) => ({ ...current, text: value }));
   };
 
   const [, startTransition] = useTransition();
 
   const handleBlur = () => {
-    if (Option.isNone(mediaId) || text.trim() === description.saved.trim()) {
+    if (Option.isNone(mediaId) || !hasChange(description)) {
       return;
     }
 
-    onChange({ ...description, saving: "saving" });
+    const sent = text;
+
+    onChange((current) => ({ ...current, saving: "saving" }));
 
     startTransition(async () => {
       const exit = await describe({
-        altText: text,
+        altText: sent,
         mediaId: mediaId.value,
         workspaceId,
       });
 
-      onChange(
-        exit._tag === "Success"
-          ? { saved: text, saving: "saved", text }
-          : { ...description, saving: "failed" }
+      // A save cut short, by a later one or by the entry leaving the list,
+      // reports nothing.
+      if (Exit.hasInterrupts(exit)) {
+        return;
+      }
+
+      onChange((current) =>
+        Exit.isSuccess(exit) ? savedAs(current, sent) : saveFailed(current)
       );
     });
   };
@@ -160,7 +167,7 @@ const AltTextField = ({
     idle: "",
     saved: t("altTextSaved"),
     saving: t("altTextSaving"),
-  } satisfies Record<Saving, string>;
+  } satisfies Record<AltTextSaving, string>;
 
   return (
     <div className="flex flex-col gap-2">
@@ -208,11 +215,7 @@ const UploadItem = ({
   const t = useTranslations("Media.uploader");
   const format = useFormatter();
 
-  const [description, setDescription] = useState<Description>({
-    saved: "",
-    saving: "idle",
-    text: "",
-  });
+  const [description, setDescription] = useState<AltTextDraft>(emptyDraft);
 
   const errorMessage = useErrorMessage();
   const progress = useAtomValue(uploadProgress(entry.id));
@@ -260,11 +263,7 @@ const UploadItem = ({
               aria-label={t("retryLabel", { name })}
               onClick={() => {
                 // A new upload: the description goes with it.
-                setDescription({
-                  saved: description.text,
-                  saving: "idle",
-                  text: description.text,
-                });
+                setDescription(carriedOver);
                 onRetry(entry, description.text);
               }}
             >
