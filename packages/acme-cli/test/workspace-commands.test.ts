@@ -9,6 +9,8 @@ import {
   Schema,
 } from "effect";
 
+import { printable } from "#print.ts";
+
 import { filesLayer, signedIn } from "./signed-in.ts";
 import {
   draftId,
@@ -767,6 +769,51 @@ describe("acme account", () => {
         yield* session.printed(["account", "apps"]),
         /Acme CLI\s+acme-cli\s+workspace:read workspace:write\s+any workspace\s+last used 2026-11-09T07:00:00Z/u
       );
+    }).pipe(Effect.scoped, Effect.provide(filesLayer))
+  );
+});
+
+describe("printing what the server holds", () => {
+  it.effect("never hands the terminal the control sequences a text holds", () =>
+    Effect.gen(function* controls() {
+      const session = yield* signedIn();
+      const escape = String.fromCodePoint(0x1b);
+
+      // Sets the clipboard, clears the screen, then shows the rest
+      // backwards.
+      const hostile = [
+        "Launch",
+        `${escape}]52;c;c3ludGhldGlj${String.fromCodePoint(0x07)}`,
+        `${escape}[2J`,
+        `${String.fromCodePoint(0x9b)}31m`,
+        `${String.fromCodePoint(0x20_2e)}day`,
+      ].join("");
+
+      yield* session.printed([
+        "drafts",
+        "save",
+        "--text",
+        hostile,
+        ...inStudio,
+      ]);
+
+      const listed = yield* session.printed(["drafts", "list", ...inStudio]);
+
+      const refused = yield* session.refused([
+        "drafts",
+        "save",
+        "--options",
+        `${escape}[2Jgone`,
+        ...inStudio,
+      ]);
+
+      assert.include(listed, "Launch");
+      assert.include(refused, "gone");
+
+      for (const printed of [listed, refused]) {
+        assert.strictEqual(printed, printable(printed));
+        assert.notInclude(printed, escape);
+      }
     }).pipe(Effect.scoped, Effect.provide(filesLayer))
   );
 });
