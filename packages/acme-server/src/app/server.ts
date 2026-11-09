@@ -6,6 +6,7 @@ import { HttpApiBuilder } from "effect/http-api";
 
 import { ClusterLive } from "#app/cluster.ts";
 import { CronsLive } from "#app/crons.ts";
+import { McpLive } from "#app/mcp/server.ts";
 import { ObservabilityLive } from "#app/observability.ts";
 import { SystemHandlers } from "#app/system.ts";
 import { ChannelsApiLive, ChannelsLive } from "#channels/container.ts";
@@ -34,8 +35,11 @@ const ApiLive = HttpApiBuilder.layer(Api, {
   openapiPath: "/openapi.json",
 }).pipe(Layer.provide([SystemHandlers, WorkspaceGroupsLive]));
 
-/** Every route the server answers: the HTTP API and Better Auth's. */
-export const RoutesLive = Layer.mergeAll(ApiLive, AuthRoutesLive);
+/**
+ * Every route the server answers: the HTTP API, Better Auth's, and the MCP
+ * endpoint.
+ */
+export const RoutesLive = Layer.mergeAll(ApiLive, AuthRoutesLive, McpLive);
 
 // The services the routes need, each built after the ones below it: the
 // database pool, the migrations, then the contexts. Better Auth checks its
