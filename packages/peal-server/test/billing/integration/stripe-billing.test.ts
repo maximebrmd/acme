@@ -23,6 +23,7 @@ import {
   workspaceOf,
 } from "#test/workspace/integration/harness.ts";
 import type { Person } from "#test/workspace/integration/harness.ts";
+import { seedChannel } from "#test/workspace/integration/seed.ts";
 
 const stripeMockUrl = Config.String("STRIPE_MOCK_URL").pipe(
   Config.withDefault("http://127.0.0.1:12111")
@@ -283,7 +284,9 @@ const trialFor = (payload: string, userId: string, days: number) =>
     );
 
 // A JSON body of plain values, as the billing endpoints take.
-type JsonBody = Readonly<Record<string, boolean | number | string>>;
+type JsonBody = Readonly<
+  Record<string, boolean | number | string | readonly string[]>
+>;
 
 // A POST as the person, with a body or none.
 const post = (person: Person, route: string, body?: JsonBody) =>
@@ -1433,6 +1436,164 @@ layer(BillingIntegration, {
         });
 
         assert.deepStrictEqual(statusesOf(replies), [200, 402]);
+      })
+  );
+  // A plan that shrinks under a workspace deletes nothing: the workspace
+  // says what it holds beyond the plan, and comes back within it by
+  // keeping what a member who manages billing chose.
+  it.effect(
+    "has a workspace over its plan after its subscription ends choose what stays",
+    () =>
+      Effect.gen(function* overPlan() {
+        const app = yield* TestApp;
+        const delivery = newDelivery();
+
+        const { owner, workspaceId } = yield* billedWorkspace(
+          "over-plan",
+          delivery.customerId
+        );
+
+        assert.strictEqual(
+          yield* deliver(payloadOf("customer.subscription.updated", delivery)),
+          200
+        );
+
+        // On the paid plan: five channels, and three members.
+        const channelIds = yield* Effect.all(
+          ["one", "two", "three", "four", "five"].map((handle) =>
+            seedChannel(workspaceId, `@${handle}@social.example`)
+          )
+        );
+
+        const guests = [yield* signedUp("stays"), yield* signedUp("leaves")];
+
+        for (const guest of guests) {
+          const invited = yield* app.request(
+            "/api/auth/organization/invite-member",
+            {
+              body: {
+                email: guest.email,
+                organizationId: workspaceId,
+                role: "editor",
+              },
+              headers: { cookie: owner.cookies },
+            }
+          );
+
+          const accepted = yield* app.request(
+            "/api/auth/organization/accept-invitation",
+            {
+              body: {
+                invitationId: (yield* bodyOf(
+                  Schema.Struct({ id: Schema.String }),
+                  invited
+                )).id,
+              },
+              headers: { cookie: guest.cookies },
+            }
+          );
+
+          assert.strictEqual(accepted.status, 200);
+        }
+
+        const standing = (cookies: string) =>
+          app
+            .request(`/api/workspaces/${workspaceId}/billing/standing`, {
+              headers: { cookie: cookies },
+            })
+            .pipe(Effect.map(({ body }) => body));
+
+        const within = {
+          mustReduce: false,
+          over: [],
+          plan: "pro",
+          planWithRoom: null,
+          scheduledPosts: 0,
+        };
+
+        assert.deepStrictEqual(yield* standing(owner.cookies), within);
+
+        // The subscription ends: the workspace is on the free plan, with
+        // everything it had.
+        assert.strictEqual(
+          yield* deliver(payloadOf("customer.subscription.deleted", delivery)),
+          200
+        );
+
+        const over = {
+          mustReduce: true,
+          over: [
+            { allowed: 3, limit: "channels", used: 5 },
+            { allowed: 2, limit: "members", used: 3 },
+          ],
+          plan: "free",
+          planWithRoom: "pro",
+          scheduledPosts: 0,
+        };
+
+        // Every member is told, whatever their role.
+        assert.deepStrictEqual(yield* standing(owner.cookies), over);
+        assert.deepStrictEqual(yield* standing(guests[0]?.cookies ?? ""), over);
+
+        const reduce = (
+          person: Person,
+          keep: {
+            readonly channels: readonly string[];
+            readonly members: readonly string[];
+          }
+        ) =>
+          post(person, `/api/workspaces/${workspaceId}/billing/reduction`, {
+            keepChannelIds: keep.channels,
+            keepMemberIds: keep.members,
+          });
+
+        const kept = {
+          channels: channelIds.slice(0, 3),
+          members: [owner.id, guests[0]?.id ?? ""],
+        };
+
+        // Only those who manage billing choose.
+        assert.strictEqual(
+          (yield* reduce(guests[0] ?? owner, kept)).status,
+          403
+        );
+
+        // A choice the plan cannot hold changes nothing.
+        const tooMany = yield* reduce(owner, {
+          ...kept,
+          channels: channelIds.slice(0, 4),
+        });
+
+        assert.strictEqual(tooMany.status, 409);
+        assert.deepInclude(tooMany.body, {
+          _tag: "ReductionRefused",
+          reason: "tooManyChannels",
+        });
+        assert.deepStrictEqual(yield* standing(owner.cookies), over);
+
+        const reduced = yield* reduce(owner, kept);
+
+        assert.strictEqual(reduced.status, 200);
+        assert.deepStrictEqual(reduced.body, {
+          disconnectedChannels: 2,
+          removedMembers: 1,
+          revokedInvitations: 0,
+          standing: { ...within, plan: "free" },
+        });
+
+        const billing = yield* billingOf(owner, workspaceId);
+
+        assert.strictEqual(billing.usage.channels, 3);
+        assert.strictEqual(billing.usage.members, 2);
+
+        // Whoever was removed no longer reaches the workspace.
+        assert.strictEqual(
+          (yield* app.request(
+            `/api/workspaces/${workspaceId}/billing/standing`,
+            { headers: { cookie: guests[1]?.cookies ?? "" } }
+          )).status,
+          404
+        );
       })
   );
 });

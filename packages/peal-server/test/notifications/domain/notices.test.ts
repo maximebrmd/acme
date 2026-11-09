@@ -97,6 +97,7 @@ const events: Readonly<Record<NoticeEvent["_tag"], NoticeEvent>> = {
   TrialEnding: {
     _tag: "TrialEnding",
     endsAt: DateTime.makeUnsafe("2026-11-23T10:00:00Z"),
+    over: [],
     plan: "pro",
   },
 };

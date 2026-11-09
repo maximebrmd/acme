@@ -195,6 +195,7 @@ const signedInGroupsLive = (
       handlers.handleAll({
         cancel: () => refusing,
         order: () => refusing,
+        reduce: () => refusing,
         withdraw: () => refusing,
         withdrawal: () => refusing,
       })

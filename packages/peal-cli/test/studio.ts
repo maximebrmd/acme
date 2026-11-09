@@ -27,6 +27,7 @@ import type {
   Post,
   PostDraft,
   PostTarget,
+  Standing,
   TikTokAccount,
 } from "peal-contract";
 
@@ -258,6 +259,27 @@ const invitation: Invitation = {
   role: "editor",
 };
 
+const within: Standing = {
+  mustReduce: false,
+  over: [],
+  plan: "free",
+  planWithRoom: null,
+  scheduledPosts: 7,
+};
+
+// The studio after a trial: more channels and members than the free plan.
+const over: Standing = {
+  mustReduce: true,
+  over: [
+    { allowed: 3, limit: "channels", used: 8 },
+    { allowed: 2, limit: "members", used: 5 },
+    { allowed: 500_000_000, limit: "mediaStorage", used: 1_200_000_000 },
+  ],
+  plan: "free",
+  planWithRoom: "pro",
+  scheduledPosts: 7,
+};
+
 const billing: Billing = {
   allowances: {
     assistantRequests: 3,
@@ -337,6 +359,8 @@ const exported = (exportedAt: DateTime.Utc): AccountExport => ({
 /** What the instance holds, and what the commands changed. */
 export interface StudioState {
   readonly changes: readonly string[];
+  /** Whether the studio holds more than its plan allows, as a test sets it. */
+  readonly overPlan: boolean;
   readonly invitations: readonly Invitation[];
   readonly posts: readonly Post[];
 }
@@ -353,6 +377,7 @@ export const makeStudio = (me: Me = studioMe) =>
     state: Ref.make<StudioState>({
       changes: [],
       invitations: [invitation],
+      overPlan: false,
       posts,
     }),
     whileExporting: Ref.make<Effect.Effect<void>>(Effect.void),
@@ -718,6 +743,10 @@ export const studioGroupsLive = (studio: Studio) =>
     HttpApiBuilder.group(Api, "billing", (handlers) =>
       handlers.handleAll({
         get: () => allowed("billing:read").pipe(Effect.as(billing)),
+        standing: () =>
+          Ref.get(studio.state).pipe(
+            Effect.map(({ overPlan }) => (overPlan ? over : within))
+          ),
       })
     ),
     HttpApiBuilder.group(Api, "members", (handlers) =>

@@ -53,12 +53,24 @@ const RecordingClients = Layer.succeed(
   })
 );
 
-// The workspace's plan, as a test sets it: no limit unless told.
-const plan = Ref.makeUnsafe<{
+interface PlanState {
   readonly channels: Allowance;
   readonly connected: number;
+  readonly members: Allowance;
   readonly posts: Allowance;
-}>({ channels: Option.none(), connected: 1, posts: Option.none() });
+  readonly taken: number;
+}
+
+const within: PlanState = {
+  channels: Option.none(),
+  connected: 1,
+  members: Option.none(),
+  posts: Option.none(),
+  taken: 1,
+};
+
+// The workspace's plan, as a test sets it: no limit unless told.
+const plan = Ref.makeUnsafe<PlanState>(within);
 
 const PlanTest = Layer.succeed(
   PostAllowance,
@@ -69,6 +81,10 @@ const PlanTest = Layer.succeed(
           allowed: channels,
           connected,
         }))
+      ),
+    members: () =>
+      Ref.get(plan).pipe(
+        Effect.map(({ members, taken }) => ({ allowed: members, taken }))
       ),
     scheduledPerMonth: () =>
       Ref.get(plan).pipe(Effect.map(({ posts }) => posts)),
@@ -208,8 +224,8 @@ layer(PublisherTest)("the platform adapters", (it) => {
         // The month's posts: one, after the trial. The first by its time
         // goes out, the second does not.
         yield* Ref.set(plan, {
+          ...within,
           channels: Option.some(3),
-          connected: 1,
           posts: Option.some(1),
         });
 
@@ -218,19 +234,20 @@ layer(PublisherTest)("the platform adapters", (it) => {
 
         // More channels than the plan allows: nothing goes out.
         yield* Ref.set(plan, {
+          ...within,
           channels: Option.some(3),
           connected: 4,
-          posts: Option.none(),
         });
+
+        assert.strictEqual(yield* send(first), "planLimit");
+
+        // More members than the plan allows: nothing either.
+        yield* Ref.set(plan, { ...within, members: Option.some(2), taken: 5 });
 
         assert.strictEqual(yield* send(first), "planLimit");
         assert.strictEqual((yield* Ref.get(handed)).length, 1);
 
-        yield* Ref.set(plan, {
-          channels: Option.none(),
-          connected: 1,
-          posts: Option.none(),
-        });
+        yield* Ref.set(plan, within);
         yield* Effect.all([
           posts.remove(first.postId),
           posts.remove(second.postId),

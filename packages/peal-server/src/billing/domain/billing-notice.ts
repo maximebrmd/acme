@@ -3,6 +3,7 @@ import { Schema } from "effect";
 import { PaidPlanSchema } from "#shared/domain/plan.ts";
 
 import { BillingIntervalSchema } from "./billing-interval.ts";
+import { ExcessSchema } from "./standing.ts";
 
 /** An amount of money, in the currency's smallest unit (cents). */
 export const MoneySchema = Schema.Struct({
@@ -30,9 +31,11 @@ export const BillingNoticeSchema = Schema.Union([
     trialEnd: Schema.Option(Schema.DateTimeUtc),
   }),
   // The trial ends at `endsAt`, and the workspace then moves to the free
-  // plan unless someone orders.
+  // plan unless someone orders: `over` is what it holds beyond that plan
+  // when it is told, which it then has to come back within.
   Schema.TaggedStruct("TrialEnding", {
     endsAt: Schema.DateTimeUtc,
+    over: Schema.Array(ExcessSchema),
     plan: PaidPlanSchema,
   }),
   // A yearly plan renews at `renewsAt`, for `price`, what Stripe will

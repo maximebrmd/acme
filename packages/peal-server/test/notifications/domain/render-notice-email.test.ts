@@ -87,12 +87,40 @@ describe(renderNoticeEmail, () => {
     expect(email.text).toContain("300,00\u00A0€ TTC");
   });
 
+  it("lists what a trial's end leaves beyond the free plan", () => {
+    const ending = {
+      _tag: "TrialEnding",
+      endsAt: DateTime.makeUnsafe("2026-11-23T10:00:00Z"),
+      over: [
+        { allowed: 3, limit: "channels", used: 8 },
+        { allowed: 2, limit: "members", used: 5 },
+        { allowed: 500_000_000, limit: "mediaStorage", used: 1_200_000_000 },
+      ],
+      plan: "pro",
+    } as const;
+
+    expect(render(ending, "en").text).toContain(
+      "Today it holds more than the free plan allows: 8 channels (3 allowed), 5 members (2 allowed), 1.2 GB of media (500 MB allowed). From that day, nothing is scheduled or published until it is back within the free plan: posts already scheduled fail when due, and can be posted again afterwards. Order a plan, or choose which channels and members stay, on the billing page."
+    );
+    expect(render(ending, "fr").text).toContain(
+      "Aujourd’hui, il dépasse ce que permet l’offre gratuite : 8 canaux (3 permis), 5 membres (2 permis), 1,2\u202FGo de médias (500\u202FMo permis). À partir de ce jour, rien n’est programmé ni publié tant qu’il n’est pas revenu dans l’offre gratuite : les publications déjà programmées échouent à leur échéance, et peuvent être republiées ensuite. Commandez un abonnement, ou choisissez les canaux et les membres qui restent, sur la page de facturation."
+    );
+
+    const within = render({ ...ending, over: [] }, "en").text;
+
+    expect(within).toContain(
+      "It holds nothing beyond what the free plan allows, and keeps its content."
+    );
+    expect(within).not.toContain("Today it holds more");
+  });
+
   it("tells a trial's end and a cancellation's", () => {
     expect(
       render(
         {
           _tag: "TrialEnding",
           endsAt: DateTime.makeUnsafe("2026-11-23T10:00:00Z"),
+          over: [],
           plan: "pro",
         },
         "en"

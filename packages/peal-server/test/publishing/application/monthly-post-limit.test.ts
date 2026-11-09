@@ -40,6 +40,7 @@ const TwoPostsServer = postsServerWith(
     PostAllowance,
     PostAllowance.of({
       channels: () => Effect.succeed({ allowed: Option.none(), connected: 0 }),
+      members: () => Effect.succeed({ allowed: Option.none(), taken: 1 }),
       scheduledPerMonth: () => Effect.succeed(Option.some(allowed)),
     })
   )
@@ -54,6 +55,7 @@ const ChangingPlanServer = postsServerWith(
     PostAllowance,
     PostAllowance.of({
       channels: () => Effect.succeed({ allowed: Option.none(), connected: 0 }),
+      members: () => Effect.succeed({ allowed: Option.none(), taken: 1 }),
       scheduledPerMonth: () =>
         Ref.get(changingAllowance).pipe(Effect.map(Option.some)),
     })
@@ -67,6 +69,20 @@ const OverChannelsServer = postsServerWith(
     PostAllowance,
     PostAllowance.of({
       channels: () => Effect.succeed({ allowed: Option.some(3), connected: 4 }),
+      members: () => Effect.succeed({ allowed: Option.none(), taken: 1 }),
+      scheduledPerMonth: () => Effect.succeed(Option.none()),
+    })
+  )
+);
+
+// A workspace with five members on a plan of two, as after its trial.
+const OverMembersServer = postsServerWith(
+  attachableMedia(),
+  Layer.succeed(
+    PostAllowance,
+    PostAllowance.of({
+      channels: () => Effect.succeed({ allowed: Option.some(3), connected: 3 }),
+      members: () => Effect.succeed({ allowed: Option.some(2), taken: 5 }),
       scheduledPerMonth: () => Effect.succeed(Option.none()),
     })
   )
@@ -506,6 +522,37 @@ describe("the channel limit", () => {
               )
             );
           }).pipe(Effect.provide(OverChannelsServer))
+        )
+      )
+  );
+
+  it.effect(
+    "lets a workspace over its plan's members schedule nothing until some leave",
+    () =>
+      setTime("2026-06-10T07:00:00Z").pipe(
+        Effect.andThen(
+          Effect.gen(function* overMembers() {
+            const workspaceId = yield* freshWorkspace;
+            const channel = yield* connect(workspaceId, "mastodon");
+
+            const { failure } = yield* scheduledAt(
+              workspaceId,
+              channel,
+              "2026-06-20T08:00:00Z"
+            );
+
+            assert.deepStrictEqual(
+              failure,
+              Option.some(
+                new PlanLimitReached({
+                  allowed: 2,
+                  limit: "members",
+                  needed: 5,
+                  used: 5,
+                })
+              )
+            );
+          }).pipe(Effect.provide(OverMembersServer))
         )
       )
   );

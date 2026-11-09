@@ -36,6 +36,11 @@ export const french: EmailCatalog = {
       "Si ce n’était pas vous, changez votre mot de passe et déconnectez vos autres sessions depuis les paramètres de votre compte, puis prévenez la personne qui gère ce serveur Peal.",
     subject: "Une copie de vos données Peal a été téléchargée",
   },
+  excess: {
+    channels: "{used} canaux ({allowed} permis)",
+    mediaStorage: "{used} de médias ({allowed} permis)",
+    members: "{used} membres ({allowed} permis)",
+  },
   exportChannels: {
     commandLine: "depuis la ligne de commande",
     web: "depuis l’application web",
@@ -80,6 +85,8 @@ export const french: EmailCatalog = {
     signature: "L’équipe Peal",
     textLink: "{action} : {url}",
   },
+  overFreePlan:
+    "Aujourd’hui, il dépasse ce que permet l’offre gratuite : {over}. À partir de ce jour, rien n’est programmé ni publié tant qu’il n’est pas revenu dans l’offre gratuite : les publications déjà programmées échouent à leur échéance, et peuvent être republiées ensuite. Commandez un abonnement, ou choisissez les canaux et les membres qui restent, sur la page de facturation.",
   plans: {
     agency: "Agency",
     business: "Business",
@@ -163,7 +170,7 @@ export const french: EmailCatalog = {
   },
   trialEnding: {
     action: "Choisir un abonnement",
-    body: "L’essai {plan} de {workspaceName} prend fin le {endsAt}. Rien n’est facturé : sauf si quelqu’un commande un abonnement d’ici là, l’espace de travail passe à l’offre gratuite. Il garde son contenu, mais doit déconnecter les canaux au-delà de ceux de l’offre gratuite avant de pouvoir programmer à nouveau.",
+    body: "L’essai {plan} de {workspaceName} prend fin le {endsAt}. Rien n’est facturé : sauf si quelqu’un commande un abonnement d’ici là, l’espace de travail passe à l’offre gratuite. {standing}",
     ignore:
       "Vous recevez cet e-mail parce que vous gérez la facturation de {workspaceName} sur Peal. Les e-mails de facturation sont toujours envoyés : conservez celui-ci, il vous sert de preuve.",
     subject: "Votre essai {plan} prend fin le {endsAt}",
@@ -183,6 +190,8 @@ export const french: EmailCatalog = {
       "Si vous n’avez pas créé de compte Peal, ignorez cet e-mail. Le lien expire dans une heure.",
     subject: "Confirmez votre adresse e-mail pour Peal",
   },
+  withinFreePlan:
+    "Il ne dépasse en rien ce que permet l’offre gratuite, et garde son contenu.",
   workspaceDeleted: {
     action: "Ouvrir mes espaces de travail",
     body: "L’espace de travail {workspaceName} a été supprimé à votre demande, avec tout son contenu : ses canaux, publications, médias, statistiques, membres et clés d’API.",

@@ -1,15 +1,18 @@
-import { Context, DateTime, Duration, Effect, Layer } from "effect";
+import { Context, DateTime, Duration, Effect, Layer, Option } from "effect";
 
 import type { BillingInterval } from "#billing/domain/billing-interval.ts";
 import { BillingOff } from "#billing/domain/billing-off.ts";
 import { inPerson } from "#billing/domain/in-person.ts";
 import { consentVersion, Order, OrderIdSchema } from "#billing/domain/order.ts";
 import type { PersonRequired } from "#billing/domain/person-required.ts";
-import { trialPlan } from "#billing/domain/plans.ts";
+import { PlanTooSmall } from "#billing/domain/plan-too-small.ts";
+import { planAllowances, trialPlan } from "#billing/domain/plans.ts";
+import { excessesOf, planHolding } from "#billing/domain/standing.ts";
 import { TrialUnavailable } from "#billing/domain/trial-unavailable.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import { newId } from "#shared/application/ids.ts";
 import type { Ids } from "#shared/application/ids.ts";
+import { Pseudonyms } from "#shared/application/pseudonyms.ts";
 import type { Actor } from "#shared/domain/access.ts";
 import { authorize } from "#shared/domain/authorize.ts";
 import type { UserId, WorkspaceId } from "#shared/domain/ids.ts";
@@ -17,9 +20,11 @@ import type { MissingPermission } from "#shared/domain/missing-permission.ts";
 import type { PaidPlan } from "#shared/domain/plan.ts";
 
 import { BillingMode } from "./ports/billing-mode.ts";
+import { MemberAddresses } from "./ports/member-addresses.ts";
 import { Orders } from "./ports/orders.ts";
 import { Subscriptions } from "./ports/subscriptions.ts";
 import { trialReservationMinutes, Trials } from "./ports/trials.ts";
+import { WorkspaceUsage } from "./ports/workspace-usage.ts";
 import type { StripeUnreachable } from "./stripe-unreachable.ts";
 
 /** What a member orders. */
@@ -58,13 +63,44 @@ export const trialOpen = Effect.fn("Billing.trialOpen")(function* trialOpen(
 });
 
 /**
+ * Whether this member may still start the trial for the workspace
+ * (`trialOpen`), and no account closed with their email address had one:
+ * a trial is one per address, as checkout checks again with the session's
+ * (`CheckoutOrders`). The billing page and an order say so before it.
+ */
+export const trialOffered = Effect.fn("Billing.trialOffered")(
+  function* trialOffered(userId: UserId, workspaceId: WorkspaceId) {
+    if (!(yield* trialOpen(userId, workspaceId))) {
+      return false;
+    }
+
+    const address = yield* MemberAddresses.use((addresses) =>
+      addresses.of(userId, workspaceId)
+    );
+
+    if (Option.isNone(address)) {
+      return true;
+    }
+
+    const pseudonym = yield* Pseudonyms.use((pseudonyms) =>
+      pseudonyms.ofEmail(address.value)
+    );
+
+    return !(yield* Trials.use((trials) => trials.usedByPseudonym(pseudonym)));
+  }
+);
+
+/**
  * Records what a member orders on the billing page, before Stripe's
  * checkout: the plan and interval, or the trial, with the consent they
  * gave to start at once, knowing their right to withdraw (the API refuses
  * an order without it). Checkout then requires it. Ordering a paid plan
  * while the workspace is in its trial leaves the trial running: it ends
  * once the paid subscription is recorded (`RecordSubscription`), so a
- * checkout left unfinished loses nothing. Needs billing:manage and the
+ * checkout left unfinished loses nothing. An order for a plan that does
+ * not hold what the workspace has (its channels, members and media) is
+ * refused, listing what to remove first (`PlanTooSmall`): moving down
+ * never leaves a workspace over its plan. Needs billing:manage and the
  * member in person.
  */
 export class PlaceOrder extends Context.Service<
@@ -79,6 +115,7 @@ export class PlaceOrder extends Context.Service<
       | DatabaseError
       | MissingPermission
       | PersonRequired
+      | PlanTooSmall
       | StripeUnreachable
       | TrialUnavailable
     >;
@@ -89,7 +126,11 @@ export class PlaceOrder extends Context.Service<
     Effect.gen(function* PlaceOrderLive() {
       const { enabled } = yield* BillingMode;
       const orders = yield* Orders;
-      const context = yield* Effect.context<Ids | Subscriptions | Trials>();
+      const usage = yield* WorkspaceUsage;
+
+      const context = yield* Effect.context<
+        Ids | MemberAddresses | Pseudonyms | Subscriptions | Trials
+      >();
 
       const place = Effect.fn("PlaceOrder.place")(function* place(
         actor: Actor,
@@ -109,9 +150,22 @@ export class PlaceOrder extends Context.Service<
             return yield* new TrialUnavailable({ reason: "notOffered" });
           }
 
-          if (!(yield* trialOpen(userId, workspaceId))) {
+          if (!(yield* trialOffered(userId, workspaceId))) {
             return yield* new TrialUnavailable({ reason: "used" });
           }
+        }
+
+        // Never above the plan ordered: moving to a smaller plan waits
+        // until the workspace fits it.
+        const held = yield* usage.of(workspaceId);
+        const over = excessesOf(planAllowances[request.plan], held);
+
+        if (over.length > 0) {
+          return yield* new PlanTooSmall({
+            over,
+            plan: request.plan,
+            planWithRoom: planHolding(held),
+          });
         }
 
         const order = new Order({

@@ -8,6 +8,7 @@ import type { RenderedEmail } from "./email-layout.ts";
 import type {
   NoticeChannel,
   NoticeEvent,
+  NoticeExcess,
   NoticeMoney,
 } from "./notice-event.ts";
 
@@ -56,6 +57,55 @@ const channelPhrase = (
         keep
       ),
   });
+
+const gigabyte = 1_000_000_000;
+
+// Bytes in the decimal units the plans are sold in, as the reader writes
+// numbers.
+const sizeIn = (bytes: number, locale: Locale): string =>
+  bytes >= gigabyte
+    ? new Intl.NumberFormat(locale, {
+        maximumFractionDigits: 1,
+        style: "unit",
+        unit: "gigabyte",
+      }).format(bytes / gigabyte)
+    : new Intl.NumberFormat(locale, {
+        maximumFractionDigits: 0,
+        style: "unit",
+        unit: "megabyte",
+      }).format(bytes / 1_000_000);
+
+// What a workspace holds beyond the free plan, each against what the plan
+// allows, or that it holds nothing beyond it.
+const standingIn = (
+  catalog: EmailCatalog,
+  over: readonly NoticeExcess[],
+  locale: Locale
+): string => {
+  if (over.length === 0) {
+    return catalog.withinFreePlan;
+  }
+
+  const amount = (limit: NoticeExcess["limit"], count: number) =>
+    limit === "mediaStorage" ? sizeIn(count, locale) : String(count);
+
+  const listed = over.map(({ allowed, limit, used }) =>
+    fill(
+      catalog.excess[limit],
+      new Map([
+        ["allowed", amount(limit, allowed)],
+        ["used", amount(limit, used)],
+      ]),
+      keep
+    )
+  );
+
+  return fill(
+    catalog.overFreePlan,
+    new Map([["over", listed.join(", ")]]),
+    keep
+  );
+};
 
 interface Content {
   readonly messages: EmailMessages;
@@ -148,11 +198,12 @@ const contentOf = (
         ["withdrawnAt", instantIn(withdrawnAt, locale)],
       ],
     }),
-    TrialEnding: ({ endsAt, plan }): Content => ({
+    TrialEnding: ({ endsAt, over, plan }): Content => ({
       messages: catalog.trialEnding,
       values: [
         ["endsAt", instantIn(endsAt, locale)],
         ["plan", catalog.plans[plan]],
+        ["standing", standingIn(catalog, over, locale)],
       ],
     }),
   });

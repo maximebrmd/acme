@@ -84,9 +84,10 @@ const plainEvent = (event: NoticeEvent): NoticeEventRecord =>
       refunded,
       withdrawnAt,
     }),
-    TrialEnding: ({ endsAt, plan }): NoticeEventRecord => ({
+    TrialEnding: ({ endsAt, over, plan }): NoticeEventRecord => ({
       _tag: "TrialEnding",
       endsAt,
+      over,
       plan,
     }),
   });

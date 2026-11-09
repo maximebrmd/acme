@@ -36,6 +36,11 @@ export const english: EmailCatalog = {
       "If it was not you, change your password and sign out your other sessions from your account settings, then tell whoever runs this Peal server.",
     subject: "A copy of your Peal data was downloaded",
   },
+  excess: {
+    channels: "{used} channels ({allowed} allowed)",
+    mediaStorage: "{used} of media ({allowed} allowed)",
+    members: "{used} members ({allowed} allowed)",
+  },
   exportChannels: {
     commandLine: "from the command line",
     web: "from the web app",
@@ -79,6 +84,8 @@ export const english: EmailCatalog = {
     signature: "The Peal team",
     textLink: "{action}: {url}",
   },
+  overFreePlan:
+    "Today it holds more than the free plan allows: {over}. From that day, nothing is scheduled or published until it is back within the free plan: posts already scheduled fail when due, and can be posted again afterwards. Order a plan, or choose which channels and members stay, on the billing page.",
   plans: {
     agency: "Agency",
     business: "Business",
@@ -162,7 +169,7 @@ export const english: EmailCatalog = {
   },
   trialEnding: {
     action: "Choose a plan",
-    body: "The {plan} trial of {workspaceName} ends on {endsAt}. Nothing is charged: unless someone orders a plan before then, the workspace moves to the free plan. It keeps its content, but must disconnect the channels above the free plan's before it can schedule posts again.",
+    body: "The {plan} trial of {workspaceName} ends on {endsAt}. Nothing is charged: unless someone orders a plan before then, the workspace moves to the free plan. {standing}",
     ignore:
       "You receive this email because you manage billing for {workspaceName} on Peal. Billing emails are always sent: keep this one, it is your record.",
     subject: "Your {plan} trial ends on {endsAt}",
@@ -182,6 +189,8 @@ export const english: EmailCatalog = {
       "If you did not create a Peal account, ignore this email. The link expires in an hour.",
     subject: "Confirm your email for Peal",
   },
+  withinFreePlan:
+    "It holds nothing beyond what the free plan allows, and keeps its content.",
   workspaceDeleted: {
     action: "Open my workspaces",
     body: "The workspace {workspaceName} was deleted, as you asked, with everything in it: its channels, posts, media, analytics, members and API keys.",

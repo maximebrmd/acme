@@ -1,4 +1,4 @@
-import { and, asc, count, eq, gt, ne } from "drizzle-orm";
+import { and, asc, count, eq, gt, inArray, ne } from "drizzle-orm";
 import {
   DateTime,
   Effect,
@@ -14,7 +14,7 @@ import { WorkspaceEntitlements } from "#billing/application/workspace-entitlemen
 import { SendAuthEmail } from "#notifications/application/send-auth-email.ts";
 import { roomForOneMore } from "#shared/domain/allowance.ts";
 import { UserIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
-import type { WorkspaceId } from "#shared/domain/ids.ts";
+import type { UserId, WorkspaceId } from "#shared/domain/ids.ts";
 import { defaultLocale, LocaleSchema } from "#shared/domain/locale.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 import { AlreadyMember } from "#workspace/application/already-member.ts";
@@ -328,11 +328,55 @@ export const WorkspacePeopleLive = Layer.effect(
       return revoked.length > 0;
     });
 
+    const removeMembers = Effect.fn("WorkspacePeople.removeMembers")(
+      function* removeMembers(
+        workspaceId: WorkspaceId,
+        userIds: readonly UserId[]
+      ) {
+        if (userIds.length === 0) {
+          return 0;
+        }
+
+        const removed = yield* db
+          .delete(member)
+          .where(
+            and(
+              eq(member.organizationId, workspaceId),
+              inArray(member.userId, [...userIds])
+            )
+          )
+          .returning({ id: member.id })
+          .pipe(unavailable);
+
+        return removed.length;
+      }
+    );
+
+    const revokeAll = Effect.fn("WorkspacePeople.revokeAll")(
+      function* revokeAll(workspaceId: WorkspaceId) {
+        const revoked = yield* db
+          .update(invitation)
+          .set({ status: "canceled" })
+          .where(
+            and(
+              eq(invitation.organizationId, workspaceId),
+              eq(invitation.status, "pending")
+            )
+          )
+          .returning({ id: invitation.id })
+          .pipe(unavailable);
+
+        return revoked.length;
+      }
+    );
+
     return WorkspacePeople.of({
       invite,
       members,
       pendingInvitations,
+      removeMembers,
       revoke,
+      revokeAll,
     });
   })
 );

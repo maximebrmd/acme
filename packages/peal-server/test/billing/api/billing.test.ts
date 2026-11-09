@@ -9,11 +9,14 @@ import { BillingOverview } from "#billing/application/billing-overview.ts";
 import { BillingMode } from "#billing/application/ports/billing-mode.ts";
 import { WorkspaceUsage } from "#billing/application/ports/workspace-usage.ts";
 import { WorkspaceEntitlements } from "#billing/application/workspace-entitlements.ts";
+import { WorkspaceStanding } from "#billing/application/workspace-standing.ts";
 import { BillingApiLive } from "#billing/container.ts";
 import type { Permission } from "#shared/domain/access.ts";
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import {
+  NoAddressesTest,
   NoTrialsTest,
+  PlainPseudonymsTest,
   subscriptionOf,
   subscriptionsHolding,
 } from "#test/billing/support.ts";
@@ -64,11 +67,12 @@ const UsageTest = Layer.succeed(
 );
 
 const overviewOn = (enabled: boolean) =>
-  BillingOverview.layer.pipe(
+  Layer.mergeAll(BillingOverview.layer, WorkspaceStanding.layer).pipe(
     Layer.provide(UsageTest),
     Layer.provide(WorkspaceEntitlements.layer),
     Layer.provide(SubscriptionsTest),
     Layer.provide(NoTrialsTest),
+    Layer.provide(Layer.mergeAll(NoAddressesTest, PlainPseudonymsTest)),
     Layer.provide(Layer.succeed(BillingMode, BillingMode.of({ enabled })))
   );
 
@@ -158,6 +162,20 @@ layer(overviewOn(true))("the billing endpoint on a server that bills", (it) => {
         assert.notInclude(JSON.stringify(billing), "cus_synthetic");
         assert.notInclude(JSON.stringify(billing), "sub_synthetic");
       })
+  );
+
+  it.effect("tell every member where the workspace stands", () =>
+    Effect.gen(function* stands() {
+      const client = yield* as(permissionsFor("viewer"));
+
+      assert.deepStrictEqual(yield* client.billing.standing({ params }), {
+        mustReduce: false,
+        over: [],
+        plan: "pro",
+        planWithRoom: null,
+        scheduledPosts: 12,
+      });
+    })
   );
 
   it.effect("answer 403 to a member without billing:read", () =>
