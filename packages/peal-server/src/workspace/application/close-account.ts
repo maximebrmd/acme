@@ -14,6 +14,7 @@ import { AccountStore } from "./account-store.ts";
 import type { AuthUnavailable } from "./auth-unavailable.ts";
 import type { BillingUnavailable } from "./billing-unavailable.ts";
 import { ContextRecords } from "./context-records.ts";
+import type { WorkspaceErasureOptions } from "./context-records.ts";
 import { IncorrectPassword } from "./incorrect-password.ts";
 import { NotSignedIn } from "./not-signed-in.ts";
 import { PasswordCheck } from "./password-check.ts";
@@ -29,17 +30,19 @@ import type { WorkspaceSubscribed } from "./workspace-subscribed.ts";
  * they wrote stay without an author, and their notices, preferences,
  * sessions and OAuth grants go too, in one transaction. It is refused while
  * they are the only owner of a workspace others still use (`planClosure`),
- * and while one of the workspaces it would delete has a subscription Stripe
- * may still bill, or Stripe cannot be reached to expire its open checkouts.
- * A confirmation is emailed to the address the account had,
- * in its language.
+ * and while Stripe cannot be reached. A subscription Stripe may still bill
+ * one of the workspaces it deletes through is cancelled at once, when
+ * `options` says the user agreed to; otherwise the closure is refused
+ * (`WorkspaceSubscribed`, with what cancelling would end). A confirmation
+ * is emailed to the address the account had, in its language.
  */
 export class CloseAccount extends Context.Service<
   CloseAccount,
   {
     readonly close: (
       principal: UserPrincipal,
-      password: Redacted.Redacted
+      password: Redacted.Redacted,
+      options: WorkspaceErasureOptions
     ) => Effect.Effect<
       void,
       | AuthUnavailable
@@ -70,7 +73,8 @@ export class CloseAccount extends Context.Service<
 
       const close = Effect.fn("CloseAccount.close")(function* close(
         principal: UserPrincipal,
-        password: Redacted.Redacted
+        password: Redacted.Redacted,
+        options: WorkspaceErasureOptions
       ) {
         const userId = yield* Effect.fromResult(ownSession(principal));
 
@@ -87,25 +91,48 @@ export class CloseAccount extends Context.Service<
           )
         );
 
-        const deleted = yield* transaction(
+        const { deleted, subscriptionsCancelled } = yield* transaction(
           Effect.gen(function* closeInTransaction() {
             const plan = yield* Effect.fromResult(
               planClosure(yield* store.standings(userId))
             );
 
-            yield* Effect.forEach(plan.deleted, eraseWorkspace, {
-              discard: true,
-            });
+            const erased = yield* Effect.all(
+              plan.deleted.map((workspaceId) =>
+                eraseWorkspace(workspaceId, options)
+              )
+            );
 
             yield* records.eraseUser(userId);
             yield* store.deleteUser(userId);
 
-            return plan.deleted;
+            return {
+              deleted: plan.deleted,
+              subscriptionsCancelled: erased.reduce(
+                (sum, workspace) => sum + workspace.subscriptionsCancelled,
+                0
+              ),
+            };
           })
         );
 
         yield* Effect.forEach(deleted, removeWorkspaceFiles, { discard: true });
-        yield* mail.deleted({ email: user.email, locale: user.locale });
+
+        // Ids only: what a restore of the database must delete again.
+        yield* Effect.logInfo("Closed an account").pipe(
+          Effect.annotateLogs({
+            "event.name": "peal.erasure",
+            subscriptionsCancelled,
+            userId,
+            workspaceIds: deleted.join(","),
+          })
+        );
+
+        yield* mail.deleted({
+          email: user.email,
+          locale: user.locale,
+          subscriptionsCancelled,
+        });
       }, Effect.provideContext(ports));
 
       return CloseAccount.of({ close });

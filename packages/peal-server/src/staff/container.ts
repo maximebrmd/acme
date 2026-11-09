@@ -1,5 +1,6 @@
 import { Layer } from "effect";
 
+import { PurgeAuditLog } from "#staff/application/purge-audit-log.ts";
 import { StaffActions } from "#staff/application/staff-actions.ts";
 import { StaffConsole } from "#staff/application/staff-console.ts";
 import { AccountsModeration } from "#staff/infrastructure/account-moderation.ts";
@@ -7,18 +8,21 @@ import { AccountStaffDirectory } from "#staff/infrastructure/account-staff-direc
 import { ContextSystemHealth } from "#staff/infrastructure/context-system-health.ts";
 import { ContextWorkspaceHealth } from "#staff/infrastructure/context-workspace-health.ts";
 import { DrizzleAuditLog } from "#staff/infrastructure/drizzle-audit-log.ts";
+import { DrizzleExpiredAuditEvents } from "#staff/infrastructure/drizzle-expired-audit-events.ts";
 
 const AdaptersLive = Layer.mergeAll(
   AccountStaffDirectory,
   AccountsModeration,
   ContextSystemHealth,
   ContextWorkspaceHealth,
-  DrizzleAuditLog
+  DrizzleAuditLog,
+  DrizzleExpiredAuditEvents
 );
 
 /**
  * The staff console's use cases: what it reads (StaffConsole) and what staff
- * do, recorded in the audit log (StaffActions). Needs the database (Drizzle
+ * do, recorded in the audit log (StaffActions), and the log's retention
+ * (PurgeAuditLog). Needs the database (Drizzle
  * and SqlClient), Ids, and what the other contexts hand staff: the
  * workspace context's AccountDirectory and AccountModeration, billing's
  * WorkspaceEntitlements, the channels' ChannelOversight and publishing's
@@ -26,8 +30,12 @@ const AdaptersLive = Layer.mergeAll(
  */
 export const StaffLive = Layer.mergeAll(
   StaffActions.layer,
-  StaffConsole.layer
+  StaffConsole.layer,
+  PurgeAuditLog.layer
 ).pipe(Layer.provide(AdaptersLive));
+
+/** The audit log's daily retention. Needs PurgeAuditLog. */
+export { AuditRetentionCron as StaffCronsLive } from "#staff/infrastructure/crons.ts";
 
 /**
  * What the audit log keeps about a user, for the workspace context when

@@ -42,6 +42,8 @@ Your use of each platform stays subject to that platform's own terms. Platforms 
 
 [Plans and prices, taxes, billing periods, renewals, cancellations and refunds, and the right of withdrawal for consumers in the EU where it applies. Payments are processed by [Payment provider].]
 
+Deleting an organisation, or closing your account so that an organisation is deleted with it, cancels that organisation's subscription at once, once you agree to it on the confirmation screen: nothing more is charged, and the period already paid for is not refunded. [Whether a consumer who withdraws within 14 days of subscribing is refunded the unused part, and how.] Invoices are kept as accounting law requires.
+
 ## Availability and changes to the service
 
 [Service availability, maintenance, and how changes to features are announced.]

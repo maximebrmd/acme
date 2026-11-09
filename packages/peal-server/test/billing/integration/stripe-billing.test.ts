@@ -460,6 +460,93 @@ layer(BillingIntegration, {
       })
   );
 
+  it.effect(
+    "cancels the subscription at Stripe and deletes the workspace once the owner agrees",
+    () =>
+      Effect.gen(function* cancelling() {
+        const app = yield* TestApp;
+        const sql = yield* SqlClient.SqlClient;
+        const delivery = newDelivery();
+
+        const { owner, workspaceId } = yield* billedWorkspace(
+          "cancelling",
+          delivery.customerId
+        );
+
+        assert.strictEqual(
+          yield* deliver(payloadOf("customer.subscription.created", delivery)),
+          200
+        );
+
+        const refused = yield* app.request(`/api/workspaces/${workspaceId}`, {
+          body: { name: "cancelling" },
+          headers: { cookie: owner.cookies },
+          method: "DELETE",
+        });
+
+        // What cancelling ends, for the owner to read before agreeing.
+        assert.strictEqual(refused.status, 409);
+        assert.deepInclude(refused.body, {
+          _tag: "WorkspaceSubscribed",
+          plan: "pro",
+          workspaceId,
+        });
+
+        const deleted = yield* app.request(`/api/workspaces/${workspaceId}`, {
+          body: { cancelSubscriptions: true, name: "cancelling" },
+          headers: { cookie: owner.cookies },
+          method: "DELETE",
+        });
+
+        assert.strictEqual(deleted.status, 204);
+        assert.deepStrictEqual(
+          yield* sql`SELECT
+            (SELECT count(*)::int FROM billing.subscriptions WHERE workspace_id = ${workspaceId}) AS subscriptions,
+            (SELECT count(*)::int FROM auth.organization WHERE id = ${workspaceId}) AS workspaces`,
+          [{ subscriptions: 0, workspaces: 0 }]
+        );
+
+        // Stripe's event for the cancellation finds no workspace, and is
+        // left alone rather than failing for ever.
+        assert.strictEqual(
+          yield* deliver(payloadOf("customer.subscription.deleted", delivery)),
+          200
+        );
+      })
+  );
+
+  it.effect(
+    "closes an account whose workspace is subscribed once its user agrees to cancel",
+    () =>
+      Effect.gen(function* closingSubscribed() {
+        const app = yield* TestApp;
+        const sql = yield* SqlClient.SqlClient;
+        const delivery = newDelivery();
+
+        const { owner, workspaceId } = yield* billedWorkspace(
+          "closing",
+          delivery.customerId
+        );
+
+        assert.strictEqual(
+          yield* deliver(payloadOf("customer.subscription.created", delivery)),
+          200
+        );
+
+        const closed = yield* app.request("/api/me", {
+          body: { cancelSubscriptions: true, password },
+          headers: { cookie: owner.cookies },
+          method: "DELETE",
+        });
+
+        assert.strictEqual(closed.status, 204);
+        assert.deepStrictEqual(
+          yield* sql`SELECT count(*)::int AS count FROM billing.subscriptions WHERE workspace_id = ${workspaceId}`,
+          [{ count: 0 }]
+        );
+      })
+  );
+
   // Stripe sends the member back from checkout, and the sign-in service's
   // plugin records the subscription, before Stripe's own events reach
   // billing.

@@ -51,6 +51,6 @@ Les points d’accès d’administration de Better Auth sous `/api/auth/admin/` 
 
 ## Le journal d’audit [#audit-log]
 
-Chaque action est inscrite avant d’être menée, afin que rien de ce que fait l’équipe ne passe inaperçu : qui l’a faite, quoi, sur quel compte, pourquoi et quand, avec la fin d’un bannissement. Une action qui a ensuite échoué montre tout de même ce que l’équipe a demandé. Le journal garde des identifiants, jamais ce que quiconque a écrit, et garde ses entrées pour de bon.
+Chaque action est inscrite avant d’être menée, afin que rien de ce que fait l’équipe ne passe inaperçu : qui l’a faite, quoi, sur quel compte, pourquoi et quand, avec la fin d’un bannissement. Une action qui a ensuite échoué montre tout de même ce que l’équipe a demandé. Le journal garde des identifiants, jamais ce que quiconque a écrit. Il garde chaque entrée 12 mois, et un bannissement, ou sa levée, 3 ans, ou 12 mois après la fin d’un bannissement plus long : une tâche quotidienne (`staff.audit-retention`, à 03 h 41 UTC) supprime les entrées plus anciennes.
 
 Quand un compte est fermé, le journal l’oublie en tant que compte visé : les entrées à son sujet perdent son identifiant et le motif donné. Celles qu’il a faites en tant qu’équipe gardent leur auteur, au titre d’un intérêt légitime : qui fait tourner le serveur répond de ce que l’équipe a fait aux comptes des autres, y compris après son départ. Ce qui a été fait, et quand, reste. Le téléchargement des données du compte liste ce que l’équipe lui a fait, avec le motif donné, mais pas qui l’a fait.

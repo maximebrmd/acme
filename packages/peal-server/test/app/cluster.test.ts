@@ -47,6 +47,7 @@ import { DatabaseLive } from "#shared/infrastructure/database.ts";
 import { MigrationsLive } from "#shared/infrastructure/migrations.ts";
 import { IdsLive } from "#shared/infrastructure/secure-random-ids.ts";
 import { TransactionRunnerLive } from "#shared/infrastructure/transaction-runner-live.ts";
+import { PurgeAuditLog } from "#staff/application/purge-audit-log.ts";
 import { RecordingPublicationOutcomes } from "#test/publishing/infrastructure/recorded-outcomes.ts";
 import {
   actorIn,
@@ -83,9 +84,11 @@ const Ticks = ClusterCron.make({
 });
 
 // The jobs the server's crons call, doing nothing: a real sweep would
-// refresh, or mark, the channels other suites keep in this database, and a
-// real collection read their posts.
+// refresh, or mark, the channels other suites keep in this database, a
+// real collection read their posts, and a real purge delete their audit
+// events.
 const ChannelJobsTest = Layer.mergeAll(
+  Layer.succeed(PurgeAuditLog, PurgeAuditLog.of({ purge: Effect.succeed(0) })),
   Layer.succeed(
     CollectMetrics,
     CollectMetrics.of({

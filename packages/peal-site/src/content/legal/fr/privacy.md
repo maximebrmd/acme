@@ -77,20 +77,23 @@ Les données personnelles sont partagées avec les prestataires qui aident à fa
 
 Les plateformes sur lesquelles vous publiez reçoivent les contenus que vous y publiez. Elles les traitent en tant que responsables du traitement, selon leurs propres politiques de confidentialité.
 
+Les membres d’une organisation voient le nom, l’adresse e-mail et le rôle des autres membres. Un membre peut autoriser une application de son choix, comme un assistant d’IA connecté par MCP, à lire ce qu’il voit dans l’organisation, y compris cette liste ; le fournisseur de cette application la traite selon ses propres conditions. Les outils MCP de Peal ne donnent l’adresse e-mail des membres que lorsque l’application la demande.
+
 ## Transferts internationaux
 
 [Indiquer si des données personnelles quittent l’Espace économique européen, vers quels pays, et la garantie de chaque transfert, comme une décision d’adéquation ou des clauses contractuelles types.]
 
 ## Durées de conservation
 
-| Données                             | Durée de conservation                                                                  |
-| ----------------------------------- | -------------------------------------------------------------------------------------- |
-| Données de compte et d’organisation | [Durée]                                                                                |
-| Contenus et données de performance  | [Durée]                                                                                |
-| Jetons des comptes connectés        | [Durée]                                                                                |
-| Pièces de facturation               | [Durée imposée par le droit comptable]                                                 |
-| Journaux techniques                 | [Durée]                                                                                |
-| Sauvegardes                         | [Délai au-delà duquel les données supprimées n’apparaissent plus dans les sauvegardes] |
+| Données                                          | Durée de conservation                                                                                                                             |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Données de compte et d’organisation              | [Durée]                                                                                                                                           |
+| Contenus et données de performance               | [Durée]                                                                                                                                           |
+| Jetons des comptes connectés                     | [Durée]                                                                                                                                           |
+| Pièces de facturation                            | [Durée imposée par le droit comptable]                                                                                                            |
+| Journaux techniques                              | Journaux du serveur 31 jours, traces 14 jours, métriques 30 jours                                                                                 |
+| Registre des actions de l’équipe sur les comptes | 12 mois ; un bannissement et sa levée 3 ans, ou 12 mois après la fin d’un bannissement plus long. La fermeture d’un compte l’en retire aussitôt   |
+| Sauvegardes                                      | Les données supprimées disparaissent des sauvegardes chiffrées sous 5 semaines. Une sauvegarde n’est restaurée que pour se remettre d’un incident |
 
 ## Vos droits
 
@@ -104,7 +107,7 @@ En vertu du RGPD, vous avez le droit :
 - de vous opposer à un traitement fondé sur des intérêts légitimes (article 21) ;
 - de retirer votre consentement à tout moment lorsqu’un traitement repose sur celui-ci, sans remettre en cause le traitement effectué auparavant (article 7, paragraphe 3).
 
-Pour exercer ces droits, écrivez à privacy@peal.social. Le RGPD impose une réponse dans un délai d’un mois, qui peut être prolongé dans certains cas (article 12, paragraphe 3). [Décrire comment l’identité du demandeur est vérifiée.]
+Vous pouvez télécharger une copie de vos données à tout moment depuis les paramètres de votre compte, ou avec la ligne de commande ; nous vous prévenons par e-mail à chaque téléchargement, afin qu’une copie prise par quelqu’un d’autre ne passe pas inaperçue. Pour exercer ces droits, écrivez à privacy@peal.social. Le RGPD impose une réponse dans un délai d’un mois, qui peut être prolongé dans certains cas (article 12, paragraphe 3). [Décrire comment l’identité du demandeur est vérifiée.]
 
 Vous avez aussi le droit d’introduire une réclamation auprès d’une autorité de contrôle, notamment dans le pays de l’UE où vous résidez, où vous travaillez ou où vous pensez que la violation a eu lieu (article 77). [Nommer l’autorité de contrôle chef de file.]
 

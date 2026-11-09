@@ -57,6 +57,11 @@ export interface MediaRecord {
   readonly byteSize: number;
   readonly contentType: string;
   readonly createdAt: DateTime.Utc;
+  /**
+   * A link that downloads the file for a few days, for a file the store
+   * holds; null for one never uploaded, or refused.
+   */
+  readonly downloadUrl: string | null;
   readonly durationMs: number | null;
   readonly height: number | null;
   readonly id: string;

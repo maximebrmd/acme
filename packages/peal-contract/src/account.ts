@@ -129,6 +129,9 @@ const ExportedMediaSchema = Schema.Struct({
   byteSize: Schema.Int,
   contentType: Schema.String,
   createdAt: instant,
+  // A link that downloads the file for 7 days; null for a file never
+  // uploaded, or refused.
+  downloadUrl: nullable(Schema.String),
   durationMs: nullable(Schema.Int),
   height: nullable(Schema.Int),
   id: Schema.String,
@@ -230,8 +233,16 @@ export const AccountExportSchema = Schema.Struct({
 
 export type AccountExport = typeof AccountExportSchema.Type;
 
-/** What confirms an account's deletion: its password. */
+/**
+ * What confirms an account's deletion: its password, and, when a workspace
+ * it deletes has a subscription Stripe may still bill, the user's
+ * agreement to cancel it.
+ */
 export const DeleteAccountSchema = Schema.Struct({
+  // The user agreed that the subscriptions of the workspaces it deletes
+  // end now, without a refund of the period paid for. Without it, such a
+  // workspace answers WorkspaceSubscribed.
+  cancelSubscriptions: Schema.optionalKey(Schema.Boolean),
   password: Schema.String,
 }).annotate({ identifier: "DeleteAccount" });
 
@@ -254,7 +265,7 @@ export class AccountApi extends HttpApiGroup.make("account")
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Answers with a JSON copy of everything Peal keeps about the user, as a file to save: their account, how they sign in, their sessions, memberships, invitations, connected applications, notices and preferences, the posts they wrote in the workspaces they share, and the channels, posts, media details, analytics, API keys, assistant usage and billing state (plan and subscription status) of the workspaces where they are the only member. It holds no secret: no password, token, key or card. Open to the user in their own session and to Peal's command line, never to another OAuth client: an MCP client would hand all of it to an AI model.",
+          "Answers with a JSON copy of everything Peal keeps about the user, as a file to save: their account, how they sign in, their sessions, memberships, invitations, connected applications, notices and preferences, what staff did to their account (action, time and reason, not who), the posts they wrote in the workspaces they share, and the channels, posts, media details, analytics, API keys, assistant usage and billing state (plan and subscription status) of the workspaces where they are the only member. It holds no secret: no password, token, key or card. Open to the user in their own session and to Peal's command line, never to another OAuth client: an MCP client would hand all of it to an AI model. Each copy is emailed to the account's address, saying whether the web app or the command line took it.",
         summary: "Export my data",
       })
     ),
@@ -273,7 +284,7 @@ export class AccountApi extends HttpApiGroup.make("account")
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Deletes the account for good, once `password` confirms it is the user asking: the workspaces where they are the only member, with everything in them, their memberships of the others, where the posts they wrote stay without an author, their sessions, notices, preferences, invitations and connected applications. Refused (409) while they are the only owner of a workspace that has other members (`LastOwner`), while a post of a workspace it would delete is being published (`WorkspaceBusy`), and while one of those workspaces has a subscription Stripe may still bill (`WorkspaceSubscribed`); (503) when Stripe cannot be reached to expire the open checkouts of the workspaces it would delete (`BillingUnavailable`); and (429) for a few seconds after three passwords tried within 10 seconds, as signing in is. A confirmation is emailed to the address the account had.",
+          "Deletes the account for good, once `password` confirms it is the user asking: the workspaces where they are the only member, with everything in them, their memberships of the others, where the posts they wrote stay without an author, their sessions, notices, preferences, invitations and connected applications. Refused (409) while they are the only owner of a workspace that has other members (`LastOwner`), while a post of a workspace it would delete is being published (`WorkspaceBusy`), and while one of those workspaces has a subscription Stripe may still bill (`WorkspaceSubscribed`, with its plan and the end of the period paid for) unless `cancelSubscriptions` is `true`, which cancels those subscriptions at Stripe at once, without a refund of the period paid for or any further charge; (503) when Stripe cannot be reached (`BillingUnavailable`), and nothing is deleted; and (429) for a few seconds after three passwords tried within 10 seconds, as signing in is. A confirmation is emailed to the address the account had.",
         summary: "Delete my account",
       })
     )

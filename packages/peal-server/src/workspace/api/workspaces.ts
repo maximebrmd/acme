@@ -8,13 +8,13 @@ import {
   WorkspaceBusy,
   WorkspaceNameMismatch,
   WorkspaceNotFound,
-  WorkspaceSubscribed,
 } from "peal-contract";
 
 import { actorOf } from "#shared/api/actor.ts";
 import { DeleteWorkspace } from "#workspace/application/delete-workspace.ts";
 
 import { userPrincipalOf } from "./principal.ts";
+import { subscribedOf } from "./subscribed.ts";
 
 const forbidden = () => Effect.fail(new Forbidden());
 
@@ -35,29 +35,33 @@ export const WorkspacesHandlers = HttpApiBuilder.group(
               ? userPrincipalOf(member.principal)
               : yield* new Forbidden();
 
-          yield* deletion.delete(actorOf(member), principal, payload.name).pipe(
-            Effect.catchTags({
-              BillingUnavailable: ({ workspaceId }) =>
-                Effect.logWarning(
-                  "Stripe could not be reached to expire a workspace's open checkouts"
-                ).pipe(
-                  Effect.annotateLogs({ workspaceId }),
-                  Effect.andThen(
-                    Effect.fail(new BillingUnavailable({ workspaceId }))
-                  )
-                ),
-              DatabaseError: Effect.die,
-              MissingPermission: forbidden,
-              NotAMember: () => Effect.fail(new WorkspaceNotFound()),
-              SessionRequired: forbidden,
-              WorkspaceBusy: ({ workspaceId }) =>
-                Effect.fail(new WorkspaceBusy({ workspaceId })),
-              WorkspaceNameMismatch: () =>
-                Effect.fail(new WorkspaceNameMismatch()),
-              WorkspaceSubscribed: ({ workspaceId }) =>
-                Effect.fail(new WorkspaceSubscribed({ workspaceId })),
+          yield* deletion
+            .delete(actorOf(member), principal, payload.name, {
+              cancelSubscriptions: payload.cancelSubscriptions === true,
             })
-          );
+            .pipe(
+              Effect.catchTags({
+                BillingUnavailable: ({ workspaceId }) =>
+                  Effect.logWarning(
+                    "Stripe could not be reached to expire a workspace's open checkouts"
+                  ).pipe(
+                    Effect.annotateLogs({ workspaceId }),
+                    Effect.andThen(
+                      Effect.fail(new BillingUnavailable({ workspaceId }))
+                    )
+                  ),
+                DatabaseError: Effect.die,
+                MissingPermission: forbidden,
+                NotAMember: () => Effect.fail(new WorkspaceNotFound()),
+                SessionRequired: forbidden,
+                WorkspaceBusy: ({ workspaceId }) =>
+                  Effect.fail(new WorkspaceBusy({ workspaceId })),
+                WorkspaceNameMismatch: () =>
+                  Effect.fail(new WorkspaceNameMismatch()),
+                WorkspaceSubscribed: (refused) =>
+                  Effect.fail(subscribedOf(refused)),
+              })
+            );
         }),
     });
   })

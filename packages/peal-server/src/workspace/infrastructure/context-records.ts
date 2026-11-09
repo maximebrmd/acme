@@ -42,20 +42,10 @@ export const ContextRecordsLive = Layer.effect(
         }
       ),
       eraseWorkspace: Effect.fn("ContextRecords.eraseWorkspace")(
-        function* eraseWorkspace(workspaceId) {
-          // Billing first: a workspace Stripe may still bill is refused
-          // before anything of it goes, and its open checkouts are expired.
-          yield* billing.eraseWorkspace(workspaceId).pipe(
-            Effect.catchTags({
-              StripeUnreachable: () =>
-                Effect.fail(new BillingUnavailable({ workspaceId })),
-              WorkspaceStillBilled: () =>
-                Effect.fail(new WorkspaceSubscribed({ workspaceId })),
-            })
-          );
-
-          // Then posts: they stop the jobs that would post to the
-          // channels, and refuse while one is going out.
+        function* eraseWorkspace(workspaceId, options) {
+          // Posts first: they stop the jobs that would post to the
+          // channels, and refuse while one is going out, before Stripe is
+          // asked anything.
           yield* posts
             .eraseWorkspace(workspaceId)
             .pipe(
@@ -69,6 +59,21 @@ export const ContextRecordsLive = Layer.effect(
           yield* media.eraseWorkspace(workspaceId);
           yield* notices.eraseWorkspace(workspaceId);
           yield* usage.eraseWorkspace(workspaceId);
+
+          // Billing last, still in the transaction: a workspace Stripe may
+          // still bill is refused unless the person agreed to cancel, its
+          // open checkouts are expired, and its subscriptions cancelled
+          // only once nothing else can refuse the erasure.
+          return yield* billing.eraseWorkspace(workspaceId, options).pipe(
+            Effect.catchTags({
+              StripeUnreachable: () =>
+                Effect.fail(new BillingUnavailable({ workspaceId })),
+              WorkspaceStillBilled: ({ paidUntil, plan }) =>
+                Effect.fail(
+                  new WorkspaceSubscribed({ paidUntil, plan, workspaceId })
+                ),
+            })
+          );
         }
       ),
       exportAuthoredPosts: (userId, workspaceIds) =>

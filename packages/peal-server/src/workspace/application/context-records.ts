@@ -21,6 +21,21 @@ import type { WorkspaceBusy } from "./workspace-busy.ts";
 import type { WorkspaceFilesRemain } from "./workspace-files-remain.ts";
 import type { WorkspaceSubscribed } from "./workspace-subscribed.ts";
 
+/** How erasing a workspace treats a subscription Stripe may still bill. */
+export interface WorkspaceErasureOptions {
+  /**
+   * Cancel it at Stripe, at once, as the person deleting agreed to;
+   * otherwise the erasure is refused (`WorkspaceSubscribed`).
+   */
+  readonly cancelSubscriptions: boolean;
+}
+
+/** What erasing a workspace ended outside Peal. */
+export interface ErasedWorkspace {
+  /** The subscriptions cancelled at Stripe. */
+  readonly subscriptionsCancelled: number;
+}
+
 /** What the other contexts keep in a workspace. */
 export interface WorkspaceContent {
   readonly analytics: readonly AnalyticsRecord[];
@@ -62,14 +77,17 @@ export class ContextRecords extends Context.Service<
     ) => Effect.Effect<readonly AuthoredPostRecord[], DatabaseError>;
     /**
      * Deletes everything of the workspace, stopping its scheduled posts and
-     * expiring its open checkouts at Stripe. Refused, before anything is
-     * deleted, while Stripe may still bill it or cannot be reached, and
-     * while one of its posts is being published.
+     * expiring its open checkouts at Stripe, and, when `options` says to,
+     * cancelling at Stripe the subscriptions that may still bill it.
+     * Refused, before anything is deleted, while one of its posts is being
+     * published, while Stripe may still bill it and `options` does not say
+     * to cancel, and while Stripe cannot be reached.
      */
     readonly eraseWorkspace: (
-      workspaceId: WorkspaceId
+      workspaceId: WorkspaceId,
+      options: WorkspaceErasureOptions
     ) => Effect.Effect<
-      void,
+      ErasedWorkspace,
       BillingUnavailable | DatabaseError | WorkspaceBusy | WorkspaceSubscribed
     >;
     /**

@@ -706,12 +706,36 @@ layer(Layer.mergeAll(IntegrationLive, StoreLive), {
         );
         assert.notInclude(text, "Synthetic reason about someone else");
         assert.deepStrictEqual(
-          own?.media.map(({ contentType, status }) => ({
+          own?.media.map(({ contentType, downloadUrl, status }) => ({
             contentType,
+            downloadUrl,
             status,
           })),
-          [{ contentType: "image/png", status: "pending" }]
+          [{ contentType: "image/png", downloadUrl: null, status: "pending" }]
         );
+
+        // Once the store holds the file, the copy links to it, as the
+        // user provided it.
+        yield* sql`UPDATE media.media_assets SET status = 'uploaded', probe_state = 'pending' WHERE workspace_id = ${atelier}`;
+
+        const withFile = yield* decodeExport(
+          (yield* app.request("/api/me/export", {
+            headers: { cookie: lee.cookies },
+          })).body
+        );
+
+        const link =
+          withFile.workspaces.find(({ id }) => id === atelier)?.media[0]
+            ?.downloadUrl ?? "";
+
+        const downloaded = yield* Effect.promise(async () => {
+          const response = await fetch(link);
+          const body = await response.arrayBuffer();
+
+          return body.byteLength;
+        });
+
+        assert.strictEqual(downloaded, 128);
         assert.deepStrictEqual(
           own?.apiKeys.map(({ name }) => name),
           ["ci"]

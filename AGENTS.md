@@ -370,17 +370,31 @@ and no socket, for tests.
   `test/workspace/integration/erasure.test.ts`, which fails on a table that
   does not say what becomes of its rows (deleted, left without the user, or
   kept because they name nobody).
-- `ContextRecords.eraseWorkspace` asks billing first: `BillingRecords`
-  refuses a workspace Stripe may still bill (`stillBills`, or a status the
-  Stripe plugin's `auth.subscription` holds that `billsAt` bills, as a
-  checkout can complete before Stripe's events come), before anything
-  goes, then expires the workspace's open Checkout Sessions at Stripe
-  (`Checkouts`, which the workspace context's `StripeCheckoutsLive` backs),
-  and refuses still while Stripe itself holds a subscription that `billsAt`
-  bills (`Checkouts.atStripe`), as a checkout completed unseen leaves one.
-  `DeleteWorkspace` and `CloseAccount`, for the workspaces it deletes,
-  answer `WorkspaceSubscribed` (409), or `BillingUnavailable` (503) when
-  Stripe does not answer. Closing an account leaves the
+- `ContextRecords.eraseWorkspace` erases posts first, which refuse while
+  one goes out, and billing last, in the same transaction, so nothing else
+  can refuse once Stripe has cancelled anything. `BillingRecords` finds what
+  Stripe may still bill (`stillBills`, a status the Stripe plugin's
+  `auth.subscription` holds that `billsAt` bills, as a checkout can complete
+  before Stripe's events come, or a subscription Stripe itself holds,
+  `Checkouts.atStripe`, as a checkout completed unseen leaves one) and
+  expires the workspace's open Checkout Sessions (`Checkouts`, which the
+  workspace context's `StripeCheckoutsLive` backs). Without the person's
+  agreement (`cancelSubscriptions`, in `DeleteWorkspaceSchema` and
+  `DeleteAccountSchema`), a billed workspace is refused: `DeleteWorkspace`
+  and `CloseAccount` answer `WorkspaceSubscribed` (409) with the plan and
+  `paidUntil`, which the web app's dialogs show (`SubscriptionCancellation`)
+  until the box is ticked. With it, `Checkouts.cancelBilled` cancels every
+  such subscription at once, `prorate: false` and `invoice_now: false`: the
+  period paid for is not refunded and nothing more is charged. The Stripe
+  customer and its invoices stay with Stripe (accounting law keeps invoices
+  10 years); Stripe's event for the cancellation finds no workspace and is
+  left alone. Stripe not answering is `BillingUnavailable` (503), and the
+  transaction rolls back: nothing is deleted. A subscription cancelled for
+  an account closure that a later workspace then refuses stays cancelled;
+  the workspace stays, on the free plan. The owner is emailed
+  (`AccountMail.workspaceDeleted`, `deleted`), saying what was cancelled,
+  and each erasure is logged by id (`event.name` `peal.erasure`) for the
+  restore runbook. Closing an account leaves the
   posts its user wrote in the workspaces that remain without an author
   (`PostRecords.forgetAuthor`: `author_id` has no foreign key), and drops the
   connections and account choices they had in progress
@@ -391,7 +405,11 @@ and no socket, for tests.
   audit log (`StaffRecords.forgetUser`), the events about the account lose
   its id and the reason given; the events its user made as staff keep
   their id, a legitimate interest: the operator answers for what staff did
-  to other people's accounts. YouTube's upload journal goes with its
+  to other people's accounts. The log keeps an event 12 months, a ban or
+  unban 3 years or 12 months past a longer ban's end
+  (`staff/domain/audit-retention.ts`); the `staff.audit-retention` cron
+  (`PurgeAuditLog`) deletes the rest daily, the log's one deletion besides
+  `forgetUser`. YouTube's upload journal goes with its
   publication calls, and `publishing.quota_usage`, the server's daily
   units, names nobody.
 - `AccountData` exports what is tied to the user, the posts they wrote in
@@ -403,7 +421,11 @@ and no socket, for tests.
   export lists what staff did to the account (action, time, reason),
   without who did it. Sessions staff opened to impersonate
   the user are left out, as Better Auth's own list leaves them out: their
-  browser and address are staff's. Closing an account is refused while its
+  browser and address are staff's. Each media file the store holds comes
+  with a link that downloads it for 7 days (`downloadUrl`), and each export
+  is emailed to the account (`AccountMail.exported`, saying web or command
+  line), so a copy taken with a stolen session or a phished device code is
+  noticed. Closing an account is refused while its
   user alone owns a workspace others use (`planClosure`), and its
   confirmation is emailed in their language. `PasswordCheck` checks a
   password three times within 10 seconds per account at most, as Better
@@ -864,9 +886,12 @@ and no socket, for tests.
   when `STRIPE_AUTOMATIC_TAX` is on. A workspace Stripe may still bill
   (`billsAt`: any status but cancelled or incomplete, unpaid and paused
   included, in `billing.subscriptions` or the plugin's `auth.subscription`)
-  is not deleted: Peal's own deletions ask `BillingRecords` first (see
-  Accounts and access), which also expires its open checkouts. Better
-  Auth's `/organization/delete` is disabled, so its hook refuses nothing.
+  is deleted only once the person agrees to cancel its subscriptions, which
+  `BillingRecords` then does at Stripe at once, without proration (see
+  Accounts and access); it also expires its open checkouts. Better Auth's
+  `/organization/delete` is disabled, so its hook refuses nothing. To stop
+  paying and keep the workspace, members use the portal, which cancels at
+  the period's end.
 - Never call Stripe in tests: checkout and the portal run against
   stripe-mock, and webhooks post the payloads in
   `test/billing/fixtures/webhooks`, signed in the test.
@@ -953,7 +978,9 @@ and no socket, for tests.
   `reports-tools.ts`, `people-tools.ts`) and its handlers beside it, merged
   into `PealTools`. Annotate every tool with `reading`, or
   `changing({ destructive, idempotent, openWorld })` from `annotations.ts`,
-  and say in its description what it changes. Refusals are `ToolRefused`,
+  and say in its description what it changes. `list_members` answers
+  members' email addresses only with `includeEmails`: hand an AI model no
+  more personal data than the task needs. Refusals are `ToolRefused`,
   with a message the user can act on (`refusals.ts`). The account's own
   data (its export, its applications) has no tool.
 - What the web app's composer sends, the CLI and the tools send too: a
@@ -1302,9 +1329,15 @@ self-hoster needs only Postgres and an S3-compatible store:
   `release.yml` builds the images on the machine running Ansible and uploads
   them. Credentials outside services issue come from a Git-ignored vault or
   are written on the server, and Ansible checks them by name only.
+- Telemetry keeps logs 31 days (Loki), traces 14 days
+  (`config/production/tempo.yaml`, whose `block_retention` is set for both
+  the backend scheduler and worker) and metrics 30 days, as the privacy
+  policy says: change both together.
 - Postgres archives its write-ahead log and is backed up to R2 with
   pgBackRest; the backup passphrase is the one secret kept outside the server
-  too. `runbooks/restore-database.md` restores it. The server migrates when it
+  too. R2 buckets are in its EU jurisdiction (`<account>.eu.r2…`). A restore
+  brings back deletions made since its point in time: the runbook lists them
+  from the `peal.erasure` logs, which nothing yet applies again. `runbooks/restore-database.md` restores it. The server migrates when it
   starts, so write migrations that the previous release can still run
   against, and roll back by releasing the previous commit.
 - Changing a server's size or adding any paid resource needs the owner's

@@ -53,6 +53,7 @@ describe(renderAuthEmail, () => {
     const inEnglish = renderAuthEmail({
       _tag: "AccountDeleted",
       locale: "en",
+      subscriptionsCancelled: 0,
       to: "ada@example.test",
       url: "https://app.example.test",
     });
@@ -60,6 +61,7 @@ describe(renderAuthEmail, () => {
     const inFrench = renderAuthEmail({
       _tag: "AccountDeleted",
       locale: "fr",
+      subscriptionsCancelled: 0,
       to: "ada@example.test",
       url: "https://app.example.test/fr",
     });
@@ -70,6 +72,64 @@ describe(renderAuthEmail, () => {
     expect(inFrench.text).toContain(
       "Ouvrir Peal\u00A0: https://app.example.test/fr"
     );
+  });
+
+  it("says when deleting cancelled subscriptions, and that nothing more is charged", () => {
+    const account = renderAuthEmail({
+      _tag: "AccountDeleted",
+      locale: "en",
+      subscriptionsCancelled: 1,
+      to: "ada@example.test",
+      url: "https://app.example.test",
+    });
+
+    expect(account.text).toContain("nothing more is charged");
+    expect(
+      renderAuthEmail({
+        _tag: "AccountDeleted",
+        locale: "en",
+        subscriptionsCancelled: 0,
+        to: "ada@example.test",
+        url: "https://app.example.test",
+      }).text
+    ).not.toContain("nothing more is charged");
+
+    const workspace = renderAuthEmail({
+      _tag: "WorkspaceDeleted",
+      locale: "fr",
+      subscriptionsCancelled: 1,
+      to: "ada@example.test",
+      url: "https://app.example.test/fr/app",
+      workspaceName: 'Studio "Nord"',
+    });
+
+    expect(workspace.subject).toBe(
+      'L’espace de travail Studio "Nord" est supprimé'
+    );
+    expect(workspace.text).toContain("plus rien n’est facturé");
+    expect(workspace.html).toContain(escapeHtml('Studio "Nord"'));
+  });
+
+  it("tells the account a copy of its data was taken, and from where", () => {
+    const web = renderAuthEmail({
+      _tag: "DataExported",
+      locale: "en",
+      to: "ada@example.test",
+      url: "https://app.example.test/app/account",
+      via: "web",
+    });
+
+    const terminal = renderAuthEmail({
+      _tag: "DataExported",
+      locale: "fr",
+      to: "ada@example.test",
+      url: "https://app.example.test/fr/app/account",
+      via: "commandLine",
+    });
+
+    expect(web.subject).toBe("A copy of your Peal data was downloaded");
+    expect(web.text).toContain("from the web app");
+    expect(terminal.text).toContain("depuis la ligne de commande");
   });
 
   it("names the role an invitation offers, with French elision", () => {

@@ -1,7 +1,12 @@
 import { describe, expect, it } from "@effect/vitest";
-import { Cause, Exit, Option } from "effect";
+import { Cause, DateTime, Exit, Option } from "effect";
+import { WorkspaceSubscribed } from "peal-contract";
 
-import { apiErrorKey, settingsErrorKey } from "#settings/errors.ts";
+import {
+  apiErrorKey,
+  settingsErrorKey,
+  subscriptionToCancel,
+} from "#settings/errors.ts";
 
 describe(settingsErrorKey, () => {
   it.each([
@@ -52,5 +57,38 @@ describe(apiErrorKey, () => {
     expect(apiErrorKey(Exit.failCause(Cause.die("offline")))).toStrictEqual(
       Option.some("unknown")
     );
+  });
+});
+
+describe(subscriptionToCancel, () => {
+  const paidUntil = DateTime.makeUnsafe("2026-12-09T10:00:00Z");
+
+  it("tells what a deletion would cancel, for the person to agree to", () => {
+    expect(
+      subscriptionToCancel(
+        Exit.fail(
+          new WorkspaceSubscribed({
+            paidUntil,
+            plan: "pro",
+            workspaceId: "6b1c8d0e-9f7a-4eb5-8a21-7c8d9eafb0c1",
+          })
+        )
+      )
+    ).toStrictEqual(
+      Option.some({
+        paidUntil: Option.some(paidUntil),
+        plan: Option.some("pro"),
+        workspaceId: "6b1c8d0e-9f7a-4eb5-8a21-7c8d9eafb0c1",
+      })
+    );
+  });
+
+  it("is none for any other ending", () => {
+    expect(subscriptionToCancel(Exit.succeed("done"))).toStrictEqual(
+      Option.none()
+    );
+    expect(
+      subscriptionToCancel(Exit.fail({ _tag: "WorkspaceBusy" }))
+    ).toStrictEqual(Option.none());
   });
 });
