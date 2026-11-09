@@ -121,8 +121,8 @@ and Next.js ships its docs in `packages/acme-web/node_modules/next/dist/docs`.
   emails they send from the stack's Mailpit (`SMTP_URL` and `MAILPIT_URL`
   override it), store media in its SeaweedFS under `tests/media/`
   (`ACME_S3_*` override it), and call its stripe-mock (`STRIPE_MOCK_URL`
-  overrides it). CI runs its own Postgres and Mailpit, and starts SeaweedFS
-  and stripe-mock from `compose.yaml`.
+  overrides it). CI runs its own Postgres, Mailpit and stripe-mock, pinned
+  by digest, and starts SeaweedFS from `compose.yaml`.
 - Tests that share a database with a running dev server share its jobs: leave
   no post scheduled or job waiting when a test ends, or the dev server runs
   it. Give each run its own database or `ACME_S3_KEY_PREFIX` when several run

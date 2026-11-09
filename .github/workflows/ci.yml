@@ -16,8 +16,9 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    # The server's tests run against a real, throwaway database, and read the
-    # emails they send from Mailpit.
+    # The server's tests run against a real, throwaway database, read the
+    # emails they send from Mailpit, and check checkout and the billing portal
+    # against stripe-mock.
     services:
       postgres:
         image: postgres:18.6-alpine@sha256:123b17998ccaf47e53b502e8c6a1e79afd8f579c6f3eec83c563da026f957395
@@ -44,6 +45,15 @@ jobs:
           --health-interval 2s
           --health-timeout 5s
           --health-retries 15
+      stripe-mock:
+        image: stripe/stripe-mock:v0.206.0@sha256:aeb96b83e87a893d2ac005e363ac01ffa6e59a5ad85b49c155dfc9129de02e78
+        ports:
+          - 12111:12111
+        options: >-
+          --health-cmd "nc -z 127.0.0.1 12111"
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 15
     env:
       DO_NOT_TRACK: "1"
       NX_NO_CLOUD: "true"
@@ -66,14 +76,14 @@ jobs:
       - run: bun run check
       - run: bun run typecheck
       # The media tests store files in the development stack's S3 store, on
-      # the port and synthetic credentials compose.yaml defaults to, and the
-      # billing tests call its stripe-mock.
-      - run: docker compose --file packages/acme-docker/compose.yaml up --detach --wait seaweedfs stripe-mock
+      # the port and synthetic credentials compose.yaml defaults to.
+      - run: docker compose --file packages/acme-docker/compose.yaml up --detach --wait seaweedfs
       - run: bun run test
         env:
           DATABASE_URL: postgres://acme:acme@localhost:5432/acme
           MAILPIT_URL: http://localhost:8025
           SMTP_URL: smtp://localhost:1025
+          STRIPE_MOCK_URL: http://localhost:12111
       - run: bun run build
 
   # The end-to-end tests: a new member's first steps in Chromium, against the
