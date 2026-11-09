@@ -109,9 +109,13 @@ export const grantOf = (
   return Object.fromEntries(grant);
 };
 
-/** Who acts: a person, possibly impersonated by staff, or an API key. */
+/**
+ * Who acts: a person, possibly impersonated by staff, or through an OAuth
+ * client (`clientId`: the command line, an MCP client), or an API key.
+ */
 export const ActorSubjectSchema = Schema.Union([
   Schema.TaggedStruct("user", {
+    clientId: Schema.optionalKey(Schema.NonEmptyString),
     impersonatedBy: Schema.Option(UserIdSchema),
     userId: UserIdSchema,
   }),

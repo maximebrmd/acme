@@ -88,12 +88,24 @@ const ExportedChannelSchema = Schema.Struct({
   status: Schema.String,
 });
 
+// How a post was created or scheduled: in the web app (`web`), with an API
+// key (`apiKey`) or through an OAuth application (`application`), with the
+// key's or the application's name then.
+const ExportedPostOriginSchema = Schema.Struct({
+  name: nullable(Schema.String),
+  via: Schema.String,
+});
+
 const ExportedPostSchema = Schema.Struct({
+  // How it was created; null on a post from before this was kept.
+  createdVia: nullable(ExportedPostOriginSchema),
   id: Schema.String,
   media: Schema.Array(
     Schema.Struct({ altText: nullable(Schema.String), mediaId: Schema.String })
   ),
   scheduledAt: nullable(instant),
+  // How it was last scheduled; null on a draft, or when it was not kept.
+  scheduledVia: nullable(ExportedPostOriginSchema),
   status: Schema.String,
   targets: Schema.Array(
     Schema.Struct({

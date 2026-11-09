@@ -16,14 +16,28 @@ export interface ChannelRecord {
   readonly status: string;
 }
 
+/**
+ * How a post was created or scheduled: in the web app (`web`), with an API
+ * key (`apiKey`) or through an OAuth application (`application`), with the
+ * key's or the application's name then, never who.
+ */
+export interface PostOriginRecord {
+  readonly name: string | null;
+  readonly via: string;
+}
+
 /** A post of a workspace, with where it went. */
 export interface PostRecord {
+  /** How it was created; null on a post from before this was kept. */
+  readonly createdVia: PostOriginRecord | null;
   readonly id: string;
   readonly media: readonly {
     readonly altText: string | null;
     readonly mediaId: string;
   }[];
   readonly scheduledAt: DateTime.Utc | null;
+  /** How it was last scheduled; null on a draft, or when not kept. */
+  readonly scheduledVia: PostOriginRecord | null;
   readonly status: string;
   readonly targets: readonly {
     readonly channelId: string;

@@ -34,12 +34,20 @@ const instant = (name: string) => timestamp(name, { withTimezone: true });
  * alt text) and `text_overrides`, the text it has instead on some channels.
  * `author_id` is the member who created it (a Better Auth user id), null
  * when an API key did, or for posts from before authors were kept.
+ *
+ * `created_via` and `scheduled_via` say how its creator, and whoever last
+ * scheduled or moved it, reached Peal (the web app, an API key, an OAuth
+ * application, with the key's or the application's id and name: JSON the
+ * domain's `PostOriginSchema` decodes), and `scheduled_by` which member
+ * scheduled it. All null on posts from before they were kept, the last two
+ * on a draft too, and `scheduled_by` when an API key scheduled it.
  */
 export const posts = publishing.table(
   "posts",
   {
     authorId: uuid("author_id"),
     cancelledAt: instant("cancelled_at"),
+    createdVia: jsonb("created_via"),
     executionId: text("execution_id"),
     finishedAt: instant("finished_at"),
     id: uuid("id").primaryKey(),
@@ -48,6 +56,8 @@ export const posts = publishing.table(
     scheduleRevision: integer("schedule_revision").notNull().default(0),
     scheduleZone: text("schedule_zone"),
     scheduledAt: instant("scheduled_at"),
+    scheduledBy: uuid("scheduled_by"),
+    scheduledVia: jsonb("scheduled_via"),
     startedAt: instant("started_at"),
     status: text("status").notNull(),
     text: text("text").notNull().default(""),

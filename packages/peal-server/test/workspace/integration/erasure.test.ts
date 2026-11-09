@@ -162,8 +162,10 @@ const userRows = {
     sql`SELECT count(*)::int AS count FROM notifications.notices WHERE user_id = ${id}`,
   "notifications.notification_preferences": (sql, id) =>
     sql`SELECT count(*)::int AS count FROM notifications.notification_preferences WHERE user_id = ${id}`,
+  // Their posts stay with the workspace, without who wrote or scheduled
+  // them.
   "publishing.posts": (sql, id) =>
-    sql`SELECT count(*)::int AS count FROM publishing.posts WHERE author_id = ${id}`,
+    sql`SELECT count(*)::int AS count FROM publishing.posts WHERE author_id = ${id} OR scheduled_by = ${id}`,
   // What staff did to them: the events stay, without them and without the
   // reason given about them. What they did as staff keeps their id (below).
   // An id the user is named by in a change staff made as someone else goes
@@ -270,6 +272,9 @@ const fill = Effect.fn("fill")(function* fill(
     "finished",
     person.id
   );
+
+  // As a post the person scheduled in the web app keeps it.
+  yield* sql`UPDATE publishing.posts SET created_via = '{"_tag":"web"}'::jsonb, scheduled_via = '{"_tag":"web"}'::jsonb, scheduled_by = ${person.id} WHERE id = ${postId}`;
 
   const [target] =
     yield* sql`SELECT id FROM publishing.post_targets WHERE post_id = ${postId}`.pipe(
@@ -518,7 +523,7 @@ layer(IntegrationLive, {
         ]);
 
         const posts = yield* count(
-          sql`SELECT count(*)::int AS count FROM publishing.posts WHERE workspace_id = ${shared} AND author_id IS NULL`
+          sql`SELECT count(*)::int AS count FROM publishing.posts WHERE workspace_id = ${shared} AND author_id IS NULL AND scheduled_by IS NULL AND scheduled_via ->> '_tag' = 'web'`
         );
 
         assert.strictEqual(posts, 1);

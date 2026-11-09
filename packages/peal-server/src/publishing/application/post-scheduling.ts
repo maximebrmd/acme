@@ -22,6 +22,7 @@ import {
   createDraft,
   finishPost,
   moveToDraft,
+  scheduledThrough,
   schedulePost,
 } from "#publishing/domain/post.ts";
 import type { Post } from "#publishing/domain/post.ts";
@@ -44,6 +45,7 @@ import { AccountRules } from "./account-rules.ts";
 import type { AttachableMedia } from "./attachable-media.ts";
 import { PostAllowance } from "./post-allowance.ts";
 import type { PostNotFound } from "./post-not-found.ts";
+import { PostOrigins } from "./post-origins.ts";
 import { channelsFor, mediaFor } from "./post-references.ts";
 import { PostRepository } from "./post-repository.ts";
 import type { PostWithTargets, StoredPost } from "./post-repository.ts";
@@ -99,6 +101,7 @@ type Ports =
   | AttachableMedia
   | Ids
   | PostAllowance
+  | PostOrigins
   | PostRepository
   | WorkspaceChannels;
 
@@ -110,7 +113,8 @@ const mayPublish = (actor: Actor) =>
  * take it back to draft, cancel it. Each use case changes the post and
  * starts or stops its job in one transaction, so a post is scheduled exactly
  * when its job exists. Each needs post:schedule, and scheduling reads the
- * workspace's channels, which needs channel:read.
+ * workspace's channels, which needs channel:read. A post keeps who scheduled
+ * or moved it last, and how they reached Peal (`PostOrigins`).
  *
  * A post is scheduled only on channels of its workspace, with ready media of
  * the workspace, and with content their platforms take, its media included
@@ -311,13 +315,23 @@ export class PostScheduling extends Context.Service<
           onSome: scheduler.cancel,
         });
 
-      // Saves the post at its new time, and swaps its job for one then.
+      // How the actor reached Peal, which the post they schedule keeps.
+      const originOf = (actor: Actor) =>
+        PostOrigins.use((origins) => origins.of(actor)).pipe(withPorts);
+
+      // Saves the post at its new time, with who moved it there, and swaps
+      // its job for one then.
       const move = Effect.fn("PostScheduling.move")(function* move(
+        actor: Actor,
         current: StoredPost,
         at: Schedule
       ) {
-        const moved = yield* Effect.fromResult(
-          schedulePost(current.post, at, yield* DateTime.now)
+        const moved = scheduledThrough(
+          yield* Effect.fromResult(
+            schedulePost(current.post, at, yield* DateTime.now)
+          ),
+          yield* originOf(actor),
+          authorOf(actor)
         );
 
         // A scheduled post moved within its month takes no more room, even
@@ -378,14 +392,26 @@ export class PostScheduling extends Context.Service<
         const now = yield* DateTime.now;
         const postId = yield* newId(PostIdSchema).pipe(withPorts);
 
+        const via = yield* originOf(actor);
+
         // A new draft can always be scheduled.
-        const post = yield* Effect.fromResult(
-          schedulePost(
-            createDraft(postId, actor.workspaceId, content, authorOf(actor)),
-            at,
-            now
-          )
-        ).pipe(Effect.catchTag("InvalidPostTransition", Effect.die));
+        const post = scheduledThrough(
+          yield* Effect.fromResult(
+            schedulePost(
+              createDraft(
+                postId,
+                actor.workspaceId,
+                content,
+                authorOf(actor),
+                Option.some(via)
+              ),
+              at,
+              now
+            )
+          ).pipe(Effect.catchTag("InvalidPostTransition", Effect.die)),
+          via,
+          authorOf(actor)
+        );
 
         const targets = yield* targetsOn(
           postId,
@@ -442,7 +468,7 @@ export class PostScheduling extends Context.Service<
 
               yield* posts.setTargets(postId, targets);
 
-              const post = yield* move(current, at);
+              const post = yield* move(actor, current, at);
 
               return { post, targets };
             })
@@ -472,7 +498,7 @@ export class PostScheduling extends Context.Service<
                 );
               }
 
-              const post = yield* move(current, at);
+              const post = yield* move(actor, current, at);
 
               return { post, targets };
             })

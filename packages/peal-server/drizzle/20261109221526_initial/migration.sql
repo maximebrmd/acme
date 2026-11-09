@@ -110,11 +110,11 @@ CREATE TABLE "billing"."subscriptions" (
 );
 --> statement-breakpoint
 CREATE TABLE "billing"."trials" (
+	"forgotten_at" timestamp with time zone,
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
 	"plan" text,
 	"reserved_at" timestamp with time zone NOT NULL,
 	"started_at" timestamp with time zone,
-	"forgotten_at" timestamp with time zone,
 	"stripe_subscription_id" text,
 	"user_id" text,
 	"user_pseudonym" text,
@@ -312,6 +312,7 @@ CREATE TABLE "publishing"."post_targets" (
 CREATE TABLE "publishing"."posts" (
 	"author_id" uuid,
 	"cancelled_at" timestamp with time zone,
+	"created_via" jsonb,
 	"execution_id" text,
 	"finished_at" timestamp with time zone,
 	"id" uuid PRIMARY KEY,
@@ -320,6 +321,8 @@ CREATE TABLE "publishing"."posts" (
 	"schedule_revision" integer DEFAULT 0 NOT NULL,
 	"schedule_zone" text,
 	"scheduled_at" timestamp with time zone,
+	"scheduled_by" uuid,
+	"scheduled_via" jsonb,
 	"started_at" timestamp with time zone,
 	"status" text NOT NULL,
 	"text" text DEFAULT '' NOT NULL,

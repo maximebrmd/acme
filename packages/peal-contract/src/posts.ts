@@ -189,16 +189,50 @@ export const PostScheduleSchema = Schema.Struct({
 
 export type PostSchedule = typeof PostScheduleSchema.Type;
 
+/**
+ * How whoever created or scheduled a post reached Peal: in the web app
+ * (`web`), with an API key of the workspace (`apiKey`), or through an OAuth
+ * application acting for a member (`application`: the command line, an MCP
+ * client).
+ */
+export const PostOriginViaSchema = Schema.Literals([
+  "web",
+  "apiKey",
+  "application",
+]).annotate({ identifier: "PostOriginVia" });
+
+export type PostOriginVia = typeof PostOriginViaSchema.Type;
+
+/** How a post was created, or scheduled: through what, and which one. */
+export const PostOriginSchema = Schema.Struct({
+  // The API key's id (`apiKey`) or the OAuth client's (`application`);
+  // null for `web`.
+  id: Schema.NullOr(Schema.String),
+  // What the key or the application was called then, if it had a name.
+  name: Schema.NullOr(Schema.String),
+  via: PostOriginViaSchema,
+}).annotate({ identifier: "PostOrigin" });
+
+export type PostOrigin = typeof PostOriginSchema.Type;
+
 /** A post, what it says and where it goes. */
 export const PostSchema = Schema.Struct({
   // The user who created it; null when an API key did.
   authorId: Schema.NullOr(Schema.String),
   content: PostContentSchema,
+  // How it was created; null on a post from before this was kept.
+  createdVia: Schema.NullOr(PostOriginSchema),
   id: Schema.String,
   // How it ended, once it finished.
   outcome: Schema.NullOr(PostOutcomeSchema),
   // Its time, unless it is a draft. A cancelled post keeps the time it had.
   schedule: Schema.NullOr(PostScheduleSchema),
+  // The member who last scheduled or moved it; null on a draft, when an API
+  // key did, or on a post from before this was kept.
+  scheduledBy: Schema.NullOr(Schema.String),
+  // How it was last scheduled or moved; null on a draft, or on a post from
+  // before this was kept.
+  scheduledVia: Schema.NullOr(PostOriginSchema),
   status: PostStatusSchema,
   // One per channel, oldest first.
   targets: Schema.Array(PostTargetSchema),

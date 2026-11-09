@@ -44,6 +44,7 @@ import { ContextRecordsLive } from "#workspace/infrastructure/context-records.ts
 import { AccountDirectoryLive } from "#workspace/infrastructure/drizzle-account-directory.ts";
 import { DrizzleAccountStore } from "#workspace/infrastructure/drizzle-account-store.ts";
 import { DrizzleConnectedAppStore } from "#workspace/infrastructure/drizzle-connected-app-store.ts";
+import { DrizzleCredentialNames } from "#workspace/infrastructure/drizzle-credential-names.ts";
 import { DrizzleImpersonationSessions } from "#workspace/infrastructure/drizzle-impersonation-sessions.ts";
 import { MemberDirectoryLive } from "#workspace/infrastructure/drizzle-member-directory.ts";
 import { WorkspaceRosterLive } from "#workspace/infrastructure/drizzle-workspace-roster.ts";
@@ -102,9 +103,10 @@ const ImpersonationGuardLive = ImpersonationGuard.layer.pipe(
  * context's WorkspaceEntitlements and RecordSubscription, the staff
  * context's ImpersonationAudit and the legal context's LegalRecords.
  */
-export const WorkspaceLive = Layer.merge(
+export const WorkspaceLive = Layer.mergeAll(
   UseCasesLive,
-  CaptchaChallengeLive
+  CaptchaChallengeLive,
+  DrizzleCredentialNames
 ).pipe(
   Layer.provide(AdaptersLive),
   Layer.provideMerge(StaffToolsLive),

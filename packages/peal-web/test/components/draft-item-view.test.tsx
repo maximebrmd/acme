@@ -19,9 +19,12 @@ const draft = (text: string, channels: number, media: number): Post => ({
     overrides: [],
     text,
   },
+  createdVia: null,
   id: "00000000-0000-7000-8000-000000000001",
   outcome: null,
   schedule: null,
+  scheduledBy: null,
+  scheduledVia: null,
   status: "draft",
   targets: Array.from({ length: channels }, (_, index) => ({
     channelId: `00000000-0000-7000-8000-00000000c00${index}`,

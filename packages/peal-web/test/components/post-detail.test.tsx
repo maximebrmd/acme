@@ -51,9 +51,12 @@ const target = (
 const post: Post = {
   authorId: null,
   content: { media: [], overrides: [], text: "Our field note." },
+  createdVia: null,
   id: "00000000-0000-7000-8000-000000000001",
   outcome: "unconfirmed",
   schedule: { at: utc("2026-06-15T08:00:00Z"), timeZone: "Europe/Paris" },
+  scheduledBy: null,
+  scheduledVia: null,
   status: "finished",
   targets: [
     target("t1", "c1", {

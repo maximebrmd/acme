@@ -9,6 +9,7 @@ import type { PlatformPublisher } from "#publishing/application/platform-publish
 import type { PostAllowance } from "#publishing/application/post-allowance.ts";
 import { PostDrafts } from "#publishing/application/post-drafts.ts";
 import { PostFollowUp } from "#publishing/application/post-follow-up.ts";
+import { PostOrigins } from "#publishing/application/post-origins.ts";
 import { PostQueries } from "#publishing/application/post-queries.ts";
 import { PostRecords } from "#publishing/application/post-records.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
@@ -35,6 +36,7 @@ import { LibraryMediaForPublishing } from "#publishing/infrastructure/library-me
 import { ListedWorkspaceChannels } from "#publishing/infrastructure/listed-workspace-channels.ts";
 import { LoggedChannelHealth } from "#publishing/infrastructure/logged-channel-health.ts";
 import { meteredOutcomes } from "#publishing/infrastructure/metered-publication-outcomes.ts";
+import { NamedPostOrigins } from "#publishing/infrastructure/named-post-origins.ts";
 import { NotifiedPublicationOutcomes } from "#publishing/infrastructure/notified-publication-outcomes.ts";
 import { PlanPostAllowanceLive } from "#publishing/infrastructure/plan-post-allowance.ts";
 import { PlatformClientsLive } from "#publishing/infrastructure/platforms/platform-clients-live.ts";
@@ -51,16 +53,27 @@ import { OutboundGuard } from "#shared/infrastructure/platforms/outbound-guard.t
  * `PublishedTargets`, which analytics follows; `PostOversight`, for the
  * staff console) and the adapters behind its
  * ports, with `references` for the channels and media posts refer to and the
- * posts a month allows. Needs the database (Drizzle), the workflow engine, a
- * TransactionRunner and Ids, and PublicationOutcomes for PostFollowUp.
+ * posts a month allows, `accounts` for what each account refuses (by
+ * default, nothing) and `origins` for the names of the keys and
+ * applications that write posts (by default, none). Needs the database
+ * (Drizzle), the workflow engine, a TransactionRunner and Ids, and
+ * PublicationOutcomes for PostFollowUp.
  */
-export const publishingWith = <E, R, E2 = never, R2 = never>(
+export const publishingWith = <
+  E,
+  R,
+  E2 = never,
+  R2 = never,
+  E3 = never,
+  R3 = never,
+>(
   references: Layer.Layer<
     AttachableMedia | PostAllowance | WorkspaceChannels,
     E,
     R
   >,
-  accounts: Layer.Layer<AccountRules, E2, R2> = AccountRules.none
+  accounts: Layer.Layer<AccountRules, E2, R2> = AccountRules.none,
+  origins: Layer.Layer<PostOrigins, E3, R3> = PostOrigins.unnamed
 ) =>
   Layer.mergeAll(
     PostDrafts.layer,
@@ -80,7 +93,8 @@ export const publishingWith = <E, R, E2 = never, R2 = never>(
         LoggedChannelHealth,
         WorkflowPublicationScheduler,
         references,
-        accounts
+        accounts,
+        origins
       )
     )
   );
@@ -89,7 +103,9 @@ export const publishingWith = <E, R, E2 = never, R2 = never>(
  * The use cases as the server runs them: channels are those the channels
  * context lists, media the ready media its library holds, and the posts a
  * month allows the workspace's plan, which the composition root provides
- * (ListChannels, MediaLibrary, WorkspaceEntitlements). How each target ends
+ * (ListChannels, MediaLibrary, WorkspaceEntitlements), and a post names the
+ * key or application that wrote it as the workspace context does
+ * (CredentialNames). How each target ends
  * is told through the notifications context (Notify), naming channels as
  * the channels context has them (ChannelRepository), once billing counted
  * the posts that went out on platforms that bill per post (MeteredPosts).
@@ -100,7 +116,8 @@ export const PublishingLive = publishingWith(
     LibraryAttachableMedia,
     PlanPostAllowanceLive
   ),
-  AccountRules.layer
+  AccountRules.layer,
+  NamedPostOrigins
 ).pipe(
   Layer.provideMerge(
     TikTokCreatorInfo.layer.pipe(Layer.provide(ListedWorkspaceChannels))
