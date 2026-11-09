@@ -600,7 +600,8 @@ and no socket, for tests.
   can act on it (`audienceOf`: `channel:connect`); for a post, its author
   (`NoticeRequest.author`), whatever their role, and the members with
   `post:schedule` who chose `everyPost`, off by default; for a post without
-  an author, every member with `post:schedule`. Every notice reaches the
+  an author, or whose author left the workspace, every member with
+  `post:schedule`. Every notice reaches the
   app; `NotificationPreferences` say which are also emailed (failed and
   unconfirmed posts and channels to reconnect by default, not published
   posts). A preferences change writes only what it names.

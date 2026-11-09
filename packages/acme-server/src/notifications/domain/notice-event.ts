@@ -137,21 +137,30 @@ export interface Candidate {
  * - about a channel: every member who may act on it (`audienceOf`);
  * - about a post with an author: its author, whatever their role, and the
  *   members who may schedule posts and chose to hear about every post;
- * - about a post without one, made with an API key: every member who may
- *   schedule posts, as nobody else would hear.
+ * - about a post without one, made with an API key, or whose author is no
+ *   longer among the members: every member who may schedule posts, as
+ *   nobody else would hear.
  */
 export const recipientsOf = (
   event: NoticeEvent,
   author: Option.Option<UserId>,
   members: readonly Candidate[]
 ): readonly UserId[] => {
+  // An author who left the workspace hears nothing more of it; their post
+  // is then told as one without an author.
+  const present = author.pipe(
+    Option.filter((userId) =>
+      members.some((member) => member.userId === userId)
+    )
+  );
+
   const hears = (member: Candidate): boolean => {
-    if (!isAboutPost(event) || Option.isNone(author)) {
+    if (!isAboutPost(event) || Option.isNone(present)) {
       return member.mayAct;
     }
 
     return (
-      member.userId === author.value ||
+      member.userId === present.value ||
       (member.mayAct && member.followsEveryPost)
     );
   };

@@ -17,7 +17,7 @@ Acme tells the members it concerns when something happens to a post or a channel
 | A channel must be reconnected      | The platform no longer accepts Acme's access: nothing goes out on the channel until someone reconnects it. | Members who may connect channels: owners and admins         |
 | A channel must be reconnected soon | The channel's access cannot be renewed, and ends on the date the notification gives.                       | The same                                                    |
 
-A post's notifications go to its author, the member who created it, whatever their role, and to the members who may schedule posts (owners, admins and editors) and chose to hear about every post in their [preferences](#email). A post created with an API key has no author: its notifications go to every member who may schedule posts. A member who left the workspace hears nothing more about it.
+A post's notifications go to its author, the member who created it, whatever their role, and to the members who may schedule posts (owners, admins and editors) and chose to hear about every post in their [preferences](#email). A post created with an API key has no author: its notifications go to every member who may schedule posts. A member who left the workspace hears nothing more about it, and their posts' notifications go to every member who may schedule posts, as for a post without an author.
 
 Each notification about a post names one channel, so a post on three channels can bring three, and a post sent again brings new ones. A cancelled post brings none. Once someone says whether a post to check went out, or sends it again, its notifications are marked read for everyone, and their emails not sent yet are dropped.
 
