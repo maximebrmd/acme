@@ -1,9 +1,12 @@
 import { assert, layer } from "@effect/vitest";
+import { MeSchema } from "acme-contract";
 import { Context, Effect, Layer } from "effect";
 
 import {
   apiKeyOf,
+  bodyOf,
   confirmedAccount,
+  cookiesOf,
   IntegrationLive,
   makeAdmin,
   origin,
@@ -208,6 +211,51 @@ layer(MatrixLive, { excludeTestServices: true, timeout: "180 seconds" })(
           });
 
           assert.strictEqual(reply.status, expected);
+        })
+    );
+
+    it.effect(
+      "lets staff impersonate a member, without publishing or handling keys",
+      () =>
+        Effect.gen(function* impersonates() {
+          const app = yield* TestApp;
+          const member = yield* signedUp("impersonated");
+          const workspaceId = yield* workspaceOf(member, "Shop");
+          const staff = yield* confirmedAccount("support");
+
+          yield* makeAdmin(staff.id);
+
+          const started = yield* app.request(
+            "/api/auth/admin/impersonate-user",
+            {
+              body: { userId: member.id },
+              headers: { cookie: yield* signIn(staff.email) },
+            }
+          );
+
+          assert.strictEqual(started.status, 200);
+
+          const cookie = cookiesOf(started);
+
+          const me = yield* bodyOf(
+            MeSchema,
+            yield* app.request("/api/me", { headers: { cookie } })
+          );
+
+          assert.strictEqual(me.user.id, member.id);
+          assert.strictEqual(me.impersonatedBy, staff.id);
+          assert.notInclude(
+            me.workspaces[0]?.permissions ?? [],
+            "post:publish"
+          );
+          assert.include(me.workspaces[0]?.permissions ?? [], "post:schedule");
+
+          const created = yield* app.request(apiKeys(workspaceId), {
+            body: newKey,
+            headers: { cookie },
+          });
+
+          assert.strictEqual(created.status, 403);
         })
     );
 
