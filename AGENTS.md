@@ -707,8 +707,8 @@ and no socket, for tests.
 ### Analytics
 
 - Analytics follows the targets that publishing's `PublishedTargets`
-  (`publishing/application`) lists, from the latest one it follows less 15
-  minutes, in `analytics.tracked_posts`, and keeps each reading in
+  (`publishing/application`) lists, from the latest one it follows (see
+  below), in `analytics.tracked_posts`, and keeps each reading in
   `analytics.metric_snapshots`: ids and counts, never content. A workspace's
   go with it (`AnalyticsRecords`), and a reading saved after its post was
   erased keeps nothing (`saveReading` updates the post first).
@@ -739,6 +739,9 @@ and no socket, for tests.
   read `failed` on (so one the server cannot show never stays first due),
   or a channel off or to reconnect, waits for its next turn; a disconnected
   channel's posts, and a post still unread a day past its window, end.
+- Each run follows the publications after the latest one it follows, then
+  looks back 15 minutes for those that settled late, 20 pages of 500 each
+  at most, so it moves on however many went live together.
 - Summaries take the posts published over a range of days in an IANA zone:
   the domain computes each day's start with `fromWallClock`, and Postgres
   buckets snapshots with those instants (`width_bucket`), never its zones.

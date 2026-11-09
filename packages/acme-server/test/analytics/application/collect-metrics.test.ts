@@ -543,6 +543,44 @@ describe("collecting post metrics", () => {
     }).pipe(Effect.provide(collectionWith()))
   );
 
+  it.effect(
+    "moves on when more posts went live together than a run follows",
+    () =>
+      Effect.gen(function* crowded() {
+        const channelId = yield* newChannelId;
+        const start = utc("2026-11-02T10:00:00.000Z");
+
+        // What a run follows at most, all within five minutes, and one more:
+        // each run looks back over more than it follows.
+        const crowd = yield* Effect.forEach(
+          Array.from({ length: 10_001 }, (_, index) => index),
+          (index) =>
+            publicationOf(
+              workspaceId,
+              channelId,
+              DateTime.formatIso(
+                DateTime.addDuration(start, Duration.millis(index * 30))
+              )
+            ),
+          { concurrency: 1 }
+        );
+
+        yield* published(...crowd);
+
+        const first = yield* runAt("2026-11-02T11:07:00.000Z");
+        const second = yield* runAt("2026-11-02T12:07:00.000Z");
+
+        assert.deepStrictEqual(
+          [first.discovered, second.discovered],
+          [10_000, 1]
+        );
+      }).pipe(
+        Effect.provide(
+          collectionWith(() => Effect.fail(new PlatformUnavailable()))
+        )
+      )
+  );
+
   it.effect("follows only posts young enough to be read, the first time", () =>
     Effect.gen(function* firstRun() {
       const channelId = yield* newChannelId;
