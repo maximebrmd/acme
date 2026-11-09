@@ -63,6 +63,12 @@ export const ContentViolationSchema = Schema.Union([
     byteSize: Schema.Int,
     maximum: Schema.Int,
   }),
+  // The file is smaller than the platform takes, in bytes.
+  Schema.TaggedStruct("mediaTooSmall", {
+    ...onMedia,
+    byteSize: Schema.Int,
+    minimum: Schema.Int,
+  }),
   // The video lasts longer than the platform takes, in milliseconds.
   Schema.TaggedStruct("videoTooLong", {
     ...onMedia,

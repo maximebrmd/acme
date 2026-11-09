@@ -41,6 +41,8 @@ export const useMediaProblemText = () => {
         t("problem.aspectRatioUnsupported", { kind, position }),
       mediaTooLarge: ({ kind, maximum, position }) =>
         t("problem.mediaTooLarge", { kind, maximum: size(maximum), position }),
+      mediaTooSmall: ({ kind, minimum, position }) =>
+        t("problem.mediaTooSmall", { kind, minimum: size(minimum), position }),
       mediaTypeUnsupported: ({ contentType, kind, position }) =>
         t("problem.mediaTypeUnsupported", {
           format: t("format", { format: formatOf(contentType) }),
@@ -73,6 +75,7 @@ type MediaViolationTag =
   | "altTextTooLong"
   | "aspectRatioUnsupported"
   | "mediaTooLarge"
+  | "mediaTooSmall"
   | "mediaTypeUnsupported"
   | "mixedMedia"
   | "tooManyPixels"
@@ -140,6 +143,12 @@ export const useMediaViolationTexts = (
       t("violation.mediaTooLarge", {
         ...named(violation),
         maximum: size(violation.maximum),
+        size: size(violation.byteSize),
+      }),
+    mediaTooSmall: (violation: Of<"mediaTooSmall">) =>
+      t("violation.mediaTooSmall", {
+        ...named(violation),
+        minimum: size(violation.minimum),
         size: size(violation.byteSize),
       }),
     mediaTypeUnsupported: (violation: Of<"mediaTypeUnsupported">) =>

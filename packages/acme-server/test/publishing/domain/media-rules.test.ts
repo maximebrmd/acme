@@ -185,6 +185,28 @@ describe(mediaViolationsOn, () => {
     ]);
   });
 
+  // LinkedIn's Videos API takes MP4 files of 75 KB and more, read as
+  // 75,000 bytes.
+  it("refuses a LinkedIn video smaller than LinkedIn takes", () => {
+    expect(
+      violations("linkedin", video(first, { byteSize: 75_000 }))
+    ).toStrictEqual([]);
+    expect(
+      violations("linkedin", video(first, { byteSize: 74_999 }))
+    ).toStrictEqual([
+      {
+        _tag: "mediaTooSmall",
+        ...on("linkedin"),
+        byteSize: 74_999,
+        mediaId: first,
+        minimum: 75_000,
+      },
+    ]);
+    expect(violations("x", video(first, { byteSize: 74_999 }))).toStrictEqual(
+      []
+    );
+  });
+
   it("keeps videos within the platform's durations", () => {
     const at = (duration: Duration.Duration) =>
       video(first, { duration: Option.some(duration) });

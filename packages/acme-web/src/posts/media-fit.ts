@@ -46,6 +46,11 @@ export type MediaProblem =
             readonly maximum: number;
           }
         | {
+            readonly _tag: "mediaTooSmall";
+            readonly byteSize: number;
+            readonly minimum: number;
+          }
+        | {
             readonly _tag: "videoTooLong";
             readonly durationMs: number;
             readonly maximumMs: number;
@@ -167,7 +172,7 @@ const fileProblems = (
     ];
   }
 
-  const { maxByteSize } = limits;
+  const { maxByteSize, minByteSize } = limits;
   const { maxAltTextLength } = rules;
   const altTextLength = measureText(altText, "codePoints");
 
@@ -179,6 +184,16 @@ const fileProblems = (
             _tag: "mediaTooLarge" as const,
             byteSize: media.byteSize,
             maximum: maxByteSize,
+          },
+        ]
+      : []),
+    ...(minByteSize !== undefined && media.byteSize < minByteSize
+      ? [
+          {
+            ...place,
+            _tag: "mediaTooSmall" as const,
+            byteSize: media.byteSize,
+            minimum: minByteSize,
           },
         ]
       : []),

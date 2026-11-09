@@ -113,6 +113,29 @@ describe(mediaFitOn, () => {
     ).toStrictEqual([]);
   });
 
+  it("refuses a LinkedIn video smaller than LinkedIn takes", () => {
+    const small = (byteSize: number) =>
+      loaded(
+        file("a", {
+          byteSize,
+          contentType: "video/mp4",
+          dimensions: { height: 1920, width: 1080 },
+          durationMs: 30_000,
+        })
+      );
+
+    expect(mediaFitOn("linkedin", [small(75_000)]).problems).toStrictEqual([]);
+    expect(mediaFitOn("linkedin", [small(74_999)]).problems).toStrictEqual([
+      {
+        _tag: "mediaTooSmall",
+        byteSize: 74_999,
+        kind: "video",
+        minimum: 75_000,
+        position: 1,
+      },
+    ]);
+  });
+
   it("keeps videos within the platform's durations and counts", () => {
     expect(
       mediaFitOn("x", [loaded(video("a", 150_000)), loaded(video("b", 400))])
