@@ -64,7 +64,7 @@ export const PeopleToolsLive = PeopleTools.toLayer(
 
           return { invitations: pending.map(invitationView) };
         }),
-      list_members: () =>
+      list_members: ({ includeEmails }) =>
         Effect.gen(function* list() {
           const listed = yield* members.list(yield* actor).pipe(
             Effect.catchTags({
@@ -73,7 +73,13 @@ export const PeopleToolsLive = PeopleTools.toLayer(
             })
           );
 
-          return { members: listed.map(memberView) };
+          return {
+            members: listed.map((member) => {
+              const { email, ...view } = memberView(member);
+
+              return includeEmails === true ? { ...view, email } : view;
+            }),
+          };
         }),
       revoke_invitation: ({ invitationId }) =>
         Effect.gen(function* revoke() {

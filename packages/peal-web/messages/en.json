@@ -964,10 +964,18 @@
       "notFound": "It is already gone.",
       "passwordTooLong": "The password is too long.",
       "passwordTooShort": "The password needs at least 12 characters.",
-      "subscribed": "A workspace this would delete still has a subscription that may be billed. Cancel it from the workspace’s billing page first: the workspace can be deleted once the subscription has ended.",
+      "subscribed": "A workspace this would delete has a subscription. Agree to cancel it to go on.",
       "tooManyRequests": "Too many attempts. Wait a minute, then try again.",
       "unknown": "Something went wrong. Try again.",
       "billingUnavailable": "Stripe could not be reached to close the checkouts still open for a workspace this would delete, so nothing was deleted. Try again in a few minutes."
+    },
+    "cancellation": {
+      "title": "Deleting cancels a subscription",
+      "ends": "{plan, select, other {The {plan} subscription} none {The subscription}} ends now: nothing more is charged.",
+      "notRefunded": "The period already paid for is not refunded.",
+      "notRefundedUntil": "The period already paid for, until {date}, is not refunded.",
+      "invoices": "Download your invoices from the billing page first: it goes with the workspace. Invoices are kept as accounting law requires, and a confirmation is emailed to you.",
+      "agree": "Cancel the subscription now, without a refund of the period paid for"
     }
   },
   "WorkspaceSettings": {
@@ -997,11 +1005,12 @@
       "description": "Deletes the workspace for good, with everything in it. Only owners may.",
       "open": "Delete this workspace…",
       "confirmTitle": "Delete {name} for good?",
-      "confirmDescription": "Its channels and their authorizations, its posts, scheduled or not, its media library, its notifications, its members and invitations, and its API keys all go, and cannot be brought back. Nothing more is posted from it.",
+      "confirmDescription": "Its channels and their authorizations, its posts, scheduled or not, its media library, its notifications, its members and invitations, and its API keys all go, and cannot be brought back. Nothing more is posted from it, and its subscription, if it has one, is cancelled.",
       "typeName": "Type {name} to confirm",
       "confirm": "Delete the workspace",
       "deleting": "Deleting…",
-      "deleted": "{name} is deleted."
+      "deleted": "{name} is deleted.",
+      "billingPage": "Open the billing page"
     },
     "members": {
       "description": "Everyone who belongs to the workspace, and their role. Owners and admins change roles and remove people; only owners make or remove owners.",
@@ -1129,7 +1138,7 @@
     },
     "export": {
       "title": "Your data",
-      "description": "A JSON file of everything Peal keeps about you: your account, sessions, memberships, invitations, connected applications, notifications and preferences, and the content of the workspaces where you are the only member. It holds no password, token or key.",
+      "description": "A JSON file of everything Peal keeps about you: your account, sessions, memberships, invitations, connected applications, notifications and preferences, what staff did to your account, the posts you wrote in the workspaces you share, and the content of the workspaces where you are the only member. It holds no password, token or key. We email you each time a copy is downloaded.",
       "download": "Download my data"
     },
     "delete": {
@@ -1137,12 +1146,13 @@
       "description": "Deletes your account for good, with the workspaces where you are the only member and everything in them. You leave the others.",
       "open": "Delete my account…",
       "confirmTitle": "Delete your account for good?",
-      "confirmDescription": "Your profile, sessions, notifications, preferences and connected applications go, with the workspaces where you are the only member. This cannot be undone. Enter your password to confirm.",
+      "confirmDescription": "Your profile, sessions, notifications, preferences and connected applications go, with the workspaces where you are the only member, and their subscriptions are cancelled. This cannot be undone. Enter your password to confirm.",
       "confirm": "Delete my account",
       "deleting": "Deleting…",
       "deleted": "Your account is deleted. A confirmation is on its way to your inbox.",
       "lastOwnerTitle": "These workspaces need another owner",
-      "lastOwnerDescription": "You are the only owner of workspaces other members use. Make one of them an owner, or delete the workspace, then try again:"
+      "lastOwnerDescription": "You are the only owner of workspaces other members use. Make one of them an owner, or delete the workspace, then try again:",
+      "billingPage": "Open the workspace’s billing page"
     }
   },
   "Staff": {

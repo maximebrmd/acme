@@ -20,15 +20,21 @@ import { useId, useState, useTransition } from "react";
 import type { ChangeEvent } from "react";
 import { toast } from "sonner";
 
-import { useRouter } from "#i18n/navigation.ts";
+import { Link, useRouter } from "#i18n/navigation.ts";
 import { deleteWorkspace } from "#settings/atoms.ts";
-import { apiErrorKey } from "#settings/errors.ts";
-import type { SettingsErrorKey } from "#settings/errors.ts";
+import { apiErrorKey, subscriptionToCancel } from "#settings/errors.ts";
+import type {
+  SettingsErrorKey,
+  SubscriptionToCancel,
+} from "#settings/errors.ts";
 
 import { SettingsError } from "./settings-error.tsx";
+import { SubscriptionCancellation } from "./subscription-cancellation.tsx";
 
 // Deletes the workspace, for good, once its name is typed again: the
-// confirmation stays open while it runs, and tells why it failed.
+// confirmation stays open while it runs, and tells why it failed. A
+// workspace Stripe may still bill is refused first with what cancelling
+// ends; the owner then agrees, and the deletion cancels it.
 export const DeleteWorkspace = ({
   name,
   workspaceId,
@@ -43,8 +49,16 @@ export const DeleteWorkspace = ({
   const remove = useAtomSet(deleteWorkspace, { mode: "promiseExit" });
   const [typed, setTyped] = useState("");
   const [error, setError] = useState<SettingsErrorKey | null>(null);
+
+  const [subscription, setSubscription] = useState<
+    Option.Option<SubscriptionToCancel>
+  >(Option.none());
+
+  const [agreed, setAgreed] = useState(false);
   const [isPending, startTransition] = useTransition();
-  const confirmed = typed.trim() === name.trim();
+
+  const confirmed =
+    typed.trim() === name.trim() && (Option.isNone(subscription) || agreed);
 
   const handleTyped = (event: ChangeEvent<HTMLInputElement>) => {
     setTyped(event.target.value);
@@ -54,6 +68,8 @@ export const DeleteWorkspace = ({
     if (!open) {
       setTyped("");
       setError(null);
+      setSubscription(Option.none());
+      setAgreed(false);
     }
   };
 
@@ -61,8 +77,17 @@ export const DeleteWorkspace = ({
     startTransition(async () => {
       const exit = await remove({
         params: { workspaceId },
-        payload: { name: typed },
+        payload: { cancelSubscriptions: agreed, name: typed },
       });
+
+      const toCancel = subscriptionToCancel(exit);
+
+      if (Option.isSome(toCancel)) {
+        setSubscription(toCancel);
+        setError(null);
+
+        return;
+      }
 
       Option.match(apiErrorKey(exit), {
         onNone: () => {
@@ -88,6 +113,21 @@ export const DeleteWorkspace = ({
           </AlertDialogDescription>
         </AlertDialogHeader>
         <SettingsError error={error} />
+        {Option.isSome(subscription) ? (
+          <SubscriptionCancellation
+            agreed={agreed}
+            onAgreedChange={setAgreed}
+            subscription={subscription.value}
+            billingLink={
+              <Link
+                href={`/app/${workspaceId}/billing`}
+                className="underline underline-offset-4"
+              >
+                {t("billingPage")}
+              </Link>
+            }
+          />
+        ) : null}
         <div className="flex flex-col gap-2">
           <Label htmlFor={inputId}>{t("typeName", { name })}</Label>
           <Input

@@ -161,21 +161,35 @@ const PortsLive = Layer.mergeAll(
 
       return ContextRecords.of({
         eraseUser: (id) => record(`eraseUser:${id}`).pipe(provide),
-        eraseWorkspace: (id) => {
+        eraseWorkspace: (id, { cancelSubscriptions }) => {
           if (id === busy) {
             return Effect.fail(new WorkspaceBusy({ workspaceId: id }));
           }
 
-          // Stripe may still bill it.
+          // Stripe may still bill it, until the person agrees to cancel.
           if (id === subscribed) {
-            return Effect.fail(new WorkspaceSubscribed({ workspaceId: id }));
+            return cancelSubscriptions
+              ? record(`eraseWorkspace:${id}:cancel`).pipe(
+                  provide,
+                  Effect.as({ subscriptionsCancelled: 1 })
+                )
+              : Effect.fail(
+                  new WorkspaceSubscribed({
+                    paidUntil: Option.some(at),
+                    plan: Option.some("pro"),
+                    workspaceId: id,
+                  })
+                );
           }
 
           if (id === unreachable) {
             return Effect.fail(new BillingUnavailable({ workspaceId: id }));
           }
 
-          return record(`eraseWorkspace:${id}`).pipe(provide);
+          return record(`eraseWorkspace:${id}`).pipe(
+            provide,
+            Effect.as({ subscriptionsCancelled: 0 })
+          );
         },
         exportAuthoredPosts: (id, workspaceIds) =>
           record(`exportAuthored:${id}:${workspaceIds.join(",")}`).pipe(
@@ -274,11 +288,24 @@ const PortsLive = Layer.mergeAll(
     Effect.gen(function* AccountMailTest() {
       const fakes = yield* Fakes;
 
+      const provide = Effect.provideService(Fakes, fakes);
+
       return AccountMail.of({
-        deleted: ({ email, locale }) =>
-          record(`mail:${email}:${locale}`).pipe(
-            Effect.provideService(Fakes, fakes)
+        deleted: ({ email, locale, subscriptionsCancelled }) =>
+          record(`mail:${email}:${locale}:${subscriptionsCancelled}`).pipe(
+            provide
           ),
+        exported: ({ email, locale, via }) =>
+          record(`mail:exported:${email}:${locale}:${via}`).pipe(provide),
+        workspaceDeleted: ({
+          email,
+          locale,
+          subscriptionsCancelled,
+          workspaceName,
+        }) =>
+          record(
+            `mail:workspaceDeleted:${email}:${locale}:${workspaceName}:${subscriptionsCancelled}`
+          ).pipe(provide),
       });
     })
   ),
@@ -416,6 +443,7 @@ layer(Fakes.layer)("the settings endpoints", (it) => {
             `eraseWorkspace:${harbour}`,
             `deleteWorkspace:${harbour}`,
             `removeFiles:${harbour}`,
+            "mail:workspaceDeleted:ana@example.test:fr:Harbour:0",
           ]
         );
       })
@@ -468,21 +496,40 @@ layer(Fakes.layer)("the settings endpoints", (it) => {
     })
   );
 
-  it.effect("refuse to delete a workspace Stripe may still bill", () =>
-    Effect.gen(function* refusesSubscribed() {
-      const client = yield* as(user(), subscribed);
+  it.effect(
+    "refuse to delete a workspace Stripe may still bill, saying what cancelling ends, until the owner agrees to cancel",
+    () =>
+      Effect.gen(function* refusesSubscribed() {
+        const client = yield* as(user(), subscribed);
+        const params = { workspaceId: subscribed };
 
-      assert.strictEqual(
-        yield* failureOf(
-          client.workspaces.delete({
-            params: { workspaceId: subscribed },
-            payload: { name: "Subscribed" },
-          })
-        ),
-        "WorkspaceSubscribed"
-      );
-      assert.notInclude(yield* calls, `deleteWorkspace:${subscribed}`);
-    })
+        const refused = yield* client.workspaces
+          .delete({ params, payload: { name: "Subscribed" } })
+          .pipe(Effect.flip);
+
+        assert.deepInclude(refused, {
+          _tag: "WorkspaceSubscribed",
+          paidUntil: at,
+          plan: "pro",
+          workspaceId: subscribed,
+        });
+        assert.notInclude(yield* calls, `deleteWorkspace:${subscribed}`);
+
+        yield* client.workspaces.delete({
+          params,
+          payload: { cancelSubscriptions: true, name: "Subscribed" },
+        });
+
+        assert.includeMembers(
+          [...(yield* calls)],
+          [
+            `eraseWorkspace:${subscribed}:cancel`,
+            `deleteWorkspace:${subscribed}`,
+            `removeFiles:${subscribed}`,
+            "mail:workspaceDeleted:ana@example.test:fr:Subscribed:1",
+          ]
+        );
+      })
   );
 
   it.effect(
@@ -574,6 +621,14 @@ layer(Fakes.layer)("the settings endpoints", (it) => {
         const fromTerminal = yield* (yield* as(oauth)).account.export();
 
         assert.strictEqual(fromTerminal.body.user.email, "ana@example.test");
+        // Each copy is told to the account's address, with where it went.
+        assert.includeMembers(
+          [...(yield* calls)],
+          [
+            "mail:exported:ana@example.test:fr:web",
+            "mail:exported:ana@example.test:fr:commandLine",
+          ]
+        );
 
         for (const principal of [
           apiKey,
@@ -673,7 +728,7 @@ layer(Fakes.layer)("the settings endpoints", (it) => {
             `eraseUser:${userId}`,
             `deleteUser:${userId}`,
             `removeFiles:${harbour}`,
-            "mail:ana@example.test:fr",
+            "mail:ana@example.test:fr:0",
           ]
         );
         assert.notInclude(done, `eraseWorkspace:${shared}`);
@@ -717,6 +772,20 @@ layer(Fakes.layer)("the settings endpoints", (it) => {
 
         assert.notInclude(after, `eraseUser:${userId}`);
         assert.notInclude(after, `deleteUser:${userId}`);
+
+        // Told to, closing cancels the subscription with the workspace.
+        yield* client.account.delete({
+          payload: { cancelSubscriptions: true, password: "correct horse" },
+        });
+
+        assert.includeMembers(
+          [...(yield* calls)],
+          [
+            `eraseWorkspace:${subscribed}:cancel`,
+            `deleteUser:${userId}`,
+            "mail:ana@example.test:fr:1",
+          ]
+        );
       })
   );
 

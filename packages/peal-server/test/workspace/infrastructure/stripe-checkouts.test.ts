@@ -11,6 +11,7 @@ import {
   empty,
   json,
   platformServer,
+  textOf,
 } from "#test/publishing/fakes/platform-server.ts";
 import type { PlatformAnswer } from "#test/publishing/fakes/platform-server.ts";
 import { StripeCheckoutsLive } from "#workspace/infrastructure/auth/stripe-checkouts.ts";
@@ -18,7 +19,9 @@ import { StripeCheckoutsLive } from "#workspace/infrastructure/auth/stripe-check
 // Stripe's API as the adapter calls it: each customer has two Checkout
 // Sessions open, and expiring one answers it expired; its subscriptions are
 // one active and one canceled, beside one of another customer's that a
-// list should not hold. `failing` answers every request a server error.
+// list should not hold. Cancelling answers the subscription canceled, but
+// for `sub_missing`, which Stripe does not know. `failing` answers every
+// request a server error.
 const fakeStripe = (options: { readonly failing?: boolean } = {}) =>
   platformServer((request): PlatformAnswer => {
     if (options.failing === true) {
@@ -61,6 +64,24 @@ const fakeStripe = (options: { readonly failing?: boolean } = {}) =>
         object: "list",
         url: "/v1/subscriptions",
       });
+    }
+
+    const cancelling = /^\/v1\/subscriptions\/(?<id>[^/]+)$/u.exec(request.path)
+      ?.groups?.["id"];
+
+    if (request.method === "DELETE" && cancelling !== undefined) {
+      return cancelling === "sub_missing"
+        ? json(
+            {
+              error: {
+                code: "resource_missing",
+                message: "No such subscription",
+                type: "invalid_request_error",
+              },
+            },
+            404
+          )
+        : json({ id: cancelling, object: "subscription", status: "canceled" });
     }
 
     const expiring = /^\/v1\/checkout\/sessions\/(?<id>[^/]+)\/expire$/u.exec(
@@ -192,6 +213,50 @@ layer(DatabaseTest)("the Stripe plugin's checkouts", (it) => {
       }).pipe(Effect.scoped)
   );
 
+  it.effect(
+    "cancel at once, unprorated, every subscription that may bill the workspace",
+    () =>
+      Effect.gen(function* cancels() {
+        const stripe = yield* fakeStripe();
+        const checkouts = yield* checkoutsOn(stripe.url);
+        const { customer, workspaceId } = yield* seeded;
+
+        const cancelled = yield* checkouts.cancelBilled(workspaceId, {
+          // Billing's own, one Stripe no longer knows, and one Stripe lists
+          // as ended.
+          known: ["sub_known", "sub_missing", `sub_test_${customer}_1`],
+          mayBill: (status) => status !== "canceled",
+        });
+
+        assert.strictEqual(cancelled, 3);
+
+        const deletes = stripe
+          .requests()
+          .filter(({ method }) => method === "DELETE");
+
+        assert.sameMembers(
+          deletes.map(({ path }) => path),
+          [
+            `/v1/subscriptions/sub_test_${customer}_0`,
+            `/v1/subscriptions/sub_test_${customer}b_0`,
+            "/v1/subscriptions/sub_known",
+            "/v1/subscriptions/sub_missing",
+          ]
+        );
+
+        for (const request of deletes) {
+          // Stripe's client sends a DELETE's parameters in its query, or
+          // its body.
+          const body = textOf(request);
+          const sent = body === "" ? request.query : new URLSearchParams(body);
+
+          assert.strictEqual(sent.get("prorate"), "false");
+          assert.strictEqual(sent.get("invoice_now"), "false");
+          assert.isNotNull(sent.get("cancellation_details[comment]"));
+        }
+      }).pipe(Effect.scoped)
+  );
+
   it.effect("say Stripe is unreachable when it fails", () =>
     Effect.gen(function* unreachable() {
       const stripe = yield* fakeStripe({ failing: true });
@@ -203,6 +268,15 @@ layer(DatabaseTest)("the Stripe plugin's checkouts", (it) => {
       assert.strictEqual(failure._tag, "StripeUnreachable");
       assert.strictEqual(
         (yield* Effect.flip(checkouts.atStripe(workspaceId)))._tag,
+        "StripeUnreachable"
+      );
+      assert.strictEqual(
+        (yield* Effect.flip(
+          checkouts.cancelBilled(workspaceId, {
+            known: ["sub_known"],
+            mayBill: () => true,
+          })
+        ))._tag,
         "StripeUnreachable"
       );
     }).pipe(Effect.scoped)
@@ -217,6 +291,13 @@ layer(DatabaseTest)("the Stripe plugin's checkouts", (it) => {
 
         assert.strictEqual(yield* checkouts.expireOpen(workspaceId), 0);
         assert.deepStrictEqual(yield* checkouts.atStripe(workspaceId), []);
+        assert.strictEqual(
+          yield* checkouts.cancelBilled(workspaceId, {
+            known: ["sub_known"],
+            mayBill: () => true,
+          }),
+          0
+        );
       }).pipe(Effect.scoped)
   );
 });

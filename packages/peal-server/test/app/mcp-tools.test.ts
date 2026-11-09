@@ -2,13 +2,10 @@ import { assert, layer } from "@effect/vitest";
 import { Context, Effect, Layer, Option, Schema } from "effect";
 import { McpClient } from "effect/ai";
 import type { McpSchema } from "effect/ai";
-import {
-  InvitationSchema,
-  PostSchema,
-  WorkspaceMemberSchema,
-} from "peal-contract";
+import { InvitationSchema, PostSchema } from "peal-contract";
 import type { TargetOptions } from "peal-contract";
 
+import { ListedMemberSchema } from "#app/mcp/people-tools.ts";
 import { ChannelRepository } from "#channels/application/channel-repository.ts";
 import { DrizzleChannelRepository } from "#channels/infrastructure/drizzle-channel-repository.ts";
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
@@ -502,16 +499,26 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
 
           const reader = yield* connected(fixture.reading);
 
-          const { members } = yield* reader.call(
-            "list_members",
-            Schema.toCodecJson(
-              Schema.Struct({ members: Schema.Array(WorkspaceMemberSchema) })
-            )
+          const MembersSchema = Schema.toCodecJson(
+            Schema.Struct({ members: Schema.Array(ListedMemberSchema) })
           );
 
+          const { members } = yield* reader.call("list_members", MembersSchema);
+
+          // Names and roles, and no email address unless asked for.
           assert.deepStrictEqual(
-            members.map(({ role }) => role),
-            ["owner"]
+            members.map(({ email, role }) => ({ email, role })),
+            [{ email: undefined, role: "owner" }]
+          );
+
+          const withEmails = yield* reader.call("list_members", MembersSchema, {
+            includeEmails: true,
+          });
+
+          assert.isTrue(
+            withEmails.members.every(
+              ({ email }) => email?.includes("@") === true
+            )
           );
 
           const email = newEmail("assistant-guest");

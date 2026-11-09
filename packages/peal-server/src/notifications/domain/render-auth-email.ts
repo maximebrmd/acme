@@ -10,11 +10,29 @@ interface Content {
   readonly values: ReadonlyMap<string, string>;
 }
 
+// A deletion's body, with what cancelling its subscriptions meant.
+const withBilling = (
+  messages: EmailMessages,
+  subscriptionsCancelled: number,
+  billingEnded: string
+): EmailMessages =>
+  subscriptionsCancelled > 0
+    ? { ...messages, body: `${messages.body} ${billingEnded}` }
+    : messages;
+
 const contentOf = (email: AuthEmail, catalog: EmailCatalog): Content =>
   Match.valueTags(email, {
-    AccountDeleted: (): Content => ({
-      messages: catalog.accountDeleted,
+    AccountDeleted: ({ subscriptionsCancelled }): Content => ({
+      messages: withBilling(
+        catalog.accountDeleted,
+        subscriptionsCancelled,
+        catalog.billingEnded.account
+      ),
       values: new Map(),
+    }),
+    DataExported: ({ via }): Content => ({
+      messages: catalog.dataExported,
+      values: new Map([["via", catalog.exportChannels[via]]]),
     }),
     Invitation: (invitation): Content => {
       const roles: ReadonlyMap<string, string> = new Map(
@@ -37,6 +55,14 @@ const contentOf = (email: AuthEmail, catalog: EmailCatalog): Content =>
     VerifyEmail: (): Content => ({
       messages: catalog.verifyEmail,
       values: new Map(),
+    }),
+    WorkspaceDeleted: ({ subscriptionsCancelled, workspaceName }): Content => ({
+      messages: withBilling(
+        catalog.workspaceDeleted,
+        subscriptionsCancelled,
+        catalog.billingEnded.workspace
+      ),
+      values: new Map([["workspaceName", workspaceName]]),
     }),
   });
 

@@ -163,24 +163,45 @@ layer(billingWith(false))("billing on a server that does not bill", (it) => {
 
 // What the Stripe plugin holds of the workspace's checkouts: the statuses
 // a test sets, the open Checkout Sessions, which expiring empties, and the
-// statuses of the subscriptions Stripe holds.
+// statuses of the subscriptions Stripe holds, which cancelling ends, with
+// the subscriptions billing named to cancel.
 class CheckoutsLog extends Context.Service<
   CheckoutsLog,
   {
     readonly atStripe: Ref.Ref<readonly string[]>;
+    readonly cancelledKnown: Ref.Ref<readonly string[]>;
     readonly expired: Ref.Ref<number>;
     readonly open: Ref.Ref<number>;
     readonly statuses: Ref.Ref<readonly string[]>;
   }
 >()("peal-server/test/billing/CheckoutsLog") {}
 
+// Cancels what may bill, and counts it.
+const cancelIn = (
+  held: Ref.Ref<readonly string[]>,
+  mayBill: (status: string) => boolean
+) =>
+  Ref.modify(held, (all) => [
+    all.filter(mayBill).length,
+    all.map((status) => (mayBill(status) ? "canceled" : status)),
+  ]);
+
 const CheckoutsInMemory = Layer.effect(
   Checkouts,
   Effect.gen(function* inMemory() {
-    const { atStripe, expired, open, statuses } = yield* CheckoutsLog;
+    const { atStripe, cancelledKnown, expired, open, statuses } =
+      yield* CheckoutsLog;
 
     return Checkouts.of({
       atStripe: () => Ref.get(atStripe),
+      cancelBilled: (_workspaceId, { known, mayBill }) =>
+        Effect.all([
+          cancelIn(atStripe, mayBill),
+          cancelIn(statuses, mayBill),
+        ]).pipe(
+          Effect.tap(() => Ref.set(cancelledKnown, known)),
+          Effect.map(([stripe, started]) => stripe + started + known.length)
+        ),
       expireOpen: () =>
         Ref.getAndSet(open, 0).pipe(
           Effect.tap((count) => Ref.update(expired, (all) => all + count))
@@ -194,6 +215,7 @@ const CheckoutsInMemory = Layer.effect(
       CheckoutsLog,
       Effect.all({
         atStripe: Ref.make<readonly string[]>([]),
+        cancelledKnown: Ref.make<readonly string[]>([]),
         expired: Ref.make(0),
         open: Ref.make(0),
         statuses: Ref.make<readonly string[]>([]),
@@ -241,10 +263,41 @@ layer(recordsWith(true))("billing's records of a billed workspace", (it) => {
           .pipe(Effect.flip);
 
         assert.strictEqual(refused._tag, "WorkspaceStillBilled");
+        // What cancelling would end, for the person to read first.
+        assert.deepInclude(refused, {
+          paidUntil: Option.some(periodEnd),
+          plan: Option.some("business" as const),
+        });
         assert.lengthOf(
           (yield* records.exportWorkspace(workspaceId)).subscriptions,
           1
         );
+      })
+  );
+
+  it.effect(
+    "cancel its subscription at Stripe when the deletion says to, then go",
+    () =>
+      Effect.gen(function* cancelled() {
+        const records = yield* BillingRecords;
+        const log = yield* CheckoutsLog;
+
+        yield* Ref.set(log.open, 1);
+
+        const erased = yield* records.eraseWorkspace(workspaceId, {
+          cancelSubscriptions: true,
+        });
+
+        assert.deepStrictEqual(erased, { subscriptionsCancelled: 1 });
+        assert.deepStrictEqual(yield* Ref.get(log.cancelledKnown), [
+          "sub_synthetic",
+        ]);
+        // Its open checkouts went first, so none starts another.
+        assert.strictEqual(yield* Ref.get(log.expired), 1);
+        assert.deepStrictEqual(yield* records.exportWorkspace(workspaceId), {
+          plan: "free",
+          subscriptions: [],
+        });
       })
   );
 });
@@ -345,6 +398,32 @@ layer(recordsWith(true))(
           yield* erase;
         })
     );
+
+    it.effect("cancel what Stripe holds when the deletion says to", () =>
+      Effect.gen(function* cancelUnseen() {
+        const log = yield* CheckoutsLog;
+
+        yield* Ref.set(log.statuses, ["active"]);
+        yield* Ref.set(log.atStripe, ["canceled", "active"]);
+
+        const refused = yield* BillingRecords.use((records) =>
+          records.eraseWorkspace(workspaceId)
+        ).pipe(Effect.flip);
+
+        // Nothing billing recorded tells the plan yet.
+        assert.deepInclude(refused, { plan: Option.none() });
+
+        const erased = yield* BillingRecords.use((records) =>
+          records.eraseWorkspace(workspaceId, { cancelSubscriptions: true })
+        );
+
+        assert.deepStrictEqual(erased, { subscriptionsCancelled: 2 });
+        assert.deepStrictEqual(yield* Ref.get(log.atStripe), [
+          "canceled",
+          "canceled",
+        ]);
+      })
+    );
   }
 );
 
@@ -431,6 +510,7 @@ const UnreadTest = Layer.mergeAll(
         Checkouts,
         Checkouts.of({
           atStripe: () => Effect.die("Stripe called while billing is off"),
+          cancelBilled: () => Effect.die("Stripe called while billing is off"),
           expireOpen: () => Effect.die("Stripe called while billing is off"),
           statuses: () => Effect.die("read while billing is off"),
         })
@@ -459,6 +539,12 @@ layer(UnreadTest)("billing off", (it) => {
       yield* BillingRecords.use((records) =>
         records.eraseWorkspace(workspaceId)
       );
+
+      const erased = yield* BillingRecords.use((records) =>
+        records.eraseWorkspace(workspaceId, { cancelSubscriptions: true })
+      );
+
+      assert.deepStrictEqual(erased, { subscriptionsCancelled: 0 });
     })
   );
 });

@@ -1,4 +1,6 @@
 import { Cause, Exit, Option, Schema } from "effect";
+import type { DateTime } from "effect";
+import { WorkspaceSubscribed } from "peal-contract";
 
 import type { AuthClientError } from "#auth/errors.ts";
 
@@ -87,4 +89,31 @@ export const apiErrorKey = <A, E extends { readonly _tag: string }>(
           ),
           Option.getOrElse((): SettingsErrorKey => "unknown")
         )
+      );
+
+/** A subscription a deletion would cancel, as the server described it. */
+export interface SubscriptionToCancel {
+  readonly paidUntil: Option.Option<DateTime.Utc>;
+  readonly plan: Option.Option<string>;
+  readonly workspaceId: string;
+}
+
+const isSubscribed = Schema.is(WorkspaceSubscribed);
+
+/**
+ * The subscription a deletion refused for, so the person reads what
+ * cancelling ends before they agree; none for any other ending.
+ */
+export const subscriptionToCancel = <A, E>(
+  exit: Exit.Exit<A, E>
+): Option.Option<SubscriptionToCancel> =>
+  Exit.isSuccess(exit)
+    ? Option.none()
+    : Cause.findErrorOption(exit.cause).pipe(
+        Option.filter(isSubscribed),
+        Option.map(({ paidUntil, plan, workspaceId }) => ({
+          paidUntil: Option.fromNullOr(paidUntil),
+          plan: Option.fromNullOr(plan),
+          workspaceId,
+        }))
       );

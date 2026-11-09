@@ -35,7 +35,17 @@ Under **API keys**, give a new key a name, how long it works (30, 90 or 365 days
 
 On **General**, owners choose **Delete this workspace…**, then type the workspace's name to confirm. Everything in it goes, for good: its channels and their authorizations, its posts, scheduled or not, and their analytics, its media library and the files in it, its notifications, its writing assistant usage, what Peal recorded of its subscriptions, its members and invitations, and its API keys, which stop working at once. Nothing more is posted from it. Stripe keeps the invoices it issued.
 
-While one of the workspace's posts is going out, deleting it waits: try again a few minutes later. While the workspace has a subscription Stripe may still bill, active, unpaid or paused, it cannot be deleted: cancel the subscription from its **Billing** page first, and delete the workspace once the subscription has ended. That includes a subscription whose checkout has just completed, before Stripe has told Peal about it. A checkout of the workspace still open, in another tab say, is closed at Stripe as the workspace goes, so it cannot be paid afterwards; when Stripe cannot be reached for that, nothing is deleted: try again a few minutes later.
+While one of the workspace's posts is going out, deleting it waits: try again a few minutes later.
+
+When the workspace has a subscription Stripe may still bill, active, unpaid or paused, including one whose checkout has just completed before Stripe told Peal about it, the dialog first says what deleting does to it, and waits until you tick **Cancel the subscription now**:
+
+- the subscription is cancelled at Stripe at once, and nothing more is charged;
+- the period already paid for is not refunded: there is no proration credit and no final invoice;
+- the workspace's **Billing** page goes with it, so download your invoices from the billing portal first. Stripe keeps the invoices it issued, as accounting law requires (10 years in France), and the confirmation email says whom to ask for a copy.
+
+A checkout of the workspace still open, in another tab say, is closed at Stripe as the workspace goes, so it cannot be paid afterwards. When Stripe cannot be reached, nothing is deleted and nothing is cancelled: try again a few minutes later. Once the workspace is deleted, a confirmation goes to your address, in your language.
+
+To stop paying and keep the workspace, cancel the subscription from its **Billing** page instead: it then ends with the period paid for.
 
 ## Your account [#account]
 
@@ -56,15 +66,17 @@ Choose **Account settings** in the account menu.
 - your connected applications, your notifications and your email preferences, including whether you hear about every post;
 - what the server's staff did to your account (a ban, a confirmation sent again, acting as you, and each change they made while acting as you, with where and on which ids…), when, and the reason they gave, but not who did it;
 - the posts you wrote in the workspaces you share, with where they went, the options each platform got, and whether YouTube kept a video private;
-- the workspaces where you are the only member, with their channels, posts, analytics (each post's counts, as Peal read them), media details, API keys, writing assistant usage and billing: their plan, and how each of their subscriptions stands.
+- the workspaces where you are the only member, with their channels, posts, analytics (each post's counts, as Peal read them), media, API keys, writing assistant usage and billing: their plan, and how each of their subscriptions stands. Each image or video the store holds comes with a link that downloads it for 7 days.
 
-The rest of a workspace you share belongs to its team: the file holds your membership of it and the posts you wrote there, not the others' posts, its channels, its media or its analytics. It holds no password, token, key or card, nor the media files themselves: download those from the workspace's media library. Payment details and invoices stay with Stripe, in the billing portal.
+The rest of a workspace you share belongs to its team: the file holds your membership of it and the posts you wrote there, not the others' posts, its channels, its media or its analytics. It holds no password, token, key or card. Payment details and invoices stay with Stripe, in the billing portal.
+
+Each time a copy is downloaded, from the web app or the [command line](/cli#account), Peal emails your address to say so. If it was not you, change your password and sign out your other sessions.
 
 ### Delete your account [#delete-account]
 
 **Delete my account…** asks for your password, then deletes the account for good. The workspaces where you are the only member go with everything in them, as [deleting a workspace](#delete-workspace) does; you leave the others, where the posts you wrote stay, without your name, as do the channels you connected, which belong to the workspace. Connections you had started and not finished, your sessions, notifications, preferences, invitations and connected applications go too, and a confirmation goes to your address, in your language. As when signing in, after three passwords tried within 10 seconds, wait a few seconds before trying another.
 
-While you are the only owner of a workspace that other members use, the account cannot be deleted: Peal lists those workspaces. Make another member an owner of each, or delete them, first. Nor can it be while a workspace it would delete has a subscription Stripe may still bill: cancel the subscription first.
+While you are the only owner of a workspace that other members use, the account cannot be deleted: Peal lists those workspaces. Make another member an owner of each, or delete them, first. When a workspace it would delete has a subscription Stripe may still bill, the dialog says what that ends and waits until you tick **Cancel the subscription now**, as [deleting a workspace](#delete-workspace) does: those subscriptions are cancelled at once, without a refund of the period paid for, and the confirmation email says so.
 
 ## Through the API [#api]
 

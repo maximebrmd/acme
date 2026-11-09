@@ -51,7 +51,7 @@ Les points d’accès d’administration de Better Auth sous `/api/auth/admin/` 
 
 ## Le journal d’audit [#audit-log]
 
-Chaque action est inscrite avant d’être menée, afin que rien de ce que fait l’équipe ne passe inaperçu : qui l’a faite, quoi, sur quel compte, pourquoi et quand, avec la fin d’un bannissement. Une action qui a ensuite échoué montre tout de même ce que l’équipe a demandé. Le journal garde des identifiants, jamais ce que quiconque a écrit, et garde ses entrées pour de bon.
+Chaque action est inscrite avant d’être menée, afin que rien de ce que fait l’équipe ne passe inaperçu : qui l’a faite, quoi, sur quel compte, pourquoi et quand, avec la fin d’un bannissement. Une action qui a ensuite échoué montre tout de même ce que l’équipe a demandé. Le journal garde des identifiants, jamais ce que quiconque a écrit. Il garde chaque entrée 12 mois, et un bannissement, ou sa levée, 3 ans, ou 12 mois après la fin d’un bannissement plus long : une tâche quotidienne (`staff.audit-retention`, à 03 h 41 UTC) supprime les entrées plus anciennes.
 
 Pendant que l’équipe agit à la place d’un compte, le serveur inscrit chaque requête qui modifie quelque chose, avant qu’elle ne s’exécute, quel que soit son chemin : l’API de Peal (`/api/…`) comme les routes du service de connexion (`/api/auth/…`). Le code qui traite la requête n’y a aucune part, si bien qu’une modification ne peut pas échapper à son inscription, et une modification que le serveur refuse ensuite est inscrite aussi. Chaque entrée indique :
 

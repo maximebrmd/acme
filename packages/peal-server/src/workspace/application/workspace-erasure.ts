@@ -4,19 +4,27 @@ import type { WorkspaceId } from "#shared/domain/ids.ts";
 
 import { AccountStore } from "./account-store.ts";
 import { ContextRecords } from "./context-records.ts";
+import type { WorkspaceErasureOptions } from "./context-records.ts";
 
 /**
  * Deletes a workspace and everything every context keeps in it, its media
- * files aside. Run it in a transaction, which it joins: the workspace goes
- * whole or not at all.
+ * files aside, cancelling its subscriptions at Stripe when `options` says
+ * to, and says what it cancelled. Run it in a transaction, which it joins:
+ * the workspace goes whole or not at all.
  */
 export const eraseWorkspace = Effect.fn("Workspace.erase")(
-  function* eraseWorkspace(workspaceId: WorkspaceId) {
+  function* eraseWorkspace(
+    workspaceId: WorkspaceId,
+    options: WorkspaceErasureOptions
+  ) {
     const records = yield* ContextRecords;
     const store = yield* AccountStore;
 
-    yield* records.eraseWorkspace(workspaceId);
+    const erased = yield* records.eraseWorkspace(workspaceId, options);
+
     yield* store.deleteWorkspace(workspaceId);
+
+    return erased;
   }
 );
 
