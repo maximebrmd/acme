@@ -1,4 +1,5 @@
 import {
+  FetchResponseError,
   OAuthResolverError,
   OAuthResponseError,
 } from "@atproto/oauth-client-node";
@@ -85,6 +86,22 @@ type ClientFailure =
   | { readonly _tag: "unknownIdentity" }
   | { readonly _tag: "unreachable" };
 
+// The error and the causes it wraps: the library wraps a server's answer in
+// its resolvers' errors, and the DID resolver's.
+const causeChain = (error: Error, depth = 0): readonly Error[] =>
+  error.cause instanceof Error && depth < 16
+    ? [error, ...causeChain(error.cause, depth + 1)]
+    : [error];
+
+const isTransientStatus = (status: number) => status >= 500 || status === 429;
+
+// A server that answered it was busy or broken, at any step: the PLC
+// directory, a PDS, or an authorization server's metadata or endpoints.
+const isTransient = (error: Error) =>
+  (error instanceof OAuthResponseError && isTransientStatus(error.status)) ||
+  (error instanceof FetchResponseError &&
+    isTransientStatus(error.response.status));
+
 const failureOf = (trouble: WireTrouble, cause: unknown): ClientFailure => {
   if (Option.isSome(trouble.refused)) {
     return { _tag: "refused", refusal: trouble.refused.value };
@@ -92,7 +109,7 @@ const failureOf = (trouble: WireTrouble, cause: unknown): ClientFailure => {
 
   if (
     trouble.unreachable ||
-    (cause instanceof OAuthResponseError && cause.status >= 500)
+    (cause instanceof Error && causeChain(cause).some(isTransient))
   ) {
     return { _tag: "unreachable" };
   }

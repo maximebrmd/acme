@@ -324,6 +324,59 @@ layer(BlueskyTest)("connecting a Bluesky account", (it) => {
     })
   );
 
+  // A refresh reads the DID document and the authorization server's
+  // metadata before it presents the refresh token: either answering 503 is
+  // the platform being down, not the session being refused.
+  it.effect.each(["directoryDown", "metadataDown"] as const)(
+    "keeps the channel as it is when %s",
+    (outage) =>
+      Effect.gen(function* lookupsDown() {
+        const workspaceId = yield* freshWorkspace;
+        const network = yield* FakeNetwork;
+        const channel = yield* connected(workspaceId);
+        const before = yield* sessionOf(channel);
+
+        yield* TestClock.adjust(Duration.days(61));
+        network.refreshWith(outage);
+
+        const outcome = yield* RefreshChannelTokens.use((refresh) =>
+          refresh.refresh(channel.id)
+        );
+
+        network.refreshWith("rotate");
+
+        assert.strictEqual(outcome, "unavailable");
+        assert.deepStrictEqual((yield* current(channel)).status, {
+          _tag: "active",
+        });
+        assert.strictEqual((yield* sessionOf(channel)).session, before.session);
+        assert.lengthOf(
+          yield* RecordedNotices.use((recorded) => recorded.of(workspaceId)),
+          0
+        );
+      })
+  );
+
+  it.effect("says the platform is down when the directory is, at sign-in", () =>
+    Effect.gen(function* signInDown() {
+      const workspaceId = yield* freshWorkspace;
+      const network = yield* FakeNetwork;
+
+      network.refreshWith("directoryDown");
+
+      const failure = yield* ConnectChannel.use((connect) =>
+        connect.start(manager(workspaceId), "bluesky", {
+          handle: Option.some("@bob.test"),
+          instance: Option.none(),
+        })
+      ).pipe(Effect.flip);
+
+      network.refreshWith("rotate");
+
+      assert.strictEqual(failure._tag, "PlatformUnavailable");
+    })
+  );
+
   it.effect("reconnects the channel to the same account", () =>
     Effect.gen(function* reconnects() {
       const workspaceId = yield* freshWorkspace;

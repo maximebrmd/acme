@@ -15,8 +15,20 @@ export const blueskyAccount = {
 
 const scope = "atproto transition:generic";
 
-/** How the fake answers refresh requests. */
-export type RefreshBehaviour = "rotate" | "refuse" | "fail";
+/**
+ * How the fake answers once the account is connected: `rotate` refreshes,
+ * `refuse` turns the refresh token down, `fail` breaks the token endpoint,
+ * and `directoryDown` and `metadataDown` break the PLC directory or the
+ * authorization server's metadata, which a refresh reads first.
+ */
+export type RefreshBehaviour =
+  | "rotate"
+  | "refuse"
+  | "fail"
+  | "directoryDown"
+  | "metadataDown";
+
+const unavailable = json({ error: "Service Unavailable" }, 503);
 
 interface Grant {
   readonly challenge: string;
@@ -107,6 +119,10 @@ export const fakeAtproto = Effect.fnUntraced(function* fakeAtproto() {
       }
 
       case `GET /${blueskyAccount.did}`: {
+        if (behaviour === "directoryDown") {
+          return unavailable;
+        }
+
         return json({
           "@context": ["https://www.w3.org/ns/did/v1"],
           alsoKnownAs: [`at://${blueskyAccount.handle}`],
@@ -126,6 +142,10 @@ export const fakeAtproto = Effect.fnUntraced(function* fakeAtproto() {
       }
 
       case "GET /.well-known/oauth-authorization-server": {
+        if (behaviour === "metadataDown") {
+          return unavailable;
+        }
+
         return json({
           authorization_endpoint: `${origin}/oauth/authorize`,
           authorization_response_iss_parameter_supported: true,
