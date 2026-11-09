@@ -31,6 +31,7 @@ import { instagramClient } from "#publishing/infrastructure/platforms/meta/insta
 import { threadsClient } from "#publishing/infrastructure/platforms/meta/threads-client.ts";
 import { xClient } from "#publishing/infrastructure/platforms/x/x-client.ts";
 import { youtubeClient } from "#publishing/infrastructure/platforms/youtube/youtube-client.ts";
+import { DatabaseError } from "#shared/application/database-error.ts";
 import {
   ChannelIdSchema,
   MediaAssetIdSchema,
@@ -435,6 +436,8 @@ export interface UploadLedger {
   readonly sessions: Map<string, UploadSession>;
   /** The units spent, by bucket and ISO day. */
   readonly spent: Map<string, number>;
+  /** Whether reading the journal fails, as with the database down. */
+  unreadable: boolean;
 }
 
 const dayKey = (bucket: string, day: LocalDate) =>
@@ -455,7 +458,11 @@ export const uploadLedgerOf = (ledger: UploadLedger) =>
             }
           }),
         find: (key) =>
-          Effect.sync(() => Option.fromUndefinedOr(ledger.sessions.get(key))),
+          ledger.unreadable
+            ? Effect.fail(new DatabaseError({ cause: "the database is down" }))
+            : Effect.sync(() =>
+                Option.fromUndefinedOr(ledger.sessions.get(key))
+              ),
         made: (key, videoId) =>
           Effect.sync(() => {
             const found = ledger.sessions.get(key);
@@ -507,6 +514,7 @@ export const uploadLedgerOf = (ledger: UploadLedger) =>
 export const emptyLedger = (): UploadLedger => ({
   sessions: new Map(),
   spent: new Map(),
+  unreadable: false,
 });
 
 /** The YouTube client, with the fake as API, in parts of 256 KiB. */

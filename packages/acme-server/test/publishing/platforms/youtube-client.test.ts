@@ -305,6 +305,68 @@ describe("publishing on YouTube", () => {
     })
   );
 
+  // An earlier run sent the last part, YouTube made the video, and the run
+  // stopped before recording it.
+  const madeUnrecorded = Effect.fn("test.madeUnrecorded")(
+    function* madeUnrecorded() {
+      const youtube = yield* onYouTube();
+      const sent = yield* post();
+
+      yield* youtube.client.publish(sent);
+
+      const [session] = youtube.youtube.sessions();
+
+      assert(session !== undefined);
+      youtube.ledger.sessions.set(sent.idempotencyKey, {
+        byteSize: video.media.byteSize,
+        finalPartSent: true,
+        sessionUrl: Option.some(
+          `${youtube.youtube.url}/upload/youtube/v3/videos?uploadType=resumable&upload_id=${session.id}`
+        ),
+        videoId: Option.none(),
+      });
+
+      return { ...youtube, sent };
+    }
+  );
+
+  it.live("never uploads again when the journal cannot be read", () =>
+    Effect.gen(function* journalDown() {
+      const { client, ledger, sent, youtube } = yield* madeUnrecorded();
+
+      ledger.unreadable = true;
+
+      assert.deepStrictEqual(yield* client.resume(sent), {
+        _tag: "unconfirmed",
+        reason: "interrupted",
+      });
+      assert.strictEqual(youtube.videos().length, 1);
+      assert.strictEqual(sessionsOpened(youtube.requests()).length, 1);
+    })
+  );
+
+  it.live(
+    "never uploads again when YouTube rate limits the session's status",
+    () =>
+      Effect.gen(function* statusLimited() {
+        const { client, sent, youtube } = yield* madeUnrecorded();
+
+        youtube.script.push(
+          "PUT /upload/youtube/v3/videos",
+          Array.from({ length: 8 }, () =>
+            youtube.googleError(429, "rateLimitExceeded")
+          )
+        );
+
+        assert.deepStrictEqual(yield* client.resume(sent), {
+          _tag: "unconfirmed",
+          reason: "interrupted",
+        });
+        assert.strictEqual(youtube.videos().length, 1);
+        assert.strictEqual(sessionsOpened(youtube.requests()).length, 1);
+      })
+  );
+
   it.live(
     "restarts an expired session whose last part never left, and leaves one that did unconfirmed",
     () =>

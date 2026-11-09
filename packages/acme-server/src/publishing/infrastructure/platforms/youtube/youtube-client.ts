@@ -150,6 +150,11 @@ const nextByteOf = (response: HttpClientResponse.HttpClientResponse) =>
 
 const isMade = (status: number) => status === 200 || status === 201;
 
+// A refusal of the upload itself, rather than of the moment (a rate limit,
+// a quota, an outage): the session's own last word.
+const isDecisive = (failure: Refused["failure"]) =>
+  failure._tag === "BadRequest" || failure._tag === "MediaRejected";
+
 const isGone = (status: number) => status === 404 || status === 410;
 
 // Whether YouTube made the video private, although asked for more.
@@ -352,14 +357,19 @@ export const youtubeClient = Effect.fn("YouTubeClient.make")(
                 }
 
                 return refusalOf(response).pipe(
-                  Effect.flatMap((refusal) =>
-                    refusal.failure._tag === "TokenRejected"
-                      ? Effect.fail(refusal.failure)
-                      : Effect.succeed<Standing>({
-                          _tag: "refused",
-                          refused: refusal,
-                        })
-                  )
+                  Effect.flatMap((refusal) => {
+                    if (refusal.failure._tag === "TokenRejected") {
+                      return Effect.fail(refusal.failure);
+                    }
+
+                    // A rate limit on the question says nothing of the
+                    // upload: only YouTube's word on the video settles it.
+                    return Effect.succeed<Standing>(
+                      isDecisive(refusal.failure)
+                        ? { _tag: "refused", refused: refusal }
+                        : unknown
+                    );
+                  })
                 );
               }),
               Effect.catchTags({
@@ -894,9 +904,18 @@ export const youtubeClient = Effect.fn("YouTubeClient.make")(
     ) {
       const chosen = youtubeOptionsOf(post);
 
-      const journal = yield* sessions
+      const read = yield* sessions
         .find(post.idempotencyKey)
-        .pipe(Effect.option, Effect.map(Option.flatten));
+        .pipe(Effect.option);
+
+      // A journal that cannot be read cannot tell that no byte left.
+      if (Option.isNone(read)) {
+        const lookedUp: LookUp = { _tag: "unknown" };
+
+        return lookedUp;
+      }
+
+      const journal = read.value;
 
       if (Option.isNone(journal)) {
         const absent: LookUp = { _tag: "absent" };

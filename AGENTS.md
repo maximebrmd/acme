@@ -526,9 +526,10 @@ and no socket, for tests.
   records the video id once made, clearing the URL. Its `lookUp` reads that
   journal and asks the session (`bytes */size`): 308 or no row is `absent`
   (the commit then resumes from the `Range`), 200/201 `found`, an expired
-  session `absent` only while no last part left. After the upload only
-  YouTube's `failed`/`rejected` refuse the post: nothing that could make a
-  retry upload twice. Each upload first spends a unit of the server-wide
+  session `absent` only while no last part left, and a journal it cannot
+  read, or a status YouTube refused for the moment (a rate limit),
+  `unknown`. After the upload only YouTube's `failed`/`rejected` refuse the
+  post: nothing that could make a retry upload twice. Each upload first spends a unit of the server-wide
   ledger (`PlatformQuota`, `publishing.quota_usage`, by Pacific day,
   `YOUTUBE_DAILY_UPLOADS`); past it, or on `quotaExceeded` and
   `uploadLimitExceeded`, it fails as `RateLimited` with that code
