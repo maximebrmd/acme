@@ -99,13 +99,13 @@ describe(AssistantPreview, () => {
         dailyLimit: 100,
         resetsAt: DateTime.makeUnsafe("2026-11-10T00:00:00Z"),
       }),
-      "used today&#x27;s 100 assistant requests",
+      "used its 100 assistant requests for today",
       false,
     ],
     [new AssistantUnavailable(), "not available on this server", false],
     [
       new AssistantInputRejected({ maxLength: 5000, reason: "tooLong" }),
-      "longer than the 5000 characters",
+      "longer than the 5,000 characters",
       false,
     ],
     [new AssistantFailed({ reason: "declined" }), "declined to work", false],
@@ -144,5 +144,28 @@ describe(AssistantPreview, () => {
 
     expect(html).toContain("Réécriture : Spirituel");
     expect(html).toContain("La réponse de l’assistant est inutilisable.");
+  });
+
+  it("writes numbers and counts as the reader's language does", async () => {
+    const tooLong = await render("fr", rewrite, {
+      _tag: "failed",
+      failure: new AssistantInputRejected({
+        maxLength: 5000,
+        reason: "tooLong",
+      }),
+    });
+
+    const quota = await render("fr", rewrite, {
+      _tag: "failed",
+      failure: new AssistantQuotaExceeded({
+        dailyLimit: 1,
+        resetsAt: DateTime.makeUnsafe("2026-11-10T00:00:00Z"),
+      }),
+    });
+
+    expect(tooLong).toContain(
+      `dépasse les ${new Intl.NumberFormat("fr").format(5000)} caractères`
+    );
+    expect(quota).toContain("a utilisé sa 1 demande à l’assistant");
   });
 });
