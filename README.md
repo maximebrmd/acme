@@ -1,3 +1,5 @@
+<img src="packages/peal-site/public/favicon.svg" alt="" width="64" height="64" />
+
 # Peal
 
 Schedule social media posts across platforms, from one place:

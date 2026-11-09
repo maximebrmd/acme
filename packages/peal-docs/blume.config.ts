@@ -56,6 +56,9 @@ export default defineConfig({
       { code: "fr", label: "Français" },
     ],
   },
+  // The mark shows beside the title. Blume finds the favicon and the Apple
+  // touch icon in public/ by their file names.
+  logo: "/favicon.svg",
   navigation: {
     tabs: [
       { label: { en: "Guides", fr: "Guides" }, path: "/" },
