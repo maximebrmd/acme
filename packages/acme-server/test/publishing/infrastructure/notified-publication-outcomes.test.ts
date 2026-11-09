@@ -7,8 +7,14 @@ import { ChannelRepository } from "#channels/application/channel-repository.ts";
 import { ListChannels } from "#channels/application/list-channels.ts";
 import { DrizzleChannelRepository } from "#channels/infrastructure/drizzle-channel-repository.ts";
 import { NoticeInbox } from "#notifications/application/notice-inbox.ts";
+import { NoticeLog } from "#notifications/application/notice-log.ts";
+import { NoticeStore } from "#notifications/application/notice-store.ts";
+import { Notify } from "#notifications/application/notify.ts";
 import type { NoticeRequest } from "#notifications/application/notify.ts";
 import { NotificationsWorkersLive } from "#notifications/container.ts";
+import { DrizzleNoticeLog } from "#notifications/infrastructure/drizzle-notice-log.ts";
+import { DrizzleNoticeStore } from "#notifications/infrastructure/drizzle-notice-store.ts";
+import { DrizzlePreferenceStore } from "#notifications/infrastructure/drizzle-preference-store.ts";
 import { WorkflowNoticeDelivery } from "#notifications/infrastructure/workflow-notice-delivery.ts";
 import { PostRepository } from "#publishing/application/post-repository.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
@@ -25,6 +31,7 @@ import { MediaRejected } from "#shared/domain/media-rejected.ts";
 import { IdsLive } from "#shared/infrastructure/secure-random-ids.ts";
 import { TransactionRunnerLive } from "#shared/infrastructure/transaction-runner-live.ts";
 import { freshWorkspace } from "#test/channels/support.ts";
+import { StartedDeliveries } from "#test/notifications/started-deliveries.ts";
 import {
   freshUser,
   noticesWith,
@@ -69,6 +76,44 @@ const onServerAt = <A, E>(
   start: string,
   test: Effect.Effect<A, E, Layer.Success<typeof ServerTest> | Scope.Scope>
 ) => setTime(start).pipe(Effect.andThen(test.pipe(Effect.provide(ServerTest))));
+
+// Notices with a bug in saving them: it dies after Notify has claimed the
+// event's key, inside the savepoint Notify runs in.
+const DyingNoticeStore = Layer.effect(
+  NoticeStore,
+  NoticeStore.use((store) =>
+    Effect.succeed(
+      NoticeStore.of({
+        ...store,
+        add: () => Effect.die("A bug in saving notices"),
+      })
+    )
+  )
+).pipe(Layer.provide(DrizzleNoticeStore));
+
+// The same server, telling through a Notify with that bug.
+const BuggyServerTest = publishingWorkers(FakePlatformPublisher).pipe(
+  Layer.provideMerge(PublishingLive),
+  Layer.provideMerge(
+    Notify.layer.pipe(
+      Layer.provideMerge(
+        Layer.mergeAll(
+          DyingNoticeStore,
+          DrizzleNoticeLog,
+          DrizzlePreferenceStore,
+          StartedDeliveries.layer,
+          TestDirectory.layer
+        )
+      )
+    )
+  ),
+  Layer.provideMerge(ListChannels.layer),
+  Layer.provideMerge(DrizzleChannelRepository),
+  Layer.provideMerge(Layer.mergeAll(IdsLive, TransactionRunnerLive)),
+  Layer.provideMerge(clusterOver(MessageStorage.layerMemory)),
+  Layer.provideMerge(FakePlatformPublisher),
+  Layer.provideMerge(DatabaseTest)
+);
 
 const timeout = 60_000;
 
@@ -243,6 +288,38 @@ describe("the notices of a post's outcomes", () => {
             "scheduled"
           );
         })
+      ),
+    timeout
+  );
+
+  it.effect(
+    "never stop publishing for a bug in telling, which leaves nothing behind",
+    () =>
+      setTime("2026-06-15T07:00:00Z").pipe(
+        Effect.andThen(
+          Effect.gen(function* buggyTelling() {
+            const { workspaceId } = yield* workspaceWithEditor;
+            const channelId = yield* connect(workspaceId, "mastodon");
+            const post = yield* schedule(workspaceId, [channelId]);
+
+            yield* eventually("the job sleeps", isSuspended(post.id));
+            yield* setTime("2026-06-15T08:00:00Z");
+            yield* eventually("the post finishes", isFinished(post.id));
+
+            const [target] = yield* targetsOf(post.id);
+
+            assert(target !== undefined);
+            assert.strictEqual(target.status._tag, "published");
+
+            // The key went with the savepoint the bug rolled back, while the
+            // settlement around it committed: the event can be told again.
+            const claimed = yield* NoticeLog.use((log) =>
+              log.isClaimed(`post-target:${target.id}:${target.round}`)
+            );
+
+            assert.isFalse(claimed);
+          }).pipe(Effect.provide(BuggyServerTest))
+        )
       ),
     timeout
   );
