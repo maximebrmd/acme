@@ -14,6 +14,7 @@ import {
   failureOf,
 } from "#channels/channels-api.ts";
 import type { ChannelErrorKey } from "#channels/channels-api.ts";
+import { useConnect } from "#channels/use-connect.ts";
 import {
   AccountPickerView,
   toggled,
@@ -27,7 +28,8 @@ interface AccountPickerProps {
   readonly workspaceId: string;
 }
 
-// Sends the member's choice, once, then returns to the channels.
+// Sends the member's choice, then returns to the channels. After a
+// failure, the member tries again, or signs in again for a new choice.
 export const AccountPicker = ({
   accounts,
   platform,
@@ -40,6 +42,7 @@ export const AccountPicker = ({
   const [selected, setSelected] = useState<readonly string[]>([]);
   const [error, setError] = useState<ChannelErrorKey | null>(null);
   const [isPending, startTransition] = useTransition();
+  const signIn = useConnect(workspaceId, platform);
 
   const handleToggle = (accountId: string, checked: boolean) => {
     setSelected((before) => toggled(accounts, before, accountId, checked));
@@ -76,12 +79,25 @@ export const AccountPicker = ({
           {t("cancel")}
         </Button>
       }
-      error={error}
-      isPending={isPending}
+      error={signIn.error ?? error}
+      isPending={isPending || signIn.isPending}
       onSubmit={handleSubmit}
       onToggle={handleToggle}
       platform={platform}
       selected={selected}
+      startOver={
+        <Button
+          type="button"
+          variant="outline"
+          disabled={signIn.isPending}
+          focusableWhenDisabled
+          onClick={() => {
+            signIn.start({});
+          }}
+        >
+          {signIn.isPending ? t("connecting") : t("startOver")}
+        </Button>
+      }
     />
   );
 };

@@ -145,12 +145,14 @@ export type ChooseAccounts = typeof ChooseAccountsSchema.Type;
 
 const workspace = { workspaceId: Schema.String };
 
-const connectErrors = [
+// Reconnecting adds no channel, so no plan limit refuses it.
+const reconnectErrors = [
   Forbidden,
   ConnectFailed,
   PlatformUnreachable,
-  PlanLimitReached,
 ] as const;
+
+const connectErrors = [...reconnectErrors, PlanLimitReached] as const;
 
 /** The social accounts connected to a workspace. */
 export class ChannelsApi extends HttpApiGroup.make("channels")
@@ -209,18 +211,18 @@ export class ChannelsApi extends HttpApiGroup.make("channels")
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Connects the accounts the member chose among those a completed sign-in listed: each becomes a channel of the workspace, or reconnects the one it has. The new accounts chosen need room in the workspace's plan, all of them: otherwise none is connected (PlanLimitReached), and the choice can be made again with fewer. Only the member who completed the sign-in can choose, once, within 15 minutes. Needs channel:connect.",
+          "Connects the accounts the member chose among those a completed sign-in listed: each becomes a channel of the workspace, or reconnects the one it has. The new accounts chosen need room in the workspace's plan, all of them: otherwise none is connected (PlanLimitReached), and the choice can be made again with fewer. Only the member who completed the sign-in can choose, within 15 minutes, and once an account is connected: a choice that failed before connecting any can be made again. Needs channel:connect.",
         summary: "Choose the accounts to connect",
       })
     ),
     HttpApiEndpoint.post("reconnect", "/:channelId/reconnect", {
-      error: [...connectErrors, ChannelNotFound],
+      error: [...reconnectErrors, ChannelNotFound],
       params: { ...workspace, channelId: Schema.String },
       success: AuthorizationSchema,
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Starts reconnecting a channel whose token stopped working or is about to: answers with the platform's sign-in page. Completing it must sign in to the same account. Needs channel:connect.",
+          "Starts reconnecting a channel whose token stopped working or is about to: answers with the platform's sign-in page. Completing it must sign in to the same account. A channel the workspace has takes no room in its plan, so no plan limit refuses it. Needs channel:connect.",
         summary: "Start reconnecting a channel",
       })
     ),

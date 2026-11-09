@@ -41,6 +41,15 @@ const video = (id: string, durationMs = 30_000) =>
     durationMs,
   });
 
+// A 30-second MP4 of `byteSize` bytes.
+const small = (byteSize: number) =>
+  file("a", {
+    byteSize,
+    contentType: "video/mp4",
+    dimensions: { height: 1920, width: 1080 },
+    durationMs: 30_000,
+  });
+
 const loaded = (
   media: Media,
   altText = "A synthetic picture"
@@ -111,6 +120,23 @@ describe(mediaFitOn, () => {
         loaded(file("a", { byteSize: 6 * mebibyte, contentType: "image/gif" })),
       ]).problems
     ).toStrictEqual([]);
+  });
+
+  it("refuses a LinkedIn video smaller than LinkedIn takes", () => {
+    expect(
+      mediaFitOn("linkedin", [loaded(small(75_000))]).problems
+    ).toStrictEqual([]);
+    expect(
+      mediaFitOn("linkedin", [loaded(small(74_999))]).problems
+    ).toStrictEqual([
+      {
+        _tag: "mediaTooSmall",
+        byteSize: 74_999,
+        kind: "video",
+        minimum: 75_000,
+        position: 1,
+      },
+    ]);
   });
 
   it("keeps videos within the platform's durations and counts", () => {

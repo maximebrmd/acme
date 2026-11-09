@@ -1,7 +1,8 @@
 "use client";
 
 import { useAtomRefresh, useAtomValue } from "@effect/atom-react";
-import type { Channel, Post, PostAnalytics } from "acme-contract";
+import { countedPlatforms } from "acme-contract";
+import type { Channel, Platform, Post, PostAnalytics } from "acme-contract";
 import { Button } from "acme-ui/components/button";
 import { Skeleton } from "acme-ui/components/skeleton";
 import { DateTime } from "effect";
@@ -17,66 +18,115 @@ import { browserTimeZone } from "#posts/zoned-time.ts";
 interface PostMetricsViewProps {
   readonly analytics: PostAnalytics;
   readonly channels: readonly Channel[];
+  /** The channels the post went live on. */
+  readonly publishedOn: readonly string[];
 }
+
+const isCounted = (platform: Platform) =>
+  countedPlatforms.some((counted) => counted === platform);
 
 /**
  * What a post's channels counted: each one's latest counts, when they were
  * read, and how they went over time. Before the first read, says when the
- * counts come.
+ * counts come, and for the platforms Acme reads no counts on, that it has
+ * none.
  */
 export const PostMetricsView = ({
   analytics,
   channels,
+  publishedOn,
 }: PostMetricsViewProps) => {
   const t = useTranslations("Analytics");
   const tPosts = useTranslations("Posts");
   const format = useFormatter();
 
+  // The platforms the post went live on, where the channel is still known.
+  const platformsOf = publishedOn.map(
+    (channelId) => channels.find(({ id }) => id === channelId)?.platform
+  );
+
+  const uncounted = [
+    ...new Set(
+      platformsOf.filter(
+        (platform): platform is Platform =>
+          platform !== undefined && !isCounted(platform)
+      )
+    ),
+  ];
+
+  const note =
+    uncounted.length === 0 ? null : (
+      <p className="text-muted-foreground text-sm">
+        {t("post.uncounted", {
+          platforms: format.list(
+            uncounted.map((platform) => tPosts("platform", { platform })),
+            { type: "conjunction" }
+          ),
+        })}
+      </p>
+    );
+
   if (analytics.targets.length === 0) {
-    return <p className="text-muted-foreground text-sm">{t("post.notYet")}</p>;
+    // Counts may still come from a channel Acme reads, or one since
+    // disconnected, which it can no longer tell.
+    const mayCome = platformsOf.some(
+      (platform) => platform === undefined || isCounted(platform)
+    );
+
+    return (
+      <div className="flex flex-col gap-2">
+        {mayCome || note === null ? (
+          <p className="text-muted-foreground text-sm">{t("post.notYet")}</p>
+        ) : null}
+        {note}
+      </div>
+    );
   }
 
   return (
-    <ul className="flex flex-col gap-6">
-      {analytics.targets.map((target) => {
-        const handle =
-          channels.find(({ id }) => id === target.channelId)?.handle ??
-          tPosts("disconnectedChannel");
+    <div className="flex flex-col gap-6">
+      <ul className="flex flex-col gap-6">
+        {analytics.targets.map((target) => {
+          const handle =
+            channels.find(({ id }) => id === target.channelId)?.handle ??
+            tPosts("disconnectedChannel");
 
-        return (
-          <li key={target.targetId} className="flex flex-col gap-2">
-            <div className="flex flex-wrap items-baseline justify-between gap-2 text-sm">
-              <span className="font-medium">{handle}</span>
-              <span className="text-muted-foreground">
-                {target.lastCollectedAt === null
-                  ? t("post.notRead")
-                  : t("post.readAt", {
-                      at: format.dateTime(
-                        DateTime.toDate(target.lastCollectedAt),
-                        { dateStyle: "medium", timeStyle: "short" }
-                      ),
-                    })}
-              </span>
-            </div>
-            {target.latest === null ? (
-              <p className="text-muted-foreground text-sm">
-                {t("post.notYet")}
-              </p>
-            ) : (
-              <MetricList counts={target.latest} />
-            )}
-            {target.snapshots.length > 1 ? (
-              <ReadingsChart handle={handle} snapshots={target.snapshots} />
-            ) : null}
-            {target.collecting ? null : (
-              <p className="text-muted-foreground text-sm">
-                {t("post.stopped")}
-              </p>
-            )}
-          </li>
-        );
-      })}
-    </ul>
+          return (
+            <li key={target.targetId} className="flex flex-col gap-2">
+              <div className="flex flex-wrap items-baseline justify-between gap-2 text-sm">
+                <span className="font-medium">{handle}</span>
+                <span className="text-muted-foreground">
+                  {target.lastCollectedAt === null
+                    ? t("post.notRead")
+                    : t("post.readAt", {
+                        at: format.dateTime(
+                          DateTime.toDate(target.lastCollectedAt),
+                          { dateStyle: "medium", timeStyle: "short" }
+                        ),
+                      })}
+                </span>
+              </div>
+              {target.latest === null ? (
+                <p className="text-muted-foreground text-sm">
+                  {t("post.notYet")}
+                </p>
+              ) : (
+                <MetricList counts={target.latest} />
+              )}
+              {target.snapshots.length > 1 ? (
+                <ReadingsChart handle={handle} snapshots={target.snapshots} />
+              ) : null}
+              {target.collecting ? null : (
+                <p className="text-muted-foreground text-sm">
+                  {t("post.stopped")}
+                </p>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+      {note}
+    </div>
   );
 };
 
@@ -123,7 +173,13 @@ export const PostMetrics = ({
 
     return (
       <InTimeZone timeZone={browserTimeZone()}>
-        <PostMetricsView analytics={result.value} channels={channels} />
+        <PostMetricsView
+          analytics={result.value}
+          channels={channels}
+          publishedOn={post.targets.flatMap(({ channelId, status }) =>
+            status === "published" ? [channelId] : []
+          )}
+        />
       </InTimeZone>
     );
   })();

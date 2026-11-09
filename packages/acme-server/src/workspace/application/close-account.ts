@@ -12,6 +12,7 @@ import type { UserPrincipal } from "#workspace/domain/user-principal.ts";
 import { AccountMail } from "./account-mail.ts";
 import { AccountStore } from "./account-store.ts";
 import type { AuthUnavailable } from "./auth-unavailable.ts";
+import type { BillingUnavailable } from "./billing-unavailable.ts";
 import { ContextRecords } from "./context-records.ts";
 import { IncorrectPassword } from "./incorrect-password.ts";
 import { NotSignedIn } from "./not-signed-in.ts";
@@ -29,7 +30,8 @@ import type { WorkspaceSubscribed } from "./workspace-subscribed.ts";
  * sessions and OAuth grants go too, in one transaction. It is refused while
  * they are the only owner of a workspace others still use (`planClosure`),
  * and while one of the workspaces it would delete has a subscription Stripe
- * may still bill. A confirmation is emailed to the address the account had,
+ * may still bill, or Stripe cannot be reached to expire its open checkouts.
+ * A confirmation is emailed to the address the account had,
  * in its language.
  */
 export class CloseAccount extends Context.Service<
@@ -41,6 +43,7 @@ export class CloseAccount extends Context.Service<
     ) => Effect.Effect<
       void,
       | AuthUnavailable
+      | BillingUnavailable
       | DatabaseError
       | IncorrectPassword
       | LastOwner

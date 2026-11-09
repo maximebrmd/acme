@@ -1,11 +1,13 @@
 import { assert, layer } from "@effect/vitest";
 import {
   Context,
+  DateTime,
   Duration,
   Effect,
   Layer,
   Option,
   Redacted,
+  Ref,
   Result,
   Schema,
 } from "effect";
@@ -14,15 +16,19 @@ import { FetchHttpClient } from "effect/http";
 import { SqlClient } from "effect/sql";
 import { TestClock } from "effect/testing";
 
+import { WorkspaceEntitlements } from "#billing/application/workspace-entitlements.ts";
+import { Entitlements, unmetered } from "#billing/domain/entitlements.ts";
 import { ChannelRepository } from "#channels/application/channel-repository.ts";
 import { ConnectChannel } from "#channels/application/connect-channel.ts";
 import type { ConnectOutcome } from "#channels/application/connect-channel.ts";
+import { DataDeletions } from "#channels/application/data-deletions.ts";
 import { PlatformAuthorizers } from "#channels/application/platform-authorizer.ts";
 import type { AuthorizationCallback } from "#channels/application/platform-authorizer.ts";
 import { RefreshChannelTokens } from "#channels/application/refresh-channel-tokens.ts";
 import { TokenCipher } from "#channels/application/token-cipher.ts";
 import type { Channel } from "#channels/domain/channel.ts";
 import type { Platform } from "#channels/domain/platform.ts";
+import { DrizzleDataDeletions } from "#channels/infrastructure/drizzle-data-deletions.ts";
 import { facebookAuthorizer } from "#channels/infrastructure/platforms/meta/facebook-authorizer.ts";
 import { instagramAuthorizer } from "#channels/infrastructure/platforms/meta/instagram-authorizer.ts";
 import { threadsAuthorizer } from "#channels/infrastructure/platforms/meta/threads-authorizer.ts";
@@ -728,6 +734,170 @@ layer(FreePlanMetaTest)("choosing Meta accounts on the free plan", (it) => {
 
         assert.strictEqual(results.filter(Result.isSuccess).length, 1);
         assert.lengthOf(yield* repository.list(workspaceId), 3);
+      })
+  );
+});
+
+// How many more reads of the plan find it limiting nothing: after them, the
+// workspace is on the free plan, as when a smaller plan lands while a
+// member chooses.
+const unmeteredReads = Ref.makeUnsafe(Number.POSITIVE_INFINITY);
+
+const DowngradingTest = Layer.succeed(
+  WorkspaceEntitlements,
+  WorkspaceEntitlements.of({
+    of: () =>
+      Ref.getAndUpdate(unmeteredReads, (left) => left - 1).pipe(
+        Effect.map((left) =>
+          left > 0
+            ? unmetered
+            : new Entitlements({
+                plan: Option.some("free"),
+                subscription: Option.none(),
+              })
+        )
+      ),
+  })
+);
+
+const DowngradingMetaTest = connectChannelWith(
+  MetaAuthorizersTest,
+  DowngradingTest
+).pipe(Layer.provideMerge(FakeMeta.layer));
+
+layer(DowngradingMetaTest)(
+  "choosing Meta accounts as the plan shrinks",
+  (it) => {
+    it.effect(
+      "keeps a choice that connected nothing for another try, and spends one that connected an account",
+      () =>
+        Effect.gen(function* retried() {
+          const meta = yield* FakeMeta;
+          const workspaceId = yield* freshWorkspace;
+          const connect = yield* ConnectChannel;
+          const repository = yield* ChannelRepository;
+
+          // As many channels as the free plan allows.
+          for (const added of [1, 2, 3]) {
+            const channel = yield* freshChannel(workspaceId, {
+              accountId: `synthetic-${added}`,
+            });
+
+            yield* repository.insert(channel, syntheticCredentials(channel));
+          }
+
+          meta.setPages([page("1101"), page("1102"), page("1103")]);
+
+          const offered = yield* signIn(workspaceId, "facebook").pipe(
+            Effect.flatMap(choiceOf)
+          );
+
+          // The choice has room when it is checked, and none once taken.
+          yield* Ref.set(unmeteredReads, 1);
+
+          const refused = yield* Effect.flip(
+            connect.choose(manager(workspaceId), "facebook", {
+              accountIds: ["1101"],
+              selection: offered.selection,
+            })
+          );
+
+          assert.deepStrictEqual(
+            refused,
+            new PlanLimitReached({ allowed: 3, limit: "channels" })
+          );
+          assert.lengthOf(yield* repository.list(workspaceId), 3);
+
+          // Room for one more, then none: the first goes, and the choice with
+          // it.
+          yield* Ref.set(unmeteredReads, 2);
+
+          const partly = yield* Effect.flip(
+            connect.choose(manager(workspaceId), "facebook", {
+              accountIds: ["1101", "1102"],
+              selection: offered.selection,
+            })
+          );
+
+          assert.strictEqual(partly._tag, "PlanLimitReached");
+          assert.lengthOf(yield* repository.list(workspaceId), 4);
+
+          yield* Ref.set(unmeteredReads, Number.POSITIVE_INFINITY);
+
+          const spent = yield* Effect.flip(
+            connect.choose(manager(workspaceId), "facebook", {
+              accountIds: ["1103"],
+              selection: offered.selection,
+            })
+          );
+
+          assert.strictEqual(spent._tag, "InvalidConnectState");
+        })
+    );
+  }
+);
+
+// Connecting, with Meta's data deletion requests carried out meanwhile.
+const DeletionsMetaTest = DrizzleDataDeletions.pipe(
+  Layer.provideMerge(MetaConnectTest)
+);
+
+layer(DeletionsMetaTest)("Meta's data deletion requests", (it) => {
+  it.effect(
+    "remove the accounts a user's sign-in offers, with their Page tokens, and no one else's",
+    () =>
+      Effect.gen(function* offered() {
+        const meta = yield* FakeMeta;
+        const workspaceId = yield* freshWorkspace;
+        const connect = yield* ConnectChannel;
+        // A user of this run only, from the random end of the workspace id.
+        const userId = `1022${workspaceId.replaceAll("-", "").slice(-12)}`;
+
+        meta.setPages([page("1001"), page("1002")]);
+        meta.setUser(`${userId}9`);
+
+        const colleagues = yield* signIn(workspaceId, "facebook").pipe(
+          Effect.flatMap(choiceOf)
+        );
+
+        meta.setUser(userId);
+
+        const theirs = yield* signIn(workspaceId, "facebook").pipe(
+          Effect.flatMap(choiceOf)
+        );
+
+        const now = yield* DateTime.now;
+
+        yield* DataDeletions.use((deletions) =>
+          deletions.erase({
+            app: "facebook",
+            code: workspaceId.replaceAll("-", ""),
+            now,
+            platforms: ["facebook", "instagram"],
+            signedRequest: `synthetic.${workspaceId}`,
+            userId,
+          })
+        );
+
+        const gone = yield* Effect.flip(
+          connect.choose(manager(workspaceId), "facebook", {
+            accountIds: ["1001"],
+            selection: theirs.selection,
+          })
+        );
+
+        assert.strictEqual(gone._tag, "InvalidConnectState");
+
+        const kept = yield* connect.choose(manager(workspaceId), "facebook", {
+          accountIds: ["1001"],
+          selection: colleagues.selection,
+        });
+
+        const [channel] = kept;
+
+        assert.strictEqual(channel?.accountId, "1001");
+        assert(channel !== undefined);
+        assert.strictEqual(yield* grantorOf(channel), `${userId}9`);
       })
   );
 });

@@ -15,6 +15,7 @@ import type {
 } from "#shared/application/personal-data.ts";
 import type { UserId, WorkspaceId } from "#shared/domain/ids.ts";
 
+import type { BillingUnavailable } from "./billing-unavailable.ts";
 import type { WorkspaceBusy } from "./workspace-busy.ts";
 import type { WorkspaceFilesRemain } from "./workspace-files-remain.ts";
 import type { WorkspaceSubscribed } from "./workspace-subscribed.ts";
@@ -57,15 +58,16 @@ export class ContextRecords extends Context.Service<
       workspaceIds: readonly WorkspaceId[]
     ) => Effect.Effect<readonly AuthoredPostRecord[], DatabaseError>;
     /**
-     * Deletes everything of the workspace, stopping its scheduled posts.
-     * Refused, before anything is deleted, while Stripe may still bill it,
-     * and while one of its posts is being published.
+     * Deletes everything of the workspace, stopping its scheduled posts and
+     * expiring its open checkouts at Stripe. Refused, before anything is
+     * deleted, while Stripe may still bill it or cannot be reached, and
+     * while one of its posts is being published.
      */
     readonly eraseWorkspace: (
       workspaceId: WorkspaceId
     ) => Effect.Effect<
       void,
-      DatabaseError | WorkspaceBusy | WorkspaceSubscribed
+      BillingUnavailable | DatabaseError | WorkspaceBusy | WorkspaceSubscribed
     >;
     /**
      * Deletes the user's notices and preferences, and the connections they

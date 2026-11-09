@@ -37,12 +37,24 @@ interface AccountPickerViewProps {
   readonly selected: readonly string[];
   /** A way back to the channels, without choosing. */
   readonly cancel: ReactNode;
+  /** A new sign-in, offered once choosing failed. */
+  readonly startOver: ReactNode;
 }
+
+/**
+ * Whether a choice that failed this way can be made again: the server
+ * keeps it when nothing was connected, and only a choice expired, already
+ * made or offered elsewhere is gone, which signing in again replaces.
+ */
+export const isSpent = (error: ChannelErrorKey | null): boolean =>
+  error === "invalidState";
 
 /**
  * The accounts a sign-in reached, to tick those the workspace posts to: a
  * Facebook user's Pages, or the Instagram accounts linked to them. Those
  * the workspace has already are marked, and choosing them reconnects them.
+ * A failure is shown with a new sign-in beside the button, which stays to
+ * try again unless the choice is spent.
  */
 export const AccountPickerView = ({
   accounts,
@@ -53,9 +65,11 @@ export const AccountPickerView = ({
   onToggle,
   platform,
   selected,
+  startOver,
 }: AccountPickerViewProps) => {
   const t = useTranslations("MetaChannels");
   const errorText = useChannelErrorText();
+  const spent = isSpent(error);
 
   const handleSubmit = (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -69,7 +83,10 @@ export const AccountPickerView = ({
       </p>
       {error === null ? null : (
         <Alert variant="destructive">
-          <AlertDescription>{errorText(error)}</AlertDescription>
+          <AlertDescription>
+            <p>{errorText(error)}</p>
+            {spent ? null : <p>{t("retry")}</p>}
+          </AlertDescription>
         </Alert>
       )}
       <fieldset className="flex flex-col gap-2">
@@ -87,7 +104,7 @@ export const AccountPickerView = ({
                   id={id}
                   aria-describedby={`${id}-handle`}
                   checked={selected.includes(account.accountId)}
-                  disabled={isPending}
+                  disabled={isPending || spent}
                   onCheckedChange={(checked) => {
                     onToggle(account.accountId, checked);
                   }}
@@ -120,13 +137,14 @@ export const AccountPickerView = ({
       <div className="flex flex-wrap gap-2">
         <Button
           type="submit"
-          disabled={isPending || selected.length === 0}
+          disabled={isPending || spent || selected.length === 0}
           focusableWhenDisabled
         >
           {isPending
             ? t("connectingChosen")
             : t("connectChosen", { count: selected.length })}
         </Button>
+        {error === null ? null : startOver}
         {cancel}
       </div>
     </form>

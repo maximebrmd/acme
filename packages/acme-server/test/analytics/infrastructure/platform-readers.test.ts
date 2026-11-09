@@ -8,9 +8,11 @@ import type {
   PostToRead,
 } from "#analytics/application/metrics-reader.ts";
 import { PostMetrics } from "#analytics/domain/post-metrics.ts";
+import { isCounted } from "#analytics/domain/counted-platforms.ts";
 import type { ChannelAccount } from "#channels/application/channel-access.ts";
 import { ChannelUnusable } from "#channels/application/channel-unusable.ts";
 import { ChannelIdSchema, PostTargetIdSchema } from "#shared/domain/ids.ts";
+import { platforms } from "#shared/domain/platform.ts";
 import { PlatformPostIdSchema } from "#shared/domain/publish-result.ts";
 import { TokenExpired } from "#shared/domain/token-expired.ts";
 import { AccessLog, channelAccessOf } from "#test/analytics/access-log.ts";
@@ -666,8 +668,9 @@ describe("reading counts on a channel", () => {
     })
   );
 
-  // The platforms Acme publishes to but reads no counts on yet.
-  it.live.each(["linkedin", "x", "threads", "instagram", "facebook"] as const)(
+  // The platforms Acme publishes to but reads no counts on yet, which the
+  // web app tells members it has no counts for.
+  it.live.each(platforms.filter((platform) => !isCounted(platform)))(
     "reads nothing on %s, which it has no reader for",
     (platform) =>
       Effect.gen(function* unsupported() {

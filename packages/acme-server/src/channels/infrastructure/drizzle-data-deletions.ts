@@ -8,7 +8,7 @@ import { DataDeletion } from "#channels/domain/data-deletion.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
 import { Drizzle } from "#shared/infrastructure/database.ts";
 
-import { channels, dataDeletions } from "./schema.ts";
+import { channels, connectChoices, dataDeletions } from "./schema.ts";
 
 type Row = typeof dataDeletions.$inferSelect;
 
@@ -32,9 +32,9 @@ const toDeletion = (row: Row) =>
 
 /**
  * Data deletion requests in the channels schema, each under the digest of
- * its signed request. Claiming the request, deleting the channels and
- * counting them share one transaction: the same request sent twice at once
- * waits on the first, then finds it.
+ * its signed request. Claiming the request, deleting the channels and the
+ * choices offered, and counting the channels share one transaction: the
+ * same request sent twice at once waits on the first, then finds it.
  */
 export const DrizzleDataDeletions = Layer.effect(
   DataDeletions,
@@ -102,6 +102,18 @@ export const DrizzleDataDeletions = Layer.effect(
           )
         )
         .returning({ id: channels.id })
+        .pipe(Effect.mapError(failed));
+
+      // The accounts their sign-in offers a member, with Page tokens, until
+      // the member chooses: they go too, whoever started the sign-in.
+      yield* db
+        .delete(connectChoices)
+        .where(
+          and(
+            inArray(connectChoices.platform, [...request.platforms]),
+            eq(connectChoices.grantedBy, request.userId)
+          )
+        )
         .pipe(Effect.mapError(failed));
 
       yield* db

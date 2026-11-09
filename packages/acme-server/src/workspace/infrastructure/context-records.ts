@@ -8,6 +8,7 @@ import { MediaRecords } from "#media/application/media-records.ts";
 import { NoticeRecords } from "#notifications/application/notice-records.ts";
 import { PostRecords } from "#publishing/application/post-records.ts";
 import { StaffRecords } from "#staff/application/staff-records.ts";
+import { BillingUnavailable } from "#workspace/application/billing-unavailable.ts";
 import { ContextRecords } from "#workspace/application/context-records.ts";
 import { WorkspaceBusy } from "#workspace/application/workspace-busy.ts";
 import { WorkspaceFilesRemain } from "#workspace/application/workspace-files-remain.ts";
@@ -43,14 +44,15 @@ export const ContextRecordsLive = Layer.effect(
       eraseWorkspace: Effect.fn("ContextRecords.eraseWorkspace")(
         function* eraseWorkspace(workspaceId) {
           // Billing first: a workspace Stripe may still bill is refused
-          // before anything of it goes.
-          yield* billing
-            .eraseWorkspace(workspaceId)
-            .pipe(
-              Effect.catchTag("WorkspaceStillBilled", () =>
-                Effect.fail(new WorkspaceSubscribed({ workspaceId }))
-              )
-            );
+          // before anything of it goes, and its open checkouts are expired.
+          yield* billing.eraseWorkspace(workspaceId).pipe(
+            Effect.catchTags({
+              StripeUnreachable: () =>
+                Effect.fail(new BillingUnavailable({ workspaceId })),
+              WorkspaceStillBilled: () =>
+                Effect.fail(new WorkspaceSubscribed({ workspaceId })),
+            })
+          );
 
           // Then posts: they stop the jobs that would post to the
           // channels, and refuse while one is going out.

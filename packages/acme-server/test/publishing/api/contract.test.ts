@@ -94,6 +94,14 @@ const violations: Record<ContractViolation["_tag"], ContentViolation> = {
     mediaId: mediaAssetId,
     platform: "x",
   },
+  mediaTooSmall: {
+    _tag: "mediaTooSmall",
+    byteSize: 74_999,
+    channelId,
+    mediaId: mediaAssetId,
+    minimum: 75_000,
+    platform: "linkedin",
+  },
   mediaTypeUnsupported: {
     _tag: "mediaTypeUnsupported",
     channelId,
@@ -218,6 +226,7 @@ const contractTags: Record<ContentViolation["_tag"], true> = {
   forbiddenCharacters: true,
   mediaRequired: true,
   mediaTooLarge: true,
+  mediaTooSmall: true,
   mediaTypeUnsupported: true,
   mixedMedia: true,
   noChannels: true,

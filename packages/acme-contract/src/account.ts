@@ -8,6 +8,7 @@ import {
 
 import { ApiKeySchema } from "./api-keys.ts";
 import { Authentication } from "./authentication.ts";
+import { BillingUnavailable } from "./billing-unavailable.ts";
 import { ConnectedAppSchema } from "./connected-apps.ts";
 import { Forbidden } from "./forbidden.ts";
 import { IncorrectPassword } from "./incorrect-password.ts";
@@ -247,13 +248,14 @@ export class AccountApi extends HttpApiGroup.make("account")
         TooManyPasswordAttempts,
         WorkspaceBusy,
         WorkspaceSubscribed,
+        BillingUnavailable,
       ],
       payload: DeleteAccountSchema,
       success: HttpApiSchema.NoContent,
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Deletes the account for good, once `password` confirms it is the user asking: the workspaces where they are the only member, with everything in them, their memberships of the others, where the posts they wrote stay without an author, their sessions, notices, preferences, invitations and connected applications. Refused (409) while they are the only owner of a workspace that has other members (`LastOwner`), while a post of a workspace it would delete is being published (`WorkspaceBusy`), and while one of those workspaces has a subscription Stripe may still bill (`WorkspaceSubscribed`), and (429) for a few seconds after three passwords tried within 10 seconds, as signing in is. A confirmation is emailed to the address the account had.",
+          "Deletes the account for good, once `password` confirms it is the user asking: the workspaces where they are the only member, with everything in them, their memberships of the others, where the posts they wrote stay without an author, their sessions, notices, preferences, invitations and connected applications. Refused (409) while they are the only owner of a workspace that has other members (`LastOwner`), while a post of a workspace it would delete is being published (`WorkspaceBusy`), and while one of those workspaces has a subscription Stripe may still bill (`WorkspaceSubscribed`); (503) when Stripe cannot be reached to expire the open checkouts of the workspaces it would delete (`BillingUnavailable`); and (429) for a few seconds after three passwords tried within 10 seconds, as signing in is. A confirmation is emailed to the address the account had.",
         summary: "Delete my account",
       })
     )

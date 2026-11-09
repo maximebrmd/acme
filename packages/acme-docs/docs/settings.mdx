@@ -35,7 +35,7 @@ Under **API keys**, give a new key a name, how long it works (30, 90 or 365 days
 
 On **General**, owners choose **Delete this workspace…**, then type the workspace's name to confirm. Everything in it goes, for good: its channels and their authorizations, its posts, scheduled or not, and their analytics, its media library and the files in it, its notifications, its writing assistant usage, what Acme recorded of its subscriptions, its members and invitations, and its API keys, which stop working at once. Nothing more is posted from it. Stripe keeps the invoices it issued.
 
-While one of the workspace's posts is going out, deleting it waits: try again a few minutes later. While the workspace has a subscription Stripe may still bill, active, unpaid or paused, it cannot be deleted: cancel the subscription from its **Billing** page first, and delete the workspace once the subscription has ended.
+While one of the workspace's posts is going out, deleting it waits: try again a few minutes later. While the workspace has a subscription Stripe may still bill, active, unpaid or paused, it cannot be deleted: cancel the subscription from its **Billing** page first, and delete the workspace once the subscription has ended. That includes a subscription whose checkout has just completed, before Stripe has told Acme about it. A checkout of the workspace still open, in another tab say, is closed at Stripe as the workspace goes, so it cannot be paid afterwards; when Stripe cannot be reached for that, nothing is deleted: try again a few minutes later.
 
 ## Your account [#account]
 

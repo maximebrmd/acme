@@ -53,6 +53,7 @@ import { TransactionRunnerLive } from "#shared/infrastructure/transaction-runner
 import { StaffApiLive, StaffLive, StaffRecordsLive } from "#staff/container.ts";
 import {
   AuthRoutesLive,
+  StripeCheckoutsLive,
   WorkspaceApiLive,
   WorkspaceLive,
   WorkspaceSettingsLive,
@@ -92,6 +93,12 @@ const ApiLive = HttpApiBuilder.layer(Api, {
  */
 export const RoutesLive = Layer.mergeAll(ApiLive, AuthRoutesLive, McpLive);
 
+// Billing, which reads the checkouts the workspace context's Stripe plugin
+// keeps.
+const BillingContextsLive = BillingLive.pipe(
+  Layer.provide(StripeCheckoutsLive)
+);
+
 // The workspace context with the notifications it sends and the plans that
 // limit it, then the notices, which read the workspace's members, then the
 // channels context, which sends them, as publishing does.
@@ -100,7 +107,7 @@ const ChannelsWithNoticesLive = ChannelsLive.pipe(
   Layer.provideMerge(
     WorkspaceLive.pipe(
       Layer.provideMerge(NotificationsLive),
-      Layer.provideMerge(BillingLive)
+      Layer.provideMerge(BillingContextsLive)
     )
   )
 );
@@ -117,7 +124,7 @@ const PublishingContextLive = PublishingLive.pipe(
 
 // The assistant, whose daily quota is the workspace plan's.
 const AssistantContextLive = AssistantLive.pipe(
-  Layer.provideMerge(BillingLive)
+  Layer.provideMerge(BillingContextsLive)
 );
 
 // Workspace and account settings, which erase and export what every context

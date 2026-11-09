@@ -31,6 +31,7 @@ const toStored = (row: Row, selection: string) =>
     choice: decodeChoice({
       createdAt: DateTime.fromDateUnsafe(row.createdAt),
       expiresAt: DateTime.fromDateUnsafe(row.expiresAt),
+      grantedBy: Option.fromNullOr(row.grantedBy),
       platform: row.platform,
       selection,
       startedBy: row.startedBy,
@@ -65,6 +66,7 @@ export const DrizzleConnectChoices = Layer.effect(
               accounts,
               createdAt: date(choice.createdAt),
               expiresAt: date(choice.expiresAt),
+              grantedBy: Option.getOrNull(choice.grantedBy),
               platform: choice.platform,
               selectionHash,
               startedBy: choice.startedBy,

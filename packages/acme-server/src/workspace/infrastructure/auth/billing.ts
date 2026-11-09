@@ -5,7 +5,7 @@ import type { GenericEndpointContext } from "better-auth";
 import { APIError } from "better-auth/api";
 import { captcha } from "better-auth/plugins";
 import { DateTime, Option, Redacted, Result, Schema } from "effect";
-import { Stripe } from "stripe";
+import type { Stripe } from "stripe";
 
 import type { SubscriptionEvent } from "#billing/application/record-subscription.ts";
 import { roomForOneMore } from "#shared/domain/allowance.ts";
@@ -18,6 +18,7 @@ import type { StripeSettings } from "#shared/infrastructure/stripe-settings.ts";
 import { permissionsFor } from "#workspace/domain/roles.ts";
 
 import type { CaptchaSettings } from "./settings.ts";
+import { stripeClientOf } from "./stripe-client.ts";
 
 /** What the billing plugin calls back into the rest of the server for. */
 export interface BillingHooks {
@@ -28,11 +29,6 @@ export interface BillingHooks {
    * makes the webhook answer an error, so Stripe sends the event again.
    */
   readonly subscriptionChanged: (event: SubscriptionEvent) => Promise<void>;
-  /**
-   * Whether Stripe may still bill the workspace: a subscription that is
-   * not cancelled or incomplete, whether it buys a plan or not.
-   */
-  readonly subscribed: (workspaceId: WorkspaceId) => Promise<boolean>;
 }
 
 /**
@@ -234,18 +230,6 @@ const mayBill = async ({
   });
 };
 
-const protocolOf = (url: URL): "http" | "https" =>
-  url.protocol === "http:" ? "http" : "https";
-
-// The port an address names, or its protocol's.
-const portOf = (url: URL): number => {
-  if (url.port !== "") {
-    return Number(url.port);
-  }
-
-  return url.protocol === "http:" ? 80 : 443;
-};
-
 // Checkout with Stripe Tax: the customer's address and VAT number decide
 // the tax, and both are kept on the customer for the next invoices.
 const automaticTax = {
@@ -266,16 +250,7 @@ export const stripeBilling = (
   hooks: BillingHooks,
   log: (message: string) => void
 ) => {
-  const client = new Stripe(Redacted.value(settings.secretKey), {
-    ...Option.match(settings.apiUrl, {
-      onNone: () => ({}),
-      onSome: (url) => ({
-        host: url.hostname,
-        port: portOf(url),
-        protocol: protocolOf(url),
-      }),
-    }),
-  });
+  const client = stripeClientOf(settings);
 
   const plans: StripePlan[] = PaidPlanSchema.literals.map((name) => ({
     name,
@@ -345,25 +320,6 @@ export const refusePersonalSubscriptions = (ctx: GenericEndpointContext) => {
       code: "WORKSPACE_SUBSCRIPTIONS_ONLY",
       message:
         "Subscriptions belong to workspaces: send customerType organization and the workspace as referenceId",
-    });
-  }
-};
-
-/**
- * Refuses to delete a workspace a subscription still pays for, before
- * anything of it is deleted: Stripe's plugin refuses it too, but only after
- * the other hooks ran. Cancel the subscription first.
- */
-export const refuseDeletingSubscribed = async (
-  hooks: BillingHooks,
-  workspaceId: string
-): Promise<void> => {
-  const id = decodeWorkspaceId(workspaceId);
-
-  if (Option.isSome(id) && (await hooks.subscribed(id.value))) {
-    throw APIError.from("BAD_REQUEST", {
-      code: "ORGANIZATION_HAS_ACTIVE_SUBSCRIPTION",
-      message: "Cancel the workspace's subscription before deleting it",
     });
   }
 };

@@ -36,6 +36,7 @@ describe(apiErrorKey, () => {
     ["WorkspaceNameMismatch", "nameMismatch"],
     ["WorkspaceBusy", "busy"],
     ["WorkspaceSubscribed", "subscribed"],
+    ["BillingUnavailable", "billingUnavailable"],
     ["LastOwner", "lastOwner"],
     ["IncorrectPassword", "incorrectPassword"],
     ["TooManyPasswordAttempts", "tooManyRequests"],

@@ -460,6 +460,39 @@ layer(BillingIntegration, {
       })
   );
 
+  // Stripe sends the member back from checkout, and the sign-in service's
+  // plugin records the subscription, before Stripe's own events reach
+  // billing.
+  it.effect(
+    "keeps a workspace whose checkout completed before Stripe's events came",
+    () =>
+      Effect.gen(function* checkedOut() {
+        const app = yield* TestApp;
+        const sql = yield* SqlClient.SqlClient;
+        const delivery = newDelivery();
+
+        const { owner, workspaceId } = yield* billedWorkspace(
+          "completed",
+          delivery.customerId
+        );
+
+        yield* sql`INSERT INTO auth.subscription (plan, reference_id, stripe_customer_id, stripe_subscription_id, status)
+          VALUES ('pro', ${workspaceId}, ${delivery.customerId}, ${delivery.subscriptionId}, 'active')`;
+
+        const refused = yield* app.request(`/api/workspaces/${workspaceId}`, {
+          body: { name: "completed" },
+          headers: { cookie: owner.cookies },
+          method: "DELETE",
+        });
+
+        assert.strictEqual(refused.status, 409);
+        assert.deepInclude(refused.body, {
+          _tag: "WorkspaceSubscribed",
+          workspaceId,
+        });
+      })
+  );
+
   it.effect(
     "deletes a workspace once its subscription ended, with what billing recorded of it",
     () =>

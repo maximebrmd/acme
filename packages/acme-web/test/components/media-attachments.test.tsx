@@ -322,4 +322,37 @@ describe("the media violations the API reports", () => {
       "@acme_x on X: images and a video cannot go out together."
     );
   });
+
+  it("say a file is smaller than the platform takes, in each language", async () => {
+    const view = (
+      <ComposerErrors
+        channels={[channel("linkedin")]}
+        media={attached}
+        failure={
+          new PostContentInvalid({
+            violations: [
+              {
+                _tag: "mediaTooSmall",
+                byteSize: 40_960,
+                channelId: "channel-linkedin",
+                mediaId: clip.id,
+                minimum: 75_000,
+                platform: "linkedin",
+              },
+            ],
+          })
+        }
+      />
+    );
+
+    await expect(render("en", view)).resolves.toContain(
+      "@acme_linkedin on LinkedIn: video 2 weighs 40 kB, at least 73.2 kB."
+    );
+    // French puts no-break spaces before a colon and a unit.
+    const french = await render("fr", view);
+
+    expect(french.replaceAll(/\s/gu, " ")).toContain(
+      "@acme_linkedin sur LinkedIn : la vidéo 2 pèse 40 ko, 73,2 ko au moins."
+    );
+  });
 });

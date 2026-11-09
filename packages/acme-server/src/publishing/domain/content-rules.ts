@@ -316,7 +316,7 @@ const fileViolations = (
     ];
   }
 
-  const { maxByteSize } = limits;
+  const { maxByteSize, minByteSize } = limits;
   const { maxAltTextLength } = rules;
   const altTextLength = measureText(altText, "codePoints");
 
@@ -328,6 +328,16 @@ const fileViolations = (
             ...on,
             byteSize: file.byteSize,
             maximum: maxByteSize,
+          },
+        ]
+      : []),
+    ...(minByteSize !== undefined && file.byteSize < minByteSize
+      ? [
+          {
+            _tag: "mediaTooSmall" as const,
+            ...on,
+            byteSize: file.byteSize,
+            minimum: minByteSize,
           },
         ]
       : []),

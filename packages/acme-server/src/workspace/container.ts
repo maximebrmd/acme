@@ -79,8 +79,8 @@ const StaffToolsLive = Layer.mergeAll(
  * cases behind the API and the MCP endpoint, with the accounts and
  * workspaces the staff console reads and acts on (AccountDirectory,
  * AccountModeration). It needs the database, migrated, the notifications
- * context's SendAuthEmail, and the billing context's WorkspaceEntitlements,
- * RecordSubscription and BilledWorkspaces.
+ * context's SendAuthEmail, and the billing context's WorkspaceEntitlements
+ * and RecordSubscription.
  */
 export const WorkspaceLive = Layer.merge(
   UseCasesLive,
@@ -138,6 +138,13 @@ export const WorkspaceApiLive = Layer.mergeAll(
     Layer.mergeAll(AuthenticationLive, StaffAccessLive, WorkspaceAccessLive)
   )
 );
+
+/**
+ * What the Stripe plugin keeps of each workspace's checkouts, for the
+ * billing context, which refuses to erase a workspace a checkout may bill
+ * and expires those still open. Needs the database.
+ */
+export { StripeCheckoutsLive } from "#workspace/infrastructure/auth/stripe-checkouts.ts";
 
 /**
  * The MCP endpoint's authentication: its routes act as the member an OAuth

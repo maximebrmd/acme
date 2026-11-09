@@ -54,7 +54,8 @@
       "readAt": "Relevée le {at}",
       "stopped": "Plus relevée : les publications sont suivies pendant 30 jours.",
       "tableCaption": "Chiffres de la publication sur {handle}, à chaque relevé",
-      "readAtColumn": "Relevé"
+      "readAtColumn": "Relevé",
+      "uncounted": "Les chiffres ne sont pas disponibles sur {platforms} : Acme ne les relève pour l’instant que sur Mastodon et Bluesky."
     }
   },
   "Assistant": {
@@ -329,14 +330,15 @@
     "description": "{platform, select, facebook {Connectez-vous avec Facebook, puis choisissez les Pages où cet espace de travail publie.} instagram {Comptes professionnels liés à une Page Facebook : connectez-vous avec Facebook, puis choisissez les comptes.} threads {Connectez-vous avec votre compte Threads.} other {Connectez-vous sur la plateforme.}}",
     "connect": "{platform, select, facebook {Connecter des Pages Facebook} instagram {Connecter Instagram} threads {Connecter Threads} other {Connecter}}",
     "connecting": "Ouverture…",
-    "platformsFailed": "Les plateformes que ce serveur connecte n’ont pas pu être chargées. Réessayez.",
     "chooseTitle": "{platform, select, facebook {Les Pages à connecter} instagram {Les comptes Instagram à connecter} other {Les comptes à connecter}}",
     "chooseDescription": "{platform, select, facebook {Votre connexion a atteint ces Pages.} instagram {Votre connexion a atteint ces comptes Instagram.} other {Votre connexion a atteint ces comptes.}} Choisissez ceux où cet espace de travail publie, dans le quart d’heure.",
     "alreadyConnected": "Connecté : le choisir le reconnecte",
     "connectChosen": "{count, plural, =0 {Connecter} one {Connecter # compte} other {Connecter # comptes}}",
     "connectingChosen": "Connexion…",
     "connected": "{count, plural, one {# compte est connecté.} other {# comptes sont connectés.}}",
-    "cancel": "Retour aux canaux"
+    "cancel": "Retour aux canaux",
+    "retry": "Choisissez à nouveau, ou reconnectez-vous avec Facebook pour une nouvelle liste.",
+    "startOver": "Se reconnecter avec Facebook"
   },
   "DataDeletionPage": {
     "title": "Demande de suppression des données",
@@ -760,7 +762,8 @@
       "sideOutOfRange": "{kind, select, image {Image {position}} video {Vidéo {position}} other {Média {position}}} : chaque côté doit faire de {minimum, number} à {maximum, number} pixels",
       "aspectRatioUnsupported": "{kind, select, image {Image {position}} video {Vidéo {position}} other {Média {position}}} : proportions non acceptées",
       "altTextTooLong": "{kind, select, image {Image {position}} video {Vidéo {position}} other {Média {position}}} : texte alternatif de plus de {maximum, number} caractères",
-      "missingAltText": "{count, plural, one {# sans texte alternatif} other {# sans texte alternatif}}"
+      "missingAltText": "{count, plural, one {# sans texte alternatif} other {# sans texte alternatif}}",
+      "mediaTooSmall": "{kind, select, image {Image {position}} video {Vidéo {position}} other {Média {position}}} : moins de {minimum}"
     },
     "violation": {
       "tooManyVideos": "{channel} : {count} vidéos, {maximum} au plus.",
@@ -772,7 +775,8 @@
       "tooManyPixels": "{channel} : {kind, select, image {l’image {position}} video {la vidéo {position}} other {une image ou une vidéo}} fait {width} × {height}, plus de {maximum, number} pixels.",
       "sideOutOfRange": "{channel} : {kind, select, image {l’image {position}} video {la vidéo {position}} other {une image ou une vidéo}} fait {width} × {height}, mais chaque côté doit faire de {minimum, number} à {maximum, number} pixels.",
       "aspectRatioUnsupported": "{channel} : {kind, select, image {l’image {position}} video {la vidéo {position}} other {une image ou une vidéo}} fait {width} × {height} ; ce canal accepte une largeur de {minimum} à {maximum} fois la hauteur.",
-      "altTextTooLong": "{channel} : le texte alternatif de {kind, select, image {l’image {position}} video {la vidéo {position}} other {une image ou une vidéo}} a {length, number} caractères, {maximum, number} au plus."
+      "altTextTooLong": "{channel} : le texte alternatif de {kind, select, image {l’image {position}} video {la vidéo {position}} other {une image ou une vidéo}} a {length, number} caractères, {maximum, number} au plus.",
+      "mediaTooSmall": "{channel} : {kind, select, image {l’image {position}} video {la vidéo {position}} other {une image ou une vidéo}} pèse {size}, {minimum} au moins."
     },
     "calendar": "{count, plural, one {Avec # image ou vidéo} other {Avec # images ou vidéos}}"
   },
@@ -842,7 +846,7 @@
       "ChannelReconnectRequired": "{channel} dans {workspace} doit être reconnecté : rien n’y est publié d’ici là.",
       "ChannelReconnectSoon": "{channel} dans {workspace} doit être reconnecté avant le {expiresAt, date, long} : son autorisation ne peut pas être renouvelée."
     },
-    "reason": "{reason, select, contentRejected {la plateforme a refusé son texte ou son format.} channelDisconnected {son canal a été déconnecté de l’espace de travail avant son départ.} channelDisabled {son canal a été désactivé avant son départ. Réactivez-le, puis publiez à nouveau.} mediaRemoved {l’une de ses images ou vidéos a été supprimée de la médiathèque avant son départ.} mediaRejected {la plateforme a refusé l’une de ses images ou vidéos.} missed {Acme était indisponible à l’heure prévue, et la publication est arrivée trop tard pour partir.} notPublished {quelqu’un a vérifié sur la plateforme et ne l’a pas trouvée.} rateLimited {la plateforme a refusé les requêtes trop longtemps, et Acme a cessé d’essayer.} tokenExpired {l’autorisation du compte ne fonctionne plus. Reconnectez-le, puis publiez à nouveau.} unavailable {la plateforme était injoignable.} appNotAudited {la plateforme n’accepte que des publications privées de l’application de ce serveur tant qu’elle ne l’a pas approuvée. Rendez le compte privé et la publication visible par son seul propriétaire, ou contactez l’opérateur du serveur.} quotaExceeded {l’allocation quotidienne de mises en ligne de la plateforme est restée épuisée, pour ce serveur Acme ou pour le compte, et Acme a cessé d’attendre.} other {{reason}}}",
+    "reason": "{reason, select, contentRejected {la plateforme a refusé son texte ou son format.} channelDisconnected {son canal a été déconnecté de l’espace de travail avant son départ.} channelDisabled {son canal a été désactivé avant son départ. Déconnectez le canal et connectez à nouveau le compte, puis programmez-la dans une nouvelle publication.} mediaRemoved {l’une de ses images ou vidéos a été supprimée de la médiathèque avant son départ.} mediaRejected {la plateforme a refusé l’une de ses images ou vidéos.} missed {Acme était indisponible à l’heure prévue, et la publication est arrivée trop tard pour partir.} notPublished {quelqu’un a vérifié sur la plateforme et ne l’a pas trouvée.} rateLimited {la plateforme a refusé les requêtes trop longtemps, et Acme a cessé d’essayer.} tokenExpired {l’autorisation du compte ne fonctionne plus. Reconnectez-le, puis publiez à nouveau.} unavailable {la plateforme était injoignable.} appNotAudited {la plateforme n’accepte que des publications privées de l’application de ce serveur tant qu’elle ne l’a pas approuvée. Rendez le compte privé et la publication visible par son seul propriétaire, ou contactez l’opérateur du serveur.} quotaExceeded {l’allocation quotidienne de mises en ligne de la plateforme est restée épuisée, pour ce serveur Acme ou pour le compte, et Acme a cessé d’attendre.} other {{reason}}}",
     "open": "{page, select, post {Ouvrir la publication} other {Ouvrir les canaux}}",
     "bell": {
       "label": "{count, plural, =0 {Notifications} one {Notifications, # non lue} other {Notifications, # non lues}}",
@@ -962,7 +966,8 @@
       "passwordTooShort": "Le mot de passe doit compter au moins 12 caractères.",
       "subscribed": "Un espace de travail que ceci supprimerait a encore un abonnement susceptible d’être facturé. Résiliez-le d’abord depuis la page de facturation de l’espace de travail : il pourra être supprimé une fois l’abonnement terminé.",
       "tooManyRequests": "Trop de tentatives. Patientez une minute, puis réessayez.",
-      "unknown": "Une erreur est survenue. Réessayez."
+      "unknown": "Une erreur est survenue. Réessayez.",
+      "billingUnavailable": "Stripe n’a pas pu être joint pour clore les paiements encore ouverts d’un espace de travail que ceci supprimerait, donc rien n’a été supprimé. Réessayez dans quelques minutes."
     }
   },
   "WorkspaceSettings": {

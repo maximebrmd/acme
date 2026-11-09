@@ -101,6 +101,24 @@ describe(renderNoticeEmail, () => {
     );
   });
 
+  // Nothing in Acme turns a channel back on, and reconnecting leaves it off:
+  // a new channel for the account is what members can make.
+  it("says what members can do with a channel turned off", () => {
+    const event: NoticeEvent = {
+      _tag: "PostFailed",
+      channel: mastodon,
+      postId,
+      reason: "channelDisabled",
+    };
+
+    expect(render(event, "en").text).toContain(
+      "its channel was turned off before it went out. Disconnect the channel and connect the account again, then schedule it in a new post."
+    );
+    expect(render(event, "fr").text).toContain(
+      "son canal a été désactivé avant son départ. Déconnectez le canal et connectez à nouveau le compte, puis programmez-la dans une nouvelle publication."
+    );
+  });
+
   it("words every failure in every language", () => {
     for (const reason of PostFailureReasonSchema.literals) {
       for (const locale of locales) {

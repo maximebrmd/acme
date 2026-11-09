@@ -179,7 +179,11 @@ describe(PostMetricsView, () => {
   it("gives each channel's latest counts", async () => {
     const html = await render(
       "en",
-      <PostMetricsView analytics={analytics} channels={[channel]} />
+      <PostMetricsView
+        analytics={analytics}
+        channels={[channel]}
+        publishedOn={[channel.id]}
+      />
     );
 
     expect(html).toContain("@alice@mastodon.test");
@@ -192,7 +196,11 @@ describe(PostMetricsView, () => {
   it("says when they were read, in the reader's zone, and when no more", async () => {
     const html = await render(
       "en",
-      <PostMetricsView analytics={analytics} channels={[channel]} />,
+      <PostMetricsView
+        analytics={analytics}
+        channels={[channel]}
+        publishedOn={[channel.id]}
+      />,
       "Europe/Paris"
     );
 
@@ -207,11 +215,69 @@ describe(PostMetricsView, () => {
       <PostMetricsView
         analytics={{ postId: analytics.postId, targets: [] }}
         channels={[channel]}
+        publishedOn={[channel.id]}
       />
     );
 
     expect(html).toContain(
       "Acme relève pour l’instant les chiffres sur Mastodon et Bluesky, dans l’heure qui suit la parution."
     );
+  });
+
+  it("says counts are not available on the platforms Acme reads none on", async () => {
+    const linkedin: Channel = {
+      ...channel,
+      handle: "Alice Example",
+      id: "01900000-0000-7000-8000-0000000000c3",
+      platform: "linkedin",
+    };
+
+    const x: Channel = {
+      ...channel,
+      handle: "@alice_example",
+      id: "01900000-0000-7000-8000-0000000000c4",
+      platform: "x",
+    };
+
+    const view = (
+      <PostMetricsView
+        analytics={{ postId: analytics.postId, targets: [] }}
+        channels={[channel, linkedin, x]}
+        publishedOn={[linkedin.id, x.id]}
+      />
+    );
+
+    const english = await render("en", view);
+    const french = await render("fr", view);
+
+    expect(english).toContain(
+      "Counts are not available on LinkedIn and X: Acme reads them on Mastodon and Bluesky only, so far."
+    );
+    expect(english).not.toContain("within the hour");
+    expect(french).toContain(
+      "Les chiffres ne sont pas disponibles sur LinkedIn et X : Acme ne les relève pour l’instant que sur Mastodon et Bluesky."
+    );
+    expect(french).not.toContain("dans l’heure");
+  });
+
+  it("says so beside the counts of the channels Acme reads", async () => {
+    const linkedin: Channel = {
+      ...channel,
+      handle: "Alice Example",
+      id: "01900000-0000-7000-8000-0000000000c3",
+      platform: "linkedin",
+    };
+
+    const html = await render(
+      "en",
+      <PostMetricsView
+        analytics={analytics}
+        channels={[channel, linkedin]}
+        publishedOn={[channel.id, linkedin.id]}
+      />
+    );
+
+    expect(html).toContain(">12<");
+    expect(html).toContain("Counts are not available on LinkedIn:");
   });
 });

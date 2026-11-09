@@ -24,6 +24,7 @@ export interface FormatLimits {
   readonly maxMediaWith?: number;
   /** Width times height. */
   readonly maxPixels?: number;
+  readonly minByteSize?: number;
   readonly minDurationMs?: number;
   /** Each of width and height, in pixels, both bounds included. */
   readonly sideRange?: SideRange;
@@ -114,8 +115,9 @@ const minute = 60 * second;
 //   one video, MP4 or QuickTime, of up to 99 MiB and 8,294,400 pixels, never
 //   with images; descriptions of up to 1,500 characters.
 // - LinkedIn: JPEG, PNG and GIF images of up to 36,152,320 pixels; one MP4
-//   video of 3 seconds to 30 minutes and up to 500 MB, never with images;
-//   alt text of up to 4,086 characters.
+//   video of 3 seconds to 30 minutes and 75 KB to 500 MB (75 KB read as
+//   75,000 bytes, the smaller reading), never with images; alt text of up
+//   to 4,086 characters.
 // - X: JPEG, PNG and WebP images of up to 5 MB, GIFs of up to 15 MB; one
 //   video, MP4 or QuickTime, of 0.5 to 140 seconds and up to 512 MB, never
 //   with images; a GIF alone too; alt text of up to 1,000 characters.
@@ -266,6 +268,7 @@ export const platformRules: Readonly<Record<Platform, PlatformRules>> = {
         "video/mp4": {
           maxByteSize: 500 * mebibyte,
           maxDurationMs: 30 * minute,
+          minByteSize: 75_000,
           minDurationMs: 3 * second,
         },
       },

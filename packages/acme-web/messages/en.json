@@ -54,7 +54,8 @@
       "readAt": "Read {at}",
       "stopped": "No longer read: posts are followed for 30 days.",
       "tableCaption": "Counts of the post on {handle}, each time they were read",
-      "readAtColumn": "Read"
+      "readAtColumn": "Read",
+      "uncounted": "Counts are not available on {platforms}: Acme reads them on Mastodon and Bluesky only, so far."
     }
   },
   "Assistant": {
@@ -329,14 +330,15 @@
     "description": "{platform, select, facebook {Sign in with Facebook, then choose the Pages this workspace posts to.} instagram {Professional accounts linked to a Facebook Page: sign in with Facebook, then choose the accounts.} threads {Sign in with your Threads account.} other {Sign in on the platform.}}",
     "connect": "{platform, select, facebook {Connect Facebook Pages} instagram {Connect Instagram} threads {Connect Threads} other {Connect}}",
     "connecting": "Opening…",
-    "platformsFailed": "The platforms this server connects could not be loaded. Try again.",
     "chooseTitle": "{platform, select, facebook {The Pages to connect} instagram {The Instagram accounts to connect} other {The accounts to connect}}",
     "chooseDescription": "{platform, select, facebook {Your sign-in reached these Pages.} instagram {Your sign-in reached these Instagram accounts.} other {Your sign-in reached these accounts.}} Choose those this workspace posts to, within a quarter of an hour.",
     "alreadyConnected": "Connected: choosing it reconnects it",
     "connectChosen": "{count, plural, =0 {Connect} one {Connect # account} other {Connect # accounts}}",
     "connectingChosen": "Connecting…",
     "connected": "{count, plural, one {# account is connected.} other {# accounts are connected.}}",
-    "cancel": "Back to the channels"
+    "cancel": "Back to the channels",
+    "retry": "Choose again, or sign in with Facebook again for a new list.",
+    "startOver": "Sign in with Facebook again"
   },
   "DataDeletionPage": {
     "title": "Data deletion request",
@@ -760,7 +762,8 @@
       "sideOutOfRange": "{kind, select, image {Image {position}} video {Video {position}} other {Media {position}}}: each side must be {minimum, number} to {maximum, number} pixels",
       "aspectRatioUnsupported": "{kind, select, image {Image {position}} video {Video {position}} other {Media {position}}}: shape not taken",
       "altTextTooLong": "{kind, select, image {Image {position}} video {Video {position}} other {Media {position}}}: alt text over {maximum, number} characters",
-      "missingAltText": "{count, plural, one {# without alt text} other {# without alt text}}"
+      "missingAltText": "{count, plural, one {# without alt text} other {# without alt text}}",
+      "mediaTooSmall": "{kind, select, image {Image {position}} video {Video {position}} other {Media {position}}}: under {minimum}"
     },
     "violation": {
       "tooManyVideos": "{channel}: {count} videos, at most {maximum}.",
@@ -772,7 +775,8 @@
       "tooManyPixels": "{channel}: {kind, select, image {image {position}} video {video {position}} other {an image or a video}} is {width} × {height}, more than {maximum, number} pixels.",
       "sideOutOfRange": "{channel}: {kind, select, image {image {position}} video {video {position}} other {an image or a video}} is {width} × {height}, but each side must be {minimum, number} to {maximum, number} pixels.",
       "aspectRatioUnsupported": "{channel}: {kind, select, image {image {position}} video {video {position}} other {an image or a video}} is {width} × {height}; it takes a width from {minimum} to {maximum} times the height.",
-      "altTextTooLong": "{channel}: the alt text of {kind, select, image {image {position}} video {video {position}} other {an image or a video}} has {length, number} characters, at most {maximum, number}."
+      "altTextTooLong": "{channel}: the alt text of {kind, select, image {image {position}} video {video {position}} other {an image or a video}} has {length, number} characters, at most {maximum, number}.",
+      "mediaTooSmall": "{channel}: {kind, select, image {image {position}} video {video {position}} other {an image or a video}} weighs {size}, at least {minimum}."
     },
     "calendar": "{count, plural, one {With # image or video} other {With # images or videos}}"
   },
@@ -842,7 +846,7 @@
       "ChannelReconnectRequired": "{channel} in {workspace} must be reconnected: nothing is posted there until it is.",
       "ChannelReconnectSoon": "{channel} in {workspace} must be reconnected by {expiresAt, date, long}: its authorization cannot be renewed."
     },
-    "reason": "{reason, select, contentRejected {the platform refused its text or its format.} channelDisconnected {its channel was disconnected from the workspace before it went out.} channelDisabled {its channel was turned off before it went out. Turn it back on, then post again.} mediaRemoved {one of its images or videos was deleted from the media library before it went out.} mediaRejected {the platform refused one of its images or videos.} missed {Acme was unavailable at the scheduled time, and the post came too late to send.} notPublished {someone checked the platform and did not find it.} rateLimited {the platform kept turning requests away, and Acme stopped trying.} tokenExpired {the account’s authorization stopped working. Reconnect it, then post again.} unavailable {the platform could not be reached.} appNotAudited {the platform takes only private posts from this server’s app until it approves the app. Make the account private and the post visible to its owner only, or ask the server’s operator.} quotaExceeded {the platform's daily allowance of uploads stayed used up, for this Acme server or for the account, and Acme stopped waiting.} other {{reason}}}",
+    "reason": "{reason, select, contentRejected {the platform refused its text or its format.} channelDisconnected {its channel was disconnected from the workspace before it went out.} channelDisabled {its channel was turned off before it went out. Disconnect the channel and connect the account again, then schedule it in a new post.} mediaRemoved {one of its images or videos was deleted from the media library before it went out.} mediaRejected {the platform refused one of its images or videos.} missed {Acme was unavailable at the scheduled time, and the post came too late to send.} notPublished {someone checked the platform and did not find it.} rateLimited {the platform kept turning requests away, and Acme stopped trying.} tokenExpired {the account’s authorization stopped working. Reconnect it, then post again.} unavailable {the platform could not be reached.} appNotAudited {the platform takes only private posts from this server’s app until it approves the app. Make the account private and the post visible to its owner only, or ask the server’s operator.} quotaExceeded {the platform's daily allowance of uploads stayed used up, for this Acme server or for the account, and Acme stopped waiting.} other {{reason}}}",
     "open": "{page, select, post {Open the post} other {Open the channels}}",
     "bell": {
       "label": "{count, plural, =0 {Notifications} one {Notifications, # unread} other {Notifications, # unread}}",
@@ -962,7 +966,8 @@
       "passwordTooShort": "The password needs at least 12 characters.",
       "subscribed": "A workspace this would delete still has a subscription that may be billed. Cancel it from the workspace’s billing page first: the workspace can be deleted once the subscription has ended.",
       "tooManyRequests": "Too many attempts. Wait a minute, then try again.",
-      "unknown": "Something went wrong. Try again."
+      "unknown": "Something went wrong. Try again.",
+      "billingUnavailable": "Stripe could not be reached to close the checkouts still open for a workspace this would delete, so nothing was deleted. Try again in a few minutes."
     }
   },
   "WorkspaceSettings": {

@@ -1,6 +1,5 @@
 "use client";
 
-import { useAtomSet } from "@effect/atom-react";
 import type { Platform } from "acme-contract";
 import { Alert, AlertDescription } from "acme-ui/components/alert";
 import { Button } from "acme-ui/components/button";
@@ -13,51 +12,18 @@ import {
 } from "acme-ui/components/card";
 import { Input } from "acme-ui/components/input";
 import { Label } from "acme-ui/components/label";
-import { Option } from "effect";
 import { useTranslations } from "next-intl";
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import type { ChangeEvent, SubmitEvent } from "react";
 
 import { useChannelErrorText } from "#channels/channel-error-text.ts";
-import { connectChannel, failureOf } from "#channels/channels-api.ts";
 import type { ChannelErrorKey } from "#channels/channels-api.ts";
-import { rememberConnection } from "#channels/pending-connection.ts";
+import { useConnect } from "#channels/use-connect.ts";
 import {
   ConnectMeta,
   metaPlatforms,
 } from "#components/channels/connect-meta.tsx";
 import type { MetaPlatform } from "#components/channels/connect-meta.tsx";
-
-// Starts a connection, then leaves for the platform's sign-in page.
-const useConnect = (workspaceId: string, platform: Platform) => {
-  const connect = useAtomSet(connectChannel, { mode: "promiseExit" });
-  const [error, setError] = useState<ChannelErrorKey | null>(null);
-  const [isPending, startTransition] = useTransition();
-
-  const start = (payload: {
-    readonly handle?: string;
-    readonly instance?: string;
-  }) => {
-    startTransition(async () => {
-      const exit = await connect({
-        params: { platform, workspaceId },
-        payload,
-      });
-
-      if (exit._tag === "Success") {
-        setError(null);
-        rememberConnection({ platform, workspaceId });
-        globalThis.location.assign(exit.value.authorizationUrl);
-
-        return;
-      }
-
-      setError(Option.getOrElse(failureOf(exit), () => "unknown" as const));
-    });
-  };
-
-  return { error, isPending, start };
-};
 
 const ErrorMessage = ({
   error,

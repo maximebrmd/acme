@@ -366,9 +366,14 @@ and no socket, for tests.
   does not say what becomes of its rows (deleted, left without the user, or
   kept because they name nobody).
 - `ContextRecords.eraseWorkspace` asks billing first: `BillingRecords`
-  refuses a workspace Stripe may still bill (`stillBills`), before anything
-  goes, and `DeleteWorkspace` and `CloseAccount`, for the workspaces it
-  deletes, answer `WorkspaceSubscribed` (409). Closing an account leaves the
+  refuses a workspace Stripe may still bill (`stillBills`, or a status the
+  Stripe plugin's `auth.subscription` holds that `billsAt` bills, as a
+  checkout can complete before Stripe's events come), before anything
+  goes, then expires the workspace's open Checkout Sessions at Stripe
+  (`Checkouts`, which the workspace context's `StripeCheckoutsLive` backs).
+  `DeleteWorkspace` and `CloseAccount`, for the workspaces it deletes,
+  answer `WorkspaceSubscribed` (409), or `BillingUnavailable` (503) when
+  Stripe does not answer. Closing an account leaves the
   posts its user wrote in the workspaces that remain without an author
   (`PostRecords.forgetAuthor`: `author_id` has no foreign key), and drops the
   connections and account choices they had in progress
@@ -457,7 +462,8 @@ and no socket, for tests.
   `complete` answers an `AccountChoice`: `ConnectChannel.complete` connects a
   single account at once, reconnects a channel's own, or keeps the accounts
   encrypted (`connect_choices`, `choice:<selection>`, 15 minutes, used once)
-  for `choose`. `IssuedTokens.grantedBy` keeps the Facebook user a Page token
+  for `choose`, which puts a choice back when it fails before connecting
+  any account. `IssuedTokens.grantedBy` keeps the Facebook user a Page token
   rests on, in `channels.granted_by`. Threads has its own OAuth: a 60-day
   long-lived token that renews itself. Every Graph call carries
   `appsecret_proof` (`#shared/infrastructure/platforms/meta-graph.ts`).
@@ -471,7 +477,8 @@ and no socket, for tests.
   once, none is `NoAccountsToConnect`.
 - Meta's data deletion callbacks (`POST /api/data-deletion/:app`, no sign-in)
   check the `signed_request` HMAC with the app's secret (`SignedRequests`),
-  delete the channels the user granted or owns in every workspace, record
+  delete the channels the user granted or owns in every workspace, and the
+  account choices their sign-in offers (`connect_choices.granted_by`), record
   only the code, counts and the SHA-256 of the signed request
   (`data_deletions`), and answer the status page
   `PUBLIC_URL/data-deletion/<code>`. The same signed request sent again
@@ -479,7 +486,11 @@ and no socket, for tests.
 - `ConnectChannel` stores each attempt under the SHA-256 of its state, bound
   to the member, the workspace and the platform, for 15 minutes, completed
   once. One channel per platform account per workspace: connecting an account
-  again reconnects its channel.
+  again reconnects its channel. Reconnecting adds no channel, so no plan
+  limit refuses it, and its contract lists none.
+- No route turns a channel off or back on (`disable` and `enable` are domain
+  rules only), and reconnecting leaves a channel turned off as it is: notices
+  and docs tell members to disconnect it and connect the account again.
 - Any request to a host a user chose (a Mastodon instance, the servers a
   Bluesky DID names) goes through `publicHttpClient` or `publicFetch` from
   `#shared/infrastructure/platforms`: HTTPS on the default port only,
@@ -626,7 +637,9 @@ and no socket, for tests.
   `MediaForPublishing`, which the media context's `MediaForPlatforms` backs:
   ready assets of the post's workspace. Fail with `TokenRejected` only when
   the platform refused the token before doing anything: the token is renewed
-  and the call made once more.
+  and the call made once more. Mastodon's adapter takes a 401 or 403 as a
+  refused token only with Mastodon's JSON error; without it, a proxy on the
+  way answered, and the call is `PlatformUnavailable`.
 - Adapters reach platforms only through `publicHttpClient`, or
   `publicHttpClientWith({ timeout })` for uploads. Test them against the
   loopback fakes in `test/publishing/fakes/` (and the sign-in flows against
@@ -833,11 +846,11 @@ and no socket, for tests.
   the workspace as `referenceId` only, for members with `billing:manage`,
   never staff impersonating them. Checkout sends Stripe Tax's parameters
   when `STRIPE_AUTOMATIC_TAX` is on. A workspace Stripe may still bill
-  (`stillBills`: any subscription not cancelled or incomplete, unpaid and
-  paused included) is not deleted: Acme's own deletions ask
-  `BillingRecords` first (see Accounts and access), and the hook on Better
-  Auth's disabled `/organization/delete` asks `BilledWorkspaces` before its
-  API keys go.
+  (`billsAt`: any status but cancelled or incomplete, unpaid and paused
+  included, in `billing.subscriptions` or the plugin's `auth.subscription`)
+  is not deleted: Acme's own deletions ask `BillingRecords` first (see
+  Accounts and access), which also expires its open checkouts. Better
+  Auth's `/organization/delete` is disabled, so its hook refuses nothing.
 - Never call Stripe in tests: checkout and the portal run against
   stripe-mock, and webhooks post the payloads in
   `test/billing/fixtures/webhooks`, signed in the test.
@@ -849,14 +862,21 @@ and no socket, for tests.
   below), in `analytics.tracked_posts`, and keeps each reading in
   `analytics.metric_snapshots`: ids and counts, never content. A workspace's
   go with it (`AnalyticsRecords`), and a reading saved after its post was
-  erased keeps nothing (`saveReading` updates the post first).
+  erased keeps nothing (`saveReading` updates the post first). Erasing
+  records the workspace's id in `analytics.erased_workspaces`, and `track`
+  passes those over, under a transaction advisory lock erasures share and
+  following holds alone, so a run that listed a workspace's posts before
+  it was erased follows none of them after.
 - TikTok reads public posts' counts with the Display API's video query, 20
   ids a call, with the channel's token when its scopes include
   `video.list`; a post known by its `publish_id` (not digits) is missing
   without a call.
 - Platforms without a reader (LinkedIn, X and Meta's so far) answer
   `ChannelUnreadable` `unsupported`: their posts end at their first turn,
-  with no warning, and the reports leave them out.
+  with no warning, and the reports leave them out. The platforms with one
+  are `countedPlatforms` (`analytics/domain/counted-platforms.ts`), which
+  the contract copies, kept equal by `test/analytics/api/contract.test.ts`,
+  so a post's page says the others have no counts.
 - `CollectMetrics` runs on the `analytics.collect-metrics` cron, hourly at
   minute 7: a post is read every hour for 48 hours, then every day until it
   is 30 days old (`analytics/domain/collection-schedule.ts`), each next read

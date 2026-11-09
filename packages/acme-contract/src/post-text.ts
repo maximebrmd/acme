@@ -190,6 +190,7 @@ export interface FormatLimits {
   readonly maxMediaWith?: number;
   /** Width times height. */
   readonly maxPixels?: number;
+  readonly minByteSize?: number;
   readonly minDurationMs?: number;
   /** Each of width and height, in pixels, both bounds included. */
   readonly sideRange?: SideRange;
@@ -363,6 +364,7 @@ export const platformRules: Readonly<Record<Platform, PlatformRules>> = {
         "video/mp4": {
           maxByteSize: 500 * mebibyte,
           maxDurationMs: 30 * minute,
+          minByteSize: 75_000,
           minDurationMs: 3 * second,
         },
       },

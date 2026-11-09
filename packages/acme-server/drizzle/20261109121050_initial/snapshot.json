@@ -2,7 +2,7 @@
   "type": "base",
   "version": "9",
   "dialect": "postgres",
-  "id": "7f4c3ef5-5eb4-4519-9dde-7dd73fb1e0e8",
+  "id": "df3debf6-5f68-4fec-9477-aa86ac5c91ac",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
@@ -113,6 +113,25 @@
         "s|sch|auth",
         "n|sch|auth",
         "e|sch|auth"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "analytics",
+        "erased_workspaces"
+      ],
+      "writes": [
+        "s|tbl|analytics.erased_workspaces",
+        "n|tbl|analytics.erased_workspaces",
+        "e|tbl|analytics.erased_workspaces",
+        "n|rel|analytics.erased_workspaces",
+        "n|type|analytics.erased_workspaces",
+        "n|rel|analytics.erased_workspaces_pkey"
+      ],
+      "reads": [
+        "n|sch|analytics"
       ]
     },
     {
@@ -1070,6 +1089,26 @@
         "n|tbl|channels.connect_choices",
         "n|sch|channels",
         "n|col|channels.connect_choices.expires_at"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "channels",
+        "connect_choices",
+        "connect_choices_granted_by"
+      ],
+      "writes": [
+        "s|idx|channels.connect_choices_granted_by",
+        "n|idx|channels.connect_choices_granted_by",
+        "e|idx|channels.connect_choices_granted_by",
+        "n|rel|channels.connect_choices_granted_by"
+      ],
+      "reads": [
+        "n|tbl|channels.connect_choices",
+        "n|sch|channels",
+        "n|col|channels.connect_choices.granted_by"
       ]
     },
     {
@@ -2389,6 +2428,12 @@
     },
     {
       "schema": "analytics",
+      "name": "erased_workspaces",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "analytics",
       "name": "metric_snapshots",
       "isRlsEnabled": false,
       "entityType": "tables"
@@ -2626,6 +2671,32 @@
       "name": "verification",
       "isRlsEnabled": false,
       "entityType": "tables"
+    },
+    {
+      "schema": "analytics",
+      "table": "erased_workspaces",
+      "name": "erased_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "analytics",
+      "table": "erased_workspaces",
+      "name": "workspace_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
     },
     {
       "schema": "analytics",
@@ -3518,6 +3589,19 @@
       "type": "timestamp with time zone",
       "typeSchema": null,
       "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "channels",
+      "table": "connect_choices",
+      "name": "granted_by",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
       "dimensions": 0,
       "default": null,
       "generated": null,
@@ -8155,6 +8239,27 @@
       "entityType": "indexes"
     },
     {
+      "schema": "channels",
+      "table": "connect_choices",
+      "name": "connect_choices_granted_by",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "granted_by",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": "\"granted_by\" IS NOT NULL",
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
       "schema": "media",
       "table": "media_assets",
       "name": "media_assets_workspace_id_id_index",
@@ -9430,6 +9535,16 @@
       "columns": [
         "bucket",
         "day"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "analytics",
+      "table": "erased_workspaces",
+      "name": "erased_workspaces_pkey",
+      "columns": [
+        "workspace_id"
       ],
       "nameExplicit": false,
       "entityType": "pks"

@@ -1,7 +1,6 @@
 import { Context, Effect, FiberSet, Layer } from "effect";
 import type { LogLevel } from "effect";
 
-import { BilledWorkspaces } from "#billing/application/billed-workspaces.ts";
 import { RecordSubscription } from "#billing/application/record-subscription.ts";
 import { WorkspaceEntitlements } from "#billing/application/workspace-entitlements.ts";
 import { SendAuthEmail } from "#notifications/application/send-auth-email.ts";
@@ -39,7 +38,6 @@ export const BetterAuthLive = Layer.effect(
     const emails = yield* SendAuthEmail;
     const entitlements = yield* WorkspaceEntitlements;
     const subscriptions = yield* RecordSubscription;
-    const billed = yield* BilledWorkspaces;
 
     // Better Auth calls back outside any fiber. Work it starts runs on fibers
     // of this layer, with its logger and tracer, and is waited for, then
@@ -76,10 +74,6 @@ export const BetterAuthLive = Layer.effect(
       resetPassword: (link) => {
         run(emails.send({ _tag: "ResetPassword", ...link }));
       },
-      // Any subscription Stripe may still bill, unpaid and paused ones
-      // included, as Stripe's plugin counts them.
-      subscribed: async (workspaceId) =>
-        await runPromise(billed.stillBilled(workspaceId)),
       // Awaited: the webhook answers an error until the event is recorded,
       // so Stripe sends it again.
       subscriptionChanged: async (event) => {

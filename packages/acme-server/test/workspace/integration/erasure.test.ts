@@ -153,6 +153,8 @@ const userRows = {
 
 // Tables that name neither a workspace nor a user, and why they stay.
 const kept = {
+  "analytics.erased_workspaces":
+    "the ids of erased workspaces, so posts listed before are never followed after",
   "auth.jwks": "the server's keys that sign OAuth access tokens",
   "auth.oauth_client":
     "clients registered by the server or by themselves, which no user owns (those a user registered are theirs, above)",

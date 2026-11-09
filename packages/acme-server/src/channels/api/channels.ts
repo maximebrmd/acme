@@ -16,12 +16,12 @@ import type {
 import { Effect, Match, Option } from "effect";
 import { HttpApiBuilder } from "effect/http-api";
 
-import type { ChannelNotFound as MissingChannel } from "#channels/application/channel-not-found.ts";
 import { ConnectChannel } from "#channels/application/connect-channel.ts";
 import type {
   ChooseFailure,
   CompleteConnectFailure,
   ConnectOutcome,
+  ReconnectFailure,
   StartFailure,
 } from "#channels/application/connect-channel.ts";
 import { DisconnectChannel } from "#channels/application/disconnect-channel.ts";
@@ -44,9 +44,16 @@ const callbackOf = (payload: ConnectCallback): AuthorizationCallback => ({
   state: payload.state,
 });
 
-// Every way starting a connection can fail, as the contract tells clients.
-// A failure that is the server's own (the database, a bug) is a defect: 500.
-const startFailure = (failure: StartFailure) =>
+// How starting fails, whether to connect an account or to reconnect one.
+type BeginRefusal = Exclude<
+  StartFailure,
+  { readonly _tag: "PlanLimitReached" }
+>;
+
+// Every way starting a connection can fail but the plan, as the contract
+// tells clients. A failure that is the server's own (the database, a bug)
+// is a defect: 500.
+const beginFailure = (failure: BeginRefusal) =>
   Match.valueTags(failure, {
     AuthorizationFailed: ({ reason }) =>
       Effect.logWarning("A platform did not authorize an account").pipe(
@@ -62,14 +69,36 @@ const startFailure = (failure: StartFailure) =>
       Effect.logError(
         "A channel was not connected: ACME_TOKEN_KEYS is not set"
       ).pipe(Effect.andThen(refused("notConfigured"))),
-    PlanLimitReached: ({ allowed, limit }) =>
-      Effect.fail(new PlanLimitReached({ allowed, limit })),
     PlatformNotConnectable: ({ reason }) =>
       refused(
         reason === "notConfigured" ? "notConfigured" : "platformNotSupported"
       ),
     PlatformUnavailable: () => Effect.fail(new PlatformUnreachable()),
   });
+
+// Connecting a new account also needs room in the plan.
+const startFailure = (
+  failure: StartFailure
+): Effect.Effect<
+  never,
+  ConnectFailed | Forbidden | PlanLimitReached | PlatformUnreachable
+> =>
+  failure._tag === "PlanLimitReached"
+    ? Effect.fail(
+        new PlanLimitReached({ allowed: failure.allowed, limit: failure.limit })
+      )
+    : beginFailure(failure);
+
+// Reconnecting adds no channel, so the plan never refuses it.
+const reconnectFailure = (
+  failure: ReconnectFailure
+): Effect.Effect<
+  never,
+  ChannelNotFound | ConnectFailed | Forbidden | PlatformUnreachable
+> =>
+  failure._tag === "ChannelNotFound"
+    ? Effect.fail(new ChannelNotFound())
+    : beginFailure(failure);
 
 type Refusal = Effect.Effect<
   never,
@@ -79,11 +108,6 @@ type Refusal = Effect.Effect<
   | PlanLimitReached
   | PlatformUnreachable
 >;
-
-const reconnectFailure = (failure: MissingChannel | StartFailure): Refusal =>
-  failure._tag === "ChannelNotFound"
-    ? Effect.fail(new ChannelNotFound())
-    : startFailure(failure);
 
 // Completing fails as starting does, and also on the callback itself.
 const completeFailure = (failure: CompleteConnectFailure): Refusal =>

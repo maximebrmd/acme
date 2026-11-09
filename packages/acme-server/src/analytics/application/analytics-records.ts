@@ -8,8 +8,10 @@ import type { WorkspaceId } from "#shared/domain/ids.ts";
 /**
  * A workspace's analytics as a whole, for the workspace context when a
  * workspace's data is exported or erased: the posts followed and their
- * snapshots. Erasing runs in the caller's transaction, if any; a reading
- * that finishes after it is dropped.
+ * snapshots. Erasing runs in the caller's transaction, if any, and records
+ * the workspace as erased, so a collection run that listed its posts
+ * before follows none of them after; a reading that finishes after it is
+ * dropped.
  */
 export class AnalyticsRecords extends Context.Service<
   AnalyticsRecords,

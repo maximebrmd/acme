@@ -75,6 +75,8 @@ export { WorkspaceBusy } from "./workspace-busy.ts";
 
 export { WorkspaceSubscribed } from "./workspace-subscribed.ts";
 
+export { BillingUnavailable } from "./billing-unavailable.ts";
+
 export { WorkspaceNameMismatch } from "./workspace-name-mismatch.ts";
 
 export { AltTextTooLong } from "./alt-text-too-long.ts";
@@ -84,6 +86,7 @@ export {
   AnalyticsSummarySchema,
   CalendarDaySchema,
   ChannelMetricsSchema,
+  countedPlatforms,
   EngagementDaySchema,
   MetricsSnapshotSchema,
   MetricTotalsSchema,
