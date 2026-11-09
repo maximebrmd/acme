@@ -1,16 +1,16 @@
 import { describe, expect, it } from "@effect/vitest";
 import { DateTime, Option, Result } from "effect";
 
-import { PlatformPostIdSchema } from "#publishing/domain/post-status.ts";
 import type { PostStatus } from "#publishing/domain/post-status.ts";
+import { PostTargetIdSchema } from "#publishing/domain/post-target-id.ts";
+import type { PostTargetStatus } from "#publishing/domain/post-target-status.ts";
+import { PostTarget } from "#publishing/domain/post-target.ts";
 import {
-  confirmNotPublished,
-  confirmPublished,
+  cancelPost,
   createDraft,
-  markFailed,
-  markPublished,
-  markUnconfirmed,
+  finishPost,
   moveToDraft,
+  outcomeOf,
   Post,
   schedulePost,
   startPublishing,
@@ -21,6 +21,7 @@ import {
   PostIdSchema,
   WorkspaceIdSchema,
 } from "#shared/domain/ids.ts";
+import { PlatformPostIdSchema } from "#shared/domain/publish-result.ts";
 import { TimeZoneIdSchema } from "#shared/domain/time-zone.ts";
 
 const postId = PostIdSchema.make("00000000-0000-7000-8000-000000000001");
@@ -28,8 +29,6 @@ const postId = PostIdSchema.make("00000000-0000-7000-8000-000000000001");
 const workspaceId = WorkspaceIdSchema.make(
   "00000000-0000-7000-8000-000000000002"
 );
-
-const channelId = ChannelIdSchema.make("00000000-0000-7000-8000-000000000003");
 
 const utc = (iso: string): DateTime.Utc => DateTime.makeUnsafe(iso);
 
@@ -40,47 +39,76 @@ const inAnHour = new Schedule({
   timeZone: TimeZoneIdSchema.make("Europe/Paris"),
 });
 
-const platformPostId = PlatformPostIdSchema.make("1790000000000000001");
-
-const postIn = (status: PostStatus): Post =>
-  new Post({ channelId, id: postId, status, workspaceId });
+const postIn = (status: PostStatus, scheduleRevision = 1): Post =>
+  new Post({ id: postId, scheduleRevision, status, workspaceId });
 
 const statuses = {
-  draft: postIn({ _tag: "draft" }),
-  failed: postIn({
-    _tag: "failed",
-    failedAt: now,
-    reason: "mediaRejected",
+  cancelled: postIn({
+    _tag: "cancelled",
+    cancelledAt: now,
+    schedule: Option.some(inAnHour),
   }),
-  published: postIn({
-    _tag: "published",
-    platformPostId: Option.some(platformPostId),
-    publishedAt: now,
+  draft: postIn({ _tag: "draft" }, 0),
+  finished: postIn({
+    _tag: "finished",
+    finishedAt: utc("2026-06-15T08:00:05Z"),
+    outcome: "published",
+    schedule: inAnHour,
+    startedAt: inAnHour.at,
   }),
   publishing: postIn({
     _tag: "publishing",
     schedule: inAnHour,
-    startedAt: utc("2026-06-15T08:00:00Z"),
+    startedAt: inAnHour.at,
   }),
   scheduled: postIn({ _tag: "scheduled", schedule: inAnHour }),
-  unconfirmed: postIn({
-    _tag: "unconfirmed",
-    attemptedAt: utc("2026-06-15T08:00:00Z"),
-  }),
 };
 
 const failureOf = <E>(result: Result.Result<Post, E>): E | undefined =>
   Option.getOrUndefined(Result.getFailure(result));
 
-const statusOf = <E>(result: Result.Result<Post, E>): PostStatus | undefined =>
-  Option.getOrUndefined(Result.getSuccess(result))?.status;
+const successOf = <E>(result: Result.Result<Post, E>): Post | undefined =>
+  Option.getOrUndefined(Result.getSuccess(result));
+
+const targetIn = (suffix: string, status: PostTargetStatus): PostTarget =>
+  new PostTarget({
+    channelId: ChannelIdSchema.make(
+      `00000000-0000-7000-8000-00000000000${suffix}`
+    ),
+    id: PostTargetIdSchema.make(`00000000-0000-7000-9000-00000000000${suffix}`),
+    postId,
+    round: 1,
+    status,
+  });
+
+const published = targetIn("a", {
+  _tag: "published",
+  permalink: Option.none(),
+  platformPostId: Option.some(PlatformPostIdSchema.make("1")),
+  publishedAt: inAnHour.at,
+});
+
+const failed = targetIn("b", {
+  _tag: "failed",
+  code: Option.none(),
+  failedAt: inAnHour.at,
+  reason: "unavailable",
+});
+
+const unconfirmed = targetIn("c", {
+  _tag: "unconfirmed",
+  attemptedAt: inAnHour.at,
+  reason: "noResponse",
+});
+
+const cancelled = targetIn("d", { _tag: "cancelled", cancelledAt: now });
 
 describe(createDraft, () => {
-  it("starts a post as a draft for its channel", () => {
-    const post = createDraft(postId, workspaceId, channelId);
+  it("starts a post as a draft at revision 0", () => {
+    const post = createDraft(postId, workspaceId);
 
     expect(post.status).toStrictEqual({ _tag: "draft" });
-    expect(post.channelId).toBe(channelId);
+    expect(post.scheduleRevision).toBe(0);
     expect(post.workspaceId).toBe(workspaceId);
   });
 });
@@ -89,12 +117,14 @@ describe(schedulePost, () => {
   it.each([
     { from: statuses.draft, label: "a draft" },
     { from: statuses.scheduled, label: "a scheduled post, moving it" },
-    { from: statuses.failed, label: "a failed post, to try again" },
-  ])("schedules $label", ({ from }) => {
-    expect(statusOf(schedulePost(from, inAnHour, now))).toStrictEqual({
+  ])("schedules $label, with a new revision", ({ from }) => {
+    const scheduled = successOf(schedulePost(from, inAnHour, now));
+
+    expect(scheduled?.status).toStrictEqual({
       _tag: "scheduled",
       schedule: inAnHour,
     });
+    expect(scheduled?.scheduleRevision).toBe(from.scheduleRevision + 1);
   });
 
   it("accepts the current instant", () => {
@@ -112,18 +142,14 @@ describe(schedulePost, () => {
     });
 
     expect(failureOf(schedulePost(statuses.draft, earlier, now))).toMatchObject(
-      {
-        _tag: "ScheduleInPast",
-        postId,
-      }
+      { _tag: "ScheduleInPast", postId }
     );
   });
 
   it.each([
     { from: statuses.publishing },
-    { from: statuses.published },
-    // It may be live already: the user confirms it before anything else.
-    { from: statuses.unconfirmed },
+    { from: statuses.finished },
+    { from: statuses.cancelled },
   ])("refuses a post that is $from.status._tag", ({ from }) => {
     expect(failureOf(schedulePost(from, inAnHour, now))).toMatchObject({
       _tag: "InvalidPostTransition",
@@ -135,18 +161,18 @@ describe(schedulePost, () => {
 });
 
 describe(moveToDraft, () => {
-  it.each([{ from: statuses.scheduled }, { from: statuses.failed }])(
-    "takes a $from.status._tag post back to draft",
-    ({ from }) => {
-      expect(statusOf(moveToDraft(from))).toStrictEqual({ _tag: "draft" });
-    }
-  );
+  it("takes a scheduled post back to draft, with a new revision", () => {
+    const draft = successOf(moveToDraft(statuses.scheduled));
+
+    expect(draft?.status).toStrictEqual({ _tag: "draft" });
+    expect(draft?.scheduleRevision).toBe(2);
+  });
 
   it.each([
     { from: statuses.draft },
     { from: statuses.publishing },
-    { from: statuses.published },
-    { from: statuses.unconfirmed },
+    { from: statuses.finished },
+    { from: statuses.cancelled },
   ])("refuses a post that is $from.status._tag", ({ from }) => {
     expect(failureOf(moveToDraft(from))).toMatchObject({
       _tag: "InvalidPostTransition",
@@ -159,15 +185,18 @@ describe(moveToDraft, () => {
 describe(startPublishing, () => {
   const due = inAnHour.at;
 
-  it("starts once the scheduled instant has come", () => {
-    expect(statusOf(startPublishing(statuses.scheduled, due))).toStrictEqual({
+  it("starts once the scheduled instant has come, keeping the revision", () => {
+    const started = successOf(startPublishing(statuses.scheduled, due));
+
+    expect(started?.status).toStrictEqual({
       _tag: "publishing",
       schedule: inAnHour,
       startedAt: due,
     });
+    expect(started?.scheduleRevision).toBe(1);
   });
 
-  it("refuses to start early, as when the post was moved later", () => {
+  it("refuses to start early", () => {
     expect(failureOf(startPublishing(statuses.scheduled, now))).toMatchObject({
       _tag: "PostNotDue",
       postId,
@@ -177,8 +206,8 @@ describe(startPublishing, () => {
   it.each([
     { from: statuses.draft },
     { from: statuses.publishing },
-    { from: statuses.failed },
-    { from: statuses.unconfirmed },
+    { from: statuses.finished },
+    { from: statuses.cancelled },
   ])("refuses a post that is $from.status._tag", ({ from }) => {
     expect(failureOf(startPublishing(from, due))).toMatchObject({
       _tag: "InvalidPostTransition",
@@ -188,110 +217,80 @@ describe(startPublishing, () => {
   });
 });
 
-describe("the outcome of publishing", () => {
+describe(outcomeOf, () => {
+  it.each([
+    { expected: "published", targets: [published, published] },
+    { expected: "partiallyPublished", targets: [published, failed] },
+    { expected: "partiallyPublished", targets: [published, cancelled] },
+    { expected: "unconfirmed", targets: [published, unconfirmed] },
+    { expected: "unconfirmed", targets: [failed, unconfirmed] },
+    { expected: "failed", targets: [failed, failed] },
+    { expected: "failed", targets: [failed, cancelled] },
+    { expected: "cancelled", targets: [cancelled, cancelled] },
+  ])(
+    "is $expected for $targets.0.status._tag and $targets.1.status._tag",
+    ({ expected, targets }) => {
+      expect(outcomeOf(targets)).toBe(expected);
+    }
+  );
+});
+
+describe(finishPost, () => {
   const later = utc("2026-06-15T08:00:05Z");
 
-  it("records the platform's id for a published post", () => {
+  it("finishes a publishing post with its targets' outcome", () => {
     expect(
-      statusOf(markPublished(statuses.publishing, platformPostId, later))
+      successOf(finishPost(statuses.publishing, [published, failed], later))
+        ?.status
     ).toStrictEqual({
-      _tag: "published",
-      platformPostId: Option.some(platformPostId),
-      publishedAt: later,
-    });
-  });
-
-  it("records why a post failed", () => {
-    expect(
-      statusOf(markFailed(statuses.publishing, "tokenExpired", later))
-    ).toStrictEqual({
-      _tag: "failed",
-      failedAt: later,
-      reason: "tokenExpired",
-    });
-  });
-
-  it("keeps when the attempt started for an unconfirmed post", () => {
-    expect(statusOf(markUnconfirmed(statuses.publishing))).toStrictEqual({
-      _tag: "unconfirmed",
-      attemptedAt: utc("2026-06-15T08:00:00Z"),
+      _tag: "finished",
+      finishedAt: later,
+      outcome: "partiallyPublished",
+      schedule: inAnHour,
+      startedAt: inAnHour.at,
     });
   });
 
   it.each([
     { from: statuses.draft },
     { from: statuses.scheduled },
-    { from: statuses.published },
-    { from: statuses.failed },
-    { from: statuses.unconfirmed },
-  ])("comes only after publishing, not from $from.status._tag", ({ from }) => {
-    expect(failureOf(markPublished(from, platformPostId, later))).toMatchObject(
-      {
-        action: "markPublished",
-      }
-    );
-    expect(failureOf(markFailed(from, "rateLimited", later))).toMatchObject({
-      action: "markFailed",
-    });
-    expect(failureOf(markUnconfirmed(from))).toMatchObject({
-      action: "markUnconfirmed",
+    { from: statuses.finished },
+    { from: statuses.cancelled },
+  ])("refuses a post that is $from.status._tag", ({ from }) => {
+    expect(failureOf(finishPost(from, [published], later))).toMatchObject({
+      action: "finish",
+      from: from.status._tag,
     });
   });
 });
 
-describe("confirming an unconfirmed post", () => {
-  const checkedAt = utc("2026-06-15T09:00:00Z");
-
-  it("marks it published at the attempt when the user found it", () => {
+describe(cancelPost, () => {
+  it("cancels a scheduled post, keeping its time", () => {
     expect(
-      statusOf(confirmPublished(statuses.unconfirmed, Option.none()))
+      successOf(cancelPost(statuses.scheduled, now))?.status
     ).toStrictEqual({
-      _tag: "published",
-      platformPostId: Option.none(),
-      publishedAt: utc("2026-06-15T08:00:00Z"),
+      _tag: "cancelled",
+      cancelledAt: now,
+      schedule: Option.some(inAnHour),
     });
   });
 
-  it("keeps the platform's id when the user gives it", () => {
-    expect(
-      statusOf(
-        confirmPublished(statuses.unconfirmed, Option.some(platformPostId))
-      )
-    ).toMatchObject({ platformPostId: Option.some(platformPostId) });
-  });
-
-  it("marks it failed when the user did not, so it can be scheduled again", () => {
-    const missing = confirmNotPublished(statuses.unconfirmed, checkedAt);
-
-    const tenOClock = new Schedule({
-      at: utc("2026-06-15T10:00:00Z"),
-      timeZone: inAnHour.timeZone,
+  it("cancels a draft", () => {
+    expect(successOf(cancelPost(statuses.draft, now))?.status).toStrictEqual({
+      _tag: "cancelled",
+      cancelledAt: now,
+      schedule: Option.none(),
     });
-
-    const again = missing.pipe(
-      Result.flatMap((post) => schedulePost(post, tenOClock, checkedAt))
-    );
-
-    expect(statusOf(missing)).toStrictEqual({
-      _tag: "failed",
-      failedAt: checkedAt,
-      reason: "notPublished",
-    });
-    expect(statusOf(again)?._tag).toBe("scheduled");
   });
 
   it.each([
-    { from: statuses.draft },
-    { from: statuses.scheduled },
     { from: statuses.publishing },
-    { from: statuses.published },
-    { from: statuses.failed },
-  ])("applies only to unconfirmed posts, not $from.status._tag", ({ from }) => {
-    expect(failureOf(confirmPublished(from, Option.none()))).toMatchObject({
-      action: "confirmPublished",
-    });
-    expect(failureOf(confirmNotPublished(from, checkedAt))).toMatchObject({
-      action: "confirmNotPublished",
+    { from: statuses.finished },
+    { from: statuses.cancelled },
+  ])("refuses a post that is $from.status._tag", ({ from }) => {
+    expect(failureOf(cancelPost(from, now))).toMatchObject({
+      action: "cancel",
+      from: from.status._tag,
     });
   });
 });
