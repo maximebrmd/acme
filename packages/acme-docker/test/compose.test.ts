@@ -1,7 +1,8 @@
 // The rules the stacks and the images keep, checked without Docker: ports on
 // 127.0.0.1 only, exact image versions, a health check on every service,
-// production services that restart and a server that gets 75 seconds to
-// stop, and images on the workspace's Bun and Node versions that run without
+// production services that restart, run read-only and gain no privileges, a
+// server that gets 75 seconds to stop and every setting the docs list, and
+// images on the workspace's Bun and Node versions that run without
 // privileges.
 import { readFileSync } from "node:fs";
 import path from "node:path";
@@ -23,12 +24,18 @@ const Volume = Schema.Union([Schema.String, Mount]);
 
 const ServiceSchema = Schema.Struct({
   build: Schema.optionalKey(Schema.Struct({ dockerfile: Schema.String })),
+  // `NAME:` with no value passes NAME through from Compose's environment.
+  environment: Schema.optionalKey(
+    Schema.Record(Schema.String, Schema.NullOr(Schema.String))
+  ),
   healthcheck: Schema.optionalKey(
     Schema.Struct({ test: Schema.NonEmptyArray(Schema.String) })
   ),
   image: Schema.String,
   ports: Schema.optionalKey(Schema.Array(Schema.String)),
+  read_only: Schema.optionalKey(Schema.Boolean),
   restart: Schema.optionalKey(Schema.String),
+  security_opt: Schema.optionalKey(Schema.Array(Schema.String)),
   stop_grace_period: Schema.optionalKey(Schema.String),
   volumes: Schema.optionalKey(Schema.Array(Volume)),
 });
@@ -50,6 +57,27 @@ const servicesOf = (file: string): [string, Service][] =>
 const development = servicesOf("compose.yaml");
 const production = servicesOf("compose.production.yaml");
 const selfHost = servicesOf("compose.self-host.yaml");
+
+// The variables the docs' environment variables page lists for the server:
+// the first column of the tables under "Server", before "Web app".
+const documentedServerSettings = (() => {
+  const page = read(
+    "..",
+    "..",
+    "acme-docs",
+    "docs",
+    "environment-variables.mdx"
+  );
+
+  const server = page.slice(
+    page.indexOf("\n## Server"),
+    page.indexOf("\n## Web app")
+  );
+
+  return [...server.matchAll(/^\| `(?<name>[A-Z][\dA-Z_]*)`/gmu)].map(
+    (row) => row.groups?.["name"] ?? ""
+  );
+})();
 
 // An exact version: a tag with a digit in it, never a moving name like latest.
 const isPinned = (image: string): boolean => {
@@ -162,11 +190,49 @@ describe("compose.production.yaml", () => {
 
     expect(server?.stop_grace_period).toBe("75s");
   });
+
+  // Compose hands a container only the variables its service names, so a
+  // setting left out here cannot be set at all, from an env file or
+  // otherwise. The image sets NODE_ENV, the port mapping fixes PORT, and
+  // Docker names each container in HOSTNAME.
+  it("passes the server every setting the docs list for it", () => {
+    const server = production.find(([name]) => name === "server")?.[1];
+    const passed = Object.keys(server?.environment ?? {});
+
+    expect(documentedServerSettings.length).toBeGreaterThan(0);
+
+    expect(
+      documentedServerSettings.filter(
+        (name) =>
+          !passed.includes(name) &&
+          !["HOSTNAME", "NODE_ENV", "PORT"].includes(name)
+      )
+    ).toStrictEqual([]);
+  });
+
+  it.each(production)(
+    "%s runs on a read-only file system",
+    (_name, service) => {
+      expect(service.read_only).toBeTruthy();
+    }
+  );
+
+  it.each(production)("%s gains no privileges", (_name, service) => {
+    expect(service.security_opt).toContain("no-new-privileges:true");
+  });
 });
 
 describe("compose.self-host.yaml", () => {
   it.each(selfHost)("%s pins its image by digest", (_name, service) => {
     expect(service.image).toSatisfy(isPinnedByDigest);
+  });
+
+  it.each(selfHost)("%s runs on a read-only file system", (_name, service) => {
+    expect(service.read_only).toBeTruthy();
+  });
+
+  it.each(selfHost)("%s gains no privileges", (_name, service) => {
+    expect(service.security_opt).toContain("no-new-privileges:true");
   });
 
   it.each(selfHost)("%s has a health check", (_name, service) => {
