@@ -21,6 +21,7 @@ import {
   Option,
   Redacted,
   Schema,
+  Stream,
 } from "effect";
 
 import { MediaStorageFailed } from "#media/application/media-storage-failed.ts";
@@ -167,6 +168,9 @@ const multipartNotFound =
     isS3Error(failure.cause, noSuchUpload)
       ? Effect.fail(new MultipartUploadNotFound({ uploadId: upload.uploadId }))
       : Effect.fail(failure);
+
+const readFailed = (cause: unknown) =>
+  new MediaStorageFailed({ cause, operation: "read a file" });
 
 /** Builds the store from settings, closing the client with the layer. */
 export const makeS3MediaStorage = Effect.fn("S3MediaStorage.make")(
@@ -459,6 +463,30 @@ export const makeS3MediaStorage = Effect.fn("S3MediaStorage.make")(
       );
     });
 
+    // The body streams once the answer's headers arrive, so the request is
+    // not tied to an abort signal that would end with the call.
+    const read = (key: StorageKey) =>
+      Stream.unwrap(
+        request(
+          "read a file",
+          async () =>
+            await client.send(
+              new GetObjectCommand({ Bucket: bucket, Key: objectKey(key) })
+            )
+        ).pipe(
+          Effect.flatMap(({ Body: body }) =>
+            body === undefined
+              ? Effect.fail(readFailed("The store sent no body"))
+              : Effect.succeed(
+                  Stream.fromReadableStream({
+                    evaluate: () => body.transformToWebStream(),
+                    onError: readFailed,
+                  })
+                )
+          )
+        )
+      );
+
     const remove = Effect.fn("S3MediaStorage.remove")(function* remove(
       key: StorageKey
     ) {
@@ -478,6 +506,7 @@ export const makeS3MediaStorage = Effect.fn("S3MediaStorage.make")(
       head,
       listUploadedParts,
       publicUrl,
+      read,
       remove,
       signUpload,
       signUploadPart,
