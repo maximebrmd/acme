@@ -63,24 +63,24 @@ assistant answers within 90, so the tunnel needs no timeout of its own.
 
 ### Roles
 
-| Role             | What it does                                                                                         |
-| ---------------- | ---------------------------------------------------------------------------------------------------- |
-| `peal_preflight` | Stops every playbook while the inventory holds placeholders                                          |
-| `system`         | Host name, UTC, updates, unattended upgrades with reboots at 03:30 UTC, swap, journal size           |
-| `ssh`            | The `ops` account, its keys (exclusive) and key-only SSH for it alone, without port forwarding       |
-| `docker`         | Docker Engine and Compose from Docker's repository, at exact versions, with rotated logs             |
-| `cloudflared`    | cloudflared from its GitHub release (checked by digest), the tunnel's routes and its systemd service |
-| `firewall`       | ufw: every incoming connection refused; port 22 open only while bootstrapping                        |
-| `peal_runtime`   | `/srv/peal`, the secrets generated there, the credentials, the host settings and `peal-compose`      |
-| `peal_backup`    | `peal-backup` and its timers: a full backup on Sundays, a differential one the other days            |
-| `peal_release`   | Builds, uploads and starts one commit of Peal (`release.yml`)                                        |
-| `uptime`         | Gatus and Caddy on the uptime server, their configuration from the inventory (`uptime.yml`)          |
+| Role             | What it does                                                                                                                                           |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `peal_preflight` | Stops every playbook while the inventory holds placeholders                                                                                            |
+| `system`         | Host name (kept across boots where cloud-init manages the hosts file), UTC, updates, unattended upgrades with reboots at 03:30 UTC, swap, journal size |
+| `ssh`            | The `ops` account, its keys (exclusive) and key-only SSH for it alone, without port forwarding; the image's own account removed                        |
+| `docker`         | Docker Engine and Compose from Docker's repository, at exact versions, with rotated logs                                                               |
+| `cloudflared`    | cloudflared from its GitHub release (checked by digest), the tunnel's routes and its systemd service                                                   |
+| `firewall`       | ufw: every incoming connection refused; port 22 open only while bootstrapping                                                                          |
+| `peal_runtime`   | `/srv/peal`, the secrets generated there, the credentials, the host settings and `peal-compose`                                                        |
+| `peal_backup`    | `peal-backup` and its timers: a full backup on Sundays, a differential one the other days                                                              |
+| `peal_release`   | Builds, uploads and starts one commit of Peal (`release.yml`)                                                                                          |
+| `uptime`         | Gatus and Caddy on the uptime server, their configuration from the inventory (`uptime.yml`)                                                            |
 
 ### Playbooks
 
 | Playbook        | When                                                                            |
 | --------------- | ------------------------------------------------------------------------------- |
-| `bootstrap.yml` | Once on a new server, as root: it creates `ops`                                 |
+| `bootstrap.yml` | Once on a new server, as the account its image lets in: it creates `ops`        |
 | `site.yml`      | Any time; it converges the server to this folder                                |
 | `release.yml`   | To deploy `main`, or another branch, tag or commit with `-e peal_version=<ref>` |
 | `uptime.yml`    | Any time, on the uptime server alone; it converges it to this folder            |
@@ -355,10 +355,11 @@ password manager: the backups cannot be read without it.
 
 ### A new server
 
-1. Create it in the provider's console, with your SSH key for root, the
-   provider's firewall with no inbound rule, and its address in
-   `inventory/hosts.yml`.
-2. `uv run ansible-playbook playbooks/bootstrap.yml --limit production -e ansible_user=root -e ssh_via_tunnel=false`
+1. Create it in the provider's console, from its Ubuntu LTS image, with
+   your SSH key, the provider's firewall with no inbound rule, and its
+   address in `inventory/hosts.yml`. See which account the image lets your
+   key into ([The image's account](#the-images-account)).
+2. `uv run ansible-playbook playbooks/bootstrap.yml --limit production -e ssh_via_tunnel=false`
 3. `uv run ansible-playbook playbooks/site.yml --limit production -e ssh_via_tunnel=false`:
    port 22 stays open while the tunnel comes up. With the provider's
    firewall in front, open 22 there for your address for these two runs.
@@ -373,6 +374,39 @@ password manager: the backups cannot be read without it.
    ([The heartbeat](#the-heartbeat)). Until then, set `peal_heartbeat_url` to
    `""` in `group_vars/production/main.yml`: while it names the uptime
    server, `site.yml` requires the credential `PEAL_HEARTBEAT_TOKEN`.
+
+### The image's account
+
+`bootstrap.yml` logs in once, with your key, as the account the server's
+image lets in, `bootstrap_user`, and creates `ops`, which every other
+playbook logs in as. Images come in two kinds:
+
+| The image lets your key into                                | Set                            | Then                                                                                                                                         |
+| ----------------------------------------------------------- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| root                                                        | nothing: `root` is the default | `site.yml`, or `uptime.yml`, turns root's logins over SSH off                                                                                |
+| an account of its own with sudo, such as `ubuntu`, not root | `bootstrap_user: ubuntu`       | The bootstrap uses sudo, which that account has without a password. `site.yml`, or `uptime.yml`, removes it, with its home and its sudo rule |
+
+Set `bootstrap_user` in the group's `main.yml`, so every later run knows
+which account to remove, rather than with `-e`. To see which kind an image
+is, try `ssh root@<address> true` once the server is up: an image of the
+second kind answers with the name of the account to use.
+
+The image's own account holds your key and sudo without a password, so it
+goes once `ops` works: the `ssh` role, which runs as `ops` with sudo,
+removes it right after it has confirmed `ops`'s keys and sudo rule, then
+lets `ops` alone in over SSH. cloud-init makes that account once per
+instance, not at each boot. A server made again from a snapshot is a new
+instance, where it comes back: run `site.yml`, or `uptime.yml`, after
+restoring one.
+
+Some images also have cloud-init write `/etc/hosts` again at every boot
+(`manage_etc_hosts`), with the name the provider gave the server. The
+`system` role turns that off in a settings file cloud-init reads after the
+image's own, `/etc/cloud/cloud.cfg.d/zz-peal.cfg`, and writes the server's
+line in cloud-init's template for the file too, since a provider that sends
+the setting at boot overrides any file on the server: the hosts file then
+names the server the same either way, and a run after a reboot reports no
+change. On an image without cloud-init, both steps are skipped.
 
 ### Without the tunnel
 
@@ -501,7 +535,7 @@ The server costs money, so it needs the owner's approval, like any paid
 resource. Then:
 
 1. Create it in the console of a provider other than production's, in
-   another city, with your SSH key for root and a firewall that lets in
+   another city, with your SSH key and a firewall that lets in
    port 443 from anywhere and port 22 from the addresses you work from. Put
    its address in `inventory/hosts.yml`, and its provider and city in
    `group_vars/uptime/main.yml`.
@@ -525,7 +559,9 @@ resource. Then:
    ssh -t ops@uptime.peal.social 'sudo install -d -m 750 /srv/uptime && sudo install -m 600 /dev/null /srv/uptime/credentials.env && sudoedit /srv/uptime/credentials.env'
    ```
 
-3. `uv run ansible-playbook playbooks/bootstrap.yml --limit uptime -e ansible_user=root`
+3. `uv run ansible-playbook playbooks/bootstrap.yml --limit uptime`, once
+   `bootstrap_user` names the account its image lets in, if not root
+   ([The image's account](#the-images-account)).
 4. `uv run ansible-playbook playbooks/uptime.yml --check --diff`, then without
    `--check`. Caddy gets a Let's Encrypt certificate for `uptime_hostname`,
    and `uptime_status_hostname`, through the TLS-ALPN challenge, on port 443

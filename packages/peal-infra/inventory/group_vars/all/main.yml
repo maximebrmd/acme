@@ -19,6 +19,14 @@ admin_user: ops
 admin_ssh_public_keys:
   - ssh-ed25519 REPLACE-WITH-AN-ADMIN-PUBLIC-KEY ops@example.com
 
+# The account a new server's image lets in with your key, which
+# bootstrap.yml logs in as, once, to create the admin user: root, or the
+# account the image comes with (ubuntu on Ubuntu's own cloud images), which
+# has sudo. Set it for a group whose provider's image does not take root.
+# The ssh role then removes that account, with its sudo rule, once the admin
+# user works (README.md, "A new server").
+bootstrap_user: root
+
 # false only while bootstrapping a server, before the tunnel serves SSH:
 # port 22 is then open, rate limited, and Ansible connects to ansible_host.
 ssh_via_tunnel: true

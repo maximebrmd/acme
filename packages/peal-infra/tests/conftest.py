@@ -4,6 +4,7 @@ server of the inventory."""
 
 from __future__ import annotations
 
+import re
 import shlex
 import subprocess
 import sys
@@ -82,6 +83,42 @@ def stdin_of(found: dict[str, Any]) -> str | None:
     if isinstance(args, str) or "stdin" not in args:
         return None
     return render(args["stdin"]) + "\n"
+
+
+def run_tasks(
+    folder: Path,
+    role: str,
+    names: list[str],
+    *,
+    check: bool = False,
+    **settings_: Any,
+) -> dict[str, int]:
+    """Runs tasks of a role, by name and in the order given, with Ansible
+    itself, on this machine and as this user, for the inventory's production
+    server and with the settings given: what a server's files become when
+    the role's paths name a folder of the test's. Returns the run's recap
+    (ok, changed, skipped…)."""
+    play = {
+        "name": f"Run tasks of the {role} role",
+        "hosts": "peal-production",
+        "gather_facts": False,
+        "connection": "local",
+        "vars": {"ansible_python_interpreter": "{{ ansible_playbook_python }}", **settings_},
+        "tasks": [task(role, name) for name in names],
+    }
+    playbook = folder / "tasks.yml"
+    playbook.write_text(yaml.safe_dump([play], sort_keys=False))
+    ran = subprocess.run(
+        [str(Path(sys.executable).parent / "ansible-playbook"), str(playbook), *(["--check"] if check else [])],
+        cwd=INFRA,
+        check=False,
+        capture_output=True,
+        text=True,
+        stdin=subprocess.DEVNULL,
+    )
+    assert ran.returncode == 0, ran.stdout + ran.stderr
+    recap = ran.stdout.rsplit("PLAY RECAP", 1)[1]
+    return {name: int(count) for name, count in re.findall(r"(\w+)=(\d+)", recap)}
 
 
 @pytest.fixture(scope="session")
