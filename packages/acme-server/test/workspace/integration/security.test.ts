@@ -1,6 +1,8 @@
+import { randomUUID } from "node:crypto";
+
 import { assert, layer } from "@effect/vitest";
 import { MeSchema } from "acme-contract";
-import { Context, Effect, Layer } from "effect";
+import { Context, Effect, Layer, Schema } from "effect";
 
 import {
   apiKeyOf,
@@ -97,6 +99,10 @@ interface Case {
 }
 
 const newKey = { name: "deploy", permissions: ["post:read"] };
+
+const MembersSchema = Schema.Struct({
+  members: Schema.Array(Schema.Struct({ id: Schema.String })),
+});
 
 const cases: readonly Case[] = [
   {
@@ -223,6 +229,10 @@ layer(MatrixLive, { excludeTestServices: true, timeout: "180 seconds" })(
           const workspaceId = yield* workspaceOf(member, "Shop");
           const staff = yield* confirmedAccount("support");
 
+          const { apiKey, key } = yield* apiKeyOf(member, workspaceId, [
+            "apiKey:read",
+          ]);
+
           yield* makeAdmin(staff.id);
 
           const started = yield* app.request(
@@ -256,6 +266,84 @@ layer(MatrixLive, { excludeTestServices: true, timeout: "180 seconds" })(
           });
 
           assert.strictEqual(created.status, 403);
+
+          // Better Auth's own key routes are off: keys go through Acme's API.
+          const listed = yield* app.request(
+            `/api/auth/api-key/list?organizationId=${workspaceId}`,
+            { headers: { cookie } }
+          );
+
+          const deleted = yield* app.request("/api/auth/api-key/delete", {
+            body: { keyId: apiKey.id },
+            headers: { cookie },
+          });
+
+          assert.strictEqual(listed.status, 404);
+          assert.strictEqual(deleted.status, 404);
+
+          // Staff may read the workspace's members, and change nothing.
+          const members = yield* app.request(
+            `/api/auth/organization/list-members?organizationId=${workspaceId}`,
+            { headers: { cookie } }
+          );
+
+          assert.strictEqual(members.status, 200);
+
+          const [owner] = (yield* bodyOf(MembersSchema, members)).members;
+          const memberId = owner?.id ?? "";
+
+          const changes = [
+            [
+              "invite-member",
+              {
+                email: staff.email,
+                organizationId: workspaceId,
+                role: "owner",
+              },
+            ],
+            [
+              "update-member-role",
+              { memberId, organizationId: workspaceId, role: "viewer" },
+            ],
+            [
+              "remove-member",
+              { memberIdOrEmail: memberId, organizationId: workspaceId },
+            ],
+            [
+              "update",
+              { data: { name: "Renamed" }, organizationId: workspaceId },
+            ],
+            ["delete", { organizationId: workspaceId }],
+            ["create", { name: "Mine", slug: `mine-${randomUUID()}` }],
+          ] as const;
+
+          for (const [route, body] of changes) {
+            const changed = yield* app.request(
+              `/api/auth/organization/${route}`,
+              { body, headers: { cookie } }
+            );
+
+            assert.strictEqual(changed.status, 403, route);
+          }
+
+          // The key, and the member's place in the workspace, are untouched.
+          const stillWorks = yield* app.request(apiKeys(workspaceId), {
+            headers: bearer(key),
+          });
+
+          assert.strictEqual(stillWorks.status, 200);
+
+          const ownerMe = yield* bodyOf(
+            MeSchema,
+            yield* app.request("/api/me", {
+              headers: { cookie: member.cookies },
+            })
+          );
+
+          assert.deepStrictEqual(
+            ownerMe.workspaces.map(({ id, role }) => ({ id, role })),
+            [{ id: workspaceId, role: "owner" }]
+          );
         })
     );
 

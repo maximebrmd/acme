@@ -10,6 +10,7 @@ import { defaultLocale, LocaleSchema } from "#shared/domain/locale.ts";
 import type { Locale } from "#shared/domain/locale.ts";
 
 import { accessControl, roles } from "./access-control.ts";
+import { refuseImpersonatedChanges } from "./impersonation.ts";
 import type { AuthConfiguration } from "./settings.ts";
 
 /** A link Better Auth wants mailed, in the recipient's language. */
@@ -115,9 +116,16 @@ export const makeAuth = ({ database, hooks, settings }: AuthDependencies) =>
       schemaName: "auth",
       transaction: true,
     }),
-    // API keys carry permissions, which only the server may set: Acme creates
-    // and updates them through its own API (POST /api/workspaces/:id/api-keys).
-    disabledPaths: ["/api-key/create", "/api-key/update"],
+    // API keys go through Acme's own API only (/api/workspaces/:id/api-keys):
+    // their permissions are the server's to set, and staff impersonating a
+    // member may not see or revoke them, which Better Auth's routes ignore.
+    disabledPaths: [
+      "/api-key/create",
+      "/api-key/delete",
+      "/api-key/get",
+      "/api-key/list",
+      "/api-key/update",
+    ],
     emailAndPassword: {
       // A sign-up for an email that already has an account answers with a
       // made-up user. Built with the admin plugin's fields, it reads the same
@@ -151,6 +159,7 @@ export const makeAuth = ({ database, hooks, settings }: AuthDependencies) =>
         await Promise.resolve();
       },
     },
+    hooks: { before: refuseImpersonatedChanges },
     logger: {
       level: "warn",
       // Messages only: Better Auth passes request details as further
