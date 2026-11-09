@@ -1,0 +1,68 @@
+---
+title: Images and videos
+description: Upload images and videos to a workspace's media library, attach them to posts with alt text, and see what Mastodon and Bluesky accept before a post goes out.
+sidebar:
+  order: 4
+---
+
+A post can show images and videos from its workspace's media library, in the order you choose, each with alt text for people who cannot see it. Acme checks them against each channel's platform when you schedule the post, and sends them with it at its time.
+
+## The media library [#library]
+
+From a workspace's card, **Media library** holds the workspace's images and videos. Drop files there, or choose them; large videos go up in parts, and an upload can be cancelled or tried again. Give each file a description for people who cannot see it, of up to 2,000 characters.
+
+| Kind   | Formats               | Largest file |
+| ------ | --------------------- | ------------ |
+| Images | JPEG, PNG, GIF, WebP  | 16 MiB       |
+| Videos | MP4, QuickTime (.mov) | 1 GiB        |
+
+Acme reads each file once it is stored: an image's dimensions, a video's dimensions, duration and codec. An image whose content is not of the type it was uploaded as is refused, and deleted. Contributors and above upload; editors and above delete.
+
+## Attach media to a post [#attach]
+
+In the composer, under **Images and videos**:
+
+- **Choose from the library** opens the workspace's media. Pick files in the order the post shows them, each numbered as you go, then choose **Attach**. Files still being processed are marked **Not ready yet**, and cannot be picked.
+- Or drop files on the uploader below, or click it to choose them. Each file joins the post once it is uploaded and read; one that is uploaded but cannot be read yet, such as a video on a server without ffprobe, stays in the library and is not attached.
+- Move a file earlier or later in the post with its arrows, or remove it from the post. Removing it leaves it in the library.
+
+A post holds up to 20 images and videos, and each platform takes fewer, as below. Saving the draft keeps them.
+
+## Alt text [#alt-text]
+
+Each image or video of a post has its own alt text, which starts as its description in the library. Changing it in the composer changes it for this post only. A post's alt text can be up to 5,000 characters, but platforms keep less, as below.
+
+Write alt text for every file. When one has none, the composer names the platforms among the post's channels that show alt text, and each of those channels shows how many files lack it. This is a reminder: it does not stop you from scheduling.
+
+## What each platform accepts [#platforms]
+
+Acme publishes to Mastodon and Bluesky. When you schedule a post, it checks the post's images and videos against these limits:
+
+| Limit                         | Bluesky                                             | Mastodon                                                                  |
+| ----------------------------- | --------------------------------------------------- | ------------------------------------------------------------------------- |
+| Images and videos in one post | 4                                                   | 4                                                                         |
+| Images                        | JPEG, PNG, GIF and WebP, up to 2,000,000 bytes each | JPEG, PNG, GIF and WebP, up to 16 MiB and 33,177,600 pixels (7680 × 4320) |
+| Videos                        | One MP4, up to 300,000,000 bytes and 3 minutes      | One MP4 or QuickTime, up to 99 MiB and 8,294,400 pixels (3840 × 2160)     |
+| Images and a video together   | No                                                  | No                                                                        |
+| Alt text                      | Shown to people who need it                         | Shown to people who need it, up to 1,500 characters                       |
+
+The Mastodon limits are those of a Mastodon server as it comes. When the post goes out, Acme also reads the limits of the account's own server, the file types it takes and its largest image and video, and does not send a file the server would refuse: the post then fails on that channel.
+
+Acme knows the limits of X, LinkedIn, Threads and Instagram too, and will check them once their accounts can be connected. It checks only what it read from each file: a fact it could not read, such as a video's duration, is not checked, and the platform may still refuse the file.
+
+## When you schedule [#schedule]
+
+Beside each channel's counter, the composer lists what its platform would refuse: too many videos, images with a video, a file type it does not take, a file too large, a video too long or too short, too many pixels, a shape it does not take, or alt text too long. **Schedule** stays off until each one is fixed, and the composer names the channel and the image or video concerned.
+
+A draft may hold any ready media of its workspace: the platforms' limits wait until you schedule it. Moving a scheduled post does not check its media again. On the calendar, posts with images or videos carry a mark.
+
+## When the post goes out [#publishing]
+
+At the post's time, Acme sends each file from the library to the platform, then publishes the post:
+
+- **Mastodon**: each file goes to the account's server, which may process it before the post can show it.
+- **Bluesky**: images go to the server that holds the account, and a video to Bluesky's video service, which processes it.
+
+Acme waits up to 15 minutes for a platform to process a file. Past that, it tries the post again later, as for a platform that does not answer.
+
+Keep images and videos in the library until the posts that show them have gone out. Deleting one does not take it out of those posts: a scheduled post that shows it fails on its channels at its time, and a draft that shows it cannot be scheduled until you remove it.

@@ -2,7 +2,7 @@
 title: API overview
 description: How the Acme HTTP API is organised, how to authenticate to it, where its OpenAPI document lives, and where to find the reference for every endpoint.
 sidebar:
-  order: 6
+  order: 8
 ---
 
 The web app, the command line and the MCP endpoint are built on the same HTTP API, so anything they do, your own code can do too.
@@ -36,7 +36,7 @@ With a session or an OAuth token, `GET /api/me` tells who you are, and lists you
 
 ## Workspaces [#workspaces]
 
-A workspace's resources live under `/api/workspaces/{workspaceId}/`: `channels`, `posts`, `media` and `api-keys`. Each endpoint's reference names the permission it needs, such as `post:schedule` or `channel:connect`.
+A workspace's resources live under `/api/workspaces/{workspaceId}/`: `channels`, `posts`, `media`, `assistant` and `api-keys`. Each endpoint's reference names the permission it needs, such as `post:schedule` or `channel:connect`.
 
 | Status | Meaning                                                                        |
 | ------ | ------------------------------------------------------------------------------ |
@@ -44,7 +44,11 @@ A workspace's resources live under `/api/workspaces/{workspaceId}/`: `channels`,
 | 403    | The credentials work, but do not allow this request, or the account is banned. |
 | 404    | No such resource, or a workspace the caller does not belong to.                |
 
-Errors answer with a JSON body whose `_tag` names the error, such as `PostContentInvalid` or `ConnectFailed`, with the details the reference lists.
+Errors answer with a JSON body whose `_tag` names the error, such as `PostContentInvalid` or `ConnectFailed`, with the details the reference lists. The writing assistant's endpoints also answer 429 once the workspace has used its requests for the day, 503 when the instance has no AI provider, and 502 when the provider gave no answer the assistant could use.
+
+## Your account [#me]
+
+What belongs to you rather than to a workspace lives under `/api/me`: who you are (`GET /api/me`), your [notifications](/notifications#api) under `/api/me/notices`, and which of them are emailed, under `/api/me/notification-preferences`. The notification endpoints answer 403 to API keys, which belong to a workspace, and to OAuth tokens bound to one workspace, such as an MCP client's.
 
 ## OpenAPI document [#openapi]
 
