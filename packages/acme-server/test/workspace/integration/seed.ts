@@ -1,7 +1,8 @@
 // Synthetic rows of the other contexts, written straight to their tables, so
 // tests of what a workspace or an account holds need no platform, job or
 // file: a channel, posts and their targets, a notice, assistant usage, a
-// subscription as Stripe's webhook records it, and an OAuth client's grant.
+// post analytics follows with a reading, a subscription as Stripe's webhook
+// records it, and an OAuth client's grant.
 import { randomUUID } from "node:crypto";
 
 import { Effect, Schema } from "effect";
@@ -98,6 +99,29 @@ export const seedUsage = Effect.fn("seedUsage")(function* seedUsage(
   yield* sql`INSERT INTO assistant.daily_usage (workspace_id, day, requests)
     VALUES (${workspaceId}, '2026-11-09', ${requests})`;
 });
+
+/**
+ * A post of the workspace that analytics follows on the channel, with one
+ * reading of its counts.
+ */
+export const seedTrackedPost = Effect.fn("seedTrackedPost")(
+  function* seedTrackedPost(
+    workspaceId: string,
+    channelId: string,
+    postId: string
+  ) {
+    const sql = yield* SqlClient.SqlClient;
+    const targetId = newUuid7();
+
+    yield* sql`INSERT INTO analytics.tracked_posts (target_id, post_id, workspace_id, channel_id, platform_post_id, published_at, next_collection_at, likes, reposts, replies, last_collected_at)
+      VALUES (${targetId}, ${postId}, ${workspaceId}, ${channelId}, ${`synthetic-${randomUUID()}`}, '2026-11-08T09:00:00Z', '2026-11-09T09:00:00Z', 4, 2, 1, '2026-11-08T10:00:00Z')`;
+
+    yield* sql`INSERT INTO analytics.metric_snapshots (target_id, collected_at, likes, reposts, replies)
+      VALUES (${targetId}, '2026-11-08T10:00:00Z', 4, 2, 1)`;
+
+    return targetId;
+  }
+);
 
 /**
  * A Stripe subscription of the workspace in `status`, as billing and Better

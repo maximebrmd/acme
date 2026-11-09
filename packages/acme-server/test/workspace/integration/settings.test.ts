@@ -35,6 +35,7 @@ import {
   seedOAuthGrant,
   seedPost,
   seedSubscription,
+  seedTrackedPost,
   seedUsage,
 } from "./seed.ts";
 
@@ -116,6 +117,9 @@ const rowsIn = Effect.fn("rowsIn")(function* rowsIn(workspaceId: string) {
   const sql = yield* SqlClient.SqlClient;
 
   return {
+    analytics: yield* countOf(
+      yield* sql`SELECT ((SELECT count(*) FROM analytics.tracked_posts WHERE workspace_id = ${workspaceId}) + (SELECT count(*) FROM analytics.metric_snapshots s JOIN analytics.tracked_posts t ON t.target_id = s.target_id WHERE t.workspace_id = ${workspaceId}))::int AS count`
+    ),
     apiKeys: yield* countOf(
       yield* sql`SELECT count(*)::int AS count FROM auth.apikey WHERE reference_id = ${workspaceId}`
     ),
@@ -153,6 +157,7 @@ const rowsIn = Effect.fn("rowsIn")(function* rowsIn(workspaceId: string) {
 });
 
 const nothing = {
+  analytics: 0,
   apiKeys: 0,
   channels: 0,
   invitations: 0,
@@ -171,7 +176,7 @@ layer(Layer.mergeAll(IntegrationLive, StoreLive), {
   timeout: "180 seconds",
 })("workspace and account settings", (it) => {
   it.effect(
-    "delete a workspace with its channels, posts, media, notices, usage, subscriptions, members and keys",
+    "delete a workspace with its channels, posts, analytics, media, notices, usage, subscriptions, members and keys",
     () =>
       Effect.gen(function* deletesWorkspace() {
         const app = yield* TestApp;
@@ -192,7 +197,14 @@ layer(Layer.mergeAll(IntegrationLive, StoreLive), {
           "@harbour@social.example"
         );
 
-        yield* seedPost(workspaceId, channelId, "A synthetic draft.");
+        const published = yield* seedPost(
+          workspaceId,
+          channelId,
+          "A synthetic post that went out.",
+          "finished"
+        );
+
+        yield* seedTrackedPost(workspaceId, channelId, published);
         yield* seedNotice(owner.id, workspaceId, "@harbour@social.example");
         yield* seedUsage(workspaceId, 3);
         // Ended: Stripe bills it no more.
@@ -210,6 +222,7 @@ layer(Layer.mergeAll(IntegrationLive, StoreLive), {
         const before = yield* rowsIn(workspaceId);
 
         assert.deepStrictEqual(before, {
+          analytics: 2,
           apiKeys: 1,
           channels: 1,
           invitations: 2,
@@ -513,7 +526,14 @@ layer(Layer.mergeAll(IntegrationLive, StoreLive), {
           "@atelier@social.example"
         );
 
-        yield* seedPost(atelier, channelId, "A synthetic draft of Atelier.");
+        const atelierPost = yield* seedPost(
+          atelier,
+          channelId,
+          "A synthetic post of Atelier.",
+          "finished"
+        );
+
+        yield* seedTrackedPost(atelier, channelId, atelierPost);
         yield* uploadedFile(lee, atelier);
         yield* seedUsage(atelier, 7);
         yield* seedNotice(lee.id, studio, "@studio@social.example");
@@ -600,7 +620,7 @@ layer(Layer.mergeAll(IntegrationLive, StoreLive), {
             channels: targets.map((target) => target.channelId),
             text: postText,
           })),
-          [{ channels: [channelId], text: "A synthetic draft of Atelier." }]
+          [{ channels: [channelId], text: "A synthetic post of Atelier." }]
         );
         assert.deepStrictEqual(
           own?.media.map(({ contentType, status }) => ({
@@ -616,6 +636,13 @@ layer(Layer.mergeAll(IntegrationLive, StoreLive), {
         assert.deepStrictEqual(own?.assistantUsage, [
           { day: "2026-11-09", requests: 7 },
         ]);
+        assert.deepStrictEqual(
+          own?.analytics.map(({ postId, snapshots }) => ({
+            likes: snapshots.map(({ likes }) => likes),
+            postId,
+          })),
+          [{ likes: [4], postId: atelierPost }]
+        );
         // This server does not bill: no plan, no subscription.
         assert.deepStrictEqual(own?.billing, { plan: null, subscriptions: [] });
         assert.notInclude(text, "A synthetic draft of Studio.");

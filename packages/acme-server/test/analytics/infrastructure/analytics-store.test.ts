@@ -1,6 +1,7 @@
 import { assert, layer } from "@effect/vitest";
 import { DateTime, Effect, Layer, Option, Result } from "effect";
 
+import { AnalyticsRecords } from "#analytics/application/analytics-records.ts";
 import { AnalyticsReports } from "#analytics/application/analytics-reports.ts";
 import { TrackedPosts } from "#analytics/application/tracked-posts.ts";
 import { dayStarts, reportRange } from "#analytics/domain/report-range.ts";
@@ -8,6 +9,7 @@ import {
   recordReading,
   trackPublication,
 } from "#analytics/domain/tracked-post.ts";
+import { DrizzleAnalyticsRecords } from "#analytics/infrastructure/drizzle-analytics-records.ts";
 import { DrizzleTrackedPosts } from "#analytics/infrastructure/drizzle-tracked-posts.ts";
 import { SqlAnalyticsReports } from "#analytics/infrastructure/sql-analytics-reports.ts";
 import { TimeZoneIdSchema } from "#shared/domain/time-zone.ts";
@@ -24,9 +26,11 @@ import { DatabaseTest, freshWorkspace } from "#test/channels/support.ts";
 // Each test writes rows of its own workspace, at instants no other suite
 // uses, and deletes them after.
 
-const StoreTest = Layer.mergeAll(DrizzleTrackedPosts, SqlAnalyticsReports).pipe(
-  Layer.provideMerge(DatabaseTest)
-);
+const StoreTest = Layer.mergeAll(
+  DrizzleTrackedPosts,
+  SqlAnalyticsReports,
+  DrizzleAnalyticsRecords
+).pipe(Layer.provideMerge(DatabaseTest));
 
 const utc = (iso: string) => DateTime.makeUnsafe(iso);
 
@@ -236,5 +240,82 @@ layer(StoreTest)("the analytics store", (it) => {
         ]);
       }).pipe(Effect.ensuring(forgetWorkspace(workspaceId)));
     })
+  );
+
+  it.effect(
+    "exports and erases a workspace's posts followed, and drops a reading of one erased meanwhile",
+    () =>
+      Effect.gen(function* records() {
+        const workspaceId = yield* freshWorkspace;
+        const tracked = yield* TrackedPosts;
+        const analytics = yield* AnalyticsRecords;
+
+        const publication = yield* publicationOf(
+          workspaceId,
+          yield* newChannelId,
+          "2041-04-02T10:20:00.000Z"
+        );
+
+        yield* Effect.gen(function* checks() {
+          const post = trackPublication(publication);
+
+          yield* tracked.track([post]);
+
+          const read = recordReading(
+            post,
+            countsOf(5, 2, 1),
+            utc("2041-04-02T11:07:01.000Z"),
+            utc("2041-04-02T11:07:00.000Z")
+          );
+
+          yield* tracked.saveReading(read);
+
+          assert.deepStrictEqual(
+            yield* analytics.exportWorkspace(workspaceId),
+            [
+              {
+                channelId: publication.channelId,
+                permalink: Option.getOrNull(publication.permalink),
+                postId: publication.postId,
+                publishedAt: publication.publishedAt,
+                snapshots: [
+                  {
+                    collectedAt: utc("2041-04-02T11:07:01.000Z"),
+                    impressions: null,
+                    likes: 5,
+                    quotes: null,
+                    replies: 1,
+                    reposts: 2,
+                  },
+                ],
+                targetId: publication.targetId,
+              },
+            ]
+          );
+
+          yield* analytics.eraseWorkspace(workspaceId);
+
+          assert.deepStrictEqual(
+            yield* analytics.exportWorkspace(workspaceId),
+            []
+          );
+
+          // A reading that ends after the erasure keeps nothing, and fails
+          // nothing.
+          yield* tracked.saveReading(
+            recordReading(
+              read,
+              countsOf(6, 2, 1),
+              utc("2041-04-02T12:07:01.000Z"),
+              utc("2041-04-02T12:07:00.000Z")
+            )
+          );
+
+          assert.deepStrictEqual(
+            yield* analytics.exportWorkspace(workspaceId),
+            []
+          );
+        }).pipe(Effect.ensuring(forgetWorkspace(workspaceId)));
+      })
   );
 });

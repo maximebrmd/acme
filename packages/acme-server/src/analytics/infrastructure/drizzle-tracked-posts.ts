@@ -184,7 +184,8 @@ export const DrizzleTrackedPosts = Layer.effect(
       db
         .update(trackedPosts)
         .set(rowOf(post))
-        .where(eq(trackedPosts.targetId, post.targetId));
+        .where(eq(trackedPosts.targetId, post.targetId))
+        .returning({ targetId: trackedPosts.targetId });
 
     const saveReading = Effect.fn("TrackedPosts.saveReading")(
       function* saveReading(post: TrackedPost) {
@@ -202,6 +203,14 @@ export const DrizzleTrackedPosts = Layer.effect(
         return yield* sql
           .withTransaction(
             Effect.gen(function* saving() {
+              // The post first, under its row lock: one erased with its
+              // workspace while it was read keeps no snapshot.
+              const saved = yield* update(post);
+
+              if (saved.length === 0) {
+                return;
+              }
+
               yield* db
                 .insert(metricSnapshots)
                 .values({
@@ -214,8 +223,6 @@ export const DrizzleTrackedPosts = Layer.effect(
                   targetId: post.targetId,
                 })
                 .onConflictDoNothing();
-
-              yield* update(post);
             })
           )
           .pipe(Effect.mapError(failed));

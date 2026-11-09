@@ -74,8 +74,9 @@ export const WorkspaceLive = Layer.merge(
  * context's data: deleting a workspace, copying out and deleting an account,
  * and the applications acting for a user. Needs what WorkspaceLive provides,
  * the database, a TransactionRunner, and the other contexts' records
- * (ChannelRecords, PostRecords, MediaRecords, NoticeRecords, UsageRecords)
- * and SendAuthEmail, which the composition root brings.
+ * (ChannelRecords, PostRecords, MediaRecords, NoticeRecords, UsageRecords,
+ * AnalyticsRecords, BillingRecords) and SendAuthEmail, which the
+ * composition root brings.
  */
 export const WorkspaceSettingsLive = Layer.mergeAll(
   AccountData.layer,

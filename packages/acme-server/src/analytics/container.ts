@@ -3,16 +3,20 @@ import { Layer } from "effect";
 import { AnalyticsQueries } from "#analytics/application/analytics-queries.ts";
 import { CollectMetrics } from "#analytics/application/collect-metrics.ts";
 import type { MetricsReader } from "#analytics/application/metrics-reader.ts";
+import { DrizzleAnalyticsRecords } from "#analytics/infrastructure/drizzle-analytics-records.ts";
 import { DrizzleTrackedPosts } from "#analytics/infrastructure/drizzle-tracked-posts.ts";
 import { PublishingPublishedPosts } from "#analytics/infrastructure/publishing-published-posts.ts";
 import { SqlAnalyticsReports } from "#analytics/infrastructure/sql-analytics-reports.ts";
 
 /**
- * Reading a workspace's analytics (AnalyticsQueries), for the handlers,
- * from Postgres. The composition root provides `Drizzle` and `SqlClient`.
+ * Reading a workspace's analytics (AnalyticsQueries), for the handlers, and
+ * its records as a whole (AnalyticsRecords), for the workspace context's
+ * exports and erasures, from Postgres. The composition root provides
+ * `Drizzle` and `SqlClient`.
  */
-export const AnalyticsLive = AnalyticsQueries.layer.pipe(
-  Layer.provide(SqlAnalyticsReports)
+export const AnalyticsLive = Layer.merge(
+  AnalyticsQueries.layer.pipe(Layer.provide(SqlAnalyticsReports)),
+  DrizzleAnalyticsRecords
 );
 
 /**

@@ -305,13 +305,13 @@ and no socket, for tests.
   before deciding, so closures, joins and deletions take turns. Each context
   hands its records of a workspace or a user to the workspace context
   through an application port (`ChannelRecords`, `PostRecords`,
-  `MediaRecords`, `NoticeRecords`, `UsageRecords`, `BillingRecords`, in the
-  shapes of `#shared/application/personal-data.ts`), which `ContextRecords`
-  reaches. The rows go in one TransactionRunner transaction, Better Auth's
-  included (the server's Drizzle on the `auth` tables, the Stripe plugin's
-  `subscription` too), and the workspace's media folder once it commits. A
-  context that keeps new data about a workspace or a user adds it to its
-  records.
+  `MediaRecords`, `NoticeRecords`, `UsageRecords`, `AnalyticsRecords`,
+  `BillingRecords`, in the shapes of `#shared/application/personal-data.ts`),
+  which `ContextRecords` reaches. The rows go in one TransactionRunner
+  transaction, Better Auth's included (the server's Drizzle on the `auth`
+  tables, the Stripe plugin's `subscription` too), and the workspace's media
+  folder once it commits. A context that keeps new data about a workspace or
+  a user adds it to its records.
 - `ContextRecords.eraseWorkspace` asks billing first: `BillingRecords`
   refuses a workspace Stripe may still bill (`stillBills`), before anything
   goes, and `DeleteWorkspace` and `CloseAccount`, for the workspaces it
@@ -320,15 +320,15 @@ and no socket, for tests.
   (`PostRecords.forgetAuthor`: `author_id` has no foreign key).
 - `AccountData` exports what is tied to the user, the posts they wrote in
   the workspaces they share (`exportAuthored`), and the content of the
-  workspaces where they are the only member, with their billing state (plan
-  and subscription statuses, never a card or Stripe's ids): those
-  `CloseAccount` deletes. Sessions staff opened to impersonate the user are
-  left out, as Better Auth's own list leaves them out: their browser and
-  address are staff's. Closing an account is refused while its user alone
-  owns a workspace others use (`planClosure`), and its confirmation is
-  emailed in their language.
-  `PasswordCheck` checks a password three times within 10 seconds per
-  account at most, as Better Auth's own routes do.
+  workspaces where they are the only member, with their analytics and
+  billing state (plan and subscription statuses, never a card or Stripe's
+  ids): those `CloseAccount` deletes. Sessions staff opened to impersonate
+  the user are left out, as Better Auth's own list leaves them out: their
+  browser and address are staff's. Closing an account is refused while its
+  user alone owns a workspace others use (`planClosure`), and its
+  confirmation is emailed in their language. `PasswordCheck` checks a
+  password three times within 10 seconds per account at most, as Better
+  Auth's own routes do.
 - Better Auth is also the OAuth authorization server for the CLI (device
   grant, the `acme-cli` public client registered at startup) and MCP clients
   (authorization code with PKCE, and dynamic registration when
@@ -661,7 +661,9 @@ and no socket, for tests.
 - Analytics follows the targets that publishing's `PublishedTargets`
   (`publishing/application`) lists, from the latest one it follows less 15
   minutes, in `analytics.tracked_posts`, and keeps each reading in
-  `analytics.metric_snapshots`: ids and counts, never content.
+  `analytics.metric_snapshots`: ids and counts, never content. A workspace's
+  go with it (`AnalyticsRecords`), and a reading saved after its post was
+  erased keeps nothing (`saveReading` updates the post first).
 - `CollectMetrics` runs on the `analytics.collect-metrics` cron, hourly at
   minute 7: a post is read every hour for 48 hours, then every day until it
   is 30 days old (`analytics/domain/collection-schedule.ts`), each next read

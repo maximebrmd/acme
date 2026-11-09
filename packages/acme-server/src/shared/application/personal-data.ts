@@ -60,6 +60,30 @@ export interface MediaRecord {
   readonly width: number | null;
 }
 
+/** A post's counts on a channel as analytics read them at one moment. */
+export interface MetricsSnapshotRecord {
+  readonly collectedAt: DateTime.Utc;
+  readonly impressions: number | null;
+  readonly likes: number;
+  readonly quotes: number | null;
+  readonly replies: number;
+  readonly reposts: number;
+}
+
+/**
+ * A post that went live on a channel of a workspace, as analytics followed
+ * it: where it is, and each reading of its counts. Ids and counts, never
+ * what the post says, which the post's own record holds.
+ */
+export interface AnalyticsRecord {
+  readonly channelId: string;
+  readonly permalink: string | null;
+  readonly postId: string;
+  readonly publishedAt: DateTime.Utc;
+  readonly snapshots: readonly MetricsSnapshotRecord[];
+  readonly targetId: string;
+}
+
 /** How many requests a workspace sent the writing assistant one UTC day. */
 export interface UsageRecord {
   /** YYYY-MM-DD. */

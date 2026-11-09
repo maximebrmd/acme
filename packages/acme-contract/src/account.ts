@@ -146,7 +146,28 @@ const ExportedUsageSchema = Schema.Struct({
   requests: Schema.Int,
 });
 
+// A post analytics followed on a channel, and each reading of its counts.
+// Quotes and impressions are null where the platform gives none.
+const ExportedAnalyticsSchema = Schema.Struct({
+  channelId: Schema.String,
+  permalink: nullable(Schema.String),
+  postId: Schema.String,
+  publishedAt: instant,
+  snapshots: Schema.Array(
+    Schema.Struct({
+      collectedAt: instant,
+      impressions: nullable(Schema.Int),
+      likes: Schema.Int,
+      quotes: nullable(Schema.Int),
+      replies: Schema.Int,
+      reposts: Schema.Int,
+    })
+  ),
+  targetId: Schema.String,
+});
+
 const ExportedWorkspaceSchema = Schema.Struct({
+  analytics: Schema.Array(ExportedAnalyticsSchema),
   apiKeys: Schema.Array(ApiKeySchema),
   assistantUsage: Schema.Array(ExportedUsageSchema),
   billing: ExportedBillingSchema,
@@ -212,7 +233,7 @@ export class AccountApi extends HttpApiGroup.make("account")
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Answers with a JSON copy of everything Acme keeps about the user, as a file to save: their account, how they sign in, their sessions, memberships, invitations, connected applications, notices and preferences, the posts they wrote in the workspaces they share, and the channels, posts, media details, API keys, assistant usage and billing state (plan and subscription status) of the workspaces where they are the only member. It holds no secret: no password, token, key or card.",
+          "Answers with a JSON copy of everything Acme keeps about the user, as a file to save: their account, how they sign in, their sessions, memberships, invitations, connected applications, notices and preferences, the posts they wrote in the workspaces they share, and the channels, posts, media details, analytics, API keys, assistant usage and billing state (plan and subscription status) of the workspaces where they are the only member. It holds no secret: no password, token, key or card.",
         summary: "Export my data",
       })
     ),

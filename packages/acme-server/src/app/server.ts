@@ -109,14 +109,15 @@ const AssistantContextLive = AssistantLive.pipe(
 );
 
 // Workspace and account settings, which erase and export what every context
-// keeps.
+// keeps, billing's included, which the workspace context brings.
 const SettingsContextLive = WorkspaceSettingsLive.pipe(
   Layer.provide(
     Layer.mergeAll(
       ChannelsWithNoticesLive,
       PublishingContextLive,
       MediaContextLive,
-      AssistantContextLive
+      AssistantContextLive,
+      AnalyticsLive
     )
   )
 );

@@ -1,5 +1,6 @@
 import { Effect, Layer } from "effect";
 
+import { AnalyticsRecords } from "#analytics/application/analytics-records.ts";
 import { UsageRecords } from "#assistant/application/ports/usage-records.ts";
 import { BillingRecords } from "#billing/application/billing-records.ts";
 import { ChannelRecords } from "#channels/application/channel-records.ts";
@@ -13,8 +14,8 @@ import { WorkspaceSubscribed } from "#workspace/application/workspace-subscribed
 
 /**
  * ContextRecords through each context's own records: publishing's posts,
- * the channels, the media library, the notices, the assistant's usage and
- * billing's subscriptions.
+ * the channels, the media library, the notices, the assistant's usage,
+ * analytics' posts followed and billing's subscriptions.
  */
 export const ContextRecordsLive = Layer.effect(
   ContextRecords,
@@ -25,6 +26,7 @@ export const ContextRecordsLive = Layer.effect(
     const notices = yield* NoticeRecords;
     const usage = yield* UsageRecords;
     const billing = yield* BillingRecords;
+    const analytics = yield* AnalyticsRecords;
 
     return ContextRecords.of({
       eraseUser: Effect.fn("ContextRecords.eraseUser")(
@@ -55,6 +57,7 @@ export const ContextRecordsLive = Layer.effect(
               )
             );
 
+          yield* analytics.eraseWorkspace(workspaceId);
           yield* channels.eraseWorkspace(workspaceId);
           yield* media.eraseWorkspace(workspaceId);
           yield* notices.eraseWorkspace(workspaceId);
@@ -66,6 +69,7 @@ export const ContextRecordsLive = Layer.effect(
       exportUser: (userId) => notices.exportUser(userId),
       exportWorkspace: (workspaceId) =>
         Effect.all({
+          analytics: analytics.exportWorkspace(workspaceId),
           assistantUsage: usage.exportWorkspace(workspaceId),
           billing: billing.exportWorkspace(workspaceId),
           channels: channels.exportWorkspace(workspaceId),

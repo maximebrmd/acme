@@ -3,6 +3,7 @@ import type { Effect } from "effect";
 
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import type {
+  AnalyticsRecord,
   AuthoredPostRecord,
   BillingRecord,
   ChannelRecord,
@@ -20,6 +21,7 @@ import type { WorkspaceSubscribed } from "./workspace-subscribed.ts";
 
 /** What the other contexts keep in a workspace. */
 export interface WorkspaceContent {
+  readonly analytics: readonly AnalyticsRecord[];
   readonly assistantUsage: readonly UsageRecord[];
   readonly billing: BillingRecord;
   readonly channels: readonly ChannelRecord[];
@@ -35,8 +37,8 @@ export interface UserContent {
 
 /**
  * The data the other contexts keep about workspaces and users: channels,
- * posts and their authors, media, assistant usage, billing, notices and
- * preferences. Erasures run in the caller's transaction, except the media
+ * posts and their authors, media, analytics, assistant usage, billing,
+ * notices and preferences. Erasures run in the caller's transaction, except the media
  * files, which the store holds outside the database: remove them once the
  * rest is committed.
  */

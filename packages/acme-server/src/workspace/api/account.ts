@@ -52,6 +52,7 @@ const viewOf = Effect.fn("AccountExport.view")(function* viewOf(
     signInMethods: account.signInMethods,
     user: account.user,
     workspaces: exported.workspaces.map((workspace) => ({
+      analytics: workspace.analytics,
       apiKeys: workspace.apiKeys.map((apiKey) => ({
         createdAt: apiKey.createdAt,
         expiresAt: Option.getOrNull(apiKey.expiresAt),

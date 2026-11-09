@@ -33,7 +33,7 @@ Sous **Clés d’API**, donnez à une nouvelle clé un nom, une durée de validi
 
 ### Supprimer un espace de travail [#delete-workspace]
 
-Dans **Général**, les propriétaires choisissent **Supprimer cet espace de travail…**, puis saisissent son nom pour confirmer. Tout son contenu disparaît, définitivement : ses canaux et leurs autorisations, ses publications, programmées ou non, sa médiathèque et ses fichiers, ses notifications, son utilisation de l’assistant de rédaction, ce qu’Acme a enregistré de ses abonnements, ses membres et invitations, et ses clés d’API, qui cessent aussitôt de fonctionner. Plus rien n’en est publié. Stripe garde les factures qu’il a émises.
+Dans **Général**, les propriétaires choisissent **Supprimer cet espace de travail…**, puis saisissent son nom pour confirmer. Tout son contenu disparaît, définitivement : ses canaux et leurs autorisations, ses publications, programmées ou non, et leurs statistiques, sa médiathèque et ses fichiers, ses notifications, son utilisation de l’assistant de rédaction, ce qu’Acme a enregistré de ses abonnements, ses membres et invitations, et ses clés d’API, qui cessent aussitôt de fonctionner. Plus rien n’en est publié. Stripe garde les factures qu’il a émises.
 
 Tant qu’une de ses publications est en cours d’envoi, la suppression attend : réessayez quelques minutes plus tard. Tant que l’espace de travail a un abonnement que Stripe peut encore facturer, actif, impayé ou suspendu, il ne peut pas être supprimé : résiliez d’abord l’abonnement depuis sa page **Facturation**, puis supprimez l’espace de travail une fois l’abonnement terminé.
 
@@ -55,9 +55,9 @@ Choisissez **Paramètres du compte** dans le menu du compte.
 - vos adhésions, et les invitations que vous avez envoyées ou reçues ;
 - vos applications connectées, vos notifications et vos préférences d’e-mail, y compris si vous suivez toutes les publications ;
 - les publications que vous avez écrites dans les espaces de travail partagés, avec leurs destinations ;
-- les espaces de travail dont vous êtes le seul membre, avec leurs canaux, publications, informations sur les médias, clés d’API, utilisation de l’assistant de rédaction et facturation : leur abonnement, et l’état de chacun de leurs abonnements Stripe.
+- les espaces de travail dont vous êtes le seul membre, avec leurs canaux, publications, statistiques (les compteurs de chaque publication, tels qu’Acme les a relevés), informations sur les médias, clés d’API, utilisation de l’assistant de rédaction et facturation : leur abonnement, et l’état de chacun de leurs abonnements Stripe.
 
-Le reste d’un espace de travail partagé appartient à son équipe : le fichier contient votre adhésion et les publications que vous y avez écrites, pas celles des autres, ni ses canaux ou ses médias. Il ne contient aucun mot de passe, jeton, clé ni carte, ni les fichiers des médias eux-mêmes : téléchargez-les depuis la médiathèque de l’espace de travail. Les moyens de paiement et les factures restent chez Stripe, dans l’espace de facturation.
+Le reste d’un espace de travail partagé appartient à son équipe : le fichier contient votre adhésion et les publications que vous y avez écrites, pas celles des autres, ni ses canaux, ses médias ou ses statistiques. Il ne contient aucun mot de passe, jeton, clé ni carte, ni les fichiers des médias eux-mêmes : téléchargez-les depuis la médiathèque de l’espace de travail. Les moyens de paiement et les factures restent chez Stripe, dans l’espace de facturation.
 
 ### Supprimer votre compte [#delete-account]
 
