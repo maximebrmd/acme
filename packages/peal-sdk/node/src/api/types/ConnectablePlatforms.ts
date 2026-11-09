@@ -3,5 +3,6 @@
 import * as Peal from "../index.js";
 
 export interface ConnectablePlatforms {
+    instagramConnections: Peal.InstagramConnection[];
     platforms: Peal.Platform[];
 }

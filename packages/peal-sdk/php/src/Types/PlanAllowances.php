@@ -20,6 +20,12 @@ class PlanAllowances extends JsonSerializableType
     public ?int $channels;
 
     /**
+     * @var ?int $mediaStorage
+     */
+    #[JsonProperty('mediaStorage')]
+    public ?int $mediaStorage;
+
+    /**
      * @var ?int $members
      */
     #[JsonProperty('members')]
@@ -35,6 +41,7 @@ class PlanAllowances extends JsonSerializableType
      * @param array{
      *   assistantRequests?: ?int,
      *   channels?: ?int,
+     *   mediaStorage?: ?int,
      *   members?: ?int,
      *   scheduledPosts?: ?int,
      * } $values
@@ -44,6 +51,7 @@ class PlanAllowances extends JsonSerializableType
     ) {
         $this->assistantRequests = $values['assistantRequests'] ?? null;
         $this->channels = $values['channels'] ?? null;
+        $this->mediaStorage = $values['mediaStorage'] ?? null;
         $this->members = $values['members'] ?? null;
         $this->scheduledPosts = $values['scheduledPosts'] ?? null;
     }

@@ -17,9 +17,11 @@ public class GetTest : BaseMockServerTest
               "allowances": {
                 "assistantRequests": 1,
                 "channels": 1,
+                "mediaStorage": 1,
                 "members": 1,
                 "scheduledPosts": 1
               },
+              "currency": "currency",
               "enabled": true,
               "plan": "free",
               "plans": [
@@ -27,26 +29,44 @@ public class GetTest : BaseMockServerTest
                   "allowances": {
                     "assistantRequests": 1,
                     "channels": 1,
+                    "mediaStorage": 1,
                     "members": 1,
                     "scheduledPosts": 1
                   },
-                  "plan": "free"
+                  "plan": "free",
+                  "price": {
+                    "month": 1,
+                    "year": 1
+                  }
                 },
                 {
                   "allowances": {
                     "assistantRequests": 1,
                     "channels": 1,
+                    "mediaStorage": 1,
                     "members": 1,
                     "scheduledPosts": 1
                   },
-                  "plan": "free"
+                  "plan": "free",
+                  "price": {
+                    "month": 1,
+                    "year": 1
+                  }
                 }
               ],
               "subscription": {
                 "cancelAtPeriodEnd": true,
                 "currentPeriodEnd": "currentPeriodEnd",
-                "plan": "pro",
-                "status": "incomplete"
+                "interval": "month",
+                "plan": "starter",
+                "startedAt": "startedAt",
+                "status": "incomplete",
+                "trialEnd": "trialEnd"
+              },
+              "trial": {
+                "available": true,
+                "days": 1,
+                "plan": "starter"
               },
               "usage": {
                 "assistantRequests": {
@@ -54,12 +74,15 @@ public class GetTest : BaseMockServerTest
                   "used": 1
                 },
                 "channels": 1,
+                "mediaStorage": 1,
                 "members": 1,
                 "scheduledPosts": {
                   "resetsAt": "resetsAt",
                   "used": 1
                 }
-              }
+              },
+              "vatRate": 1,
+              "withdrawableUntil": "withdrawableUntil"
             }
             """;
 
@@ -91,22 +114,36 @@ public class GetTest : BaseMockServerTest
               "allowances": {
                 "assistantRequests": 1,
                 "channels": 1,
+                "mediaStorage": 1,
                 "members": 1,
                 "scheduledPosts": 1
               },
+              "currency": "currency",
               "enabled": true,
               "plan": "free",
               "plans": [
                 {
                   "allowances": {},
-                  "plan": "free"
+                  "plan": "free",
+                  "price": {
+                    "month": 1,
+                    "year": 1
+                  }
                 }
               ],
               "subscription": {
                 "cancelAtPeriodEnd": true,
                 "currentPeriodEnd": "currentPeriodEnd",
-                "plan": "pro",
-                "status": "incomplete"
+                "interval": "month",
+                "plan": "starter",
+                "startedAt": "startedAt",
+                "status": "incomplete",
+                "trialEnd": "trialEnd"
+              },
+              "trial": {
+                "available": true,
+                "days": 1,
+                "plan": "starter"
               },
               "usage": {
                 "assistantRequests": {
@@ -114,12 +151,15 @@ public class GetTest : BaseMockServerTest
                   "used": 1
                 },
                 "channels": 1,
+                "mediaStorage": 1,
                 "members": 1,
                 "scheduledPosts": {
                   "resetsAt": "resetsAt",
                   "used": 1
                 }
-              }
+              },
+              "vatRate": 1,
+              "withdrawableUntil": "withdrawableUntil"
             }
             """;
 

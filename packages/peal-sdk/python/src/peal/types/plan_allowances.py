@@ -13,6 +13,9 @@ class PlanAllowances(UniversalBaseModel):
         typing.Optional[int], FieldMetadata(alias="assistantRequests"), pydantic.Field(alias="assistantRequests")
     ] = None
     channels: typing.Optional[int] = None
+    media_storage: typing_extensions.Annotated[
+        typing.Optional[int], FieldMetadata(alias="mediaStorage"), pydantic.Field(alias="mediaStorage")
+    ] = None
     members: typing.Optional[int] = None
     scheduled_posts: typing_extensions.Annotated[
         typing.Optional[int], FieldMetadata(alias="scheduledPosts"), pydantic.Field(alias="scheduledPosts")

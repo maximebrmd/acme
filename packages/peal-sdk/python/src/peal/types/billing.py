@@ -3,21 +3,30 @@
 import typing
 
 import pydantic
+import typing_extensions
 from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
+from ..core.serialization import FieldMetadata
 from .billing_subscription import BillingSubscription
 from .plan import Plan
 from .plan_allowances import PlanAllowances
 from .plan_offer import PlanOffer
+from .trial_offer import TrialOffer
 from .usage import Usage
 
 
 class Billing(UniversalBaseModel):
     allowances: PlanAllowances
+    currency: str
     enabled: bool
     plan: typing.Optional[Plan] = None
     plans: typing.List[PlanOffer]
     subscription: typing.Optional[BillingSubscription] = None
+    trial: typing.Optional[TrialOffer] = None
     usage: Usage
+    vat_rate: typing_extensions.Annotated[int, FieldMetadata(alias="vatRate"), pydantic.Field(alias="vatRate")]
+    withdrawable_until: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="withdrawableUntil"), pydantic.Field(alias="withdrawableUntil")
+    ] = None
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

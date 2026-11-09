@@ -814,6 +814,28 @@ func (a AssistantUnavailableEncodedTag) Ptr() *AssistantUnavailableEncodedTag {
 	return &a
 }
 
+type BillingInterval string
+
+const (
+	BillingIntervalMonth BillingInterval = "month"
+	BillingIntervalYear  BillingInterval = "year"
+)
+
+func NewBillingIntervalFromString(s string) (BillingInterval, error) {
+	switch s {
+	case "month":
+		return BillingIntervalMonth, nil
+	case "year":
+		return BillingIntervalYear, nil
+	}
+	var t BillingInterval
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (b BillingInterval) Ptr() *BillingInterval {
+	return &b
+}
+
 var (
 	channelCannotPostEncodedFieldTag    = big.NewInt(1 << 0)
 	channelCannotPostEncodedFieldReason = big.NewInt(1 << 1)
@@ -5769,6 +5791,7 @@ const (
 	FailureReasonUnavailable         FailureReason = "unavailable"
 	FailureReasonAppNotAudited       FailureReason = "appNotAudited"
 	FailureReasonQuotaExceeded       FailureReason = "quotaExceeded"
+	FailureReasonAppBillingLimit     FailureReason = "appBillingLimit"
 )
 
 func NewFailureReasonFromString(s string) (FailureReason, error) {
@@ -5797,6 +5820,8 @@ func NewFailureReasonFromString(s string) (FailureReason, error) {
 		return FailureReasonAppNotAudited, nil
 	case "quotaExceeded":
 		return FailureReasonQuotaExceeded, nil
+	case "appBillingLimit":
+		return FailureReasonAppBillingLimit, nil
 	}
 	var t FailureReason
 	return "", fmt.Errorf("%s is not a valid %T", s, t)
@@ -6891,6 +6916,34 @@ func (n *NotFoundErrorBody) validate() error {
 	return nil
 }
 
+type PaidPlan string
+
+const (
+	PaidPlanStarter  PaidPlan = "starter"
+	PaidPlanPro      PaidPlan = "pro"
+	PaidPlanBusiness PaidPlan = "business"
+	PaidPlanAgency   PaidPlan = "agency"
+)
+
+func NewPaidPlanFromString(s string) (PaidPlan, error) {
+	switch s {
+	case "starter":
+		return PaidPlanStarter, nil
+	case "pro":
+		return PaidPlanPro, nil
+	case "business":
+		return PaidPlanBusiness, nil
+	case "agency":
+		return PaidPlanAgency, nil
+	}
+	var t PaidPlan
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (p PaidPlan) Ptr() *PaidPlan {
+	return &p
+}
+
 // One action on one resource of a workspace.
 type Permission string
 
@@ -6999,6 +7052,7 @@ const (
 	PlanLimitMembers           PlanLimit = "members"
 	PlanLimitScheduledPosts    PlanLimit = "scheduledPosts"
 	PlanLimitAssistantRequests PlanLimit = "assistantRequests"
+	PlanLimitMediaStorage      PlanLimit = "mediaStorage"
 )
 
 func NewPlanLimitFromString(s string) (PlanLimit, error) {
@@ -7011,6 +7065,8 @@ func NewPlanLimitFromString(s string) (PlanLimit, error) {
 		return PlanLimitScheduledPosts, nil
 	case "assistantRequests":
 		return PlanLimitAssistantRequests, nil
+	case "mediaStorage":
+		return PlanLimitMediaStorage, nil
 	}
 	var t PlanLimit
 	return "", fmt.Errorf("%s is not a valid %T", s, t)

@@ -16,6 +16,7 @@ AttemptResult = typing.Union[
         "unavailable",
         "appNotAudited",
         "quotaExceeded",
+        "appBillingLimit",
     ],
     typing.Any,
 ]

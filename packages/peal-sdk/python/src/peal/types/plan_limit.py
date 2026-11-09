@@ -2,4 +2,6 @@
 
 import typing
 
-PlanLimit = typing.Union[typing.Literal["channels", "members", "scheduledPosts", "assistantRequests"], typing.Any]
+PlanLimit = typing.Union[
+    typing.Literal["channels", "members", "scheduledPosts", "assistantRequests", "mediaStorage"], typing.Any
+]

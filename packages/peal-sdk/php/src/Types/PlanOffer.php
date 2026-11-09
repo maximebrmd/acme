@@ -20,9 +20,16 @@ class PlanOffer extends JsonSerializableType
     public string $plan;
 
     /**
+     * @var ?PlanPrice $price
+     */
+    #[JsonProperty('price')]
+    public ?PlanPrice $price;
+
+    /**
      * @param array{
      *   allowances: PlanAllowances,
      *   plan: value-of<Plan>,
+     *   price?: ?PlanPrice,
      * } $values
      */
     public function __construct(
@@ -30,6 +37,7 @@ class PlanOffer extends JsonSerializableType
     ) {
         $this->allowances = $values['allowances'];
         $this->plan = $values['plan'];
+        $this->price = $values['price'] ?? null;
     }
 
     /**

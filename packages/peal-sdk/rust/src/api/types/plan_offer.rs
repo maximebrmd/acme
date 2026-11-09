@@ -5,6 +5,8 @@ pub struct PlanOffer {
     #[serde(default)]
     pub allowances: PlanAllowances,
     pub plan: Plan,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub price: Option<PlanPrice>,
 }
 
 impl PlanOffer {
@@ -18,6 +20,7 @@ impl PlanOffer {
 pub struct PlanOfferBuilder {
     allowances: Option<PlanAllowances>,
     plan: Option<Plan>,
+    price: Option<PlanPrice>,
 }
 
 impl PlanOfferBuilder {
@@ -31,6 +34,11 @@ impl PlanOfferBuilder {
         self
     }
 
+    pub fn price(mut self, value: PlanPrice) -> Self {
+        self.price = Some(value);
+        self
+    }
+
     /// Consumes the builder and constructs a [`PlanOffer`].
     /// This method will fail if any of the following fields are not set:
     /// - [`allowances`](PlanOfferBuilder::allowances)
@@ -41,6 +49,7 @@ impl PlanOfferBuilder {
                 .allowances
                 .ok_or_else(|| BuildError::missing_field("allowances"))?,
             plan: self.plan.ok_or_else(|| BuildError::missing_field("plan"))?,
+            price: self.price,
         })
     }
 }

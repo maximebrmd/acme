@@ -23,6 +23,7 @@ public class CompleteConnectTest : BaseMockServerTest
               "_tag": "connected",
               "channel": {
                 "avatarUrl": "avatarUrl",
+                "connection": "instagramLogin",
                 "displayName": "displayName",
                 "handle": "handle",
                 "id": "id",
@@ -79,6 +80,7 @@ public class CompleteConnectTest : BaseMockServerTest
               "_tag": "connected",
               "channel": {
                 "avatarUrl": "avatarUrl",
+                "connection": "instagramLogin",
                 "displayName": "displayName",
                 "handle": "handle",
                 "id": "id",

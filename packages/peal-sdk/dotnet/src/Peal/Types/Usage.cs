@@ -17,6 +17,9 @@ public record Usage : IJsonOnDeserialized
     [JsonPropertyName("channels")]
     public required int Channels { get; set; }
 
+    [JsonPropertyName("mediaStorage")]
+    public required int MediaStorage { get; set; }
+
     [JsonPropertyName("members")]
     public required int Members { get; set; }
 

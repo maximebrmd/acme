@@ -14,6 +14,11 @@ class NoticeEvent extends JsonSerializableType
      *   |'PostUnconfirmed'
      *   |'ChannelReconnectRequired'
      *   |'ChannelReconnectSoon'
+     *   |'SubscriptionStarted'
+     *   |'TrialEnding'
+     *   |'SubscriptionRenewing'
+     *   |'SubscriptionCancelled'
+     *   |'SubscriptionWithdrawn'
      *   |'_unknown'
      * ) $type
      */
@@ -26,6 +31,11 @@ class NoticeEvent extends JsonSerializableType
      *   |NoticeEventPostUnconfirmed
      *   |NoticeEventChannelReconnectRequired
      *   |NoticeEventChannelReconnectSoon
+     *   |NoticeEventSubscriptionStarted
+     *   |NoticeEventTrialEnding
+     *   |NoticeEventSubscriptionRenewing
+     *   |NoticeEventSubscriptionCancelled
+     *   |NoticeEventSubscriptionWithdrawn
      *   |mixed
      * ) $value
      */
@@ -39,6 +49,11 @@ class NoticeEvent extends JsonSerializableType
      *   |'PostUnconfirmed'
      *   |'ChannelReconnectRequired'
      *   |'ChannelReconnectSoon'
+     *   |'SubscriptionStarted'
+     *   |'TrialEnding'
+     *   |'SubscriptionRenewing'
+     *   |'SubscriptionCancelled'
+     *   |'SubscriptionWithdrawn'
      *   |'_unknown'
      * ),
      *   value: (
@@ -47,6 +62,11 @@ class NoticeEvent extends JsonSerializableType
      *   |NoticeEventPostUnconfirmed
      *   |NoticeEventChannelReconnectRequired
      *   |NoticeEventChannelReconnectSoon
+     *   |NoticeEventSubscriptionStarted
+     *   |NoticeEventTrialEnding
+     *   |NoticeEventSubscriptionRenewing
+     *   |NoticeEventSubscriptionCancelled
+     *   |NoticeEventSubscriptionWithdrawn
      *   |mixed
      * ),
      * } $values
@@ -115,6 +135,66 @@ class NoticeEvent extends JsonSerializableType
         return new NoticeEvent([
             'type' => 'ChannelReconnectSoon',
             'value' => $channelReconnectSoon,
+        ]);
+    }
+
+    /**
+     * @param NoticeEventSubscriptionStarted $subscriptionStarted
+     * @return NoticeEvent
+     */
+    public static function subscriptionStarted(NoticeEventSubscriptionStarted $subscriptionStarted): NoticeEvent
+    {
+        return new NoticeEvent([
+            'type' => 'SubscriptionStarted',
+            'value' => $subscriptionStarted,
+        ]);
+    }
+
+    /**
+     * @param NoticeEventTrialEnding $trialEnding
+     * @return NoticeEvent
+     */
+    public static function trialEnding(NoticeEventTrialEnding $trialEnding): NoticeEvent
+    {
+        return new NoticeEvent([
+            'type' => 'TrialEnding',
+            'value' => $trialEnding,
+        ]);
+    }
+
+    /**
+     * @param NoticeEventSubscriptionRenewing $subscriptionRenewing
+     * @return NoticeEvent
+     */
+    public static function subscriptionRenewing(NoticeEventSubscriptionRenewing $subscriptionRenewing): NoticeEvent
+    {
+        return new NoticeEvent([
+            'type' => 'SubscriptionRenewing',
+            'value' => $subscriptionRenewing,
+        ]);
+    }
+
+    /**
+     * @param NoticeEventSubscriptionCancelled $subscriptionCancelled
+     * @return NoticeEvent
+     */
+    public static function subscriptionCancelled(NoticeEventSubscriptionCancelled $subscriptionCancelled): NoticeEvent
+    {
+        return new NoticeEvent([
+            'type' => 'SubscriptionCancelled',
+            'value' => $subscriptionCancelled,
+        ]);
+    }
+
+    /**
+     * @param NoticeEventSubscriptionWithdrawn $subscriptionWithdrawn
+     * @return NoticeEvent
+     */
+    public static function subscriptionWithdrawn(NoticeEventSubscriptionWithdrawn $subscriptionWithdrawn): NoticeEvent
+    {
+        return new NoticeEvent([
+            'type' => 'SubscriptionWithdrawn',
+            'value' => $subscriptionWithdrawn,
         ]);
     }
 
@@ -229,6 +309,116 @@ class NoticeEvent extends JsonSerializableType
     }
 
     /**
+     * @return bool
+     */
+    public function isSubscriptionStarted(): bool
+    {
+        return $this->value instanceof NoticeEventSubscriptionStarted && $this->type === 'SubscriptionStarted';
+    }
+
+    /**
+     * @return NoticeEventSubscriptionStarted
+     */
+    public function asSubscriptionStarted(): NoticeEventSubscriptionStarted
+    {
+        if (!($this->value instanceof NoticeEventSubscriptionStarted && $this->type === 'SubscriptionStarted')) {
+            throw new Exception(
+                "Expected SubscriptionStarted; got " . $this->type . " with value of type " . get_debug_type($this->value),
+            );
+        }
+
+        return $this->value;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isTrialEnding(): bool
+    {
+        return $this->value instanceof NoticeEventTrialEnding && $this->type === 'TrialEnding';
+    }
+
+    /**
+     * @return NoticeEventTrialEnding
+     */
+    public function asTrialEnding(): NoticeEventTrialEnding
+    {
+        if (!($this->value instanceof NoticeEventTrialEnding && $this->type === 'TrialEnding')) {
+            throw new Exception(
+                "Expected TrialEnding; got " . $this->type . " with value of type " . get_debug_type($this->value),
+            );
+        }
+
+        return $this->value;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isSubscriptionRenewing(): bool
+    {
+        return $this->value instanceof NoticeEventSubscriptionRenewing && $this->type === 'SubscriptionRenewing';
+    }
+
+    /**
+     * @return NoticeEventSubscriptionRenewing
+     */
+    public function asSubscriptionRenewing(): NoticeEventSubscriptionRenewing
+    {
+        if (!($this->value instanceof NoticeEventSubscriptionRenewing && $this->type === 'SubscriptionRenewing')) {
+            throw new Exception(
+                "Expected SubscriptionRenewing; got " . $this->type . " with value of type " . get_debug_type($this->value),
+            );
+        }
+
+        return $this->value;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isSubscriptionCancelled(): bool
+    {
+        return $this->value instanceof NoticeEventSubscriptionCancelled && $this->type === 'SubscriptionCancelled';
+    }
+
+    /**
+     * @return NoticeEventSubscriptionCancelled
+     */
+    public function asSubscriptionCancelled(): NoticeEventSubscriptionCancelled
+    {
+        if (!($this->value instanceof NoticeEventSubscriptionCancelled && $this->type === 'SubscriptionCancelled')) {
+            throw new Exception(
+                "Expected SubscriptionCancelled; got " . $this->type . " with value of type " . get_debug_type($this->value),
+            );
+        }
+
+        return $this->value;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isSubscriptionWithdrawn(): bool
+    {
+        return $this->value instanceof NoticeEventSubscriptionWithdrawn && $this->type === 'SubscriptionWithdrawn';
+    }
+
+    /**
+     * @return NoticeEventSubscriptionWithdrawn
+     */
+    public function asSubscriptionWithdrawn(): NoticeEventSubscriptionWithdrawn
+    {
+        if (!($this->value instanceof NoticeEventSubscriptionWithdrawn && $this->type === 'SubscriptionWithdrawn')) {
+            throw new Exception(
+                "Expected SubscriptionWithdrawn; got " . $this->type . " with value of type " . get_debug_type($this->value),
+            );
+        }
+
+        return $this->value;
+    }
+
+    /**
      * @return string
      */
     public function __toString(): string
@@ -266,6 +456,26 @@ class NoticeEvent extends JsonSerializableType
                 break;
             case 'ChannelReconnectSoon':
                 $value = $this->asChannelReconnectSoon()->jsonSerialize();
+                $result = array_merge($value, $result);
+                break;
+            case 'SubscriptionStarted':
+                $value = $this->asSubscriptionStarted()->jsonSerialize();
+                $result = array_merge($value, $result);
+                break;
+            case 'TrialEnding':
+                $value = $this->asTrialEnding()->jsonSerialize();
+                $result = array_merge($value, $result);
+                break;
+            case 'SubscriptionRenewing':
+                $value = $this->asSubscriptionRenewing()->jsonSerialize();
+                $result = array_merge($value, $result);
+                break;
+            case 'SubscriptionCancelled':
+                $value = $this->asSubscriptionCancelled()->jsonSerialize();
+                $result = array_merge($value, $result);
+                break;
+            case 'SubscriptionWithdrawn':
+                $value = $this->asSubscriptionWithdrawn()->jsonSerialize();
                 $result = array_merge($value, $result);
                 break;
             case '_unknown':
@@ -318,6 +528,21 @@ class NoticeEvent extends JsonSerializableType
                 break;
             case 'ChannelReconnectSoon':
                 $args['value'] = NoticeEventChannelReconnectSoon::jsonDeserialize($data);
+                break;
+            case 'SubscriptionStarted':
+                $args['value'] = NoticeEventSubscriptionStarted::jsonDeserialize($data);
+                break;
+            case 'TrialEnding':
+                $args['value'] = NoticeEventTrialEnding::jsonDeserialize($data);
+                break;
+            case 'SubscriptionRenewing':
+                $args['value'] = NoticeEventSubscriptionRenewing::jsonDeserialize($data);
+                break;
+            case 'SubscriptionCancelled':
+                $args['value'] = NoticeEventSubscriptionCancelled::jsonDeserialize($data);
+                break;
+            case 'SubscriptionWithdrawn':
+                $args['value'] = NoticeEventSubscriptionWithdrawn::jsonDeserialize($data);
                 break;
             case '_unknown':
             default:

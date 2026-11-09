@@ -5,15 +5,20 @@ package social.peal.types;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSetter;
+import com.fasterxml.jackson.annotation.Nulls;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import org.jetbrains.annotations.NotNull;
+import social.peal.core.Nullable;
+import social.peal.core.NullableNonemptyFilter;
 import social.peal.core.ObjectMappers;
 
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
@@ -23,11 +28,15 @@ public final class PlanOffer {
 
     private final Plan plan;
 
+    private final Optional<PlanPrice> price;
+
     private final Map<String, Object> additionalProperties;
 
-    private PlanOffer(PlanAllowances allowances, Plan plan, Map<String, Object> additionalProperties) {
+    private PlanOffer(
+            PlanAllowances allowances, Plan plan, Optional<PlanPrice> price, Map<String, Object> additionalProperties) {
         this.allowances = allowances;
         this.plan = plan;
+        this.price = price;
         this.additionalProperties = additionalProperties;
     }
 
@@ -39,6 +48,20 @@ public final class PlanOffer {
     @JsonProperty("plan")
     public Plan getPlan() {
         return plan;
+    }
+
+    @JsonIgnore
+    public Optional<PlanPrice> getPrice() {
+        if (price == null) {
+            return Optional.empty();
+        }
+        return price;
+    }
+
+    @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
+    @JsonProperty("price")
+    private Optional<PlanPrice> _getPrice() {
+        return price;
     }
 
     @java.lang.Override
@@ -53,12 +76,12 @@ public final class PlanOffer {
     }
 
     private boolean equalTo(PlanOffer other) {
-        return allowances.equals(other.allowances) && plan.equals(other.plan);
+        return allowances.equals(other.allowances) && plan.equals(other.plan) && price.equals(other.price);
     }
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.allowances, this.plan);
+        return Objects.hash(this.allowances, this.plan, this.price);
     }
 
     @java.lang.Override
@@ -86,6 +109,12 @@ public final class PlanOffer {
         _FinalStage additionalProperty(String key, Object value);
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
+
+        _FinalStage price(Optional<PlanPrice> price);
+
+        _FinalStage price(PlanPrice price);
+
+        _FinalStage price(Nullable<PlanPrice> price);
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -93,6 +122,8 @@ public final class PlanOffer {
         private PlanAllowances allowances;
 
         private Plan plan;
+
+        private Optional<PlanPrice> price = Optional.empty();
 
         private Map<String, Object> additionalProperties = new HashMap<>();
 
@@ -102,6 +133,7 @@ public final class PlanOffer {
         public Builder from(PlanOffer other) {
             allowances(other.getAllowances());
             plan(other.getPlan());
+            price(other.getPrice());
             return this;
         }
 
@@ -120,13 +152,38 @@ public final class PlanOffer {
         }
 
         @java.lang.Override
+        public _FinalStage price(Nullable<PlanPrice> price) {
+            if (price.isNull()) {
+                this.price = null;
+            } else if (price.isEmpty()) {
+                this.price = Optional.empty();
+            } else {
+                this.price = Optional.of(price.get());
+            }
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage price(PlanPrice price) {
+            this.price = Optional.ofNullable(price);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "price", nulls = Nulls.SKIP)
+        public _FinalStage price(Optional<PlanPrice> price) {
+            this.price = price;
+            return this;
+        }
+
+        @java.lang.Override
         public PlanOffer build() {
-            return new PlanOffer(allowances, plan, additionalProperties);
+            return new PlanOffer(allowances, plan, price, additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
-            if (key.equalsIgnoreCase("allowances") || key.equalsIgnoreCase("plan")) {
+            if (key.equalsIgnoreCase("allowances") || key.equalsIgnoreCase("plan") || key.equalsIgnoreCase("price")) {
                 return;
             }
             this.additionalProperties.put(key, value);

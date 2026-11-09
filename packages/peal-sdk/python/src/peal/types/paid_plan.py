@@ -2,4 +2,4 @@
 
 import typing
 
-PaidPlan = typing.Union[typing.Literal["pro", "business"], typing.Any]
+PaidPlan = typing.Union[typing.Literal["starter", "pro", "business", "agency"], typing.Any]

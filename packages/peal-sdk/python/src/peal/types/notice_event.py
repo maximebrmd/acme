@@ -8,8 +8,11 @@ import pydantic
 import typing_extensions
 from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 from ..core.serialization import FieldMetadata
+from .billing_interval import BillingInterval
 from .failure_reason import FailureReason
+from .money import Money
 from .notice_channel import NoticeChannel
+from .paid_plan import PaidPlan
 
 
 class NoticeEvent_PostPublished(UniversalBaseModel):
@@ -98,6 +101,100 @@ class NoticeEvent_ChannelReconnectSoon(UniversalBaseModel):
             extra = pydantic.Extra.allow
 
 
+class NoticeEvent_SubscriptionStarted(UniversalBaseModel):
+    type: typing_extensions.Annotated[
+        typing.Literal["SubscriptionStarted"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "SubscriptionStarted"
+    interval: BillingInterval
+    plan: PaidPlan
+    price: Money
+    started_at: typing_extensions.Annotated[str, FieldMetadata(alias="startedAt"), pydantic.Field(alias="startedAt")]
+    trial_end: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="trialEnd"), pydantic.Field(alias="trialEnd")
+    ] = None
+
+    if IS_PYDANTIC_V2:
+        model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
+    else:
+
+        class Config:
+            frozen = True
+            smart_union = True
+            extra = pydantic.Extra.allow
+
+
+class NoticeEvent_TrialEnding(UniversalBaseModel):
+    type: typing_extensions.Annotated[
+        typing.Literal["TrialEnding"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "TrialEnding"
+    ends_at: typing_extensions.Annotated[str, FieldMetadata(alias="endsAt"), pydantic.Field(alias="endsAt")]
+    plan: PaidPlan
+
+    if IS_PYDANTIC_V2:
+        model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
+    else:
+
+        class Config:
+            frozen = True
+            smart_union = True
+            extra = pydantic.Extra.allow
+
+
+class NoticeEvent_SubscriptionRenewing(UniversalBaseModel):
+    type: typing_extensions.Annotated[
+        typing.Literal["SubscriptionRenewing"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "SubscriptionRenewing"
+    plan: PaidPlan
+    price: Money
+    renews_at: typing_extensions.Annotated[str, FieldMetadata(alias="renewsAt"), pydantic.Field(alias="renewsAt")]
+
+    if IS_PYDANTIC_V2:
+        model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
+    else:
+
+        class Config:
+            frozen = True
+            smart_union = True
+            extra = pydantic.Extra.allow
+
+
+class NoticeEvent_SubscriptionCancelled(UniversalBaseModel):
+    type: typing_extensions.Annotated[
+        typing.Literal["SubscriptionCancelled"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "SubscriptionCancelled"
+    ends_at: typing_extensions.Annotated[str, FieldMetadata(alias="endsAt"), pydantic.Field(alias="endsAt")]
+    plan: PaidPlan
+
+    if IS_PYDANTIC_V2:
+        model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
+    else:
+
+        class Config:
+            frozen = True
+            smart_union = True
+            extra = pydantic.Extra.allow
+
+
+class NoticeEvent_SubscriptionWithdrawn(UniversalBaseModel):
+    type: typing_extensions.Annotated[
+        typing.Literal["SubscriptionWithdrawn"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "SubscriptionWithdrawn"
+    plan: PaidPlan
+    refunded: Money
+    withdrawn_at: typing_extensions.Annotated[
+        str, FieldMetadata(alias="withdrawnAt"), pydantic.Field(alias="withdrawnAt")
+    ]
+
+    if IS_PYDANTIC_V2:
+        model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
+    else:
+
+        class Config:
+            frozen = True
+            smart_union = True
+            extra = pydantic.Extra.allow
+
+
 NoticeEvent = typing_extensions.Annotated[
     typing.Union[
         NoticeEvent_PostPublished,
@@ -105,6 +202,11 @@ NoticeEvent = typing_extensions.Annotated[
         NoticeEvent_PostUnconfirmed,
         NoticeEvent_ChannelReconnectRequired,
         NoticeEvent_ChannelReconnectSoon,
+        NoticeEvent_SubscriptionStarted,
+        NoticeEvent_TrialEnding,
+        NoticeEvent_SubscriptionRenewing,
+        NoticeEvent_SubscriptionCancelled,
+        NoticeEvent_SubscriptionWithdrawn,
     ],
     pydantic.Field(discriminator="type"),
 ]

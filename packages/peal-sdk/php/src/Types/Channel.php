@@ -14,6 +14,12 @@ class Channel extends JsonSerializableType
     public ?string $avatarUrl;
 
     /**
+     * @var ?value-of<InstagramConnection> $connection
+     */
+    #[JsonProperty('connection')]
+    public ?string $connection;
+
+    /**
      * @var ?string $displayName
      */
     #[JsonProperty('displayName')]
@@ -56,6 +62,7 @@ class Channel extends JsonSerializableType
      *   platform: value-of<Platform>,
      *   status: ChannelStatus,
      *   avatarUrl?: ?string,
+     *   connection?: ?value-of<InstagramConnection>,
      *   displayName?: ?string,
      *   tokenExpiresAt?: ?string,
      * } $values
@@ -64,6 +71,7 @@ class Channel extends JsonSerializableType
         array $values,
     ) {
         $this->avatarUrl = $values['avatarUrl'] ?? null;
+        $this->connection = $values['connection'] ?? null;
         $this->displayName = $values['displayName'] ?? null;
         $this->handle = $values['handle'];
         $this->id = $values['id'];

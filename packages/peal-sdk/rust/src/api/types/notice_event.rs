@@ -45,6 +45,56 @@ pub enum NoticeEvent {
         expires_at: String,
     },
 
+    #[non_exhaustive]
+    SubscriptionStarted {
+        interval: BillingInterval,
+        plan: PaidPlan,
+        #[serde(default)]
+        price: Money,
+        #[serde(rename = "startedAt")]
+        #[serde(default)]
+        started_at: String,
+        #[serde(rename = "trialEnd")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        trial_end: Option<String>,
+    },
+
+    #[non_exhaustive]
+    TrialEnding {
+        #[serde(rename = "endsAt")]
+        #[serde(default)]
+        ends_at: String,
+        plan: PaidPlan,
+    },
+
+    #[non_exhaustive]
+    SubscriptionRenewing {
+        plan: PaidPlan,
+        #[serde(default)]
+        price: Money,
+        #[serde(rename = "renewsAt")]
+        #[serde(default)]
+        renews_at: String,
+    },
+
+    #[non_exhaustive]
+    SubscriptionCancelled {
+        #[serde(rename = "endsAt")]
+        #[serde(default)]
+        ends_at: String,
+        plan: PaidPlan,
+    },
+
+    #[non_exhaustive]
+    SubscriptionWithdrawn {
+        plan: PaidPlan,
+        #[serde(default)]
+        refunded: Money,
+        #[serde(rename = "withdrawnAt")]
+        #[serde(default)]
+        withdrawn_at: String,
+    },
+
     /// Catch-all variant for unrecognized discriminant values.
     /// If the server sends a discriminant not recognized by the current SDK
     /// version, the raw payload is captured here so callers can still inspect it.
@@ -84,6 +134,45 @@ impl NoticeEvent {
         Self::ChannelReconnectSoon {
             channel,
             expires_at,
+        }
+    }
+
+    pub fn subscription_started(
+        interval: BillingInterval,
+        plan: PaidPlan,
+        price: Money,
+        started_at: String,
+    ) -> Self {
+        Self::SubscriptionStarted {
+            interval,
+            plan,
+            price,
+            started_at,
+            trial_end: None,
+        }
+    }
+
+    pub fn trial_ending(ends_at: String, plan: PaidPlan) -> Self {
+        Self::TrialEnding { ends_at, plan }
+    }
+
+    pub fn subscription_renewing(plan: PaidPlan, price: Money, renews_at: String) -> Self {
+        Self::SubscriptionRenewing {
+            plan,
+            price,
+            renews_at,
+        }
+    }
+
+    pub fn subscription_cancelled(ends_at: String, plan: PaidPlan) -> Self {
+        Self::SubscriptionCancelled { ends_at, plan }
+    }
+
+    pub fn subscription_withdrawn(plan: PaidPlan, refunded: Money, withdrawn_at: String) -> Self {
+        Self::SubscriptionWithdrawn {
+            plan,
+            refunded,
+            withdrawn_at,
         }
     }
 
@@ -127,6 +216,22 @@ impl NoticeEvent {
         Self::PostUnconfirmed {
             channel: Some(channel),
             post_id,
+        }
+    }
+
+    pub fn subscription_started_with_trial_end(
+        interval: BillingInterval,
+        plan: PaidPlan,
+        price: Money,
+        started_at: String,
+        trial_end: String,
+    ) -> Self {
+        Self::SubscriptionStarted {
+            interval,
+            plan,
+            price,
+            started_at,
+            trial_end: Some(trial_end),
         }
     }
 

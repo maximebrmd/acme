@@ -537,6 +537,7 @@ const (
 	AttemptResultUnavailable         AttemptResult = "unavailable"
 	AttemptResultAppNotAudited       AttemptResult = "appNotAudited"
 	AttemptResultQuotaExceeded       AttemptResult = "quotaExceeded"
+	AttemptResultAppBillingLimit     AttemptResult = "appBillingLimit"
 )
 
 func NewAttemptResultFromString(s string) (AttemptResult, error) {
@@ -565,6 +566,8 @@ func NewAttemptResultFromString(s string) (AttemptResult, error) {
 		return AttemptResultAppNotAudited, nil
 	case "quotaExceeded":
 		return AttemptResultQuotaExceeded, nil
+	case "appBillingLimit":
+		return AttemptResultAppBillingLimit, nil
 	}
 	var t AttemptResult
 	return "", fmt.Errorf("%s is not a valid %T", s, t)

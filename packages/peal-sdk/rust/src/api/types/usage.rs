@@ -7,6 +7,9 @@ pub struct Usage {
     pub assistant_requests: PeriodUsage,
     #[serde(default)]
     pub channels: i64,
+    #[serde(rename = "mediaStorage")]
+    #[serde(default)]
+    pub media_storage: i64,
     #[serde(default)]
     pub members: i64,
     #[serde(rename = "scheduledPosts")]
@@ -25,6 +28,7 @@ impl Usage {
 pub struct UsageBuilder {
     assistant_requests: Option<PeriodUsage>,
     channels: Option<i64>,
+    media_storage: Option<i64>,
     members: Option<i64>,
     scheduled_posts: Option<PeriodUsage>,
 }
@@ -37,6 +41,11 @@ impl UsageBuilder {
 
     pub fn channels(mut self, value: i64) -> Self {
         self.channels = Some(value);
+        self
+    }
+
+    pub fn media_storage(mut self, value: i64) -> Self {
+        self.media_storage = Some(value);
         self
     }
 
@@ -54,6 +63,7 @@ impl UsageBuilder {
     /// This method will fail if any of the following fields are not set:
     /// - [`assistant_requests`](UsageBuilder::assistant_requests)
     /// - [`channels`](UsageBuilder::channels)
+    /// - [`media_storage`](UsageBuilder::media_storage)
     /// - [`members`](UsageBuilder::members)
     /// - [`scheduled_posts`](UsageBuilder::scheduled_posts)
     pub fn build(self) -> Result<Usage, BuildError> {
@@ -64,6 +74,9 @@ impl UsageBuilder {
             channels: self
                 .channels
                 .ok_or_else(|| BuildError::missing_field("channels"))?,
+            media_storage: self
+                .media_storage
+                .ok_or_else(|| BuildError::missing_field("media_storage"))?,
             members: self
                 .members
                 .ok_or_else(|| BuildError::missing_field("members"))?,

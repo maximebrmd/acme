@@ -37,27 +37,37 @@ func (g *GetBillingRequest) SetWorkspaceID(workspaceID string) {
 }
 
 var (
-	billingFieldAllowances   = big.NewInt(1 << 0)
-	billingFieldEnabled      = big.NewInt(1 << 1)
-	billingFieldPlan         = big.NewInt(1 << 2)
-	billingFieldPlans        = big.NewInt(1 << 3)
-	billingFieldSubscription = big.NewInt(1 << 4)
-	billingFieldUsage        = big.NewInt(1 << 5)
+	billingFieldAllowances        = big.NewInt(1 << 0)
+	billingFieldCurrency          = big.NewInt(1 << 1)
+	billingFieldEnabled           = big.NewInt(1 << 2)
+	billingFieldPlan              = big.NewInt(1 << 3)
+	billingFieldPlans             = big.NewInt(1 << 4)
+	billingFieldSubscription      = big.NewInt(1 << 5)
+	billingFieldTrial             = big.NewInt(1 << 6)
+	billingFieldUsage             = big.NewInt(1 << 7)
+	billingFieldVatRate           = big.NewInt(1 << 8)
+	billingFieldWithdrawableUntil = big.NewInt(1 << 9)
 )
 
 // billingNullableFields maps the wire names of Billing's nullable fields (required or optional) to their field bits.
 var billingNullableFields = map[string]*big.Int{
-	"plan":         billingFieldPlan,
-	"subscription": billingFieldSubscription,
+	"plan":              billingFieldPlan,
+	"subscription":      billingFieldSubscription,
+	"trial":             billingFieldTrial,
+	"withdrawableUntil": billingFieldWithdrawableUntil,
 }
 
 type Billing struct {
-	Allowances   *PlanAllowances      `json:"allowances" url:"allowances"`
-	Enabled      bool                 `json:"enabled" url:"enabled"`
-	Plan         *Plan                `json:"plan,omitempty" url:"plan,omitempty"`
-	Plans        []*PlanOffer         `json:"plans" url:"plans"`
-	Subscription *BillingSubscription `json:"subscription,omitempty" url:"subscription,omitempty"`
-	Usage        *Usage               `json:"usage" url:"usage"`
+	Allowances        *PlanAllowances      `json:"allowances" url:"allowances"`
+	Currency          string               `json:"currency" url:"currency"`
+	Enabled           bool                 `json:"enabled" url:"enabled"`
+	Plan              *Plan                `json:"plan,omitempty" url:"plan,omitempty"`
+	Plans             []*PlanOffer         `json:"plans" url:"plans"`
+	Subscription      *BillingSubscription `json:"subscription,omitempty" url:"subscription,omitempty"`
+	Trial             *TrialOffer          `json:"trial,omitempty" url:"trial,omitempty"`
+	Usage             *Usage               `json:"usage" url:"usage"`
+	VatRate           int                  `json:"vatRate" url:"vatRate"`
+	WithdrawableUntil *string              `json:"withdrawableUntil,omitempty" url:"withdrawableUntil,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -71,6 +81,13 @@ func (b *Billing) GetAllowances() *PlanAllowances {
 		return nil
 	}
 	return b.Allowances
+}
+
+func (b *Billing) GetCurrency() string {
+	if b == nil {
+		return ""
+	}
+	return b.Currency
 }
 
 func (b *Billing) GetEnabled() bool {
@@ -101,11 +118,32 @@ func (b *Billing) GetSubscription() *BillingSubscription {
 	return b.Subscription
 }
 
+func (b *Billing) GetTrial() *TrialOffer {
+	if b == nil {
+		return nil
+	}
+	return b.Trial
+}
+
 func (b *Billing) GetUsage() *Usage {
 	if b == nil {
 		return nil
 	}
 	return b.Usage
+}
+
+func (b *Billing) GetVatRate() int {
+	if b == nil {
+		return 0
+	}
+	return b.VatRate
+}
+
+func (b *Billing) GetWithdrawableUntil() *string {
+	if b == nil {
+		return nil
+	}
+	return b.WithdrawableUntil
 }
 
 func (b *Billing) GetExtraProperties() map[string]interface{} {
@@ -129,6 +167,13 @@ func (b *Billing) require(field *big.Int) {
 func (b *Billing) SetAllowances(allowances *PlanAllowances) {
 	b.Allowances = allowances
 	b.require(billingFieldAllowances)
+}
+
+// SetCurrency sets the Currency field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *Billing) SetCurrency(currency string) {
+	b.Currency = currency
+	b.require(billingFieldCurrency)
 }
 
 // SetEnabled sets the Enabled field and marks it as non-optional;
@@ -159,11 +204,32 @@ func (b *Billing) SetSubscription(subscription *BillingSubscription) {
 	b.require(billingFieldSubscription)
 }
 
+// SetTrial sets the Trial field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *Billing) SetTrial(trial *TrialOffer) {
+	b.Trial = trial
+	b.require(billingFieldTrial)
+}
+
 // SetUsage sets the Usage field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (b *Billing) SetUsage(usage *Usage) {
 	b.Usage = usage
 	b.require(billingFieldUsage)
+}
+
+// SetVatRate sets the VatRate field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *Billing) SetVatRate(vatRate int) {
+	b.VatRate = vatRate
+	b.require(billingFieldVatRate)
+}
+
+// SetWithdrawableUntil sets the WithdrawableUntil field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *Billing) SetWithdrawableUntil(withdrawableUntil *string) {
+	b.WithdrawableUntil = withdrawableUntil
+	b.require(billingFieldWithdrawableUntil)
 }
 
 func (b *Billing) UnmarshalJSON(data []byte) error {
@@ -218,20 +284,28 @@ func (b *Billing) String() string {
 var (
 	billingSubscriptionFieldCancelAtPeriodEnd = big.NewInt(1 << 0)
 	billingSubscriptionFieldCurrentPeriodEnd  = big.NewInt(1 << 1)
-	billingSubscriptionFieldPlan              = big.NewInt(1 << 2)
-	billingSubscriptionFieldStatus            = big.NewInt(1 << 3)
+	billingSubscriptionFieldInterval          = big.NewInt(1 << 2)
+	billingSubscriptionFieldPlan              = big.NewInt(1 << 3)
+	billingSubscriptionFieldStartedAt         = big.NewInt(1 << 4)
+	billingSubscriptionFieldStatus            = big.NewInt(1 << 5)
+	billingSubscriptionFieldTrialEnd          = big.NewInt(1 << 6)
 )
 
 // billingSubscriptionNullableFields maps the wire names of BillingSubscription's nullable fields (required or optional) to their field bits.
 var billingSubscriptionNullableFields = map[string]*big.Int{
 	"currentPeriodEnd": billingSubscriptionFieldCurrentPeriodEnd,
+	"startedAt":        billingSubscriptionFieldStartedAt,
+	"trialEnd":         billingSubscriptionFieldTrialEnd,
 }
 
 type BillingSubscription struct {
 	CancelAtPeriodEnd bool               `json:"cancelAtPeriodEnd" url:"cancelAtPeriodEnd"`
 	CurrentPeriodEnd  *string            `json:"currentPeriodEnd,omitempty" url:"currentPeriodEnd,omitempty"`
+	Interval          BillingInterval    `json:"interval" url:"interval"`
 	Plan              PaidPlan           `json:"plan" url:"plan"`
+	StartedAt         *string            `json:"startedAt,omitempty" url:"startedAt,omitempty"`
 	Status            SubscriptionStatus `json:"status" url:"status"`
+	TrialEnd          *string            `json:"trialEnd,omitempty" url:"trialEnd,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -254,6 +328,13 @@ func (b *BillingSubscription) GetCurrentPeriodEnd() *string {
 	return b.CurrentPeriodEnd
 }
 
+func (b *BillingSubscription) GetInterval() BillingInterval {
+	if b == nil {
+		return ""
+	}
+	return b.Interval
+}
+
 func (b *BillingSubscription) GetPlan() PaidPlan {
 	if b == nil {
 		return ""
@@ -261,11 +342,25 @@ func (b *BillingSubscription) GetPlan() PaidPlan {
 	return b.Plan
 }
 
+func (b *BillingSubscription) GetStartedAt() *string {
+	if b == nil {
+		return nil
+	}
+	return b.StartedAt
+}
+
 func (b *BillingSubscription) GetStatus() SubscriptionStatus {
 	if b == nil {
 		return ""
 	}
 	return b.Status
+}
+
+func (b *BillingSubscription) GetTrialEnd() *string {
+	if b == nil {
+		return nil
+	}
+	return b.TrialEnd
 }
 
 func (b *BillingSubscription) GetExtraProperties() map[string]interface{} {
@@ -298,6 +393,13 @@ func (b *BillingSubscription) SetCurrentPeriodEnd(currentPeriodEnd *string) {
 	b.require(billingSubscriptionFieldCurrentPeriodEnd)
 }
 
+// SetInterval sets the Interval field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *BillingSubscription) SetInterval(interval BillingInterval) {
+	b.Interval = interval
+	b.require(billingSubscriptionFieldInterval)
+}
+
 // SetPlan sets the Plan field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (b *BillingSubscription) SetPlan(plan PaidPlan) {
@@ -305,11 +407,25 @@ func (b *BillingSubscription) SetPlan(plan PaidPlan) {
 	b.require(billingSubscriptionFieldPlan)
 }
 
+// SetStartedAt sets the StartedAt field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *BillingSubscription) SetStartedAt(startedAt *string) {
+	b.StartedAt = startedAt
+	b.require(billingSubscriptionFieldStartedAt)
+}
+
 // SetStatus sets the Status field and marks it as non-optional;
 // this prevents an empty or null value for this field from being omitted during serialization.
 func (b *BillingSubscription) SetStatus(status SubscriptionStatus) {
 	b.Status = status
 	b.require(billingSubscriptionFieldStatus)
+}
+
+// SetTrialEnd sets the TrialEnd field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (b *BillingSubscription) SetTrialEnd(trialEnd *string) {
+	b.TrialEnd = trialEnd
+	b.require(billingSubscriptionFieldTrialEnd)
 }
 
 func (b *BillingSubscription) UnmarshalJSON(data []byte) error {
@@ -359,28 +475,6 @@ func (b *BillingSubscription) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", b)
-}
-
-type PaidPlan string
-
-const (
-	PaidPlanPro      PaidPlan = "pro"
-	PaidPlanBusiness PaidPlan = "business"
-)
-
-func NewPaidPlanFromString(s string) (PaidPlan, error) {
-	switch s {
-	case "pro":
-		return PaidPlanPro, nil
-	case "business":
-		return PaidPlanBusiness, nil
-	}
-	var t PaidPlan
-	return "", fmt.Errorf("%s is not a valid %T", s, t)
-}
-
-func (p PaidPlan) Ptr() *PaidPlan {
-	return &p
 }
 
 var (
@@ -489,18 +583,24 @@ type Plan string
 
 const (
 	PlanFree     Plan = "free"
+	PlanStarter  Plan = "starter"
 	PlanPro      Plan = "pro"
 	PlanBusiness Plan = "business"
+	PlanAgency   Plan = "agency"
 )
 
 func NewPlanFromString(s string) (Plan, error) {
 	switch s {
 	case "free":
 		return PlanFree, nil
+	case "starter":
+		return PlanStarter, nil
 	case "pro":
 		return PlanPro, nil
 	case "business":
 		return PlanBusiness, nil
+	case "agency":
+		return PlanAgency, nil
 	}
 	var t Plan
 	return "", fmt.Errorf("%s is not a valid %T", s, t)
@@ -513,14 +613,16 @@ func (p Plan) Ptr() *Plan {
 var (
 	planAllowancesFieldAssistantRequests = big.NewInt(1 << 0)
 	planAllowancesFieldChannels          = big.NewInt(1 << 1)
-	planAllowancesFieldMembers           = big.NewInt(1 << 2)
-	planAllowancesFieldScheduledPosts    = big.NewInt(1 << 3)
+	planAllowancesFieldMediaStorage      = big.NewInt(1 << 2)
+	planAllowancesFieldMembers           = big.NewInt(1 << 3)
+	planAllowancesFieldScheduledPosts    = big.NewInt(1 << 4)
 )
 
 // planAllowancesNullableFields maps the wire names of PlanAllowances's nullable fields (required or optional) to their field bits.
 var planAllowancesNullableFields = map[string]*big.Int{
 	"assistantRequests": planAllowancesFieldAssistantRequests,
 	"channels":          planAllowancesFieldChannels,
+	"mediaStorage":      planAllowancesFieldMediaStorage,
 	"members":           planAllowancesFieldMembers,
 	"scheduledPosts":    planAllowancesFieldScheduledPosts,
 }
@@ -528,6 +630,7 @@ var planAllowancesNullableFields = map[string]*big.Int{
 type PlanAllowances struct {
 	AssistantRequests *int `json:"assistantRequests,omitempty" url:"assistantRequests,omitempty"`
 	Channels          *int `json:"channels,omitempty" url:"channels,omitempty"`
+	MediaStorage      *int `json:"mediaStorage,omitempty" url:"mediaStorage,omitempty"`
 	Members           *int `json:"members,omitempty" url:"members,omitempty"`
 	ScheduledPosts    *int `json:"scheduledPosts,omitempty" url:"scheduledPosts,omitempty"`
 
@@ -550,6 +653,13 @@ func (p *PlanAllowances) GetChannels() *int {
 		return nil
 	}
 	return p.Channels
+}
+
+func (p *PlanAllowances) GetMediaStorage() *int {
+	if p == nil {
+		return nil
+	}
+	return p.MediaStorage
 }
 
 func (p *PlanAllowances) GetMembers() *int {
@@ -594,6 +704,13 @@ func (p *PlanAllowances) SetAssistantRequests(assistantRequests *int) {
 func (p *PlanAllowances) SetChannels(channels *int) {
 	p.Channels = channels
 	p.require(planAllowancesFieldChannels)
+}
+
+// SetMediaStorage sets the MediaStorage field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PlanAllowances) SetMediaStorage(mediaStorage *int) {
+	p.MediaStorage = mediaStorage
+	p.require(planAllowancesFieldMediaStorage)
 }
 
 // SetMembers sets the Members field and marks it as non-optional;
@@ -662,11 +779,18 @@ func (p *PlanAllowances) String() string {
 var (
 	planOfferFieldAllowances = big.NewInt(1 << 0)
 	planOfferFieldPlan       = big.NewInt(1 << 1)
+	planOfferFieldPrice      = big.NewInt(1 << 2)
 )
+
+// planOfferNullableFields maps the wire names of PlanOffer's nullable fields (required or optional) to their field bits.
+var planOfferNullableFields = map[string]*big.Int{
+	"price": planOfferFieldPrice,
+}
 
 type PlanOffer struct {
 	Allowances *PlanAllowances `json:"allowances" url:"allowances"`
 	Plan       Plan            `json:"plan" url:"plan"`
+	Price      *PlanPrice      `json:"price,omitempty" url:"price,omitempty"`
 
 	// Private bitmask of fields set to an explicit value and therefore not to be omitted
 	explicitFields *big.Int `json:"-" url:"-"`
@@ -687,6 +811,13 @@ func (p *PlanOffer) GetPlan() Plan {
 		return ""
 	}
 	return p.Plan
+}
+
+func (p *PlanOffer) GetPrice() *PlanPrice {
+	if p == nil {
+		return nil
+	}
+	return p.Price
 }
 
 func (p *PlanOffer) GetExtraProperties() map[string]interface{} {
@@ -719,6 +850,13 @@ func (p *PlanOffer) SetPlan(plan Plan) {
 	p.require(planOfferFieldPlan)
 }
 
+// SetPrice sets the Price field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PlanOffer) SetPrice(price *PlanPrice) {
+	p.Price = price
+	p.require(planOfferFieldPrice)
+}
+
 func (p *PlanOffer) UnmarshalJSON(data []byte) error {
 	type unmarshaler PlanOffer
 	var value unmarshaler
@@ -731,6 +869,13 @@ func (p *PlanOffer) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	p.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, planOfferNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		p.require(presentFields)
+	}
 	p.rawJSON = json.RawMessage(data)
 	return nil
 }
@@ -747,6 +892,108 @@ func (p *PlanOffer) MarshalJSON() ([]byte, error) {
 }
 
 func (p *PlanOffer) String() string {
+	if p == nil {
+		return "<nil>"
+	}
+	if len(p.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(p.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(p); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", p)
+}
+
+var (
+	planPriceFieldMonth = big.NewInt(1 << 0)
+	planPriceFieldYear  = big.NewInt(1 << 1)
+)
+
+type PlanPrice struct {
+	Month int `json:"month" url:"month"`
+	Year  int `json:"year" url:"year"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (p *PlanPrice) GetMonth() int {
+	if p == nil {
+		return 0
+	}
+	return p.Month
+}
+
+func (p *PlanPrice) GetYear() int {
+	if p == nil {
+		return 0
+	}
+	return p.Year
+}
+
+func (p *PlanPrice) GetExtraProperties() map[string]interface{} {
+	if p == nil {
+		return nil
+	}
+	return p.extraProperties
+}
+
+func (p *PlanPrice) require(field *big.Int) {
+	next := new(big.Int)
+	if p.explicitFields != nil {
+		next.Set(p.explicitFields)
+	}
+	next.Or(next, field)
+	p.explicitFields = next
+}
+
+// SetMonth sets the Month field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PlanPrice) SetMonth(month int) {
+	p.Month = month
+	p.require(planPriceFieldMonth)
+}
+
+// SetYear sets the Year field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (p *PlanPrice) SetYear(year int) {
+	p.Year = year
+	p.require(planPriceFieldYear)
+}
+
+func (p *PlanPrice) UnmarshalJSON(data []byte) error {
+	type unmarshaler PlanPrice
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*p = PlanPrice(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *p)
+	if err != nil {
+		return err
+	}
+	p.extraProperties = extraProperties
+	p.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (p *PlanPrice) MarshalJSON() ([]byte, error) {
+	type embed PlanPrice
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*p),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, p.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (p *PlanPrice) String() string {
 	if p == nil {
 		return "<nil>"
 	}
@@ -802,15 +1049,135 @@ func (s SubscriptionStatus) Ptr() *SubscriptionStatus {
 }
 
 var (
+	trialOfferFieldAvailable = big.NewInt(1 << 0)
+	trialOfferFieldDays      = big.NewInt(1 << 1)
+	trialOfferFieldPlan      = big.NewInt(1 << 2)
+)
+
+type TrialOffer struct {
+	Available bool     `json:"available" url:"available"`
+	Days      int      `json:"days" url:"days"`
+	Plan      PaidPlan `json:"plan" url:"plan"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (t *TrialOffer) GetAvailable() bool {
+	if t == nil {
+		return false
+	}
+	return t.Available
+}
+
+func (t *TrialOffer) GetDays() int {
+	if t == nil {
+		return 0
+	}
+	return t.Days
+}
+
+func (t *TrialOffer) GetPlan() PaidPlan {
+	if t == nil {
+		return ""
+	}
+	return t.Plan
+}
+
+func (t *TrialOffer) GetExtraProperties() map[string]interface{} {
+	if t == nil {
+		return nil
+	}
+	return t.extraProperties
+}
+
+func (t *TrialOffer) require(field *big.Int) {
+	next := new(big.Int)
+	if t.explicitFields != nil {
+		next.Set(t.explicitFields)
+	}
+	next.Or(next, field)
+	t.explicitFields = next
+}
+
+// SetAvailable sets the Available field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TrialOffer) SetAvailable(available bool) {
+	t.Available = available
+	t.require(trialOfferFieldAvailable)
+}
+
+// SetDays sets the Days field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TrialOffer) SetDays(days int) {
+	t.Days = days
+	t.require(trialOfferFieldDays)
+}
+
+// SetPlan sets the Plan field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (t *TrialOffer) SetPlan(plan PaidPlan) {
+	t.Plan = plan
+	t.require(trialOfferFieldPlan)
+}
+
+func (t *TrialOffer) UnmarshalJSON(data []byte) error {
+	type unmarshaler TrialOffer
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*t = TrialOffer(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *t)
+	if err != nil {
+		return err
+	}
+	t.extraProperties = extraProperties
+	t.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (t *TrialOffer) MarshalJSON() ([]byte, error) {
+	type embed TrialOffer
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*t),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, t.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (t *TrialOffer) String() string {
+	if t == nil {
+		return "<nil>"
+	}
+	if len(t.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(t.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(t); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", t)
+}
+
+var (
 	usageFieldAssistantRequests = big.NewInt(1 << 0)
 	usageFieldChannels          = big.NewInt(1 << 1)
-	usageFieldMembers           = big.NewInt(1 << 2)
-	usageFieldScheduledPosts    = big.NewInt(1 << 3)
+	usageFieldMediaStorage      = big.NewInt(1 << 2)
+	usageFieldMembers           = big.NewInt(1 << 3)
+	usageFieldScheduledPosts    = big.NewInt(1 << 4)
 )
 
 type Usage struct {
 	AssistantRequests *PeriodUsage `json:"assistantRequests" url:"assistantRequests"`
 	Channels          int          `json:"channels" url:"channels"`
+	MediaStorage      int          `json:"mediaStorage" url:"mediaStorage"`
 	Members           int          `json:"members" url:"members"`
 	ScheduledPosts    *PeriodUsage `json:"scheduledPosts" url:"scheduledPosts"`
 
@@ -833,6 +1200,13 @@ func (u *Usage) GetChannels() int {
 		return 0
 	}
 	return u.Channels
+}
+
+func (u *Usage) GetMediaStorage() int {
+	if u == nil {
+		return 0
+	}
+	return u.MediaStorage
 }
 
 func (u *Usage) GetMembers() int {
@@ -877,6 +1251,13 @@ func (u *Usage) SetAssistantRequests(assistantRequests *PeriodUsage) {
 func (u *Usage) SetChannels(channels int) {
 	u.Channels = channels
 	u.require(usageFieldChannels)
+}
+
+// SetMediaStorage sets the MediaStorage field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (u *Usage) SetMediaStorage(mediaStorage int) {
+	u.MediaStorage = mediaStorage
+	u.require(usageFieldMediaStorage)
 }
 
 // SetMembers sets the Members field and marks it as non-optional;

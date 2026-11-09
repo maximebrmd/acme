@@ -5,4 +5,5 @@ import * as Peal from "../index.js";
 export interface PlanOffer {
     allowances: Peal.PlanAllowances;
     plan: Peal.Plan;
+    price: Peal.PlanPrice | null;
 }

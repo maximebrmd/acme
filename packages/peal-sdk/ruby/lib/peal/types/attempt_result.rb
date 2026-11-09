@@ -19,6 +19,7 @@ module Peal
       UNAVAILABLE = "unavailable"
       APP_NOT_AUDITED = "appNotAudited"
       QUOTA_EXCEEDED = "quotaExceeded"
+      APP_BILLING_LIMIT = "appBillingLimit"
     end
   end
 end

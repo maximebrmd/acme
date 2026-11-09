@@ -14,6 +14,9 @@ class Usage(UniversalBaseModel):
         PeriodUsage, FieldMetadata(alias="assistantRequests"), pydantic.Field(alias="assistantRequests")
     ]
     channels: int
+    media_storage: typing_extensions.Annotated[
+        int, FieldMetadata(alias="mediaStorage"), pydantic.Field(alias="mediaStorage")
+    ]
     members: int
     scheduled_posts: typing_extensions.Annotated[
         PeriodUsage, FieldMetadata(alias="scheduledPosts"), pydantic.Field(alias="scheduledPosts")

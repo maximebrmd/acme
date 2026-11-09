@@ -9,6 +9,12 @@ use Peal\Core\Types\ArrayType;
 class ConnectablePlatforms extends JsonSerializableType
 {
     /**
+     * @var array<value-of<InstagramConnection>> $instagramConnections
+     */
+    #[JsonProperty('instagramConnections'), ArrayType(['string'])]
+    public array $instagramConnections;
+
+    /**
      * @var array<value-of<Platform>> $platforms
      */
     #[JsonProperty('platforms'), ArrayType(['string'])]
@@ -16,12 +22,14 @@ class ConnectablePlatforms extends JsonSerializableType
 
     /**
      * @param array{
+     *   instagramConnections: array<value-of<InstagramConnection>>,
      *   platforms: array<value-of<Platform>>,
      * } $values
      */
     public function __construct(
         array $values,
     ) {
+        $this->instagramConnections = $values['instagramConnections'];
         $this->platforms = $values['platforms'];
     }
 

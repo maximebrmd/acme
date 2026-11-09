@@ -16,6 +16,7 @@ public class ListTest : BaseMockServerTest
             [
               {
                 "avatarUrl": "avatarUrl",
+                "connection": "instagramLogin",
                 "displayName": "displayName",
                 "handle": "handle",
                 "id": "id",
@@ -27,6 +28,7 @@ public class ListTest : BaseMockServerTest
               },
               {
                 "avatarUrl": "avatarUrl",
+                "connection": "instagramLogin",
                 "displayName": "displayName",
                 "handle": "handle",
                 "id": "id",
@@ -66,6 +68,7 @@ public class ListTest : BaseMockServerTest
             [
               {
                 "avatarUrl": "avatarUrl",
+                "connection": "instagramLogin",
                 "displayName": "displayName",
                 "handle": "handle",
                 "id": "id",

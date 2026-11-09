@@ -11,6 +11,7 @@ module Peal
       MEMBERS = "members"
       SCHEDULED_POSTS = "scheduledPosts"
       ASSISTANT_REQUESTS = "assistantRequests"
+      MEDIA_STORAGE = "mediaStorage"
     end
   end
 end

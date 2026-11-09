@@ -27,6 +27,7 @@ import social.peal.errors.BadRequestError;
 import social.peal.errors.ConflictError;
 import social.peal.errors.ForbiddenError;
 import social.peal.errors.NotFoundError;
+import social.peal.errors.PaymentRequiredError;
 import social.peal.errors.ServiceUnavailableError;
 import social.peal.errors.UnauthorizedError;
 import social.peal.errors.UnprocessableEntityError;
@@ -41,6 +42,7 @@ import social.peal.types.ForbiddenEncoded;
 import social.peal.types.Media;
 import social.peal.types.MediaPage;
 import social.peal.types.MediaUsage;
+import social.peal.types.PlanLimitReachedEncoded;
 import social.peal.types.PreparedUpload;
 import social.peal.types.UnauthenticatedEncoded;
 
@@ -155,14 +157,14 @@ public class RawMediaClient {
     }
 
     /**
-     * Records pending media and signs the upload of its file: one PUT for an image or a video up to 16 MiB, one PUT per part for a larger video. Send the file with them, then complete the upload. The requests only take the declared size and content type. Needs media:upload.
+     * Records pending media and signs the upload of its file: one PUT for an image or a video up to 16 MiB, one PUT per part for a larger video. Send the file with them, then complete the upload. The requests only take the declared size and content type. On a server that bills, the declared size must fit the plan's media storage with what the workspace stores (PlanLimitReached <code>mediaStorage</code>). Needs media:upload.
      */
     public PealClientHttpResponse<PreparedUpload> create(String workspaceId, NewUpload request) {
         return create(workspaceId, request, null);
     }
 
     /**
-     * Records pending media and signs the upload of its file: one PUT for an image or a video up to 16 MiB, one PUT per part for a larger video. Send the file with them, then complete the upload. The requests only take the declared size and content type. Needs media:upload.
+     * Records pending media and signs the upload of its file: one PUT for an image or a video up to 16 MiB, one PUT per part for a larger video. Send the file with them, then complete the upload. The requests only take the declared size and content type. On a server that bills, the declared size must fit the plan's media storage with what the workspace stores (PlanLimitReached <code>mediaStorage</code>). Needs media:upload.
      */
     public PealClientHttpResponse<PreparedUpload> create(
             String workspaceId, NewUpload request, RequestOptions requestOptions) {
@@ -212,6 +214,10 @@ public class RawMediaClient {
                     case 401:
                         throw new UnauthorizedError(
                                 ObjectMappers.JSON_MAPPER.readValue(responseBodyString, UnauthenticatedEncoded.class),
+                                response);
+                    case 402:
+                        throw new PaymentRequiredError(
+                                ObjectMappers.JSON_MAPPER.readValue(responseBodyString, PlanLimitReachedEncoded.class),
                                 response);
                     case 403:
                         throw new ForbiddenError(

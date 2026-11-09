@@ -9,6 +9,8 @@ import com.fasterxml.jackson.annotation.JsonValue;
 public final class PlanLimit {
     public static final PlanLimit CHANNELS = new PlanLimit(Value.CHANNELS, "channels");
 
+    public static final PlanLimit MEDIA_STORAGE = new PlanLimit(Value.MEDIA_STORAGE, "mediaStorage");
+
     public static final PlanLimit ASSISTANT_REQUESTS = new PlanLimit(Value.ASSISTANT_REQUESTS, "assistantRequests");
 
     public static final PlanLimit MEMBERS = new PlanLimit(Value.MEMBERS, "members");
@@ -48,6 +50,8 @@ public final class PlanLimit {
         switch (value) {
             case CHANNELS:
                 return visitor.visitChannels();
+            case MEDIA_STORAGE:
+                return visitor.visitMediaStorage();
             case ASSISTANT_REQUESTS:
                 return visitor.visitAssistantRequests();
             case MEMBERS:
@@ -65,6 +69,8 @@ public final class PlanLimit {
         switch (value) {
             case "channels":
                 return CHANNELS;
+            case "mediaStorage":
+                return MEDIA_STORAGE;
             case "assistantRequests":
                 return ASSISTANT_REQUESTS;
             case "members":
@@ -85,6 +91,8 @@ public final class PlanLimit {
 
         ASSISTANT_REQUESTS,
 
+        MEDIA_STORAGE,
+
         UNKNOWN
     }
 
@@ -96,6 +104,8 @@ public final class PlanLimit {
         T visitScheduledPosts();
 
         T visitAssistantRequests();
+
+        T visitMediaStorage();
 
         T visitUnknown(String unknownType);
     }

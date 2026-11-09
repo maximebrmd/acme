@@ -14,6 +14,7 @@ from ..errors.bad_request_error import BadRequestError
 from ..errors.conflict_error import ConflictError
 from ..errors.forbidden_error import ForbiddenError
 from ..errors.not_found_error import NotFoundError
+from ..errors.payment_required_error import PaymentRequiredError
 from ..errors.service_unavailable_error import ServiceUnavailableError
 from ..errors.unauthorized_error import UnauthorizedError
 from ..errors.unprocessable_entity_error import UnprocessableEntityError
@@ -21,6 +22,7 @@ from ..types.forbidden_encoded import ForbiddenEncoded
 from ..types.media import Media
 from ..types.media_page import MediaPage
 from ..types.media_usage import MediaUsage
+from ..types.plan_limit_reached_encoded import PlanLimitReachedEncoded
 from ..types.prepared_upload import PreparedUpload
 from ..types.unauthenticated_encoded import UnauthenticatedEncoded
 from pydantic import ValidationError
@@ -153,7 +155,7 @@ class RawMediaClient:
         request_options: typing.Optional[RequestOptions] = None,
     ) -> HttpResponse[PreparedUpload]:
         """
-        Records pending media and signs the upload of its file: one PUT for an image or a video up to 16 MiB, one PUT per part for a larger video. Send the file with them, then complete the upload. The requests only take the declared size and content type. Needs media:upload.
+        Records pending media and signs the upload of its file: one PUT for an image or a video up to 16 MiB, one PUT per part for a larger video. Send the file with them, then complete the upload. The requests only take the declared size and content type. On a server that bills, the declared size must fit the plan's media storage with what the workspace stores (PlanLimitReached `mediaStorage`). Needs media:upload.
 
         Parameters
         ----------
@@ -207,6 +209,17 @@ class RawMediaClient:
                         UnauthenticatedEncoded,
                         parse_obj_as(
                             type_=UnauthenticatedEncoded,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 402:
+                raise PaymentRequiredError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        PlanLimitReachedEncoded,
+                        parse_obj_as(
+                            type_=PlanLimitReachedEncoded,  # type: ignore
                             object_=_response.json(),
                         ),
                     ),
@@ -874,7 +887,7 @@ class AsyncRawMediaClient:
         request_options: typing.Optional[RequestOptions] = None,
     ) -> AsyncHttpResponse[PreparedUpload]:
         """
-        Records pending media and signs the upload of its file: one PUT for an image or a video up to 16 MiB, one PUT per part for a larger video. Send the file with them, then complete the upload. The requests only take the declared size and content type. Needs media:upload.
+        Records pending media and signs the upload of its file: one PUT for an image or a video up to 16 MiB, one PUT per part for a larger video. Send the file with them, then complete the upload. The requests only take the declared size and content type. On a server that bills, the declared size must fit the plan's media storage with what the workspace stores (PlanLimitReached `mediaStorage`). Needs media:upload.
 
         Parameters
         ----------
@@ -928,6 +941,17 @@ class AsyncRawMediaClient:
                         UnauthenticatedEncoded,
                         parse_obj_as(
                             type_=UnauthenticatedEncoded,  # type: ignore
+                            object_=_response.json(),
+                        ),
+                    ),
+                )
+            if _response.status_code == 402:
+                raise PaymentRequiredError(
+                    headers=dict(_response.headers),
+                    body=typing.cast(
+                        PlanLimitReachedEncoded,
+                        parse_obj_as(
+                            type_=PlanLimitReachedEncoded,  # type: ignore
                             object_=_response.json(),
                         ),
                     ),

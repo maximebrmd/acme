@@ -23,6 +23,8 @@ public final class Usage {
 
     private final int channels;
 
+    private final int mediaStorage;
+
     private final int members;
 
     private final PeriodUsage scheduledPosts;
@@ -32,11 +34,13 @@ public final class Usage {
     private Usage(
             PeriodUsage assistantRequests,
             int channels,
+            int mediaStorage,
             int members,
             PeriodUsage scheduledPosts,
             Map<String, Object> additionalProperties) {
         this.assistantRequests = assistantRequests;
         this.channels = channels;
+        this.mediaStorage = mediaStorage;
         this.members = members;
         this.scheduledPosts = scheduledPosts;
         this.additionalProperties = additionalProperties;
@@ -50,6 +54,11 @@ public final class Usage {
     @JsonProperty("channels")
     public int getChannels() {
         return channels;
+    }
+
+    @JsonProperty("mediaStorage")
+    public int getMediaStorage() {
+        return mediaStorage;
     }
 
     @JsonProperty("members")
@@ -76,13 +85,15 @@ public final class Usage {
     private boolean equalTo(Usage other) {
         return assistantRequests.equals(other.assistantRequests)
                 && channels == other.channels
+                && mediaStorage == other.mediaStorage
                 && members == other.members
                 && scheduledPosts.equals(other.scheduledPosts);
     }
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.assistantRequests, this.channels, this.members, this.scheduledPosts);
+        return Objects.hash(
+                this.assistantRequests, this.channels, this.mediaStorage, this.members, this.scheduledPosts);
     }
 
     @java.lang.Override
@@ -101,7 +112,11 @@ public final class Usage {
     }
 
     public interface ChannelsStage {
-        MembersStage channels(int channels);
+        MediaStorageStage channels(int channels);
+    }
+
+    public interface MediaStorageStage {
+        MembersStage mediaStorage(int mediaStorage);
     }
 
     public interface MembersStage {
@@ -122,10 +137,17 @@ public final class Usage {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static final class Builder
-            implements AssistantRequestsStage, ChannelsStage, MembersStage, ScheduledPostsStage, _FinalStage {
+            implements AssistantRequestsStage,
+                    ChannelsStage,
+                    MediaStorageStage,
+                    MembersStage,
+                    ScheduledPostsStage,
+                    _FinalStage {
         private PeriodUsage assistantRequests;
 
         private int channels;
+
+        private int mediaStorage;
 
         private int members;
 
@@ -139,6 +161,7 @@ public final class Usage {
         public Builder from(Usage other) {
             assistantRequests(other.getAssistantRequests());
             channels(other.getChannels());
+            mediaStorage(other.getMediaStorage());
             members(other.getMembers());
             scheduledPosts(other.getScheduledPosts());
             return this;
@@ -153,8 +176,15 @@ public final class Usage {
 
         @java.lang.Override
         @JsonSetter("channels")
-        public MembersStage channels(int channels) {
+        public MediaStorageStage channels(int channels) {
             this.channels = channels;
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter("mediaStorage")
+        public MembersStage mediaStorage(int mediaStorage) {
+            this.mediaStorage = mediaStorage;
             return this;
         }
 
@@ -174,13 +204,14 @@ public final class Usage {
 
         @java.lang.Override
         public Usage build() {
-            return new Usage(assistantRequests, channels, members, scheduledPosts, additionalProperties);
+            return new Usage(assistantRequests, channels, mediaStorage, members, scheduledPosts, additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
             if (key.equalsIgnoreCase("assistantRequests")
                     || key.equalsIgnoreCase("channels")
+                    || key.equalsIgnoreCase("mediaStorage")
                     || key.equalsIgnoreCase("members")
                     || key.equalsIgnoreCase("scheduledPosts")) {
                 return;

@@ -8,4 +8,5 @@ enum PlanLimit: string
     case Members = "members";
     case ScheduledPosts = "scheduledPosts";
     case AssistantRequests = "assistantRequests";
+    case MediaStorage = "mediaStorage";
 }

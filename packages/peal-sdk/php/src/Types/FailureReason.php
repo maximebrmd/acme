@@ -16,4 +16,5 @@ enum FailureReason: string
     case Unavailable = "unavailable";
     case AppNotAudited = "appNotAudited";
     case QuotaExceeded = "quotaExceeded";
+    case AppBillingLimit = "appBillingLimit";
 }

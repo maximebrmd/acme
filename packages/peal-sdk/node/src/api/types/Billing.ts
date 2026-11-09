@@ -4,9 +4,13 @@ import * as Peal from "../index.js";
 
 export interface Billing {
     allowances: Peal.PlanAllowances;
+    currency: string;
     enabled: boolean;
     plan: Peal.Plan | null;
     plans: Peal.PlanOffer[];
     subscription: Peal.BillingSubscription | null;
+    trial: Peal.TrialOffer | null;
     usage: Peal.Usage;
+    vatRate: number;
+    withdrawableUntil: string | null;
 }

@@ -28,22 +28,34 @@ public final class BillingSubscription {
 
     private final Optional<String> currentPeriodEnd;
 
+    private final BillingInterval interval;
+
     private final PaidPlan plan;
 
+    private final Optional<String> startedAt;
+
     private final SubscriptionStatus status;
+
+    private final Optional<String> trialEnd;
 
     private final Map<String, Object> additionalProperties;
 
     private BillingSubscription(
             boolean cancelAtPeriodEnd,
             Optional<String> currentPeriodEnd,
+            BillingInterval interval,
             PaidPlan plan,
+            Optional<String> startedAt,
             SubscriptionStatus status,
+            Optional<String> trialEnd,
             Map<String, Object> additionalProperties) {
         this.cancelAtPeriodEnd = cancelAtPeriodEnd;
         this.currentPeriodEnd = currentPeriodEnd;
+        this.interval = interval;
         this.plan = plan;
+        this.startedAt = startedAt;
         this.status = status;
+        this.trialEnd = trialEnd;
         this.additionalProperties = additionalProperties;
     }
 
@@ -60,9 +72,22 @@ public final class BillingSubscription {
         return currentPeriodEnd;
     }
 
+    @JsonProperty("interval")
+    public BillingInterval getInterval() {
+        return interval;
+    }
+
     @JsonProperty("plan")
     public PaidPlan getPlan() {
         return plan;
+    }
+
+    @JsonIgnore
+    public Optional<String> getStartedAt() {
+        if (startedAt == null) {
+            return Optional.empty();
+        }
+        return startedAt;
     }
 
     @JsonProperty("status")
@@ -70,10 +95,30 @@ public final class BillingSubscription {
         return status;
     }
 
+    @JsonIgnore
+    public Optional<String> getTrialEnd() {
+        if (trialEnd == null) {
+            return Optional.empty();
+        }
+        return trialEnd;
+    }
+
     @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
     @JsonProperty("currentPeriodEnd")
     private Optional<String> _getCurrentPeriodEnd() {
         return currentPeriodEnd;
+    }
+
+    @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
+    @JsonProperty("startedAt")
+    private Optional<String> _getStartedAt() {
+        return startedAt;
+    }
+
+    @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
+    @JsonProperty("trialEnd")
+    private Optional<String> _getTrialEnd() {
+        return trialEnd;
     }
 
     @java.lang.Override
@@ -90,13 +135,23 @@ public final class BillingSubscription {
     private boolean equalTo(BillingSubscription other) {
         return cancelAtPeriodEnd == other.cancelAtPeriodEnd
                 && currentPeriodEnd.equals(other.currentPeriodEnd)
+                && interval.equals(other.interval)
                 && plan.equals(other.plan)
-                && status.equals(other.status);
+                && startedAt.equals(other.startedAt)
+                && status.equals(other.status)
+                && trialEnd.equals(other.trialEnd);
     }
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.cancelAtPeriodEnd, this.currentPeriodEnd, this.plan, this.status);
+        return Objects.hash(
+                this.cancelAtPeriodEnd,
+                this.currentPeriodEnd,
+                this.interval,
+                this.plan,
+                this.startedAt,
+                this.status,
+                this.trialEnd);
     }
 
     @java.lang.Override
@@ -109,9 +164,13 @@ public final class BillingSubscription {
     }
 
     public interface CancelAtPeriodEndStage {
-        PlanStage cancelAtPeriodEnd(boolean cancelAtPeriodEnd);
+        IntervalStage cancelAtPeriodEnd(boolean cancelAtPeriodEnd);
 
         Builder from(BillingSubscription other);
+    }
+
+    public interface IntervalStage {
+        PlanStage interval(@NotNull BillingInterval interval);
     }
 
     public interface PlanStage {
@@ -134,15 +193,34 @@ public final class BillingSubscription {
         _FinalStage currentPeriodEnd(String currentPeriodEnd);
 
         _FinalStage currentPeriodEnd(Nullable<String> currentPeriodEnd);
+
+        _FinalStage startedAt(Optional<String> startedAt);
+
+        _FinalStage startedAt(String startedAt);
+
+        _FinalStage startedAt(Nullable<String> startedAt);
+
+        _FinalStage trialEnd(Optional<String> trialEnd);
+
+        _FinalStage trialEnd(String trialEnd);
+
+        _FinalStage trialEnd(Nullable<String> trialEnd);
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static final class Builder implements CancelAtPeriodEndStage, PlanStage, StatusStage, _FinalStage {
+    public static final class Builder
+            implements CancelAtPeriodEndStage, IntervalStage, PlanStage, StatusStage, _FinalStage {
         private boolean cancelAtPeriodEnd;
+
+        private BillingInterval interval;
 
         private PaidPlan plan;
 
         private SubscriptionStatus status;
+
+        private Optional<String> trialEnd = Optional.empty();
+
+        private Optional<String> startedAt = Optional.empty();
 
         private Optional<String> currentPeriodEnd = Optional.empty();
 
@@ -154,15 +232,25 @@ public final class BillingSubscription {
         public Builder from(BillingSubscription other) {
             cancelAtPeriodEnd(other.getCancelAtPeriodEnd());
             currentPeriodEnd(other.getCurrentPeriodEnd());
+            interval(other.getInterval());
             plan(other.getPlan());
+            startedAt(other.getStartedAt());
             status(other.getStatus());
+            trialEnd(other.getTrialEnd());
             return this;
         }
 
         @java.lang.Override
         @JsonSetter("cancelAtPeriodEnd")
-        public PlanStage cancelAtPeriodEnd(boolean cancelAtPeriodEnd) {
+        public IntervalStage cancelAtPeriodEnd(boolean cancelAtPeriodEnd) {
             this.cancelAtPeriodEnd = cancelAtPeriodEnd;
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter("interval")
+        public PlanStage interval(@NotNull BillingInterval interval) {
+            this.interval = Objects.requireNonNull(interval, "interval must not be null");
             return this;
         }
 
@@ -177,6 +265,56 @@ public final class BillingSubscription {
         @JsonSetter("status")
         public _FinalStage status(@NotNull SubscriptionStatus status) {
             this.status = Objects.requireNonNull(status, "status must not be null");
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage trialEnd(Nullable<String> trialEnd) {
+            if (trialEnd.isNull()) {
+                this.trialEnd = null;
+            } else if (trialEnd.isEmpty()) {
+                this.trialEnd = Optional.empty();
+            } else {
+                this.trialEnd = Optional.of(trialEnd.get());
+            }
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage trialEnd(String trialEnd) {
+            this.trialEnd = Optional.ofNullable(trialEnd);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "trialEnd", nulls = Nulls.SKIP)
+        public _FinalStage trialEnd(Optional<String> trialEnd) {
+            this.trialEnd = trialEnd;
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage startedAt(Nullable<String> startedAt) {
+            if (startedAt.isNull()) {
+                this.startedAt = null;
+            } else if (startedAt.isEmpty()) {
+                this.startedAt = Optional.empty();
+            } else {
+                this.startedAt = Optional.of(startedAt.get());
+            }
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage startedAt(String startedAt) {
+            this.startedAt = Optional.ofNullable(startedAt);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "startedAt", nulls = Nulls.SKIP)
+        public _FinalStage startedAt(Optional<String> startedAt) {
+            this.startedAt = startedAt;
             return this;
         }
 
@@ -207,15 +345,26 @@ public final class BillingSubscription {
 
         @java.lang.Override
         public BillingSubscription build() {
-            return new BillingSubscription(cancelAtPeriodEnd, currentPeriodEnd, plan, status, additionalProperties);
+            return new BillingSubscription(
+                    cancelAtPeriodEnd,
+                    currentPeriodEnd,
+                    interval,
+                    plan,
+                    startedAt,
+                    status,
+                    trialEnd,
+                    additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
             if (key.equalsIgnoreCase("cancelAtPeriodEnd")
                     || key.equalsIgnoreCase("currentPeriodEnd")
+                    || key.equalsIgnoreCase("interval")
                     || key.equalsIgnoreCase("plan")
-                    || key.equalsIgnoreCase("status")) {
+                    || key.equalsIgnoreCase("startedAt")
+                    || key.equalsIgnoreCase("status")
+                    || key.equalsIgnoreCase("trialEnd")) {
                 return;
             }
             this.additionalProperties.put(key, value);

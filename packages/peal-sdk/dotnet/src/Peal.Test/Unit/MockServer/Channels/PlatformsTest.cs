@@ -14,6 +14,10 @@ public class PlatformsTest : BaseMockServerTest
     {
         const string mockResponse = """
             {
+              "instagramConnections": [
+                "instagramLogin",
+                "instagramLogin"
+              ],
               "platforms": [
                 "x",
                 "x"
@@ -46,6 +50,9 @@ public class PlatformsTest : BaseMockServerTest
     {
         const string mockResponse = """
             {
+              "instagramConnections": [
+                "instagramLogin"
+              ],
               "platforms": [
                 "x"
               ]

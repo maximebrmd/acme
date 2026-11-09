@@ -10,9 +10,13 @@ public readonly record struct Plan : IStringEnum
 {
     public static readonly Plan Free = new(Values.Free);
 
+    public static readonly Plan Starter = new(Values.Starter);
+
     public static readonly Plan Pro = new(Values.Pro);
 
     public static readonly Plan Business = new(Values.Business);
+
+    public static readonly Plan Agency = new(Values.Agency);
 
     public Plan(string value)
     {
@@ -106,8 +110,12 @@ public readonly record struct Plan : IStringEnum
     {
         public const string Free = "free";
 
+        public const string Starter = "starter";
+
         public const string Pro = "pro";
 
         public const string Business = "business";
+
+        public const string Agency = "agency";
     }
 }

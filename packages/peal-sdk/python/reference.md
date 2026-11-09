@@ -448,7 +448,7 @@ client.api_keys.revoke(
 </details>
 
 ## channels
-<details><summary><code>client.channels.<a href="src/peal/channels/client.py#L33-L63">list</a>(...) -> typing.List[Channel]</code></summary>
+<details><summary><code>client.channels.<a href="src/peal/channels/client.py#L34-L64">list</a>(...) -> typing.List[Channel]</code></summary>
 <dl>
 <dd>
 
@@ -521,7 +521,7 @@ client.channels.list(
 </dl>
 </details>
 
-<details><summary><code>client.channels.<a href="src/peal/channels/client.py#L65-L95">platforms</a>(...) -> ConnectablePlatforms</code></summary>
+<details><summary><code>client.channels.<a href="src/peal/channels/client.py#L66-L96">platforms</a>(...) -> ConnectablePlatforms</code></summary>
 <dl>
 <dd>
 
@@ -594,7 +594,7 @@ client.channels.platforms(
 </dl>
 </details>
 
-<details><summary><code>client.channels.<a href="src/peal/channels/client.py#L97-L142">connect</a>(...) -> Authorization</code></summary>
+<details><summary><code>client.channels.<a href="src/peal/channels/client.py#L98-L151">connect</a>(...) -> Authorization</code></summary>
 <dl>
 <dd>
 
@@ -606,7 +606,7 @@ client.channels.platforms(
 <dl>
 <dd>
 
-Starts connecting an account of the platform: answers with the platform's sign-in page, where the browser goes next. The connection is tied to the caller and the workspace, and must be completed within 15 minutes. On a server that bills, a workspace whose plan allows no more channels gets PlanLimitReached. Needs channel:connect.
+Starts connecting an account of the platform: answers with the platform's sign-in page, where the browser goes next. For Instagram, `connection` picks Instagram Login (the professional account itself, no Facebook Page needed) or Facebook Login (the accounts linked to the caller's Pages); without it, the server's preferred way. The connection is tied to the caller and the workspace, and must be completed within 15 minutes. On a server that bills, a workspace whose plan allows no more channels gets PlanLimitReached. Needs channel:connect.
 </dd>
 </dl>
 </dd>
@@ -664,6 +664,14 @@ client.channels.connect(
 <dl>
 <dd>
 
+**connection:** `typing.Optional[InstagramConnection]` 
+    
+</dd>
+</dl>
+
+<dl>
+<dd>
+
 **handle:** `typing.Optional[str]` 
     
 </dd>
@@ -692,7 +700,7 @@ client.channels.connect(
 </dl>
 </details>
 
-<details><summary><code>client.channels.<a href="src/peal/channels/client.py#L144-L196">complete_connect</a>(...) -> ConnectOutcome</code></summary>
+<details><summary><code>client.channels.<a href="src/peal/channels/client.py#L153-L205">complete_connect</a>(...) -> ConnectOutcome</code></summary>
 <dl>
 <dd>
 
@@ -807,7 +815,7 @@ client.channels.complete_connect(
 </dl>
 </details>
 
-<details><summary><code>client.channels.<a href="src/peal/channels/client.py#L198-L245">choose_accounts</a>(...) -> typing.List[Channel]</code></summary>
+<details><summary><code>client.channels.<a href="src/peal/channels/client.py#L207-L254">choose_accounts</a>(...) -> typing.List[Channel]</code></summary>
 <dl>
 <dd>
 
@@ -909,7 +917,7 @@ client.channels.choose_accounts(
 </dl>
 </details>
 
-<details><summary><code>client.channels.<a href="src/peal/channels/client.py#L247-L280">reconnect</a>(...) -> Authorization</code></summary>
+<details><summary><code>client.channels.<a href="src/peal/channels/client.py#L256-L289">reconnect</a>(...) -> Authorization</code></summary>
 <dl>
 <dd>
 
@@ -991,7 +999,7 @@ client.channels.reconnect(
 </dl>
 </details>
 
-<details><summary><code>client.channels.<a href="src/peal/channels/client.py#L282-L314">disconnect</a>(...)</code></summary>
+<details><summary><code>client.channels.<a href="src/peal/channels/client.py#L291-L323">disconnect</a>(...)</code></summary>
 <dl>
 <dd>
 
@@ -2369,7 +2377,7 @@ client.media.list(
 <dl>
 <dd>
 
-Records pending media and signs the upload of its file: one PUT for an image or a video up to 16 MiB, one PUT per part for a larger video. Send the file with them, then complete the upload. The requests only take the declared size and content type. Needs media:upload.
+Records pending media and signs the upload of its file: one PUT for an image or a video up to 16 MiB, one PUT per part for a larger video. Send the file with them, then complete the upload. The requests only take the declared size and content type. On a server that bills, the declared size must fit the plan's media storage with what the workspace stores (PlanLimitReached `mediaStorage`). Needs media:upload.
 </dd>
 </dl>
 </dd>

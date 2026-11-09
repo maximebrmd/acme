@@ -11,6 +11,10 @@ public record ConnectablePlatforms : IJsonOnDeserialized
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
 
+    [JsonPropertyName("instagramConnections")]
+    public IEnumerable<InstagramConnection> InstagramConnections { get; set; } =
+        new List<InstagramConnection>();
+
     [JsonPropertyName("platforms")]
     public IEnumerable<Platform> Platforms { get; set; } = new List<Platform>();
 

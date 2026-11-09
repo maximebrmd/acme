@@ -2,4 +2,4 @@
 
 import typing
 
-Plan = typing.Union[typing.Literal["free", "pro", "business"], typing.Any]
+Plan = typing.Union[typing.Literal["free", "starter", "pro", "business", "agency"], typing.Any]

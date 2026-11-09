@@ -8,6 +8,7 @@ from ..types.authorization import Authorization
 from ..types.channel import Channel
 from ..types.connect_outcome import ConnectOutcome
 from ..types.connectable_platforms import ConnectablePlatforms
+from ..types.instagram_connection import InstagramConnection
 from ..types.platform import Platform
 from .raw_client import AsyncRawChannelsClient, RawChannelsClient
 
@@ -99,18 +100,21 @@ class ChannelsClient:
         workspace_id: str,
         platform: Platform,
         *,
+        connection: typing.Optional[InstagramConnection] = OMIT,
         handle: typing.Optional[str] = OMIT,
         instance: typing.Optional[str] = OMIT,
         request_options: typing.Optional[RequestOptions] = None,
     ) -> Authorization:
         """
-        Starts connecting an account of the platform: answers with the platform's sign-in page, where the browser goes next. The connection is tied to the caller and the workspace, and must be completed within 15 minutes. On a server that bills, a workspace whose plan allows no more channels gets PlanLimitReached. Needs channel:connect.
+        Starts connecting an account of the platform: answers with the platform's sign-in page, where the browser goes next. For Instagram, `connection` picks Instagram Login (the professional account itself, no Facebook Page needed) or Facebook Login (the accounts linked to the caller's Pages); without it, the server's preferred way. The connection is tied to the caller and the workspace, and must be completed within 15 minutes. On a server that bills, a workspace whose plan allows no more channels gets PlanLimitReached. Needs channel:connect.
 
         Parameters
         ----------
         workspace_id : str
 
         platform : Platform
+
+        connection : typing.Optional[InstagramConnection]
 
         handle : typing.Optional[str]
 
@@ -137,7 +141,12 @@ class ChannelsClient:
         )
         """
         _response = self._raw_client.connect(
-            workspace_id, platform, handle=handle, instance=instance, request_options=request_options
+            workspace_id,
+            platform,
+            connection=connection,
+            handle=handle,
+            instance=instance,
+            request_options=request_options,
         )
         return _response.data
 
@@ -414,18 +423,21 @@ class AsyncChannelsClient:
         workspace_id: str,
         platform: Platform,
         *,
+        connection: typing.Optional[InstagramConnection] = OMIT,
         handle: typing.Optional[str] = OMIT,
         instance: typing.Optional[str] = OMIT,
         request_options: typing.Optional[RequestOptions] = None,
     ) -> Authorization:
         """
-        Starts connecting an account of the platform: answers with the platform's sign-in page, where the browser goes next. The connection is tied to the caller and the workspace, and must be completed within 15 minutes. On a server that bills, a workspace whose plan allows no more channels gets PlanLimitReached. Needs channel:connect.
+        Starts connecting an account of the platform: answers with the platform's sign-in page, where the browser goes next. For Instagram, `connection` picks Instagram Login (the professional account itself, no Facebook Page needed) or Facebook Login (the accounts linked to the caller's Pages); without it, the server's preferred way. The connection is tied to the caller and the workspace, and must be completed within 15 minutes. On a server that bills, a workspace whose plan allows no more channels gets PlanLimitReached. Needs channel:connect.
 
         Parameters
         ----------
         workspace_id : str
 
         platform : Platform
+
+        connection : typing.Optional[InstagramConnection]
 
         handle : typing.Optional[str]
 
@@ -460,7 +472,12 @@ class AsyncChannelsClient:
         asyncio.run(main())
         """
         _response = await self._raw_client.connect(
-            workspace_id, platform, handle=handle, instance=instance, request_options=request_options
+            workspace_id,
+            platform,
+            connection=connection,
+            handle=handle,
+            instance=instance,
+            request_options=request_options,
         )
         return _response.data
 

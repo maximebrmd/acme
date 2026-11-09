@@ -62,7 +62,8 @@ module Peal
 
       # Records pending media and signs the upload of its file: one PUT for an image or a video up to 16 MiB, one PUT
       # per part for a larger video. Send the file with them, then complete the upload. The requests only take the
-      # declared size and content type. Needs media:upload.
+      # declared size and content type. On a server that bills, the declared size must fit the plan's media storage with
+      # what the workspace stores (PlanLimitReached `mediaStorage`). Needs media:upload.
       #
       # @param request_options [Hash]
       # @param params [Peal::Media::Types::NewUpload]
@@ -107,6 +108,7 @@ module Peal
           error_class = Peal::Errors::ResponseError.subclass_for_code(code)
           error_types = {
             401 => Peal::Types::UnauthenticatedEncoded,
+            402 => Peal::Types::PlanLimitReachedEncoded,
             403 => Peal::Types::ForbiddenEncoded
           }
           error_body = Peal::Errors::ResponseError.load_error_body(code, response.body, error_types)

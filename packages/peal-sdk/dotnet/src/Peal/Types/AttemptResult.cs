@@ -32,6 +32,8 @@ public readonly record struct AttemptResult : IStringEnum
 
     public static readonly AttemptResult QuotaExceeded = new(Values.QuotaExceeded);
 
+    public static readonly AttemptResult AppBillingLimit = new(Values.AppBillingLimit);
+
     public AttemptResult(string value)
     {
         Value = value;
@@ -151,5 +153,7 @@ public readonly record struct AttemptResult : IStringEnum
         public const string AppNotAudited = "appNotAudited";
 
         public const string QuotaExceeded = "quotaExceeded";
+
+        public const string AppBillingLimit = "appBillingLimit";
     }
 }

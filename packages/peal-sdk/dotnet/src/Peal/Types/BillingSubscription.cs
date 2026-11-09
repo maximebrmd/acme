@@ -17,11 +17,20 @@ public record BillingSubscription : IJsonOnDeserialized
     [JsonPropertyName("currentPeriodEnd")]
     public string? CurrentPeriodEnd { get; set; }
 
+    [JsonPropertyName("interval")]
+    public required BillingInterval Interval { get; set; }
+
     [JsonPropertyName("plan")]
     public required PaidPlan Plan { get; set; }
 
+    [JsonPropertyName("startedAt")]
+    public string? StartedAt { get; set; }
+
     [JsonPropertyName("status")]
     public required SubscriptionStatus Status { get; set; }
+
+    [JsonPropertyName("trialEnd")]
+    public string? TrialEnd { get; set; }
 
     [JsonIgnore]
     public ReadOnlyAdditionalProperties AdditionalProperties { get; private set; } = new();

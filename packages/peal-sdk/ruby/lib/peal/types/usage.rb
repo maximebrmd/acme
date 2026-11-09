@@ -9,6 +9,8 @@ module Peal
 
       field :channels, -> { Integer }, optional: false, nullable: false
 
+      field :media_storage, -> { Integer }, optional: false, nullable: false, api_name: "mediaStorage"
+
       field :members, -> { Integer }, optional: false, nullable: false
 
       field :scheduled_posts, -> { Peal::Types::PeriodUsage }, optional: false, nullable: false, api_name: "scheduledPosts"

@@ -38,6 +38,7 @@ if typing.TYPE_CHECKING:
     from .attempt_result import AttemptResult
     from .authorization import Authorization
     from .billing import Billing
+    from .billing_interval import BillingInterval
     from .billing_subscription import BillingSubscription
     from .calendar_day import CalendarDay
     from .channel import Channel
@@ -131,6 +132,7 @@ if typing.TYPE_CHECKING:
     from .failure_reason import FailureReason
     from .forbidden_encoded import ForbiddenEncoded
     from .forbidden_encoded_tag import ForbiddenEncodedTag
+    from .instagram_connection import InstagramConnection
     from .invalid_date_range_encoded import InvalidDateRangeEncoded
     from .invalid_date_range_encoded_tag import InvalidDateRangeEncodedTag
     from .invalid_time_range_encoded import InvalidTimeRangeEncoded
@@ -170,6 +172,7 @@ if typing.TYPE_CHECKING:
     from .membership import Membership
     from .metric_totals import MetricTotals
     from .metrics_snapshot import MetricsSnapshot
+    from .money import Money
     from .non_finite_number import NonFiniteNumber
     from .not_found_error_body import (
         NotFoundErrorBody,
@@ -185,12 +188,22 @@ if typing.TYPE_CHECKING:
         NoticeEvent_PostFailed,
         NoticeEvent_PostPublished,
         NoticeEvent_PostUnconfirmed,
+        NoticeEvent_SubscriptionCancelled,
+        NoticeEvent_SubscriptionRenewing,
+        NoticeEvent_SubscriptionStarted,
+        NoticeEvent_SubscriptionWithdrawn,
+        NoticeEvent_TrialEnding,
     )
     from .notice_event_channel_reconnect_required import NoticeEventChannelReconnectRequired
     from .notice_event_channel_reconnect_soon import NoticeEventChannelReconnectSoon
     from .notice_event_post_failed import NoticeEventPostFailed
     from .notice_event_post_published import NoticeEventPostPublished
     from .notice_event_post_unconfirmed import NoticeEventPostUnconfirmed
+    from .notice_event_subscription_cancelled import NoticeEventSubscriptionCancelled
+    from .notice_event_subscription_renewing import NoticeEventSubscriptionRenewing
+    from .notice_event_subscription_started import NoticeEventSubscriptionStarted
+    from .notice_event_subscription_withdrawn import NoticeEventSubscriptionWithdrawn
+    from .notice_event_trial_ending import NoticeEventTrialEnding
     from .notice_page import NoticePage
     from .notification_preferences import NotificationPreferences
     from .notification_preferences_email import NotificationPreferencesEmail
@@ -203,6 +216,7 @@ if typing.TYPE_CHECKING:
     from .plan_limit_reached_encoded import PlanLimitReachedEncoded
     from .plan_limit_reached_encoded_tag import PlanLimitReachedEncodedTag
     from .plan_offer import PlanOffer
+    from .plan_price import PlanPrice
     from .platform import Platform
     from .platform_unreachable_encoded import PlatformUnreachableEncoded
     from .platform_unreachable_encoded_tag import PlatformUnreachableEncodedTag
@@ -251,6 +265,7 @@ if typing.TYPE_CHECKING:
     from .too_many_invitations_encoded import TooManyInvitationsEncoded
     from .top_post import TopPost
     from .translation_language import TranslationLanguage
+    from .trial_offer import TrialOffer
     from .unauthenticated_encoded import UnauthenticatedEncoded
     from .unauthenticated_encoded_tag import UnauthenticatedEncodedTag
     from .unconfirmed_reason import UnconfirmedReason
@@ -309,6 +324,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "AttemptResult": ".attempt_result",
     "Authorization": ".authorization",
     "Billing": ".billing",
+    "BillingInterval": ".billing_interval",
     "BillingSubscription": ".billing_subscription",
     "CalendarDay": ".calendar_day",
     "Channel": ".channel",
@@ -403,6 +419,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "FailureReason": ".failure_reason",
     "ForbiddenEncoded": ".forbidden_encoded",
     "ForbiddenEncodedTag": ".forbidden_encoded_tag",
+    "InstagramConnection": ".instagram_connection",
     "InvalidDateRangeEncoded": ".invalid_date_range_encoded",
     "InvalidDateRangeEncodedTag": ".invalid_date_range_encoded_tag",
     "InvalidTimeRangeEncoded": ".invalid_time_range_encoded",
@@ -440,6 +457,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "Membership": ".membership",
     "MetricTotals": ".metric_totals",
     "MetricsSnapshot": ".metrics_snapshot",
+    "Money": ".money",
     "NonFiniteNumber": ".non_finite_number",
     "NotFoundErrorBody": ".not_found_error_body",
     "NotFoundErrorBody_ChannelNotFound": ".not_found_error_body",
@@ -452,11 +470,21 @@ _dynamic_imports: typing.Dict[str, str] = {
     "NoticeEventPostFailed": ".notice_event_post_failed",
     "NoticeEventPostPublished": ".notice_event_post_published",
     "NoticeEventPostUnconfirmed": ".notice_event_post_unconfirmed",
+    "NoticeEventSubscriptionCancelled": ".notice_event_subscription_cancelled",
+    "NoticeEventSubscriptionRenewing": ".notice_event_subscription_renewing",
+    "NoticeEventSubscriptionStarted": ".notice_event_subscription_started",
+    "NoticeEventSubscriptionWithdrawn": ".notice_event_subscription_withdrawn",
+    "NoticeEventTrialEnding": ".notice_event_trial_ending",
     "NoticeEvent_ChannelReconnectRequired": ".notice_event",
     "NoticeEvent_ChannelReconnectSoon": ".notice_event",
     "NoticeEvent_PostFailed": ".notice_event",
     "NoticeEvent_PostPublished": ".notice_event",
     "NoticeEvent_PostUnconfirmed": ".notice_event",
+    "NoticeEvent_SubscriptionCancelled": ".notice_event",
+    "NoticeEvent_SubscriptionRenewing": ".notice_event",
+    "NoticeEvent_SubscriptionStarted": ".notice_event",
+    "NoticeEvent_SubscriptionWithdrawn": ".notice_event",
+    "NoticeEvent_TrialEnding": ".notice_event",
     "NoticePage": ".notice_page",
     "NotificationPreferences": ".notification_preferences",
     "NotificationPreferencesEmail": ".notification_preferences_email",
@@ -469,6 +497,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "PlanLimitReachedEncoded": ".plan_limit_reached_encoded",
     "PlanLimitReachedEncodedTag": ".plan_limit_reached_encoded_tag",
     "PlanOffer": ".plan_offer",
+    "PlanPrice": ".plan_price",
     "Platform": ".platform",
     "PlatformUnreachableEncoded": ".platform_unreachable_encoded",
     "PlatformUnreachableEncodedTag": ".platform_unreachable_encoded_tag",
@@ -525,6 +554,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "TooManyInvitationsEncoded": ".too_many_invitations_encoded",
     "TopPost": ".top_post",
     "TranslationLanguage": ".translation_language",
+    "TrialOffer": ".trial_offer",
     "UnauthenticatedEncoded": ".unauthenticated_encoded",
     "UnauthenticatedEncodedTag": ".unauthenticated_encoded_tag",
     "UnconfirmedReason": ".unconfirmed_reason",
@@ -607,6 +637,7 @@ __all__ = [
     "AttemptResult",
     "Authorization",
     "Billing",
+    "BillingInterval",
     "BillingSubscription",
     "CalendarDay",
     "Channel",
@@ -701,6 +732,7 @@ __all__ = [
     "FailureReason",
     "ForbiddenEncoded",
     "ForbiddenEncodedTag",
+    "InstagramConnection",
     "InvalidDateRangeEncoded",
     "InvalidDateRangeEncodedTag",
     "InvalidTimeRangeEncoded",
@@ -738,6 +770,7 @@ __all__ = [
     "Membership",
     "MetricTotals",
     "MetricsSnapshot",
+    "Money",
     "NonFiniteNumber",
     "NotFoundErrorBody",
     "NotFoundErrorBody_ChannelNotFound",
@@ -750,11 +783,21 @@ __all__ = [
     "NoticeEventPostFailed",
     "NoticeEventPostPublished",
     "NoticeEventPostUnconfirmed",
+    "NoticeEventSubscriptionCancelled",
+    "NoticeEventSubscriptionRenewing",
+    "NoticeEventSubscriptionStarted",
+    "NoticeEventSubscriptionWithdrawn",
+    "NoticeEventTrialEnding",
     "NoticeEvent_ChannelReconnectRequired",
     "NoticeEvent_ChannelReconnectSoon",
     "NoticeEvent_PostFailed",
     "NoticeEvent_PostPublished",
     "NoticeEvent_PostUnconfirmed",
+    "NoticeEvent_SubscriptionCancelled",
+    "NoticeEvent_SubscriptionRenewing",
+    "NoticeEvent_SubscriptionStarted",
+    "NoticeEvent_SubscriptionWithdrawn",
+    "NoticeEvent_TrialEnding",
     "NoticePage",
     "NotificationPreferences",
     "NotificationPreferencesEmail",
@@ -767,6 +810,7 @@ __all__ = [
     "PlanLimitReachedEncoded",
     "PlanLimitReachedEncodedTag",
     "PlanOffer",
+    "PlanPrice",
     "Platform",
     "PlatformUnreachableEncoded",
     "PlatformUnreachableEncodedTag",
@@ -823,6 +867,7 @@ __all__ = [
     "TooManyInvitationsEncoded",
     "TopPost",
     "TranslationLanguage",
+    "TrialOffer",
     "UnauthenticatedEncoded",
     "UnauthenticatedEncodedTag",
     "UnconfirmedReason",

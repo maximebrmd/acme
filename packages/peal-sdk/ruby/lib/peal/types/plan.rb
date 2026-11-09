@@ -8,8 +8,10 @@ module Peal
       extend Peal::Internal::Types::Enum
 
       FREE = "free"
+      STARTER = "starter"
       PRO = "pro"
       BUSINESS = "business"
+      AGENCY = "agency"
     end
   end
 end

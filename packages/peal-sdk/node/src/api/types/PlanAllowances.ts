@@ -3,6 +3,7 @@
 export interface PlanAllowances {
     assistantRequests: number | null;
     channels: number | null;
+    mediaStorage: number | null;
     members: number | null;
     scheduledPosts: number | null;
 }

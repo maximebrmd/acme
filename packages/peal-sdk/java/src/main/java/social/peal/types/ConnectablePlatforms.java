@@ -21,13 +21,24 @@ import social.peal.core.ObjectMappers;
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
 @JsonDeserialize(builder = ConnectablePlatforms.Builder.class)
 public final class ConnectablePlatforms {
+    private final List<InstagramConnection> instagramConnections;
+
     private final List<Platform> platforms;
 
     private final Map<String, Object> additionalProperties;
 
-    private ConnectablePlatforms(List<Platform> platforms, Map<String, Object> additionalProperties) {
+    private ConnectablePlatforms(
+            List<InstagramConnection> instagramConnections,
+            List<Platform> platforms,
+            Map<String, Object> additionalProperties) {
+        this.instagramConnections = instagramConnections;
         this.platforms = platforms;
         this.additionalProperties = additionalProperties;
+    }
+
+    @JsonProperty("instagramConnections")
+    public List<InstagramConnection> getInstagramConnections() {
+        return instagramConnections;
     }
 
     @JsonProperty("platforms")
@@ -47,12 +58,12 @@ public final class ConnectablePlatforms {
     }
 
     private boolean equalTo(ConnectablePlatforms other) {
-        return platforms.equals(other.platforms);
+        return instagramConnections.equals(other.instagramConnections) && platforms.equals(other.platforms);
     }
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.platforms);
+        return Objects.hash(this.instagramConnections, this.platforms);
     }
 
     @java.lang.Override
@@ -66,6 +77,8 @@ public final class ConnectablePlatforms {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static final class Builder {
+        private List<InstagramConnection> instagramConnections = new ArrayList<>();
+
         private List<Platform> platforms = new ArrayList<>();
 
         private Map<String, Object> additionalProperties = new HashMap<>();
@@ -73,7 +86,29 @@ public final class ConnectablePlatforms {
         private Builder() {}
 
         public Builder from(ConnectablePlatforms other) {
+            instagramConnections(other.getInstagramConnections());
             platforms(other.getPlatforms());
+            return this;
+        }
+
+        @JsonSetter(value = "instagramConnections", nulls = Nulls.SKIP)
+        public Builder instagramConnections(List<InstagramConnection> instagramConnections) {
+            this.instagramConnections.clear();
+            if (instagramConnections != null) {
+                this.instagramConnections.addAll(instagramConnections);
+            }
+            return this;
+        }
+
+        public Builder addInstagramConnections(InstagramConnection instagramConnections) {
+            this.instagramConnections.add(instagramConnections);
+            return this;
+        }
+
+        public Builder addAllInstagramConnections(List<InstagramConnection> instagramConnections) {
+            if (instagramConnections != null) {
+                this.instagramConnections.addAll(instagramConnections);
+            }
             return this;
         }
 
@@ -99,12 +134,12 @@ public final class ConnectablePlatforms {
         }
 
         public ConnectablePlatforms build() {
-            return new ConnectablePlatforms(platforms, additionalProperties);
+            return new ConnectablePlatforms(instagramConnections, platforms, additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
-            if (key.equalsIgnoreCase("platforms")) {
+            if (key.equalsIgnoreCase("instagramConnections") || key.equalsIgnoreCase("platforms")) {
                 return;
             }
             this.additionalProperties.put(key, value);

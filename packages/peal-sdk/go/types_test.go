@@ -13933,6 +13933,35 @@ func TestEnumAssistantUnavailableEncodedTag(t *testing.T) {
 	})
 }
 
+func TestEnumBillingInterval(t *testing.T) {
+	t.Run("NewFromString_month", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewBillingIntervalFromString("month")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, BillingInterval("month"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_year", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewBillingIntervalFromString("year")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, BillingInterval("year"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_Invalid", func(t *testing.T) {
+		_, err := NewBillingIntervalFromString("invalid_value_that_does_not_exist")
+		assert.Error(t, err)
+	})
+
+	t.Run("Ptr", func(t *testing.T) {
+		val, err := NewBillingIntervalFromString("month")
+		assert.NoError(t, err)
+		ptr := val.Ptr()
+		assert.NotNil(t, ptr)
+		assert.Equal(t, val, *ptr)
+	})
+}
+
 func TestEnumChannelCannotPostEncodedReason(t *testing.T) {
 	t.Run("NewFromString_disabled", func(t *testing.T) {
 		t.Parallel()
@@ -14220,6 +14249,13 @@ func TestEnumFailureReason(t *testing.T) {
 		assert.Equal(t, FailureReason("quotaExceeded"), val, "enum value should match expected wire value")
 	})
 
+	t.Run("NewFromString_appBillingLimit", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewFailureReasonFromString("appBillingLimit")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, FailureReason("appBillingLimit"), val, "enum value should match expected wire value")
+	})
+
 	t.Run("NewFromString_Invalid", func(t *testing.T) {
 		_, err := NewFailureReasonFromString("invalid_value_that_does_not_exist")
 		assert.Error(t, err)
@@ -14417,6 +14453,49 @@ func TestEnumNonFiniteNumber(t *testing.T) {
 
 	t.Run("Ptr", func(t *testing.T) {
 		val, err := NewNonFiniteNumberFromString("Infinity")
+		assert.NoError(t, err)
+		ptr := val.Ptr()
+		assert.NotNil(t, ptr)
+		assert.Equal(t, val, *ptr)
+	})
+}
+
+func TestEnumPaidPlan(t *testing.T) {
+	t.Run("NewFromString_starter", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewPaidPlanFromString("starter")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, PaidPlan("starter"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_pro", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewPaidPlanFromString("pro")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, PaidPlan("pro"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_business", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewPaidPlanFromString("business")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, PaidPlan("business"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_agency", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewPaidPlanFromString("agency")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, PaidPlan("agency"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_Invalid", func(t *testing.T) {
+		_, err := NewPaidPlanFromString("invalid_value_that_does_not_exist")
+		assert.Error(t, err)
+	})
+
+	t.Run("Ptr", func(t *testing.T) {
+		val, err := NewPaidPlanFromString("starter")
 		assert.NoError(t, err)
 		ptr := val.Ptr()
 		assert.NotNil(t, ptr)
@@ -14662,6 +14741,13 @@ func TestEnumPlanLimit(t *testing.T) {
 		val, err := NewPlanLimitFromString("assistantRequests")
 		assert.NoError(t, err, "valid enum value should not return error")
 		assert.Equal(t, PlanLimit("assistantRequests"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_mediaStorage", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewPlanLimitFromString("mediaStorage")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, PlanLimit("mediaStorage"), val, "enum value should match expected wire value")
 	})
 
 	t.Run("NewFromString_Invalid", func(t *testing.T) {

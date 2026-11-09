@@ -8,9 +8,13 @@ namespace Peal;
 [Serializable]
 public readonly record struct PaidPlan : IStringEnum
 {
+    public static readonly PaidPlan Starter = new(Values.Starter);
+
     public static readonly PaidPlan Pro = new(Values.Pro);
 
     public static readonly PaidPlan Business = new(Values.Business);
+
+    public static readonly PaidPlan Agency = new(Values.Agency);
 
     public PaidPlan(string value)
     {
@@ -106,8 +110,12 @@ public readonly record struct PaidPlan : IStringEnum
     [Serializable]
     public static class Values
     {
+        public const string Starter = "starter";
+
         public const string Pro = "pro";
 
         public const string Business = "business";
+
+        public const string Agency = "agency";
     }
 }

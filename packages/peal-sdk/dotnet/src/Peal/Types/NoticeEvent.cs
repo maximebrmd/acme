@@ -64,6 +64,51 @@ public record NoticeEvent
     }
 
     /// <summary>
+    /// Create an instance of NoticeEvent with <see cref="NoticeEvent.SubscriptionStarted"/>.
+    /// </summary>
+    public NoticeEvent(NoticeEvent.SubscriptionStarted value)
+    {
+        Type = "SubscriptionStarted";
+        Value = value.Value;
+    }
+
+    /// <summary>
+    /// Create an instance of NoticeEvent with <see cref="NoticeEvent.TrialEnding"/>.
+    /// </summary>
+    public NoticeEvent(NoticeEvent.TrialEnding value)
+    {
+        Type = "TrialEnding";
+        Value = value.Value;
+    }
+
+    /// <summary>
+    /// Create an instance of NoticeEvent with <see cref="NoticeEvent.SubscriptionRenewing"/>.
+    /// </summary>
+    public NoticeEvent(NoticeEvent.SubscriptionRenewing value)
+    {
+        Type = "SubscriptionRenewing";
+        Value = value.Value;
+    }
+
+    /// <summary>
+    /// Create an instance of NoticeEvent with <see cref="NoticeEvent.SubscriptionCancelled"/>.
+    /// </summary>
+    public NoticeEvent(NoticeEvent.SubscriptionCancelled value)
+    {
+        Type = "SubscriptionCancelled";
+        Value = value.Value;
+    }
+
+    /// <summary>
+    /// Create an instance of NoticeEvent with <see cref="NoticeEvent.SubscriptionWithdrawn"/>.
+    /// </summary>
+    public NoticeEvent(NoticeEvent.SubscriptionWithdrawn value)
+    {
+        Type = "SubscriptionWithdrawn";
+        Value = value.Value;
+    }
+
+    /// <summary>
     /// Discriminant value
     /// </summary>
     [JsonPropertyName("_tag")]
@@ -98,6 +143,31 @@ public record NoticeEvent
     /// Returns true if <see cref="Type"/> is "ChannelReconnectSoon"
     /// </summary>
     public bool IsChannelReconnectSoon => Type == "ChannelReconnectSoon";
+
+    /// <summary>
+    /// Returns true if <see cref="Type"/> is "SubscriptionStarted"
+    /// </summary>
+    public bool IsSubscriptionStarted => Type == "SubscriptionStarted";
+
+    /// <summary>
+    /// Returns true if <see cref="Type"/> is "TrialEnding"
+    /// </summary>
+    public bool IsTrialEnding => Type == "TrialEnding";
+
+    /// <summary>
+    /// Returns true if <see cref="Type"/> is "SubscriptionRenewing"
+    /// </summary>
+    public bool IsSubscriptionRenewing => Type == "SubscriptionRenewing";
+
+    /// <summary>
+    /// Returns true if <see cref="Type"/> is "SubscriptionCancelled"
+    /// </summary>
+    public bool IsSubscriptionCancelled => Type == "SubscriptionCancelled";
+
+    /// <summary>
+    /// Returns true if <see cref="Type"/> is "SubscriptionWithdrawn"
+    /// </summary>
+    public bool IsSubscriptionWithdrawn => Type == "SubscriptionWithdrawn";
 
     /// <summary>
     /// Returns the value as a <see cref="Peal.NoticeEventPostPublished"/> if <see cref="Type"/> is 'PostPublished', otherwise throws an exception.
@@ -146,12 +216,62 @@ public record NoticeEvent
             ? (Peal.NoticeEventChannelReconnectSoon)Value!
             : throw new global::System.Exception("NoticeEvent.Type is not 'ChannelReconnectSoon'");
 
+    /// <summary>
+    /// Returns the value as a <see cref="Peal.NoticeEventSubscriptionStarted"/> if <see cref="Type"/> is 'SubscriptionStarted', otherwise throws an exception.
+    /// </summary>
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'SubscriptionStarted'.</exception>
+    public Peal.NoticeEventSubscriptionStarted AsSubscriptionStarted() =>
+        IsSubscriptionStarted
+            ? (Peal.NoticeEventSubscriptionStarted)Value!
+            : throw new global::System.Exception("NoticeEvent.Type is not 'SubscriptionStarted'");
+
+    /// <summary>
+    /// Returns the value as a <see cref="Peal.NoticeEventTrialEnding"/> if <see cref="Type"/> is 'TrialEnding', otherwise throws an exception.
+    /// </summary>
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'TrialEnding'.</exception>
+    public Peal.NoticeEventTrialEnding AsTrialEnding() =>
+        IsTrialEnding
+            ? (Peal.NoticeEventTrialEnding)Value!
+            : throw new global::System.Exception("NoticeEvent.Type is not 'TrialEnding'");
+
+    /// <summary>
+    /// Returns the value as a <see cref="Peal.NoticeEventSubscriptionRenewing"/> if <see cref="Type"/> is 'SubscriptionRenewing', otherwise throws an exception.
+    /// </summary>
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'SubscriptionRenewing'.</exception>
+    public Peal.NoticeEventSubscriptionRenewing AsSubscriptionRenewing() =>
+        IsSubscriptionRenewing
+            ? (Peal.NoticeEventSubscriptionRenewing)Value!
+            : throw new global::System.Exception("NoticeEvent.Type is not 'SubscriptionRenewing'");
+
+    /// <summary>
+    /// Returns the value as a <see cref="Peal.NoticeEventSubscriptionCancelled"/> if <see cref="Type"/> is 'SubscriptionCancelled', otherwise throws an exception.
+    /// </summary>
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'SubscriptionCancelled'.</exception>
+    public Peal.NoticeEventSubscriptionCancelled AsSubscriptionCancelled() =>
+        IsSubscriptionCancelled
+            ? (Peal.NoticeEventSubscriptionCancelled)Value!
+            : throw new global::System.Exception("NoticeEvent.Type is not 'SubscriptionCancelled'");
+
+    /// <summary>
+    /// Returns the value as a <see cref="Peal.NoticeEventSubscriptionWithdrawn"/> if <see cref="Type"/> is 'SubscriptionWithdrawn', otherwise throws an exception.
+    /// </summary>
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'SubscriptionWithdrawn'.</exception>
+    public Peal.NoticeEventSubscriptionWithdrawn AsSubscriptionWithdrawn() =>
+        IsSubscriptionWithdrawn
+            ? (Peal.NoticeEventSubscriptionWithdrawn)Value!
+            : throw new global::System.Exception("NoticeEvent.Type is not 'SubscriptionWithdrawn'");
+
     public T Match<T>(
         Func<Peal.NoticeEventPostPublished, T> onPostPublished,
         Func<Peal.NoticeEventPostFailed, T> onPostFailed,
         Func<Peal.NoticeEventPostUnconfirmed, T> onPostUnconfirmed,
         Func<Peal.NoticeEventChannelReconnectRequired, T> onChannelReconnectRequired,
         Func<Peal.NoticeEventChannelReconnectSoon, T> onChannelReconnectSoon,
+        Func<Peal.NoticeEventSubscriptionStarted, T> onSubscriptionStarted,
+        Func<Peal.NoticeEventTrialEnding, T> onTrialEnding,
+        Func<Peal.NoticeEventSubscriptionRenewing, T> onSubscriptionRenewing,
+        Func<Peal.NoticeEventSubscriptionCancelled, T> onSubscriptionCancelled,
+        Func<Peal.NoticeEventSubscriptionWithdrawn, T> onSubscriptionWithdrawn,
         Func<string, object?, T> onUnknown_
     )
     {
@@ -162,6 +282,11 @@ public record NoticeEvent
             "PostUnconfirmed" => onPostUnconfirmed(AsPostUnconfirmed()),
             "ChannelReconnectRequired" => onChannelReconnectRequired(AsChannelReconnectRequired()),
             "ChannelReconnectSoon" => onChannelReconnectSoon(AsChannelReconnectSoon()),
+            "SubscriptionStarted" => onSubscriptionStarted(AsSubscriptionStarted()),
+            "TrialEnding" => onTrialEnding(AsTrialEnding()),
+            "SubscriptionRenewing" => onSubscriptionRenewing(AsSubscriptionRenewing()),
+            "SubscriptionCancelled" => onSubscriptionCancelled(AsSubscriptionCancelled()),
+            "SubscriptionWithdrawn" => onSubscriptionWithdrawn(AsSubscriptionWithdrawn()),
             _ => onUnknown_(Type, Value),
         };
     }
@@ -172,6 +297,11 @@ public record NoticeEvent
         Action<Peal.NoticeEventPostUnconfirmed> onPostUnconfirmed,
         Action<Peal.NoticeEventChannelReconnectRequired> onChannelReconnectRequired,
         Action<Peal.NoticeEventChannelReconnectSoon> onChannelReconnectSoon,
+        Action<Peal.NoticeEventSubscriptionStarted> onSubscriptionStarted,
+        Action<Peal.NoticeEventTrialEnding> onTrialEnding,
+        Action<Peal.NoticeEventSubscriptionRenewing> onSubscriptionRenewing,
+        Action<Peal.NoticeEventSubscriptionCancelled> onSubscriptionCancelled,
+        Action<Peal.NoticeEventSubscriptionWithdrawn> onSubscriptionWithdrawn,
         Action<string, object?> onUnknown_
     )
     {
@@ -191,6 +321,21 @@ public record NoticeEvent
                 break;
             case "ChannelReconnectSoon":
                 onChannelReconnectSoon(AsChannelReconnectSoon());
+                break;
+            case "SubscriptionStarted":
+                onSubscriptionStarted(AsSubscriptionStarted());
+                break;
+            case "TrialEnding":
+                onTrialEnding(AsTrialEnding());
+                break;
+            case "SubscriptionRenewing":
+                onSubscriptionRenewing(AsSubscriptionRenewing());
+                break;
+            case "SubscriptionCancelled":
+                onSubscriptionCancelled(AsSubscriptionCancelled());
+                break;
+            case "SubscriptionWithdrawn":
+                onSubscriptionWithdrawn(AsSubscriptionWithdrawn());
                 break;
             default:
                 onUnknown_(Type, Value);
@@ -268,6 +413,76 @@ public record NoticeEvent
         return false;
     }
 
+    /// <summary>
+    /// Attempts to cast the value to a <see cref="Peal.NoticeEventSubscriptionStarted"/> and returns true if successful.
+    /// </summary>
+    public bool TryAsSubscriptionStarted(out Peal.NoticeEventSubscriptionStarted? value)
+    {
+        if (Type == "SubscriptionStarted")
+        {
+            value = (Peal.NoticeEventSubscriptionStarted)Value!;
+            return true;
+        }
+        value = null;
+        return false;
+    }
+
+    /// <summary>
+    /// Attempts to cast the value to a <see cref="Peal.NoticeEventTrialEnding"/> and returns true if successful.
+    /// </summary>
+    public bool TryAsTrialEnding(out Peal.NoticeEventTrialEnding? value)
+    {
+        if (Type == "TrialEnding")
+        {
+            value = (Peal.NoticeEventTrialEnding)Value!;
+            return true;
+        }
+        value = null;
+        return false;
+    }
+
+    /// <summary>
+    /// Attempts to cast the value to a <see cref="Peal.NoticeEventSubscriptionRenewing"/> and returns true if successful.
+    /// </summary>
+    public bool TryAsSubscriptionRenewing(out Peal.NoticeEventSubscriptionRenewing? value)
+    {
+        if (Type == "SubscriptionRenewing")
+        {
+            value = (Peal.NoticeEventSubscriptionRenewing)Value!;
+            return true;
+        }
+        value = null;
+        return false;
+    }
+
+    /// <summary>
+    /// Attempts to cast the value to a <see cref="Peal.NoticeEventSubscriptionCancelled"/> and returns true if successful.
+    /// </summary>
+    public bool TryAsSubscriptionCancelled(out Peal.NoticeEventSubscriptionCancelled? value)
+    {
+        if (Type == "SubscriptionCancelled")
+        {
+            value = (Peal.NoticeEventSubscriptionCancelled)Value!;
+            return true;
+        }
+        value = null;
+        return false;
+    }
+
+    /// <summary>
+    /// Attempts to cast the value to a <see cref="Peal.NoticeEventSubscriptionWithdrawn"/> and returns true if successful.
+    /// </summary>
+    public bool TryAsSubscriptionWithdrawn(out Peal.NoticeEventSubscriptionWithdrawn? value)
+    {
+        if (Type == "SubscriptionWithdrawn")
+        {
+            value = (Peal.NoticeEventSubscriptionWithdrawn)Value!;
+            return true;
+        }
+        value = null;
+        return false;
+    }
+
     public override string ToString() => JsonUtils.Serialize(this);
 
     public static implicit operator NoticeEvent(NoticeEvent.PostPublished value) => new(value);
@@ -280,6 +495,20 @@ public record NoticeEvent
         new(value);
 
     public static implicit operator NoticeEvent(NoticeEvent.ChannelReconnectSoon value) =>
+        new(value);
+
+    public static implicit operator NoticeEvent(NoticeEvent.SubscriptionStarted value) =>
+        new(value);
+
+    public static implicit operator NoticeEvent(NoticeEvent.TrialEnding value) => new(value);
+
+    public static implicit operator NoticeEvent(NoticeEvent.SubscriptionRenewing value) =>
+        new(value);
+
+    public static implicit operator NoticeEvent(NoticeEvent.SubscriptionCancelled value) =>
+        new(value);
+
+    public static implicit operator NoticeEvent(NoticeEvent.SubscriptionWithdrawn value) =>
         new(value);
 
     [Serializable]
@@ -350,6 +579,37 @@ public record NoticeEvent
                         ?? throw new JsonException(
                             "Failed to deserialize Peal.NoticeEventChannelReconnectSoon"
                         ),
+                "SubscriptionStarted" =>
+                    jsonWithoutDiscriminator.Deserialize<Peal.NoticeEventSubscriptionStarted?>(
+                        options
+                    )
+                        ?? throw new JsonException(
+                            "Failed to deserialize Peal.NoticeEventSubscriptionStarted"
+                        ),
+                "TrialEnding" => jsonWithoutDiscriminator.Deserialize<Peal.NoticeEventTrialEnding?>(
+                    options
+                ) ?? throw new JsonException("Failed to deserialize Peal.NoticeEventTrialEnding"),
+                "SubscriptionRenewing" =>
+                    jsonWithoutDiscriminator.Deserialize<Peal.NoticeEventSubscriptionRenewing?>(
+                        options
+                    )
+                        ?? throw new JsonException(
+                            "Failed to deserialize Peal.NoticeEventSubscriptionRenewing"
+                        ),
+                "SubscriptionCancelled" =>
+                    jsonWithoutDiscriminator.Deserialize<Peal.NoticeEventSubscriptionCancelled?>(
+                        options
+                    )
+                        ?? throw new JsonException(
+                            "Failed to deserialize Peal.NoticeEventSubscriptionCancelled"
+                        ),
+                "SubscriptionWithdrawn" =>
+                    jsonWithoutDiscriminator.Deserialize<Peal.NoticeEventSubscriptionWithdrawn?>(
+                        options
+                    )
+                        ?? throw new JsonException(
+                            "Failed to deserialize Peal.NoticeEventSubscriptionWithdrawn"
+                        ),
                 _ => json.Deserialize<object?>(options),
             };
             return new NoticeEvent(discriminator, value);
@@ -372,6 +632,11 @@ public record NoticeEvent
                         options
                     ),
                     "ChannelReconnectSoon" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "SubscriptionStarted" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "TrialEnding" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "SubscriptionRenewing" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "SubscriptionCancelled" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "SubscriptionWithdrawn" => JsonSerializer.SerializeToNode(value.Value, options),
                     _ => JsonSerializer.SerializeToNode(value.Value, options),
                 } ?? new JsonObject();
             json["_tag"] = value.Type;
@@ -496,6 +761,106 @@ public record NoticeEvent
 
         public static implicit operator NoticeEvent.ChannelReconnectSoon(
             Peal.NoticeEventChannelReconnectSoon value
+        ) => new(value);
+    }
+
+    /// <summary>
+    /// Discriminated union type for SubscriptionStarted
+    /// </summary>
+    [Serializable]
+    public struct SubscriptionStarted
+    {
+        public SubscriptionStarted(Peal.NoticeEventSubscriptionStarted value)
+        {
+            Value = value;
+        }
+
+        internal Peal.NoticeEventSubscriptionStarted Value { get; set; }
+
+        public override string ToString() => Value.ToString() ?? "null";
+
+        public static implicit operator NoticeEvent.SubscriptionStarted(
+            Peal.NoticeEventSubscriptionStarted value
+        ) => new(value);
+    }
+
+    /// <summary>
+    /// Discriminated union type for TrialEnding
+    /// </summary>
+    [Serializable]
+    public struct TrialEnding
+    {
+        public TrialEnding(Peal.NoticeEventTrialEnding value)
+        {
+            Value = value;
+        }
+
+        internal Peal.NoticeEventTrialEnding Value { get; set; }
+
+        public override string ToString() => Value.ToString() ?? "null";
+
+        public static implicit operator NoticeEvent.TrialEnding(
+            Peal.NoticeEventTrialEnding value
+        ) => new(value);
+    }
+
+    /// <summary>
+    /// Discriminated union type for SubscriptionRenewing
+    /// </summary>
+    [Serializable]
+    public struct SubscriptionRenewing
+    {
+        public SubscriptionRenewing(Peal.NoticeEventSubscriptionRenewing value)
+        {
+            Value = value;
+        }
+
+        internal Peal.NoticeEventSubscriptionRenewing Value { get; set; }
+
+        public override string ToString() => Value.ToString() ?? "null";
+
+        public static implicit operator NoticeEvent.SubscriptionRenewing(
+            Peal.NoticeEventSubscriptionRenewing value
+        ) => new(value);
+    }
+
+    /// <summary>
+    /// Discriminated union type for SubscriptionCancelled
+    /// </summary>
+    [Serializable]
+    public struct SubscriptionCancelled
+    {
+        public SubscriptionCancelled(Peal.NoticeEventSubscriptionCancelled value)
+        {
+            Value = value;
+        }
+
+        internal Peal.NoticeEventSubscriptionCancelled Value { get; set; }
+
+        public override string ToString() => Value.ToString() ?? "null";
+
+        public static implicit operator NoticeEvent.SubscriptionCancelled(
+            Peal.NoticeEventSubscriptionCancelled value
+        ) => new(value);
+    }
+
+    /// <summary>
+    /// Discriminated union type for SubscriptionWithdrawn
+    /// </summary>
+    [Serializable]
+    public struct SubscriptionWithdrawn
+    {
+        public SubscriptionWithdrawn(Peal.NoticeEventSubscriptionWithdrawn value)
+        {
+            Value = value;
+        }
+
+        internal Peal.NoticeEventSubscriptionWithdrawn Value { get; set; }
+
+        public override string ToString() => Value.ToString() ?? "null";
+
+        public static implicit operator NoticeEvent.SubscriptionWithdrawn(
+            Peal.NoticeEventSubscriptionWithdrawn value
         ) => new(value);
     }
 }

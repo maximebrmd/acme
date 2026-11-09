@@ -7,13 +7,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 public final class FailureReason {
-    public static final FailureReason TOKEN_EXPIRED = new FailureReason(Value.TOKEN_EXPIRED, "tokenExpired");
-
-    public static final FailureReason APP_NOT_AUDITED = new FailureReason(Value.APP_NOT_AUDITED, "appNotAudited");
-
     public static final FailureReason CONTENT_REJECTED = new FailureReason(Value.CONTENT_REJECTED, "contentRejected");
-
-    public static final FailureReason CHANNEL_DISABLED = new FailureReason(Value.CHANNEL_DISABLED, "channelDisabled");
 
     public static final FailureReason NOT_PUBLISHED = new FailureReason(Value.NOT_PUBLISHED, "notPublished");
 
@@ -21,16 +15,24 @@ public final class FailureReason {
 
     public static final FailureReason UNAVAILABLE = new FailureReason(Value.UNAVAILABLE, "unavailable");
 
+    public static final FailureReason MISSED = new FailureReason(Value.MISSED, "missed");
+
+    public static final FailureReason MEDIA_REJECTED = new FailureReason(Value.MEDIA_REJECTED, "mediaRejected");
+
+    public static final FailureReason TOKEN_EXPIRED = new FailureReason(Value.TOKEN_EXPIRED, "tokenExpired");
+
+    public static final FailureReason APP_NOT_AUDITED = new FailureReason(Value.APP_NOT_AUDITED, "appNotAudited");
+
+    public static final FailureReason CHANNEL_DISABLED = new FailureReason(Value.CHANNEL_DISABLED, "channelDisabled");
+
     public static final FailureReason CHANNEL_DISCONNECTED =
             new FailureReason(Value.CHANNEL_DISCONNECTED, "channelDisconnected");
 
     public static final FailureReason QUOTA_EXCEEDED = new FailureReason(Value.QUOTA_EXCEEDED, "quotaExceeded");
 
-    public static final FailureReason MISSED = new FailureReason(Value.MISSED, "missed");
-
     public static final FailureReason RATE_LIMITED = new FailureReason(Value.RATE_LIMITED, "rateLimited");
 
-    public static final FailureReason MEDIA_REJECTED = new FailureReason(Value.MEDIA_REJECTED, "mediaRejected");
+    public static final FailureReason APP_BILLING_LIMIT = new FailureReason(Value.APP_BILLING_LIMIT, "appBillingLimit");
 
     private final Value value;
 
@@ -64,30 +66,32 @@ public final class FailureReason {
 
     public <T> T visit(Visitor<T> visitor) {
         switch (value) {
-            case TOKEN_EXPIRED:
-                return visitor.visitTokenExpired();
-            case APP_NOT_AUDITED:
-                return visitor.visitAppNotAudited();
             case CONTENT_REJECTED:
                 return visitor.visitContentRejected();
-            case CHANNEL_DISABLED:
-                return visitor.visitChannelDisabled();
             case NOT_PUBLISHED:
                 return visitor.visitNotPublished();
             case MEDIA_REMOVED:
                 return visitor.visitMediaRemoved();
             case UNAVAILABLE:
                 return visitor.visitUnavailable();
+            case MISSED:
+                return visitor.visitMissed();
+            case MEDIA_REJECTED:
+                return visitor.visitMediaRejected();
+            case TOKEN_EXPIRED:
+                return visitor.visitTokenExpired();
+            case APP_NOT_AUDITED:
+                return visitor.visitAppNotAudited();
+            case CHANNEL_DISABLED:
+                return visitor.visitChannelDisabled();
             case CHANNEL_DISCONNECTED:
                 return visitor.visitChannelDisconnected();
             case QUOTA_EXCEEDED:
                 return visitor.visitQuotaExceeded();
-            case MISSED:
-                return visitor.visitMissed();
             case RATE_LIMITED:
                 return visitor.visitRateLimited();
-            case MEDIA_REJECTED:
-                return visitor.visitMediaRejected();
+            case APP_BILLING_LIMIT:
+                return visitor.visitAppBillingLimit();
             case UNKNOWN:
             default:
                 return visitor.visitUnknown(string);
@@ -97,30 +101,32 @@ public final class FailureReason {
     @JsonCreator(mode = JsonCreator.Mode.DELEGATING)
     public static FailureReason valueOf(String value) {
         switch (value) {
-            case "tokenExpired":
-                return TOKEN_EXPIRED;
-            case "appNotAudited":
-                return APP_NOT_AUDITED;
             case "contentRejected":
                 return CONTENT_REJECTED;
-            case "channelDisabled":
-                return CHANNEL_DISABLED;
             case "notPublished":
                 return NOT_PUBLISHED;
             case "mediaRemoved":
                 return MEDIA_REMOVED;
             case "unavailable":
                 return UNAVAILABLE;
+            case "missed":
+                return MISSED;
+            case "mediaRejected":
+                return MEDIA_REJECTED;
+            case "tokenExpired":
+                return TOKEN_EXPIRED;
+            case "appNotAudited":
+                return APP_NOT_AUDITED;
+            case "channelDisabled":
+                return CHANNEL_DISABLED;
             case "channelDisconnected":
                 return CHANNEL_DISCONNECTED;
             case "quotaExceeded":
                 return QUOTA_EXCEEDED;
-            case "missed":
-                return MISSED;
             case "rateLimited":
                 return RATE_LIMITED;
-            case "mediaRejected":
-                return MEDIA_REJECTED;
+            case "appBillingLimit":
+                return APP_BILLING_LIMIT;
             default:
                 return new FailureReason(Value.UNKNOWN, value);
         }
@@ -151,6 +157,8 @@ public final class FailureReason {
 
         QUOTA_EXCEEDED,
 
+        APP_BILLING_LIMIT,
+
         UNKNOWN
     }
 
@@ -178,6 +186,8 @@ public final class FailureReason {
         T visitAppNotAudited();
 
         T visitQuotaExceeded();
+
+        T visitAppBillingLimit();
 
         T visitUnknown(String unknownType);
     }

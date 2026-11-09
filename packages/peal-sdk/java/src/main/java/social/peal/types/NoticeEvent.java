@@ -46,6 +46,26 @@ public final class NoticeEvent {
         return new NoticeEvent(new ChannelReconnectSoonValue(value));
     }
 
+    public static NoticeEvent subscriptionStarted(NoticeEventSubscriptionStarted value) {
+        return new NoticeEvent(new SubscriptionStartedValue(value));
+    }
+
+    public static NoticeEvent trialEnding(NoticeEventTrialEnding value) {
+        return new NoticeEvent(new TrialEndingValue(value));
+    }
+
+    public static NoticeEvent subscriptionRenewing(NoticeEventSubscriptionRenewing value) {
+        return new NoticeEvent(new SubscriptionRenewingValue(value));
+    }
+
+    public static NoticeEvent subscriptionCancelled(NoticeEventSubscriptionCancelled value) {
+        return new NoticeEvent(new SubscriptionCancelledValue(value));
+    }
+
+    public static NoticeEvent subscriptionWithdrawn(NoticeEventSubscriptionWithdrawn value) {
+        return new NoticeEvent(new SubscriptionWithdrawnValue(value));
+    }
+
     public boolean isPostPublished() {
         return value instanceof PostPublishedValue;
     }
@@ -64,6 +84,26 @@ public final class NoticeEvent {
 
     public boolean isChannelReconnectSoon() {
         return value instanceof ChannelReconnectSoonValue;
+    }
+
+    public boolean isSubscriptionStarted() {
+        return value instanceof SubscriptionStartedValue;
+    }
+
+    public boolean isTrialEnding() {
+        return value instanceof TrialEndingValue;
+    }
+
+    public boolean isSubscriptionRenewing() {
+        return value instanceof SubscriptionRenewingValue;
+    }
+
+    public boolean isSubscriptionCancelled() {
+        return value instanceof SubscriptionCancelledValue;
+    }
+
+    public boolean isSubscriptionWithdrawn() {
+        return value instanceof SubscriptionWithdrawnValue;
     }
 
     public boolean _isUnknown() {
@@ -101,6 +141,41 @@ public final class NoticeEvent {
     public Optional<NoticeEventChannelReconnectSoon> getChannelReconnectSoon() {
         if (isChannelReconnectSoon()) {
             return Optional.of(((ChannelReconnectSoonValue) value).value);
+        }
+        return Optional.empty();
+    }
+
+    public Optional<NoticeEventSubscriptionStarted> getSubscriptionStarted() {
+        if (isSubscriptionStarted()) {
+            return Optional.of(((SubscriptionStartedValue) value).value);
+        }
+        return Optional.empty();
+    }
+
+    public Optional<NoticeEventTrialEnding> getTrialEnding() {
+        if (isTrialEnding()) {
+            return Optional.of(((TrialEndingValue) value).value);
+        }
+        return Optional.empty();
+    }
+
+    public Optional<NoticeEventSubscriptionRenewing> getSubscriptionRenewing() {
+        if (isSubscriptionRenewing()) {
+            return Optional.of(((SubscriptionRenewingValue) value).value);
+        }
+        return Optional.empty();
+    }
+
+    public Optional<NoticeEventSubscriptionCancelled> getSubscriptionCancelled() {
+        if (isSubscriptionCancelled()) {
+            return Optional.of(((SubscriptionCancelledValue) value).value);
+        }
+        return Optional.empty();
+    }
+
+    public Optional<NoticeEventSubscriptionWithdrawn> getSubscriptionWithdrawn() {
+        if (isSubscriptionWithdrawn()) {
+            return Optional.of(((SubscriptionWithdrawnValue) value).value);
         }
         return Optional.empty();
     }
@@ -144,6 +219,16 @@ public final class NoticeEvent {
 
         T visitChannelReconnectSoon(NoticeEventChannelReconnectSoon channelReconnectSoon);
 
+        T visitSubscriptionStarted(NoticeEventSubscriptionStarted subscriptionStarted);
+
+        T visitTrialEnding(NoticeEventTrialEnding trialEnding);
+
+        T visitSubscriptionRenewing(NoticeEventSubscriptionRenewing subscriptionRenewing);
+
+        T visitSubscriptionCancelled(NoticeEventSubscriptionCancelled subscriptionCancelled);
+
+        T visitSubscriptionWithdrawn(NoticeEventSubscriptionWithdrawn subscriptionWithdrawn);
+
         T _visitUnknown(Object unknownType);
     }
 
@@ -153,7 +238,12 @@ public final class NoticeEvent {
         @JsonSubTypes.Type(PostFailedValue.class),
         @JsonSubTypes.Type(PostUnconfirmedValue.class),
         @JsonSubTypes.Type(ChannelReconnectRequiredValue.class),
-        @JsonSubTypes.Type(ChannelReconnectSoonValue.class)
+        @JsonSubTypes.Type(ChannelReconnectSoonValue.class),
+        @JsonSubTypes.Type(SubscriptionStartedValue.class),
+        @JsonSubTypes.Type(TrialEndingValue.class),
+        @JsonSubTypes.Type(SubscriptionRenewingValue.class),
+        @JsonSubTypes.Type(SubscriptionCancelledValue.class),
+        @JsonSubTypes.Type(SubscriptionWithdrawnValue.class)
     })
     @JsonIgnoreProperties(ignoreUnknown = true)
     private interface Value {
@@ -346,6 +436,206 @@ public final class NoticeEvent {
         }
 
         private boolean equalTo(ChannelReconnectSoonValue other) {
+            return value.equals(other.value);
+        }
+
+        @java.lang.Override
+        public int hashCode() {
+            return Objects.hash(this.value);
+        }
+
+        @java.lang.Override
+        public String toString() {
+            return "NoticeEvent{" + "value: " + value + "}";
+        }
+    }
+
+    @JsonTypeName("SubscriptionStarted")
+    @JsonIgnoreProperties("_tag")
+    private static final class SubscriptionStartedValue implements Value {
+        @JsonUnwrapped
+        @JsonIgnoreProperties(value = "_tag", allowSetters = true)
+        private NoticeEventSubscriptionStarted value;
+
+        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+        private SubscriptionStartedValue() {}
+
+        private SubscriptionStartedValue(NoticeEventSubscriptionStarted value) {
+            this.value = value;
+        }
+
+        @java.lang.Override
+        public <T> T visit(Visitor<T> visitor) {
+            return visitor.visitSubscriptionStarted(value);
+        }
+
+        @java.lang.Override
+        public boolean equals(Object other) {
+            if (this == other) return true;
+            return other instanceof SubscriptionStartedValue && equalTo((SubscriptionStartedValue) other);
+        }
+
+        private boolean equalTo(SubscriptionStartedValue other) {
+            return value.equals(other.value);
+        }
+
+        @java.lang.Override
+        public int hashCode() {
+            return Objects.hash(this.value);
+        }
+
+        @java.lang.Override
+        public String toString() {
+            return "NoticeEvent{" + "value: " + value + "}";
+        }
+    }
+
+    @JsonTypeName("TrialEnding")
+    @JsonIgnoreProperties("_tag")
+    private static final class TrialEndingValue implements Value {
+        @JsonUnwrapped
+        @JsonIgnoreProperties(value = "_tag", allowSetters = true)
+        private NoticeEventTrialEnding value;
+
+        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+        private TrialEndingValue() {}
+
+        private TrialEndingValue(NoticeEventTrialEnding value) {
+            this.value = value;
+        }
+
+        @java.lang.Override
+        public <T> T visit(Visitor<T> visitor) {
+            return visitor.visitTrialEnding(value);
+        }
+
+        @java.lang.Override
+        public boolean equals(Object other) {
+            if (this == other) return true;
+            return other instanceof TrialEndingValue && equalTo((TrialEndingValue) other);
+        }
+
+        private boolean equalTo(TrialEndingValue other) {
+            return value.equals(other.value);
+        }
+
+        @java.lang.Override
+        public int hashCode() {
+            return Objects.hash(this.value);
+        }
+
+        @java.lang.Override
+        public String toString() {
+            return "NoticeEvent{" + "value: " + value + "}";
+        }
+    }
+
+    @JsonTypeName("SubscriptionRenewing")
+    @JsonIgnoreProperties("_tag")
+    private static final class SubscriptionRenewingValue implements Value {
+        @JsonUnwrapped
+        @JsonIgnoreProperties(value = "_tag", allowSetters = true)
+        private NoticeEventSubscriptionRenewing value;
+
+        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+        private SubscriptionRenewingValue() {}
+
+        private SubscriptionRenewingValue(NoticeEventSubscriptionRenewing value) {
+            this.value = value;
+        }
+
+        @java.lang.Override
+        public <T> T visit(Visitor<T> visitor) {
+            return visitor.visitSubscriptionRenewing(value);
+        }
+
+        @java.lang.Override
+        public boolean equals(Object other) {
+            if (this == other) return true;
+            return other instanceof SubscriptionRenewingValue && equalTo((SubscriptionRenewingValue) other);
+        }
+
+        private boolean equalTo(SubscriptionRenewingValue other) {
+            return value.equals(other.value);
+        }
+
+        @java.lang.Override
+        public int hashCode() {
+            return Objects.hash(this.value);
+        }
+
+        @java.lang.Override
+        public String toString() {
+            return "NoticeEvent{" + "value: " + value + "}";
+        }
+    }
+
+    @JsonTypeName("SubscriptionCancelled")
+    @JsonIgnoreProperties("_tag")
+    private static final class SubscriptionCancelledValue implements Value {
+        @JsonUnwrapped
+        @JsonIgnoreProperties(value = "_tag", allowSetters = true)
+        private NoticeEventSubscriptionCancelled value;
+
+        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+        private SubscriptionCancelledValue() {}
+
+        private SubscriptionCancelledValue(NoticeEventSubscriptionCancelled value) {
+            this.value = value;
+        }
+
+        @java.lang.Override
+        public <T> T visit(Visitor<T> visitor) {
+            return visitor.visitSubscriptionCancelled(value);
+        }
+
+        @java.lang.Override
+        public boolean equals(Object other) {
+            if (this == other) return true;
+            return other instanceof SubscriptionCancelledValue && equalTo((SubscriptionCancelledValue) other);
+        }
+
+        private boolean equalTo(SubscriptionCancelledValue other) {
+            return value.equals(other.value);
+        }
+
+        @java.lang.Override
+        public int hashCode() {
+            return Objects.hash(this.value);
+        }
+
+        @java.lang.Override
+        public String toString() {
+            return "NoticeEvent{" + "value: " + value + "}";
+        }
+    }
+
+    @JsonTypeName("SubscriptionWithdrawn")
+    @JsonIgnoreProperties("_tag")
+    private static final class SubscriptionWithdrawnValue implements Value {
+        @JsonUnwrapped
+        @JsonIgnoreProperties(value = "_tag", allowSetters = true)
+        private NoticeEventSubscriptionWithdrawn value;
+
+        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+        private SubscriptionWithdrawnValue() {}
+
+        private SubscriptionWithdrawnValue(NoticeEventSubscriptionWithdrawn value) {
+            this.value = value;
+        }
+
+        @java.lang.Override
+        public <T> T visit(Visitor<T> visitor) {
+            return visitor.visitSubscriptionWithdrawn(value);
+        }
+
+        @java.lang.Override
+        public boolean equals(Object other) {
+            if (this == other) return true;
+            return other instanceof SubscriptionWithdrawnValue && equalTo((SubscriptionWithdrawnValue) other);
+        }
+
+        private boolean equalTo(SubscriptionWithdrawnValue other) {
             return value.equals(other.value);
         }
 

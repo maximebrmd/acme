@@ -7,7 +7,12 @@ export type NoticeEvent =
     | Peal.NoticeEvent.PostFailed
     | Peal.NoticeEvent.PostUnconfirmed
     | Peal.NoticeEvent.ChannelReconnectRequired
-    | Peal.NoticeEvent.ChannelReconnectSoon;
+    | Peal.NoticeEvent.ChannelReconnectSoon
+    | Peal.NoticeEvent.SubscriptionStarted
+    | Peal.NoticeEvent.TrialEnding
+    | Peal.NoticeEvent.SubscriptionRenewing
+    | Peal.NoticeEvent.SubscriptionCancelled
+    | Peal.NoticeEvent.SubscriptionWithdrawn;
 
 export namespace NoticeEvent {
     export interface PostPublished extends Peal.NoticeEventPostPublished {
@@ -28,5 +33,25 @@ export namespace NoticeEvent {
 
     export interface ChannelReconnectSoon extends Peal.NoticeEventChannelReconnectSoon {
         _tag: "ChannelReconnectSoon";
+    }
+
+    export interface SubscriptionStarted extends Peal.NoticeEventSubscriptionStarted {
+        _tag: "SubscriptionStarted";
+    }
+
+    export interface TrialEnding extends Peal.NoticeEventTrialEnding {
+        _tag: "TrialEnding";
+    }
+
+    export interface SubscriptionRenewing extends Peal.NoticeEventSubscriptionRenewing {
+        _tag: "SubscriptionRenewing";
+    }
+
+    export interface SubscriptionCancelled extends Peal.NoticeEventSubscriptionCancelled {
+        _tag: "SubscriptionCancelled";
+    }
+
+    export interface SubscriptionWithdrawn extends Peal.NoticeEventSubscriptionWithdrawn {
+        _tag: "SubscriptionWithdrawn";
     }
 }
