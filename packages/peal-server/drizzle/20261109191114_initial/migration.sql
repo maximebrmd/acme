@@ -61,6 +61,16 @@ CREATE TABLE "assistant"."daily_usage" (
 	CONSTRAINT "daily_usage_requests" CHECK ("requests" >= 0)
 );
 --> statement-breakpoint
+CREATE TABLE "billing"."metered_posts" (
+	"month" date,
+	"platform" text,
+	"posts" integer NOT NULL,
+	"posts_with_links" integer NOT NULL,
+	"workspace_id" uuid,
+	CONSTRAINT "metered_posts_pkey" PRIMARY KEY("workspace_id","platform","month"),
+	CONSTRAINT "metered_posts_counts" CHECK ("posts_with_links" >= 0 AND "posts_with_links" <= "posts")
+);
+--> statement-breakpoint
 CREATE TABLE "billing"."stripe_events" (
 	"id" text PRIMARY KEY,
 	"received_at" timestamp with time zone NOT NULL

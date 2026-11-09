@@ -3,13 +3,16 @@ import { Context, DateTime, Effect, Layer, Option, Ref } from "effect";
 
 import { BillingOverview } from "#billing/application/billing-overview.ts";
 import { BillingRecords } from "#billing/application/billing-records.ts";
+import { MeteredPosts } from "#billing/application/metered-posts.ts";
 import { BillingMode } from "#billing/application/ports/billing-mode.ts";
 import { Checkouts } from "#billing/application/ports/checkouts.ts";
+import { MeteredPostLedger } from "#billing/application/ports/metered-post-ledger.ts";
 import { Subscriptions } from "#billing/application/ports/subscriptions.ts";
 import { WorkspaceUsage } from "#billing/application/ports/workspace-usage.ts";
 import { RecordSubscription } from "#billing/application/record-subscription.ts";
 import type { SubscriptionEvent } from "#billing/application/record-subscription.ts";
 import { WorkspaceEntitlements } from "#billing/application/workspace-entitlements.ts";
+import type { MeteredPostCount } from "#billing/domain/metered-posts.ts";
 import type { Subscription } from "#billing/domain/subscription.ts";
 import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 import { Actor } from "#shared/domain/access.ts";
@@ -253,11 +256,51 @@ const CheckoutsInMemory = Layer.effect(
   )
 );
 
+// The metered posts' counts in memory, by month and platform.
+const MeteredPostsInMemory = Layer.effect(
+  MeteredPostLedger,
+  Effect.gen(function* inMemory() {
+    const counts = yield* Ref.make<readonly MeteredPostCount[]>([]);
+
+    return MeteredPostLedger.of({
+      add: ({ month, platform, withLink }) =>
+        Ref.update(counts, (all) => {
+          const same = (count: MeteredPostCount) =>
+            count.platform === platform &&
+            DateTime.Equivalence(count.month, month);
+
+          const found = all.find(same) ?? {
+            month,
+            platform,
+            posts: 0,
+            postsWithLinks: 0,
+          };
+
+          return [
+            ...all.filter((count) => !same(count)),
+            {
+              ...found,
+              posts: found.posts + 1,
+              postsWithLinks: found.postsWithLinks + (withLink ? 1 : 0),
+            },
+          ];
+        }),
+      eraseWorkspace: () => Ref.set(counts, []),
+      ofWorkspace: () => Ref.get(counts),
+    });
+  })
+);
+
 // What billing keeps of a workspace, for its exports and erasures, on a
 // server that bills or not.
 const recordsWith = (enabled: boolean) =>
-  Layer.mergeAll(BillingRecords.layer, RecordSubscription.layer).pipe(
+  Layer.mergeAll(
+    BillingRecords.layer,
+    RecordSubscription.layer,
+    MeteredPosts.layer
+  ).pipe(
     Layer.provide(SubscriptionsInMemory),
+    Layer.provide(MeteredPostsInMemory),
     Layer.provide(TransactionsTest),
     Layer.provideMerge(CheckoutsInMemory),
     Layer.provide(Layer.succeed(BillingMode, BillingMode.of({ enabled })))
@@ -273,6 +316,52 @@ const erase = (options?: { readonly cancelSubscriptions: boolean }) =>
       .pipe(Effect.tap(() => records.eraseWorkspace(workspaceId)))
   );
 
+const november = DateTime.makeUnsafe("2026-11-01T00:00:00Z");
+
+layer(recordsWith(false))("posts on platforms that bill per post", (it) => {
+  it.effect(
+    "counts X's by month, those with a link apart, and nothing elsewhere",
+    () =>
+      Effect.gen(function* counts() {
+        const metered = yield* MeteredPosts;
+        const records = yield* BillingRecords;
+
+        const published = (
+          platform: "mastodon" | "x",
+          at: string,
+          withLink: boolean
+        ) =>
+          metered.published({
+            platform,
+            publishedAt: DateTime.makeUnsafe(at),
+            withLink,
+            workspaceId,
+          });
+
+        yield* published("x", "2026-11-09T10:00:00Z", false);
+        yield* published("x", "2026-11-30T23:59:59Z", true);
+        yield* published("mastodon", "2026-11-09T10:00:00Z", true);
+
+        const counted: readonly MeteredPostCount[] = [
+          { month: november, platform: "x", posts: 2, postsWithLinks: 1 },
+        ];
+
+        assert.deepStrictEqual(
+          yield* metered.ofWorkspace(workspaceId),
+          counted
+        );
+        assert.deepStrictEqual(
+          (yield* records.exportWorkspace(workspaceId)).meteredPosts,
+          counted
+        );
+
+        yield* erase();
+
+        assert.lengthOf(yield* metered.ofWorkspace(workspaceId), 0);
+      })
+  );
+});
+
 layer(recordsWith(true))("billing's records of a billed workspace", (it) => {
   it.effect(
     "hold its plan and subscriptions, and refuse to go while Stripe may bill it",
@@ -285,6 +374,7 @@ layer(recordsWith(true))("billing's records of a billed workspace", (it) => {
         );
 
         assert.deepStrictEqual(yield* records.exportWorkspace(workspaceId), {
+          meteredPosts: [],
           plan: "business",
           subscriptions: [
             {
@@ -339,6 +429,7 @@ layer(recordsWith(true))("billing's records of a billed workspace", (it) => {
         // Its open checkouts went first, so none starts another.
         assert.strictEqual(yield* Ref.get(log.expired), 1);
         assert.deepStrictEqual(yield* records.exportWorkspace(workspaceId), {
+          meteredPosts: [],
           plan: "free",
           subscriptions: [],
         });
@@ -496,6 +587,7 @@ layer(recordsWith(true))(
         yield* erase();
 
         assert.deepStrictEqual(yield* records.exportWorkspace(workspaceId), {
+          meteredPosts: [],
           plan: "free",
           subscriptions: [],
         });
@@ -535,6 +627,7 @@ const UnreadTest = Layer.mergeAll(
 ).pipe(
   Layer.provide(
     Layer.mergeAll(
+      MeteredPostsInMemory,
       Layer.succeed(BillingMode, BillingMode.of({ enabled: false })),
       Layer.succeed(
         Checkouts,

@@ -204,6 +204,14 @@ const PortsLive = Layer.mergeAll(
             analytics: [],
             assistantUsage: [{ day: "2026-11-09", requests: 3 }],
             billing: {
+              meteredPosts: [
+                {
+                  month: at,
+                  platform: "x",
+                  posts: 3,
+                  postsWithLinks: 1,
+                },
+              ],
               plan: "pro",
               subscriptions: [
                 {

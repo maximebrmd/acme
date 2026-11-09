@@ -106,6 +106,16 @@ export interface UsageRecord {
  * a server that does not bill.
  */
 export interface BillingRecord {
+  /**
+   * The posts it made on platforms that bill the server per post, and how
+   * many held a link, by month (its first instant).
+   */
+  readonly meteredPosts: readonly {
+    readonly month: DateTime.Utc;
+    readonly platform: string;
+    readonly posts: number;
+    readonly postsWithLinks: number;
+  }[];
   readonly plan: string | null;
   readonly subscriptions: readonly {
     readonly cancelAtPeriodEnd: boolean;

@@ -1,7 +1,12 @@
+import { sql } from "drizzle-orm";
 import {
   boolean,
+  check,
+  date,
   index,
+  integer,
   pgSchema,
+  primaryKey,
   text,
   timestamp,
   uuid,
@@ -46,3 +51,28 @@ export const stripeEvents = billing.table("stripe_events", {
   id: text("id").primaryKey(),
   receivedAt: instant("received_at").notNull(),
 });
+
+/**
+ * How many posts each workspace made on each platform that bills the
+ * server per post, by calendar month (UTC, its first day), and how many of
+ * them held a link: counts only, never a post. Publishing adds one in the
+ * transaction that settles each post that went out. Deleting a workspace
+ * deletes its rows.
+ */
+export const meteredPosts = billing.table(
+  "metered_posts",
+  {
+    month: date("month", { mode: "date" }).notNull(),
+    platform: text("platform").notNull(),
+    posts: integer("posts").notNull(),
+    postsWithLinks: integer("posts_with_links").notNull(),
+    workspaceId: uuid("workspace_id").notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.workspaceId, table.platform, table.month] }),
+    check(
+      "metered_posts_counts",
+      sql`${table.postsWithLinks} >= 0 AND ${table.postsWithLinks} <= ${table.posts}`
+    ),
+  ]
+);
