@@ -1,5 +1,8 @@
 import { apiKey } from "@better-auth/api-key";
-import { getCurrentAuthEndpointContext } from "@better-auth/core/context";
+import {
+  getCurrentAuthEndpointContext,
+  tryGetCurrentAuthEndpointContext,
+} from "@better-auth/core/context";
 import { drizzleAdapter } from "@better-auth/drizzle-adapter/relations-v2";
 import type { DrizzleAdapterConfig } from "@better-auth/drizzle-adapter/relations-v2";
 import { betterAuth } from "better-auth";
@@ -203,7 +206,14 @@ export const makeAuth = ({ database, hooks, settings }: AuthDependencies) =>
           inviter,
           organization: workspace,
         }) => {
-          const locale = localeOf(inviter.user);
+          // In the reader's language: the invitee's, when they have an
+          // account, otherwise the inviter's.
+          const invitee =
+            await tryGetCurrentAuthEndpointContext()?.context.internalAdapter.findUserByEmail(
+              email
+            );
+
+          const locale = localeOf(invitee?.user ?? inviter.user);
 
           hooks.invitation({
             inviterName: inviter.user.name,
@@ -213,8 +223,6 @@ export const makeAuth = ({ database, hooks, settings }: AuthDependencies) =>
             url: `${settings.publicUrl}${localePrefix(locale)}/invitations/${id}`,
             workspaceName: workspace.name,
           });
-
-          await Promise.resolve();
         },
       }),
       admin({ adminRoles: ["admin"], impersonationSessionDuration: oneHour }),

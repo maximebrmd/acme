@@ -10,6 +10,7 @@ import {
   emailTo,
   IntegrationLive,
   linkIn,
+  newEmail,
   signIn,
   signedUp,
   TestApp,
@@ -79,13 +80,38 @@ layer(IntegrationLive, { excludeTestServices: true, timeout: "180 seconds" })(
     );
 
     it.effect(
-      "invite people by email, in the inviter's language, with a role",
+      "invite people by email, in the reader's language, with a role",
       () =>
         Effect.gen(function* invites() {
           const app = yield* TestApp;
           const owner = yield* signedUp("camille", "fr");
           const workspaceId = yield* workspaceOf(owner, "Agence");
           const guest = yield* confirmedAccount("guest");
+
+          // Someone without an account reads the inviter's language.
+          const newcomer = newEmail("newcomer");
+
+          const toNewcomer = yield* app.request(
+            "/api/auth/organization/invite-member",
+            {
+              body: {
+                email: newcomer,
+                organizationId: workspaceId,
+                role: "editor",
+              },
+              headers: { cookie: owner.cookies },
+            }
+          );
+
+          assert.strictEqual(toNewcomer.status, 200);
+
+          const french = yield* emailTo(newcomer, /vous invite/u);
+
+          assert.strictEqual(
+            french.Subject,
+            "camille vous invite à rejoindre Agence sur Acme"
+          );
+          assert.match(linkIn(french).pathname, /^\/fr\/invitations\//u);
 
           const invited = yield* app.request(
             "/api/auth/organization/invite-member",
@@ -102,14 +128,15 @@ layer(IntegrationLive, { excludeTestServices: true, timeout: "180 seconds" })(
           assert.strictEqual(invited.status, 200);
 
           const { id } = yield* bodyOf(InvitationSchema, invited);
-          const message = yield* emailTo(guest.email, /vous invite/u);
+          const message = yield* emailTo(guest.email, /invited you/u);
 
+          // The guest's account is in English.
           assert.strictEqual(
             message.Subject,
-            "camille vous invite à rejoindre Agence sur Acme"
+            "camille invited you to Agence on Acme"
           );
-          assert.include(message.Text, "sur Acme en tant que lecteur.");
-          assert.strictEqual(linkIn(message).pathname, `/fr/invitations/${id}`);
+          assert.include(message.Text, "on Acme as a viewer.");
+          assert.strictEqual(linkIn(message).pathname, `/invitations/${id}`);
 
           const cookies = yield* signIn(guest.email);
 
