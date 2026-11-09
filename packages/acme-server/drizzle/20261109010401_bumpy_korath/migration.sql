@@ -1,1 +1,0 @@
-ALTER TABLE "publishing"."publication_calls" ADD CONSTRAINT "publication_calls_target_round_attempt" UNIQUE("target_id","round","attempt");

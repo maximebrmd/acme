@@ -2,11 +2,35 @@
   "type": "base",
   "version": "9",
   "dialect": "postgres",
-  "id": "b0c93e90-4d15-4de8-ad6f-1693c52d1af6",
+  "id": "32dd4239-64ed-4995-b9fd-59221deb850e",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
   "footprints": [
+    {
+      "statementType": "create_schema",
+      "statementTarget": [
+        "schema",
+        "media"
+      ],
+      "writes": [
+        "s|sch|media",
+        "n|sch|media",
+        "e|sch|media"
+      ]
+    },
+    {
+      "statementType": "create_schema",
+      "statementTarget": [
+        "schema",
+        "publishing"
+      ],
+      "writes": [
+        "s|sch|publishing",
+        "n|sch|publishing",
+        "e|sch|publishing"
+      ]
+    },
     {
       "statementType": "create_schema",
       "statementTarget": [
@@ -17,6 +41,104 @@
         "s|sch|auth",
         "n|sch|auth",
         "e|sch|auth"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "media",
+        "media_assets"
+      ],
+      "writes": [
+        "s|tbl|media.media_assets",
+        "n|tbl|media.media_assets",
+        "e|tbl|media.media_assets",
+        "n|rel|media.media_assets",
+        "n|type|media.media_assets",
+        "n|rel|media.media_assets_pkey",
+        "n|rel|media.media_assets_storage_key_key"
+      ],
+      "reads": [
+        "n|sch|media"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "publishing",
+        "post_targets"
+      ],
+      "writes": [
+        "s|tbl|publishing.post_targets",
+        "n|tbl|publishing.post_targets",
+        "e|tbl|publishing.post_targets",
+        "n|rel|publishing.post_targets",
+        "n|type|publishing.post_targets",
+        "n|rel|publishing.post_targets_pkey",
+        "n|rel|publishing.post_targets_post_channel"
+      ],
+      "reads": [
+        "n|sch|publishing"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "publishing",
+        "posts"
+      ],
+      "writes": [
+        "s|tbl|publishing.posts",
+        "n|tbl|publishing.posts",
+        "e|tbl|publishing.posts",
+        "n|rel|publishing.posts",
+        "n|type|publishing.posts",
+        "n|rel|publishing.posts_pkey"
+      ],
+      "reads": [
+        "n|sch|publishing"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "publishing",
+        "publication_attempts"
+      ],
+      "writes": [
+        "s|tbl|publishing.publication_attempts",
+        "n|tbl|publishing.publication_attempts",
+        "e|tbl|publishing.publication_attempts",
+        "n|rel|publishing.publication_attempts",
+        "n|type|publishing.publication_attempts",
+        "n|rel|publishing.publication_attempts_pkey"
+      ],
+      "reads": [
+        "n|sch|publishing"
+      ]
+    },
+    {
+      "statementType": "create_table",
+      "statementTarget": [
+        "table",
+        "publishing",
+        "publication_calls"
+      ],
+      "writes": [
+        "s|tbl|publishing.publication_calls",
+        "n|tbl|publishing.publication_calls",
+        "e|tbl|publishing.publication_calls",
+        "n|rel|publishing.publication_calls",
+        "n|type|publishing.publication_calls",
+        "n|rel|publishing.publication_calls_pkey",
+        "n|rel|publishing.publication_calls_target_round_attempt"
+      ],
+      "reads": [
+        "n|sch|publishing"
       ]
     },
     {
@@ -192,6 +314,47 @@
       ],
       "reads": [
         "n|sch|auth"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "media",
+        "media_assets",
+        "media_assets_workspace_id_index"
+      ],
+      "writes": [
+        "s|idx|media.media_assets_workspace_id_index",
+        "n|idx|media.media_assets_workspace_id_index",
+        "e|idx|media.media_assets_workspace_id_index",
+        "n|rel|media.media_assets_workspace_id_index"
+      ],
+      "reads": [
+        "n|tbl|media.media_assets",
+        "n|sch|media",
+        "n|col|media.media_assets.workspace_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "publishing",
+        "posts",
+        "posts_workspace_scheduled_at"
+      ],
+      "writes": [
+        "s|idx|publishing.posts_workspace_scheduled_at",
+        "n|idx|publishing.posts_workspace_scheduled_at",
+        "e|idx|publishing.posts_workspace_scheduled_at",
+        "n|rel|publishing.posts_workspace_scheduled_at"
+      ],
+      "reads": [
+        "n|tbl|publishing.posts",
+        "n|sch|publishing",
+        "n|col|publishing.posts.workspace_id",
+        "n|col|publishing.posts.scheduled_at"
       ]
     },
     {
@@ -418,6 +581,75 @@
       "statementType": "create_fk",
       "statementTarget": [
         "table",
+        "publishing",
+        "post_targets"
+      ],
+      "writes": [
+        "s|fk|publishing.post_targets.post_targets_post_id_posts_id_fkey",
+        "n|fk|publishing.post_targets.post_targets_post_id_posts_id_fkey",
+        "e|fk|publishing.post_targets.post_targets_post_id_posts_id_fkey",
+        "n|con|publishing.post_targets.post_targets_post_id_posts_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|publishing.post_targets",
+        "n|sch|publishing",
+        "n|tbl|publishing.posts",
+        "n|sch|publishing",
+        "n|col|publishing.post_targets.post_id",
+        "n|col|publishing.posts.id",
+        "e|uniqueness|publishing.posts.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "publishing",
+        "publication_attempts"
+      ],
+      "writes": [
+        "s|fk|publishing.publication_attempts.publication_attempts_target_id_post_targets_id_fkey",
+        "n|fk|publishing.publication_attempts.publication_attempts_target_id_post_targets_id_fkey",
+        "e|fk|publishing.publication_attempts.publication_attempts_target_id_post_targets_id_fkey",
+        "n|con|publishing.publication_attempts.publication_attempts_target_id_post_targets_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|publishing.publication_attempts",
+        "n|sch|publishing",
+        "n|tbl|publishing.post_targets",
+        "n|sch|publishing",
+        "n|col|publishing.publication_attempts.target_id",
+        "n|col|publishing.post_targets.id",
+        "e|uniqueness|publishing.post_targets.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
+        "publishing",
+        "publication_calls"
+      ],
+      "writes": [
+        "s|fk|publishing.publication_calls.publication_calls_target_id_post_targets_id_fkey",
+        "n|fk|publishing.publication_calls.publication_calls_target_id_post_targets_id_fkey",
+        "e|fk|publishing.publication_calls.publication_calls_target_id_post_targets_id_fkey",
+        "n|con|publishing.publication_calls.publication_calls_target_id_post_targets_id_fkey"
+      ],
+      "reads": [
+        "n|tbl|publishing.publication_calls",
+        "n|sch|publishing",
+        "n|tbl|publishing.post_targets",
+        "n|sch|publishing",
+        "n|col|publishing.publication_calls.target_id",
+        "n|col|publishing.post_targets.id",
+        "e|uniqueness|publishing.post_targets.id"
+      ]
+    },
+    {
+      "statementType": "create_fk",
+      "statementTarget": [
+        "table",
         "auth",
         "account"
       ],
@@ -555,8 +787,46 @@
   ],
   "ddl": [
     {
+      "name": "media",
+      "entityType": "schemas"
+    },
+    {
+      "name": "publishing",
+      "entityType": "schemas"
+    },
+    {
       "name": "auth",
       "entityType": "schemas"
+    },
+    {
+      "schema": "media",
+      "name": "media_assets",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "publishing",
+      "name": "post_targets",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "publishing",
+      "name": "posts",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "publishing",
+      "name": "publication_attempts",
+      "isRlsEnabled": false,
+      "entityType": "tables"
+    },
+    {
+      "schema": "publishing",
+      "name": "publication_calls",
+      "isRlsEnabled": false,
+      "entityType": "tables"
     },
     {
       "schema": "auth",
@@ -611,6 +881,734 @@
       "name": "verification",
       "isRlsEnabled": false,
       "entityType": "tables"
+    },
+    {
+      "schema": "media",
+      "table": "media_assets",
+      "name": "byte_size",
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "media",
+      "table": "media_assets",
+      "name": "codec",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "media",
+      "table": "media_assets",
+      "name": "content_type",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "media",
+      "table": "media_assets",
+      "name": "created_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "media",
+      "table": "media_assets",
+      "name": "duration_ms",
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "media",
+      "table": "media_assets",
+      "name": "height",
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "media",
+      "table": "media_assets",
+      "name": "id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "media",
+      "table": "media_assets",
+      "name": "multipart_part_size",
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "media",
+      "table": "media_assets",
+      "name": "multipart_upload_id",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "media",
+      "table": "media_assets",
+      "name": "rejection_reason",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "media",
+      "table": "media_assets",
+      "name": "status",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "media",
+      "table": "media_assets",
+      "name": "storage_key",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "media",
+      "table": "media_assets",
+      "name": "updated_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "media",
+      "table": "media_assets",
+      "name": "width",
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "media",
+      "table": "media_assets",
+      "name": "workspace_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "post_targets",
+      "name": "cancel_requested",
+      "type": "boolean",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "false",
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "post_targets",
+      "name": "channel_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "post_targets",
+      "name": "failure_code",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "post_targets",
+      "name": "failure_reason",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "post_targets",
+      "name": "finished_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "post_targets",
+      "name": "id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "post_targets",
+      "name": "permalink",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "post_targets",
+      "name": "platform_post_id",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "post_targets",
+      "name": "post_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "post_targets",
+      "name": "round",
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "1",
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "post_targets",
+      "name": "started_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "post_targets",
+      "name": "status",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "post_targets",
+      "name": "unconfirmed_reason",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "posts",
+      "name": "cancelled_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "posts",
+      "name": "execution_id",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "posts",
+      "name": "finished_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "posts",
+      "name": "id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "posts",
+      "name": "outcome",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "posts",
+      "name": "schedule_revision",
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "0",
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "posts",
+      "name": "schedule_zone",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "posts",
+      "name": "scheduled_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "posts",
+      "name": "started_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "posts",
+      "name": "status",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "posts",
+      "name": "workspace_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "publication_attempts",
+      "name": "attempt",
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "publication_attempts",
+      "name": "decision",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "publication_attempts",
+      "name": "detail",
+      "type": "jsonb",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "publication_attempts",
+      "name": "finished_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "publication_attempts",
+      "name": "outcome",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "publication_attempts",
+      "name": "retry_delay_millis",
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "publication_attempts",
+      "name": "round",
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "publication_attempts",
+      "name": "started_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "publication_attempts",
+      "name": "target_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "publication_calls",
+      "name": "attempt",
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "publication_calls",
+      "name": "finished_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "publication_calls",
+      "name": "idempotency_key",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "publication_calls",
+      "name": "operation",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "publication_calls",
+      "name": "outcome",
+      "type": "jsonb",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "publication_calls",
+      "name": "round",
+      "type": "integer",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "publication_calls",
+      "name": "started_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "publication_calls",
+      "name": "target_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
     },
     {
       "schema": "auth",
@@ -1731,6 +2729,55 @@
       "entityType": "columns"
     },
     {
+      "schema": "media",
+      "table": "media_assets",
+      "name": "media_assets_workspace_id_index",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "workspace_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "publishing",
+      "table": "posts",
+      "name": "posts_workspace_scheduled_at",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "workspace_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "scheduled_at",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
       "schema": "auth",
       "table": "account",
       "name": "account_userId_idx",
@@ -1962,6 +3009,57 @@
       "entityType": "indexes"
     },
     {
+      "schema": "publishing",
+      "table": "post_targets",
+      "name": "post_targets_post_id_posts_id_fkey",
+      "nameExplicit": false,
+      "columns": [
+        "post_id"
+      ],
+      "schemaTo": "publishing",
+      "tableTo": "posts",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "entityType": "fks"
+    },
+    {
+      "schema": "publishing",
+      "table": "publication_attempts",
+      "name": "publication_attempts_target_id_post_targets_id_fkey",
+      "nameExplicit": false,
+      "columns": [
+        "target_id"
+      ],
+      "schemaTo": "publishing",
+      "tableTo": "post_targets",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "entityType": "fks"
+    },
+    {
+      "schema": "publishing",
+      "table": "publication_calls",
+      "name": "publication_calls_target_id_post_targets_id_fkey",
+      "nameExplicit": false,
+      "columns": [
+        "target_id"
+      ],
+      "schemaTo": "publishing",
+      "tableTo": "post_targets",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "entityType": "fks"
+    },
+    {
       "schema": "auth",
       "table": "account",
       "name": "account_user_id_user_id_fkey",
@@ -2064,6 +3162,58 @@
       "entityType": "fks"
     },
     {
+      "schema": "publishing",
+      "table": "publication_attempts",
+      "name": "publication_attempts_pkey",
+      "columns": [
+        "target_id",
+        "round",
+        "attempt"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "media",
+      "table": "media_assets",
+      "name": "media_assets_pkey",
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "publishing",
+      "table": "post_targets",
+      "name": "post_targets_pkey",
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "publishing",
+      "table": "posts",
+      "name": "posts_pkey",
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
+      "schema": "publishing",
+      "table": "publication_calls",
+      "name": "publication_calls_pkey",
+      "columns": [
+        "idempotency_key"
+      ],
+      "nameExplicit": false,
+      "entityType": "pks"
+    },
+    {
       "schema": "auth",
       "table": "account",
       "name": "account_pkey",
@@ -2154,6 +3304,42 @@
       "entityType": "pks"
     },
     {
+      "schema": "publishing",
+      "table": "post_targets",
+      "name": "post_targets_post_channel",
+      "nameExplicit": true,
+      "columns": [
+        "post_id",
+        "channel_id"
+      ],
+      "nullsNotDistinct": false,
+      "entityType": "uniques"
+    },
+    {
+      "schema": "publishing",
+      "table": "publication_calls",
+      "name": "publication_calls_target_round_attempt",
+      "nameExplicit": true,
+      "columns": [
+        "target_id",
+        "round",
+        "attempt"
+      ],
+      "nullsNotDistinct": false,
+      "entityType": "uniques"
+    },
+    {
+      "schema": "media",
+      "table": "media_assets",
+      "name": "media_assets_storage_key_key",
+      "nameExplicit": false,
+      "columns": [
+        "storage_key"
+      ],
+      "nullsNotDistinct": false,
+      "entityType": "uniques"
+    },
+    {
       "schema": "auth",
       "table": "organization",
       "name": "organization_slug_key",
@@ -2196,6 +3382,34 @@
       ],
       "nullsNotDistinct": false,
       "entityType": "uniques"
+    },
+    {
+      "schema": "media",
+      "table": "media_assets",
+      "name": "media_assets_status",
+      "value": "\"status\" IN ('pending', 'uploaded', 'ready', 'rejected')",
+      "entityType": "checks"
+    },
+    {
+      "schema": "media",
+      "table": "media_assets",
+      "name": "media_assets_multipart_upload",
+      "value": "(\"multipart_upload_id\" IS NULL) = (\"multipart_part_size\" IS NULL) AND (\"multipart_upload_id\" IS NULL OR \"status\" = 'pending')",
+      "entityType": "checks"
+    },
+    {
+      "schema": "media",
+      "table": "media_assets",
+      "name": "media_assets_rejection_reason",
+      "value": "(\"rejection_reason\" IS NULL) = (\"status\" <> 'rejected')",
+      "entityType": "checks"
+    },
+    {
+      "schema": "media",
+      "table": "media_assets",
+      "name": "media_assets_dimensions",
+      "value": "(\"width\" IS NULL) = (\"height\" IS NULL)",
+      "entityType": "checks"
     }
   ]
 }

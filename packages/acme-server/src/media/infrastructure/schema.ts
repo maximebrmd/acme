@@ -4,11 +4,14 @@ import {
   check,
   index,
   integer,
-  pgTable,
+  pgSchema,
   text,
   timestamp,
   uuid,
 } from "drizzle-orm/pg-core";
+
+// Like every context, media keeps its tables in a Postgres schema of its own.
+export const media = pgSchema("media");
 
 const instant = (name: string) =>
   timestamp(name, { mode: "date", withTimezone: true });
@@ -16,7 +19,7 @@ const instant = (name: string) =>
 // One row per media asset. The status columns mirror MediaStatus: a pending
 // multipart upload keeps the store's upload id and part size, and a rejected
 // asset its reason. Metadata stays null until a probe finds it.
-export const mediaAssets = pgTable(
+export const mediaAssets = media.table(
   "media_assets",
   {
     byteSize: bigint("byte_size", { mode: "number" }).notNull(),
