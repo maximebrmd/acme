@@ -437,8 +437,6 @@ export class ConnectChannel extends Context.Service<
           account: AuthorizedAccount,
           connected: ConnectedAccount
         ) {
-          yield* roomForChannel(actor.workspaceId);
-
           const id = yield* newId(ChannelIdSchema).pipe(
             Effect.provideService(Ids, ids)
           );
@@ -460,7 +458,14 @@ export class ConnectChannel extends Context.Service<
             tokenServices
           );
 
-          yield* channels.insert(channel, credentials);
+          // Counted and added in turn with the workspace's other additions,
+          // so two at once never pass the plan's limit together.
+          yield* channels.addingTo(
+            actor.workspaceId,
+            roomForChannel(actor.workspaceId).pipe(
+              Effect.andThen(channels.insert(channel, credentials))
+            )
+          );
 
           return channel;
         }

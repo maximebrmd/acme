@@ -8,6 +8,7 @@ import {
   Option,
   Schema,
 } from "effect";
+import { SqlClient, SqlError } from "effect/sql";
 
 import { ChannelAlreadyConnected } from "#channels/application/channel-already-connected.ts";
 import { ChannelCredentials } from "#channels/application/channel-credentials.ts";
@@ -126,8 +127,24 @@ export const DrizzleChannelRepository = Layer.effect(
   ChannelRepository,
   Effect.gen(function* DrizzleChannelRepository() {
     const db = yield* Drizzle;
+    const client = yield* SqlClient.SqlClient;
 
     return ChannelRepository.of({
+      // A transaction's advisory lock, in the two-key form: the first key
+      // names what it guards, the second the workspace.
+      addingTo: (workspaceId, adding) =>
+        client
+          .withTransaction(
+            client`SELECT pg_advisory_xact_lock(hashtext('acme-server/channels/additions'), hashtext(${workspaceId}))`.pipe(
+              Effect.andThen(adding)
+            )
+          )
+          .pipe(
+            Effect.catchIf(SqlError.isSqlError, (failure) =>
+              Effect.fail(failed(failure))
+            ),
+            Effect.withSpan("ChannelRepository.addingTo")
+          ),
       credentials: (channelId) =>
         db
           .select({

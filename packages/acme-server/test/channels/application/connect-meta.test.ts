@@ -6,6 +6,7 @@ import {
   Layer,
   Option,
   Redacted,
+  Result,
   Schema,
 } from "effect";
 import { Mac, SecureRandom } from "effect/crypto";
@@ -679,6 +680,53 @@ layer(FreePlanMetaTest)("choosing Meta accounts on the free plan", (it) => {
           chosen.map(({ accountId }) => accountId),
           ["701", "702"]
         );
+        assert.lengthOf(yield* repository.list(workspaceId), 3);
+      })
+  );
+
+  it.effect(
+    "lets in no more channels than the plan allows when two choices are made at once",
+    () =>
+      Effect.gen(function* together() {
+        const meta = yield* FakeMeta;
+        const workspaceId = yield* freshWorkspace;
+        const connect = yield* ConnectChannel;
+        const repository = yield* ChannelRepository;
+
+        meta.setPages([page("801"), page("802")]);
+
+        const first = yield* signIn(workspaceId, "facebook").pipe(
+          Effect.flatMap(choiceOf)
+        );
+
+        const second = yield* signIn(workspaceId, "facebook").pipe(
+          Effect.flatMap(choiceOf)
+        );
+
+        for (const added of [1, 2]) {
+          const channel = yield* freshChannel(workspaceId, {
+            accountId: `synthetic-${added}`,
+          });
+
+          yield* repository.insert(channel, syntheticCredentials(channel));
+        }
+
+        // From two tabs: each finds room for one more before either adds.
+        const results = yield* Effect.all(
+          [
+            connect.choose(manager(workspaceId), "facebook", {
+              accountIds: ["801"],
+              selection: first.selection,
+            }),
+            connect.choose(manager(workspaceId), "facebook", {
+              accountIds: ["802"],
+              selection: second.selection,
+            }),
+          ].map(Effect.result),
+          { concurrency: "unbounded" }
+        );
+
+        assert.strictEqual(results.filter(Result.isSuccess).length, 1);
         assert.lengthOf(yield* repository.list(workspaceId), 3);
       })
   );

@@ -684,7 +684,9 @@ and no socket, for tests.
   repost adds nothing, as `countGoingOut` counts posts, not rounds),
   `AssistantAllowance`, and members in Better Auth's organization hooks
   (`workspace/infrastructure/auth/billing.ts`: pending invitations count when
-  inviting). A workspace over a smaller
+  inviting). Channels and posts are counted and added under a transaction's
+  advisory lock (`ChannelRepository.addingTo`, `PostRepository.claimMonth`),
+  so requests sent together never pass a limit. A workspace over a smaller
   plan's limits keeps what it has. Each context also counts for the billing
   page (`ChannelUsage`, `PostUsage`, `WorkspaceSeats`, `AssistantRequests`),
   so `BillingOverviewLive` is built after the contexts it reads.

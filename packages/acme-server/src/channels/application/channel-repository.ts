@@ -64,6 +64,15 @@ export class ChannelRepository extends Context.Service<
       readonly now: DateTime.Utc;
     }) => Effect.Effect<readonly Channel[], DatabaseError>;
     /**
+     * Runs `adding` in a transaction that holds back, until it ends, any
+     * other one adding a channel to the workspace: counting its channels,
+     * then adding one, takes turns.
+     */
+    readonly addingTo: <A, E, R>(
+      workspaceId: WorkspaceId,
+      adding: Effect.Effect<A, E, R>
+    ) => Effect.Effect<A, DatabaseError | E, R>;
+    /**
      * Saves a newly connected channel with its tokens. Fails with
      * ChannelAlreadyConnected, saving nothing, when the workspace already has
      * a channel for the account.
