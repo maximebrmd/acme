@@ -1,4 +1,11 @@
 ---
+# In check mode on a new server, the files that go in acme_root wait for the
+# folder: the tasks that write them skip until it exists.
+- name: Look for the Acme folder
+  ansible.builtin.stat:
+    path: "{{ acme_root }}"
+  register: acme_runtime_root
+
 - name: Create the Acme folders
   ansible.builtin.file:
     path: "{{ item }}"
@@ -46,7 +53,9 @@
     owner: root
     group: root
     mode: "0600"
-  when: acme_credentials is defined
+  when: >-
+    acme_credentials is defined
+    and (not ansible_check_mode or acme_runtime_root.stat.exists)
   no_log: true
 
 - name: Check for the credentials
@@ -95,6 +104,7 @@
     owner: root
     group: root
     mode: "0640"
+  when: not ansible_check_mode or acme_runtime_root.stat.exists
 
 # `sudo acme-compose ps`, `logs server`, `exec postgres psql --username acme`:
 # Compose on the release that runs, with its settings.

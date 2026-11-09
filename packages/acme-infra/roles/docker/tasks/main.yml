@@ -1,6 +1,11 @@
 ---
 # Docker Engine and Compose from Docker's repository: the stack needs Engine
 # 28 or later for image mounts, and Compose 2.35 or later.
+#
+# In check mode, a task that needs what an earlier one would make skips when
+# that one reports a change: on a new server, the repository waits for
+# python3-debian, apt cannot find Docker's packages before their repository
+# is added, and the daemon's folder and service come with the packages.
 - name: Create the apt keyrings folder
   ansible.builtin.file:
     path: /etc/apt/keyrings
@@ -13,6 +18,13 @@
     dest: /etc/apt/keyrings/docker.asc
     mode: "0644"
 
+# deb822_repository reads and writes sources with it, in check mode too.
+- name: Install what Docker's repository needs
+  ansible.builtin.apt:
+    name: python3-debian
+    state: present
+  register: docker_python_debian
+
 - name: Add Docker's apt repository
   ansible.builtin.deb822_repository:
     name: docker
@@ -21,18 +33,27 @@
     suites: ["{{ ansible_facts.distribution_release }}"]
     components: [stable]
     signed_by: /etc/apt/keyrings/docker.asc
+  register: docker_repository
+  when: not (ansible_check_mode and docker_python_debian is changed)
+
+- name: Look for Docker Engine
+  ansible.builtin.stat:
+    path: /usr/bin/dockerd
+  register: docker_engine
 
 - name: Install Docker Engine and Compose
   ansible.builtin.apt:
     name: [docker-ce, docker-ce-cli, containerd.io, docker-buildx-plugin, docker-compose-plugin]
     state: present
     update_cache: true
+  when: not (ansible_check_mode and (docker_repository is changed or docker_repository is skipped))
 
 - name: Configure the Docker daemon
   ansible.builtin.copy:
     dest: /etc/docker/daemon.json
     content: "{{ docker_daemon | to_nice_json }}\n"
     mode: "0644"
+  when: not ansible_check_mode or docker_engine.stat.exists
   notify: Restart Docker
 
 - name: Start Docker at boot
@@ -40,3 +61,4 @@
     name: docker
     state: started
     enabled: true
+  when: not ansible_check_mode or docker_engine.stat.exists

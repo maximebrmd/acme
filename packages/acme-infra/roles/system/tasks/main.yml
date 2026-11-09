@@ -85,6 +85,15 @@
     value: "10"
     sysctl_file: /etc/sysctl.d/60-swap.conf
 
+# Ubuntu ships no drop-in folder for journald. In check mode on a new
+# server, the file waits for it.
+- name: Create journald's drop-in folder
+  ansible.builtin.file:
+    path: /etc/systemd/journald.conf.d
+    state: directory
+    mode: "0755"
+  register: system_journald_folder
+
 - name: Cap the journal size
   ansible.builtin.copy:
     dest: /etc/systemd/journald.conf.d/50-size.conf
@@ -92,4 +101,5 @@
       [Journal]
       SystemMaxUse=500M
     mode: "0644"
+  when: not (ansible_check_mode and system_journald_folder is changed)
   notify: Restart journald
