@@ -65,7 +65,7 @@ While staff act as an account, the server records every request that changes som
 | Ids       | The ids the request named, by name (`postId`, `channelId`, `organizationId`); never the text, media or anything else it carried |
 | When      | When it was asked for                                                                                                           |
 
-Reads are not recorded. MCP clients, the command line and API keys never act for staff: their tokens carry no impersonation, and staff acting as an account may not let an application act for it or create a key.
+Reads are not recorded. MCP clients, the command line and API keys never act for staff: their tokens carry no impersonation, and staff acting as an account may not let an application act for it or create a key. A request to delete one of its workspaces or close the account is refused, so no subscription is cancelled, and recorded like any other change. These entries are kept 12 months, like the rest of the log.
 
 The log also records how each impersonation ended: **Stopped acting as the account** when staff stop it from the banner or sign out, and **Acting as the account ended, by the server** when the server ends it, as its staff member was banned, signed out everywhere or is no longer staff, or the account was banned or signed out everywhere. One that is never stopped ends an hour after it began, as its start in the log shows.
 

@@ -8,9 +8,12 @@ const now = DateTime.makeUnsafe("2026-11-09T03:00:00Z");
 const at = (iso: string) => DateTime.makeUnsafe(iso);
 
 describe(isExpired, () => {
-  it("keeps staff actions 12 months", () => {
+  it("keeps staff actions 12 months, impersonations' records included", () => {
     for (const action of [
       "impersonate",
+      "impersonatedChange",
+      "impersonationEnded",
+      "stopImpersonating",
       "revokeSessions",
       "resendVerification",
     ] as const) {

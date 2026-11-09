@@ -33,6 +33,8 @@ layer(RetentionTest)("the audit log's retention", (it) => {
           banForGood: ["ban", "1895-06-01", null],
           banRecent: ["ban", "1897-01-01", null],
           banStillRecent: ["ban", "1895-06-01", "1898-06-01"],
+          changedAsMember: ["impersonatedChange", "1897-12-01", null],
+          changedRecently: ["impersonatedChange", "1898-06-01", null],
           impersonated: ["impersonate", "1898-06-01", null],
           revoked: ["revokeSessions", "1897-12-01", null],
           unbanned: ["unban", "1895-06-01", null],
@@ -50,7 +52,7 @@ layer(RetentionTest)("the audit log's retention", (it) => {
         assert.strictEqual(
           (yield* expired.deleteBatch(auditCutoffs(now), 1)) +
             (yield* expired.deleteBatch(auditCutoffs(now), 500)),
-          4
+          5
         );
 
         const left = yield* sql<{ id: string }>`
@@ -58,9 +60,12 @@ layer(RetentionTest)("the audit log's retention", (it) => {
 
         assert.sameMembers(
           left.map(({ id }) => id),
-          ["banRecent", "banStillRecent", "impersonated"].map(
-            (name) => ids.get(name) ?? ""
-          )
+          [
+            "banRecent",
+            "banStillRecent",
+            "changedRecently",
+            "impersonated",
+          ].map((name) => ids.get(name) ?? "")
         );
 
         yield* sql`DELETE FROM staff.audit_events WHERE id IN ${sql.in([...ids.values()])}`;

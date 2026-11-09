@@ -65,7 +65,7 @@ Pendant que l’équipe agit à la place d’un compte, le serveur inscrit chaqu
 | Identifiants      | Les identifiants que nommait la requête, par leur nom (`postId`, `channelId`, `organizationId`) ; jamais le texte, les médias ni rien d’autre qu’elle portait |
 | Quand             | Le moment de la demande                                                                                                                                       |
 
-Les lectures ne sont pas inscrites. Les clients MCP, la ligne de commande et les clés d’API n’agissent jamais pour l’équipe : leurs jetons ne portent aucune substitution, et l’équipe qui agit à la place d’un compte ne peut ni laisser une application agir pour lui ni créer de clé.
+Les lectures ne sont pas inscrites. Les clients MCP, la ligne de commande et les clés d’API n’agissent jamais pour l’équipe : leurs jetons ne portent aucune substitution, et l’équipe qui agit à la place d’un compte ne peut ni laisser une application agir pour lui ni créer de clé. Une demande de suppression de l’un de ses espaces de travail ou de clôture du compte est refusée, si bien qu’aucun abonnement n’est résilié, et inscrite comme tout autre changement. Ces entrées sont gardées 12 mois, comme le reste du journal.
 
 Le journal inscrit aussi comment chaque substitution a pris fin : **A cessé d’agir à la place du compte** quand l’équipe y met fin depuis le bandeau ou se déconnecte, et **Le serveur a mis fin à la session à la place du compte** quand le serveur y met fin, parce que la personne de l’équipe a été bannie, déconnectée partout ou ne fait plus partie de l’équipe, ou parce que le compte a été banni ou déconnecté partout. Une substitution jamais arrêtée prend fin une heure après son début, que montre le journal.
 

@@ -279,6 +279,79 @@ layer(IntegrationLive, { excludeTestServices: true, timeout: "180 seconds" })(
         })
     );
 
+    it.effect(
+      "records staff asking to delete the workspace or close the account, and deletes nothing",
+      () =>
+        Effect.gen(function* deletions() {
+          const app = yield* TestApp;
+          const sql = yield* SqlClient.SqlClient;
+
+          const { actingAs, member, staff, staffCookies, workspaceId } =
+            yield* impersonation("deleting");
+
+          // Agreeing to end the subscription does not let staff delete:
+          // only the member, signed in as themselves, may.
+          const workspaceDeletion = yield* app.request(
+            `/api/workspaces/${workspaceId}`,
+            {
+              body: { cancelSubscriptions: true, name: "deleting" },
+              headers: { cookie: actingAs },
+              method: "DELETE",
+            }
+          );
+
+          assert.strictEqual(workspaceDeletion.status, 403);
+
+          const accountClosure = yield* app.request("/api/me", {
+            body: {
+              cancelSubscriptions: true,
+              password: "a synthetic guess",
+            },
+            headers: { cookie: actingAs },
+            method: "DELETE",
+          });
+
+          assert.strictEqual(accountClosure.status, 403);
+
+          const [kept] =
+            yield* sql`SELECT count(*)::int AS workspaces FROM auth.organization WHERE id = ${workspaceId}`.pipe(
+              Effect.flatMap(
+                Schema.decodeUnknownEffect(
+                  Schema.Tuple([Schema.Struct({ workspaces: Schema.Number })])
+                )
+              ),
+              Effect.orDie
+            );
+
+          assert.strictEqual(kept.workspaces, 1);
+
+          const { page, text } = yield* auditOf(member.id, staffCookies);
+
+          assert.deepStrictEqual(
+            page.items
+              .filter(ofAction("impersonatedChange"))
+              .map(({ operation, staffId, workspaceId: workspace }) => ({
+                operation,
+                staffId,
+                workspace,
+              })),
+            [
+              {
+                operation: "account.delete",
+                staffId: staff.id,
+                workspace: null,
+              },
+              {
+                operation: "workspaces.delete",
+                staffId: staff.id,
+                workspace: workspaceId,
+              },
+            ]
+          );
+          assert.notInclude(text, "a synthetic guess");
+        })
+    );
+
     it.effect("records the end of an impersonation staff stop", () =>
       Effect.gen(function* stops() {
         const app = yield* TestApp;
