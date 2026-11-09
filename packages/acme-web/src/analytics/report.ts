@@ -6,7 +6,7 @@ import type {
 } from "acme-contract";
 import { DateTime, Option, Schema } from "effect";
 
-import { addDays, dateKey, wallClockOf } from "#posts/zoned-time.ts";
+import { addDays, dateKey, wallClockOf, zoneOf } from "#posts/zoned-time.ts";
 import type { CalendarDate } from "#posts/zoned-time.ts";
 
 import type { SummaryRange } from "./api.ts";
@@ -19,6 +19,23 @@ export type Range = typeof RangeSchema.Type;
 export const ranges: readonly Range[] = RangeSchema.literals;
 
 export const defaultRange: Range = "30";
+
+// A zone the engine knows, as a summary's days can run in.
+const decodeZone = Schema.decodeUnknownOption(
+  Schema.String.check(
+    Schema.makeFilter((zone) => Option.isSome(zoneOf(zone)), {
+      expected: "a time zone",
+    })
+  )
+);
+
+/**
+ * The zone a summary's days run in: the browser's, or UTC when it names
+ * one that is not a zone, which the server would refuse. Engines answer
+ * "Etc/Unknown", or nothing at all, when they cannot tell.
+ */
+export const summaryTimeZone = (browserZone: string): string =>
+  decodeZone(browserZone).pipe(Option.getOrElse(() => "UTC"));
 
 /** The day it is in the zone now, or in UTC for a zone that is not one. */
 export const todayIn = (timeZone: string): CalendarDate =>
