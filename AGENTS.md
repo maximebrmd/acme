@@ -168,6 +168,7 @@ them:
 | `shared`        | the kernel the others build on                                              |
 | `analytics`     | the posts it follows, snapshots of their counts, the hourly collection      |
 | `billing`       | plans, subscriptions, entitlements, the billing page's usage                |
+| `staff`         | the staff console: what staff read and do, and the audit log of it          |
 
 - `domain`: entities and rules on Effect's core (`effect`: Schema, DateTime,
   Data). No HTTP, SQL, cluster, workflow, AI, Drizzle or Better Auth.
@@ -267,10 +268,28 @@ and no socket, for tests.
 - Map each use case error to a contract error. A failure of the server's own
   (the database, a bug) is a defect: 500. A handler that maps an outside
   failure to 503 logs it as a warning first.
-- Handler tests through `HttpApiTest.groups` provide `securityTest(member)` or
-  `anonymousSecurityTest` from `#workspace/api/security.ts`. The CLI's
-  in-memory test server (`packages/acme-cli/test/support.ts`) serves every
-  contract group: add new endpoints there too.
+- The staff console's group (`StaffApi`, under `/api/admin`) has
+  `StaffAccess` alone, in `WorkspaceGroupsLive`: staff in their own session,
+  from the session cookie read fresh, and a trusted `Origin` for writes.
+  Anyone else, an API key, an OAuth token or staff impersonating someone
+  included, gets 404 (`HttpApiError.NotFound`), never 401 or 403, so the
+  console never tells it is there. `StaffStanding` decides, from the role
+  and the ban the database holds now.
+- `POST /api/client-errors` (`ClientErrorsApi`, in `src/app/client-errors/`)
+  needs no credentials. `ClientErrorIntake` counts 30 reports a minute per
+  address (`AUTH_IP_HEADERS`, else the connection's), in this process, and
+  reads the body with a 16 KiB limit before it is decoded; the handler
+  replaces addresses, ids, keys, tokens and the queries of the links they
+  quote, drops control characters, logs at error level with OpenTelemetry's
+  attribute names (`event.name` `acme.client_error`) and counts in
+  `acme.client_errors`. Never log more of a report than its schema holds.
+- Handler tests through `HttpApiTest.groups` provide `securityTest(member)`,
+  `anonymousSecurityTest` or `staffSecurityTest(userId)` from
+  `#workspace/api/security.ts`: `HttpApiTest` serves every group, so each
+  provides every middleware (nobody is staff in the first two, and the
+  error report intake lets everything through). The CLI's in-memory test
+  server (`packages/acme-cli/test/support.ts`) serves every contract group:
+  add new endpoints there too.
 
 ### Accounts and access (workspace)
 
@@ -294,7 +313,17 @@ and no socket, for tests.
 - API keys belong to workspaces, never carry more than their creator holds,
   and are created only through `POST /api/workspaces/:workspaceId/api-keys`:
   Better Auth's own key routes are disabled.
-- Staff (Better Auth's admin role) may impersonate a member for an hour. They
+- Staff (Better Auth's admin role) act through the staff context's use
+  cases only (`StaffActions`): each checks `mayAct`
+  (`staff/domain/account-rules.ts`), records an `AuditEvent` in
+  `staff.audit_events`, then calls the admin plugin on the server with the
+  staff member's cookies (`AccountModeration`). The admin plugin's routes are
+  in `disabledPaths` but for `/admin/stop-impersonating`, which the
+  impersonation banner calls: add none back. The console reads accounts and
+  workspaces through `AccountDirectory`, each workspace's plan, channels and
+  posts through `WorkspaceEntitlements`, `ChannelOversight` and
+  `PostOversight`: metadata only, never a post's text or media.
+- Staff may impersonate a member for an hour. They
   then lose the permissions `withheldWhileImpersonating` lists
   (`workspace/domain/membership.ts`), and Better Auth refuses them every route
   that changes a workspace or the account (name, language, password,
@@ -309,7 +338,8 @@ and no socket, for tests.
   hands its records of a workspace or a user to the workspace context
   through an application port (`ChannelRecords`, `PostRecords`,
   `MediaRecords`, `NoticeRecords`, `UsageRecords`, `AnalyticsRecords`,
-  `BillingRecords`, in the shapes of `#shared/application/personal-data.ts`),
+  `BillingRecords`, `StaffRecords`, in the shapes of
+  `#shared/application/personal-data.ts`),
   which `ContextRecords` reaches. The rows go in one TransactionRunner
   transaction, Better Auth's included (the server's Drizzle on the `auth`
   tables, the Stripe plugin's `subscription` too), and the workspace's media
@@ -874,8 +904,8 @@ and no socket, for tests.
   SQL.
 - Each context keeps its tables in a Postgres schema named after it
   (`publishing`, `channels`, `media`, `notifications`, `assistant`,
-  `analytics`, `billing`; the workspace context's are Better Auth's, in
-  `auth`). Effect creates its `cluster_*` tables in `public`; drizzle-kit
+  `analytics`, `billing`, `staff`; the workspace context's are Better
+  Auth's, in `auth`). Effect creates its `cluster_*` tables in `public`; drizzle-kit
   never manages them.
 - Declare a context's tables in `src/<context>/infrastructure/schema.ts`, then
   run `nx run acme-server:db:generate`, which writes a migration folder under
@@ -938,7 +968,22 @@ self-hoster needs only Postgres and an S3-compatible store:
   a draft or a scheduled post in the composer, and shows a post that went
   out in `PostDetail` (each channel's status, attempts and reasons, with
   repost and confirm, and its analytics), `…/settings` (with `members`,
-  `invitations` and `api-keys`) and `…/billing`.
+  `invitations` and `api-keys`) and `…/billing`. The staff console is
+  `admin` (the system's health), `admin/users`, `admin/users/[userId]`,
+  `admin/workspaces`, `admin/workspaces/[workspaceId]` and `admin/audit`:
+  its layout and pages read the staff endpoints with the visitor's cookies
+  through `staffRead` (`#staff/server.ts`), which shows the not-found page
+  for any 404, and its actions are mutations from `#staff/atoms.ts`.
+  `ImpersonationBanner`, in `AppShell`, shows while staff act as someone.
+- The web app reports its errors to `POST /api/client-errors`:
+  `src/instrumentation-client.ts` (uncaught errors, unhandled rejections),
+  `app/[locale]/error.tsx` and `app/global-error.tsx` (the error pages, in
+  the reader's language), and `src/instrumentation.ts` (`onRequestError`).
+  Build reports with `reportOf` (`#errors/report.ts`), which cuts each field
+  to the contract's limits and keeps no query, id or address; browsers send
+  them without cookies, each error once, ten a page at most. The release
+  comes from `ACME_RELEASE`, through the locale layout's `acme-release`
+  meta tag.
 - Pages fetch through the client derived from `acme-contract`, with
   `@effect/atom-react`: query atoms come from `AcmeApi` in `src/api/client.ts`.
   Browsers call `/api`; server code calls `ACME_API_URL`.
@@ -1080,7 +1125,10 @@ self-hoster needs only Postgres and an S3-compatible store:
   `banner` or a named `navigation` when a name repeats.
 - Sign up a new synthetic user each run (`member+<uuid>@example.test`, from
   `credentials.member`), and read its emails through Mailpit's API
-  (`tests/support/mailpit.ts`).
+  (`tests/support/mailpit.ts`). Accounts a test acts on rather than as sign
+  up through the API with `confirmedAccount`, and `makeStaff`
+  (`tests/support/accounts.ts`) gives one the staff role in the database, as
+  self-hosters do; it signs in again afterwards.
 - No platform can be connected in a run, so a test that needs a channel
   inserts a synthetic one with `seedChannel` (`tests/support/channels.ts`).
   Update it when `channels.channels` changes. Publish nothing, and cancel any
@@ -1128,8 +1176,9 @@ self-hoster needs only Postgres and an S3-compatible store:
 
 - Production runs on a Hetzner server managed with Ansible from `acme-infra`,
   reachable only through a Cloudflare Tunnel: no inbound ports, SSH included.
-  Cloudflare Zero Trust Access guards Grafana, the admin and the sandbox, and
-  cloudflared checks the Access token on those routes too. Caddy fronts the
+  Cloudflare Zero Trust Access guards Grafana, the admin (`/api/auth/admin`,
+  the staff console's `/api/admin`, `/admin`, `/en/admin` and `/fr/admin`) and the
+  sandbox, and cloudflared checks the Access token on those routes too. Caddy fronts the
   stack for self-hosters.
 - Change the servers only through the playbooks in `packages/acme-infra`; SSH
   is for reading (`sudo acme-compose ps`). Run `site.yml` with `--check
@@ -1140,6 +1189,10 @@ self-hoster needs only Postgres and an S3-compatible store:
   there; Docker's own rules would otherwise bypass ufw.
 - Telemetry goes through an OpenTelemetry Collector to Loki, Tempo, Prometheus
   and Grafana; alerts go to a Telegram bot. A separate server checks uptime.
+  Grafana's alert rules (`config/production/grafana/alerting/rules.yaml`)
+  and dashboards (`config/production/grafana/dashboards/`) are provisioned
+  from `acme-docker`; the web app's error reports have an alert and a
+  dashboard of their own, and the server's error-log alert leaves them out.
 - Secrets are generated on the server and stay there. Do not copy them, print
   them, or give the server's credentials to other systems, GitHub included:
   `release.yml` builds the images on the machine running Ansible and uploads

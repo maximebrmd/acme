@@ -6,6 +6,7 @@ import { CaptchaHandlers } from "#workspace/api/captcha.ts";
 import { ConnectedAppsHandlers } from "#workspace/api/connected-apps.ts";
 import {
   AuthenticationLive,
+  StaffAccessLive,
   WorkspaceAccessLive,
 } from "#workspace/api/security.ts";
 import { SessionHandlers } from "#workspace/api/session.ts";
@@ -19,8 +20,10 @@ import { CloseAccount } from "#workspace/application/close-account.ts";
 import { ConnectedApps } from "#workspace/application/connected-apps.ts";
 import { DeleteWorkspace } from "#workspace/application/delete-workspace.ts";
 import { ResolveMember } from "#workspace/application/resolve-member.ts";
+import { StaffStanding } from "#workspace/application/staff-standing.ts";
 import { WorkspaceContacts } from "#workspace/application/workspace-contacts.ts";
 import { WorkspaceSeats } from "#workspace/application/workspace-seats.ts";
+import { AccountModerationLive } from "#workspace/infrastructure/auth/account-moderation.ts";
 import { ApiKeyIssuerLive } from "#workspace/infrastructure/auth/api-key-issuer.ts";
 import { BetterAuthLive } from "#workspace/infrastructure/auth/better-auth.ts";
 import { CaptchaChallengeLive } from "#workspace/infrastructure/auth/captcha-challenge.ts";
@@ -29,6 +32,7 @@ import { AuthGatewayLive } from "#workspace/infrastructure/auth/gateway.ts";
 import { PasswordCheckLive } from "#workspace/infrastructure/auth/password-check.ts";
 import { AuthSettings } from "#workspace/infrastructure/auth/settings.ts";
 import { ContextRecordsLive } from "#workspace/infrastructure/context-records.ts";
+import { AccountDirectoryLive } from "#workspace/infrastructure/drizzle-account-directory.ts";
 import { DrizzleAccountStore } from "#workspace/infrastructure/drizzle-account-store.ts";
 import { DrizzleConnectedAppStore } from "#workspace/infrastructure/drizzle-connected-app-store.ts";
 import { MemberDirectoryLive } from "#workspace/infrastructure/drizzle-member-directory.ts";
@@ -49,22 +53,33 @@ const UseCasesLive = Layer.mergeAll(
   ApiKeys.layer,
   Authenticate.layer,
   ResolveMember.layer,
+  StaffStanding.layer,
   WorkspaceContacts.layer,
   WorkspaceSeats.layer
+);
+
+// What the staff console reads of accounts and workspaces, and does to
+// accounts, which the staff context reaches through ports of its own.
+const StaffToolsLive = Layer.mergeAll(
+  AccountDirectoryLive,
+  AccountModerationLive
 );
 
 /**
  * The workspace context's services: Better Auth, configured from the
  * environment, with the command line's OAuth client registered, and the use
- * cases behind the API and the MCP endpoint. It needs the database,
- * migrated, the notifications context's SendAuthEmail, and the billing
- * context's WorkspaceEntitlements, RecordSubscription and BilledWorkspaces.
+ * cases behind the API and the MCP endpoint, with the accounts and
+ * workspaces the staff console reads and acts on (AccountDirectory,
+ * AccountModeration). It needs the database, migrated, the notifications
+ * context's SendAuthEmail, and the billing context's WorkspaceEntitlements,
+ * RecordSubscription and BilledWorkspaces.
  */
 export const WorkspaceLive = Layer.merge(
   UseCasesLive,
   CaptchaChallengeLive
 ).pipe(
   Layer.provide(AdaptersLive),
+  Layer.provideMerge(StaffToolsLive),
   Layer.provideMerge(BetterAuthLive),
   Layer.provideMerge(AuthSettings.layer)
 );
@@ -75,8 +90,8 @@ export const WorkspaceLive = Layer.merge(
  * and the applications acting for a user. Needs what WorkspaceLive provides,
  * the database, a TransactionRunner, and the other contexts' records
  * (ChannelRecords, PostRecords, MediaRecords, NoticeRecords, UsageRecords,
- * AnalyticsRecords, BillingRecords) and SendAuthEmail, which the
- * composition root brings.
+ * AnalyticsRecords, BillingRecords, StaffRecords) and SendAuthEmail, which
+ * the composition root brings.
  */
 export const WorkspaceSettingsLive = Layer.mergeAll(
   AccountData.layer,
@@ -98,8 +113,8 @@ export const WorkspaceSettingsLive = Layer.mergeAll(
 
 /**
  * The workspace endpoints, and the Authentication and WorkspaceAccess
- * middleware every workspace group of the API relies on. The settings'
- * endpoints need WorkspaceSettingsLive.
+ * middleware every workspace group of the API relies on, and StaffAccess,
+ * the staff console's. The settings' endpoints need WorkspaceSettingsLive.
  */
 export const WorkspaceApiLive = Layer.mergeAll(
   SessionHandlers,
@@ -109,7 +124,9 @@ export const WorkspaceApiLive = Layer.mergeAll(
   ConnectedAppsHandlers,
   CaptchaHandlers
 ).pipe(
-  Layer.provideMerge(Layer.mergeAll(AuthenticationLive, WorkspaceAccessLive))
+  Layer.provideMerge(
+    Layer.mergeAll(AuthenticationLive, StaffAccessLive, WorkspaceAccessLive)
+  )
 );
 
 /**

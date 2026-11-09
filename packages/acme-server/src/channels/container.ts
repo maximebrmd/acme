@@ -3,6 +3,7 @@ import { Digest, Mac, SecureRandom } from "effect/crypto";
 import { FetchHttpClient } from "effect/http";
 
 import { ChannelAccess } from "#channels/application/channel-access.ts";
+import { ChannelOversight } from "#channels/application/channel-oversight.ts";
 import { ChannelUsage } from "#channels/application/channel-usage.ts";
 import { ConnectChannel } from "#channels/application/connect-channel.ts";
 import { DeletePlatformUserData } from "#channels/application/delete-platform-user-data.ts";
@@ -65,6 +66,7 @@ const AdaptersLive = Layer.mergeAll(
 
 const UseCasesLive = Layer.mergeAll(
   ChannelAccess.layer,
+  ChannelOversight.layer,
   ListChannels.layer,
   DisconnectChannel.layer,
   ConnectChannel.layer,
@@ -77,7 +79,8 @@ const UseCasesLive = Layer.mergeAll(
 /**
  * The channels context's use cases, and the adapters behind its ports
  * (ChannelRepository, TokenCipher, ...), which its other use cases and
- * workers share, and ChannelRecords for the workspace context. Needs the
+ * workers share, ChannelRecords for the workspace context, and
+ * ChannelOversight for the staff console. Needs the
  * database (Drizzle and SqlClient), migrated, Ids, Dns, the notifications
  * context's Notify and the billing context's WorkspaceEntitlements.
  */

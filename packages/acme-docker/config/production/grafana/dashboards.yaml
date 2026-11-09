@@ -1,0 +1,15 @@
+# The dashboards Grafana shows, provisioned read-only from the files mounted
+# at /etc/grafana/dashboards (config/production/grafana/dashboards/).
+
+apiVersion: 1
+
+providers:
+  - name: acme
+    orgId: 1
+    folder: Acme
+    type: file
+    disableDeletion: true
+    allowUiUpdates: false
+    options:
+      path: /etc/grafana/dashboards
+      foldersFromFilesStructure: false

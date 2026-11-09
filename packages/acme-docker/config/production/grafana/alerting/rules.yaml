@@ -97,7 +97,9 @@ groups:
               refId: A
               queryType: instant
               # OTLP severity numbers 17 to 24 are errors and fatal errors.
-              expr: sum(count_over_time({service_name="acme-server"} | severity_number >= 17 [10m]))
+              # The web app's error reports, which the server logs at error
+              # level too, have an alert of their own below.
+              expr: sum(count_over_time({service_name="acme-server"} | severity_number >= 17 | event_name != "acme.client_error" [10m]))
           - refId: B
             datasourceUid: __expr__
             model:
@@ -108,6 +110,39 @@ groups:
                 - evaluator:
                     type: gt
                     params: [5]
+
+      - uid: acme-web-error-spike
+        title: The web app reports a spike of errors
+        condition: B
+        for: 0s
+        noDataState: OK
+        execErrState: Error
+        annotations:
+          summary: The web app reported more than 20 errors in 10 minutes, from browsers or its own server, those dropped for coming too fast included. Read them on the Acme dashboard's browser errors panels.
+        labels:
+          severity: warning
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange:
+              from: 600
+              to: 0
+            model:
+              refId: A
+              instant: true
+              # The server counts each report it logs (acme.client_errors)
+              # and each its intake drops (acme.client_errors.dropped).
+              expr: (sum(increase(acme_client_errors_total[10m])) or vector(0)) + (sum(increase(acme_client_errors_dropped_total[10m])) or vector(0))
+          - refId: B
+            datasourceUid: __expr__
+            model:
+              refId: B
+              type: threshold
+              expression: A
+              conditions:
+                - evaluator:
+                    type: gt
+                    params: [20]
 
       - uid: acme-backup-stale
         title: The database has no recent backup

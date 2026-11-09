@@ -1,0 +1,41 @@
+import { Layer } from "effect";
+
+import { StaffActions } from "#staff/application/staff-actions.ts";
+import { StaffConsole } from "#staff/application/staff-console.ts";
+import { AccountsModeration } from "#staff/infrastructure/account-moderation.ts";
+import { AccountStaffDirectory } from "#staff/infrastructure/account-staff-directory.ts";
+import { ContextSystemHealth } from "#staff/infrastructure/context-system-health.ts";
+import { ContextWorkspaceHealth } from "#staff/infrastructure/context-workspace-health.ts";
+import { DrizzleAuditLog } from "#staff/infrastructure/drizzle-audit-log.ts";
+
+const AdaptersLive = Layer.mergeAll(
+  AccountStaffDirectory,
+  AccountsModeration,
+  ContextSystemHealth,
+  ContextWorkspaceHealth,
+  DrizzleAuditLog
+);
+
+/**
+ * The staff console's use cases: what it reads (StaffConsole) and what staff
+ * do, recorded in the audit log (StaffActions). Needs the database (Drizzle
+ * and SqlClient), Ids, and what the other contexts hand staff: the
+ * workspace context's AccountDirectory and AccountModeration, billing's
+ * WorkspaceEntitlements, the channels' ChannelOversight and publishing's
+ * PostOversight, which the composition root brings.
+ */
+export const StaffLive = Layer.mergeAll(
+  StaffActions.layer,
+  StaffConsole.layer
+).pipe(Layer.provide(AdaptersLive));
+
+/**
+ * What the audit log keeps about a user, for the workspace context when
+ * their account is closed. Needs the database (Drizzle).
+ */
+export { DrizzleStaffRecords as StaffRecordsLive } from "#staff/infrastructure/drizzle-audit-log.ts";
+
+// The staff console's endpoints. They need the use cases StaffLive provides,
+// and the StaffAccess middleware of the workspace context, which the
+// composition root brings.
+export { StaffHandlers as StaffApiLive } from "#staff/api/staff.ts";

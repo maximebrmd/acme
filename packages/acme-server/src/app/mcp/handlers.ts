@@ -1,12 +1,12 @@
 import { CurrentMember } from "acme-contract";
 import { Array, Effect, Option } from "effect";
 
-import { makeDatabasePing } from "#app/database-ping.ts";
 import { ToolRefused } from "#app/mcp/tool-refused.ts";
 import { AcmeTools } from "#app/mcp/tools.ts";
 import { toChannelView } from "#channels/api/channel-view.ts";
 import { ListChannels } from "#channels/application/list-channels.ts";
 import { actorOf } from "#shared/api/actor.ts";
+import { makeDatabasePing } from "#shared/infrastructure/database-ping.ts";
 import { userPrincipalOf } from "#workspace/api/principal.ts";
 import { Accounts } from "#workspace/application/accounts.ts";
 

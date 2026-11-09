@@ -8,6 +8,7 @@ import { BillingApi } from "./billing.ts";
 import { CaptchaApi } from "./captcha.ts";
 import { ChannelOAuthApi } from "./channel-oauth.ts";
 import { ChannelsApi } from "./channels.ts";
+import { ClientErrorsApi } from "./client-errors.ts";
 import { ConnectedAppsApi } from "./connected-apps.ts";
 import { DataDeletionApi } from "./data-deletion.ts";
 import { MediaApi } from "./media.ts";
@@ -15,6 +16,7 @@ import { NoticesApi } from "./notices.ts";
 import { NotificationPreferencesApi } from "./notification-preferences.ts";
 import { PostsApi } from "./posts.ts";
 import { SessionApi } from "./session.ts";
+import { StaffApi } from "./staff.ts";
 import { SystemApi } from "./system.ts";
 import { TikTokApi } from "./tiktok.ts";
 import { WorkspacesApi } from "./workspaces.ts";
@@ -225,7 +227,25 @@ export { ConnectFailed, ConnectFailureReasonSchema } from "./connect-failed.ts";
 
 export type { ConnectFailureReason } from "./connect-failed.ts";
 
+export { ClientErrorIntake } from "./client-error-intake.ts";
+
+export { ClientErrorTooLarge } from "./client-error-too-large.ts";
+
+export {
+  clientErrorLimits,
+  ClientErrorKindSchema,
+  ClientErrorReportSchema,
+  ClientErrorsApi,
+  maxClientErrorBytes,
+} from "./client-errors.ts";
+
+export type { ClientErrorKind, ClientErrorReport } from "./client-errors.ts";
+
 export { CurrentMember } from "./current-member.ts";
+
+export { CurrentStaff } from "./current-staff.ts";
+
+export type { Staff } from "./current-staff.ts";
 
 export { CurrentPrincipal } from "./current-principal.ts";
 
@@ -463,6 +483,59 @@ export type { Me, Membership } from "./session.ts";
 
 export { ScheduleInPast } from "./schedule-in-past.ts";
 
+export {
+  maxStaffReasonLength,
+  StaffActionSchema,
+  StaffApi,
+  StaffAuditEventSchema,
+  StaffAuditPageSchema,
+  StaffBanPayloadSchema,
+  StaffChannelSchema,
+  StaffFailureSchema,
+  StaffPostCountsSchema,
+  staffPageSize,
+  StaffReasonPayloadSchema,
+  StaffReasonSchema,
+  StaffSessionSchema,
+  StaffSystemSchema,
+  StaffUserPageSchema,
+  StaffUserSchema,
+  StaffUserSummarySchema,
+  StaffWorkspacePageSchema,
+  StaffWorkspaceSchema,
+  StaffWorkspaceSummarySchema,
+} from "./staff.ts";
+
+export type {
+  StaffAction,
+  StaffAuditEvent,
+  StaffAuditPage,
+  StaffBanPayload,
+  StaffChannel,
+  StaffFailure,
+  StaffPostCounts,
+  StaffReasonPayload,
+  StaffSession,
+  StaffSystem,
+  StaffUser,
+  StaffUserPage,
+  StaffUserSummary,
+  StaffWorkspace,
+  StaffWorkspacePage,
+  StaffWorkspaceSummary,
+} from "./staff.ts";
+
+export { StaffAccess } from "./staff-access.ts";
+
+export {
+  StaffActionRefused,
+  StaffRefusalSchema,
+} from "./staff-action-refused.ts";
+
+export type { StaffRefusal } from "./staff-action-refused.ts";
+
+export { TooManyClientErrors } from "./too-many-client-errors.ts";
+
 export { Unauthenticated } from "./unauthenticated.ts";
 
 export { UnknownChannels } from "./unknown-channels.ts";
@@ -474,6 +547,8 @@ export { UnsupportedMediaType } from "./unsupported-media-type.ts";
 export { UploadIncomplete } from "./upload-incomplete.ts";
 
 export { UploadRejected } from "./upload-rejected.ts";
+
+export { UserNotFound } from "./user-not-found.ts";
 
 export { WorkspaceAccess } from "./workspace-access.ts";
 
@@ -501,4 +576,6 @@ export class Api extends HttpApi.make("acme")
   .add(CaptchaApi)
   .add(AnalyticsApi)
   .add(TikTokApi)
+  .add(StaffApi)
+  .add(ClientErrorsApi)
   .annotateMerge(OpenApi.annotations({ title: "Acme API" })) {}

@@ -12,6 +12,8 @@ CREATE SCHEMA "notifications";
 --> statement-breakpoint
 CREATE SCHEMA "publishing";
 --> statement-breakpoint
+CREATE SCHEMA "staff";
+--> statement-breakpoint
 CREATE SCHEMA "auth";
 --> statement-breakpoint
 CREATE TABLE "analytics"."metric_snapshots" (
@@ -272,6 +274,16 @@ CREATE TABLE "publishing"."upload_sessions" (
 	"opened_at" timestamp with time zone NOT NULL,
 	"session_url" text,
 	"video_id" text
+);
+--> statement-breakpoint
+CREATE TABLE "staff"."audit_events" (
+	"action" text NOT NULL,
+	"at" timestamp with time zone NOT NULL,
+	"ban_expires_at" timestamp with time zone,
+	"id" uuid PRIMARY KEY,
+	"reason" text,
+	"staff_id" uuid,
+	"target_id" uuid
 );
 --> statement-breakpoint
 CREATE TABLE "auth"."account" (
@@ -570,6 +582,9 @@ CREATE INDEX "notices_user_unread" ON "notifications"."notices" ("user_id") WHER
 CREATE INDEX "post_targets_published" ON "publishing"."post_targets" ("finished_at","id") WHERE "status" = 'published';--> statement-breakpoint
 CREATE INDEX "posts_workspace_scheduled_at" ON "publishing"."posts" ("workspace_id","scheduled_at");--> statement-breakpoint
 CREATE INDEX "posts_workspace_drafts" ON "publishing"."posts" ("workspace_id","id") WHERE "status" = 'draft';--> statement-breakpoint
+CREATE INDEX "audit_events_at" ON "staff"."audit_events" ("at","id");--> statement-breakpoint
+CREATE INDEX "audit_events_target" ON "staff"."audit_events" ("target_id","at");--> statement-breakpoint
+CREATE INDEX "audit_events_staff" ON "staff"."audit_events" ("staff_id");--> statement-breakpoint
 CREATE INDEX "account_userId_idx" ON "auth"."account" ("user_id");--> statement-breakpoint
 CREATE INDEX "apikey_configId_idx" ON "auth"."apikey" ("config_id");--> statement-breakpoint
 CREATE INDEX "apikey_referenceId_idx" ON "auth"."apikey" ("reference_id");--> statement-breakpoint

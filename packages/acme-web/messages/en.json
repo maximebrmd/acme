@@ -1139,5 +1139,241 @@
       "lastOwnerTitle": "These workspaces need another owner",
       "lastOwnerDescription": "You are the only owner of workspaces other members use. Make one of them an owner, or delete the workspace, then try again:"
     }
+  },
+  "Staff": {
+    "title": "Staff console",
+    "description": "Accounts, workspaces and the server's health, for the people who run it. Every action is recorded in the audit log.",
+    "signedInAs": "Staff: {email}",
+    "nav": {
+      "label": "Staff console",
+      "system": "System",
+      "users": "Accounts",
+      "workspaces": "Workspaces",
+      "audit": "Audit log"
+    },
+    "search": {
+      "submit": "Search",
+      "clear": "Clear"
+    },
+    "pager": {
+      "label": "Pages",
+      "previous": "Previous page",
+      "next": "Next page",
+      "position": "Page {page} of {pages}",
+      "total": "{total, plural, =0 {Nothing found} one {# result} other {# results}}"
+    },
+    "never": "Never",
+    "unknown": "Unknown",
+    "system": {
+      "title": "System",
+      "description": "Whether the server can take traffic, what it runs, and what needs a hand soon.",
+      "checkedAt": "Checked",
+      "database": "Database",
+      "ready": "Answers",
+      "notReady": "Does not answer",
+      "release": "Release",
+      "noRelease": "Not told",
+      "overdue": "Overdue posts",
+      "overdueHint": "Scheduled more than five minutes ago and not started: the job runner is behind or stopped.",
+      "dueTitle": "Posts due within the hour",
+      "dueTotal": "{total, plural, =0 {No post is due within the hour.} one {# post is due within the hour.} other {# posts are due within the hour.}}",
+      "dueColumns": {
+        "at": "Due",
+        "workspace": "Workspace",
+        "channels": "Channels"
+      },
+      "failingTitle": "Channels to reconnect",
+      "failingDescription": "Marked to reconnect, or whose authorization runs out within a week.",
+      "failingEmpty": "Every channel works."
+    },
+    "users": {
+      "title": "Accounts",
+      "description": "Find an account by its email, its name or its id.",
+      "searchLabel": "Email, name or id",
+      "columns": {
+        "name": "Name",
+        "email": "Email",
+        "created": "Created",
+        "lastSignIn": "Last signed in",
+        "state": "State"
+      },
+      "empty": "No account matches.",
+      "staff": "Staff",
+      "banned": "Banned",
+      "unverified": "Unconfirmed"
+    },
+    "user": {
+      "back": "All accounts",
+      "profileTitle": "Profile",
+      "email": "Email",
+      "emailVerified": "{verified, select, true {Confirmed} other {Not confirmed}}",
+      "language": "Language",
+      "languageName": "{locale, select, fr {French} other {English}}",
+      "created": "Created",
+      "lastSignIn": "Last signed in",
+      "sessions": "Open sessions",
+      "role": "Role on this server",
+      "roleName": "{staff, select, true {Staff} other {Member}}",
+      "banTitle": "Ban",
+      "notBanned": "Not banned.",
+      "bannedForGood": "Banned until the ban is lifted.",
+      "bannedUntil": "Banned until",
+      "banReason": "Reason given: {reason}",
+      "workspacesTitle": "Workspaces",
+      "noWorkspace": "In no workspace.",
+      "workspaceColumns": {
+        "name": "Workspace",
+        "role": "Role"
+      },
+      "historyTitle": "What staff did to this account",
+      "minimisation": "Staff see who an account is, never what it wrote. Its posts and media show only while you act as it."
+    },
+    "actions": {
+      "title": "Actions",
+      "reason": "Why",
+      "reasonHint": "Kept in the audit log, with your name. Say what was asked, not more about the person than needed.",
+      "cancel": "Cancel",
+      "ban": {
+        "open": "Ban",
+        "title": "Ban {name}?",
+        "description": "The account is signed out everywhere, and can neither sign in nor use its API keys until the ban ends.",
+        "duration": "For how long",
+        "forever": "Until lifted",
+        "day": "One day",
+        "week": "One week",
+        "month": "30 days",
+        "confirm": "Ban the account",
+        "pending": "Banning…",
+        "done": "{name} is banned."
+      },
+      "unban": {
+        "open": "Lift the ban",
+        "title": "Lift the ban on {name}?",
+        "description": "The account can sign in again at once.",
+        "confirm": "Lift the ban",
+        "pending": "Lifting…",
+        "done": "{name} can sign in again."
+      },
+      "revokeSessions": {
+        "open": "Sign out everywhere",
+        "title": "Sign {name} out everywhere?",
+        "description": "Every session of the account ends, on every device. Its API keys keep working.",
+        "confirm": "Sign out everywhere",
+        "pending": "Signing out…",
+        "done": "{name} is signed out everywhere."
+      },
+      "resendVerification": {
+        "open": "Send the confirmation again",
+        "title": "Send {name} a new confirmation link?",
+        "description": "Acme emails a new link to confirm the address, in the account's language.",
+        "confirm": "Send it",
+        "pending": "Sending…",
+        "done": "The confirmation is on its way to {email}."
+      },
+      "impersonate": {
+        "open": "Act as this account",
+        "title": "Act as {name}?",
+        "description": "You are signed in as the account for an hour, and see what it sees, its posts and media included. You cannot change the account or its workspaces, publish or manage keys and billing.",
+        "confirm": "Act as the account",
+        "pending": "Signing in…"
+      }
+    },
+    "errors": {
+      "banned": "A banned account cannot be signed in as. Lift the ban first.",
+      "expired": "A ban must end in the future.",
+      "gone": "This account no longer exists.",
+      "notStaff": "Your staff session has ended. Sign in again.",
+      "self": "Staff do not do this to their own account.",
+      "staff": "Staff never act as other staff.",
+      "unknown": "That did not work. Try again.",
+      "verified": "This address is confirmed already."
+    },
+    "workspaces": {
+      "title": "Workspaces",
+      "description": "Find a workspace by its name, its slug or its id.",
+      "searchLabel": "Name, slug or id",
+      "columns": {
+        "name": "Name",
+        "slug": "Slug",
+        "members": "Members",
+        "created": "Created"
+      },
+      "empty": "No workspace matches."
+    },
+    "workspace": {
+      "back": "All workspaces",
+      "created": "Created",
+      "membersTitle": "Members",
+      "memberColumns": {
+        "name": "Name",
+        "email": "Email",
+        "role": "Role"
+      },
+      "billingTitle": "Plan",
+      "unmetered": "This server does not bill: nothing is limited.",
+      "plan": "Plan",
+      "subscription": "Subscription",
+      "noSubscription": "None",
+      "cancelsAtEnd": "Ends",
+      "renews": "Renews",
+      "channelsTitle": "Channels",
+      "noChannel": "No channel is connected.",
+      "channelColumns": {
+        "account": "Account",
+        "platform": "Platform",
+        "health": "Health",
+        "expires": "Authorization ends"
+      },
+      "noExpiry": "Renews itself",
+      "postsTitle": "Posts",
+      "postsHint": "Counts only: staff never see a post's text or media.",
+      "failuresTitle": "Latest failures",
+      "noFailure": "No post failed.",
+      "failureColumns": {
+        "at": "When",
+        "platform": "Platform",
+        "status": "Status",
+        "reason": "Why",
+        "code": "Platform's code"
+      },
+      "removedChannel": "Disconnected"
+    },
+    "audit": {
+      "title": "Audit log",
+      "description": "What staff did, newest first: who, what, to which account, why and when. Ids of closed accounts, and the reasons given about them, are forgotten.",
+      "columns": {
+        "at": "When",
+        "staff": "Staff",
+        "action": "Action",
+        "target": "Account",
+        "reason": "Why"
+      },
+      "empty": "Staff have done nothing yet.",
+      "closedAccount": "A closed account",
+      "noReason": "Not kept",
+      "until": "Until",
+      "action": "{action, select, ban {Banned} unban {Lifted the ban} revokeSessions {Signed out everywhere} resendVerification {Sent the confirmation again} impersonate {Acted as the account} other {{action}}}"
+    },
+    "channelStatus": {
+      "active": "Works",
+      "refreshNeeded": "To reconnect",
+      "disabled": "Turned off",
+      "disabledToReconnect": "Turned off, to reconnect"
+    },
+    "troubleStatus": "{status, select, failed {Failed} other {Unconfirmed}}",
+    "reason": "{reason, select, contentRejected {Content refused} channelDisconnected {Channel disconnected} channelDisabled {Channel turned off} mediaRemoved {Media deleted} mediaRejected {Media refused} missed {Missed} notPublished {Not found after a check} rateLimited {Rate limited} tokenExpired {Authorization stopped working} unavailable {Platform unreachable} noResponse {No answer} unreadableResponse {Unreadable answer} interrupted {Interrupted} adapterFailure {Failed during the call} other {{reason}}}"
+  },
+  "Impersonation": {
+    "label": "Acting as another account",
+    "notice": "You are acting as {name} ({email}). You see what they see, and cannot change their account or workspaces. This session ends within an hour.",
+    "stop": "Stop acting as them",
+    "stopping": "Coming back…",
+    "stopFailed": "Coming back to your account failed. Try again, or sign out."
+  },
+  "ErrorPage": {
+    "title": "Something went wrong",
+    "description": "This page ran into an error, which was reported. Try again, or come back in a moment.",
+    "retry": "Try again",
+    "home": "Back to the home page"
   }
 }

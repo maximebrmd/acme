@@ -1,11 +1,13 @@
 import {
   Api,
   Authentication,
+  ClientErrorIntake,
   CurrentPrincipal,
   DataDeletionNotFound,
   MetaAppNotConfigured,
   OAuthApi,
   OAuthClientNotPublished,
+  StaffAccess,
   Unauthenticated,
   WorkspaceAccess,
   WorkspaceNotFound,
@@ -25,7 +27,7 @@ import {
 } from "effect";
 import { CliOutput } from "effect/cli";
 import { FetchHttpClient, HttpRouter, HttpServer } from "effect/http";
-import { HttpApiBuilder } from "effect/http-api";
+import { HttpApiBuilder, HttpApiError } from "effect/http-api";
 import { ChildProcessSpawner } from "effect/process";
 import { TestConsole } from "effect/testing";
 
@@ -250,6 +252,42 @@ const CaptchaLive = HttpApiBuilder.group(Api, "captcha", (handlers) =>
   })
 );
 
+// Nobody is staff: the staff console answers 404 to every request.
+const notStaff = Effect.fail(new HttpApiError.NotFound());
+
+const StaffLive = HttpApiBuilder.group(Api, "staff", (handlers) =>
+  handlers.handleAll({
+    audit: () => notStaff,
+    ban: () => notStaff,
+    impersonate: () => notStaff,
+    resendVerification: () => notStaff,
+    revokeSessions: () => notStaff,
+    session: () => notStaff,
+    system: () => notStaff,
+    unban: () => notStaff,
+    user: () => notStaff,
+    users: () => notStaff,
+    workspace: () => notStaff,
+    workspaces: () => notStaff,
+  })
+).pipe(
+  Layer.provideMerge(
+    Layer.succeed(StaffAccess, StaffAccess.of({ session: () => notStaff }))
+  )
+);
+
+// Error reports are taken, and dropped.
+const ClientErrorsLive = HttpApiBuilder.group(Api, "clientErrors", (handlers) =>
+  handlers.handleAll({ reportClientError: () => Effect.void })
+).pipe(
+  Layer.provideMerge(
+    Layer.succeed(
+      ClientErrorIntake,
+      ClientErrorIntake.of((httpEffect) => httpEffect)
+    )
+  )
+);
+
 const notConfigured = Effect.fail(new MetaAppNotConfigured());
 
 const DataDeletionLive = HttpApiBuilder.group(Api, "dataDeletion", (handlers) =>
@@ -286,7 +324,9 @@ export const inMemoryServer = (
                 Layer.provide(signedInGroupsLive(server)),
                 Layer.provide(ChannelOAuthLive),
                 Layer.provide(CaptchaLive),
-                Layer.provide(DataDeletionLive)
+                Layer.provide(DataDeletionLive),
+                Layer.provide(StaffLive),
+                Layer.provide(ClientErrorsLive)
               ),
               HttpApiBuilder.layer(OAuthApi).pipe(
                 Layer.provide(server.handlers)

@@ -7,6 +7,7 @@ import { ChannelRecords } from "#channels/application/channel-records.ts";
 import { MediaRecords } from "#media/application/media-records.ts";
 import { NoticeRecords } from "#notifications/application/notice-records.ts";
 import { PostRecords } from "#publishing/application/post-records.ts";
+import { StaffRecords } from "#staff/application/staff-records.ts";
 import { ContextRecords } from "#workspace/application/context-records.ts";
 import { WorkspaceBusy } from "#workspace/application/workspace-busy.ts";
 import { WorkspaceFilesRemain } from "#workspace/application/workspace-files-remain.ts";
@@ -15,7 +16,8 @@ import { WorkspaceSubscribed } from "#workspace/application/workspace-subscribed
 /**
  * ContextRecords through each context's own records: publishing's posts,
  * the channels, the media library, the notices, the assistant's usage,
- * analytics' posts followed and billing's subscriptions.
+ * analytics' posts followed, billing's subscriptions and the staff audit
+ * log.
  */
 export const ContextRecordsLive = Layer.effect(
   ContextRecords,
@@ -27,6 +29,7 @@ export const ContextRecordsLive = Layer.effect(
     const usage = yield* UsageRecords;
     const billing = yield* BillingRecords;
     const analytics = yield* AnalyticsRecords;
+    const staff = yield* StaffRecords;
 
     return ContextRecords.of({
       eraseUser: Effect.fn("ContextRecords.eraseUser")(
@@ -34,6 +37,7 @@ export const ContextRecordsLive = Layer.effect(
           yield* notices.eraseUser(userId);
           yield* posts.forgetAuthor(userId);
           yield* channels.eraseUser(userId);
+          yield* staff.forgetUser(userId);
         }
       ),
       eraseWorkspace: Effect.fn("ContextRecords.eraseWorkspace")(

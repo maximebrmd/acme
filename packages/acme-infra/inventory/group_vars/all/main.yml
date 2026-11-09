@@ -73,14 +73,18 @@ acme_mail_credentials: [RESEND_API_KEY, SMTP_URL]
 acme_settings: {}
 
 # Paths of the app's host name that Cloudflare Access guards in production:
-# Better Auth's admin endpoints on the server, and the admin pages on the web
-# app. Each is a regular expression cloudflared matches against the path,
+# Better Auth's admin endpoints and the staff console's API on the server,
+# and the staff console's pages on the web app, under /en too, where Next
+# serves English pages next-intl's proxy skips (paths with a dot). Each is a
+# regular expression cloudflared matches against the path,
 # once it has resolved dot segments, backslashes and repeated slashes
 # (tests/test_cloudflared.py), in any letter case.
 acme_access_paths:
   - path: (?i)^/+api/+auth/+admin(/|$)
     to: server
-  - path: (?i)^/+(fr/+)?admin(/|$)
+  - path: (?i)^/+api/+admin(/|$)
+    to: server
+  - path: (?i)^/+((en|fr)/+)?admin(/|$)
     to: web
 # On an environment behind Access throughout (the sandbox), the paths that
 # outside services call, which stay open, each with an Access application of

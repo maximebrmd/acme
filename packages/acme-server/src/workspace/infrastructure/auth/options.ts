@@ -314,8 +314,26 @@ export const makeAuth = ({ database, hooks, settings }: AuthDependencies) =>
     // every context keeps: the admin plugin's removal of a user would leave
     // their notices, preferences and the workspaces they alone belonged to.
     // Staff ban accounts instead.
+    //
+    // Staff act through the staff console (/api/admin), which records each
+    // action in the audit log and calls the admin plugin on the server. Its
+    // own routes would act unrecorded, or show sessions' addresses: only
+    // stop-impersonating stays, which the impersonation banner calls.
     disabledPaths: [
+      "/admin/ban-user",
+      "/admin/create-user",
+      "/admin/get-user",
+      "/admin/has-permission",
+      "/admin/impersonate-user",
+      "/admin/list-user-sessions",
+      "/admin/list-users",
       "/admin/remove-user",
+      "/admin/revoke-user-session",
+      "/admin/revoke-user-sessions",
+      "/admin/set-role",
+      "/admin/set-user-password",
+      "/admin/unban-user",
+      "/admin/update-user",
       "/api-key/create",
       "/api-key/delete",
       "/api-key/get",

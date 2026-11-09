@@ -1,0 +1,56 @@
+---
+title: Console de l’équipe
+description: Donnez le rôle d’équipe à celles et ceux qui font tourner votre serveur, puis trouvez des comptes et des espaces de travail, bannissez, déconnectez ou agissez à la place d’un compte, et lisez le journal d’audit de chaque action, depuis /admin.
+sidebar:
+  order: 13
+---
+
+La console de l’équipe est destinée à celles et ceux qui font tourner un serveur Acme : elle trouve un compte ou un espace de travail, dit comment va le serveur, et permet à l’équipe d’agir sur les comptes. Elle se trouve à `/admin` sur votre adresse Acme (`/fr/admin` en français), et son API sous `/api/admin`.
+
+## Donner le rôle d’équipe [#make-staff]
+
+L’équipe, ce sont les comptes qui ont le rôle d’administrateur de Better Auth. Aucune page ne l’accorde : donnez-le dans la base de données, puis reconnectez-vous, car une session garde le rôle qu’elle avait en commençant.
+
+```sql
+UPDATE auth."user" SET role = 'admin' WHERE email = 'vous@example.com';
+```
+
+Pour retirer ce rôle, mettez `role` à `NULL`, puis demandez à une autre personne de l’équipe de **Déconnecter partout** ce compte, ce qui met fin aussi aux sessions qu’il a ouvertes pour agir à la place de quelqu’un. La console refuse toute personne qui n’est pas de l’équipe dans sa propre session, connectée ou non, en répondant 404 comme si elle n’existait pas : une clé d’API, une application qui agit par OAuth, ou l’équipe pendant qu’elle agit à la place de quelqu’un sont refusées aussi. Un compte d’équipe banni est refusé aussitôt.
+
+Les serveurs d’Acme placent aussi `/admin`, `/en/admin`, `/fr/admin` et `/api/admin` derrière Cloudflare Access. Derrière votre propre frontal, vous pouvez de même les réserver aux adresses de votre équipe.
+
+## Ce que montre la console [#screens]
+
+| Page                 | Ce qu’elle montre                                                                                                                                                                                                       |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Système              | Si la base de données répond, la version que fait tourner le serveur (`OTEL_SERVICE_VERSION`), les publications prévues dans l’heure, celles en retard, et les canaux à reconnecter dans tous les espaces de travail    |
+| Comptes              | Les comptes par adresse, nom ou identifiant, du plus récent au plus ancien, 25 par page                                                                                                                                 |
+| Un compte            | Son nom et son adresse, si l’adresse est confirmée, sa langue, quand il a été créé et s’est connecté pour la dernière fois, son bannissement, ses espaces de travail et ses rôles, et combien de sessions il a ouvertes |
+| Espaces de travail   | Les espaces de travail par nom, identifiant court ou identifiant, avec leurs membres                                                                                                                                    |
+| Un espace de travail | Ses membres et leurs rôles, son offre et son abonnement, ses canaux et si chacun fonctionne, combien de publications il a dans chaque état, et les dernières publications en échec ou non confirmées                    |
+| Journal d’audit      | Ce que l’équipe a fait, du plus récent au plus ancien                                                                                                                                                                   |
+
+L’équipe voit qui est un compte, jamais ce qu’il a écrit : ni le texte d’une publication, ni image ou vidéo, ni jeton. Une publication en échec apparaît par ses identifiants, sa plateforme, la raison de l’échec et le code de la plateforme. Pour voir ce que voit un membre, l’équipe agit à sa place (voir plus bas).
+
+« Dernière connexion » est le début de la plus récente des sessions que le compte a ouvertes lui-même, tant qu’il en reste une ; les sessions que l’équipe ouvre pour agir à sa place ne comptent pas.
+
+## Ce que fait l’équipe [#actions]
+
+Chaque action demande un motif, et l’inscrit au journal d’audit avec le nom de la personne de l’équipe. Écrivez ce qui a été demandé, sans en dire plus que nécessaire sur la personne.
+
+- **Bannir**, pour un jour, une semaine, 30 jours ou jusqu’à la levée : le compte est déconnecté partout, y compris des sessions qu’il a ouvertes pour agir à la place de quelqu’un, et ne peut ni se connecter ni utiliser ses clés d’API entre-temps. **Lever le bannissement** l’annule.
+- **Déconnecter partout** met fin à toutes les sessions du compte, sur tous ses appareils, y compris celles que l’équipe a ouvertes à sa place et celles qu’il a ouvertes pour agir à la place de quelqu’un. Ses clés d’API continuent de fonctionner.
+- **Renvoyer la confirmation** envoie un nouveau lien pour confirmer l’adresse, dans la langue du compte, tant qu’elle n’est pas confirmée.
+- **Agir à la place de ce compte** connecte le navigateur de la personne de l’équipe avec ce compte pendant une heure. Un bandeau en haut de chaque page dit de quel compte il s’agit, avec **Cesser d’agir à sa place**, qui rend la session de la personne de l’équipe.
+
+Pendant qu’elle agit à la place d’un compte, l’équipe voit ses publications et ses médias, et ne peut ni connecter de canaux, ni publier, ni gérer les clés d’API ou la facturation, ni modifier ses espaces de travail ou le compte, ni laisser une application agir pour lui. Elle peut lire ses notifications, pas les marquer comme lues. Elle peut demander de l’aide à l’assistant de rédaction dans ses espaces de travail, ce qui compte dans les demandes du jour de ces espaces.
+
+L’équipe ne bannit, ne déconnecte ni n’agit jamais à sa propre place, et n’agit jamais à la place d’autres membres de l’équipe. Personne ne supprime un compte, sauf son titulaire, depuis [ses paramètres de compte](/settings#delete-account).
+
+Les points d’accès d’administration de Better Auth sous `/api/auth/admin/` sont désactivés, afin que rien de ce que fait l’équipe n’échappe au journal d’audit ; seul `POST /api/auth/admin/stop-impersonating` reste, que le bandeau appelle.
+
+## Le journal d’audit [#audit-log]
+
+Chaque action est inscrite avant d’être menée, afin que rien de ce que fait l’équipe ne passe inaperçu : qui l’a faite, quoi, sur quel compte, pourquoi et quand, avec la fin d’un bannissement. Une action qui a ensuite échoué montre tout de même ce que l’équipe a demandé. Le journal garde des identifiants, jamais ce que quiconque a écrit, et garde ses entrées pour de bon.
+
+Quand un compte est fermé, le journal l’oublie : les entrées à son sujet perdent son identifiant et le motif donné, et celles qu’il a faites en tant qu’équipe perdent leur auteur. Ce qui a été fait, et quand, reste.

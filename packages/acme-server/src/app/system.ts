@@ -2,7 +2,7 @@ import { Api, DatabaseUnavailable } from "acme-contract";
 import { Effect } from "effect";
 import { HttpApiBuilder } from "effect/http-api";
 
-import { makeDatabasePing } from "#app/database-ping.ts";
+import { makeDatabasePing } from "#shared/infrastructure/database-ping.ts";
 
 export const SystemHandlers = HttpApiBuilder.group(
   Api,
