@@ -18,6 +18,7 @@ const combiningAccent = "é";
 
 const lengths = (text: string): Record<TextUnit, number> => ({
   codePoints: measureText(text, "codePoints"),
+  emojiBytes: measureText(text, "emojiBytes"),
   graphemes: measureText(text, "graphemes"),
   utf8Bytes: measureText(text, "utf8Bytes"),
   weighted: measureText(text, "weighted"),
@@ -26,44 +27,92 @@ const lengths = (text: string): Record<TextUnit, number> => ({
 describe(measureText, () => {
   it.each([
     {
-      expected: { codePoints: 5, graphemes: 5, utf8Bytes: 5, weighted: 5 },
+      expected: {
+        codePoints: 5,
+        emojiBytes: 5,
+        graphemes: 5,
+        utf8Bytes: 5,
+        weighted: 5,
+      },
       label: "plain ASCII",
       text: "hello",
     },
     {
-      expected: { codePoints: 0, graphemes: 0, utf8Bytes: 0, weighted: 0 },
+      expected: {
+        codePoints: 0,
+        emojiBytes: 0,
+        graphemes: 0,
+        utf8Bytes: 0,
+        weighted: 0,
+      },
       label: "nothing",
       text: "",
     },
     {
-      expected: { codePoints: 2, graphemes: 1, utf8Bytes: 8, weighted: 2 },
+      expected: {
+        codePoints: 2,
+        emojiBytes: 8,
+        graphemes: 1,
+        utf8Bytes: 8,
+        weighted: 2,
+      },
       label: "an emoji with a skin tone",
       text: thumbsUpMediumSkin,
     },
     {
-      expected: { codePoints: 5, graphemes: 1, utf8Bytes: 18, weighted: 2 },
+      expected: {
+        codePoints: 5,
+        emojiBytes: 18,
+        graphemes: 1,
+        utf8Bytes: 18,
+        weighted: 2,
+      },
       label: "a family emoji joined by zero-width joiners",
       text: family,
     },
     {
       // NFC turns it into one code point, which X counts once.
-      expected: { codePoints: 2, graphemes: 1, utf8Bytes: 3, weighted: 1 },
+      expected: {
+        codePoints: 2,
+        emojiBytes: 2,
+        graphemes: 1,
+        utf8Bytes: 3,
+        weighted: 1,
+      },
       label: "an accent written as a combining mark",
       text: combiningAccent,
     },
     {
-      expected: { codePoints: 3, graphemes: 3, utf8Bytes: 9, weighted: 6 },
+      expected: {
+        codePoints: 3,
+        emojiBytes: 3,
+        graphemes: 3,
+        utf8Bytes: 9,
+        weighted: 6,
+      },
       label: "Japanese, which X counts twice",
       text: "日本語",
     },
     {
-      expected: { codePoints: 3, graphemes: 3, utf8Bytes: 6, weighted: 3 },
+      expected: {
+        codePoints: 3,
+        emojiBytes: 3,
+        graphemes: 3,
+        utf8Bytes: 6,
+        weighted: 3,
+      },
       label: "Cyrillic, which X counts once",
       text: "Мир",
     },
     {
       // An em dash is in a range X counts once; an ellipsis is not.
-      expected: { codePoints: 2, graphemes: 2, utf8Bytes: 6, weighted: 3 },
+      expected: {
+        codePoints: 2,
+        emojiBytes: 2,
+        graphemes: 2,
+        utf8Bytes: 6,
+        weighted: 3,
+      },
       label: "punctuation",
       text: "—…",
     },

@@ -262,7 +262,7 @@ export const platformRules: Readonly<Record<Platform, PlatformRules>> = {
       showsAltText: true,
     },
     mediaRequired: false,
-    textLimits: [{ maximum: 500, unit: "codePoints" }],
+    textLimits: [{ maximum: 500, unit: "emojiBytes" }],
   },
   tiktok: { mediaRequired: false, textLimits: [] },
   x: {
