@@ -13,6 +13,8 @@ import type { PartNumber, PlannedPart } from "#media/domain/upload-plan.ts";
  * A request the client sends straight to the store, signed by acme so it
  * needs no credentials. The store checks the signed headers, so the client
  * sends them exactly as given, and the body must have the planned size.
+ * A single upload only creates the file: sent again once the file is
+ * stored, it fails with 412, and the client completes the upload.
  */
 export const SignedRequestSchema = Schema.Struct({
   headers: Schema.Record(Schema.String, Schema.String),
@@ -58,7 +60,7 @@ export interface StoredPart {
 export class MediaStorage extends Context.Service<
   MediaStorage,
   {
-    /** Signs one PUT of the whole file. */
+    /** Signs one PUT of the whole file, which fails if the file exists. */
     readonly signUpload: (
       upload: UploadToSign
     ) => Effect.Effect<SignedRequest, MediaStorageFailed>;

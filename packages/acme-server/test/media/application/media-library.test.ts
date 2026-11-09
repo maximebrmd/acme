@@ -113,6 +113,22 @@ layer(LibraryTest)("the media library", (it) => {
 
       // Completing again changes nothing.
       assert.deepStrictEqual(yield* complete(prepared), uploaded);
+
+      // The URL cannot swap the checked file for other bytes of its size.
+      const swapped = yield* sendSigned(
+        request,
+        body.map((byte) => 255 - byte)
+      );
+
+      assert.strictEqual(swapped.status, 412);
+
+      const { bytes } = yield* fetchBytes(
+        yield* MediaStorage.use((storage) =>
+          storage.publicUrl(prepared.asset.storageKey, Duration.minutes(5))
+        )
+      );
+
+      assert.deepStrictEqual(bytes, body);
     })
   );
 

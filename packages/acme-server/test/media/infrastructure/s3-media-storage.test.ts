@@ -48,7 +48,10 @@ layer(StorageTest)("the S3 media store", (it) => {
       });
 
       assert.strictEqual(signed.method, "PUT");
-      assert.deepStrictEqual(signed.headers, { "content-type": "image/png" });
+      assert.deepStrictEqual(signed.headers, {
+        "content-type": "image/png",
+        "if-none-match": "*",
+      });
 
       const response = yield* sendSigned(signed, body);
 
@@ -77,13 +80,50 @@ layer(StorageTest)("the S3 media store", (it) => {
       const longer = yield* sendSigned(signed, syntheticBytes(101));
 
       const retyped = yield* sendSigned(
-        { headers: { "content-type": "image/jpeg" }, url: signed.url },
+        {
+          headers: { ...signed.headers, "content-type": "image/jpeg" },
+          url: signed.url,
+        },
+        syntheticBytes(100)
+      );
+
+      // Without If-None-Match, the PUT could replace a stored file.
+      const unconditional = yield* sendSigned(
+        { headers: { "content-type": "image/png" }, url: signed.url },
         syntheticBytes(100)
       );
 
       assert.strictEqual(longer.status, 403);
       assert.strictEqual(retyped.status, 403);
+      assert.strictEqual(unconditional.status, 403);
       assert.deepStrictEqual(yield* storage.head(key), Option.none());
+    })
+  );
+
+  it.effect("never replaces a stored file with the same URL", () =>
+    Effect.gen(function* createOnly() {
+      const storage = yield* MediaStorage;
+      const key = yield* freshKey;
+      const first = syntheticBytes(200);
+      const second = first.map((byte) => 255 - byte);
+
+      const signed = yield* storage.signUpload({
+        byteSize: first.length,
+        contentType: "image/png",
+        expiresIn,
+        key,
+      });
+
+      yield* Effect.addFinalizer(() => Effect.orDie(storage.remove(key)));
+
+      assert.strictEqual((yield* sendSigned(signed, first)).status, 200);
+      assert.strictEqual((yield* sendSigned(signed, second)).status, 412);
+
+      const { bytes } = yield* fetchBytes(
+        yield* storage.publicUrl(key, expiresIn)
+      );
+
+      assert.deepStrictEqual(bytes, first);
     })
   );
 

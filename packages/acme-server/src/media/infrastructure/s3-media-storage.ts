@@ -180,8 +180,11 @@ export const makeS3MediaStorage = Effect.fn("S3MediaStorage.make")(
     const signUpload = Effect.fn("S3MediaStorage.signUpload")(
       function* signUpload(upload: UploadToSign) {
         // Signing content-type and content-length makes the store refuse a
-        // body of any other type or size. The presigner leaves content-type
-        // unsigned unless asked.
+        // body of any other type or size. Signing If-None-Match: * makes the
+        // PUT create-only, so the URL cannot replace a file once stored,
+        // after completeUpload checked it. The presigner leaves both headers
+        // unsigned unless asked. Browsers send them after a CORS preflight:
+        // the bucket's CORS rule allows Content-Type and If-None-Match.
         const url = yield* request(
           "sign an upload",
           async () =>
@@ -191,17 +194,18 @@ export const makeS3MediaStorage = Effect.fn("S3MediaStorage.make")(
                 Bucket: bucket,
                 ContentLength: upload.byteSize,
                 ContentType: upload.contentType,
+                IfNoneMatch: "*",
                 Key: objectKey(upload.key),
               }),
               {
                 expiresIn: presignedSeconds(upload.expiresIn),
-                signableHeaders: new Set(["content-type"]),
+                signableHeaders: new Set(["content-type", "if-none-match"]),
               }
             )
         );
 
         const signed: SignedRequest = {
-          headers: { "content-type": upload.contentType },
+          headers: { "content-type": upload.contentType, "if-none-match": "*" },
           method: "PUT",
           url,
         };
