@@ -1042,7 +1042,7 @@
       "ends": "{plan, select, other {The {plan} subscription} none {The subscription}} ends now: nothing more is charged.",
       "notRefunded": "The period already paid for is not refunded, except where the law gives a refund.",
       "notRefundedUntil": "The period already paid for, until {date}, is not refunded, except where the law gives a refund.",
-      "withdrawal": "If you subscribed as a consumer less than 14 days ago, you may withdraw and be refunded the unused part: ask whoever runs this Peal server.",
+      "withdrawal": "If you subscribed as a consumer less than 14 days ago, withdraw first with Withdraw from contract here on the workspace’s billing page: the unused part is then refunded. Once the workspace is deleted, ask whoever runs this Peal server.",
       "invoices": "Download your invoices from the billing page first: it goes with the workspace. Invoices are kept as accounting law requires, and a confirmation is emailed to you.",
       "agree": "{count, plural, one {Cancel the subscription now} other {Cancel these # subscriptions now}}, without a refund of the period paid for except where the law gives one"
     }

@@ -1042,7 +1042,7 @@
       "ends": "{plan, select, other {L’abonnement {plan}} none {L’abonnement}} prend fin maintenant : plus rien n’est facturé.",
       "notRefunded": "La période déjà payée n’est pas remboursée, sauf lorsque la loi prévoit un remboursement.",
       "notRefundedUntil": "La période déjà payée, jusqu’au {date}, n’est pas remboursée, sauf lorsque la loi prévoit un remboursement.",
-      "withdrawal": "Si vous avez souscrit en tant que consommateur il y a moins de 14 jours, vous pouvez vous rétracter et être remboursé de la part non utilisée : adressez-vous à la personne qui gère ce serveur Peal.",
+      "withdrawal": "Si vous avez souscrit en tant que consommateur il y a moins de 14 jours, rétractez-vous d’abord avec Se rétracter du contrat ici, sur la page de facturation de l’espace de travail : la part non utilisée vous est alors remboursée. Une fois l’espace de travail supprimé, adressez-vous à la personne qui gère ce serveur Peal.",
       "invoices": "Téléchargez d’abord vos factures depuis la page de facturation : elle disparaît avec l’espace de travail. Les factures sont conservées comme le droit comptable l’exige, et une confirmation vous est envoyée par e-mail.",
       "agree": "{count, plural, one {Résilier l’abonnement maintenant} other {Résilier ces # abonnements maintenant}}, sans remboursement de la période payée, sauf lorsque la loi en prévoit un"
     }
