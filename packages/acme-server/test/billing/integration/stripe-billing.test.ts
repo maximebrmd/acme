@@ -264,11 +264,53 @@ layer(BillingIntegration, {
 
         assert.strictEqual(refused.status, 401);
 
+        // A member who does not manage billing.
+        const editor = yield* signedUp("editor");
+        const sql = yield* SqlClient.SqlClient;
+
+        yield* sql`INSERT INTO auth.member (organization_id, user_id, role, created_at) VALUES (${workspaceId}, ${editor.id}, 'editor', now())`;
+
+        const notManaging = yield* upgrade(editor, {
+          customerType: "organization",
+          referenceId: workspaceId,
+        });
+
+        assert.strictEqual(notManaging.status, 401);
+
+        // A reference that is no workspace's id.
+        const nowhere = yield* upgrade(owner, {
+          customerType: "organization",
+          referenceId: "not-a-workspace",
+        });
+
+        assert.strictEqual(nowhere.status, 401);
+
         const personal = yield* upgrade(owner, {});
 
         assert.strictEqual(personal.status, 400);
         assert.strictEqual(
           (yield* bodyOf(ErrorSchema, personal)).code,
+          "WORKSPACE_SUBSCRIPTIONS_ONLY"
+        );
+
+        // Stripe's plugin reads the body's customer type before the query's.
+        const mixed = yield* app.request(
+          "/api/auth/subscription/upgrade?customerType=organization",
+          {
+            body: {
+              cancelUrl: `/app/${workspaceId}/billing`,
+              customerType: "user",
+              disableRedirect: true,
+              plan: "pro",
+              successUrl: `/app/${workspaceId}/billing`,
+            },
+            headers: { cookie: owner.cookies },
+          }
+        );
+
+        assert.strictEqual(mixed.status, 400);
+        assert.strictEqual(
+          (yield* bodyOf(ErrorSchema, mixed)).code,
           "WORKSPACE_SUBSCRIPTIONS_ONLY"
         );
       })

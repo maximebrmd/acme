@@ -203,6 +203,13 @@ const mayBill = async ({
   readonly session: unknown;
   readonly user: { readonly id: string };
 }): Promise<boolean> => {
+  const workspaceId = decodeWorkspaceId(referenceId);
+
+  // No workspace has that id, which Postgres would refuse to compare.
+  if (Option.isNone(workspaceId)) {
+    return false;
+  }
+
   const { adapter } = getCurrentAuthEndpointContext().context;
 
   const found: unknown = await adapter.findOne({
@@ -210,7 +217,7 @@ const mayBill = async ({
     select: ["role"],
     where: [
       { field: "userId", value: user.id },
-      { field: "organizationId", value: referenceId },
+      { field: "organizationId", value: workspaceId.value },
     ],
   });
 
@@ -298,11 +305,21 @@ export const stripeBilling = (
   });
 };
 
-const WorkspaceBillingSchema = Schema.Struct({
-  customerType: Schema.Literal("organization"),
+const CustomerTypeSchema = Schema.Struct({
+  customerType: Schema.optionalKey(Schema.Unknown),
 });
 
-const isWorkspaceBilling = Schema.is(WorkspaceBillingSchema);
+const decodeCustomerType = Schema.decodeUnknownOption(CustomerTypeSchema);
+
+// The customer types a request names, in its body and in its query.
+const customerTypesOf = (ctx: GenericEndpointContext): readonly unknown[] =>
+  [ctx.body, ctx.query].flatMap((part) =>
+    Option.match(decodeCustomerType(part), {
+      onNone: () => [],
+      onSome: ({ customerType }) =>
+        customerType === undefined ? [] : [customerType],
+    })
+  );
 
 // Stripe sends the browser back to this one after checkout.
 const returnRoute = "/subscription/success";
@@ -310,13 +327,20 @@ const returnRoute = "/subscription/success";
 /**
  * Subscriptions belong to workspaces: Better Auth's subscription routes
  * would otherwise let a user subscribe for themselves, which buys nothing.
+ * Every customer type the request names must be `organization`: Stripe's
+ * plugin reads the body's before the query's.
  */
 export const refusePersonalSubscriptions = (ctx: GenericEndpointContext) => {
   if (!ctx.path.startsWith("/subscription/") || ctx.path === returnRoute) {
     return;
   }
 
-  if (!isWorkspaceBilling(ctx.body) && !isWorkspaceBilling(ctx.query)) {
+  const named = customerTypesOf(ctx);
+
+  if (
+    named.length === 0 ||
+    !named.every((customerType) => customerType === "organization")
+  ) {
     throw APIError.from("BAD_REQUEST", {
       code: "WORKSPACE_SUBSCRIPTIONS_ONLY",
       message:
