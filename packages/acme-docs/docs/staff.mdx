@@ -15,9 +15,9 @@ Staff are accounts with Better Auth's admin role. No page grants it: set it in t
 UPDATE auth."user" SET role = 'admin' WHERE email = 'you@example.com';
 ```
 
-To take the role back, set `role` to `NULL` and end the account's sessions. The console refuses anyone but staff in their own session, signed in or not, answering 404 as if it were not there: an API key, an application acting through OAuth, or staff while they act as someone else are refused too. A banned staff account is refused at once.
+To take the role back, set `role` to `NULL`, then have other staff **Sign out everywhere** the account, which also ends the sessions it opened to act as someone else. The console refuses anyone but staff in their own session, signed in or not, answering 404 as if it were not there: an API key, an application acting through OAuth, or staff while they act as someone else are refused too. A banned staff account is refused at once.
 
-Acme's own servers also put `/admin`, `/fr/admin` and `/api/admin` behind Cloudflare Access. Behind your own edge, you may restrict them to your team's addresses the same way.
+Acme's own servers also put `/admin`, `/en/admin`, `/fr/admin` and `/api/admin` behind Cloudflare Access. Behind your own edge, you may restrict them to your team's addresses the same way.
 
 ## What the console shows [#screens]
 
@@ -38,8 +38,8 @@ Staff see who an account is, never what it wrote: no post's text, no image or vi
 
 Each action asks why, and keeps the reason in the audit log with the staff member's name. Write what was asked, not more about the person than needed.
 
-- **Ban**, for a day, a week, 30 days or until lifted: the account is signed out everywhere, and can neither sign in nor use its API keys meanwhile. **Lift the ban** undoes it.
-- **Sign out everywhere** ends every session of the account, on every device, those staff opened included. Its API keys keep working.
+- **Ban**, for a day, a week, 30 days or until lifted: the account is signed out everywhere, sessions it opened as staff to act as someone else included, and can neither sign in nor use its API keys meanwhile. **Lift the ban** undoes it.
+- **Sign out everywhere** ends every session of the account, on every device, those staff opened to act as it and those it opened as staff to act as someone else included. Its API keys keep working.
 - **Send the confirmation again** emails a new link to confirm the address, in the account's language, while it is not confirmed.
 - **Act as this account** signs the staff member's browser in as the account for an hour. A banner at the top of every page says whose account it is, with **Stop acting as them**, which brings back the staff member's own session.
 

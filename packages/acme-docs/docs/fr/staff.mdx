@@ -15,9 +15,9 @@ L’équipe, ce sont les comptes qui ont le rôle d’administrateur de Better A
 UPDATE auth."user" SET role = 'admin' WHERE email = 'vous@example.com';
 ```
 
-Pour retirer ce rôle, mettez `role` à `NULL` et mettez fin aux sessions du compte. La console refuse toute personne qui n’est pas de l’équipe dans sa propre session, connectée ou non, en répondant 404 comme si elle n’existait pas : une clé d’API, une application qui agit par OAuth, ou l’équipe pendant qu’elle agit à la place de quelqu’un sont refusées aussi. Un compte d’équipe banni est refusé aussitôt.
+Pour retirer ce rôle, mettez `role` à `NULL`, puis demandez à une autre personne de l’équipe de **Déconnecter partout** ce compte, ce qui met fin aussi aux sessions qu’il a ouvertes pour agir à la place de quelqu’un. La console refuse toute personne qui n’est pas de l’équipe dans sa propre session, connectée ou non, en répondant 404 comme si elle n’existait pas : une clé d’API, une application qui agit par OAuth, ou l’équipe pendant qu’elle agit à la place de quelqu’un sont refusées aussi. Un compte d’équipe banni est refusé aussitôt.
 
-Les serveurs d’Acme placent aussi `/admin`, `/fr/admin` et `/api/admin` derrière Cloudflare Access. Derrière votre propre frontal, vous pouvez de même les réserver aux adresses de votre équipe.
+Les serveurs d’Acme placent aussi `/admin`, `/en/admin`, `/fr/admin` et `/api/admin` derrière Cloudflare Access. Derrière votre propre frontal, vous pouvez de même les réserver aux adresses de votre équipe.
 
 ## Ce que montre la console [#screens]
 
@@ -38,8 +38,8 @@ L’équipe voit qui est un compte, jamais ce qu’il a écrit : ni le texte d�
 
 Chaque action demande un motif, et l’inscrit au journal d’audit avec le nom de la personne de l’équipe. Écrivez ce qui a été demandé, sans en dire plus que nécessaire sur la personne.
 
-- **Bannir**, pour un jour, une semaine, 30 jours ou jusqu’à la levée : le compte est déconnecté partout, et ne peut ni se connecter ni utiliser ses clés d’API entre-temps. **Lever le bannissement** l’annule.
-- **Déconnecter partout** met fin à toutes les sessions du compte, sur tous ses appareils, y compris celles que l’équipe a ouvertes. Ses clés d’API continuent de fonctionner.
+- **Bannir**, pour un jour, une semaine, 30 jours ou jusqu’à la levée : le compte est déconnecté partout, y compris des sessions qu’il a ouvertes pour agir à la place de quelqu’un, et ne peut ni se connecter ni utiliser ses clés d’API entre-temps. **Lever le bannissement** l’annule.
+- **Déconnecter partout** met fin à toutes les sessions du compte, sur tous ses appareils, y compris celles que l’équipe a ouvertes à sa place et celles qu’il a ouvertes pour agir à la place de quelqu’un. Ses clés d’API continuent de fonctionner.
 - **Renvoyer la confirmation** envoie un nouveau lien pour confirmer l’adresse, dans la langue du compte, tant qu’elle n’est pas confirmée.
 - **Agir à la place de ce compte** connecte le navigateur de la personne de l’équipe avec ce compte pendant une heure. Un bandeau en haut de chaque page dit de quel compte il s’agit, avec **Cesser d’agir à sa place**, qui rend la session de la personne de l’équipe.
 

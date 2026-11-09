@@ -21,7 +21,10 @@ export interface ModerationRequest {
 export class AccountModeration extends Context.Service<
   AccountModeration,
   {
-    /** Bans the account and ends its sessions. */
+    /**
+     * Bans the account and ends its sessions, those it opened as staff to
+     * act as someone else included.
+     */
     readonly ban: (
       request: ModerationRequest & {
         readonly expiresAt: Option.Option<DateTime.Utc>;
@@ -31,7 +34,10 @@ export class AccountModeration extends Context.Service<
     readonly unban: (
       request: ModerationRequest
     ) => Effect.Effect<void, AuthUnavailable>;
-    /** Ends every session of the account, staff's impersonations included. */
+    /**
+     * Ends every session of the account: staff's impersonations of it, and
+     * those it opened as staff to act as someone else.
+     */
     readonly revokeSessions: (
       request: ModerationRequest
     ) => Effect.Effect<void, AuthUnavailable>;

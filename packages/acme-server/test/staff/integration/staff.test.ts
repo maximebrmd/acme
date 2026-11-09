@@ -597,6 +597,69 @@ layer(StaffedLive, { excludeTestServices: true, timeout: "180 seconds" })(
       })
     );
 
+    it.effect.each([
+      { action: "ban", body: { ...reason, expiresAt: null } },
+      { action: "revoke-sessions", body: reason },
+    ])(
+      "ends the sessions staff opened to act as someone when they get $action",
+      ({ action, body }) =>
+        Effect.gen(function* ends() {
+          const app = yield* TestApp;
+          const fixture = yield* Staffed;
+          const rogue = yield* confirmedAccount(`console-rogue-${action}`);
+          const person = yield* signedUp(`console-acted-on-${action}`);
+
+          yield* makeAdmin(rogue.id);
+
+          const started = yield* app.request(
+            `/api/admin/users/${person.id}/impersonate`,
+            { body: reason, headers: { cookie: yield* signIn(rogue.email) } }
+          );
+
+          assert.strictEqual(started.status, 204);
+
+          const actingAs = cookiesOf(started);
+          const sql = yield* SqlClient.SqlClient;
+
+          const impersonations =
+            sql`SELECT count(*)::int AS open FROM auth.session WHERE impersonated_by = ${rogue.id}`.pipe(
+              Effect.flatMap(
+                Schema.decodeUnknownEffect(
+                  Schema.Tuple([Schema.Struct({ open: Schema.Number })])
+                )
+              ),
+              Effect.map(([{ open }]) => open),
+              Effect.orDie
+            );
+
+          assert.strictEqual(yield* impersonations, 1);
+
+          const stopped = yield* app.request(
+            `/api/admin/users/${rogue.id}/${action}`,
+            { body, headers: { cookie: fixture.staffCookies } }
+          );
+
+          assert.strictEqual(stopped.status, 204);
+
+          assert.strictEqual(yield* impersonations, 0);
+
+          const after = yield* app.request(
+            "/api/auth/get-session?disableCookieCache=true",
+            { headers: { cookie: actingAs } }
+          );
+
+          assert.strictEqual(after.body, null);
+
+          // The person's own session stays.
+          const own = yield* app.request("/api/me/notices/read-all", {
+            headers: { cookie: person.cookies },
+            method: "POST",
+          });
+
+          assert.strictEqual(own.status, 200);
+        })
+    );
+
     it.effect("emails the confirmation again", () =>
       Effect.gen(function* resends() {
         const app = yield* TestApp;

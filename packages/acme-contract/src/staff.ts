@@ -348,7 +348,7 @@ export class StaffApi extends HttpApiGroup.make("staff")
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Bans the account, for good or until `expiresAt`, and signs it out everywhere: it can neither sign in nor use its API keys meanwhile. The reason is kept in the audit log and shown to staff.",
+          "Bans the account, for good or until `expiresAt`, and signs it out everywhere, sessions it opened as staff to act as someone else included: it can neither sign in nor use its API keys meanwhile. The reason is kept in the audit log and shown to staff.",
         summary: "Ban an account",
       })
     ),
@@ -362,7 +362,7 @@ export class StaffApi extends HttpApiGroup.make("staff")
       "revokeSessions",
       "/revoke-sessions",
       "Sign an account out everywhere",
-      "Ends every session of the account, those staff opened to act as it included."
+      "Ends every session of the account, those staff opened to act as it included, and those it opened as staff to act as someone else."
     ),
     userAction(
       "resendVerification",

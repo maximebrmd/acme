@@ -1,7 +1,12 @@
+import { eq } from "drizzle-orm";
 import { DateTime, Duration, Effect, Layer, Option, Redacted } from "effect";
 
+import type { UserId } from "#shared/domain/ids.ts";
 import { defaultLocale } from "#shared/domain/locale.ts";
+import { Drizzle } from "#shared/infrastructure/database.ts";
 import { AccountModeration } from "#workspace/application/account-moderation.ts";
+import { AuthUnavailable } from "#workspace/application/auth-unavailable.ts";
+import { session } from "#workspace/infrastructure/auth-schema.generated.ts";
 
 import { attempt } from "./attempt.ts";
 import { BetterAuth } from "./better-auth.ts";
@@ -23,6 +28,20 @@ export const AccountModerationLive = Layer.effect(
   AccountModeration,
   Effect.gen(function* AccountModerationLive() {
     const auth = yield* BetterAuth;
+    const db = yield* Drizzle;
+
+    // The sessions the user opened as staff to act as someone else. Better
+    // Auth ends only the user's own when it bans them or signs them out
+    // everywhere; these hang on the other person's account, and would let
+    // staff banned or signed out a moment ago go on acting as them.
+    const endImpersonations = (userId: UserId) =>
+      db
+        .delete(session)
+        .where(eq(session.impersonatedBy, userId))
+        .pipe(
+          Effect.mapError((cause) => new AuthUnavailable({ cause })),
+          Effect.asVoid
+        );
 
     return AccountModeration.of({
       ban: Effect.fn("AccountModeration.ban")(function* ban({
@@ -47,6 +66,8 @@ export const AccountModerationLive = Layer.effect(
               headers: headersOf(staffSession),
             })
         );
+
+        yield* endImpersonations(userId);
       }),
       impersonate: ({ staffSession, userId }) =>
         attempt(
@@ -81,7 +102,7 @@ export const AccountModerationLive = Layer.effect(
               headers: headersOf(staffSession),
             })
         ).pipe(
-          Effect.asVoid,
+          Effect.andThen(endImpersonations(userId)),
           Effect.withSpan("AccountModeration.revokeSessions")
         ),
       unban: ({ staffSession, userId }) =>
