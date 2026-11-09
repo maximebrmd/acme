@@ -248,6 +248,9 @@ def test_ssh_forwards_to_the_dashboard_only() -> None:
     sshd = ansible_render(template, admin_user="ops", ssh_tcp_forwarding="local", ssh_permit_open=permit_open)
 
     assert "AllowTcpForwarding local\n" in sshd
+    # PermitOpen covers TCP alone: a Unix socket, such as Docker's, would
+    # otherwise be forwarded too.
+    assert "AllowStreamLocalForwarding no\n" in sshd
     assert f"PermitOpen 127.0.0.1:{UPTIME['uptime_gatus_port']}\n" in sshd
     assert "AllowTcpForwarding no\n" in ansible_render(
         template, admin_user="ops", **role_file("ssh", "defaults")
