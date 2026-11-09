@@ -230,11 +230,11 @@ const CheckoutsInMemory = Layer.effect(
           Effect.tap(() => Ref.set(cancelledKnown, known)),
           Effect.map(([stripe, started]) => stripe + started + known.length)
         ),
-      holdWorkspace: () => Effect.succeed(true),
       expireOpen: () =>
         Ref.getAndSet(open, 0).pipe(
           Effect.tap((count) => Ref.update(expired, (all) => all + count))
         ),
+      holdWorkspace: () => Effect.succeed(true),
       statuses: () => Ref.get(statuses),
     });
   })

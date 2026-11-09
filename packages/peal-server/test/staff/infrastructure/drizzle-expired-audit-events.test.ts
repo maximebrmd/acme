@@ -55,9 +55,7 @@ layer(RetentionTest)("the audit log's retention", (it) => {
           Object.keys(rows).map((name) => [name, randomUUID()])
         );
 
-        for (const [name, [action, at, ends, target]] of Object.entries(
-          rows
-        )) {
+        for (const [name, [action, at, ends, target]] of Object.entries(rows)) {
           yield* sql`INSERT INTO staff.audit_events (id, action, at, ban_expires_at, target_id)
             VALUES (${ids.get(name) ?? ""}, ${action}, ${`${at}T00:00:00Z`}::timestamptz, ${ends === null ? null : `${ends}T00:00:00Z`}::timestamptz, ${target}::uuid)`;
         }

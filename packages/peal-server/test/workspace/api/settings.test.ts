@@ -168,38 +168,6 @@ const PortsLive = Layer.mergeAll(
 
           return record(`eraseWorkspace:${id}`).pipe(provide);
         },
-        // Stripe may still bill one, until the person agrees to cancel:
-        // nothing is cancelled while another refuses.
-        settleWorkspaces: (ids, { cancelSubscriptions }) =>
-          Effect.gen(function* settle() {
-            if (ids.includes(busy)) {
-              return yield* new WorkspaceBusy({ workspaceId: busy });
-            }
-
-            if (ids.includes(unreachable)) {
-              return yield* new BillingUnavailable({ workspaceId: unreachable });
-            }
-
-            const billed = ids.filter((id) => id === subscribed);
-
-            if (billed.length > 0 && !cancelSubscriptions) {
-              return yield* new WorkspaceSubscribed({
-                subscriptions: billed.map((workspaceId) => ({
-                  paidUntil: Option.some(at),
-                  plan: Option.some("pro" as const),
-                  workspaceId,
-                })),
-              });
-            }
-
-            yield* Effect.forEach(
-              billed,
-              (id) => record(`cancel:${id}`).pipe(provide),
-              { discard: true }
-            );
-
-            return { subscriptionsCancelled: billed.length };
-          }),
         exportAuthoredPosts: (id, workspaceIds) =>
           record(`exportAuthored:${id}:${workspaceIds.join(",")}`).pipe(
             provide,
@@ -251,6 +219,40 @@ const PortsLive = Layer.mergeAll(
             posts: [],
           }),
         removeWorkspaceFiles: (id) => record(`removeFiles:${id}`).pipe(provide),
+        // Stripe may still bill one, until the person agrees to cancel:
+        // nothing is cancelled while another refuses.
+        settleWorkspaces: (ids, { cancelSubscriptions }) =>
+          Effect.gen(function* settle() {
+            if (ids.includes(busy)) {
+              return yield* new WorkspaceBusy({ workspaceId: busy });
+            }
+
+            if (ids.includes(unreachable)) {
+              return yield* new BillingUnavailable({
+                workspaceId: unreachable,
+              });
+            }
+
+            const billed = ids.filter((id) => id === subscribed);
+
+            if (billed.length > 0 && !cancelSubscriptions) {
+              return yield* new WorkspaceSubscribed({
+                subscriptions: billed.map((workspaceId) => ({
+                  paidUntil: Option.some(at),
+                  plan: Option.some("pro" as const),
+                  workspaceId,
+                })),
+              });
+            }
+
+            yield* Effect.forEach(
+              billed,
+              (id) => record(`cancel:${id}`).pipe(provide),
+              { discard: true }
+            );
+
+            return { subscriptionsCancelled: billed.length };
+          }),
       });
     })
   ),
@@ -530,7 +532,9 @@ layer(Fakes.layer)("the settings endpoints", (it) => {
 
         assert.deepInclude(refused, {
           _tag: "WorkspaceSubscribed",
-          subscriptions: [{ paidUntil: at, plan: "pro", workspaceId: subscribed }],
+          subscriptions: [
+            { paidUntil: at, plan: "pro", workspaceId: subscribed },
+          ],
         });
         assert.notInclude(yield* calls, `deleteWorkspace:${subscribed}`);
 

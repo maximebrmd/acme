@@ -262,23 +262,21 @@ layer(DatabaseTest)("the Stripe plugin's checkouts", (it) => {
       }).pipe(Effect.scoped)
   );
 
-  it.effect(
-    "hold a workspace that exists, and say one deleted is gone",
-    () =>
-      Effect.gen(function* holds() {
-        const sql = yield* SqlClient.SqlClient;
-        const checkouts = yield* checkoutsOn(undefined);
-        const { workspaceId } = yield* seeded;
+  it.effect("hold a workspace that exists, and say one deleted is gone", () =>
+    Effect.gen(function* holds() {
+      const sql = yield* SqlClient.SqlClient;
+      const checkouts = yield* checkoutsOn(undefined);
+      const { workspaceId } = yield* seeded;
 
-        assert.isTrue(
-          yield* sql.withTransaction(checkouts.holdWorkspace(workspaceId))
-        );
+      assert.isTrue(
+        yield* sql.withTransaction(checkouts.holdWorkspace(workspaceId))
+      );
 
-        yield* sql`DELETE FROM auth.subscription WHERE reference_id = ${workspaceId}`;
-        yield* sql`DELETE FROM auth.organization WHERE id = ${workspaceId}`;
+      yield* sql`DELETE FROM auth.subscription WHERE reference_id = ${workspaceId}`;
+      yield* sql`DELETE FROM auth.organization WHERE id = ${workspaceId}`;
 
-        assert.isFalse(yield* checkouts.holdWorkspace(workspaceId));
-      }).pipe(Effect.scoped)
+      assert.isFalse(yield* checkouts.holdWorkspace(workspaceId));
+    }).pipe(Effect.scoped)
   );
 
   it.effect("say Stripe is unreachable when it fails", () =>

@@ -25,8 +25,13 @@ const render = async (
         }}
         subscriptions={subscriptions}
         // The app links through next-intl's Link, which needs Next to run.
-        billingLink={(workspaceId) => (
-          <a href={`/app/${workspaceId}/billing`}>{`Billing of ${workspaceId}`}</a>
+        billingLinks={Object.fromEntries(
+          subscriptions.map(({ workspaceId }) => [
+            workspaceId,
+            <a key={workspaceId} href={`/app/${workspaceId}/billing`}>
+              {`Billing of ${workspaceId}`}
+            </a>,
+          ])
         )}
       />
     </NextIntlClientProvider>

@@ -312,6 +312,7 @@ layer(StorageTest)("the S3 media store", (it) => {
         // The same store, as a server that serves the bucket publicly
         // sees it.
         const settings = yield* S3StorageConfig;
+
         const served = yield* makeS3MediaStorage({
           ...settings,
           publicBaseUrl: Option.some(new URL("https://media.example.test")),

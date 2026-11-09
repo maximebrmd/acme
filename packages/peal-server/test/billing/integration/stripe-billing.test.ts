@@ -184,8 +184,6 @@ const decodeSubscribed = Schema.decodeUnknownSync(
   })
 );
 
-const subscribedIn = (body: unknown) => decodeSubscribed(body).subscriptions;
-
 // What an account's export says of its workspaces' billing.
 const ExportedBillingSchema = Schema.Struct({
   workspaces: Schema.Array(
@@ -439,7 +437,9 @@ layer(BillingIntegration, {
 
         assert.strictEqual(refused.status, 409);
         assert.deepInclude(refused.body, { _tag: "WorkspaceSubscribed" });
-        assert.deepInclude(subscribedIn(refused.body)[0], { workspaceId });
+        assert.deepInclude(decodeSubscribed(refused.body).subscriptions[0], {
+          workspaceId,
+        });
 
         const closing = yield* app.request("/api/me", {
           body: { password },
@@ -449,7 +449,9 @@ layer(BillingIntegration, {
 
         assert.strictEqual(closing.status, 409);
         assert.deepInclude(closing.body, { _tag: "WorkspaceSubscribed" });
-        assert.deepInclude(subscribedIn(closing.body)[0], { workspaceId });
+        assert.deepInclude(decodeSubscribed(closing.body).subscriptions[0], {
+          workspaceId,
+        });
 
         const keys = yield* app.request(
           `/api/workspaces/${workspaceId}/api-keys`,
@@ -498,7 +500,7 @@ layer(BillingIntegration, {
         // What cancelling ends, for the owner to read before agreeing.
         assert.strictEqual(refused.status, 409);
         assert.deepInclude(refused.body, { _tag: "WorkspaceSubscribed" });
-        assert.deepInclude(subscribedIn(refused.body)[0], {
+        assert.deepInclude(decodeSubscribed(refused.body).subscriptions[0], {
           plan: "pro",
           workspaceId,
         });
@@ -585,7 +587,9 @@ layer(BillingIntegration, {
 
         assert.strictEqual(refused.status, 409);
         assert.deepInclude(refused.body, { _tag: "WorkspaceSubscribed" });
-        assert.deepInclude(subscribedIn(refused.body)[0], { workspaceId });
+        assert.deepInclude(decodeSubscribed(refused.body).subscriptions[0], {
+          workspaceId,
+        });
       })
   );
 

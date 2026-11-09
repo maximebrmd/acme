@@ -118,13 +118,17 @@ export const DeleteWorkspace = ({
             agreed={agreed}
             onAgreedChange={setAgreed}
             subscriptions={subscriptions.value}
-            billingLink={(billed) => (
-              <Link
-                href={`/app/${billed}/billing`}
-                className="underline underline-offset-4"
-              >
-                {t("billingPage")}
-              </Link>
+            billingLinks={Object.fromEntries(
+              subscriptions.value.map(({ workspaceId: billed }) => [
+                billed,
+                <Link
+                  key={billed}
+                  href={`/app/${billed}/billing`}
+                  className="underline underline-offset-4"
+                >
+                  {t("billingPage")}
+                </Link>,
+              ])
             )}
           />
         ) : null}

@@ -85,15 +85,15 @@ Members of an organisation see each other's name, email address and role. A memb
 
 ## Retention
 
-| Data                                | Kept for                                                                                                                              |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| Account and organisation data       | [Period]                                                                                                                              |
-| Content and performance data        | [Period]                                                                                                                              |
-| Connected account tokens            | [Period]                                                                                                                              |
-| Billing records                     | [Period required by accounting law]                                                                                                   |
-| Technical logs                      | Server logs 31 days, traces 14 days, metrics 30 days                                                                                  |
+| Data                                | Kept for                                                                                                                                                                          |
+| ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Account and organisation data       | [Period]                                                                                                                                                                          |
+| Content and performance data        | [Period]                                                                                                                                                                          |
+| Connected account tokens            | [Period]                                                                                                                                                                          |
+| Billing records                     | [Period required by accounting law]                                                                                                                                               |
+| Technical logs                      | Server logs 31 days, traces 14 days, metrics 30 days                                                                                                                              |
 | Record of staff actions on accounts | 12 months; a ban and its lifting 3 years, or 12 months after a longer ban ends, and a ban until lifted as long as it holds. Closing an account removes it from the record at once |
-| Backups                             | Deleted data leaves the encrypted backups within 5 weeks. A backup is restored only to recover from an incident                       |
+| Backups                             | Deleted data leaves the encrypted backups within 5 weeks. A backup is restored only to recover from an incident                                                                   |
 
 ## Your rights
 

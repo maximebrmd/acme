@@ -55,13 +55,13 @@ const Cancelled = ({
  */
 export const SubscriptionCancellation = ({
   agreed,
-  billingLink,
+  billingLinks,
   onAgreedChange,
   subscriptions,
 }: {
   readonly agreed: boolean;
-  /** The billing page of a workspace, where its invoices are. */
-  readonly billingLink: (workspaceId: string) => ReactNode;
+  /** Each workspace's billing page, where its invoices are, by its id. */
+  readonly billingLinks: Readonly<Record<string, ReactNode>>;
   readonly onAgreedChange: (agreed: boolean) => void;
   readonly subscriptions: readonly SubscriptionToCancel[];
 }) => {
@@ -79,7 +79,7 @@ export const SubscriptionCancellation = ({
                 // The same workspace may list two subscriptions, neither
                 // with an id of its own.
                 key={`${subscription.workspaceId}-${String(index)}`}
-                billingLink={billingLink(subscription.workspaceId)}
+                billingLink={billingLinks[subscription.workspaceId]}
                 subscription={subscription}
               />
             ))}

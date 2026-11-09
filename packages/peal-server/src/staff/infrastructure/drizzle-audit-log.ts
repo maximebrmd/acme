@@ -163,7 +163,9 @@ export const DrizzleStaffRecords = Layer.effect(
             .set({
               objectIds: sql`coalesce((select jsonb_object_agg(name, value) from (${named}) as kept where value <> ${userId}), '{}'::jsonb)`,
             })
-            .where(sql`exists (select 1 from (${named}) as found where value = ${userId})`)
+            .where(
+              sql`exists (select 1 from (${named}) as found where value = ${userId})`
+            )
             .pipe(Effect.mapError(failed));
         }
       ),

@@ -41,12 +41,10 @@ const describe = ({
   readonly billed: readonly Subscription[];
   readonly checkedOut: boolean;
 }): readonly BilledSubscription[] => {
-  const described = billed.map(
-    (subscription): BilledSubscription => ({
-      paidUntil: subscription.currentPeriodEnd,
-      plan: Option.some(subscription.plan),
-    })
-  );
+  const described = billed.map((subscription): BilledSubscription => ({
+    paidUntil: subscription.currentPeriodEnd,
+    plan: Option.some(subscription.plan),
+  }));
 
   return described.length === 0 && checkedOut ? [undescribed] : described;
 };
@@ -246,8 +244,11 @@ export class BillingRecords extends Context.Service<
         function* eraseWorkspace(workspaceId: WorkspaceId) {
           // Stripe decides: billing's records wait for the events of what
           // settling cancelled.
-          if (enabled && (yield* checkouts.atStripe(workspaceId)).some(mayBill)) {
-            return yield* new WorkspaceStillBilled({
+          if (
+            enabled &&
+            (yield* checkouts.atStripe(workspaceId)).some(mayBill)
+          ) {
+            yield* new WorkspaceStillBilled({
               subscriptions: [undescribed],
               workspaceId,
             });
