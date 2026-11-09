@@ -39,6 +39,14 @@ const removeEmptyFolders = async (folder: string): Promise<boolean> => {
   return empty;
 };
 
+// Without the document, the generator would fail after the previous run's
+// files are gone, and leave the SDK empty.
+if (!(await Bun.file(path.join(sdkRoot, "openapi.json")).exists())) {
+  throw new Error(
+    "packages/peal-sdk/openapi.json is missing: generate through Nx (`bun run sdk:generate`), which writes it first."
+  );
+}
+
 const previousFiles = Bun.file(filesList);
 
 if (await previousFiles.exists()) {
