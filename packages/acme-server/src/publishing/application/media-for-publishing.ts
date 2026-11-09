@@ -24,7 +24,7 @@ export interface PublishableMedia {
 
 /**
  * Why media cannot go out: it is gone, or no longer ready (`MediaRejected`
- * with code `mediaUnavailable`), or the media store did not answer
+ * with the code `ownRefusalCodes.mediaRemoved`), or the media store did not answer
  * (`PlatformUnavailable`, worth trying again). Either way, nothing was sent.
  */
 export type MediaFailure = MediaRejected | PlatformUnavailable;

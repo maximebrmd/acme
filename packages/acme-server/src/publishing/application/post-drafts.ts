@@ -4,16 +4,23 @@ import { checkDraft } from "#publishing/domain/content-rules.ts";
 import type { InvalidPostTransition } from "#publishing/domain/invalid-post-transition.ts";
 import type { PostContentRejected } from "#publishing/domain/post-content-rejected.ts";
 import type { PostContent } from "#publishing/domain/post-content.ts";
-import { createDraft, editDraft } from "#publishing/domain/post.ts";
+import {
+  authorOf,
+  createDraft,
+  discardDraft,
+  editDraft,
+  mayDiscard,
+} from "#publishing/domain/post.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import { newId } from "#shared/application/ids.ts";
 import type { Ids } from "#shared/application/ids.ts";
 import { TransactionRunner } from "#shared/application/transaction-runner.ts";
+import { can } from "#shared/domain/access.ts";
 import type { Actor, Permission } from "#shared/domain/access.ts";
 import { authorize } from "#shared/domain/authorize.ts";
 import { PostIdSchema } from "#shared/domain/ids.ts";
 import type { ChannelId, PostId } from "#shared/domain/ids.ts";
-import type { MissingPermission } from "#shared/domain/missing-permission.ts";
+import { MissingPermission } from "#shared/domain/missing-permission.ts";
 
 import type { AttachableMedia } from "./attachable-media.ts";
 import type { PostNotFound } from "./post-not-found.ts";
@@ -51,7 +58,9 @@ const applied = (written: boolean) =>
  * on it in the meantime.
  *
  * Creating a draft needs post:create, changing one post:update; both read
- * the workspace's channels, which needs channel:read.
+ * the workspace's channels, which needs channel:read. Its creator is its
+ * author. Discarding a draft deletes it, and needs post:delete, unless the
+ * actor is its author and has post:update (`mayDiscard`).
  */
 export class PostDrafts extends Context.Service<
   PostDrafts,
@@ -68,6 +77,14 @@ export class PostDrafts extends Context.Service<
     ) => Effect.Effect<
       PostWithTargets,
       DraftFailure | InvalidPostTransition | PostNotFound
+    >;
+    /** Deletes a draft. A post scheduled or sent is not a draft. */
+    readonly discard: (
+      actor: Actor,
+      postId: PostId
+    ) => Effect.Effect<
+      void,
+      DatabaseError | InvalidPostTransition | MissingPermission | PostNotFound
     >;
   }
 >()("acme-server/publishing/application/PostDrafts") {
@@ -104,7 +121,14 @@ export class PostDrafts extends Context.Service<
       ) {
         const channels = yield* checked(actor, "post:create", request);
         const postId = yield* newId(PostIdSchema).pipe(withPorts);
-        const post = createDraft(postId, actor.workspaceId, request.content);
+
+        const post = createDraft(
+          postId,
+          actor.workspaceId,
+          request.content,
+          authorOf(actor)
+        );
+
         const targets = yield* targetsOn(postId, channels).pipe(withPorts);
 
         yield* transaction(posts.insert(post, targets));
@@ -144,7 +168,36 @@ export class PostDrafts extends Context.Service<
         );
       });
 
-      return PostDrafts.of({ create, update });
+      const discard = Effect.fn("PostDrafts.discard")(function* discard(
+        actor: Actor,
+        postId: PostId
+      ) {
+        // Neither right: no draft can be the actor's to discard.
+        if (!can(actor, "post:delete") && !can(actor, "post:update")) {
+          return yield* new MissingPermission({ permission: "post:delete" });
+        }
+
+        return yield* transaction(
+          Effect.gen(function* remove() {
+            const current = yield* lockInWorkspace(
+              actor.workspaceId,
+              postId
+            ).pipe(withPorts);
+
+            if (!mayDiscard(actor, current.post)) {
+              return yield* new MissingPermission({
+                permission: "post:delete",
+              });
+            }
+
+            yield* Effect.fromResult(discardDraft(current.post));
+
+            return yield* posts.remove(postId);
+          })
+        );
+      });
+
+      return PostDrafts.of({ create, discard, update });
     })
   );
 }

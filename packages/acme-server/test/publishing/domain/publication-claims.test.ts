@@ -37,6 +37,7 @@ const schedule = new Schedule({
 
 const postIn = (status: PostStatus, scheduleRevision = 2): Post =>
   new Post({
+    authorId: Option.none(),
     content: emptyContent,
     id: postId,
     scheduleRevision,

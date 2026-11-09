@@ -4,8 +4,9 @@ import { emailKindOf } from "./notice-event.ts";
 import type { EmailKind, NoticeEvent } from "./notice-event.ts";
 
 /**
- * Which notices a user also receives by email. Every notice reaches the app,
- * whatever these say.
+ * Which notices a user also receives by email, and whether they hear about
+ * every post of their workspaces or only those they wrote. Every notice
+ * they receive reaches the app, whatever the email choices say.
  */
 export class NotificationPreferences extends Schema.Class<NotificationPreferences>(
   "acme-server/notifications/domain/NotificationPreferences"
@@ -16,12 +17,14 @@ export class NotificationPreferences extends Schema.Class<NotificationPreference
     postPublished: Schema.Boolean,
     postUnconfirmed: Schema.Boolean,
   }),
+  // How the posts others wrote went, for members who may schedule posts.
+  everyPost: Schema.Boolean,
 }) {}
 
 /**
  * Until a user chooses: email for what needs them (a post that failed or may
  * not have gone out, a channel to reconnect), and not for posts that went
- * out as planned.
+ * out as planned; and only the posts they wrote.
  */
 export const defaultPreferences = new NotificationPreferences({
   email: {
@@ -30,11 +33,13 @@ export const defaultPreferences = new NotificationPreferences({
     postPublished: false,
     postUnconfirmed: true,
   },
+  everyPost: false,
 });
 
 /** Some preferences to change; the others stay as they are. */
 export interface PreferencesChange {
-  readonly email: { readonly [K in EmailKind]?: boolean };
+  readonly email?: { readonly [K in EmailKind]?: boolean };
+  readonly everyPost?: boolean;
 }
 
 export const changePreferences = (
@@ -42,14 +47,16 @@ export const changePreferences = (
   change: PreferencesChange
 ): NotificationPreferences => {
   const { email } = preferences;
+  const asked = change.email ?? {};
 
   return new NotificationPreferences({
     email: {
-      channelReconnect: change.email.channelReconnect ?? email.channelReconnect,
-      postFailed: change.email.postFailed ?? email.postFailed,
-      postPublished: change.email.postPublished ?? email.postPublished,
-      postUnconfirmed: change.email.postUnconfirmed ?? email.postUnconfirmed,
+      channelReconnect: asked.channelReconnect ?? email.channelReconnect,
+      postFailed: asked.postFailed ?? email.postFailed,
+      postPublished: asked.postPublished ?? email.postPublished,
+      postUnconfirmed: asked.postUnconfirmed ?? email.postUnconfirmed,
     },
+    everyPost: change.everyPost ?? preferences.everyPost,
   });
 };
 

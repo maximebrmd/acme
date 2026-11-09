@@ -3,8 +3,10 @@ import { Digest, SecureRandom } from "effect/crypto";
 import { FetchHttpClient } from "effect/http";
 
 import type { AttachableMedia } from "#publishing/application/attachable-media.ts";
+import { MediaInPosts } from "#publishing/application/media-in-posts.ts";
 import type { PlatformPublisher } from "#publishing/application/platform-publisher.ts";
 import { PostDrafts } from "#publishing/application/post-drafts.ts";
+import { PostFollowUp } from "#publishing/application/post-follow-up.ts";
 import { PostQueries } from "#publishing/application/post-queries.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
 import { RoutedPlatformPublisher } from "#publishing/application/routed-platform-publisher.ts";
@@ -29,9 +31,10 @@ import { OutboundGuard } from "#shared/infrastructure/platforms/outbound-guard.t
 
 /**
  * The publishing context's use cases (`PostDrafts`, `PostQueries`,
- * `PostScheduling`, for the handlers) and the adapters behind its ports,
- * with `references` for the channels and media posts refer to. Needs the
- * database (Drizzle), the workflow engine, a TransactionRunner and Ids.
+ * `PostScheduling`, `PostFollowUp`, for the handlers) and the adapters
+ * behind its ports, with `references` for the channels and media posts refer
+ * to. Needs the database (Drizzle), the workflow engine, a TransactionRunner
+ * and Ids, and PublicationOutcomes for PostFollowUp.
  */
 export const publishingWith = <E, R>(
   references: Layer.Layer<AttachableMedia | WorkspaceChannels, E, R>
@@ -39,7 +42,8 @@ export const publishingWith = <E, R>(
   Layer.mergeAll(
     PostDrafts.layer,
     PostQueries.layer,
-    PostScheduling.layer
+    PostScheduling.layer,
+    PostFollowUp.layer
   ).pipe(
     Layer.provideMerge(
       Layer.mergeAll(
@@ -59,12 +63,21 @@ export const publishingWith = <E, R>(
  * ends is told through the notifications context (Notify), naming channels
  * as the channels context has them (ChannelRepository).
  */
-export const PublishingLive = NotifiedPublicationOutcomes.pipe(
+export const PublishingLive = publishingWith(
+  Layer.mergeAll(ListedWorkspaceChannels, LibraryAttachableMedia)
+).pipe(
   Layer.provideMerge(
-    publishingWith(
-      Layer.mergeAll(ListedWorkspaceChannels, LibraryAttachableMedia)
-    )
+    NotifiedPublicationOutcomes.pipe(Layer.provide(DrizzlePostRepository))
   )
+);
+
+/**
+ * Which posts show a media asset, for the media context to ask before it
+ * deletes one (MediaInPosts). Needs the database (Drizzle) and a
+ * TransactionRunner.
+ */
+export const MediaInPostsLive = MediaInPosts.layer.pipe(
+  Layer.provide(DrizzlePostRepository)
 );
 
 // The posts endpoints. They need the use cases PublishingLive provides, and

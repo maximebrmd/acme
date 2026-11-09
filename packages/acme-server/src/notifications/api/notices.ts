@@ -102,7 +102,10 @@ const noticeView = (notice: Notice): NoticeView => ({
 
 const preferencesView = (
   preferences: NotificationPreferences
-): PreferencesView => ({ email: { ...preferences.email } });
+): PreferencesView => ({
+  email: { ...preferences.email },
+  everyPost: preferences.everyPost,
+});
 
 const denied = { InboxAccessDenied: forbidden };
 

@@ -105,6 +105,7 @@ export {
   MediaKindSchema,
   MediaPageSchema,
   MediaSchema,
+  MediaUsageSchema,
   NewUploadSchema,
   PreparedUploadSchema,
   SignedRequestSchema,
@@ -118,12 +119,15 @@ export type {
   MediaDescription,
   MediaKind,
   MediaPage,
+  MediaUsage,
   NewUpload,
   PreparedUpload,
   SignedRequest,
   UploadPart,
   UploadTarget,
 } from "./media.ts";
+
+export { MediaInUse } from "./media-in-use.ts";
 
 export { MediaNotFound } from "./media-not-found.ts";
 
@@ -199,7 +203,11 @@ export { PostStatusSchema } from "./post-status.ts";
 export type { PostStatus } from "./post-status.ts";
 
 export {
+  AttemptResultSchema,
+  defaultDraftPageSize,
+  DraftPageSchema,
   FailureReasonSchema,
+  maxDraftPageSize,
   MediaAttachmentSchema,
   PostContentSchema,
   PostDraftSchema,
@@ -207,12 +215,16 @@ export {
   PostScheduleSchema,
   PostSchema,
   PostTargetSchema,
-  PostTargetStatusSchema,
+  PublicationAttemptSchema,
   SchedulePostSchema,
+  TargetConfirmationSchema,
   TextOverrideSchema,
+  UnconfirmedReasonSchema,
 } from "./posts.ts";
 
 export type {
+  AttemptResult,
+  DraftPage,
   FailureReason,
   MediaAttachment,
   Post,
@@ -221,10 +233,18 @@ export type {
   PostOutcome,
   PostSchedule,
   PostTarget,
-  PostTargetStatus,
+  PublicationAttempt,
   SchedulePost,
+  TargetConfirmation,
   TextOverride,
+  UnconfirmedReason,
 } from "./posts.ts";
+
+export { PostTargetStatusSchema } from "./post-target-status.ts";
+
+export type { PostTargetStatus } from "./post-target-status.ts";
+
+export { TargetStatusConflict } from "./target-status-conflict.ts";
 
 export {
   MemberSchema,

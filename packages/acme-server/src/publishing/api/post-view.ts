@@ -1,9 +1,17 @@
-import type { Post as PostView, PostTarget as TargetView } from "acme-contract";
-import { Match, Option } from "effect";
+import type {
+  AttemptResult,
+  Post as PostView,
+  PublicationAttempt as AttemptView,
+  PostTarget as TargetView,
+} from "acme-contract";
+import { DateTime, Match, Option } from "effect";
 
 import type { PostWithTargets } from "#publishing/application/post-repository.ts";
+import type { RecordedAttempt } from "#publishing/application/publication-journal.ts";
 import type { PostStatus } from "#publishing/domain/post-status.ts";
 import type { PostTarget } from "#publishing/domain/post-target.ts";
+import { failureReasonOf } from "#publishing/domain/publication-policy.ts";
+import type { AttemptOutcome } from "#publishing/domain/publication-policy.ts";
 import type { Schedule } from "#publishing/domain/schedule.ts";
 
 const scheduleView = ({ at, timeZone }: Schedule) => ({ at, timeZone });
@@ -18,18 +26,26 @@ const scheduleOf = (status: PostStatus) =>
     scheduled: ({ schedule }) => scheduleView(schedule),
   });
 
-const targetView = ({ channelId, id, status }: PostTarget): TargetView => ({
+const targetView = ({
+  channelId,
+  id,
+  round,
+  status,
+}: PostTarget): TargetView => ({
   channelId,
   failureReason: status._tag === "failed" ? status.reason : null,
   id,
   permalink:
     status._tag === "published" ? Option.getOrNull(status.permalink) : null,
   publishedAt: status._tag === "published" ? status.publishedAt : null,
+  round,
   status: status._tag,
+  unconfirmedReason: status._tag === "unconfirmed" ? status.reason : null,
 });
 
 /** What clients see of a post: what it says, when, and where it went. */
 export const postView = ({ post, targets }: PostWithTargets): PostView => ({
+  authorId: Option.getOrNull(post.authorId),
   content: {
     media: post.content.media.map(({ altText, mediaId }) => ({
       altText,
@@ -46,4 +62,24 @@ export const postView = ({ post, targets }: PostWithTargets): PostView => ({
   schedule: scheduleOf(post.status),
   status: post.status._tag,
   targets: targets.map(targetView),
+});
+
+// What an attempt came to, in the words the failure reasons use.
+const resultOf = (outcome: AttemptOutcome): AttemptResult =>
+  outcome._tag === "published" || outcome._tag === "unconfirmed"
+    ? outcome._tag
+    : failureReasonOf(outcome);
+
+/** What clients see of an attempt: when, how it ended, what came next. */
+export const attemptView = (attempt: RecordedAttempt): AttemptView => ({
+  attempt: attempt.attempt,
+  finishedAt: attempt.finishedAt,
+  result: resultOf(attempt.outcome),
+  retryAt: attempt.retryAfter.pipe(
+    Option.map((delay) => DateTime.addDuration(attempt.finishedAt, delay)),
+    Option.getOrNull
+  ),
+  round: attempt.round,
+  startedAt: attempt.startedAt,
+  targetId: attempt.targetId,
 });

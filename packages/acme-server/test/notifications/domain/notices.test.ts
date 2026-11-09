@@ -10,8 +10,11 @@ import {
   audienceOf,
   emailKindOf,
   pageOf,
+  readerPermissionOf,
+  recipientsOf,
 } from "#notifications/domain/notice-event.ts";
 import type {
+  Candidate,
   NoticeChannel,
   NoticeEvent,
 } from "#notifications/domain/notice-event.ts";
@@ -77,6 +80,14 @@ describe("notice events", () => {
     expect(audienceOf(events.PostUnconfirmed)).toBe("post:schedule");
   });
 
+  it("need their readers to still read posts, or still act on a channel", () => {
+    expect(readerPermissionOf(events.PostFailed)).toBe("post:read");
+    expect(readerPermissionOf(events.PostUnconfirmed)).toBe("post:read");
+    expect(readerPermissionOf(events.ChannelReconnectSoon)).toBe(
+      "channel:connect"
+    );
+  });
+
   it("link to the page where they are acted on", () => {
     expect(pageOf(events.ChannelReconnectSoon, workspaceId)).toBe(
       `/app/${workspaceId}/channels`
@@ -84,6 +95,56 @@ describe("notice events", () => {
     expect(pageOf(events.PostFailed, workspaceId)).toBe(
       `/app/${workspaceId}/posts/${postId}`
     );
+  });
+});
+
+describe(recipientsOf, () => {
+  const author = UserIdSchema.make("1a1c5f7e-3d2a-4c1b-9e8f-7a6b5c4d3e2f");
+
+  const follower = UserIdSchema.make("2a1c5f7e-3d2a-4c1b-9e8f-7a6b5c4d3e2f");
+
+  const scheduler = UserIdSchema.make("3a1c5f7e-3d2a-4c1b-9e8f-7a6b5c4d3e2f");
+
+  const reader = UserIdSchema.make("4a1c5f7e-3d2a-4c1b-9e8f-7a6b5c4d3e2f");
+
+  // The author is a contributor: they may not act on the post.
+  const members: readonly Candidate[] = [
+    { followsEveryPost: false, mayAct: false, userId: author },
+    { followsEveryPost: true, mayAct: true, userId: follower },
+    { followsEveryPost: false, mayAct: true, userId: scheduler },
+    { followsEveryPost: true, mayAct: false, userId: reader },
+  ];
+
+  it("tell a post's author and the members who may act and follow every post", () => {
+    expect(
+      recipientsOf(events.PostFailed, Option.some(author), members)
+    ).toStrictEqual([author, follower]);
+  });
+
+  it("tell every member who may act about a post without an author", () => {
+    expect(
+      recipientsOf(events.PostPublished, Option.none(), members)
+    ).toStrictEqual([follower, scheduler]);
+  });
+
+  it("tell an author who left the workspace nothing", () => {
+    expect(
+      recipientsOf(
+        events.PostUnconfirmed,
+        Option.some(UserIdSchema.make("9a1c5f7e-3d2a-4c1b-9e8f-7a6b5c4d3e2f")),
+        members
+      )
+    ).toStrictEqual([follower]);
+  });
+
+  it("tell every member who may act about a channel, whatever they follow", () => {
+    expect(
+      recipientsOf(
+        events.ChannelReconnectRequired,
+        Option.some(author),
+        members
+      )
+    ).toStrictEqual([follower, scheduler]);
   });
 });
 
@@ -114,6 +175,17 @@ describe("notification preferences", () => {
     });
     expect(wantsEmail(changed, events.PostPublished)).toBeTruthy();
     expect(wantsEmail(changed, events.PostFailed)).toBeFalsy();
+    expect(changed.everyPost).toBeFalsy();
+  });
+
+  it("follow only one's own posts until asked for every post", () => {
+    const following = changePreferences(defaultPreferences, {
+      everyPost: true,
+    });
+
+    expect(defaultPreferences.everyPost).toBeFalsy();
+    expect(following.everyPost).toBeTruthy();
+    expect(following.email).toStrictEqual(defaultPreferences.email);
   });
 });
 

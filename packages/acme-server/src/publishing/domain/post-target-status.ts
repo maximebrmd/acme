@@ -5,11 +5,22 @@ import {
   UnconfirmedReasonSchema,
 } from "#shared/domain/publish-result.ts";
 
-/** Why a post did not go out on a channel. */
+/**
+ * Why a post did not go out on a channel. Targets are stored with it, so
+ * members may be added but never renamed or removed.
+ */
 export const FailureReasonSchema = Schema.Literals([
   // The platform refused the post as sent: text too long, a duplicate,
   // against its rules, or a request it could not read.
   "contentRejected",
+  // The channel was disconnected from the workspace before the post went
+  // out: nothing was sent.
+  "channelDisconnected",
+  // The channel was turned off before the post went out: nothing was sent.
+  "channelDisabled",
+  // One of its images or videos was deleted, or is no longer ready, before
+  // the post went out: nothing was sent.
+  "mediaRemoved",
   // The platform refused an image or a video.
   "mediaRejected",
   // The server was down at the scheduled time, and the post was too late to

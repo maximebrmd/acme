@@ -36,6 +36,8 @@ const owner = permissionsFor("owner");
 
 const viewer = permissionsFor("viewer");
 
+const contributor = permissionsFor("contributor");
+
 interface Person {
   readonly email: string;
   readonly userId: UserId;
@@ -327,6 +329,118 @@ layer(Test)("notices", (it) => {
 
       assert.lengthOf(yield* startedFor(key), 0);
     })
+  );
+
+  it.effect(
+    "tell a post's author, whatever their role, and email them as they choose",
+    () =>
+      Effect.gen(function* toAuthor() {
+        const { people, workspaceId } = yield* workspaceWith([
+          { locale: "en", permissions: contributor },
+          { locale: "en", permissions: editor },
+          { locale: "en", permissions: contributor },
+        ]);
+
+        const [author, editorMember, other] = people;
+
+        assert(
+          author !== undefined &&
+            editorMember !== undefined &&
+            other !== undefined
+        );
+
+        const request = yield* failedPost(workspaceId);
+
+        yield* Notify.use((notify) =>
+          notify.notify({ ...request, author: author.userId })
+        );
+
+        assert.lengthOf(yield* noticesOf(author), 1);
+        // The editor follows only their own posts, until they choose.
+        assert.lengthOf(yield* noticesOf(editorMember), 0);
+        assert.lengthOf(yield* noticesOf(other), 0);
+
+        assert.strictEqual(yield* deliver(request.key), 0);
+        assert.lengthOf(yield* sentTo(author.email), 1);
+      })
+  );
+
+  it.effect(
+    "tell the members who chose every post about another member's post",
+    () =>
+      Effect.gen(function* toFollowers() {
+        const { people, workspaceId } = yield* workspaceWith([
+          { locale: "en", permissions: contributor },
+          { locale: "en", permissions: editor },
+          // Follows every post, but may not act on one.
+          { locale: "en", permissions: viewer },
+        ]);
+
+        const [author, follower, watcher] = people;
+
+        assert(
+          author !== undefined &&
+            follower !== undefined &&
+            watcher !== undefined
+        );
+
+        yield* Effect.forEach([follower, watcher], (person) =>
+          NotificationSettings.use((settings) =>
+            settings.change(readerOf(person.userId), { everyPost: true })
+          )
+        );
+
+        const request = yield* failedPost(workspaceId);
+
+        yield* Notify.use((notify) =>
+          notify.notify({ ...request, author: author.userId })
+        );
+
+        assert.lengthOf(yield* noticesOf(author), 1);
+        assert.lengthOf(yield* noticesOf(follower), 1);
+        assert.lengthOf(yield* noticesOf(watcher), 0);
+      })
+  );
+
+  it.effect(
+    "resolve an event: its notices are read, and its emails never go",
+    () =>
+      Effect.gen(function* resolves() {
+        const { people, workspaceId } = yield* workspaceWith([
+          { locale: "en", permissions: editor },
+          { locale: "fr", permissions: owner },
+        ]);
+
+        const [ada, chloe] = people;
+
+        assert(ada !== undefined && chloe !== undefined);
+
+        const notify = yield* Notify;
+        const request = yield* failedPost(workspaceId);
+        const untouched = yield* failedPost(workspaceId);
+
+        yield* notify.notify(request);
+        yield* notify.notify(untouched);
+        yield* notify.resolve(request.key);
+
+        const [readAda, readChloe] = yield* Effect.forEach(
+          [ada, chloe],
+          (person) =>
+            noticesOf(person).pipe(
+              Effect.map((notices) =>
+                notices.map(({ readAt }) => Option.isSome(readAt))
+              )
+            )
+        );
+
+        // Newest first: the untouched event, then the resolved one.
+        assert.deepStrictEqual(readAda, [false, true]);
+        assert.deepStrictEqual(readChloe, [false, true]);
+
+        assert.strictEqual(yield* deliver(request.key), 0);
+        assert.lengthOf(yield* sentTo(ada.email), 0);
+        assert.lengthOf(yield* sentTo(chloe.email), 0);
+      })
   );
 
   it.effect(

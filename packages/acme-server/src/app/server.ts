@@ -26,6 +26,7 @@ import {
   NotificationsWorkersLive,
 } from "#notifications/container.ts";
 import {
+  MediaInPostsLive,
   PostsApiLive,
   PublishingLive,
   PublishingWorkersLive,
@@ -72,10 +73,14 @@ const ChannelsWithNoticesLive = ChannelsLive.pipe(
   Layer.provideMerge(WorkspaceLive.pipe(Layer.provideMerge(NotificationsLive)))
 );
 
+// The media context, which asks publishing which posts show an asset before
+// deleting it.
+const MediaContextLive = MediaLive.pipe(Layer.provide(MediaInPostsLive));
+
 // Publishing posts to the channels the channels context lists, with the
 // media the media context holds.
 const PublishingContextLive = PublishingLive.pipe(
-  Layer.provide(Layer.mergeAll(ChannelsWithNoticesLive, MediaLive))
+  Layer.provide(Layer.mergeAll(ChannelsWithNoticesLive, MediaContextLive))
 );
 
 // Durable jobs as AppLive runs them, for tests that write and read posts and
@@ -102,7 +107,7 @@ const JobsWithoutWorkersLive = Layer.mergeAll(
 const ServicesLive = Layer.mergeAll(
   ChannelsWithNoticesLive,
   PublishingContextLive,
-  MediaLive,
+  MediaContextLive,
   AssistantLive
 ).pipe(
   Layer.provide(Layer.mergeAll(JobsWithoutWorkersLive, BunDns.layer)),
@@ -132,7 +137,7 @@ const WorkersLive = Layer.mergeAll(
 const ContextsLive = Layer.mergeAll(
   ChannelsWithNoticesLive,
   PublishingContextLive,
-  MediaLive,
+  MediaContextLive,
   AssistantLive
 ).pipe(
   Layer.provideMerge(

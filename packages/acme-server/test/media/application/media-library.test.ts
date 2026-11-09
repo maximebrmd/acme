@@ -19,7 +19,7 @@ import {
 } from "#media/application/upload-policy.ts";
 import { completeUpload } from "#media/application/use-cases/complete-upload.ts";
 import type { PreparedUpload } from "#media/application/use-cases/create-upload.ts";
-import { MediaLibrary, MediaLive } from "#media/container.ts";
+import { MediaLibrary } from "#media/container.ts";
 import { MediaMetadata } from "#media/domain/media-metadata.ts";
 import { DrizzleMediaAssetsLive } from "#media/infrastructure/drizzle-media-assets.ts";
 import { S3MediaStorageLive } from "#media/infrastructure/s3-media-storage.ts";
@@ -32,18 +32,19 @@ import {
   fetchBytes,
   hasFfmpeg,
   mebibytes,
+  MediaTestLive,
+  memberIn,
   sendSigned,
   storageSettings,
   syntheticBytes,
   syntheticSvg,
   syntheticVideo,
-  memberIn,
 } from "#test/media/support.ts";
 
 // The container's layer, plus the ports themselves so tests can look behind
 // the use cases.
 const LibraryTest = Layer.mergeAll(
-  MediaLive,
+  MediaTestLive,
   S3MediaStorageLive,
   DrizzleMediaAssetsLive
 ).pipe(Layer.provideMerge(DatabaseTest), Layer.provide(storageSettings));

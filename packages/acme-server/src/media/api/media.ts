@@ -4,6 +4,7 @@ import {
   CurrentMember,
   defaultMediaPageSize,
   Forbidden,
+  MediaInUse,
   MediaNotFound,
   MediaStoreUnavailable,
   MediaTooLarge,
@@ -153,6 +154,8 @@ export const MediaHandlers = HttpApiBuilder.group(
           yield* library.deleteMedia(actor, assetId).pipe(
             Effect.catchTags({
               MediaAssetNotFound: notFound,
+              MediaInUse: ({ postIds }) =>
+                Effect.fail(new MediaInUse({ postIds })),
               MediaStorageFailed: storeUnavailable,
               MissingPermission: forbidden,
             })
@@ -221,6 +224,18 @@ export const MediaHandlers = HttpApiBuilder.group(
             items: page.items.map(itemView),
             nextCursor: Option.getOrNull(page.next),
           };
+        }),
+      usage: ({ params }) =>
+        Effect.gen(function* usage() {
+          const actor = actorOf(yield* CurrentMember);
+          const assetId = yield* assetIdOf(params.mediaId);
+
+          return yield* library.mediaUsage(actor, assetId).pipe(
+            Effect.catchTags({
+              MediaAssetNotFound: notFound,
+              MissingPermission: forbidden,
+            })
+          );
         }),
     });
   })

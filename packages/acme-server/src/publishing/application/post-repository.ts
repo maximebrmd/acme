@@ -1,11 +1,12 @@
 import { Context } from "effect";
 import type { DateTime, Effect, Option } from "effect";
 
+import type { PostStatusName } from "#publishing/domain/post-status.ts";
 import type { PostTargetId } from "#publishing/domain/post-target-id.ts";
 import type { PostTarget } from "#publishing/domain/post-target.ts";
 import type { Post } from "#publishing/domain/post.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
-import type { PostId, WorkspaceId } from "#shared/domain/ids.ts";
+import type { MediaAssetId, PostId, WorkspaceId } from "#shared/domain/ids.ts";
 
 import type { ExecutionId } from "./publication-scheduler.ts";
 
@@ -19,6 +20,19 @@ export interface StoredPost {
 export interface PostWithTargets {
   readonly post: Post;
   readonly targets: readonly PostTarget[];
+}
+
+/** A page of a workspace's drafts, newest first. */
+export interface DraftPageRequest {
+  /** The last draft of the page before, if this is not the first. */
+  readonly after: Option.Option<PostId>;
+  readonly limit: number;
+}
+
+export interface DraftPage {
+  readonly items: readonly PostWithTargets[];
+  /** Where the next page starts, if there is one. */
+  readonly next: Option.Option<PostId>;
 }
 
 /**
@@ -43,6 +57,8 @@ export class PostRepository extends Context.Service<
     readonly lock: (
       postId: PostId
     ) => Effect.Effect<Option.Option<StoredPost>, DatabaseError>;
+    /** Deletes the post and its targets. */
+    readonly remove: (postId: PostId) => Effect.Effect<void, DatabaseError>;
     readonly update: (
       next: Post,
       current: Post
@@ -86,5 +102,16 @@ export class PostRepository extends Context.Service<
       from: DateTime.Utc,
       to: DateTime.Utc
     ) => Effect.Effect<readonly PostWithTargets[], DatabaseError>;
+    /** The workspace's drafts, newest first, a page at a time. */
+    readonly listDrafts: (
+      workspaceId: WorkspaceId,
+      page: DraftPageRequest
+    ) => Effect.Effect<DraftPage, DatabaseError>;
+    /** The workspace's posts in one of `statuses` that show the media. */
+    readonly showing: (
+      workspaceId: WorkspaceId,
+      mediaId: MediaAssetId,
+      statuses: readonly PostStatusName[]
+    ) => Effect.Effect<readonly Post[], DatabaseError>;
   }
 >()("acme-server/publishing/application/PostRepository") {}

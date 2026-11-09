@@ -8,13 +8,19 @@ import { PostTargetIdSchema } from "#publishing/domain/post-target-id.ts";
 import type { PostTargetStatus } from "#publishing/domain/post-target-status.ts";
 import { PostTarget } from "#publishing/domain/post-target.ts";
 import {
+  authorOf,
   cancelPost,
   createDraft,
+  discardDraft,
   editDraft,
   finishPost,
+  isAuthor,
+  mayDiscard,
   moveToDraft,
   outcomeOf,
   Post,
+  reopenPost,
+  reviseOutcome,
   schedulePost,
   startPublishing,
 } from "#publishing/domain/post.ts";
@@ -22,11 +28,13 @@ import { Schedule } from "#publishing/domain/schedule.ts";
 import {
   ChannelIdSchema,
   PostIdSchema,
+  UserIdSchema,
   WorkspaceIdSchema,
 } from "#shared/domain/ids.ts";
 import { PlatformPostIdSchema } from "#shared/domain/publish-result.ts";
 import { TimeZoneIdSchema } from "#shared/domain/time-zone.ts";
-import { contentOf } from "#test/publishing/support.ts";
+import { actorAs, apiKeyIn, contentOf } from "#test/publishing/support.ts";
+import { permissionsFor } from "#workspace/domain/roles.ts";
 
 const postId = PostIdSchema.make("00000000-0000-7000-8000-000000000001");
 
@@ -45,6 +53,7 @@ const inAnHour = new Schedule({
 
 const postIn = (status: PostStatus, scheduleRevision = 1): Post =>
   new Post({
+    authorId: Option.none(),
     content: emptyContent,
     id: postId,
     scheduleRevision,
@@ -115,7 +124,7 @@ const cancelled = targetIn("d", { _tag: "cancelled", cancelledAt: now });
 
 describe(createDraft, () => {
   it("starts a post as a draft at revision 0", () => {
-    const post = createDraft(postId, workspaceId, emptyContent);
+    const post = createDraft(postId, workspaceId, emptyContent, Option.none());
 
     expect(post.status).toStrictEqual({ _tag: "draft" });
     expect(post.scheduleRevision).toBe(0);
@@ -344,5 +353,108 @@ describe(cancelPost, () => {
       action: "cancel",
       from: from.status._tag,
     });
+  });
+});
+
+describe("a post's author", () => {
+  const userId = UserIdSchema.make("5b1c5f7e-3d2a-4c1b-9e8f-7a6b5c4d3e2f");
+
+  const other = UserIdSchema.make("0e9d8c7b-6a5f-4e3d-8c2b-1a0f9e8d7c6b");
+
+  const contributor = permissionsFor("contributor");
+
+  const draft = createDraft(
+    postId,
+    workspaceId,
+    emptyContent,
+    authorOf(actorAs(userId, workspaceId, contributor))
+  );
+
+  it("is the member who created the post, and none for an API key", () => {
+    expect(draft.authorId).toStrictEqual(Option.some(userId));
+    expect(authorOf(apiKeyIn(workspaceId))).toStrictEqual(Option.none());
+    expect(isAuthor(draft, actorAs(userId, workspaceId))).toBeTruthy();
+    expect(isAuthor(draft, actorAs(other, workspaceId))).toBeFalsy();
+    expect(isAuthor(statuses.draft, apiKeyIn(workspaceId))).toBeFalsy();
+  });
+
+  it("may discard their draft as a contributor; others need post:delete", () => {
+    const mine = actorAs(userId, workspaceId, contributor);
+    const theirs = actorAs(other, workspaceId, contributor);
+
+    const viewer = actorAs(userId, workspaceId, permissionsFor("viewer"));
+
+    expect(mayDiscard(mine, draft)).toBeTruthy();
+    expect(mayDiscard(theirs, draft)).toBeFalsy();
+    expect(mayDiscard(viewer, draft)).toBeFalsy();
+    expect(mayDiscard(actorAs(other, workspaceId), draft)).toBeTruthy();
+    expect(mayDiscard(apiKeyIn(workspaceId, contributor), draft)).toBeFalsy();
+  });
+});
+
+describe(discardDraft, () => {
+  it("discards a draft", () => {
+    expect(successOf(discardDraft(statuses.draft))).toBe(statuses.draft);
+  });
+
+  it.each([
+    { from: statuses.scheduled },
+    { from: statuses.publishing },
+    { from: statuses.finished },
+    { from: statuses.cancelled },
+  ])("refuses a post that is $from.status._tag", ({ from }) => {
+    expect(failureOf(discardDraft(from))).toMatchObject({
+      action: "discard",
+      from: from.status._tag,
+    });
+  });
+});
+
+describe(reopenPost, () => {
+  it("makes a finished post publishing again, from its time", () => {
+    expect(successOf(reopenPost(statuses.finished, now))?.status).toStrictEqual(
+      {
+        _tag: "publishing",
+        schedule: inAnHour,
+        startedAt: now,
+      }
+    );
+  });
+
+  it("leaves a post still publishing as it is", () => {
+    expect(successOf(reopenPost(statuses.publishing, now))).toBe(
+      statuses.publishing
+    );
+  });
+
+  it.each([
+    { from: statuses.draft },
+    { from: statuses.scheduled },
+    { from: statuses.cancelled },
+  ])("refuses a post that is $from.status._tag", ({ from }) => {
+    expect(failureOf(reopenPost(from, now))).toMatchObject({
+      action: "reopen",
+      from: from.status._tag,
+    });
+  });
+});
+
+describe(reviseOutcome, () => {
+  it("adds up the targets again, and keeps when the post finished", () => {
+    const revised = successOf(
+      reviseOutcome(statuses.finished, [published, failed])
+    );
+
+    expect(revised?.status).toMatchObject({
+      _tag: "finished",
+      finishedAt: utc("2026-06-15T08:00:05Z"),
+      outcome: "partiallyPublished",
+    });
+  });
+
+  it("refuses a post that has not finished", () => {
+    expect(
+      failureOf(reviseOutcome(statuses.publishing, [published]))
+    ).toMatchObject({ action: "finish", from: "publishing" });
   });
 });

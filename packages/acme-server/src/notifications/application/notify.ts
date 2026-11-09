@@ -1,6 +1,10 @@
 import { Context, DateTime, Effect, Layer, Option } from "effect";
 
-import { audienceOf } from "#notifications/domain/notice-event.ts";
+import {
+  audienceOf,
+  readerPermissionOf,
+  recipientsOf,
+} from "#notifications/domain/notice-event.ts";
 import type { NoticeEvent } from "#notifications/domain/notice-event.ts";
 import { NoticeIdSchema } from "#notifications/domain/notice-id.ts";
 import { Notice } from "#notifications/domain/notice.ts";
@@ -11,7 +15,7 @@ import {
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import { Ids } from "#shared/application/ids.ts";
 import { TransactionRunner } from "#shared/application/transaction-runner.ts";
-import type { WorkspaceId } from "#shared/domain/ids.ts";
+import type { UserId, WorkspaceId } from "#shared/domain/ids.ts";
 
 import { NoticeDelivery } from "./notice-delivery.ts";
 import { NoticeLog } from "./notice-log.ts";
@@ -23,6 +27,12 @@ import type { RecipientsUnavailable } from "./recipients-unavailable.ts";
 
 /** One event to tell a workspace's members about. */
 export interface NoticeRequest {
+  /**
+   * For an event about a post: the member who wrote it, when a member did.
+   * They hear about it, with those who chose to hear about every post
+   * (`recipientsOf`).
+   */
+  readonly author?: UserId;
   readonly event: NoticeEvent;
   /**
    * Names the event, such as `post-target:<id>:<round>`: an event
@@ -33,9 +43,9 @@ export interface NoticeRequest {
 }
 
 /**
- * Tells the members of a workspace who can act on an event what happened:
- * a notice in the app for each, and an email for those who want one, in
- * their language, once per key.
+ * Tells the members of a workspace an event concerns what happened
+ * (`recipientsOf`): a notice in the app for each, and an email for those
+ * who want one, in their language, once per key.
  *
  * It runs in one transaction, joining the caller's: the key, the notices
  * and the start of their emails' delivery commit together, or not at all,
@@ -48,6 +58,12 @@ export class Notify extends Context.Service<
     readonly notify: (
       request: NoticeRequest
     ) => Effect.Effect<void, DatabaseError | RecipientsUnavailable>;
+    /**
+     * Someone dealt with the event of this key: its notices are marked read
+     * for everyone, and emails not sent yet are dropped. In one transaction,
+     * joining the caller's.
+     */
+    readonly resolve: (key: string) => Effect.Effect<void, DatabaseError>;
   }
 >()("acme-server/notifications/application/Notify") {
   static readonly layer = Layer.effect(
@@ -70,23 +86,46 @@ export class Notify extends Context.Service<
           return;
         }
 
-        const { recipients: people } = yield* recipients.withPermission(
+        const readers = yield* recipients.withPermission(
+          request.workspaceId,
+          readerPermissionOf(request.event)
+        );
+
+        const actors = yield* recipients.withPermission(
           request.workspaceId,
           audienceOf(request.event)
         );
 
+        const mayAct = new Set(actors.recipients.map(({ userId }) => userId));
+
         const chosen = yield* preferences.forUsers(
-          people.map(({ userId }) => userId)
+          readers.recipients.map(({ userId }) => userId)
+        );
+
+        const preferencesOf = (userId: UserId) =>
+          chosen.get(userId) ?? defaultPreferences;
+
+        const told = new Set(
+          recipientsOf(
+            request.event,
+            Option.fromUndefinedOr(request.author),
+            readers.recipients.map(({ userId }) => ({
+              followsEveryPost: preferencesOf(userId).everyPost,
+              mayAct: mayAct.has(userId),
+              userId,
+            }))
+          )
+        );
+
+        const people = readers.recipients.filter(({ userId }) =>
+          told.has(userId)
         );
 
         const notices = yield* Effect.all(
           people.map(({ userId }) =>
             ids.next.pipe(
               Effect.map((uuid): NewNotice => ({
-                email: wantsEmail(
-                  chosen.get(userId) ?? defaultPreferences,
-                  request.event
-                ),
+                email: wantsEmail(preferencesOf(userId), request.event),
                 notice: new Notice({
                   createdAt: now,
                   event: request.event,
@@ -112,7 +151,12 @@ export class Notify extends Context.Service<
           Effect.annotateLogs({ notice: request.event._tag })
         );
 
-      return Notify.of({ notify });
+      const resolve = (key: string) =>
+        transaction(
+          DateTime.now.pipe(Effect.flatMap((now) => store.resolve(key, now)))
+        );
+
+      return Notify.of({ notify, resolve });
     })
   );
 }

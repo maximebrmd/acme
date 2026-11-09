@@ -1,6 +1,7 @@
 import { Schema } from "effect";
 import {
   HttpApiEndpoint,
+  HttpApiError,
   HttpApiGroup,
   HttpApiSchema,
   OpenApi,
@@ -14,12 +15,14 @@ import { PostContentInvalid } from "./post-content-invalid.ts";
 import { PostNotFound } from "./post-not-found.ts";
 import { PostStatusConflict } from "./post-status-conflict.ts";
 import { PostStatusSchema } from "./post-status.ts";
+import { PostTargetStatusSchema } from "./post-target-status.ts";
 import {
   maxAltTextLength,
   maxMediaPerPost,
   maxPostTextLength,
 } from "./post-text.ts";
 import { ScheduleInPast } from "./schedule-in-past.ts";
+import { TargetStatusConflict } from "./target-status-conflict.ts";
 import { UnknownChannels } from "./unknown-channels.ts";
 import { UnknownMedia } from "./unknown-media.ts";
 import { WorkspaceAccess } from "./workspace-access.ts";
@@ -98,23 +101,19 @@ export const PostOutcomeSchema = Schema.Literals([
 export type PostOutcome = typeof PostOutcomeSchema.Type;
 
 /**
- * Where a post is on one channel. `unconfirmed` means Acme could not tell
- * whether the platform published it: the user checks before reposting.
+ * Why a post did not go out on a channel: the platform refused its text or
+ * format (`contentRejected`) or a media (`mediaRejected`); its channel was
+ * disconnected (`channelDisconnected`) or turned off (`channelDisabled`), or
+ * one of its media deleted (`mediaRemoved`), before it went out; Acme was
+ * down at its time (`missed`); a member found it missing (`notPublished`);
+ * the platform kept limiting Acme (`rateLimited`), refused the account's
+ * token (`tokenExpired`) or could not be reached (`unavailable`).
  */
-export const PostTargetStatusSchema = Schema.Literals([
-  "pending",
-  "publishing",
-  "published",
-  "failed",
-  "unconfirmed",
-  "cancelled",
-]).annotate({ identifier: "PostTargetStatus" });
-
-export type PostTargetStatus = typeof PostTargetStatusSchema.Type;
-
-/** Why a post did not go out on a channel. */
 export const FailureReasonSchema = Schema.Literals([
   "contentRejected",
+  "channelDisconnected",
+  "channelDisabled",
+  "mediaRemoved",
   "mediaRejected",
   "missed",
   "notPublished",
@@ -125,17 +124,37 @@ export const FailureReasonSchema = Schema.Literals([
 
 export type FailureReason = typeof FailureReasonSchema.Type;
 
+/**
+ * Why Acme cannot tell whether an unconfirmed post went out: no answer came
+ * (`noResponse`), the answer could not be read (`unreadableResponse`), the
+ * server stopped during the call (`interrupted`), or Acme's own code failed
+ * during it (`adapterFailure`).
+ */
+export const UnconfirmedReasonSchema = Schema.Literals([
+  "noResponse",
+  "unreadableResponse",
+  "interrupted",
+  "adapterFailure",
+]).annotate({ identifier: "UnconfirmedReason" });
+
+export type UnconfirmedReason = typeof UnconfirmedReasonSchema.Type;
+
 /** A post on one of its channels. */
 export const PostTargetSchema = Schema.Struct({
   channelId: Schema.String,
   // Why it failed, once it has.
   failureReason: Schema.NullOr(FailureReasonSchema),
   id: Schema.String,
-  // Its address on the platform, when the platform gave one.
+  // Its address on the platform, when the platform gave one, or the member
+  // who confirmed it.
   permalink: Schema.NullOr(Schema.String),
   // When it went live, once it has.
   publishedAt: Schema.NullOr(Schema.DateTimeUtc),
+  // How many times it was sent: 1, and one more for each repost.
+  round: Schema.Int,
   status: PostTargetStatusSchema,
+  // Why Acme cannot tell whether it went out, while it is unconfirmed.
+  unconfirmedReason: Schema.NullOr(UnconfirmedReasonSchema),
 }).annotate({ identifier: "PostTarget" });
 
 export type PostTarget = typeof PostTargetSchema.Type;
@@ -150,6 +169,8 @@ export type PostSchedule = typeof PostScheduleSchema.Type;
 
 /** A post, what it says and where it goes. */
 export const PostSchema = Schema.Struct({
+  // The user who created it; null when an API key did.
+  authorId: Schema.NullOr(Schema.String),
   content: PostContentSchema,
   id: Schema.String,
   // How it ended, once it finished.
@@ -180,9 +201,98 @@ export const SchedulePostSchema = Schema.Struct({
 
 export type SchedulePost = typeof SchedulePostSchema.Type;
 
+/** A page of drafts, newest first. */
+export const DraftPageSchema = Schema.Struct({
+  items: Schema.Array(PostSchema),
+  // Pass it as `cursor` for the next page; null on the last one.
+  nextCursor: Schema.NullOr(Schema.String),
+}).annotate({ identifier: "DraftPage" });
+
+export type DraftPage = typeof DraftPageSchema.Type;
+
+/** How many drafts a page holds, unless `limit` says otherwise. */
+export const defaultDraftPageSize = 20;
+
+/** The most drafts a page holds. */
+export const maxDraftPageSize = 50;
+
+/**
+ * How one attempt at publishing on a channel ended: `published`;
+ * `unconfirmed`, when Acme could not tell; or why it did not go out, as in
+ * `FailureReason`. A `rateLimited` or `unavailable` attempt is followed by
+ * another unless Acme gave up.
+ */
+export const AttemptResultSchema = Schema.Literals([
+  "published",
+  "unconfirmed",
+  "contentRejected",
+  "channelDisconnected",
+  "channelDisabled",
+  "mediaRemoved",
+  "mediaRejected",
+  "rateLimited",
+  "tokenExpired",
+  "unavailable",
+]).annotate({ identifier: "AttemptResult" });
+
+export type AttemptResult = typeof AttemptResultSchema.Type;
+
+/** One attempt at publishing a post on one of its channels. */
+export const PublicationAttemptSchema = Schema.Struct({
+  // Its number in its round, from 1.
+  attempt: Schema.Int,
+  finishedAt: Schema.DateTimeUtc,
+  result: AttemptResultSchema,
+  // When Acme tried again, if it did.
+  retryAt: Schema.NullOr(Schema.DateTimeUtc),
+  // The round it belongs to: 1, and one more for each repost.
+  round: Schema.Int,
+  startedAt: Schema.DateTimeUtc,
+  targetId: Schema.String,
+}).annotate({ identifier: "PublicationAttempt" });
+
+export type PublicationAttempt = typeof PublicationAttemptSchema.Type;
+
+const isWebAddress = Schema.makeFilter(
+  (address: string) => {
+    if (!URL.canParse(address)) {
+      return false;
+    }
+
+    const { protocol } = new URL(address);
+
+    return protocol === "https:" || protocol === "http:";
+  },
+  { expected: "an http or https URL" }
+);
+
+/**
+ * What a member found on the platform for an unconfirmed post: it is live,
+ * at `permalink` if they give it, or it is not there.
+ */
+export const TargetConfirmationSchema = Schema.Union([
+  Schema.TaggedStruct("published", {
+    permalink: Schema.NullOr(
+      Schema.String.check(Schema.isMaxLength(2048), isWebAddress)
+    ),
+  }),
+  Schema.TaggedStruct("notPublished", {}),
+]).annotate({ identifier: "TargetConfirmation" });
+
+export type TargetConfirmation = typeof TargetConfirmationSchema.Type;
+
 const workspace = { workspaceId: Schema.String };
 
 const post = { ...workspace, postId: Schema.String };
+
+const target = { ...post, targetId: Schema.String };
+
+const followUp = [
+  Forbidden,
+  PostNotFound,
+  PostStatusConflict,
+  TargetStatusConflict,
+];
 
 const scheduling = [
   Forbidden,
@@ -195,9 +305,27 @@ const scheduling = [
   UnknownMedia,
 ];
 
-/** A workspace's posts: drafts, the calendar, and scheduling. */
+/** A workspace's posts: drafts, the calendar, scheduling, and outcomes. */
 export class PostsApi extends HttpApiGroup.make("posts")
   .add(
+    HttpApiEndpoint.get("drafts", "/drafts", {
+      error: [Forbidden, HttpApiError.BadRequest],
+      params: workspace,
+      query: {
+        cursor: Schema.optionalKey(Schema.String),
+        limit: Schema.optionalKey(
+          Schema.Int.check(
+            Schema.isBetween({ maximum: maxDraftPageSize, minimum: 1 })
+          )
+        ),
+      },
+      success: DraftPageSchema,
+    }).annotateMerge(
+      OpenApi.annotations({
+        description: `Lists the workspace's drafts, newest first, ${defaultDraftPageSize} a page unless \`limit\` (at most ${maxDraftPageSize}) says otherwise. Pass the page's \`nextCursor\` as \`cursor\` for the next one. Needs post:read.`,
+        summary: "List drafts",
+      })
+    ),
     HttpApiEndpoint.get("list", "/", {
       error: [Forbidden, InvalidTimeRange],
       params: workspace,
@@ -230,6 +358,28 @@ export class PostsApi extends HttpApiGroup.make("posts")
       OpenApi.annotations({
         description: "Answers with a post of the workspace. Needs post:read.",
         summary: "Get a post",
+      })
+    ),
+    HttpApiEndpoint.get("attempts", "/:postId/attempts", {
+      error: [Forbidden, PostNotFound],
+      params: post,
+      success: Schema.Array(PublicationAttemptSchema),
+    }).annotateMerge(
+      OpenApi.annotations({
+        description:
+          "Lists every attempt Acme made at publishing the post, by channel, round and attempt, with how each ended. An attempt still in progress is not listed yet. Needs post:read.",
+        summary: "List a post's attempts",
+      })
+    ),
+    HttpApiEndpoint.delete("discard", "/:postId", {
+      error: [Forbidden, PostNotFound, PostStatusConflict],
+      params: post,
+      success: HttpApiSchema.NoContent,
+    }).annotateMerge(
+      OpenApi.annotations({
+        description:
+          "Deletes a draft. A post scheduled or sent is a conflict: cancel it instead. Needs post:delete, or post:update for the user who created the draft.",
+        summary: "Discard a draft",
       })
     ),
     HttpApiEndpoint.put("update", "/:postId", {
@@ -273,6 +423,40 @@ export class PostsApi extends HttpApiGroup.make("posts")
         description:
           "Moves a scheduled post to another instant, or schedules a draft on the channels it has. Needs post:schedule, and channel:read for a draft.",
         summary: "Reschedule a post",
+      })
+    ),
+    HttpApiEndpoint.post("unschedule", "/:postId/unschedule", {
+      error: [Forbidden, PostNotFound, PostStatusConflict],
+      params: post,
+      success: PostSchema,
+    }).annotateMerge(
+      OpenApi.annotations({
+        description:
+          "Takes a scheduled post back to draft, so its text and media can change: it goes out at no time until it is scheduled again. A post already publishing is a conflict. Needs post:schedule.",
+        summary: "Unschedule a post",
+      })
+    ),
+    HttpApiEndpoint.post("repost", "/:postId/targets/:targetId/repost", {
+      error: followUp,
+      params: target,
+      success: PostSchema,
+    }).annotateMerge(
+      OpenApi.annotations({
+        description:
+          "Sends the post again, now, on one channel where it failed or is unconfirmed: a new round, with its own attempts. Check the platform first when it is unconfirmed, as it may be live already. Needs post:schedule.",
+        summary: "Repost on a channel",
+      })
+    ),
+    HttpApiEndpoint.post("confirm", "/:postId/targets/:targetId/confirm", {
+      error: followUp,
+      params: target,
+      payload: TargetConfirmationSchema,
+      success: PostSchema,
+    }).annotateMerge(
+      OpenApi.annotations({
+        description:
+          "Says what you found on the platform for a post unconfirmed on one channel: `published`, with its address if you have it, or `notPublished`, which fails it there so it can be reposted. Its notifications are marked read. Needs post:schedule.",
+        summary: "Confirm a post on a channel",
       })
     ),
     HttpApiEndpoint.post("cancel", "/:postId/cancel", {

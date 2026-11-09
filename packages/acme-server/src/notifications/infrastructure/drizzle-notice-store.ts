@@ -163,6 +163,20 @@ export const DrizzleNoticeStore = Layer.effect(
           return yield* Effect.all(rows.map((row) => noticeOf(row)));
         }
       ),
+      resolve: (key, at) =>
+        Effect.gen(function* resolve() {
+          yield* db
+            .update(notices)
+            .set({ readAt: date(at) })
+            .where(and(eq(notices.eventKey, key), isNull(notices.readAt)));
+
+          yield* db
+            .update(notices)
+            .set({ emailSettledAt: date(at), emailStatus: "skipped" })
+            .where(
+              and(eq(notices.eventKey, key), eq(notices.emailStatus, "pending"))
+            );
+        }).pipe(Effect.mapError(failed)),
       settleEmail: (noticeId, outcome, at) =>
         db
           .update(notices)

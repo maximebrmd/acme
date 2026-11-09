@@ -8,6 +8,7 @@ import type {
   CredentialFailure,
   PublishingToken,
 } from "#publishing/application/platform-credentials.ts";
+import { ownRefusalCodes } from "#publishing/domain/own-refusals.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
 import { BadRequest } from "#shared/domain/bad-request.ts";
 import type { ChannelId } from "#shared/domain/ids.ts";
@@ -22,7 +23,10 @@ const isDatabaseError = Schema.is(DatabaseError);
 const unusable = ({ reason }: ChannelUnusable) =>
   Effect.fail(
     new BadRequest({
-      code: reason === "notFound" ? "channelDisconnected" : "channelDisabled",
+      code:
+        reason === "notFound"
+          ? ownRefusalCodes.channelDisconnected
+          : ownRefusalCodes.channelDisabled,
     })
   );
 

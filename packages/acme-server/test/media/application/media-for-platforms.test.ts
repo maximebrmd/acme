@@ -5,7 +5,7 @@ import sharp from "sharp";
 import { MediaForPlatforms } from "#media/application/media-for-platforms.ts";
 import { MediaNotPublishable } from "#media/application/media-not-publishable.ts";
 import { MediaStorage } from "#media/application/ports/media-storage.ts";
-import { MediaLibrary, MediaLive } from "#media/container.ts";
+import { MediaLibrary } from "#media/container.ts";
 import { S3MediaStorageLive } from "#media/infrastructure/s3-media-storage.ts";
 import { Ids } from "#shared/application/ids.ts";
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
@@ -13,12 +13,13 @@ import type { WorkspaceId } from "#shared/domain/ids.ts";
 import {
   DatabaseTest,
   fetchBytes,
+  MediaTestLive,
   memberIn,
   sendSigned,
   storageSettings,
 } from "#test/media/support.ts";
 
-const MediaTest = Layer.mergeAll(MediaLive, S3MediaStorageLive).pipe(
+const MediaTest = Layer.mergeAll(MediaTestLive, S3MediaStorageLive).pipe(
   Layer.provideMerge(DatabaseTest),
   Layer.provide(storageSettings)
 );

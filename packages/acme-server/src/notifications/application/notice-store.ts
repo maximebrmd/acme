@@ -31,7 +31,8 @@ export type EmailOutcome =
   | "sent"
   // The transport refused it for good, or kept failing.
   | "failed"
-  // The reader no longer wants it, or no longer belongs to the workspace.
+  // The reader no longer wants it, or no longer belongs to the workspace,
+  // or someone dealt with the event before it went out.
   | "skipped";
 
 /**
@@ -65,6 +66,14 @@ export class NoticeStore extends Context.Service<
     readonly pendingEmails: (
       key: string
     ) => Effect.Effect<readonly Notice[], DatabaseError>;
+    /**
+     * The event was dealt with: its notices still unread are marked read at
+     * `at`, and their emails still pending are skipped.
+     */
+    readonly resolve: (
+      key: string,
+      at: DateTime.Utc
+    ) => Effect.Effect<void, DatabaseError>;
     /** Records how sending a pending email ended. */
     readonly settleEmail: (
       noticeId: NoticeId,

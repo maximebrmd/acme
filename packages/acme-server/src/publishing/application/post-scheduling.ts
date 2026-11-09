@@ -7,8 +7,10 @@ import type { PostContent } from "#publishing/domain/post-content.ts";
 import { cancelTarget } from "#publishing/domain/post-target.ts";
 import type { PostTarget } from "#publishing/domain/post-target.ts";
 import {
+  authorOf,
   cancelPost,
   createDraft,
+  moveToDraft,
   schedulePost,
 } from "#publishing/domain/post.ts";
 import type { Post } from "#publishing/domain/post.ts";
@@ -70,10 +72,10 @@ const mayPublish = (actor: Actor) =>
 
 /**
  * Scheduling posts: create one for a time, schedule a draft, move a post,
- * cancel it. Each use case changes the post and starts or stops its job in
- * one transaction, so a post is scheduled exactly when its job exists. Each
- * needs post:schedule, and scheduling reads the workspace's channels, which
- * needs channel:read.
+ * take it back to draft, cancel it. Each use case changes the post and
+ * starts or stops its job in one transaction, so a post is scheduled exactly
+ * when its job exists. Each needs post:schedule, and scheduling reads the
+ * workspace's channels, which needs channel:read.
  *
  * A post is scheduled only on channels of its workspace, with ready media of
  * the workspace, and with content their platforms take, its media included
@@ -128,6 +130,18 @@ export class PostScheduling extends Context.Service<
       | PostNotFound
       | ScheduleInPast
       | Unpublishable
+    >;
+    /**
+     * Takes a scheduled post back to draft, to change what it says: its
+     * revision goes up, so the job for its time, which is stopped, would
+     * publish nothing if it woke anyway. Schedule it again once edited.
+     */
+    readonly unschedule: (
+      actor: Actor,
+      postId: PostId
+    ) => Effect.Effect<
+      PostWithTargets,
+      DatabaseError | InvalidPostTransition | MissingPermission | PostNotFound
     >;
     /**
      * Cancels a post. Once it is publishing, the post itself finishes with
@@ -243,7 +257,11 @@ export class PostScheduling extends Context.Service<
 
         // A new draft can always be scheduled.
         const post = yield* Effect.fromResult(
-          schedulePost(createDraft(postId, actor.workspaceId, content), at, now)
+          schedulePost(
+            createDraft(postId, actor.workspaceId, content, authorOf(actor)),
+            at,
+            now
+          )
         ).pipe(Effect.catchTag("InvalidPostTransition", Effect.die));
 
         const targets = yield* targetsOn(postId, channels).pipe(withPorts);
@@ -328,6 +346,25 @@ export class PostScheduling extends Context.Service<
         }
       );
 
+      const unschedule = Effect.fn("PostScheduling.unschedule")(
+        function* unschedule(actor: Actor, postId: PostId) {
+          yield* mayPublish(actor);
+
+          return yield* transaction(
+            Effect.gen(function* moveBackAndStop() {
+              const current = yield* lockPost(actor, postId);
+
+              const draft = yield* Effect.fromResult(moveToDraft(current.post));
+
+              yield* applied(yield* posts.update(draft, current.post));
+              yield* stopJob(current);
+
+              return { post: draft, targets: yield* posts.targets(postId) };
+            })
+          );
+        }
+      );
+
       const cancel = Effect.fn("PostScheduling.cancel")(function* cancel(
         actor: Actor,
         postId: PostId
@@ -361,7 +398,13 @@ export class PostScheduling extends Context.Service<
         );
       });
 
-      return PostScheduling.of({ cancel, reschedule, schedule, scheduleDraft });
+      return PostScheduling.of({
+        cancel,
+        reschedule,
+        schedule,
+        scheduleDraft,
+        unschedule,
+      });
     })
   );
 }

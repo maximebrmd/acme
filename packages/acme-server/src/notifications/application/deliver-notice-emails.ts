@@ -1,6 +1,9 @@
 import { Context, DateTime, Effect, Layer, Option, Schedule } from "effect";
 
-import { audienceOf, pageOf } from "#notifications/domain/notice-event.ts";
+import {
+  pageOf,
+  readerPermissionOf,
+} from "#notifications/domain/notice-event.ts";
 import type { Notice } from "#notifications/domain/notice.ts";
 import {
   defaultPreferences,
@@ -124,11 +127,13 @@ export class DeliverNoticeEmails extends Context.Service<
             return 0;
           }
 
-          // One event's notices share its workspace and its audience.
+          // One event's notices share its workspace and its audience: a
+          // reader who left the workspace, or may no longer act on a
+          // channel, gets no email.
           const { recipients: people, workspaceName } =
             yield* recipients.withPermission(
               first.workspaceId,
-              audienceOf(first.event)
+              readerPermissionOf(first.event)
             );
 
           const chosen = yield* preferences.forUsers(

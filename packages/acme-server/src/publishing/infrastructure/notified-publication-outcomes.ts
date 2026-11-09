@@ -35,12 +35,18 @@ const eventOf = (target: PostTarget, channel: Channel) => {
   });
 };
 
+// The key of what a target's round brought: one notice per target and round.
+const keyOf = (target: PostTarget) =>
+  `post-target:${target.id}:${target.round}`;
+
 /**
  * Outcomes told through the notifications context, in the transaction that
  * settled the target: the notices commit with the settlement, once, under a
- * key per target and round, so a repost is told again. The channel is named
- * as the channels context has it now, by the repository port its jobs read
- * any workspace's channel with.
+ * key per target and round, so a repost is told again. They go to the post's
+ * author and the members who follow every post (`recipientsOf`). The channel
+ * is named as the channels context has it now, by the repository port its
+ * jobs read any workspace's channel with. A round a member dealt with, by
+ * confirming or reposting it, resolves its notices.
  *
  * The database failing rolls the settlement back with the notices, and the
  * step is retried. A bug in telling is logged, and never stops publishing:
@@ -68,11 +74,17 @@ export const NotifiedPublicationOutcomes = Layer.effect(
         return;
       }
 
+      const { post } = found.value;
+
       yield* notices
         .notify({
+          ...Option.match(post.authorId, {
+            onNone: () => ({}),
+            onSome: (author) => ({ author }),
+          }),
           event: event.value,
-          key: `post-target:${target.id}:${target.round}`,
-          workspaceId: found.value.post.workspaceId,
+          key: keyOf(target),
+          workspaceId: post.workspaceId,
         })
         .pipe(
           Effect.catchTag("RecipientsUnavailable", (failure) =>
@@ -82,6 +94,12 @@ export const NotifiedPublicationOutcomes = Layer.effect(
     });
 
     return PublicationOutcomes.of({
+      resolved: (target) =>
+        notices
+          .resolve(keyOf(target))
+          .pipe(
+            Effect.annotateLogs({ round: target.round, targetId: target.id })
+          ),
       settled: (target) =>
         settled(target).pipe(
           Effect.catchDefect((defect) =>

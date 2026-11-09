@@ -17,8 +17,14 @@ export const english: EmailCatalog = {
     subject: "Reconnect {handle} on {platform} by {expiresAt}",
   },
   failureReasons: {
+    channelDisabled:
+      "its channel was turned off before it went out. Turn it back on, then post again.",
+    channelDisconnected:
+      "its channel was disconnected from the workspace before it went out.",
     contentRejected: "the platform refused its text or its format.",
     mediaRejected: "the platform refused one of its images or videos.",
+    mediaRemoved:
+      "one of its images or videos was deleted from the media library before it went out.",
     missed:
       "Acme was unavailable at the scheduled time, and the post came too late to send.",
     notPublished: "someone checked the platform and did not find it.",
@@ -56,21 +62,21 @@ export const english: EmailCatalog = {
     action: "Open the post",
     body: "A post of {workspaceName} did not go out on {channel}: {reason}",
     ignore:
-      "You receive this email because you schedule posts in {workspaceName} on Acme. Choose which notifications you receive by email in your notification preferences.",
+      "You receive this email because you wrote this post in {workspaceName} on Acme, or follow its posts. Choose which notifications you receive by email in your notification preferences.",
     subject: "A post did not go out on {channel}",
   },
   postPublished: {
     action: "See the post",
     body: "A post of {workspaceName} is live on {channel}.",
     ignore:
-      "You receive this email because you schedule posts in {workspaceName} on Acme. Choose which notifications you receive by email in your notification preferences.",
+      "You receive this email because you wrote this post in {workspaceName} on Acme, or follow its posts. Choose which notifications you receive by email in your notification preferences.",
     subject: "Published on {channel}",
   },
   postUnconfirmed: {
     action: "Open the post",
     body: "Acme sent a post of {workspaceName} to {channel} but got no answer, so it may or may not be live. Check the platform before you post it again, then tell Acme what you found.",
     ignore:
-      "You receive this email because you schedule posts in {workspaceName} on Acme. Choose which notifications you receive by email in your notification preferences.",
+      "You receive this email because you wrote this post in {workspaceName} on Acme, or follow its posts. Choose which notifications you receive by email in your notification preferences.",
     subject: "Check {channel}: a post may have gone out",
   },
   resetPassword: {
