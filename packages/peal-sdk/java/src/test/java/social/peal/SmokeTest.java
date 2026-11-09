@@ -1,37 +1,36 @@
+// The smoke test, which scripts/test.ts runs against a stand-in API: the
+// health check, the signed-in user with a bearer token, and the error a
+// refused token raises.
 package social.peal;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import social.peal.api.SessionApi;
-import social.peal.api.SystemApi;
-import social.peal.auth.HttpBearerAuth;
-import social.peal.model.Me;
+import social.peal.core.PealClientApiException;
+import social.peal.types.Me;
+import social.peal.types.Permission;
 
-/**
- * The smoke test, which scripts/test.ts runs against a stand-in API: the
- * health check, then the signed-in user with a bearer token, set up as the
- * docs show. It runs only with PEAL_API_URL.
- */
 class SmokeTest {
-  @Test
-  @EnabledIfEnvironmentVariable(named = "PEAL_API_URL", matches = ".+")
-  void callsTheApiWithABearerToken() throws ApiException {
-    ApiClient client = Configuration.getDefaultApiClient();
-    client.setBasePath(System.getenv("PEAL_API_URL"));
-    ((HttpBearerAuth) client.getAuthentication("bearer")).setBearerToken("peal_test");
+    private static final String BASE_URL = System.getenv("PEAL_API_URL");
 
-    new SystemApi(client).health();
-    Me me = new SessionApi(client).sessionMe();
+    @Test
+    void callsTheApiWithItsToken() {
+        PealClient peal = PealClient.builder().url(BASE_URL).token("peal_test").build();
 
-    assertEquals("ada@example.test", me.getUser().getEmail());
-    assertNull(me.getImpersonatedBy());
-    assertNull(me.getUser().getImage());
-    assertTrue(
-        me.getWorkspaces().get(0).getPermissions().stream()
-            .anyMatch(permission -> "post:schedule".equals(permission.getValue())));
-  }
+        peal.system().health();
+        Me me = peal.session().me();
+
+        assertEquals("ada@example.test", me.getUser().getEmail());
+        assertFalse(me.getImpersonatedBy().isPresent());
+        assertFalse(me.getUser().getImage().isPresent());
+        assertTrue(me.getWorkspaces().get(0).getPermissions().contains(Permission.POST_SCHEDULE));
+
+        PealClient refused = PealClient.builder().url(BASE_URL).token("refused").build();
+        PealClientApiException error =
+                assertThrows(PealClientApiException.class, () -> refused.session().me());
+        assertEquals(401, error.statusCode());
+    }
 }

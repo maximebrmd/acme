@@ -1,28 +1,30 @@
 [package]
 name = "peal-sdk"
-version = "0.2.0"
-authors = ["Peal <hello@peal.social>"]
-description = "Schedule posts across social platforms, follow how they did, and manage a Peal workspace's channels, media and members."
-license = "Apache-2.0"
-homepage = "https://peal.social"
-repository = "https://github.com/peal-social/peal"
-# Files this repository needs and the crate does not: Nx's project, the
-# generator's records, the smoke test (scripts/test.ts runs it).
-exclude = ["project.json", ".openapi-generator", ".openapi-generator-ignore", ".gitignore", "examples/smoke.rs"]
+version = "0.3.0"
 edition = "2021"
+description = "Client for the Peal API: schedule social media posts across platforms."
+license = "Apache-2.0"
+repository = "https://github.com/peal-social/peal"
+documentation = "https://docs.rs/peal-sdk"
+homepage = "https://peal.social"
+authors = ["Peal <hello@peal.social>"]
+keywords = ["peal", "social-media", "scheduling", "api", "sdk"]
+# Files this repository needs and the crate does not: Nx's project, Fern's
+# records, the smoke test (scripts/test.ts runs it).
+exclude = ["project.json", ".fern", ".fernignore", "examples/smoke.rs"]
+
+[lib]
+doctest = false
 
 [dependencies]
-serde = { version = "^1.0", features = ["derive"] }
-serde_with = { version = "^3.8", default-features = false, features = ["base64", "std", "macros"] }
-serde_json = "^1.0"
-serde_repr = "^0.1"
-url = "^2.5"
-reqwest = { version = "^0.13", default-features = false, features = ["json", "multipart", "query", "form"] }
+bytes = "1.0"
+futures = "0.3"
+reqwest = { version = "0.12", features = ["json", "stream", "gzip", "rustls-tls"], default-features = false }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+thiserror = "1.0"
+tokio = { version = "1.0", features = ["full"] }
 
 [dev-dependencies]
-tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+tokio-test = "0.4"
 
-[features]
-default = ["rustls"]
-native-tls = ["reqwest/native-tls"]
-rustls = ["reqwest/rustls"]

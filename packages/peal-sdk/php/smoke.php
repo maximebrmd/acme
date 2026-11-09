@@ -1,26 +1,36 @@
 <?php
 
 // The smoke test, which scripts/test.ts runs against a stand-in API: the
-// health check, then the signed-in user with a bearer token.
+// health check, the signed-in user with a bearer token, and the error a
+// refused token raises.
 
 require __DIR__ . '/vendor/autoload.php';
 
-$config = Peal\Configuration::getDefaultConfiguration()
-    ->setHost(getenv('PEAL_API_URL'))
-    ->setAccessToken('peal_test');
-$client = new GuzzleHttp\Client();
+use Peal\Exceptions\PealApiException;
+use Peal\PealClient;
 
-(new Peal\Api\SystemApi($client, $config))->health();
-$me = (new Peal\Api\SessionApi($client, $config))->sessionMe();
+$baseUrl = getenv('PEAL_API_URL');
+$peal = new PealClient(token: 'peal_test', options: ['baseUrl' => $baseUrl]);
+
+$peal->system->health();
+$me = $peal->session->me();
 
 if (
-    $me->getUser()->getEmail() !== 'ada@example.test'
-    || $me->getImpersonatedBy() !== null
-    || $me->getUser()->getImage() !== null
-    || !in_array('post:schedule', $me->getWorkspaces()[0]->getPermissions(), true)
+    $me->user->email !== 'ada@example.test'
+    || $me->impersonatedBy !== null
+    || $me->user->image !== null
+    || !in_array('post:schedule', $me->workspaces[0]->permissions, true)
 ) {
-    fwrite(STDERR, 'Unexpected answer: ' . $me . PHP_EOL);
-    exit(1);
+    throw new RuntimeException('Unexpected answer: ' . $me->toJson());
+}
+
+try {
+    (new PealClient(token: 'refused', options: ['baseUrl' => $baseUrl]))->session->me();
+    throw new RuntimeException('A refused token got an answer');
+} catch (PealApiException $error) {
+    if ($error->getCode() !== 401) {
+        throw $error;
+    }
 }
 
 echo "ok\n";

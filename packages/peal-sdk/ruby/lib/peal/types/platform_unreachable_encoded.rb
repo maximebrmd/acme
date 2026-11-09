@@ -1,0 +1,11 @@
+# frozen_string_literal: true
+
+require_relative "../../peal"
+
+module Peal
+  module Types
+    class PlatformUnreachableEncoded < Internal::Types::Model
+      field :tag, -> { Peal::Types::PlatformUnreachableEncodedTag }, optional: false, nullable: false, api_name: "_tag"
+    end
+  end
+end

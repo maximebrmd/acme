@@ -411,8 +411,7 @@ behind.
 
 The SDKs in `packages/peal-sdk` are generated from the contract and
 committed. After changing the contract, regenerate them, then build them; both
-need Docker, which runs openapi-generator and every toolchain but TypeScript's
-and uv's:
+need Docker, which runs Fern's generators and every toolchain but uv's:
 
 ```sh
 bun run sdk:generate   # rewrite every SDK from the contract

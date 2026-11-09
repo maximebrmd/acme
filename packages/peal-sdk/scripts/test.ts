@@ -7,7 +7,7 @@ import path from "node:path";
 
 import { $ } from "bun";
 
-import { runInContainer, sdkRoot, workspaceRoot } from "./container.ts";
+import { runInContainer, sdkRoot } from "./container.ts";
 import { languageNamed } from "./languages.ts";
 
 const language = languageNamed(Bun.argv[2]);
@@ -74,7 +74,6 @@ try {
     ? $`sh -c ${language.test}`.cwd(path.join(sdkRoot, language.name)).env({
         ...process.env,
         PEAL_API_URL: `http://127.0.0.1:${server.port}`,
-        TSC: path.join(workspaceRoot, "node_modules", ".bin", "tsc"),
       })
     : runInContainer({
         arguments: ["sh", "-c", language.test],

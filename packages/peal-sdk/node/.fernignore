@@ -1,0 +1,7 @@
+# Ours, which Fern leaves alone when it regenerates this folder; it deletes
+# every other file it did not write. scripts/generate.ts copies LICENSE and
+# NOTICE in after it.
+.fernignore
+project.json
+# The smoke test, which scripts/test.ts runs.
+test/

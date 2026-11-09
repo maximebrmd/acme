@@ -1,0 +1,2 @@
+pub mod notification_preferences;
+pub use notification_preferences::NotificationPreferencesClient;

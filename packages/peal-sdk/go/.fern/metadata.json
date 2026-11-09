@@ -1,0 +1,13 @@
+{
+  "cliVersion": "5.201.0",
+  "generatorName": "fernapi/fern-go-sdk",
+  "generatorVersion": "1.70.22",
+  "generatorConfig": {
+    "module": {
+      "path": "github.com/peal-social/peal/packages/peal-sdk/go"
+    },
+    "packageName": "peal"
+  },
+  "requestedVersion": "0.3.0",
+  "sdkVersion": "v0.3.0"
+}

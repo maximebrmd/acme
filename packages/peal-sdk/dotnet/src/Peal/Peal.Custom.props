@@ -1,0 +1,19 @@
+<!-- Ours (see .fernignore): what the generated project cannot know. Peal.csproj imports it last. -->
+<Project>
+  <PropertyGroup>
+    <Authors>Peal</Authors>
+    <Company>Peal</Company>
+    <Copyright>Copyright 2026 Peal</Copyright>
+    <Description>Client for the Peal API: schedule social media posts across platforms.</Description>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <PackageProjectUrl>https://peal.social</PackageProjectUrl>
+    <PackageTags>peal;social-media;scheduling;api;sdk</PackageTags>
+    <RepositoryType>git</RepositoryType>
+    <RepositoryUrl>https://github.com/peal-social/peal</RepositoryUrl>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Apache-2.0 asks every copy to carry the license and the notice. -->
+    <None Include="..\..\LICENSE" Pack="true" PackagePath="\" />
+    <None Include="..\..\NOTICE" Pack="true" PackagePath="\" />
+  </ItemGroup>
+</Project>

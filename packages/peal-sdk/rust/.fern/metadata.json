@@ -1,0 +1,15 @@
+{
+  "cliVersion": "5.201.0",
+  "generatorName": "fernapi/fern-rust-sdk",
+  "generatorVersion": "0.53.6",
+  "generatorConfig": {
+    "clientClassName": "PealClient",
+    "crateName": "peal-sdk",
+    "packageDescription": "Client for the Peal API: schedule social media posts across platforms.",
+    "packageDocumentation": "https://docs.rs/peal-sdk",
+    "packageLicense": "Apache-2.0",
+    "packageRepository": "https://github.com/peal-social/peal",
+    "preserveCrateNameHyphens": true
+  },
+  "requestedVersion": "0.3.0"
+}

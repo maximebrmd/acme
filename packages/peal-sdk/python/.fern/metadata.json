@@ -1,0 +1,12 @@
+{
+  "cliVersion": "5.201.0",
+  "generatorName": "fernapi/fern-python-sdk",
+  "generatorVersion": "5.41.26",
+  "generatorConfig": {
+    "client": {
+      "class_name": "Peal"
+    },
+    "package_name": "peal"
+  },
+  "requestedVersion": "0.3.0"
+}
