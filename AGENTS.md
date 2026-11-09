@@ -357,9 +357,10 @@ and no socket, for tests.
   (`workspace/domain/membership.ts`), and Better Auth refuses them every route
   that changes a workspace or the account (name, language, password,
   sessions), grants an OAuth client access or approves a device code
-  (`impersonation.ts`). They may write, schedule and publish posts: what
-  they make keeps the member as its author (`author_id`), and the audit log
-  keeps the staff member behind it.
+  (`impersonation.ts`). They may write and edit drafts, not schedule or
+  publish them: a scheduled post goes out after the impersonation ends, to
+  the member's real accounts. What they write keeps the member as its author
+  (`author_id`), and the audit log keeps the staff member behind it.
 - Every request in an impersonation session goes through
   `ImpersonationGuard` (`workspace/application/impersonation-guard.ts`)
   before its handler, so no handler can skip it: `Authentication` (session
