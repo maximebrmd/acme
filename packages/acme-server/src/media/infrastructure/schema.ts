@@ -17,11 +17,13 @@ const instant = (name: string) =>
   timestamp(name, { mode: "date", withTimezone: true });
 
 // One row per media asset. The status columns mirror MediaStatus: a pending
-// multipart upload keeps the store's upload id and part size, and a rejected
-// asset its reason. Metadata stays null until a probe finds it.
+// multipart upload keeps the store's upload id and part size, an uploaded
+// asset where its probe stands, and a rejected asset its reason. Metadata
+// stays null until a probe finds it.
 export const mediaAssets = media.table(
   "media_assets",
   {
+    altText: text("alt_text"),
     byteSize: bigint("byte_size", { mode: "number" }).notNull(),
     codec: text("codec"),
     contentType: text("content_type").notNull(),
@@ -31,6 +33,8 @@ export const mediaAssets = media.table(
     id: uuid("id").primaryKey(),
     multipartPartSize: integer("multipart_part_size"),
     multipartUploadId: text("multipart_upload_id"),
+    // Null on rows saved uploaded before probes were tracked: not probed yet.
+    probeState: text("probe_state"),
     rejectionReason: text("rejection_reason"),
     status: text("status").notNull(),
     storageKey: text("storage_key").notNull().unique(),
@@ -39,7 +43,12 @@ export const mediaAssets = media.table(
     workspaceId: uuid("workspace_id").notNull(),
   },
   (table) => [
-    index("media_assets_workspace_id_index").on(table.workspaceId),
+    // A workspace's assets, newest first: ids are UUIDv7s, so they sort by
+    // creation time.
+    index("media_assets_workspace_id_id_index").on(
+      table.workspaceId,
+      table.id.desc()
+    ),
     check(
       "media_assets_status",
       sql`${table.status} IN ('pending', 'uploaded', 'ready', 'rejected')`
@@ -47,6 +56,10 @@ export const mediaAssets = media.table(
     check(
       "media_assets_multipart_upload",
       sql`(${table.multipartUploadId} IS NULL) = (${table.multipartPartSize} IS NULL) AND (${table.multipartUploadId} IS NULL OR ${table.status} = 'pending')`
+    ),
+    check(
+      "media_assets_probe_state",
+      sql`${table.probeState} IS NULL OR ${table.status} = 'uploaded'`
     ),
     check(
       "media_assets_rejection_reason",

@@ -1,8 +1,3 @@
-import { execFileSync, spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
-import os from "node:os";
-import path from "node:path";
-
 import { assert, layer } from "@effect/vitest";
 import { ConfigProvider, Duration, Effect, Layer, Option } from "effect";
 import sharp from "sharp";
@@ -20,48 +15,14 @@ import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import { IdsLive } from "#shared/infrastructure/secure-random-ids.ts";
 import {
   damagedPng,
+  hasFfmpeg,
   sendSigned,
   storageSettings,
   syntheticSvg,
+  syntheticVideo,
 } from "#test/media/support.ts";
 
 const expiresIn = Duration.minutes(5);
-
-// CI runners may lack FFmpeg; the parsing tests below cover its output.
-const hasFfmpeg =
-  spawnSync("ffmpeg", ["-version"]).status === 0 &&
-  spawnSync("ffprobe", ["-version"]).status === 0;
-
-// A one-second 320×240 test pattern, encoded with FFmpeg's own MPEG-4 encoder,
-// which every build has.
-const syntheticVideo = (): Uint8Array<ArrayBuffer> => {
-  const folder = mkdtempSync(path.join(os.tmpdir(), "acme-probe-"));
-  const file = path.join(folder, "pattern.mp4");
-
-  try {
-    execFileSync(
-      "ffmpeg",
-      [
-        "-v",
-        "error",
-        "-f",
-        "lavfi",
-        "-i",
-        "testsrc=size=320x240:rate=25",
-        "-t",
-        "1",
-        "-c:v",
-        "mpeg4",
-        file,
-      ],
-      { stdio: "ignore" }
-    );
-
-    return new Uint8Array(readFileSync(file));
-  } finally {
-    rmSync(folder, { force: true, recursive: true });
-  }
-};
 
 // A 40×30 JPEG whose EXIF orientation turns it a quarter turn.
 const sidewaysJpeg = Effect.promise(

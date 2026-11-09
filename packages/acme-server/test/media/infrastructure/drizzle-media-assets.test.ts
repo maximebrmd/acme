@@ -1,15 +1,19 @@
 import { assert, layer } from "@effect/vitest";
+import { eq } from "drizzle-orm";
 import { DateTime, Duration, Effect, Layer, Option } from "effect";
 
 import { MediaAssets } from "#media/application/ports/media-assets.ts";
+import { AltTextSchema } from "#media/domain/alt-text.ts";
 import { MediaAssetIdSchema } from "#media/domain/media-asset-id.ts";
 import { MediaAsset, startUpload } from "#media/domain/media-asset.ts";
 import { maxDuration, MediaMetadata } from "#media/domain/media-metadata.ts";
 import type { MediaStatus } from "#media/domain/media-status.ts";
 import { MultipartUploadIdSchema } from "#media/domain/media-status.ts";
 import { DrizzleMediaAssetsLive } from "#media/infrastructure/drizzle-media-assets.ts";
+import { mediaAssets } from "#media/infrastructure/schema.ts";
 import { Ids } from "#shared/application/ids.ts";
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
+import { Drizzle } from "#shared/infrastructure/database.ts";
 import { DatabaseTest } from "#test/media/support.ts";
 
 const RepositoryTest = DrizzleMediaAssetsLive.pipe(
@@ -33,6 +37,7 @@ const freshAsset = Effect.gen(function* freshAsset() {
         contentType: "video/quicktime",
         kind: "video",
       },
+      altText: Option.none(),
       id,
       upload: { _tag: "single" },
       workspaceId,
@@ -47,6 +52,7 @@ const changed = (
   metadata = asset.metadata
 ): MediaAsset =>
   new MediaAsset({
+    altText: asset.altText,
     byteSize: asset.byteSize,
     contentType: asset.contentType,
     createdAt: asset.createdAt,
@@ -57,6 +63,8 @@ const changed = (
     updatedAt: later,
     workspaceId: asset.workspaceId,
   });
+
+const uploaded: MediaStatus = { _tag: "uploaded", probe: "pending" };
 
 const probed = new MediaMetadata({
   codec: Option.some("h264"),
@@ -86,7 +94,9 @@ layer(RepositoryTest)("the Drizzle media assets", (it) => {
             uploadId: MultipartUploadIdSchema.make("synthetic-upload-id"),
           },
         }),
-        changed(asset, { _tag: "uploaded" }),
+        changed(asset, { _tag: "uploaded", probe: "pending" }),
+        changed(asset, { _tag: "uploaded", probe: "unavailable" }),
+        changed(asset, { _tag: "uploaded", probe: "timedOut" }),
         changed(asset, { _tag: "ready" }, probed),
         changed(asset, { _tag: "rejected", reason: "typeMismatch" }),
       ];
@@ -109,11 +119,11 @@ layer(RepositoryTest)("the Drizzle media assets", (it) => {
       const ready = changed(asset, { _tag: "ready" }, probed);
 
       yield* assets.insert(asset);
-      yield* assets.update(changed(asset, { _tag: "uploaded" }), "pending");
+      yield* assets.update(changed(asset, uploaded), "pending");
       yield* assets.update(ready, "uploaded");
 
       // A call that read the asset while it was pending saves too late.
-      const stale = changed(asset, { _tag: "uploaded" });
+      const stale = changed(asset, uploaded);
 
       assert.deepStrictEqual(yield* assets.update(stale, "pending"), ready);
       assert.deepStrictEqual(
@@ -178,7 +188,7 @@ layer(RepositoryTest)("the Drizzle media assets", (it) => {
       yield* assets.remove(asset.workspaceId, asset.id);
 
       const error = yield* Effect.flip(
-        assets.update(changed(asset, { _tag: "uploaded" }), "pending")
+        assets.update(changed(asset, uploaded), "pending")
       );
 
       assert.strictEqual(error._tag, "MediaAssetNotFound");
@@ -186,6 +196,168 @@ layer(RepositoryTest)("the Drizzle media assets", (it) => {
         yield* assets.findById(asset.workspaceId, asset.id),
         Option.none()
       );
+    })
+  );
+  it.effect("lists a workspace's assets newest first, a page at a time", () =>
+    Effect.gen(function* lists() {
+      const assets = yield* MediaAssets;
+      const first = yield* freshAsset;
+      const ids = yield* Ids;
+
+      // Five assets of one workspace, and one of another.
+      const mine = [first];
+
+      for (let count = 0; count < 4; count += 1) {
+        const id = MediaAssetIdSchema.make(yield* ids.next);
+
+        mine.push(
+          startUpload(
+            {
+              accepted: {
+                byteSize: 100,
+                contentType: "image/png",
+                kind: "image",
+              },
+              altText: Option.none(),
+              id,
+              upload: { _tag: "single" },
+              workspaceId: first.workspaceId,
+            },
+            createdAt
+          )
+        );
+      }
+
+      const theirs = yield* freshAsset;
+
+      yield* Effect.forEach([...mine, theirs], assets.insert);
+
+      const newestFirst = mine.toReversed().map((asset) => asset.id);
+      const workspace = first.workspaceId;
+
+      const firstPage = yield* assets.list(workspace, {
+        after: Option.none(),
+        limit: 2,
+      });
+
+      assert.deepStrictEqual(
+        firstPage.assets.map((asset) => asset.id),
+        newestFirst.slice(0, 2)
+      );
+      assert.deepStrictEqual(firstPage.next, Option.some(newestFirst[1]));
+
+      const secondPage = yield* assets.list(workspace, {
+        after: firstPage.next,
+        limit: 2,
+      });
+
+      assert.deepStrictEqual(
+        secondPage.assets.map((asset) => asset.id),
+        newestFirst.slice(2, 4)
+      );
+
+      const lastPage = yield* assets.list(workspace, {
+        after: secondPage.next,
+        limit: 2,
+      });
+
+      assert.deepStrictEqual(
+        lastPage.assets.map((asset) => asset.id),
+        newestFirst.slice(4)
+      );
+      assert.deepStrictEqual(lastPage.next, Option.none());
+
+      // Exactly a page left: no next page.
+      const exact = yield* assets.list(workspace, {
+        after: Option.none(),
+        limit: 5,
+      });
+
+      assert.strictEqual(exact.assets.length, 5);
+      assert.deepStrictEqual(exact.next, Option.none());
+    })
+  );
+
+  it.effect("keeps a description that a status change read before", () =>
+    Effect.gen(function* describes() {
+      const assets = yield* MediaAssets;
+      const asset = yield* freshAsset;
+      const altText = Option.some(AltTextSchema.make("A synthetic video"));
+
+      yield* assets.insert(asset);
+
+      const described = yield* assets.describe(
+        asset.workspaceId,
+        asset.id,
+        altText,
+        later
+      );
+
+      assert.deepStrictEqual(described.altText, altText);
+      assert.deepStrictEqual(described.updatedAt, later);
+
+      // A transition that read the asset before it was described.
+      const saved = yield* assets.update(changed(asset, uploaded), "pending");
+
+      assert.deepStrictEqual(saved.altText, altText);
+      assert.deepStrictEqual(saved.status, uploaded);
+      assert.deepStrictEqual(
+        yield* assets.findById(asset.workspaceId, asset.id),
+        Option.some(saved)
+      );
+
+      const cleared = yield* assets.describe(
+        asset.workspaceId,
+        asset.id,
+        Option.none(),
+        later
+      );
+
+      assert.deepStrictEqual(cleared.altText, Option.none());
+    })
+  );
+
+  it.effect("describes an asset only in its own workspace", () =>
+    Effect.gen(function* scopedDescription() {
+      const assets = yield* MediaAssets;
+      const asset = yield* freshAsset;
+      const other = yield* freshAsset;
+
+      yield* assets.insert(asset);
+
+      const error = yield* Effect.flip(
+        assets.describe(
+          other.workspaceId,
+          asset.id,
+          Option.some(AltTextSchema.make("Not theirs")),
+          later
+        )
+      );
+
+      assert.strictEqual(error._tag, "MediaAssetNotFound");
+      assert.deepStrictEqual(
+        yield* assets.findById(asset.workspaceId, asset.id),
+        Option.some(asset)
+      );
+    })
+  );
+
+  it.effect("reads an uploaded row saved before probes were tracked", () =>
+    Effect.gen(function* legacyRow() {
+      const assets = yield* MediaAssets;
+      const asset = yield* freshAsset;
+      const db = yield* Drizzle;
+
+      yield* assets.insert(changed(asset, uploaded));
+      yield* db
+        .update(mediaAssets)
+        .set({ probeState: null })
+        .where(eq(mediaAssets.id, asset.id))
+        .pipe(Effect.orDie);
+
+      const found = yield* assets.findById(asset.workspaceId, asset.id);
+
+      assert.deepStrictEqual(Option.getOrUndefined(found)?.status, uploaded);
     })
   );
 });

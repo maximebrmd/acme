@@ -1,0 +1,188 @@
+{
+  "type": "diff",
+  "version": "9",
+  "dialect": "postgres",
+  "id": "53fbae94-0c6f-4116-8974-476212f9165b",
+  "prevIds": [
+    "2b4c9862-4be6-4f33-aa22-f5ec0a34fa39"
+  ],
+  "footprints": [
+    {
+      "statementType": "drop_index",
+      "statementTarget": [
+        "index",
+        "media",
+        "media_assets",
+        "media_assets_workspace_id_index"
+      ],
+      "writes": [
+        "s|idx|media.media_assets_workspace_id_index",
+        "n|idx|media.media_assets_workspace_id_index",
+        "e|idx|media.media_assets_workspace_id_index",
+        "n|rel|media.media_assets_workspace_id_index"
+      ],
+      "reads": [
+        "e|tbl|media.media_assets",
+        "n|sch|media",
+        "e|col|media.media_assets.workspace_id"
+      ],
+      "sharedWrites": []
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "media",
+        "media_assets",
+        "alt_text"
+      ],
+      "writes": [
+        "s|col|media.media_assets.alt_text",
+        "n|col|media.media_assets.alt_text",
+        "e|col|media.media_assets.alt_text"
+      ],
+      "reads": [
+        "n|tbl|media.media_assets",
+        "n|sch|media"
+      ]
+    },
+    {
+      "statementType": "add_column",
+      "statementTarget": [
+        "column",
+        "media",
+        "media_assets",
+        "probe_state"
+      ],
+      "writes": [
+        "s|col|media.media_assets.probe_state",
+        "n|col|media.media_assets.probe_state",
+        "e|col|media.media_assets.probe_state"
+      ],
+      "reads": [
+        "n|tbl|media.media_assets",
+        "n|sch|media"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "media",
+        "media_assets",
+        "media_assets_workspace_id_id_index"
+      ],
+      "writes": [
+        "s|idx|media.media_assets_workspace_id_id_index",
+        "n|idx|media.media_assets_workspace_id_id_index",
+        "e|idx|media.media_assets_workspace_id_id_index",
+        "n|rel|media.media_assets_workspace_id_id_index"
+      ],
+      "reads": [
+        "n|tbl|media.media_assets",
+        "n|sch|media",
+        "n|col|media.media_assets.workspace_id",
+        "n|col|media.media_assets.id"
+      ]
+    },
+    {
+      "statementType": "add_check",
+      "statementTarget": [
+        "table",
+        "media",
+        "media_assets"
+      ],
+      "writes": [
+        "s|ck|media.media_assets.media_assets_probe_state",
+        "n|ck|media.media_assets.media_assets_probe_state",
+        "e|ck|media.media_assets.media_assets_probe_state",
+        "n|con|media.media_assets.media_assets_probe_state"
+      ],
+      "reads": [
+        "n|tbl|media.media_assets",
+        "n|sch|media",
+        "n|col|media.media_assets.probe_state",
+        "n|col|media.media_assets.status"
+      ]
+    }
+  ],
+  "deltas": [
+    {
+      "op": "create",
+      "row": {
+        "schema": "media",
+        "table": "media_assets",
+        "name": "alt_text",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "media",
+        "table": "media_assets",
+        "name": "probe_state",
+        "type": "text",
+        "typeSchema": null,
+        "notNull": false,
+        "dimensions": 0,
+        "default": null,
+        "generated": null,
+        "identity": null,
+        "entityType": "columns"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "media",
+        "table": "media_assets",
+        "name": "media_assets_workspace_id_id_index",
+        "nameExplicit": true,
+        "columns": [
+          {
+            "value": "workspace_id",
+            "isExpression": false,
+            "asc": true,
+            "nullsFirst": false,
+            "opclass": null
+          },
+          {
+            "value": "id",
+            "isExpression": false,
+            "asc": false,
+            "nullsFirst": false,
+            "opclass": null
+          }
+        ],
+        "isUnique": false,
+        "where": null,
+        "with": "",
+        "method": "btree",
+        "concurrently": false,
+        "entityType": "indexes"
+      }
+    },
+    {
+      "op": "create",
+      "row": {
+        "schema": "media",
+        "table": "media_assets",
+        "name": "media_assets_probe_state",
+        "value": "\"probe_state\" IS NULL OR \"status\" = 'uploaded'",
+        "entityType": "checks"
+      }
+    },
+    {
+      "op": "drop",
+      "key": "indexes\u0000[\"media\",\"media_assets_workspace_id_index\"]"
+    }
+  ]
+}

@@ -1,18 +1,6 @@
 import { Schema } from "effect";
 
-/** Why a probe could not read a file. */
-export const ProbeFailureReasonSchema = Schema.Literals([
-  // The file is damaged, or not in a format the probe reads.
-  "unreadable",
-  // Reading it took longer than the probe allows.
-  "timedOut",
-  // The store served more bytes than acme stores for the file's kind.
-  "tooLarge",
-  // The probing program could not run, or printed nothing it understands.
-  "toolFailed",
-]);
-
-export type ProbeFailureReason = typeof ProbeFailureReasonSchema.Type;
+import { ProbeFailureReasonSchema } from "#media/domain/media-status.ts";
 
 /**
  * A probe ran and could not read the file. The reason is for clients to

@@ -6,6 +6,7 @@ import { MediaStatusNameSchema } from "./media-status.ts";
 /** The transitions of `./media-asset.ts`, by name. */
 export const MediaActionSchema = Schema.Literals([
   "markUploaded",
+  "markUnprobed",
   "markReady",
   "markRejected",
 ]);

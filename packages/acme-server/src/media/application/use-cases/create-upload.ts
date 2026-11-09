@@ -1,4 +1,4 @@
-import { DateTime, Effect, Schema } from "effect";
+import { DateTime, Effect, Option, Schema } from "effect";
 
 import { MediaAssets } from "#media/application/ports/media-assets.ts";
 import {
@@ -6,6 +6,7 @@ import {
   SignedRequestSchema,
 } from "#media/application/ports/media-storage.ts";
 import { CurrentUploadPolicy } from "#media/application/upload-policy.ts";
+import { altTextOf } from "#media/domain/alt-text.ts";
 import { MediaAssetIdSchema } from "#media/domain/media-asset-id.ts";
 import {
   acceptUpload,
@@ -26,6 +27,8 @@ import type { WorkspaceId } from "#shared/domain/ids.ts";
 
 /** A file the client is about to upload, as it declares it. */
 export interface CreateUploadRequest {
+  /** Its description, as the person typed it, if they did. */
+  readonly altText: Option.Option<string>;
   readonly byteSize: ByteSize;
   readonly contentType: string;
   readonly workspaceId: WorkspaceId;
@@ -76,6 +79,10 @@ export const createUpload = Effect.fn("Media.createUpload")(
       acceptUpload(request.contentType, request.byteSize)
     );
 
+    const altText = yield* Effect.fromResult(
+      altTextOf(Option.getOrElse(request.altText, () => ""))
+    );
+
     const policy = yield* CurrentUploadPolicy;
     const storage = yield* MediaStorage;
     const assets = yield* MediaAssets;
@@ -86,7 +93,7 @@ export const createUpload = Effect.fn("Media.createUpload")(
 
     if (plan._tag === "single") {
       const asset = startUpload(
-        { accepted, id, upload: { _tag: "single" }, workspaceId },
+        { accepted, altText, id, upload: { _tag: "single" }, workspaceId },
         now
       );
 
@@ -120,6 +127,7 @@ export const createUpload = Effect.fn("Media.createUpload")(
     const asset = startUpload(
       {
         accepted,
+        altText,
         id,
         upload: { _tag: "multipart", partSize: plan.partSize, uploadId },
         workspaceId,
