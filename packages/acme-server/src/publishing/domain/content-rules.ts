@@ -230,8 +230,8 @@ const fileViolations = (
 /**
  * What the channel's platform would refuse in the post's images and videos,
  * whose files are `files`, in the post's order: each file's type, size,
- * duration, dimensions and alt text, then how many videos there are and
- * whether they come with images. A platform whose media rules are not known
+ * duration, dimensions and alt text, whether a file that goes alone has
+ * company, then how many videos there are and whether they come with images. A platform whose media rules are not known
  * refuses nothing here; how many it takes is in `violationsOn`.
  */
 export const mediaViolationsOn = (
@@ -252,10 +252,34 @@ export const mediaViolationsOn = (
   const videos = files.filter((file) => file.kind === "video").length;
   const mixed = !rules.mixesKinds && videos > 0 && videos < files.length;
 
+  // A file that takes fewer companions than the platform's own count, as
+  // X's GIFs, which go alone. Past that count, `violationsOn` says so.
+  const { maxMedia } = platformRules[channel.platform];
+
+  const fewest = Math.min(
+    ...files.map(
+      (file) => rules.formats[file.contentType]?.maxMediaWith ?? Infinity
+    )
+  );
+
+  const tooMany =
+    files.length > fewest &&
+    (maxMedia === undefined || content.media.length <= maxMedia);
+
   return [
     ...files.flatMap((file) =>
       fileViolations(rules, channel, file, altTexts.get(file.mediaId) ?? "")
     ),
+    ...(tooMany
+      ? [
+          {
+            _tag: "tooManyMedia" as const,
+            ...channel,
+            count: files.length,
+            maximum: fewest,
+          },
+        ]
+      : []),
     ...atMost("tooManyVideos", channel, videos, rules.maxVideos),
     ...(mixed ? [{ _tag: "mixedMedia" as const, ...channel }] : []),
   ];
