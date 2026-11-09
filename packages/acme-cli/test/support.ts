@@ -196,6 +196,12 @@ const signedInGroupsLive = (authorization: AuthorizationServer) =>
     ),
     HttpApiBuilder.group(Api, "notificationPreferences", (handlers) =>
       handlers.handleAll({ get: () => refusing, update: () => refusing })
+    ),
+    HttpApiBuilder.group(Api, "assistant", (handlers) =>
+      handlers.handleAll({
+        status: () => refusing,
+        suggest: () => refusing,
+      })
     )
   ).pipe(Layer.provideMerge(securityLive(authorization)));
 

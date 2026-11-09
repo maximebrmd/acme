@@ -10,6 +10,7 @@ import { UserIdSchema, WorkspaceIdSchema } from "./ids.ts";
 export const statements = {
   analytics: ["read"],
   apiKey: ["create", "read", "update", "delete"],
+  assistant: ["use"],
   billing: ["read", "manage"],
   channel: ["read", "connect", "disconnect"],
   invitation: ["create", "cancel"],
@@ -43,6 +44,7 @@ export const PermissionSchema = Schema.Literals([
   "apiKey:read",
   "apiKey:update",
   "apiKey:delete",
+  "assistant:use",
   "billing:read",
   "billing:manage",
   "channel:read",

@@ -14,8 +14,9 @@ import type { Grant, Permission } from "#shared/domain/access.ts";
  *   workspace owns it.
  * - `admin`: everything but deleting the workspace.
  * - `editor`: writes, schedules, approves and publishes posts, manages media,
- *   and reads channels and analytics.
- * - `contributor`: drafts posts and uploads media, but publishes nothing.
+ *   asks the writing assistant, and reads channels and analytics.
+ * - `contributor`: drafts posts, uploads media and asks the writing
+ *   assistant, but publishes nothing.
  * - `viewer`: reads posts, media, channels and analytics.
  */
 export const RoleSchema = Schema.Literals([
@@ -34,12 +35,14 @@ export const roleGrants: Readonly<Record<Role, Grant>> = {
   admin: { ...allButOrganization, organization: ["update"] },
   contributor: {
     analytics: ["read"],
+    assistant: ["use"],
     channel: ["read"],
     media: ["read", "upload"],
     post: ["read", "create", "update"],
   },
   editor: {
     analytics: ["read"],
+    assistant: ["use"],
     channel: ["read"],
     media: ["read", "upload", "delete"],
     post: statements.post,

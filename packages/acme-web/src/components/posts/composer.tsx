@@ -25,6 +25,7 @@ import { useFormatter, useLocale, useTranslations } from "next-intl";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 
+import { AssistantMenu } from "#components/posts/assistant-menu.tsx";
 import { ChannelPicker } from "#components/posts/channel-picker.tsx";
 import { CharacterCounters } from "#components/posts/character-counters.tsx";
 import { ComposerActions } from "#components/posts/composer-actions.tsx";
@@ -207,6 +208,8 @@ export const Composer = ({
   const [action, setAction] = useState<ComposerAction | null>(null);
 
   const [text, setText] = useState(post?.content.text ?? "");
+  // Counts the texts accepted from the assistant: each starts fresh editors.
+  const [accepted, setAccepted] = useState(0);
   const [overrides, setOverrides] = useState(() => overridesOf(post));
 
   const [media, setMedia] = useState<readonly MediaAttachment[]>(
@@ -412,7 +415,19 @@ export const Composer = ({
             <legend className="mb-3 text-sm font-medium">
               {t("textLegend")}
             </legend>
+            <AssistantMenu
+              disabled={locked}
+              permissions={permissions}
+              platforms={selected.map(({ platform }) => platform)}
+              text={text}
+              workspaceId={workspaceId}
+              onAccept={(suggested) => {
+                setText(suggested);
+                setAccepted((count) => count + 1);
+              }}
+            />
             <TextTabs
+              key={accepted}
               selected={selected}
               text={text}
               overrides={overrides}

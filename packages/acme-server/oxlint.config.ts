@@ -18,6 +18,7 @@ const contexts = [
   "analytics",
   "billing",
   "notifications",
+  "assistant",
 ] as const;
 
 type Kernel = (typeof contexts)[number] | "shared";

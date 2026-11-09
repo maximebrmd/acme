@@ -39,6 +39,12 @@ const securityHeaders = [
 ];
 
 const config: NextConfig = {
+  // How long, in milliseconds, a request that src/proxy.ts forwards may take
+  // before Next answers 500 instead: 30 seconds unless set. The writing
+  // assistant waits up to 90 seconds for its language model (acme-server's
+  // src/assistant/infrastructure/language-model-writing-model.ts), so this
+  // waits longer.
+  experimental: { proxyTimeout: 120_000 },
   // Every page and every /api response proxied to the server.
   headers: async () =>
     await Promise.resolve([{ headers: securityHeaders, source: "/:path*" }]),
