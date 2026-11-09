@@ -4,10 +4,12 @@ import { getTranslations } from "next-intl/server";
 
 import { currentUserOrNone } from "#auth/session.ts";
 import { AccountMenuView } from "#components/account-menu-view.tsx";
+import { NotificationBell } from "#components/notices/notification-bell.tsx";
 import { Link } from "#i18n/navigation.ts";
 
 // The header's account corner: the signed-in user, read from GET /api/me
-// while the page renders, or a way to sign in, also when that read fails.
+// while the page renders, with their notifications' bell, or a way to sign
+// in, also when that read fails.
 export const AccountMenu = async () => {
   const me = await currentUserOrNone();
   const t = await getTranslations("UserMenu");
@@ -24,7 +26,10 @@ export const AccountMenu = async () => {
       </Button>
     ),
     onSome: ({ user }) => (
-      <AccountMenuView name={user.name} email={user.email} />
+      <>
+        <NotificationBell />
+        <AccountMenuView name={user.name} email={user.email} />
+      </>
     ),
   });
 };

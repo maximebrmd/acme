@@ -472,5 +472,59 @@
       "allowing": "Allowing…",
       "deny": "Deny"
     }
+  },
+  "Notices": {
+    "platform": "{platform, select, bluesky {Bluesky} facebook {Facebook} instagram {Instagram} linkedin {LinkedIn} mastodon {Mastodon} pinterest {Pinterest} threads {Threads} tiktok {TikTok} x {X} youtube {YouTube} other {{platform}}}",
+    "channel": "{platform} ({handle})",
+    "unknownChannel": "a disconnected channel",
+    "unknownWorkspace": "a workspace you left",
+    "event": {
+      "PostPublished": "A post of {workspace} is live on {channel}.",
+      "PostFailed": "A post of {workspace} did not go out on {channel}: {reason}",
+      "PostUnconfirmed": "A post of {workspace} may have gone out on {channel}. Check the platform before you post it again.",
+      "ChannelReconnectRequired": "{channel} in {workspace} must be reconnected: nothing is posted there until it is.",
+      "ChannelReconnectSoon": "{channel} in {workspace} must be reconnected by {expiresAt, date, long}: its authorization cannot be renewed."
+    },
+    "reason": "{reason, select, contentRejected {the platform refused its text or its format.} mediaRejected {the platform refused one of its images or videos.} missed {Acme was unavailable at the scheduled time, and the post came too late to send.} notPublished {someone checked the platform and did not find it.} rateLimited {the platform kept turning requests away, and Acme stopped trying.} tokenExpired {the account’s authorization stopped working. Reconnect it, then post again.} unavailable {the platform could not be reached.} other {{reason}}}",
+    "open": "{page, select, post {Open the post} other {Open the channels}}",
+    "bell": {
+      "label": "{count, plural, =0 {Notifications} one {Notifications, # unread} other {Notifications, # unread}}",
+      "many": "99+",
+      "arrived": "{count, plural, one {# new notification} other {# new notifications}}"
+    },
+    "page": {
+      "title": "Notifications",
+      "description": "What happened to the posts and channels of your workspaces. They stay here until you mark them as read.",
+      "listTitle": "Latest first",
+      "preferences": "Email preferences",
+      "markAllRead": "Mark all as read",
+      "markingAll": "Marking…",
+      "markRead": "Mark as read",
+      "marking": "Marking…",
+      "markFailed": "The notifications could not be marked as read. Try again.",
+      "unread": "Unread",
+      "received": "{date, date, medium} at {date, time, short}",
+      "loading": "Loading the notifications…",
+      "loadFailed": "The notifications could not be loaded.",
+      "reload": "Try again",
+      "loadMore": "Show more",
+      "empty": "Nothing yet. When a post goes out, fails or needs checking, or a channel must be reconnected, it shows here."
+    },
+    "preferences": {
+      "title": "Notification preferences",
+      "description": "Every notification appears in Acme. Choose which ones also reach you by email.",
+      "back": "Back to the notifications",
+      "legend": "Email me when",
+      "postFailed": "A post did not go out",
+      "postUnconfirmed": "A post may have gone out, and needs checking on the platform",
+      "channelReconnect": "A channel must be reconnected, now or soon",
+      "postPublished": "A post went out",
+      "saving": "Saving…",
+      "saved": "Preferences saved.",
+      "saveFailed": "The preferences could not be saved. Try again.",
+      "loading": "Loading your preferences…",
+      "loadFailed": "Your preferences could not be loaded.",
+      "reload": "Try again"
+    }
   }
 }

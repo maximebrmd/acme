@@ -1,0 +1,163 @@
+"use client";
+
+import { useAtomRefresh, useAtomSet, useAtomValue } from "@effect/atom-react";
+import type { NotificationPreferences } from "acme-contract";
+import { Alert, AlertDescription } from "acme-ui/components/alert";
+import { Button } from "acme-ui/components/button";
+import { Checkbox } from "acme-ui/components/checkbox";
+import { Label } from "acme-ui/components/label";
+import { Skeleton } from "acme-ui/components/skeleton";
+import { Exit } from "effect";
+import { AsyncResult } from "effect/reactivity";
+import { useTranslations } from "next-intl";
+import { useId, useTransition } from "react";
+import { toast } from "sonner";
+
+import { useHydrated } from "#components/media/use-hydrated.ts";
+import {
+  changeNotificationPreferences,
+  notificationPreferences,
+  preferencesKeys,
+} from "#notices/atoms.ts";
+
+type EmailKind = keyof NotificationPreferences["email"];
+
+// Most pressing first: what needs the reader, then what went as planned.
+const kinds: readonly EmailKind[] = [
+  "postFailed",
+  "postUnconfirmed",
+  "channelReconnect",
+  "postPublished",
+];
+
+const PreferenceRow = ({
+  checked,
+  disabled,
+  kind,
+  onChange,
+}: {
+  readonly checked: boolean;
+  readonly disabled: boolean;
+  readonly kind: EmailKind;
+  readonly onChange: (kind: EmailKind, checked: boolean) => void;
+}) => {
+  const t = useTranslations("Notices.preferences");
+  const id = useId();
+
+  const handleCheckedChange = (next: boolean) => {
+    onChange(kind, next);
+  };
+
+  return (
+    <div className="flex items-center gap-3">
+      <Checkbox
+        id={id}
+        checked={checked}
+        disabled={disabled}
+        onCheckedChange={handleCheckedChange}
+      />
+      <Label htmlFor={id}>{t(kind)}</Label>
+    </div>
+  );
+};
+
+/**
+ * The email choices, one box per kind of notice. Each change is saved at
+ * once, alone, so two changed in quick succession both stay.
+ */
+export const PreferencesFields = ({
+  onChange,
+  preferences,
+  saving,
+}: {
+  readonly onChange: (kind: EmailKind, checked: boolean) => void;
+  readonly preferences: NotificationPreferences;
+  readonly saving: boolean;
+}) => {
+  const t = useTranslations("Notices.preferences");
+
+  return (
+    <fieldset className="flex flex-col gap-4" aria-busy={saving}>
+      <legend className="mb-2 font-medium">{t("legend")}</legend>
+      {kinds.map((kind) => (
+        <PreferenceRow
+          key={kind}
+          kind={kind}
+          checked={preferences.email[kind]}
+          disabled={saving}
+          onChange={onChange}
+        />
+      ))}
+    </fieldset>
+  );
+};
+
+const LoadedPreferences = () => {
+  const t = useTranslations("Notices.preferences");
+  const result = useAtomValue(notificationPreferences);
+  const reload = useAtomRefresh(notificationPreferences);
+
+  const change = useAtomSet(changeNotificationPreferences, {
+    mode: "promiseExit",
+  });
+
+  const [saving, startSaving] = useTransition();
+
+  const handleChange = (kind: EmailKind, checked: boolean) => {
+    startSaving(async () => {
+      const exit = await change({
+        payload: { email: { [kind]: checked } },
+        reactivityKeys: preferencesKeys,
+      });
+
+      if (Exit.isSuccess(exit)) {
+        toast.success(t("saved"));
+      } else {
+        toast.error(t("saveFailed"));
+      }
+    });
+  };
+
+  return AsyncResult.match(result, {
+    onFailure: () => (
+      <Alert variant="destructive">
+        <AlertDescription>
+          <span className="flex flex-wrap items-center justify-between gap-2">
+            {t("loadFailed")}
+            <Button variant="outline" size="sm" onClick={reload}>
+              {t("reload")}
+            </Button>
+          </span>
+        </AlertDescription>
+      </Alert>
+    ),
+    onInitial: () => (
+      <div aria-busy className="flex flex-col gap-3">
+        <span className="sr-only">{t("loading")}</span>
+        <Skeleton className="h-28" />
+      </div>
+    ),
+    onSuccess: ({ value }) => (
+      <PreferencesFields
+        preferences={value}
+        saving={saving}
+        onChange={handleChange}
+      />
+    ),
+  });
+};
+
+/** The user's email preferences, read and saved with their cookies. */
+export const NotificationPreferencesForm = () => {
+  const t = useTranslations("Notices.preferences");
+  const hydrated = useHydrated();
+
+  return hydrated ? (
+    <LoadedPreferences />
+  ) : (
+    <div aria-busy>
+      <span className="sr-only">{t("loading")}</span>
+      <Skeleton className="h-28" />
+    </div>
+  );
+};
