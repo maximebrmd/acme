@@ -9,9 +9,9 @@ Acme reaches every outside service through a port with a self-hostable default. 
 
 <Callout type="warning" title="Before the first release">
   Acme has not been released yet, and there are no published images to run:
-  build the server's image and the web app from the repository, as its README
-  explains. This page describes the self-hosting model the code follows, and
-  every value shown is an example.
+  build them from the repository, as [With Docker Compose and Caddy](#compose)
+  shows. This page describes the self-hosting model the code follows, and every
+  value shown is an example.
 </Callout>
 
 ## Services [#services]
@@ -47,6 +47,29 @@ In production (`NODE_ENV=production`, which the server's image sets), the server
 | `ACME_S3_ENDPOINT`, `ACME_S3_BUCKET`, `ACME_S3_ACCESS_KEY_ID`, `ACME_S3_SECRET_ACCESS_KEY` | The media store                                                     |
 
 The web app needs `ACME_API_URL`. To connect channels, the server also needs `ACME_TOKEN_KEYS`. [Environment variables](/environment-variables) lists every setting, with its default.
+
+## With Docker Compose and Caddy [#compose]
+
+The repository's `packages/acme-docker` folder holds a stack you can run as it is. `compose.production.yaml` runs Postgres, the server, the web app and a telemetry stack (an OpenTelemetry collector, Loki, Tempo, Prometheus and Grafana), each restarted when it stops, with every port on `127.0.0.1`. `compose.self-host.yaml` adds Caddy in front of them: it gets a certificate from Let's Encrypt, and it is the only service reachable from outside, on ports 80 and 443.
+
+1. Point your domain at the server in DNS, and open ports 80 and 443.
+2. Copy `self-host.env.example` out of the repository, such as to `/srv/acme/acme.env`, let only root read it, and fill it in: the domain, the secrets it says how to generate, email and the media store.
+3. From `packages/acme-docker`, build the images, then start the stack:
+
+```sh
+docker compose --project-name acme --file compose.production.yaml \
+  --file compose.self-host.yaml --env-file /srv/acme/acme.env build
+docker compose --project-name acme --file compose.production.yaml \
+  --file compose.self-host.yaml --env-file /srv/acme/acme.env up --detach --wait
+```
+
+The server applies its migrations as it starts, so an upgrade is a newer checkout and the same two commands. Compose gives the server its 75 seconds to stop.
+
+Caddy (`self-host/Caddyfile`) sends `/api/*` and `/.well-known/oauth-*` to the server and everything else to the web app, and waits 150 seconds for an answer, longer than the writing assistant and the web app's forwarding wait. Set `AUTH_IP_HEADERS=x-forwarded-for`, as the example file does.
+
+Grafana listens on `127.0.0.1:13000` only: reach it through an SSH tunnel, such as `ssh -L 13000:127.0.0.1:13000 you@your-server`, and sign in as `admin` with `GRAFANA_ADMIN_PASSWORD`. Its alert rules come provisioned, and notify no one until you add a contact point.
+
+To back the database up, set `ACME_POSTGRES_ARCHIVE_MODE=on` and the `PGBACKREST_REPO1_*` settings the example file lists. Postgres then archives its write-ahead log to that bucket with pgBackRest, which the stack's Postgres image ships, and you take backups on a schedule with `docker compose … exec --user postgres postgres pgbackrest backup --type=full`. Acme's own servers do so with the Ansible in `packages/acme-infra`, whose README and restore runbook show every command. [Environment variables](/environment-variables#compose) lists the stack's settings.
 
 ## In front of Acme [#reverse-proxy]
 

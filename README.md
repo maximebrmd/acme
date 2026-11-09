@@ -28,8 +28,9 @@ anywhere yet: keep a draft's address to come back to it.
 ## Set up
 
 You need Git, Bun (the version in [`.bun-version`](.bun-version)), Node 26.13
-or later, and Docker: Engine 28 or later with Compose 2.35 or later, because
-the development stack uses an image mount.
+or later, Docker (Engine 28 or later with Compose 2.35 or later, because the
+stacks use image mounts), and [uv](https://docs.astral.sh/uv/), which installs
+the Ansible toolchain that `bun run test` checks `packages/acme-infra` with.
 
 ```sh
 bun install --frozen-lockfile
@@ -366,6 +367,64 @@ address from. Behind a real edge, name the one it sets and overwrites, such
 as `cf-connecting-ip` behind Cloudflare. Add `ACME_TOKEN_KEYS` to connect
 channels.
 
+The other production images build the same way, from the repository root:
+`build-web-image` (Next's standalone server on Node, as the `node` user, on
+port 3001), `build-static-image` (the marketing site and the docs, served by
+nginx on ports 8080 and 8081; pass their build-time variables with
+`--build-arg`) and `build-postgres-image` (Postgres 18 with pgBackRest), each
+a target of `acme-docker`.
+
+## Deploy
+
+[`compose.production.yaml`](packages/acme-docker/compose.production.yaml)
+runs the whole stack: Postgres with pgBackRest, the server, the web app, the
+site and docs (profile `static`), the OpenTelemetry Collector, Loki, Tempo,
+Prometheus and Grafana with its alert rules. Every port listens on 127.0.0.1,
+every service restarts when it stops, and the server gets 75 seconds to stop.
+
+### Production, behind Cloudflare
+
+Acme's own servers, production and the sandbox, run on Hetzner Cloud and are
+reachable only through a Cloudflare Tunnel: no inbound port, SSH included.
+Cloudflare Access guards Grafana, SSH, the admin and the whole sandbox;
+Grafana's alerts go to a Telegram chat; Postgres is backed up to R2. Ansible
+in [`packages/acme-infra`](packages/acme-infra/README.md) sets the servers up
+and releases a commit: it builds the images on the machine running it,
+uploads them over SSH, and starts the new server, which migrates the database.
+
+```sh
+cd packages/acme-infra
+uv sync --locked
+uv run ansible-galaxy collection install --requirements-file requirements.yml
+uv run ansible-playbook playbooks/site.yml --limit sandbox --check --diff
+uv run ansible-playbook playbooks/release.yml --limit sandbox
+```
+
+Nothing has been applied yet: the inventory holds placeholders, and every
+playbook stops until they are replaced. Its README says what to set up at
+Cloudflare first, and
+[`runbooks/restore-database.md`](packages/acme-infra/runbooks/restore-database.md)
+how to restore the database.
+
+### Self-hosting, behind Caddy
+
+[`compose.self-host.yaml`](packages/acme-docker/compose.self-host.yaml) puts
+Caddy in front of the stack, with a Let's Encrypt certificate for your domain:
+it alone listens on ports 80 and 443, and its
+[`Caddyfile`](packages/acme-docker/self-host/Caddyfile) sends `/api/*` and
+`/.well-known/oauth-*` to the server and the rest to the web app. Fill in a copy
+of [`self-host.env.example`](packages/acme-docker/self-host.env.example)
+outside the repository, then, from `packages/acme-docker`:
+
+```sh
+docker compose --project-name acme --file compose.production.yaml \
+  --file compose.self-host.yaml --env-file /srv/acme/acme.env build
+docker compose --project-name acme --file compose.production.yaml \
+  --file compose.self-host.yaml --env-file /srv/acme/acme.env up --detach --wait
+```
+
+The docs' self-hosting page explains each setting.
+
 ## Layout
 
 | Package                                   | What it is                                                                     |
@@ -375,10 +434,11 @@ channels.
 | [`acme-ui`](packages/acme-ui)             | The design system: shadcn/ui and the Tailwind CSS v4 theme, shipped as sources |
 | [`acme-web`](packages/acme-web)           | The web app (Next.js)                                                          |
 | [`acme-cli`](packages/acme-cli)           | The `acme` command line, a client of the API                                   |
-| [`acme-docker`](packages/acme-docker)     | The development stack and the server's production image                        |
+| [`acme-docker`](packages/acme-docker)     | The development and production stacks, and the production images               |
 | [`acme-docs`](packages/acme-docs)         | The documentation site (Blume), with the API reference from the contract       |
 | [`acme-site`](packages/acme-site)         | The marketing site (Astro), with the privacy, terms and data deletion pages    |
 | [`acme-e2e`](packages/acme-e2e)           | End-to-end browser tests, run against the server and the web app's build       |
+| [`acme-infra`](packages/acme-infra)       | Ansible for Acme's servers, behind a Cloudflare Tunnel                         |
 
 How the code is organised, and the rules it follows, are in
 [AGENTS.md](AGENTS.md).

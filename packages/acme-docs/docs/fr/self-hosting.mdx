@@ -8,10 +8,10 @@ sidebar:
 Acme accède à chaque service extérieur par un port doté d’une option par défaut auto-hébergeable. Une instance auto-hébergée fait tourner deux programmes à elle, le serveur et l’application web, et a besoin de Postgres, d’un stockage objet compatible S3 et d’un moyen d’envoyer des e-mails. Tout le reste est facultatif et reste désactivé tant que vous ne le configurez pas.
 
 <Callout type="warning" title="Avant la première version">
-  Acme n’est pas encore sorti et aucune image n’est publiée : construisez
-  l’image du serveur et l’application web depuis le dépôt, comme l’explique son
-  README. Cette page décrit le modèle d’auto-hébergement que suit le code, et
-  toutes les valeurs indiquées sont des exemples.
+  Acme n’est pas encore sorti et aucune image n’est publiée : construisez-les
+  depuis le dépôt, comme le montre [Avec Docker Compose et Caddy](#compose).
+  Cette page décrit le modèle d’auto-hébergement que suit le code, et toutes les
+  valeurs indiquées sont des exemples.
 </Callout>
 
 ## Services [#services]
@@ -47,6 +47,29 @@ En production (`NODE_ENV=production`, que l’image du serveur définit), le ser
 | `ACME_S3_ENDPOINT`, `ACME_S3_BUCKET`, `ACME_S3_ACCESS_KEY_ID`, `ACME_S3_SECRET_ACCESS_KEY` | Le stockage des médias                                         |
 
 L’application web a besoin de `ACME_API_URL`. Pour connecter des canaux, le serveur a aussi besoin de `ACME_TOKEN_KEYS`. [Variables d’environnement](/environment-variables) liste chaque réglage, avec sa valeur par défaut.
+
+## Avec Docker Compose et Caddy [#compose]
+
+Le dossier `packages/acme-docker` du dépôt contient une pile à faire tourner telle quelle. `compose.production.yaml` fait tourner Postgres, le serveur, l’application web et une pile de télémétrie (un collecteur OpenTelemetry, Loki, Tempo, Prometheus et Grafana), chacun redémarré s’il s’arrête, avec chaque port sur `127.0.0.1`. `compose.self-host.yaml` place Caddy devant eux : il obtient un certificat auprès de Let’s Encrypt, et c’est le seul service joignable de l’extérieur, sur les ports 80 et 443.
+
+1. Faites pointer votre domaine vers le serveur dans le DNS, et ouvrez les ports 80 et 443.
+2. Copiez `self-host.env.example` hors du dépôt, par exemple vers `/srv/acme/acme.env`, ne laissez que root le lire, et remplissez-le : le domaine, les secrets qu’il dit comment générer, l’e-mail et le stockage des médias.
+3. Depuis `packages/acme-docker`, construisez les images, puis démarrez la pile :
+
+```sh
+docker compose --project-name acme --file compose.production.yaml \
+  --file compose.self-host.yaml --env-file /srv/acme/acme.env build
+docker compose --project-name acme --file compose.production.yaml \
+  --file compose.self-host.yaml --env-file /srv/acme/acme.env up --detach --wait
+```
+
+Le serveur applique ses migrations au démarrage : une mise à jour, c’est une extraction plus récente du dépôt et les deux mêmes commandes. Compose laisse au serveur ses 75 secondes pour s’arrêter.
+
+Caddy (`self-host/Caddyfile`) envoie `/api/*` et `/.well-known/oauth-*` au serveur et tout le reste à l’application web, et attend une réponse 150 secondes, plus longtemps que l’assistant de rédaction et la transmission de l’application web. Définissez `AUTH_IP_HEADERS=x-forwarded-for`, comme le fait le fichier d’exemple.
+
+Grafana n’écoute que sur `127.0.0.1:13000` : joignez-le par un tunnel SSH, comme `ssh -L 13000:127.0.0.1:13000 vous@votre-serveur`, et connectez-vous en `admin` avec `GRAFANA_ADMIN_PASSWORD`. Ses règles d’alerte sont fournies, et ne préviennent personne tant que vous n’ajoutez pas de point de contact.
+
+Pour sauvegarder la base de données, définissez `ACME_POSTGRES_ARCHIVE_MODE=on` et les réglages `PGBACKREST_REPO1_*` que liste le fichier d’exemple. Postgres archive alors son journal d’écriture anticipée dans ce bucket avec pgBackRest, que fournit l’image Postgres de la pile, et vous lancez les sauvegardes à intervalles réguliers avec `docker compose … exec --user postgres postgres pgbackrest backup --type=full`. Les serveurs d’Acme le font avec l’Ansible de `packages/acme-infra`, dont le README et la procédure de restauration montrent chaque commande. [Variables d’environnement](/environment-variables#compose) liste les réglages de la pile.
 
 ## Devant Acme [#reverse-proxy]
 
