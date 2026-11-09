@@ -2,7 +2,7 @@
   "type": "base",
   "version": "9",
   "dialect": "postgres",
-  "id": "41b526df-2f3f-442e-affb-6aac3fa2b737",
+  "id": "6f403978-85b1-462f-b921-5f14781030b1",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
@@ -4574,6 +4574,19 @@
       "schema": "publishing",
       "table": "publication_calls",
       "name": "outcome",
+      "type": "jsonb",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "publication_calls",
+      "name": "progress",
       "type": "jsonb",
       "typeSchema": null,
       "notNull": false,

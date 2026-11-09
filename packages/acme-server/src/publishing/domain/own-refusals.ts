@@ -12,3 +12,15 @@ export const ownRefusalCodes = {
   // A MediaRejected: the media was deleted, or is no longer ready.
   mediaRemoved: "mediaUnavailable",
 } as const;
+
+/**
+ * The codes adapters give a platform's refusal that has a failure reason of
+ * its own, rather than `contentRejected`. They are stored in the
+ * publication journal too, so never change one.
+ */
+export const platformRefusalCodes = {
+  // A BadRequest: the platform takes only some posts from this server's
+  // app until it approves it (TikTok: private posts from an app it has not
+  // audited).
+  appNotAudited: "appNotAudited",
+} as const;

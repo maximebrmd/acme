@@ -82,8 +82,20 @@ describe(fitOn, () => {
     ]);
   });
 
+  it("counts TikTok's caption in UTF-16 code units, and asks for media", () => {
+    const fit = fitOn("tiktok", "👍".repeat(1100), 0);
+
+    expect(fit.tightest).toStrictEqual({
+      length: 2200,
+      maximum: 2200,
+      remaining: 0,
+      unit: "utf16Units",
+    });
+    expect(fit.problems).toStrictEqual([{ _tag: "mediaRequired" }]);
+  });
+
   it("has no limit to show for a platform with none known", () => {
-    const fit = fitOn("tiktok", "a".repeat(10_000), 0);
+    const fit = fitOn("pinterest", "a".repeat(10_000), 0);
 
     expect(fit.tightest).toBeUndefined();
     expect(fits(fit)).toBeTruthy();

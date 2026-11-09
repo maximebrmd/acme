@@ -16,6 +16,7 @@ import { NotificationPreferencesApi } from "./notification-preferences.ts";
 import { PostsApi } from "./posts.ts";
 import { SessionApi } from "./session.ts";
 import { SystemApi } from "./system.ts";
+import { TikTokApi } from "./tiktok.ts";
 import { WorkspacesApi } from "./workspaces.ts";
 
 export { DatabaseUnavailable } from "./database-unavailable.ts";
@@ -150,7 +151,18 @@ export { CaptchaApi, CaptchaSchema } from "./captcha.ts";
 
 export type { Captcha } from "./captcha.ts";
 
+export { ChannelCannotPost } from "./channel-cannot-post.ts";
+
 export { ChannelNotFound } from "./channel-not-found.ts";
+
+export {
+  TikTokAccountSchema,
+  TikTokApi,
+  TikTokBlockSchema,
+  TikTokCreatorSchema,
+} from "./tiktok.ts";
+
+export type { TikTokAccount, TikTokBlock, TikTokCreator } from "./tiktok.ts";
 
 export {
   BlueskyClientMetadataSchema,
@@ -488,4 +500,5 @@ export class Api extends HttpApi.make("acme")
   .add(BillingApi)
   .add(CaptchaApi)
   .add(AnalyticsApi)
+  .add(TikTokApi)
   .annotateMerge(OpenApi.annotations({ title: "Acme API" })) {}

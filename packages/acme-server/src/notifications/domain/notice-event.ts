@@ -26,6 +26,7 @@ export const PostFailureReasonSchema = Schema.Literals([
   "rateLimited",
   "tokenExpired",
   "unavailable",
+  "appNotAudited",
 ]);
 
 export type PostFailureReason = typeof PostFailureReasonSchema.Type;

@@ -380,11 +380,20 @@ and no socket, for tests.
   their app (`<PLATFORM>_CLIENT_ID` and `_CLIENT_SECRET`, read by
   `oauthClientConfig`; one half alone stops the server), Facebook Pages and
   Instagram with `META_APP_ID`/`META_APP_SECRET`, Threads with
-  `THREADS_APP_ID`/`THREADS_APP_SECRET`. A platform without its settings is
+  `THREADS_APP_ID`/`THREADS_APP_SECRET`, TikTok with
+  `TIKTOK_CLIENT_KEY`/`TIKTOK_CLIENT_SECRET` (`oauthClientConfig`'s
+  `idSuffix`). A platform without its settings is
   in `unconfigured`. Each declares its `TokenPolicy`, data in
   `channels/domain/token-policy.ts`, which the refresh sweep and the
   reconnect warnings follow: LinkedIn's tokens are not renewed and expire
-  after 60 days, X's last two hours and rotate on refresh.
+  after 60 days, X's last two hours and rotate on refresh, as TikTok's do
+  (`expires_in` decides; refresh tokens end 180 days after sign-in).
+- TikTok's Login Kit for Web takes no PKCE (TikTok asks it of desktop and
+  mobile apps only): the state, bound to member and workspace, guards the
+  callback, and a token answer naming an `error` is a refusal whatever its
+  status. A `PlatformAuthorizer` may have `revoke`, which
+  `DisconnectChannel` calls once the channel is deleted, logging any
+  failure: TikTok's guidelines ask for it.
 - `GET …/channels/platforms` (`ConnectChannel.connectable`, channel:connect)
   lists the platforms the server has an authorizer for, every platform's
   through the one registry; the web app's connect forms offer only those.
@@ -488,8 +497,8 @@ and no socket, for tests.
   publish runs inside the gate: uploads, processing waits, token renewal,
   the post and its confirmation.
 - Platform adapters live in `publishing/infrastructure/platforms/<platform>/`
-  (Mastodon, Bluesky, LinkedIn and X, and Threads, Instagram and Facebook
-  Pages in `meta/`), beside `ChannelGate`, and implement the steps of
+  (Mastodon, Bluesky, LinkedIn and X, Threads, Instagram and Facebook
+  Pages in `meta/`, and TikTok), beside `ChannelGate`, and implement the steps of
   `publishing/application/publication-steps.ts`, which `sequenced` runs:
   `prepare` uploads the media (safe to repeat: media alone shows nowhere),
   `poll` waits while the platform processes it (15 minutes at most),
@@ -516,6 +525,24 @@ and no socket, for tests.
   as long as `X-Business-Use-Case-Usage` says.
 - Derive whatever an adapter sends from the request's `idempotencyKey` and
   `startedAt`, which every run of an attempt shares.
+- An adapter whose publish is several requests that the `sequenced` steps
+  cannot model implements `PlatformClient` itself and journals its progress
+  on the call's row (`PublicationProgress`, `publication_calls.progress`:
+  ids and states, never content), committed before each request that can
+  make the post live; a resumed run reads it. TikTok's
+  (`platforms/tiktok/`): a FILE_UPLOAD goes live only with its last 10 MB
+  chunk, so `uploading` starts over and `finishing` polls status/fetch; a
+  PULL_FROM_URL init is the commit, so `pulling` without an answer is
+  unconfirmed, `pulled` polls. Its steps (`TikTokProgressSchema`) are
+  persisted contract (`fixtures/persisted/publication-calls`). TikTok's
+  post ids are int64s: read them from the answer's text, never as JSON
+  numbers. A post only its creator sees has no public id: it is published
+  under its `publish_id`, without a permalink.
+- Scheduling asks `AccountRules` what each channel's own account refuses
+  (TikTok's creator info: audiences, interactions, longest video; photos on
+  a server without `TIKTOK_MEDIA_URL_PREFIX`), and lets the post through
+  when the platform cannot say: the adapter checks again. Tests that need
+  none pass `AccountRules.none`, `publishingWith`'s default.
 - Adapters get tokens only through `PlatformCredentials`, which
   `ChannelAccess` backs (`ChannelAccessCredentials`), and media only through
   `MediaForPublishing`, which the media context's `MediaForPlatforms` backs:
@@ -745,6 +772,10 @@ and no socket, for tests.
   `analytics.metric_snapshots`: ids and counts, never content. A workspace's
   go with it (`AnalyticsRecords`), and a reading saved after its post was
   erased keeps nothing (`saveReading` updates the post first).
+- TikTok reads public posts' counts with the Display API's video query, 20
+  ids a call, with the channel's token when its scopes include
+  `video.list`; a post known by its `publish_id` (not digits) is missing
+  without a call.
 - Platforms without a reader (LinkedIn, X and Meta's so far) answer
   `ChannelUnreadable` `unsupported`: their posts end at their first turn,
   with no warning, and the reports leave them out.
@@ -924,7 +955,13 @@ self-hoster needs only Postgres and an S3-compatible store:
   `#posts/target-options.ts` describes for each selected channel's platform
   (text, tags, choice, yes or no, toggle; `initial`, `inverted` and `within`
   for TikTok's boxes), turns them into the contract's `TargetOptions` with
-  Schema, and shows each `option*` violation under its field.
+  Schema, and shows each `option*` violation under its field. On a TikTok
+  channel, `TikTokChannelOptions` reads `GET …/channels/:id/tiktok-creator`
+  and limits the fields by the creator (`#posts/tiktok-account.ts`): their
+  nickname, their audiences, interactions they turned off (and set off),
+  no Duet or Stitch on photo posts, "Only me" closed to branded content,
+  the disclosure's label, and TikTok's consent line, as its content sharing
+  guidelines require.
 - The composer's attachments come from `MediaPicker` (ready media of the
   workspace) or `MediaUploader` (`onUploaded` attaches ready uploads).
   `#posts/attachments.ts` keeps the list: order, alt text seeded from the

@@ -91,6 +91,12 @@ export const ContentViolationSchema = Schema.Union([
   }),
   // Width times height is more than the platform takes.
   Schema.TaggedStruct("tooManyPixels", { ...sized, maximum: Schema.Int }),
+  // A side is shorter or longer than the platform takes, in pixels.
+  Schema.TaggedStruct("sideOutOfRange", {
+    ...sized,
+    maximum: Schema.Int,
+    minimum: Schema.Int,
+  }),
   // Width over height is outside what the platform takes.
   Schema.TaggedStruct("aspectRatioUnsupported", {
     ...sized,

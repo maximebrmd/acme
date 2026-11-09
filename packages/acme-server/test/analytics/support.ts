@@ -65,12 +65,17 @@ export const newChannelId = newId(ChannelIdSchema);
 
 /**
  * The platforms' readers over plain HTTP, against fakes: Mastodon servers
- * at the host the account names, Bluesky's AppView at `appView`.
+ * at the host the account names, Bluesky's AppView at `appView`, TikTok's
+ * API at `tiktokApi`.
  */
-export const readersWith = (appView = "http://127.0.0.1:9") =>
+export const readersWith = (
+  appView = "http://127.0.0.1:9",
+  tiktokApi = "http://127.0.0.1:9"
+) =>
   platformMetricsReaderWith({
     blueskyAppView: new URL(appView),
     mastodonScheme: "http:",
+    tiktokApi: new URL(tiktokApi),
   }).pipe(
     Layer.provide(Layer.mergeAll(FetchHttpClient.layer, OpenOutboundGuard))
   );

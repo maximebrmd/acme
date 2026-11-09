@@ -4,21 +4,31 @@ import { Effect, Layer, Option } from "effect";
 import { ChannelRepository } from "#channels/application/channel-repository.ts";
 import { DisconnectChannel } from "#channels/application/disconnect-channel.ts";
 import { ListChannels } from "#channels/application/list-channels.ts";
+import { PlatformAuthorizers } from "#channels/application/platform-authorizer.ts";
 import { DrizzleChannelRepository } from "#channels/infrastructure/drizzle-channel-repository.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
+import { authorizersOf } from "#test/channels/connect-support.ts";
 import {
   actorIn,
   DatabaseTest,
   freshChannel,
   freshWorkspace,
   syntheticCredentials,
+  TokenCipherTest,
 } from "#test/channels/support.ts";
 
+// No platform to tell about a disconnect: its own tests are its sign-in's.
 const UseCasesTest = Layer.mergeAll(
   ListChannels.layer,
   DisconnectChannel.layer
 ).pipe(
-  Layer.provideMerge(DrizzleChannelRepository),
+  Layer.provideMerge(
+    Layer.mergeAll(
+      DrizzleChannelRepository,
+      TokenCipherTest,
+      Layer.succeed(PlatformAuthorizers, authorizersOf())
+    )
+  ),
   Layer.provideMerge(DatabaseTest)
 );
 

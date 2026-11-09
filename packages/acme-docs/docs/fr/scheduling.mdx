@@ -32,20 +32,21 @@ Sur la carte d’un espace de travail, dans **Espaces de travail**, choisissez *
 
 Sous **Longueur sur chaque canal**, chaque canal où part la publication montre la place que laisse sa plateforme, et ce qu’elle refuserait d’autre, images et vidéos comprises. Les plateformes ne comptent pas de la même façon : un même texte peut tenir sur l’une et pas sur l’autre.
 
-| Plateforme | Limite du texte                                                                                              | Images et vidéos |
-| ---------- | ------------------------------------------------------------------------------------------------------------ | ---------------- |
-| Bluesky    | 300 caractères, et 3 000 octets                                                                              | 4                |
-| Mastodon   | 500 caractères (la valeur par défaut d’un serveur)                                                           | 4                |
-| X          | 280, où un lien compte 23, et un emoji ou un caractère hors des alphabets latin, grec et cyrillique compte 2 | 4                |
-| Threads    | 500 caractères, où un emoji compte ses octets, 4 pour la plupart ; 5 liens différents                        | 20               |
-| LinkedIn   | 3 000 caractères                                                                                             | 20               |
-| Instagram  | 2 200 caractères, 30 hashtags, 20 mentions ; une image ou une vidéo est obligatoire                          | 20               |
+| Plateforme | Limite du texte                                                                                              | Images et vidéos        |
+| ---------- | ------------------------------------------------------------------------------------------------------------ | ----------------------- |
+| Bluesky    | 300 caractères, et 3 000 octets                                                                              | 4                       |
+| Mastodon   | 500 caractères (la valeur par défaut d’un serveur)                                                           | 4                       |
+| X          | 280, où un lien compte 23, et un emoji ou un caractère hors des alphabets latin, grec et cyrillique compte 2 | 4                       |
+| Threads    | 500 caractères, où un emoji compte ses octets, 4 pour la plupart ; 5 liens différents                        | 20                      |
+| LinkedIn   | 3 000 caractères                                                                                             | 20                      |
+| Instagram  | 2 200 caractères, 30 hashtags, 20 mentions ; une image ou une vidéo est obligatoire                          | 20                      |
+| TikTok     | 2 200, où la plupart des emoji comptent 2 (unités de code UTF-16) ; une image ou une vidéo est obligatoire   | Une vidéo, ou 35 photos |
 
-Bluesky compte ce qu’un lecteur voit comme un seul caractère : un emoji fait de plusieurs points de code compte une fois. Facebook, TikTok, YouTube et Pinterest n’ont pas encore de limite dans Acme. Acme vérifie les limites quand vous programmez une publication, pas pendant que vous rédigez un brouillon.
+Bluesky compte ce qu’un lecteur voit comme un seul caractère : un emoji fait de plusieurs points de code compte une fois. Facebook, YouTube et Pinterest n’ont pas encore de limite dans Acme. TikTok accepte 2 200 pour la légende d’une vidéo et 4 000 pour la description d’une publication de photos : Acme limite les deux à 2 200. Acme vérifie les limites quand vous programmez une publication, pas pendant que vous rédigez un brouillon.
 
 ## Options des plateformes [#options]
 
-Certaines plateformes demandent à chaque publication plus que son texte et ses médias. Quand la publication part sur un canal de l’une d’elles, **Options des plateformes** montre les champs de ce canal. Un brouillon les garde tels quels, inachevés ; la programmer exige ceux marqués obligatoires, et montre sous chaque champ ce que sa plateforme refuserait. Les canaux YouTube et TikTok ne peuvent pas encore être connectés : leurs options sont prêtes pour le jour où ils le pourront.
+Certaines plateformes demandent à chaque publication plus que son texte et ses médias. Quand la publication part sur un canal de l’une d’elles, **Options des plateformes** montre les champs de ce canal. Un brouillon les garde tels quels, inachevés ; la programmer exige ceux marqués obligatoires, et montre sous chaque champ ce que sa plateforme refuserait. Les canaux YouTube ne peuvent pas encore être connectés : leurs options sont prêtes pour le jour où ils le pourront.
 
 | Plateforme | Options                                                                                                                                                                                                                                                                                                                |
 | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -55,6 +56,8 @@ Certaines plateformes demandent à chaque publication plus que son texte et ses 
 Le texte de la publication est la description de la vidéo YouTube et la légende de la publication TikTok. Les tags sont séparés par des virgules ; YouTube compte les virgules, et deux caractères de plus pour un tag qui contient une espace.
 
 Pour divulguer un contenu commercial sur TikTok, activez **Divulguer un contenu commercial**, puis dites de quelle marque la publication fait la promotion : **Votre marque** (signalée comme « Contenu promotionnel »), **Contenu de marque** pour un tiers (signalé comme « Partenariat rémunéré »), ou les deux. Un contenu de marque ne peut pas être visible par vous seul.
+
+Sur un canal TikTok, l’éditeur lit les réglages du compte sur TikTok, comme le demandent les règles de TikTok : il nomme le compte au nom duquel la publication part, ne propose que les audiences du compte (un compte public : tout le monde, amis, moi uniquement ; un compte privé : abonnés, amis, moi uniquement), grise les interactions que son titulaire a désactivées sur TikTok, retire le Duo et le Collage des publications de photos, et dit quelle mention ajoute une divulgation. La programmation revérifie ces réglages, avec la durée maximale des vidéos du compte ; la mention de consentement de TikTok se trouve sous les options, et publier vaut acceptation.
 
 Par l’API, un brouillon prend ses options dans `options`, une entrée par canal, chacune marquée de sa `platform` ; chacune des cibles de la publication répond avec les siennes. Mettre à jour un brouillon remplace ses options : celles qui manquent sont retirées. Un canal ajouté seulement au moment de programmer n’en a pas encore : sur YouTube ou TikTok, donnez-lui d’abord ses options dans le brouillon.
 

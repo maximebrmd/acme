@@ -16,6 +16,16 @@ export const workspaceChannels = (workspaceId: string) =>
     reactivityKeys: ["channels"],
   });
 
+/**
+ * A TikTok channel's creator, read from TikTok each time the composer
+ * opens the channel's options, as TikTok's guidelines ask.
+ */
+export const tiktokCreator = (workspaceId: string, channelId: string) =>
+  AcmeApi.query("tiktok", "creator", {
+    params: { channelId, workspaceId },
+    reactivityKeys: ["channels"],
+  });
+
 /** A post of the workspace. */
 export const workspacePost = (workspaceId: string, postId: string) =>
   AcmeApi.query("posts", "get", {

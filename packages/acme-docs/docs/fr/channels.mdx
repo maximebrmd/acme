@@ -1,20 +1,19 @@
 ---
 title: Connecter des canaux
-description: Connectez les comptes Mastodon, Bluesky, LinkedIn, X, Threads, Instagram et les Pages Facebook sur lesquels publie un espace de travail, reconnectez-les quand une plateforme le demande, et déconnectez-les.
+description: Connectez les comptes Mastodon, Bluesky, LinkedIn, X, Threads, Instagram, TikTok et les Pages Facebook sur lesquels publie un espace de travail, reconnectez-les quand une plateforme le demande, et déconnectez-les.
 sidebar:
   order: 2
 ---
 
-Un canal est un compte social connecté à un espace de travail : un compte Mastodon, Bluesky, LinkedIn, X, Threads ou Instagram, ou une Page Facebook, aujourd’hui. Les publications partent sur des canaux : connectez-en au moins un avant de programmer quoi que ce soit.
+Un canal est un compte social connecté à un espace de travail : un compte Mastodon, Bluesky, LinkedIn, X, Threads, Instagram ou TikTok, ou une Page Facebook, aujourd’hui. Les publications partent sur des canaux : connectez-en au moins un avant de programmer quoi que ce soit.
 
 Ouvrez un espace de travail depuis **Espaces de travail**, puis **Canaux**. Chaque membre voit les canaux de l’espace de travail ; seuls les propriétaires et les administrateurs les connectent, les reconnectent et les déconnectent.
 
-<Callout type="note" title="Sept plateformes pour l’instant">
-  Acme connecte les comptes Mastodon, Bluesky, LinkedIn, X, Threads et
-  Instagram, et les Pages Facebook. Les autres plateformes qu’il connaît, comme
-  TikTok, YouTube et Pinterest, ne peuvent pas encore être connectées.
-  **Canaux** ne propose que les plateformes pour lesquelles le serveur Acme est
-  configuré.
+<Callout type="note" title="Huit plateformes pour l’instant">
+  Acme connecte les comptes Mastodon, Bluesky, LinkedIn, X, Threads, Instagram
+  et TikTok, et les Pages Facebook. Les autres plateformes qu’il connaît,
+  YouTube et Pinterest, ne peuvent pas encore être connectées. **Canaux** ne
+  propose que les plateformes pour lesquelles le serveur Acme est configuré.
 </Callout>
 
 ## Connecter un compte [#connect]
@@ -49,6 +48,24 @@ Sous **X**, choisissez **Connecter X**, connectez-vous sur X et autorisez Acme. 
 
 Le serveur Acme doit être configuré pour X : sur une instance auto-hébergée, voyez [X](/self-hosting#x). D’ici là, **Canaux** ne le propose pas.
 
+### TikTok [#tiktok]
+
+Sous **TikTok**, choisissez **Connecter TikTok**, connectez-vous sur TikTok et autorisez Acme. Il demande votre profil et votre nom d’utilisateur, à publier des vidéos et des photos sur votre compte, et à lire vos vidéos, pour leurs chiffres dans les [statistiques](/analytics). Vous pouvez refuser ce dernier point sur la page de TikTok : le canal publie alors sans statistiques.
+
+Le serveur Acme doit être configuré pour TikTok : sur une instance auto-hébergée, voyez [TikTok](/self-hosting#tiktok). D’ici là, **Canaux** ne le propose pas.
+
+<Callout
+  type="warning"
+  title="Tant que TikTok n’a pas audité l’application du serveur"
+>
+  TikTok n’accepte que des publications privées d’une application qu’il n’a pas
+  auditée : le compte doit être privé quand la publication part, et la
+  publication visible par vous seul (**Moi uniquement**). Toute autre
+  publication échoue avec « la plateforme n’accepte que des publications privées
+  de l’application de ce serveur ». Demandez à l’opérateur du serveur si TikTok
+  l’a auditée.
+</Callout>
+
 ### Pages Facebook [#facebook]
 
 Sous **Pages Facebook**, choisissez **Connecter des Pages Facebook**, connectez-vous avec Facebook, et autorisez Acme à lister vos Pages et à y publier. De retour dans Acme, cochez les Pages où l’espace de travail publie, puis **Connecter** : chacune devient un canal. Une connexion qui n’atteint qu’une Page la connecte aussitôt. Seules les Pages où vous pouvez créer du contenu sont listées, et celles que l’espace de travail a déjà sont signalées : en choisir une la reconnecte.
@@ -75,7 +92,7 @@ Un canal dont l’accès ne peut pas être renouvelé affiche aussi la date avan
 
 ## Garder les canaux connectés [#keep-connected]
 
-Acme renouvelle de lui-même l’accès de chaque compte avant qu’il n’expire : il rafraîchit une session Bluesky un mois avant qu’elle ne tombe, l’accès à X, qui dure deux heures, avant sa fin, et l’accès à Threads, qui dure 60 jours, une semaine avant. L’accès à Mastodon, et l’accès de Page avec lequel publient les Pages Facebook et les comptes Instagram, n’expirent pas tant que personne ne les révoque ; Facebook retire aussi l’accès d’une Page quand la personne qui l’a connectée change de mot de passe ou perd son rôle sur la Page. L’accès à LinkedIn ne peut pas être renouvelé : reconnectez le canal tous les 60 jours, comme ci-dessus.
+Acme renouvelle de lui-même l’accès de chaque compte avant qu’il n’expire : il rafraîchit une session Bluesky un mois avant qu’elle ne tombe, l’accès à X, qui dure deux heures, avant sa fin, l’accès à Threads, qui dure 60 jours, une semaine avant, et l’accès à TikTok, qui dure un jour ou moins, une demi-heure avant sa fin. TikTok laisse Acme le renouveler pendant 180 jours après la connexion du compte : le canal demande ensuite à être reconnecté. L’accès à Mastodon, et l’accès de Page avec lequel publient les Pages Facebook et les comptes Instagram, n’expirent pas tant que personne ne les révoque ; Facebook retire aussi l’accès d’une Page quand la personne qui l’a connectée change de mot de passe ou perd son rôle sur la Page. L’accès à LinkedIn ne peut pas être renouvelé : reconnectez le canal tous les 60 jours, comme ci-dessus.
 
 Quand une plateforme refuse l’accès d’Acme pendant qu’il publie, Acme renouvelle l’accès quand la plateforme le permet, et réessaie une fois. Quand la plateforme refuse encore, ou que l’accès ne peut pas être renouvelé, par exemple parce que le titulaire du compte l’a révoqué, le canal passe à **À reconnecter**, et les propriétaires et administrateurs de l’espace de travail en sont prévenus une fois, sous la cloche et par e-mail, sauf s’ils ont désactivé cet e-mail (voir [Notifications](/notifications)). Quand une plateforme ne répond pas, Acme réessaie plus tard et laisse le canal tel quel.
 
@@ -89,6 +106,7 @@ Quand une plateforme refuse l’accès d’Acme pendant qu’il publie, Acme ren
 - **X** : Acme publie au nom du compte. X transforme lui-même mentions, hashtags et liens en liens, et traite une vidéo avant que la publication parte.
 - **Threads** et **Instagram** : Meta va chercher chaque image et chaque vidéo dans le stockage des médias, la traite, puis Acme publie : plusieurs fichiers forment un carrousel. Une vidéo Instagram part en reel. Acme vérifie la limite quotidienne de publication du compte avant de commencer.
 - **Pages Facebook** : Acme publie le texte sur la Page, une photo avec, plusieurs photos en une publication, ou une vidéo, que Facebook va chercher dans le stockage des médias.
+- **TikTok** : Acme publie une vidéo, avec le texte de la publication comme légende, ou jusqu’à 35 photos, avec le texte comme description, comme vous l’avez choisi dans les [options TikTok](/scheduling#options) de la publication. Juste avant, il relit les réglages du compte sur TikTok, et la publication échoue s’ils ne la permettent plus. Une vidéo part en morceaux depuis le stockage des médias, sauf si TikTok peut aller la chercher lui-même (voyez [TikTok](/self-hosting#tiktok)) ; TikTok va toujours chercher les photos. TikTok traite ensuite la publication, qu’Acme suit jusqu’à sa mise en ligne : une publication que d’autres voient affiche un lien une fois validée par la modération de TikTok, une publication que vous seul voyez n’en a pas. TikTok autorise environ 15 publications par jour et par compte, toutes applications confondues.
 
 ## Reconnecter [#reconnect]
 
@@ -98,7 +116,7 @@ Choisissez **Reconnecter** à côté du canal, puis connectez-vous sur la platef
 
 Choisissez **Déconnecter** à côté du canal et confirmez. Acme supprime les jetons qu’il détient pour le compte et n’y publie plus rien. Vous pourrez le connecter de nouveau plus tard.
 
-La déconnexion ne prévient pas la plateforme. Pour y retirer aussi l’accès d’Acme, révoquez-le dans les réglages du compte sur la plateforme.
+La déconnexion ne prévient pas la plateforme, sauf TikTok, à qui Acme demande de révoquer son accès : Acme quitte alors aussi les applications connectées du compte. Ailleurs, pour retirer l’accès d’Acme, révoquez-le dans les réglages du compte sur la plateforme.
 
 ## Quand la connexion échoue [#errors]
 

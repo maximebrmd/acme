@@ -13,6 +13,8 @@ import { Schema } from "effect";
  * - `emojiBytes`: code points, but an emoji counts the bytes it takes in
  *   UTF-8, 4 for most and more for those built of several (Threads, whose
  *   "Posts" page says "Emojis are counted as the number of UTF-8 bytes").
+ * - `utf16Units`: UTF-16 code units, as JavaScript counts a string's
+ *   length, so most emoji count 2 (TikTok's "UTF-16 runes").
  * - `weighted`: X's open text-counting rules. The text is normalized to NFC;
  *   a link counts as 23, whatever its length; an emoji counts as 2; a code
  *   point counts as 1 in the ranges that hold Latin, Greek, Cyrillic and most
@@ -23,6 +25,7 @@ export const TextUnitSchema = Schema.Literals([
   "codePoints",
   "utf8Bytes",
   "emojiBytes",
+  "utf16Units",
   "weighted",
 ]);
 
@@ -133,6 +136,7 @@ const measures: Readonly<Record<TextUnit, (text: string) => number>> = {
   codePoints: (text) => codePointsOf(text).length,
   emojiBytes: emojiBytesLength,
   graphemes: (text) => segmentsOf(text).length,
+  utf16Units: (text) => text.length,
   utf8Bytes: utf8BytesOf,
   weighted: weightedLength,
 };

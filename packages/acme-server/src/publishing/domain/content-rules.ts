@@ -238,13 +238,28 @@ const durationViolations = (
 };
 
 const dimensionViolations = (
-  { aspectRatio, maxPixels }: FormatLimits,
+  { aspectRatio, maxPixels, sideRange }: FormatLimits,
   on: MediaOnChannel,
   { height, width }: Dimensions
 ): readonly ContentViolation[] => {
   const ratio = width / height;
 
   return [
+    ...(sideRange !== undefined &&
+    [width, height].some(
+      (side) => side < sideRange.minimum || side > sideRange.maximum
+    )
+      ? [
+          {
+            _tag: "sideOutOfRange" as const,
+            ...on,
+            height,
+            maximum: sideRange.maximum,
+            minimum: sideRange.minimum,
+            width,
+          },
+        ]
+      : []),
     ...(maxPixels !== undefined && width * height > maxPixels
       ? [
           {

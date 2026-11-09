@@ -36,7 +36,7 @@ Write alt text for every file. When one has none, the composer names the platfor
 
 ## What each platform accepts [#platforms]
 
-Acme publishes to Mastodon, Bluesky, LinkedIn, X, Threads, Instagram and Facebook Pages. When you schedule a post, it checks the post's images and videos against these limits:
+Acme publishes to Mastodon, Bluesky, LinkedIn, X, Threads, Instagram, Facebook Pages and TikTok. When you schedule a post, it checks the post's images and videos against these limits:
 
 | Limit                         | Bluesky                                             | Mastodon                                                                  |
 | ----------------------------- | --------------------------------------------------- | ------------------------------------------------------------------------- |
@@ -68,6 +68,18 @@ On Meta's platforms:
 | Images and a video together   | Yes                                                 | Yes                                                      | No                              |
 | Alt text                      | Shown to people who need it, up to 1,000 characters | Not sent                                                 | Shown to people who need it     |
 
+On TikTok:
+
+| Limit                         | TikTok                                                                                                        |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| Images and videos in one post | One video, or up to 35 photos; at least one                                                                   |
+| Images                        | JPEG and WebP, up to 20 MiB and 1080p (2,073,600 pixels)                                                      |
+| Videos                        | MP4 or QuickTime, up to 4 GiB and 10 minutes, each side from 360 to 4,096 pixels, at 23 to 60 frames a second |
+| Images and a video together   | No                                                                                                            |
+| Alt text                      | Not sent                                                                                                      |
+
+A TikTok account may post shorter videos only, as its settings on TikTok say: Acme checks its longest when you schedule the post, and again when it goes out. Acme does not read a video's frame rate: TikTok refuses one outside its range when it processes the post. Photos need a server set up to let TikTok fetch them (see [TikTok](/self-hosting#tiktok)): elsewhere, a TikTok post with photos is refused when you schedule it.
+
 Acme checks only what it read from each file: a fact it could not read, such as a video's duration, is not checked, and the platform may still refuse the file.
 
 ## When you schedule [#schedule]
@@ -83,6 +95,7 @@ At the post's time, Acme sends each file from the library to the platform, then 
 - **Mastodon**: each file goes to the account's server, which may process it before the post can show it.
 - **Bluesky**: images go to the server that holds the account, and a video to Bluesky's video service, which processes it.
 - **Threads**, **Instagram** and **Facebook Pages**: Acme gives Meta a link to each file in the media store, valid for two hours, and Meta fetches it. On Threads and Instagram, Meta then processes the files before the post goes out.
+- **TikTok**: a video goes up in parts of 10 MB, read one at a time from the media store, unless the server lets TikTok fetch it from the store's public address; photos TikTok always fetches. TikTok then processes the post before it goes live.
 
 Acme waits up to 15 minutes for a platform to process a file. Past that, it tries the post again later, as for a platform that does not answer.
 

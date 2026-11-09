@@ -24,6 +24,8 @@ export const english: EmailCatalog = {
     subject: "Reconnect {handle} on {platform} by {expiresAt}",
   },
   failureReasons: {
+    appNotAudited:
+      "the platform takes only private posts from this server’s app until it approves the app. Make the account private and the post visible to its owner only, or ask the server’s operator.",
     channelDisabled:
       "its channel was turned off before it went out. Turn it back on, then post again.",
     channelDisconnected:

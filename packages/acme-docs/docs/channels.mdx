@@ -1,17 +1,17 @@
 ---
 title: Connect channels
-description: Connect the Mastodon, Bluesky, LinkedIn, X, Threads, Instagram and Facebook Page accounts a workspace posts to, reconnect them when a platform asks, and disconnect them.
+description: Connect the Mastodon, Bluesky, LinkedIn, X, Threads, Instagram, TikTok and Facebook Page accounts a workspace posts to, reconnect them when a platform asks, and disconnect them.
 sidebar:
   order: 2
 ---
 
-A channel is a social account connected to a workspace: a Mastodon, Bluesky, LinkedIn, X, Threads or Instagram account, or a Facebook Page, today. Posts go to channels, so connect at least one before you schedule anything.
+A channel is a social account connected to a workspace: a Mastodon, Bluesky, LinkedIn, X, Threads, Instagram or TikTok account, or a Facebook Page, today. Posts go to channels, so connect at least one before you schedule anything.
 
 Open a workspace from **Workspaces**, then **Channels**. Every member sees the workspace's channels; only owners and admins connect, reconnect and disconnect them.
 
-<Callout type="note" title="Seven platforms so far">
-  Acme connects Mastodon, Bluesky, LinkedIn, X, Threads and Instagram accounts,
-  and Facebook Pages. The other platforms it knows, such as TikTok, YouTube and
+<Callout type="note" title="Eight platforms so far">
+  Acme connects Mastodon, Bluesky, LinkedIn, X, Threads, Instagram and TikTok
+  accounts, and Facebook Pages. The other platforms it knows, YouTube and
   Pinterest, cannot be connected yet. **Channels** offers only the platforms the
   Acme server is set up for.
 </Callout>
@@ -48,6 +48,20 @@ Under **X**, choose **Connect X**, sign in on X and allow Acme. It asks to read 
 
 The Acme server must be set up for X: on a self-hosted instance, see [X](/self-hosting#x). Until then, **Channels** does not offer it.
 
+### TikTok [#tiktok]
+
+Under **TikTok**, choose **Connect TikTok**, sign in on TikTok and allow Acme. It asks for your profile and username, to post videos and photos on your account, and to read your videos, for their counts in [analytics](/analytics). You may turn the last one off on TikTok's page: the channel then posts without analytics.
+
+The Acme server must be set up for TikTok: on a self-hosted instance, see [TikTok](/self-hosting#tiktok). Until then, **Channels** does not offer it.
+
+<Callout type="warning" title="Until TikTok audits the server's app">
+  TikTok takes only private posts from an app it has not audited: the account
+  must be private when the post goes out, and the post visible to you only
+  (**Only me**). Any other post fails with "the platform takes only private
+  posts from this server's app". Ask the server's operator whether TikTok
+  audited it.
+</Callout>
+
 ### Facebook Pages [#facebook]
 
 Under **Facebook Pages**, choose **Connect Facebook Pages**, sign in with Facebook, and allow Acme to list your Pages and post on them. Back in Acme, tick the Pages the workspace posts to, then **Connect**: each becomes a channel. A sign-in that reaches one Page connects it straight away. Only Pages you may create content on are listed, and those the workspace already has are marked: choosing one reconnects it.
@@ -74,7 +88,7 @@ A channel whose access cannot be renewed also shows the date by which it must be
 
 ## Keep channels connected [#keep-connected]
 
-Acme renews each account's access on its own before it runs out: it refreshes a Bluesky session a month before it would lapse, X access, which lasts two hours, before it ends, and Threads access, which lasts 60 days, a week before. Mastodon access, and the Page access Facebook Pages and Instagram accounts post with, do not expire until someone revokes them; Facebook also withdraws a Page's access when the person who connected it changes their password or loses their role on the Page. LinkedIn access cannot be renewed: reconnect the channel every 60 days, as above.
+Acme renews each account's access on its own before it runs out: it refreshes a Bluesky session a month before it would lapse, X access, which lasts two hours, before it ends, Threads access, which lasts 60 days, a week before, and TikTok access, which lasts a day or less, half an hour before it ends. TikTok lets Acme renew it for 180 days after you connected the account: then the channel asks to be reconnected. Mastodon access, and the Page access Facebook Pages and Instagram accounts post with, do not expire until someone revokes them; Facebook also withdraws a Page's access when the person who connected it changes their password or loses their role on the Page. LinkedIn access cannot be renewed: reconnect the channel every 60 days, as above.
 
 When a platform refuses Acme's access while Acme posts, Acme renews the access where the platform allows it, and tries once more. When the platform refuses again, or the access cannot be renewed, for example because the account's owner revoked it, the channel turns to **Reconnect needed**, and the workspace's owners and admins are told once, under the bell and by email unless they turned that email off (see [Notifications](/notifications)). When a platform does not answer, Acme tries again later and leaves the channel as it is.
 
@@ -88,6 +102,7 @@ At a post's time, Acme posts it as the channel's account, with its text on that 
 - **X**: Acme posts as the account. X turns mentions, hashtags and links into links itself, and processes a video before the post goes out.
 - **Threads** and **Instagram**: Meta fetches each image and video from the media store, processes it, then Acme publishes the post: several files make a carousel. An Instagram video goes out as a reel. Acme checks the account's daily publishing limit before it starts.
 - **Facebook Pages**: Acme posts the text on the Page, a photo with it, several photos in one post, or a video, which Facebook fetches from the media store.
+- **TikTok**: Acme posts one video, with the post's text as its caption, or up to 35 photos, with the text as their description, as you chose in the post's [TikTok options](/scheduling#options). Just before, it reads the account's settings on TikTok again, and the post fails if they no longer allow it. A video goes up in parts from the media store, unless TikTok can fetch it itself (see [TikTok](/self-hosting#tiktok)); photos TikTok always fetches. TikTok then processes the post, which Acme follows until it is published: a post others see shows a link to it once TikTok's moderation passed it, one only you see has none. TikTok allows about 15 posts a day to each account, shared by every app.
 
 ## Reconnect [#reconnect]
 
@@ -97,7 +112,7 @@ Choose **Reconnect** next to the channel, then sign in on the platform with the 
 
 Choose **Disconnect** next to the channel and confirm. Acme deletes the tokens it holds for the account and posts nothing more to it. You can connect it again later.
 
-Disconnecting does not tell the platform. To remove Acme's access there too, revoke it in the account's settings on the platform.
+Disconnecting does not tell the platform, except TikTok, which Acme asks to revoke its access: Acme then leaves the account's connected apps there too. Elsewhere, to remove Acme's access, revoke it in the account's settings on the platform.
 
 ## When connecting fails [#errors]
 

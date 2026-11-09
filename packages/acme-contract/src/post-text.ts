@@ -21,15 +21,16 @@ export const maxMediaPerPost = 20;
 /**
  * How a platform measures text: graphemes (what a reader sees as one
  * character), Unicode code points, UTF-8 bytes, code points with each emoji
- * counted by its UTF-8 bytes (Threads), or X's weighted count, where a link
- * counts as 23, an emoji as 2, and a code point outside Latin, Greek,
- * Cyrillic and common punctuation as 2.
+ * counted by its UTF-8 bytes (Threads), UTF-16 code units (TikTok), or X's
+ * weighted count, where a link counts as 23, an emoji as 2, and a code point
+ * outside Latin, Greek, Cyrillic and common punctuation as 2.
  */
 export const TextUnitSchema = Schema.Literals([
   "graphemes",
   "codePoints",
   "utf8Bytes",
   "emojiBytes",
+  "utf16Units",
   "weighted",
 ]).annotate({
   description: "How a platform measures the length of a post's text.",
@@ -135,6 +136,7 @@ const measures: Readonly<Record<TextUnit, (text: string) => number>> = {
   codePoints: (text) => codePointsOf(text).length,
   emojiBytes: emojiBytesLength,
   graphemes: (text) => segmentsOf(text).length,
+  utf16Units: (text) => text.length,
   utf8Bytes: utf8BytesOf,
   weighted: weightedLength,
 };
@@ -189,6 +191,14 @@ export interface FormatLimits {
   /** Width times height. */
   readonly maxPixels?: number;
   readonly minDurationMs?: number;
+  /** Each of width and height, in pixels, both bounds included. */
+  readonly sideRange?: SideRange;
+}
+
+/** The fewest and most pixels a side may have. */
+export interface SideRange {
+  readonly maximum: number;
+  readonly minimum: number;
 }
 
 /** What a platform takes of a post's images and videos. */
@@ -267,6 +277,17 @@ const instagramVideo: FormatLimits = {
   maxByteSize: 300 * mebibyte,
   maxDurationMs: 15 * minute,
   minDurationMs: 3 * second,
+};
+
+const tiktokImage: FormatLimits = {
+  maxByteSize: 20 * mebibyte,
+  maxPixels: 1920 * 1080,
+};
+
+const tiktokVideo: FormatLimits = {
+  maxByteSize: 4096 * mebibyte,
+  maxDurationMs: 10 * minute,
+  sideRange: { maximum: 4096, minimum: 360 },
 };
 
 export const platformRules: Readonly<Record<Platform, PlatformRules>> = {
@@ -383,7 +404,22 @@ export const platformRules: Readonly<Record<Platform, PlatformRules>> = {
     mediaRequired: false,
     textLimits: [{ maximum: 500, unit: "emojiBytes" }],
   },
-  tiktok: { mediaRequired: false, textLimits: [] },
+  tiktok: {
+    maxMedia: 35,
+    media: {
+      formats: {
+        "image/jpeg": tiktokImage,
+        "image/webp": tiktokImage,
+        "video/mp4": tiktokVideo,
+        "video/quicktime": tiktokVideo,
+      },
+      maxVideos: 1,
+      mixesKinds: false,
+      showsAltText: false,
+    },
+    mediaRequired: true,
+    textLimits: [{ maximum: 2200, unit: "utf16Units" }],
+  },
   x: {
     maxMedia: 4,
     media: {

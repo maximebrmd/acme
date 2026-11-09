@@ -22,6 +22,8 @@ import {
 import type { MetaApp } from "#shared/infrastructure/platforms/meta-apps.ts";
 import { metaHosts } from "#shared/infrastructure/platforms/meta-graph.ts";
 import type { MetaHosts } from "#shared/infrastructure/platforms/meta-graph.ts";
+import { tiktokHosts } from "#shared/infrastructure/platforms/tiktok-api.ts";
+import type { TikTokHosts } from "#shared/infrastructure/platforms/tiktok-api.ts";
 
 import type { BlueskyAuthorizerOptions } from "./bluesky/bluesky-authorizer.ts";
 import type { BlueskyClientMode } from "./bluesky/bluesky-client.ts";
@@ -45,6 +47,10 @@ export interface ChannelPlatformSettings {
   readonly publicUrl: string;
   /** The app's Threads credentials; none when this server has none. */
   readonly threads: Option.Option<MetaApp>;
+  /** Acme's TikTok app (its client key and secret), if the operator has one. */
+  readonly tiktok: Option.Option<OAuthClient>;
+  /** Where TikTok's API and sign-in page are. */
+  readonly tiktokHosts: TikTokHosts;
   /** Acme's X app, if the operator registered one. */
   readonly x: Option.Option<OAuthClient>;
 }
@@ -162,6 +168,10 @@ const blueskyModeOf = Effect.fnUntraced(function* blueskyModeOf(settings: {
  *   Instagram professional accounts.
  * - `THREADS_APP_ID` and `THREADS_APP_SECRET`: the same app's Threads
  *   credentials, for Threads accounts.
+ * - `TIKTOK_CLIENT_KEY` and `TIKTOK_CLIENT_SECRET`: the app the operator
+ *   registered on TikTok for Developers, with Login Kit and the Content
+ *   Posting API. Without them, TikTok is not offered; one alone stops the
+ *   server.
  */
 export const channelPlatformsConfig = Effect.gen(function* settings() {
   const publicUrl = yield* publicUrlConfig;
@@ -178,6 +188,7 @@ export const channelPlatformsConfig = Effect.gen(function* settings() {
   const x = yield* oauthClientConfig("x", "X");
   const meta = yield* metaAppConfig;
   const threads = yield* threadsAppConfig;
+  const tiktok = yield* oauthClientConfig("tiktok", "TIKTOK", "CLIENT_KEY");
 
   const platforms: ChannelPlatformSettings = {
     bluesky: mode.pipe(
@@ -192,6 +203,8 @@ export const channelPlatformsConfig = Effect.gen(function* settings() {
     metaHosts,
     publicUrl,
     threads,
+    tiktok,
+    tiktokHosts,
     x,
   };
 

@@ -20,13 +20,14 @@ import { mastodonAuthorizer } from "./mastodon/mastodon-authorizer.ts";
 import { facebookAuthorizer } from "./meta/facebook-authorizer.ts";
 import { instagramAuthorizer } from "./meta/instagram-authorizer.ts";
 import { threadsAuthorizer } from "./meta/threads-authorizer.ts";
+import { tiktokAuthorizer } from "./tiktok/tiktok-authorizer.ts";
 import { xAuthorizer, xEndpoints } from "./x/x-authorizer.ts";
 
 /**
  * Every platform this server connects, from its settings: Mastodon always,
  * Bluesky when it has a client to run, LinkedIn and X when the operator
  * registered an app there, Facebook Pages and Instagram with Meta's app,
- * Threads with its credentials. Needs an HttpClient, the outbound guard, the
+ * Threads with its credentials, TikTok with its client key and secret. Needs an HttpClient, the outbound guard, the
  * database, the TokenCipher, SecureRandom, Digest and Mac.
  */
 export const PlatformAuthorizersLive = Layer.effect(
@@ -85,6 +86,17 @@ export const PlatformAuthorizersLive = Layer.effect(
       ? [yield* threadsAuthorizer(metaOptions(settings.threads.value))]
       : [];
 
+    const tiktok = Option.isSome(settings.tiktok)
+      ? [
+          yield* tiktokAuthorizer({
+            client: settings.tiktok.value,
+            hosts: settings.tiktokHosts,
+            http,
+            publicUrl: settings.publicUrl,
+          }),
+        ]
+      : [];
+
     const configured = [
       mastodon,
       ...Option.toArray(bluesky),
@@ -92,6 +104,7 @@ export const PlatformAuthorizersLive = Layer.effect(
       ...Option.toArray(x),
       ...meta,
       ...threads,
+      ...tiktok,
     ];
 
     const byPlatform: ReadonlyMap<Platform, PlatformAuthorizer> = new Map(
@@ -108,6 +121,7 @@ export const PlatformAuthorizersLive = Layer.effect(
           "facebook",
           "instagram",
           "threads",
+          "tiktok",
         ] as const
       ).filter((platform) => !byPlatform.has(platform))
     );

@@ -42,6 +42,7 @@ import {
   MediaInPostsLive,
   PostsApiLive,
   PublishingLive,
+  TikTokApiLive,
   publishingWorkersReading,
 } from "#publishing/container.ts";
 import { DatabaseLive } from "#shared/infrastructure/database.ts";
@@ -66,7 +67,8 @@ const WorkspaceGroupsLive = Layer.mergeAll(
   NotificationPreferencesApiLive,
   AssistantApiLive,
   BillingApiLive,
-  AnalyticsApiLive
+  AnalyticsApiLive,
+  TikTokApiLive
 ).pipe(Layer.provideMerge(WorkspaceApiLive));
 
 const ApiLive = HttpApiBuilder.layer(Api, {

@@ -3,14 +3,15 @@ import { Schema } from "effect";
 /**
  * How a platform measures a post's text, as publishing counts it: graphemes
  * (what a reader sees as one character), Unicode code points, UTF-8 bytes,
- * code points with each emoji counted by its UTF-8 bytes, or X's weighted
- * count.
+ * code points with each emoji counted by its UTF-8 bytes, UTF-16 code
+ * units, or X's weighted count.
  */
 export const TextUnitSchema = Schema.Literals([
   "graphemes",
   "codePoints",
   "utf8Bytes",
   "emojiBytes",
+  "utf16Units",
   "weighted",
 ]);
 
@@ -30,6 +31,8 @@ const unitDescriptions: Readonly<Record<TextUnit, string>> = {
   emojiBytes:
     "characters, where an emoji counts as the bytes it takes in UTF-8, 4 for most",
   graphemes: "characters, counting what a reader sees as one character",
+  utf16Units:
+    "characters, where an emoji counts as 2 and most other characters as 1",
   utf8Bytes: "bytes once encoded as UTF-8",
   weighted:
     "characters as X counts them: a link counts as 23 whatever its length, an emoji as 2, and a Chinese, Japanese or Korean character as 2",

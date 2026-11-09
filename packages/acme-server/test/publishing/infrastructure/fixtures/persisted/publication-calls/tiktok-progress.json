@@ -1,0 +1,7 @@
+[
+  { "_tag": "pulling", "kind": "video" },
+  { "_tag": "pulling", "kind": "photo" },
+  { "_tag": "pulled", "kind": "video", "publishId": "v_pub_url~v2.123456789" },
+  { "_tag": "uploading", "publishId": "v_pub_file~v2-1.123456789" },
+  { "_tag": "finishing", "publishId": "v_pub_file~v2-1.123456789" }
+]

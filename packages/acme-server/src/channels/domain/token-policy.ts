@@ -93,6 +93,17 @@ export const tokenPolicies = {
       rotates: false,
     },
   }),
+  // Access tokens last two hours by TikTok's guide (its examples say a
+  // day: `expires_in` decides), and each refresh token works once. Refresh
+  // tokens end 180 days after the creator signed in.
+  tiktok: new TokenPolicy({
+    lifetime: Option.some(Duration.hours(2)),
+    refresh: {
+      _tag: "refreshToken",
+      ahead: Duration.minutes(30),
+      rotates: true,
+    },
+  }),
   // Access tokens last two hours, and each refresh token works once.
   x: new TokenPolicy({
     lifetime: Option.some(Duration.hours(2)),

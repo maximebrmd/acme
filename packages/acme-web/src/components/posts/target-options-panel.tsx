@@ -1,6 +1,12 @@
 "use client";
 
-import type { Channel, ContentViolation } from "acme-contract";
+import { useAtomValue } from "@effect/atom-react";
+import type {
+  Channel,
+  ContentViolation,
+  TikTokAccount,
+  TikTokCreator,
+} from "acme-contract";
 import { Checkbox } from "acme-ui/components/checkbox";
 import { Input } from "acme-ui/components/input";
 import { Label } from "acme-ui/components/label";
@@ -12,10 +18,13 @@ import {
   SelectValue,
 } from "acme-ui/components/select";
 import { Separator } from "acme-ui/components/separator";
-import { Match, Option, Schema } from "effect";
+import { Cause, Match, Option, Schema } from "effect";
+import { AsyncResult } from "effect/reactivity";
 import { useTranslations } from "next-intl";
-import type { ChangeEvent } from "react";
+import { useEffect } from "react";
+import type { ChangeEvent, ReactNode } from "react";
 
+import { tiktokCreator } from "#posts/api.ts";
 import type { ComposerFailure } from "#posts/composer-failure.ts";
 import {
   fieldsOf,
@@ -32,6 +41,8 @@ import type {
   ToggleField,
   YesNoField,
 } from "#posts/target-options.ts";
+import { fittedToCreator, creatorLimits } from "#posts/tiktok-account.ts";
+import type { FieldLimits, CreatorLimits } from "#posts/tiktok-account.ts";
 
 type Translate = ReturnType<typeof useTranslations<"Posts.Options">>;
 
@@ -46,6 +57,8 @@ const textOf = (value: Value): string =>
 interface FieldProps<F extends OptionField> {
   readonly disabled: boolean;
   readonly field: F;
+  /** How the account shows it, when its platform says (TikTok's creator). */
+  readonly limits: FieldLimits;
   readonly id: string;
   readonly onValue: (value: Value) => void;
   readonly value: Value;
@@ -74,13 +87,16 @@ const labelOf = (t: Translate, field: OptionField) =>
 const Notes = ({
   field,
   id,
+  limits,
   violation,
 }: {
   readonly field: OptionField;
   readonly id: string;
+  readonly limits: FieldLimits;
   readonly violation: OptionViolation | undefined;
 }) => {
   const t = useTranslations("Posts.Options");
+  const closed = [...(limits.closedChoices?.values() ?? [])];
 
   return (
     <>
@@ -89,6 +105,14 @@ const Notes = ({
           {t(field.hint)}
         </p>
       )}
+      {limits.locked === undefined ? null : (
+        <p className="text-muted-foreground text-xs">{t(limits.locked)}</p>
+      )}
+      {closed.map((reason) => (
+        <p key={reason} className="text-muted-foreground text-xs">
+          {t(reason)}
+        </p>
+      ))}
       {violation === undefined ? null : (
         <p id={`${id}-error`} className="text-destructive-text text-xs">
           {problemOf(t, field, violation)}
@@ -116,6 +140,7 @@ const TextInput = ({
   field,
   id,
   onValue,
+  limits,
   value,
   violation,
 }: FieldProps<TagsField | TextField>) => {
@@ -138,12 +163,13 @@ const TextInput = ({
         aria-describedby={describedBy(field, id, violation)}
         onChange={handleChange}
       />
-      <Notes field={field} id={id} violation={violation} />
+      <Notes field={field} id={id} limits={limits} violation={violation} />
     </div>
   );
 };
 
 interface Choice {
+  readonly closed: boolean;
   readonly label: string;
   readonly value: string;
 }
@@ -155,6 +181,7 @@ const ChoiceSelect = ({
   id,
   onChoice,
   selected,
+  limits,
   violation,
 }: {
   readonly choices: readonly Choice[];
@@ -163,6 +190,7 @@ const ChoiceSelect = ({
   readonly id: string;
   readonly onChoice: (value: string) => void;
   readonly selected: string | undefined;
+  readonly limits: FieldLimits;
   readonly violation: OptionViolation | undefined;
 }) => {
   const t = useTranslations("Posts.Options");
@@ -177,7 +205,7 @@ const ChoiceSelect = ({
         onValueChange={(next) => {
           const picked = choices.find(({ value }) => value === next);
 
-          if (picked !== undefined) {
+          if (picked !== undefined && !picked.closed) {
             onChoice(picked.value);
           }
         }}
@@ -191,14 +219,14 @@ const ChoiceSelect = ({
           <SelectValue>{chosen?.label ?? t("choose")}</SelectValue>
         </SelectTrigger>
         <SelectContent>
-          {choices.map(({ label, value }) => (
-            <SelectItem key={value} value={value}>
+          {choices.map(({ closed, label, value }) => (
+            <SelectItem key={value} value={value} disabled={closed}>
               {label}
             </SelectItem>
           ))}
         </SelectContent>
       </Select>
-      <Notes field={field} id={id} violation={violation} />
+      <Notes field={field} id={id} limits={limits} violation={violation} />
     </div>
   );
 };
@@ -215,10 +243,17 @@ const ChoiceInput = ({
     <ChoiceSelect
       {...rest}
       field={field}
-      choices={field.choices.map((choice) => ({
-        label: t(choice.label),
-        value: choice.value,
-      }))}
+      choices={field.choices
+        .filter(
+          ({ value: offered }) =>
+            rest.limits.choices === undefined ||
+            rest.limits.choices.has(offered)
+        )
+        .map((choice) => ({
+          closed: rest.limits.closedChoices?.has(choice.value) ?? false,
+          label: t(choice.label),
+          value: choice.value,
+        }))}
       selected={Option.getOrUndefined(decodeText(value))}
       onChoice={onValue}
     />
@@ -248,8 +283,8 @@ const YesNoInput = ({
       {...rest}
       field={field}
       choices={[
-        { label: t(field.yes), value: yes },
-        { label: t(field.no), value: no },
+        { closed: false, label: t(field.yes), value: yes },
+        { closed: false, label: t(field.no), value: no },
       ]}
       selected={Option.getOrUndefined(selected)}
       onChoice={(choice) => {
@@ -264,11 +299,16 @@ const ToggleInput = ({
   field,
   id,
   onValue,
+  limits,
   value,
   violation,
 }: FieldProps<ToggleField>) => {
   const t = useTranslations("Posts.Options");
-  const checked = field.inverted === true ? value === false : value === true;
+  const locked = limits.locked !== undefined;
+
+  // A locked box shows the setting off, whatever the post held.
+  const checked =
+    !locked && (field.inverted === true ? value === false : value === true);
 
   return (
     <div className="flex flex-col gap-1">
@@ -276,7 +316,7 @@ const ToggleInput = ({
         <Checkbox
           id={id}
           checked={checked}
-          disabled={disabled}
+          disabled={disabled || locked}
           aria-invalid={violation !== undefined}
           aria-describedby={describedBy(field, id, violation)}
           onCheckedChange={(ticked) => {
@@ -286,7 +326,7 @@ const ToggleInput = ({
         <Label htmlFor={id}>{t(field.label)}</Label>
       </div>
       <div className="pl-6">
-        <Notes field={field} id={id} violation={violation} />
+        <Notes field={field} id={id} limits={limits} violation={violation} />
       </div>
     </div>
   );
@@ -311,14 +351,28 @@ interface ChannelOptionsProps {
   readonly violations: readonly ContentViolation[];
 }
 
-// The fields of one channel's platform, filled in with its values.
+const unlimited: FieldLimits = {};
+
+const noFields: ReadonlyMap<string, FieldLimits> = new Map();
+
+// The fields of one channel's platform, filled in with its values, limited
+// by its account when it says how (`limits`), with `header` above them and
+// `footer` below.
 const ChannelOptionsFields = ({
   channel,
   disabled,
+  footer,
+  header,
   onChange,
+  limits,
   values,
   violations,
-}: ChannelOptionsProps) => {
+}: ChannelOptionsProps & {
+  readonly footer?: ReactNode;
+  readonly header?: ReactNode;
+  readonly limits?: ReadonlyMap<string, FieldLimits>;
+}) => {
+  const limitsByField = limits ?? noFields;
   const t = useTranslations("Posts.Options");
   const tPosts = useTranslations("Posts");
   const byField = violationsByField(violations, channel.id);
@@ -326,9 +380,10 @@ const ChannelOptionsFields = ({
 
   const shown = fieldsOf(channel.platform).filter(
     (field) =>
-      field.kind !== "toggle" ||
-      field.within === undefined ||
-      values[field.within] === true
+      limitsByField.get(field.name)?.hidden !== true &&
+      (field.kind !== "toggle" ||
+        field.within === undefined ||
+        values[field.within] === true)
   );
 
   return (
@@ -344,6 +399,7 @@ const ChannelOptionsFields = ({
       <p className="text-muted-foreground text-xs">
         {t("description", { platform })}
       </p>
+      {header}
       {shown.map((field) => (
         <div
           key={field.name}
@@ -356,6 +412,7 @@ const ChannelOptionsFields = ({
           <FieldInput
             disabled={disabled}
             field={field}
+            limits={limitsByField.get(field.name) ?? unlimited}
             id={`option-${channel.id}-${field.name}`}
             value={values[field.name]}
             violation={byField.get(field.name)}
@@ -365,14 +422,199 @@ const ChannelOptionsFields = ({
           />
         </div>
       ))}
+      {footer}
     </fieldset>
   );
+};
+
+/** What the composer knows of a TikTok channel's creator. */
+export type TikTokAccountState =
+  | { readonly _tag: "loading" }
+  | { readonly _tag: "failed"; readonly reason: TikTokFailure }
+  | { readonly _tag: "loaded"; readonly account: TikTokAccount };
+
+/** Why a creator's settings could not be read. */
+export type TikTokFailure = "disabled" | "reconnect" | "unreachable";
+
+// Who posts: their nickname, with their username when TikTok gives one.
+const postingAs = (t: Translate, { nickname, username }: TikTokCreator) =>
+  username === ""
+    ? t("tiktok.postingAsNickname", { nickname })
+    : t("tiktok.postingAs", { nickname, username });
+
+// TikTok's policies the consent names, which its guidelines ask to link.
+const tiktokPolicies = {
+  brand: "https://www.tiktok.com/legal/page/global/bc-policy/en",
+  music: "https://www.tiktok.com/legal/page/global/music-usage-confirmation/en",
+} as const;
+
+const PolicyLink = ({
+  children,
+  href,
+}: {
+  readonly children: ReactNode;
+  readonly href: string;
+}) => (
+  <a
+    href={href}
+    target="_blank"
+    rel="noreferrer noopener"
+    className="underline underline-offset-4"
+  >
+    {children}
+  </a>
+);
+
+// The consent's tags, each the policy it names.
+const BrandedContentPolicy = (chunks: ReactNode) => (
+  <PolicyLink href={tiktokPolicies.brand}>{chunks}</PolicyLink>
+);
+
+const MusicUsageConfirmation = (chunks: ReactNode) => (
+  <PolicyLink href={tiktokPolicies.music}>{chunks}</PolicyLink>
+);
+
+// Who posts, or why the creator cannot post, or why TikTok could not say.
+const CreatorNotice = ({ state }: { readonly state: TikTokAccountState }) => {
+  const t = useTranslations("Posts.Options");
+
+  const text = Match.valueTags(state, {
+    failed: ({ reason }) => t("tiktok.creatorFailed", { reason }),
+    loaded: ({ account: { posting } }) =>
+      posting._tag === "blocked"
+        ? t("tiktok.blocked", { reason: posting.reason })
+        : postingAs(t, posting.creator),
+    loading: () => t("tiktok.loadingCreator"),
+  });
+
+  return <output className="text-sm">{text}</output>;
+};
+
+// The disclosure's label, the consent TikTok asks for, and how long it
+// takes to show.
+const TikTokFooter = ({
+  photos,
+  limits,
+  state,
+}: {
+  readonly photos: boolean;
+  readonly limits: CreatorLimits;
+  readonly state: TikTokAccountState;
+}) => {
+  const t = useTranslations("Posts.Options");
+  const kind = photos ? "photo" : "video";
+
+  const noPhotos =
+    photos && state._tag === "loaded" && !state.account.takesPhotos;
+
+  return (
+    <div className="flex flex-col gap-2">
+      {Option.isSome(limits.label) ? (
+        <p className="text-sm">{t(limits.label.value, { kind })}</p>
+      ) : null}
+      {noPhotos ? (
+        <p className="text-destructive-text text-xs">{t("tiktok.noPhotos")}</p>
+      ) : null}
+      <p className="text-muted-foreground text-xs">{t("tiktok.processing")}</p>
+      <p className="text-sm">
+        {t.rich(limits.consent, {
+          brand: BrandedContentPolicy,
+          music: MusicUsageConfirmation,
+        })}
+      </p>
+    </div>
+  );
+};
+
+/**
+ * A TikTok channel's fields, limited by its creator as TikTok's content
+ * sharing guidelines ask, once `state` says who they are.
+ */
+export const TikTokOptionsFields = ({
+  photos,
+  state,
+  ...props
+}: ChannelOptionsProps & {
+  readonly photos: boolean;
+  readonly state: TikTokAccountState;
+}) => {
+  const account =
+    state._tag === "loaded" ? Option.some(state.account) : Option.none();
+
+  const limits = creatorLimits(account, props.values, photos);
+
+  return (
+    <ChannelOptionsFields
+      {...props}
+      limits={limits.fields}
+      header={<CreatorNotice state={state} />}
+      footer={<TikTokFooter photos={photos} limits={limits} state={state} />}
+    />
+  );
+};
+
+const decodeCannotPost = Schema.decodeUnknownOption(
+  Schema.Struct({
+    _tag: Schema.Literal("ChannelCannotPost"),
+    reason: Schema.Literals(["disabled", "reconnect"]),
+  })
+);
+
+const failureOf = (cause: Cause.Cause<unknown>): TikTokFailure =>
+  Cause.findErrorOption(cause).pipe(
+    Option.flatMap(decodeCannotPost),
+    Option.match({
+      onNone: (): TikTokFailure => "unreachable",
+      onSome: ({ reason }) => reason,
+    })
+  );
+
+// A TikTok channel's fields, with its creator read from the API; the
+// values follow what the creator's settings allow.
+const TikTokChannelOptions = ({
+  photos,
+  workspaceId,
+  ...props
+}: ChannelOptionsProps & {
+  readonly photos: boolean;
+  readonly workspaceId: string;
+}) => {
+  const result = useAtomValue(tiktokCreator(workspaceId, props.channel.id));
+
+  let state: TikTokAccountState = { _tag: "loading" };
+
+  if (AsyncResult.isSuccess(result)) {
+    state = { _tag: "loaded", account: result.value };
+  } else if (AsyncResult.isFailure(result)) {
+    state = { _tag: "failed", reason: failureOf(result.cause) };
+  }
+
+  const account =
+    state._tag === "loaded" ? Option.some(state.account) : Option.none();
+
+  const fitted = fittedToCreator(account, props.values);
+  const { onChange } = props;
+
+  useEffect(() => {
+    if (fitted !== props.values) {
+      onChange(fitted);
+    }
+  }, [fitted, props.values, onChange]);
+
+  return <TikTokOptionsFields {...props} photos={photos} state={state} />;
 };
 
 interface TargetOptionsPanelProps {
   /** The channels the post goes to; those whose platform takes options show. */
   readonly channels: readonly Channel[];
   readonly disabled: boolean;
+  /** Whether the post shows photos only, which TikTok posts as photos. */
+  readonly photos?: boolean;
+  /**
+   * The workspace, whose TikTok channels' creators are read from the API;
+   * without it, they show without them.
+   */
+  readonly workspaceId?: string;
   readonly onChange: (channelId: string, values: OptionValues) => void;
   /** What each channel's fields hold, by channel. */
   readonly valuesOf: (channel: Channel) => OptionValues;
@@ -391,24 +633,45 @@ export const TargetOptionsPanel = ({
   channels,
   disabled,
   onChange,
+  photos = false,
   valuesOf,
   violations,
+  workspaceId,
 }: TargetOptionsPanelProps) => (
   <div className="flex flex-col gap-4">
     {channels
       .filter(({ platform }) => fieldsOf(platform).length > 0)
-      .map((channel) => (
-        <ChannelOptionsFields
-          key={channel.id}
-          channel={channel}
-          disabled={disabled}
-          values={valuesOf(channel)}
-          violations={violations}
-          onChange={(values) => {
+      .map((channel) => {
+        const props: ChannelOptionsProps = {
+          channel,
+          disabled,
+          onChange: (values) => {
             onChange(channel.id, values);
-          }}
-        />
-      ))}
+          },
+          values: valuesOf(channel),
+          violations,
+        };
+
+        if (channel.platform !== "tiktok") {
+          return <ChannelOptionsFields key={channel.id} {...props} />;
+        }
+
+        return workspaceId === undefined ? (
+          <TikTokOptionsFields
+            key={channel.id}
+            {...props}
+            photos={photos}
+            state={{ _tag: "loading" }}
+          />
+        ) : (
+          <TikTokChannelOptions
+            key={channel.id}
+            {...props}
+            photos={photos}
+            workspaceId={workspaceId}
+          />
+        );
+      })}
   </div>
 );
 

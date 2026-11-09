@@ -1,6 +1,6 @@
 ---
 title: Analytics
-description: See how your posts did on Mastodon and Bluesky, by channel and day, which posts did best, and each post's counts over time.
+description: See how your posts did on Mastodon, Bluesky and TikTok, by channel and day, which posts did best, and each post's counts over time.
 sidebar:
   order: 6
 ---
@@ -27,6 +27,7 @@ Readings take turns with the channel's publishing: Acme makes one call at a time
 
 - **Mastodon**: Acme reads each post on the account's server, with the account's access when the account allowed Acme to read its posts. Accounts connected before Acme asked for that are read without it, which shows public and unlisted posts; [reconnect](/channels#reconnect) one to read its followers-only posts too.
 - **Bluesky**: Acme reads posts from Bluesky's public service, 25 at a time, without the account's session: a post's counts are public on Bluesky.
+- **TikTok**: Acme reads the account's public posts, 20 at a time, with the account's access, when the account allowed Acme to read its videos: their likes, shares as reposts, comments as replies, and views. TikTok gives no id for a post only its owner sees, so those are never read.
 
 Acme reads no counts on LinkedIn, X, Threads, Instagram or Facebook Pages yet. It finds so at a post's first turn, stops there, and leaves the post out of **Analytics**, rather than show it with no counts.
 

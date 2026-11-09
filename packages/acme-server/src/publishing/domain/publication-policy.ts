@@ -4,7 +4,7 @@ import { PublishFailureSchema } from "#shared/domain/publish-failure.ts";
 import type { PublishFailure } from "#shared/domain/publish-failure.ts";
 import { PublishResultSchema } from "#shared/domain/publish-result.ts";
 
-import { ownRefusalCodes } from "./own-refusals.ts";
+import { ownRefusalCodes, platformRefusalCodes } from "./own-refusals.ts";
 import type { FailureReason } from "./post-target-status.ts";
 import { TargetSettlementSchema } from "./target-settlement.ts";
 import type { TargetSettlement } from "./target-settlement.ts";
@@ -27,7 +27,8 @@ import type { TargetSettlement } from "./target-settlement.ts";
  * |                     | could not read the media (`./own-refusals.ts`)     |
  * | BadRequest          | give up: contentRejected, or channelDisconnected   |
  * |                     | and channelDisabled when Acme refused to use the   |
- * |                     | channel                                            |
+ * |                     | channel, appNotAudited when the platform refused   |
+ * |                     | the server's app                                   |
  *
  * PlatformUnavailable and RateLimited each count only the attempts that
  * ended that way: a rate limit uses none of the unavailable retries, and the
@@ -173,6 +174,10 @@ export type RefusalReason = Exclude<FailureReason, "missed" | "notPublished">;
 const badRequestReason = (code: string): RefusalReason => {
   if (code === ownRefusalCodes.channelDisconnected) {
     return "channelDisconnected";
+  }
+
+  if (code === platformRefusalCodes.appNotAudited) {
+    return "appNotAudited";
   }
 
   return code === ownRefusalCodes.channelDisabled

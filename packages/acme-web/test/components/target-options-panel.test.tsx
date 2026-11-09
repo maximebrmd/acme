@@ -1,6 +1,6 @@
 import { describe, expect, it } from "@effect/vitest";
 import { PostContentInvalid } from "acme-contract";
-import type { Channel, ContentViolation } from "acme-contract";
+import type { Channel, ContentViolation, TikTokCreator } from "acme-contract";
 import { NextIntlClientProvider } from "next-intl";
 import type { Locale } from "next-intl";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -9,7 +9,9 @@ import { ComposerErrors } from "#components/posts/composer-errors.tsx";
 import {
   takesOptions,
   TargetOptionsPanel,
+  TikTokOptionsFields,
 } from "#components/posts/target-options-panel.tsx";
+import type { TikTokAccountState } from "#components/posts/target-options-panel.tsx";
 import { loadMessages } from "#i18n/messages.ts";
 import { initialValues } from "#posts/target-options.ts";
 import type { OptionValues } from "#posts/target-options.ts";
@@ -146,6 +148,137 @@ describe(TargetOptionsPanel, () => {
   it("shows only for platforms that take options", () => {
     expect(takesOptions([mastodon])).toBeFalsy();
     expect(takesOptions([mastodon, youtube])).toBeTruthy();
+  });
+});
+
+const renderTikTok = async (
+  locale: Locale,
+  state: TikTokAccountState,
+  values: OptionValues = initialValues("tiktok")
+) => {
+  const messages = await loadMessages(locale);
+
+  return renderToStaticMarkup(
+    <NextIntlClientProvider locale={locale} messages={messages}>
+      <TikTokOptionsFields
+        channel={tiktok}
+        disabled={false}
+        photos={false}
+        state={state}
+        values={values}
+        violations={[]}
+        onChange={() => {
+          // Rendered once, never changed.
+        }}
+      />
+    </NextIntlClientProvider>
+  );
+};
+
+const creator: TikTokCreator = {
+  avatarUrl: null,
+  commentDisabled: true,
+  duetDisabled: false,
+  maxVideoDurationMs: 600_000,
+  nickname: "Acme Clips",
+  privacyLevels: ["PUBLIC_TO_EVERYONE", "SELF_ONLY"],
+  stitchDisabled: false,
+  username: "acme_clips",
+};
+
+const loadedWith = (shown: TikTokCreator): TikTokAccountState => ({
+  _tag: "loaded",
+  account: { posting: { _tag: "ready", creator: shown }, takesPhotos: true },
+});
+
+const loaded = loadedWith(creator);
+
+describe(TikTokOptionsFields, () => {
+  it("names who posts, greys out what they turned off, and asks consent", async () => {
+    const html = await renderTikTok("en", loaded);
+
+    expect(html).toContain("Posting as Acme Clips (@acme_clips).");
+    expect(html).toContain("Turned off in the account’s TikTok settings.");
+    expect(html).toMatch(
+      /By posting, you agree to TikTok’s <a [^>]+>Music Usage Confirmation<\/a>\./u
+    );
+    expect(html).toContain("may take a few minutes to process");
+  });
+
+  it("labels branded content, and asks consent to its policy", async () => {
+    const html = await renderTikTok("en", loaded, {
+      ...initialValues("tiktok"),
+      brandContent: true,
+      commercialContent: true,
+    });
+
+    expect(html).toContain("Your video will be labeled “Paid partnership”.");
+    expect(html).toContain(
+      "Branded content visibility cannot be set to private."
+    );
+    expect(html).toMatch(
+      /By posting, you agree to TikTok’s <a [^>]+>Branded Content Policy<\/a> and <a [^>]+>Music Usage Confirmation<\/a>\./u
+    );
+  });
+
+  it("links the consent to TikTok's policies", async () => {
+    const music = await renderTikTok("en", loaded);
+
+    const branded = await renderTikTok("fr", loaded, {
+      ...initialValues("tiktok"),
+      brandContent: true,
+      commercialContent: true,
+    });
+
+    expect(music).toContain(
+      'href="https://www.tiktok.com/legal/page/global/music-usage-confirmation/en"'
+    );
+    expect(music).not.toContain("bc-policy");
+    expect(branded).toContain(
+      'href="https://www.tiktok.com/legal/page/global/bc-policy/en"'
+    );
+    expect(branded).toContain(
+      'href="https://www.tiktok.com/legal/page/global/music-usage-confirmation/en"'
+    );
+  });
+
+  it("names a creator without a username by their nickname alone", async () => {
+    const html = await renderTikTok(
+      "en",
+      loadedWith({ ...creator, username: "" })
+    );
+
+    expect(html).toContain("Posting as Acme Clips.");
+    expect(html).not.toContain("(@)");
+  });
+
+  it("says why the creator cannot post, or TikTok could not say", async () => {
+    const blocked = await renderTikTok("en", {
+      _tag: "loaded",
+      account: {
+        posting: { _tag: "blocked", reason: "postLimit" },
+        takesPhotos: true,
+      },
+    });
+
+    const failed = await renderTikTok("fr", {
+      _tag: "failed",
+      reason: "reconnect",
+    });
+
+    expect(blocked).toContain("as many posts today as TikTok allows");
+    expect(failed).toContain(
+      "Reconnectez ce compte pour lire ses réglages sur TikTok."
+    );
+  });
+
+  it("speaks the reader's language", async () => {
+    const html = await renderTikTok("fr", loaded);
+
+    expect(html).toContain("Publication en tant que Acme Clips (@acme_clips).");
+    expect(html).toMatch(
+      /En publiant, vous acceptez la <a [^>]+>Confirmation d’utilisation de la musique<\/a> de TikTok\./u
+    );
   });
 });
 

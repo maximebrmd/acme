@@ -24,6 +24,8 @@ export const french: EmailCatalog = {
     subject: "Reconnectez {handle} sur {platform} avant le {expiresAt}",
   },
   failureReasons: {
+    appNotAudited:
+      "la plateforme n’accepte que des publications privées de l’application de ce serveur tant qu’elle ne l’a pas approuvée. Rendez le compte privé et la publication visible par son seul propriétaire, ou contactez l’opérateur du serveur.",
     channelDisabled:
       "son canal a été désactivé avant son départ. Réactivez-le, puis publiez à nouveau.",
     channelDisconnected:

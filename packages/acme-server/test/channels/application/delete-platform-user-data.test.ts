@@ -18,6 +18,7 @@ import { ChannelPlatforms } from "#channels/infrastructure/platforms/channel-pla
 import { MetaSignedRequestsLive } from "#channels/infrastructure/platforms/meta/meta-signed-requests.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
 import { metaHosts } from "#shared/infrastructure/platforms/meta-graph.ts";
+import { tiktokHosts } from "#shared/infrastructure/platforms/tiktok-api.ts";
 import {
   metaApp,
   signedRequest,
@@ -41,6 +42,8 @@ const settings = (apps: { readonly threads: boolean }) =>
       metaHosts,
       publicUrl: "https://acme.test",
       threads: apps.threads ? Option.some(threadsApp) : Option.none(),
+      tiktok: Option.none(),
+      tiktokHosts,
       x: Option.none(),
     })
   );
