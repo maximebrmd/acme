@@ -295,7 +295,7 @@ layer(McpFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
             fixture.owner,
             fixture.clientId,
             workspace,
-            "openid workspace:read workspace:write"
+            "openid workspace:read workspace:write workspace:publish"
           );
 
           // Over the sessionful revision as well.

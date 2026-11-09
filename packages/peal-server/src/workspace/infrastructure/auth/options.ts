@@ -197,12 +197,12 @@ const isMember = async (
 };
 
 // MCP clients register themselves, when the server allows it, with the
-// right to ask for reading; writing they may ask for too, and the user then
-// agrees to it or not on the consent page.
+// right to ask for reading; writing and publishing they may ask for too,
+// and the user then agrees to each or not on the consent page.
 const dynamicClientRegistration: Partial<OAuthOptions<Scope[]>> = {
   allowDynamicClientRegistration: true,
   allowUnauthenticatedClientRegistration: true,
-  clientRegistrationAllowedScopes: ["workspace:write"],
+  clientRegistrationAllowedScopes: ["workspace:write", "workspace:publish"],
   clientRegistrationDefaultApplicationType: "infer",
   clientRegistrationDefaultScopes: [
     "openid",

@@ -13,9 +13,11 @@ import { SignInFailed } from "#sign-in-failed.ts";
 
 /**
  * What the command line asks to do: anything the user's role allows in
- * their workspaces, and to renew its sign-in without them.
+ * their workspaces, scheduling and publishing posts included, which is a
+ * scope of its own, and to renew its sign-in without them.
  */
-export const loginScope = "offline_access workspace:read workspace:write";
+export const loginScope =
+  "offline_access workspace:read workspace:write workspace:publish";
 
 // RFC 8628 §3.5: wait five seconds between requests unless the server says
 // otherwise, and five more each time it asks to slow down.
@@ -148,6 +150,10 @@ export const login = Command.make(
         `Or open ${device.verification_uri_complete}, where the code is filled in.`
       );
     }
+
+    yield* Console.log(
+      "The command line asks to read your workspaces, to change them as your role allows, and to schedule and publish posts to your connected accounts: the page lists each before you approve."
+    );
 
     yield* Console.log(
       `Waiting for you to approve the sign-in (the code works for ${Duration.format(Duration.seconds(device.expires_in))})…`

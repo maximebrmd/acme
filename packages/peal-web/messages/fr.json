@@ -800,7 +800,8 @@
       "email": "Voir votre adresse e-mail",
       "offlineAccess": "Rester connectée en votre absence, jusqu’à ce que vous la déconnectiez",
       "workspaceRead": "Lire l’espace de travail : publications, canaux, médias et statistiques",
-      "workspaceWrite": "Faire ce que votre rôle permet dans l’espace de travail, comme rédiger, programmer et publier",
+      "workspaceWrite": "Faire ce que votre rôle permet dans l’espace de travail, comme rédiger des brouillons et gérer les médias, sans rien programmer ni publier",
+      "workspacePublish": "Programmer et publier des publications sur vos comptes connectés, où tout le monde peut les voir",
       "other": "Utiliser la permission « {scope} »"
     },
     "device": {

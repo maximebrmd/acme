@@ -800,7 +800,8 @@
       "email": "See your email address",
       "offlineAccess": "Stay connected while you are away, until you disconnect it",
       "workspaceRead": "Read the workspace: posts, channels, media and analytics",
-      "workspaceWrite": "Do what your role allows in the workspace, such as writing, scheduling and publishing posts",
+      "workspaceWrite": "Do what your role allows in the workspace, such as writing drafts and managing media, without scheduling or publishing anything",
+      "workspacePublish": "Schedule and publish posts to your connected accounts, where everyone can see them",
       "other": "Use the permission “{scope}”"
     },
     "device": {

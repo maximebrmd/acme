@@ -8,6 +8,7 @@ const scopeKeys = {
   offline_access: "offlineAccess",
   openid: "openid",
   profile: "profile",
+  "workspace:publish": "workspacePublish",
   "workspace:read": "workspaceRead",
   "workspace:write": "workspaceWrite",
 } as const;
@@ -18,14 +19,16 @@ const decodeKnownScope = Schema.decodeUnknownOption(
     "offline_access",
     "openid",
     "profile",
+    "workspace:publish",
     "workspace:read",
     "workspace:write",
   ])
 );
 
-// Writing includes reading, which needs no line of its own then.
+// Writing and publishing include reading, which needs no line of its own
+// then. Publishing always has its own line.
 const shown = (scopes: readonly string[]): readonly string[] =>
-  scopes.includes("workspace:write")
+  scopes.includes("workspace:write") || scopes.includes("workspace:publish")
     ? scopes.filter((scope) => scope !== "workspace:read")
     : scopes;
 

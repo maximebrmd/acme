@@ -37,8 +37,13 @@ interface Fixture {
   readonly channelId: string;
   /** A YouTube channel of the workspace. */
   readonly youtubeId: string;
-  /** A token that may do what the owner's role allows in the workspace. */
+  /**
+   * A token that may do what the owner's role allows in the workspace, but
+   * what puts posts out.
+   */
   readonly writing: string;
+  /** A token that may do everything the owner's role allows. */
+  readonly publishing: string;
   /** A token that may only read the workspace. */
   readonly reading: string;
   readonly workspaceId: string;
@@ -68,21 +73,35 @@ const ToolsFixtureLive = Layer.effect(
 
     const clientId = yield* registeredClient;
 
+    // Each asks for more than the one before, so the consent page comes
+    // back every time: a consent covers only what it was given for.
+    const reading = yield* authorize(
+      owner,
+      clientId,
+      workspaceId,
+      "openid workspace:read"
+    );
+
+    const writing = yield* authorize(
+      owner,
+      clientId,
+      workspaceId,
+      "openid workspace:read workspace:write"
+    );
+
+    const publishing = yield* authorize(
+      owner,
+      clientId,
+      workspaceId,
+      "openid workspace:read workspace:write workspace:publish"
+    );
+
     return {
       channelId: channel.id,
-      reading: yield* authorize(
-        owner,
-        clientId,
-        workspaceId,
-        "openid workspace:read"
-      ),
+      publishing,
+      reading,
       workspaceId,
-      writing: yield* authorize(
-        owner,
-        clientId,
-        workspaceId,
-        "openid workspace:read workspace:write"
-      ),
+      writing,
       youtubeId: youtube.id,
     };
   })
@@ -295,13 +314,24 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
             "A synthetic draft, rewritten."
           );
 
-          // A draft has nothing to unschedule, repost or confirm.
+          // Taking a post back is deciding what goes out, which the user
+          // did not let this connection do.
           assert.include(
             yield* writer.refused("unschedule_post", { postId: created.id }),
+            "workspace:publish"
+          );
+
+          const publisher = yield* connected(fixture.publishing);
+
+          // A draft has nothing to unschedule, repost or confirm.
+          assert.include(
+            yield* publisher.refused("unschedule_post", {
+              postId: created.id,
+            }),
             "The post is draft, which does not allow this."
           );
           assert.include(
-            yield* writer.refused("repost_target", {
+            yield* publisher.refused("repost_target", {
               postId: created.id,
               targetId: "not-a-target",
             }),
@@ -326,7 +356,7 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
               channelIds: [],
               content: content("Not for a reader."),
             }),
-            "they let this client read only"
+            "did not give this client the scope workspace:write"
           );
 
           assert.deepStrictEqual(
