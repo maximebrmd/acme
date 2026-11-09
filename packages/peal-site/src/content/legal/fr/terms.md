@@ -10,7 +10,7 @@ Date d’entrée en vigueur : [Date]
 
 Ces conditions encadrent l’utilisation du service Peal hébergé à l’adresse app.peal.social, fourni par [Nom de l’entité juridique] (« nous »), [Adresse du siège], [Numéro d’immatriculation]. [Indiquer comment les conditions sont acceptées, par exemple à la création d’un compte.]
 
-Elles ne couvrent pas le code source de Peal. Le code source fait l’objet d’une licence distincte, la Functional Source License, Version 1.1, ALv2 Future License (FSL-1.1-ALv2), qui encadre son auto-hébergement, sa modification et sa redistribution.
+Elles ne couvrent pas le code source de Peal. Le code source fait l’objet d’une licence distincte, la Functional Source License, Version 1.1, ALv2 Future License (FSL-1.1-ALv2), qui encadre son auto-hébergement, sa modification et sa redistribution, à l’exception des SDK et du contrat de l’API à partir duquel ils sont générés, qui relèvent de la licence Apache, version 2.0.
 
 ## Le service
 
@@ -41,6 +41,8 @@ Votre utilisation de chaque plateforme reste soumise à ses propres conditions. 
 ## Offres, prix et paiement
 
 [Les offres et les prix, les taxes, les périodes de facturation, les renouvellements, les résiliations et les remboursements, ainsi que le droit de rétractation des consommateurs dans l’UE lorsqu’il s’applique. Les paiements sont traités par [Prestataire de paiement].]
+
+Supprimer une organisation, ou fermer votre compte de sorte qu’une organisation soit supprimée avec lui, résilie immédiatement son abonnement, une fois que vous l’acceptez sur l’écran de confirmation : plus rien n’est facturé, et la période déjà payée n’est pas remboursée, sauf lorsque la loi prévoit un remboursement, comme pour un consommateur qui se rétracte dans les 14 jours suivant la souscription, qui est remboursé de la part non utilisée. [Comment un consommateur qui se rétracte demande ce remboursement.] Les factures sont conservées comme le droit comptable l’exige.
 
 ## Disponibilité et évolutions du service
 

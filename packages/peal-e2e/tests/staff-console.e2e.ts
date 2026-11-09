@@ -205,5 +205,14 @@ describe("the staff console", { serial: true }, () => {
         await expect(screen.getByRole("cell", reason)).toBeVisible();
       })
     );
+
+    // Coming back from the member's account is recorded too, with the
+    // route staff took.
+    await expect(
+      screen.getByRole(
+        "cell",
+        "Stopped acting as the account auth:/admin/stop-impersonating"
+      )
+    ).toBeVisible();
   });
 });

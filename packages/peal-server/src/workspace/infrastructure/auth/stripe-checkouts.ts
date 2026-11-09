@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import { Effect, Layer, Option } from "effect";
+import { Effect, Layer, Option, Schema } from "effect";
 import type { Stripe } from "stripe";
 
 import { Checkouts } from "#billing/application/ports/checkouts.ts";
@@ -17,8 +17,8 @@ import { stripeClientOf } from "./stripe-client.ts";
 
 const failed = (cause: unknown) => new DatabaseError({ cause });
 
-// A deletion waits on these calls, inside its transaction: Stripe gets this
-// long to answer each one.
+// A deletion waits on these calls, and holds its transaction while it asks
+// whether anything still bills: Stripe gets this long to answer each one.
 const requestTimeout = 10_000;
 
 // Better Auth's own default, for a row written without one.
@@ -54,7 +54,7 @@ const expireFor = (
     Effect.map((expired) => expired.length)
   );
 
-// The status of every subscription Stripe holds for the customer, those
+// Every subscription Stripe holds for the customer, with its status, those
 // its events have not reported yet included. Kept to the customer's own,
 // which is all Stripe lists.
 const subscriptionsOf = (
@@ -71,9 +71,49 @@ const subscriptionsOf = (
   }).pipe(
     Effect.map((subscriptions) =>
       subscriptions.flatMap((held) =>
-        held.customer === customer ? [held.status] : []
+        held.customer === customer ? [{ id: held.id, status: held.status }] : []
       )
     )
+  );
+
+// Stripe's answer to a subscription it does not know: nothing to cancel.
+const isMissing = Schema.is(
+  Schema.Struct({ code: Schema.Literal("resource_missing") })
+);
+
+// Why Stripe ended it, in its dashboard and its events.
+const cancellationComment = "Workspace deleted on Peal";
+
+// Cancels the subscription at once: no proration credit, no final invoice,
+// so the period paid for stays paid and nothing more is charged. Says
+// whether Stripe had it to cancel.
+const cancelAtStripe = (
+  stripe: Stripe,
+  subscriptionId: string,
+  workspaceId: WorkspaceId
+) =>
+  Effect.tryPromise({
+    // Whether Stripe answered that it does not know the subscription.
+    catch: (cause) => isMissing(cause),
+    try: async () =>
+      await stripe.subscriptions.cancel(
+        subscriptionId,
+        {
+          cancellation_details: { comment: cancellationComment },
+          invoice_now: false,
+          prorate: false,
+        },
+        // A deletion tried again asks Stripe once.
+        { idempotencyKey: `erase-${workspaceId}-${subscriptionId}` }
+      ),
+  }).pipe(
+    Effect.matchEffect({
+      onFailure: (missing) =>
+        missing
+          ? Effect.succeed(false)
+          : Effect.fail(new StripeUnreachable({ workspaceId })),
+      onSuccess: () => Effect.succeed(true),
+    })
   );
 
 /**
@@ -81,8 +121,9 @@ const subscriptionsOf = (
  * subscriptions its checkouts started (`subscription`, by workspace as
  * `reference_id`), and the Stripe customer it made for the workspace
  * (`organization.stripe_customer_id`), whose open Checkout Sessions are
- * expired at Stripe, and whose subscriptions Stripe is asked for. Without a
- * Stripe key, there are none.
+ * expired at Stripe, and whose subscriptions Stripe is asked for, and
+ * cancelled when the workspace is deleted. Without a Stripe key, there are
+ * none.
  */
 export const StripeCheckoutsLive = Layer.effect(
   Checkouts,
@@ -168,9 +209,95 @@ export const StripeCheckoutsLive = Layer.effect(
         )
       );
 
-      return found.flat();
+      return found.flat().map(({ status }) => status);
     });
 
-    return Checkouts.of({ atStripe, expireOpen, statuses });
+    const cancelBilled = Effect.fn("Checkouts.cancelBilled")(
+      function* cancelBilled(
+        workspaceId: WorkspaceId,
+        {
+          known,
+          mayBill,
+        }: {
+          readonly known: readonly string[];
+          readonly mayBill: (status: string) => boolean;
+        }
+      ) {
+        if (Option.isNone(client)) {
+          return 0;
+        }
+
+        const stripe = client.value;
+
+        const started = yield* db
+          .select({
+            id: subscription.stripeSubscriptionId,
+            status: subscription.status,
+          })
+          .from(subscription)
+          .where(eq(subscription.referenceId, workspaceId))
+          .pipe(Effect.mapError(failed));
+
+        const held = yield* customersOf(workspaceId).pipe(
+          Effect.flatMap(
+            Effect.forEach((customer) =>
+              subscriptionsOf(stripe, customer, workspaceId)
+            )
+          )
+        );
+
+        // What Stripe says of each subscription it lists decides; the
+        // others, which billing or the plugin hold, are asked to end.
+        const listed = new Map(
+          held.flat().map(({ id, status }) => [id, status])
+        );
+
+        const named = [
+          ...known,
+          ...started.flatMap(({ id, status }) =>
+            id === null || id === "" || !mayBill(status ?? defaultStatus)
+              ? []
+              : [id]
+          ),
+        ].filter((id) => !listed.has(id));
+
+        const billing = [
+          ...new Set([
+            ...[...listed].flatMap(([id, status]) =>
+              mayBill(status) ? [id] : []
+            ),
+            ...named,
+          ]),
+        ];
+
+        const cancelled = yield* Effect.all(
+          billing.map((id) => cancelAtStripe(stripe, id, workspaceId))
+        );
+
+        return cancelled.filter(Boolean).length;
+      }
+    );
+
+    // FOR KEY SHARE waits on a deletion that holds the row, which locks it
+    // first, and then finds it gone.
+    const holdWorkspace = (workspaceId: WorkspaceId) =>
+      db
+        .select({ id: organization.id })
+        .from(organization)
+        .where(eq(organization.id, workspaceId))
+        .for("key share")
+        .pipe(
+          Effect.mapError(failed),
+          Effect.map((rows) => rows.length > 0),
+          Effect.withSpan("Checkouts.holdWorkspace")
+        );
+
+    return Checkouts.of({
+      atStripe,
+      cancelBilled,
+      expireOpen,
+      holdWorkspace,
+      statuses,
+    });
   })
 );

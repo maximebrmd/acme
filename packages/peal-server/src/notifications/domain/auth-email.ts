@@ -23,8 +23,25 @@ export const AuthEmailSchema = Schema.Union([
     workspaceName: Schema.String,
   }),
   // Confirms, to the address it had, that an account was deleted with its
-  // data, as its owner asked. Its link opens Peal.
-  Schema.TaggedStruct("AccountDeleted", link),
+  // data, as its owner asked, and how many subscriptions of the workspaces
+  // it deleted were cancelled. Its link opens Peal.
+  Schema.TaggedStruct("AccountDeleted", {
+    ...link,
+    subscriptionsCancelled: Schema.Int,
+  }),
+  // Confirms, to the owner who deleted it, that a workspace is deleted, and
+  // whether its subscription was cancelled. Its link opens their workspaces.
+  Schema.TaggedStruct("WorkspaceDeleted", {
+    ...link,
+    subscriptionsCancelled: Schema.Int,
+    workspaceName: Schema.String,
+  }),
+  // Tells the account's address that a copy of its data was downloaded,
+  // from the web app or the command line. Its link opens account settings.
+  Schema.TaggedStruct("DataExported", {
+    ...link,
+    via: Schema.Literals(["commandLine", "web"]),
+  }),
 ]);
 
 export type AuthEmail = typeof AuthEmailSchema.Type;

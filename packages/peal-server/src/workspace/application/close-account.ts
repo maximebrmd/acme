@@ -14,12 +14,17 @@ import { AccountStore } from "./account-store.ts";
 import type { AuthUnavailable } from "./auth-unavailable.ts";
 import type { BillingUnavailable } from "./billing-unavailable.ts";
 import { ContextRecords } from "./context-records.ts";
+import type { WorkspaceErasureOptions } from "./context-records.ts";
 import { IncorrectPassword } from "./incorrect-password.ts";
 import { NotSignedIn } from "./not-signed-in.ts";
 import { PasswordCheck } from "./password-check.ts";
 import type { TooManyPasswordAttempts } from "./too-many-password-attempts.ts";
 import type { WorkspaceBusy } from "./workspace-busy.ts";
-import { eraseWorkspace, removeWorkspaceFiles } from "./workspace-erasure.ts";
+import {
+  eraseWorkspace,
+  removeWorkspaceFiles,
+  reportCancelledFirst,
+} from "./workspace-erasure.ts";
 import type { WorkspaceSubscribed } from "./workspace-subscribed.ts";
 
 /**
@@ -29,17 +34,20 @@ import type { WorkspaceSubscribed } from "./workspace-subscribed.ts";
  * they wrote stay without an author, and their notices, preferences,
  * sessions and OAuth grants go too, in one transaction. It is refused while
  * they are the only owner of a workspace others still use (`planClosure`),
- * and while one of the workspaces it would delete has a subscription Stripe
- * may still bill, or Stripe cannot be reached to expire its open checkouts.
- * A confirmation is emailed to the address the account had,
- * in its language.
+ * and while Stripe cannot be reached. A subscription Stripe may still bill
+ * one of the workspaces it deletes through is cancelled at once, when
+ * `options` says the user agreed to, before the transaction and once
+ * nothing else refuses; otherwise the closure is refused
+ * (`WorkspaceSubscribed`, listing what cancelling would end in each). A confirmation
+ * is emailed to the address the account had, in its language.
  */
 export class CloseAccount extends Context.Service<
   CloseAccount,
   {
     readonly close: (
       principal: UserPrincipal,
-      password: Redacted.Redacted
+      password: Redacted.Redacted,
+      options: WorkspaceErasureOptions
     ) => Effect.Effect<
       void,
       | AuthUnavailable
@@ -70,7 +78,8 @@ export class CloseAccount extends Context.Service<
 
       const close = Effect.fn("CloseAccount.close")(function* close(
         principal: UserPrincipal,
-        password: Redacted.Redacted
+        password: Redacted.Redacted,
+        options: WorkspaceErasureOptions
       ) {
         const userId = yield* Effect.fromResult(ownSession(principal));
 
@@ -87,8 +96,21 @@ export class CloseAccount extends Context.Service<
           )
         );
 
+        // What it would delete, so Stripe's side, which cannot be undone,
+        // is settled first, once nothing else refuses.
+        const planned = yield* Effect.fromResult(
+          planClosure(yield* store.standings(userId))
+        );
+
+        const { subscriptionsCancelled } = yield* records.settleWorkspaces(
+          planned.deleted,
+          options
+        );
+
         const deleted = yield* transaction(
           Effect.gen(function* closeInTransaction() {
+            // Again, under the workspaces' locks: a workspace someone
+            // joined meanwhile is left rather than deleted.
             const plan = yield* Effect.fromResult(
               planClosure(yield* store.standings(userId))
             );
@@ -102,10 +124,25 @@ export class CloseAccount extends Context.Service<
 
             return plan.deleted;
           })
-        );
+        ).pipe(reportCancelledFirst(subscriptionsCancelled));
 
         yield* Effect.forEach(deleted, removeWorkspaceFiles, { discard: true });
-        yield* mail.deleted({ email: user.email, locale: user.locale });
+
+        // Ids only: what a restore of the database must delete again.
+        yield* Effect.logInfo("Closed an account").pipe(
+          Effect.annotateLogs({
+            "event.name": "peal.erasure",
+            subscriptionsCancelled,
+            userId,
+            workspaceIds: deleted.join(","),
+          })
+        );
+
+        yield* mail.deleted({
+          email: user.email,
+          locale: user.locale,
+          subscriptionsCancelled,
+        });
       }, Effect.provideContext(ports));
 
       return CloseAccount.of({ close });

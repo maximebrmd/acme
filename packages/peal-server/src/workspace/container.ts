@@ -23,6 +23,7 @@ import { Authenticate } from "#workspace/application/authenticate.ts";
 import { CloseAccount } from "#workspace/application/close-account.ts";
 import { ConnectedApps } from "#workspace/application/connected-apps.ts";
 import { DeleteWorkspace } from "#workspace/application/delete-workspace.ts";
+import { ImpersonationGuard } from "#workspace/application/impersonation-guard.ts";
 import { ResolveMember } from "#workspace/application/resolve-member.ts";
 import { StaffStanding } from "#workspace/application/staff-standing.ts";
 import { WorkspaceContacts } from "#workspace/application/workspace-contacts.ts";
@@ -41,9 +42,11 @@ import { ContextRecordsLive } from "#workspace/infrastructure/context-records.ts
 import { AccountDirectoryLive } from "#workspace/infrastructure/drizzle-account-directory.ts";
 import { DrizzleAccountStore } from "#workspace/infrastructure/drizzle-account-store.ts";
 import { DrizzleConnectedAppStore } from "#workspace/infrastructure/drizzle-connected-app-store.ts";
+import { DrizzleImpersonationSessions } from "#workspace/infrastructure/drizzle-impersonation-sessions.ts";
 import { MemberDirectoryLive } from "#workspace/infrastructure/drizzle-member-directory.ts";
 import { WorkspaceRosterLive } from "#workspace/infrastructure/drizzle-workspace-roster.ts";
 import { EmailedAccountMail } from "#workspace/infrastructure/emailed-account-mail.ts";
+import { StaffImpersonationLog } from "#workspace/infrastructure/staff-impersonation-log.ts";
 
 const AdaptersLive = Layer.mergeAll(
   AuthGatewayLive,
@@ -73,14 +76,28 @@ const StaffToolsLive = Layer.mergeAll(
   AccountModerationLive
 );
 
+// What every request in a session staff act as someone in goes through,
+// from Peal's API and Better Auth's routes alike: the staff member's
+// standing, read fresh, and the audit log, the staff context's.
+const ImpersonationGuardLive = ImpersonationGuard.layer.pipe(
+  Layer.provide(
+    Layer.mergeAll(
+      AccountDirectoryLive,
+      DrizzleImpersonationSessions,
+      StaffImpersonationLog
+    )
+  )
+);
+
 /**
  * The workspace context's services: Better Auth, configured from the
  * environment, with the command line's OAuth client registered, and the use
  * cases behind the API and the MCP endpoint, with the accounts and
  * workspaces the staff console reads and acts on (AccountDirectory,
- * AccountModeration). It needs the database, migrated, the notifications
- * context's SendAuthEmail, and the billing context's WorkspaceEntitlements
- * and RecordSubscription.
+ * AccountModeration), and the guard of staff's impersonations. It needs
+ * the database, migrated, Ids, the notifications context's SendAuthEmail,
+ * the billing context's WorkspaceEntitlements and RecordSubscription, and
+ * the staff context's ImpersonationAudit.
  */
 export const WorkspaceLive = Layer.merge(
   UseCasesLive,
@@ -89,6 +106,7 @@ export const WorkspaceLive = Layer.merge(
   Layer.provide(AdaptersLive),
   Layer.provideMerge(StaffToolsLive),
   Layer.provideMerge(BetterAuthLive),
+  Layer.provideMerge(ImpersonationGuardLive),
   Layer.provideMerge(AuthSettings.layer)
 );
 

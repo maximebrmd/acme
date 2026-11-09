@@ -1,7 +1,14 @@
 {
   "name": "peal-contract",
   "private": true,
-  "license": "FSL-1.1-ALv2",
+  "homepage": "https://peal.social",
+  "bugs": "https://github.com/peal-social/peal/issues",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/peal-social/peal.git",
+    "directory": "packages/peal-contract"
+  },
   "type": "module",
   "exports": {
     ".": "./src/api.ts",

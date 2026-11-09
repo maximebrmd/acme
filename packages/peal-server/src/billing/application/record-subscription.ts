@@ -3,9 +3,11 @@ import type { DateTime } from "effect";
 
 import { SubscriptionChange } from "#billing/domain/subscription-change.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
+import { TransactionRunner } from "#shared/application/transaction-runner.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
 import type { PaidPlan } from "#shared/domain/plan.ts";
 
+import { Checkouts } from "./ports/checkouts.ts";
 import { Subscriptions } from "./ports/subscriptions.ts";
 import type { RecordOutcome } from "./ports/subscriptions.ts";
 
@@ -35,7 +37,7 @@ const decodeChange = Schema.decodeUnknownOption(SubscriptionChange);
  * failure is reported, so the webhook answers an error and Stripe sends
  * the event again later; an event this server cannot read, as with a status
  * Stripe added since, is logged and ignored, since sending it again would
- * change nothing.
+ * change nothing. An event about a workspace deleted meanwhile is ignored.
  */
 export class RecordSubscription extends Context.Service<
   RecordSubscription,
@@ -49,6 +51,8 @@ export class RecordSubscription extends Context.Service<
     RecordSubscription,
     Effect.gen(function* RecordSubscriptionLive() {
       const subscriptions = yield* Subscriptions;
+      const checkouts = yield* Checkouts;
+      const { transaction } = yield* TransactionRunner;
 
       const record = Effect.fn("RecordSubscription.record")(function* record(
         event: SubscriptionEvent
@@ -67,8 +71,19 @@ export class RecordSubscription extends Context.Service<
           return ignored;
         }
 
-        const outcome: RecordedEvent = yield* subscriptions.record(
-          change.value
+        // Under the workspace's row: an event that comes while the
+        // workspace is being deleted, as the one its cancellation sends,
+        // waits, then finds it gone, and leaves no record behind.
+        const outcome: RecordedEvent = yield* transaction(
+          Effect.gen(function* recordHeld() {
+            if (!(yield* checkouts.holdWorkspace(event.workspaceId))) {
+              const gone: RecordedEvent = "ignored";
+
+              return gone;
+            }
+
+            return yield* subscriptions.record(change.value);
+          })
         );
 
         yield* Effect.logInfo("Recorded a subscription event").pipe(

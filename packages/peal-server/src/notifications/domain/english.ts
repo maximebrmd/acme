@@ -8,6 +8,12 @@ export const english: EmailCatalog = {
       "If you did not ask for this, tell whoever runs this Peal server. Peal sends no more email to this address.",
     subject: "Your Peal account is deleted",
   },
+  billingEnded: {
+    account:
+      "The subscriptions of the workspaces it deleted were cancelled at once: nothing more is charged, and the period already paid for is not refunded, except where the law gives a refund: if you subscribed as a consumer less than 14 days ago, you may withdraw and be refunded the unused part. Their invoices are kept as accounting law requires; ask whoever runs this Peal server for a copy.",
+    workspace:
+      "Its subscription was cancelled at once: nothing more is charged, and the period already paid for is not refunded, except where the law gives a refund: if you subscribed as a consumer less than 14 days ago, you may withdraw and be refunded the unused part. Its invoices are kept as accounting law requires; ask whoever runs this Peal server for a copy.",
+  },
   channel: "{platform} ({handle})",
   channelReconnectRequired: {
     action: "Reconnect the account",
@@ -22,6 +28,17 @@ export const english: EmailCatalog = {
     ignore:
       "You receive this email because you manage the channels of {workspaceName} on Peal. Choose which notifications you receive by email in your notification preferences.",
     subject: "Reconnect {handle} on {platform} by {expiresAt}",
+  },
+  dataExported: {
+    action: "Open my account settings",
+    body: "A copy of your Peal account’s data was just downloaded {via}. It holds your profile, your sessions with their addresses, and your workspaces’ content.",
+    ignore:
+      "If it was not you, change your password and sign out your other sessions from your account settings, then tell whoever runs this Peal server.",
+    subject: "A copy of your Peal data was downloaded",
+  },
+  exportChannels: {
+    commandLine: "from the command line",
+    web: "from the web app",
   },
   failureReasons: {
     appNotAudited:
@@ -111,5 +128,11 @@ export const english: EmailCatalog = {
     ignore:
       "If you did not create a Peal account, ignore this email. The link expires in an hour.",
     subject: "Confirm your email for Peal",
+  },
+  workspaceDeleted: {
+    action: "Open my workspaces",
+    body: "The workspace {workspaceName} was deleted, as you asked, with everything in it: its channels, posts, media, analytics, members and API keys.",
+    ignore: "If you did not ask for this, tell whoever runs this Peal server.",
+    subject: "The workspace {workspaceName} is deleted",
   },
 };

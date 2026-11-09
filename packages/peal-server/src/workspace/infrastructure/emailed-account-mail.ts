@@ -28,15 +28,46 @@ export const EmailedAccountMail = Layer.effect(
       FiberSet.awaitEmpty(fibers).pipe(Effect.timeoutOption(drainTimeout))
     );
 
+    const home = (locale: Locale) => `${publicUrl}${localePrefix(locale)}`;
+
     return AccountMail.of({
-      deleted: ({ email, locale }) =>
+      deleted: ({ email, locale, subscriptionsCancelled }) =>
         FiberSet.run(
           fibers,
           emails.send({
             _tag: "AccountDeleted",
             locale,
+            subscriptionsCancelled,
             to: email,
-            url: `${publicUrl}${localePrefix(locale)}`,
+            url: home(locale),
+          })
+        ).pipe(Effect.asVoid),
+      exported: ({ email, locale, via }) =>
+        FiberSet.run(
+          fibers,
+          emails.send({
+            _tag: "DataExported",
+            locale,
+            to: email,
+            url: `${home(locale)}/app/account`,
+            via,
+          })
+        ).pipe(Effect.asVoid),
+      workspaceDeleted: ({
+        email,
+        locale,
+        subscriptionsCancelled,
+        workspaceName,
+      }) =>
+        FiberSet.run(
+          fibers,
+          emails.send({
+            _tag: "WorkspaceDeleted",
+            locale,
+            subscriptionsCancelled,
+            to: email,
+            url: `${home(locale)}/app`,
+            workspaceName,
           })
         ).pipe(Effect.asVoid),
     });

@@ -8,6 +8,23 @@ export interface EmailCatalog {
   /** An account was deleted with its data, as its owner asked. */
   readonly accountDeleted: EmailMessages;
   /**
+   * Added to a deletion's body when it cancelled subscriptions: what that
+   * means for payments and invoices.
+   */
+  readonly billingEnded: {
+    readonly account: string;
+    readonly workspace: string;
+  };
+  /**
+   * A copy of the account's data was downloaded `{via}`, one of
+   * `exportChannels`.
+   */
+  readonly dataExported: EmailMessages;
+  readonly exportChannels: {
+    readonly commandLine: string;
+    readonly web: string;
+  };
+  /**
    * The channel a post notice names, as `{channel}`: `{platform}` and
    * `{handle}`.
    */
@@ -55,6 +72,8 @@ export interface EmailCatalog {
   /** `{channel}` for a post whose channel was disconnected since. */
   readonly unknownChannel: string;
   readonly verifyEmail: EmailMessages;
+  /** The workspace `{workspaceName}` was deleted by its owner. */
+  readonly workspaceDeleted: EmailMessages;
 }
 
 export interface EmailMessages {

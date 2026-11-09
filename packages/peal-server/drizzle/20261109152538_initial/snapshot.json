@@ -2,7 +2,7 @@
   "type": "base",
   "version": "9",
   "dialect": "postgres",
-  "id": "e4205f8f-1b9c-4280-9ae7-cfa0553f4ab3",
+  "id": "111df661-b9d5-44eb-8a5c-c3c05cd033e0",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
@@ -1296,6 +1296,27 @@
         "n|tbl|staff.audit_events",
         "n|sch|staff",
         "n|col|staff.audit_events.staff_id"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "staff",
+        "audit_events",
+        "audit_events_workspace"
+      ],
+      "writes": [
+        "s|idx|staff.audit_events_workspace",
+        "n|idx|staff.audit_events_workspace",
+        "e|idx|staff.audit_events_workspace",
+        "n|rel|staff.audit_events_workspace"
+      ],
+      "reads": [
+        "n|tbl|staff.audit_events",
+        "n|sch|staff",
+        "n|col|staff.audit_events.workspace_id",
+        "n|col|staff.audit_events.at"
       ]
     },
     {
@@ -5080,6 +5101,32 @@
     {
       "schema": "staff",
       "table": "audit_events",
+      "name": "object_ids",
+      "type": "jsonb",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": "'{}'",
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "staff",
+      "table": "audit_events",
+      "name": "operation",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "staff",
+      "table": "audit_events",
       "name": "reason",
       "type": "text",
       "typeSchema": null,
@@ -5107,6 +5154,19 @@
       "schema": "staff",
       "table": "audit_events",
       "name": "target_id",
+      "type": "uuid",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "staff",
+      "table": "audit_events",
+      "name": "workspace_id",
       "type": "uuid",
       "typeSchema": null,
       "notNull": false,
@@ -8484,6 +8544,34 @@
       "columns": [
         {
           "value": "staff_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "staff",
+      "table": "audit_events",
+      "name": "audit_events_workspace",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "workspace_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "at",
           "isExpression": false,
           "asc": true,
           "nullsFirst": false,

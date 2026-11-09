@@ -10,7 +10,7 @@ Effective date: [Date]
 
 These terms govern the use of the hosted Peal service at app.peal.social, provided by [Legal entity name] ("we"), [Registered address], [Company registration number]. [State how the terms are accepted, for example when an account is created.]
 
-They do not cover the Peal source code. The source code is licensed separately under the Functional Source License, Version 1.1, ALv2 Future License (FSL-1.1-ALv2), which governs self-hosting, modifying and redistributing it.
+They do not cover the Peal source code. The source code is licensed separately under the Functional Source License, Version 1.1, ALv2 Future License (FSL-1.1-ALv2), which governs self-hosting, modifying and redistributing it, except for the SDKs and the API contract they are generated from, which are licensed under the Apache License, Version 2.0.
 
 ## The service
 
@@ -41,6 +41,8 @@ Your use of each platform stays subject to that platform's own terms. Platforms 
 ## Plans, prices and payment
 
 [Plans and prices, taxes, billing periods, renewals, cancellations and refunds, and the right of withdrawal for consumers in the EU where it applies. Payments are processed by [Payment provider].]
+
+Deleting an organisation, or closing your account so that an organisation is deleted with it, cancels that organisation's subscription at once, once you agree to it on the confirmation screen: nothing more is charged, and the period already paid for is not refunded, except where the law gives a refund, as to a consumer who withdraws within 14 days of subscribing, who is refunded the unused part. [How a consumer who withdraws asks for that refund.] Invoices are kept as accounting law requires.
 
 ## Availability and changes to the service
 

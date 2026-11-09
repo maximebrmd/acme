@@ -15,6 +15,15 @@ export const StaffActionSchema = Schema.Literals([
   "resendVerification",
   // Signed in as it, for an hour.
   "impersonate",
+  // Changed something while acting as it: the event's operation names the
+  // change, its workspace and object ids say where and on what.
+  "impersonatedChange",
+  // Stopped acting as it, or signed out of the session that did.
+  "stopImpersonating",
+  // The server ended a session acting as it: its staff member was banned,
+  // signed out everywhere or no longer staff, or the account was banned or
+  // signed out everywhere.
+  "impersonationEnded",
 ]);
 
 export type StaffAction = typeof StaffActionSchema.Type;

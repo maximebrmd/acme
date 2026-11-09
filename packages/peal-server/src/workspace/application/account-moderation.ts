@@ -14,6 +14,15 @@ export interface ModerationRequest {
 }
 
 /**
+ * A session staff were acting as an account in, which ended: `staffId`
+ * acted as `userId`.
+ */
+export interface EndedImpersonation {
+  readonly staffId: UserId;
+  readonly userId: UserId;
+}
+
+/**
  * What staff do to accounts, through Better Auth's admin plugin, whose own
  * routes are off: the staff console's use cases check and record each
  * action first.
@@ -23,24 +32,26 @@ export class AccountModeration extends Context.Service<
   {
     /**
      * Bans the account and ends its sessions, those it opened as staff to
-     * act as someone else included.
+     * act as someone else included: the impersonations that ended, staff's
+     * of the account and the account's of others.
      */
     readonly ban: (
       request: ModerationRequest & {
         readonly expiresAt: Option.Option<DateTime.Utc>;
         readonly reason: string;
       }
-    ) => Effect.Effect<void, AuthUnavailable>;
+    ) => Effect.Effect<readonly EndedImpersonation[], AuthUnavailable>;
     readonly unban: (
       request: ModerationRequest
     ) => Effect.Effect<void, AuthUnavailable>;
     /**
      * Ends every session of the account: staff's impersonations of it, and
-     * those it opened as staff to act as someone else.
+     * those it opened as staff to act as someone else, which it answers
+     * with.
      */
     readonly revokeSessions: (
       request: ModerationRequest
-    ) => Effect.Effect<void, AuthUnavailable>;
+    ) => Effect.Effect<readonly EndedImpersonation[], AuthUnavailable>;
     /**
      * Emails the account a new link to confirm its address, which opens the
      * confirmation page in its language.

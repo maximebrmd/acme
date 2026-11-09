@@ -103,6 +103,15 @@ export class MediaStorage extends Context.Service<
       expiresIn: Duration.Duration
     ) => Effect.Effect<string, MediaStorageFailed>;
     /**
+     * A presigned GET of the file that stops working after `expiresIn`,
+     * whether or not the store serves the bucket publicly: for a copy of
+     * someone's data, whose links must not outlive it.
+     */
+    readonly downloadUrl: (
+      key: StorageKey,
+      expiresIn: Duration.Duration
+    ) => Effect.Effect<string, MediaStorageFailed>;
+    /**
      * The stored file's bytes, read as they arrive, for platforms that take
      * uploads: nothing is held in memory but the chunk in flight.
      */

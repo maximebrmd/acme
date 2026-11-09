@@ -1,7 +1,12 @@
 import { describe, expect, it } from "@effect/vitest";
-import { Cause, Exit, Option } from "effect";
+import { Cause, DateTime, Exit, Option } from "effect";
+import { WorkspaceSubscribed } from "peal-contract";
 
-import { apiErrorKey, settingsErrorKey } from "#settings/errors.ts";
+import {
+  apiErrorKey,
+  settingsErrorKey,
+  subscriptionsToCancel,
+} from "#settings/errors.ts";
 
 describe(settingsErrorKey, () => {
   it.each([
@@ -52,5 +57,54 @@ describe(apiErrorKey, () => {
     expect(apiErrorKey(Exit.failCause(Cause.die("offline")))).toStrictEqual(
       Option.some("unknown")
     );
+  });
+});
+
+describe(subscriptionsToCancel, () => {
+  const paidUntil = DateTime.makeUnsafe("2026-12-09T10:00:00Z");
+
+  it("tells everything a deletion would cancel, for the person to agree to", () => {
+    expect(
+      subscriptionsToCancel(
+        Exit.fail(
+          new WorkspaceSubscribed({
+            subscriptions: [
+              {
+                paidUntil,
+                plan: "pro",
+                workspaceId: "6b1c8d0e-9f7a-4eb5-8a21-7c8d9eafb0c1",
+              },
+              {
+                paidUntil: null,
+                plan: null,
+                workspaceId: "7c2d9e1f-0a8b-4fc6-9b32-8d9eafb0c1d2",
+              },
+            ],
+          })
+        )
+      )
+    ).toStrictEqual(
+      Option.some([
+        {
+          paidUntil: Option.some(paidUntil),
+          plan: Option.some("pro"),
+          workspaceId: "6b1c8d0e-9f7a-4eb5-8a21-7c8d9eafb0c1",
+        },
+        {
+          paidUntil: Option.none(),
+          plan: Option.none(),
+          workspaceId: "7c2d9e1f-0a8b-4fc6-9b32-8d9eafb0c1d2",
+        },
+      ])
+    );
+  });
+
+  it("is none for any other ending", () => {
+    expect(subscriptionsToCancel(Exit.succeed("done"))).toStrictEqual(
+      Option.none()
+    );
+    expect(
+      subscriptionsToCancel(Exit.fail({ _tag: "WorkspaceBusy" }))
+    ).toStrictEqual(Option.none());
   });
 });

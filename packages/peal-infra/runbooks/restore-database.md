@@ -116,6 +116,35 @@ What the new secrets cost: everyone signs in again, the command line and MCP
 clients too, and the channels' tokens can no longer be read, so members
 reconnect their channels.
 
+## Deletions since the restore point
+
+A restore brings back the accounts and workspaces their users deleted after
+the restore point, which the law asks to delete again before anyone can use
+them. Peal does not record them outside the database yet, nor apply them
+again by itself. Until it does:
+
+1. Keep the server and the web app stopped once Postgres is restored.
+2. In Grafana's Explore, on Loki, list the deletions since the restore point,
+   by id only:
+
+   ```logql
+   {service_name="peal-server"} | event_name="peal.erasure"
+   ```
+
+   Loki keeps 31 days of logs, which covers a restore to the latest state and
+   most restores to a time, but not all of them: the backups keep deleted
+   data up to 5 weeks, so a restore to a point 32 to 35 days back brings
+   back deletions no log lists any more. Loki runs on the same server, so a
+   server lost with its disk, the likeliest reason to restore, takes the
+   list with it: there is then no list at all. In either case, tell the
+   owner before the server takes requests: the deletions cannot be found
+   again, and the incident's record must say so.
+
+3. Each must be deleted again before the server takes requests, and noted
+   in the incident's record. No command does it yet: tell the owner, with
+   the list, before starting the server. Their Stripe subscriptions were
+   already cancelled.
+
 ## Practise
 
 Restore into the sandbox from its own backups now and then, with the steps
