@@ -1,0 +1,111 @@
+---
+title: Environment variables
+description: Every environment variable the Acme server, the web app and the command line read, whether it is required, its default, and what it does.
+sidebar:
+  order: 8
+---
+
+The server, the web app and the command line read plain environment variables, so they run on any host. This page lists every one they read. Values shown are examples.
+
+The server runs in production mode when `NODE_ENV` is `production`, as its image sets. Settings marked "required in production" have no default there, and the server refuses to start without them. Elsewhere they default to the development stack, so a server run from source needs only `DATABASE_URL`.
+
+## Server [#server]
+
+### Core [#core]
+
+| Variable                 | Default                                         | What it does                                                                                                                                                                                                                                                                         |
+| ------------------------ | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `DATABASE_URL`           | none: required                                  | The Postgres database, such as `postgres://acme:secret@postgres:5432/acme`. Connect directly or through a pooler in session mode, never in transaction mode.                                                                                                                         |
+| `PUBLIC_URL`             | required in production; `http://localhost:3001` | The address people open Acme at: the web app, such as `https://acme.example.com`. Links in emails, sign-in, the platforms' redirects and the MCP endpoint's address are built from its origin. MCP clients sign in only when it is HTTPS, or on a loopback host such as `localhost`. |
+| `NODE_ENV`               | `development`                                   | `production` turns on production mode: required settings, sign-in rate limits, and no development defaults.                                                                                                                                                                          |
+| `PORT`                   | `3000`                                          | The port the HTTP server listens on.                                                                                                                                                                                                                                                 |
+| `HOSTNAME`               | `acme-server`                                   | The server's name among the job runners recorded in the database. Each server process needs its own; Docker sets it to the container id.                                                                                                                                             |
+| `ACME_CLUSTER_RETENTION` | `30 days`                                       | How long the records of finished jobs, such as a published post's, are kept before a daily cleanup deletes them, as a duration such as `7 days`. Jobs still waiting are always kept.                                                                                                 |
+
+### Sign-in [#sign-in]
+
+| Variable                          | Default                                      | What it does                                                                                                                                                                                                                                                                      |
+| --------------------------------- | -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `BETTER_AUTH_SECRET`              | required in production; a development secret | The secret that signs sessions and encrypts what sign-in stores: at least 32 random characters, such as `openssl rand -base64 32`. Whoever knows it can sign in as anyone. Keep it secret.                                                                                        |
+| `BETTER_AUTH_SECRETS`             | unset                                        | To rotate the secret: `version:secret` entries separated by commas, newest first, such as `2:<new>,1:<old>`. Read by Better Auth itself: when set, the first entry's secret is used, and the others, with `BETTER_AUTH_SECRET`, still decrypt what older secrets encrypted.       |
+| `AUTH_IP_HEADERS`                 | required in production; `x-forwarded-for`    | The headers, separated by commas, that carry the client's address, which sign-in rate limits count by. Name only a header your edge sets and replaces: `cf-connecting-ip` behind Cloudflare, `x-forwarded-for` behind Caddy. See [In front of Acme](/self-hosting#reverse-proxy). |
+| `AUTH_TRUSTED_PROXIES`            | none                                         | The addresses or CIDR ranges, separated by commas, of proxies that append to `X-Forwarded-For`. The client's address is then read from the right, past them.                                                                                                                      |
+| `TRUSTED_ORIGINS`                 | none                                         | Origins besides `PUBLIC_URL`, separated by commas, allowed to send signed-in requests that change something. `media-cors` also lets them upload media.                                                                                                                            |
+| `AUTH_REQUIRE_EMAIL_VERIFICATION` | `true`                                       | `false` lets people sign in before they confirm their email address.                                                                                                                                                                                                              |
+| `AUTH_DB_POOL_MAX`                | `5`                                          | How many database connections sign-in opens, beside the server's 10.                                                                                                                                                                                                              |
+| `MCP_DYNAMIC_REGISTRATION`        | `false`                                      | `true` lets MCP clients register themselves, which most of them need before they sign in. Anyone may then register a client under any name; the consent page says Acme has not checked it.                                                                                        |
+
+Better Auth also reads `BETTER_AUTH_TRUSTED_ORIGINS`, which adds origins as `TRUSTED_ORIGINS` does. Prefer `TRUSTED_ORIGINS`, which `media-cors` reads too.
+
+### Email [#email]
+
+| Variable         | Default                                                                   | What it does                                                                                                                                                                                   |
+| ---------------- | ------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `MAIL_FROM`      | required in production; `Acme <noreply@acme.localhost>`                   | The sender, as `Acme <noreply@example.com>` or an address your mail service may send from.                                                                                                     |
+| `RESEND_API_KEY` | unset                                                                     | Sends email through Resend's API. Keep it secret.                                                                                                                                              |
+| `SMTP_URL`       | required in production without `RESEND_API_KEY`; `smtp://127.0.0.1:11025` | The SMTP server, such as `smtp://user:password@mail.example.com:587`, or `smtps://` for TLS from the first byte. Used when `RESEND_API_KEY` is unset. Keep it secret when it holds a password. |
+
+### Channels [#channels]
+
+| Variable              | Default | What it does                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| --------------------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ACME_TOKEN_KEYS`     | unset   | The keys that encrypt the tokens of connected channels: `keyId:key` entries separated by commas, such as `k2:<key>,k1:<key>`, each key 32 random bytes in base64 (`openssl rand -base64 32`). The first key encrypts and every listed key decrypts. Unset or empty, the server starts, and connecting a channel fails. A malformed value stops the server at startup. Keep a copy: without the keys, every channel must be reconnected. |
+| `BLUESKY_CLIENT_KEYS` | unset   | The keys of Acme's Bluesky client, from `bun nx run acme-server:bluesky-key`: `keyId:key` entries separated by commas, the first one signing. They need `PUBLIC_URL` on HTTPS without a port. Without them, only a server on `localhost` outside production connects Bluesky, with the development client. A malformed value stops the server at startup.                                                                               |
+
+### Media [#media]
+
+| Variable                     | Default                                          | What it does                                                                                                                                                                          |
+| ---------------------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ACME_S3_ENDPOINT`           | required in production; `http://127.0.0.1:18333` | The URL of the S3 API that stores media, such as `https://<account>.r2.cloudflarestorage.com`.                                                                                        |
+| `ACME_S3_BUCKET`             | required in production; `acme-media`             | The bucket media goes in.                                                                                                                                                             |
+| `ACME_S3_ACCESS_KEY_ID`      | required in production; the development key      | The access key of the store. Keep it secret.                                                                                                                                          |
+| `ACME_S3_SECRET_ACCESS_KEY`  | required in production; the development secret   | The secret of that key. Keep it secret.                                                                                                                                               |
+| `ACME_S3_REGION`             | `auto`                                           | The region requests are signed for, such as `eu-west-1`. `auto` suits Cloudflare R2.                                                                                                  |
+| `ACME_S3_FORCE_PATH_STYLE`   | `false` in production; `true` otherwise          | `true` puts the bucket in the URL's path rather than its host name, as SeaweedFS needs.                                                                                               |
+| `ACME_S3_KEY_PREFIX`         | none                                             | A folder every key goes under, such as `staging/`, so instances can share a bucket. It ends with `/`.                                                                                 |
+| `ACME_MEDIA_PUBLIC_BASE_URL` | unset                                            | Where the bucket is served publicly, if it is, such as `https://media.example.com`. Unset, pages read media through short-lived signed links.                                         |
+| `ACME_FFPROBE_PATH`          | `ffprobe`                                        | The ffprobe program that reads a video's dimensions, duration and codec. The server's image ships one at `/usr/local/bin/ffprobe`. Without it, videos stay uploaded and are not read. |
+
+### Telemetry [#telemetry]
+
+| Variable                      | Default       | What it does                                                                                                                                                   |
+| ----------------------------- | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | unset         | The OTLP/HTTP address of the OpenTelemetry collector that receives logs, metrics and traces, such as `http://otel-collector:4318`. Unset, nothing is exported. |
+| `OTEL_SERVICE_NAME`           | `acme-server` | The service name telemetry is reported under.                                                                                                                  |
+| `OTEL_TRACES_EXPORTER`        | `otlp`        | `none` stops exporting traces once an endpoint is set. `OTEL_METRICS_EXPORTER` and `OTEL_LOGS_EXPORTER` do the same for metrics and logs.                      |
+
+The server exports telemetry as JSON over HTTP, so point the endpoint at the collector's OTLP/HTTP port, 4318 by default, rather than its gRPC one. It also reads these OpenTelemetry variables, and no others (`OTEL_EXPORTER_OTLP_PROTOCOL` included):
+
+- `OTEL_EXPORTER_OTLP_HEADERS`, `OTEL_EXPORTER_OTLP_COMPRESSION` and `OTEL_EXPORTER_OTLP_TIMEOUT`, and the per-signal forms of these and of the endpoint, such as `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT`;
+- `OTEL_RESOURCE_ATTRIBUTES` and `OTEL_SERVICE_VERSION`;
+- `OTEL_SDK_DISABLED`;
+- the batching settings `OTEL_BSP_*` for traces and `OTEL_BLRP_*` for logs;
+- `OTEL_METRIC_EXPORT_INTERVAL`, `OTEL_METRIC_EXPORT_TIMEOUT` and `OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE`.
+
+### Job runner [#job-runner]
+
+The library that runs Acme's jobs also reads its own settings from the environment, under these names: `SHARDS_PER_GROUP`, `SHARD_GROUPS`, `AVAILABLE_SHARD_GROUPS`, `RUNNER_SHARD_WEIGHT`, `SHARD_LOCK_REFRESH_INTERVAL`, `SHARD_LOCK_EXPIRATION`, `SHARD_LOCK_DISABLE_ADVISORY`, `PREEMPTIVE_SHUTDOWN`, `ENTITY_MAILBOX_CAPACITY`, `ENTITY_MAILBOX_METRICS`, `MAX_RESIDENT_ENTITIES`, `UNPROCESSED_MESSAGE_BATCH_SIZE`, `ENTITY_MAX_IDLE_TIME`, `ENTITY_REGISTRATION_TIMEOUT`, `ENTITY_REPLY_POLL_INTERVAL`, `SEND_RETRY_INTERVAL`, `REFRESH_ASSIGNMENTS_INTERVAL`, `RUNNER_JOIN_DEBOUNCE`, `RUNNER_HEALTH_CHECK_INTERVAL`, `SIMULATE_REMOTE_SERIALIZATION`, `LISTEN_HOST` and `LISTEN_PORT`. Leave them unset: Acme is tested with their defaults, and `SHARD_LOCK_DISABLE_ADVISORY=true` would let two servers run the same jobs.
+
+## Web app [#web-app]
+
+| Variable             | Default                                         | What it does                                                                                                                                                                                                           |
+| -------------------- | ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ACME_API_URL`       | required in production; `http://localhost:3000` | Where the web app reaches the server, such as `http://acme-server:3000`. It forwards `/api/*` and `/.well-known/oauth-*` there, and renders pages with it. Read at each request, so one build runs against any server. |
+| `PORT`               | `3000`                                          | The port the web app listens on.                                                                                                                                                                                       |
+| `HOSTNAME`           | `0.0.0.0`                                       | The address the web app listens on. In a container, where Docker sets `HOSTNAME` to the container id, set it to `0.0.0.0`.                                                                                             |
+| `KEEP_ALIVE_TIMEOUT` | Node's                                          | How long, in milliseconds, an idle connection stays open, for a proxy in front that keeps connections longer.                                                                                                          |
+| `NODE_ENV`           | `production` for a build                        | The built web app always runs in production mode, where `ACME_API_URL` is required.                                                                                                                                    |
+
+## Command line [#command-line]
+
+| Variable          | Default                 | What it does                                                                                  |
+| ----------------- | ----------------------- | --------------------------------------------------------------------------------------------- |
+| `ACME_API_URL`    | `http://localhost:3000` | The address of the instance, such as `https://acme.example.com`, unless `--api-url` is given. |
+| `ACME_CONFIG_DIR` | unset                   | The folder the sign-ins are saved in, in `credentials.json`.                                  |
+| `XDG_CONFIG_HOME` | unset                   | Without `ACME_CONFIG_DIR`, the sign-ins go in its `acme` folder.                              |
+| `APPDATA`         | Windows sets it         | Without either, the sign-ins go in its `acme` folder.                                         |
+| `HOME`            | the system sets it      | Otherwise, the sign-ins go in `~/.config/acme`.                                               |
+
+## Tools [#tools]
+
+`bun nx run acme-server:media-cors`, which puts the upload CORS rule on the bucket, reads the media store's `ACME_S3_*` variables, `PUBLIC_URL` and `TRUSTED_ORIGINS`, with the same defaults as the server. `bun nx run acme-server:bluesky-key` reads nothing.
