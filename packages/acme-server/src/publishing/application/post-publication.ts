@@ -70,11 +70,13 @@ const scheduleOf = (post: Post) => {
 
 /**
  * The post's job woke for `revision`: start publishing if the post still has
- * that revision, mark it missed if it is too late, or stop.
+ * that revision, mark it missed if it is too late (telling
+ * PublicationOutcomes how each target ended), or stop.
  */
 export const claimPostRun = Effect.fn("Publishing.claimPost")(
   function* claimPostRun(postId: PostId, revision: number) {
     const posts = yield* PostRepository;
+    const outcomes = yield* PublicationOutcomes;
     const { transaction } = yield* TransactionRunner;
 
     return yield* transaction(
@@ -117,6 +119,12 @@ export const claimPostRun = Effect.fn("Publishing.claimPost")(
           ).pipe(Effect.orDie);
 
           yield* applied(yield* posts.update(finished, post));
+
+          // Each target settled here, never in recordTargetRun: told once,
+          // as a step run again finds the post finished and misses nothing.
+          yield* Effect.forEach(missed, (target) => outcomes.settled(target), {
+            discard: true,
+          });
 
           const claim: PostClaim = { _tag: "missed" };
 
