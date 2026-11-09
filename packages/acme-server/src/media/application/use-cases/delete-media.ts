@@ -18,6 +18,10 @@ export interface DeleteMediaRequest {
  * Deletes the stored file, aborting its upload if it is still pending, then
  * the asset. The file goes first, so a failure leaves the asset to delete
  * again rather than a file nothing points to.
+ *
+ * A single upload URL that has not expired yet can still create the file
+ * again; nothing removes such a file until a sweep of keys without an asset
+ * exists.
  */
 export const deleteMedia = Effect.fn("Media.deleteMedia")(
   function* deleteMedia({ assetId, workspaceId }: DeleteMediaRequest) {
