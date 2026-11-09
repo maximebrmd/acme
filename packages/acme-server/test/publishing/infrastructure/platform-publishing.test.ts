@@ -1,7 +1,7 @@
 import { assert, describe, it } from "@effect/vitest";
 import { Effect, Layer, Option, Scope } from "effect";
 import { MessageStorage } from "effect/cluster";
-import { Digest, SecureRandom } from "effect/crypto";
+import { Digest, Mac, SecureRandom } from "effect/crypto";
 import { FetchHttpClient } from "effect/http";
 
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
@@ -46,6 +46,13 @@ const platformsOn = (instanceUrl: string) =>
       platformClientsWith({
         linkedinApi: new URL(instanceUrl),
         mastodonScheme: "http:",
+        metaAppSecret: Option.none(),
+        metaHosts: {
+          facebookDialog: new URL(instanceUrl),
+          facebookGraph: new URL(instanceUrl),
+          threadsAuthorize: new URL(instanceUrl),
+          threadsGraph: new URL(instanceUrl),
+        },
         timing: testTiming,
         videoService: new URL(instanceUrl),
         xApi: new URL(instanceUrl),
@@ -64,6 +71,7 @@ const platformsOn = (instanceUrl: string) =>
       Layer.mergeAll(
         FetchHttpClient.layer,
         OpenOutboundGuard,
+        Mac.layerWebCrypto.pipe(Layer.provide(SecureRandom.layerWebCrypto)),
         SecureRandom.layerWebCrypto,
         Digest.layerWebCrypto
       )

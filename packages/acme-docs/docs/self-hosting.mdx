@@ -137,7 +137,7 @@ echo "k1:$(openssl rand -base64 32)"
 
 The value lists `keyId:key` entries separated by commas, such as `k2:<key>,k1:<key>`. The first key encrypts and every listed key decrypts: to rotate, put a new key first and keep the old ones. A malformed value stops the server at startup. Keep the keys secret, and keep a copy: without them, every channel must be reconnected.
 
-The server reaches the platforms itself, over HTTPS, so it needs to reach the internet: to connect accounts, and to publish, on each account's Mastodon server, on the Bluesky server that holds each account, through Bluesky's video service, `https://video.bsky.app`, for videos, on LinkedIn (`www.linkedin.com`, `api.linkedin.com` and the upload addresses LinkedIn gives) and on X (`api.x.com`). It only calls servers on public addresses, on the default HTTPS port, which keeps people from pointing it at your private network. The platforms send people back to `PUBLIC_URL/connect/<platform>/callback`, through their browser: they never call the server themselves, apart from Bluesky reading Acme's client description, below.
+The server reaches the platforms itself, over HTTPS, so it needs to reach the internet: to connect accounts, and to publish, on each account's Mastodon server, on the Bluesky server that holds each account, through Bluesky's video service, `https://video.bsky.app`, for videos, on LinkedIn (`www.linkedin.com`, `api.linkedin.com` and the upload addresses LinkedIn gives), on X (`api.x.com`) and on Meta's APIs. It only calls servers on public addresses, on the default HTTPS port, which keeps people from pointing it at your private network. The platforms send people back to `PUBLIC_URL/connect/<platform>/callback`, through their browser: they never call the server themselves, apart from Bluesky reading Acme's client description, and Meta's data deletion requests, below.
 
 To publish an image or a video, the server reads it from the media store, whole, into memory, then uploads it: a Bluesky video can take up to 300 MB. LinkedIn and X take videos in parts of 4 MiB, so the server holds one part at a time. Give the server the memory for the largest files your members post.
 
@@ -174,6 +174,24 @@ A server connects X accounts once you register an app for it in X's developer co
 X bills each request of the API to the app, and a post with a link costs more. Set a spending limit in X's console: once it is reached, X refuses posts, which fail with their reason, until you raise it. Acme renews each account's access every two hours, and keeps it working as long as it is renewed.
 
 For LinkedIn as for X, one of the two settings without the other stops the server at startup; without both, **Channels** does not offer the platform.
+
+### Threads, Instagram and Facebook Pages [#meta]
+
+One app in Meta's developer dashboard connects all three. Give it the Facebook Login use case, with the permissions `pages_show_list`, `pages_read_engagement` and `pages_manage_posts` for Facebook Pages, and `instagram_basic` and `instagram_content_publish` for Instagram; and the Threads use case, with `threads_basic` and `threads_content_publish`. Then set `META_APP_ID` and `META_APP_SECRET` from the app's basic settings, and `THREADS_APP_ID` and `THREADS_APP_SECRET` from its Threads settings. A platform whose settings are missing is not offered.
+
+In the dashboard, register these addresses:
+
+| Setting                                    | Address                                                                                         |
+| ------------------------------------------ | ----------------------------------------------------------------------------------------------- |
+| Facebook Login's valid OAuth redirect URIs | `PUBLIC_URL/connect/facebook/callback` and `PUBLIC_URL/connect/instagram/callback`              |
+| Threads' redirect callback URL             | `PUBLIC_URL/connect/threads/callback`                                                           |
+| Data deletion request URL                  | `PUBLIC_URL/api/data-deletion/facebook`, and `PUBLIC_URL/api/data-deletion/threads` for Threads |
+
+When one of its users asks Meta to delete what Acme holds about them, Meta calls that address with a request signed with the app's secret. Acme checks the signature, deletes, in every workspace, the channels that person connected and their tokens, and answers with a confirmation code and the page where its status shows, `PUBLIC_URL/data-deletion/<code>`.
+
+Meta fetches the images and videos it publishes from links to the media store, valid for two hours: the store must answer Meta's servers on the internet, through presigned links or `ACME_MEDIA_PUBLIC_BASE_URL`. The server calls `graph.facebook.com` and `graph.threads.com`, and signs every Facebook and Instagram call with the app secret, so you may turn on **Require App Secret** in the app's advanced settings.
+
+While the app is in development mode, only people with a role on it can connect their accounts: add yourself, and Threads testers, under App roles. Serving other people needs Meta's App Review of each permission. Instagram accounts must be professional ones linked to a Facebook Page.
 
 ## Writing assistant [#ai]
 

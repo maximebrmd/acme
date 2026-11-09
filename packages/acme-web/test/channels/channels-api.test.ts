@@ -18,6 +18,7 @@ describe(failureOf, () => {
   it.each([
     [new ConnectFailed({ reason: "invalidInstance" }), "invalidInstance"],
     [new ConnectFailed({ reason: "accountMismatch" }), "accountMismatch"],
+    [new ConnectFailed({ reason: "noAccounts" }), "noAccounts"],
     [new PlatformUnreachable(), "unreachable"],
     [new Forbidden(), "forbidden"],
     [new ChannelNotFound(), "notFound"],

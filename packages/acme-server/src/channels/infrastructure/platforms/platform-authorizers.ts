@@ -3,6 +3,7 @@ import { Effect, Layer, Option } from "effect";
 import { PlatformAuthorizers } from "#channels/application/platform-authorizer.ts";
 import type { PlatformAuthorizer } from "#channels/application/platform-authorizer.ts";
 import type { Platform } from "#channels/domain/platform.ts";
+import type { MetaApp } from "#shared/infrastructure/platforms/meta-apps.ts";
 import {
   publicFetch,
   publicHttpClient,
@@ -16,13 +17,17 @@ import {
 } from "./linkedin/linkedin-authorizer.ts";
 import { MastodonApps } from "./mastodon/mastodon-apps.ts";
 import { mastodonAuthorizer } from "./mastodon/mastodon-authorizer.ts";
+import { facebookAuthorizer } from "./meta/facebook-authorizer.ts";
+import { instagramAuthorizer } from "./meta/instagram-authorizer.ts";
+import { threadsAuthorizer } from "./meta/threads-authorizer.ts";
 import { xAuthorizer, xEndpoints } from "./x/x-authorizer.ts";
 
 /**
  * Every platform this server connects, from its settings: Mastodon always,
  * Bluesky when it has a client to run, LinkedIn and X when the operator
- * registered an app there. Needs an HttpClient, the outbound guard, the
- * database, the TokenCipher, SecureRandom and Digest.
+ * registered an app there, Facebook Pages and Instagram with Meta's app,
+ * Threads with its credentials. Needs an HttpClient, the outbound guard, the
+ * database, the TokenCipher, SecureRandom, Digest and Mac.
  */
 export const PlatformAuthorizersLive = Layer.effect(
   PlatformAuthorizers,
@@ -62,29 +67,49 @@ export const PlatformAuthorizersLive = Layer.effect(
         )
       : Option.none<PlatformAuthorizer>();
 
-    // Each platform that needs a setting, and whether this server has it.
-    const configurable: readonly (readonly [
-      Platform,
-      Option.Option<PlatformAuthorizer>,
-    ])[] = [
-      ["bluesky", bluesky],
-      ["linkedin", linkedin],
-      ["x", x],
+    const metaOptions = (app: MetaApp) => ({
+      app,
+      hosts: settings.metaHosts,
+      http,
+      publicUrl: settings.publicUrl,
+    });
+
+    const meta = Option.isSome(settings.meta)
+      ? [
+          yield* facebookAuthorizer(metaOptions(settings.meta.value)),
+          yield* instagramAuthorizer(metaOptions(settings.meta.value)),
+        ]
+      : [];
+
+    const threads = Option.isSome(settings.threads)
+      ? [yield* threadsAuthorizer(metaOptions(settings.threads.value))]
+      : [];
+
+    const configured = [
+      mastodon,
+      ...Option.toArray(bluesky),
+      ...Option.toArray(linkedin),
+      ...Option.toArray(x),
+      ...meta,
+      ...threads,
     ];
 
-    const byPlatform: ReadonlyMap<Platform, PlatformAuthorizer> = new Map([
-      [mastodon.platform, mastodon],
-      ...configurable.flatMap(([, authorizer]) =>
-        Option.toArray(authorizer).map(
-          (found) => [found.platform, found] as const
-        )
-      ),
-    ]);
+    const byPlatform: ReadonlyMap<Platform, PlatformAuthorizer> = new Map(
+      configured.map((authorizer) => [authorizer.platform, authorizer])
+    );
 
+    // Platforms Acme supports, which this server lacks the settings for.
     const unconfigured: ReadonlySet<Platform> = new Set(
-      configurable.flatMap(([platform, authorizer]) =>
-        Option.isNone(authorizer) ? [platform] : []
-      )
+      (
+        [
+          "bluesky",
+          "linkedin",
+          "x",
+          "facebook",
+          "instagram",
+          "threads",
+        ] as const
+      ).filter((platform) => !byPlatform.has(platform))
     );
 
     return PlatformAuthorizers.of({

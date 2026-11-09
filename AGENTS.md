@@ -367,14 +367,33 @@ and no socket, for tests.
   (`channels/application/platform-authorizer.ts`); Mastodon always, Bluesky
   when the server has a client for it, LinkedIn and X when the operator set
   their app (`<PLATFORM>_CLIENT_ID` and `_CLIENT_SECRET`, read by
-  `oauthClientConfig`; one half alone stops the server). Each declares its
-  `TokenPolicy`, data in `channels/domain/token-policy.ts`, which the refresh
-  sweep and the reconnect warnings follow: LinkedIn's tokens are not renewed
-  and expire after 60 days, X's last two hours and rotate on refresh.
+  `oauthClientConfig`; one half alone stops the server), Facebook Pages and
+  Instagram with `META_APP_ID`/`META_APP_SECRET`, Threads with
+  `THREADS_APP_ID`/`THREADS_APP_SECRET`. A platform without its settings is
+  in `unconfigured`. Each declares its `TokenPolicy`, data in
+  `channels/domain/token-policy.ts`, which the refresh sweep and the
+  reconnect warnings follow: LinkedIn's tokens are not renewed and expire
+  after 60 days, X's last two hours and rotate on refresh.
 - `GET …/channels/platforms` (`ConnectChannel.connectable`) lists the
   platforms the server has an authorizer for; the web app offers only those.
   Map a platform's own denial codes (LinkedIn's `user_cancelled_*`) to
   `AuthorizationDenied` in `connect-channel.ts`.
+- Facebook Pages and Instagram share Facebook Login
+  (`infrastructure/platforms/meta/facebook-login.ts`): a long-lived user
+  token lists the user's Pages with their tokens, which never expire; an
+  Instagram professional account posts with its Page's token. Their
+  `complete` answers an `AccountChoice`: `ConnectChannel.complete` connects a
+  single account at once, reconnects a channel's own, or keeps the accounts
+  encrypted (`connect_choices`, `choice:<selection>`, 15 minutes, used once)
+  for `choose`. `IssuedTokens.grantedBy` keeps the Facebook user a Page token
+  rests on, in `channels.granted_by`. Threads has its own OAuth: a 60-day
+  long-lived token that renews itself. Every Graph call carries
+  `appsecret_proof` (`#shared/infrastructure/platforms/meta-graph.ts`).
+- Meta's data deletion callbacks (`POST /api/data-deletion/:app`, no sign-in)
+  check the `signed_request` HMAC with the app's secret (`SignedRequests`),
+  delete the channels the user granted or owns in every workspace, record
+  only the code and counts (`data_deletions`), and answer the status page
+  `PUBLIC_URL/data-deletion/<code>`.
 - `ConnectChannel` stores each attempt under the SHA-256 of its state, bound
   to the member, the workspace and the platform, for 15 minutes, completed
   once. One channel per platform account per workspace: connecting an account
@@ -455,24 +474,32 @@ and no socket, for tests.
   publish runs inside the gate: uploads, processing waits, token renewal,
   the post and its confirmation.
 - Platform adapters live in `publishing/infrastructure/platforms/<platform>/`
-  (Mastodon, Bluesky, LinkedIn and X), beside `ChannelGate`, and implement
-  the steps of `publishing/application/publication-steps.ts`, which
-  `sequenced` runs:
+  (Mastodon, Bluesky, LinkedIn and X, and Threads, Instagram and Facebook
+  Pages in `meta/`), beside `ChannelGate`, and implement the steps of
+  `publishing/application/publication-steps.ts`, which `sequenced` runs:
   `prepare` uploads the media (safe to repeat: media alone shows nowhere),
   `poll` waits while the platform processes it (15 minutes at most),
   `commit` is the one request that makes the post live (fail with
   `OutcomeUnknown` when it may have), and `confirmation` says how to read the
   post back: `lookUp` by a key chosen before the commit (Bluesky's record
-  key), or by a search that answers `found` or `unknown`, never `absent`, so
-  the post is never sent again (X's recent posts, by text and file count);
-  `resend` with the attempt's idempotency key within the window the platform
-  keeps it (Mastodon: 50 minutes of its hour); or `none`, unconfirmed at once
+  key) or by what `prepare` made when the run still has it (a Meta
+  container, published once at most: `PUBLISHED` found, `FINISHED` absent),
+  or by a search that answers `found` or `unknown`, never `absent`, so the
+  post is never sent again (X's recent posts, by text and file count;
+  Facebook Pages', by text, as they keep no key); `resend` with the
+  attempt's idempotency key within the window the platform keeps it
+  (Mastodon: 50 minutes of its hour); or `none`, unconfirmed at once
   (LinkedIn members' posts cannot be read back).
 - Large uploads go in parts read one at a time from the media stream
   (`inParts` in `platforms/byte-parts.ts`): LinkedIn's video parts, X's
   4 MiB appends. LinkedIn calls name `Linkedin-Version`
   (`LINKEDIN_API_VERSION`, a default a test keeps within ten months), and
   send the member's token to LinkedIn's hosts only.
+- Meta's adapters hand Meta public media URLs (`MediaForPublishing.publicUrl`,
+  two hours), check the daily publishing quota before Threads and Instagram
+  containers, and read Graph refusals with
+  `#shared/infrastructure/platforms/graph-refusal.ts`, whose rate limits wait
+  as long as `X-Business-Use-Case-Usage` says.
 - Derive whatever an adapter sends from the request's `idempotencyKey` and
   `startedAt`, which every run of an attempt shares.
 - Adapters get tokens only through `PlatformCredentials`, which
@@ -785,7 +812,9 @@ self-hoster needs only Postgres and an S3-compatible store:
 - Pages live under `src/app/[locale]/`: the auth pages (`sign-up`, `sign-in`,
   `verify-email`, `forgot-password`, `reset-password`, `invitations/[id]`),
   the OAuth pages (`device`, `oauth/workspace`, `oauth/consent`), the
-  platforms' redirect URI `connect/[platform]/callback`, and the signed-in
+  platforms' redirect URI `connect/[platform]/callback` (which shows the
+  account picker when a sign-in reached several accounts), Meta's data
+  deletion status `data-deletion/[code]`, and the signed-in
   app: `app` (workspaces), `app/notices`, `app/notices/preferences`,
   `app/account`, `app/[workspaceId]/channels`, `…/media`, `…/calendar`,
   `…/analytics`, `…/drafts`, `…/posts/new`, `…/posts/[postId]`, which opens

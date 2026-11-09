@@ -125,6 +125,7 @@ const ChannelJobsTest = Layer.mergeAll(
   Layer.succeed(
     ConnectChannel,
     ConnectChannel.of({
+      choose: () => Effect.die("not used by the crons"),
       complete: () => Effect.die("not used by the crons"),
       connectable: () => Effect.die("not used by the crons"),
       purgeExpired: Effect.succeed(0),

@@ -78,7 +78,7 @@ export type Authorization = typeof AuthorizationSchema.Type;
 /**
  * The platforms this server can connect accounts of: those Acme has a
  * sign-in flow for, and whose settings the server has, such as an app
- * registered on LinkedIn or X. Clients offer only these.
+ * registered on LinkedIn, X or Meta. Clients offer only these.
  */
 export const ConnectablePlatformsSchema = Schema.Struct({
   platforms: Schema.Array(PlatformSchema),
@@ -99,6 +99,49 @@ export const ConnectCallbackSchema = Schema.Struct({
 }).annotate({ identifier: "ConnectCallback" });
 
 export type ConnectCallback = typeof ConnectCallbackSchema.Type;
+
+/**
+ * An account a sign-in reached, which the member may choose to connect: a
+ * Facebook Page, or an Instagram account linked to one.
+ */
+export const ChoosableAccountSchema = Schema.Struct({
+  // The account's id on the platform, which choosing it names.
+  accountId: Schema.String,
+  avatarUrl: Schema.NullOr(Schema.String),
+  // Whether the workspace has a channel for it: choosing it reconnects that
+  // channel.
+  connected: Schema.Boolean,
+  displayName: Schema.NullOr(Schema.String),
+  handle: Schema.String,
+}).annotate({ identifier: "ChoosableAccount" });
+
+export type ChoosableAccount = typeof ChoosableAccountSchema.Type;
+
+/**
+ * How completing a connection ended: the account became a channel
+ * (`connected`), or the sign-in reached several accounts (`choose`), among
+ * which the member picks before `expiresAt`, sending back `selection`.
+ */
+export const ConnectOutcomeSchema = Schema.Union([
+  Schema.TaggedStruct("connected", { channel: ChannelSchema }),
+  Schema.TaggedStruct("choose", {
+    accounts: Schema.Array(ChoosableAccountSchema),
+    expiresAt: Schema.DateTimeUtc,
+    selection: Schema.String,
+  }),
+]).annotate({ identifier: "ConnectOutcome" });
+
+export type ConnectOutcome = typeof ConnectOutcomeSchema.Type;
+
+/** The accounts a member chose among those a sign-in reached. */
+export const ChooseAccountsSchema = Schema.Struct({
+  accountIds: Schema.Array(
+    Schema.String.check(Schema.isBetweenLength(1, 256))
+  ).check(Schema.isMinLength(1), Schema.isMaxLength(100)),
+  selection: Schema.String.check(Schema.isBetweenLength(1, 256)),
+}).annotate({ identifier: "ChooseAccounts" });
+
+export type ChooseAccounts = typeof ChooseAccountsSchema.Type;
 
 const workspace = { workspaceId: Schema.String };
 
@@ -130,7 +173,7 @@ export class ChannelsApi extends HttpApiGroup.make("channels")
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Lists the platforms this server can connect accounts of, in Acme's order. A platform that needs a setting the server lacks, such as an app registered on LinkedIn or X, is left out. Needs channel:read.",
+          "Lists the platforms this server can connect accounts of, in Acme's order. A platform that needs a setting the server lacks, such as an app registered on LinkedIn, X or Meta, is left out. Needs channel:connect.",
         summary: "List connectable platforms",
       })
     ),
@@ -150,12 +193,24 @@ export class ChannelsApi extends HttpApiGroup.make("channels")
       error: [...connectErrors, ChannelNotFound],
       params: { ...workspace, platform: PlatformSchema },
       payload: ConnectCallbackSchema,
-      success: ChannelSchema,
+      success: ConnectOutcomeSchema,
     }).annotateMerge(
       OpenApi.annotations({
         description:
-          "Completes a connection with what the platform sent back: the account becomes a channel of the workspace, or the channel it reconnects takes its new tokens. Only the member who started the connection can complete it, once. A new account needs room in the workspace's plan (PlanLimitReached). Needs channel:connect.",
+          "Completes a connection with what the platform sent back: the account becomes a channel of the workspace, or the channel it reconnects takes its new tokens. When the sign-in reached several accounts, as the Pages a Facebook user manages, the answer lists them instead, to choose with chooseAccounts. Only the member who started the connection can complete it, once. A new account needs room in the workspace's plan (PlanLimitReached). Needs channel:connect.",
         summary: "Complete connecting an account",
+      })
+    ),
+    HttpApiEndpoint.post("chooseAccounts", "/connect/:platform/accounts", {
+      error: [...connectErrors, ChannelNotFound],
+      params: { ...workspace, platform: PlatformSchema },
+      payload: ChooseAccountsSchema,
+      success: Schema.Array(ChannelSchema),
+    }).annotateMerge(
+      OpenApi.annotations({
+        description:
+          "Connects the accounts the member chose among those a completed sign-in listed: each becomes a channel of the workspace, or reconnects the one it has. Each new account needs room in the workspace's plan (PlanLimitReached). Only the member who completed the sign-in can choose, once, within 15 minutes. Needs channel:connect.",
+        summary: "Choose the accounts to connect",
       })
     ),
     HttpApiEndpoint.post("reconnect", "/:channelId/reconnect", {

@@ -22,6 +22,11 @@ import { useChannelErrorText } from "#channels/channel-error-text.ts";
 import { connectChannel, failureOf } from "#channels/channels-api.ts";
 import type { ChannelErrorKey } from "#channels/channels-api.ts";
 import { rememberConnection } from "#channels/pending-connection.ts";
+import {
+  ConnectMeta,
+  metaPlatforms,
+} from "#components/channels/connect-meta.tsx";
+import type { MetaPlatform } from "#components/channels/connect-meta.tsx";
 
 // Starts a connection, then leaves for the platform's sign-in page.
 const useConnect = (workspaceId: string, platform: Platform) => {
@@ -224,10 +229,34 @@ const ConnectWithButton = ({
   );
 };
 
+const ConnectWithMeta = ({
+  platform,
+  workspaceId,
+}: {
+  readonly platform: MetaPlatform;
+  readonly workspaceId: string;
+}) => {
+  const { error, isPending, start } = useConnect(workspaceId, platform);
+
+  const handleConnect = () => {
+    start({});
+  };
+
+  return (
+    <ConnectMeta
+      platform={platform}
+      error={error}
+      isPending={isPending}
+      onConnect={handleConnect}
+    />
+  );
+};
+
 /**
  * Where a member starts connecting an account, for each platform this
  * server connects: a form for Mastodon and Bluesky, which ask for a server
- * or a handle, a button for the others.
+ * or a handle, a button for LinkedIn and X, and Meta's sign-in for Threads,
+ * Instagram and Facebook Pages.
  */
 export const ConnectForms = ({
   platforms,
@@ -250,6 +279,17 @@ export const ConnectForms = ({
         offered.has(platform)
           ? [
               <ConnectWithButton
+                key={platform}
+                platform={platform}
+                workspaceId={workspaceId}
+              />,
+            ]
+          : []
+      )}
+      {metaPlatforms.flatMap((platform) =>
+        offered.has(platform)
+          ? [
+              <ConnectWithMeta
                 key={platform}
                 platform={platform}
                 workspaceId={workspaceId}

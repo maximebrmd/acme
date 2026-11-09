@@ -137,7 +137,7 @@ echo "k1:$(openssl rand -base64 32)"
 
 La valeur liste des entrées `idDeClé:clé` séparées par des virgules, comme `k2:<clé>,k1:<clé>`. La première clé chiffre et toutes les clés listées déchiffrent : pour en changer, placez une nouvelle clé en tête et gardez les anciennes. Une valeur mal formée arrête le serveur au démarrage. Gardez les clés secrètes, et gardez-en une copie : sans elles, chaque canal doit être reconnecté.
 
-Le serveur joint lui-même les plateformes, en HTTPS : il doit donc accéder à Internet, pour connecter des comptes et pour publier, sur le serveur Mastodon de chaque compte, sur le serveur Bluesky qui héberge chaque compte, par le service vidéo de Bluesky, `https://video.bsky.app`, pour les vidéos, sur LinkedIn (`www.linkedin.com`, `api.linkedin.com` et les adresses d’envoi que LinkedIn donne) et sur X (`api.x.com`). Il n’appelle que des serveurs aux adresses publiques, sur le port HTTPS par défaut, ce qui empêche de le diriger vers votre réseau privé. Les plateformes renvoient les personnes vers `PUBLIC_URL/connect/<plateforme>/callback`, par leur navigateur : elles n’appellent jamais le serveur elles-mêmes, sauf Bluesky, qui lit la description du client d’Acme, ci-dessous.
+Le serveur joint lui-même les plateformes, en HTTPS : il doit donc accéder à Internet, pour connecter des comptes et pour publier, sur le serveur Mastodon de chaque compte, sur le serveur Bluesky qui héberge chaque compte, par le service vidéo de Bluesky, `https://video.bsky.app`, pour les vidéos, sur LinkedIn (`www.linkedin.com`, `api.linkedin.com` et les adresses d’envoi que LinkedIn donne), sur X (`api.x.com`) et sur les API de Meta. Il n’appelle que des serveurs aux adresses publiques, sur le port HTTPS par défaut, ce qui empêche de le diriger vers votre réseau privé. Les plateformes renvoient les personnes vers `PUBLIC_URL/connect/<plateforme>/callback`, par leur navigateur : elles n’appellent jamais le serveur elles-mêmes, sauf Bluesky, qui lit la description du client d’Acme, et les demandes de suppression de données de Meta, ci-dessous.
 
 Pour publier une image ou une vidéo, le serveur la lit dans le stockage des médias, en entier, en mémoire, puis l’envoie : une vidéo Bluesky peut prendre jusqu’à 300 Mo. LinkedIn et X prennent les vidéos par parties de 4 Mio : le serveur n’en garde qu’une à la fois. Donnez au serveur la mémoire nécessaire aux plus gros fichiers que publient vos membres.
 
@@ -174,6 +174,24 @@ Un serveur connecte des comptes X une fois que vous lui avez enregistré une app
 X facture chaque requête de l’API à l’application, et une publication avec un lien coûte plus. Fixez une limite de dépenses dans la console de X : une fois atteinte, X refuse les publications, qui échouent avec leur raison, jusqu’à ce que vous la releviez. Acme renouvelle l’accès de chaque compte toutes les deux heures, et le garde valable tant qu’il est renouvelé.
 
 Pour LinkedIn comme pour X, l’un des deux réglages sans l’autre arrête le serveur au démarrage ; sans les deux, **Canaux** ne propose pas la plateforme.
+
+### Threads, Instagram et Pages Facebook [#meta]
+
+Une application du tableau de bord des développeurs de Meta connecte les trois. Donnez-lui le cas d’usage Facebook Login, avec les autorisations `pages_show_list`, `pages_read_engagement` et `pages_manage_posts` pour les Pages Facebook, et `instagram_basic` et `instagram_content_publish` pour Instagram ; et le cas d’usage Threads, avec `threads_basic` et `threads_content_publish`. Définissez ensuite `META_APP_ID` et `META_APP_SECRET` d’après les paramètres de base de l’application, et `THREADS_APP_ID` et `THREADS_APP_SECRET` d’après ses paramètres Threads. Une plateforme dont les paramètres manquent n’est pas proposée.
+
+Dans le tableau de bord, enregistrez ces adresses :
+
+| Paramètre                                          | Adresse                                                                                         |
+| -------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| URI de redirection OAuth valides de Facebook Login | `PUBLIC_URL/connect/facebook/callback` et `PUBLIC_URL/connect/instagram/callback`               |
+| URL de rappel de redirection de Threads            | `PUBLIC_URL/connect/threads/callback`                                                           |
+| URL de demande de suppression des données          | `PUBLIC_URL/api/data-deletion/facebook`, et `PUBLIC_URL/api/data-deletion/threads` pour Threads |
+
+Quand l’une de ses utilisatrices ou l’un de ses utilisateurs demande à Meta de supprimer ce qu’Acme détient sur elle ou lui, Meta appelle cette adresse avec une demande signée avec le secret de l’application. Acme vérifie la signature, supprime, dans chaque espace de travail, les canaux que la personne a connectés et leurs jetons, et répond avec un code de confirmation et la page où s’affiche son état, `PUBLIC_URL/data-deletion/<code>`.
+
+Meta va chercher les images et vidéos qu’il publie par des liens vers le stockage des médias, valables deux heures : le stockage doit répondre aux serveurs de Meta sur Internet, par des liens présignés ou `ACME_MEDIA_PUBLIC_BASE_URL`. Le serveur appelle `graph.facebook.com` et `graph.threads.com`, et signe chaque appel à Facebook et Instagram avec le secret de l’application : vous pouvez activer **Exiger la clé secrète** dans les paramètres avancés de l’application.
+
+Tant que l’application est en mode développement, seules les personnes qui y ont un rôle peuvent connecter leurs comptes : ajoutez-vous, ainsi que les testeurs Threads, sous Rôles de l’application. Servir d’autres personnes demande l’examen par Meta de chaque autorisation. Les comptes Instagram doivent être des comptes professionnels liés à une Page Facebook.
 
 ## Assistant de rédaction [#ai]
 

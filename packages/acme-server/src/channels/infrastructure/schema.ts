@@ -3,6 +3,7 @@ import {
   boolean,
   check,
   index,
+  integer,
   pgSchema,
   primaryKey,
   text,
@@ -29,6 +30,10 @@ const instant = (name: string) => timestamp(name, { withTimezone: true });
  * - `access_token` and `refresh_token` are stored as the TokenCipher wrote
  *   them, `<keyId>.<iv>.<ciphertext>`, both with the key `token_key_id`
  *   names, so a rotation can find the rows an older key encrypted.
+ * - `granted_by` is the platform user the tokens rest on, when that is not
+ *   the account itself: the Facebook user who connected a Page, or the
+ *   Instagram account linked to one. Meta's data deletion requests name
+ *   that user.
  * - The platform is not checked here, so adding one needs no migration: the
  *   repository decodes every row with the domain's schema.
  */
@@ -40,6 +45,7 @@ export const channels = channelsSchema.table(
     avatarUrl: text("avatar_url"),
     createdAt: instant("created_at").notNull(),
     displayName: text("display_name"),
+    grantedBy: text("granted_by"),
     handle: text("handle").notNull(),
     id: uuid("id").primaryKey(),
     platform: text("platform").notNull(),
@@ -80,6 +86,10 @@ export const channels = channelsSchema.table(
       .where(
         sql`${table.status} = 'active' AND ${table.tokenKind} <> 'nonExpiring'`
       ),
+    // Meta's data deletion requests: the channels a user's grant holds up.
+    index("channels_granted_by")
+      .on(table.grantedBy)
+      .where(sql`${table.grantedBy} IS NOT NULL`),
     check(
       "channels_token_key",
       sql`split_part(${table.accessToken}, '.', 1) = ${table.tokenKeyId} AND (${table.refreshToken} IS NULL OR split_part(${table.refreshToken}, '.', 1) = ${table.tokenKeyId})`
@@ -115,6 +125,46 @@ export const connectAttempts = channelsSchema.table(
   },
   (table) => [index("connect_attempts_expires_at").on(table.expiresAt)]
 );
+
+/**
+ * Accounts a sign-in reached, waiting for the member to choose those to
+ * connect, for at most `expires_at`: the Pages a Facebook user manages, or
+ * the Instagram accounts linked to them.
+ *
+ * - `selection_hash` is the SHA-256, in hex, of the selection the member's
+ *   browser holds, which is not stored.
+ * - `started_by` and `workspace_id` bind it to the member, as attempts are.
+ * - `accounts` are the accounts with their tokens, as JSON encrypted by the
+ *   TokenCipher for `choice:<selection>`.
+ */
+export const connectChoices = channelsSchema.table(
+  "connect_choices",
+  {
+    accounts: text("accounts").notNull(),
+    createdAt: instant("created_at").notNull(),
+    expiresAt: instant("expires_at").notNull(),
+    platform: text("platform").notNull(),
+    selectionHash: text("selection_hash").primaryKey(),
+    startedBy: text("started_by").notNull(),
+    workspaceId: uuid("workspace_id").notNull(),
+  },
+  (table) => [index("connect_choices_expires_at").on(table.expiresAt)]
+);
+
+/**
+ * The data deletion requests Meta sent on behalf of its users, so the status
+ * page Meta links to can answer. Nothing names the user: only the app the
+ * request came through (`facebook` or `threads`), when it came and was done,
+ * and how many channels it deleted. `code` is the confirmation code Meta
+ * shows the user.
+ */
+export const dataDeletions = channelsSchema.table("data_deletions", {
+  app: text("app").notNull(),
+  channelsDeleted: integer("channels_deleted").notNull(),
+  code: text("code").primaryKey(),
+  completedAt: instant("completed_at").notNull(),
+  requestedAt: instant("requested_at").notNull(),
+});
 
 /**
  * Acme's app on each Mastodon instance, registered with the instance the

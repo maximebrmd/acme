@@ -31,9 +31,9 @@ describe(acceptedText, () => {
 
 describe(shortenablePlatforms, () => {
   it("offers the platforms of the post's channels that have a limit", () => {
-    expect(
-      shortenablePlatforms(["x", "facebook", "x", "bluesky"])
-    ).toStrictEqual(["x", "bluesky"]);
+    expect(shortenablePlatforms(["x", "tiktok", "x", "bluesky"])).toStrictEqual(
+      ["x", "bluesky"]
+    );
   });
 
   it("offers every platform with a limit while no channel is picked", () => {
@@ -44,8 +44,9 @@ describe(shortenablePlatforms, () => {
       "mastodon",
       "threads",
       "instagram",
+      "facebook",
     ]);
-    expect(shortenablePlatforms(["facebook"])).toStrictEqual(
+    expect(shortenablePlatforms(["tiktok"])).toStrictEqual(
       shortenablePlatforms([])
     );
   });

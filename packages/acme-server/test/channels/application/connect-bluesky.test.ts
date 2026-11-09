@@ -25,6 +25,7 @@ import {
 import type { Channel } from "#channels/domain/channel.ts";
 import { DrizzleChannelRepository } from "#channels/infrastructure/drizzle-channel-repository.ts";
 import { DrizzleConnectAttempts } from "#channels/infrastructure/drizzle-connect-attempts.ts";
+import { DrizzleConnectChoices } from "#channels/infrastructure/drizzle-connect-choices.ts";
 import { PlanChannelAllowanceLive } from "#channels/infrastructure/plan-channel-allowance.ts";
 import { blueskyAuthorizer } from "#channels/infrastructure/platforms/bluesky/bluesky-authorizer.ts";
 import { SqlChannelLocks } from "#channels/infrastructure/sql-channel-locks.ts";
@@ -33,6 +34,7 @@ import { publicFetch } from "#shared/infrastructure/platforms/public-http.ts";
 import { UnmeteredTest } from "#test/billing/support.ts";
 import {
   authorizersOf,
+  connectedChannel,
   testPublicUrl,
 } from "#test/channels/connect-support.ts";
 import {
@@ -93,6 +95,7 @@ const BlueskyTest = Layer.mergeAll(
     Layer.mergeAll(
       DrizzleChannelRepository,
       DrizzleConnectAttempts,
+      DrizzleConnectChoices,
       SqlChannelLocks,
       PlanChannelAllowanceLive.pipe(Layer.provide(UnmeteredTest)),
       BlueskyAuthorizersTest,
@@ -125,12 +128,14 @@ const connected = Effect.fn("connected")(function* connected(
 
   const back = network.approve(authorizationUrl);
 
-  return yield* connect.complete(manager(workspaceId), "bluesky", {
-    code: Option.some(back.code),
-    error: Option.none(),
-    issuer: Option.some(back.iss),
-    state: back.state,
-  });
+  return yield* connect
+    .complete(manager(workspaceId), "bluesky", {
+      code: Option.some(back.code),
+      error: Option.none(),
+      issuer: Option.some(back.iss),
+      state: back.state,
+    })
+    .pipe(Effect.flatMap(connectedChannel));
 });
 
 const decodeToken = Schema.decodeUnknownEffect(EncryptedTokenSchema);
@@ -395,16 +400,14 @@ layer(BlueskyTest)("connecting a Bluesky account", (it) => {
 
       const back = network.approve(authorizationUrl);
 
-      const reconnected = yield* connect.complete(
-        manager(workspaceId),
-        "bluesky",
-        {
+      const reconnected = yield* connect
+        .complete(manager(workspaceId), "bluesky", {
           code: Option.some(back.code),
           error: Option.none(),
           issuer: Option.some(back.iss),
           state: back.state,
-        }
-      );
+        })
+        .pipe(Effect.flatMap(connectedChannel));
 
       assert.strictEqual(reconnected.id, channel.id);
       assert.notStrictEqual(

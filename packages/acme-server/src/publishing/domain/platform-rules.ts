@@ -74,7 +74,10 @@ const minute = 60 * second;
 // - Threads: 500 characters; carousels of up to 20 items.
 // - Instagram: captions of 2,200 characters, 30 hashtags and 20 mentions;
 //   no post without an image or a video; carousels of up to 20 items.
-// - Facebook Pages, TikTok, YouTube and Pinterest: no limit known yet.
+// - Facebook Pages: 63,206 characters, the figure commonly reported (Meta's
+//   reference names no limit for `message`); how many photos one post
+//   attaches is not known yet.
+// - TikTok, YouTube and Pinterest: no limit known yet.
 //
 // "Characters" with no other word count code points, the stricter reading.
 //
@@ -101,7 +104,11 @@ const minute = 60 * second;
 // - Instagram: JPEG images of up to 8 MB, from 4:5 to 1.91:1; MP4 and
 //   QuickTime videos of 3 seconds to 15 minutes and up to 300 MB, from 1:100
 //   to 10:1; carousels mix them. Whether it shows alt text is not known yet.
-// - Facebook Pages, TikTok, YouTube and Pinterest: no media rule known yet.
+// - Facebook Pages: JPEG, PNG and GIF photos of up to 10 MB (Page Photos,
+//   which also lists BMP and TIFF, formats Acme does not take), with alt
+//   text; one MP4 or QuickTime video, never with photos, whose limits
+//   Meta's reference does not give.
+// - TikTok, YouTube and Pinterest: no media rule known yet.
 const blueskyImage: FormatLimits = { maxByteSize: 2_000_000 };
 
 const mastodonImage: FormatLimits = {
@@ -135,6 +142,8 @@ const threadsVideo: FormatLimits = {
   maxDurationMs: 5 * minute,
 };
 
+const facebookImage: FormatLimits = { maxByteSize: 10 * mebibyte };
+
 const instagramVideo: FormatLimits = {
   aspectRatio: { maximum: 10, minimum: 0.01 },
   maxByteSize: 300 * mebibyte,
@@ -163,7 +172,22 @@ export const platformRules: Readonly<Record<Platform, PlatformRules>> = {
       { maximum: 3000, unit: "utf8Bytes" },
     ],
   },
-  facebook: { mediaRequired: false, textLimits: [] },
+  facebook: {
+    media: {
+      formats: {
+        "image/gif": facebookImage,
+        "image/jpeg": facebookImage,
+        "image/png": facebookImage,
+        "video/mp4": {},
+        "video/quicktime": {},
+      },
+      maxVideos: 1,
+      mixesKinds: false,
+      showsAltText: true,
+    },
+    mediaRequired: false,
+    textLimits: [{ maximum: 63_206, unit: "codePoints" }],
+  },
   instagram: {
     maxHashtags: 30,
     maxMedia: 20,

@@ -2,6 +2,8 @@ import {
   Api,
   Authentication,
   CurrentPrincipal,
+  DataDeletionNotFound,
+  MetaAppNotConfigured,
   OAuthApi,
   OAuthClientNotPublished,
   Unauthenticated,
@@ -158,6 +160,7 @@ const signedInGroupsLive = (authorization: AuthorizationServer) =>
     ),
     HttpApiBuilder.group(Api, "channels", (handlers) =>
       handlers.handleAll({
+        chooseAccounts: () => refusing,
         completeConnect: () => refusing,
         connect: () => refusing,
         disconnect: () => refusing,
@@ -244,6 +247,15 @@ const CaptchaLive = HttpApiBuilder.group(Api, "captcha", (handlers) =>
   })
 );
 
+const notConfigured = Effect.fail(new MetaAppNotConfigured());
+
+const DataDeletionLive = HttpApiBuilder.group(Api, "dataDeletion", (handlers) =>
+  handlers.handleAll({
+    request: () => notConfigured,
+    status: () => Effect.fail(new DataDeletionNotFound()),
+  })
+);
+
 // An Acme server in memory: acme-contract served by test handlers, without
 // a socket, with an OAuth authorization server. The CLI never imports
 // acme-server, so its tests answer for it.
@@ -270,7 +282,8 @@ export const inMemoryServer = (
                 ),
                 Layer.provide(signedInGroupsLive(server)),
                 Layer.provide(ChannelOAuthLive),
-                Layer.provide(CaptchaLive)
+                Layer.provide(CaptchaLive),
+                Layer.provide(DataDeletionLive)
               ),
               HttpApiBuilder.layer(OAuthApi).pipe(
                 Layer.provide(server.handlers)

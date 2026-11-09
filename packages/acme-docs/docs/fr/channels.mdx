@@ -1,19 +1,20 @@
 ---
 title: Connecter des canaux
-description: Connectez les comptes Mastodon, Bluesky, LinkedIn et X sur lesquels publie un espace de travail, reconnectez-les quand une plateforme le demande, et déconnectez-les.
+description: Connectez les comptes Mastodon, Bluesky, LinkedIn, X, Threads, Instagram et les Pages Facebook sur lesquels publie un espace de travail, reconnectez-les quand une plateforme le demande, et déconnectez-les.
 sidebar:
   order: 2
 ---
 
-Un canal est un compte social connecté à un espace de travail : un compte Mastodon, Bluesky, LinkedIn ou X aujourd’hui. Les publications partent sur des canaux : connectez-en au moins un avant de programmer quoi que ce soit.
+Un canal est un compte social connecté à un espace de travail : un compte Mastodon, Bluesky, LinkedIn, X, Threads ou Instagram, ou une Page Facebook, aujourd’hui. Les publications partent sur des canaux : connectez-en au moins un avant de programmer quoi que ce soit.
 
 Ouvrez un espace de travail depuis **Espaces de travail**, puis **Canaux**. Chaque membre voit les canaux de l’espace de travail ; seuls les propriétaires et les administrateurs les connectent, les reconnectent et les déconnectent.
 
-<Callout type="note" title="Quatre plateformes pour l’instant">
-  Acme connecte les comptes Mastodon, Bluesky, LinkedIn et X. Les autres
-  plateformes qu’il connaît, comme Threads, Instagram et Facebook, ne peuvent
-  pas encore être connectées. **Canaux** ne propose que les plateformes pour
-  lesquelles le serveur Acme est configuré.
+<Callout type="note" title="Sept plateformes pour l’instant">
+  Acme connecte les comptes Mastodon, Bluesky, LinkedIn, X, Threads et
+  Instagram, et les Pages Facebook. Les autres plateformes qu’il connaît, comme
+  TikTok, YouTube et Pinterest, ne peuvent pas encore être connectées.
+  **Canaux** ne propose que les plateformes pour lesquelles le serveur Acme est
+  configuré.
 </Callout>
 
 ## Connecter un compte [#connect]
@@ -48,6 +49,18 @@ Sous **X**, choisissez **Connecter X**, connectez-vous sur X et autorisez Acme. 
 
 Le serveur Acme doit être configuré pour X : sur une instance auto-hébergée, voyez [X](/self-hosting#x). D’ici là, **Canaux** ne le propose pas.
 
+### Pages Facebook [#facebook]
+
+Sous **Pages Facebook**, choisissez **Connecter des Pages Facebook**, connectez-vous avec Facebook, et autorisez Acme à lister vos Pages et à y publier. De retour dans Acme, cochez les Pages où l’espace de travail publie, puis **Connecter** : chacune devient un canal. Une connexion qui n’atteint qu’une Page la connecte aussitôt. Seules les Pages où vous pouvez créer du contenu sont listées, et celles que l’espace de travail a déjà sont signalées : en choisir une la reconnecte.
+
+### Instagram [#instagram]
+
+Acme publie sur les comptes professionnels Instagram, entreprise ou créateur, liés à une Page Facebook. Sous **Instagram**, choisissez **Connecter Instagram** et connectez-vous avec Facebook, comme pour les Pages, puis cochez les comptes Instagram liés à vos Pages. Un compte publie avec l’accès de sa Page : il reste connecté tant que vous gérez la Page.
+
+### Threads [#threads]
+
+Sous **Threads**, choisissez **Connecter Threads**, connectez-vous avec votre compte Threads, et autorisez Acme à lire votre profil et à publier.
+
 ## États [#statuses]
 
 Chaque canal affiche l’un de ces états :
@@ -62,7 +75,7 @@ Un canal dont l’accès ne peut pas être renouvelé affiche aussi la date avan
 
 ## Garder les canaux connectés [#keep-connected]
 
-Acme renouvelle de lui-même l’accès de chaque compte avant qu’il n’expire : il rafraîchit une session Bluesky un mois avant qu’elle ne tombe, et l’accès à X, qui dure deux heures, avant sa fin. L’accès à Mastodon n’expire pas, tant que personne ne le révoque. L’accès à LinkedIn ne peut pas être renouvelé : reconnectez le canal tous les 60 jours, comme ci-dessus.
+Acme renouvelle de lui-même l’accès de chaque compte avant qu’il n’expire : il rafraîchit une session Bluesky un mois avant qu’elle ne tombe, l’accès à X, qui dure deux heures, avant sa fin, et l’accès à Threads, qui dure 60 jours, une semaine avant. L’accès à Mastodon, et l’accès de Page avec lequel publient les Pages Facebook et les comptes Instagram, n’expirent pas tant que personne ne les révoque ; Facebook retire aussi l’accès d’une Page quand la personne qui l’a connectée change de mot de passe ou perd son rôle sur la Page. L’accès à LinkedIn ne peut pas être renouvelé : reconnectez le canal tous les 60 jours, comme ci-dessus.
 
 Quand une plateforme refuse l’accès d’Acme pendant qu’il publie, Acme renouvelle l’accès quand la plateforme le permet, et réessaie une fois. Quand la plateforme refuse encore, ou que l’accès ne peut pas être renouvelé, par exemple parce que le titulaire du compte l’a révoqué, le canal passe à **À reconnecter**, et les propriétaires et administrateurs de l’espace de travail en sont prévenus une fois, sous la cloche et par e-mail, sauf s’ils ont désactivé cet e-mail (voir [Notifications](/notifications)). Quand une plateforme ne répond pas, Acme réessaie plus tard et laisse le canal tel quel.
 
@@ -74,6 +87,8 @@ Quand une plateforme refuse l’accès d’Acme pendant qu’il publie, Acme ren
 - **Bluesky** : Acme publie sur le serveur qui héberge le compte. Les liens et les hashtags deviennent des liens ; les mentions restent du texte brut pour l’instant. Les vidéos passent par le service vidéo de Bluesky, qui les traite avant que la publication parte.
 - **LinkedIn** : Acme publie publiquement, au nom du membre. Les hashtags deviennent des hashtags LinkedIn ; les mentions restent du texte brut. LinkedIn traite une vidéo avant que la publication parte.
 - **X** : Acme publie au nom du compte. X transforme lui-même mentions, hashtags et liens en liens, et traite une vidéo avant que la publication parte.
+- **Threads** et **Instagram** : Meta va chercher chaque image et chaque vidéo dans le stockage des médias, la traite, puis Acme publie : plusieurs fichiers forment un carrousel. Une vidéo Instagram part en reel. Acme vérifie la limite quotidienne de publication du compte avant de commencer.
+- **Pages Facebook** : Acme publie le texte sur la Page, une photo avec, plusieurs photos en une publication, ou une vidéo, que Facebook va chercher dans le stockage des médias.
 
 ## Reconnecter [#reconnect]
 
@@ -96,4 +111,5 @@ La déconnexion ne prévient pas la plateforme. Pour y retirer aussi l’accès 
 | Cette connexion a expiré ou a été lancée ailleurs                             | Recommencez depuis les canaux de l’espace de travail, dans cet onglet.                               |
 | La connexion a été annulée sur la plateforme                                  | Vous, ou la plateforme, avez refusé. Recommencez si vous vouliez connecter le compte.                |
 | Vous vous êtes connecté à un autre compte que celui de ce canal               | Reconnectez-vous avec le compte du canal.                                                            |
+| La connexion n’a atteint aucun compte à connecter                             | Gérez une Page Facebook, ou liez-y votre compte professionnel Instagram.                             |
 | La plateforme n’a pas répondu                                                 | Réessayez dans un instant.                                                                           |

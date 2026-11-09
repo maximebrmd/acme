@@ -9,6 +9,7 @@ import { CaptchaApi } from "./captcha.ts";
 import { ChannelOAuthApi } from "./channel-oauth.ts";
 import { ChannelsApi } from "./channels.ts";
 import { ConnectedAppsApi } from "./connected-apps.ts";
+import { DataDeletionApi } from "./data-deletion.ts";
 import { MediaApi } from "./media.ts";
 import { NoticesApi } from "./notices.ts";
 import { NotificationPreferencesApi } from "./notification-preferences.ts";
@@ -167,19 +168,46 @@ export {
   AuthorizationSchema,
   ChannelSchema,
   ChannelStatusSchema,
+  ChoosableAccountSchema,
+  ChooseAccountsSchema,
   ConnectablePlatformsSchema,
   ConnectCallbackSchema,
   ConnectChannelSchema,
+  ConnectOutcomeSchema,
 } from "./channels.ts";
 
 export type {
   Authorization,
   Channel,
   ChannelStatus,
+  ChoosableAccount,
+  ChooseAccounts,
   ConnectablePlatforms,
   ConnectCallback,
   ConnectChannel,
+  ConnectOutcome,
 } from "./channels.ts";
+
+export {
+  DataDeletionApi,
+  DataDeletionConfirmationSchema,
+  DataDeletionStatusSchema,
+  MetaAppSchema,
+  SignedRequestFormSchema,
+} from "./data-deletion.ts";
+
+export type {
+  DataDeletionConfirmation,
+  DataDeletionStatus,
+  MetaApp,
+  SignedRequestForm,
+} from "./data-deletion.ts";
+
+export { DataDeletionNotFound } from "./data-deletion-not-found.ts";
+
+export { MetaAppNotConfigured } from "./meta-app-not-configured.ts";
+
+export { SignedRequestRefused } from "./signed-request-refused.ts";
 
 export { ConnectFailed, ConnectFailureReasonSchema } from "./connect-failed.ts";
 
@@ -425,6 +453,7 @@ export class Api extends HttpApi.make("acme")
   .add(ApiKeysApi)
   .add(ChannelsApi)
   .add(ChannelOAuthApi)
+  .add(DataDeletionApi)
   .add(PostsApi)
   .add(MediaApi)
   .add(NoticesApi)

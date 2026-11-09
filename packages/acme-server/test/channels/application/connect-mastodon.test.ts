@@ -12,7 +12,10 @@ import {
 import { Actor } from "#shared/domain/access.ts";
 import { ChannelIdSchema, UserIdSchema } from "#shared/domain/ids.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
-import { MastodonConnectTest } from "#test/channels/connect-support.ts";
+import {
+  connectedChannel,
+  MastodonConnectTest,
+} from "#test/channels/connect-support.ts";
 import {
   fakeMastodon,
   mastodonAccount,
@@ -84,11 +87,13 @@ layer(MastodonConnectTest)("connecting a Mastodon account", (it) => {
         "https://acme.test/connect/mastodon/callback"
       );
 
-      const channel = yield* connect.complete(
-        manager(workspaceId),
-        "mastodon",
-        callbackOf(instance.approve(authorizationUrl))
-      );
+      const channel = yield* connect
+        .complete(
+          manager(workspaceId),
+          "mastodon",
+          callbackOf(instance.approve(authorizationUrl))
+        )
+        .pipe(Effect.flatMap(connectedChannel));
 
       const { host } = new URL(instance.url);
 
@@ -137,11 +142,13 @@ layer(MastodonConnectTest)("connecting a Mastodon account", (it) => {
       assert.notStrictEqual(attempts[0]?.value, state);
       assert.match(attempts[0]?.value ?? "", /^[\da-f]{64}$/u);
 
-      const channel = yield* connect.complete(
-        manager(workspaceId),
-        "mastodon",
-        callbackOf(instance.approve(authorizationUrl))
-      );
+      const channel = yield* connect
+        .complete(
+          manager(workspaceId),
+          "mastodon",
+          callbackOf(instance.approve(authorizationUrl))
+        )
+        .pipe(Effect.flatMap(connectedChannel));
 
       const [row] = yield* stored("access_token", channel.id);
 
@@ -219,11 +226,13 @@ layer(MastodonConnectTest)("connecting a Mastodon account", (it) => {
         "profile read:statuses write:statuses write:media"
       );
 
-      const channel = yield* connect.complete(
-        manager(workspaceId),
-        "mastodon",
-        callbackOf(instance.approve(authorizationUrl))
-      );
+      const channel = yield* connect
+        .complete(
+          manager(workspaceId),
+          "mastodon",
+          callbackOf(instance.approve(authorizationUrl))
+        )
+        .pipe(Effect.flatMap(connectedChannel));
 
       assert.include(channel.scopes, "read:statuses");
     }).pipe(Effect.scoped)
@@ -280,7 +289,9 @@ layer(MastodonConnectTest)("connecting a Mastodon account", (it) => {
       }
 
       // None of these used the attempt up: its member completes it, once.
-      const channel = yield* connect.complete(member, "mastodon", back);
+      const channel = yield* connect
+        .complete(member, "mastodon", back)
+        .pipe(Effect.flatMap(connectedChannel));
 
       assert.strictEqual(channel.workspaceId, workspaceId);
 
@@ -355,11 +366,13 @@ layer(MastodonConnectTest)("connecting a Mastodon account", (it) => {
           { handle: Option.none(), instance: Option.some(instance.url) }
         );
 
-        return yield* connect.complete(
-          manager(workspaceId),
-          "mastodon",
-          callbackOf(instance.approve(authorizationUrl))
-        );
+        return yield* connect
+          .complete(
+            manager(workspaceId),
+            "mastodon",
+            callbackOf(instance.approve(authorizationUrl))
+          )
+          .pipe(Effect.flatMap(connectedChannel));
       });
 
       const first = yield* connectOnce;

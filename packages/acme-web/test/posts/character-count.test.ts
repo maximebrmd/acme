@@ -57,7 +57,7 @@ describe(fitOn, () => {
   });
 
   it("has no limit to show for a platform with none known", () => {
-    const fit = fitOn("facebook", "a".repeat(10_000), 0);
+    const fit = fitOn("tiktok", "a".repeat(10_000), 0);
 
     expect(fit.tightest).toBeUndefined();
     expect(fits(fit)).toBeTruthy();

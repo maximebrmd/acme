@@ -11,6 +11,7 @@ import { PlanLimitReached } from "#shared/domain/plan-limit-reached.ts";
 import { everyWorkspaceOn } from "#test/billing/support.ts";
 import {
   connectChannelWith,
+  connectedChannel,
   MastodonAuthorizersTest,
 } from "#test/channels/connect-support.ts";
 import { fakeMastodon } from "#test/channels/fakes/fake-mastodon.ts";
@@ -129,11 +130,13 @@ layer(FreePlanTest)("connecting channels on the free plan", (it) => {
         instance: Option.some(instance.url),
       });
 
-      const channel = yield* connect.complete(
-        manager(workspaceId),
-        "mastodon",
-        callbackOf(instance.approve(yield* begin))
-      );
+      const channel = yield* connect
+        .complete(
+          manager(workspaceId),
+          "mastodon",
+          callbackOf(instance.approve(yield* begin))
+        )
+        .pipe(Effect.flatMap(connectedChannel));
 
       yield* fill(workspaceId, freeChannels - 2);
 
@@ -143,11 +146,13 @@ layer(FreePlanTest)("connecting channels on the free plan", (it) => {
 
       // The same account: its channel takes the new tokens, and no channel
       // is added.
-      const reconnected = yield* connect.complete(
-        manager(workspaceId),
-        "mastodon",
-        callbackOf(instance.approve(again))
-      );
+      const reconnected = yield* connect
+        .complete(
+          manager(workspaceId),
+          "mastodon",
+          callbackOf(instance.approve(again))
+        )
+        .pipe(Effect.flatMap(connectedChannel));
 
       assert.strictEqual(reconnected.id, channel.id);
     }).pipe(Effect.scoped)

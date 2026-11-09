@@ -74,13 +74,13 @@ describe(planFor, () => {
 
   it("halves a post for a platform whose limit is unknown", () => {
     const { prompt } = planFor(
-      { _tag: "shorten", platform: "facebook" },
+      { _tag: "shorten", platform: "pinterest" },
       draftOf("A long post."),
-      textLimitsOn("facebook")
+      textLimitsOn("pinterest")
     );
 
     expect(prompt.instructions).toContain(
-      "shorten the draft for Facebook to about half its length"
+      "shorten the draft for Pinterest to about half its length"
     );
   });
 

@@ -10,7 +10,7 @@ import {
   Ref,
   Stream,
 } from "effect";
-import { Digest, SecureRandom } from "effect/crypto";
+import { Digest, Mac, SecureRandom } from "effect/crypto";
 import { FetchHttpClient } from "effect/http";
 
 import { MediaForPublishing } from "#publishing/application/media-for-publishing.ts";
@@ -23,6 +23,9 @@ import { MediaAttachment } from "#publishing/domain/media-attachment.ts";
 import { blueskyClient } from "#publishing/infrastructure/platforms/bluesky/bluesky-client.ts";
 import { linkedinClient } from "#publishing/infrastructure/platforms/linkedin/linkedin-client.ts";
 import { mastodonClient } from "#publishing/infrastructure/platforms/mastodon/mastodon-client.ts";
+import { facebookClient } from "#publishing/infrastructure/platforms/meta/facebook-client.ts";
+import { instagramClient } from "#publishing/infrastructure/platforms/meta/instagram-client.ts";
+import { threadsClient } from "#publishing/infrastructure/platforms/meta/threads-client.ts";
 import { xClient } from "#publishing/infrastructure/platforms/x/x-client.ts";
 import {
   ChannelIdSchema,
@@ -35,6 +38,7 @@ import type { Platform } from "#shared/domain/platform.ts";
 import { TokenExpired } from "#shared/domain/token-expired.ts";
 import { isTokenRejected } from "#shared/domain/token-rejected.ts";
 import type { TokenRejected } from "#shared/domain/token-rejected.ts";
+import type { MetaHosts } from "#shared/infrastructure/platforms/meta-graph.ts";
 import { publicHttpClient } from "#shared/infrastructure/platforms/public-http.ts";
 import { OpenOutboundGuard } from "#test/channels/support.ts";
 
@@ -354,5 +358,67 @@ export const blueskySession = Effect.fn("test.blueskySession")(
         token_type: "DPoP",
       },
     });
+  }
+);
+
+/** Every Meta service at the fake's address. */
+export const metaHostsAt = (url: string): MetaHosts => ({
+  facebookDialog: new URL(url),
+  facebookGraph: new URL(url),
+  threadsAuthorize: new URL(url),
+  threadsGraph: new URL(url),
+});
+
+const MetaCryptoTest = Mac.layerWebCrypto.pipe(
+  Layer.provide(SecureRandom.layerWebCrypto)
+);
+
+/** Which Meta client to build against the fake Graph. */
+export type MetaPlatform = "facebook" | "instagram" | "threads";
+
+/**
+ * A Meta client against the fake at `url`, with the credentials and files.
+ * Facebook and Instagram sign their calls with `appSecret`.
+ */
+export const metaClientWith = Effect.fn("test.metaClient")(
+  function* metaClientWith(options: {
+    readonly appSecret: string;
+    readonly credentials: Layer.Layer<CredentialLog | PlatformCredentials>;
+    readonly files?: readonly TestFile[];
+    readonly platform: MetaPlatform;
+    readonly url: string;
+  }) {
+    const api = yield* httpClient;
+    const hosts = metaHostsAt(options.url);
+    const appSecret = Option.some(Redacted.make(options.appSecret));
+
+    const services = Layer.mergeAll(
+      options.credentials,
+      mediaOf(options.files ?? []),
+      MetaCryptoTest
+    );
+
+    if (options.platform === "threads") {
+      return yield* threadsClient({ api, hosts, timing: testTiming }).pipe(
+        Effect.provide(services)
+      );
+    }
+
+    if (options.platform === "instagram") {
+      return yield* instagramClient({
+        api,
+        appSecret,
+        hosts,
+        timing: testTiming,
+      }).pipe(Effect.provide(services));
+    }
+
+    return yield* facebookClient({
+      api,
+      appSecret,
+      hosts,
+      timing: testTiming,
+      uploads: api,
+    }).pipe(Effect.provide(services));
   }
 );

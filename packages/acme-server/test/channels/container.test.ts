@@ -157,8 +157,12 @@ layer(channelsWith(""))("the channels context on a local server", (it) => {
         assert.isTrue(Option.isSome(authorizers.for("mastodon")));
         assert.isTrue(Option.isNone(authorizers.for("linkedin")));
         assert.isTrue(Option.isNone(authorizers.for("x")));
+        // Nor Meta's platforms, without Meta's app.
         assert.deepStrictEqual([...authorizers.unconfigured].toSorted(), [
+          "facebook",
+          "instagram",
           "linkedin",
+          "threads",
           "x",
         ]);
         assert.isTrue(Option.isNone(documents.bluesky));

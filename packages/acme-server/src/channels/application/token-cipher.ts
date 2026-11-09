@@ -35,7 +35,7 @@ export const tokenKeyIdOf = (encrypted: EncryptedToken): string => {
  * data: a copy moved under another context does not decrypt.
  */
 export const SecretContextSchema = Schema.String.check(
-  Schema.isPattern(/^(?:app|connect):\S+$/u)
+  Schema.isPattern(/^(?:app|choice|connect):\S+$/u)
 ).pipe(Schema.brand("SecretContext"));
 
 export type SecretContext = typeof SecretContextSchema.Type;
@@ -43,6 +43,10 @@ export type SecretContext = typeof SecretContextSchema.Type;
 /** The context of a connection's secret, named by its state. */
 export const connectAttemptContext = (state: string): SecretContext =>
   SecretContextSchema.make(`connect:${state}`);
+
+/** The context of the accounts a member is offered, named by its selection. */
+export const choiceContext = (selection: string): SecretContext =>
+  SecretContextSchema.make(`choice:${selection}`);
 
 /** The context of an app's client secret on a server. */
 export const appSecretContext = (origin: string): SecretContext =>
@@ -60,8 +64,8 @@ export type TokenDecryptionError =
  *
  * Secrets that belong to no channel, such as a connection's PKCE verifier or
  * an app's client secret on a Mastodon instance, are encrypted the same way,
- * bound to a context of their own (`connect:<state>`, `app:<origin>`), which
- * never reads as a channel id.
+ * bound to a context of their own (`connect:<state>`, `choice:<selection>`,
+ * `app:<origin>`), which never reads as a channel id.
  *
  * A server may run without keys, as long as it stores no channel: encrypting
  * then fails with MissingTokenKey, and decrypting with UnknownTokenKey.

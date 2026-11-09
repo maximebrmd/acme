@@ -3,11 +3,13 @@ import { Digest, SecureRandom } from "effect/crypto";
 import { FetchHttpClient } from "effect/http";
 
 import { ConnectChannel } from "#channels/application/connect-channel.ts";
+import type { ConnectOutcome } from "#channels/application/connect-channel.ts";
 import { PlatformAuthorizers } from "#channels/application/platform-authorizer.ts";
 import type { PlatformAuthorizer } from "#channels/application/platform-authorizer.ts";
 import type { Platform } from "#channels/domain/platform.ts";
 import { DrizzleChannelRepository } from "#channels/infrastructure/drizzle-channel-repository.ts";
 import { DrizzleConnectAttempts } from "#channels/infrastructure/drizzle-connect-attempts.ts";
+import { DrizzleConnectChoices } from "#channels/infrastructure/drizzle-connect-choices.ts";
 import { PlanChannelAllowanceLive } from "#channels/infrastructure/plan-channel-allowance.ts";
 import { linkedinAuthorizer } from "#channels/infrastructure/platforms/linkedin/linkedin-authorizer.ts";
 import type { LinkedInEndpoints } from "#channels/infrastructure/platforms/linkedin/linkedin-authorizer.ts";
@@ -28,6 +30,15 @@ import {
 
 /** The web app's origin the tests run under. */
 export const testPublicUrl = "https://acme.test";
+
+/**
+ * The channel a completed connection made, for platforms whose sign-in
+ * reaches one account: a test expecting it fails on a choice.
+ */
+export const connectedChannel = (outcome: ConnectOutcome) =>
+  outcome._tag === "connected"
+    ? Effect.succeed(outcome.channel)
+    : Effect.die(new Error("The connection offered a choice of accounts"));
 
 /** A registry of the authorizers given, as the server builds it. */
 export const authorizersOf = (
@@ -81,6 +92,7 @@ export const connectChannelWith = <E, R>(
       Layer.mergeAll(
         DrizzleChannelRepository,
         DrizzleConnectAttempts,
+        DrizzleConnectChoices,
         SqlChannelLocks,
         PlanChannelAllowanceLive.pipe(Layer.provide(entitlements)),
         authorizers
@@ -149,6 +161,7 @@ export const xAuthorizerOn = (endpoints: XEndpoints) =>
 export const ConnectAdaptersTest = Layer.mergeAll(
   DrizzleChannelRepository,
   DrizzleConnectAttempts,
+  DrizzleConnectChoices,
   SqlChannelLocks,
   PlanChannelAllowanceLive.pipe(Layer.provide(UnmeteredTest))
 ).pipe(Layer.provideMerge(TokenCipherTest), Layer.provideMerge(DatabaseTest));

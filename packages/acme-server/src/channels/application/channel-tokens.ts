@@ -17,7 +17,13 @@ export const encryptTokens = Effect.fn("ChannelTokens.encrypt")(
       ? Option.some(yield* cipher.encrypt(tokens.refreshToken.value, channelId))
       : Option.none();
 
-    return new ChannelCredentials({ accessToken, refreshToken });
+    return tokens.grantedBy === undefined
+      ? new ChannelCredentials({ accessToken, refreshToken })
+      : new ChannelCredentials({
+          accessToken,
+          grantedBy: tokens.grantedBy,
+          refreshToken,
+        });
   }
 );
 

@@ -9,15 +9,15 @@ two years after it ships.
 
 It is not released yet. Today you can:
 
-- create an account and workspaces, and connect Mastodon, Bluesky, LinkedIn
-  and X accounts to them;
+- create an account and workspaces, and connect Mastodon, Bluesky, LinkedIn,
+  X, Threads and Instagram accounts and Facebook Pages to them;
 - upload images and videos to a workspace's media library;
 - write a post, with its own text on some channels and images or videos
   with alt text, keep it with the workspace's drafts or discard it, then
   schedule it, move it on a calendar, take it back to draft or cancel it;
-- have it published to Mastodon, Bluesky, LinkedIn and X at its time, with
-  its media, then follow each channel's attempts, post it again where it
-  failed, and say whether one Acme could not confirm went out;
+- have it published on those channels at its time, with its media, then
+  follow each channel's attempts, post it again where it failed, and say
+  whether one Acme could not confirm went out;
 - hear how your posts ended, or every post if you choose, and which
   channels need reconnecting, under a bell in the app and by email;
 - see how posts did on Mastodon and Bluesky: their likes, reposts, replies
@@ -35,7 +35,8 @@ It is not released yet. Today you can:
   Turnstile's keys; without them, nothing is limited or checked;
 - sign in from the command line, and let MCP clients read a workspace.
 
-Analytics on LinkedIn and X, and the other platforms, are still to come.
+Analytics on LinkedIn, X and Meta's platforms, and the other platforms, are
+still to come.
 
 ## Set up
 
@@ -167,6 +168,14 @@ be read, and their channels must be reconnected.
   **Channels** does not offer them. X refuses `localhost` in redirects: try it
   with `PUBLIC_URL` on `http://127.0.0.1:3001` and the web app's production
   build, or through an HTTPS tunnel. LinkedIn members reconnect every 60 days.
+- **Threads**, **Instagram** and **Facebook Pages** need an app in Meta's
+  developer dashboard, in development mode with you in its roles, and its ids
+  and secrets in `META_APP_ID`, `META_APP_SECRET`, `THREADS_APP_ID` and
+  `THREADS_APP_SECRET`; the docs' self-hosting page lists its permissions and
+  addresses. Facebook and Instagram come back with the accounts the sign-in
+  reached, to tick. Meta fetches the media it publishes from the store, which
+  it cannot reach on this machine: text posts work, media needs a public
+  store.
 
 The server refreshes tokens due for it every 10 minutes and, daily at 08:00
 UTC, tells a workspace's owners and admins about accounts that must be
@@ -319,6 +328,8 @@ In development, these are the ones you may want:
 | `BLUESKY_CLIENT_KEYS`         | unset: the loopback client       | Keys of the confidential Bluesky client                        |
 | `LINKEDIN_CLIENT_ID`          | unset: LinkedIn is not offered   | The LinkedIn app's client id, with `LINKEDIN_CLIENT_SECRET`    |
 | `X_CLIENT_ID`                 | unset: X is not offered          | The X app's OAuth 2.0 client id, with `X_CLIENT_SECRET`        |
+| `META_APP_ID`                 | unset: no Facebook nor Instagram | Meta's app, with `META_APP_SECRET`                             |
+| `THREADS_APP_ID`              | unset: no Threads                | The app's Threads id, with `THREADS_APP_SECRET`                |
 | `ACME_AI_PROVIDER`            | unset: no writing assistant      | `anthropic` or `openai-compatible`                             |
 | `ACME_AI_API_KEY`             | unset                            | The provider's key: required for Anthropic                     |
 | `ACME_AI_BASE_URL`            | Anthropic's API                  | The API's base URL: required for an OpenAI-compatible server   |

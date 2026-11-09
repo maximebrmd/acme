@@ -27,6 +27,7 @@ import {
   ChannelOAuthApiLive,
   ChannelsApiLive,
   ChannelsLive,
+  DataDeletionApiLive,
 } from "#channels/container.ts";
 import { MediaApiLive, MediaLive } from "#media/container.ts";
 import {
@@ -71,7 +72,12 @@ const WorkspaceGroupsLive = Layer.mergeAll(
 const ApiLive = HttpApiBuilder.layer(Api, {
   openapiPath: "/openapi.json",
 }).pipe(
-  Layer.provide([SystemHandlers, ChannelOAuthApiLive, WorkspaceGroupsLive])
+  Layer.provide([
+    SystemHandlers,
+    ChannelOAuthApiLive,
+    DataDeletionApiLive,
+    WorkspaceGroupsLive,
+  ])
 );
 
 /**

@@ -1,7 +1,11 @@
 "use client";
 
 import { useAtomSet } from "@effect/atom-react";
-import type { ConnectCallback, Platform } from "acme-contract";
+import type {
+  ChoosableAccount,
+  ConnectCallback,
+  Platform,
+} from "acme-contract";
 import { Alert, AlertDescription, AlertTitle } from "acme-ui/components/alert";
 import { Button } from "acme-ui/components/button";
 import { Option } from "effect";
@@ -17,6 +21,7 @@ import {
   forgetConnection,
   pendingWorkspace,
 } from "#channels/pending-connection.ts";
+import { AccountPicker } from "#components/channels/account-picker.tsx";
 import { Link, useRouter } from "#i18n/navigation.ts";
 
 // The tab's storage only changes from this page's own actions.
@@ -86,6 +91,13 @@ export const CompleteConnection = ({
     readonly workspaceId: string;
   } | null>(null);
 
+  // The accounts the sign-in reached, when the member chooses among them.
+  const [choice, setChoice] = useState<{
+    readonly accounts: readonly ChoosableAccount[];
+    readonly selection: string;
+    readonly workspaceId: string;
+  } | null>(null);
+
   // React runs effects twice in development; a callback completes once.
   const started = useRef(false);
 
@@ -116,7 +128,19 @@ export const CompleteConnection = ({
       forgetConnection();
 
       if (exit._tag === "Success") {
-        toast.success(t("connected", { handle: exit.value.handle }));
+        const outcome = exit.value;
+
+        if (outcome._tag === "choose") {
+          setChoice({
+            accounts: outcome.accounts,
+            selection: outcome.selection,
+            workspaceId: workspace,
+          });
+
+          return;
+        }
+
+        toast.success(t("connected", { handle: outcome.channel.handle }));
         router.replace(`/app/${workspace}/channels`);
 
         return;
@@ -130,6 +154,17 @@ export const CompleteConnection = ({
 
     void finish(workspaceId, callback);
   }, [callback, complete, platform, router, t, workspaceId]);
+
+  if (choice !== null) {
+    return (
+      <AccountPicker
+        accounts={choice.accounts}
+        platform={platform}
+        selection={choice.selection}
+        workspaceId={choice.workspaceId}
+      />
+    );
+  }
 
   if (failure !== null) {
     return (

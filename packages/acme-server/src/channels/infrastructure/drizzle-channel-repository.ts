@@ -101,9 +101,11 @@ const channelColumns = (channel: Channel) => {
 
 const credentialColumns = ({
   accessToken,
+  grantedBy,
   refreshToken,
 }: ChannelCredentials) => ({
   accessToken,
+  grantedBy: grantedBy ?? null,
   refreshToken: Option.getOrNull(refreshToken),
   tokenKeyId: tokenKeyIdOf(accessToken),
 });

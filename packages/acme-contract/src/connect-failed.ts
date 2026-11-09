@@ -16,6 +16,9 @@ import { Schema } from "effect";
  * - `authorizationFailed`: the platform refused to hand over the account.
  * - `accountMismatch`: reconnecting signed in to a different account than the
  *   channel's.
+ * - `noAccounts`: the sign-in reached no account Acme can post to, such as a
+ *   Facebook user who manages no Page, or whose Pages have no Instagram
+ *   professional account linked to them.
  */
 export const ConnectFailureReasonSchema = Schema.Literals([
   "platformNotSupported",
@@ -27,6 +30,7 @@ export const ConnectFailureReasonSchema = Schema.Literals([
   "denied",
   "authorizationFailed",
   "accountMismatch",
+  "noAccounts",
 ]).annotate({ identifier: "ConnectFailureReason" });
 
 export type ConnectFailureReason = typeof ConnectFailureReasonSchema.Type;

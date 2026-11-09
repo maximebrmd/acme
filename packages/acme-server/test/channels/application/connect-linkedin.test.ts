@@ -12,6 +12,7 @@ import {
   authorizersOf,
   ConnectAdaptersTest,
   connectChannelOver,
+  connectedChannel,
   linkedinAuthorizerOn,
 } from "#test/channels/connect-support.ts";
 import {
@@ -59,11 +60,13 @@ const startAndApprove = Effect.fn("test.startAndApprove")(
       instance: Option.none(),
     });
 
-    return yield* on.connect.complete(
-      manager(workspaceId),
-      "linkedin",
-      callbackOf(on.linkedin.approve(url))
-    );
+    return yield* on.connect
+      .complete(
+        manager(workspaceId),
+        "linkedin",
+        callbackOf(on.linkedin.approve(url))
+      )
+      .pipe(Effect.flatMap(connectedChannel));
   }
 );
 
@@ -102,11 +105,13 @@ layer(AdaptersTest)("connecting a LinkedIn member", (it) => {
 
       const before = yield* DateTime.now;
 
-      const channel = yield* on.connect.complete(
-        manager(workspaceId),
-        "linkedin",
-        callbackOf(on.linkedin.approve(authorizationUrl))
-      );
+      const channel = yield* on.connect
+        .complete(
+          manager(workspaceId),
+          "linkedin",
+          callbackOf(on.linkedin.approve(authorizationUrl))
+        )
+        .pipe(Effect.flatMap(connectedChannel));
 
       assert.strictEqual(channel.platform, "linkedin");
       assert.strictEqual(channel.accountId, linkedinMember.sub);
@@ -163,11 +168,13 @@ layer(AdaptersTest)("connecting a LinkedIn member", (it) => {
           channel.id
         );
 
-        const again = yield* on.connect.complete(
-          manager(workspaceId),
-          "linkedin",
-          callbackOf(on.linkedin.approve(url))
-        );
+        const again = yield* on.connect
+          .complete(
+            manager(workspaceId),
+            "linkedin",
+            callbackOf(on.linkedin.approve(url))
+          )
+          .pipe(Effect.flatMap(connectedChannel));
 
         assert.strictEqual(again.id, channel.id);
         assert.deepStrictEqual(again.status, { _tag: "active" });

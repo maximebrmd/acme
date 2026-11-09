@@ -20,6 +20,7 @@ import {
   authorizersOf,
   ConnectAdaptersTest,
   connectChannelOver,
+  connectedChannel,
   xAuthorizerOn,
 } from "#test/channels/connect-support.ts";
 import { fakeX, xAccount, xClient } from "#test/channels/fakes/fake-x.ts";
@@ -66,11 +67,9 @@ const connected = Effect.fn("test.connected")(function* connected(
     instance: Option.none(),
   });
 
-  return yield* on.connect.complete(
-    manager(workspaceId),
-    "x",
-    callbackOf(on.x.approve(url))
-  );
+  return yield* on.connect
+    .complete(manager(workspaceId), "x", callbackOf(on.x.approve(url)))
+    .pipe(Effect.flatMap(connectedChannel));
 });
 
 // The token jobs over the workspace's channels only, with the authorizer.
@@ -150,11 +149,13 @@ layer(AdaptersTest)("connecting an X account", (it) => {
 
       const now = yield* DateTime.now;
 
-      const channel = yield* on.connect.complete(
-        manager(workspaceId),
-        "x",
-        callbackOf(on.x.approve(authorizationUrl))
-      );
+      const channel = yield* on.connect
+        .complete(
+          manager(workspaceId),
+          "x",
+          callbackOf(on.x.approve(authorizationUrl))
+        )
+        .pipe(Effect.flatMap(connectedChannel));
 
       assert.strictEqual(channel.platform, "x");
       assert.strictEqual(channel.accountId, xAccount.id);
