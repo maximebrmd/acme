@@ -638,7 +638,7 @@
       "incorrectPassword": "Le mot de passe est incorrect.",
       "lastOwner": "Un espace de travail a besoin d’un propriétaire : nommez d’abord un autre membre propriétaire.",
       "nameMismatch": "Le nom ne correspond pas à celui de l’espace de travail.",
-      "notFound": "Il n’existe déjà plus.",
+      "notFound": "Cet élément n’existe déjà plus.",
       "passwordTooLong": "Le mot de passe est trop long.",
       "passwordTooShort": "Le mot de passe doit compter au moins 12 caractères.",
       "tooManyRequests": "Trop de tentatives. Patientez une minute, puis réessayez.",
@@ -676,7 +676,7 @@
       "typeName": "Saisissez {name} pour confirmer",
       "confirm": "Supprimer l’espace de travail",
       "deleting": "Suppression…",
-      "deleted": "{name} est supprimé."
+      "deleted": "L’espace de travail {name} est supprimé."
     },
     "members": {
       "description": "Toutes les personnes de l’espace de travail, et leur rôle. Les propriétaires et les administrateurs changent les rôles et retirent des membres ; seuls les propriétaires nomment ou retirent des propriétaires.",
@@ -702,6 +702,7 @@
       "pendingTitle": "Invitations en attente",
       "empty": "Aucune invitation n’attend de réponse.",
       "expires": "Expire le {date}",
+      "expired": "A expiré le {date}",
       "resend": "Renvoyer",
       "resending": "Envoi…",
       "resendTo": "Renvoyer l’invitation à {email}",
@@ -791,7 +792,7 @@
       "description": "Les applications que vous laissez agir pour vous, comme la ligne de commande et les clients MCP.",
       "empty": "Aucune application n’agit pour vous.",
       "cli": "Ligne de commande Acme",
-      "anyWorkspace": "Dans celui de vos espaces de travail qu’elle indique",
+      "anyWorkspace": "Dans l’espace de travail que chacune de ses requêtes désigne",
       "workspaces": "Dans {names}",
       "dates": "Autorisée le {authorized} · {lastUsed, select, never {jamais utilisée} other {dernière utilisation le {lastUsed}}}",
       "revoke": "Révoquer",

@@ -80,7 +80,9 @@ const AppRow = ({ app }: { readonly app: ConnectedApp }) => {
         <span className="text-muted-foreground text-sm">
           {workspaces.length === 0
             ? t("anyWorkspace")
-            : t("workspaces", { names: workspaces.join(", ") })}
+            : t("workspaces", {
+                names: format.list(workspaces, { type: "conjunction" }),
+              })}
         </span>
         <span className="text-muted-foreground text-sm">
           {t("dates", {

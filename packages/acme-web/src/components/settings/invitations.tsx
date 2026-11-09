@@ -24,7 +24,7 @@ import {
 } from "acme-ui/components/select";
 import { Schema } from "effect";
 import { AsyncResult } from "effect/reactivity";
-import { useFormatter, useTranslations } from "next-intl";
+import { useFormatter, useNow, useTranslations } from "next-intl";
 import { useId, useState, useTransition } from "react";
 import type { SubmitEvent } from "react";
 import { toast } from "sonner";
@@ -140,7 +140,8 @@ interface InvitationRowProps {
   readonly workspaceId: string;
 }
 
-// One pending invitation: who, as what, until when; sending it again, and
+// One pending invitation: who, as what, until when (Better Auth keeps an
+// expired one pending, until it is sent again); sending it again, and
 // revoking it once confirmed.
 const InvitationRow = ({
   invitation,
@@ -154,10 +155,12 @@ const InvitationRow = ({
   const settings = useTranslations("Settings");
   const errors = useTranslations("Settings.errors");
   const format = useFormatter();
+  const now = useNow();
   const [isResending, startResend] = useTransition();
   const [isRevoking, startRevoke] = useTransition();
   const { email } = invitation;
   const role = invitation.role ?? "";
+  const expired = invitation.expiresAt.getTime() <= now.getTime();
 
   const handleResend = () => {
     startResend(async () => {
@@ -197,7 +200,7 @@ const InvitationRow = ({
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         <span className="truncate font-medium">{email}</span>
         <span className="text-muted-foreground text-sm">
-          {t("expires", {
+          {t(expired ? "expired" : "expires", {
             date: format.dateTime(invitation.expiresAt, {
               dateStyle: "medium",
               timeStyle: "short",
