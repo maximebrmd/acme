@@ -29,6 +29,7 @@ describe(permissionsFor, () => {
   it("lets a contributor draft without scheduling or publishing", () => {
     expect(permissionsFor("contributor")).toStrictEqual([
       "analytics:read",
+      "assistant:use",
       "channel:read",
       "media:read",
       "media:upload",
@@ -36,6 +37,12 @@ describe(permissionsFor, () => {
       "post:create",
       "post:update",
     ]);
+  });
+
+  it("lets those who write posts ask the writing assistant", () => {
+    expect(permissionsFor("editor")).toContain("assistant:use");
+    expect(permissionsFor("contributor")).toContain("assistant:use");
+    expect(permissionsFor("viewer")).not.toContain("assistant:use");
   });
 
   it("lets a viewer read only", () => {
