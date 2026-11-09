@@ -49,6 +49,23 @@ describe(ChannelRow, () => {
     expect(html).toContain(">Disconnect<");
   });
 
+  it("names the account in each button, for rows read out of order", async () => {
+    const [english, french] = await Promise.all([render("en"), render("fr")]);
+
+    expect(english).toContain(
+      'aria-label="Reconnect @acme_example@social.example"'
+    );
+    expect(english).toContain(
+      'aria-label="Disconnect @acme_example@social.example"'
+    );
+    expect(french).toContain(
+      'aria-label="Reconnecter @acme_example@social.example"'
+    );
+    expect(french).toContain(
+      'aria-label="Déconnecter @acme_example@social.example"'
+    );
+  });
+
   it("gives the date by which a token must be renewed, in French", async () => {
     const html = await render("fr", {
       channel: {

@@ -129,6 +129,11 @@ export const ChannelRow = ({
             disabled={isReconnecting}
             focusableWhenDisabled
             onClick={handleReconnect}
+            aria-label={
+              isReconnecting
+                ? undefined
+                : t("reconnectAccount", { handle: channel.handle })
+            }
           >
             {isReconnecting ? t("reconnecting") : t("reconnect")}
           </Button>
@@ -142,6 +147,11 @@ export const ChannelRow = ({
                   size="sm"
                   disabled={isDisconnecting}
                   focusableWhenDisabled
+                  aria-label={
+                    isDisconnecting
+                      ? undefined
+                      : t("disconnectAccount", { handle: channel.handle })
+                  }
                 />
               }
             >
