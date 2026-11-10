@@ -44,6 +44,8 @@ export const french: EmailCatalog = {
         "Elle n’a pas pu être appliquée : le contrat a été conclu par une entreprise, avec un numéro de TVA vérifié, qui ne dispose pas du droit de rétractation. Le contrat peut être résilié, avec Résilier votre contrat, au pied de chaque page.",
       cancelled:
         "Elle est appliquée. Le contrat prend fin le {effectiveAt}. Jusque-là, l’espace de travail conserve son offre ; il passe ensuite à l’offre gratuite, avec son contenu, et plus rien n’est prélevé.",
+      cancelledLater:
+        "Elle est appliquée. Le contrat prend fin le {effectiveAt}, la date que vous avez demandée : il se renouvelle jusque-là, et sa dernière période n’est facturée que jusqu’à ce jour. L’espace de travail conserve son offre jusque-là ; il passe ensuite à l’offre gratuite, avec son contenu.",
       confirm:
         "Cette adresse gère la facturation d’un contrat sur Peal, mais la demande n’indique pas le numéro de contrat : nous devons nous assurer qu’elle vient de vous. Suivez le lien ci-dessous, sous 30 jours, et choisissez le contrat. La demande est alors appliquée à la date du {receivedAt}, qui fait foi. Rien ne change d’ici là.",
       expired:
@@ -56,6 +58,8 @@ export const french: EmailCatalog = {
         "Nous n’avons pas retrouvé le contrat à partir de ce qu’indique la demande : une personne va l’examiner et vous écrira à cette adresse. Si elle est appliquée, elle l’est à la date du {receivedAt}, qui fait foi. Pour qu’elle soit appliquée immédiatement, renvoyez-la avec le numéro de contrat, qui figure dans l’e-mail de confirmation de votre abonnement.",
       withdrawn:
         "Elle est appliquée. Le contrat a pris fin le {effectiveAt}, et {refunded} vous sont remboursés sur le moyen de paiement utilisé, dans les 14 jours suivant votre déclaration.",
+      withdrawnUnpaid:
+        "Elle est appliquée. Le contrat a pris fin le {effectiveAt}. Rien n’avait été prélevé pour lui : il n’y a donc rien à rembourser.",
     },
     received: {
       cancellation:

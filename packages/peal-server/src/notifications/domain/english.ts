@@ -44,6 +44,8 @@ export const english: EmailCatalog = {
         "It could not be applied: the contract was concluded by a business, with a verified VAT number, which has no right to withdraw. The contract can be cancelled instead, with Cancel your contract, at the foot of every page.",
       cancelled:
         "It is applied. The contract ends on {effectiveAt}. Until then the workspace keeps its plan; it then moves to the free plan, with its content, and nothing more is charged.",
+      cancelledLater:
+        "It is applied. The contract ends on {effectiveAt}, the day you asked for: it renews until then, and its last period is charged only up to that day. The workspace keeps its plan until then; it then moves to the free plan, with its content.",
       confirm:
         "This address manages a contract’s billing on Peal, but the request does not give the contract number, so we must make sure it comes from you: follow the link below, within 30 days, and choose the contract. The request is then applied as of {receivedAt}, the date that counts. Nothing changes until then.",
       expired:
@@ -56,6 +58,8 @@ export const english: EmailCatalog = {
         "We could not find the contract from what the request says, so a person will look at it and write to you at this address. If it is applied, it is as of {receivedAt}, the date that counts. To have it applied at once, send it again with the contract number, which is in the email that confirmed your subscription.",
       withdrawn:
         "It is applied. The contract ended on {effectiveAt}, and {refunded} is refunded to the payment method used, within 14 days of your statement.",
+      withdrawnUnpaid:
+        "It is applied. The contract ended on {effectiveAt}. Nothing had been charged for it, so there is nothing to refund.",
     },
     received: {
       cancellation:

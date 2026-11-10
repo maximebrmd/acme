@@ -105,6 +105,54 @@ describe(renderAuthEmail, () => {
     expect(email.html).toContain(`href="${escapeHtml(url)}"`);
   });
 
+  it("says nothing is refunded when nothing was charged, and that a plan renews until a later day asked for", () => {
+    const base = {
+      _tag: "ContractRequestAcknowledged",
+      contract: "",
+      locale: "en",
+      name: "Camille Synthetic",
+      receivedAt: at("2026-11-10T08:05:00.000Z"),
+      refunded: null,
+      to: "camille@example.test",
+      url: "https://app.example.test",
+    } as const;
+
+    const unpaid = renderAuthEmail({
+      ...base,
+      desiredAt: null,
+      effectiveAt: at("2026-11-10T08:05:00.000Z"),
+      kind: "withdrawal",
+      outcome: "withdrawn",
+    }).text;
+
+    expect(unpaid).toContain("Nothing had been charged");
+    expect(unpaid).not.toContain("is refunded to");
+    expect(unpaid).not.toContain("and  is");
+
+    const later = renderAuthEmail({
+      ...base,
+      desiredAt: at("2027-02-15T00:00:00.000Z"),
+      effectiveAt: at("2027-02-15T00:00:00.000Z"),
+      kind: "cancellation",
+      outcome: "cancelled",
+    }).text;
+
+    expect(later).toContain("it renews until then");
+    expect(later).not.toContain("nothing more is charged");
+
+    const french = renderAuthEmail({
+      ...base,
+      desiredAt: at("2027-02-15T00:00:00.000Z"),
+      effectiveAt: at("2027-02-15T00:00:00.000Z"),
+      kind: "cancellation",
+      locale: "fr",
+      outcome: "cancelled",
+    }).text;
+
+    expect(french).toContain("il se renouvelle jusque-là");
+    expect(french).not.toContain("plus rien n’est prélevé");
+  });
+
   it("acknowledges a cancellation with when it came and what it said, in the reader's language", () => {
     const { subject, text } = cancellationAcknowledged("fr", "confirm");
 

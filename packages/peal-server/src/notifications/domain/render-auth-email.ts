@@ -1,4 +1,4 @@
-import { Match } from "effect";
+import { DateTime, Match } from "effect";
 
 import type { AuthEmail } from "./auth-email.ts";
 import type { EmailCatalog, EmailMessages } from "./email-catalog.ts";
@@ -76,6 +76,27 @@ type Acknowledged = Extract<
   { readonly _tag: "ContractRequestAcknowledged" }
 >;
 
+// Which words say what became of it: a cancellation that ends on a later
+// day its sender asked for renews until then, and a withdrawal from a
+// contract that charged nothing refunds nothing.
+const outcomeWordsOf = (
+  email: Acknowledged
+): keyof EmailCatalog["contractRequest"]["outcomes"] => {
+  if (
+    email.outcome === "cancelled" &&
+    email.desiredAt !== null &&
+    email.effectiveAt !== null &&
+    DateTime.toEpochMillis(email.desiredAt) ===
+      DateTime.toEpochMillis(email.effectiveAt)
+  ) {
+    return "cancelledLater";
+  }
+
+  return email.outcome === "withdrawn" && email.refunded === null
+    ? "withdrawnUnpaid"
+    : email.outcome;
+};
+
 // A request's acknowledgement: when it came, what it said, what became of
 // it.
 const acknowledgementOf = (
@@ -88,7 +109,7 @@ const acknowledgementOf = (
     words.received[email.kind],
     words.content,
     ...(email.desiredAt === null ? [] : [words.desired]),
-    words.outcomes[email.outcome],
+    words.outcomes[outcomeWordsOf(email)],
     // A cancellation that gives money back: its plan had renewed since.
     ...(email.outcome === "cancelled" && email.refunded !== null
       ? [words.renewalRefunded]

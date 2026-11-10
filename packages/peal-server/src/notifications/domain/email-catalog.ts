@@ -33,15 +33,22 @@ export interface EmailCatalog {
     readonly contractNotGiven: string;
     readonly desired: string;
     readonly ignore: string;
+    /**
+     * `cancelledLater` for a contract that ends on a later day its sender
+     * asked for, and renews until then; `withdrawnUnpaid` for a withdrawal
+     * from a contract that had charged nothing.
+     */
     readonly outcomes: {
       readonly business: string;
       readonly cancelled: string;
+      readonly cancelledLater: string;
       readonly confirm: string;
       readonly expired: string;
       readonly notSubscribed: string;
       readonly nothingToCancel: string;
       readonly review: string;
       readonly withdrawn: string;
+      readonly withdrawnUnpaid: string;
     };
     readonly received: {
       readonly cancellation: string;
