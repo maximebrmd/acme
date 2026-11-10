@@ -25,6 +25,7 @@ import {
   GatedPlatformPublisher,
   UnreadMetrics,
 } from "#publishing/infrastructure/channel-gate.ts";
+import { DrizzleContentFingerprints } from "#publishing/infrastructure/drizzle-content-fingerprints.ts";
 import { DrizzleIdempotencyKeys } from "#publishing/infrastructure/drizzle-idempotency-keys.ts";
 import { DrizzlePlatformQuota } from "#publishing/infrastructure/drizzle-platform-quota.ts";
 import { DrizzlePostOversight } from "#publishing/infrastructure/drizzle-post-oversight.ts";
@@ -97,6 +98,7 @@ export const publishingWith = <
   ).pipe(
     Layer.provideMerge(
       Layer.mergeAll(
+        DrizzleContentFingerprints,
         DrizzleIdempotencyKeys,
         DrizzlePostOversight,
         DrizzlePostRepository,

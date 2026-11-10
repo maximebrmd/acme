@@ -2,12 +2,14 @@ import { Effect, Match, Option } from "effect";
 import type { Schema } from "effect";
 import type { HttpClientError } from "effect/http";
 import type { HttpApiError } from "effect/http-api";
+import { duplicateWindowHours } from "peal-contract";
 import type {
   AlreadyMember,
   AltTextTooLong,
   ChannelCannotPost,
   ChannelNotFound,
   ContentViolation,
+  DuplicatePost,
   Forbidden,
   IdempotencyKeyReused,
   InvalidDateRange,
@@ -59,6 +61,7 @@ export type ApiFailure =
   | AltTextTooLong
   | ChannelCannotPost
   | ChannelNotFound
+  | DuplicatePost
   | Forbidden
   | HttpApiError.BadRequest
   | HttpClientError.HttpClientError
@@ -237,6 +240,16 @@ export const explain =
       ChannelNotFound: () =>
         refused(
           "The workspace has no such channel, or it is not of this platform: peal channels list shows them."
+        ),
+      DuplicatePost: ({ duplicates }) =>
+        refused(
+          `The same content already goes to ${duplicates
+            .map(
+              ({ channelId, postId }) => `channel ${channelId} (post ${postId})`
+            )
+            .join(
+              ", "
+            )}, less than ${String(duplicateWindowHours)} hours from this post's time: nothing was made. If you mean to post it twice, send it again with --allow-duplicate.`
         ),
       Forbidden: () =>
         refused(

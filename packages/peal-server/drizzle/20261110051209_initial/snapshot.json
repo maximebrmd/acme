@@ -2,7 +2,7 @@
   "type": "base",
   "version": "9",
   "dialect": "postgres",
-  "id": "d71aabce-402d-4fc6-8c08-067405f0e006",
+  "id": "e3de5b63-112f-4b0f-8dce-ca136251f281",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
@@ -1979,6 +1979,27 @@
         "index",
         "publishing",
         "post_targets",
+        "post_targets_channel_content"
+      ],
+      "writes": [
+        "s|idx|publishing.post_targets_channel_content",
+        "n|idx|publishing.post_targets_channel_content",
+        "e|idx|publishing.post_targets_channel_content",
+        "n|rel|publishing.post_targets_channel_content"
+      ],
+      "reads": [
+        "n|tbl|publishing.post_targets",
+        "n|sch|publishing",
+        "n|col|publishing.post_targets.channel_id",
+        "n|col|publishing.post_targets.content_digest"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "publishing",
+        "post_targets",
         "post_targets_published"
       ],
       "writes": [
@@ -2033,6 +2054,27 @@
         "n|tbl|publishing.posts",
         "n|sch|publishing",
         "n|col|publishing.posts.scheduled_at"
+      ]
+    },
+    {
+      "statementType": "create_index",
+      "statementTarget": [
+        "index",
+        "publishing",
+        "posts",
+        "posts_workspace_id"
+      ],
+      "writes": [
+        "s|idx|publishing.posts_workspace_id",
+        "n|idx|publishing.posts_workspace_id",
+        "e|idx|publishing.posts_workspace_id",
+        "n|rel|publishing.posts_workspace_id"
+      ],
+      "reads": [
+        "n|tbl|publishing.posts",
+        "n|sch|publishing",
+        "n|col|publishing.posts.workspace_id",
+        "n|col|publishing.posts.id"
       ]
     },
     {
@@ -6719,6 +6761,19 @@
       "type": "uuid",
       "typeSchema": null,
       "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "publishing",
+      "table": "post_targets",
+      "name": "content_digest",
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
       "dimensions": 0,
       "default": null,
       "generated": null,
@@ -11908,6 +11963,34 @@
     {
       "schema": "publishing",
       "table": "post_targets",
+      "name": "post_targets_channel_content",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "channel_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "content_digest",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": "\"content_digest\" IS NOT NULL",
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "publishing",
+      "table": "post_targets",
       "name": "post_targets_published",
       "nameExplicit": true,
       "columns": [
@@ -11977,6 +12060,34 @@
       ],
       "isUnique": false,
       "where": "\"status\" = 'scheduled'",
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "entityType": "indexes"
+    },
+    {
+      "schema": "publishing",
+      "table": "posts",
+      "name": "posts_workspace_id",
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "workspace_id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "id",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
       "with": "",
       "method": "btree",
       "concurrently": false,

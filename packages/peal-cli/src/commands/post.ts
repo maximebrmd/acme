@@ -1,6 +1,7 @@
 import { Array as Arr, Effect, Option, Schema } from "effect";
 import { Argument, Command, Flag } from "effect/cli";
 import {
+  duplicateWindowHours,
   idempotencyKeyLifetimeHours,
   maxIdempotencyKeyLength,
   NewPostSchema,
@@ -150,6 +151,12 @@ const planned = (input: {
 export const post = Command.make(
   "post",
   {
+    allowDuplicate: Flag.Boolean("allow-duplicate").pipe(
+      Flag.withDescription(
+        `Send it even when another post already sends the same text and media to one of these channels less than ${String(duplicateWindowHours)} hours from its time, which is otherwise refused as a post sent twice by mistake.`
+      ),
+      Flag.withDefault(false)
+    ),
     alt: Flag.String("alt").pipe(
       Flag.withMetavar("<text>"),
       Flag.withDescription(
@@ -200,13 +207,18 @@ export const post = Command.make(
   Effect.fn("post")(function* sendPost(input) {
     const { channelIds, options, when } = yield* planned(input);
 
-    const withMedia = (media: readonly MediaAttachment[]) =>
-      checkPost({
+    const withMedia = (media: readonly MediaAttachment[]) => {
+      const written: NewPost = {
         channelIds,
         content: { media, overrides: [], text: input.text },
         options,
         when,
-      });
+      };
+
+      return checkPost(
+        input.allowDuplicate ? { ...written, allowDuplicate: true } : written
+      );
+    };
 
     yield* withMedia([]);
 

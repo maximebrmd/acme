@@ -1,5 +1,9 @@
 import { DateTime, Effect, Option } from "effect";
-import { CurrentMember, defaultDraftPageSize } from "peal-contract";
+import {
+  CurrentMember,
+  defaultDraftPageSize,
+  duplicateWindowHours,
+} from "peal-contract";
 import type { ChannelOptions as ChannelOptionsInput } from "peal-contract";
 
 import { PostTools } from "#app/mcp/posts-tools.ts";
@@ -257,6 +261,17 @@ export const PostToolsLive = PostTools.toLayer(
           const sent = yield* scheduling.send(yield* actor, request).pipe(
             Effect.catchTags({
               ...newPostFailures,
+              DuplicateContent: ({ duplicates }) =>
+                refuse(
+                  `The same content already goes to ${duplicates
+                    .map(
+                      ({ channelId, postId }) =>
+                        `channel ${channelId} (post ${postId})`
+                    )
+                    .join(
+                      ", "
+                    )}, less than ${String(duplicateWindowHours)} hours from this post's time: nothing was made. If the first call's answer was lost, that post is the one it made: read it with get_post. Call again with allowDuplicate: true only when the user means to post the same content twice.`
+                ),
               IdempotencyKeyReused: () =>
                 refuse(
                   "This idempotencyKey was used in the last 24 hours with other arguments: nothing was made. Call again with the first call's exact arguments to get its post, or with a new key for a new post."

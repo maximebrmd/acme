@@ -1,7 +1,8 @@
 import { describe, expect, it } from "@effect/vitest";
-import { Exit, Schema } from "effect";
+import { Duration, Exit, Schema } from "effect";
 import {
   ContentViolationSchema,
+  duplicateWindowHours as contractDuplicateWindowHours,
   maxYouTubeTagsLength as contractMaxTagsLength,
   maxYouTubeTitleLength as contractMaxTitleLength,
   optionsPlatforms as contractOptionsPlatforms,
@@ -13,6 +14,7 @@ import type { ContentViolation as ContractViolation } from "peal-contract";
 import * as ContractText from "peal-contract/post-text";
 
 import type { ContentViolation } from "#publishing/domain/content-violation.ts";
+import { duplicateWindow } from "#publishing/domain/duplicate-window.ts";
 import { maxAltTextLength } from "#publishing/domain/media-attachment.ts";
 import { platformRules } from "#publishing/domain/platform-rules.ts";
 import {
@@ -391,6 +393,14 @@ const options: readonly unknown[] = [
   { platform: "mastodon" },
   { platform: "youtube", title: "A title", unknownOption: true },
 ];
+
+describe("the contract's duplicate window", () => {
+  it("is the server's", () => {
+    expect(Duration.hours(contractDuplicateWindowHours)).toStrictEqual(
+      duplicateWindow
+    );
+  });
+});
 
 describe("the contract's target options", () => {
   it("are the server's, with the same limits", () => {

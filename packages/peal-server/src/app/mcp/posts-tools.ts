@@ -3,6 +3,7 @@ import { Tool, Toolkit } from "effect/ai";
 import {
   CurrentMember,
   DraftPageSchema,
+  duplicateWindowHours,
   idempotencyKeyLifetimeHours,
   maxDraftPageSize,
   maxIdempotencyKeyLength,
@@ -294,9 +295,10 @@ export const CancelPost = Tool.make("cancel_post", {
 
 export const CreatePost = Tool.make("create_post", {
   dependencies: [CurrentMember],
-  description: `Creates a post and sends it in one call: its text, the ready media of the workspace it shows (list_media, import_media), the text it has instead on some channels, the options of the channels whose platform asks for more (YouTube, TikTok), and \`when\`: \`now\`, which publishes within seconds, or \`at\` an instant. ${reachesThePublic} ${refusedWhole} Pass an \`idempotencyKey\` (any text of your choosing, at most ${String(maxIdempotencyKeyLength)} characters, new for each post) so that calling again after a lost answer makes no second post: within ${String(idempotencyKeyLifetimeHours)} hours the same key with the same arguments answers the post the first call made; with other arguments it is refused. ${needsPublishing}`,
+  description: `Creates a post and sends it in one call: its text, the ready media of the workspace it shows (list_media, import_media), the text it has instead on some channels, the options of the channels whose platform asks for more (YouTube, TikTok), and \`when\`: \`now\`, which publishes within seconds, or \`at\` an instant. ${reachesThePublic} ${refusedWhole} Pass an \`idempotencyKey\` (any text of your choosing, at most ${String(maxIdempotencyKeyLength)} characters, new for each post) so that calling again after a lost answer makes no second post: within ${String(idempotencyKeyLifetimeHours)} hours the same key with the same arguments answers the post the first call made; with other arguments it is refused. Apart from keys, a post whose content already goes to one of its channels less than ${String(duplicateWindowHours)} hours from its time is refused, naming the post that has it: pass \`allowDuplicate: true\` only when the user means to post the same twice. ${needsPublishing}`,
   failure: ToolRefused,
   parameters: Schema.Struct({
+    allowDuplicate: NewPostSchema.fields.allowDuplicate,
     channelIds: NewPostSchema.fields.channelIds,
     content: NewPostSchema.fields.content,
     idempotencyKey: Schema.optionalKey(

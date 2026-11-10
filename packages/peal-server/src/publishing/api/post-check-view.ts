@@ -52,6 +52,10 @@ export const validationView = (
 
   return {
     channels: check.channels.map(previewView),
+    duplicates: check.duplicates.map(({ channelId, postId }) => ({
+      channelId,
+      postId,
+    })),
     planLimit: Option.getOrNull(shortfall),
     schedule,
     unknownChannels: [...read.malformedChannels, ...check.unknownChannels],

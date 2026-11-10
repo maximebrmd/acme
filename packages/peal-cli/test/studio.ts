@@ -8,6 +8,7 @@ import {
   CurrentMember,
   CurrentPrincipal,
   Forbidden,
+  DuplicatePost,
   IdempotencyKeyReused,
   InvalidTimeZone,
   InvitationNotFound,
@@ -1294,6 +1295,30 @@ export const studioGroupsLive = (studio: Studio) =>
               payload.content,
               payload.options ?? []
             );
+
+            // The same words to the same channel again, from a post that
+            // still goes out, is a mistake unless meant.
+            const duplicates =
+              payload.allowDuplicate === true
+                ? []
+                : payload.channelIds.flatMap((channelId) =>
+                    before.posts
+                      .filter(
+                        (other) =>
+                          other.status !== "draft" &&
+                          other.status !== "cancelled" &&
+                          other.content.text === payload.content.text &&
+                          other.targets.some(
+                            (target) => target.channelId === channelId
+                          )
+                      )
+                      .slice(0, 1)
+                      .map((other) => ({ channelId, postId: other.id }))
+                  );
+
+            if (duplicates.length > 0) {
+              return yield* new DuplicatePost({ duplicates });
+            }
 
             const id = nextId("d", before.posts.length);
 

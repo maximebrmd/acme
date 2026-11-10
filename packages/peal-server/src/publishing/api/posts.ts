@@ -4,6 +4,7 @@ import {
   Api,
   CurrentMember,
   defaultDraftPageSize,
+  DuplicatePost,
   Forbidden,
   IdempotencyKeyReused,
   InvalidTimeRange,
@@ -22,6 +23,7 @@ import { PostFollowUp } from "#publishing/application/post-follow-up.ts";
 import type { Confirmation } from "#publishing/application/post-follow-up.ts";
 import { PostQueries } from "#publishing/application/post-queries.ts";
 import { PostScheduling } from "#publishing/application/post-scheduling.ts";
+import type { DuplicateContent } from "#publishing/domain/duplicate-content.ts";
 import type { InvalidPostTransition } from "#publishing/domain/invalid-post-transition.ts";
 import type { InvalidTargetTransition } from "#publishing/domain/invalid-target-transition.ts";
 import type { PostContentRejected } from "#publishing/domain/post-content-rejected.ts";
@@ -65,6 +67,16 @@ const unknownMedia = ({ mediaIds }: { readonly mediaIds: readonly string[] }) =>
   Effect.fail(new UnknownMedia({ mediaIds }));
 
 const inPast = () => Effect.fail(new ScheduleInPast());
+
+const duplicate = ({ duplicates }: DuplicateContent) =>
+  Effect.fail(
+    new DuplicatePost({
+      duplicates: duplicates.map(({ channelId, postId }) => ({
+        channelId,
+        postId,
+      })),
+    })
+  );
 
 const targetConflict = ({ from }: InvalidTargetTransition) =>
   Effect.fail(new TargetStatusConflict({ status: from }));
@@ -321,6 +333,7 @@ export const PostsHandlers = HttpApiBuilder.group(
           const sent = yield* scheduling.send(actor, request).pipe(
             Effect.catchTags({
               DatabaseError: Effect.die,
+              DuplicateContent: duplicate,
               IdempotencyKeyReused: () =>
                 Effect.fail(new IdempotencyKeyReused()),
               MissingPermission: forbidden,

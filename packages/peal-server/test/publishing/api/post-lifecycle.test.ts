@@ -4,6 +4,7 @@ import { HttpServer } from "effect/http";
 import { HttpApiTest } from "effect/http-api";
 import {
   Api,
+  DuplicatePost,
   Forbidden,
   PostNotFound,
   PostStatusConflict,
@@ -512,6 +513,30 @@ describe("the send endpoint", () => {
             .pipe(Effect.flip);
 
           assert.strictEqual(zone._tag, "InvalidTimeZone");
+
+          // The same post under no key, as a client that kept none sends
+          // it again: refused, naming the post that has its content.
+          const twice = yield* editor.posts
+            .send({ headers: {}, params, payload })
+            .pipe(Effect.flip);
+
+          assert.instanceOf(twice, DuplicatePost);
+          assert.deepStrictEqual(twice.duplicates, [
+            { channelId, postId: sent.id },
+          ]);
+
+          // Unless it is meant.
+          const meant = yield* editor.posts.send({
+            headers: {},
+            params,
+            payload: { ...payload, allowDuplicate: true },
+          });
+
+          assert.notStrictEqual(meant.id, sent.id);
+
+          yield* editor.posts.cancel({
+            params: { ...params, postId: meant.id },
+          });
 
           const denied = yield* contributor.posts
             .send({ headers: {}, params, payload })

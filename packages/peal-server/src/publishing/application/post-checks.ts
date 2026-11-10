@@ -4,6 +4,11 @@ import type { ChannelOptions } from "#publishing/domain/channel-options.ts";
 import { channelOf, previewOn } from "#publishing/domain/channel-preview.ts";
 import type { ChannelPreview } from "#publishing/domain/channel-preview.ts";
 import type { ContentViolation } from "#publishing/domain/content-violation.ts";
+import {
+  contentOn,
+  duplicateRange,
+} from "#publishing/domain/duplicate-window.ts";
+import type { Duplicate } from "#publishing/domain/duplicate-window.ts";
 import type { PostContent } from "#publishing/domain/post-content.ts";
 import { scheduleGrace } from "#publishing/domain/post.ts";
 import { postingMonthOf } from "#publishing/domain/posting-month.ts";
@@ -21,6 +26,7 @@ import type { PlanLimitReached } from "#shared/domain/plan-limit-reached.ts";
 
 import type { AccountRules } from "./account-rules.ts";
 import { AttachableMedia } from "./attachable-media.ts";
+import { ContentFingerprints } from "./content-fingerprints.ts";
 import { PostAllowance } from "./post-allowance.ts";
 import { PostRepository } from "./post-repository.ts";
 import { violationsOf } from "./publishability.ts";
@@ -28,6 +34,8 @@ import { WorkspaceChannels } from "./workspace-channels.ts";
 
 /** A post to check: what `send` takes, or a draft, which has no time. */
 export interface CheckPostRequest {
+  /** True when the same content may go to a channel that has it. */
+  readonly allowDuplicate?: boolean;
   readonly channelIds: readonly ChannelId[];
   readonly content: PostContent;
   // The options it has on some channels, one at most per channel.
@@ -43,6 +51,11 @@ export interface CheckPostRequest {
 export interface PostCheck {
   /** One per channel of the workspace it names, in the order given. */
   readonly channels: readonly ChannelPreview[];
+  /**
+   * The channels that already have the same content from another post
+   * near its time, when it has one and does not allow them.
+   */
+  readonly duplicates: readonly Duplicate[];
   /** The limit of the plan it would pass, when it has a time. */
   readonly planLimit: Option.Option<PlanLimitReached>;
   /** Whether its time can be kept, when it has one. */
@@ -58,6 +71,7 @@ export const isSendable = (check: PostCheck): boolean =>
   check.violations.length === 0 &&
   check.unknownChannels.length === 0 &&
   check.unknownMedia.length === 0 &&
+  check.duplicates.length === 0 &&
   check.channels.every(({ violations }) => violations.length === 0) &&
   Option.isNone(check.planLimit) &&
   !Option.contains(check.schedule, "inPast");
@@ -65,6 +79,7 @@ export const isSendable = (check: PostCheck): boolean =>
 type Ports =
   | AccountRules
   | AttachableMedia
+  | ContentFingerprints
   | PostAllowance
   | PostRepository
   | WorkspaceChannels;
@@ -94,6 +109,7 @@ export class PostChecks extends Context.Service<
       const allowance = yield* PostAllowance;
       const workspaceChannels = yield* WorkspaceChannels;
       const attachable = yield* AttachableMedia;
+      const fingerprints = yield* ContentFingerprints;
       const ports = yield* Effect.context<Ports>();
 
       // The first limit of the plan a post at `at` would pass, as
@@ -139,7 +155,13 @@ export class PostChecks extends Context.Service<
 
       const check = Effect.fn("PostChecks.check")(function* check(
         actor: Actor,
-        { channelIds, content, options = [], when }: CheckPostRequest
+        {
+          allowDuplicate = false,
+          channelIds,
+          content,
+          options = [],
+          when,
+        }: CheckPostRequest
       ) {
         yield* Effect.fromResult(authorize(actor, "post:read"));
 
@@ -211,6 +233,24 @@ export class PostChecks extends Context.Service<
           onSome: (instant) => planLimitAt(actor.workspaceId, instant),
         });
 
+        // Read without a transaction, so nothing is held: as the plan's
+        // room, it says how things stand now.
+        const duplicates = yield* Option.match(at, {
+          onNone: () => Effect.succeed([]),
+          onSome: (instant) =>
+            allowDuplicate
+              ? Effect.succeed([])
+              : fingerprints.duplicatesOf({
+                  ...duplicateRange(instant),
+                  contents: channels.map(({ channelId }) => ({
+                    channelId,
+                    content: contentOn(content, channelId),
+                  })),
+                  except: Option.none(),
+                  workspaceId: actor.workspaceId,
+                }),
+        });
+
         const checked: PostCheck = {
           channels: channels.map((channel) =>
             previewOn(
@@ -221,6 +261,7 @@ export class PostChecks extends Context.Service<
               )
             )
           ),
+          duplicates,
           planLimit,
           schedule,
           unknownChannels,

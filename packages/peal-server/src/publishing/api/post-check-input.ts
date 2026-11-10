@@ -54,6 +54,7 @@ export const checkRequestFrom = (input: CheckInput) =>
         .map(({ mediaId }) => mediaId)
         .filter((mediaId) => !isMediaId(mediaId)),
       request: {
+        allowDuplicate: input.allowDuplicate ?? false,
         channelIds: yield* decodeChannelIds(
           input.channelIds.filter(isChannelId)
         ),

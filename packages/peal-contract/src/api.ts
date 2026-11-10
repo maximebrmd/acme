@@ -533,6 +533,14 @@ export type { PostStatus } from "./post-status.ts";
 export { IdempotencyKeyReused } from "./idempotency-key-reused.ts";
 
 export {
+  DuplicateOnChannelSchema,
+  DuplicatePost,
+  duplicateWindowHours,
+} from "./duplicate-post.ts";
+
+export type { DuplicateOnChannel } from "./duplicate-post.ts";
+
+export {
   ChannelPreviewSchema,
   LimitedCountSchema,
   PlanShortfallSchema,

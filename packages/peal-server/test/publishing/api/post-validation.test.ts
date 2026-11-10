@@ -77,6 +77,7 @@ describe("the validate endpoint", () => {
                 violations: [],
               },
             ],
+            duplicates: [],
             planLimit: null,
             schedule: "ok",
             unknownChannels: [],
