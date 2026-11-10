@@ -75,6 +75,7 @@ const onStarter: Billing = {
   subscription: {
     cancelAtPeriodEnd: false,
     currentPeriodEnd: DateTime.makeUnsafe("2026-12-09T10:00:00Z"),
+    endsAt: null,
     interval: "month",
     plan: "starter",
     startedAt: DateTime.makeUnsafe("2026-11-09T10:00:00Z"),

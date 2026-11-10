@@ -2,7 +2,7 @@
   "type": "base",
   "version": "9",
   "dialect": "postgres",
-  "id": "64da63ee-59f9-4781-b42b-18a1e42f49cd",
+  "id": "c528d1cf-b61a-4675-93d3-6091413c0f61",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
@@ -4383,6 +4383,19 @@
       "type": "timestamp with time zone",
       "typeSchema": null,
       "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "entityType": "columns"
+    },
+    {
+      "schema": "billing",
+      "table": "subscriptions",
+      "name": "cancel_at",
+      "type": "timestamp with time zone",
+      "typeSchema": null,
+      "notNull": false,
       "dimensions": 0,
       "default": null,
       "generated": null,

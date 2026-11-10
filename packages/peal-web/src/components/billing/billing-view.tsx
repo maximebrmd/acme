@@ -167,7 +167,8 @@ const SubscriptionLines = ({
   if (subscription.status === "trialing" && subscription.trialEnd !== null) {
     lines.push(t("trialEnds", { date: dateIn(subscription.trialEnd) }));
   } else if (subscription.currentPeriodEnd !== null) {
-    const date = dateIn(subscription.currentPeriodEnd);
+    // Cancelled for a later day, it ends then, not with this period.
+    const date = dateIn(subscription.endsAt ?? subscription.currentPeriodEnd);
 
     lines.push(
       subscription.cancelAtPeriodEnd

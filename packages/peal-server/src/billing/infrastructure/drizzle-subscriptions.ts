@@ -64,6 +64,7 @@ const storedStage = sql`case ${subscriptions.status} ${sql.join(
 
 const toSubscription = (row: Row) =>
   decodeSubscription({
+    cancelAt: instantOf(row.cancelAt),
     cancelAtPeriodEnd: row.cancelAtPeriodEnd,
     currentPeriodEnd: instantOf(row.currentPeriodEnd),
     currentPeriodStart: instantOf(row.currentPeriodStart),
@@ -242,6 +243,7 @@ export const DrizzleSubscriptionsLive = Layer.effect(
       const { subscription } = change;
 
       const values = {
+        cancelAt: dateOf(subscription.cancelAt),
         cancelAtPeriodEnd: subscription.cancelAtPeriodEnd,
         currentPeriodEnd: dateOf(subscription.currentPeriodEnd),
         currentPeriodStart: dateOf(subscription.currentPeriodStart),
@@ -282,6 +284,7 @@ export const DrizzleSubscriptionsLive = Layer.effect(
         .values(values)
         .onConflictDoUpdate({
           set: {
+            cancelAt: sql`excluded.cancel_at`,
             cancelAtPeriodEnd: sql`excluded.cancel_at_period_end`,
             currentPeriodEnd: sql`excluded.current_period_end`,
             currentPeriodStart: sql`excluded.current_period_start`,

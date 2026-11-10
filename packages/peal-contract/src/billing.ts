@@ -65,6 +65,9 @@ export const BillingSubscriptionSchema = Schema.Struct({
   cancelAtPeriodEnd: Schema.Boolean,
   // When the period paid for ends: the next payment, or the end.
   currentPeriodEnd: Schema.NullOr(Schema.DateTimeUtc),
+  // When it ends, once it is set to end: with the period paid for, or on
+  // the later day its cancellation asked for. Null while it renews.
+  endsAt: Schema.NullOr(Schema.DateTimeUtc),
   // How often it is paid for.
   interval: BillingIntervalSchema,
   plan: PaidPlanSchema,

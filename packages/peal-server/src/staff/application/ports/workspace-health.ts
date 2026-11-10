@@ -15,6 +15,8 @@ import type { Platform } from "#shared/domain/platform.ts";
 export interface StaffSubscription {
   readonly cancelAtPeriodEnd: boolean;
   readonly currentPeriodEnd: Option.Option<DateTime.Utc>;
+  /** When it ends, once it is set to end. */
+  readonly endsAt: Option.Option<DateTime.Utc>;
   readonly interval: "month" | "year";
   readonly plan: PaidPlan;
   readonly startedAt: Option.Option<DateTime.Utc>;

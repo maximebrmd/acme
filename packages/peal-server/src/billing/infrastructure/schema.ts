@@ -31,6 +31,8 @@ const instant = (name: string) => timestamp(name, { withTimezone: true });
 export const subscriptions = billing.table(
   "subscriptions",
   {
+    // When Stripe is set to end it, when on a day of its own.
+    cancelAt: instant("cancel_at"),
     cancelAtPeriodEnd: boolean("cancel_at_period_end").notNull(),
     currentPeriodEnd: instant("current_period_end"),
     currentPeriodStart: instant("current_period_start"),

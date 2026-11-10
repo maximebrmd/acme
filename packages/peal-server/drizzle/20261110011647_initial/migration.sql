@@ -126,6 +126,7 @@ CREATE TABLE "billing"."stripe_events" (
 );
 --> statement-breakpoint
 CREATE TABLE "billing"."subscriptions" (
+	"cancel_at" timestamp with time zone,
 	"cancel_at_period_end" boolean NOT NULL,
 	"current_period_end" timestamp with time zone,
 	"current_period_start" timestamp with time zone,
