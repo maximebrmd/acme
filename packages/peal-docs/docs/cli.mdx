@@ -231,9 +231,15 @@ An agent that runs commands rather than MCP tools works the same way: [Posting f
 peal analytics summary                                     # the last 30 days, today included
 peal analytics summary --from 2026-10-01 --to 2026-10-31 --time-zone Europe/Paris
 peal analytics post <post-id>
+peal analytics dashboard --days 7                          # against the 7 days before
+peal analytics channel <channel-id> --days 30
+peal analytics export posts --output posts.csv --from 2026-10-01 --to 2026-10-31
+peal analytics export accounts --format json --output accounts.ndjson
 ```
 
 `peal analytics summary` adds up the counts of the posts published over a range of days: in all, by channel, and the posts people did the most with. Days run in `--time-zone`, an IANA zone such as `Europe/Paris`; without it, in `TZ`, then in your computer's zone. `peal analytics post` prints a post's latest counts on each channel it went out on. A dash stands for a count the platform does not give. See [Analytics](/analytics).
+
+`peal analytics dashboard` shows a range beside the same number of days before it: each total with what changed, followers with what they gained, each channel, and the top posts. `peal analytics channel` prints one channel day by day: followers, following, views, reach, and the interactions its posts gained. Both take `--days 7`, `30` or `90` (30 unless said), or `--from` and `--to`. `peal analytics export posts` or `accounts` saves the figures to the file `--output` names, as CSV or, with `--format json`, one JSON object a line; it replaces no file.
 
 ## Billing [#billing]
 
