@@ -1,4 +1,4 @@
-import { and, asc, eq, gte } from "drizzle-orm";
+import { and, asc, count, eq, gte } from "drizzle-orm";
 import { DateTime, Effect, Layer, Option, Schema } from "effect";
 import { SqlClient } from "effect/sql";
 
@@ -101,13 +101,47 @@ export const DrizzlePartnerStore = Layer.effect(
           Effect.flatMap(Effect.forEach(toPartner))
         ),
       closeOf: (workspaceId) =>
-        db
-          .delete(partners)
-          .where(eq(partners.workspaceId, workspaceId))
-          .returning({ id: partners.id })
+        client
+          .withTransaction(
+            Effect.gen(function* closeOf() {
+              const [account] = yield* db
+                .select({ id: partners.id })
+                .from(partners)
+                .where(eq(partners.workspaceId, workspaceId))
+                .limit(1)
+                .pipe(Effect.mapError(failed));
+
+              if (account === undefined) {
+                return 0;
+              }
+
+              // The partner's hold, as CustomerWorkspaces takes it.
+              yield* client`SELECT pg_advisory_xact_lock(hashtext('peal-server/workspace/partner'), hashtext(${account.id}))`.pipe(
+                Effect.mapError(failed)
+              );
+
+              const [owned] = yield* db
+                .select({ total: count() })
+                .from(partnerWorkspaces)
+                .where(eq(partnerWorkspaces.partnerId, account.id))
+                .pipe(Effect.mapError(failed));
+
+              if (owned !== undefined && owned.total > 0) {
+                return owned.total;
+              }
+
+              yield* db
+                .delete(partners)
+                .where(eq(partners.id, account.id))
+                .pipe(Effect.mapError(failed));
+
+              return 0;
+            })
+          )
           .pipe(
-            Effect.mapError(failed),
-            Effect.map((rows) => rows.length > 0)
+            Effect.catchTag("SqlError", (failure) =>
+              Effect.fail(failed(failure))
+            )
           ),
       get: (partnerId) =>
         db

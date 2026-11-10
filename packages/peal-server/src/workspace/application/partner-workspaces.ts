@@ -169,6 +169,7 @@ export class PartnerWorkspaces extends Context.Service<
       | ExternalIdTaken
       | InvalidWorkspaceDetails
       | MissingPartnerScope
+      | PartnerNotFound
     >;
     readonly get: (
       key: PartnerKeyPrincipal,
@@ -406,6 +407,15 @@ export class PartnerWorkspaces extends Context.Service<
 
         return yield* transaction(
           Effect.gen(function* creating() {
+            // Under the partner's hold, which closing the account takes
+            // too: the workspace is made for an account that is there, or
+            // not at all.
+            yield* workspaces.hold(key.partnerId);
+
+            if (Option.isNone(yield* partners.get(key.partnerId))) {
+              return yield* new PartnerNotFound();
+            }
+
             const workspace = yield* workspaces.create({
               createdAt: now,
               externalId: Option.flatten(externalId),

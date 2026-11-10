@@ -796,6 +796,47 @@ layer(SelfServiceLive, { excludeTestServices: true, timeout: "180 seconds" })(
         })
     );
 
+    it.effect(
+      "make a customer's workspace or close the account, one after the other, never an error of the server's",
+      () =>
+        Effect.gen(function* together() {
+          const app = yield* TestApp;
+
+          // Sent together, one of them comes first: the workspace is made
+          // and the account stays (409), or the account closes and its
+          // key makes nothing.
+          for (let round = 0; round < 6; round += 1) {
+            const { home, owner } = yield* partnerOf(
+              `together${String(round)}`
+            );
+
+            const { key } = yield* keyOf(owner, home);
+
+            const [made, closed] = yield* Effect.all(
+              [
+                app.request("/api/partner/workspaces", {
+                  body: { name: "Sent together" },
+                  headers: bearer(key),
+                }),
+                app.request(`/api/workspaces/${home}/partner`, {
+                  headers: { cookie: owner.cookies },
+                  method: "DELETE",
+                }),
+              ],
+              { concurrency: 2 }
+            );
+
+            assert.isBelow(made.status, 500, `create, round ${String(round)}`);
+            assert.isBelow(closed.status, 500, `close, round ${String(round)}`);
+            assert.notStrictEqual(
+              made.status === 201,
+              closed.status === 204,
+              `round ${String(round)}: ${String(made.status)} and ${String(closed.status)}`
+            );
+          }
+        })
+    );
+
     it.effect("hold a partner key to its scopes and permissions", () =>
       Effect.gen(function* scopes() {
         const app = yield* TestApp;

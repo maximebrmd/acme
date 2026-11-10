@@ -309,9 +309,16 @@ export class PartnerAccounts extends Context.Service<
           });
         }
 
-        // The store refuses too, should a workspace be created meanwhile:
-        // its rows refer to the account.
-        yield* partners.closeOf(actor.workspaceId);
+        // Counted again as it is deleted, under the partner's hold: a
+        // workspace made for it meanwhile keeps the account.
+        const made = yield* partners.closeOf(actor.workspaceId);
+
+        if (made > 0) {
+          yield* new PartnerOwnsWorkspaces({
+            owned: made,
+            workspaceId: actor.workspaceId,
+          });
+        }
       });
 
       return PartnerAccounts.of({ change, close, grant, open, standing });

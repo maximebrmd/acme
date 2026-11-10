@@ -141,6 +141,7 @@ export const PartnerHandlers = HttpApiBuilder.group(
                 InvalidWorkspaceDetails: ({ field }) =>
                   Effect.fail(new PartnerDetailsInvalid({ field })),
                 MissingPartnerScope: withoutScope,
+                PartnerNotFound: forbidden,
               })
             );
 

@@ -39,13 +39,16 @@ export class PartnerStore extends Context.Service<
     /** Saves the account's name, logo and return origins. */
     readonly save: (partner: Partner) => Effect.Effect<void, DatabaseError>;
     /**
-     * Deletes the account of this home workspace with its keys, in the
-     * caller's transaction. Says whether there was one. It must own no
-     * workspace any more.
+     * Deletes the account of this home workspace with its keys, unless it
+     * owns workspaces, and says how many it owns: none once it is closed,
+     * or when there was no account. Counted and deleted in one
+     * transaction, under the partner's hold (`CustomerWorkspaces.hold`),
+     * so a workspace made for it meanwhile is counted, or waits and finds
+     * the account gone.
      */
     readonly closeOf: (
       workspaceId: WorkspaceId
-    ) => Effect.Effect<boolean, DatabaseError>;
+    ) => Effect.Effect<number, DatabaseError>;
     readonly keys: (
       partnerId: PartnerId
     ) => Effect.Effect<readonly PartnerKey[], DatabaseError>;
