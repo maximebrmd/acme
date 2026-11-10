@@ -691,3 +691,22 @@ export class Api extends HttpApi.make("peal")
       title: "Peal API",
     })
   ) {}
+
+export {
+  complaintRight,
+  dataRights,
+  processingLocales,
+  processingRegister,
+  recipientCategories,
+  retentionPeriods,
+  retentionTable,
+} from "./data-processing.ts";
+
+export type {
+  DataRight,
+  ProcessingCategory,
+  ProcessingCondition,
+  ProcessingLocale,
+  ProcessingText,
+  RecipientCategory,
+} from "./data-processing.ts";

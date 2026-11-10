@@ -48,6 +48,7 @@ import { DrizzleImpersonationSessions } from "#workspace/infrastructure/drizzle-
 import { MemberDirectoryLive } from "#workspace/infrastructure/drizzle-member-directory.ts";
 import { WorkspaceRosterLive } from "#workspace/infrastructure/drizzle-workspace-roster.ts";
 import { EmailedAccountMail } from "#workspace/infrastructure/emailed-account-mail.ts";
+import { PrivacyDeclarationLive } from "#workspace/infrastructure/privacy-declaration-file.ts";
 import { StaffImpersonationLog } from "#workspace/infrastructure/staff-impersonation-log.ts";
 
 const AdaptersLive = Layer.mergeAll(
@@ -136,7 +137,8 @@ export const WorkspaceSettingsLive = Layer.mergeAll(
       DrizzleAccountStore,
       DrizzleConnectedAppStore,
       EmailedAccountMail,
-      PasswordCheckLive
+      PasswordCheckLive,
+      PrivacyDeclarationLive
     )
   )
 );

@@ -20,6 +20,7 @@ import { AccountData } from "#workspace/application/account-data.ts";
 import type { AccountExport } from "#workspace/application/account-data.ts";
 import { CloseAccount } from "#workspace/application/close-account.ts";
 
+import { aboutOf } from "./about.ts";
 import { currentUser } from "./connected-apps.ts";
 import { subscribedOf } from "./subscribed.ts";
 
@@ -78,6 +79,12 @@ const viewOf = Effect.fn("AccountExport.view")(function* viewOf(
   );
 
   const view: AccountExportView = {
+    about: aboutOf({
+      bills: exported.bills,
+      declaration: exported.declaration,
+      legalRetention: exported.legalHold !== null,
+      locale: account.user.locale,
+    }),
     authoredPosts,
     connectedApps: exported.connectedApps,
     contracts: exported.contracts,

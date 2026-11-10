@@ -314,14 +314,28 @@ Définissez alors `PEAL_LEGAL_RETENTION=true`. Ne pas conserver ces données est
 
 **Ce qu’elle conserve**, dans le schéma `legal`, que rien d’autre dans le serveur ne lit :
 
-- chaque requête qui crée, modifie ou supprime des publications ou des médias, depuis l’application web, une clé d’API, la ligne de commande ou un client MCP : quand, depuis quelle adresse (lue comme la connexion la lit, depuis `AUTH_IP_HEADERS`), par quel protocole et avec quel moyen de connexion, conservée 1 an. Jamais ce que la requête contenait ;
-- à la fermeture d’un compte, les nom et adresse e-mail de son titulaire, conservés 5 ans, et ses moyens de connexion (l’identifiant de chaque méthode de connexion, jamais le mot de passe ni son empreinte) et ses clients Stripe, conservés 1 an.
+- chaque requête qui crée, modifie ou supprime des publications ou des médias, depuis l’application web, une clé d’API, la ligne de commande ou un client MCP : quand, depuis quelle adresse (lue comme la connexion la lit, depuis `AUTH_IP_HEADERS`), par quel protocole et avec quel moyen de connexion, conservée {{keep-legal-connections-fr}}. Jamais ce que la requête contenait ;
+- à la fermeture d’un compte, les nom et adresse e-mail de son titulaire, conservés {{keep-legal-identity-fr}}, et ses moyens de connexion (l’identifiant de chaque méthode de connexion, jamais le mot de passe ni son empreinte) et ses clients Stripe, conservés {{keep-legal-account-fr}}.
 
-Une tâche quotidienne (`legal.retention`, à 03 h 47 UTC) supprime chaque donnée une fois sa durée écoulée. L’équipe ne lit ces données qu’en répondant à une réquisition dans la [console de l’équipe](/staff#legal-requests), et chaque réponse est consignée et conservée 5 ans. L’export de chaque utilisateur liste ses connexions et ce que la fermeture de son compte laisserait. Votre propre politique de confidentialité doit dire que vous les conservez.
+Une tâche quotidienne (`legal.retention`, à 03 h 47 UTC) supprime chaque donnée une fois sa durée écoulée. L’équipe ne lit ces données qu’en répondant à une réquisition dans la [console de l’équipe](/staff#legal-requests), et chaque réponse est consignée et conservée {{keep-legal-disclosures-fr}}. L’export de chaque utilisateur liste ses connexions et ce que la fermeture de son compte laisserait. Votre propre politique de confidentialité doit dire que vous les conservez.
 
 **Désactivée**, le serveur n’écrit rien dans le schéma `legal`, et la fermeture d’un compte efface tout.
 
 **La désactiver après l’avoir activée** ne conserve plus rien de nouveau, et ne supprime rien sur-le-champ : ce que le serveur détient déjà reste jusqu’à son terme, puisque la loi vous imposait de le conserver aussi longtemps, et la tâche quotidienne continue de le supprimer. D’ici là, l’équipe dotée du rôle juridique peut encore répondre à une réquisition qui le concerne, et l’export de chaque utilisateur liste encore les connexions conservées à son sujet.
+
+## Déclaration de confidentialité [#privacy-declaration]
+
+Chaque utilisateur peut télécharger une copie de ses données (**Compte**, **Vos données**, ou `peal account export`). Elle s’accompagne de ce que le RGPD, article 15, impose au responsable de traitement d’indiquer : pour chaque catégorie de données, sa finalité, sa base légale, sa durée de conservation et son origine ; qui la reçoit ; et les droits qui s’y attachent. Peal en écrit l’essentiel à partir d’un registre unique dans son code, d’où vient aussi le tableau des durées de sa propre politique de confidentialité : les deux ne peuvent pas diverger.
+
+Ce qui dépend de vous, Peal ne peut pas le savoir, et ne le devine jamais. Déclarez-le dans un fichier JSON, comme le montre `self-host/privacy-declaration.example.json`, et nommez ce fichier avec `PEAL_PRIVACY_DECLARATION` (la pile Compose le monte ; un serveur lancé autrement lit `PEAL_PRIVACY_DECLARATION_FILE`) :
+
+- `controller` : qui décide des finalités du traitement, c’est-à-dire vous : `name`, et si vous le souhaitez `address`, `contact` (où adresser les demandes) et `dataProtectionOfficer` ;
+- `policyUrl` : l’adresse de votre politique de confidentialité ;
+- `supervisoryAuthority` : l’autorité de protection des données dont vous relevez, `name` et `url` ;
+- `recipients` : chaque prestataire qui traite pour vous les données de vos utilisateurs (hébergement, stockage des médias, e-mail, paiements, protection contre les robots, IA, alertes), avec son `name`, le `service` rendu, le `country` où il traite les données, et le `safeguard` d’un transfert hors de l’Espace économique européen, ou `null` ;
+- `retention` : seulement si vous exploitez une autre pile que celle de ce dépôt, la durée pendant laquelle la vôtre conserve `technicalLogs` et `backups`, en anglais (`en`) et en français (`fr`). Le registre indique sinon celles de la pile de production : journaux {{keep-logs-fr}}, traces {{keep-traces-fr}}, métriques {{keep-metrics-fr}}, et données supprimées disparues des sauvegardes sous {{keep-backups-fr}}.
+
+Chaque partie est facultative. Ce que vous omettez apparaît comme non déclaré dans chaque export, qui en dit alors moins aux utilisateurs que ce que la loi vous impose : renseignez-le avant d’ouvrir votre serveur à d’autres. Le serveur lit le fichier au démarrage, et s’arrête s’il ne peut pas le lire.
 
 ## Télémétrie [#telemetry]
 

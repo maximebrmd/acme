@@ -35,10 +35,12 @@ import { ConnectedApps } from "#workspace/application/connected-apps.ts";
 import { ContextRecords } from "#workspace/application/context-records.ts";
 import { DeleteWorkspace } from "#workspace/application/delete-workspace.ts";
 import { PasswordCheck } from "#workspace/application/password-check.ts";
+import { PrivacyDeclaration } from "#workspace/application/privacy-declaration.ts";
 import { TooManyPasswordAttempts } from "#workspace/application/too-many-password-attempts.ts";
 import { WorkspaceBusy } from "#workspace/application/workspace-busy.ts";
 import { WorkspaceSubscribed } from "#workspace/application/workspace-subscribed.ts";
 import type { MembershipStanding } from "#workspace/domain/account-closure.ts";
+import { undeclared } from "#workspace/domain/operator-declaration.ts";
 import { permissionsFor } from "#workspace/domain/roles.ts";
 
 // The settings endpoints on their real use cases, over ports kept in memory.
@@ -369,6 +371,22 @@ const PortsLive = Layer.mergeAll(
   Layer.succeed(
     TransactionRunner,
     TransactionRunner.of({ transaction: (effect) => effect })
+  ),
+  // A server that bills, whose operator declared who it is.
+  Layer.succeed(
+    PrivacyDeclaration,
+    PrivacyDeclaration.of({
+      bills: true,
+      declared: {
+        ...undeclared,
+        controller: {
+          address: null,
+          contact: "privacy@example.test",
+          dataProtectionOfficer: null,
+          name: "Synthetic Operator SAS",
+        },
+      },
+    })
   )
 );
 
@@ -650,6 +668,18 @@ layer(Fakes.layer)("the settings endpoints", (it) => {
           `attachment; filename="peal-data-${DateTime.formatIsoDate(body.exportedAt)}.json"`
         );
         assert.strictEqual(body.user.email, "ana@example.test");
+        // With what Article 15(1) lists, in Ana's language, from what the
+        // operator declared.
+        assert.strictEqual(body.about.language, "fr");
+        assert.strictEqual(
+          body.about.controller?.contact,
+          "privacy@example.test"
+        );
+        assert.isNull(body.about.processors);
+        assert.includeMembers(
+          body.about.categories.map(({ id }) => id),
+          ["account", "content", "contracts", "legalConnections"]
+        );
         assert.deepStrictEqual(
           body.workspaces.map(({ assistantUsage, billing, name }) => ({
             assistantUsage,

@@ -125,6 +125,17 @@
          + (peal_runtime_host_settings | dict2items | selectattr('value', 'string')
             | selectattr('value', 'search', "['\r\n]") | map(attribute='key') | list) }}
 
+# Mounted read-only in the server, which runs without privileges: readable
+# by all, as it holds what the privacy policy publishes anyway.
+- name: Write the privacy declaration
+  ansible.builtin.copy:
+    content: "{{ peal_privacy_declaration | to_nice_json }}\n"
+    dest: "{{ peal_root }}/privacy-declaration.json"
+    owner: root
+    group: root
+    mode: "0644"
+  when: not ansible_check_mode or peal_runtime_root.stat.exists
+
 - name: Write the host settings for Compose
   ansible.builtin.template:
     src: host.env.j2

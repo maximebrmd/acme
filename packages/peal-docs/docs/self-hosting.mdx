@@ -314,14 +314,28 @@ Set `PEAL_LEGAL_RETENTION=true` then. Not keeping the data is an offence (the sa
 
 **What it keeps**, in the `legal` schema, which nothing else in the server reads:
 
-- each request that creates, changes or deletes posts or media, through the web app, an API key, the command line or an MCP client: when, from which address (read as sign-in reads it, from `AUTH_IP_HEADERS`), over which protocol and how it signed in, kept 1 year. Never what the request carried;
-- when an account closes, its holder's name and email address, kept 5 years, and how they signed in (each sign-in method's identifier, never the password or its hash) and their Stripe customers, kept 1 year.
+- each request that creates, changes or deletes posts or media, through the web app, an API key, the command line or an MCP client: when, from which address (read as sign-in reads it, from `AUTH_IP_HEADERS`), over which protocol and how it signed in, kept {{keep-legal-connections-en}}. Never what the request carried;
+- when an account closes, its holder's name and email address, kept {{keep-legal-identity-en}}, and how they signed in (each sign-in method's identifier, never the password or its hash) and their Stripe customers, kept {{keep-legal-account-en}}.
 
-A daily job (`legal.retention`, at 03:47 UTC) deletes each record once its time is up. Staff read these records only by answering a legal request in the [staff console](/staff#legal-requests), and each answer is recorded and kept 5 years. Each user's export lists their connections and what closing their account would leave. Your own privacy notice should say that you keep them.
+A daily job (`legal.retention`, at 03:47 UTC) deletes each record once its time is up. Staff read these records only by answering a legal request in the [staff console](/staff#legal-requests), and each answer is recorded and kept {{keep-legal-disclosures-en}}. Each user's export lists their connections and what closing their account would leave. Your own privacy notice should say that you keep them.
 
 **Off**, the server writes nothing to the `legal` schema, and closing an account erases everything.
 
 **Turning it off after it was on** keeps nothing more, and deletes nothing at once: what the server already holds stays until its time is up, as the law had you keep it for that long, and the daily job goes on deleting it. Meanwhile staff with the legal role can still answer a request about it, and each user's export still lists the connections kept about them.
+
+## Privacy declaration [#privacy-declaration]
+
+Each user can download a copy of their data (**Account**, **Your data**, or `peal account export`). With it comes what the GDPR, Article 15, has a controller tell: for each category of data, what it is for, on which legal basis, how long it is kept and where it came from; who receives it; and the rights over it. Peal writes most of it from one registry in its code, which its own privacy policy's retention table is written from too, so the two cannot disagree.
+
+What depends on you, Peal cannot know, and never guesses. Declare it in a JSON file, as `self-host/privacy-declaration.example.json` shows, and name the file with `PEAL_PRIVACY_DECLARATION` (the Compose stack mounts it; a server run another way reads `PEAL_PRIVACY_DECLARATION_FILE`):
+
+- `controller`: who decides what the data is processed for, that is you: `name`, and if you wish `address`, `contact` (where privacy requests go) and `dataProtectionOfficer`;
+- `policyUrl`: where your privacy policy is;
+- `supervisoryAuthority`: the data protection authority you answer to, `name` and `url`;
+- `recipients`: every provider that processes your users' data for you (hosting, media storage, email, payments, bot protection, AI, alerts), each with its `name`, the `service` it gives, the `country` it processes the data in, and the `safeguard` of a transfer outside the European Economic Area, or `null`;
+- `retention`: only if you run another stack than this repository's, how long yours keeps `technicalLogs` and `backups`, in English (`en`) and French (`fr`). The registry otherwise states the production stack's: logs {{keep-logs-en}}, traces {{keep-traces-en}}, metrics {{keep-metrics-en}}, and deleted data gone from backups within {{keep-backups-en}}.
+
+Every part is optional. What you leave out reads as not declared in each export, which then tells users less than the law has you tell them: fill it in before you open your server to others. The server reads the file when it starts, and stops on one it cannot read.
 
 ## Telemetry [#telemetry]
 

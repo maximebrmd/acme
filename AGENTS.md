@@ -540,6 +540,24 @@ and no socket, for tests.
   confirmation is emailed in their language. `PasswordCheck` checks a
   password three times within 10 seconds per account at most, as Better
   Auth's own routes do.
+- The export carries what GDPR Article 15(1) lists (`about`): each
+  category's purposes, legal basis, retention and source, the recipients,
+  the rights and how to exercise them, in the account's language. It is
+  written (`workspace/api/about.ts`) from one registry,
+  `peal-contract/data-processing` (`processingRegister`,
+  `retentionPeriods`), which the privacy policy's retention table
+  (peal-site, en and fr, row for row: `test/privacy-retention.test.ts`),
+  the docs' figures (`{{keep-…}}` variables, `retention-variables.ts`) and
+  the production stack (`peal-docker/test/retention.test.ts`) follow too;
+  `test/workspace/api/data-processing.test.ts` compares each period with
+  the rule that enforces it. Change a period in its rule and the registry
+  together, then the policy's table; a new kind of personal data gets a
+  category there. What only the operator knows (controller, policy URL,
+  sub-processors, supervisory authority, its own logs' and backups'
+  retention) comes from the JSON file `PEAL_PRIVACY_DECLARATION_FILE`
+  names (`PrivacyDeclaration`, `workspace/domain/operator-declaration.ts`),
+  null in the export until declared: never write a provider on a guess,
+  in the software, the policy or `peal_privacy_declaration` (peal-infra).
 - Better Auth is also the OAuth authorization server for the CLI (device
   grant, the `peal-cli` public client registered at startup) and MCP clients
   (authorization code with PKCE, and dynamic registration when
@@ -1694,6 +1712,9 @@ self-hoster needs only Postgres and an S3-compatible store:
   documents in `src/content/legal/<locale>/<document>.md`. Keep a legal
   document `draft: true` (banner and noindex) until legal review approves it,
   and never replace a [bracketed placeholder] with a guess.
+- The privacy policy's retention table is the registry's
+  (`peal-contract/data-processing`), which `nx run peal-site:test` checks
+  in both languages: change the registry, then the table.
 - TypeScript 7 does not read `.astro` files, and `astro check` refuses it: keep
   page logic in typed `.ts` modules and `.astro` files thin. Name files in
   kebab-case.

@@ -40,6 +40,22 @@ def test_peals_servers_keep_what_french_law_has_a_host_keep(rendered: Path, envi
     assert _host_env(rendered, environment)["PEAL_LEGAL_RETENTION"] == "true"
 
 
+@pytest.mark.parametrize("environment", ENVIRONMENTS)
+def test_the_server_reads_the_privacy_declaration_the_role_writes(rendered: Path, environment: str) -> None:
+    host_env = _host_env(rendered, environment)
+
+    assert host_env["PEAL_PRIVACY_DECLARATION"] == f"{settings(environment)['peal_root']}/privacy-declaration.json"
+    written = task("peal_runtime", "Write the privacy declaration")
+    assert written["ansible.builtin.copy"]["dest"] == "{{ peal_root }}/privacy-declaration.json"
+
+
+@pytest.mark.parametrize("environment", ENVIRONMENTS)
+def test_no_provider_is_declared_before_the_owner_confirms_it(environment: str) -> None:
+    """Each user's export repeats the declaration: a provider guessed here
+    would be told to users as a fact."""
+    assert settings(environment)["peal_privacy_declaration"] == {}
+
+
 def test_production_sends_its_heartbeat(rendered: Path) -> None:
     host_env = _host_env(rendered, "production")
 

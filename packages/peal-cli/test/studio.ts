@@ -294,6 +294,16 @@ const cli: ConnectedApp = {
 };
 
 const exported = (exportedAt: DateTime.Utc): AccountExport => ({
+  about: {
+    categories: [],
+    complaint: { authority: null, right: "Synthetic right to complain" },
+    controller: null,
+    language: "en",
+    policyUrl: null,
+    processors: null,
+    recipients: [],
+    rights: [],
+  },
   authoredPosts: [],
   connectedApps: [cli],
   contracts: { orders: [], withdrawals: [] },

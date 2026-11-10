@@ -16,6 +16,12 @@
       },
       "dependsOn": ["typegen"]
     },
+    "test": {
+      "command": "vitest run",
+      "options": {
+        "cwd": "{projectRoot}"
+      }
+    },
     "build": {
       "command": "astro build",
       "options": {

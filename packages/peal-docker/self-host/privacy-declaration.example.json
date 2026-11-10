@@ -1,0 +1,37 @@
+{
+  "controller": {
+    "name": "Example Studio Ltd",
+    "address": "1 Example Street, 00000 Example City",
+    "contact": "privacy@example.com",
+    "dataProtectionOfficer": "dpo@example.com"
+  },
+  "policyUrl": "https://www.example.com/privacy/",
+  "supervisoryAuthority": {
+    "name": "Example Data Protection Authority",
+    "url": "https://authority.example.com/"
+  },
+  "recipients": [
+    {
+      "name": "Example Hosting",
+      "service": "Hosting",
+      "country": "Example country",
+      "safeguard": null
+    },
+    {
+      "name": "Example Mail",
+      "service": "Email delivery",
+      "country": "Example country",
+      "safeguard": "Standard contractual clauses"
+    }
+  ],
+  "retention": {
+    "technicalLogs": {
+      "en": "Server logs 14 days",
+      "fr": "Journaux du serveur 14 jours"
+    },
+    "backups": {
+      "en": "Deleted data leaves the backups within 2 weeks",
+      "fr": "Les données supprimées disparaissent des sauvegardes sous 2 semaines"
+    }
+  }
+}
