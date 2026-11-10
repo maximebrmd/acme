@@ -714,6 +714,67 @@ describe("a workspace where every post waits", () => {
   );
 });
 
+describe("an approval that meets a move of the same post", () => {
+  it.effect(
+    "takes its turn: each ends as one of them alone would, and neither breaks",
+    () =>
+      onReviewServerAt(
+        start,
+        Effect.gen(function* together() {
+          const scheduling = yield* PostScheduling;
+          const review = yield* PostReview;
+          const { channelId, contributor, editor, workspaceId } = yield* team;
+
+          yield* withPolicy(workspaceId, "always");
+
+          // Both lock the post and its request: taken in the same order,
+          // they wait for each other; in opposite orders, the database
+          // would stop one of them.
+          const ends = yield* Effect.forEach(
+            Array.from({ length: 12 }, (_, index) => index),
+            (index) =>
+              Effect.gen(function* pair() {
+                const { post } = yield* scheduling.schedule(contributor, {
+                  channelIds: [channelId],
+                  content: contentOf(
+                    `A synthetic post, number ${String(index)}.`
+                  ),
+                  schedule: at8,
+                });
+
+                const read = yield* shown(post);
+
+                yield* Effect.all(
+                  [
+                    review.approve(editor, post.id, read).pipe(Effect.result),
+                    scheduling
+                      .reschedule(
+                        contributor,
+                        post.id,
+                        scheduleIn("2026-06-15T09:00:00Z")
+                      )
+                      .pipe(Effect.result),
+                  ],
+                  { concurrency: 2 }
+                );
+
+                return yield* statusOf(post.id);
+              }),
+            { concurrency: 4 }
+          );
+
+          // Approved first, it is scheduled, and its move then waits
+          // again; moved first, it waits, and the approval of what was
+          // read still stands for it.
+          for (const status of ends) {
+            assert.include(["scheduled", "awaitingApproval"], status);
+          }
+        })
+      ),
+    timeout
+  );
+});
+
 // A workspace whose members grow past what its plan allows while a post
 // waits: three seats, and as many members as the test says.
 const members = Ref.makeUnsafe(1);

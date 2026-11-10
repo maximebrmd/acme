@@ -95,6 +95,7 @@ export const PublishingReviewedPosts = Layer.effect(
 
     return ReviewedPosts.of({
       get,
+      lock: held.lock,
       release: (workspaceId, postId) =>
         held.release(workspaceId, postId).pipe(
           Effect.map(({ late }) => Option.some({ late })),

@@ -294,6 +294,10 @@ export class ReviewDesk extends Context.Service<
       // The request that waits, when it is the one the reviewer was shown.
       const pendingFor = Effect.fn("ReviewDesk.pendingFor")(
         function* pendingFor(post: ReviewedPost, shown: ShownRequest) {
+          // The post first, then its request: the order scheduling takes
+          // them in.
+          yield* posts.lock(post.workspaceId, post.postId);
+
           const pending = yield* requests.lockPending(
             post.workspaceId,
             post.postId

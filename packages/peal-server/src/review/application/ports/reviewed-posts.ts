@@ -87,6 +87,15 @@ export class ReviewedPosts extends Context.Service<
       postId: PostId
     ) => Effect.Effect<Option.Option<ReviewedPost>, DatabaseError>;
     /**
+     * Holds the post for the caller's transaction. A decision takes the
+     * post before its request, as scheduling does, so an approval and a
+     * move of the same post take turns.
+     */
+    readonly lock: (
+      workspaceId: WorkspaceId,
+      postId: PostId
+    ) => Effect.Effect<void, DatabaseError>;
+    /**
      * Schedules an approved post, in the caller's transaction. In a
      * workspace that holds more than its plan allows, nothing is scheduled
      * (PlanLimitReached): the caller's transaction is undone, and the post

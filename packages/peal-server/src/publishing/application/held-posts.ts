@@ -49,6 +49,16 @@ export class HeldPosts extends Context.Service<
       postId: PostId
     ) => Effect.Effect<PostWithTargets, DatabaseError | PostNotFound>;
     /**
+     * Holds the post for the caller's transaction, before the caller reads
+     * what it decides from: every change to a post takes the post first,
+     * then what hangs on it, so two changes wait for each other rather
+     * than for what the other holds. Nothing for a post that is gone.
+     */
+    readonly lock: (
+      workspaceId: WorkspaceId,
+      postId: PostId
+    ) => Effect.Effect<void, DatabaseError>;
+    /**
      * Schedules an approved post for the time it was asked for, starts its
      * job, and tells PostEvents it is scheduled, in one transaction. Approved after that time, it goes back to draft instead
      * (`late`), and keeps its approval: a member gives it a new time. In a
@@ -94,6 +104,13 @@ export class HeldPosts extends Context.Service<
 
         return { post, targets: yield* posts.targets(postId) };
       });
+
+      const lock = (workspaceId: WorkspaceId, postId: PostId) =>
+        lockInWorkspace(workspaceId, postId).pipe(
+          withPorts,
+          Effect.asVoid,
+          Effect.catchTag("PostNotFound", () => Effect.void)
+        );
 
       const release = Effect.fn("HeldPosts.release")(function* release(
         workspaceId: WorkspaceId,
@@ -179,7 +196,7 @@ export class HeldPosts extends Context.Service<
         );
       });
 
-      return HeldPosts.of({ get, release, sendBack });
+      return HeldPosts.of({ get, lock, release, sendBack });
     })
   );
 }
