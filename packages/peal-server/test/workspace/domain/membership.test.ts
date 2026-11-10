@@ -84,6 +84,9 @@ describe(actorFor, () => {
     assert.notInclude(actor.permissions, "post:publish");
     assert.include(actor.permissions, "post:create");
     assert.include(actor.permissions, "post:update");
+    // Comments are other people's: staff neither read nor answer them.
+    assert.notInclude(actor.permissions, "engagement:read");
+    assert.notInclude(actor.permissions, "engagement:reply");
   });
 
   it("lets an API key act in its own workspace with its own permissions", () => {
