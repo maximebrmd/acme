@@ -1352,6 +1352,13 @@ and no socket, for tests.
   run `nx run peal-server:db:generate`, which writes a migration folder under
   `packages/peal-server/drizzle/`. Commit the folder as drizzle-kit wrote it;
   never edit a migration that has shipped.
+- A query on a hot path (the calendar, a job that scans every workspace)
+  gets its plan read on a database of the size it will meet:
+  `packages/peal-server/scripts/seed-scale.ts` fills an empty, migrated
+  database whose name ends in `scale` with synthetic rows for so many users
+  (10,000 by default: 40,000 channels, 900,000 posts, 2.25 million targets).
+  A job that takes "everything due" pages by cursor and says what it left;
+  it never stops at a fixed count.
 - The server applies pending migrations before it listens, under an advisory
   lock, so servers starting together take turns. `nx run peal-server:db:migrate`
   applies them without starting the server.
