@@ -24,6 +24,16 @@ public readonly record struct SubscribableWebhookEventType : IStringEnum
 
     public static readonly SubscribableWebhookEventType PostCancelled = new(Values.PostCancelled);
 
+    public static readonly SubscribableWebhookEventType PostApprovalRequested = new(
+        Values.PostApprovalRequested
+    );
+
+    public static readonly SubscribableWebhookEventType PostApproved = new(Values.PostApproved);
+
+    public static readonly SubscribableWebhookEventType PostChangesRequested = new(
+        Values.PostChangesRequested
+    );
+
     public static readonly SubscribableWebhookEventType ChannelConnected = new(
         Values.ChannelConnected
     );
@@ -148,6 +158,12 @@ public readonly record struct SubscribableWebhookEventType : IStringEnum
         public const string PostUnconfirmed = "post.unconfirmed";
 
         public const string PostCancelled = "post.cancelled";
+
+        public const string PostApprovalRequested = "post.approval_requested";
+
+        public const string PostApproved = "post.approved";
+
+        public const string PostChangesRequested = "post.changes_requested";
 
         public const string ChannelConnected = "channel.connected";
 

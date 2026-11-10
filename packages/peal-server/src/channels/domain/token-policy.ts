@@ -92,6 +92,18 @@ export const tokenPolicies = {
     lifetime: Option.none(),
     refresh: { _tag: "none" },
   }),
+  // A Business Profile location is reached with a Google grant, whose
+  // tokens live as YouTube's: an hour, refreshed without rotating, when a
+  // post needs it; a location that posts nothing is renewed after 30 days,
+  // so its refresh token is never six months unused.
+  googleBusiness: new TokenPolicy({
+    lifetime: Option.some(Duration.hours(1)),
+    refresh: {
+      _tag: "refreshToken",
+      rotates: false,
+      sweep: { _tag: "keepAlive", unused: Duration.days(30) },
+    },
+  }),
   // Through Facebook Login, an Instagram account publishes with the token
   // of the Page it is linked to, which never expires either.
   instagram: new TokenPolicy({
@@ -115,10 +127,35 @@ export const tokenPolicies = {
     lifetime: Option.some(Duration.days(60)),
     refresh: { _tag: "none" },
   }),
+  // The Community Management API app's tokens last 60 days too. LinkedIn
+  // gives programmatic refresh tokens to approved partners only: one lasts
+  // a year from the sign-in, renewing does not extend it, and it does not
+  // rotate. A page whose sign-in brought one is renewed a week ahead; the
+  // others are reconnected every 60 days, as profiles are.
+  linkedinPage: new TokenPolicy({
+    lifetime: Option.some(Duration.days(60)),
+    refresh: {
+      _tag: "refreshToken",
+      rotates: false,
+      sweep: { _tag: "beforeExpiry", ahead: Duration.days(7) },
+    },
+  }),
   // Tokens never expire; they stop working when the user revokes them.
   mastodon: new TokenPolicy({
     lifetime: Option.none(),
     refresh: { _tag: "none" },
+  }),
+  // Access tokens last 30 days, and the continuous refresh token that
+  // renews them 60, each refresh giving 60 more: the sweep renews a week
+  // ahead, so neither lapses on an account that does not post. The refresh
+  // token an answer brings replaces the one sent.
+  pinterest: new TokenPolicy({
+    lifetime: Option.some(Duration.days(30)),
+    refresh: {
+      _tag: "refreshToken",
+      rotates: true,
+      sweep: { _tag: "beforeExpiry", ahead: Duration.days(7) },
+    },
   }),
   // Long-lived tokens last 60 days, and are renewed once at least a day old.
   threads: new TokenPolicy({

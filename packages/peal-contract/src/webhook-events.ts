@@ -16,6 +16,9 @@ export const SubscribableWebhookEventTypeSchema = Schema.Literals([
   "post.failed",
   "post.unconfirmed",
   "post.cancelled",
+  "post.approval_requested",
+  "post.approved",
+  "post.changes_requested",
   "channel.connected",
   "channel.disconnected",
   "channel.reconnect_needed",
@@ -69,11 +72,25 @@ export const MediaFailureReasonSchema = Schema.Literals([
   "timedOut",
   "tooLarge",
   "toolFailed",
+  // A PDF document of more pages than any platform shows.
+  "tooManyPages",
   // This server has no probe for the file's kind.
   "unavailable",
 ]).annotate({ identifier: "MediaFailureReason" });
 
 export type MediaFailureReason = typeof MediaFailureReasonSchema.Type;
+
+/**
+ * Who decided on a post's approval, by kind only: a member, someone without
+ * an account who came through a review link, or an application.
+ */
+export const WebhookReviewPartySchema = Schema.Literals([
+  "member",
+  "visitor",
+  "application",
+]).annotate({ identifier: "WebhookReviewParty" });
+
+export type WebhookReviewParty = typeof WebhookReviewPartySchema.Type;
 
 const workspace = { workspaceId: Schema.String };
 
@@ -122,7 +139,8 @@ export const WebhookPayloadSchema = Schema.Union([
     }),
     type: Schema.Literal("post.scheduled"),
   }),
-  // A scheduled post was taken back to draft.
+  // A scheduled post, or one that waited for an approval, was taken back
+  // to draft.
   Schema.Struct({
     ...envelope,
     data: Schema.Struct(post),
@@ -170,6 +188,32 @@ export const WebhookPayloadSchema = Schema.Union([
       targets: Schema.Array(WebhookTargetSchema),
     }),
     type: Schema.Literal("post.cancelled"),
+  }),
+  // Someone asked for the post to go out at `scheduledAt`, in a workspace
+  // that asks for approvals: it waits, and no `post.scheduled` is sent
+  // until it is approved.
+  Schema.Struct({
+    ...envelope,
+    data: Schema.Struct({ ...post, scheduledAt: Schema.DateTimeUtc }),
+    type: Schema.Literal("post.approval_requested"),
+  }),
+  // The post was approved. `late` when its time had passed: it is a draft
+  // again, and no `post.scheduled` follows.
+  Schema.Struct({
+    ...envelope,
+    data: Schema.Struct({
+      ...post,
+      by: WebhookReviewPartySchema,
+      late: Schema.Boolean,
+    }),
+    type: Schema.Literal("post.approved"),
+  }),
+  // Changes were asked for: the post is a draft again. What was asked is
+  // a comment, read through the API.
+  Schema.Struct({
+    ...envelope,
+    data: Schema.Struct({ ...post, by: WebhookReviewPartySchema }),
+    type: Schema.Literal("post.changes_requested"),
   }),
   // An account was connected, or, `reconnected`, a channel the workspace
   // had was authorized again.

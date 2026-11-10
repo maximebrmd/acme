@@ -198,6 +198,7 @@ them:
 | `staff`         | the staff console: what staff read and do, and the audit log of it          |
 | `webhooks`      | endpoints, their signing secrets, events, deliveries and the delivery log   |
 | `legal`         | what French law has a host keep, and the legal requests that read it        |
+| `review`        | approval policies, requests and decisions, review links, comments           |
 
 - `domain`: entities and rules on Effect's core (`effect`: Schema, DateTime,
   Data). No HTTP, SQL, cluster, workflow, AI, Drizzle or Better Auth.
@@ -655,14 +656,23 @@ and no socket, for tests.
   `THREADS_APP_ID`/`THREADS_APP_SECRET`, TikTok with
   `TIKTOK_CLIENT_KEY`/`TIKTOK_CLIENT_SECRET` (`oauthClientConfig`'s
   `idSuffix`), YouTube with `YOUTUBE_CLIENT_ID` and `_CLIENT_SECRET` (a
-  Google OAuth client). A platform without its settings is in
+  Google OAuth client), Pinterest with
+  `PINTEREST_APP_ID`/`PINTEREST_APP_SECRET` (its `secretSuffix` too),
+  Google Business Profile with `GOOGLE_BUSINESS_CLIENT_ID` and
+  `_CLIENT_SECRET` (a client of its own: Google gives access to the
+  Business Profile APIs, quotas and reviews by project). A platform
+  without its settings is in
   `unconfigured`. Each declares its `TokenPolicy`, data in
   `channels/domain/token-policy.ts`, which the refresh sweep and the
-  reconnect warnings follow: LinkedIn's tokens are not renewed and expire
-  after 60 days, X's last two hours and rotate on refresh, as TikTok's do
+  reconnect warnings follow: a LinkedIn profile's tokens are not renewed
+  and expire after 60 days, as a company page's do unless its sign-in
+  brought a refresh token (`linkedinPage`: renewed a week ahead), X's last two hours and rotate on refresh, as TikTok's do
   (`expires_in` decides; refresh tokens end 180 days after sign-in),
   Google's last an hour and do not rotate, Threads' and Instagram Login's
-  (`instagramLogin`) last 60 days and renew themselves a week ahead. A
+  (`instagramLogin`) last 60 days and renew themselves a week ahead,
+  Pinterest's last 30 days and are renewed a week ahead, each refresh
+  bringing a refresh token good for 60 days more, which replaces the one
+  sent. A
   refreshable policy's `sweep` renews tokens `beforeExpiry` (`ahead` of it)
   or keeps them alive (`keepAlive`: only once `unused` that long past their
   expiry, the access being renewed when a call needs it, through
@@ -688,6 +698,17 @@ and no socket, for tests.
   channel is deleted and no other channel, in any workspace, connects the
   same account (`ChannelRepository.accountInUse`), waiting 10 seconds at
   most and logging any failure.
+- Pinterest's OAuth names no PKCE either, takes the app's id and secret as
+  Basic credentials, and separates scopes with commas. Its errors are
+  `{ code, message }`, never RFC 6749's: a 401 from the token endpoint
+  refuses the app (the operator's to fix), any other refusal of a refresh
+  the refresh token. Its API revokes tokens of system users only, so the
+  authorizer has no `revoke`. `PINTEREST_SANDBOX=true`
+  (`pinterestHostsConfig`, `#shared/infrastructure/platforms/pinterest-api.ts`)
+  sends the authorizer's, the adapter's, the lookups' and the reader's
+  calls to Pinterest's Sandbox, all an app with Trial access may write to:
+  its tokens work nowhere else, and it takes no video and gives no
+  analytics.
 - `platformRegistrations` (`infrastructure/platforms/platform-addresses.ts`)
   lists every address a platform is given or reads (redirect URIs, Meta's
   data deletion and deauthorize callbacks, Bluesky's documents), from the
@@ -703,6 +724,27 @@ and no socket, for tests.
   through the one registry; the web app's connect forms offer only those.
   Map a platform's own denial codes (LinkedIn's `user_cancelled_*`) to
   `AuthorizationDenied` in `connect-channel.ts`.
+- A channel names the way in it came through on the platforms that have
+  several (`ChannelConnectionSchema`, `#shared/domain/channel-connection.ts`:
+  Instagram's two logins, LinkedIn's `linkedinProfile` and `linkedinPage`);
+  one stored without any came the first way there was (`connectionOf`).
+  The registry answers the authorizer of a platform and connection, and
+  `linkedinConnections` beside `instagramConnections`.
+- LinkedIn has two apps, as LinkedIn grants its Community Management API
+  only to an app with no other product: `LINKEDIN_CLIENT_ID` connects
+  members' profiles (OpenID Connect and `w_member_social`), and
+  `LINKEDIN_PAGES_CLIENT_ID`/`_SECRET` company pages
+  (`linkedin-pages-authorizer.ts`: `w_organization_social`,
+  `r_organization_social`, `rw_organization_admin`, nothing of the member's
+  profile). Both redirect to `/connect/linkedin/callback`; the attempt's
+  connection picks the authorizer. The pages sign-in lists the member's
+  approved roles (`organizationAcls`) and answers an `AccountChoice` of
+  the pages they administer or write content for (`postingRoles`), each
+  with the member's token and `urn:li:organization:<id>` as its account
+  id, which no profile's can equal. A page's token is renewed only when
+  LinkedIn gave a refresh token (approved partners): `tokenPolicies.linkedinPage`.
+  Use finders, never batch reads (`ids=List(…)` on a collection): the
+  Development tier refuses those, and gives 100 calls a member a day.
 - Facebook Pages and Instagram share Facebook Login
   (`infrastructure/platforms/meta/facebook-login.ts`): a long-lived user
   token lists the user's Pages with their tokens, which never expire; an
@@ -746,6 +788,26 @@ and no socket, for tests.
   Google's chooser (brand accounts too), so `complete` answers the channels
   `channels.list?mine=true` lists as an `AccountChoice`: one connects at
   once, none is `NoAccountsToConnect`.
+- Both Google products build on `googleOAuth`
+  (`infrastructure/platforms/google/google-oauth.ts`): the sign-in, the
+  exchange, the refresh and the revocation, with each product's client,
+  scopes and settings' names. Change the flow there, never in one product.
+- Google Business Profile (platform id `googleBusiness`) connects with the
+  `business.manage` scope
+  (`platforms/google-business/google-business-authorizer.ts`): `complete`
+  lists the accounts the Google user reaches (Account Management API,
+  20 a page), then each account's locations (Business Information API,
+  100 a page, with the required `readMask`), and answers those with
+  `metadata.hasVoiceOfMerchant` as an `AccountChoice`, `googleBusinessReach`
+  at most (100 accounts, 200 locations): one channel per location, and no
+  other location can post. A channel's `accountId` is the location's name
+  in the My Business API v4, `accounts/{account}/locations/{location}`,
+  which its posts are made under: a location reached through another
+  account is another account id, so reconnecting through one answers
+  `ReconnectAccountMismatch`. Its `handle` is the location's address (or
+  store code), its `displayName` its title. A project Google has not given
+  access has a quota of 0: every listing answers 429, which is
+  `PlatformUnavailable`, and the log says to check the project.
 - Meta's data deletion callbacks (`POST /api/data-deletion/:app`, no sign-in)
   check the `signed_request` HMAC with the app's secret (`SignedRequests`),
   delete the channels the user granted or owns in every workspace, and the
@@ -778,6 +840,11 @@ and no socket, for tests.
   `OutboundGuard` for an open one only to reach loopback fakes.
 - The AT Protocol OAuth client runs on Bun only with the handle resolver built
   on Peal's guarded fetch; its default one needs Node's undici.
+- The refresh sweep takes each platform's cutoff from every way in the
+  server has for it (`PlatformAuthorizers.every`), the latest one, then
+  checks each channel against its own way in's policy: a platform's first
+  authorizer may renew nothing (LinkedIn's profiles) while another does
+  (its pages).
 - Refresh a channel's tokens only inside `ChannelLocks.withLock` (Postgres
   advisory locks). A process holds at most four at once, each on a pool
   connection, so never nest `withLock`. Bluesky and X refresh tokens work
@@ -875,6 +942,20 @@ and no socket, for tests.
   repost's rate-limit deadline counts from the repost. `confirm` records
   what a member found for an unconfirmed target and revises the outcome.
   Both call `PublicationOutcomes.resolved`.
+- Every way of scheduling passes the `ApprovalGate` in the transaction that
+  saves the post: `schedule`, `scheduleDraft`, `reschedule` and `send` (so
+  `posts.send`, `create_post`, `publish_post` and `peal post` too) ask
+  `mayAsk`, then `throughGate` before `roomInMonth`. A held post takes its
+  month's room and gets no job; `PostEvents.scheduled` is told only for a
+  post that is scheduled (`announce`), and `HeldPosts.release` tells it once
+  the post is approved, so no `post.scheduled` webhook goes before. An
+  application is answered the post with `awaitingApproval`, never a
+  refusal. Approving is publishing (`post:approve` is in
+  `publishingPermissions`): an OAuth client needs `workspace:publish`.
+  What happens in a review reaches webhooks through `ReviewOutcomes`
+  (`webhookReviewOutcomes`: `post.approval_requested`, `post.approved`,
+  `post.changes_requested`, by kind of reviewer, never a name or a
+  comment).
 - Refusals Peal makes itself, before any platform call (a channel
   disconnected or turned off, media deleted), carry the codes of
   `#publishing/domain/own-refusals.ts`; the policy maps them to their own
@@ -889,8 +970,9 @@ and no socket, for tests.
   publish runs inside the gate: uploads, processing waits, token renewal,
   the post and its confirmation.
 - Platform adapters live in `publishing/infrastructure/platforms/<platform>/`
-  (Mastodon, Bluesky, LinkedIn, X, TikTok and YouTube, and Threads,
-  Instagram and Facebook Pages in `meta/`), beside `ChannelGate`, and implement the steps of
+  (Mastodon, Bluesky, LinkedIn, X, TikTok, YouTube, Pinterest and Google
+  Business Profile, and Threads, Instagram and Facebook Pages in `meta/`),
+  beside `ChannelGate`, and implement the steps of
   `publishing/application/publication-steps.ts`, which `sequenced` runs:
   `prepare` uploads the media (safe to repeat: media alone shows nowhere),
   `poll` waits while the platform processes it (15 minutes at most),
@@ -924,12 +1006,59 @@ and no socket, for tests.
   (`dailyLimitCodes`) until Pacific midnight, which the policy ends as
   `quotaExceeded`. A video YouTube made private against the options is
   `Published.keptPrivate`, kept on the target and shown on its page.
+- Google Business Profile's adapter (`platforms/google-business/`) makes a
+  local post with one request, `POST /v4/{location}/localPosts` on
+  `mybusiness.googleapis.com` (the My Business API v4, the one API with
+  local posts): the text as `summary`, the options' `topicType`, `event`,
+  `callToAction` and `offer`, and each photo as a `PHOTO` media item with a
+  public URL (`MediaForPublishing.publicUrl`, two hours); no video.
+  Requests carry `X-GOOG-API-FORMAT-VERSION: 2`, for the detail of
+  validation errors. Google keeps no idempotency key, so `lookUp` lists the
+  location's posts (100 a page, three pages) and takes the one made since
+  the attempt started with its type, its text and its event's title:
+  `found` when exactly one is, `unknown` otherwise, never `absent`. A 5xx
+  on the create call is `OutcomeUnknown`. Once Google answered the post,
+  only its `state` `REJECTED` (`postRejected`) fails the attempt: a post
+  still `PROCESSING` after the confirmation delays is published.
+  `google-business-refusal.ts` reads Google's `status`, `ErrorInfo` reasons
+  and the numeric `ErrorCode` ranges (photos 1000 to 1099, operations 1300
+  to 1399, as a location that may not post), never a message or a `value`;
+  its codes (`googleBusinessRefusalCodes`) are stored in the journal. A 403
+  is `TokenRejected` only for a scope the token lacks: the API not enabled
+  is the operator's (`PlatformUnavailable`, logged as an error), any other
+  the Google user's lost permission (`BadRequest` `permissionDenied`).
+  Reviews, questions and a location's metrics are not built: they would be
+  a context of their own, reaching Google through `ChannelAccess`.
+- Pinterest's adapter (`platforms/pinterest/`) makes a Pin with one
+  request, pins/create: an image by the public media URL Pinterest fetches
+  (`MediaForPublishing.publicUrl`, two hours), two to five as a carousel
+  (`multiple_image_urls`), or a video registered first (media/create), sent
+  to the address and with the form fields the answer gives, then polled.
+  That upload is one multipart request to an object store, which needs its
+  `Content-Length`: `multipartBody` frames the media stream, the form's
+  fields first in Pinterest's order, and `streamedBody` names its length,
+  after the file took its upload slot (`media.held`).
+  Pinterest has no idempotency key: `lookUp` searches the Pins of the
+  board, or of its section, made since the attempt started
+  (`pinterest-pin-match.ts`: title, description, link, kind of media), and
+  answers `found` or `unknown`, never `absent`. Refusals are read from the
+  status and whether the body is Pinterest's own (`pinterest-refusal.ts`):
+  only a 401 with it is `TokenRejected`.
+- A confirmation that searches the platform (Pinterest's board, a LinkedIn
+  page's newest posts, a location's local posts) adopts a post only through
+  `attemptAmong` (`platforms/attempt-match.ts`): the one match the channel
+  is not already recorded to have made (`RecordedPosts`, the targets'
+  `platform_post_id`), so another attempt's identical post is never taken
+  for this one's; several matches, or a post nothing tells apart (no text,
+  no title, no link), answer `unknown`. A create call that ends in a
+  server's error or a timeout is `OutcomeUnknown`, never a retry.
 - No adapter holds a whole file: large uploads go in parts read one at a
   time from the media stream (`inParts` in `platforms/byte-parts.ts`:
   LinkedIn's video parts, X's 4 MiB appends, TikTok's and YouTube's
   chunks), and a file a platform takes in one request is streamed with
   `streamedBody` (`#shared/infrastructure/platforms/public-http.ts`), in a
-  form with `multipartBody` (Mastodon), never `Stream.mkUint8Array` or
+  form with `multipartBody` (Mastodon, Pinterest's videos; LinkedIn's
+  documents go as they are), never `Stream.mkUint8Array` or
   `FormData` (only Bluesky's images, 2 MB at most, are read whole).
   `streamedBody` names the length, which the public client's fetch sends
   as Content-Length: Effect's fetch client drops that header, and a body
@@ -938,8 +1067,28 @@ and no socket, for tests.
   16 MiB at once (`PEAL_MAX_CONCURRENT_UPLOADS`, by default one per GiB of
   memory, 2 to 8); the others wait inside their gate, where no timeout
   runs before the upload begins. LinkedIn calls name `Linkedin-Version`
-  (`LINKEDIN_API_VERSION`, a default a test keeps within ten months), and
+  (`LINKEDIN_API_VERSION`, a default a test keeps within ten months, read
+  from `#shared/infrastructure/platforms/linkedin-version.ts` by every
+  context that calls LinkedIn), and
   send the member's token to LinkedIn's hosts only.
+- LinkedIn's adapter posts as the account's URN (`authorUrnOf`: a page's
+  account id is its URN) and builds two `sequenced` clients: a member's
+  post is confirmed by `none`, a page's by a `lookUp` that searches the
+  page's newest posts for the same commentary (`linkedin-confirmation.ts`),
+  `found` or `unknown`. Rest.li 2.0 lists keep their parentheses and commas
+  and encode each URN: write such a query whole, in a string URL, as
+  `setUrlParams` would encode the parentheses. On LinkedIn's versioned
+  API, only a 401 is a token to renew for a read (lookups, statistics): a
+  403 is about scopes or roles, and must never mark a channel to
+  reconnect.
+- A LinkedIn mention is data beside the text (`LinkedInOptions.mentions`:
+  the page's exact name and URN): the text keeps `@Name`, readable, which
+  counts as written, and `littleTextOf` writes `@[Name](urn)` where
+  `mentionSpans` finds it, every reserved character of little text escaped.
+  Pages only: no API open to Peal finds a member's URN. A link card is
+  LinkedIn's article (`linkUrl` with `linkTitle`; one image becomes its
+  thumbnail), and a PDF goes through the Documents API, alone
+  (`linkedin-documents.ts`).
 - Meta's adapters hand Meta public media URLs (`MediaForPublishing.publicUrl`,
   two hours), check the daily publishing quota before Threads and Instagram
   containers (Instagram's on the host its channel's connection names, from
@@ -974,15 +1123,16 @@ and no socket, for tests.
   and the call made once more. Mastodon's adapter takes a 401 or 403 as a
   refused token only with Mastodon's JSON error; without it, a proxy on the
   way answered, and the call is `PlatformUnavailable`.
-- Adapters reach platforms only through `publicHttpClient`, or
-  `publicHttpClientWith({ timeout })` for uploads. Test them against the
+- Adapters reach platforms only through `publicHttpClient`,
+  `publicHttpClientWith({ timeout })` for uploads, or `publicStreamedPost`
+  for a whole file sent in one request of a declared length. Test them against the
   loopback fakes in `test/publishing/fakes/` (and the sign-in flows against
   `test/channels/fakes/`).
 - A journal row found in flight is resumed (`PlatformPublisher.resume`, the
   gate's `Resume`), never sent again blindly: Bluesky looks the record up and
   creates it only when absent, Mastodon resends under the same key while its
   window holds, checked again just before the post goes out, X searches the
-  account's recent posts, and an adapter that cannot tell (LinkedIn) answers
+  account's recent posts and Pinterest the board's Pins, and an adapter that cannot tell (LinkedIn) answers
   unconfirmed. A resume refuses a post only when nothing can have gone live,
   and a target whose cancel was requested is never resumed.
 - Tell how each target ended through `PublicationOutcomes`, once, in the
@@ -1013,7 +1163,8 @@ and no socket, for tests.
   `platform`, in `publishing.post_targets.options` (JSON the domain decodes;
   null on rows from before options and on platforms that take none). A
   platform's options are one `Schema.Class` in its own file
-  (`youtube-options.ts`, `tiktok-options.ts`): every field optional, so a
+  (`youtube-options.ts`, `tiktok-options.ts`, `pinterest-options.ts`,
+  `google-business-options.ts`): every field optional, so a
   draft holds them unfinished, a `platform: Schema.tag(...)`, and a
   `problems()` method listing what the platform would refuse (`missing`,
   `tooLong`, `invalid`, by field). Adding a platform's options is adding its
@@ -1027,6 +1178,12 @@ and no socket, for tests.
   from `OutgoingPost.options`, with
   `post.options.pipe(Option.filter(Schema.is(YouTubeOptions)))`; keep stored
   options decoding (`fixtures/persisted/post-targets/options.json`).
+- A field the web composer shows only for some values of another (an
+  event's dates) says so with `shownWith` in `#posts/target-options.ts`:
+  `isShown` hides it and `optionsOf` leaves its value out, as the domain's
+  `problems()` refuse it there. A day and a time on a clock that is not the
+  reader's (Google Business Profile's `startsAt`, on the location's) is a
+  `localTime` field, text as `2026-11-27T09:00`, never an instant.
 - Posts show only ready media of the workspace: `LibraryAttachableMedia`
   reads each asset through the media context's `MediaLibrary`, and anything
   else answers `UnknownMedia` when a draft is saved or scheduled.
@@ -1044,6 +1201,87 @@ and no socket, for tests.
   request is opened (`MediaForPublishing.held`), never inside it: a platform
   drops a request left waiting.
 
+### Capabilities and lookups
+
+- Clients ask what a channel takes rather than learn each platform:
+  `GET …/platforms/capabilities` and `GET …/channels/:channelId/capabilities`
+  (`PostingCapabilities`, channel:read, API keys and read-only OAuth clients
+  included) answer `capabilitiesOf`
+  (`#publishing/domain/platform-capabilities.ts`): `platformRules` with
+  Peal's own ceilings, the options field by field, the rules between them,
+  the lookups, and whether analytics counts posts there (`CountedPlatforms`,
+  which `AnalyticsCoverage` backs). The description has a version
+  (`capabilitiesVersion`): add fields, platforms, lookups and restrictions
+  under it, and raise it only when a field changes meaning or leaves.
+- A platform's description is that of any of its channels; a channel's
+  follows the way in it came through (`ChannelConnections`, which
+  `ListedChannelConnections` backs from the channels context). A lookup
+  only one way in has names it (`connection` on its definition:
+  `linkedinOrganizations` on `linkedinPage`), so `lookupsOn` and
+  `lookupNamed` leave it out for the others (404 `LookupNotFound`), and
+  `CountedPlatforms.onChannel` (`countsChannel` in analytics' domain) says
+  a LinkedIn profile's posts are not counted while `countedPlatforms`
+  lists LinkedIn. A lookup that cannot run without a field says so
+  (`required`).
+- Lookups spend the platforms' allowance: `pacedLookups`
+  (`publishing/application/paced-lookups.ts`) lets a channel's reach its
+  platform `lookupRunsPerMinute` times a minute (30), failing past it as
+  `RateLimited` (`lookupPace`, 429 with `retryAfterSeconds`), and answers
+  the same query on the same channel from its last answer for
+  `lookupAnswerLifetime` (a minute), in this process; a failure is never
+  kept. Every run also takes one of the platform's `lookupDailyRuns`, for
+  the whole server (`PlatformQuota`, bucket `lookups:<platform>`, by UTC
+  day; past them `RateLimited` `lookupBudget`), since a channel's pace
+  bounds neither all channels together nor ever new inputs; an answer the
+  platform gives every channel alike (`shared` in `lookups`: YouTube's
+  categories) is kept for all of them for `sharedAnswerLifetime` (a day).
+  An adapter added to `PlatformLookupsLive` is paced with the rest; give
+  its platform its `lookupDailyRuns`. Whatever else reads a platform
+  for a member's GET goes through the same paced lookups, as a channel's
+  standing does (`AccountStandings` runs the `tiktokCreator` lookup):
+  never a platform call per request.
+- Nothing in a description is written twice. A field's type and values come
+  from its schema (`describeFields`), `required` from what `problems()`
+  misses in options with nothing chosen, and the rest (`maxLength`,
+  `ifLeftOut`, `forbiddenCharacters`, `pattern`, `lookup`) from the options
+  class's static `notes`, built on the constants `problems()` uses; rules
+  between two options are its static `constraints`
+  (`OptionConstraint`: `needsOneOf` and `notWith` between yes-or-no
+  options, `neededWith` and `onlyWith` for an option that depends on
+  another's value, as Google Business Profile's on its post type; the
+  contract's union and the CLI's `constraintLine` list each kind). A new option gets its
+  entry in `notes`, typed by the class's fields;
+  `test/publishing/domain/platform-capabilities.test.ts` fails on a field
+  left undescribed, and `test/publishing/api/capabilities.test.ts` keeps the
+  figures equal to `peal-contract/post-text` and the fields to the
+  contract's options.
+- What an account narrows is an `AccountRestriction`, read by
+  `AccountStandings` when the channel is described (TikTok's
+  `creatorRestrictions`, which say beforehand what `creatorViolationsOn`
+  refuses: change both together). A platform that cannot be asked answers
+  `unread` with the reason, never an error.
+- A lookup is account data an option refers to
+  (`#publishing/domain/lookup.ts`): a name prefixed by its platform, an input
+  struct of optional fields with its `notes` (`required` names those the
+  lookup cannot run without, as the board of `pinterestBoardSections`:
+  `query` answers none without them), a `LookupQuery` and a
+  `LookupResult` member (`items` and `nextCursor`), and one adapter in
+  `platforms/platform-lookups-live.ts`, whose registry does not compile
+  without it. `ChannelLookups` checks channel:read, the platform and the
+  input before the platform is asked. The contract copies the names, one
+  flat `LookupInputSchema` holding every lookup's fields, and the result
+  union (`test/publishing/api/lookups.test.ts` keeps them equal). An option
+  filled by a lookup names it in its `notes`.
+- Lookup adapters call the platform through `PlatformCredentials.withToken`
+  and `publicHttpClient`, not the channel's gate: a member waits for the
+  answer, and a gate may hold a long upload. They fail with `TokenRejected`
+  only for the platform's own refusal of the token, `RateLimited`,
+  `PlatformUnavailable`, or `LookupInputRejected` when the platform refused
+  what the input asked (a cursor it never gave); they never change anything
+  on the platform. Test them against the loopback fakes.
+- `GET …/channels/:id/tiktok-creator` stays, for the composer; the
+  `tiktokCreator` lookup answers the same view.
+
 ### Media
 
 - Clients upload straight to the store with presigned PUTs, so files never
@@ -1056,8 +1294,21 @@ and no socket, for tests.
   an `uploaded` asset carries its probe state (`pending`, `unavailable`, or why
   the probe failed).
 - Accepted media: JPEG, PNG, GIF and WebP images up to 16 MiB; MP4 and
-  QuickTime videos up to 1 GiB (`media/domain/media-format.ts`). Publishing
+  QuickTime videos up to 1 GiB; PDF documents up to 100 MiB and 300 pages
+  (`media/domain/media-format.ts`). Publishing
   checks per-platform limits when a post is scheduled.
+- A PDF is the `document` kind, which only a platform whose rules list
+  `application/pdf` takes (LinkedIn, alone in its post); a platform
+  without media rules refuses it too. It is probed without a PDF library
+  (`pdf-pages.ts`: the header, and the `/Count` of the page tree's root,
+  the last one written, in the clear or in an inflated object stream,
+  never a count of page objects, which strings, comments and earlier
+  revisions repeat); pages that cannot be told are none, not a refusal.
+  The file is read once, in slices that yield (`sliceBytes`), with bounds
+  on object streams and on what they inflate to: keep every reader of
+  uploaded bytes linear and interruptible, as a synchronous loop holds the
+  whole server and no timeout fires in it. Never render or open a
+  document: store it, hand it over.
 - On a server that bills, `createUpload` checks the declared size against
   the plan's media storage (`StorageAllowance`) before the store opens an
   upload, and again as the asset is recorded (`MediaAssets.insertWithin`,
@@ -1536,7 +1787,17 @@ and no socket, for tests.
   halts; any other refusal, the token's included, fails the post and
   halts, so analytics never marks a channel to reconnect for insights it
   may not read.
-- Platforms without a reader (LinkedIn, X, Threads and Facebook Pages so
+- Google Business Profile has no reader and gets none: Google withdrew
+  local posts' insights (`localPosts.reportInsights`, February 2023) with
+  no replacement, and its Performance API counts a location's days, never
+  a post.
+- LinkedIn reads a company page's posts with
+  `organizationalEntityShareStatistics`, one finder call for the posts
+  asked, which needs `rw_organization_admin` and the page's ADMINISTRATOR:
+  a profile's channel, and a page LinkedIn answers 403 for, are
+  `unsupported`. Clients say "LinkedIn pages" where they list the counted
+  platforms.
+- Platforms without a reader (X, Threads and Facebook Pages so
   far) answer
   `ChannelUnreadable` `unsupported`: their posts end at their first turn,
   with no warning, and the reports leave them out. The platforms with one
@@ -1569,6 +1830,11 @@ and no socket, for tests.
   50 ids a call, with the channel's token (`youtube.readonly`): views are
   impressions, comments replies, reposts 0; only a 401 with Google's JSON
   error refuses the token, and a 403 (quota) or 429 halts the read.
+  Pinterest reads pins/analytics, one Pin a call (60 a minute for each
+  account with Standard access), over the 90 days up to today: impressions,
+  saves as reposts, reactions as likes and comments as replies, no quotes;
+  a 404 is a missing Pin, a 429 halts, and only a 401 with Pinterest's own
+  error refuses the token.
 - A halted read leaves the rest due for the next run; a missing post, one a
   read `failed` on (so one the server cannot show never stays first due),
   or a channel off or to reconnect, waits for its next turn; a disconnected
@@ -1681,6 +1947,95 @@ and no socket, for tests.
   (`attempt/<n>/again/<k>`, `recover/<n>/<k>`, persisted contract),
   `maxRecoveries` times.
 
+### Review and approval
+
+- A post that needs an approval is `awaitingApproval` in publishing: it has
+  its time, counts in its month and keeps its media (`MediaInPosts`), and
+  has no job. Every use case that schedules passes the `ApprovalGate`
+  (`publishing/application/approval-gate.ts`) in the transaction that saves
+  the post (`throughGate`, in `PostScheduling`): a new way of scheduling
+  calls it too, never `schedulePost` and `startJob` alone. The review
+  context backs the gate (`ReviewApprovalGate` over `ApprovalIntake`);
+  `ApprovalGate.open` is for tests. `HeldPosts` is publishing's side of a
+  decision (`release`, `sendBack`), for the review context only: `release`
+  starts the job, and dies unless the gate says an approval stands. It
+  schedules, so it checks the plan as scheduling does (`withinPlan`): in a
+  workspace that went over its channels or members while the post waited,
+  the approval is refused (`PlanLimitReached`; `WorkspaceOverPlan` to a
+  link's holder, who is told nothing of the plan), nothing is recorded,
+  and the post keeps waiting.
+- The policy is per workspace (`review/domain/approval-policy.ts`): `never`,
+  `contributorsAndApplications`, `always`. An application is an API key or
+  an OAuth client (`Actor.subject.clientId`). Where posts wait, whoever has
+  post:create may ask (`maySubmit`), and acts on drafts and waiting posts
+  only (`mayChange`); staff acting as a member neither ask nor approve
+  (`post:approve` is withheld), and read a post's review without
+  commenting or resolving: a comment shows under the member's name to
+  people outside the workspace.
+- An approval covers a subject, publishing's `approvalSubject`: the text,
+  the media in order with their alt text, the per-channel texts, the
+  channels and their options. Never the time. The review context keeps its
+  SHA-256 only (`subject_hash`). Add what a new kind of content says to the
+  subject, or an approval would cover a post that changed. Reviewers are
+  shown all of it: `ReviewedChannel.options` (publishing's `plainOptions`)
+  on the link's page and the review, which the web app writes out with
+  `#review/shown-options.ts`, leaving none out.
+- A decision is for what its reviewer was shown. The link's page and a
+  post's review (`review.thread`, `get_post_review`, `peal review show`)
+  answer the post with the request that waits, read request first, so the
+  post shown is never older than the request; approving and asking for
+  changes send back its id and `subjectHash` (`ShownRequest`, `asShown`),
+  from every client, and another request or hash is `ApprovalChanged`
+  (409): the client shows the post again. Never decide for "whatever
+  waits", and render a decision's post from the answer that gave its
+  request, never from another query.
+- Whoever heard a post waits (`post.approval_requested`) hears what became
+  of it: the same event again with its new time when it is moved (the
+  request's key and its time; members are not asked twice),
+  `post.approved` then `post.scheduled` unless late,
+  `post.changes_requested`, `post.unscheduled` when it is taken back to
+  draft, `post.cancelled`, or `post.scheduled` alone when a member who may
+  schedule did. A new way for a post to stop waiting tells one of these.
+- An approval after the post's time (beyond `scheduleGrace`) publishes
+  nothing: `releasePost` takes the post back to draft, still approved.
+- `review.approval_requests` is the record of who approved what: a decided
+  row never changes. An application approves only what a member asked for
+  in person (`takesApplicationApproval`), or the policy that holds
+  applications would hold nothing. No route lets an application approve
+  its own post: `ReviewLinks.create` refuses it a link that approves
+  (`ApprovalNeedsPerson`; the command line offers view and comment only),
+  and a link that names no member approves nothing an application asked
+  for.
+- Review links: 256 random bits (`LinkTokens`), of which only the SHA-256
+  is stored; the address is `PUBLIC_URL/review#<token>`, so the token
+  reaches no server's address logs, and clients send it in the
+  `x-review-token` header. Never put it in a path, a query, a log or an
+  error. A link shows one post through `ReviewedPosts` and nothing else of
+  its workspace, and closes with the post (`LinkClosed` says why).
+- `VisitorReview` is the only use case without an actor: the link's token
+  is the credential. Its writes pass the `VisitorGuard` (per address and
+  per link, in this process, then Turnstile when the server has keys) after
+  the `ReviewVisitor` middleware (16 KiB bodies). What anyone types goes
+  through `review/domain/plain-text.ts` and is stored and served as plain
+  text: clients render it as text, never as markup.
+- A comment's selection is kept as its quote and where it started
+  (`comment-anchor.ts`); views find it again in the current text
+  (`locate`), and say when it is gone.
+- Tell the rest of Peal what a review did through `ReviewOutcomes`, in the
+  transaction that did it. It is the seam for other listeners (outgoing
+  webhooks): add them beside `NotifiedReviewOutcomes`, not in the use
+  cases. Notices name who acted by kind (`ReviewParty`), never by name.
+- A visitor's name is kept 24 months (`review-retention.ts`, the
+  `review.retention` cron): the privacy policy and the docs' guide say so,
+  change them together. Peal takes no address from a visitor and mails
+  nobody without an account: anyone could name anyone's address on a
+  link's page. The workspace hears of a link's comments once an hour at
+  most (`commentKeyOf`), so a link's holder cannot flood its members.
+- The contract copies the domain's lists and limits, kept equal by
+  `test/review/api/contract.test.ts`. Test use cases on
+  `test/review/support.ts` (the real gate and stores over
+  `posts-server.ts`).
+
 ### MCP endpoint
 
 - `src/app/mcp/` serves effect/ai's `McpServer.layerHttp` at `/api/mcp`
@@ -1712,6 +2067,12 @@ and no socket, for tests.
   `PostTools` and `MediaTools` that change something are `contentTools`,
   whose calls the ConnectionJournal keeps. The account's own
   data (its export, its applications) has no tool.
+- `get_channel_capabilities` and `run_channel_lookup`
+  (`capabilities-tools.ts`) answer the views of the capabilities and lookups
+  endpoints; they read, and are open world, as they may ask the platform.
+  The CLI's are `peal channels capabilities` and `peal channels lookup`
+  (`--json` prints the answer as the API sends it). Describe a new lookup in
+  `run_channel_lookup`'s description and the docs' lookups table.
 - What the web app's composer sends, the CLI and the tools send too: a
   draft's per-channel `options` (`create_draft`, `update_draft`, `peal
   drafts save --options`), and TikTok's creator before a TikTok post
@@ -1736,9 +2097,9 @@ and no socket, for tests.
   SQL.
 - Each context keeps its tables in a Postgres schema named after it
   (`publishing`, `channels`, `media`, `notifications`, `assistant`,
-  `analytics`, `billing`, `staff`, `legal`, `webhooks`; the workspace
-  context's are Better Auth's, in `auth`). Effect creates its `cluster_*`
-  tables in `public`; drizzle-kit never manages them.
+  `analytics`, `billing`, `staff`, `legal`, `review`, `webhooks`; the
+  workspace context's are Better Auth's, in `auth`). Effect creates its
+  `cluster_*` tables in `public`; drizzle-kit never manages them.
 - Declare a context's tables in `src/<context>/infrastructure/schema.ts`, then
   run `nx run peal-server:db:generate`, which writes a migration folder under
   `packages/peal-server/drizzle/`. Commit the folder as drizzle-kit wrote it;
@@ -1811,14 +2172,17 @@ self-hoster needs only Postgres and an S3-compatible store:
   the OAuth pages (`device`, `oauth/workspace`, `oauth/consent`), the
   platforms' redirect URI `connect/[platform]/callback` (which shows the
   account picker when a sign-in reached several accounts), Meta's data
-  deletion status `data-deletion/[code]`, and the signed-in
+  deletion status `data-deletion/[code]`, the page behind a review link
+  `review` (no sign-in, noindex; the token is the address's fragment, read
+  in the browser), and the signed-in
   app: `app` (workspaces), `app/notices`, `app/notices/preferences`,
   `app/account`, `app/[workspaceId]/channels`, `…/media`, `…/calendar`,
   `…/analytics`, `…/drafts`, `…/posts/new`, `…/posts/[postId]`, which opens
   a draft or a scheduled post in the composer, and shows a post that went
   out in `PostDetail` (each channel's status, attempts and reasons, with
-  repost and confirm, and its analytics), `…/settings` (with `members`,
-  `invitations`, `api-keys` and `webhooks`) and `…/billing`. The staff console is
+  repost and confirm, and its analytics), `…/approvals` (the posts that
+  wait), `…/settings` (with `members`, `invitations`, `api-keys` and
+  `webhooks`) and `…/billing`. The staff console is
   `admin` (the system's health), `admin/users`, `admin/users/[userId]`,
   `admin/workspaces`, `admin/workspaces/[workspaceId]`,
   `admin/contract-requests` (through `deskRead`), `admin/audit` and
@@ -1890,15 +2254,22 @@ self-hoster needs only Postgres and an S3-compatible store:
 - The composer's options come from `TargetOptionsSection`
   (`components/posts/target-options-panel.tsx`), which renders the fields
   `#posts/target-options.ts` describes for each selected channel's platform
-  (text, tags, choice, yes or no, toggle; `initial`, `inverted` and `within`
-  for TikTok's boxes), turns them into the contract's `TargetOptions` with
+  (text, number, tags, choice, yes or no, toggle, and `lookup`, a choice
+  among what a lookup answers for the account, shown `under` another once
+  that one is chosen; `initial`, `inverted` and `within` for TikTok's
+  boxes), turns them into the contract's `TargetOptions` with
   Schema, and shows each `option*` violation under its field. On a TikTok
   channel, `TikTokChannelOptions` reads `GET …/channels/:id/tiktok-creator`
   and limits the fields by the creator (`#posts/tiktok-account.ts`): their
   nickname, their audiences, interactions they turned off (and set off),
   no Duet or Stitch on photo posts, "Only me" closed to branded content,
   the disclosure's label, and TikTok's consent line, as its content sharing
-  guidelines require.
+  guidelines require. On a Pinterest channel, `PinterestChannelOptions`
+  reads the account's boards, ten pages of 50 at most, and the chosen
+  board's sections (`pinterestBoards` and `pinterestBoardSections` in
+  `#posts/api.ts`, as `LookupChoices`): a field shows that its list is being
+  read, or why it could not be with a way to ask again, and keeps a value
+  the list lacks.
 - The composer's attachments come from `MediaPicker` (ready media of the
   workspace) or `MediaUploader` (`onUploaded` attaches ready uploads).
   `#posts/attachments.ts` keeps the list: order, alt text seeded from the
@@ -1975,8 +2346,8 @@ self-hoster needs only Postgres and an S3-compatible store:
   `http://localhost:3000`.
 - `peal login` signs in with the device grant; `whoami`, `logout`, `mcp` and
   `health` are the other commands, with `channels`, `drafts`, `posts`,
-  `post`, `media`, `analytics`, `billing`, `members`, `invitations` and
-  `webhooks`, which act in the
+  `post`, `media`, `approvals`, `review`, `analytics`, `billing`,
+  `members`, `invitations` and `webhooks`, which act in the
   workspace `--workspace`, then `PEAL_WORKSPACE`, names by slug or id
   (`inWorkspace`, `src/workspace.ts`; a user's only workspace otherwise),
   and `account`, which exports the user's data to a file only they may read

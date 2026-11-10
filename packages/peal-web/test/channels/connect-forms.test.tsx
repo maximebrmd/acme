@@ -1,7 +1,11 @@
 import { RegistryProvider } from "@effect/atom-react";
 import { describe, expect, it } from "@effect/vitest";
 import { NextIntlClientProvider } from "next-intl";
-import type { InstagramConnection, Platform } from "peal-contract";
+import type {
+  InstagramConnection,
+  LinkedInConnection,
+  Platform,
+} from "peal-contract";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import { ConnectForms } from "#components/channels/connect-forms.tsx";
@@ -10,7 +14,8 @@ import { loadMessages } from "#i18n/messages.ts";
 const render = async (
   locale: "en" | "fr",
   platforms: readonly Platform[],
-  instagramConnections: readonly InstagramConnection[] = []
+  instagramConnections: readonly InstagramConnection[] = [],
+  linkedinConnections: readonly LinkedInConnection[] = []
 ) => {
   const messages = await loadMessages(locale);
 
@@ -19,6 +24,7 @@ const render = async (
       <RegistryProvider>
         <ConnectForms
           instagramConnections={instagramConnections}
+          linkedinConnections={linkedinConnections}
           platforms={platforms}
           workspaceId="5b1c5f7e-3d2a-4c1b-9e8f-7a6b5c4d3e2f"
         />
@@ -68,6 +74,37 @@ describe(ConnectForms, () => {
 
     expect(html).toContain(">Passer par une Page Facebook<");
     expect(html).not.toContain("Se connecter avec Instagram");
+  });
+
+  it("offers a LinkedIn profile or company pages where the server has both", async () => {
+    const html = await render(
+      "en",
+      ["linkedin"],
+      [],
+      ["linkedinProfile", "linkedinPage"]
+    );
+
+    expect(html).toContain(">Connect your profile<");
+    expect(html).toContain(">Connect company pages<");
+    expect(html).toContain("then choose the pages");
+    expect(html).not.toContain(">Connect LinkedIn<");
+    expect(html.indexOf("Connect your profile")).toBeLessThan(
+      html.indexOf("Connect company pages")
+    );
+  });
+
+  it("offers company pages alone on a server with the pages app only", async () => {
+    const html = await render("fr", ["linkedin"], [], ["linkedinPage"]);
+
+    expect(html).toContain(">Connecter des pages d’entreprise<");
+    expect(html).not.toContain("Connecter votre profil");
+  });
+
+  it("keeps LinkedIn's one button on a server that connects profiles only", async () => {
+    const html = await render("en", ["linkedin"], [], ["linkedinProfile"]);
+
+    expect(html).toContain(">Connect LinkedIn<");
+    expect(html).not.toContain("company pages");
   });
 
   it("writes the buttons in French", async () => {

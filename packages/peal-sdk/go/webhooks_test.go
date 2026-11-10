@@ -3488,6 +3488,27 @@ func TestEnumSubscribableWebhookEventType(t *testing.T) {
 		assert.Equal(t, SubscribableWebhookEventType("post.cancelled"), val, "enum value should match expected wire value")
 	})
 
+	t.Run("NewFromString_post_approval_requested", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewSubscribableWebhookEventTypeFromString("post.approval_requested")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, SubscribableWebhookEventType("post.approval_requested"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_post_approved", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewSubscribableWebhookEventTypeFromString("post.approved")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, SubscribableWebhookEventType("post.approved"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_post_changes_requested", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewSubscribableWebhookEventTypeFromString("post.changes_requested")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, SubscribableWebhookEventType("post.changes_requested"), val, "enum value should match expected wire value")
+	})
+
 	t.Run("NewFromString_channel_connected", func(t *testing.T) {
 		t.Parallel()
 		val, err := NewSubscribableWebhookEventTypeFromString("channel.connected")
@@ -3729,6 +3750,27 @@ func TestEnumWebhookEventType(t *testing.T) {
 		val, err := NewWebhookEventTypeFromString("post.cancelled")
 		assert.NoError(t, err, "valid enum value should not return error")
 		assert.Equal(t, WebhookEventType("post.cancelled"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_post_approval_requested", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewWebhookEventTypeFromString("post.approval_requested")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, WebhookEventType("post.approval_requested"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_post_approved", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewWebhookEventTypeFromString("post.approved")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, WebhookEventType("post.approved"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_post_changes_requested", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewWebhookEventTypeFromString("post.changes_requested")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, WebhookEventType("post.changes_requested"), val, "enum value should match expected wire value")
 	})
 
 	t.Run("NewFromString_channel_connected", func(t *testing.T) {

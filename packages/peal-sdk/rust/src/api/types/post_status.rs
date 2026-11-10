@@ -4,6 +4,7 @@ pub use crate::prelude::*;
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum PostStatus {
     Draft,
+    AwaitingApproval,
     Scheduled,
     Publishing,
     Finished,
@@ -17,6 +18,7 @@ impl Serialize for PostStatus {
     fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
         match self {
             Self::Draft => serializer.serialize_str("draft"),
+            Self::AwaitingApproval => serializer.serialize_str("awaitingApproval"),
             Self::Scheduled => serializer.serialize_str("scheduled"),
             Self::Publishing => serializer.serialize_str("publishing"),
             Self::Finished => serializer.serialize_str("finished"),
@@ -31,6 +33,7 @@ impl<'de> Deserialize<'de> for PostStatus {
         let value = String::deserialize(deserializer)?;
         match value.as_str() {
             "draft" => Ok(Self::Draft),
+            "awaitingApproval" => Ok(Self::AwaitingApproval),
             "scheduled" => Ok(Self::Scheduled),
             "publishing" => Ok(Self::Publishing),
             "finished" => Ok(Self::Finished),
@@ -44,6 +47,7 @@ impl fmt::Display for PostStatus {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Draft => write!(f, "draft"),
+            Self::AwaitingApproval => write!(f, "awaitingApproval"),
             Self::Scheduled => write!(f, "scheduled"),
             Self::Publishing => write!(f, "publishing"),
             Self::Finished => write!(f, "finished"),

@@ -1,11 +1,13 @@
-import { Array as Arr, Duration, Match, Option, Result } from "effect";
+import { Array as Arr, Duration, Match, Option, Result, Schema } from "effect";
 
+import type { ChannelConnection } from "#shared/domain/channel-connection.ts";
 import type { ChannelId, MediaAssetId } from "#shared/domain/ids.ts";
 import type { Platform } from "#shared/domain/platform.ts";
 
 import { optionsOn } from "./channel-options.ts";
 import type { ChannelOptions } from "./channel-options.ts";
 import type { ContentViolation } from "./content-violation.ts";
+import { LinkedInOptions, pageProblems } from "./linkedin-options.ts";
 import type { Dimensions, MediaFile } from "./media-file.ts";
 import type { OptionProblem } from "./option-problem.ts";
 import { platformRules } from "./platform-rules.ts";
@@ -25,8 +27,23 @@ import {
 /** A channel a post goes to, and the platform whose rules it follows. */
 export interface ChannelOnPlatform {
   readonly channelId: ChannelId;
+  /**
+   * The way in the channel came through, where its platform has several
+   * and the rules differ by it (a LinkedIn company page). Left out
+   * elsewhere, and never part of a violation.
+   */
+  readonly connection?: ChannelConnection;
   readonly platform: Platform;
 }
+
+// A channel as violations name it: its id and its platform.
+const named = ({
+  channelId,
+  platform,
+}: ChannelOnPlatform): ChannelOnPlatform => ({
+  channelId,
+  platform,
+});
 
 // One of the post's images or videos, on one channel.
 interface MediaOnChannel extends ChannelOnPlatform {
@@ -119,6 +136,24 @@ export const optionViolationsOn = (
       );
 };
 
+const isLinkedIn = Schema.is(LinkedInOptions);
+
+// What the way in the channel came through refuses in its options, beyond
+// its platform's rules.
+const connectionViolationsOn = (
+  channel: ChannelOnPlatform,
+  options: Option.Option<TargetOptions>
+): readonly ContentViolation[] =>
+  channel.connection === "linkedinPage"
+    ? options
+        .pipe(
+          Option.filter(isLinkedIn),
+          Option.map(pageProblems),
+          Option.getOrElse(() => [])
+        )
+        .map((problem) => optionViolation(named(channel), problem))
+    : [];
+
 /**
  * What a draft for these channels must hold: text overrides and options
  * only for some of them, and options of their own platforms. The platforms'
@@ -136,7 +171,7 @@ export const checkDraft = (
     ...overridesWithoutChannel(content, channelIds),
     ...optionsWithoutChannel(options, channelIds),
     ...channels.flatMap((channel) =>
-      otherPlatform(channel, optionsOn(options, channel.channelId))
+      otherPlatform(named(channel), optionsOn(options, channel.channelId))
     ),
   ]);
 };
@@ -376,8 +411,21 @@ export const mediaViolationsOn = (
 ): readonly ContentViolation[] => {
   const rules = platformRules[channel.platform].media;
 
+  // A platform whose media rules are not known may take images and videos
+  // Peal cannot check; a document goes only where the rules say so.
   if (rules === undefined) {
-    return [];
+    return files.flatMap((file) =>
+      file.kind === "document"
+        ? [
+            {
+              _tag: "mediaTypeUnsupported" as const,
+              ...channel,
+              contentType: file.contentType,
+              mediaId: file.mediaId,
+            },
+          ]
+        : []
+    );
   }
 
   const altTexts = new Map(
@@ -439,10 +487,16 @@ export const checkPublishable = (
     ...(channels.length === 0 ? [{ _tag: "noChannels" as const }] : []),
     ...overridesWithoutChannel(content, channelIds),
     ...optionsWithoutChannel(options, channelIds),
-    ...channels.flatMap((channel) => [
-      ...violationsOn(content, channel),
-      ...mediaViolationsOn(content, channel, files),
-      ...optionViolationsOn(channel, optionsOn(options, channel.channelId)),
-    ]),
+    ...channels.flatMap((connected) => {
+      const channel = named(connected);
+      const chosen = optionsOn(options, channel.channelId);
+
+      return [
+        ...violationsOn(content, channel),
+        ...mediaViolationsOn(content, channel, files),
+        ...optionViolationsOn(channel, chosen),
+        ...connectionViolationsOn(connected, chosen),
+      ];
+    }),
   ]);
 };

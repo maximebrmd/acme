@@ -31,7 +31,7 @@ const upload = Command.make(
     altText: altFlag,
     file: Argument.String("file").pipe(
       Argument.withDescription(
-        "The image or video to upload: JPEG, PNG, GIF or WebP up to 16 MiB, MP4 or QuickTime up to 1 GiB, told by its extension."
+        "The image, video or document to upload: JPEG, PNG, GIF or WebP up to 16 MiB, MP4 or QuickTime up to 1 GiB, PDF up to 100 MiB and 300 pages, told by its extension."
       )
     ),
     json: jsonFlag,

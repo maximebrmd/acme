@@ -116,10 +116,16 @@ describe(fitOn, () => {
     expect(fit.problems).toStrictEqual([{ _tag: "mediaRequired" }]);
   });
 
-  it("has no limit to show for a platform with none known", () => {
-    const fit = fitOn("pinterest", "a".repeat(10_000), 0);
+  it("holds a Pin's description to 800 characters, with an image or a video", () => {
+    const fit = fitOn("pinterest", "é".repeat(801), 0);
 
-    expect(fit.tightest).toBeUndefined();
-    expect(fits(fit)).toBeTruthy();
+    expect(fit.tightest).toStrictEqual({
+      length: 801,
+      maximum: 800,
+      remaining: -1,
+      unit: "codePoints",
+    });
+    expect(fit.problems).toContainEqual({ _tag: "mediaRequired" });
+    expect(fits(fitOn("pinterest", "é".repeat(800), 1))).toBeTruthy();
   });
 });

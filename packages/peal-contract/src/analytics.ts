@@ -38,12 +38,16 @@ export const countedPlatforms = [
   "tiktok",
   "youtube",
   "instagram",
+  "pinterest",
+  // Company pages only: a LinkedIn profile's posts have no counts.
+  "linkedin",
 ] as const satisfies readonly Platform[];
 
 /**
- * A post's counts on its platform: likes (Mastodon's favourites), reposts
- * (Mastodon's boosts), replies, and quotes and impressions where the
- * platform gives them, null otherwise. Neither Mastodon nor Bluesky tells
+ * A post's counts on its platform: likes (Mastodon's favourites,
+ * Pinterest's reactions), reposts (Mastodon's boosts, Pinterest's saves),
+ * replies, and quotes and impressions where the platform gives them, null
+ * otherwise. Neither Mastodon nor Bluesky tells
  * impressions; Mastodon counts quotes from 4.5.
  */
 export const PostMetricsSchema = Schema.Struct({

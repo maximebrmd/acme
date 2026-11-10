@@ -252,7 +252,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"instagramConnections\": [\n    \"instagramLogin\"\n  ],\n  \"platforms\": [\n    \"x\"\n  ]\n}",
+        "body": "{\n  \"instagramConnections\": [\n    \"instagramLogin\"\n  ],\n  \"linkedinConnections\": [\n    \"linkedinProfile\"\n  ],\n  \"platforms\": [\n    \"x\"\n  ]\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -1031,7 +1031,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"items\": [\n    {\n      \"altText\": \"altText\",\n      \"byteSize\": 1,\n      \"codec\": \"codec\",\n      \"contentType\": \"image/gif\",\n      \"createdAt\": \"createdAt\",\n      \"dimensions\": {\n        \"height\": 1,\n        \"width\": 1\n      },\n      \"durationMs\": 1,\n      \"id\": \"id\",\n      \"kind\": \"image\",\n      \"status\": {\n        \"_tag\": \"pending\"\n      },\n      \"updatedAt\": \"updatedAt\",\n      \"url\": \"url\"\n    }\n  ],\n  \"nextCursor\": \"nextCursor\"\n}",
+        "body": "{\n  \"items\": [\n    {\n      \"altText\": \"altText\",\n      \"byteSize\": 1000000,\n      \"codec\": \"codec\",\n      \"contentType\": \"image/gif\",\n      \"createdAt\": \"createdAt\",\n      \"dimensions\": {\n        \"height\": 1,\n        \"width\": 1\n      },\n      \"durationMs\": 1,\n      \"id\": \"id\",\n      \"kind\": \"image\",\n      \"pageCount\": 1,\n      \"status\": {\n        \"_tag\": \"pending\"\n      },\n      \"updatedAt\": \"updatedAt\",\n      \"url\": \"url\"\n    }\n  ],\n  \"nextCursor\": \"nextCursor\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -1067,7 +1067,7 @@
       },
       "response": {
         "status": 201,
-        "body": "{\n  \"media\": {\n    \"altText\": \"altText\",\n    \"byteSize\": 1,\n    \"codec\": \"codec\",\n    \"contentType\": \"image/gif\",\n    \"createdAt\": \"createdAt\",\n    \"dimensions\": {\n      \"height\": 1,\n      \"width\": 1\n    },\n    \"durationMs\": 1,\n    \"id\": \"id\",\n    \"kind\": \"image\",\n    \"status\": {\n      \"_tag\": \"pending\"\n    },\n    \"updatedAt\": \"updatedAt\",\n    \"url\": \"url\"\n  },\n  \"upload\": {\n    \"expiresAt\": \"expiresAt\",\n    \"request\": {\n      \"headers\": {\n        \"key\": \"value\"\n      },\n      \"method\": \"PUT\",\n      \"url\": \"url\"\n    },\n    \"_tag\": \"single\"\n  }\n}",
+        "body": "{\n  \"media\": {\n    \"altText\": \"altText\",\n    \"byteSize\": 1000000,\n    \"codec\": \"codec\",\n    \"contentType\": \"image/gif\",\n    \"createdAt\": \"createdAt\",\n    \"dimensions\": {\n      \"height\": 1,\n      \"width\": 1\n    },\n    \"durationMs\": 1,\n    \"id\": \"id\",\n    \"kind\": \"image\",\n    \"pageCount\": 1,\n    \"status\": {\n      \"_tag\": \"pending\"\n    },\n    \"updatedAt\": \"updatedAt\",\n    \"url\": \"url\"\n  },\n  \"upload\": {\n    \"expiresAt\": \"expiresAt\",\n    \"request\": {\n      \"headers\": {\n        \"key\": \"value\"\n      },\n      \"method\": \"PUT\",\n      \"url\": \"url\"\n    },\n    \"_tag\": \"single\"\n  }\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -1103,7 +1103,7 @@
       },
       "response": {
         "status": 201,
-        "body": "{\n  \"altText\": \"altText\",\n  \"byteSize\": 1,\n  \"codec\": \"codec\",\n  \"contentType\": \"image/gif\",\n  \"createdAt\": \"createdAt\",\n  \"dimensions\": {\n    \"height\": 1,\n    \"width\": 1\n  },\n  \"durationMs\": 1,\n  \"id\": \"id\",\n  \"kind\": \"image\",\n  \"status\": {\n    \"_tag\": \"pending\"\n  },\n  \"updatedAt\": \"updatedAt\",\n  \"url\": \"url\"\n}",
+        "body": "{\n  \"altText\": \"altText\",\n  \"byteSize\": 1000000,\n  \"codec\": \"codec\",\n  \"contentType\": \"image/gif\",\n  \"createdAt\": \"createdAt\",\n  \"dimensions\": {\n    \"height\": 1,\n    \"width\": 1\n  },\n  \"durationMs\": 1,\n  \"id\": \"id\",\n  \"kind\": \"image\",\n  \"pageCount\": 1,\n  \"status\": {\n    \"_tag\": \"pending\"\n  },\n  \"updatedAt\": \"updatedAt\",\n  \"url\": \"url\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -1142,7 +1142,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"altText\": \"altText\",\n  \"byteSize\": 1,\n  \"codec\": \"codec\",\n  \"contentType\": \"image/gif\",\n  \"createdAt\": \"createdAt\",\n  \"dimensions\": {\n    \"height\": 1,\n    \"width\": 1\n  },\n  \"durationMs\": 1,\n  \"id\": \"id\",\n  \"kind\": \"image\",\n  \"status\": {\n    \"_tag\": \"pending\"\n  },\n  \"updatedAt\": \"updatedAt\",\n  \"url\": \"url\"\n}",
+        "body": "{\n  \"altText\": \"altText\",\n  \"byteSize\": 1000000,\n  \"codec\": \"codec\",\n  \"contentType\": \"image/gif\",\n  \"createdAt\": \"createdAt\",\n  \"dimensions\": {\n    \"height\": 1,\n    \"width\": 1\n  },\n  \"durationMs\": 1,\n  \"id\": \"id\",\n  \"kind\": \"image\",\n  \"pageCount\": 1,\n  \"status\": {\n    \"_tag\": \"pending\"\n  },\n  \"updatedAt\": \"updatedAt\",\n  \"url\": \"url\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -1220,7 +1220,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"altText\": \"altText\",\n  \"byteSize\": 1,\n  \"codec\": \"codec\",\n  \"contentType\": \"image/gif\",\n  \"createdAt\": \"createdAt\",\n  \"dimensions\": {\n    \"height\": 1,\n    \"width\": 1\n  },\n  \"durationMs\": 1,\n  \"id\": \"id\",\n  \"kind\": \"image\",\n  \"status\": {\n    \"_tag\": \"pending\"\n  },\n  \"updatedAt\": \"updatedAt\",\n  \"url\": \"url\"\n}",
+        "body": "{\n  \"altText\": \"altText\",\n  \"byteSize\": 1000000,\n  \"codec\": \"codec\",\n  \"contentType\": \"image/gif\",\n  \"createdAt\": \"createdAt\",\n  \"dimensions\": {\n    \"height\": 1,\n    \"width\": 1\n  },\n  \"durationMs\": 1,\n  \"id\": \"id\",\n  \"kind\": \"image\",\n  \"pageCount\": 1,\n  \"status\": {\n    \"_tag\": \"pending\"\n  },\n  \"updatedAt\": \"updatedAt\",\n  \"url\": \"url\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -1259,7 +1259,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"altText\": \"altText\",\n  \"byteSize\": 1,\n  \"codec\": \"codec\",\n  \"contentType\": \"image/gif\",\n  \"createdAt\": \"createdAt\",\n  \"dimensions\": {\n    \"height\": 1,\n    \"width\": 1\n  },\n  \"durationMs\": 1,\n  \"id\": \"id\",\n  \"kind\": \"image\",\n  \"status\": {\n    \"_tag\": \"pending\"\n  },\n  \"updatedAt\": \"updatedAt\",\n  \"url\": \"url\"\n}",
+        "body": "{\n  \"altText\": \"altText\",\n  \"byteSize\": 1000000,\n  \"codec\": \"codec\",\n  \"contentType\": \"image/gif\",\n  \"createdAt\": \"createdAt\",\n  \"dimensions\": {\n    \"height\": 1,\n    \"width\": 1\n  },\n  \"durationMs\": 1,\n  \"id\": \"id\",\n  \"kind\": \"image\",\n  \"pageCount\": 1,\n  \"status\": {\n    \"_tag\": \"pending\"\n  },\n  \"updatedAt\": \"updatedAt\",\n  \"url\": \"url\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -1455,7 +1455,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"email\": {\n    \"channelReconnect\": true,\n    \"postFailed\": true,\n    \"postPublished\": true,\n    \"postUnconfirmed\": true\n  },\n  \"everyPost\": true\n}",
+        "body": "{\n  \"email\": {\n    \"channelReconnect\": true,\n    \"postFailed\": true,\n    \"postPublished\": true,\n    \"postReview\": true,\n    \"postUnconfirmed\": true\n  },\n  \"everyPost\": true\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -1487,7 +1487,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"email\": {\n    \"channelReconnect\": true,\n    \"postFailed\": true,\n    \"postPublished\": true,\n    \"postUnconfirmed\": true\n  },\n  \"everyPost\": true\n}",
+        "body": "{\n  \"email\": {\n    \"channelReconnect\": true,\n    \"postFailed\": true,\n    \"postPublished\": true,\n    \"postReview\": true,\n    \"postUnconfirmed\": true\n  },\n  \"everyPost\": true\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -1742,7 +1742,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"allowances\": {\n    \"assistantRequests\": 1,\n    \"channels\": 1,\n    \"mediaStorage\": 1,\n    \"members\": 1,\n    \"scheduledPosts\": 1\n  },\n  \"currency\": \"currency\",\n  \"enabled\": true,\n  \"plan\": \"free\",\n  \"plans\": [\n    {\n      \"allowances\": {\n        \"assistantRequests\": null,\n        \"channels\": null,\n        \"mediaStorage\": null,\n        \"members\": null,\n        \"scheduledPosts\": null\n      },\n      \"plan\": \"free\",\n      \"price\": {\n        \"month\": 1,\n        \"year\": 1\n      }\n    }\n  ],\n  \"subscription\": {\n    \"cancelAtPeriodEnd\": true,\n    \"currentPeriodEnd\": \"currentPeriodEnd\",\n    \"endsAt\": \"endsAt\",\n    \"interval\": \"month\",\n    \"plan\": \"starter\",\n    \"startedAt\": \"startedAt\",\n    \"status\": \"incomplete\",\n    \"trialEnd\": \"trialEnd\"\n  },\n  \"trial\": {\n    \"available\": true,\n    \"days\": 1,\n    \"plan\": \"starter\"\n  },\n  \"usage\": {\n    \"assistantRequests\": {\n      \"resetsAt\": \"resetsAt\",\n      \"used\": 1\n    },\n    \"channels\": 1,\n    \"mediaStorage\": 1,\n    \"members\": 1,\n    \"scheduledPosts\": {\n      \"resetsAt\": \"resetsAt\",\n      \"used\": 1\n    }\n  },\n  \"vatRate\": 1,\n  \"withdrawableUntil\": \"withdrawableUntil\"\n}",
+        "body": "{\n  \"allowances\": {\n    \"assistantRequests\": 1000000,\n    \"channels\": 1000000,\n    \"mediaStorage\": 1000000,\n    \"members\": 1000000,\n    \"scheduledPosts\": 1000000\n  },\n  \"currency\": \"currency\",\n  \"enabled\": true,\n  \"plan\": \"free\",\n  \"plans\": [\n    {\n      \"allowances\": {\n        \"assistantRequests\": null,\n        \"channels\": null,\n        \"mediaStorage\": null,\n        \"members\": null,\n        \"scheduledPosts\": null\n      },\n      \"plan\": \"free\",\n      \"price\": {\n        \"month\": 1,\n        \"year\": 1\n      }\n    }\n  ],\n  \"subscription\": {\n    \"cancelAtPeriodEnd\": true,\n    \"currentPeriodEnd\": \"currentPeriodEnd\",\n    \"endsAt\": \"endsAt\",\n    \"interval\": \"month\",\n    \"plan\": \"starter\",\n    \"startedAt\": \"startedAt\",\n    \"status\": \"incomplete\",\n    \"trialEnd\": \"trialEnd\"\n  },\n  \"trial\": {\n    \"available\": true,\n    \"days\": 1,\n    \"plan\": \"starter\"\n  },\n  \"usage\": {\n    \"assistantRequests\": {\n      \"resetsAt\": \"resetsAt\",\n      \"used\": 1\n    },\n    \"channels\": 1,\n    \"mediaStorage\": 1000000,\n    \"members\": 1,\n    \"scheduledPosts\": {\n      \"resetsAt\": \"resetsAt\",\n      \"used\": 1\n    }\n  },\n  \"vatRate\": 1,\n  \"withdrawableUntil\": \"withdrawableUntil\"\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -1778,7 +1778,7 @@
       },
       "response": {
         "status": 200,
-        "body": "{\n  \"mustReduce\": true,\n  \"over\": [\n    {\n      \"allowed\": 1,\n      \"limit\": \"channels\",\n      \"used\": 1\n    }\n  ],\n  \"plan\": \"free\",\n  \"planWithRoom\": \"starter\",\n  \"scheduledPosts\": 1\n}",
+        "body": "{\n  \"mustReduce\": true,\n  \"over\": [\n    {\n      \"allowed\": 1000000,\n      \"limit\": \"channels\",\n      \"used\": 1000000\n    }\n  ],\n  \"plan\": \"free\",\n  \"planWithRoom\": \"starter\",\n  \"scheduledPosts\": 1\n}",
         "headers": {
           "Content-Type": "application/json"
         }
@@ -1909,6 +1909,162 @@
         }
       },
       "uuid": "c6bd795a-5cf3-41b8-b95b-745e8b46320a",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "206f778b-5ab6-4cb7-97ee-3bd7a28d5c90",
+      "name": "Describe every platform - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/platforms/capabilities",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "[\n  {\n    \"analytics\": {\n      \"perPost\": true\n    },\n    \"lookups\": [\n      {\n        \"fills\": [\n          \"fills\"\n        ],\n        \"input\": [\n          {\n            \"forbiddenCharacters\": [\n              \"forbiddenCharacters\"\n            ],\n            \"ifLeftOut\": null,\n            \"lookup\": null,\n            \"maxLength\": null,\n            \"maximum\": null,\n            \"minimum\": null,\n            \"name\": \"name\",\n            \"pattern\": null,\n            \"required\": true,\n            \"type\": \"boolean\",\n            \"values\": [\n              \"values\"\n            ]\n          }\n        ],\n        \"name\": \"youtubeVideoCategories\",\n        \"paged\": true,\n        \"platform\": \"x\"\n      }\n    ],\n    \"media\": {\n      \"altText\": {\n        \"maxLength\": 1,\n        \"shown\": null\n      },\n      \"formats\": [\n        {\n          \"contentType\": \"image/gif\",\n          \"kind\": \"image\",\n          \"maxAspectRatio\": null,\n          \"maxByteSize\": null,\n          \"maxDurationMs\": null,\n          \"maxMediaWith\": null,\n          \"maxPixels\": null,\n          \"maxSide\": null,\n          \"minAspectRatio\": null,\n          \"minByteSize\": null,\n          \"minDurationMs\": null,\n          \"minSide\": null\n        }\n      ],\n      \"maxCount\": 1,\n      \"maxVideos\": 1,\n      \"mixesKinds\": true,\n      \"required\": true\n    },\n    \"options\": {\n      \"constraints\": [\n        {\n          \"field\": \"field\",\n          \"oneOf\": [\n            \"oneOf\"\n          ],\n          \"_tag\": \"needsOneOf\"\n        }\n      ],\n      \"fields\": [\n        {\n          \"forbiddenCharacters\": [\n            \"forbiddenCharacters\"\n          ],\n          \"ifLeftOut\": null,\n          \"lookup\": null,\n          \"maxLength\": null,\n          \"maximum\": null,\n          \"minimum\": null,\n          \"name\": \"name\",\n          \"pattern\": null,\n          \"required\": true,\n          \"type\": \"boolean\",\n          \"values\": [\n            \"values\"\n          ]\n        }\n      ]\n    },\n    \"platform\": \"x\",\n    \"text\": {\n      \"forbiddenCharacters\": [\n        \"forbiddenCharacters\"\n      ],\n      \"limits\": [\n        {\n          \"maximum\": 1,\n          \"unit\": \"graphemes\"\n        }\n      ],\n      \"maxHashtags\": 1,\n      \"maxLinks\": 1,\n      \"maxMentions\": 1\n    },\n    \"version\": 1\n  }\n]",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "206f778b-5ab6-4cb7-97ee-3bd7a28d5c90",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "cdd73b7a-d082-4e8b-a5a0-fc3ddd8ced5b",
+      "name": "Describe a channel - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/channels/{channelId}/capabilities",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          },
+          "channelId": {
+            "equalTo": "channelId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"account\": {\n    \"_tag\": \"unrestricted\"\n  },\n  \"capabilities\": {\n    \"analytics\": {\n      \"perPost\": true\n    },\n    \"lookups\": [\n      {\n        \"fills\": [\n          \"fills\"\n        ],\n        \"input\": [\n          {\n            \"forbiddenCharacters\": [\n              \"forbiddenCharacters\"\n            ],\n            \"ifLeftOut\": null,\n            \"lookup\": null,\n            \"maxLength\": null,\n            \"maximum\": null,\n            \"minimum\": null,\n            \"name\": \"name\",\n            \"pattern\": null,\n            \"required\": true,\n            \"type\": \"boolean\",\n            \"values\": [\n              \"values\"\n            ]\n          }\n        ],\n        \"name\": \"youtubeVideoCategories\",\n        \"paged\": true,\n        \"platform\": \"x\"\n      }\n    ],\n    \"media\": {\n      \"altText\": {\n        \"maxLength\": 1,\n        \"shown\": null\n      },\n      \"formats\": [\n        {\n          \"contentType\": \"image/gif\",\n          \"kind\": \"image\",\n          \"maxAspectRatio\": null,\n          \"maxByteSize\": null,\n          \"maxDurationMs\": null,\n          \"maxMediaWith\": null,\n          \"maxPixels\": null,\n          \"maxSide\": null,\n          \"minAspectRatio\": null,\n          \"minByteSize\": null,\n          \"minDurationMs\": null,\n          \"minSide\": null\n        }\n      ],\n      \"maxCount\": 1,\n      \"maxVideos\": 1,\n      \"mixesKinds\": true,\n      \"required\": true\n    },\n    \"options\": {\n      \"constraints\": [\n        {\n          \"field\": \"field\",\n          \"oneOf\": [\n            \"oneOf\"\n          ],\n          \"_tag\": \"needsOneOf\"\n        }\n      ],\n      \"fields\": [\n        {\n          \"forbiddenCharacters\": [\n            \"forbiddenCharacters\"\n          ],\n          \"ifLeftOut\": null,\n          \"lookup\": null,\n          \"maxLength\": null,\n          \"maximum\": null,\n          \"minimum\": null,\n          \"name\": \"name\",\n          \"pattern\": null,\n          \"required\": true,\n          \"type\": \"boolean\",\n          \"values\": [\n            \"values\"\n          ]\n        }\n      ]\n    },\n    \"platform\": \"x\",\n    \"text\": {\n      \"forbiddenCharacters\": [\n        \"forbiddenCharacters\"\n      ],\n      \"limits\": [\n        {\n          \"maximum\": 1,\n          \"unit\": \"graphemes\"\n        }\n      ],\n      \"maxHashtags\": 1,\n      \"maxLinks\": 1,\n      \"maxMentions\": 1\n    },\n    \"version\": 1\n  },\n  \"channelId\": \"channelId\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "cdd73b7a-d082-4e8b-a5a0-fc3ddd8ced5b",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "72188ec9-3202-4233-b8da-b86cc1ad89d4",
+      "name": "List a channel's lookups - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/channels/{channelId}/lookups",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          },
+          "channelId": {
+            "equalTo": "channelId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "[\n  {\n    \"fills\": [\n      \"fills\"\n    ],\n    \"input\": [\n      {\n        \"forbiddenCharacters\": [\n          \"forbiddenCharacters\"\n        ],\n        \"ifLeftOut\": null,\n        \"lookup\": null,\n        \"maxLength\": null,\n        \"maximum\": null,\n        \"minimum\": null,\n        \"name\": \"name\",\n        \"pattern\": null,\n        \"required\": true,\n        \"type\": \"boolean\",\n        \"values\": [\n          \"values\"\n        ]\n      }\n    ],\n    \"name\": \"youtubeVideoCategories\",\n    \"paged\": true,\n    \"platform\": \"x\"\n  }\n]",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "72188ec9-3202-4233-b8da-b86cc1ad89d4",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "174fd726-8776-421b-b13d-0598f6a2b06d",
+      "name": "Run a channel's lookup - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/channels/{channelId}/lookups/{name}",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          },
+          "channelId": {
+            "equalTo": "channelId"
+          },
+          "name": {
+            "equalTo": "name"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"items\": [\n    {\n      \"id\": \"id\",\n      \"title\": \"title\"\n    }\n  ],\n  \"nextCursor\": \"nextCursor\",\n  \"_tag\": \"youtubeVideoCategories\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "174fd726-8776-421b-b13d-0598f6a2b06d",
       "persistent": true,
       "priority": 3,
       "metadata": {
@@ -2267,9 +2423,432 @@
           }
         }
       }
+    },
+    {
+      "id": "6be34caa-af85-4f41-99ea-50a0dc99a489",
+      "name": "Get the review settings - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/review/settings",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"approvalPolicy\": \"never\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "6be34caa-af85-4f41-99ea-50a0dc99a489",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "65acd408-3ce1-4543-a26a-995c56c825fa",
+      "name": "Update the review settings - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/review/settings",
+        "method": "PUT",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"approvalPolicy\": \"never\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "65acd408-3ce1-4543-a26a-995c56c825fa",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "3af9f7d5-dbac-4d59-b7d1-d7d604ee3a0d",
+      "name": "List pending approvals - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/approvals",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "[\n  {\n    \"decision\": {\n      \"at\": \"at\",\n      \"by\": {\n        \"kind\": \"member\",\n        \"linkId\": null,\n        \"name\": null,\n        \"userId\": null\n      }\n    },\n    \"id\": \"id\",\n    \"postId\": \"postId\",\n    \"requestedAt\": \"requestedAt\",\n    \"requestedBy\": \"requestedBy\",\n    \"requestedByName\": \"requestedByName\",\n    \"requestedVia\": \"member\",\n    \"schedule\": {\n      \"at\": \"at\",\n      \"timeZone\": \"timeZone\"\n    },\n    \"status\": \"pending\",\n    \"subjectHash\": \"subjectHash\"\n  }\n]",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "3af9f7d5-dbac-4d59-b7d1-d7d604ee3a0d",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "af352133-1243-4fea-88f6-2714b4d73806",
+      "name": "Get a post's review - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/posts/{postId}/review",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          },
+          "postId": {
+            "equalTo": "postId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"approvals\": [\n    {\n      \"decision\": {\n        \"at\": \"at\",\n        \"by\": {\n          \"kind\": \"member\",\n          \"linkId\": null,\n          \"name\": null,\n          \"userId\": null\n        }\n      },\n      \"id\": \"id\",\n      \"postId\": \"postId\",\n      \"requestedAt\": \"requestedAt\",\n      \"requestedBy\": \"requestedBy\",\n      \"requestedByName\": \"requestedByName\",\n      \"requestedVia\": \"member\",\n      \"schedule\": {\n        \"at\": \"at\",\n        \"timeZone\": \"timeZone\"\n      },\n      \"status\": \"pending\",\n      \"subjectHash\": \"subjectHash\"\n    }\n  ],\n  \"channels\": [\n    {\n      \"channelId\": \"channelId\",\n      \"handle\": \"handle\",\n      \"options\": {\n        \"platform\": \"youtube\"\n      },\n      \"platform\": \"x\",\n      \"text\": \"text\"\n    }\n  ],\n  \"comments\": [\n    {\n      \"anchor\": {\n        \"channelId\": \"channelId\",\n        \"selection\": null\n      },\n      \"author\": {\n        \"kind\": \"member\",\n        \"linkId\": null,\n        \"name\": null,\n        \"userId\": null\n      },\n      \"createdAt\": \"createdAt\",\n      \"id\": \"id\",\n      \"parentId\": \"parentId\",\n      \"postId\": \"postId\",\n      \"resolved\": {\n        \"at\": \"at\",\n        \"by\": {\n          \"kind\": \"member\",\n          \"linkId\": null,\n          \"name\": null,\n          \"userId\": null\n        }\n      },\n      \"text\": \"text\"\n    }\n  ],\n  \"media\": [\n    {\n      \"altText\": \"altText\",\n      \"kind\": \"image\",\n      \"mediaId\": \"mediaId\",\n      \"url\": \"url\"\n    }\n  ]\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "af352133-1243-4fea-88f6-2714b4d73806",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "36c8132f-150a-462b-b30e-4e68ec64348c",
+      "name": "Comment on a post - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/posts/{postId}/comments",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          },
+          "postId": {
+            "equalTo": "postId"
+          }
+        }
+      },
+      "response": {
+        "status": 201,
+        "body": "{\n  \"anchor\": {\n    \"channelId\": \"channelId\",\n    \"selection\": {\n      \"located\": {\n        \"end\": 1,\n        \"start\": 1\n      },\n      \"quote\": \"quote\",\n      \"start\": 1\n    }\n  },\n  \"author\": {\n    \"kind\": \"member\",\n    \"linkId\": \"linkId\",\n    \"name\": \"name\",\n    \"userId\": \"userId\"\n  },\n  \"createdAt\": \"createdAt\",\n  \"id\": \"id\",\n  \"parentId\": \"parentId\",\n  \"postId\": \"postId\",\n  \"resolved\": {\n    \"at\": \"at\",\n    \"by\": {\n      \"kind\": \"member\",\n      \"linkId\": \"linkId\",\n      \"name\": \"name\",\n      \"userId\": \"userId\"\n    }\n  },\n  \"text\": \"text\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "36c8132f-150a-462b-b30e-4e68ec64348c",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "ca3108e6-172b-4f83-9bd9-b4542f0e6222",
+      "name": "Resolve a thread - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/posts/{postId}/comments/{commentId}",
+        "method": "PATCH",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          },
+          "postId": {
+            "equalTo": "postId"
+          },
+          "commentId": {
+            "equalTo": "commentId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"anchor\": {\n    \"channelId\": \"channelId\",\n    \"selection\": {\n      \"located\": {\n        \"end\": 1,\n        \"start\": 1\n      },\n      \"quote\": \"quote\",\n      \"start\": 1\n    }\n  },\n  \"author\": {\n    \"kind\": \"member\",\n    \"linkId\": \"linkId\",\n    \"name\": \"name\",\n    \"userId\": \"userId\"\n  },\n  \"createdAt\": \"createdAt\",\n  \"id\": \"id\",\n  \"parentId\": \"parentId\",\n  \"postId\": \"postId\",\n  \"resolved\": {\n    \"at\": \"at\",\n    \"by\": {\n      \"kind\": \"member\",\n      \"linkId\": \"linkId\",\n      \"name\": \"name\",\n      \"userId\": \"userId\"\n    }\n  },\n  \"text\": \"text\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "ca3108e6-172b-4f83-9bd9-b4542f0e6222",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "f3d159ec-5281-4300-b9b6-15870a0bcb7d",
+      "name": "Approve a post - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/posts/{postId}/approve",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          },
+          "postId": {
+            "equalTo": "postId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"approval\": {\n    \"decision\": {\n      \"at\": \"at\",\n      \"by\": {\n        \"kind\": \"member\",\n        \"linkId\": null,\n        \"name\": null,\n        \"userId\": null\n      }\n    },\n    \"id\": \"id\",\n    \"postId\": \"postId\",\n    \"requestedAt\": \"requestedAt\",\n    \"requestedBy\": \"requestedBy\",\n    \"requestedByName\": \"requestedByName\",\n    \"requestedVia\": \"member\",\n    \"schedule\": {\n      \"at\": \"at\",\n      \"timeZone\": \"timeZone\"\n    },\n    \"status\": \"pending\",\n    \"subjectHash\": \"subjectHash\"\n  },\n  \"late\": true\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "f3d159ec-5281-4300-b9b6-15870a0bcb7d",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "a477524f-cba6-477a-bd2f-f2baed3aeff2",
+      "name": "Request changes to a post - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/posts/{postId}/request-changes",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          },
+          "postId": {
+            "equalTo": "postId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"approval\": {\n    \"decision\": {\n      \"at\": \"at\",\n      \"by\": {\n        \"kind\": \"member\",\n        \"linkId\": null,\n        \"name\": null,\n        \"userId\": null\n      }\n    },\n    \"id\": \"id\",\n    \"postId\": \"postId\",\n    \"requestedAt\": \"requestedAt\",\n    \"requestedBy\": \"requestedBy\",\n    \"requestedByName\": \"requestedByName\",\n    \"requestedVia\": \"member\",\n    \"schedule\": {\n      \"at\": \"at\",\n      \"timeZone\": \"timeZone\"\n    },\n    \"status\": \"pending\",\n    \"subjectHash\": \"subjectHash\"\n  },\n  \"comment\": {\n    \"anchor\": {\n      \"channelId\": \"channelId\",\n      \"selection\": {\n        \"located\": null,\n        \"quote\": \"quote\",\n        \"start\": 1\n      }\n    },\n    \"author\": {\n      \"kind\": \"member\",\n      \"linkId\": \"linkId\",\n      \"name\": \"name\",\n      \"userId\": \"userId\"\n    },\n    \"createdAt\": \"createdAt\",\n    \"id\": \"id\",\n    \"parentId\": \"parentId\",\n    \"postId\": \"postId\",\n    \"resolved\": {\n      \"at\": \"at\",\n      \"by\": {\n        \"kind\": \"member\",\n        \"linkId\": null,\n        \"name\": null,\n        \"userId\": null\n      }\n    },\n    \"text\": \"text\"\n  }\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "a477524f-cba6-477a-bd2f-f2baed3aeff2",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "6c5bf980-9e71-4ab0-9423-e600e6df9d2b",
+      "name": "List a post's review links - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/posts/{postId}/review-links",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          },
+          "postId": {
+            "equalTo": "postId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "[\n  {\n    \"access\": \"view\",\n    \"createdAt\": \"createdAt\",\n    \"createdBy\": \"createdBy\",\n    \"expiresAt\": \"expiresAt\",\n    \"id\": \"id\",\n    \"postId\": \"postId\",\n    \"revokedAt\": \"revokedAt\",\n    \"status\": \"active\"\n  }\n]",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "6c5bf980-9e71-4ab0-9423-e600e6df9d2b",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "6465f193-6e26-463a-901c-2f0591f595b6",
+      "name": "Create a review link - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/posts/{postId}/review-links",
+        "method": "POST",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          },
+          "postId": {
+            "equalTo": "postId"
+          }
+        }
+      },
+      "response": {
+        "status": 201,
+        "body": "{\n  \"link\": {\n    \"access\": \"view\",\n    \"createdAt\": \"createdAt\",\n    \"createdBy\": \"createdBy\",\n    \"expiresAt\": \"expiresAt\",\n    \"id\": \"id\",\n    \"postId\": \"postId\",\n    \"revokedAt\": \"revokedAt\",\n    \"status\": \"active\"\n  },\n  \"token\": \"token\",\n  \"url\": \"url\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "6465f193-6e26-463a-901c-2f0591f595b6",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
+      "id": "6782c037-1ce1-41c6-8d30-29cb6b87e8e0",
+      "name": "Revoke a review link - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/review-links/{linkId}",
+        "method": "DELETE",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          },
+          "linkId": {
+            "equalTo": "linkId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"access\": \"view\",\n  \"createdAt\": \"createdAt\",\n  \"createdBy\": \"createdBy\",\n  \"expiresAt\": \"expiresAt\",\n  \"id\": \"id\",\n  \"postId\": \"postId\",\n  \"revokedAt\": \"revokedAt\",\n  \"status\": \"active\"\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "6782c037-1ce1-41c6-8d30-29cb6b87e8e0",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
     }
   ],
   "meta": {
-    "total": 61
+    "total": 76
   }
 }

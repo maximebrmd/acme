@@ -111,6 +111,40 @@ describe(refreshDueBefore, () => {
     }
   );
 
+  it("is a week ahead for Pinterest, whose tokens last 30 days", () => {
+    expect(refreshDueBefore(tokenPolicies.pinterest, now)).toStrictEqual(
+      Option.some(after("7 days"))
+    );
+  });
+
+  it("is a week ahead for a LinkedIn page, and none for a profile", () => {
+    expect(refreshDueBefore(tokenPolicies.linkedinPage, now)).toStrictEqual(
+      Option.some(after("7 days"))
+    );
+    expect(refreshDueBefore(tokenPolicies.linkedin, now)).toStrictEqual(
+      Option.none()
+    );
+  });
+
+  it("is a month ago for a Google Business Profile location, kept alive as YouTube is", () => {
+    expect(refreshDueBefore(tokenPolicies.googleBusiness, now)).toStrictEqual(
+      refreshDueBefore(tokenPolicies.youtube, now)
+    );
+    expect(tokenPolicies.googleBusiness.refresh).toStrictEqual(
+      tokenPolicies.youtube.refresh
+    );
+  });
+
+  it("names every way in whose refresh token works once", () => {
+    expect(
+      Object.entries(tokenPolicies)
+        .flatMap(([name, { refresh }]) =>
+          refresh._tag === "refreshToken" && refresh.rotates ? [name] : []
+        )
+        .toSorted()
+    ).toStrictEqual(["bluesky", "blueskyLoopback", "pinterest", "tiktok", "x"]);
+  });
+
   it("is none for tokens that are never refreshed", () => {
     expect(refreshDueBefore(tokenPolicies.mastodon, now)).toStrictEqual(
       Option.none()
@@ -178,10 +212,13 @@ describe(isRefreshDue, () => {
       bluesky: "beforeExpiry",
       blueskyLoopback: "beforeExpiry",
       facebook: "none",
+      googleBusiness: "keepAlive",
       instagram: "none",
       instagramLogin: "beforeExpiry",
       linkedin: "none",
+      linkedinPage: "beforeExpiry",
       mastodon: "none",
+      pinterest: "beforeExpiry",
       threads: "beforeExpiry",
       tiktok: "keepAlive",
       x: "keepAlive",

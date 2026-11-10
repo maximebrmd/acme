@@ -13,6 +13,7 @@ import { ConnectedAppSchema } from "./connected-apps.ts";
 import { DeletionIncomplete } from "./deletion-incomplete.ts";
 import { Forbidden } from "./forbidden.ts";
 import { IncorrectPassword } from "./incorrect-password.ts";
+import { ByteCountSchema } from "./int64.ts";
 import { LastOwner } from "./last-owner.ts";
 import { MediaStoreUnavailable } from "./media-store-unavailable.ts";
 import { NoticeEventSchema } from "./notices.ts";
@@ -82,6 +83,9 @@ const ExportedNoticeSchema = Schema.Struct({
 });
 
 const ExportedChannelSchema = Schema.Struct({
+  // The way in it came through, on a platform that has several (a LinkedIn
+  // profile or page, Instagram's two logins); null elsewhere.
+  connection: nullable(Schema.String),
   createdAt: instant,
   displayName: nullable(Schema.String),
   handle: Schema.String,
@@ -246,7 +250,7 @@ const ExportedAboutSchema = Schema.Struct({
 
 const ExportedMediaSchema = Schema.Struct({
   altText: nullable(Schema.String),
-  byteSize: Schema.Int,
+  byteSize: ByteCountSchema,
   contentType: Schema.String,
   createdAt: instant,
   // A link that downloads the file for 7 days; null for a file never
@@ -255,6 +259,8 @@ const ExportedMediaSchema = Schema.Struct({
   durationMs: nullable(Schema.Int),
   height: nullable(Schema.Int),
   id: Schema.String,
+  // A document's pages; null for an image or a video.
+  pageCount: nullable(Schema.Int),
   status: Schema.String,
   width: nullable(Schema.Int),
 });
@@ -369,6 +375,69 @@ const ExportedAnalyticsSchema = Schema.Struct({
   targetId: Schema.String,
 });
 
+// A comment in a post's review. `author` is member, apiKey or visitor; a
+// visitor's name is null once past its retention.
+const ExportedReviewCommentSchema = Schema.Struct({
+  author: Schema.String,
+  authorName: nullable(Schema.String),
+  authorUserId: nullable(Schema.String),
+  channelId: nullable(Schema.String),
+  createdAt: instant,
+  id: Schema.String,
+  parentId: nullable(Schema.String),
+  postId: Schema.String,
+  quote: nullable(Schema.String),
+  resolvedAt: nullable(instant),
+  text: Schema.String,
+});
+
+// An approval asked for a post, and what was decided: `status` is pending,
+// approved, changesRequested or withdrawn.
+const ExportedApprovalSchema = Schema.Struct({
+  decidedAt: nullable(instant),
+  decidedBy: nullable(Schema.String),
+  decidedByName: nullable(Schema.String),
+  decidedByUserId: nullable(Schema.String),
+  id: Schema.String,
+  postId: Schema.String,
+  requestedAt: instant,
+  requestedBy: nullable(Schema.String),
+  scheduledAt: instant,
+  status: Schema.String,
+});
+
+// What the reviews of a workspace's posts hold: its approval policy, the
+// links made to its posts (never their tokens), their comments and the
+// approvals asked and decided. Never the address a visitor left.
+const ExportedReviewSchema = Schema.Struct({
+  approvalPolicy: Schema.String,
+  approvals: Schema.Array(ExportedApprovalSchema),
+  comments: Schema.Array(ExportedReviewCommentSchema),
+  links: Schema.Array(
+    Schema.Struct({
+      access: Schema.String,
+      createdAt: instant,
+      createdBy: nullable(Schema.String),
+      expiresAt: instant,
+      id: Schema.String,
+      postId: Schema.String,
+      revokedAt: nullable(instant),
+    })
+  ),
+});
+
+const inWorkspace = { workspaceId: Schema.String };
+
+// What the user wrote and decided in the reviews of posts, anywhere.
+const ExportedUserReviewSchema = Schema.Struct({
+  approvals: Schema.Array(
+    Schema.Struct({ ...ExportedApprovalSchema.fields, ...inWorkspace })
+  ),
+  comments: Schema.Array(
+    Schema.Struct({ ...ExportedReviewCommentSchema.fields, ...inWorkspace })
+  ),
+});
+
 // A webhook endpoint: where the workspace is told what happens in it,
 // without the secret that signs what it is sent.
 const ExportedWebhookSchema = Schema.Struct({
@@ -391,6 +460,7 @@ const ExportedWorkspaceSchema = Schema.Struct({
   media: Schema.Array(ExportedMediaSchema),
   name: Schema.String,
   posts: Schema.Array(ExportedPostSchema),
+  review: ExportedReviewSchema,
   slug: Schema.String,
   webhooks: Schema.Array(ExportedWebhookSchema),
 });
@@ -399,7 +469,8 @@ const ExportedWorkspaceSchema = Schema.Struct({
  * Everything Peal keeps about the user: their account, how they sign in,
  * their sessions, workspaces, invitations, connected applications, notices
  * and preferences, what staff did to their account, the orders and
- * withdrawals they made, the posts they wrote in the workspaces they share, the
+ * withdrawals they made, the posts they wrote in the workspaces they share,
+ * what they wrote and decided in the reviews of posts, the
  * connections that made content and what the law has Peal keep once the
  * account closes, and
  * the content of the workspaces where they are the only member, which
@@ -427,6 +498,9 @@ export const AccountExportSchema = Schema.Struct({
   memberships: Schema.Array(ExportedMembershipSchema),
   notices: Schema.Array(ExportedNoticeSchema),
   notificationPreferences: NotificationPreferencesSchema,
+  // The comments the user wrote on posts, the approvals they asked for and
+  // those they decided, in any workspace.
+  review: ExportedUserReviewSchema,
   sessions: Schema.Array(ExportedSessionSchema),
   signInMethods: Schema.Array(ExportedSignInMethodSchema),
   // What staff did to the account, oldest first.

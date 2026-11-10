@@ -31,6 +31,7 @@ import type { AuthorizationCallback } from "#channels/application/platform-autho
 import { actorOf } from "#shared/api/actor.ts";
 import { limitRefusal } from "#shared/api/limit-reached.ts";
 import type { LimitRefusal } from "#shared/api/limit-reached.ts";
+import { isConnectionOf } from "#shared/domain/channel-connection.ts";
 
 import { toChannelView } from "./channel-view.ts";
 
@@ -204,11 +205,12 @@ export const ChannelsHandlers = HttpApiBuilder.group(
 
           const authorizationUrl = yield* connectChannel
             .start(actor, params.platform, {
-              // A way in names Instagram's only, and others have one.
-              connection:
-                params.platform === "instagram"
-                  ? Option.fromUndefinedOr(payload.connection)
-                  : Option.none(),
+              // A way in names its own platform's, and others have one.
+              connection: Option.fromUndefinedOr(payload.connection).pipe(
+                Option.filter((connection) =>
+                  isConnectionOf(params.platform, connection)
+                )
+              ),
               handle: Option.fromUndefinedOr(payload.handle),
               instance: Option.fromUndefinedOr(payload.instance),
             })
@@ -251,6 +253,7 @@ export const ChannelsHandlers = HttpApiBuilder.group(
 
           return {
             instagramConnections: connectable.instagramConnections,
+            linkedinConnections: connectable.linkedinConnections,
             platforms: connectable.platforms,
           };
         }),

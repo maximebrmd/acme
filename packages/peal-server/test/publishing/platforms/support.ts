@@ -24,27 +24,30 @@ import type {
 import { PlatformQuota } from "#publishing/application/platform-quota.ts";
 import type { PublicationProgress } from "#publishing/application/publication-progress.ts";
 import type { StepTiming } from "#publishing/application/publication-steps.ts";
+import { RecordedPosts } from "#publishing/application/recorded-posts.ts";
 import { UploadSessions } from "#publishing/application/upload-sessions.ts";
 import type { UploadSession } from "#publishing/application/upload-sessions.ts";
 import { MediaAttachment } from "#publishing/domain/media-attachment.ts";
 import { blueskyClient } from "#publishing/infrastructure/platforms/bluesky/bluesky-client.ts";
+import { googleBusinessClient } from "#publishing/infrastructure/platforms/google-business/google-business-client.ts";
 import { linkedinClient } from "#publishing/infrastructure/platforms/linkedin/linkedin-client.ts";
 import { mastodonClient } from "#publishing/infrastructure/platforms/mastodon/mastodon-client.ts";
 import { facebookClient } from "#publishing/infrastructure/platforms/meta/facebook-client.ts";
 import { instagramClient } from "#publishing/infrastructure/platforms/meta/instagram-client.ts";
 import { threadsClient } from "#publishing/infrastructure/platforms/meta/threads-client.ts";
+import { pinterestClient } from "#publishing/infrastructure/platforms/pinterest/pinterest-client.ts";
 import { tiktokClient } from "#publishing/infrastructure/platforms/tiktok/tiktok-client.ts";
 import { xClient } from "#publishing/infrastructure/platforms/x/x-client.ts";
 import { youtubeClient } from "#publishing/infrastructure/platforms/youtube/youtube-client.ts";
 import { DatabaseError } from "#shared/application/database-error.ts";
+import { connectionOf } from "#shared/domain/channel-connection.ts";
+import type { ChannelConnection } from "#shared/domain/channel-connection.ts";
 import {
   ChannelIdSchema,
   MediaAssetIdSchema,
   WorkspaceIdSchema,
 } from "#shared/domain/ids.ts";
 import type { ChannelId, MediaAssetId } from "#shared/domain/ids.ts";
-import { connectionOf } from "#shared/domain/instagram-connection.ts";
-import type { InstagramConnection } from "#shared/domain/instagram-connection.ts";
 import { MediaRejected } from "#shared/domain/media-rejected.ts";
 import type { Platform } from "#shared/domain/platform.ts";
 import { TokenExpired } from "#shared/domain/token-expired.ts";
@@ -92,7 +95,7 @@ export class CredentialLog extends Context.Service<
 export const credentialsOf = (
   given: {
     readonly accountId: string;
-    readonly connection?: Option.Option<InstagramConnection>;
+    readonly connection?: Option.Option<ChannelConnection>;
     readonly platform: Platform;
   },
   tokens: readonly string[]
@@ -178,10 +181,18 @@ export interface TestFile {
 let nextMedia = 0;
 
 /** A synthetic file of `size` bytes. */
+const defaultTypes = {
+  document: "application/pdf",
+  image: "image/png",
+  video: "video/mp4",
+} as const;
+
+const extensions = { document: "pdf", image: "png", video: "mp4" } as const;
+
 export const testFile = (
-  kind: "image" | "video",
+  kind: "document" | "image" | "video",
   size: number,
-  contentType = kind === "image" ? "image/png" : "video/mp4"
+  contentType: string = defaultTypes[kind]
 ): TestFile => {
   nextMedia += 1;
 
@@ -194,10 +205,13 @@ export const testFile = (
     media: {
       byteSize: size,
       contentType,
-      dimensions: Option.some({ height: 600, width: 800 }),
+      dimensions:
+        kind === "document"
+          ? Option.none()
+          : Option.some({ height: 600, width: 800 }),
       duration:
         kind === "video" ? Option.some(Duration.seconds(4)) : Option.none(),
-      fileName: `${mediaId}.${kind === "image" ? "png" : "mp4"}`,
+      fileName: `${mediaId}.${extensions[kind]}`,
       kind,
       mediaId,
     },
@@ -260,6 +274,16 @@ export const outgoing = Effect.fn("test.outgoing")(function* outgoing(
   return post;
 });
 
+// The posts the channel is recorded to have made already, by platform id.
+const recordedOf = (ids: readonly string[]) =>
+  Layer.succeed(
+    RecordedPosts,
+    RecordedPosts.of({
+      among: (_channelId, asked) =>
+        Effect.succeed(new Set(asked.filter((id) => ids.includes(id)))),
+    })
+  );
+
 const HttpTest = Layer.mergeAll(FetchHttpClient.layer, OpenOutboundGuard);
 
 const httpClient = publicHttpClient.pipe(Effect.provide(HttpTest));
@@ -291,6 +315,8 @@ export const linkedinClientWith = Effect.fn("test.linkedinClient")(
     readonly api: string;
     readonly credentials: Layer.Layer<CredentialLog | PlatformCredentials>;
     readonly files?: readonly TestFile[];
+    /** The ids the channel is already known to have published. */
+    readonly recorded?: readonly string[];
     readonly version: string;
   }) {
     const api = yield* httpClient;
@@ -303,7 +329,11 @@ export const linkedinClientWith = Effect.fn("test.linkedinClient")(
       version: options.version,
     }).pipe(
       Effect.provide(
-        Layer.mergeAll(options.credentials, mediaOf(options.files ?? []))
+        Layer.mergeAll(
+          options.credentials,
+          recordedOf(options.recorded ?? []),
+          mediaOf(options.files ?? [])
+        )
       )
     );
   }
@@ -326,6 +356,33 @@ export const xClientWith = Effect.fn("test.xClient")(
     }).pipe(
       Effect.provide(
         Layer.mergeAll(options.credentials, mediaOf(options.files ?? []))
+      )
+    );
+  }
+);
+
+/** The Google Business Profile client, with the fake as API. */
+export const googleBusinessClientWith = Effect.fn("test.googleBusinessClient")(
+  function* googleBusinessClientWith(options: {
+    readonly api: string;
+    readonly credentials: Layer.Layer<CredentialLog | PlatformCredentials>;
+    readonly files?: readonly TestFile[];
+    /** The ids the channel is already known to have published. */
+    readonly recorded?: readonly string[];
+  }) {
+    const api = yield* httpClient;
+
+    return yield* googleBusinessClient({
+      api,
+      apiUrl: new URL(options.api),
+      timing: testTiming,
+    }).pipe(
+      Effect.provide(
+        Layer.mergeAll(
+          options.credentials,
+          recordedOf(options.recorded ?? []),
+          mediaOf(options.files ?? [])
+        )
       )
     );
   }
@@ -606,6 +663,35 @@ export const youtubeClientWith = Effect.fn("test.youtubeClient")(
           options.credentials,
           mediaOf(options.files ?? []),
           uploadLedgerOf(options.ledger)
+        )
+      )
+    );
+  }
+);
+
+/** The Pinterest client, with the fake as API and as the videos' store. */
+export const pinterestClientWith = Effect.fn("test.pinterestClient")(
+  function* pinterestClientWith(options: {
+    readonly api: string;
+    readonly credentials: Layer.Layer<CredentialLog | PlatformCredentials>;
+    readonly files?: readonly TestFile[];
+    /** The ids the channel is already known to have published. */
+    readonly recorded?: readonly string[];
+  }) {
+    const api = yield* httpClient;
+
+    return yield* pinterestClient({
+      api,
+      apiUrl: new URL(options.api),
+      timing: testTiming,
+      uploads: api,
+    }).pipe(
+      Effect.provide(
+        Layer.mergeAll(
+          options.credentials,
+          recordedOf(options.recorded ?? []),
+          mediaOf(options.files ?? []),
+          OpenOutboundGuard
         )
       )
     );

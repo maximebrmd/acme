@@ -60,6 +60,7 @@ layer(Test, { timeout: 60_000 })("billing's notices", (it) => {
               channelReconnect: false,
               postFailed: false,
               postPublished: false,
+              postReview: true,
               postUnconfirmed: false,
             },
           })

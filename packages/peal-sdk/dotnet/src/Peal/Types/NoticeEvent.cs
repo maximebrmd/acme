@@ -46,6 +46,42 @@ public record NoticeEvent
     }
 
     /// <summary>
+    /// Create an instance of NoticeEvent with <see cref="NoticeEvent.PostApprovalRequested"/>.
+    /// </summary>
+    public NoticeEvent(NoticeEvent.PostApprovalRequested value)
+    {
+        Type = "PostApprovalRequested";
+        Value = value.Value;
+    }
+
+    /// <summary>
+    /// Create an instance of NoticeEvent with <see cref="NoticeEvent.PostApproved"/>.
+    /// </summary>
+    public NoticeEvent(NoticeEvent.PostApproved value)
+    {
+        Type = "PostApproved";
+        Value = value.Value;
+    }
+
+    /// <summary>
+    /// Create an instance of NoticeEvent with <see cref="NoticeEvent.PostChangesRequested"/>.
+    /// </summary>
+    public NoticeEvent(NoticeEvent.PostChangesRequested value)
+    {
+        Type = "PostChangesRequested";
+        Value = value.Value;
+    }
+
+    /// <summary>
+    /// Create an instance of NoticeEvent with <see cref="NoticeEvent.PostCommented"/>.
+    /// </summary>
+    public NoticeEvent(NoticeEvent.PostCommented value)
+    {
+        Type = "PostCommented";
+        Value = value.Value;
+    }
+
+    /// <summary>
     /// Create an instance of NoticeEvent with <see cref="NoticeEvent.ChannelReconnectRequired"/>.
     /// </summary>
     public NoticeEvent(NoticeEvent.ChannelReconnectRequired value)
@@ -144,6 +180,26 @@ public record NoticeEvent
     public bool IsPostUnconfirmed => Type == "PostUnconfirmed";
 
     /// <summary>
+    /// Returns true if <see cref="Type"/> is "PostApprovalRequested"
+    /// </summary>
+    public bool IsPostApprovalRequested => Type == "PostApprovalRequested";
+
+    /// <summary>
+    /// Returns true if <see cref="Type"/> is "PostApproved"
+    /// </summary>
+    public bool IsPostApproved => Type == "PostApproved";
+
+    /// <summary>
+    /// Returns true if <see cref="Type"/> is "PostChangesRequested"
+    /// </summary>
+    public bool IsPostChangesRequested => Type == "PostChangesRequested";
+
+    /// <summary>
+    /// Returns true if <see cref="Type"/> is "PostCommented"
+    /// </summary>
+    public bool IsPostCommented => Type == "PostCommented";
+
+    /// <summary>
     /// Returns true if <see cref="Type"/> is "ChannelReconnectRequired"
     /// </summary>
     public bool IsChannelReconnectRequired => Type == "ChannelReconnectRequired";
@@ -209,6 +265,42 @@ public record NoticeEvent
         IsPostUnconfirmed
             ? (Peal.NoticeEventPostUnconfirmed)Value!
             : throw new global::System.Exception("NoticeEvent.Type is not 'PostUnconfirmed'");
+
+    /// <summary>
+    /// Returns the value as a <see cref="Peal.NoticeEventPostApprovalRequested"/> if <see cref="Type"/> is 'PostApprovalRequested', otherwise throws an exception.
+    /// </summary>
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'PostApprovalRequested'.</exception>
+    public Peal.NoticeEventPostApprovalRequested AsPostApprovalRequested() =>
+        IsPostApprovalRequested
+            ? (Peal.NoticeEventPostApprovalRequested)Value!
+            : throw new global::System.Exception("NoticeEvent.Type is not 'PostApprovalRequested'");
+
+    /// <summary>
+    /// Returns the value as a <see cref="Peal.NoticeEventPostApproved"/> if <see cref="Type"/> is 'PostApproved', otherwise throws an exception.
+    /// </summary>
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'PostApproved'.</exception>
+    public Peal.NoticeEventPostApproved AsPostApproved() =>
+        IsPostApproved
+            ? (Peal.NoticeEventPostApproved)Value!
+            : throw new global::System.Exception("NoticeEvent.Type is not 'PostApproved'");
+
+    /// <summary>
+    /// Returns the value as a <see cref="Peal.NoticeEventPostChangesRequested"/> if <see cref="Type"/> is 'PostChangesRequested', otherwise throws an exception.
+    /// </summary>
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'PostChangesRequested'.</exception>
+    public Peal.NoticeEventPostChangesRequested AsPostChangesRequested() =>
+        IsPostChangesRequested
+            ? (Peal.NoticeEventPostChangesRequested)Value!
+            : throw new global::System.Exception("NoticeEvent.Type is not 'PostChangesRequested'");
+
+    /// <summary>
+    /// Returns the value as a <see cref="Peal.NoticeEventPostCommented"/> if <see cref="Type"/> is 'PostCommented', otherwise throws an exception.
+    /// </summary>
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'PostCommented'.</exception>
+    public Peal.NoticeEventPostCommented AsPostCommented() =>
+        IsPostCommented
+            ? (Peal.NoticeEventPostCommented)Value!
+            : throw new global::System.Exception("NoticeEvent.Type is not 'PostCommented'");
 
     /// <summary>
     /// Returns the value as a <see cref="Peal.NoticeEventChannelReconnectRequired"/> if <see cref="Type"/> is 'ChannelReconnectRequired', otherwise throws an exception.
@@ -290,6 +382,10 @@ public record NoticeEvent
         Func<Peal.NoticeEventPostPublished, T> onPostPublished,
         Func<Peal.NoticeEventPostFailed, T> onPostFailed,
         Func<Peal.NoticeEventPostUnconfirmed, T> onPostUnconfirmed,
+        Func<Peal.NoticeEventPostApprovalRequested, T> onPostApprovalRequested,
+        Func<Peal.NoticeEventPostApproved, T> onPostApproved,
+        Func<Peal.NoticeEventPostChangesRequested, T> onPostChangesRequested,
+        Func<Peal.NoticeEventPostCommented, T> onPostCommented,
         Func<Peal.NoticeEventChannelReconnectRequired, T> onChannelReconnectRequired,
         Func<Peal.NoticeEventChannelReconnectSoon, T> onChannelReconnectSoon,
         Func<Peal.NoticeEventSubscriptionStarted, T> onSubscriptionStarted,
@@ -306,6 +402,10 @@ public record NoticeEvent
             "PostPublished" => onPostPublished(AsPostPublished()),
             "PostFailed" => onPostFailed(AsPostFailed()),
             "PostUnconfirmed" => onPostUnconfirmed(AsPostUnconfirmed()),
+            "PostApprovalRequested" => onPostApprovalRequested(AsPostApprovalRequested()),
+            "PostApproved" => onPostApproved(AsPostApproved()),
+            "PostChangesRequested" => onPostChangesRequested(AsPostChangesRequested()),
+            "PostCommented" => onPostCommented(AsPostCommented()),
             "ChannelReconnectRequired" => onChannelReconnectRequired(AsChannelReconnectRequired()),
             "ChannelReconnectSoon" => onChannelReconnectSoon(AsChannelReconnectSoon()),
             "SubscriptionStarted" => onSubscriptionStarted(AsSubscriptionStarted()),
@@ -322,6 +422,10 @@ public record NoticeEvent
         Action<Peal.NoticeEventPostPublished> onPostPublished,
         Action<Peal.NoticeEventPostFailed> onPostFailed,
         Action<Peal.NoticeEventPostUnconfirmed> onPostUnconfirmed,
+        Action<Peal.NoticeEventPostApprovalRequested> onPostApprovalRequested,
+        Action<Peal.NoticeEventPostApproved> onPostApproved,
+        Action<Peal.NoticeEventPostChangesRequested> onPostChangesRequested,
+        Action<Peal.NoticeEventPostCommented> onPostCommented,
         Action<Peal.NoticeEventChannelReconnectRequired> onChannelReconnectRequired,
         Action<Peal.NoticeEventChannelReconnectSoon> onChannelReconnectSoon,
         Action<Peal.NoticeEventSubscriptionStarted> onSubscriptionStarted,
@@ -343,6 +447,18 @@ public record NoticeEvent
                 break;
             case "PostUnconfirmed":
                 onPostUnconfirmed(AsPostUnconfirmed());
+                break;
+            case "PostApprovalRequested":
+                onPostApprovalRequested(AsPostApprovalRequested());
+                break;
+            case "PostApproved":
+                onPostApproved(AsPostApproved());
+                break;
+            case "PostChangesRequested":
+                onPostChangesRequested(AsPostChangesRequested());
+                break;
+            case "PostCommented":
+                onPostCommented(AsPostCommented());
                 break;
             case "ChannelReconnectRequired":
                 onChannelReconnectRequired(AsChannelReconnectRequired());
@@ -410,6 +526,62 @@ public record NoticeEvent
         if (Type == "PostUnconfirmed")
         {
             value = (Peal.NoticeEventPostUnconfirmed)Value!;
+            return true;
+        }
+        value = null;
+        return false;
+    }
+
+    /// <summary>
+    /// Attempts to cast the value to a <see cref="Peal.NoticeEventPostApprovalRequested"/> and returns true if successful.
+    /// </summary>
+    public bool TryAsPostApprovalRequested(out Peal.NoticeEventPostApprovalRequested? value)
+    {
+        if (Type == "PostApprovalRequested")
+        {
+            value = (Peal.NoticeEventPostApprovalRequested)Value!;
+            return true;
+        }
+        value = null;
+        return false;
+    }
+
+    /// <summary>
+    /// Attempts to cast the value to a <see cref="Peal.NoticeEventPostApproved"/> and returns true if successful.
+    /// </summary>
+    public bool TryAsPostApproved(out Peal.NoticeEventPostApproved? value)
+    {
+        if (Type == "PostApproved")
+        {
+            value = (Peal.NoticeEventPostApproved)Value!;
+            return true;
+        }
+        value = null;
+        return false;
+    }
+
+    /// <summary>
+    /// Attempts to cast the value to a <see cref="Peal.NoticeEventPostChangesRequested"/> and returns true if successful.
+    /// </summary>
+    public bool TryAsPostChangesRequested(out Peal.NoticeEventPostChangesRequested? value)
+    {
+        if (Type == "PostChangesRequested")
+        {
+            value = (Peal.NoticeEventPostChangesRequested)Value!;
+            return true;
+        }
+        value = null;
+        return false;
+    }
+
+    /// <summary>
+    /// Attempts to cast the value to a <see cref="Peal.NoticeEventPostCommented"/> and returns true if successful.
+    /// </summary>
+    public bool TryAsPostCommented(out Peal.NoticeEventPostCommented? value)
+    {
+        if (Type == "PostCommented")
+        {
+            value = (Peal.NoticeEventPostCommented)Value!;
             return true;
         }
         value = null;
@@ -536,6 +708,16 @@ public record NoticeEvent
 
     public static implicit operator NoticeEvent(NoticeEvent.PostUnconfirmed value) => new(value);
 
+    public static implicit operator NoticeEvent(NoticeEvent.PostApprovalRequested value) =>
+        new(value);
+
+    public static implicit operator NoticeEvent(NoticeEvent.PostApproved value) => new(value);
+
+    public static implicit operator NoticeEvent(NoticeEvent.PostChangesRequested value) =>
+        new(value);
+
+    public static implicit operator NoticeEvent(NoticeEvent.PostCommented value) => new(value);
+
     public static implicit operator NoticeEvent(NoticeEvent.ChannelReconnectRequired value) =>
         new(value);
 
@@ -613,6 +795,30 @@ public record NoticeEvent
                         ?? throw new JsonException(
                             "Failed to deserialize Peal.NoticeEventPostUnconfirmed"
                         ),
+                "PostApprovalRequested" =>
+                    jsonWithoutDiscriminator.Deserialize<Peal.NoticeEventPostApprovalRequested?>(
+                        options
+                    )
+                        ?? throw new JsonException(
+                            "Failed to deserialize Peal.NoticeEventPostApprovalRequested"
+                        ),
+                "PostApproved" =>
+                    jsonWithoutDiscriminator.Deserialize<Peal.NoticeEventPostApproved?>(options)
+                        ?? throw new JsonException(
+                            "Failed to deserialize Peal.NoticeEventPostApproved"
+                        ),
+                "PostChangesRequested" =>
+                    jsonWithoutDiscriminator.Deserialize<Peal.NoticeEventPostChangesRequested?>(
+                        options
+                    )
+                        ?? throw new JsonException(
+                            "Failed to deserialize Peal.NoticeEventPostChangesRequested"
+                        ),
+                "PostCommented" =>
+                    jsonWithoutDiscriminator.Deserialize<Peal.NoticeEventPostCommented?>(options)
+                        ?? throw new JsonException(
+                            "Failed to deserialize Peal.NoticeEventPostCommented"
+                        ),
                 "ChannelReconnectRequired" =>
                     jsonWithoutDiscriminator.Deserialize<Peal.NoticeEventChannelReconnectRequired?>(
                         options
@@ -682,6 +888,10 @@ public record NoticeEvent
                     "PostPublished" => JsonSerializer.SerializeToNode(value.Value, options),
                     "PostFailed" => JsonSerializer.SerializeToNode(value.Value, options),
                     "PostUnconfirmed" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "PostApprovalRequested" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "PostApproved" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "PostChangesRequested" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "PostCommented" => JsonSerializer.SerializeToNode(value.Value, options),
                     "ChannelReconnectRequired" => JsonSerializer.SerializeToNode(
                         value.Value,
                         options
@@ -780,6 +990,86 @@ public record NoticeEvent
 
         public static implicit operator NoticeEvent.PostUnconfirmed(
             Peal.NoticeEventPostUnconfirmed value
+        ) => new(value);
+    }
+
+    /// <summary>
+    /// Discriminated union type for PostApprovalRequested
+    /// </summary>
+    [Serializable]
+    public struct PostApprovalRequested
+    {
+        public PostApprovalRequested(Peal.NoticeEventPostApprovalRequested value)
+        {
+            Value = value;
+        }
+
+        internal Peal.NoticeEventPostApprovalRequested Value { get; set; }
+
+        public override string ToString() => Value.ToString() ?? "null";
+
+        public static implicit operator NoticeEvent.PostApprovalRequested(
+            Peal.NoticeEventPostApprovalRequested value
+        ) => new(value);
+    }
+
+    /// <summary>
+    /// Discriminated union type for PostApproved
+    /// </summary>
+    [Serializable]
+    public struct PostApproved
+    {
+        public PostApproved(Peal.NoticeEventPostApproved value)
+        {
+            Value = value;
+        }
+
+        internal Peal.NoticeEventPostApproved Value { get; set; }
+
+        public override string ToString() => Value.ToString() ?? "null";
+
+        public static implicit operator NoticeEvent.PostApproved(
+            Peal.NoticeEventPostApproved value
+        ) => new(value);
+    }
+
+    /// <summary>
+    /// Discriminated union type for PostChangesRequested
+    /// </summary>
+    [Serializable]
+    public struct PostChangesRequested
+    {
+        public PostChangesRequested(Peal.NoticeEventPostChangesRequested value)
+        {
+            Value = value;
+        }
+
+        internal Peal.NoticeEventPostChangesRequested Value { get; set; }
+
+        public override string ToString() => Value.ToString() ?? "null";
+
+        public static implicit operator NoticeEvent.PostChangesRequested(
+            Peal.NoticeEventPostChangesRequested value
+        ) => new(value);
+    }
+
+    /// <summary>
+    /// Discriminated union type for PostCommented
+    /// </summary>
+    [Serializable]
+    public struct PostCommented
+    {
+        public PostCommented(Peal.NoticeEventPostCommented value)
+        {
+            Value = value;
+        }
+
+        internal Peal.NoticeEventPostCommented Value { get; set; }
+
+        public override string ToString() => Value.ToString() ?? "null";
+
+        public static implicit operator NoticeEvent.PostCommented(
+            Peal.NoticeEventPostCommented value
         ) => new(value);
     }
 

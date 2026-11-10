@@ -116,7 +116,7 @@ func TestMediaCreateWithWireMock(
 	)
 	request := &peal.NewUpload{
 		WorkspaceID: "workspaceId",
-		ByteSize:    1,
+		ByteSize:    int64(1000000),
 		ContentType: "contentType",
 	}
 	_, invocationErr := client.Media.Create(

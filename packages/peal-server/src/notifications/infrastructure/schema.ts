@@ -72,6 +72,8 @@ export const notificationPreferences = notificationsSchema.table(
     emailChannelReconnect: boolean("email_channel_reconnect").notNull(),
     emailPostFailed: boolean("email_post_failed").notNull(),
     emailPostPublished: boolean("email_post_published").notNull(),
+    // Comments on posts, approvals asked for and decided: on unless chosen.
+    emailPostReview: boolean("email_post_review").notNull().default(true),
     emailPostUnconfirmed: boolean("email_post_unconfirmed").notNull(),
     everyPost: boolean("every_post").notNull().default(false),
     updatedAt: instant("updated_at").notNull(),

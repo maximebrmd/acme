@@ -1,0 +1,202 @@
+import { Context, DateTime, Effect, Layer } from "effect";
+
+import { approvalSubject } from "#publishing/domain/approval-subject.ts";
+import { InvalidPostTransition } from "#publishing/domain/invalid-post-transition.ts";
+import { moveToDraft, releasePost } from "#publishing/domain/post.ts";
+import type { DatabaseError } from "#shared/application/database-error.ts";
+import { TransactionRunner } from "#shared/application/transaction-runner.ts";
+import type { PostId, WorkspaceId } from "#shared/domain/ids.ts";
+import type { PlanLimitReached } from "#shared/domain/plan-limit-reached.ts";
+
+import { ApprovalGate } from "./approval-gate.ts";
+import type { PostAllowance } from "./post-allowance.ts";
+import { PostEvents } from "./post-events.ts";
+import type { PostNotFound } from "./post-not-found.ts";
+import { PostRepository } from "./post-repository.ts";
+import type { PostWithTargets } from "./post-repository.ts";
+import { PublicationScheduler } from "./publication-scheduler.ts";
+import { withinPlan } from "./within-plan.ts";
+import { findInWorkspace, lockInWorkspace } from "./workspace-posts.ts";
+
+// A compare and set that misses under the row lock means the lock was not
+// held: a bug, not a conflict to report.
+const applied = (written: boolean) =>
+  written ? Effect.void : Effect.die("A post changed under its row lock");
+
+/** A post that was approved, and what became of it. */
+export interface ReleasedPost extends PostWithTargets {
+  /**
+   * Whether the approval came after the post's time: it then went back to
+   * draft rather than out late.
+   */
+  readonly late: boolean;
+}
+
+/**
+ * The posts that wait for an approval, for the review context, which
+ * decides: it shows them to reviewers, and tells what was decided. These
+ * check no permission: the review context does, before it calls them, and
+ * no handler reaches them. A post is still released only while the
+ * `ApprovalGate` says an approval stands for it as it is, so nothing here
+ * schedules around the gate either.
+ */
+export class HeldPosts extends Context.Service<
+  HeldPosts,
+  {
+    /** The workspace's post and its targets, as they are now. */
+    readonly get: (
+      workspaceId: WorkspaceId,
+      postId: PostId
+    ) => Effect.Effect<PostWithTargets, DatabaseError | PostNotFound>;
+    /**
+     * Holds the post for the caller's transaction, before the caller reads
+     * what it decides from: every change to a post takes the post first,
+     * then what hangs on it, so two changes wait for each other rather
+     * than for what the other holds. Nothing for a post that is gone.
+     */
+    readonly lock: (
+      workspaceId: WorkspaceId,
+      postId: PostId
+    ) => Effect.Effect<void, DatabaseError>;
+    /**
+     * Schedules an approved post for the time it was asked for, starts its
+     * job, and tells PostEvents it is scheduled, in one transaction. Approved after that time, it goes back to draft instead
+     * (`late`), and keeps its approval: a member gives it a new time. In a
+     * workspace that holds more channels or members than its plan allows,
+     * nothing is scheduled (PlanLimitReached), and the post keeps waiting.
+     */
+    readonly release: (
+      workspaceId: WorkspaceId,
+      postId: PostId
+    ) => Effect.Effect<
+      ReleasedPost,
+      DatabaseError | InvalidPostTransition | PlanLimitReached | PostNotFound
+    >;
+    /** Takes a post that waits back to draft, for its author to change. */
+    readonly sendBack: (
+      workspaceId: WorkspaceId,
+      postId: PostId
+    ) => Effect.Effect<
+      PostWithTargets,
+      DatabaseError | InvalidPostTransition | PostNotFound
+    >;
+  }
+>()("peal-server/publishing/application/HeldPosts") {
+  static readonly layer = Layer.effect(
+    HeldPosts,
+    Effect.gen(function* HeldPostsLive() {
+      const posts = yield* PostRepository;
+      const scheduler = yield* PublicationScheduler;
+      const gate = yield* ApprovalGate;
+      const events = yield* PostEvents;
+      const { transaction } = yield* TransactionRunner;
+      const ports = yield* Effect.context<PostAllowance | PostRepository>();
+
+      const withPorts = Effect.provideContext(ports);
+
+      const get = Effect.fn("HeldPosts.get")(function* get(
+        workspaceId: WorkspaceId,
+        postId: PostId
+      ) {
+        const { post } = yield* findInWorkspace(workspaceId, postId).pipe(
+          withPorts
+        );
+
+        return { post, targets: yield* posts.targets(postId) };
+      });
+
+      const lock = (workspaceId: WorkspaceId, postId: PostId) =>
+        lockInWorkspace(workspaceId, postId).pipe(
+          withPorts,
+          Effect.asVoid,
+          Effect.catchTag("PostNotFound", () => Effect.void)
+        );
+
+      const release = Effect.fn("HeldPosts.release")(function* release(
+        workspaceId: WorkspaceId,
+        postId: PostId
+      ) {
+        return yield* transaction(
+          Effect.gen(function* scheduleAndStart() {
+            const current = yield* lockInWorkspace(workspaceId, postId).pipe(
+              withPorts
+            );
+
+            const targets = yield* posts.targets(postId);
+
+            const released = yield* Effect.fromResult(
+              releasePost(current.post, yield* DateTime.now)
+            );
+
+            const approved = yield* gate.approved({
+              postId,
+              subject: approvalSubject(current.post.content, targets),
+              workspaceId,
+            });
+
+            if (!approved) {
+              return yield* Effect.die(
+                `Post ${postId} was released without an approval`
+              );
+            }
+
+            if (released.status._tag !== "scheduled") {
+              yield* applied(yield* posts.update(released, current.post));
+
+              return { late: true, post: released, targets };
+            }
+
+            // An approval schedules the post: a workspace that went over
+            // its plan while the post waited schedules nothing, and the
+            // post keeps waiting, its approval undone with this
+            // transaction.
+            yield* withinPlan(workspaceId).pipe(withPorts);
+            yield* applied(yield* posts.update(released, current.post));
+
+            const executionId = yield* scheduler.schedule({
+              postId,
+              revision: released.scheduleRevision,
+              scheduledAt: released.status.schedule.at,
+            });
+
+            yield* applied(yield* posts.setExecution(released, executionId));
+            // Now it is scheduled: whoever follows the workspace hears it,
+            // which they did not while it waited.
+            yield* events.scheduled(released, targets);
+
+            return { late: false, post: released, targets };
+          })
+        );
+      });
+
+      const sendBack = Effect.fn("HeldPosts.sendBack")(function* sendBack(
+        workspaceId: WorkspaceId,
+        postId: PostId
+      ) {
+        return yield* transaction(
+          Effect.gen(function* moveBack() {
+            const current = yield* lockInWorkspace(workspaceId, postId).pipe(
+              withPorts
+            );
+
+            if (current.post.status._tag !== "awaitingApproval") {
+              return yield* new InvalidPostTransition({
+                action: "moveToDraft",
+                from: current.post.status._tag,
+                postId,
+              });
+            }
+
+            const draft = yield* Effect.fromResult(moveToDraft(current.post));
+
+            yield* applied(yield* posts.update(draft, current.post));
+
+            return { post: draft, targets: yield* posts.targets(postId) };
+          })
+        );
+      });
+
+      return HeldPosts.of({ get, lock, release, sendBack });
+    })
+  );
+}

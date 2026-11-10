@@ -33,6 +33,8 @@ export const mediaAssets = media.table(
     id: uuid("id").primaryKey(),
     multipartPartSize: integer("multipart_part_size"),
     multipartUploadId: text("multipart_upload_id"),
+    // A document's pages, when the probe could count them.
+    pageCount: integer("page_count"),
     // Null on rows saved uploaded before probes were tracked: not probed yet.
     probeState: text("probe_state"),
     rejectionReason: text("rejection_reason"),

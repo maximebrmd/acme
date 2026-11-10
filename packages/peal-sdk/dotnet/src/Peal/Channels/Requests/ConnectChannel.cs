@@ -13,7 +13,7 @@ public record ConnectChannel
     public required Platform Platform { get; set; }
 
     [JsonPropertyName("connection")]
-    public InstagramConnection? Connection { get; set; }
+    public ChannelConnection? Connection { get; set; }
 
     [JsonPropertyName("handle")]
     public string? Handle { get; set; }

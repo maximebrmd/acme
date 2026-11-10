@@ -8,6 +8,7 @@ import {
   fieldOf,
   fieldsOf,
   initialValues,
+  isShown,
   optionsOf,
   valuesOf,
   valuesOfPost,
@@ -36,6 +37,105 @@ describe("the options fields", () => {
     expect(fieldsOf("mastodon")).toStrictEqual([]);
     expect(Option.isSome(fieldOf("youtube", "title"))).toBeTruthy();
     expect(Option.isNone(fieldOf("youtube", "privacyLevel"))).toBeTruthy();
+  });
+
+  it("have a field for every option the contract takes, and no other", () => {
+    for (const platform of optionsPlatforms) {
+      const member = TargetOptionsSchema.members.find(
+        ({ fields }) => fields.platform.literal === platform
+      );
+
+      expect(
+        fieldsOf(platform)
+          .map(({ name }) => name)
+          .toSorted()
+      ).toStrictEqual(
+        Object.keys(member?.fields ?? {})
+          .filter((name) => name !== "platform")
+          .toSorted()
+      );
+    }
+  });
+
+  it.each([
+    [
+      "linkedin",
+      {
+        disableReshare: true,
+        documentTitle: "A synthetic deck",
+        linkDescription: "What ships",
+        linkTitle: "Launch day",
+        linkUrl: "https://example.test/launch",
+        mentions: "Example Bakery <urn:li:organization:9000000001>",
+        visibility: "loggedIn",
+      },
+    ],
+    [
+      "tiktok",
+      { ...initialValues("tiktok"), privacyLevel: "PUBLIC_TO_EVERYONE" },
+    ],
+    [
+      "youtube",
+      {
+        ...initialValues("youtube"),
+        categoryId: "22",
+        madeForKids: false,
+        privacy: "unlisted",
+        tags: "launch, launch day",
+        title: "A synthetic launch video",
+      },
+    ],
+    [
+      "pinterest",
+      {
+        boardId: "549755885001",
+        boardSectionId: "5000000000001",
+        coverSecond: "12",
+        dominantColor: "#6E7874",
+        link: "https://example.test/recipes",
+        title: "Tomato salad",
+      },
+    ],
+    [
+      "googleBusiness",
+      {
+        couponCode: "SYNTHETIC-10",
+        endsAt: "2026-11-27T18:00",
+        postType: "offer",
+        redeemUrl: "https://example.test/redeem",
+        startsAt: "2026-11-27T09:00",
+        terms: "One per synthetic customer.",
+        title: "Synthetic open day",
+      },
+    ],
+  ] as const)(
+    "turn %s's fields, each kind filled in, into options the contract takes, and back",
+    (platform, values) => {
+      const options = optionsOf(platform, values);
+
+      expect(options.pipe(Option.map((given) => given.platform))).toStrictEqual(
+        Option.some(platform)
+      );
+      // Every field kept its value: nothing was dropped on the way.
+      expect(
+        options.pipe(Option.map((given) => Object.keys(given).toSorted()))
+      ).toStrictEqual(
+        Option.some([...Object.keys(values), "platform"].toSorted())
+      );
+      expect(
+        options.pipe(Option.map((given) => valuesOf(platform, given)))
+      ).toStrictEqual(Option.some(values));
+    }
+  );
+
+  it("cover every platform that takes options in the test above", () => {
+    expect([...optionsPlatforms].toSorted()).toStrictEqual([
+      "googleBusiness",
+      "linkedin",
+      "pinterest",
+      "tiktok",
+      "youtube",
+    ]);
   });
 
   it("start TikTok's interactions off and its disclosure untold", () => {
@@ -96,6 +196,156 @@ describe(optionsOf, () => {
     ).toStrictEqual(Option.some(values));
     // A target without options starts as a new one.
     expect(valuesOf("tiktok", null)).toStrictEqual(initialValues("tiktok"));
+  });
+});
+
+// The names of the Google Business Profile fields these values show.
+const shownWith = (values: Readonly<Record<string, boolean | string>>) =>
+  fieldsOf("googleBusiness")
+    .filter((field) => isShown("googleBusiness", field, values))
+    .map(({ name }) => name);
+
+describe("a Google Business Profile post's options", () => {
+  it("show an update's button, an event's title and dates, an offer's code and terms", () => {
+    expect(shownWith({})).toStrictEqual(["postType", "callToAction"]);
+    expect(shownWith({ callToAction: "book" })).toStrictEqual([
+      "postType",
+      "callToAction",
+      "callToActionUrl",
+    ]);
+    // The call button rings the location: no address to give.
+    expect(shownWith({ callToAction: "call" })).toStrictEqual([
+      "postType",
+      "callToAction",
+    ]);
+    expect(shownWith({ postType: "event" })).toStrictEqual([
+      "postType",
+      "title",
+      "startsAt",
+      "endsAt",
+      "callToAction",
+    ]);
+    // An offer shows Google's own button, whatever was chosen before.
+    expect(
+      shownWith({ callToAction: "book", postType: "offer" })
+    ).toStrictEqual([
+      "postType",
+      "title",
+      "startsAt",
+      "endsAt",
+      "couponCode",
+      "redeemUrl",
+      "terms",
+    ]);
+  });
+
+  it("send only what shows, so a changed post type leaves nothing behind", () => {
+    const filled = {
+      callToAction: "order",
+      callToActionUrl: "https://example.com/order",
+      couponCode: "SYNTHETIC-10",
+      endsAt: "2026-11-27T18:00",
+      startsAt: "2026-11-27T09:00",
+      title: "Synthetic open day",
+    };
+
+    expect(
+      Option.getOrThrow(optionsOf("googleBusiness", filled))
+    ).toStrictEqual({
+      callToAction: "order",
+      callToActionUrl: "https://example.com/order",
+      platform: "googleBusiness",
+    });
+    expect(
+      Option.getOrThrow(
+        optionsOf("googleBusiness", { ...filled, postType: "offer" })
+      )
+    ).toStrictEqual({
+      couponCode: "SYNTHETIC-10",
+      endsAt: "2026-11-27T18:00",
+      platform: "googleBusiness",
+      postType: "offer",
+      startsAt: "2026-11-27T09:00",
+      title: "Synthetic open day",
+    });
+  });
+
+  it("fill the fields back from stored options, with nothing ticked at first", () => {
+    expect(initialValues("googleBusiness")).toStrictEqual({});
+    expect(
+      valuesOf("googleBusiness", {
+        endsAt: "2026-11-27T18:00",
+        platform: "googleBusiness",
+        postType: "event",
+        startsAt: "2026-11-27T09:00",
+        title: "Synthetic open day",
+      })
+    ).toStrictEqual({
+      endsAt: "2026-11-27T18:00",
+      postType: "event",
+      startsAt: "2026-11-27T09:00",
+      title: "Synthetic open day",
+    });
+  });
+});
+
+describe("Pinterest's fields", () => {
+  it("give the board, a whole second for the cover, and nothing left empty", () => {
+    expect(
+      optionsOf("pinterest", {
+        boardId: "549755885001",
+        boardSectionId: "5000000000001",
+        coverSecond: " 12 ",
+        dominantColor: "",
+        link: "https://peal.example/recipes",
+        title: "Tomato salad",
+      })
+    ).toStrictEqual(
+      Option.some({
+        boardId: "549755885001",
+        boardSectionId: "5000000000001",
+        coverSecond: 12,
+        link: "https://peal.example/recipes",
+        platform: "pinterest",
+        title: "Tomato salad",
+      })
+    );
+    // Anything but digits is no second the API would take.
+    expect(
+      optionsOf("pinterest", { boardId: "549755885001", coverSecond: "1.5" })
+    ).toStrictEqual(
+      Option.some({ boardId: "549755885001", platform: "pinterest" })
+    );
+  });
+
+  it("fill back from stored options, the second as its digits", () => {
+    expect(
+      valuesOf("pinterest", {
+        boardId: "549755885001",
+        coverSecond: 0,
+        platform: "pinterest",
+      })
+    ).toStrictEqual({ boardId: "549755885001", coverSecond: "0" });
+    expect(initialValues("pinterest")).toStrictEqual({});
+  });
+
+  it("forget the section when the board changes, and only then", () => {
+    const values = {
+      boardId: "549755885001",
+      boardSectionId: "5000000000001",
+      title: "Tomato salad",
+    };
+
+    expect(
+      withValue("pinterest", values, "boardId", "549755885002")
+    ).toStrictEqual({ boardId: "549755885002", title: "Tomato salad" });
+    expect(
+      withValue("pinterest", values, "boardId", "549755885001")
+    ).toStrictEqual(values);
+    expect(withValue("pinterest", values, "title", "Salad")).toStrictEqual({
+      ...values,
+      title: "Salad",
+    });
   });
 });
 
@@ -206,5 +456,43 @@ describe(violationsByField, () => {
     expect([...violationsByField(violations, channelId).keys()]).toStrictEqual([
       "title",
     ]);
+  });
+});
+
+describe("LinkedIn's mentions", () => {
+  const bakery = {
+    name: "Example Bakery",
+    urn: "urn:li:organization:9000000001",
+  };
+
+  const bikes = { name: "Example (UK)", urn: "urn:li:organization:9000000002" };
+
+  it("show as names and URNs, and come back as the API takes them", () => {
+    const values = valuesOf("linkedin", {
+      mentions: [bakery, bikes],
+      platform: "linkedin",
+    });
+
+    expect(values["mentions"]).toBe(
+      "Example Bakery <urn:li:organization:9000000001>; Example (UK) <urn:li:organization:9000000002>"
+    );
+    expect(optionsOf("linkedin", values)).toStrictEqual(
+      Option.some({
+        disableReshare: false,
+        mentions: [bakery, bikes],
+        platform: "linkedin",
+      })
+    );
+  });
+
+  it("keep an entry typed without its URN, for scheduling to refuse", () => {
+    expect(
+      optionsOf("linkedin", { mentions: "Example Bakery;  " })
+    ).toStrictEqual(
+      Option.some({
+        mentions: [{ name: "Example Bakery", urn: "" }],
+        platform: "linkedin",
+      })
+    );
   });
 });

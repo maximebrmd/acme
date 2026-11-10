@@ -234,25 +234,25 @@ This SDK uses forward-compatible enums that can handle unknown values gracefully
 using Peal;
 
 // Using a built-in value
-var altTextTooLongEncodedTag = AltTextTooLongEncodedTag.AltTextTooLong;
+var accountUnreadReason = AccountUnreadReason.Disabled;
 
 // Using a custom value
-var customAltTextTooLongEncodedTag = AltTextTooLongEncodedTag.FromCustom("custom-value");
+var customAccountUnreadReason = AccountUnreadReason.FromCustom("custom-value");
 
 // Using in a switch statement
-switch (altTextTooLongEncodedTag.Value)
+switch (accountUnreadReason.Value)
 {
-    case AltTextTooLongEncodedTag.Values.AltTextTooLong:
-        Console.WriteLine("AltTextTooLong");
+    case AccountUnreadReason.Values.Disabled:
+        Console.WriteLine("Disabled");
         break;
     default:
-        Console.WriteLine($"Unknown value: {altTextTooLongEncodedTag.Value}");
+        Console.WriteLine($"Unknown value: {accountUnreadReason.Value}");
         break;
 }
 
 // Explicit casting
-string altTextTooLongEncodedTagString = (string)AltTextTooLongEncodedTag.AltTextTooLong;
-AltTextTooLongEncodedTag altTextTooLongEncodedTagFromString = (AltTextTooLongEncodedTag)"AltTextTooLong";
+string accountUnreadReasonString = (string)AccountUnreadReason.Disabled;
+AccountUnreadReason accountUnreadReasonFromString = (AccountUnreadReason)"disabled";
 ```
 
 ## Contributing

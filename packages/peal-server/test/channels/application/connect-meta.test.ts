@@ -635,6 +635,7 @@ layer(MetaConnectTest)("connecting Meta accounts", (it) => {
 
       assert.deepStrictEqual(platforms, {
         instagramConnections: ["facebookLogin"],
+        linkedinConnections: [],
         platforms: ["threads", "instagram", "facebook"],
       });
 

@@ -26,36 +26,36 @@ public final class ConflictErrorBody {
         return value.visit(visitor);
     }
 
-    public static ConflictErrorBody alreadyMember(AlreadyMemberEncoded value) {
-        return new ConflictErrorBody(new AlreadyMemberValue(value));
+    public static ConflictErrorBody postNotReviewable(PostNotReviewableEncoded value) {
+        return new ConflictErrorBody(new PostNotReviewableValue(value));
     }
 
-    public static ConflictErrorBody tooManyInvitations(TooManyInvitationsEncoded value) {
-        return new ConflictErrorBody(new TooManyInvitationsValue(value));
+    public static ConflictErrorBody tooManyReviewLinks(TooManyReviewLinksEncoded value) {
+        return new ConflictErrorBody(new TooManyReviewLinksValue(value));
     }
 
-    public boolean isAlreadyMember() {
-        return value instanceof AlreadyMemberValue;
+    public boolean isPostNotReviewable() {
+        return value instanceof PostNotReviewableValue;
     }
 
-    public boolean isTooManyInvitations() {
-        return value instanceof TooManyInvitationsValue;
+    public boolean isTooManyReviewLinks() {
+        return value instanceof TooManyReviewLinksValue;
     }
 
     public boolean _isUnknown() {
         return value instanceof _UnknownValue;
     }
 
-    public Optional<AlreadyMemberEncoded> getAlreadyMember() {
-        if (isAlreadyMember()) {
-            return Optional.of(((AlreadyMemberValue) value).value);
+    public Optional<PostNotReviewableEncoded> getPostNotReviewable() {
+        if (isPostNotReviewable()) {
+            return Optional.of(((PostNotReviewableValue) value).value);
         }
         return Optional.empty();
     }
 
-    public Optional<TooManyInvitationsEncoded> getTooManyInvitations() {
-        if (isTooManyInvitations()) {
-            return Optional.of(((TooManyInvitationsValue) value).value);
+    public Optional<TooManyReviewLinksEncoded> getTooManyReviewLinks() {
+        if (isTooManyReviewLinks()) {
+            return Optional.of(((TooManyReviewLinksValue) value).value);
         }
         return Optional.empty();
     }
@@ -89,46 +89,46 @@ public final class ConflictErrorBody {
     }
 
     public interface Visitor<T> {
-        T visitAlreadyMember(AlreadyMemberEncoded alreadyMember);
+        T visitPostNotReviewable(PostNotReviewableEncoded postNotReviewable);
 
-        T visitTooManyInvitations(TooManyInvitationsEncoded tooManyInvitations);
+        T visitTooManyReviewLinks(TooManyReviewLinksEncoded tooManyReviewLinks);
 
         T _visitUnknown(Object unknownType);
     }
 
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "_tag", visible = true, defaultImpl = _UnknownValue.class)
-    @JsonSubTypes({@JsonSubTypes.Type(AlreadyMemberValue.class), @JsonSubTypes.Type(TooManyInvitationsValue.class)})
+    @JsonSubTypes({@JsonSubTypes.Type(PostNotReviewableValue.class), @JsonSubTypes.Type(TooManyReviewLinksValue.class)})
     @JsonIgnoreProperties(ignoreUnknown = true)
     private interface Value {
         <T> T visit(Visitor<T> visitor);
     }
 
-    @JsonTypeName("AlreadyMember")
+    @JsonTypeName("PostNotReviewable")
     @JsonIgnoreProperties("_tag")
-    private static final class AlreadyMemberValue implements Value {
+    private static final class PostNotReviewableValue implements Value {
         @JsonUnwrapped
         @JsonIgnoreProperties(value = "_tag", allowSetters = true)
-        private AlreadyMemberEncoded value;
+        private PostNotReviewableEncoded value;
 
         @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-        private AlreadyMemberValue() {}
+        private PostNotReviewableValue() {}
 
-        private AlreadyMemberValue(AlreadyMemberEncoded value) {
+        private PostNotReviewableValue(PostNotReviewableEncoded value) {
             this.value = value;
         }
 
         @java.lang.Override
         public <T> T visit(Visitor<T> visitor) {
-            return visitor.visitAlreadyMember(value);
+            return visitor.visitPostNotReviewable(value);
         }
 
         @java.lang.Override
         public boolean equals(Object other) {
             if (this == other) return true;
-            return other instanceof AlreadyMemberValue && equalTo((AlreadyMemberValue) other);
+            return other instanceof PostNotReviewableValue && equalTo((PostNotReviewableValue) other);
         }
 
-        private boolean equalTo(AlreadyMemberValue other) {
+        private boolean equalTo(PostNotReviewableValue other) {
             return value.equals(other.value);
         }
 
@@ -143,32 +143,32 @@ public final class ConflictErrorBody {
         }
     }
 
-    @JsonTypeName("TooManyInvitations")
+    @JsonTypeName("TooManyReviewLinks")
     @JsonIgnoreProperties("_tag")
-    private static final class TooManyInvitationsValue implements Value {
+    private static final class TooManyReviewLinksValue implements Value {
         @JsonUnwrapped
         @JsonIgnoreProperties(value = "_tag", allowSetters = true)
-        private TooManyInvitationsEncoded value;
+        private TooManyReviewLinksEncoded value;
 
         @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-        private TooManyInvitationsValue() {}
+        private TooManyReviewLinksValue() {}
 
-        private TooManyInvitationsValue(TooManyInvitationsEncoded value) {
+        private TooManyReviewLinksValue(TooManyReviewLinksEncoded value) {
             this.value = value;
         }
 
         @java.lang.Override
         public <T> T visit(Visitor<T> visitor) {
-            return visitor.visitTooManyInvitations(value);
+            return visitor.visitTooManyReviewLinks(value);
         }
 
         @java.lang.Override
         public boolean equals(Object other) {
             if (this == other) return true;
-            return other instanceof TooManyInvitationsValue && equalTo((TooManyInvitationsValue) other);
+            return other instanceof TooManyReviewLinksValue && equalTo((TooManyReviewLinksValue) other);
         }
 
-        private boolean equalTo(TooManyInvitationsValue other) {
+        private boolean equalTo(TooManyReviewLinksValue other) {
             return value.equals(other.value);
         }
 

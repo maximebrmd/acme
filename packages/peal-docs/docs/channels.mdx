@@ -1,19 +1,19 @@
 ---
 title: Connect channels
-description: Connect the Mastodon, Bluesky, LinkedIn, X, Threads, Instagram, TikTok, Facebook Page and YouTube accounts a workspace posts to, reconnect them when a platform asks, and disconnect them.
+description: Connect the Mastodon, Bluesky, LinkedIn, X, Threads, Instagram, TikTok, Facebook Page, YouTube, Pinterest and Google Business Profile accounts a workspace posts to, reconnect them when a platform asks, and disconnect them.
 sidebar:
   order: 2
 ---
 
-A channel is a social account connected to a workspace: a Mastodon, Bluesky, LinkedIn, X, Threads, Instagram or TikTok account, a Facebook Page, or a YouTube channel, today. Posts go to channels, so connect at least one before you schedule anything.
+A channel is a social account connected to a workspace: a Mastodon, Bluesky, LinkedIn, X, Threads, Instagram, TikTok or Pinterest account, a Facebook Page, a YouTube channel, or a Google Business Profile location, today. Posts go to channels, so connect at least one before you schedule anything.
 
 Open a workspace from **Workspaces**, then **Channels**. Every member sees the workspace's channels; only owners and admins connect, reconnect and disconnect them.
 
-<Callout type="note" title="Nine platforms so far">
-  Peal connects Mastodon, Bluesky, LinkedIn, X, Threads, Instagram and TikTok
-  accounts, Facebook Pages and YouTube channels. The other platform it knows,
-  Pinterest, cannot be connected yet. **Channels** offers only the platforms the
-  Peal server is set up for.
+<Callout type="note" title="Eleven platforms so far">
+  Peal connects Mastodon, Bluesky, LinkedIn, X, Threads, Instagram, TikTok and
+  Pinterest accounts, Facebook Pages, YouTube channels and Google Business
+  Profile locations. **Channels** offers only the platforms the Peal server is
+  set up for.
 </Callout>
 
 ## Connect an account [#connect]
@@ -36,11 +36,13 @@ The Peal server must be set up for Bluesky: on a self-hosted instance, see [Blue
 
 ### LinkedIn [#linkedin]
 
-Under **LinkedIn**, choose **Connect LinkedIn**, sign in on LinkedIn and allow Peal. Peal connects your own LinkedIn profile, and posts as you; company pages cannot be connected yet. It asks LinkedIn for your name and picture, and to publish posts.
+Under **LinkedIn**, choose **Connect LinkedIn**, sign in on LinkedIn and allow Peal. Peal connects your own LinkedIn profile, and posts as you. It asks LinkedIn for your name and picture, and to publish posts.
 
-LinkedIn lets Peal post for 60 days, then asks you to sign in again: the channel shows the date, and its workspace's owners and admins are told a week before. Reconnect before then: when you are signed in on LinkedIn, it does not ask again.
+On a server set up for company pages, **LinkedIn** offers two buttons instead. **Connect your profile** does the above. **Connect company pages** signs you in to a second LinkedIn app, then lists the pages you may post to, where you are an administrator or a content administrator: choose one or several, and each becomes a channel that posts as the page. Peal asks LinkedIn to post as your pages, to read their posts, and to list the pages you administer and read their statistics; nothing about your own profile. A page keeps working while you keep your role on it: when you lose it, or leave the company, reconnect the page with another administrator's sign-in.
 
-The Peal server must be set up for LinkedIn: on a self-hosted instance, see [LinkedIn](/self-hosting#linkedin). Until then, **Channels** does not offer it.
+LinkedIn lets Peal post for 60 days, then asks you to sign in again: the channel shows the date, and its workspace's owners and admins are told a week before. Reconnect before then: when you are signed in on LinkedIn, it does not ask again. A page's access lasts 60 days too, unless LinkedIn gave the server's app refresh tokens, which it reserves for approved partners: Peal then renews it a week ahead, for a year after the sign-in.
+
+The Peal server must be set up for LinkedIn, and separately for company pages: on a self-hosted instance, see [LinkedIn](/self-hosting#linkedin) and [LinkedIn company pages](/self-hosting#linkedin-pages). Until then, **Channels** does not offer them.
 
 ### X [#x]
 
@@ -87,6 +89,22 @@ Under **YouTube**, choose **Connect YouTube**, sign in with Google, and pick the
 
 The Peal server must be set up for YouTube: on a self-hosted instance, see [YouTube](/self-hosting#youtube). Until then, **Channels** does not offer it.
 
+### Pinterest [#pinterest]
+
+Under **Pinterest**, choose **Connect Pinterest**, sign in on Pinterest, and allow Peal to see your boards and Pins, to create Pins, and to read your account's name and picture. Peal asks for nothing about secret boards, so it never lists them and cannot pin to them.
+
+The Peal server must be set up for Pinterest: on a self-hosted instance, see [Pinterest](/self-hosting#pinterest). Until then, **Channels** does not offer it.
+
+### Google Business Profile [#google-business]
+
+Under **Google Business Profile**, choose **Connect Google Business Profile**, sign in with Google, and allow Peal to manage your Business Profile: Google has one permission for everything about a profile, and Peal uses it to list your locations and to make their posts, nothing else. A sign-in that reaches one location connects it; one that reaches several lists them, each with its address, for you to choose those this workspace posts to. Each location is a channel.
+
+Only locations Google has verified are listed: Google takes no post for the others. Verify the business in your Business Profile first, then connect again. One sign-in offers 200 locations at most.
+
+A channel keeps the account its location was reached through. If the location moves to another account or location group, or the person who connected it no longer manages it, its posts fail: disconnect it, and connect the location again.
+
+The Peal server must be set up for Google Business Profile, with a Google project Google gave access to its Business Profile APIs: on a self-hosted instance, see [Google Business Profile](/self-hosting#google-business). Until then, **Channels** does not offer it.
+
 ## Statuses [#statuses]
 
 Each channel shows one of these:
@@ -101,7 +119,7 @@ A channel whose access cannot be renewed also shows the date by which it must be
 
 ## Keep channels connected [#keep-connected]
 
-Peal renews each account's access on its own before it runs out: it refreshes a Bluesky session a month before it would lapse, and Threads access and the access of an Instagram account connected with Instagram, which last 60 days, a week before. X access, which lasts two hours, TikTok access, which lasts a day or less, and YouTube access, which lasts an hour, it renews whenever it posts or reads the posts' counts, and at least once a month for an account it does nothing with, so the platform never drops it. TikTok lets Peal renew it for 180 days after you connected the account: then the channel asks to be reconnected. Google ends YouTube access when the owner removes Peal from their Google account, or six months after Peal last used it; on a self-hosted server whose Google project is in testing, seven days after the channel was connected. Mastodon access, and the Page access Facebook Pages and Instagram accounts connected through a Page post with, do not expire until someone revokes them; Facebook also withdraws a Page's access when the person who connected it changes their password or loses their role on the Page. LinkedIn access cannot be renewed: reconnect the channel every 60 days, as above. When someone removes Peal from their Facebook, Instagram or Threads account, Meta tells Peal, which marks the channels that person connected to be reconnected, in every workspace, and tells the members who manage them, before a post fails on them.
+Peal renews each account's access on its own before it runs out: it refreshes a Bluesky session a month before it would lapse, Threads access and the access of an Instagram account connected with Instagram, which last 60 days, a week before, and Pinterest access, which lasts 30 days, a week before too. Pinterest lets Peal renew it for as long as it keeps doing so, each renewal within 60 days of the last. X access, which lasts two hours, TikTok access, which lasts a day or less, and YouTube and Google Business Profile access, which last an hour, it renews whenever it posts or reads the posts' counts, and at least once a month for an account it does nothing with, so the platform never drops it. TikTok lets Peal renew it for 180 days after you connected the account: then the channel asks to be reconnected. Google ends YouTube access when the owner removes Peal from their Google account, or six months after Peal last used it; on a self-hosted server whose Google project is in testing, seven days after the channel was connected. Mastodon access, and the Page access Facebook Pages and Instagram accounts connected through a Page post with, do not expire until someone revokes them; Facebook also withdraws a Page's access when the person who connected it changes their password or loses their role on the Page. LinkedIn access cannot be renewed: reconnect the channel every 60 days, as above. When someone removes Peal from their Facebook, Instagram or Threads account, Meta tells Peal, which marks the channels that person connected to be reconnected, in every workspace, and tells the members who manage them, before a post fails on them.
 
 When a platform refuses Peal's access while Peal posts, Peal renews the access where the platform allows it, and tries once more. When the platform refuses again, or the access cannot be renewed, for example because the account's owner revoked it, the channel turns to **Reconnect needed**, and the workspace's owners and admins are told once, under the bell and by email unless they turned that email off (see [Notifications](/notifications)). When a platform does not answer, Peal tries again later and leaves the channel as it is.
 
@@ -111,12 +129,15 @@ At a post's time, Peal posts it as the channel's account, with its text on that 
 
 - **Mastodon**: Peal posts on the account's server, with the account's default visibility. The server turns mentions, hashtags and links into links itself, and may process a video before the post can show it.
 - **Bluesky**: Peal posts on the server that holds the account. Links and hashtags become links; mentions stay plain text for now. Videos go through Bluesky's video service, which processes them before the post goes out.
-- **LinkedIn**: Peal posts publicly, as the member. Hashtags become LinkedIn hashtags; mentions stay plain text. LinkedIn processes a video before the post goes out.
+- **LinkedIn**: Peal posts as the member, or as the company page, publicly unless the post's options say otherwise (a profile's connections only, or signed-in members). Hashtags become LinkedIn hashtags. A company page the text names after an `@`, by its full name exactly as LinkedIn shows it, becomes a mention when the post's options list the page; a company page channel finds a page by the name in its address. People cannot be mentioned, and any other `@` stays plain text. A link can show as a card, with the title and description you give it, as LinkedIn reads no page itself. A PDF shows page by page, alone, under the title you give it. LinkedIn processes a video or a document before the post goes out.
 - **X**: Peal posts as the account. X turns mentions, hashtags and links into links itself, a domain without `https://` such as `peal.social` too, and processes a video before the post goes out. When X refuses the server's app because its credits ran out, the post is not at fault: Peal keeps it waiting and tries again every half hour, so it goes out once the server's operator has paid. A day after its time, it fails with its reason (see [Notifications](/notifications)).
 - **Threads** and **Instagram**: Meta fetches each image and video from the media store, processes it, then Peal publishes the post: several files make a carousel. An Instagram video goes out as a reel. Peal checks the account's daily publishing limit before it starts.
 - **Facebook Pages**: Peal posts the text on the Page, a photo with it, several photos in one post, or a video, which Facebook fetches from the media store.
 - **TikTok**: Peal posts one video, with the post's text as its caption, or up to 35 photos, with the text as their description, as you chose in the post's [TikTok options](/scheduling#options). Just before, it reads the account's settings on TikTok again, and the post fails if they no longer allow it. A video goes up in parts from the media store, unless TikTok can fetch it itself (see [TikTok](/self-hosting#tiktok)); photos TikTok always fetches. TikTok then processes the post, which Peal follows until it is published: a post others see shows a link to it once TikTok's moderation passed it, one only you see has none. TikTok allows about 15 posts a day to each account, shared by every app.
 - **YouTube**: Peal uploads the post's video to the channel, with the post's text as its description and the title, visibility, made-for-kids answer, tags and category of its [platform options](/scheduling#options), then waits while YouTube processes it. A video YouTube fails to process or rejects, as a duplicate or for its length, fails with YouTube's reason. When YouTube keeps a video private although you chose public or unlisted, the post's page says so: change its visibility in YouTube Studio. A Peal server uploads a limited number of videos a day, across all its channels: past that, a video waits until midnight Pacific Time, when YouTube's quotas reset, and the post's page shows the wait.
+- **Google Business Profile**: Peal makes a post on the location, with the post's text as its description and the type, dates, button and offer of its [platform options](/scheduling#options). Google fetches each photo from the media store; a post takes no video. Google may reject a post for its content policy after taking it: the post then fails. Once the post is live, its page links to it on Google.
+
+- **Pinterest**: Peal creates a Pin on the board, and the board section, of the post's [platform options](/scheduling#options), with the post's text as its description, the first file's alt text as its alt text, and the title and link you gave. One image makes an image Pin, two to five a carousel, which Pinterest fetches from the media store; a video goes up from the media store in one request, Pinterest processes it, and its cover is the frame at the second you chose, the first one otherwise. Pinterest gives Peal nothing to tell a Pin it already made from one it did not: when its answer is lost, Peal looks for the Pin on the board, and never sends it twice.
 
 ## Reconnect [#reconnect]
 
@@ -126,18 +147,18 @@ Choose **Reconnect** next to the channel, then sign in on the platform with the 
 
 Choose **Disconnect** next to the channel and confirm. Peal deletes the tokens it holds for the account and posts nothing more to it. You can connect it again later.
 
-Disconnecting does not tell the platform, except TikTok and YouTube: unless another workspace still connects the same account, Peal revokes its access there, and leaves the account's connected apps. To remove Peal's access on the other platforms, revoke it in the account's settings there.
+Disconnecting does not tell the platform, except TikTok, YouTube and Google Business Profile: unless another workspace still connects the same account, Peal revokes its access there, and leaves the account's connected apps. To remove Peal's access on the other platforms, revoke it in the account's settings there.
 
 ## When connecting fails [#errors]
 
-| Message                                                          | What to do                                                                                                                                                              |
-| ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| This server is not set up to connect accounts of this platform   | Ask the instance's administrator: the server lacks a setting the platform needs.                                                                                        |
-| This is not the address of a server                              | Check the Mastodon server's address, for example `mastodon.social`.                                                                                                     |
-| Peal only connects to servers on the public internet, over HTTPS | The server is private, or does not answer over HTTPS.                                                                                                                   |
-| No account was found for this handle                             | Check the Bluesky handle.                                                                                                                                               |
-| This connection expired or was started elsewhere                 | Start again from the workspace's channels, in this tab.                                                                                                                 |
-| The connection was cancelled on the platform                     | You, or the platform, refused. Start again if you meant to connect.                                                                                                     |
-| You signed in to another account than this channel's             | Reconnect with the channel's own account.                                                                                                                               |
-| The sign-in reached no account to connect                        | Manage a Facebook Page, or link your Instagram professional account to one, or connect it with Instagram instead; on YouTube, pick a Google account that has a channel. |
-| The platform did not answer                                      | Try again in a moment.                                                                                                                                                  |
+| Message                                                          | What to do                                                                                                                                                                                                                                 |
+| ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| This server is not set up to connect accounts of this platform   | Ask the instance's administrator: the server lacks a setting the platform needs.                                                                                                                                                           |
+| This is not the address of a server                              | Check the Mastodon server's address, for example `mastodon.social`.                                                                                                                                                                        |
+| Peal only connects to servers on the public internet, over HTTPS | The server is private, or does not answer over HTTPS.                                                                                                                                                                                      |
+| No account was found for this handle                             | Check the Bluesky handle.                                                                                                                                                                                                                  |
+| This connection expired or was started elsewhere                 | Start again from the workspace's channels, in this tab.                                                                                                                                                                                    |
+| The connection was cancelled on the platform                     | You, or the platform, refused. Start again if you meant to connect.                                                                                                                                                                        |
+| You signed in to another account than this channel's             | Reconnect with the channel's own account.                                                                                                                                                                                                  |
+| The sign-in reached no account to connect                        | Manage a Facebook Page, or link your Instagram professional account to one, or connect it with Instagram instead; on YouTube, pick a Google account that has a channel; on Google Business Profile, verify the business with Google first. |
+| The platform did not answer                                      | Try again in a moment.                                                                                                                                                                                                                     |

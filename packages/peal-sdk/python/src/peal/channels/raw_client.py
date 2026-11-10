@@ -18,10 +18,10 @@ from ..errors.unauthorized_error import UnauthorizedError
 from ..errors.unprocessable_entity_error import UnprocessableEntityError
 from ..types.authorization import Authorization
 from ..types.channel import Channel
+from ..types.channel_connection import ChannelConnection
 from ..types.connect_outcome import ConnectOutcome
 from ..types.connectable_platforms import ConnectablePlatforms
 from ..types.forbidden_encoded import ForbiddenEncoded
-from ..types.instagram_connection import InstagramConnection
 from ..types.plan_limit_reached_encoded import PlanLimitReachedEncoded
 from ..types.platform import Platform
 from ..types.unauthenticated_encoded import UnauthenticatedEncoded
@@ -190,7 +190,7 @@ class RawChannelsClient:
         workspace_id: str,
         platform: Platform,
         *,
-        connection: typing.Optional[InstagramConnection] = OMIT,
+        connection: typing.Optional[ChannelConnection] = OMIT,
         handle: typing.Optional[str] = OMIT,
         instance: typing.Optional[str] = OMIT,
         request_options: typing.Optional[RequestOptions] = None,
@@ -204,7 +204,7 @@ class RawChannelsClient:
 
         platform : Platform
 
-        connection : typing.Optional[InstagramConnection]
+        connection : typing.Optional[ChannelConnection]
 
         handle : typing.Optional[str]
 
@@ -921,7 +921,7 @@ class AsyncRawChannelsClient:
         workspace_id: str,
         platform: Platform,
         *,
-        connection: typing.Optional[InstagramConnection] = OMIT,
+        connection: typing.Optional[ChannelConnection] = OMIT,
         handle: typing.Optional[str] = OMIT,
         instance: typing.Optional[str] = OMIT,
         request_options: typing.Optional[RequestOptions] = None,
@@ -935,7 +935,7 @@ class AsyncRawChannelsClient:
 
         platform : Platform
 
-        connection : typing.Optional[InstagramConnection]
+        connection : typing.Optional[ChannelConnection]
 
         handle : typing.Optional[str]
 

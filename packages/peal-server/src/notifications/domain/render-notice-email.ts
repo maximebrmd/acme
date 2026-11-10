@@ -136,6 +136,22 @@ const contentOf = (
         ["platform", platformName(catalog, channel)],
       ],
     }),
+    PostApprovalRequested: ({ scheduledAt }): Content => ({
+      messages: catalog.postApprovalRequested,
+      values: [["scheduledAt", instantIn(scheduledAt, locale)]],
+    }),
+    PostApproved: ({ by, late }): Content => ({
+      messages: late ? catalog.postApprovedLate : catalog.postApproved,
+      values: [["by", catalog.reviewParties[by]]],
+    }),
+    PostChangesRequested: ({ by }): Content => ({
+      messages: catalog.postChangesRequested,
+      values: [["by", catalog.reviewParties[by]]],
+    }),
+    PostCommented: ({ by }): Content => ({
+      messages: catalog.postCommented,
+      values: [["by", catalog.reviewParties[by]]],
+    }),
     PostFailed: ({ channel, reason }): Content => ({
       messages: catalog.postFailed,
       values: [

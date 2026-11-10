@@ -77,7 +77,7 @@ module Peal
       # @example
       #   client.media.create(
       #     workspace_id: "workspaceId",
-      #     byte_size: 1,
+      #     byte_size: 1000000,
       #     content_type: "contentType"
       #   )
       #

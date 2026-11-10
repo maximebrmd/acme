@@ -22,6 +22,7 @@ import { Ids } from "#shared/application/ids.ts";
 import { WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import { everyWorkspaceOn, UnmeteredTest } from "#test/billing/support.ts";
 import { OpenOutboundGuard } from "#test/channels/support.ts";
+import { syntheticPdf } from "#test/media/pdf.ts";
 import {
   damagedPng,
   DatabaseTest,
@@ -205,6 +206,28 @@ layer(importing(UnmeteredTest), { timeout: "120 seconds" })(
         );
 
         assert.deepStrictEqual(bytes, png);
+
+        yield* MediaStorage.use((storage) =>
+          storage.remove(imported.asset.storageKey)
+        );
+      })
+    );
+
+    it.effect("stores and probes a PDF document, as an upload of one is", () =>
+      Effect.gen(function* importsDocument() {
+        const workspaceId = yield* freshWorkspace;
+        const pdf = syntheticPdf(3);
+
+        const host = yield* hostServing({
+          "/deck": whole(pdf, "application/octet-stream"),
+        });
+
+        const imported = yield* importFrom(workspaceId, `${host.url}/deck`);
+
+        assert.strictEqual(imported.asset.status._tag, "ready");
+        assert.strictEqual(imported.asset.contentType, "application/pdf");
+        assert.strictEqual(imported.asset.kind, "document");
+        assert.deepStrictEqual(imported.asset.metadata.pages, Option.some(3));
 
         yield* MediaStorage.use((storage) =>
           storage.remove(imported.asset.storageKey)

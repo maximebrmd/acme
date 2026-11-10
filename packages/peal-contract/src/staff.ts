@@ -9,7 +9,7 @@ import {
 import { PlanSchema } from "./billing-plans.ts";
 import { BillingSubscriptionSchema } from "./billing.ts";
 import { ChannelStatusSchema } from "./channels.ts";
-import { PlatformSchema } from "./platform.ts";
+import { ChannelConnectionSchema, PlatformSchema } from "./platform.ts";
 import { FailureReasonSchema, UnconfirmedReasonSchema } from "./posts.ts";
 import { StaffAccess } from "./staff-access.ts";
 import { StaffActionRefused } from "./staff-action-refused.ts";
@@ -175,6 +175,9 @@ export const StaffMemberSchema = Schema.Struct({
 
 /** A channel of a workspace and how it is doing, without its tokens. */
 export const StaffChannelSchema = Schema.Struct({
+  // The way in it came through, on a platform that has several: a LinkedIn
+  // profile or company page, Instagram's two logins. Null elsewhere.
+  connection: Schema.NullOr(ChannelConnectionSchema),
   handle: Schema.String,
   id: Schema.String,
   platform: PlatformSchema,
@@ -205,6 +208,7 @@ export type StaffWebhook = typeof StaffWebhookSchema.Type;
 
 /** How many of a workspace's posts are where, drafts included. */
 export const StaffPostCountsSchema = Schema.Struct({
+  awaitingApproval: Schema.Int,
   cancelled: Schema.Int,
   draft: Schema.Int,
   finished: Schema.Int,

@@ -5,14 +5,20 @@ import type { HttpApiError } from "effect/http-api";
 import type {
   AlreadyMember,
   AltTextTooLong,
+  ApprovalChanged,
+  ApprovalNotPending,
   ChannelCannotPost,
   ChannelNotFound,
+  CommentInvalid,
+  CommentNotFound,
   ContentViolation,
   Forbidden,
   IdempotencyKeyReused,
   InvalidDateRange,
   InvalidTimeZone,
   InvitationNotFound,
+  LookupInputInvalid,
+  LookupNotFound,
   MediaNotFound,
   MediaSourceFailure,
   MediaImportBusy,
@@ -21,13 +27,17 @@ import type {
   MediaStoreUnavailable,
   MediaTooLarge,
   PlanLimitReached,
+  PlatformRateLimited,
   PlatformUnreachable,
   PostContentInvalid,
   PostNotFound,
+  PostNotReviewable,
   PostStatusConflict,
+  ReviewLinkNotFound,
   ScheduleInPast,
   TargetStatusConflict,
   TooManyInvitations,
+  TooManyReviewLinks,
   TooManyWebhookEndpoints,
   TooManyWebhookSends,
   Unauthenticated,
@@ -57,8 +67,12 @@ import { SignInExpired } from "#sign-in-expired.ts";
 export type ApiFailure =
   | AlreadyMember
   | AltTextTooLong
+  | ApprovalChanged
+  | ApprovalNotPending
   | ChannelCannotPost
   | ChannelNotFound
+  | CommentInvalid
+  | CommentNotFound
   | Forbidden
   | HttpApiError.BadRequest
   | HttpClientError.HttpClientError
@@ -66,6 +80,8 @@ export type ApiFailure =
   | InvalidDateRange
   | InvalidTimeZone
   | InvitationNotFound
+  | LookupInputInvalid
+  | LookupNotFound
   | MediaNotFound
   | MediaImportBusy
   | MediaSourceNotPublic
@@ -73,14 +89,18 @@ export type ApiFailure =
   | MediaStoreUnavailable
   | MediaTooLarge
   | PlanLimitReached
+  | PlatformRateLimited
   | PlatformUnreachable
   | PostContentInvalid
   | PostNotFound
+  | PostNotReviewable
   | PostStatusConflict
+  | ReviewLinkNotFound
   | ScheduleInPast
   | Schema.SchemaError
   | TargetStatusConflict
   | TooManyInvitations
+  | TooManyReviewLinks
   | TooManyWebhookEndpoints
   | TooManyWebhookSends
   | Unauthenticated
@@ -212,6 +232,17 @@ const sourceFailures: Readonly<Record<MediaSourceFailure, string>> = {
   unknownHost: "its host has no address",
 };
 
+// What is wrong with a comment, as the user fixes it.
+const commentProblems: Readonly<Record<CommentInvalid["problem"], string>> = {
+  anchor:
+    "it is about a channel the post does not go to, or it is an answer, which is about what its thread is about",
+  name: "the name is empty, or longer than 80 characters",
+  parent:
+    "it answers a comment that started no thread of this post: answer the first comment of a thread, which is also the one to resolve",
+  selection: "the words it quotes are not in the post's text where it says",
+  text: "its text is empty, or longer than 2000 characters",
+};
+
 const refused = (reason: string) => new Refused({ reason });
 
 /**
@@ -227,6 +258,14 @@ export const explain =
         refused(
           `The description is longer than Peal keeps: ${String(maxLength)} characters at most.`
         ),
+      ApprovalChanged: () =>
+        refused(
+          "The post changed since you read it: it was asked again, or says something else. Nothing was decided. Read it again with peal review show, then decide with the --approval and --subject it prints."
+        ),
+      ApprovalNotPending: () =>
+        refused(
+          "The post does not wait for an approval: none was asked, or it was already decided, withdrawn or scheduled. peal approvals list shows those that wait."
+        ),
       BadRequest: () => refused("Peal could not read the request."),
       ChannelCannotPost: ({ reason }) =>
         refused(
@@ -238,6 +277,10 @@ export const explain =
         refused(
           "The workspace has no such channel, or it is not of this platform: peal channels list shows them."
         ),
+      CommentInvalid: ({ problem }) =>
+        refused(`Peal refused the comment: ${commentProblems[problem]}.`),
+      CommentNotFound: () =>
+        refused("The post has no such comment: peal review show lists them."),
       Forbidden: () =>
         refused(
           "Peal refused: your role in this workspace does not allow it, or your account was suspended."
@@ -258,6 +301,14 @@ export const explain =
       InvitationNotFound: () =>
         refused(
           "The workspace has no pending invitation with that id: it was accepted, declined or revoked."
+        ),
+      LookupInputInvalid: () =>
+        refused(
+          "The lookup refused its input: peal channels lookup <channel-id> lists what each lookup takes, and a cursor must be one a page before named."
+        ),
+      LookupNotFound: () =>
+        refused(
+          "This channel's platform has no such lookup: peal channels lookup <channel-id> lists those it has."
         ),
       MediaImportBusy: () =>
         refused(
@@ -281,6 +332,12 @@ export const explain =
           `The ${kind} weighs ${size(byteSize)}, and Peal stores ${kind}s up to ${size(maxByteSize)}.`
         ),
       PlanLimitReached: (reached) => refused(planLimitReason(reached)),
+      PlatformRateLimited: ({ retryAfterSeconds }) =>
+        refused(
+          retryAfterSeconds === null
+            ? "The platform asked to slow down, or its allowance for today is spent: try again later."
+            : `The platform asked to slow down: try again in ${String(retryAfterSeconds)} seconds.`
+        ),
       PlatformUnreachable: () =>
         refused(
           "The platform did not answer, or asked to slow down: try again in a few minutes."
@@ -293,8 +350,18 @@ export const explain =
           ].join("\n")
         ),
       PostNotFound: () => refused("The workspace has no such post."),
+      PostNotReviewable: ({ status }) =>
+        refused(
+          status === "cancelled"
+            ? "The post was cancelled: nothing is left to review."
+            : "The post went out, or is going out: nothing is left to review."
+        ),
       PostStatusConflict: ({ status }) =>
         refused(`The post is ${status}, which does not allow this.`),
+      ReviewLinkNotFound: () =>
+        refused(
+          "The workspace has no such review link: peal review links lists a post's."
+        ),
       ScheduleInPast: () =>
         refused("That time has passed: give a later --at, or publish it now."),
       SchemaError: requestFailed(url),
@@ -305,6 +372,10 @@ export const explain =
       TooManyInvitations: () =>
         refused(
           "The workspace has 100 invitations pending, the most it may: revoke some first."
+        ),
+      TooManyReviewLinks: ({ limit }) =>
+        refused(
+          `The post has ${String(limit)} working review links, the most it may: revoke one first.`
         ),
       TooManyWebhookEndpoints: ({ allowed }) =>
         refused(

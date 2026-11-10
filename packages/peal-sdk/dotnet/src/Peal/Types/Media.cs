@@ -15,7 +15,7 @@ public record Media : IJsonOnDeserialized
     public string? AltText { get; set; }
 
     [JsonPropertyName("byteSize")]
-    public required int ByteSize { get; set; }
+    public required long ByteSize { get; set; }
 
     [JsonPropertyName("codec")]
     public string? Codec { get; set; }
@@ -37,6 +37,9 @@ public record Media : IJsonOnDeserialized
 
     [JsonPropertyName("kind")]
     public required MediaKind Kind { get; set; }
+
+    [JsonPropertyName("pageCount")]
+    public int? PageCount { get; set; }
 
     [JsonPropertyName("status")]
     public required MediaStatus Status { get; set; }

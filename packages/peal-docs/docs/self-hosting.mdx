@@ -148,9 +148,9 @@ echo "k1:$(openssl rand -base64 32)"
 
 The value lists `keyId:key` entries separated by commas, such as `k2:<key>,k1:<key>`. The first key encrypts and every listed key decrypts: to rotate, put a new key first and keep the old ones. A malformed value stops the server at startup. Keep the keys secret, and keep a copy: without them, every channel must be reconnected.
 
-The server reaches the platforms itself, over HTTPS, so it needs to reach the internet: to connect accounts, and to publish, on each account's Mastodon server, on the Bluesky server that holds each account, through Bluesky's video service, `https://video.bsky.app`, for videos, on LinkedIn (`www.linkedin.com`, `api.linkedin.com` and the upload addresses LinkedIn gives), on X (`api.x.com`), on TikTok (`open.tiktokapis.com`) and on Meta's APIs. It only calls servers on public addresses, on the default HTTPS port, which keeps people from pointing it at your private network. The platforms send people back to `PUBLIC_URL/connect/<platform>/callback`, through their browser: they never call the server themselves, apart from Bluesky reading Peal's client description, and Meta's data deletion requests, below.
+The server reaches the platforms itself, over HTTPS, so it needs to reach the internet: to connect accounts, and to publish, on each account's Mastodon server, on the Bluesky server that holds each account, through Bluesky's video service, `https://video.bsky.app`, for videos, on LinkedIn (`www.linkedin.com`, `api.linkedin.com` and the upload addresses LinkedIn gives), on X (`api.x.com`), on TikTok (`open.tiktokapis.com`), on Pinterest (`api.pinterest.com` and the upload addresses Pinterest gives) and on Meta's APIs. It only calls servers on public addresses, on the default HTTPS port, which keeps people from pointing it at your private network. The platforms send people back to `PUBLIC_URL/connect/<platform>/callback`, through their browser: they never call the server themselves, apart from Bluesky reading Peal's client description, and Meta's data deletion requests, below.
 
-To publish an image or a video, the server reads it from the media store, whole, into memory, then uploads it: a Bluesky video can take up to 300 MB. LinkedIn and X take videos in parts of 4 MiB, and TikTok in parts of 10 MB, so the server holds one part at a time. Give the server the memory for the largest files your members post.
+To publish an image or a video, the server reads it from the media store, whole, into memory, then uploads it: a Bluesky video can take up to 300 MB. LinkedIn and X take videos in parts of 4 MiB, and TikTok in parts of 10 MB, so the server holds one part at a time; a Pinterest video is sent as it is read, and never held whole. Give the server the memory for the largest files your members post.
 
 ### Addresses to register [#platform-addresses]
 
@@ -193,6 +193,18 @@ A server connects LinkedIn members once you register an app for it on LinkedIn's
 3. Put the app's client id in `LINKEDIN_CLIENT_ID` and its primary client secret in `LINKEDIN_CLIENT_SECRET`.
 
 These apps get no refresh token: members reconnect their channel every 60 days, and are told a week before. Peal calls LinkedIn's API in the version `LINKEDIN_API_VERSION` names, a recent one unless set; LinkedIn retires each version a year after its release, and a retired one fails every post.
+
+### LinkedIn company pages [#linkedin-pages]
+
+Posting to company pages takes LinkedIn's **Community Management API**, which LinkedIn reviews, and grants only to an app that has no other product: it cannot be added to the app above. A server that has the first app alone keeps connecting profiles, unchanged.
+
+1. Create a second app on LinkedIn's developer portal, for the same LinkedIn page, with no product on it. LinkedIn asks that a super admin of that page verify the app.
+2. Request the **Community Management API** on it. LinkedIn grants it to registered legal organizations, for commercial uses, and checks a business email address, the organization, and its website; a personal email address does not pass. Its terms keep what the API serves for your own organization's clients: read them with the use you make of your server in mind.
+3. LinkedIn first grants the **Development tier**, for building: 500 calls a day for the app and 100 for each member, and no batch read, which Peal does not use. Ask for the **Standard tier** before real use: LinkedIn then asks for a screen recording of each use, here connecting a page, posting to it, and reading its posts' statistics, and for your privacy policy.
+4. Under **Auth**, add the same redirect URL, `PUBLIC_URL/connect/linkedin/callback`.
+5. Put the app's client id in `LINKEDIN_PAGES_CLIENT_ID` and its primary client secret in `LINKEDIN_PAGES_CLIENT_SECRET`.
+
+Peal asks members for `w_organization_social`, `r_organization_social` and `rw_organization_admin`, lists the pages each one administers, and posts to those they choose with their own access, which lasts 60 days. LinkedIn gives refresh tokens to approved partners only: when your app gets them, Peal renews a page's access by itself for a year after the sign-in; otherwise the page is reconnected every 60 days, like a profile. Pages are the only LinkedIn channels whose posts Peal reads counts on, and finds after a lost answer.
 
 ### X [#x]
 
@@ -269,6 +281,42 @@ While the project's consent screen is in **Testing**, only the test users you li
 The server calls `oauth2.googleapis.com` and `www.googleapis.com`, and uploads each video there in parts of 8 MiB, holding one at a time; an upload cut off, even by a restart, resumes where YouTube stands. Uploads draw on the project's **Video Uploads** quota, 100 a day unless Google grants more, which resets at midnight Pacific Time: Peal counts them for the whole server, and an upload past `YOUTUBE_DAILY_UPLOADS`, or one YouTube refuses for its quota or the channel's daily limit, waits for the next day. Processing polls and analytics draw on the project's other quota, 10,000 units a day.
 
 Until November 2026, Google kept the videos of API projects it had not audited private. It no longer does, but a channel's settings or Google's restrictions can still keep a video private: Peal compares what YouTube answers with the visibility the member chose, and says so on the post's page.
+
+### Pinterest [#pinterest]
+
+A server connects Pinterest accounts once you register an app for it on Pinterest's developer site:
+
+1. On `developers.pinterest.com`, under **My apps**, connect an app, with a link to your privacy policy. Pinterest reviews the request and grants **Trial access**.
+2. In the app's settings, add `PUBLIC_URL/connect/pinterest/callback` as a redirect URI, such as `https://peal.example.com/connect/pinterest/callback`: Pinterest takes the exact address only.
+3. Put the app id in `PINTEREST_APP_ID` and its secret key in `PINTEREST_APP_SECRET`.
+
+One of the two settings without the other stops the server at startup; without both, **Channels** does not offer Pinterest. Members sign in on Pinterest and allow Peal to read their boards and Pins, to create Pins and to read their account: Peal asks for `boards:read`, `boards:write`, `pins:read`, `pins:write` and `user_accounts:read`, and nothing about secret boards. Access lasts 30 days, and Peal renews it a week ahead with a refresh token Pinterest keeps good for 60 days after each renewal. Pinterest's API revokes no member's access: disconnecting a channel deletes Peal's tokens, and the member removes the app in their Pinterest settings.
+
+With **Trial access**, an app makes 1,000 calls a day in all, and the boards and Pins it creates are seen by their creator alone, in Pinterest's Sandbox: set `PINTEREST_SANDBOX=true`, so that the server calls `api-sandbox.pinterest.com`. The Sandbox creates no video Pin and gives no analytics. To publish for real, ask Pinterest for **Standard access** from the app's page, with a video of your server signing a member in through Pinterest and creating a Pin; once granted, unset `PINTEREST_SANDBOX`, and have members connect their accounts again, as a Sandbox token works nowhere else. Standard access allows each account 100 writes and 60 analytics reads a minute.
+
+The server calls `api.pinterest.com` (or the Sandbox), and sends each video to the address Pinterest names for it, an object store's. Pinterest fetches a Pin's images from links to the media store, valid for two hours: the store must answer Pinterest's servers on the internet, through presigned links or `PEAL_MEDIA_PUBLIC_BASE_URL`. Pinterest's developer guidelines ask that each Pin be chosen by the member who publishes it, which scheduling a post is, and limit what an app may keep of what it reads: Peal keeps a Pin's id and its counts, for the workspace that published it.
+
+### Google Business Profile [#google-business]
+
+A server connects Business Profile locations once Google has given one of your Google Cloud projects access to the Business Profile APIs, which it does on request:
+
+1. In the Google Cloud console, create a project, or pick one, and note its project number.
+2. Ask Google for access with the [GBP API contact form](https://support.google.com/business/contact/api_default), choosing **Application for Basic API Access**, from an email address that owns or manages a Business Profile. Google asks that the profile be verified and active for 60 days or more, and that the business have a website. It answers by email once it has reviewed the request.
+3. Look at the project's quota for the Business Profile APIs: 300 requests a minute means access is granted, 0 that it is not yet. A quota increase does not replace the request.
+4. Under APIs and services, enable the **Google My Business API**, which makes the posts and shows in the console only once access is granted, the **My Business Account Management API** and the **My Business Business Information API**, which list accounts and locations.
+5. Under **Google Auth Platform**, set up the consent screen for **External** users, and add the scope `https://www.googleapis.com/auth/business.manage`.
+6. Under **Clients**, create a **Web application** client, with `PUBLIC_URL/connect/googleBusiness/callback` as an authorized redirect URI, such as `https://peal.example.com/connect/googleBusiness/callback`.
+7. Put the client id in `GOOGLE_BUSINESS_CLIENT_ID` and its secret in `GOOGLE_BUSINESS_CLIENT_SECRET`.
+
+One of the two settings without the other stops the server at startup; without both, **Channels** does not offer Google Business Profile. The client is its own, apart from YouTube's, as Google gives access, counts quota and reviews apps project by project. A project that has both products serves both: give the same client id and secret under both names, with both redirect URIs on the client.
+
+Members sign in with Google and choose among the verified locations of the accounts they own or manage, 200 at most a sign-in: one connection is one location. Peal lists accounts and locations when a member connects, makes posts, and reads a location's posts back when Google's answer to one was lost. It changes nothing else on a profile, and reads no reviews. It renews its access, which lasts an hour, whenever it posts, and at least once a month for a location it posts nothing to, so Google never drops it; disconnecting a location revokes that access at Google, unless another workspace still connects the same location.
+
+While the project has no access, Google answers every call with 429: connecting fails as the platform not answering, and the server's log says to check the project. While the consent screen is in **Testing**, only its test users sign in, and Google ends their access after seven days, as for YouTube.
+
+The server calls `oauth2.googleapis.com`, `mybusinessaccountmanagement.googleapis.com`, `mybusinessbusinessinformation.googleapis.com` and `mybusiness.googleapis.com`. Google fetches each photo from a link to the media store, valid for two hours: the store must answer Google's servers on the internet, through presigned links or `PEAL_MEDIA_PUBLIC_BASE_URL`. Every call draws on the project's 300 requests a minute; past them, a post waits and goes out a little later.
+
+Google's [policies for these APIs](https://developers.google.com/my-business/content/policies) bind you as the project's owner. Among them: act only for businesses whose owners or managers signed in themselves, tell them of a change to their profile within 48 hours (Peal tells a post's author in the app once it is live, and by email if they chose so), let a business leave, which disconnecting a channel does, and store what the APIs answer only within the limits Google sets. Of that, Peal keeps a location's name and address, which label its channel, and each post's name and address on Google, until the channel is disconnected or the workspace deleted: read the policies, and decide whether that suits your use.
 
 ## Writing assistant [#ai]
 

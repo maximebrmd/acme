@@ -3,7 +3,14 @@ import { Context, Effect, Layer, Option, Schema } from "effect";
 import { McpClient } from "effect/ai";
 import type { McpSchema } from "effect/ai";
 import { SqlClient } from "effect/sql";
-import { InvitationSchema, PostSchema } from "peal-contract";
+import {
+  ApprovalRequestSchema,
+  ChangesOutcomeSchema,
+  ChannelCapabilitiesSchema,
+  InvitationSchema,
+  PostReviewSchema,
+  PostSchema,
+} from "peal-contract";
 import type { TargetOptions } from "peal-contract";
 
 import { ListedMemberSchema } from "#app/mcp/people-tools.ts";
@@ -14,6 +21,8 @@ import { DatabaseLive } from "#shared/infrastructure/database.ts";
 import { IdsLive } from "#shared/infrastructure/secure-random-ids.ts";
 import { freshChannel, syntheticCredentials } from "#test/channels/support.ts";
 import {
+  apiKeyOf,
+  bodyOf,
   emailTo,
   newEmail,
   signedUpUnconfirmed,
@@ -21,6 +30,7 @@ import {
   unconfirmedEmails,
   workspaceOf,
 } from "#test/workspace/integration/harness.ts";
+import type { Person } from "#test/workspace/integration/harness.ts";
 
 import {
   authorize,
@@ -35,6 +45,8 @@ import {
 
 interface Fixture {
   readonly channelId: string;
+  /** The workspace's owner, signed in. */
+  readonly owner: Person;
   /** A YouTube channel of the workspace. */
   readonly youtubeId: string;
   /**
@@ -98,6 +110,7 @@ const ToolsFixtureLive = Layer.effect(
 
     return {
       channelId: channel.id,
+      owner,
       publishing,
       reading,
       workspaceId,
@@ -227,6 +240,7 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
         // Read only, destructive, idempotent, open world.
         assert.deepStrictEqual(hints, {
           analytics_summary: [true, false, true, false],
+          approve_post: [false, false, false, true],
           cancel_post: [false, true, true, false],
           confirm_target: [false, true, true, false],
           create_draft: [false, false, false, false],
@@ -236,10 +250,13 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           create_webhook: [false, false, false, true],
           discard_draft: [false, true, true, false],
           get_billing: [true, false, true, false],
+          get_channel_capabilities: [true, false, true, true],
           get_post: [true, false, true, false],
+          get_post_review: [true, false, true, false],
           get_tiktok_creator: [true, false, true, true],
           import_media: [false, false, false, true],
           invite_member: [false, true, false, true],
+          list_approvals: [true, false, true, false],
           list_channels: [true, false, true, false],
           list_drafts: [true, false, true, false],
           list_invitations: [true, false, true, false],
@@ -253,8 +270,10 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           post_analytics: [true, false, true, false],
           publish_post: [false, false, false, true],
           repost_target: [false, false, false, true],
+          request_changes: [false, true, false, false],
           reschedule_post: [false, true, true, true],
           revoke_invitation: [false, true, true, false],
+          run_channel_lookup: [true, false, true, true],
           schedule_post: [false, false, false, true],
           server_health: [true, false, true, false],
           unschedule_post: [false, true, true, false],
@@ -266,6 +285,58 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           assert.isNotEmpty(tool.description ?? "", tool.name);
         }
       })
+    );
+
+    it.effect(
+      "tell a connection that reads only what a channel takes, and its lookups",
+      () =>
+        Effect.gen(function* capabilities() {
+          const fixture = yield* ToolsFixture;
+
+          const reader = yield* connected(fixture.reading);
+
+          const described = yield* reader.call(
+            "get_channel_capabilities",
+            ChannelCapabilitiesSchema,
+            { channelId: fixture.youtubeId }
+          );
+
+          assert.strictEqual(described.channelId, fixture.youtubeId);
+          assert.deepStrictEqual(described.account, { _tag: "unrestricted" });
+          assert.deepStrictEqual(
+            described.capabilities.options.fields.flatMap((field) =>
+              field.required ? [field.name] : []
+            ),
+            ["madeForKids", "title"]
+          );
+          assert.deepStrictEqual(
+            described.capabilities.lookups.map(({ name }) => name),
+            ["youtubeVideoCategories", "youtubePlaylists"]
+          );
+
+          // Refused before the platform is asked anything.
+          assert.include(
+            yield* reader.refused("run_channel_lookup", {
+              channelId: fixture.youtubeId,
+              name: "boards",
+            }),
+            "has no lookup named boards"
+          );
+          assert.include(
+            yield* reader.refused("run_channel_lookup", {
+              channelId: fixture.youtubeId,
+              input: { regionCode: "FR" },
+              name: "youtubePlaylists",
+            }),
+            "does not take this input"
+          );
+          assert.include(
+            yield* reader.refused("get_channel_capabilities", {
+              channelId: "not-a-channel",
+            }),
+            "This is not one of the workspace's channels"
+          );
+        })
     );
 
     it.effect(
@@ -564,6 +635,195 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
             ),
             { enabled: false, plan: null }
           );
+        })
+    );
+
+    it.effect(
+      "read reviews and decide on approvals, for a connection that may, and leave an application's request to a person",
+      () =>
+        Effect.gen(function* reviews() {
+          const fixture = yield* ToolsFixture;
+          const app = yield* TestApp;
+          const { owner, workspaceId } = fixture;
+          const writer = yield* connected(fixture.writing);
+          const publisher = yield* connected(fixture.publishing);
+          const reader = yield* connected(fixture.reading);
+          const headers = { cookie: owner.cookies };
+          const base = `/api/workspaces/${workspaceId}`;
+
+          // This server runs no job, so no notice is emailed here: the owner
+          // reads theirs in the app.
+          yield* app.request("/api/me/notification-preferences", {
+            body: { email: { postReview: false } },
+            headers,
+            method: "PATCH",
+          });
+
+          // The owner asks that every post waits, then writes two posts and
+          // asks for them to go out: in person, and with an API key.
+          yield* app.request(`${base}/review/settings`, {
+            body: { approvalPolicy: "always" },
+            headers,
+            method: "PUT",
+          });
+
+          const key = yield* apiKeyOf(owner, workspaceId, [
+            "channel:read",
+            "post:create",
+            "post:read",
+            "post:schedule",
+          ]);
+
+          const scheduled = Effect.fn("scheduled")(function* scheduled(
+            credentials: Readonly<Record<string, string>>
+          ) {
+            const draft = yield* bodyOf(
+              PostJsonSchema,
+              yield* app.request(`${base}/posts`, {
+                body: {
+                  channelIds: [fixture.channelId],
+                  content: content("A synthetic post that waits."),
+                },
+                headers: credentials,
+              })
+            );
+
+            const asked = yield* app.request(
+              `${base}/posts/${draft.id}/schedule`,
+              {
+                body: {
+                  at: "2031-01-01T09:00:00Z",
+                  channelIds: [fixture.channelId],
+                  timeZone: "Europe/Paris",
+                },
+                headers: credentials,
+              }
+            );
+
+            assert.strictEqual(asked.status, 200, JSON.stringify(asked.body));
+
+            return yield* bodyOf(PostJsonSchema, asked);
+          });
+
+          const inPerson = yield* scheduled(headers);
+
+          const byKey = yield* scheduled({
+            authorization: `Bearer ${key.key}`,
+          });
+
+          assert.deepStrictEqual(
+            [inPerson.status, byKey.status],
+            ["awaitingApproval", "awaitingApproval"]
+          );
+
+          const ApprovalsSchema = Schema.toCodecJson(
+            Schema.Struct({ approvals: Schema.Array(ApprovalRequestSchema) })
+          );
+
+          const { approvals } = yield* reader.call(
+            "list_approvals",
+            ApprovalsSchema
+          );
+
+          assert.deepStrictEqual(
+            approvals.map(({ postId, requestedVia }) => [postId, requestedVia]),
+            [
+              [inPerson.id, "member"],
+              [byKey.id, "apiKey"],
+            ]
+          );
+
+          // What each approval names, as a client that read them sends it
+          // back.
+          const shownFor = (postId: string) => {
+            const approval = approvals.find((asked) => asked.postId === postId);
+
+            return {
+              approvalId: approval?.id ?? "",
+              postId,
+              subjectHash: approval?.subjectHash ?? "",
+            };
+          };
+
+          // Reading only decides nothing.
+          assert.include(
+            yield* reader.refused("approve_post", shownFor(inPerson.id)),
+            "This connection may not approve posts"
+          );
+          assert.include(
+            yield* reader.refused("request_changes", {
+              ...shownFor(inPerson.id),
+              comment: "Not mine to ask.",
+            }),
+            "This connection may not approve posts"
+          );
+
+          // Approving is publishing: a connection that only writes decides
+          // nothing either.
+          assert.include(
+            yield* writer.refused("approve_post", shownFor(inPerson.id)),
+            "This connection may not approve posts"
+          );
+
+          // What an application asked for waits for a person.
+          assert.include(
+            yield* publisher.refused("approve_post", shownFor(byKey.id)),
+            "it waits for a person"
+          );
+
+          // A decision for something else than what was read is refused.
+          assert.include(
+            yield* publisher.refused("approve_post", {
+              ...shownFor(inPerson.id),
+              subjectHash: "0".repeat(64),
+            }),
+            "says something else since the user was shown it"
+          );
+
+          const before = yield* mcpConnections(workspaceId);
+
+          const sentBack = yield* publisher.call(
+            "request_changes",
+            Schema.toCodecJson(ChangesOutcomeSchema),
+            { ...shownFor(inPerson.id), comment: "Say Thursday, not Friday." }
+          );
+
+          assert.strictEqual(sentBack.approval.status, "changesRequested");
+          assert.strictEqual(yield* mcpConnections(workspaceId), before + 1);
+
+          const thread = yield* reader.call(
+            "get_post_review",
+            Schema.toCodecJson(PostReviewSchema),
+            { postId: inPerson.id }
+          );
+
+          assert.deepStrictEqual(
+            thread.comments.map(({ author, text }) => [author.kind, text]),
+            [["member", "Say Thursday, not Friday."]]
+          );
+          assert.include(
+            yield* publisher.refused("approve_post", shownFor(inPerson.id)),
+            "The post does not wait for an approval"
+          );
+
+          // A link's page has one address for every link, its token in a
+          // header: nothing between the server and a reader may keep one
+          // link's answer for another.
+          const page = yield* app.request("/api/review-link", {
+            headers: { "x-review-token": "not-a-token" },
+          });
+
+          assert.deepStrictEqual(
+            [page.status, page.headers.get("cache-control")],
+            [404, "no-store"]
+          );
+
+          // Back to never, for the tests that follow.
+          yield* app.request(`${base}/review/settings`, {
+            body: { approvalPolicy: "never" },
+            headers,
+            method: "PUT",
+          });
         })
     );
 

@@ -351,6 +351,7 @@ layer(UseCasesTest)("the channels endpoints", (it) => {
 
         assert.deepStrictEqual(listed, {
           instagramConnections: [],
+          linkedinConnections: [],
           platforms: ["mastodon"],
         });
 

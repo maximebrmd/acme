@@ -26,7 +26,7 @@ import social.peal.core.ObjectMappers;
 public final class PlanLimitReachedEncoded {
     private final PlanLimitReachedEncodedTag tag;
 
-    private final int allowed;
+    private final long allowed;
 
     private final String billingUrl;
 
@@ -36,18 +36,18 @@ public final class PlanLimitReachedEncoded {
 
     private final Optional<PaidPlan> planWithRoom;
 
-    private final int used;
+    private final long used;
 
     private final Map<String, Object> additionalProperties;
 
     private PlanLimitReachedEncoded(
             PlanLimitReachedEncodedTag tag,
-            int allowed,
+            long allowed,
             String billingUrl,
             PlanLimit limit,
             Plan plan,
             Optional<PaidPlan> planWithRoom,
-            int used,
+            long used,
             Map<String, Object> additionalProperties) {
         this.tag = tag;
         this.allowed = allowed;
@@ -65,7 +65,7 @@ public final class PlanLimitReachedEncoded {
     }
 
     @JsonProperty("allowed")
-    public int getAllowed() {
+    public long getAllowed() {
         return allowed;
     }
 
@@ -93,7 +93,7 @@ public final class PlanLimitReachedEncoded {
     }
 
     @JsonProperty("used")
-    public int getUsed() {
+    public long getUsed() {
         return used;
     }
 
@@ -146,7 +146,7 @@ public final class PlanLimitReachedEncoded {
     }
 
     public interface AllowedStage {
-        BillingUrlStage allowed(int allowed);
+        BillingUrlStage allowed(long allowed);
     }
 
     public interface BillingUrlStage {
@@ -162,7 +162,7 @@ public final class PlanLimitReachedEncoded {
     }
 
     public interface UsedStage {
-        _FinalStage used(int used);
+        _FinalStage used(long used);
     }
 
     public interface _FinalStage {
@@ -184,7 +184,7 @@ public final class PlanLimitReachedEncoded {
             implements TagStage, AllowedStage, BillingUrlStage, LimitStage, PlanStage, UsedStage, _FinalStage {
         private PlanLimitReachedEncodedTag tag;
 
-        private int allowed;
+        private long allowed;
 
         private String billingUrl;
 
@@ -192,7 +192,7 @@ public final class PlanLimitReachedEncoded {
 
         private Plan plan;
 
-        private int used;
+        private long used;
 
         private Optional<PaidPlan> planWithRoom = Optional.empty();
 
@@ -221,7 +221,7 @@ public final class PlanLimitReachedEncoded {
 
         @java.lang.Override
         @JsonSetter("allowed")
-        public BillingUrlStage allowed(int allowed) {
+        public BillingUrlStage allowed(long allowed) {
             this.allowed = allowed;
             return this;
         }
@@ -249,7 +249,7 @@ public final class PlanLimitReachedEncoded {
 
         @java.lang.Override
         @JsonSetter("used")
-        public _FinalStage used(int used) {
+        public _FinalStage used(long used) {
             this.used = used;
             return this;
         }

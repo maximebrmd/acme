@@ -14,7 +14,7 @@ public class CreateTest : BaseMockServerTest
     {
         const string requestJson = """
             {
-              "byteSize": 1,
+              "byteSize": 1000000,
               "contentType": "contentType"
             }
             """;
@@ -23,7 +23,7 @@ public class CreateTest : BaseMockServerTest
             {
               "media": {
                 "altText": "altText",
-                "byteSize": 1,
+                "byteSize": 1000000,
                 "codec": "codec",
                 "contentType": "image/gif",
                 "createdAt": "createdAt",
@@ -34,6 +34,7 @@ public class CreateTest : BaseMockServerTest
                 "durationMs": 1,
                 "id": "id",
                 "kind": "image",
+                "pageCount": 1,
                 "status": {
                   "_tag": "pending"
                 },
@@ -75,7 +76,7 @@ public class CreateTest : BaseMockServerTest
             {
                 WorkspaceId = "workspaceId",
                 AltText = null,
-                ByteSize = 1,
+                ByteSize = 1000000,
                 ContentType = "contentType",
             }
         );
@@ -87,7 +88,7 @@ public class CreateTest : BaseMockServerTest
     {
         const string requestJson = """
             {
-              "byteSize": 1,
+              "byteSize": 1000000,
               "contentType": "contentType"
             }
             """;
@@ -96,7 +97,7 @@ public class CreateTest : BaseMockServerTest
             {
               "media": {
                 "altText": "altText",
-                "byteSize": 1,
+                "byteSize": 1000000,
                 "codec": "codec",
                 "contentType": "image/gif",
                 "createdAt": "createdAt",
@@ -107,6 +108,7 @@ public class CreateTest : BaseMockServerTest
                 "durationMs": 1,
                 "id": "id",
                 "kind": "image",
+                "pageCount": 1,
                 "status": {
                   "_tag": "pending"
                 },
@@ -147,7 +149,7 @@ public class CreateTest : BaseMockServerTest
             new NewUpload
             {
                 WorkspaceId = "workspaceId",
-                ByteSize = 1,
+                ByteSize = 1000000,
                 ContentType = "contentType",
             }
         );

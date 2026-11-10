@@ -7,14 +7,27 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 public final class WebhookEventType {
+    public static final WebhookEventType MEDIA_FAILED = new WebhookEventType(Value.MEDIA_FAILED, "media.failed");
+
+    public static final WebhookEventType POST_FAILED = new WebhookEventType(Value.POST_FAILED, "post.failed");
+
+    public static final WebhookEventType POST_PUBLISHED = new WebhookEventType(Value.POST_PUBLISHED, "post.published");
+
+    public static final WebhookEventType POST_APPROVAL_REQUESTED =
+            new WebhookEventType(Value.POST_APPROVAL_REQUESTED, "post.approval_requested");
+
+    public static final WebhookEventType POST_UNSCHEDULED =
+            new WebhookEventType(Value.POST_UNSCHEDULED, "post.unscheduled");
+
+    public static final WebhookEventType POST_CHANGES_REQUESTED =
+            new WebhookEventType(Value.POST_CHANGES_REQUESTED, "post.changes_requested");
+
+    public static final WebhookEventType POST_APPROVED = new WebhookEventType(Value.POST_APPROVED, "post.approved");
+
     public static final WebhookEventType CHANNEL_CONNECTED =
             new WebhookEventType(Value.CHANNEL_CONNECTED, "channel.connected");
 
     public static final WebhookEventType WEBHOOK_TEST = new WebhookEventType(Value.WEBHOOK_TEST, "webhook.test");
-
-    public static final WebhookEventType MEDIA_FAILED = new WebhookEventType(Value.MEDIA_FAILED, "media.failed");
-
-    public static final WebhookEventType POST_FAILED = new WebhookEventType(Value.POST_FAILED, "post.failed");
 
     public static final WebhookEventType CHANNEL_DISCONNECTED =
             new WebhookEventType(Value.CHANNEL_DISCONNECTED, "channel.disconnected");
@@ -26,12 +39,7 @@ public final class WebhookEventType {
 
     public static final WebhookEventType POST_SCHEDULED = new WebhookEventType(Value.POST_SCHEDULED, "post.scheduled");
 
-    public static final WebhookEventType POST_PUBLISHED = new WebhookEventType(Value.POST_PUBLISHED, "post.published");
-
     public static final WebhookEventType MEDIA_READY = new WebhookEventType(Value.MEDIA_READY, "media.ready");
-
-    public static final WebhookEventType POST_UNSCHEDULED =
-            new WebhookEventType(Value.POST_UNSCHEDULED, "post.unscheduled");
 
     public static final WebhookEventType POST_UNCONFIRMED =
             new WebhookEventType(Value.POST_UNCONFIRMED, "post.unconfirmed");
@@ -68,14 +76,24 @@ public final class WebhookEventType {
 
     public <T> T visit(Visitor<T> visitor) {
         switch (value) {
-            case CHANNEL_CONNECTED:
-                return visitor.visitChannelConnected();
-            case WEBHOOK_TEST:
-                return visitor.visitWebhookTest();
             case MEDIA_FAILED:
                 return visitor.visitMediaFailed();
             case POST_FAILED:
                 return visitor.visitPostFailed();
+            case POST_PUBLISHED:
+                return visitor.visitPostPublished();
+            case POST_APPROVAL_REQUESTED:
+                return visitor.visitPostApprovalRequested();
+            case POST_UNSCHEDULED:
+                return visitor.visitPostUnscheduled();
+            case POST_CHANGES_REQUESTED:
+                return visitor.visitPostChangesRequested();
+            case POST_APPROVED:
+                return visitor.visitPostApproved();
+            case CHANNEL_CONNECTED:
+                return visitor.visitChannelConnected();
+            case WEBHOOK_TEST:
+                return visitor.visitWebhookTest();
             case CHANNEL_DISCONNECTED:
                 return visitor.visitChannelDisconnected();
             case CHANNEL_RECONNECT_NEEDED:
@@ -84,12 +102,8 @@ public final class WebhookEventType {
                 return visitor.visitPostCancelled();
             case POST_SCHEDULED:
                 return visitor.visitPostScheduled();
-            case POST_PUBLISHED:
-                return visitor.visitPostPublished();
             case MEDIA_READY:
                 return visitor.visitMediaReady();
-            case POST_UNSCHEDULED:
-                return visitor.visitPostUnscheduled();
             case POST_UNCONFIRMED:
                 return visitor.visitPostUnconfirmed();
             case UNKNOWN:
@@ -101,14 +115,24 @@ public final class WebhookEventType {
     @JsonCreator(mode = JsonCreator.Mode.DELEGATING)
     public static WebhookEventType valueOf(String value) {
         switch (value) {
-            case "channel.connected":
-                return CHANNEL_CONNECTED;
-            case "webhook.test":
-                return WEBHOOK_TEST;
             case "media.failed":
                 return MEDIA_FAILED;
             case "post.failed":
                 return POST_FAILED;
+            case "post.published":
+                return POST_PUBLISHED;
+            case "post.approval_requested":
+                return POST_APPROVAL_REQUESTED;
+            case "post.unscheduled":
+                return POST_UNSCHEDULED;
+            case "post.changes_requested":
+                return POST_CHANGES_REQUESTED;
+            case "post.approved":
+                return POST_APPROVED;
+            case "channel.connected":
+                return CHANNEL_CONNECTED;
+            case "webhook.test":
+                return WEBHOOK_TEST;
             case "channel.disconnected":
                 return CHANNEL_DISCONNECTED;
             case "channel.reconnect_needed":
@@ -117,12 +141,8 @@ public final class WebhookEventType {
                 return POST_CANCELLED;
             case "post.scheduled":
                 return POST_SCHEDULED;
-            case "post.published":
-                return POST_PUBLISHED;
             case "media.ready":
                 return MEDIA_READY;
-            case "post.unscheduled":
-                return POST_UNSCHEDULED;
             case "post.unconfirmed":
                 return POST_UNCONFIRMED;
             default:
@@ -142,6 +162,12 @@ public final class WebhookEventType {
         POST_UNCONFIRMED,
 
         POST_CANCELLED,
+
+        POST_APPROVAL_REQUESTED,
+
+        POST_APPROVED,
+
+        POST_CHANGES_REQUESTED,
 
         CHANNEL_CONNECTED,
 
@@ -170,6 +196,12 @@ public final class WebhookEventType {
         T visitPostUnconfirmed();
 
         T visitPostCancelled();
+
+        T visitPostApprovalRequested();
+
+        T visitPostApproved();
+
+        T visitPostChangesRequested();
 
         T visitChannelConnected();
 

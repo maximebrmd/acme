@@ -23,6 +23,7 @@ const contentTypes = {
   ".jpg": "image/jpeg",
   ".mov": "video/quicktime",
   ".mp4": "video/mp4",
+  ".pdf": "application/pdf",
   ".png": "image/png",
   ".qt": "video/quicktime",
   ".webp": "image/webp",
@@ -113,7 +114,7 @@ export const uploadFile = (
 
     if (contentType === undefined) {
       return yield* new Refused({
-        reason: `${given} is not a file Peal takes, by its name: it stores JPEG, PNG, GIF and WebP images (.jpg, .jpeg, .png, .gif, .webp), and MP4 and QuickTime videos (.mp4, .mov).`,
+        reason: `${given} is not a file Peal takes, by its name: it stores JPEG, PNG, GIF and WebP images (.jpg, .jpeg, .png, .gif, .webp), MP4 and QuickTime videos (.mp4, .mov), and PDF documents (.pdf), which LinkedIn shows.`,
       });
     }
 

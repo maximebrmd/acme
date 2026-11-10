@@ -19,20 +19,11 @@ public record NotFoundErrorBody
     }
 
     /// <summary>
-    /// Create an instance of NotFoundErrorBody with <see cref="NotFoundErrorBody.WebhookEndpointNotFound"/>.
+    /// Create an instance of NotFoundErrorBody with <see cref="NotFoundErrorBody.ReviewLinkNotFound"/>.
     /// </summary>
-    public NotFoundErrorBody(NotFoundErrorBody.WebhookEndpointNotFound value)
+    public NotFoundErrorBody(NotFoundErrorBody.ReviewLinkNotFound value)
     {
-        Type = "WebhookEndpointNotFound";
-        Value = value.Value;
-    }
-
-    /// <summary>
-    /// Create an instance of NotFoundErrorBody with <see cref="NotFoundErrorBody.WebhookDeliveryNotFound"/>.
-    /// </summary>
-    public NotFoundErrorBody(NotFoundErrorBody.WebhookDeliveryNotFound value)
-    {
-        Type = "WebhookDeliveryNotFound";
+        Type = "ReviewLinkNotFound";
         Value = value.Value;
     }
 
@@ -57,14 +48,9 @@ public record NotFoundErrorBody
     public object? Value { get; internal set; }
 
     /// <summary>
-    /// Returns true if <see cref="Type"/> is "WebhookEndpointNotFound"
+    /// Returns true if <see cref="Type"/> is "ReviewLinkNotFound"
     /// </summary>
-    public bool IsWebhookEndpointNotFound => Type == "WebhookEndpointNotFound";
-
-    /// <summary>
-    /// Returns true if <see cref="Type"/> is "WebhookDeliveryNotFound"
-    /// </summary>
-    public bool IsWebhookDeliveryNotFound => Type == "WebhookDeliveryNotFound";
+    public bool IsReviewLinkNotFound => Type == "ReviewLinkNotFound";
 
     /// <summary>
     /// Returns true if <see cref="Type"/> is "WorkspaceNotFound"
@@ -72,25 +58,14 @@ public record NotFoundErrorBody
     public bool IsWorkspaceNotFound => Type == "WorkspaceNotFound";
 
     /// <summary>
-    /// Returns the value as a <see cref="Peal.WebhookEndpointNotFoundEncoded"/> if <see cref="Type"/> is 'WebhookEndpointNotFound', otherwise throws an exception.
+    /// Returns the value as a <see cref="Peal.ReviewLinkNotFoundEncoded"/> if <see cref="Type"/> is 'ReviewLinkNotFound', otherwise throws an exception.
     /// </summary>
-    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'WebhookEndpointNotFound'.</exception>
-    public Peal.WebhookEndpointNotFoundEncoded AsWebhookEndpointNotFound() =>
-        IsWebhookEndpointNotFound
-            ? (Peal.WebhookEndpointNotFoundEncoded)Value!
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'ReviewLinkNotFound'.</exception>
+    public Peal.ReviewLinkNotFoundEncoded AsReviewLinkNotFound() =>
+        IsReviewLinkNotFound
+            ? (Peal.ReviewLinkNotFoundEncoded)Value!
             : throw new global::System.Exception(
-                "NotFoundErrorBody.Type is not 'WebhookEndpointNotFound'"
-            );
-
-    /// <summary>
-    /// Returns the value as a <see cref="Peal.WebhookDeliveryNotFoundEncoded"/> if <see cref="Type"/> is 'WebhookDeliveryNotFound', otherwise throws an exception.
-    /// </summary>
-    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'WebhookDeliveryNotFound'.</exception>
-    public Peal.WebhookDeliveryNotFoundEncoded AsWebhookDeliveryNotFound() =>
-        IsWebhookDeliveryNotFound
-            ? (Peal.WebhookDeliveryNotFoundEncoded)Value!
-            : throw new global::System.Exception(
-                "NotFoundErrorBody.Type is not 'WebhookDeliveryNotFound'"
+                "NotFoundErrorBody.Type is not 'ReviewLinkNotFound'"
             );
 
     /// <summary>
@@ -105,35 +80,29 @@ public record NotFoundErrorBody
             );
 
     public T Match<T>(
-        Func<Peal.WebhookEndpointNotFoundEncoded, T> onWebhookEndpointNotFound,
-        Func<Peal.WebhookDeliveryNotFoundEncoded, T> onWebhookDeliveryNotFound,
+        Func<Peal.ReviewLinkNotFoundEncoded, T> onReviewLinkNotFound,
         Func<Peal.WorkspaceNotFoundEncoded, T> onWorkspaceNotFound,
         Func<string, object?, T> onUnknown_
     )
     {
         return Type switch
         {
-            "WebhookEndpointNotFound" => onWebhookEndpointNotFound(AsWebhookEndpointNotFound()),
-            "WebhookDeliveryNotFound" => onWebhookDeliveryNotFound(AsWebhookDeliveryNotFound()),
+            "ReviewLinkNotFound" => onReviewLinkNotFound(AsReviewLinkNotFound()),
             "WorkspaceNotFound" => onWorkspaceNotFound(AsWorkspaceNotFound()),
             _ => onUnknown_(Type, Value),
         };
     }
 
     public void Visit(
-        Action<Peal.WebhookEndpointNotFoundEncoded> onWebhookEndpointNotFound,
-        Action<Peal.WebhookDeliveryNotFoundEncoded> onWebhookDeliveryNotFound,
+        Action<Peal.ReviewLinkNotFoundEncoded> onReviewLinkNotFound,
         Action<Peal.WorkspaceNotFoundEncoded> onWorkspaceNotFound,
         Action<string, object?> onUnknown_
     )
     {
         switch (Type)
         {
-            case "WebhookEndpointNotFound":
-                onWebhookEndpointNotFound(AsWebhookEndpointNotFound());
-                break;
-            case "WebhookDeliveryNotFound":
-                onWebhookDeliveryNotFound(AsWebhookDeliveryNotFound());
+            case "ReviewLinkNotFound":
+                onReviewLinkNotFound(AsReviewLinkNotFound());
                 break;
             case "WorkspaceNotFound":
                 onWorkspaceNotFound(AsWorkspaceNotFound());
@@ -145,27 +114,13 @@ public record NotFoundErrorBody
     }
 
     /// <summary>
-    /// Attempts to cast the value to a <see cref="Peal.WebhookEndpointNotFoundEncoded"/> and returns true if successful.
+    /// Attempts to cast the value to a <see cref="Peal.ReviewLinkNotFoundEncoded"/> and returns true if successful.
     /// </summary>
-    public bool TryAsWebhookEndpointNotFound(out Peal.WebhookEndpointNotFoundEncoded? value)
+    public bool TryAsReviewLinkNotFound(out Peal.ReviewLinkNotFoundEncoded? value)
     {
-        if (Type == "WebhookEndpointNotFound")
+        if (Type == "ReviewLinkNotFound")
         {
-            value = (Peal.WebhookEndpointNotFoundEncoded)Value!;
-            return true;
-        }
-        value = null;
-        return false;
-    }
-
-    /// <summary>
-    /// Attempts to cast the value to a <see cref="Peal.WebhookDeliveryNotFoundEncoded"/> and returns true if successful.
-    /// </summary>
-    public bool TryAsWebhookDeliveryNotFound(out Peal.WebhookDeliveryNotFoundEncoded? value)
-    {
-        if (Type == "WebhookDeliveryNotFound")
-        {
-            value = (Peal.WebhookDeliveryNotFoundEncoded)Value!;
+            value = (Peal.ReviewLinkNotFoundEncoded)Value!;
             return true;
         }
         value = null;
@@ -188,13 +143,8 @@ public record NotFoundErrorBody
 
     public override string ToString() => JsonUtils.Serialize(this);
 
-    public static implicit operator NotFoundErrorBody(
-        NotFoundErrorBody.WebhookEndpointNotFound value
-    ) => new(value);
-
-    public static implicit operator NotFoundErrorBody(
-        NotFoundErrorBody.WebhookDeliveryNotFound value
-    ) => new(value);
+    public static implicit operator NotFoundErrorBody(NotFoundErrorBody.ReviewLinkNotFound value) =>
+        new(value);
 
     public static implicit operator NotFoundErrorBody(NotFoundErrorBody.WorkspaceNotFound value) =>
         new(value);
@@ -240,19 +190,10 @@ public record NotFoundErrorBody
 
             var value = discriminator switch
             {
-                "WebhookEndpointNotFound" =>
-                    jsonWithoutDiscriminator.Deserialize<Peal.WebhookEndpointNotFoundEncoded?>(
-                        options
-                    )
+                "ReviewLinkNotFound" =>
+                    jsonWithoutDiscriminator.Deserialize<Peal.ReviewLinkNotFoundEncoded?>(options)
                         ?? throw new JsonException(
-                            "Failed to deserialize Peal.WebhookEndpointNotFoundEncoded"
-                        ),
-                "WebhookDeliveryNotFound" =>
-                    jsonWithoutDiscriminator.Deserialize<Peal.WebhookDeliveryNotFoundEncoded?>(
-                        options
-                    )
-                        ?? throw new JsonException(
-                            "Failed to deserialize Peal.WebhookDeliveryNotFoundEncoded"
+                            "Failed to deserialize Peal.ReviewLinkNotFoundEncoded"
                         ),
                 "WorkspaceNotFound" => json.Deserialize<Peal.WorkspaceNotFoundEncoded?>(options)
                     ?? throw new JsonException(
@@ -272,14 +213,7 @@ public record NotFoundErrorBody
             JsonNode json =
                 value.Type switch
                 {
-                    "WebhookEndpointNotFound" => JsonSerializer.SerializeToNode(
-                        value.Value,
-                        options
-                    ),
-                    "WebhookDeliveryNotFound" => JsonSerializer.SerializeToNode(
-                        value.Value,
-                        options
-                    ),
+                    "ReviewLinkNotFound" => JsonSerializer.SerializeToNode(value.Value, options),
                     "WorkspaceNotFound" => JsonSerializer.SerializeToNode(value.Value, options),
                     _ => JsonSerializer.SerializeToNode(value.Value, options),
                 } ?? new JsonObject();
@@ -310,42 +244,22 @@ public record NotFoundErrorBody
     }
 
     /// <summary>
-    /// Discriminated union type for WebhookEndpointNotFound
+    /// Discriminated union type for ReviewLinkNotFound
     /// </summary>
     [Serializable]
-    public struct WebhookEndpointNotFound
+    public struct ReviewLinkNotFound
     {
-        public WebhookEndpointNotFound(Peal.WebhookEndpointNotFoundEncoded value)
+        public ReviewLinkNotFound(Peal.ReviewLinkNotFoundEncoded value)
         {
             Value = value;
         }
 
-        internal Peal.WebhookEndpointNotFoundEncoded Value { get; set; }
+        internal Peal.ReviewLinkNotFoundEncoded Value { get; set; }
 
         public override string ToString() => Value.ToString() ?? "null";
 
-        public static implicit operator NotFoundErrorBody.WebhookEndpointNotFound(
-            Peal.WebhookEndpointNotFoundEncoded value
-        ) => new(value);
-    }
-
-    /// <summary>
-    /// Discriminated union type for WebhookDeliveryNotFound
-    /// </summary>
-    [Serializable]
-    public struct WebhookDeliveryNotFound
-    {
-        public WebhookDeliveryNotFound(Peal.WebhookDeliveryNotFoundEncoded value)
-        {
-            Value = value;
-        }
-
-        internal Peal.WebhookDeliveryNotFoundEncoded Value { get; set; }
-
-        public override string ToString() => Value.ToString() ?? "null";
-
-        public static implicit operator NotFoundErrorBody.WebhookDeliveryNotFound(
-            Peal.WebhookDeliveryNotFoundEncoded value
+        public static implicit operator NotFoundErrorBody.ReviewLinkNotFound(
+            Peal.ReviewLinkNotFoundEncoded value
         ) => new(value);
     }
 

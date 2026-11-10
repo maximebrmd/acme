@@ -183,6 +183,7 @@ export const linkedinAuthorizer = Effect.fn("LinkedInAuthorizer.make")(
     const authorizer: PlatformAuthorizer = {
       begin,
       complete,
+      connection: "linkedinProfile",
       platform: "linkedin",
       policy: tokenPolicies.linkedin,
       // Nothing renews a LinkedIn token: its policy never makes one due, and

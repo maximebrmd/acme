@@ -3,10 +3,12 @@ import { Tool, Toolkit } from "effect/ai";
 import { ChannelSchema, CurrentMember, PermissionSchema } from "peal-contract";
 
 import { reading } from "#app/mcp/annotations.ts";
+import { CapabilityTools } from "#app/mcp/capabilities-tools.ts";
 import { MediaTools } from "#app/mcp/media-tools.ts";
 import { PeopleTools } from "#app/mcp/people-tools.ts";
 import { PostTools } from "#app/mcp/posts-tools.ts";
 import { ReportTools } from "#app/mcp/reports-tools.ts";
+import { ReviewTools } from "#app/mcp/review-tools.ts";
 import { ToolRefused } from "#app/mcp/tool-refused.ts";
 import { WebhookTools } from "#app/mcp/webhooks-tools.ts";
 
@@ -64,7 +66,7 @@ export const ListWorkspaces = Tool.make("list_workspaces", {
 export const ListChannels = Tool.make("list_channels", {
   dependencies: [CurrentMember],
   description:
-    "Lists the social accounts (channels) connected to the workspace, oldest first, with whether each one posts or needs to be reconnected, and for Instagram its `connection`: `instagramLogin` (the professional account itself) or `facebookLogin` (through a Facebook Page). Their tokens are never shown. Accounts are connected in the web app, where the member signs in on the platform.",
+    "Lists the social accounts (channels) connected to the workspace, oldest first, with whether each one posts or needs to be reconnected, and for Instagram its `connection`: `instagramLogin` (the professional account itself) or `facebookLogin` (through a Facebook Page), and for LinkedIn `linkedinProfile` (a member's own profile) or `linkedinPage` (a company page, the only LinkedIn channels with post counts and lookups). Their tokens are never shown. Accounts are connected in the web app, where the member signs in on the platform.",
   failure: ToolRefused,
   success: Schema.Struct({ channels: Schema.Array(ChannelSchema) }),
 })
@@ -102,5 +104,7 @@ export const PealTools = Toolkit.merge(
   MediaTools,
   ReportTools,
   PeopleTools,
+  CapabilityTools,
+  ReviewTools,
   WebhookTools
 );

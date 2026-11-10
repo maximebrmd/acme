@@ -130,6 +130,7 @@ const LoadedConnectForms = ({
     return (
       <ConnectForms
         instagramConnections={platforms.value.instagramConnections}
+        linkedinConnections={platforms.value.linkedinConnections}
         platforms={platforms.value.platforms}
         workspaceId={workspaceId}
       />

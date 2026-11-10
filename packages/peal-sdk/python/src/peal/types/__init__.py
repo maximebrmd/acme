@@ -6,12 +6,41 @@ import typing
 from importlib import import_module
 
 if typing.TYPE_CHECKING:
+    from .account_restriction import (
+        AccountRestriction,
+        AccountRestriction_MediaTypesRefused,
+        AccountRestriction_OptionFixed,
+        AccountRestriction_OptionValues,
+        AccountRestriction_VideoDuration,
+    )
+    from .account_restriction_media_types_refused import AccountRestrictionMediaTypesRefused
+    from .account_restriction_option_fixed import AccountRestrictionOptionFixed
+    from .account_restriction_option_values import AccountRestrictionOptionValues
+    from .account_restriction_video_duration import AccountRestrictionVideoDuration
+    from .account_standing import (
+        AccountStanding,
+        AccountStanding_Read,
+        AccountStanding_Unread,
+        AccountStanding_Unrestricted,
+    )
+    from .account_standing_read import AccountStandingRead
+    from .account_standing_unread import AccountStandingUnread
+    from .account_standing_unrestricted import AccountStandingUnrestricted
+    from .account_unread_reason import AccountUnreadReason
     from .already_member_encoded import AlreadyMemberEncoded
     from .alt_text_too_long_encoded import AltTextTooLongEncoded
     from .alt_text_too_long_encoded_tag import AltTextTooLongEncodedTag
     from .analytics_summary import AnalyticsSummary
     from .api_key import ApiKey
     from .api_key_not_found_encoded import ApiKeyNotFoundEncoded
+    from .approval_changed_encoded import ApprovalChangedEncoded
+    from .approval_not_pending_encoded import ApprovalNotPendingEncoded
+    from .approval_origin import ApprovalOrigin
+    from .approval_outcome import ApprovalOutcome
+    from .approval_policy import ApprovalPolicy
+    from .approval_request import ApprovalRequest
+    from .approval_request_decision import ApprovalRequestDecision
+    from .approval_status import ApprovalStatus
     from .assistant_action import (
         AssistantAction,
         AssistantAction_Hashtags,
@@ -41,10 +70,13 @@ if typing.TYPE_CHECKING:
     from .billing_interval import BillingInterval
     from .billing_subscription import BillingSubscription
     from .calendar_day import CalendarDay
+    from .changes_outcome import ChangesOutcome
     from .channel import Channel
     from .channel_cannot_post_encoded import ChannelCannotPostEncoded
     from .channel_cannot_post_encoded_reason import ChannelCannotPostEncodedReason
     from .channel_cannot_post_encoded_tag import ChannelCannotPostEncodedTag
+    from .channel_capabilities import ChannelCapabilities
+    from .channel_connection import ChannelConnection
     from .channel_metrics import ChannelMetrics
     from .channel_not_found_encoded import ChannelNotFoundEncoded
     from .channel_options import ChannelOptions
@@ -53,10 +85,17 @@ if typing.TYPE_CHECKING:
     from .channel_status_disabled import ChannelStatusDisabled
     from .channel_status_refresh_needed import ChannelStatusRefreshNeeded
     from .choosable_account import ChoosableAccount
+    from .comment_anchor import CommentAnchor
+    from .comment_invalid_encoded import CommentInvalidEncoded
+    from .comment_invalid_encoded_tag import CommentInvalidEncodedTag
+    from .comment_not_found_encoded import CommentNotFoundEncoded
+    from .comment_problem import CommentProblem
+    from .comment_selection import CommentSelection
+    from .comment_selection_located import CommentSelectionLocated
     from .conflict_error_body import (
         ConflictErrorBody,
-        ConflictErrorBody_AlreadyMember,
-        ConflictErrorBody_TooManyInvitations,
+        ConflictErrorBody_PostNotReviewable,
+        ConflictErrorBody_TooManyReviewLinks,
     )
     from .connect_failed_encoded import ConnectFailedEncoded
     from .connect_failed_encoded_tag import ConnectFailedEncodedTag
@@ -123,6 +162,7 @@ if typing.TYPE_CHECKING:
     from .content_violation_video_too_long import ContentViolationVideoTooLong
     from .content_violation_video_too_short import ContentViolationVideoTooShort
     from .created_api_key import CreatedApiKey
+    from .created_review_link import CreatedReviewLink
     from .database_unavailable_encoded import DatabaseUnavailableEncoded
     from .database_unavailable_encoded_tag import DatabaseUnavailableEncodedTag
     from .draft_page import DraftPage
@@ -131,8 +171,14 @@ if typing.TYPE_CHECKING:
     from .engagement_day import EngagementDay
     from .excess import Excess
     from .failure_reason import FailureReason
+    from .field_default import FieldDefault
+    from .field_description import FieldDescription
+    from .field_type import FieldType
     from .forbidden_encoded import ForbiddenEncoded
     from .forbidden_encoded_tag import ForbiddenEncodedTag
+    from .google_business_call_to_action import GoogleBusinessCallToAction
+    from .google_business_options import GoogleBusinessOptions
+    from .google_business_post_type import GoogleBusinessPostType
     from .held_limit import HeldLimit
     from .idempotency_key_reused_encoded import IdempotencyKeyReusedEncoded
     from .idempotency_key_reused_encoded_tag import IdempotencyKeyReusedEncodedTag
@@ -145,13 +191,41 @@ if typing.TYPE_CHECKING:
     from .invalid_time_zone_encoded_tag import InvalidTimeZoneEncodedTag
     from .invitation import Invitation
     from .invitation_not_found_encoded import InvitationNotFoundEncoded
+    from .linked_in_connection import LinkedInConnection
+    from .linked_in_mention import LinkedInMention
+    from .linked_in_options import LinkedInOptions
+    from .linked_in_organization import LinkedInOrganization
+    from .linked_in_visibility import LinkedInVisibility
+    from .lookup_description import LookupDescription
+    from .lookup_input_invalid_encoded import LookupInputInvalidEncoded
+    from .lookup_input_invalid_encoded_tag import LookupInputInvalidEncodedTag
+    from .lookup_name import LookupName
+    from .lookup_not_found_encoded import LookupNotFoundEncoded
+    from .lookup_result import (
+        LookupResult,
+        LookupResult_LinkedinOrganizations,
+        LookupResult_PinterestBoardSections,
+        LookupResult_PinterestBoards,
+        LookupResult_TiktokCreator,
+        LookupResult_YoutubePlaylists,
+        LookupResult_YoutubeVideoCategories,
+    )
+    from .lookup_result_linkedin_organizations import LookupResultLinkedinOrganizations
+    from .lookup_result_pinterest_board_sections import LookupResultPinterestBoardSections
+    from .lookup_result_pinterest_boards import LookupResultPinterestBoards
+    from .lookup_result_tiktok_creator import LookupResultTiktokCreator
+    from .lookup_result_youtube_playlists import LookupResultYoutubePlaylists
+    from .lookup_result_youtube_video_categories import LookupResultYoutubeVideoCategories
     from .me import Me
     from .me_user import MeUser
     from .me_user_locale import MeUserLocale
     from .media import Media
     from .media_attachment import MediaAttachment
+    from .media_capabilities import MediaCapabilities
+    from .media_capabilities_alt_text import MediaCapabilitiesAltText
     from .media_content_type import MediaContentType
     from .media_dimensions import MediaDimensions
+    from .media_format import MediaFormat
     from .media_import_busy_encoded import MediaImportBusyEncoded
     from .media_import_busy_encoded_tag import MediaImportBusyEncodedTag
     from .media_in_use_encoded import MediaInUseEncoded
@@ -185,8 +259,7 @@ if typing.TYPE_CHECKING:
     from .non_finite_number import NonFiniteNumber
     from .not_found_error_body import (
         NotFoundErrorBody,
-        NotFoundErrorBody_WebhookDeliveryNotFound,
-        NotFoundErrorBody_WebhookEndpointNotFound,
+        NotFoundErrorBody_ReviewLinkNotFound,
         NotFoundErrorBody_WorkspaceNotFound,
     )
     from .notice import Notice
@@ -195,6 +268,10 @@ if typing.TYPE_CHECKING:
         NoticeEvent,
         NoticeEvent_ChannelReconnectRequired,
         NoticeEvent_ChannelReconnectSoon,
+        NoticeEvent_PostApprovalRequested,
+        NoticeEvent_PostApproved,
+        NoticeEvent_PostChangesRequested,
+        NoticeEvent_PostCommented,
         NoticeEvent_PostFailed,
         NoticeEvent_PostPublished,
         NoticeEvent_PostUnconfirmed,
@@ -207,6 +284,10 @@ if typing.TYPE_CHECKING:
     )
     from .notice_event_channel_reconnect_required import NoticeEventChannelReconnectRequired
     from .notice_event_channel_reconnect_soon import NoticeEventChannelReconnectSoon
+    from .notice_event_post_approval_requested import NoticeEventPostApprovalRequested
+    from .notice_event_post_approved import NoticeEventPostApproved
+    from .notice_event_post_changes_requested import NoticeEventPostChangesRequested
+    from .notice_event_post_commented import NoticeEventPostCommented
     from .notice_event_post_failed import NoticeEventPostFailed
     from .notice_event_post_published import NoticeEventPostPublished
     from .notice_event_post_unconfirmed import NoticeEventPostUnconfirmed
@@ -219,9 +300,23 @@ if typing.TYPE_CHECKING:
     from .notice_page import NoticePage
     from .notification_preferences import NotificationPreferences
     from .notification_preferences_email import NotificationPreferencesEmail
+    from .option_constraint import (
+        OptionConstraint,
+        OptionConstraint_NeededWith,
+        OptionConstraint_NeedsOneOf,
+        OptionConstraint_NotWith,
+        OptionConstraint_OnlyWith,
+    )
+    from .option_constraint_needed_with import OptionConstraintNeededWith
+    from .option_constraint_needs_one_of import OptionConstraintNeedsOneOf
+    from .option_constraint_not_with import OptionConstraintNotWith
+    from .option_constraint_only_with import OptionConstraintOnlyWith
     from .paid_plan import PaidPlan
     from .period_usage import PeriodUsage
     from .permission import Permission
+    from .pinterest_board import PinterestBoard
+    from .pinterest_board_section import PinterestBoardSection
+    from .pinterest_options import PinterestOptions
     from .plan import Plan
     from .plan_allowances import PlanAllowances
     from .plan_limit import PlanLimit
@@ -230,6 +325,11 @@ if typing.TYPE_CHECKING:
     from .plan_offer import PlanOffer
     from .plan_price import PlanPrice
     from .platform import Platform
+    from .platform_capabilities import PlatformCapabilities
+    from .platform_capabilities_analytics import PlatformCapabilitiesAnalytics
+    from .platform_capabilities_options import PlatformCapabilitiesOptions
+    from .platform_rate_limited_encoded import PlatformRateLimitedEncoded
+    from .platform_rate_limited_encoded_tag import PlatformRateLimitedEncodedTag
     from .platform_unreachable_encoded import PlatformUnreachableEncoded
     from .platform_unreachable_encoded_tag import PlatformUnreachableEncodedTag
     from .post import Post
@@ -239,9 +339,12 @@ if typing.TYPE_CHECKING:
     from .post_draft import PostDraft
     from .post_metrics import PostMetrics
     from .post_not_found_encoded import PostNotFoundEncoded
+    from .post_not_reviewable_encoded import PostNotReviewableEncoded
+    from .post_not_reviewable_encoded_status import PostNotReviewableEncodedStatus
     from .post_origin import PostOrigin
     from .post_origin_via import PostOriginVia
     from .post_outcome import PostOutcome
+    from .post_review import PostReview
     from .post_schedule import PostSchedule
     from .post_status import PostStatus
     from .post_status_conflict_encoded import PostStatusConflictEncoded
@@ -255,6 +358,18 @@ if typing.TYPE_CHECKING:
     from .probe_state import ProbeState
     from .publication_attempt import PublicationAttempt
     from .rejection_reason import RejectionReason
+    from .review_comment import ReviewComment
+    from .review_comment_resolved import ReviewCommentResolved
+    from .review_link import ReviewLink
+    from .review_link_access import ReviewLinkAccess
+    from .review_link_not_found_encoded import ReviewLinkNotFoundEncoded
+    from .review_link_status import ReviewLinkStatus
+    from .review_party import ReviewParty
+    from .review_settings import ReviewSettings
+    from .reviewed_channel import ReviewedChannel
+    from .reviewed_media import ReviewedMedia
+    from .reviewer import Reviewer
+    from .reviewer_kind import ReviewerKind
     from .role import Role
     from .schedule_in_past_encoded import ScheduleInPastEncoded
     from .signed_request import SignedRequest
@@ -269,8 +384,17 @@ if typing.TYPE_CHECKING:
     from .target_confirmation_not_published import TargetConfirmationNotPublished
     from .target_confirmation_published import TargetConfirmationPublished
     from .target_metrics import TargetMetrics
-    from .target_options import TargetOptions, TargetOptions_Tiktok, TargetOptions_Youtube
+    from .target_options import (
+        TargetOptions,
+        TargetOptions_GoogleBusiness,
+        TargetOptions_Linkedin,
+        TargetOptions_Pinterest,
+        TargetOptions_Tiktok,
+        TargetOptions_Youtube,
+    )
     from .target_status_conflict_encoded import TargetStatusConflictEncoded
+    from .text_capabilities import TextCapabilities
+    from .text_limit import TextLimit
     from .text_override import TextOverride
     from .text_unit import TextUnit
     from .tik_tok_account import TikTokAccount
@@ -282,6 +406,7 @@ if typing.TYPE_CHECKING:
     from .tik_tok_options import TikTokOptions
     from .tik_tok_privacy_level import TikTokPrivacyLevel
     from .too_many_invitations_encoded import TooManyInvitationsEncoded
+    from .too_many_review_links_encoded import TooManyReviewLinksEncoded
     from .too_many_webhook_endpoints_encoded import TooManyWebhookEndpointsEncoded
     from .too_many_webhook_endpoints_encoded_tag import TooManyWebhookEndpointsEncodedTag
     from .too_many_webhook_sends_encoded import TooManyWebhookSendsEncoded
@@ -337,14 +462,41 @@ if typing.TYPE_CHECKING:
     from .workspace_not_found_encoded import WorkspaceNotFoundEncoded
     from .workspace_not_found_encoded_tag import WorkspaceNotFoundEncodedTag
     from .you_tube_options import YouTubeOptions
+    from .you_tube_playlist import YouTubePlaylist
     from .you_tube_privacy import YouTubePrivacy
+    from .you_tube_video_category import YouTubeVideoCategory
 _dynamic_imports: typing.Dict[str, str] = {
+    "AccountRestriction": ".account_restriction",
+    "AccountRestrictionMediaTypesRefused": ".account_restriction_media_types_refused",
+    "AccountRestrictionOptionFixed": ".account_restriction_option_fixed",
+    "AccountRestrictionOptionValues": ".account_restriction_option_values",
+    "AccountRestrictionVideoDuration": ".account_restriction_video_duration",
+    "AccountRestriction_MediaTypesRefused": ".account_restriction",
+    "AccountRestriction_OptionFixed": ".account_restriction",
+    "AccountRestriction_OptionValues": ".account_restriction",
+    "AccountRestriction_VideoDuration": ".account_restriction",
+    "AccountStanding": ".account_standing",
+    "AccountStandingRead": ".account_standing_read",
+    "AccountStandingUnread": ".account_standing_unread",
+    "AccountStandingUnrestricted": ".account_standing_unrestricted",
+    "AccountStanding_Read": ".account_standing",
+    "AccountStanding_Unread": ".account_standing",
+    "AccountStanding_Unrestricted": ".account_standing",
+    "AccountUnreadReason": ".account_unread_reason",
     "AlreadyMemberEncoded": ".already_member_encoded",
     "AltTextTooLongEncoded": ".alt_text_too_long_encoded",
     "AltTextTooLongEncodedTag": ".alt_text_too_long_encoded_tag",
     "AnalyticsSummary": ".analytics_summary",
     "ApiKey": ".api_key",
     "ApiKeyNotFoundEncoded": ".api_key_not_found_encoded",
+    "ApprovalChangedEncoded": ".approval_changed_encoded",
+    "ApprovalNotPendingEncoded": ".approval_not_pending_encoded",
+    "ApprovalOrigin": ".approval_origin",
+    "ApprovalOutcome": ".approval_outcome",
+    "ApprovalPolicy": ".approval_policy",
+    "ApprovalRequest": ".approval_request",
+    "ApprovalRequestDecision": ".approval_request_decision",
+    "ApprovalStatus": ".approval_status",
     "AssistantAction": ".assistant_action",
     "AssistantActionHashtags": ".assistant_action_hashtags",
     "AssistantActionRewrite": ".assistant_action_rewrite",
@@ -372,10 +524,13 @@ _dynamic_imports: typing.Dict[str, str] = {
     "BillingInterval": ".billing_interval",
     "BillingSubscription": ".billing_subscription",
     "CalendarDay": ".calendar_day",
+    "ChangesOutcome": ".changes_outcome",
     "Channel": ".channel",
     "ChannelCannotPostEncoded": ".channel_cannot_post_encoded",
     "ChannelCannotPostEncodedReason": ".channel_cannot_post_encoded_reason",
     "ChannelCannotPostEncodedTag": ".channel_cannot_post_encoded_tag",
+    "ChannelCapabilities": ".channel_capabilities",
+    "ChannelConnection": ".channel_connection",
     "ChannelMetrics": ".channel_metrics",
     "ChannelNotFoundEncoded": ".channel_not_found_encoded",
     "ChannelOptions": ".channel_options",
@@ -387,9 +542,16 @@ _dynamic_imports: typing.Dict[str, str] = {
     "ChannelStatus_Disabled": ".channel_status",
     "ChannelStatus_RefreshNeeded": ".channel_status",
     "ChoosableAccount": ".choosable_account",
+    "CommentAnchor": ".comment_anchor",
+    "CommentInvalidEncoded": ".comment_invalid_encoded",
+    "CommentInvalidEncodedTag": ".comment_invalid_encoded_tag",
+    "CommentNotFoundEncoded": ".comment_not_found_encoded",
+    "CommentProblem": ".comment_problem",
+    "CommentSelection": ".comment_selection",
+    "CommentSelectionLocated": ".comment_selection_located",
     "ConflictErrorBody": ".conflict_error_body",
-    "ConflictErrorBody_AlreadyMember": ".conflict_error_body",
-    "ConflictErrorBody_TooManyInvitations": ".conflict_error_body",
+    "ConflictErrorBody_PostNotReviewable": ".conflict_error_body",
+    "ConflictErrorBody_TooManyReviewLinks": ".conflict_error_body",
     "ConnectFailedEncoded": ".connect_failed_encoded",
     "ConnectFailedEncodedTag": ".connect_failed_encoded_tag",
     "ConnectFailureReason": ".connect_failure_reason",
@@ -455,6 +617,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "ContentViolation_VideoTooLong": ".content_violation",
     "ContentViolation_VideoTooShort": ".content_violation",
     "CreatedApiKey": ".created_api_key",
+    "CreatedReviewLink": ".created_review_link",
     "DatabaseUnavailableEncoded": ".database_unavailable_encoded",
     "DatabaseUnavailableEncodedTag": ".database_unavailable_encoded_tag",
     "DraftPage": ".draft_page",
@@ -463,8 +626,14 @@ _dynamic_imports: typing.Dict[str, str] = {
     "EngagementDay": ".engagement_day",
     "Excess": ".excess",
     "FailureReason": ".failure_reason",
+    "FieldDefault": ".field_default",
+    "FieldDescription": ".field_description",
+    "FieldType": ".field_type",
     "ForbiddenEncoded": ".forbidden_encoded",
     "ForbiddenEncodedTag": ".forbidden_encoded_tag",
+    "GoogleBusinessCallToAction": ".google_business_call_to_action",
+    "GoogleBusinessOptions": ".google_business_options",
+    "GoogleBusinessPostType": ".google_business_post_type",
     "HeldLimit": ".held_limit",
     "IdempotencyKeyReusedEncoded": ".idempotency_key_reused_encoded",
     "IdempotencyKeyReusedEncodedTag": ".idempotency_key_reused_encoded_tag",
@@ -477,13 +646,39 @@ _dynamic_imports: typing.Dict[str, str] = {
     "InvalidTimeZoneEncodedTag": ".invalid_time_zone_encoded_tag",
     "Invitation": ".invitation",
     "InvitationNotFoundEncoded": ".invitation_not_found_encoded",
+    "LinkedInConnection": ".linked_in_connection",
+    "LinkedInMention": ".linked_in_mention",
+    "LinkedInOptions": ".linked_in_options",
+    "LinkedInOrganization": ".linked_in_organization",
+    "LinkedInVisibility": ".linked_in_visibility",
+    "LookupDescription": ".lookup_description",
+    "LookupInputInvalidEncoded": ".lookup_input_invalid_encoded",
+    "LookupInputInvalidEncodedTag": ".lookup_input_invalid_encoded_tag",
+    "LookupName": ".lookup_name",
+    "LookupNotFoundEncoded": ".lookup_not_found_encoded",
+    "LookupResult": ".lookup_result",
+    "LookupResultLinkedinOrganizations": ".lookup_result_linkedin_organizations",
+    "LookupResultPinterestBoardSections": ".lookup_result_pinterest_board_sections",
+    "LookupResultPinterestBoards": ".lookup_result_pinterest_boards",
+    "LookupResultTiktokCreator": ".lookup_result_tiktok_creator",
+    "LookupResultYoutubePlaylists": ".lookup_result_youtube_playlists",
+    "LookupResultYoutubeVideoCategories": ".lookup_result_youtube_video_categories",
+    "LookupResult_LinkedinOrganizations": ".lookup_result",
+    "LookupResult_PinterestBoardSections": ".lookup_result",
+    "LookupResult_PinterestBoards": ".lookup_result",
+    "LookupResult_TiktokCreator": ".lookup_result",
+    "LookupResult_YoutubePlaylists": ".lookup_result",
+    "LookupResult_YoutubeVideoCategories": ".lookup_result",
     "Me": ".me",
     "MeUser": ".me_user",
     "MeUserLocale": ".me_user_locale",
     "Media": ".media",
     "MediaAttachment": ".media_attachment",
+    "MediaCapabilities": ".media_capabilities",
+    "MediaCapabilitiesAltText": ".media_capabilities_alt_text",
     "MediaContentType": ".media_content_type",
     "MediaDimensions": ".media_dimensions",
+    "MediaFormat": ".media_format",
     "MediaImportBusyEncoded": ".media_import_busy_encoded",
     "MediaImportBusyEncodedTag": ".media_import_busy_encoded_tag",
     "MediaInUseEncoded": ".media_in_use_encoded",
@@ -514,14 +709,17 @@ _dynamic_imports: typing.Dict[str, str] = {
     "Money": ".money",
     "NonFiniteNumber": ".non_finite_number",
     "NotFoundErrorBody": ".not_found_error_body",
-    "NotFoundErrorBody_WebhookDeliveryNotFound": ".not_found_error_body",
-    "NotFoundErrorBody_WebhookEndpointNotFound": ".not_found_error_body",
+    "NotFoundErrorBody_ReviewLinkNotFound": ".not_found_error_body",
     "NotFoundErrorBody_WorkspaceNotFound": ".not_found_error_body",
     "Notice": ".notice",
     "NoticeChannel": ".notice_channel",
     "NoticeEvent": ".notice_event",
     "NoticeEventChannelReconnectRequired": ".notice_event_channel_reconnect_required",
     "NoticeEventChannelReconnectSoon": ".notice_event_channel_reconnect_soon",
+    "NoticeEventPostApprovalRequested": ".notice_event_post_approval_requested",
+    "NoticeEventPostApproved": ".notice_event_post_approved",
+    "NoticeEventPostChangesRequested": ".notice_event_post_changes_requested",
+    "NoticeEventPostCommented": ".notice_event_post_commented",
     "NoticeEventPostFailed": ".notice_event_post_failed",
     "NoticeEventPostPublished": ".notice_event_post_published",
     "NoticeEventPostUnconfirmed": ".notice_event_post_unconfirmed",
@@ -533,6 +731,10 @@ _dynamic_imports: typing.Dict[str, str] = {
     "NoticeEventWebhookEndpointDisabled": ".notice_event_webhook_endpoint_disabled",
     "NoticeEvent_ChannelReconnectRequired": ".notice_event",
     "NoticeEvent_ChannelReconnectSoon": ".notice_event",
+    "NoticeEvent_PostApprovalRequested": ".notice_event",
+    "NoticeEvent_PostApproved": ".notice_event",
+    "NoticeEvent_PostChangesRequested": ".notice_event",
+    "NoticeEvent_PostCommented": ".notice_event",
     "NoticeEvent_PostFailed": ".notice_event",
     "NoticeEvent_PostPublished": ".notice_event",
     "NoticeEvent_PostUnconfirmed": ".notice_event",
@@ -545,9 +747,21 @@ _dynamic_imports: typing.Dict[str, str] = {
     "NoticePage": ".notice_page",
     "NotificationPreferences": ".notification_preferences",
     "NotificationPreferencesEmail": ".notification_preferences_email",
+    "OptionConstraint": ".option_constraint",
+    "OptionConstraintNeededWith": ".option_constraint_needed_with",
+    "OptionConstraintNeedsOneOf": ".option_constraint_needs_one_of",
+    "OptionConstraintNotWith": ".option_constraint_not_with",
+    "OptionConstraintOnlyWith": ".option_constraint_only_with",
+    "OptionConstraint_NeededWith": ".option_constraint",
+    "OptionConstraint_NeedsOneOf": ".option_constraint",
+    "OptionConstraint_NotWith": ".option_constraint",
+    "OptionConstraint_OnlyWith": ".option_constraint",
     "PaidPlan": ".paid_plan",
     "PeriodUsage": ".period_usage",
     "Permission": ".permission",
+    "PinterestBoard": ".pinterest_board",
+    "PinterestBoardSection": ".pinterest_board_section",
+    "PinterestOptions": ".pinterest_options",
     "Plan": ".plan",
     "PlanAllowances": ".plan_allowances",
     "PlanLimit": ".plan_limit",
@@ -556,6 +770,11 @@ _dynamic_imports: typing.Dict[str, str] = {
     "PlanOffer": ".plan_offer",
     "PlanPrice": ".plan_price",
     "Platform": ".platform",
+    "PlatformCapabilities": ".platform_capabilities",
+    "PlatformCapabilitiesAnalytics": ".platform_capabilities_analytics",
+    "PlatformCapabilitiesOptions": ".platform_capabilities_options",
+    "PlatformRateLimitedEncoded": ".platform_rate_limited_encoded",
+    "PlatformRateLimitedEncodedTag": ".platform_rate_limited_encoded_tag",
     "PlatformUnreachableEncoded": ".platform_unreachable_encoded",
     "PlatformUnreachableEncodedTag": ".platform_unreachable_encoded_tag",
     "Post": ".post",
@@ -565,9 +784,12 @@ _dynamic_imports: typing.Dict[str, str] = {
     "PostDraft": ".post_draft",
     "PostMetrics": ".post_metrics",
     "PostNotFoundEncoded": ".post_not_found_encoded",
+    "PostNotReviewableEncoded": ".post_not_reviewable_encoded",
+    "PostNotReviewableEncodedStatus": ".post_not_reviewable_encoded_status",
     "PostOrigin": ".post_origin",
     "PostOriginVia": ".post_origin_via",
     "PostOutcome": ".post_outcome",
+    "PostReview": ".post_review",
     "PostSchedule": ".post_schedule",
     "PostStatus": ".post_status",
     "PostStatusConflictEncoded": ".post_status_conflict_encoded",
@@ -583,6 +805,18 @@ _dynamic_imports: typing.Dict[str, str] = {
     "ProbeState": ".probe_state",
     "PublicationAttempt": ".publication_attempt",
     "RejectionReason": ".rejection_reason",
+    "ReviewComment": ".review_comment",
+    "ReviewCommentResolved": ".review_comment_resolved",
+    "ReviewLink": ".review_link",
+    "ReviewLinkAccess": ".review_link_access",
+    "ReviewLinkNotFoundEncoded": ".review_link_not_found_encoded",
+    "ReviewLinkStatus": ".review_link_status",
+    "ReviewParty": ".review_party",
+    "ReviewSettings": ".review_settings",
+    "ReviewedChannel": ".reviewed_channel",
+    "ReviewedMedia": ".reviewed_media",
+    "Reviewer": ".reviewer",
+    "ReviewerKind": ".reviewer_kind",
     "Role": ".role",
     "ScheduleInPastEncoded": ".schedule_in_past_encoded",
     "SignedRequest": ".signed_request",
@@ -602,9 +836,14 @@ _dynamic_imports: typing.Dict[str, str] = {
     "TargetConfirmation_Published": ".target_confirmation",
     "TargetMetrics": ".target_metrics",
     "TargetOptions": ".target_options",
+    "TargetOptions_GoogleBusiness": ".target_options",
+    "TargetOptions_Linkedin": ".target_options",
+    "TargetOptions_Pinterest": ".target_options",
     "TargetOptions_Tiktok": ".target_options",
     "TargetOptions_Youtube": ".target_options",
     "TargetStatusConflictEncoded": ".target_status_conflict_encoded",
+    "TextCapabilities": ".text_capabilities",
+    "TextLimit": ".text_limit",
     "TextOverride": ".text_override",
     "TextUnit": ".text_unit",
     "TikTokAccount": ".tik_tok_account",
@@ -618,6 +857,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "TikTokOptions": ".tik_tok_options",
     "TikTokPrivacyLevel": ".tik_tok_privacy_level",
     "TooManyInvitationsEncoded": ".too_many_invitations_encoded",
+    "TooManyReviewLinksEncoded": ".too_many_review_links_encoded",
     "TooManyWebhookEndpointsEncoded": ".too_many_webhook_endpoints_encoded",
     "TooManyWebhookEndpointsEncodedTag": ".too_many_webhook_endpoints_encoded_tag",
     "TooManyWebhookSendsEncoded": ".too_many_webhook_sends_encoded",
@@ -673,7 +913,9 @@ _dynamic_imports: typing.Dict[str, str] = {
     "WorkspaceNotFoundEncoded": ".workspace_not_found_encoded",
     "WorkspaceNotFoundEncodedTag": ".workspace_not_found_encoded_tag",
     "YouTubeOptions": ".you_tube_options",
+    "YouTubePlaylist": ".you_tube_playlist",
     "YouTubePrivacy": ".you_tube_privacy",
+    "YouTubeVideoCategory": ".you_tube_video_category",
 }
 
 
@@ -699,12 +941,37 @@ def __dir__():
 
 
 __all__ = [
+    "AccountRestriction",
+    "AccountRestrictionMediaTypesRefused",
+    "AccountRestrictionOptionFixed",
+    "AccountRestrictionOptionValues",
+    "AccountRestrictionVideoDuration",
+    "AccountRestriction_MediaTypesRefused",
+    "AccountRestriction_OptionFixed",
+    "AccountRestriction_OptionValues",
+    "AccountRestriction_VideoDuration",
+    "AccountStanding",
+    "AccountStandingRead",
+    "AccountStandingUnread",
+    "AccountStandingUnrestricted",
+    "AccountStanding_Read",
+    "AccountStanding_Unread",
+    "AccountStanding_Unrestricted",
+    "AccountUnreadReason",
     "AlreadyMemberEncoded",
     "AltTextTooLongEncoded",
     "AltTextTooLongEncodedTag",
     "AnalyticsSummary",
     "ApiKey",
     "ApiKeyNotFoundEncoded",
+    "ApprovalChangedEncoded",
+    "ApprovalNotPendingEncoded",
+    "ApprovalOrigin",
+    "ApprovalOutcome",
+    "ApprovalPolicy",
+    "ApprovalRequest",
+    "ApprovalRequestDecision",
+    "ApprovalStatus",
     "AssistantAction",
     "AssistantActionHashtags",
     "AssistantActionRewrite",
@@ -732,10 +999,13 @@ __all__ = [
     "BillingInterval",
     "BillingSubscription",
     "CalendarDay",
+    "ChangesOutcome",
     "Channel",
     "ChannelCannotPostEncoded",
     "ChannelCannotPostEncodedReason",
     "ChannelCannotPostEncodedTag",
+    "ChannelCapabilities",
+    "ChannelConnection",
     "ChannelMetrics",
     "ChannelNotFoundEncoded",
     "ChannelOptions",
@@ -747,9 +1017,16 @@ __all__ = [
     "ChannelStatus_Disabled",
     "ChannelStatus_RefreshNeeded",
     "ChoosableAccount",
+    "CommentAnchor",
+    "CommentInvalidEncoded",
+    "CommentInvalidEncodedTag",
+    "CommentNotFoundEncoded",
+    "CommentProblem",
+    "CommentSelection",
+    "CommentSelectionLocated",
     "ConflictErrorBody",
-    "ConflictErrorBody_AlreadyMember",
-    "ConflictErrorBody_TooManyInvitations",
+    "ConflictErrorBody_PostNotReviewable",
+    "ConflictErrorBody_TooManyReviewLinks",
     "ConnectFailedEncoded",
     "ConnectFailedEncodedTag",
     "ConnectFailureReason",
@@ -815,6 +1092,7 @@ __all__ = [
     "ContentViolation_VideoTooLong",
     "ContentViolation_VideoTooShort",
     "CreatedApiKey",
+    "CreatedReviewLink",
     "DatabaseUnavailableEncoded",
     "DatabaseUnavailableEncodedTag",
     "DraftPage",
@@ -823,8 +1101,14 @@ __all__ = [
     "EngagementDay",
     "Excess",
     "FailureReason",
+    "FieldDefault",
+    "FieldDescription",
+    "FieldType",
     "ForbiddenEncoded",
     "ForbiddenEncodedTag",
+    "GoogleBusinessCallToAction",
+    "GoogleBusinessOptions",
+    "GoogleBusinessPostType",
     "HeldLimit",
     "IdempotencyKeyReusedEncoded",
     "IdempotencyKeyReusedEncodedTag",
@@ -837,13 +1121,39 @@ __all__ = [
     "InvalidTimeZoneEncodedTag",
     "Invitation",
     "InvitationNotFoundEncoded",
+    "LinkedInConnection",
+    "LinkedInMention",
+    "LinkedInOptions",
+    "LinkedInOrganization",
+    "LinkedInVisibility",
+    "LookupDescription",
+    "LookupInputInvalidEncoded",
+    "LookupInputInvalidEncodedTag",
+    "LookupName",
+    "LookupNotFoundEncoded",
+    "LookupResult",
+    "LookupResultLinkedinOrganizations",
+    "LookupResultPinterestBoardSections",
+    "LookupResultPinterestBoards",
+    "LookupResultTiktokCreator",
+    "LookupResultYoutubePlaylists",
+    "LookupResultYoutubeVideoCategories",
+    "LookupResult_LinkedinOrganizations",
+    "LookupResult_PinterestBoardSections",
+    "LookupResult_PinterestBoards",
+    "LookupResult_TiktokCreator",
+    "LookupResult_YoutubePlaylists",
+    "LookupResult_YoutubeVideoCategories",
     "Me",
     "MeUser",
     "MeUserLocale",
     "Media",
     "MediaAttachment",
+    "MediaCapabilities",
+    "MediaCapabilitiesAltText",
     "MediaContentType",
     "MediaDimensions",
+    "MediaFormat",
     "MediaImportBusyEncoded",
     "MediaImportBusyEncodedTag",
     "MediaInUseEncoded",
@@ -874,14 +1184,17 @@ __all__ = [
     "Money",
     "NonFiniteNumber",
     "NotFoundErrorBody",
-    "NotFoundErrorBody_WebhookDeliveryNotFound",
-    "NotFoundErrorBody_WebhookEndpointNotFound",
+    "NotFoundErrorBody_ReviewLinkNotFound",
     "NotFoundErrorBody_WorkspaceNotFound",
     "Notice",
     "NoticeChannel",
     "NoticeEvent",
     "NoticeEventChannelReconnectRequired",
     "NoticeEventChannelReconnectSoon",
+    "NoticeEventPostApprovalRequested",
+    "NoticeEventPostApproved",
+    "NoticeEventPostChangesRequested",
+    "NoticeEventPostCommented",
     "NoticeEventPostFailed",
     "NoticeEventPostPublished",
     "NoticeEventPostUnconfirmed",
@@ -893,6 +1206,10 @@ __all__ = [
     "NoticeEventWebhookEndpointDisabled",
     "NoticeEvent_ChannelReconnectRequired",
     "NoticeEvent_ChannelReconnectSoon",
+    "NoticeEvent_PostApprovalRequested",
+    "NoticeEvent_PostApproved",
+    "NoticeEvent_PostChangesRequested",
+    "NoticeEvent_PostCommented",
     "NoticeEvent_PostFailed",
     "NoticeEvent_PostPublished",
     "NoticeEvent_PostUnconfirmed",
@@ -905,9 +1222,21 @@ __all__ = [
     "NoticePage",
     "NotificationPreferences",
     "NotificationPreferencesEmail",
+    "OptionConstraint",
+    "OptionConstraintNeededWith",
+    "OptionConstraintNeedsOneOf",
+    "OptionConstraintNotWith",
+    "OptionConstraintOnlyWith",
+    "OptionConstraint_NeededWith",
+    "OptionConstraint_NeedsOneOf",
+    "OptionConstraint_NotWith",
+    "OptionConstraint_OnlyWith",
     "PaidPlan",
     "PeriodUsage",
     "Permission",
+    "PinterestBoard",
+    "PinterestBoardSection",
+    "PinterestOptions",
     "Plan",
     "PlanAllowances",
     "PlanLimit",
@@ -916,6 +1245,11 @@ __all__ = [
     "PlanOffer",
     "PlanPrice",
     "Platform",
+    "PlatformCapabilities",
+    "PlatformCapabilitiesAnalytics",
+    "PlatformCapabilitiesOptions",
+    "PlatformRateLimitedEncoded",
+    "PlatformRateLimitedEncodedTag",
     "PlatformUnreachableEncoded",
     "PlatformUnreachableEncodedTag",
     "Post",
@@ -925,9 +1259,12 @@ __all__ = [
     "PostDraft",
     "PostMetrics",
     "PostNotFoundEncoded",
+    "PostNotReviewableEncoded",
+    "PostNotReviewableEncodedStatus",
     "PostOrigin",
     "PostOriginVia",
     "PostOutcome",
+    "PostReview",
     "PostSchedule",
     "PostStatus",
     "PostStatusConflictEncoded",
@@ -943,6 +1280,18 @@ __all__ = [
     "ProbeState",
     "PublicationAttempt",
     "RejectionReason",
+    "ReviewComment",
+    "ReviewCommentResolved",
+    "ReviewLink",
+    "ReviewLinkAccess",
+    "ReviewLinkNotFoundEncoded",
+    "ReviewLinkStatus",
+    "ReviewParty",
+    "ReviewSettings",
+    "ReviewedChannel",
+    "ReviewedMedia",
+    "Reviewer",
+    "ReviewerKind",
     "Role",
     "ScheduleInPastEncoded",
     "SignedRequest",
@@ -962,9 +1311,14 @@ __all__ = [
     "TargetConfirmation_Published",
     "TargetMetrics",
     "TargetOptions",
+    "TargetOptions_GoogleBusiness",
+    "TargetOptions_Linkedin",
+    "TargetOptions_Pinterest",
     "TargetOptions_Tiktok",
     "TargetOptions_Youtube",
     "TargetStatusConflictEncoded",
+    "TextCapabilities",
+    "TextLimit",
     "TextOverride",
     "TextUnit",
     "TikTokAccount",
@@ -978,6 +1332,7 @@ __all__ = [
     "TikTokOptions",
     "TikTokPrivacyLevel",
     "TooManyInvitationsEncoded",
+    "TooManyReviewLinksEncoded",
     "TooManyWebhookEndpointsEncoded",
     "TooManyWebhookEndpointsEncodedTag",
     "TooManyWebhookSendsEncoded",
@@ -1033,5 +1388,7 @@ __all__ = [
     "WorkspaceNotFoundEncoded",
     "WorkspaceNotFoundEncodedTag",
     "YouTubeOptions",
+    "YouTubePlaylist",
     "YouTubePrivacy",
+    "YouTubeVideoCategory",
 ]

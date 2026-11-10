@@ -19,7 +19,7 @@ public class DescribeTest : BaseMockServerTest
         const string mockResponse = """
             {
               "altText": "altText",
-              "byteSize": 1,
+              "byteSize": 1000000,
               "codec": "codec",
               "contentType": "image/gif",
               "createdAt": "createdAt",
@@ -30,6 +30,7 @@ public class DescribeTest : BaseMockServerTest
               "durationMs": 1,
               "id": "id",
               "kind": "image",
+              "pageCount": 1,
               "status": {
                 "_tag": "pending"
               },
@@ -75,7 +76,7 @@ public class DescribeTest : BaseMockServerTest
         const string mockResponse = """
             {
               "altText": "altText",
-              "byteSize": 1,
+              "byteSize": 1000000,
               "codec": "codec",
               "contentType": "image/gif",
               "createdAt": "createdAt",
@@ -86,6 +87,7 @@ public class DescribeTest : BaseMockServerTest
               "durationMs": 1,
               "id": "id",
               "kind": "image",
+              "pageCount": 1,
               "status": {
                 "_tag": "pending"
               },

@@ -9,8 +9,7 @@ class NotFoundErrorBody extends JsonSerializableType
 {
     /**
      * @var (
-     *    'WebhookEndpointNotFound'
-     *   |'WebhookDeliveryNotFound'
+     *    'ReviewLinkNotFound'
      *   |'WorkspaceNotFound'
      *   |'_unknown'
      * ) $type
@@ -19,8 +18,7 @@ class NotFoundErrorBody extends JsonSerializableType
 
     /**
      * @var (
-     *    WebhookEndpointNotFoundEncoded
-     *   |WebhookDeliveryNotFoundEncoded
+     *    ReviewLinkNotFoundEncoded
      *   |WorkspaceNotFoundEncoded
      *   |mixed
      * ) $value
@@ -30,14 +28,12 @@ class NotFoundErrorBody extends JsonSerializableType
     /**
      * @param array{
      *   type: (
-     *    'WebhookEndpointNotFound'
-     *   |'WebhookDeliveryNotFound'
+     *    'ReviewLinkNotFound'
      *   |'WorkspaceNotFound'
      *   |'_unknown'
      * ),
      *   value: (
-     *    WebhookEndpointNotFoundEncoded
-     *   |WebhookDeliveryNotFoundEncoded
+     *    ReviewLinkNotFoundEncoded
      *   |WorkspaceNotFoundEncoded
      *   |mixed
      * ),
@@ -51,26 +47,14 @@ class NotFoundErrorBody extends JsonSerializableType
     }
 
     /**
-     * @param WebhookEndpointNotFoundEncoded $webhookEndpointNotFound
+     * @param ReviewLinkNotFoundEncoded $reviewLinkNotFound
      * @return NotFoundErrorBody
      */
-    public static function webhookEndpointNotFound(WebhookEndpointNotFoundEncoded $webhookEndpointNotFound): NotFoundErrorBody
+    public static function reviewLinkNotFound(ReviewLinkNotFoundEncoded $reviewLinkNotFound): NotFoundErrorBody
     {
         return new NotFoundErrorBody([
-            'type' => 'WebhookEndpointNotFound',
-            'value' => $webhookEndpointNotFound,
-        ]);
-    }
-
-    /**
-     * @param WebhookDeliveryNotFoundEncoded $webhookDeliveryNotFound
-     * @return NotFoundErrorBody
-     */
-    public static function webhookDeliveryNotFound(WebhookDeliveryNotFoundEncoded $webhookDeliveryNotFound): NotFoundErrorBody
-    {
-        return new NotFoundErrorBody([
-            'type' => 'WebhookDeliveryNotFound',
-            'value' => $webhookDeliveryNotFound,
+            'type' => 'ReviewLinkNotFound',
+            'value' => $reviewLinkNotFound,
         ]);
     }
 
@@ -89,41 +73,19 @@ class NotFoundErrorBody extends JsonSerializableType
     /**
      * @return bool
      */
-    public function isWebhookEndpointNotFound(): bool
+    public function isReviewLinkNotFound(): bool
     {
-        return $this->value instanceof WebhookEndpointNotFoundEncoded && $this->type === 'WebhookEndpointNotFound';
+        return $this->value instanceof ReviewLinkNotFoundEncoded && $this->type === 'ReviewLinkNotFound';
     }
 
     /**
-     * @return WebhookEndpointNotFoundEncoded
+     * @return ReviewLinkNotFoundEncoded
      */
-    public function asWebhookEndpointNotFound(): WebhookEndpointNotFoundEncoded
+    public function asReviewLinkNotFound(): ReviewLinkNotFoundEncoded
     {
-        if (!($this->value instanceof WebhookEndpointNotFoundEncoded && $this->type === 'WebhookEndpointNotFound')) {
+        if (!($this->value instanceof ReviewLinkNotFoundEncoded && $this->type === 'ReviewLinkNotFound')) {
             throw new Exception(
-                "Expected WebhookEndpointNotFound; got " . $this->type . " with value of type " . get_debug_type($this->value),
-            );
-        }
-
-        return $this->value;
-    }
-
-    /**
-     * @return bool
-     */
-    public function isWebhookDeliveryNotFound(): bool
-    {
-        return $this->value instanceof WebhookDeliveryNotFoundEncoded && $this->type === 'WebhookDeliveryNotFound';
-    }
-
-    /**
-     * @return WebhookDeliveryNotFoundEncoded
-     */
-    public function asWebhookDeliveryNotFound(): WebhookDeliveryNotFoundEncoded
-    {
-        if (!($this->value instanceof WebhookDeliveryNotFoundEncoded && $this->type === 'WebhookDeliveryNotFound')) {
-            throw new Exception(
-                "Expected WebhookDeliveryNotFound; got " . $this->type . " with value of type " . get_debug_type($this->value),
+                "Expected ReviewLinkNotFound; got " . $this->type . " with value of type " . get_debug_type($this->value),
             );
         }
 
@@ -172,12 +134,8 @@ class NotFoundErrorBody extends JsonSerializableType
         $result = array_merge($base, $result);
 
         switch ($this->type) {
-            case 'WebhookEndpointNotFound':
-                $value = $this->asWebhookEndpointNotFound()->jsonSerialize();
-                $result = array_merge($value, $result);
-                break;
-            case 'WebhookDeliveryNotFound':
-                $value = $this->asWebhookDeliveryNotFound()->jsonSerialize();
+            case 'ReviewLinkNotFound':
+                $value = $this->asReviewLinkNotFound()->jsonSerialize();
                 $result = array_merge($value, $result);
                 break;
             case 'WorkspaceNotFound':
@@ -220,11 +178,8 @@ class NotFoundErrorBody extends JsonSerializableType
 
         $args['type'] = $type;
         switch ($type) {
-            case 'WebhookEndpointNotFound':
-                $args['value'] = WebhookEndpointNotFoundEncoded::jsonDeserialize($data);
-                break;
-            case 'WebhookDeliveryNotFound':
-                $args['value'] = WebhookDeliveryNotFoundEncoded::jsonDeserialize($data);
+            case 'ReviewLinkNotFound':
+                $args['value'] = ReviewLinkNotFoundEncoded::jsonDeserialize($data);
                 break;
             case 'WorkspaceNotFound':
                 $args['value'] = WorkspaceNotFoundEncoded::jsonDeserialize($data);

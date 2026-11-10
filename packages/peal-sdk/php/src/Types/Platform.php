@@ -14,4 +14,5 @@ enum Platform: string
     case Tiktok = "tiktok";
     case Youtube = "youtube";
     case Pinterest = "pinterest";
+    case GoogleBusiness = "googleBusiness";
 }

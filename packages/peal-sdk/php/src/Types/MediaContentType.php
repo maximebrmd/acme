@@ -10,4 +10,5 @@ enum MediaContentType: string
     case ImageWebp = "image/webp";
     case VideoMp4 = "video/mp4";
     case VideoQuicktime = "video/quicktime";
+    case ApplicationPdf = "application/pdf";
 }

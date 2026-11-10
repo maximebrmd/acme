@@ -106,10 +106,16 @@ Chaque commande fait ce que votre rôle y permet, comme l’application web : un
 
 ```sh
 peal channels list
+peal channels capabilities [<channel-id>] [--json]
+peal channels lookup <channel-id> [<lookup>] [--region <country>] [--language <tag>] [--vanity-name <name>] [--limit <n>] [--cursor <cursor>] [--json]
 peal channels tiktok <channel-id>
 ```
 
 `peal channels list` liste les canaux de l’espace de travail avec leurs identifiants, que les brouillons et les publications prennent, et si chacun publie ou est à reconnecter. Connecter un canal se fait dans l’application web.
+
+`peal channels capabilities` montre [ce qu’un canal accepte](/api-overview#capabilities) : comment son texte est compté et limité, les médias qu’il accepte avec les limites de chaque type de fichier, les options de sa plateforme (que règle `peal drafts save --options`) et ce que le compte lui-même restreint, lu sur la plateforme à ce moment-là. Sans canal, la commande résume chaque plateforme en une ligne.
+
+`peal channels lookup` demande à la plateforme d’un canal les données du compte auxquelles ses options se rapportent : sans recherche, la commande liste celles du canal ; avec une recherche, elle la lance, comme `peal channels lookup <channel-id> youtubeVideoCategories --region FR` pour les catégories où une vidéo YouTube peut être classée en France. `peal channels lookup <channel-id> pinterestBoards` liste les tableaux d’un compte Pinterest, et `pinterestBoardSections --board <board-id>` les sections d’un tableau. Une recherche paginée se termine par le `--cursor` qui lit sa page suivante. Elle ne change rien. Avec `--json`, les deux commandes affichent la réponse du serveur en JSON, pour les scripts.
 
 `peal channels tiktok` lit les réglages d’un canal TikTok sur TikTok, comme TikTok le demande avant une publication : sous quel nom il publie, les audiences qu’une publication peut choisir (son `privacyLevel`, sans valeur par défaut), les interactions que le compte a désactivées, qui restent désactivées, et sa vidéo la plus longue, ou pourquoi il ne peut pas publier aujourd’hui. Publier sur TikTok vaut acceptation de sa confirmation d’utilisation de la musique, et de sa politique sur le contenu de marque pour un contenu de marque.
 
@@ -124,7 +130,7 @@ peal drafts discard <post-id>
 ```
 
 - `peal drafts save` sans `--post` écrit un nouveau brouillon, pour les canaux que nomme `--channel` (aucun pour l’instant convient). Avec `--post`, il modifie ce brouillon : le texte, quand `--text` est donné, et les canaux, quand un `--channel` l’est. Ce que vous laissez de côté reste tel quel, médias et [options des plateformes](/scheduling#options) des canaux qu’il garde compris.
-- `--options <channel-id>=<json>` règle les options de la plateforme d’un canal, en JSON avec sa `platform` : pour YouTube, `title` et `madeForKids` (tous deux nécessaires pour programmer), `privacy`, `tags`, `categoryId`, `notifySubscribers`, `containsSyntheticMedia` ; pour TikTok, `privacyLevel` (nécessaire, l’un de ceux que liste `peal channels tiktok`), `disableComment`, `disableDuet`, `disableStitch`, `commercialContent`, `brandOrganic`, `brandContent`, `aiGenerated`. Répétez-le pour plusieurs canaux ; il remplace en entier les options de ce canal.
+- `--options <channel-id>=<json>` règle les options de la plateforme d’un canal, en JSON avec sa `platform` : pour YouTube, `title` et `madeForKids` (tous deux nécessaires pour programmer), `privacy`, `tags`, `categoryId`, `notifySubscribers`, `containsSyntheticMedia` ; pour TikTok, `privacyLevel` (nécessaire, l’un de ceux que liste `peal channels tiktok`), `disableComment`, `disableDuet`, `disableStitch`, `commercialContent`, `brandOrganic`, `brandContent`, `aiGenerated` ; pour Pinterest, `boardId` (nécessaire, l’un de ceux que liste `peal channels lookup`), `boardSectionId`, `title`, `link`, `coverSecond`, `dominantColor` ; pour LinkedIn, `visibility` (`public` par défaut, `connections` sur un profil, ou `loggedIn`), `disableReshare`, `mentions` (des pages d’entreprise, chacune un `name` et un `urn` que `peal channels lookup` trouve sur un canal de page d’entreprise), `linkUrl` avec son `linkTitle` et une `linkDescription`, et le `documentTitle` d’un document PDF ; pour Google Business Profile, `postType` (`standard` par défaut, `event` ou `offer`), `title`, `startsAt` et `endsAt` (nécessaires pour un événement ou une offre, comme `2026-11-27T09:00`, à l’heure de l’établissement), `callToAction` avec `callToActionUrl`, et pour une offre `couponCode`, `redeemUrl` et `terms`. Répétez-le pour plusieurs canaux ; il remplace en entier les options de ce canal.
 - Un brouillon ne part à aucune heure. Son texte, ses médias et ses options sont vérifiés contre les règles de chaque plateforme quand il est programmé, avec `peal posts schedule` ou dans l’application web.
 - `peal drafts discard` supprime un brouillon pour de bon. Une publication programmée ou partie n’est pas un brouillon : déprogrammez-la ou annulez-la plutôt.
 
@@ -180,12 +186,33 @@ peal media import https://files.example/printemps/couverture.jpg --alt "Un catal
 peal media list                   # du plus récent au plus ancien ; --limit et --cursor les parcourent
 ```
 
-- `peal media upload` envoie un fichier dans les médias de l’espace de travail : JPEG, PNG, GIF ou WebP jusqu’à 16 Mio, MP4 ou QuickTime jusqu’à 1 Gio, reconnu à son extension. Le fichier va directement au stockage des médias, puis Peal le vérifie et le lit.
-- `peal media import` fait récupérer au serveur une image ou une vidéo à une adresse `https://` publique, sans identifiants, en 90 secondes au plus ([Images et vidéos](/media#import)). Pour les fichiers plus lourds ou plus lents, utilisez `peal media upload`.
+- `peal media upload` envoie un fichier dans les médias de l’espace de travail : JPEG, PNG, GIF ou WebP jusqu’à 16 Mio, MP4 ou QuickTime jusqu’à 1 Gio, ou un document PDF jusqu’à 100 Mio et 300 pages, reconnu à son extension. Le fichier va directement au stockage des médias, puis Peal le vérifie et le lit.
+- `peal media import` fait récupérer au serveur une image, une vidéo ou un document PDF à une adresse `https://` publique, sans identifiants, en 90 secondes au plus ([Images et vidéos](/media#import)). Pour les fichiers plus lourds ou plus lents, utilisez `peal media upload`.
 - `peal media list` liste les images et vidéos de l’espace de travail, de la plus récente à la plus ancienne, avec les identifiants que les publications prennent et si chacune est prête. `--limit` prend 100 au plus.
 - `--alt` dit ce que montre le fichier, pour les personnes qui ne peuvent pas le voir.
 
 Chaque commande affiche l’identifiant du média. Seul un média `ready` va dans une publication.
+
+## Relectures et approbations [#review]
+
+```sh
+peal approvals list
+peal approvals approve <post-id> --approval <approval-id> --subject <fingerprint>
+peal approvals request-changes <post-id> --approval <approval-id> --subject <fingerprint> --comment "Dites jeudi, pas vendredi."
+peal approvals policy
+peal approvals policy --set always
+peal review show <post-id>
+peal review comment <post-id> --text "Très bien." --reply-to <comment-id>
+peal review link <post-id> --access comment --hours 48
+peal review links <post-id>
+peal review revoke <link-id>
+```
+
+- `peal approvals list` affiche les publications qui attendent une [approbation](/review), avec l’heure demandée pour chacune et qui a demandé. `approve` en programme une ; approuvée après son heure, elle redevient un brouillon. `request-changes` la renvoie en brouillon avec votre commentaire. Les deux décident de ce que vous avez lu : `list` et `peal review show` affichent, pour chaque publication qui attend, les `--approval` et `--subject` qu’une décision prend, et une publication qui a changé depuis n’est pas décidée (`peal` le dit ; relisez-la).
+- La ligne de commande est une application : sous la politique qui retient les publications des applications, ce qu’elle programme attend, et elle n’approuve que ce qu’un membre a demandé dans l’application web.
+- `peal approvals policy` montre quelles publications attendent ; `--set never`, `contributorsAndApplications` ou `always` le change, pour les propriétaires et les administrateurs.
+- `peal review show` affiche la publication telle que chaque canal la recevra, ses approbations et ses commentaires, fil par fil. Ce que les personnes invitées ont tapé est affiché comme du texte, les caractères de contrôle remplacés.
+- `peal review link` crée un lien de relecture (`--access view` ou `comment`, par défaut ; `--hours`, 14 jours sinon) et affiche son adresse, une seule fois. Un lien qui permet d’approuver se crée dans l’application web seulement : la ligne de commande est une application, et approuverait ainsi ses propres publications. `links` liste les liens d’une publication sans leur adresse, et `revoke` en termine un.
 
 ## Sortie pour les scripts [#json]
 

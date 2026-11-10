@@ -15,11 +15,11 @@ public class GetTest : BaseMockServerTest
         const string mockResponse = """
             {
               "allowances": {
-                "assistantRequests": 1,
-                "channels": 1,
-                "mediaStorage": 1,
-                "members": 1,
-                "scheduledPosts": 1
+                "assistantRequests": 1000000,
+                "channels": 1000000,
+                "mediaStorage": 1000000,
+                "members": 1000000,
+                "scheduledPosts": 1000000
               },
               "currency": "currency",
               "enabled": true,
@@ -27,11 +27,11 @@ public class GetTest : BaseMockServerTest
               "plans": [
                 {
                   "allowances": {
-                    "assistantRequests": 1,
-                    "channels": 1,
-                    "mediaStorage": 1,
-                    "members": 1,
-                    "scheduledPosts": 1
+                    "assistantRequests": 1000000,
+                    "channels": 1000000,
+                    "mediaStorage": 1000000,
+                    "members": 1000000,
+                    "scheduledPosts": 1000000
                   },
                   "plan": "free",
                   "price": {
@@ -41,11 +41,11 @@ public class GetTest : BaseMockServerTest
                 },
                 {
                   "allowances": {
-                    "assistantRequests": 1,
-                    "channels": 1,
-                    "mediaStorage": 1,
-                    "members": 1,
-                    "scheduledPosts": 1
+                    "assistantRequests": 1000000,
+                    "channels": 1000000,
+                    "mediaStorage": 1000000,
+                    "members": 1000000,
+                    "scheduledPosts": 1000000
                   },
                   "plan": "free",
                   "price": {
@@ -75,7 +75,7 @@ public class GetTest : BaseMockServerTest
                   "used": 1
                 },
                 "channels": 1,
-                "mediaStorage": 1,
+                "mediaStorage": 1000000,
                 "members": 1,
                 "scheduledPosts": {
                   "resetsAt": "resetsAt",
@@ -113,11 +113,11 @@ public class GetTest : BaseMockServerTest
         const string mockResponse = """
             {
               "allowances": {
-                "assistantRequests": 1,
-                "channels": 1,
-                "mediaStorage": 1,
-                "members": 1,
-                "scheduledPosts": 1
+                "assistantRequests": 1000000,
+                "channels": 1000000,
+                "mediaStorage": 1000000,
+                "members": 1000000,
+                "scheduledPosts": 1000000
               },
               "currency": "currency",
               "enabled": true,
@@ -153,7 +153,7 @@ public class GetTest : BaseMockServerTest
                   "used": 1
                 },
                 "channels": 1,
-                "mediaStorage": 1,
+                "mediaStorage": 1000000,
                 "members": 1,
                 "scheduledPosts": {
                   "resetsAt": "resetsAt",

@@ -2,4 +2,4 @@
 
 import typing
 
-MediaKind = typing.Union[typing.Literal["image", "video"], typing.Any]
+MediaKind = typing.Union[typing.Literal["image", "video", "document"], typing.Any]

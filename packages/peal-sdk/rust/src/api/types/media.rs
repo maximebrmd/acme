@@ -23,6 +23,9 @@ pub struct Media {
     #[serde(default)]
     pub id: String,
     pub kind: MediaKind,
+    #[serde(rename = "pageCount")]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub page_count: Option<i64>,
     pub status: MediaStatus,
     #[serde(rename = "updatedAt")]
     #[serde(default)]
@@ -49,6 +52,7 @@ pub struct MediaBuilder {
     duration_ms: Option<i64>,
     id: Option<String>,
     kind: Option<MediaKind>,
+    page_count: Option<i64>,
     status: Option<MediaStatus>,
     updated_at: Option<String>,
     url: Option<String>,
@@ -100,6 +104,11 @@ impl MediaBuilder {
         self
     }
 
+    pub fn page_count(mut self, value: i64) -> Self {
+        self.page_count = Some(value);
+        self
+    }
+
     pub fn status(mut self, value: MediaStatus) -> Self {
         self.status = Some(value);
         self
@@ -141,6 +150,7 @@ impl MediaBuilder {
             duration_ms: self.duration_ms,
             id: self.id.ok_or_else(|| BuildError::missing_field("id"))?,
             kind: self.kind.ok_or_else(|| BuildError::missing_field("kind"))?,
+            page_count: self.page_count,
             status: self
                 .status
                 .ok_or_else(|| BuildError::missing_field("status"))?,

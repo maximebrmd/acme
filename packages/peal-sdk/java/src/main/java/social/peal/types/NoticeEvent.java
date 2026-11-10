@@ -38,6 +38,22 @@ public final class NoticeEvent {
         return new NoticeEvent(new PostUnconfirmedValue(value));
     }
 
+    public static NoticeEvent postApprovalRequested(NoticeEventPostApprovalRequested value) {
+        return new NoticeEvent(new PostApprovalRequestedValue(value));
+    }
+
+    public static NoticeEvent postApproved(NoticeEventPostApproved value) {
+        return new NoticeEvent(new PostApprovedValue(value));
+    }
+
+    public static NoticeEvent postChangesRequested(NoticeEventPostChangesRequested value) {
+        return new NoticeEvent(new PostChangesRequestedValue(value));
+    }
+
+    public static NoticeEvent postCommented(NoticeEventPostCommented value) {
+        return new NoticeEvent(new PostCommentedValue(value));
+    }
+
     public static NoticeEvent channelReconnectRequired(NoticeEventChannelReconnectRequired value) {
         return new NoticeEvent(new ChannelReconnectRequiredValue(value));
     }
@@ -80,6 +96,22 @@ public final class NoticeEvent {
 
     public boolean isPostUnconfirmed() {
         return value instanceof PostUnconfirmedValue;
+    }
+
+    public boolean isPostApprovalRequested() {
+        return value instanceof PostApprovalRequestedValue;
+    }
+
+    public boolean isPostApproved() {
+        return value instanceof PostApprovedValue;
+    }
+
+    public boolean isPostChangesRequested() {
+        return value instanceof PostChangesRequestedValue;
+    }
+
+    public boolean isPostCommented() {
+        return value instanceof PostCommentedValue;
     }
 
     public boolean isChannelReconnectRequired() {
@@ -135,6 +167,34 @@ public final class NoticeEvent {
     public Optional<NoticeEventPostUnconfirmed> getPostUnconfirmed() {
         if (isPostUnconfirmed()) {
             return Optional.of(((PostUnconfirmedValue) value).value);
+        }
+        return Optional.empty();
+    }
+
+    public Optional<NoticeEventPostApprovalRequested> getPostApprovalRequested() {
+        if (isPostApprovalRequested()) {
+            return Optional.of(((PostApprovalRequestedValue) value).value);
+        }
+        return Optional.empty();
+    }
+
+    public Optional<NoticeEventPostApproved> getPostApproved() {
+        if (isPostApproved()) {
+            return Optional.of(((PostApprovedValue) value).value);
+        }
+        return Optional.empty();
+    }
+
+    public Optional<NoticeEventPostChangesRequested> getPostChangesRequested() {
+        if (isPostChangesRequested()) {
+            return Optional.of(((PostChangesRequestedValue) value).value);
+        }
+        return Optional.empty();
+    }
+
+    public Optional<NoticeEventPostCommented> getPostCommented() {
+        if (isPostCommented()) {
+            return Optional.of(((PostCommentedValue) value).value);
         }
         return Optional.empty();
     }
@@ -230,6 +290,14 @@ public final class NoticeEvent {
 
         T visitPostUnconfirmed(NoticeEventPostUnconfirmed postUnconfirmed);
 
+        T visitPostApprovalRequested(NoticeEventPostApprovalRequested postApprovalRequested);
+
+        T visitPostApproved(NoticeEventPostApproved postApproved);
+
+        T visitPostChangesRequested(NoticeEventPostChangesRequested postChangesRequested);
+
+        T visitPostCommented(NoticeEventPostCommented postCommented);
+
         T visitChannelReconnectRequired(NoticeEventChannelReconnectRequired channelReconnectRequired);
 
         T visitChannelReconnectSoon(NoticeEventChannelReconnectSoon channelReconnectSoon);
@@ -254,6 +322,10 @@ public final class NoticeEvent {
         @JsonSubTypes.Type(PostPublishedValue.class),
         @JsonSubTypes.Type(PostFailedValue.class),
         @JsonSubTypes.Type(PostUnconfirmedValue.class),
+        @JsonSubTypes.Type(PostApprovalRequestedValue.class),
+        @JsonSubTypes.Type(PostApprovedValue.class),
+        @JsonSubTypes.Type(PostChangesRequestedValue.class),
+        @JsonSubTypes.Type(PostCommentedValue.class),
         @JsonSubTypes.Type(ChannelReconnectRequiredValue.class),
         @JsonSubTypes.Type(ChannelReconnectSoonValue.class),
         @JsonSubTypes.Type(SubscriptionStartedValue.class),
@@ -374,6 +446,166 @@ public final class NoticeEvent {
         }
 
         private boolean equalTo(PostUnconfirmedValue other) {
+            return value.equals(other.value);
+        }
+
+        @java.lang.Override
+        public int hashCode() {
+            return Objects.hash(this.value);
+        }
+
+        @java.lang.Override
+        public String toString() {
+            return "NoticeEvent{" + "value: " + value + "}";
+        }
+    }
+
+    @JsonTypeName("PostApprovalRequested")
+    @JsonIgnoreProperties("_tag")
+    private static final class PostApprovalRequestedValue implements Value {
+        @JsonUnwrapped
+        @JsonIgnoreProperties(value = "_tag", allowSetters = true)
+        private NoticeEventPostApprovalRequested value;
+
+        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+        private PostApprovalRequestedValue() {}
+
+        private PostApprovalRequestedValue(NoticeEventPostApprovalRequested value) {
+            this.value = value;
+        }
+
+        @java.lang.Override
+        public <T> T visit(Visitor<T> visitor) {
+            return visitor.visitPostApprovalRequested(value);
+        }
+
+        @java.lang.Override
+        public boolean equals(Object other) {
+            if (this == other) return true;
+            return other instanceof PostApprovalRequestedValue && equalTo((PostApprovalRequestedValue) other);
+        }
+
+        private boolean equalTo(PostApprovalRequestedValue other) {
+            return value.equals(other.value);
+        }
+
+        @java.lang.Override
+        public int hashCode() {
+            return Objects.hash(this.value);
+        }
+
+        @java.lang.Override
+        public String toString() {
+            return "NoticeEvent{" + "value: " + value + "}";
+        }
+    }
+
+    @JsonTypeName("PostApproved")
+    @JsonIgnoreProperties("_tag")
+    private static final class PostApprovedValue implements Value {
+        @JsonUnwrapped
+        @JsonIgnoreProperties(value = "_tag", allowSetters = true)
+        private NoticeEventPostApproved value;
+
+        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+        private PostApprovedValue() {}
+
+        private PostApprovedValue(NoticeEventPostApproved value) {
+            this.value = value;
+        }
+
+        @java.lang.Override
+        public <T> T visit(Visitor<T> visitor) {
+            return visitor.visitPostApproved(value);
+        }
+
+        @java.lang.Override
+        public boolean equals(Object other) {
+            if (this == other) return true;
+            return other instanceof PostApprovedValue && equalTo((PostApprovedValue) other);
+        }
+
+        private boolean equalTo(PostApprovedValue other) {
+            return value.equals(other.value);
+        }
+
+        @java.lang.Override
+        public int hashCode() {
+            return Objects.hash(this.value);
+        }
+
+        @java.lang.Override
+        public String toString() {
+            return "NoticeEvent{" + "value: " + value + "}";
+        }
+    }
+
+    @JsonTypeName("PostChangesRequested")
+    @JsonIgnoreProperties("_tag")
+    private static final class PostChangesRequestedValue implements Value {
+        @JsonUnwrapped
+        @JsonIgnoreProperties(value = "_tag", allowSetters = true)
+        private NoticeEventPostChangesRequested value;
+
+        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+        private PostChangesRequestedValue() {}
+
+        private PostChangesRequestedValue(NoticeEventPostChangesRequested value) {
+            this.value = value;
+        }
+
+        @java.lang.Override
+        public <T> T visit(Visitor<T> visitor) {
+            return visitor.visitPostChangesRequested(value);
+        }
+
+        @java.lang.Override
+        public boolean equals(Object other) {
+            if (this == other) return true;
+            return other instanceof PostChangesRequestedValue && equalTo((PostChangesRequestedValue) other);
+        }
+
+        private boolean equalTo(PostChangesRequestedValue other) {
+            return value.equals(other.value);
+        }
+
+        @java.lang.Override
+        public int hashCode() {
+            return Objects.hash(this.value);
+        }
+
+        @java.lang.Override
+        public String toString() {
+            return "NoticeEvent{" + "value: " + value + "}";
+        }
+    }
+
+    @JsonTypeName("PostCommented")
+    @JsonIgnoreProperties("_tag")
+    private static final class PostCommentedValue implements Value {
+        @JsonUnwrapped
+        @JsonIgnoreProperties(value = "_tag", allowSetters = true)
+        private NoticeEventPostCommented value;
+
+        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+        private PostCommentedValue() {}
+
+        private PostCommentedValue(NoticeEventPostCommented value) {
+            this.value = value;
+        }
+
+        @java.lang.Override
+        public <T> T visit(Visitor<T> visitor) {
+            return visitor.visitPostCommented(value);
+        }
+
+        @java.lang.Override
+        public boolean equals(Object other) {
+            if (this == other) return true;
+            return other instanceof PostCommentedValue && equalTo((PostCommentedValue) other);
+        }
+
+        private boolean equalTo(PostCommentedValue other) {
             return value.equals(other.value);
         }
 

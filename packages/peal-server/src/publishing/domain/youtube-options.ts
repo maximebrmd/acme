@@ -1,5 +1,8 @@
 import { Schema } from "effect";
 
+import type { FieldNotes } from "./field-description.ts";
+import type { LookupName } from "./lookup.ts";
+import type { OptionConstraint } from "./option-constraint.ts";
 import { invalid, missing } from "./option-problem.ts";
 import type { OptionProblem } from "./option-problem.ts";
 import { PostTextSchema } from "./post-text.ts";
@@ -29,7 +32,14 @@ export const YouTubePrivacySchema = Schema.Literals([
 
 export type YouTubePrivacy = typeof YouTubePrivacySchema.Type;
 
-const angleBrackets = /[<>]/u;
+// The characters YouTube refuses in a title.
+const titleForbidden = ["<", ">"] as const;
+
+// A comma would split a tag in two.
+const tagForbidden = [","] as const;
+
+const holdsAny = (text: string, forbidden: readonly string[]) =>
+  forbidden.some((character) => text.includes(character));
 
 const characters = (text: string) => measureText(text, "codePoints");
 
@@ -60,7 +70,7 @@ const titleProblems = (
           },
         ]
       : []),
-    ...(angleBrackets.test(title) ? [invalid("title")] : []),
+    ...(holdsAny(title, titleForbidden) ? [invalid("title")] : []),
   ];
 };
 
@@ -71,7 +81,7 @@ const tagsProblems = (
   const length = youTubeTagsLength(tags);
 
   return [
-    ...(tags.some((tag) => tag.trim() === "" || tag.includes(","))
+    ...(tags.some((tag) => tag.trim() === "" || holdsAny(tag, tagForbidden))
       ? [invalid("tags")]
       : []),
     ...(length > maxYouTubeTagsLength
@@ -123,6 +133,34 @@ export class YouTubeOptions extends Schema.Class<YouTubeOptions>(
   ),
   title: Schema.optionalKey(PostTextSchema),
 }) {
+  /**
+   * What the fields' schemas do not say, for the description clients read
+   * (`optionFieldsOn`): every field has an entry.
+   */
+  static readonly notes: Readonly<
+    Record<YouTubeField, FieldNotes<LookupName>>
+  > = {
+    categoryId: {
+      lookup: "youtubeVideoCategories",
+      pattern: categoryId.source,
+    },
+    containsSyntheticMedia: { ifLeftOut: false },
+    madeForKids: {},
+    notifySubscribers: { ifLeftOut: true },
+    privacy: { ifLeftOut: "public" },
+    tags: {
+      forbiddenCharacters: tagForbidden,
+      maxLength: maxYouTubeTagsLength,
+    },
+    title: {
+      forbiddenCharacters: titleForbidden,
+      maxLength: maxYouTubeTitleLength,
+    },
+  };
+
+  /** No rule ties two of YouTube's options together. */
+  static readonly constraints: readonly OptionConstraint<YouTubeField>[] = [];
+
   /** What YouTube would refuse in them. */
   problems(): readonly OptionProblem<YouTubeField>[] {
     return youTubeProblems(this);

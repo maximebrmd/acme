@@ -4,10 +4,11 @@ import { ChannelSchema } from "peal-contract";
 import type {
   Channel,
   ChannelStatus,
-  InstagramConnection,
+  ChannelConnection,
   TikTokAccount,
 } from "peal-contract";
 
+import { capabilities, lookupWith } from "#commands/channel-capabilities.ts";
 import { explain } from "#explain.ts";
 import { jsonFlag, printJson } from "#json.ts";
 import { columns, instant } from "#print.ts";
@@ -21,12 +22,15 @@ const statusOf = (status: ChannelStatus): string =>
     refreshNeeded: () => "must be reconnected",
   });
 
-const connections: Readonly<Record<InstagramConnection, string>> = {
+const connections: Readonly<Record<ChannelConnection, string>> = {
   facebookLogin: "through a Facebook Page",
   instagramLogin: "Instagram Login",
+  linkedinPage: "company page",
+  linkedinProfile: "profile",
 };
 
-// The platform, and for Instagram the way in, which reconnecting takes.
+// The platform, and for Instagram and LinkedIn the way in, which
+// reconnecting takes.
 const platformOf = (channel: Channel): string =>
   channel.connection === null
     ? channel.platform
@@ -157,5 +161,10 @@ const tiktok = Command.make(
 
 export const channels = Command.make("channels").pipe(
   Command.withDescription("The social accounts connected to a workspace."),
-  Command.withSubcommands([list, tiktok])
+  Command.withSubcommands([
+    list,
+    capabilities,
+    lookupWith(creatorLines),
+    tiktok,
+  ])
 );

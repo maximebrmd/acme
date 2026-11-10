@@ -21,10 +21,10 @@ public record ContentViolationMediaTooLarge : IJsonOnDeserialized
     public required string MediaId { get; set; }
 
     [JsonPropertyName("byteSize")]
-    public required int ByteSize { get; set; }
+    public required long ByteSize { get; set; }
 
     [JsonPropertyName("maximum")]
-    public required int Maximum { get; set; }
+    public required long Maximum { get; set; }
 
     [JsonIgnore]
     public ReadOnlyAdditionalProperties AdditionalProperties { get; private set; } = new();

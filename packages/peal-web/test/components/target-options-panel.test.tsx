@@ -7,11 +7,15 @@ import { renderToStaticMarkup } from "react-dom/server";
 
 import { ComposerErrors } from "#components/posts/composer-errors.tsx";
 import {
+  PinterestOptionsFields,
   takesOptions,
   TargetOptionsPanel,
   TikTokOptionsFields,
 } from "#components/posts/target-options-panel.tsx";
-import type { TikTokAccountState } from "#components/posts/target-options-panel.tsx";
+import type {
+  LookupSource,
+  TikTokAccountState,
+} from "#components/posts/target-options-panel.tsx";
 import { loadMessages } from "#i18n/messages.ts";
 import { initialValues } from "#posts/target-options.ts";
 import type { OptionValues } from "#posts/target-options.ts";
@@ -48,6 +52,37 @@ const mastodon = channel(
   "mastodon",
   "@peal@social.example"
 );
+
+const location = channel(
+  "00000000-0000-7000-8000-000000000004",
+  "googleBusiness",
+  "1 Synthetic Street, Exampleville"
+);
+
+const renderLocation = async (locale: Locale, values: OptionValues) => {
+  const messages = await loadMessages(locale);
+
+  return renderToStaticMarkup(
+    <NextIntlClientProvider locale={locale} messages={messages}>
+      <TargetOptionsPanel
+        channels={[location]}
+        disabled={false}
+        valuesOf={() => values}
+        violations={[
+          {
+            _tag: "optionInvalid",
+            channelId: location.id,
+            field: "endsAt",
+            platform: "googleBusiness",
+          },
+        ]}
+        onChange={() => {
+          // Rendered once, never changed.
+        }}
+      />
+    </NextIntlClientProvider>
+  );
+};
 
 const violations: readonly ContentViolation[] = [
   {
@@ -144,6 +179,122 @@ describe(TargetOptionsPanel, () => {
     expect(html).toContain("Titre (obligatoire)");
     expect(html).toContain("Obligatoire pour programmer.");
     expect(html).toContain("Autoriser les commentaires");
+  });
+
+  it("shows a Google Business Profile update its button", async () => {
+    const update = await renderLocation("en", {});
+
+    expect(update).toContain(
+      "1 Synthetic Street, Exampleville on Google Business Profile: options"
+    );
+    expect(update).toContain("Post type");
+    expect(update).toContain("Button");
+    expect(update).not.toContain("Starts (required)");
+    expect(update).not.toContain("Coupon code");
+  });
+
+  it("shows a Google Business Profile event its title, dates and button link", async () => {
+    const event = await renderLocation("en", {
+      callToAction: "learnMore",
+      endsAt: "2026-11-27T08:00",
+      postType: "event",
+      startsAt: "2026-11-27T09:00",
+    });
+
+    expect(event).toContain("Title (required)");
+    expect(event).toContain('type="datetime-local"');
+    expect(event).toContain('value="2026-11-27T09:00"');
+    expect(event).toContain("Choose a day and a time after the start.");
+    expect(event).toContain("Button link (required)");
+  });
+
+  it("shows a Google Business Profile offer its code and terms, and no button", async () => {
+    const offer = await renderLocation("fr", {
+      callToAction: "learnMore",
+      postType: "offer",
+    });
+
+    expect(offer).toContain("Code promotionnel");
+    expect(offer).toContain("Conditions générales");
+    expect(offer).not.toContain("Lien du bouton");
+  });
+
+  it("shows every platform's fields together, each kind of field in one panel", async () => {
+    const page = channel(
+      "00000000-0000-7000-8000-000000000005",
+      "linkedin",
+      "Example Bakery"
+    );
+
+    const pins = channel(
+      "00000000-0000-7000-8000-000000000006",
+      "pinterest",
+      "peal_pins"
+    );
+
+    const every = [youtube, tiktok, page, pins, location];
+
+    const filled = new Map<string, OptionValues>([
+      [location.id, { postType: "event" }],
+      [
+        page.id,
+        { mentions: "Example Bakery <urn:li:organization:9000000001>" },
+      ],
+    ]);
+
+    const [english, french] = await Promise.all(
+      (["en", "fr"] as const).map(async (locale) =>
+        renderToStaticMarkup(
+          <NextIntlClientProvider
+            locale={locale}
+            messages={await loadMessages(locale)}
+          >
+            <TargetOptionsPanel
+              channels={every}
+              disabled={false}
+              valuesOf={(shown) =>
+                filled.get(shown.id) ?? initialValues(shown.platform)
+              }
+              violations={[]}
+              onChange={() => {
+                // Rendered once, never changed.
+              }}
+            />
+          </NextIntlClientProvider>
+        )
+      )
+    );
+
+    // A text, a choice, a yes or no and a box; mentions; a lookup still
+    // read and a number; a time on the location's clock, shown with its
+    // post type.
+    for (const label of [
+      "Title (required)",
+      "Who can view this post (required)",
+      "Who can see this post",
+      "Pages to mention",
+      "Example Bakery &lt;urn:li:organization:9000000001&gt;",
+      "Board (required)",
+      "Reading the list on the platform…",
+      "Video cover, at second",
+      "Post type",
+      "Starts (required)",
+    ]) {
+      expect(english).toContain(label);
+    }
+
+    expect(english).toContain('type="datetime-local"');
+    expect(english).toContain('type="number"');
+
+    for (const label of [
+      "Qui peut voir cette publication",
+      "Pages à mentionner",
+      "Tableau (obligatoire)",
+      "Couverture de la vidéo, à la seconde",
+      "Type de publication",
+    ]) {
+      expect(french).toContain(label);
+    }
   });
 
   it("shows only for platforms that take options", () => {
@@ -279,6 +430,179 @@ describe(TikTokOptionsFields, () => {
     expect(html).toContain("Publication en tant que Peal Clips (@peal_clips).");
     expect(html).toMatch(
       /En publiant, vous acceptez la <a [^>]+>Confirmation d’utilisation de la musique<\/a> de TikTok\./u
+    );
+  });
+});
+
+const pinterest = channel(
+  "00000000-0000-7000-8000-000000000004",
+  "pinterest",
+  "@pealexample"
+);
+
+const boardChoices = [
+  { label: "Summer recipes", value: "549755885001" },
+  { label: "Garden", value: "549755885002" },
+];
+
+const boards: LookupSource = {
+  choices: { _tag: "loaded", choices: boardChoices, truncated: false },
+};
+
+const noSections: LookupSource = {
+  choices: { _tag: "loaded", choices: [], truncated: false },
+};
+
+const renderPinterest = async (
+  locale: Locale,
+  sources: {
+    readonly boards: LookupSource;
+    readonly sections?: LookupSource;
+  },
+  values: OptionValues = {},
+  refused: readonly ContentViolation[] = []
+) => {
+  const messages = await loadMessages(locale);
+
+  return renderToStaticMarkup(
+    <NextIntlClientProvider locale={locale} messages={messages}>
+      <PinterestOptionsFields
+        channel={pinterest}
+        disabled={false}
+        boards={sources.boards}
+        sections={sources.sections ?? noSections}
+        values={values}
+        violations={refused}
+        onChange={() => {
+          // Rendered once, never changed.
+        }}
+      />
+    </NextIntlClientProvider>
+  );
+};
+
+const boardsFailed = async (
+  reason: "rateLimited" | "reconnect" | "unreachable"
+) =>
+  await renderPinterest("en", {
+    boards: {
+      choices: { _tag: "failed", reason },
+      retry: () => {
+        // Never clicked in a static render.
+      },
+    },
+  });
+
+describe(PinterestOptionsFields, () => {
+  it("says the boards are being read", async () => {
+    const html = await renderPinterest("en", {
+      boards: { choices: { _tag: "loading" } },
+    });
+
+    expect(html).toContain("@pealexample on Pinterest: options");
+    expect(html).toContain("Board (required)");
+    expect(html).toContain("Reading the list on the platform…");
+  });
+
+  it("offers the boards once read, with the Pin's other fields", async () => {
+    const html = await renderPinterest(
+      "en",
+      { boards },
+      { boardId: "549755885002" }
+    );
+
+    expect(html).not.toContain("Reading the list");
+    expect(html).toContain("Garden");
+    expect(html).toContain("Title");
+    expect(html).toContain("Video cover, at second");
+  });
+
+  it("shows a board's sections once a board is chosen and has some", async () => {
+    const sections: LookupSource = {
+      choices: {
+        _tag: "loaded",
+        choices: [{ label: "Salads", value: "5000000000001" }],
+        truncated: false,
+      },
+    };
+
+    const unchosen = await renderPinterest("en", { boards, sections });
+
+    const chosen = await renderPinterest(
+      "en",
+      { boards, sections },
+      { boardId: "549755885001", boardSectionId: "5000000000001" }
+    );
+
+    const without = await renderPinterest(
+      "en",
+      { boards },
+      { boardId: "549755885001" }
+    );
+
+    expect(unchosen).not.toContain("Board section");
+    expect(chosen).toContain("Board section");
+    expect(chosen).toContain("Salads");
+    expect(without).not.toContain("Board section");
+  });
+
+  it("says why the boards could not be read, with a way to ask again", async () => {
+    await expect(boardsFailed("reconnect")).resolves.toContain(
+      "Reconnect this account to read its list."
+    );
+    await expect(boardsFailed("rateLimited")).resolves.toContain(
+      "The platform asked to slow down."
+    );
+
+    const unreachable = await boardsFailed("unreachable");
+
+    expect(unreachable).toContain("The list could not be read");
+    expect(unreachable).toContain("Try again</button>");
+  });
+
+  it("says an account has no board, and keeps a board the list lacks", async () => {
+    const empty = await renderPinterest("en", { boards: noSections });
+
+    const gone = await renderPinterest(
+      "en",
+      {
+        boards: {
+          choices: { _tag: "loaded", choices: boardChoices, truncated: true },
+        },
+      },
+      { boardId: "549755885999" }
+    );
+
+    expect(empty).toContain("This account has no board yet");
+    expect(gone).toContain("Not in the list (549755885999)");
+    expect(gone).toContain("Only the first 2 are listed.");
+  });
+
+  it("shows what scheduling refused, in the reader's language", async () => {
+    const html = await renderPinterest(
+      "fr",
+      { boards },
+      { link: "peal.example" },
+      [
+        {
+          _tag: "optionMissing",
+          channelId: pinterest.id,
+          field: "boardId",
+          platform: "pinterest",
+        },
+        {
+          _tag: "optionInvalid",
+          channelId: pinterest.id,
+          field: "link",
+          platform: "pinterest",
+        },
+      ]
+    );
+
+    expect(html).toContain("Tableau (obligatoire)");
+    expect(html).toContain("Obligatoire pour programmer.");
+    expect(html).toContain(
+      "Un lien commence par http:// ou https://, sans espace."
     );
   });
 });

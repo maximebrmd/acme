@@ -9,13 +9,14 @@ import {
   CardTitle,
 } from "peal-ui/components/card";
 
+import { ApprovalPolicyForm } from "#components/settings/approval-policy-form.tsx";
 import { DeleteWorkspace } from "#components/settings/delete-workspace.tsx";
 import { RenameWorkspaceForm } from "#components/settings/rename-workspace-form.tsx";
 import { routing } from "#i18n/routing.ts";
 import { membershipOf } from "#posts/membership.ts";
 
-// A workspace's general settings: its name, and deleting it, for those
-// whose role allows each.
+// A workspace's general settings: its name, which posts wait for an
+// approval, and deleting it, for those whose role allows each.
 const GeneralSettingsPage = async ({
   params,
 }: PageProps<"/[locale]/app/[workspaceId]/settings">) => {
@@ -27,6 +28,7 @@ const GeneralSettingsPage = async ({
 
   const workspace = await membershipOf(locale, workspaceId);
   const t = await getTranslations("WorkspaceSettings");
+  const review = await getTranslations("Review");
   const may = new Set(workspace.permissions);
 
   return (
@@ -48,6 +50,22 @@ const GeneralSettingsPage = async ({
               name={workspace.name}
               workspaceId={workspace.id}
             />
+          </CardContent>
+        ) : null}
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            <h2>{review("policy.title")}</h2>
+          </CardTitle>
+          <CardDescription>
+            {review("policy.description")}{" "}
+            {may.has("organization:update") ? null : review("policy.readOnly")}
+          </CardDescription>
+        </CardHeader>
+        {may.has("organization:update") ? (
+          <CardContent>
+            <ApprovalPolicyForm workspaceId={workspace.id} />
           </CardContent>
         ) : null}
       </Card>

@@ -28,6 +28,20 @@ interface FakeVideo {
   polls: number;
 }
 
+/** A video category, as videoCategories.list answers one. */
+export interface FakeCategory {
+  readonly assignable: boolean;
+  readonly id: string;
+  readonly title: string;
+}
+
+/** A playlist, as playlists.list answers one. */
+export interface FakePlaylist {
+  readonly id: string;
+  readonly privacy: string;
+  readonly title: string;
+}
+
 /** How a video's processing ends. */
 export type Processing =
   | { readonly _tag: "processed"; readonly after: number }
@@ -61,7 +75,8 @@ const concat = (parts: readonly Uint8Array[]) => {
 };
 
 /**
- * The YouTube Data API's resumable videos.insert and videos.list, for
+ * The YouTube Data API's resumable videos.insert, videos.list,
+ * videoCategories.list and playlists.list (`mine=true`, in pages), for
  * tokens in `tokens`: a POST opens a session whose address comes back in
  * `Location`; PUTs append contiguous byte ranges, answering 308 with the
  * `Range` received, until the last byte makes the video (201); a PUT of
@@ -72,6 +87,10 @@ const concat = (parts: readonly Uint8Array[]) => {
  */
 export const fakeYouTubeApi = Effect.fnUntraced(function* fakeYouTubeApi(
   options: {
+    /** The video categories of every region but "ZZ", which YouTube refuses. */
+    readonly categories?: readonly FakeCategory[];
+    /** The playlists of the token's channel, in order. */
+    readonly playlists?: readonly FakePlaylist[];
     readonly privacy?: "private" | "public";
     readonly processing?: Processing;
     readonly tokens?: readonly string[];
@@ -237,6 +256,53 @@ export const fakeYouTubeApi = Effect.fnUntraced(function* fakeYouTubeApi(
 
     if (route === "PUT /upload/youtube/v3/videos") {
       return put(request);
+    }
+
+    if (route === "GET /youtube/v3/videoCategories") {
+      return request.query.get("regionCode") === "ZZ"
+        ? googleError(400, "invalidParameter")
+        : json({
+            items: (options.categories ?? []).map(
+              ({ assignable, id, title }) => ({
+                id,
+                kind: "youtube#videoCategory",
+                snippet: {
+                  assignable,
+                  // The title in the language asked, to tell `hl` arrived.
+                  title: `${title} (${request.query.get("hl") ?? "en_US"})`,
+                },
+              })
+            ),
+            kind: "youtube#videoCategoryListResponse",
+          });
+    }
+
+    if (route === "GET /youtube/v3/playlists") {
+      const all = options.playlists ?? [];
+      const token = request.query.get("pageToken");
+      const from = token === null ? 0 : Number(token.replace(/^page-/u, ""));
+      const size = Number(request.query.get("maxResults") ?? "5");
+
+      if (request.query.get("mine") !== "true" || Number.isNaN(from)) {
+        return googleError(400, "invalidPageToken");
+      }
+
+      const items = all
+        .slice(from, from + size)
+        .map(({ id, privacy, title }) => ({
+          id,
+          kind: "youtube#playlist",
+          snippet: { title },
+          status: { privacyStatus: privacy },
+        }));
+
+      const kind = "youtube#playlistListResponse";
+
+      return json(
+        from + size < all.length
+          ? { items, kind, nextPageToken: `page-${from + size}` }
+          : { items, kind }
+      );
     }
 
     if (route === "GET /youtube/v3/videos") {

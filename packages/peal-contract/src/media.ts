@@ -10,6 +10,7 @@ import {
 import { AltTextTooLong } from "./alt-text-too-long.ts";
 import { Authentication } from "./authentication.ts";
 import { Forbidden } from "./forbidden.ts";
+import { ByteCountSchema } from "./int64.ts";
 import { MediaImportBusy } from "./media-import-busy.ts";
 import { MediaInUse } from "./media-in-use.ts";
 import { MediaNotFound } from "./media-not-found.ts";
@@ -32,23 +33,29 @@ export const MediaContentTypeSchema = Schema.Literals([
   "image/webp",
   "video/mp4",
   "video/quicktime",
+  "application/pdf",
 ]).annotate({ identifier: "MediaContentType" });
 
 export type MediaContentType = typeof MediaContentTypeSchema.Type;
 
-export const MediaKindSchema = Schema.Literals(["image", "video"]).annotate({
-  identifier: "MediaKind",
-});
+export const MediaKindSchema = Schema.Literals([
+  "image",
+  "video",
+  "document",
+]).annotate({ identifier: "MediaKind" });
 
 export type MediaKind = typeof MediaKindSchema.Type;
 
 const PixelsSchema = Schema.Int.check(Schema.isGreaterThan(0));
 
-/** An image or video of the workspace. */
+/**
+ * An image, a video or a document (a PDF, which LinkedIn shows page by
+ * page) of the workspace.
+ */
 export const MediaSchema = Schema.Struct({
   // What it shows, for people who cannot see it.
   altText: Schema.NullOr(Schema.String),
-  byteSize: Schema.Int,
+  byteSize: ByteCountSchema,
   // The video codec, as ffprobe names it (h264, hevc…), once probed.
   codec: Schema.NullOr(Schema.String),
   contentType: MediaContentTypeSchema,
@@ -61,6 +68,8 @@ export const MediaSchema = Schema.Struct({
   durationMs: Schema.NullOr(Schema.Int),
   id: Schema.String,
   kind: MediaKindSchema,
+  // How many pages a document has, once probed, when its bytes tell.
+  pageCount: Schema.NullOr(Schema.Int),
   status: MediaStatusSchema,
   updatedAt: Schema.DateTimeUtc,
   // Where the file can be read for an hour, to show it: null while the file
@@ -84,7 +93,7 @@ export type SignedRequest = typeof SignedRequestSchema.Type;
 
 /** One part of a file uploaded in parts, with its exact size. */
 export const UploadPartSchema = Schema.Struct({
-  byteSize: Schema.Int,
+  byteSize: ByteCountSchema,
   partNumber: Schema.Int,
   request: SignedRequestSchema,
 }).annotate({ identifier: "UploadPart" });
@@ -118,7 +127,7 @@ export const NewUploadSchema = Schema.Struct({
   // What it shows, for people who cannot see it. It can also be written
   // later.
   altText: Schema.optionalKey(Schema.NullOr(Schema.String)),
-  byteSize: Schema.Int.check(Schema.isGreaterThan(0)),
+  byteSize: ByteCountSchema.check(Schema.isGreaterThan(0)),
   contentType: Schema.String,
 }).annotate({ identifier: "NewUpload" });
 

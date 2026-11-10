@@ -3,17 +3,12 @@
 import * as Peal from "../index.js";
 
 export type NotFoundErrorBody = 
-    | Peal.NotFoundErrorBody.WebhookEndpointNotFound
-    | Peal.NotFoundErrorBody.WebhookDeliveryNotFound
+    | Peal.NotFoundErrorBody.ReviewLinkNotFound
     | Peal.NotFoundErrorBody.WorkspaceNotFound;
 
 export namespace NotFoundErrorBody {
-    export interface WebhookEndpointNotFound extends Peal.WebhookEndpointNotFoundEncoded {
-        _tag: "WebhookEndpointNotFound";
-    }
-
-    export interface WebhookDeliveryNotFound extends Peal.WebhookDeliveryNotFoundEncoded {
-        _tag: "WebhookDeliveryNotFound";
+    export interface ReviewLinkNotFound extends Peal.ReviewLinkNotFoundEncoded {
+        _tag: "ReviewLinkNotFound";
     }
 
     export interface WorkspaceNotFound extends Peal.WorkspaceNotFoundEncoded {

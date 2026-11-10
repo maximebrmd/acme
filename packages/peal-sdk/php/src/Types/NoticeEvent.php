@@ -12,6 +12,10 @@ class NoticeEvent extends JsonSerializableType
      *    'PostPublished'
      *   |'PostFailed'
      *   |'PostUnconfirmed'
+     *   |'PostApprovalRequested'
+     *   |'PostApproved'
+     *   |'PostChangesRequested'
+     *   |'PostCommented'
      *   |'ChannelReconnectRequired'
      *   |'ChannelReconnectSoon'
      *   |'SubscriptionStarted'
@@ -30,6 +34,10 @@ class NoticeEvent extends JsonSerializableType
      *    NoticeEventPostPublished
      *   |NoticeEventPostFailed
      *   |NoticeEventPostUnconfirmed
+     *   |NoticeEventPostApprovalRequested
+     *   |NoticeEventPostApproved
+     *   |NoticeEventPostChangesRequested
+     *   |NoticeEventPostCommented
      *   |NoticeEventChannelReconnectRequired
      *   |NoticeEventChannelReconnectSoon
      *   |NoticeEventSubscriptionStarted
@@ -49,6 +57,10 @@ class NoticeEvent extends JsonSerializableType
      *    'PostPublished'
      *   |'PostFailed'
      *   |'PostUnconfirmed'
+     *   |'PostApprovalRequested'
+     *   |'PostApproved'
+     *   |'PostChangesRequested'
+     *   |'PostCommented'
      *   |'ChannelReconnectRequired'
      *   |'ChannelReconnectSoon'
      *   |'SubscriptionStarted'
@@ -63,6 +75,10 @@ class NoticeEvent extends JsonSerializableType
      *    NoticeEventPostPublished
      *   |NoticeEventPostFailed
      *   |NoticeEventPostUnconfirmed
+     *   |NoticeEventPostApprovalRequested
+     *   |NoticeEventPostApproved
+     *   |NoticeEventPostChangesRequested
+     *   |NoticeEventPostCommented
      *   |NoticeEventChannelReconnectRequired
      *   |NoticeEventChannelReconnectSoon
      *   |NoticeEventSubscriptionStarted
@@ -115,6 +131,54 @@ class NoticeEvent extends JsonSerializableType
         return new NoticeEvent([
             'type' => 'PostUnconfirmed',
             'value' => $postUnconfirmed,
+        ]);
+    }
+
+    /**
+     * @param NoticeEventPostApprovalRequested $postApprovalRequested
+     * @return NoticeEvent
+     */
+    public static function postApprovalRequested(NoticeEventPostApprovalRequested $postApprovalRequested): NoticeEvent
+    {
+        return new NoticeEvent([
+            'type' => 'PostApprovalRequested',
+            'value' => $postApprovalRequested,
+        ]);
+    }
+
+    /**
+     * @param NoticeEventPostApproved $postApproved
+     * @return NoticeEvent
+     */
+    public static function postApproved(NoticeEventPostApproved $postApproved): NoticeEvent
+    {
+        return new NoticeEvent([
+            'type' => 'PostApproved',
+            'value' => $postApproved,
+        ]);
+    }
+
+    /**
+     * @param NoticeEventPostChangesRequested $postChangesRequested
+     * @return NoticeEvent
+     */
+    public static function postChangesRequested(NoticeEventPostChangesRequested $postChangesRequested): NoticeEvent
+    {
+        return new NoticeEvent([
+            'type' => 'PostChangesRequested',
+            'value' => $postChangesRequested,
+        ]);
+    }
+
+    /**
+     * @param NoticeEventPostCommented $postCommented
+     * @return NoticeEvent
+     */
+    public static function postCommented(NoticeEventPostCommented $postCommented): NoticeEvent
+    {
+        return new NoticeEvent([
+            'type' => 'PostCommented',
+            'value' => $postCommented,
         ]);
     }
 
@@ -274,6 +338,94 @@ class NoticeEvent extends JsonSerializableType
         if (!($this->value instanceof NoticeEventPostUnconfirmed && $this->type === 'PostUnconfirmed')) {
             throw new Exception(
                 "Expected PostUnconfirmed; got " . $this->type . " with value of type " . get_debug_type($this->value),
+            );
+        }
+
+        return $this->value;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isPostApprovalRequested(): bool
+    {
+        return $this->value instanceof NoticeEventPostApprovalRequested && $this->type === 'PostApprovalRequested';
+    }
+
+    /**
+     * @return NoticeEventPostApprovalRequested
+     */
+    public function asPostApprovalRequested(): NoticeEventPostApprovalRequested
+    {
+        if (!($this->value instanceof NoticeEventPostApprovalRequested && $this->type === 'PostApprovalRequested')) {
+            throw new Exception(
+                "Expected PostApprovalRequested; got " . $this->type . " with value of type " . get_debug_type($this->value),
+            );
+        }
+
+        return $this->value;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isPostApproved(): bool
+    {
+        return $this->value instanceof NoticeEventPostApproved && $this->type === 'PostApproved';
+    }
+
+    /**
+     * @return NoticeEventPostApproved
+     */
+    public function asPostApproved(): NoticeEventPostApproved
+    {
+        if (!($this->value instanceof NoticeEventPostApproved && $this->type === 'PostApproved')) {
+            throw new Exception(
+                "Expected PostApproved; got " . $this->type . " with value of type " . get_debug_type($this->value),
+            );
+        }
+
+        return $this->value;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isPostChangesRequested(): bool
+    {
+        return $this->value instanceof NoticeEventPostChangesRequested && $this->type === 'PostChangesRequested';
+    }
+
+    /**
+     * @return NoticeEventPostChangesRequested
+     */
+    public function asPostChangesRequested(): NoticeEventPostChangesRequested
+    {
+        if (!($this->value instanceof NoticeEventPostChangesRequested && $this->type === 'PostChangesRequested')) {
+            throw new Exception(
+                "Expected PostChangesRequested; got " . $this->type . " with value of type " . get_debug_type($this->value),
+            );
+        }
+
+        return $this->value;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isPostCommented(): bool
+    {
+        return $this->value instanceof NoticeEventPostCommented && $this->type === 'PostCommented';
+    }
+
+    /**
+     * @return NoticeEventPostCommented
+     */
+    public function asPostCommented(): NoticeEventPostCommented
+    {
+        if (!($this->value instanceof NoticeEventPostCommented && $this->type === 'PostCommented')) {
+            throw new Exception(
+                "Expected PostCommented; got " . $this->type . " with value of type " . get_debug_type($this->value),
             );
         }
 
@@ -488,6 +640,22 @@ class NoticeEvent extends JsonSerializableType
                 $value = $this->asPostUnconfirmed()->jsonSerialize();
                 $result = array_merge($value, $result);
                 break;
+            case 'PostApprovalRequested':
+                $value = $this->asPostApprovalRequested()->jsonSerialize();
+                $result = array_merge($value, $result);
+                break;
+            case 'PostApproved':
+                $value = $this->asPostApproved()->jsonSerialize();
+                $result = array_merge($value, $result);
+                break;
+            case 'PostChangesRequested':
+                $value = $this->asPostChangesRequested()->jsonSerialize();
+                $result = array_merge($value, $result);
+                break;
+            case 'PostCommented':
+                $value = $this->asPostCommented()->jsonSerialize();
+                $result = array_merge($value, $result);
+                break;
             case 'ChannelReconnectRequired':
                 $value = $this->asChannelReconnectRequired()->jsonSerialize();
                 $result = array_merge($value, $result);
@@ -564,6 +732,18 @@ class NoticeEvent extends JsonSerializableType
                 break;
             case 'PostUnconfirmed':
                 $args['value'] = NoticeEventPostUnconfirmed::jsonDeserialize($data);
+                break;
+            case 'PostApprovalRequested':
+                $args['value'] = NoticeEventPostApprovalRequested::jsonDeserialize($data);
+                break;
+            case 'PostApproved':
+                $args['value'] = NoticeEventPostApproved::jsonDeserialize($data);
+                break;
+            case 'PostChangesRequested':
+                $args['value'] = NoticeEventPostChangesRequested::jsonDeserialize($data);
+                break;
+            case 'PostCommented':
+                $args['value'] = NoticeEventPostCommented::jsonDeserialize($data);
                 break;
             case 'ChannelReconnectRequired':
                 $args['value'] = NoticeEventChannelReconnectRequired::jsonDeserialize($data);

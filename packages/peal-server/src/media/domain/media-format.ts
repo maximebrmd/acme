@@ -5,7 +5,7 @@ const mebibyte = 1024 * 1024;
 const gibibyte = 1024 * mebibyte;
 
 /** What a piece of media is, which decides its limits and how it is probed. */
-export const MediaKindSchema = Schema.Literals(["image", "video"]);
+export const MediaKindSchema = Schema.Literals(["image", "video", "document"]);
 
 export type MediaKind = typeof MediaKindSchema.Type;
 
@@ -23,6 +23,9 @@ export type MediaKind = typeof MediaKindSchema.Type;
  * Formats only one platform takes (HEIC, AVIF, WebM) wait for a conversion
  * step. Which platform takes which format is checked when a post is
  * scheduled, not here.
+ *
+ * A PDF is the one document Peal stores: no image or video to convert, but
+ * a kind of post of its own, which LinkedIn shows page by page.
  */
 export const MediaContentTypeSchema = Schema.Literals([
   "image/gif",
@@ -31,6 +34,7 @@ export const MediaContentTypeSchema = Schema.Literals([
   "image/webp",
   "video/mp4",
   "video/quicktime",
+  "application/pdf",
 ]);
 
 export type MediaContentType = typeof MediaContentTypeSchema.Type;
@@ -42,6 +46,7 @@ export interface MediaFormat {
 }
 
 export const mediaFormats = {
+  "application/pdf": { extension: "pdf", kind: "document" },
   "image/gif": { extension: "gif", kind: "image" },
   "image/jpeg": { extension: "jpg", kind: "image" },
   "image/png": { extension: "png", kind: "image" },
@@ -61,10 +66,14 @@ export const mediaFormats = {
  *   300,000,000 bytes and Instagram reels 300 MB. X allows up to 8 GB for
  *   videos of up to 20 minutes, which peal does not take yet.
  *
+ * - Documents, 100 MiB: LinkedIn's Documents API takes files of up to
+ *   100 MB.
+ *
  * The limit of each platform, and of each Mastodon instance, is checked
  * when a post is scheduled.
  */
 export const maxByteSize = {
+  document: 100 * mebibyte,
   image: 16 * mebibyte,
   video: gibibyte,
 } as const satisfies Readonly<Record<MediaKind, number>>;
@@ -91,3 +100,10 @@ export const parseContentType = (
 
 export const kindOf = (contentType: MediaContentType): MediaKind =>
   mediaFormats[contentType].kind;
+
+/**
+ * The most pages a document may have: 300, what LinkedIn's Documents API
+ * takes, the one platform that shows documents. A longer one is refused
+ * when it is probed, as no post could show it.
+ */
+export const maxDocumentPages = 300;

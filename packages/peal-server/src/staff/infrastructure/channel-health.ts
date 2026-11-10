@@ -1,6 +1,7 @@
 import { Option } from "effect";
 import type { DateTime } from "effect";
 
+import type { ChannelConnection } from "#shared/domain/channel-connection.ts";
 import type { ChannelId, WorkspaceId } from "#shared/domain/ids.ts";
 import type { Platform } from "#shared/domain/platform.ts";
 import type {
@@ -10,6 +11,7 @@ import type {
 
 /** What the channels context's ChannelOversight answers with, as read here. */
 export interface OverseenChannel {
+  readonly connection: Option.Option<ChannelConnection>;
   readonly handle: string;
   readonly id: ChannelId;
   readonly platform: Platform;
@@ -24,10 +26,12 @@ export interface OverseenChannel {
 }
 
 /**
- * What staff see of a channel: its account, whether it posts, and when a
+ * What staff see of a channel: its account, the way in it came through
+ * (a LinkedIn profile or page), whether it posts, and when a
  * token that cannot be renewed runs out. Never its tokens or scopes.
  */
 export const healthOf = (channel: OverseenChannel): ChannelHealth => ({
+  connection: channel.connection,
   handle: channel.handle,
   id: channel.id,
   platform: channel.platform,

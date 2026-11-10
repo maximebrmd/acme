@@ -18,6 +18,9 @@ class NotificationPreferencesEmail(UniversalBaseModel):
     post_published: typing_extensions.Annotated[
         bool, FieldMetadata(alias="postPublished"), pydantic.Field(alias="postPublished")
     ]
+    post_review: typing_extensions.Annotated[
+        bool, FieldMetadata(alias="postReview"), pydantic.Field(alias="postReview")
+    ]
     post_unconfirmed: typing_extensions.Annotated[
         bool, FieldMetadata(alias="postUnconfirmed"), pydantic.Field(alias="postUnconfirmed")
     ]

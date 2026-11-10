@@ -22,5 +22,25 @@
     "disableStitch": false,
     "platform": "tiktok",
     "privacyLevel": "MUTUAL_FOLLOW_FRIENDS"
+  },
+  { "platform": "googleBusiness" },
+  {
+    "callToAction": "book",
+    "callToActionUrl": "https://example.com/book",
+    "endsAt": "2026-11-27T18:00",
+    "platform": "googleBusiness",
+    "postType": "event",
+    "startsAt": "2026-11-27T09:00",
+    "title": "Synthetic open day"
+  },
+  {
+    "couponCode": "SYNTHETIC-10",
+    "endsAt": "2026-12-31T23:59",
+    "platform": "googleBusiness",
+    "postType": "offer",
+    "redeemUrl": "https://example.com/redeem",
+    "startsAt": "2026-12-01T00:00",
+    "terms": "One per synthetic customer.",
+    "title": "Ten percent off"
   }
 ]

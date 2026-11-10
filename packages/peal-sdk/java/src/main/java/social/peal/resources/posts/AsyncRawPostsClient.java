@@ -413,14 +413,14 @@ public class AsyncRawPostsClient {
     }
 
     /**
-     * Creates a post and sends it to some of the workspace's channels in one call: <code>when</code> is <code>now</code>, which publishes at once, or <code>at</code> an instant, kept with its IANA time zone. It goes through every rule scheduling a draft does (each platform's limits on text, media and options, the account's own, the plan's), and answers every violation at once (PostContentInvalid): nothing is made then. What it publishes reaches the platforms' public, and cannot be taken back from Peal once it is out; until its time, cancel or unschedule it. Send an <code>Idempotency-Key</code> header (any text of your choosing, at most 255 characters, such as a UUID) to make a request safe to send again: within 24 hours, the same key with the same body answers the post the first request made, as it now stands, and makes no other; the same key with another body is refused (IdempotencyKeyReused), and answers PostNotFound once that post was deleted. Keys are kept per workspace, as digests. Needs post:schedule and channel:read, and media:read when it shows media; an OAuth client needs the scope workspace:publish.
+     * Creates a post and sends it to some of the workspace's channels in one call: <code>when</code> is <code>now</code>, which publishes at once, or <code>at</code> an instant, kept with its IANA time zone. It goes through every rule scheduling a draft does (each platform's limits on text, media and options, the account's own, the plan's), and answers every violation at once (PostContentInvalid): nothing is made then. In a workspace that asks for approvals, a post that needs one is answered with the status <code>awaitingApproval</code>: it keeps its time and goes out only once it is approved. What it publishes reaches the platforms' public, and cannot be taken back from Peal once it is out; until its time, cancel or unschedule it. Send an <code>Idempotency-Key</code> header (any text of your choosing, at most 255 characters, such as a UUID) to make a request safe to send again: within 24 hours, the same key with the same body answers the post the first request made, as it now stands, and makes no other; the same key with another body is refused (IdempotencyKeyReused), and answers PostNotFound once that post was deleted. Keys are kept per workspace, as digests. Needs post:schedule and channel:read, and media:read when it shows media; an OAuth client needs the scope workspace:publish.
      */
     public CompletableFuture<PealClientHttpResponse<Post>> send(String workspaceId, NewPost request) {
         return send(workspaceId, request, null);
     }
 
     /**
-     * Creates a post and sends it to some of the workspace's channels in one call: <code>when</code> is <code>now</code>, which publishes at once, or <code>at</code> an instant, kept with its IANA time zone. It goes through every rule scheduling a draft does (each platform's limits on text, media and options, the account's own, the plan's), and answers every violation at once (PostContentInvalid): nothing is made then. What it publishes reaches the platforms' public, and cannot be taken back from Peal once it is out; until its time, cancel or unschedule it. Send an <code>Idempotency-Key</code> header (any text of your choosing, at most 255 characters, such as a UUID) to make a request safe to send again: within 24 hours, the same key with the same body answers the post the first request made, as it now stands, and makes no other; the same key with another body is refused (IdempotencyKeyReused), and answers PostNotFound once that post was deleted. Keys are kept per workspace, as digests. Needs post:schedule and channel:read, and media:read when it shows media; an OAuth client needs the scope workspace:publish.
+     * Creates a post and sends it to some of the workspace's channels in one call: <code>when</code> is <code>now</code>, which publishes at once, or <code>at</code> an instant, kept with its IANA time zone. It goes through every rule scheduling a draft does (each platform's limits on text, media and options, the account's own, the plan's), and answers every violation at once (PostContentInvalid): nothing is made then. In a workspace that asks for approvals, a post that needs one is answered with the status <code>awaitingApproval</code>: it keeps its time and goes out only once it is approved. What it publishes reaches the platforms' public, and cannot be taken back from Peal once it is out; until its time, cancel or unschedule it. Send an <code>Idempotency-Key</code> header (any text of your choosing, at most 255 characters, such as a UUID) to make a request safe to send again: within 24 hours, the same key with the same body answers the post the first request made, as it now stands, and makes no other; the same key with another body is refused (IdempotencyKeyReused), and answers PostNotFound once that post was deleted. Keys are kept per workspace, as digests. Needs post:schedule and channel:read, and media:read when it shows media; an OAuth client needs the scope workspace:publish.
      */
     public CompletableFuture<PealClientHttpResponse<Post>> send(
             String workspaceId, NewPost request, RequestOptions requestOptions) {
@@ -1023,7 +1023,7 @@ public class AsyncRawPostsClient {
     }
 
     /**
-     * Schedules a draft on some of the workspace's channels at an instant, kept with the IANA time zone it was chosen in. The content must fit each platform's rules, its media included: file types, sizes, durations, dimensions, alt text, how many videos, and whether images and videos go together. A channel whose platform takes options needs those it requires, as the draft gives them on that channel: a channel the draft was not for has none yet. A time up to a minute ago publishes now. On a server that bills, the posts going out in that month (UTC) must fit the workspace's plan (PlanLimitReached). Needs post:schedule and channel:read, and media:read when it shows media.
+     * Schedules a draft on some of the workspace's channels at an instant, kept with the IANA time zone it was chosen in. The content must fit each platform's rules, its media included: file types, sizes, durations, dimensions, alt text, how many videos, and whether images and videos go together. A channel whose platform takes options needs those it requires, as the draft gives them on that channel: a channel the draft was not for has none yet. A time up to a minute ago publishes now. On a server that bills, the posts going out in that month (UTC) must fit the workspace's plan (PlanLimitReached). Where the workspace asks for an approval of this post (its approval policy), the post is not scheduled: it answers with the status <code>awaitingApproval</code>, keeps its time, and goes out only once approved; contributors may then ask too, with post:create. Needs post:schedule and channel:read, and media:read when it shows media.
      */
     public CompletableFuture<PealClientHttpResponse<Post>> schedule(
             String workspaceId, String postId, SchedulePost request) {
@@ -1031,7 +1031,7 @@ public class AsyncRawPostsClient {
     }
 
     /**
-     * Schedules a draft on some of the workspace's channels at an instant, kept with the IANA time zone it was chosen in. The content must fit each platform's rules, its media included: file types, sizes, durations, dimensions, alt text, how many videos, and whether images and videos go together. A channel whose platform takes options needs those it requires, as the draft gives them on that channel: a channel the draft was not for has none yet. A time up to a minute ago publishes now. On a server that bills, the posts going out in that month (UTC) must fit the workspace's plan (PlanLimitReached). Needs post:schedule and channel:read, and media:read when it shows media.
+     * Schedules a draft on some of the workspace's channels at an instant, kept with the IANA time zone it was chosen in. The content must fit each platform's rules, its media included: file types, sizes, durations, dimensions, alt text, how many videos, and whether images and videos go together. A channel whose platform takes options needs those it requires, as the draft gives them on that channel: a channel the draft was not for has none yet. A time up to a minute ago publishes now. On a server that bills, the posts going out in that month (UTC) must fit the workspace's plan (PlanLimitReached). Where the workspace asks for an approval of this post (its approval policy), the post is not scheduled: it answers with the status <code>awaitingApproval</code>, keeps its time, and goes out only once approved; contributors may then ask too, with post:create. Needs post:schedule and channel:read, and media:read when it shows media.
      */
     public CompletableFuture<PealClientHttpResponse<Post>> schedule(
             String workspaceId, String postId, SchedulePost request, RequestOptions requestOptions) {
@@ -1147,7 +1147,7 @@ public class AsyncRawPostsClient {
     }
 
     /**
-     * Moves a scheduled post to another instant, or schedules a draft on the channels it has. Moved to another month, or scheduled, it must fit that month's posts in the workspace's plan (PlanLimitReached). Needs post:schedule, and channel:read for a draft.
+     * Moves a scheduled post, or one awaiting approval, to another instant, or schedules a draft on the channels it has. A post that needs an approval it does not have waits for it (<code>awaitingApproval</code>). Moved to another month, or scheduled, it must fit that month's posts in the workspace's plan (PlanLimitReached). Needs post:schedule, and channel:read for a draft.
      */
     public CompletableFuture<PealClientHttpResponse<Post>> reschedule(
             String workspaceId, String postId, ReschedulePostsRequest request) {
@@ -1155,7 +1155,7 @@ public class AsyncRawPostsClient {
     }
 
     /**
-     * Moves a scheduled post to another instant, or schedules a draft on the channels it has. Moved to another month, or scheduled, it must fit that month's posts in the workspace's plan (PlanLimitReached). Needs post:schedule, and channel:read for a draft.
+     * Moves a scheduled post, or one awaiting approval, to another instant, or schedules a draft on the channels it has. A post that needs an approval it does not have waits for it (<code>awaitingApproval</code>). Moved to another month, or scheduled, it must fit that month's posts in the workspace's plan (PlanLimitReached). Needs post:schedule, and channel:read for a draft.
      */
     public CompletableFuture<PealClientHttpResponse<Post>> reschedule(
             String workspaceId, String postId, ReschedulePostsRequest request, RequestOptions requestOptions) {
@@ -1642,14 +1642,14 @@ public class AsyncRawPostsClient {
     }
 
     /**
-     * Cancels a draft or a scheduled post. A post already publishing finishes with what its channels did: those not yet sent are cancelled. Needs post:schedule.
+     * Cancels a draft, a scheduled post or one awaiting approval. A post already publishing finishes with what its channels did: those not yet sent are cancelled. Needs post:schedule.
      */
     public CompletableFuture<PealClientHttpResponse<Post>> cancel(String workspaceId, String postId) {
         return cancel(workspaceId, postId, CancelPostsRequest.builder().build());
     }
 
     /**
-     * Cancels a draft or a scheduled post. A post already publishing finishes with what its channels did: those not yet sent are cancelled. Needs post:schedule.
+     * Cancels a draft, a scheduled post or one awaiting approval. A post already publishing finishes with what its channels did: those not yet sent are cancelled. Needs post:schedule.
      */
     public CompletableFuture<PealClientHttpResponse<Post>> cancel(
             String workspaceId, String postId, RequestOptions requestOptions) {
@@ -1657,7 +1657,7 @@ public class AsyncRawPostsClient {
     }
 
     /**
-     * Cancels a draft or a scheduled post. A post already publishing finishes with what its channels did: those not yet sent are cancelled. Needs post:schedule.
+     * Cancels a draft, a scheduled post or one awaiting approval. A post already publishing finishes with what its channels did: those not yet sent are cancelled. Needs post:schedule.
      */
     public CompletableFuture<PealClientHttpResponse<Post>> cancel(
             String workspaceId, String postId, CancelPostsRequest request) {
@@ -1665,7 +1665,7 @@ public class AsyncRawPostsClient {
     }
 
     /**
-     * Cancels a draft or a scheduled post. A post already publishing finishes with what its channels did: those not yet sent are cancelled. Needs post:schedule.
+     * Cancels a draft, a scheduled post or one awaiting approval. A post already publishing finishes with what its channels did: those not yet sent are cancelled. Needs post:schedule.
      */
     public CompletableFuture<PealClientHttpResponse<Post>> cancel(
             String workspaceId, String postId, CancelPostsRequest request, RequestOptions requestOptions) {

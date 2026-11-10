@@ -19,7 +19,8 @@ import { FetchHttpClient, HttpRouter, HttpServer } from "effect/http";
 import { SqlClient } from "effect/sql";
 
 import { AppLive } from "#app/server.ts";
-import { SqlLive } from "#shared/infrastructure/database.ts";
+import { DatabaseLive, SqlLive } from "#shared/infrastructure/database.ts";
+import { MigrationsLive } from "#shared/infrastructure/migrations.ts";
 import { storageSettings } from "#test/media/support.ts";
 
 /** The web app's origin, which the server trusts by default. */
@@ -399,4 +400,16 @@ export const makeAdmin = Effect.fn("makeAdmin")(function* makeAdmin(
 });
 
 /** The app, and a database connection for what only staff tools do. */
-export const IntegrationLive = Layer.mergeAll(TestApp.layer, SqlLive);
+/**
+ * SQL on the migrated database. The test app builds itself, and so applies
+ * the migrations, only with its first request: a test that queries before
+ * it asks the app anything would otherwise read whatever database it was
+ * given, empty when no other suite ran on it first. Tests that pair the app
+ * with SQL of their own take this, never `SqlLive` alone.
+ */
+export const MigratedSqlLive = Layer.merge(
+  SqlLive,
+  MigrationsLive.pipe(Layer.provide(DatabaseLive))
+);
+
+export const IntegrationLive = Layer.mergeAll(TestApp.layer, MigratedSqlLive);

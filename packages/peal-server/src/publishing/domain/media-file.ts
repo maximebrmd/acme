@@ -13,13 +13,16 @@ export const MediaContentTypeSchema = Schema.Literals([
   "image/webp",
   "video/mp4",
   "video/quicktime",
+  "application/pdf",
 ]);
 
 export type MediaContentType = typeof MediaContentTypeSchema.Type;
 
-export type MediaKind = "image" | "video";
+export type MediaKind = "document" | "image" | "video";
 
-const kinds: Readonly<Record<MediaContentType, MediaKind>> = {
+/** What kind of file each type Peal stores is. */
+export const mediaKinds: Readonly<Record<MediaContentType, MediaKind>> = {
+  "application/pdf": "document",
   "image/gif": "image",
   "image/jpeg": "image",
   "image/png": "image",
@@ -39,7 +42,7 @@ export const DimensionsSchema = Schema.Struct({
 export type Dimensions = typeof DimensionsSchema.Type;
 
 /**
- * An image or a video a post may show, as the media context stored and
+ * An image, a video or a document (a PDF) a post may show, as the media context stored and
  * probed it: what the platforms' media rules are checked against. A fact
  * the probe did not find is none, and the rules that need it wait for the
  * platform to check them.
@@ -54,6 +57,6 @@ export class MediaFile extends Schema.Class<MediaFile>(
   mediaId: MediaAssetIdSchema,
 }) {
   get kind(): MediaKind {
-    return kinds[this.contentType];
+    return mediaKinds[this.contentType];
   }
 }

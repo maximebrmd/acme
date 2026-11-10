@@ -6,6 +6,10 @@ export type NoticeEvent =
     | Peal.NoticeEvent.PostPublished
     | Peal.NoticeEvent.PostFailed
     | Peal.NoticeEvent.PostUnconfirmed
+    | Peal.NoticeEvent.PostApprovalRequested
+    | Peal.NoticeEvent.PostApproved
+    | Peal.NoticeEvent.PostChangesRequested
+    | Peal.NoticeEvent.PostCommented
     | Peal.NoticeEvent.ChannelReconnectRequired
     | Peal.NoticeEvent.ChannelReconnectSoon
     | Peal.NoticeEvent.SubscriptionStarted
@@ -26,6 +30,22 @@ export namespace NoticeEvent {
 
     export interface PostUnconfirmed extends Peal.NoticeEventPostUnconfirmed {
         _tag: "PostUnconfirmed";
+    }
+
+    export interface PostApprovalRequested extends Peal.NoticeEventPostApprovalRequested {
+        _tag: "PostApprovalRequested";
+    }
+
+    export interface PostApproved extends Peal.NoticeEventPostApproved {
+        _tag: "PostApproved";
+    }
+
+    export interface PostChangesRequested extends Peal.NoticeEventPostChangesRequested {
+        _tag: "PostChangesRequested";
+    }
+
+    export interface PostCommented extends Peal.NoticeEventPostCommented {
+        _tag: "PostCommented";
     }
 
     export interface ChannelReconnectRequired extends Peal.NoticeEventChannelReconnectRequired {

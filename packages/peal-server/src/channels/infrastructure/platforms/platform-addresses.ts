@@ -4,11 +4,13 @@ import type { MetaApp } from "peal-contract";
 import type { Platform } from "#channels/domain/platform.ts";
 
 import { blueskyPaths } from "./bluesky/bluesky-client.ts";
+import { googleBusinessCallbackPath } from "./google-business/google-business-authorizer.ts";
 import { linkedinCallbackPath } from "./linkedin/linkedin-authorizer.ts";
 import { mastodonCallbackPath } from "./mastodon/mastodon-authorizer.ts";
 import { facebookLoginCallbackPath } from "./meta/facebook-login.ts";
 import { instagramCallbackPath } from "./meta/instagram-login-authorizer.ts";
 import { threadsCallbackPath } from "./meta/threads-authorizer.ts";
+import { pinterestCallbackPath } from "./pinterest/pinterest-authorizer.ts";
 import { tiktokCallbackPath } from "./tiktok/tiktok-authorizer.ts";
 import { xCallbackPath } from "./x/x-authorizer.ts";
 import { youtubeCallbackPath } from "./youtube/youtube-authorizer.ts";
@@ -35,9 +37,12 @@ export interface PlatformRegistration {
   readonly id:
     | "bluesky"
     | "facebookLogin"
+    | "googleBusiness"
     | "instagramLogin"
     | "linkedin"
+    | "linkedinPages"
     | "mastodon"
+    | "pinterest"
     | "threads"
     | "tiktok"
     | "x"
@@ -143,6 +148,19 @@ export const platformRegistrations = (
     },
     {
       addresses: [
+        redirect("Authorized redirect URL (Auth)", linkedinCallbackPath),
+      ],
+      id: "linkedinPages",
+      name: "LinkedIn: a second app, with the Community Management API, for company pages",
+      notes: [
+        "LinkedIn gives the Community Management API to an app that has no other product: it is not the app that connects profiles, and takes the same address.",
+      ],
+      platforms: ["linkedin"],
+      registeredBy: "operator",
+      settings: ["LINKEDIN_PAGES_CLIENT_ID", "LINKEDIN_PAGES_CLIENT_SECRET"],
+    },
+    {
+      addresses: [
         redirect("Callback URI (user authentication settings)", xCallbackPath),
       ],
       id: "x",
@@ -221,6 +239,28 @@ export const platformRegistrations = (
       platforms: ["youtube"],
       registeredBy: "operator",
       settings: ["YOUTUBE_CLIENT_ID", "YOUTUBE_CLIENT_SECRET"],
+    },
+    {
+      addresses: [redirect("Redirect URIs", pinterestCallbackPath)],
+      id: "pinterest",
+      name: "Pinterest",
+      notes: ["Pinterest takes the exact address only."],
+      platforms: ["pinterest"],
+      registeredBy: "operator",
+      settings: ["PINTEREST_APP_ID", "PINTEREST_APP_SECRET"],
+    },
+    {
+      addresses: [
+        redirect("Authorized redirect URI", googleBusinessCallbackPath),
+      ],
+      id: "googleBusiness",
+      name: "Google Business Profile: a Google OAuth client, as a web application",
+      notes: [
+        "The client of the Google Cloud project Google gave access to the Business Profile APIs: YouTube's client, when one project has both, then takes both addresses.",
+      ],
+      platforms: ["googleBusiness"],
+      registeredBy: "operator",
+      settings: ["GOOGLE_BUSINESS_CLIENT_ID", "GOOGLE_BUSINESS_CLIENT_SECRET"],
     },
   ];
 };

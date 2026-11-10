@@ -5,6 +5,7 @@ import type { ChoosableAccount } from "peal-contract";
 import type { ComponentProps } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
+import { choiceStart } from "#channels/choice-connection.ts";
 import {
   AccountPickerView,
   toggled,
@@ -154,6 +155,84 @@ describe(AccountPickerView, () => {
       expect(html).toContain("Start over");
     }
   );
+
+  it("names a Google Business Profile's locations, and Google as where to sign in again", async () => {
+    const html = await picker("en", {
+      error: "unreachable",
+      platform: "googleBusiness",
+      selected: ["101"],
+    });
+
+    expect(html).toContain("Your sign-in reached these verified locations.");
+    expect(html).toContain("The locations to connect");
+    expect(html).toContain(
+      "Choose again, or sign in with Google again for a new list."
+    );
+
+    await expect(
+      picker("fr", { error: "unreachable", platform: "googleBusiness" })
+    ).resolves.toContain(
+      "Choisissez à nouveau, ou reconnectez-vous avec Google pour une nouvelle liste."
+    );
+  });
+
+  // Each family of platforms signs in somewhere else: a LinkedIn page is
+  // not reached through Facebook.
+  it.each([
+    [
+      "facebook",
+      "sign in with Facebook again",
+      "reconnectez-vous avec Facebook",
+    ],
+    [
+      "instagram",
+      "sign in with Facebook again",
+      "reconnectez-vous avec Facebook",
+    ],
+    ["youtube", "sign in with Google again", "reconnectez-vous avec Google"],
+    [
+      "googleBusiness",
+      "sign in with Google again",
+      "reconnectez-vous avec Google",
+    ],
+    [
+      "linkedin",
+      "sign in with LinkedIn again",
+      "reconnectez-vous avec LinkedIn",
+    ],
+    // A platform that gains a choice later names no other platform's login.
+    ["pinterest", "sign in again", "reconnectez-vous"],
+  ] as const)(
+    "says where to sign in again for a new list of %s accounts",
+    async (platform, english, french) => {
+      await expect(
+        picker("en", { error: "unreachable", platform })
+      ).resolves.toContain(`Choose again, or ${english} for a new list.`);
+      await expect(
+        picker("fr", { error: "unreachable", platform })
+      ).resolves.toContain(
+        `Choisissez à nouveau, ou ${french} pour une nouvelle liste.`
+      );
+    }
+  );
+
+  it("signs in again the way the choice came through", () => {
+    expect(choiceStart("linkedin")).toStrictEqual({
+      connection: "linkedinPage",
+    });
+    expect(choiceStart("instagram")).toStrictEqual({
+      connection: "facebookLogin",
+    });
+    expect(choiceStart("facebook")).toStrictEqual({});
+    expect(choiceStart("googleBusiness")).toStrictEqual({});
+  });
+
+  it("names LinkedIn's pages as those the member administers", async () => {
+    const html = await picker("en", { platform: "linkedin" });
+
+    expect(html).toContain("The LinkedIn pages to connect");
+    expect(html).toContain("You administer these LinkedIn pages.");
+  });
 
   it("offers no new sign-in before anything failed", async () => {
     await expect(picker("en", { selected: ["101"] })).resolves.not.toContain(

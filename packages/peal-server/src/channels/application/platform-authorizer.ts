@@ -8,7 +8,9 @@ import type { InvalidInstance } from "#channels/domain/invalid-instance.ts";
 import type { Platform } from "#channels/domain/platform.ts";
 import type { TokenPolicy } from "#channels/domain/token-policy.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
+import type { ChannelConnection } from "#shared/domain/channel-connection.ts";
 import type { InstagramConnection } from "#shared/domain/instagram-connection.ts";
+import type { LinkedInConnection } from "#shared/domain/linkedin-connection.ts";
 import type { PlatformUnavailable } from "#shared/domain/platform-unavailable.ts";
 import type { TokenExpired } from "#shared/domain/token-expired.ts";
 
@@ -136,11 +138,11 @@ export type RefreshFailure = PlatformUnavailable | TokenExpired;
 export interface PlatformAuthorizer {
   readonly platform: Platform;
   /**
-   * The way in this authorizer is, for Instagram, which has two: its
-   * channels keep it, so their tokens are renewed, and their posts sent,
-   * the same way.
+   * The way in this authorizer is, for the platforms that have several
+   * (Instagram's two logins, LinkedIn's profile or page): its channels keep
+   * it, so their tokens are renewed, and their posts sent, the same way.
    */
-  readonly connection?: InstagramConnection;
+  readonly connection?: ChannelConnection;
   /** How the tokens this adapter issues live. */
   readonly policy: TokenPolicy;
   /** Prepares a sign-in and says where to send the browser. */
@@ -154,6 +156,12 @@ export interface PlatformAuthorizer {
   readonly complete: (request: {
     readonly attempt: ConnectAttempt;
     readonly callback: AuthorizationCallback;
+    /**
+     * The account of the channel the sign-in reconnects, if it reconnects
+     * one: an authorizer that offers only some of the accounts a sign-in
+     * reaches offers that one among them, when the sign-in reaches it.
+     */
+    readonly reconnecting: Option.Option<string>;
     readonly secret: Redacted.Redacted;
   }) => Effect.Effect<Authorized, CompleteFailure>;
   /**
@@ -184,18 +192,29 @@ export class PlatformAuthorizers extends Context.Service<
   {
     /**
      * The platform's authorizer, if this server can connect it: for
-     * Instagram, the one of the connection given, or without one the
-     * server's first in `instagramConnections`.
+     * Instagram and LinkedIn, the one of the connection given, or without
+     * one the server's first (`instagramConnections`, `linkedinConnections`).
      */
     readonly for: (
       platform: Platform,
-      connection?: Option.Option<InstagramConnection>
+      connection?: Option.Option<ChannelConnection>
     ) => Option.Option<PlatformAuthorizer>;
+    /**
+     * Every authorizer this server has for the platform, one for each way
+     * in: the token jobs read each one's policy, as a platform's ways in
+     * renew their tokens differently (LinkedIn's pages, not its profiles).
+     */
+    readonly every: (platform: Platform) => readonly PlatformAuthorizer[];
     /**
      * The ways this server connects Instagram accounts, the one it prefers
      * first: Instagram Login, then Facebook Login.
      */
     readonly instagramConnections: readonly InstagramConnection[];
+    /**
+     * What this server connects on LinkedIn, each with an app of its own:
+     * members' profiles, then the pages they administer.
+     */
+    readonly linkedinConnections: readonly LinkedInConnection[];
     /**
      * Platforms Peal supports but this server cannot connect for want of a
      * setting, as Bluesky without client keys in production.

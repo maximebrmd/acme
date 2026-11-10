@@ -15,6 +15,7 @@ export const PlatformSchema = Schema.Literals([
   "tiktok",
   "youtube",
   "pinterest",
+  "googleBusiness",
 ]).annotate({
   description: "A social network a channel connects to.",
   identifier: "Platform",
@@ -40,3 +41,35 @@ export const InstagramConnectionSchema = Schema.Literals([
 });
 
 export type InstagramConnection = typeof InstagramConnectionSchema.Type;
+
+/**
+ * What a LinkedIn channel posts as: `linkedinProfile` (a member's own
+ * profile) or `linkedinPage` (a company page the member administers, which
+ * needs a server whose operator LinkedIn granted the Community Management
+ * API). The server's copy (src/shared/domain/linkedin-connection.ts) is the
+ * source; a test keeps the two equal.
+ */
+export const LinkedInConnectionSchema = Schema.Literals([
+  "linkedinProfile",
+  "linkedinPage",
+]).annotate({
+  description: "What a LinkedIn channel posts as: a profile or a page.",
+  identifier: "LinkedInConnection",
+});
+
+export type LinkedInConnection = typeof LinkedInConnectionSchema.Type;
+
+/**
+ * The way in a channel came through, on the platforms that have several:
+ * Instagram's and LinkedIn's.
+ */
+export const ChannelConnectionSchema = Schema.Literals([
+  ...InstagramConnectionSchema.literals,
+  ...LinkedInConnectionSchema.literals,
+]).annotate({
+  description:
+    "The way in a channel came through, on platforms that have several.",
+  identifier: "ChannelConnection",
+});
+
+export type ChannelConnection = typeof ChannelConnectionSchema.Type;

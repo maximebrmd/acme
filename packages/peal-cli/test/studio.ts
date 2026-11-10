@@ -4,6 +4,8 @@ import { HttpApiBuilder, HttpApiSchema } from "effect/http-api";
 import {
   AlreadyMember,
   Api,
+  ApprovalChanged,
+  ApprovalNotPending,
   ChannelNotFound,
   CurrentMember,
   CurrentPrincipal,
@@ -11,6 +13,8 @@ import {
   IdempotencyKeyReused,
   InvalidTimeZone,
   InvitationNotFound,
+  LookupInputInvalid,
+  LookupNotFound,
   maxWebhookEndpoints,
   MediaNotFound,
   MediaSourceNotPublic,
@@ -19,6 +23,7 @@ import {
   PostContentInvalid,
   PostNotFound,
   PostStatusConflict,
+  ReviewLinkNotFound,
   ScheduleInPast,
   TargetStatusConflict,
   TooManyWebhookEndpoints,
@@ -37,6 +42,8 @@ import {
 } from "peal-contract";
 import type {
   AccountExport,
+  ApprovalPolicy,
+  ApprovalRequest,
   Billing,
   Channel,
   ChannelOptions,
@@ -52,6 +59,8 @@ import type {
   PostDraft,
   PostOrigin,
   PostTarget,
+  ReviewComment,
+  ReviewLink,
   SignedRequest,
   Standing,
   TikTokAccount,
@@ -60,6 +69,14 @@ import type {
   WebhookEventType,
   WebhookUrlRefusal,
 } from "peal-contract";
+
+import {
+  capabilitiesOn,
+  describedPlatforms,
+  pinterestLookup,
+  playlistPage,
+  videoCategories,
+} from "./studio-capabilities.ts";
 
 // A synthetic Peal instance's data, in memory, for the commands that act in
 // a workspace: two workspaces, their channels, posts, members and
@@ -83,6 +100,8 @@ const everything: readonly Permission[] = [
   "media:read",
   "media:upload",
   "media:delete",
+  "organization:update",
+  "post:approve",
   "post:read",
   "post:create",
   "post:update",
@@ -138,12 +157,14 @@ export const youtubeId = "0190f3a0-0000-7000-8000-00000000c004";
 
 export const instagramId = "0190f3a0-0000-7000-8000-00000000c005";
 
+export const pinterestId = "0190f3a0-0000-7000-8000-00000000c006";
+
 const channels: readonly Channel[] = [
   {
     avatarUrl: null,
     connection: null,
     displayName: "Studio",
-    handle: "@studio@example.social",
+    handle: "@studio@social.example.test",
     id: mastodonId,
     platform: "mastodon",
     status: { _tag: "active" },
@@ -189,6 +210,16 @@ const channels: readonly Channel[] = [
     status: { _tag: "active" },
     tokenExpiresAt: null,
   },
+  {
+    avatarUrl: null,
+    connection: null,
+    displayName: "Studio",
+    handle: "@studioexample",
+    id: pinterestId,
+    platform: "pinterest",
+    status: { _tag: "active" },
+    tokenExpiresAt: null,
+  },
 ];
 
 // The TikTok channel's creator, as TikTok tells it.
@@ -215,6 +246,8 @@ export const scheduledId = "0190f3a0-0000-7000-8000-00000000d002";
 
 export const finishedId = "0190f3a0-0000-7000-8000-00000000d003";
 
+export const awaitingId = "0190f3a0-0000-7000-8000-00000000d004";
+
 export const failedTargetId = "0190f3a0-0000-7000-8000-00000000e001";
 
 export const unconfirmedTargetId = "0190f3a0-0000-7000-8000-00000000e002";
@@ -232,6 +265,10 @@ const pendingOn = (id: string, channelId: string): PostTarget => ({
   status: "pending",
   unconfirmedReason: null,
 });
+
+const escape = String.fromCodePoint(0x1b);
+
+const contributorId = "8d0f7780-8536-41ef-a55c-f18fd2a01bf8";
 
 const content = (text: string) => ({ media: [], overrides: [], text });
 
@@ -259,6 +296,18 @@ const posts: readonly Post[] = [
     scheduledVia: null,
     status: "scheduled",
     targets: [pendingOn("0190f3a0-0000-7000-8000-00000000e011", mastodonId)],
+  },
+  {
+    authorId: contributorId,
+    content: content("A synthetic post that waits. Out on Friday."),
+    createdVia: null,
+    id: awaitingId,
+    outcome: null,
+    schedule: { at: at("2026-11-21T09:00:00Z"), timeZone: "Europe/Paris" },
+    scheduledBy: contributorId,
+    scheduledVia: null,
+    status: "awaitingApproval",
+    targets: [pendingOn("0190f3a0-0000-7000-8000-00000000e012", mastodonId)],
   },
   {
     authorId: userId,
@@ -294,6 +343,51 @@ const posts: readonly Post[] = [
     ],
   },
 ];
+
+/** The fingerprint of what the post that waits says. */
+export const awaitingSubject = "5a".repeat(32);
+
+/** The approval that waits for it. */
+export const awaitingApprovalId = "0190f3a0-0000-7000-8000-00000000b001";
+
+// The approval that waits for the post a contributor asked to send.
+const approval: ApprovalRequest = {
+  decision: null,
+  id: awaitingApprovalId,
+  postId: awaitingId,
+  requestedAt: at("2026-11-09T10:00:00Z"),
+  requestedBy: contributorId,
+  requestedByName: "Synthetic Contributor",
+  requestedVia: "member",
+  schedule: { at: at("2026-11-21T09:00:00Z"), timeZone: "Europe/Paris" },
+  status: "pending",
+  subjectHash: awaitingSubject,
+};
+
+// A visitor's comment on it, about a word of its text, as a link's holder
+// typed it: what they type is theirs, control characters included.
+const comment: ReviewComment = {
+  anchor: {
+    channelId: mastodonId,
+    selection: {
+      located: { end: 36, start: 30 },
+      quote: "Friday",
+      start: 30,
+    },
+  },
+  author: {
+    kind: "visitor",
+    linkId: "0190f3a0-0000-7000-8000-00000000b002",
+    name: "Ada Lovelace",
+    userId: null,
+  },
+  createdAt: at("2026-11-09T11:00:00Z"),
+  id: "0190f3a0-0000-7000-8000-00000000b003",
+  parentId: null,
+  postId: awaitingId,
+  resolved: null,
+  text: `Could this be ${escape}[31mThursday?`,
+};
 
 const invitation: Invitation = {
   createdAt: at("2026-11-01T10:00:00Z"),
@@ -391,10 +485,12 @@ const exported = (exportedAt: DateTime.Utc): AccountExport => ({
       channelReconnect: true,
       postFailed: true,
       postPublished: false,
+      postReview: true,
       postUnconfirmed: true,
     },
     everyPost: false,
   },
+  review: { approvals: [], comments: [] },
   sessions: [],
   signInMethods: [],
   staffActions: [],
@@ -429,6 +525,7 @@ const image = (id: string, overrides: Partial<Media> = {}): Media => ({
   durationMs: null,
   id,
   kind: "image",
+  pageCount: null,
   status: { _tag: "ready" },
   updatedAt: at("2026-11-05T10:00:00Z"),
   url: `https://${storeHost}/read/${id}`,
@@ -569,12 +666,16 @@ const deliveries: readonly StudioDelivery[] = [
 
 /** What the instance holds, and what the commands changed. */
 export interface StudioState {
+  readonly approvals: readonly ApprovalRequest[];
   readonly changes: readonly string[];
+  readonly comments: readonly ReviewComment[];
   readonly deliveries: readonly StudioDelivery[];
   /** Whether the studio holds more than its plan allows, as a test sets it. */
   readonly overPlan: boolean;
   readonly invitations: readonly Invitation[];
+  readonly links: readonly ReviewLink[];
   readonly media: readonly Media[];
+  readonly policy: ApprovalPolicy;
   readonly posts: readonly Post[];
   /** The posts made under an idempotency key, with the request's body. */
   readonly sent: Readonly<
@@ -598,11 +699,15 @@ export interface Studio {
 export const makeStudio = (me: Me = studioMe) =>
   Effect.all({
     state: Ref.make<StudioState>({
+      approvals: [approval],
       changes: [],
+      comments: [comment],
       deliveries,
       invitations: [invitation],
+      links: [],
       media: [image(readyMediaId, { altText: "A synthetic catalogue cover" })],
       overPlan: false,
+      policy: "contributorsAndApplications",
       posts,
       sent: {},
       signingKeys: true,
@@ -618,6 +723,23 @@ const record = (studio: Studio, change: string) =>
     ...current,
     changes: [...current.changes, change],
   }));
+
+// The studio's channel a path names.
+const channelIn = (params: {
+  readonly channelId: string;
+  readonly workspaceId: string;
+}) =>
+  Option.match(
+    Option.fromUndefinedOr(
+      params.workspaceId === studioId
+        ? channels.find(({ id }) => id === params.channelId)
+        : undefined
+    ),
+    {
+      onNone: () => Effect.fail(new ChannelNotFound()),
+      onSome: (channel) => Effect.succeed(channel),
+    }
+  );
 
 // The member a request acts as, if they may do this.
 const allowed = (permission: Permission) =>
@@ -1287,7 +1409,13 @@ export const studioGroupsLive = (studio: Studio) =>
                 ? { at: studioNow, timeZone: payload.when.timeZone ?? "UTC" }
                 : { at: payload.when.at, timeZone: payload.when.timeZone };
 
-            const status = yield* checkTime(when.at, when.timeZone);
+            const asked = yield* checkTime(when.at, when.timeZone);
+
+            // Where every post waits, this one does: nothing goes out.
+            const status =
+              before.policy === "always"
+                ? ("awaitingApproval" as const)
+                : asked;
 
             yield* checkContent(
               payload.channelIds,
@@ -1588,7 +1716,7 @@ export const studioGroupsLive = (studio: Studio) =>
                           replies: 3,
                           reposts: 4,
                         },
-                        permalink: "https://example.social/@studio/1",
+                        permalink: "https://social.example.test/@studio/1",
                         publishedAt: at("2026-11-08T09:00:05Z"),
                         snapshots: [],
                         targetId: failedTargetId,
@@ -1632,7 +1760,7 @@ export const studioGroupsLive = (studio: Studio) =>
                     replies: 3,
                     reposts: 4,
                   },
-                  permalink: "https://example.social/@studio/1",
+                  permalink: "https://social.example.test/@studio/1",
                   postId: finishedId,
                   publishedAt: at("2026-11-08T09:00:05Z"),
                   targetId: failedTargetId,
@@ -1756,6 +1884,384 @@ export const studioGroupsLive = (studio: Studio) =>
       handlers.handleAll({
         list: () => Effect.succeed([cli]),
         revoke: () => refusing,
+      })
+    ),
+    HttpApiBuilder.group(Api, "capabilities", (handlers) =>
+      handlers.handleAll({
+        channel: ({ params }) =>
+          allowed("channel:read").pipe(
+            Effect.andThen(channelIn(params)),
+            Effect.map((channel) => ({
+              account:
+                channel.platform === "tiktok"
+                  ? {
+                      _tag: "read" as const,
+                      blocked: null,
+                      restrictions: [
+                        {
+                          _tag: "optionValues" as const,
+                          field: "privacyLevel",
+                          values: ["PUBLIC_TO_EVERYONE", "SELF_ONLY"],
+                        },
+                        {
+                          _tag: "optionFixed" as const,
+                          field: "disableDuet",
+                          value: true,
+                        },
+                        { _tag: "videoDuration" as const, maximumMs: 600_000 },
+                        {
+                          _tag: "mediaTypesRefused" as const,
+                          contentTypes: ["image/jpeg" as const],
+                        },
+                      ],
+                    }
+                  : { _tag: "unrestricted" as const },
+              capabilities: capabilitiesOn(channel.platform),
+              channelId: channel.id,
+            }))
+          ),
+        platforms: () =>
+          allowed("channel:read").pipe(
+            Effect.as(describedPlatforms.map(capabilitiesOn))
+          ),
+      })
+    ),
+    HttpApiBuilder.group(Api, "lookups", (handlers) =>
+      handlers.handleAll({
+        list: ({ params }) =>
+          allowed("channel:read").pipe(
+            Effect.andThen(channelIn(params)),
+            Effect.map(({ platform }) => capabilitiesOn(platform).lookups)
+          ),
+        run: ({ params, payload }) =>
+          Effect.gen(function* run() {
+            yield* allowed("channel:read");
+
+            const channel = yield* channelIn(params);
+
+            if (
+              params.name === "tiktokCreator" &&
+              channel.platform === "tiktok"
+            ) {
+              return {
+                _tag: "tiktokCreator" as const,
+                items: [tiktokAccount],
+                nextCursor: null,
+              };
+            }
+
+            if (channel.platform === "pinterest") {
+              return (
+                pinterestLookup(params.name, payload.boardId) ??
+                (yield* new LookupInputInvalid())
+              );
+            }
+
+            if (channel.platform !== "youtube") {
+              return yield* new LookupNotFound();
+            }
+
+            if (params.name === "youtubeVideoCategories") {
+              return payload.regionCode === "ZZ"
+                ? yield* new LookupInputInvalid()
+                : videoCategories;
+            }
+
+            if (params.name !== "youtubePlaylists") {
+              return yield* new LookupNotFound();
+            }
+
+            return (
+              playlistPage(payload.cursor) ?? (yield* new LookupInputInvalid())
+            );
+          }),
+      })
+    ),
+    HttpApiBuilder.group(Api, "review", (handlers) =>
+      handlers.handleAll({
+        approve: ({ params, payload }) =>
+          Effect.gen(function* approve() {
+            yield* allowed("post:approve");
+
+            const post = yield* findPost(
+              studio,
+              params.workspaceId,
+              params.postId
+            );
+
+            const { approvals } = yield* Ref.get(studio.state);
+
+            const pending = approvals.find(
+              (asked) => asked.postId === post.id && asked.status === "pending"
+            );
+
+            if (pending === undefined) {
+              return yield* new ApprovalNotPending();
+            }
+
+            if (
+              pending.id !== payload.approvalId ||
+              pending.subjectHash !== payload.subjectHash
+            ) {
+              return yield* new ApprovalChanged();
+            }
+
+            const decided: ApprovalRequest = {
+              ...pending,
+              decision: {
+                at: at("2026-11-10T09:00:00Z"),
+                by: {
+                  kind: "member",
+                  linkId: null,
+                  name: studio.me.user.name,
+                  userId,
+                },
+              },
+              status: "approved",
+            };
+
+            yield* Ref.update(studio.state, (current) => ({
+              ...current,
+              approvals: current.approvals.map((asked) =>
+                asked.id === decided.id ? decided : asked
+              ),
+            }));
+            yield* savePost(studio, { ...post, status: "scheduled" });
+            yield* record(studio, `approve:${post.id}`);
+
+            return { approval: decided, late: false };
+          }),
+        comment: ({ params, payload }) =>
+          Effect.gen(function* addComment() {
+            yield* allowed("post:create");
+
+            const post = yield* findPost(
+              studio,
+              params.workspaceId,
+              params.postId
+            );
+
+            const { comments } = yield* Ref.get(studio.state);
+
+            const written: ReviewComment = {
+              anchor: null,
+              author: {
+                kind: "member",
+                linkId: null,
+                name: studio.me.user.name,
+                userId,
+              },
+              createdAt: at("2026-11-10T09:00:00Z"),
+              id: `0190f3a0-0000-7000-8000-00000000f${String(comments.length).padStart(3, "0")}`,
+              parentId: payload.parentId ?? null,
+              postId: post.id,
+              resolved: null,
+              text: payload.text,
+            };
+
+            yield* Ref.update(studio.state, (current) => ({
+              ...current,
+              comments: [...current.comments, written],
+            }));
+            yield* record(
+              studio,
+              [
+                `comment:${post.id}:${payload.text}`,
+                ...(payload.parentId === undefined ? [] : [payload.parentId]),
+              ].join(":")
+            );
+
+            return written;
+          }),
+        createLink: ({ params, payload }) =>
+          Effect.gen(function* createLink() {
+            yield* allowed("post:approve");
+
+            const post = yield* findPost(
+              studio,
+              params.workspaceId,
+              params.postId
+            );
+
+            const { links } = yield* Ref.get(studio.state);
+
+            const link: ReviewLink = {
+              access: payload.access,
+              createdAt: at("2026-11-10T09:00:00Z"),
+              createdBy: userId,
+              expiresAt: at("2026-11-12T09:00:00Z"),
+              id: `0190f3a0-0000-7000-8000-00000000a${String(links.length + 100)}`,
+              postId: post.id,
+              revokedAt: null,
+              status: "active",
+            };
+
+            yield* Ref.update(studio.state, (current) => ({
+              ...current,
+              links: [link, ...current.links],
+            }));
+            yield* record(
+              studio,
+              `link:${post.id}:${payload.access}:${String(payload.expiresInHours ?? "default")}`
+            );
+
+            return {
+              link,
+              token: "synthetic-token",
+              url: "https://peal.example.test/review#synthetic-token",
+            };
+          }),
+        links: ({ params }) =>
+          Effect.gen(function* listLinks() {
+            yield* allowed("post:read");
+            yield* findPost(studio, params.workspaceId, params.postId);
+
+            const { links } = yield* Ref.get(studio.state);
+
+            return links.filter(({ postId }) => postId === params.postId);
+          }),
+        pending: ({ params }) =>
+          Effect.gen(function* pending() {
+            yield* allowed("post:read");
+
+            const { approvals } = yield* Ref.get(studio.state);
+
+            return params.workspaceId === studioId
+              ? approvals.filter(({ status }) => status === "pending")
+              : [];
+          }),
+        requestChanges: ({ params, payload }) =>
+          Effect.gen(function* requestChanges() {
+            yield* allowed("post:approve");
+
+            const post = yield* findPost(
+              studio,
+              params.workspaceId,
+              params.postId
+            );
+
+            const { approvals } = yield* Ref.get(studio.state);
+
+            const pending = approvals.find(
+              (asked) => asked.postId === post.id && asked.status === "pending"
+            );
+
+            if (pending === undefined) {
+              return yield* new ApprovalNotPending();
+            }
+
+            if (
+              pending.id !== payload.approvalId ||
+              pending.subjectHash !== payload.subjectHash
+            ) {
+              return yield* new ApprovalChanged();
+            }
+
+            const by = {
+              kind: "member" as const,
+              linkId: null,
+              name: studio.me.user.name,
+              userId,
+            };
+
+            const decided: ApprovalRequest = {
+              ...pending,
+              decision: { at: at("2026-11-10T09:00:00Z"), by },
+              status: "changesRequested",
+            };
+
+            yield* savePost(studio, {
+              ...post,
+              schedule: null,
+              status: "draft",
+            });
+            yield* record(
+              studio,
+              `requestChanges:${post.id}:${payload.comment}`
+            );
+
+            return {
+              approval: decided,
+              comment: {
+                anchor: null,
+                author: by,
+                createdAt: at("2026-11-10T09:00:00Z"),
+                id: "0190f3a0-0000-7000-8000-00000000f900",
+                parentId: null,
+                postId: post.id,
+                resolved: null,
+                text: payload.comment,
+              },
+            };
+          }),
+        resolve: () => refusing,
+        revokeLink: ({ params }) =>
+          Effect.gen(function* revokeLink() {
+            yield* allowed("post:approve");
+
+            const { links } = yield* Ref.get(studio.state);
+            const link = links.find(({ id }) => id === params.linkId);
+
+            if (link === undefined || params.workspaceId !== studioId) {
+              return yield* new ReviewLinkNotFound();
+            }
+
+            yield* record(studio, `revoke:${link.id}`);
+
+            return {
+              ...link,
+              revokedAt: at("2026-11-10T09:30:00Z"),
+              status: "revoked" as const,
+            };
+          }),
+        settings: () =>
+          Effect.gen(function* settings() {
+            yield* allowed("post:read");
+
+            return { approvalPolicy: (yield* Ref.get(studio.state)).policy };
+          }),
+        thread: ({ params }) =>
+          Effect.gen(function* thread() {
+            yield* allowed("post:read");
+
+            const post = yield* findPost(
+              studio,
+              params.workspaceId,
+              params.postId
+            );
+
+            const { approvals, comments } = yield* Ref.get(studio.state);
+
+            return {
+              approvals: approvals.filter(
+                ({ postId }) => postId === params.postId
+              ),
+              channels: post.targets.map(({ channelId }) => ({
+                channelId,
+                handle: "@studio@social.example.test",
+                options:
+                  post.targets.find((target) => target.channelId === channelId)
+                    ?.options ?? null,
+                platform: "mastodon" as const,
+                text: post.content.text,
+              })),
+              comments: comments.filter(
+                ({ postId }) => postId === params.postId
+              ),
+              media: [],
+            };
+          }),
+        updateSettings: ({ payload }) =>
+          Effect.gen(function* updateSettings() {
+            yield* allowed("organization:update");
+            yield* Ref.update(studio.state, (current) => ({
+              ...current,
+              policy: payload.approvalPolicy,
+            }));
+            yield* record(studio, `policy:${payload.approvalPolicy}`);
+
+            return payload;
+          }),
       })
     ),
     HttpApiBuilder.group(Api, "webhooks", (handlers) =>

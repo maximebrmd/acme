@@ -2,6 +2,7 @@
 
 export const MediaKind = {
         Image: "image",
-        Video: "video"
+        Video: "video",
+        Document: "document"
     } as const;
 export type MediaKind = typeof MediaKind[keyof typeof MediaKind];

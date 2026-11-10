@@ -12,7 +12,12 @@ import { ConnectFailed } from "./connect-failed.ts";
 import { Forbidden } from "./forbidden.ts";
 import { PlanLimitReached } from "./plan-limit-reached.ts";
 import { PlatformUnreachable } from "./platform-unreachable.ts";
-import { InstagramConnectionSchema, PlatformSchema } from "./platform.ts";
+import {
+  ChannelConnectionSchema,
+  InstagramConnectionSchema,
+  LinkedInConnectionSchema,
+  PlatformSchema,
+} from "./platform.ts";
 import { WorkspaceAccess } from "./workspace-access.ts";
 
 /**
@@ -37,9 +42,10 @@ export type ChannelStatus = typeof ChannelStatusSchema.Type;
 export const ChannelSchema = Schema.Struct({
   // The account's picture, as the platform serves it.
   avatarUrl: Schema.NullOr(Schema.String),
-  // How an Instagram channel reaches its account: through Instagram Login
-  // or through a Facebook Page. Null on other platforms.
-  connection: Schema.NullOr(InstagramConnectionSchema),
+  // How an Instagram channel reaches its account (through Instagram Login
+  // or through a Facebook Page), or what a LinkedIn channel posts as (a
+  // member's profile or a company page). Null on other platforms.
+  connection: Schema.NullOr(ChannelConnectionSchema),
   // The account's name, when the platform shows one besides the handle.
   displayName: Schema.NullOr(Schema.String),
   handle: Schema.String,
@@ -61,10 +67,12 @@ export type Channel = typeof ChannelSchema.Type;
  * Instagram may take the way in.
  */
 export const ConnectChannelSchema = Schema.Struct({
-  // Instagram only: sign in with Instagram Login or with Facebook Login.
-  // Left out, the server's preferred way, the first of
-  // `instagramConnections` in the connectable platforms.
-  connection: Schema.optionalKey(InstagramConnectionSchema),
+  // Instagram: sign in with Instagram Login or with Facebook Login.
+  // LinkedIn: connect the member's profile or the pages they administer.
+  // Left out, the server's first way for the platform
+  // (`instagramConnections`, `linkedinConnections` in the connectable
+  // platforms). One of another platform is ignored.
+  connection: Schema.optionalKey(ChannelConnectionSchema),
   // A Bluesky handle such as "peal.bsky.social", a DID, or a server URL.
   handle: Schema.optionalKey(Schema.String.check(Schema.isMaxLength(256))),
   // A Mastodon instance, as "mastodon.social" or "https://mastodon.social".
@@ -92,6 +100,9 @@ export const ConnectablePlatformsSchema = Schema.Struct({
   // The ways this server connects Instagram accounts, the one it prefers
   // first; empty when Instagram is not among the platforms.
   instagramConnections: Schema.Array(InstagramConnectionSchema),
+  // What this server connects on LinkedIn: profiles, pages, or both; empty
+  // when LinkedIn is not among the platforms.
+  linkedinConnections: Schema.Array(LinkedInConnectionSchema),
   platforms: Schema.Array(PlatformSchema),
 }).annotate({ identifier: "ConnectablePlatforms" });
 

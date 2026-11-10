@@ -1,8 +1,11 @@
 import { Duration, Option, Schema } from "effect";
 
+import type { AccountRestriction } from "./account-restriction.ts";
 import type { ChannelOnPlatform } from "./content-rules.ts";
 import type { ContentViolation } from "./content-violation.ts";
-import type { MediaFile } from "./media-file.ts";
+import { MediaContentTypeSchema } from "./media-file.ts";
+import type { MediaContentType, MediaFile } from "./media-file.ts";
+import { platformRules } from "./platform-rules.ts";
 import type { TargetOptions } from "./target-options.ts";
 import { TikTokOptions, TikTokPrivacyLevelSchema } from "./tiktok-options.ts";
 import type { TikTokField } from "./tiktok-options.ts";
@@ -126,3 +129,56 @@ export const creatorViolationsOn = (
     ...tooLong,
   ];
 };
+
+// Turned off by the creator: the option that turns it off must stay true.
+const fixedOff = (
+  field: TikTokField,
+  turnedOff: boolean
+): readonly AccountRestriction[] =>
+  turnedOff ? [{ _tag: "optionFixed", field, value: true }] : [];
+
+/** The photo types TikTok takes, where a server can post photos. */
+export const tiktokPhotoTypes: readonly MediaContentType[] =
+  MediaContentTypeSchema.literals.filter(
+    (contentType) =>
+      contentType.startsWith("image/") &&
+      platformRules.tiktok.media?.formats[contentType] !== undefined
+  );
+
+/** The photos a server TikTok takes none from refuses. */
+export const photosRefused = (
+  takesPhotos: boolean
+): readonly AccountRestriction[] =>
+  takesPhotos || tiktokPhotoTypes.length === 0
+    ? []
+    : [{ _tag: "mediaTypesRefused", contentTypes: tiktokPhotoTypes }];
+
+/**
+ * What `creatorViolationsOn` checks, said beforehand: the audiences the
+ * account offers, the interactions the creator turned off (Duets and
+ * Stitches are a video's), their longest video, and the photos a server
+ * without a verified address cannot post.
+ */
+export const creatorRestrictions = (
+  creator: TikTokCreator,
+  takesPhotos: boolean
+): readonly AccountRestriction[] => [
+  {
+    _tag: "optionValues",
+    field: "privacyLevel",
+    values: creator.privacyLevels,
+  },
+  ...fixedOff("disableComment", creator.commentDisabled),
+  ...fixedOff("disableDuet", creator.duetDisabled),
+  ...fixedOff("disableStitch", creator.stitchDisabled),
+  ...Option.match(creator.maxVideoDuration, {
+    onNone: (): readonly AccountRestriction[] => [],
+    onSome: (maximum): readonly AccountRestriction[] => [
+      {
+        _tag: "videoDuration",
+        maximumMs: Math.round(Duration.toMillis(maximum)),
+      },
+    ],
+  }),
+  ...photosRefused(takesPhotos),
+];

@@ -62,6 +62,12 @@ class Media extends JsonSerializableType
     public string $kind;
 
     /**
+     * @var ?int $pageCount
+     */
+    #[JsonProperty('pageCount')]
+    public ?int $pageCount;
+
+    /**
      * @var MediaStatus $status
      */
     #[JsonProperty('status')]
@@ -92,6 +98,7 @@ class Media extends JsonSerializableType
      *   codec?: ?string,
      *   dimensions?: ?MediaDimensions,
      *   durationMs?: ?int,
+     *   pageCount?: ?int,
      *   url?: ?string,
      * } $values
      */
@@ -107,6 +114,7 @@ class Media extends JsonSerializableType
         $this->durationMs = $values['durationMs'] ?? null;
         $this->id = $values['id'];
         $this->kind = $values['kind'];
+        $this->pageCount = $values['pageCount'] ?? null;
         $this->status = $values['status'];
         $this->updatedAt = $values['updatedAt'];
         $this->url = $values['url'] ?? null;

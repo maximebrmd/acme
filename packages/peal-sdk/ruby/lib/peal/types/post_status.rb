@@ -8,6 +8,7 @@ module Peal
       extend Peal::Internal::Types::Enum
 
       DRAFT = "draft"
+      AWAITING_APPROVAL = "awaitingApproval"
       SCHEDULED = "scheduled"
       PUBLISHING = "publishing"
       FINISHED = "finished"

@@ -43,7 +43,7 @@
       "publishedAt": "Parue le {at}",
       "engagement": "{count, plural, =0 {Aucune interaction pour l’instant} one {# interaction} other {# interactions}}",
       "open": "Ouvrir la publication",
-      "view": "Voir sur {platform, select, x {X} linkedin {LinkedIn} bluesky {Bluesky} mastodon {Mastodon} threads {Threads} instagram {Instagram} facebook {Facebook} tiktok {TikTok} youtube {YouTube} pinterest {Pinterest} other {la plateforme}}"
+      "view": "Voir sur {platform, select, x {X} linkedin {LinkedIn} bluesky {Bluesky} mastodon {Mastodon} threads {Threads} instagram {Instagram} facebook {Facebook} tiktok {TikTok} youtube {YouTube} pinterest {Pinterest} googleBusiness {Google} other {la plateforme}}"
     },
     "post": {
       "title": "Ce qu’elle a donné",
@@ -55,7 +55,9 @@
       "stopped": "Plus relevée : les publications sont suivies pendant 30 jours.",
       "tableCaption": "Chiffres de la publication sur {handle}, à chaque relevé",
       "readAtColumn": "Relevé",
-      "uncounted": "Les chiffres ne sont pas disponibles sur {platforms} : Peal ne les relève pour l’instant que sur {counted}."
+      "uncounted": "Les chiffres ne sont pas disponibles sur {platforms} : Peal ne les relève pour l’instant que sur {counted}.",
+      "countedName": "{platform, select, linkedin {les pages LinkedIn} other {{name}}}",
+      "uncountedName": "{platform, select, linkedin {les profils LinkedIn} other {{name}}}"
     }
   },
   "Assistant": {
@@ -244,8 +246,8 @@
     "retry": "Réessayer",
     "empty": "Aucun compte n’est encore connecté.",
     "listTitle": "Comptes connectés",
-    "platform": "{platform, select, bluesky {Bluesky} facebook {Facebook} instagram {Instagram} linkedin {LinkedIn} mastodon {Mastodon} pinterest {Pinterest} threads {Threads} tiktok {TikTok} x {X} youtube {YouTube} other {{platform}}}",
-    "platformVia": "{platform, select, instagram {Instagram} other {{platform}}} ({connection, select, instagramLogin {connexion Instagram} facebookLogin {via une Page Facebook} other {{connection}}})",
+    "platform": "{platform, select, bluesky {Bluesky} facebook {Facebook} googleBusiness {Google Business Profile} instagram {Instagram} linkedin {LinkedIn} mastodon {Mastodon} pinterest {Pinterest} threads {Threads} tiktok {TikTok} x {X} youtube {YouTube} other {{platform}}}",
+    "platformVia": "{platform, select, instagram {Instagram} linkedin {LinkedIn} other {{platform}}} ({connection, select, instagramLogin {connexion Instagram} facebookLogin {via une Page Facebook} linkedinProfile {profil} linkedinPage {page d’entreprise} other {{connection}}})",
     "status": {
       "active": "Connecté",
       "refreshNeeded": "À reconnecter",
@@ -259,7 +261,7 @@
     "disconnectAccount": "Déconnecter {handle}",
     "disconnecting": "Déconnexion…",
     "disconnectTitle": "Déconnecter {handle} ?",
-    "disconnectDescription": "Peal supprime les jetons qu’il détient pour ce compte {platform, select, bluesky {Bluesky} facebook {Facebook} instagram {Instagram} linkedin {LinkedIn} mastodon {Mastodon} pinterest {Pinterest} threads {Threads} tiktok {TikTok} x {X} youtube {YouTube} other {{platform}}} et n’y publie plus rien. Vous pourrez le reconnecter plus tard.",
+    "disconnectDescription": "Peal supprime les jetons qu’il détient pour ce compte {platform, select, bluesky {Bluesky} facebook {Facebook} googleBusiness {Google Business Profile} instagram {Instagram} linkedin {LinkedIn} mastodon {Mastodon} pinterest {Pinterest} threads {Threads} tiktok {TikTok} x {X} youtube {YouTube} other {{platform}}} et n’y publie plus rien. Vous pourrez le reconnecter plus tard.",
     "cancel": "Annuler",
     "disconnected": "{handle} est déconnecté.",
     "connectTitle": "Connecter un compte",
@@ -290,7 +292,7 @@
       "forbidden": "Vous ne pouvez pas faire cela dans cet espace de travail.",
       "notFound": "Ce canal n’est plus connecté.",
       "unknown": "Une erreur est survenue. Réessayez.",
-      "noAccounts": "La connexion n’a atteint aucun compte à connecter : sur Facebook, et sur Instagram via une Page Facebook, vous ne gérez aucune Page, ou aucun compte professionnel Instagram n’est lié à vos Pages (connectez-le plutôt avec Instagram) ; sur YouTube, le compte Google choisi n’a pas de chaîne."
+      "noAccounts": "La connexion n’a atteint aucun compte à connecter : sur Facebook, et sur Instagram via une Page Facebook, vous ne gérez aucune Page, ou aucun compte professionnel Instagram n’est lié à vos Pages (connectez-le plutôt avec Instagram) ; sur YouTube, le compte Google choisi n’a pas de chaîne ; sur Google Business Profile, il ne gère aucun établissement validé ; sur LinkedIn, vous n’êtes administrateur ou administrateur de contenu d’aucune page."
     }
   },
   "PlatformConnect": {
@@ -315,6 +317,16 @@
       "title": "YouTube",
       "description": "Votre chaîne YouTube. Vous vous connectez avec Google, choisissez la chaîne si votre compte en a plusieurs, et autorisez Peal à mettre en ligne des vidéos et à lire la chaîne.",
       "connect": "Connecter YouTube"
+    },
+    "pinterest": {
+      "title": "Pinterest",
+      "description": "Votre compte Pinterest. Vous vous connectez sur Pinterest et autorisez Peal à créer des épingles sur vos tableaux et à lire leurs statistiques.",
+      "connect": "Connecter Pinterest"
+    },
+    "googleBusiness": {
+      "title": "Google Business Profile",
+      "description": "Votre établissement dans la recherche Google et sur Maps. Vous vous connectez avec Google, autorisez Peal à gérer votre fiche d’établissement, puis choisissez les établissements validés où cet espace de travail publie.",
+      "connect": "Connecter Google Business Profile"
     }
   },
   "ConnectCallbackPage": {
@@ -332,20 +344,26 @@
     "description": "{platform, select, facebook {Connectez-vous avec Facebook, puis choisissez les Pages où cet espace de travail publie.} instagram {Comptes professionnels liés à une Page Facebook : connectez-vous avec Facebook, puis choisissez les comptes.} threads {Connectez-vous avec votre compte Threads.} other {Connectez-vous sur la plateforme.}}",
     "connect": "{platform, select, facebook {Connecter des Pages Facebook} instagram {Connecter Instagram} threads {Connecter Threads} other {Connecter}}",
     "connecting": "Ouverture…",
-    "chooseTitle": "{platform, select, facebook {Les Pages à connecter} instagram {Les comptes Instagram à connecter} other {Les comptes à connecter}}",
-    "chooseDescription": "{platform, select, facebook {Votre connexion a atteint ces Pages.} instagram {Votre connexion a atteint ces comptes Instagram.} other {Votre connexion a atteint ces comptes.}} Choisissez ceux où cet espace de travail publie, dans le quart d’heure.",
+    "chooseTitle": "{platform, select, facebook {Les Pages à connecter} instagram {Les comptes Instagram à connecter} googleBusiness {Les établissements à connecter} linkedin {Les pages LinkedIn à connecter} other {Les comptes à connecter}}",
+    "chooseDescription": "{platform, select, facebook {Votre connexion a atteint ces Pages.} instagram {Votre connexion a atteint ces comptes Instagram.} googleBusiness {Votre connexion a atteint ces établissements validés.} linkedin {Vous administrez ces pages LinkedIn.} other {Votre connexion a atteint ces comptes.}} Choisissez ceux où cet espace de travail publie, dans le quart d’heure.",
     "alreadyConnected": "Connecté : le choisir le reconnecte",
     "connectChosen": "{count, plural, =0 {Connecter} one {Connecter # compte} other {Connecter # comptes}}",
     "connectingChosen": "Connexion…",
     "connected": "{count, plural, one {# compte est connecté.} other {# comptes sont connectés.}}",
     "cancel": "Retour aux canaux",
-    "retry": "Choisissez à nouveau, ou reconnectez-vous avec Facebook pour une nouvelle liste.",
-    "startOver": "Se reconnecter avec Facebook"
+    "retry": "Choisissez à nouveau, ou {platform, select, facebook {reconnectez-vous avec Facebook} instagram {reconnectez-vous avec Facebook} youtube {reconnectez-vous avec Google} googleBusiness {reconnectez-vous avec Google} linkedin {reconnectez-vous avec LinkedIn} other {reconnectez-vous}} pour une nouvelle liste.",
+    "startOver": "{platform, select, facebook {Se reconnecter avec Facebook} instagram {Se reconnecter avec Facebook} youtube {Se reconnecter avec Google} googleBusiness {Se reconnecter avec Google} linkedin {Se reconnecter avec LinkedIn} other {Se reconnecter}}"
   },
   "InstagramChannels": {
     "title": "Instagram",
     "description": "{connection, select, instagramLogin {Connectez-vous à votre compte professionnel (Entreprise ou Créateur) sur Instagram : aucune Page Facebook n’est nécessaire. Peal renouvelle son accès tous les 60 jours, sans vous.} facebookLogin {Ou, pour les comptes gérés depuis une Page Facebook : connectez-vous avec Facebook, puis choisissez les comptes liés à vos Pages.} other {Connectez-vous sur Instagram.}}",
     "connect": "{connection, select, instagramLogin {Se connecter avec Instagram} facebookLogin {Passer par une Page Facebook} other {Connecter Instagram}}",
+    "connecting": "Ouverture…"
+  },
+  "LinkedInChannels": {
+    "title": "LinkedIn",
+    "description": "{connection, select, linkedinProfile {Votre propre profil. LinkedIn vous demande de vous reconnecter tous les 60 jours : Peal vous le rappelle une semaine avant.} linkedinPage {Les pages d’entreprise que vous administrez : connectez-vous, puis choisissez les pages. Vous devez être administrateur ou administrateur de contenu d’une page pour y publier.} other {Connectez-vous sur LinkedIn.}}",
+    "connect": "{connection, select, linkedinProfile {Connecter votre profil} linkedinPage {Connecter des pages d’entreprise} other {Connecter LinkedIn}}",
     "connecting": "Ouverture…"
   },
   "DataDeletionPage": {
@@ -358,8 +376,8 @@
     "unavailable": "L’état de la demande n’a pas pu être lu. Réessayez plus tard."
   },
   "Posts": {
-    "platform": "{platform, select, x {X} linkedin {LinkedIn} bluesky {Bluesky} mastodon {Mastodon} threads {Threads} instagram {Instagram} facebook {Facebook} tiktok {TikTok} youtube {YouTube} pinterest {Pinterest} other {{platform}}}",
-    "status": "{status, select, draft {Brouillon} scheduled {Programmé} publishing {En cours de publication} finished {Terminé} cancelled {Annulé} other {{status}}}",
+    "platform": "{platform, select, x {X} linkedin {LinkedIn} bluesky {Bluesky} mastodon {Mastodon} threads {Threads} instagram {Instagram} facebook {Facebook} tiktok {TikTok} youtube {YouTube} pinterest {Pinterest} googleBusiness {Google Business Profile} other {{platform}}}",
+    "status": "{status, select, draft {Brouillon} awaitingApproval {En attente d’approbation} scheduled {Programmé} publishing {En cours de publication} finished {Terminé} cancelled {Annulé} other {{status}}}",
     "targetStatus": "{status, select, pending {En attente} publishing {En cours} published {Publié} failed {Échec} unconfirmed {À vérifier} cancelled {Annulé} other {{status}}}",
     "outcome": "{outcome, select, published {Publié} partiallyPublished {Publié en partie} unconfirmed {À vérifier} failed {Échec} cancelled {Annulé} other {{outcome}}}",
     "disconnectedChannel": "Un canal déconnecté",
@@ -377,6 +395,7 @@
       "newTitle": "Nouvelle publication",
       "editTitle": "Modifier le brouillon",
       "scheduledTitle": "Publication programmée",
+      "awaitingTitle": "Publication en attente d’approbation",
       "closedTitle": "Publication",
       "description": "Écrivez une fois, adaptez le texte à chaque canal si besoin, puis choisissez quand il part.",
       "loading": "Chargement de la publication…",
@@ -416,6 +435,8 @@
       "saving": "Enregistrement…",
       "schedule": "Programmer",
       "scheduling": "Programmation…",
+      "askApproval": "Demander l’approbation",
+      "askingApproval": "Demande…",
       "reschedule": "Déplacer à cette heure",
       "rescheduling": "Déplacement…",
       "cancelPost": "Annuler la publication",
@@ -435,11 +456,14 @@
       "closeDialog": "Fermer",
       "saved": "Brouillon enregistré.",
       "scheduled": "Publication programmée pour {at}.",
+      "sentForApproval": "Envoyée pour approbation. Une fois approuvée, la publication partira le {at}.",
       "rescheduled": "Publication déplacée à {at}.",
       "cancelled": "Publication annulée.",
       "unscheduled": "La publication est de nouveau un brouillon : modifiez-la, puis programmez-la.",
       "discarded": "Brouillon supprimé.",
       "lockedText": "Une publication programmée garde son texte. Vous pouvez encore la déplacer ou l’annuler, ou la repasser en brouillon pour la modifier.",
+      "awaitingText": "Cette publication attend une approbation : elle garde son texte, et ne partira à son heure qu’une fois approuvée. Vous pouvez encore la déplacer ou l’annuler, ou la remettre en brouillon pour la modifier.",
+      "willWait": "Cet espace de travail demande une approbation : une fois la demande faite, la publication attend, et ne partira à son heure que si quelqu’un l’approuve avant.",
       "readOnly": "Cette publication ne peut plus être modifiée.",
       "notAllowed": "Votre rôle vous permet de lire les publications, pas de les modifier.",
       "cannotSchedule": "Votre rôle vous permet d’écrire des brouillons. Une personne qui peut programmer choisira l’heure.",
@@ -447,7 +471,7 @@
         "generic": "Une erreur est survenue. Réessayez.",
         "forbidden": "Votre rôle ne le permet pas.",
         "notFound": "Cette publication n’existe plus.",
-        "conflict": "Cette publication est {status, select, draft {un brouillon} scheduled {programmée} publishing {en cours de publication} finished {terminée} cancelled {annulée} other {{status}}} et ne peut pas être modifiée ainsi.",
+        "conflict": "Cette publication est {status, select, draft {un brouillon} awaitingApproval {en attente d’approbation} scheduled {programmée} publishing {en cours de publication} finished {terminée} cancelled {annulée} other {{status}}} et ne peut pas être modifiée ainsi.",
         "inPast": "Cette heure est passée. Choisissez-en une plus tardive.",
         "timeZone": "Choisissez un fuseau horaire dans la liste.",
         "unknownChannels": "Certains de ces canaux ne sont plus connectés.",
@@ -483,6 +507,50 @@
       "tooLong": "{length} sur {maximum} caractères.",
       "invalid": "Une valeur que la plateforme refuse.",
       "unknownField": "une option",
+      "linkedin": {
+        "visibility": "Qui peut voir cette publication",
+        "visibilityHint": "Tout le monde, sauf choix contraire. « Relations uniquement » vaut pour un profil : une page n’en a pas.",
+        "visibilityPublic": "Tout le monde",
+        "visibilityConnections": "Relations uniquement",
+        "visibilityLoggedIn": "Membres LinkedIn connectés",
+        "disableReshare": "Empêcher les autres de republier cette publication",
+        "mentions": "Pages à mentionner",
+        "mentionsHint": "Écrivez @ puis le nom complet de la page dans le texte, exactement comme LinkedIn l’affiche, et indiquez la page ici sous la forme Nom <urn:li:organization:numéro>, plusieurs séparées par des points-virgules. Un canal de page d’entreprise trouve le numéro d’une page à partir du nom figurant dans son adresse (recherche linkedinOrganizations). Les personnes ne peuvent pas être mentionnées.",
+        "mentionsInvalid": "Chaque mention comporte le nom d’une page et son URN, sous la forme Nom <urn:li:organization:numéro>, et un nom n’apparaît qu’une fois.",
+        "linkUrl": "Lien à afficher sous forme de carte",
+        "linkUrlHint": "Une adresse commençant par https://. LinkedIn ne lit pas la page : donnez son titre à la carte ci-dessous. Une image jointe devient l’image de la carte ; un lien ne peut pas accompagner une vidéo, un document ou plusieurs images.",
+        "linkUrlInvalid": "Un lien est une adresse web commençant par https:// ou http://.",
+        "linkTitle": "Titre du lien",
+        "linkTitleHint": "Nécessaire avec un lien.",
+        "linkDescription": "Description du lien",
+        "documentTitle": "Titre du document",
+        "documentTitleHint": "Affiché au-dessus d’un PDF joint à la publication. Le nom du fichier si le champ reste vide.",
+        "documentTitleInvalid": "Un titre ne peut pas se composer uniquement d’espaces."
+      },
+      "lookupLoading": "Lecture de la liste sur la plateforme…",
+      "lookupFailed": "{reason, select, reconnect {Reconnectez ce compte pour lire sa liste.} disabled {Ce canal est désactivé : déconnectez-le et connectez à nouveau le compte pour y publier.} rateLimited {La plateforme demande de ralentir. Réessayez dans un instant.} other {La liste n’a pas pu être lue sur la plateforme. Réessayez dans un instant.}}",
+      "lookupRetry": "Réessayer",
+      "lookupNone": "Aucune",
+      "lookupUnknown": "Absent de la liste ({value})",
+      "lookupTruncated": "Seuls les {count, number} premiers sont listés.",
+      "pinterest": {
+        "board": "Tableau",
+        "boardHint": "Le tableau où l’épingle est enregistrée. Le texte de la publication est la description de l’épingle, et la description du premier fichier son texte alternatif.",
+        "boardInvalid": "Choisissez l’un des tableaux du compte.",
+        "boardEmpty": "Ce compte n’a pas encore de tableau : créez-en un sur Pinterest, puis réessayez.",
+        "boardSection": "Section du tableau",
+        "boardSectionInvalid": "Choisissez l’une des sections du tableau.",
+        "title": "Titre",
+        "titleHint": "100 caractères au plus.",
+        "link": "Lien",
+        "linkHint": "Là où l’on arrive en cliquant sur l’épingle : une adresse qui commence par http:// ou https://.",
+        "linkInvalid": "Un lien commence par http:// ou https://, sans espace.",
+        "coverSecond": "Couverture de la vidéo, à la seconde",
+        "coverSecondHint": "Pour une vidéo : la seconde dont l’image devient la couverture. La première image si le champ reste vide.",
+        "dominantColor": "Couleur dominante",
+        "dominantColorHint": "La couleur affichée pendant le chargement de l’image : un # et six chiffres hexadécimaux, comme #6E7874.",
+        "dominantColorInvalid": "Une couleur est un # suivi de six chiffres hexadécimaux, comme #6E7874."
+      },
       "youtube": {
         "title": "Titre",
         "titleHint": "100 caractères au plus, sans < ni >. Le texte de la publication en est la description.",
@@ -504,6 +572,36 @@
         "categoryIdInvalid": "Une catégorie est un nombre, comme 22.",
         "notifySubscribers": "Prévenir les abonnés",
         "containsSyntheticMedia": "Contient des contenus modifiés ou synthétiques réalistes"
+      },
+      "googleBusiness": {
+        "postType": "Type de publication",
+        "postTypeHint": "Une actualité, sauf si vous en choisissez un autre. Le texte de la publication est sa description.",
+        "postTypeStandard": "Actualité",
+        "postTypeEvent": "Événement",
+        "postTypeOffer": "Offre",
+        "title": "Titre",
+        "titleHint": "Le nom de l’événement ou de l’offre : 58 caractères au plus.",
+        "startsAt": "Début",
+        "startsAtHint": "À l’heure de l’établissement.",
+        "startsAtInvalid": "Choisissez un jour et une heure.",
+        "endsAt": "Fin",
+        "endsAtInvalid": "Choisissez un jour et une heure après le début.",
+        "callToAction": "Bouton",
+        "callToActionHint": "Aucun bouton, sauf si vous en choisissez un. Une offre affiche celui de Google.",
+        "actionNone": "Aucun bouton",
+        "actionBook": "Réserver",
+        "actionOrder": "Commander en ligne",
+        "actionShop": "Acheter",
+        "actionLearnMore": "En savoir plus",
+        "actionSignUp": "S’inscrire",
+        "actionCall": "Appeler",
+        "callToActionUrl": "Lien du bouton",
+        "linkHint": "Une adresse complète, qui commence par https://.",
+        "linkInvalid": "Saisissez une adresse complète, qui commence par https:// ou http://.",
+        "couponCode": "Code promotionnel",
+        "couponCodeHint": "Utilisable en magasin ou en ligne.",
+        "redeemUrl": "Lien pour profiter de l’offre",
+        "terms": "Conditions générales"
       },
       "tiktok": {
         "privacyLevel": "Qui peut voir cette publication",
@@ -638,7 +736,7 @@
       "description": "Les images et les vidéos vont directement dans le stockage. Décrivez chacune pour les personnes qui ne peuvent pas la voir.",
       "dropzone": "Déposez des images ou des vidéos ici, ou cliquez pour les choisir.",
       "choose": "Choisir des images ou des vidéos à importer",
-      "accepted": "Images JPEG, PNG, GIF et WebP jusqu’à 16 Mo, vidéos MP4 et QuickTime jusqu’à 1 Go.",
+      "accepted": "Images JPEG, PNG, GIF et WebP jusqu’à 16 Mo, vidéos MP4 et QuickTime jusqu’à 1 Go, documents PDF jusqu’à 100 Mo et 300 pages (pour LinkedIn).",
       "dropping": "Déposez pour importer",
       "uploads": "Imports",
       "phase": {
@@ -662,7 +760,7 @@
       "remove": "Retirer",
       "removeLabel": "Retirer {name} de la liste",
       "errors": {
-        "unsupportedType": "Peal ne prend pas ce type de fichier. Importez une image JPEG, PNG, GIF ou WebP, ou une vidéo MP4 ou QuickTime.",
+        "unsupportedType": "Peal ne prend pas ce type de fichier. Importez une image JPEG, PNG, GIF ou WebP, une vidéo MP4 ou QuickTime, ou un document PDF.",
         "tooLarge": "Ce fichier dépasse les {limit, number} Mo que Peal accepte pour ce type de média.",
         "storageFull": "L’abonnement de l’espace de travail n’a plus de place pour ce fichier : il permet {limit} Mo de médias. Supprimez des médias, ou demandez à un propriétaire ou un administrateur de passer à un abonnement supérieur.",
         "altTextTooLong": "La description dépasse {limit, number} caractères.",
@@ -691,7 +789,8 @@
       "unreadable": "Importé, mais le fichier n’a pas pu être lu : il est peut-être endommagé.",
       "timedOut": "Importé, mais la lecture du fichier a pris trop de temps.",
       "tooLarge": "Importé, mais le fichier stocké est plus gros que déclaré.",
-      "toolFailed": "Importé, mais le serveur n’a pas réussi à le lire."
+      "toolFailed": "Importé, mais le serveur n’a pas réussi à le lire.",
+      "tooManyPages": "Importé, mais le document compte plus de 300 pages, plus que LinkedIn n’en affiche."
     },
     "rejected": {
       "sizeMismatch": "Le fichier n’avait pas la taille déclarée, et a été supprimé.",
@@ -704,14 +803,15 @@
       "loadFailed": "Les médias n’ont pas pu être chargés.",
       "reload": "Réessayer",
       "loadMore": "Afficher plus",
-      "kind": "{kind, select, image {Image} other {Vidéo}}",
+      "kind": "{kind, select, image {Image} document {Document PDF} other {Vidéo}}",
+      "pages": "{count, plural, one {# page} other {# pages}}",
       "dimensions": "{width} × {height}",
       "duration": "{seconds, number} s",
       "noAltText": "Aucune description",
       "added": "Ajouté le {date, date, medium}",
       "delete": "Supprimer",
-      "deleteLabel": "Supprimer {kind, select, image {cette image} other {cette vidéo}}",
-      "deleteTitle": "Supprimer {kind, select, image {cette image} other {cette vidéo}} ?",
+      "deleteLabel": "Supprimer {kind, select, image {cette image} document {ce document} other {cette vidéo}}",
+      "deleteTitle": "Supprimer {kind, select, image {cette image} document {ce document} other {cette vidéo}} ?",
       "deleteDescription": "Son fichier est supprimé du stockage, et le média ne peut plus aller dans des publications. Les publications déjà parues le gardent sur leurs plateformes. Cette action est définitive.",
       "usageLoading": "Recherche des publications qui l’utilisent…",
       "usageFailed": "Peal n’a pas pu vérifier quelles publications l’utilisent. Réessayez.",
@@ -729,18 +829,18 @@
   "PostMedia": {
     "count": "{count, plural, =0 {Aucune image ni vidéo pour l’instant} one {# image ou vidéo} other {# images ou vidéos}}, {maximum} au plus.",
     "list": "Images et vidéos, dans l’ordre où la publication les montre",
-    "item": "{kind, select, image {Image {position}} video {Vidéo {position}} other {Média {position}}}",
+    "item": "{kind, select, image {Image {position}} video {Vidéo {position}} document {Document {position}} other {Média {position}}}",
     "loading": "Chargement…",
     "loadFailed": "Cette image ou vidéo n’a pas pu être chargée.",
     "altTextLabel": "Texte alternatif de {kind, select, image {l’image {position}} video {la vidéo {position}} other {le média {position}}}",
     "altTextHint": "Décrivez ce qu’elle montre pour les personnes qui ne peuvent pas la voir.",
     "altTextMissing": "Pas encore de texte alternatif : {platforms} le {count, plural, one {montre} other {montrent}} aux personnes qui ne peuvent pas voir {kind, select, video {la vidéo} other {l’image}}.",
     "altTextEncouraged": "Pas encore de texte alternatif. Écrivez-en un pour que tout le monde puisse suivre la publication.",
-    "moveEarlier": "Avancer {kind, select, image {l’image {position}} video {la vidéo {position}} other {le média {position}}}",
-    "moveLater": "Reculer {kind, select, image {l’image {position}} video {la vidéo {position}} other {le média {position}}}",
-    "remove": "Retirer {kind, select, image {l’image {position}} video {la vidéo {position}} other {le média {position}}} de la publication",
-    "moved": "{kind, select, image {Image déplacée} video {Vidéo déplacée} other {Média déplacé}} en position {position} sur {count}.",
-    "removed": "{kind, select, image {Image retirée} video {Vidéo retirée} other {Média retiré}} de la publication.",
+    "moveEarlier": "Avancer {kind, select, image {l’image {position}} video {la vidéo {position}} document {le document {position}} other {le média {position}}}",
+    "moveLater": "Reculer {kind, select, image {l’image {position}} video {la vidéo {position}} document {le document {position}} other {le média {position}}}",
+    "remove": "Retirer {kind, select, image {l’image {position}} video {la vidéo {position}} document {le document {position}} other {le média {position}}} de la publication",
+    "moved": "{kind, select, image {Image déplacée} video {Vidéo déplacée} document {Document déplacé} other {Média déplacé}} en position {position} sur {count}.",
+    "removed": "{kind, select, image {Image retirée} video {Vidéo retirée} document {Document retiré} other {Média retiré}} de la publication.",
     "attached": "{count, plural, one {# image ou vidéo ajoutée.} other {# images ou vidéos ajoutées.}}",
     "full": "Une publication montre {maximum} images ou vidéos au plus : {count, plural, one {# n’a pas été ajoutée.} other {# n’ont pas été ajoutées.}}",
     "notReady": "Le fichier a été envoyé, mais il ne peut pas aller dans une publication avant d’être traité.",
@@ -851,7 +951,7 @@
     }
   },
   "Notices": {
-    "platform": "{platform, select, bluesky {Bluesky} facebook {Facebook} instagram {Instagram} linkedin {LinkedIn} mastodon {Mastodon} pinterest {Pinterest} threads {Threads} tiktok {TikTok} x {X} youtube {YouTube} other {{platform}}}",
+    "platform": "{platform, select, bluesky {Bluesky} facebook {Facebook} googleBusiness {Google Business Profile} instagram {Instagram} linkedin {LinkedIn} mastodon {Mastodon} pinterest {Pinterest} threads {Threads} tiktok {TikTok} x {X} youtube {YouTube} other {{platform}}}",
     "channel": "{platform} ({handle})",
     "unknownChannel": "un canal déconnecté",
     "unknownWorkspace": "un espace de travail que vous avez quitté",
@@ -859,6 +959,11 @@
       "PostPublished": "Une publication de {workspace} est en ligne sur {channel}.",
       "PostFailed": "Une publication de {workspace} n’est pas partie sur {channel} : {reason}",
       "PostUnconfirmed": "Une publication de {workspace} est peut-être partie sur {channel}. Vérifiez sur la plateforme avant de la republier.",
+      "PostApprovalRequested": "Une publication de {workspace} attend une approbation, pour partir le {scheduledAt, date, long} à {scheduledAt, time, short}.",
+      "PostApproved": "{by, select, visitor {Une personne invitée à relire} application {Une application} other {Un membre}} a approuvé une publication de {workspace}. Elle est programmée.",
+      "PostApprovedLate": "{by, select, visitor {Une personne invitée à relire} application {Une application} other {Un membre}} a approuvé une publication de {workspace} après son heure. Rien n’a été publié en retard : elle est de nouveau un brouillon, toujours approuvé. Donnez-lui une nouvelle date.",
+      "PostChangesRequested": "{by, select, visitor {Une personne invitée à relire} application {Une application} other {Un membre}} a demandé des modifications sur une publication de {workspace}. Elle est de nouveau un brouillon.",
+      "PostCommented": "{by, select, visitor {Une personne invitée à relire} application {Une application} other {Un membre}} a commenté une publication de {workspace}.",
       "ChannelReconnectRequired": "{channel} dans {workspace} doit être reconnecté : rien n’y est publié d’ici là.",
       "ChannelReconnectSoon": "{channel} dans {workspace} doit être reconnecté avant le {expiresAt, date, long} : son autorisation ne peut pas être renouvelée.",
       "TrialEnding": "L’essai {plan} de {workspace} prend fin le {endsAt, date, long}. Rien n’est facturé : l’espace de travail passe ensuite à l’offre gratuite, sauf si quelqu’un commande un abonnement.",
@@ -902,6 +1007,7 @@
       "legend": "M’envoyer un e-mail quand",
       "postFailed": "Une publication n’est pas partie",
       "postUnconfirmed": "Une publication est peut-être partie, et doit être vérifiée sur la plateforme",
+      "postReview": "Une publication attend mon approbation, ou une publication que je suis est commentée, approuvée ou renvoyée",
       "channelReconnect": "Un canal doit être reconnecté, maintenant ou bientôt",
       "postPublished": "Une publication est partie",
       "postsLegend": "Me prévenir pour",
@@ -1328,7 +1434,10 @@
         "published": "Une publication est en ligne sur un canal",
         "failed": "Une publication échoue sur un canal",
         "unconfirmed": "Une publication est peut-être partie sur un canal",
-        "cancelled": "Une publication est annulée"
+        "cancelled": "Une publication est annulée",
+        "approval_requested": "Une publication attend une approbation",
+        "approved": "Une publication est approuvée",
+        "changes_requested": "Des modifications sont demandées sur une publication"
       },
       "channel": {
         "connected": "Un canal est connecté ou reconnecté",
@@ -1862,5 +1971,167 @@
     "description": "Cette page a rencontré une erreur, qui a été signalée. Réessayez, ou revenez dans un instant.",
     "retry": "Réessayer",
     "home": "Retour à l’accueil"
+  },
+  "Review": {
+    "title": "Relecture",
+    "description": "Les commentaires sur cette publication, les approbations demandées, et les liens qui la montrent à des personnes sans compte.",
+    "loading": "Chargement de la relecture…",
+    "loadFailed": "La relecture n’a pas pu être chargée.",
+    "retry": "Réessayer",
+    "close": "Fermer",
+    "reviewer": {
+      "apiKey": "Une clé d’API",
+      "visitor": "Une personne invitée à relire",
+      "formerMember": "Un ancien membre",
+      "visitorBadge": "Invité"
+    },
+    "thread": {
+      "title": "Commentaires",
+      "empty": "Personne n’a encore commenté.",
+      "aChannel": "un canal",
+      "aboutChannel": "À propos de la publication sur {channel}",
+      "aboutWords": "À propos de ces mots, sur {channel} :",
+      "aboutWordsGone": "À propos de ces mots, que le texte sur {channel} ne dit plus :",
+      "resolved": "Résolu",
+      "answer": "Répondre",
+      "resolve": "Résoudre",
+      "reopen": "Rouvrir"
+    },
+    "form": {
+      "hint": "{count} caractères sur {maximum}. Texte brut : rien de ce que vous tapez n’est lu comme une mise en forme.",
+      "commentLabel": "Votre commentaire",
+      "comment": "Commenter",
+      "answerLabel": "Votre réponse",
+      "answer": "Répondre",
+      "sending": "Envoi…",
+      "aboutWords": "Votre commentaire porte sur ces mots, sur {channel} :",
+      "wholePost": "Commenter plutôt toute la publication"
+    },
+    "preview": {
+      "title": "La publication sur chaque canal",
+      "hint": "Ce que chaque canal recevra. Ce n’est pas la mise en page de la plateforme.",
+      "hintSelect": "Ce que chaque canal recevra. Ce n’est pas la mise en page de la plateforme. Sélectionnez des mots pour les commenter.",
+      "disconnected": "Un canal déconnecté",
+      "platform": "{platform, select, bluesky {Bluesky} facebook {Facebook} googleBusiness {Google Business Profile} instagram {Instagram} linkedin {LinkedIn} mastodon {Mastodon} pinterest {Pinterest} threads {Threads} tiktok {TikTok} x {X} youtube {YouTube} other {{platform}}}",
+      "noText": "Pas de texte sur ce canal.",
+      "mediaLabel": "Images, vidéos et documents",
+      "mediaUnavailable": "Ce fichier ne peut pas être affiché.",
+      "video": "Vidéo",
+      "document": "Un document PDF, affiché page par page sur LinkedIn.",
+      "openDocument": "Ouvrir le document dans un nouvel onglet",
+      "altText": "Texte alternatif : {text}",
+      "noAltText": "Pas de texte alternatif.",
+      "options": "Ce que ce canal reçoit aussi avec la publication :",
+      "optionYes": "Oui",
+      "optionNo": "Non"
+    },
+    "approval": {
+      "status": "{status, select, pending {En attente d’approbation} approved {Approuvée} changesRequested {Modifications demandées} withdrawn {Retirée} other {{status}}}",
+      "askedFor": "pour partir le {at}",
+      "askedBy": "{via, select, apiKey {Demandée avec une clé d’API} application {Demandée par {name}, depuis une application} unknown {Demandée par un ancien membre} other {Demandée par {name}}} le {at}",
+      "decidedBy": "{kind, select, visitor {Décidée par {name}, depuis un lien de relecture,} other {Décidée par {name}}} le {at}"
+    },
+    "decide": {
+      "waiting": "Cette publication attend une approbation. Elle ne partira à son heure qu’une fois approuvée par une personne qui peut approuver les publications, ou par une personne invitée dont le lien le permet.",
+      "waitingForYou": "Cette publication attend une approbation, que vous pouvez donner. Approuvée, elle est programmée pour son heure ; approuvée après cette heure, elle redevient un brouillon au lieu de partir en retard.",
+      "approve": "Approuver",
+      "approving": "Approbation…",
+      "requestChanges": "Demander des modifications",
+      "changesTitle": "Demander des modifications ?",
+      "changesDescription": "La publication redevient un brouillon et ne partira plus à son heure. Son auteur est prévenu, avec votre commentaire.",
+      "changesLabel": "Que faut-il changer ?",
+      "sendBack": "Renvoyer en brouillon",
+      "sentBack": "Modifications demandées : la publication est de nouveau un brouillon.",
+      "approved": "Approuvée : la publication est programmée.",
+      "approvedLate": "Approuvée après son heure : rien n’a été publié en retard. La publication est de nouveau un brouillon, toujours approuvé : donnez-lui une nouvelle date."
+    },
+    "links": {
+      "title": "Liens de relecture",
+      "description": "Un lien montre cette publication, et rien d’autre de l’espace de travail, à qui le détient, sans compte. Il cesse de fonctionner à son expiration ou à sa révocation, et dès que la publication est publiée, annulée ou supprimée.",
+      "accessLabel": "La personne qui l’ouvre peut",
+      "access": "{access, select, view {Voir seulement} comment {Voir et commenter} approve {Voir, commenter et approuver} other {{access}}}",
+      "lifetimeLabel": "Il fonctionne pendant",
+      "lifetime": "{days, plural, one {# jour} other {# jours}}",
+      "create": "Créer un lien",
+      "creating": "Création…",
+      "createFailed": "Le lien n’a pas pu être créé.",
+      "madeTitle": "Copiez ce lien maintenant",
+      "madeDescription": "Il ne sera plus affiché : Peal n’en garde pas de copie. La personne qui l’ouvre peut {access, select, view {voir la publication} comment {voir la publication et la commenter} approve {voir la publication, la commenter, et l’approuver ou demander des modifications} other {{access}}}, jusqu’au {until}.",
+      "copy": "Copier le lien",
+      "copied": "Lien copié.",
+      "loadFailed": "Les liens n’ont pas pu être chargés.",
+      "empty": "Aucun lien n’a été créé pour cette publication.",
+      "status": "{status, select, active {Actif} expired {Expiré} revoked {Révoqué} other {{status}}}",
+      "until": "jusqu’au {until}",
+      "revoke": "Révoquer",
+      "revoked": "Lien révoqué.",
+      "revokeFailed": "Le lien n’a pas pu être révoqué."
+    },
+    "errors": {
+      "comment": "{problem, select, text {Écrivez un commentaire de 2000 caractères au plus.} name {Donnez un nom de 80 caractères au plus.} parent {Ce fil n’accepte plus de réponses.} anchor {La publication ne va plus sur ce canal.} selection {Le texte a changé depuis que vous avez sélectionné ces mots. Sélectionnez-les de nouveau.} other {Le commentaire n’a pas pu être enregistré.}}",
+      "failure": "{failure, select, Forbidden {Votre rôle ne le permet pas, ou une application a demandé l’envoi de cette publication : une personne doit l’approuver.} PostNotFound {Cette publication n’existe plus.} CommentNotFound {Ce commentaire n’existe plus.} ApprovalNotPending {Cette publication n’attend plus d’approbation : elle a été décidée, reprise ou programmée entre-temps.} ApprovalChanged {La publication a changé depuis que vous l’avez ouverte. Rien n’a été décidé : relisez-la ci-dessous, puis décidez.} PlanLimitReached {Rien n’a été approuvé : cet espace de travail a plus de canaux ou de membres que son offre ne le permet, et ne programme rien tant qu’il n’est pas revenu dans ses limites. La publication attend toujours. Un propriétaire ou un administrateur peut changer d’offre sur la page de facturation.} WorkspaceOverPlan {Rien n’a été approuvé : l’équipe qui vous a envoyé ce lien ne peut pas programmer de publications pour le moment. Prévenez-la ; la publication vous attend toujours.} ReviewAccessDenied {Ce lien ne le permet pas.} ReviewCaptchaRequired {Complétez la vérification ci-dessous, puis envoyez de nouveau.} TooManyReviewRequests {Trop d’envois sont passés par ce lien récemment. Réessayez dans un moment.} ReviewRequestTooLarge {C’est trop long pour être envoyé.} other {Une erreur est survenue. Réessayez.}}"
+    },
+    "page": {
+      "metaTitle": "Relire une publication",
+      "title": "Relire une publication",
+      "intro": "Ce lien vous a été envoyé pour regarder une publication avant sa parution. Vous n’avez pas besoin de compte.",
+      "loading": "Chargement de la publication…",
+      "noToken": {
+        "title": "Ce lien est incomplet",
+        "description": "Ouvrez le lien entier que vous avez reçu : sa fin, après le signe #, est ce qui ouvre la publication."
+      },
+      "notFound": {
+        "title": "Ce lien n’ouvre rien",
+        "description": "Vérifiez que vous avez ouvert le lien entier, ou demandez-en un nouveau à la personne qui vous l’a envoyé."
+      },
+      "closed": {
+        "title": "Ce lien ne fonctionne plus",
+        "reason": "{reason, select, expired {Il a expiré. Demandez-en un nouveau à la personne qui vous l’a envoyé.} revoked {Il a été révoqué. Demandez-en un nouveau à la personne qui vous l’a envoyé.} published {La publication est parue, ou en cours de parution : il n’y a plus rien à relire.} cancelled {La publication a été annulée : elle ne paraîtra pas.} deleted {La publication a été supprimée.} other {La publication ne peut plus être relue.}}"
+      },
+      "failed": {
+        "title": "La publication n’a pas pu être chargée",
+        "description": "Vérifiez votre connexion, puis réessayez."
+      },
+      "status": "{status, select, awaitingApproval {Cette publication attend une approbation. Approuvée, elle paraîtra le {at}, à votre heure ({zone}).} scheduled {Cette publication est programmée : elle paraîtra le {at}, à votre heure ({zone}).} other {Cette publication est un brouillon : elle n’a pas encore d’heure de parution.}}",
+      "expires": "Ce lien fonctionne jusqu’au {at}.",
+      "identityLegend": "Qui êtes-vous ?",
+      "nameLabel": "Votre nom",
+      "nameHint": "Affiché avec ce que vous écrivez et décidez.",
+      "privacy": "Votre nom est conservé avec vos commentaires et décisions pendant 24 mois, pour l’équipe qui vous a envoyé ce lien.",
+      "decideTitle": "Votre décision",
+      "decideIntro": "Approuvez la publication telle qu’elle est montrée ici, ou demandez des modifications. Votre décision est enregistrée avec votre nom.",
+      "approve": "Approuver cette publication",
+      "approving": "Approbation…",
+      "requestChanges": "Demander des modifications",
+      "changesLabel": "Que faut-il changer ?",
+      "sendChanges": "Envoyer",
+      "approved": "Merci : la publication est approuvée, et programmée.",
+      "approvedLate": "Merci : la publication est approuvée. Son heure était passée, elle n’a donc pas été publiée : l’équipe lui en donnera une nouvelle.",
+      "changesSent": "Merci : votre demande est envoyée, et la publication est retournée à son auteur.",
+      "decided": "{status, select, approved {Cette publication a été approuvée.} changesRequested {Des modifications ont été demandées sur cette publication.} other {Aucune approbation n’est demandée pour cette publication en ce moment.}}"
+    },
+    "approvals": {
+      "nav": "Approbations",
+      "title": "À approuver",
+      "description": "Les publications de {workspace} qui attendent une approbation avant d’être programmées, les plus anciennes d’abord.",
+      "loading": "Chargement des approbations…",
+      "loadFailed": "Les approbations n’ont pas pu être chargées.",
+      "empty": "Aucune publication n’attend d’approbation.",
+      "open": "Ouvrir la publication",
+      "policy": "{policy, select, never {Cet espace de travail ne demande aucune approbation : qui peut programmer programme. Un propriétaire ou un administrateur peut le changer dans les paramètres.} contributorsAndApplications {Les publications des contributeurs et des applications attendent une approbation.} always {Toutes les publications attendent une approbation.} other {{policy}}}"
+    },
+    "policy": {
+      "title": "Approbations",
+      "description": "Si les publications attendent une approbation avant d’être programmées. Une publication qui attend a son heure, et ne part qu’une fois approuvée par une personne qui peut approuver les publications, ou par une personne invitée dont le lien le permet.",
+      "legend": "Les publications attendent une approbation",
+      "option": "{policy, select, never {Jamais} contributorsAndApplications {Quand un contributeur ou une application le demande} always {Toujours} other {{policy}}}",
+      "hint": "{policy, select, never {Qui peut programmer des publications le fait. Les contributeurs écrivent des brouillons.} contributorsAndApplications {Les contributeurs peuvent demander l’envoi d’une publication, et ce qu’une clé d’API, la ligne de commande ou un assistant IA programme attend aussi. Les propriétaires, administrateurs et éditeurs programment directement dans l’application.} always {Toutes les publications attendent, qui que ce soit qui demande. Qui peut approuver peut approuver les siennes.} other {{policy}}}",
+      "save": "Enregistrer",
+      "saving": "Enregistrement…",
+      "saved": "Paramètre d’approbation enregistré. Il s’applique aux publications programmées à partir de maintenant.",
+      "saveFailed": "Le paramètre n’a pas pu être enregistré.",
+      "loadFailed": "Le paramètre n’a pas pu être chargé.",
+      "readOnly": "Les propriétaires et les administrateurs le choisissent."
+    }
   }
 }

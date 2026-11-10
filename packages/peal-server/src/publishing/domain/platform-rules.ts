@@ -99,7 +99,13 @@ const minute = 60 * second;
 //   up to 35 photos. TikTok publishes nothing without media.
 // - YouTube: the video's description, at most 5,000 bytes, without "<" or
 //   ">"; no post without its one video.
-// - Pinterest: no limit known yet.
+// - Pinterest: a Pin's description, at most 800 characters (pins/create);
+//   no Pin without an image or a video; up to 5 images, a carousel.
+// - Google Business Profile: a local post's `summary` is held to 1,500
+//   characters, the figure commonly reported for Google's editor. Google's
+//   own pages name none (the localPosts reference, "Description/body of
+//   the local post", and Business Profile Help's page on posts, as read in
+//   November 2026). How many photos one post takes is not stated either.
 //
 // "Characters" with no other word count code points, the stricter reading.
 //
@@ -117,7 +123,8 @@ const minute = 60 * second;
 // - LinkedIn: JPEG, PNG and GIF images of up to 36,152,320 pixels; one MP4
 //   video of 3 seconds to 30 minutes and 75 KB to 500 MB (75 KB read as
 //   75,000 bytes, the smaller reading), never with images; alt text of up
-//   to 4,086 characters.
+//   to 4,086 characters; or one PDF document of up to 100 MB (and 300
+//   pages, which the media library checks), alone.
 // - X: JPEG, PNG and WebP images of up to 5 MB, GIFs of up to 15 MB; one
 //   video, MP4 or QuickTime, of 0.5 to 140 seconds and up to 512 MB, never
 //   with images; a GIF alone too; alt text of up to 1,000 characters.
@@ -143,7 +150,18 @@ const minute = 60 * second;
 //   alone (channels Google has not verified take 15 minutes at most, which
 //   only YouTube knows). A video of 3 minutes or less that is square or
 //   taller than wide becomes a Short.
-// - Pinterest: no media rule known yet.
+// - Pinterest (pins/create, and its product specs): JPEG and PNG images of
+//   up to 20 MB, one alone or 2 to 5 as a carousel; or one video, MP4 or
+//   QuickTime, of 4 seconds to 15 minutes and up to 2 GB, taller than
+//   1.91:1 and shorter than 1:2, never with images. A Pin has one alt text
+//   of up to 500 characters, the first file's. Pinterest asks carousel
+//   images to be square or 2:3, which it checks itself.
+// - Google Business Profile: JPEG and PNG photos of 10,240 bytes (the
+//   MediaItem reference) to 5 MB (Business Profile's photo guidelines),
+//   which Google fetches from a public URL. The API takes no video in a
+//   local post ("only photos are supported"), and keeps no alt text. A
+//   photo's shorter side must have 250 pixels at least, which Peal does not
+//   check: Google refuses a smaller one when the post goes out.
 const blueskyImage: FormatLimits = { maxByteSize: 2_000_000 };
 
 const mastodonImage: FormatLimits = {
@@ -202,6 +220,20 @@ const tiktokVideo: FormatLimits = {
   sideRange: { maximum: 4096, minimum: 360 },
 };
 
+const googleBusinessImage: FormatLimits = {
+  maxByteSize: 5 * mebibyte,
+  minByteSize: 10_240,
+};
+
+const pinterestImage: FormatLimits = { maxByteSize: 20 * mebibyte };
+
+const pinterestVideo: FormatLimits = {
+  aspectRatio: { maximum: 1.91, minimum: 0.5 },
+  maxByteSize: 2048 * mebibyte,
+  maxDurationMs: 15 * minute,
+  minDurationMs: 4 * second,
+};
+
 export const platformRules: Readonly<Record<Platform, PlatformRules>> = {
   bluesky: {
     maxMedia: 4,
@@ -239,6 +271,18 @@ export const platformRules: Readonly<Record<Platform, PlatformRules>> = {
     mediaRequired: false,
     textLimits: [{ maximum: 63_206, unit: "codePoints" }],
   },
+  googleBusiness: {
+    media: {
+      formats: {
+        "image/jpeg": googleBusinessImage,
+        "image/png": googleBusinessImage,
+      },
+      mixesKinds: false,
+      showsAltText: false,
+    },
+    mediaRequired: false,
+    textLimits: [{ maximum: 1500, unit: "codePoints" }],
+  },
   instagram: {
     maxHashtags: 30,
     maxMedia: 20,
@@ -262,6 +306,8 @@ export const platformRules: Readonly<Record<Platform, PlatformRules>> = {
     maxMedia: 20,
     media: {
       formats: {
+        // A document, shown page by page, is the post's only file.
+        "application/pdf": { maxByteSize: 100 * mebibyte, maxMediaWith: 1 },
         "image/gif": linkedinImage,
         "image/jpeg": linkedinImage,
         "image/png": linkedinImage,
@@ -299,7 +345,23 @@ export const platformRules: Readonly<Record<Platform, PlatformRules>> = {
     mediaRequired: false,
     textLimits: [{ maximum: 500, unit: "codePoints" }],
   },
-  pinterest: { mediaRequired: false, textLimits: [] },
+  pinterest: {
+    maxMedia: 5,
+    media: {
+      formats: {
+        "image/jpeg": pinterestImage,
+        "image/png": pinterestImage,
+        "video/mp4": pinterestVideo,
+        "video/quicktime": pinterestVideo,
+      },
+      maxAltTextLength: 500,
+      maxVideos: 1,
+      mixesKinds: false,
+      showsAltText: true,
+    },
+    mediaRequired: true,
+    textLimits: [{ maximum: 800, unit: "codePoints" }],
+  },
   threads: {
     maxLinks: 5,
     maxMedia: 20,

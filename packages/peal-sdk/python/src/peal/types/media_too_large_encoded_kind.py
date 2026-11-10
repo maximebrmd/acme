@@ -2,4 +2,4 @@
 
 import typing
 
-MediaTooLargeEncodedKind = typing.Union[typing.Literal["image", "video"], typing.Any]
+MediaTooLargeEncodedKind = typing.Union[typing.Literal["image", "video", "document"], typing.Any]

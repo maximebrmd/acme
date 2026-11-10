@@ -23,7 +23,7 @@ public final class Usage {
 
     private final int channels;
 
-    private final int mediaStorage;
+    private final long mediaStorage;
 
     private final int members;
 
@@ -34,7 +34,7 @@ public final class Usage {
     private Usage(
             PeriodUsage assistantRequests,
             int channels,
-            int mediaStorage,
+            long mediaStorage,
             int members,
             PeriodUsage scheduledPosts,
             Map<String, Object> additionalProperties) {
@@ -57,7 +57,7 @@ public final class Usage {
     }
 
     @JsonProperty("mediaStorage")
-    public int getMediaStorage() {
+    public long getMediaStorage() {
         return mediaStorage;
     }
 
@@ -116,7 +116,7 @@ public final class Usage {
     }
 
     public interface MediaStorageStage {
-        MembersStage mediaStorage(int mediaStorage);
+        MembersStage mediaStorage(long mediaStorage);
     }
 
     public interface MembersStage {
@@ -147,7 +147,7 @@ public final class Usage {
 
         private int channels;
 
-        private int mediaStorage;
+        private long mediaStorage;
 
         private int members;
 
@@ -183,7 +183,7 @@ public final class Usage {
 
         @java.lang.Override
         @JsonSetter("mediaStorage")
-        public MembersStage mediaStorage(int mediaStorage) {
+        public MembersStage mediaStorage(long mediaStorage) {
             this.mediaStorage = mediaStorage;
             return this;
         }

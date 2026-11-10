@@ -302,6 +302,20 @@ const tiktokVideo: FormatLimits = {
   sideRange: { maximum: 4096, minimum: 360 },
 };
 
+const googleBusinessImage: FormatLimits = {
+  maxByteSize: 5 * mebibyte,
+  minByteSize: 10_240,
+};
+
+const pinterestImage: FormatLimits = { maxByteSize: 20 * mebibyte };
+
+const pinterestVideo: FormatLimits = {
+  aspectRatio: { maximum: 1.91, minimum: 0.5 },
+  maxByteSize: 2048 * mebibyte,
+  maxDurationMs: 15 * minute,
+  minDurationMs: 4 * second,
+};
+
 export const platformRules: Readonly<Record<Platform, PlatformRules>> = {
   bluesky: {
     maxMedia: 4,
@@ -339,6 +353,18 @@ export const platformRules: Readonly<Record<Platform, PlatformRules>> = {
     mediaRequired: false,
     textLimits: [{ maximum: 63_206, unit: "codePoints" }],
   },
+  googleBusiness: {
+    media: {
+      formats: {
+        "image/jpeg": googleBusinessImage,
+        "image/png": googleBusinessImage,
+      },
+      mixesKinds: false,
+      showsAltText: false,
+    },
+    mediaRequired: false,
+    textLimits: [{ maximum: 1500, unit: "codePoints" }],
+  },
   instagram: {
     maxHashtags: 30,
     maxMedia: 20,
@@ -362,6 +388,8 @@ export const platformRules: Readonly<Record<Platform, PlatformRules>> = {
     maxMedia: 20,
     media: {
       formats: {
+        // A document, shown page by page, is the post's only file.
+        "application/pdf": { maxByteSize: 100 * mebibyte, maxMediaWith: 1 },
         "image/gif": linkedinImage,
         "image/jpeg": linkedinImage,
         "image/png": linkedinImage,
@@ -399,7 +427,23 @@ export const platformRules: Readonly<Record<Platform, PlatformRules>> = {
     mediaRequired: false,
     textLimits: [{ maximum: 500, unit: "codePoints" }],
   },
-  pinterest: { mediaRequired: false, textLimits: [] },
+  pinterest: {
+    maxMedia: 5,
+    media: {
+      formats: {
+        "image/jpeg": pinterestImage,
+        "image/png": pinterestImage,
+        "video/mp4": pinterestVideo,
+        "video/quicktime": pinterestVideo,
+      },
+      maxAltTextLength: 500,
+      maxVideos: 1,
+      mixesKinds: false,
+      showsAltText: true,
+    },
+    mediaRequired: true,
+    textLimits: [{ maximum: 800, unit: "codePoints" }],
+  },
   threads: {
     maxLinks: 5,
     maxMedia: 20,

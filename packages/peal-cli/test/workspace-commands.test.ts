@@ -8,6 +8,7 @@ import {
   Ref,
   Schema,
 } from "effect";
+import { ChannelCapabilitiesSchema } from "peal-contract";
 
 import { printable } from "#print.ts";
 
@@ -17,6 +18,7 @@ import {
   failedTargetId,
   finishedId,
   mastodonId,
+  pinterestId,
   quotaTargetId,
   scheduledId,
   studioMe,
@@ -356,6 +358,216 @@ describe("peal channels", () => {
   );
 });
 
+describe("peal channels capabilities", () => {
+  it.effect("shows what a channel takes: text, media, options, account", () =>
+    Effect.gen(function* capabilities() {
+      const session = yield* signedIn();
+
+      const shown = yield* session.printed([
+        "channels",
+        "capabilities",
+        tiktokId,
+        ...inStudio,
+      ]);
+
+      assert.include(shown, "What a post on tiktok may hold");
+      assert.include(shown, "at most 500 codePoints, 65536 utf16Units");
+      assert.include(shown, "up to 4 images and videos, 1 video at most");
+      assert.include(shown, "image/jpeg  up to 16 MiB, 33177600 pixels");
+      assert.include(
+        shown,
+        "privacyLevel    choice   required  one of PUBLIC_TO_EVERYONE, SELF_ONLY; values from the lookup tiktokCreator"
+      );
+      assert.include(
+        shown,
+        "When commercialContent is true, one of brandOrganic, brandContent must be true."
+      );
+      assert.include(
+        shown,
+        "privacyLevel takes only PUBLIC_TO_EVERYONE, SELF_ONLY."
+      );
+      assert.include(shown, "disableDuet must be true.");
+      assert.include(shown, "Videos last 600 seconds at most.");
+      assert.include(shown, "Refused on this channel: image/jpeg.");
+    }).pipe(Effect.scoped, Effect.provide(filesLayer))
+  );
+
+  it.effect("sums up every platform when no channel is named", () =>
+    Effect.gen(function* platforms() {
+      const session = yield* signedIn();
+
+      const shown = yield* session.printed([
+        "channels",
+        "capabilities",
+        ...inStudio,
+      ]);
+
+      assert.include(shown, "mastodon");
+      assert.include(
+        shown,
+        "options: madeForKids*, title*, categoryId, privacy"
+      );
+      assert.include(
+        shown,
+        "lookups: youtubeVideoCategories, youtubePlaylists"
+      );
+      assert.include(shown, "* required to schedule");
+    }).pipe(Effect.scoped, Effect.provide(filesLayer))
+  );
+
+  it.effect("prints the server's answer as JSON for scripts", () =>
+    Effect.gen(function* json() {
+      const session = yield* signedIn();
+
+      const shown = yield* session.printed([
+        "channels",
+        "capabilities",
+        youtubeId,
+        "--json",
+        ...inStudio,
+      ]);
+
+      const decoded = Schema.decodeUnknownSync(
+        Schema.fromJsonString(ChannelCapabilitiesSchema)
+      )(shown);
+
+      assert.strictEqual(decoded.channelId, youtubeId);
+      assert.deepStrictEqual(decoded.account, { _tag: "unrestricted" });
+      assert.include(
+        yield* session.refused([
+          "channels",
+          "capabilities",
+          draftId,
+          ...inStudio,
+        ]),
+        "The workspace has no such channel"
+      );
+    }).pipe(Effect.scoped, Effect.provide(filesLayer))
+  );
+});
+
+// peal channels lookup, in the studio.
+const lookup = (more: readonly string[]) => [
+  "channels",
+  "lookup",
+  ...more,
+  ...inStudio,
+];
+
+describe("peal channels lookup", () => {
+  it.effect("lists a channel's lookups, and runs one", () =>
+    Effect.gen(function* lookups() {
+      const session = yield* signedIn();
+
+      const listed = yield* session.printed([
+        "channels",
+        "lookup",
+        youtubeId,
+        ...inStudio,
+      ]);
+
+      assert.include(
+        listed,
+        "youtubeVideoCategories  fills categoryId  takes --language, --region"
+      );
+      assert.include(listed, "youtubePlaylists        takes --cursor, --limit");
+
+      const categories = yield* session.printed([
+        "channels",
+        "lookup",
+        youtubeId,
+        "youtubeVideoCategories",
+        "--region",
+        "FR",
+        ...inStudio,
+      ]);
+
+      assert.include(categories, "22  People & Blogs");
+    }).pipe(Effect.scoped, Effect.provide(filesLayer))
+  );
+
+  it.effect("reads a paged lookup page by page", () =>
+    Effect.gen(function* paged() {
+      const session = yield* signedIn();
+
+      const run = (more: readonly string[]) =>
+        session.printed([
+          "channels",
+          "lookup",
+          youtubeId,
+          "youtubePlaylists",
+          ...more,
+          ...inStudio,
+        ]);
+
+      const first = yield* run([]);
+
+      assert.include(first, "PLsynthetic01  Launches  public");
+      assert.include(first, "More: add --cursor page-1");
+
+      const last = yield* run(["--cursor", "page-1"]);
+
+      assert.include(last, "PLsynthetic02  Field notes");
+      assert.notInclude(last, "More:");
+    }).pipe(Effect.scoped, Effect.provide(filesLayer))
+  );
+
+  it.effect("lists a Pinterest account's boards, and a board's sections", () =>
+    Effect.gen(function* pinterest() {
+      const session = yield* signedIn();
+
+      assert.include(
+        yield* session.printed(lookup([pinterestId])),
+        "pinterestBoardSections  fills boardSectionId  takes --board, --cursor, --limit"
+      );
+      assert.include(
+        yield* session.printed(lookup([pinterestId, "pinterestBoards"])),
+        "549755885001  Studio notes  PUBLIC"
+      );
+      assert.include(
+        yield* session.printed(
+          lookup([
+            pinterestId,
+            "pinterestBoardSections",
+            "--board",
+            "549755885001",
+          ])
+        ),
+        "5000000000001  Sketches"
+      );
+      assert.include(
+        yield* session.refused(lookup([pinterestId, "pinterestBoardSections"])),
+        "The lookup refused its input"
+      );
+    }).pipe(Effect.scoped, Effect.provide(filesLayer))
+  );
+
+  it.effect("shows a TikTok creator, and explains refusals", () =>
+    Effect.gen(function* refusals() {
+      const session = yield* signedIn();
+
+      assert.include(
+        yield* session.printed(lookup([tiktokId, "tiktokCreator"])),
+        "Posting as Studio (@studio_example)."
+      );
+      assert.include(
+        yield* session.refused(lookup([tiktokId, "youtubePlaylists"])),
+        "This channel's platform has no such lookup"
+      );
+      assert.include(
+        yield* session.refused(
+          lookup([youtubeId, "youtubeVideoCategories", "--region", "ZZ"])
+        ),
+        "The lookup refused its input"
+      );
+      assert.include(
+        yield* session.printed(lookup([mastodonId])),
+        "has no lookups"
+      );
+    }).pipe(Effect.scoped, Effect.provide(filesLayer))
+  );
+});
+
 describe("peal posts", () => {
   it.effect("shows how a post went on each channel, with its targets", () =>
     Effect.gen(function* shows() {
@@ -373,7 +585,7 @@ describe("peal posts", () => {
         `Post ${finishedId} in Studio: finished (failed), for 2026-11-08T09:00:00Z (Europe/Paris).`
       );
       assert.include(shown, failedTargetId);
-      assert.include(shown, "(mastodon @studio@example.social)");
+      assert.include(shown, "(mastodon @studio@social.example.test)");
       assert.include(
         shown,
         "failed: rateLimited (the platform kept limiting Peal, which stopped trying)"
@@ -418,7 +630,7 @@ describe("peal posts", () => {
 
       assert.include(
         yield* session.printed(args),
-        `Posting ${finishedId} again on ${mastodonId} (mastodon @studio@example.social), now: round 2.`
+        `Posting ${finishedId} again on ${mastodonId} (mastodon @studio@social.example.test), now: round 2.`
       );
       assert.include(
         yield* session.refused(args),
@@ -509,7 +721,7 @@ describe("peal analytics", () => {
       assert.match(summary, /Impressions\s+–/u);
       assert.include(
         summary,
-        `${mastodonId} (mastodon @studio@example.social)`
+        `${mastodonId} (mastodon @studio@social.example.test)`
       );
       assert.include(summary, "20 interactions");
       assert.deepStrictEqual(yield* changes(session.studio), [
@@ -554,7 +766,7 @@ describe("peal analytics", () => {
         ...inStudio,
       ]);
 
-      assert.include(shown, "https://example.social/@studio/1");
+      assert.include(shown, "https://social.example.test/@studio/1");
       assert.match(shown, /Reposts\s+4/u);
       assert.include(
         yield* session.printed(["analytics", "post", draftId, ...inStudio]),
@@ -623,7 +835,7 @@ describe("peal billing, members and invitations", () => {
       const session = yield* signedIn();
       const listed = yield* session.printed(["channels", "list", ...inStudio]);
 
-      assert.match(listed, /mastodon\s+@studio@example\.social\s+posts/u);
+      assert.match(listed, /mastodon\s+@studio@social\.example\.test\s+posts/u);
       assert.match(
         listed,
         /bluesky\s+studio\.example\.test\s+must be reconnected/u

@@ -14,6 +14,7 @@ pub enum Platform {
     Tiktok,
     Youtube,
     Pinterest,
+    GoogleBusiness,
     /// This variant is used for forward compatibility.
     /// If the server sends a value not recognized by the current SDK version,
     /// it will be captured here with the raw string value.
@@ -32,6 +33,7 @@ impl Serialize for Platform {
             Self::Tiktok => serializer.serialize_str("tiktok"),
             Self::Youtube => serializer.serialize_str("youtube"),
             Self::Pinterest => serializer.serialize_str("pinterest"),
+            Self::GoogleBusiness => serializer.serialize_str("googleBusiness"),
             Self::__Unknown(val) => serializer.serialize_str(val),
         }
     }
@@ -51,6 +53,7 @@ impl<'de> Deserialize<'de> for Platform {
             "tiktok" => Ok(Self::Tiktok),
             "youtube" => Ok(Self::Youtube),
             "pinterest" => Ok(Self::Pinterest),
+            "googleBusiness" => Ok(Self::GoogleBusiness),
             _ => Ok(Self::__Unknown(value)),
         }
     }
@@ -69,6 +72,7 @@ impl fmt::Display for Platform {
             Self::Tiktok => write!(f, "tiktok"),
             Self::Youtube => write!(f, "youtube"),
             Self::Pinterest => write!(f, "pinterest"),
+            Self::GoogleBusiness => write!(f, "googleBusiness"),
             Self::__Unknown(val) => write!(f, "{}", val),
         }
     }

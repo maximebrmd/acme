@@ -15,6 +15,14 @@ module Peal
 
       member -> { Peal::Types::NoticeEventPostUnconfirmed }, key: "POST_UNCONFIRMED"
 
+      member -> { Peal::Types::NoticeEventPostApprovalRequested }, key: "POST_APPROVAL_REQUESTED"
+
+      member -> { Peal::Types::NoticeEventPostApproved }, key: "POST_APPROVED"
+
+      member -> { Peal::Types::NoticeEventPostChangesRequested }, key: "POST_CHANGES_REQUESTED"
+
+      member -> { Peal::Types::NoticeEventPostCommented }, key: "POST_COMMENTED"
+
       member -> { Peal::Types::NoticeEventChannelReconnectRequired }, key: "CHANNEL_RECONNECT_REQUIRED"
 
       member -> { Peal::Types::NoticeEventChannelReconnectSoon }, key: "CHANNEL_RECONNECT_SOON"

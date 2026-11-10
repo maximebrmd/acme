@@ -1,7 +1,11 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import type { InstagramConnection, Platform } from "peal-contract";
+import type {
+  InstagramConnection,
+  LinkedInConnection,
+  Platform,
+} from "peal-contract";
 import { Alert, AlertDescription } from "peal-ui/components/alert";
 import { Button } from "peal-ui/components/button";
 import {
@@ -20,6 +24,7 @@ import { useChannelErrorText } from "#channels/channel-error-text.ts";
 import type { ChannelErrorKey } from "#channels/channels-api.ts";
 import { useConnect } from "#channels/use-connect.ts";
 import { ConnectInstagram } from "#components/channels/connect-instagram.tsx";
+import { ConnectLinkedIn } from "#components/channels/connect-linkedin.tsx";
 import {
   ConnectMeta,
   metaPlatforms,
@@ -153,13 +158,21 @@ const ConnectBluesky = ({ workspaceId }: { readonly workspaceId: string }) => {
 };
 
 // The platforms whose sign-in needs nothing typed first: a button.
-type ButtonPlatform = "linkedin" | "tiktok" | "x" | "youtube";
+type ButtonPlatform =
+  | "googleBusiness"
+  | "linkedin"
+  | "pinterest"
+  | "tiktok"
+  | "x"
+  | "youtube";
 
 const buttonPlatforms: readonly ButtonPlatform[] = [
   "linkedin",
   "x",
   "tiktok",
   "youtube",
+  "pinterest",
+  "googleBusiness",
 ];
 
 const ConnectWithButton = ({
@@ -224,6 +237,29 @@ const ConnectWithMeta = ({
   );
 };
 
+const ConnectWithLinkedIn = ({
+  connections,
+  workspaceId,
+}: {
+  readonly connections: readonly LinkedInConnection[];
+  readonly workspaceId: string;
+}) => {
+  const { error, isPending, start } = useConnect(workspaceId, "linkedin");
+
+  const handleConnect = (connection: LinkedInConnection) => {
+    start({ connection });
+  };
+
+  return (
+    <ConnectLinkedIn
+      connections={connections}
+      error={error}
+      isPending={isPending}
+      onConnect={handleConnect}
+    />
+  );
+};
+
 const ConnectWithInstagram = ({
   connections,
   workspaceId,
@@ -250,20 +286,28 @@ const ConnectWithInstagram = ({
 /**
  * Where a member starts connecting an account, for each platform this
  * server connects: a form for Mastodon and Bluesky, which ask for a server
- * or a handle, a button for LinkedIn, X, TikTok and YouTube, one for each
- * of Instagram's ways in the server has, and Meta's sign-in for Threads
- * and Facebook Pages.
+ * or a handle, a button for X, TikTok, YouTube, Pinterest and Google
+ * Business Profile, one for each of Instagram's ways in the server has,
+ * one for a LinkedIn profile and one for company pages on a server that
+ * connects pages, and Meta's sign-in for Threads and Facebook Pages.
  */
 export const ConnectForms = ({
   instagramConnections,
+  linkedinConnections,
   platforms,
   workspaceId,
 }: {
   readonly instagramConnections: readonly InstagramConnection[];
+  /** What the server connects on LinkedIn: profiles, pages, or both. */
+  readonly linkedinConnections: readonly LinkedInConnection[];
   readonly platforms: readonly Platform[];
   readonly workspaceId: string;
 }) => {
   const offered = new Set(platforms);
+
+  // A server with the app for pages offers the choice; one without keeps
+  // LinkedIn's single button, for a profile.
+  const linkedinChoice = linkedinConnections.includes("linkedinPage");
 
   return (
     <div className="grid gap-4 sm:grid-cols-2">
@@ -273,8 +317,14 @@ export const ConnectForms = ({
       {offered.has("bluesky") ? (
         <ConnectBluesky workspaceId={workspaceId} />
       ) : null}
+      {offered.has("linkedin") && linkedinChoice ? (
+        <ConnectWithLinkedIn
+          connections={linkedinConnections}
+          workspaceId={workspaceId}
+        />
+      ) : null}
       {buttonPlatforms.flatMap((platform) =>
-        offered.has(platform)
+        offered.has(platform) && !(platform === "linkedin" && linkedinChoice)
           ? [
               <ConnectWithButton
                 key={platform}

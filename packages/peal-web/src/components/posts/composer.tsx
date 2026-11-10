@@ -4,6 +4,7 @@ import { DateTime, Option } from "effect";
 import { useFormatter, useLocale, useTranslations } from "next-intl";
 import { PostContentInvalid } from "peal-contract";
 import type {
+  ApprovalPolicy,
   Channel,
   MediaAttachment,
   Permission,
@@ -141,14 +142,26 @@ const titleOf = (t: Translate, post: Post | undefined) => {
     return t("editTitle");
   }
 
+  if (post.status === "awaitingApproval") {
+    return t("awaitingTitle");
+  }
+
   return post.status === "scheduled" ? t("scheduledTitle") : t("closedTitle");
 };
 
 const noticeOf = (
   t: Translate,
   status: PostStatus,
-  { canSchedule, canWrite }: { canSchedule: boolean; canWrite: boolean }
+  {
+    canSchedule,
+    canWrite,
+    willWait,
+  }: { canSchedule: boolean; canWrite: boolean; willWait: boolean }
 ) => {
+  if (status === "awaitingApproval") {
+    return t("awaitingText");
+  }
+
   if (status === "scheduled") {
     return t("lockedText");
   }
@@ -161,13 +174,26 @@ const noticeOf = (
     return t("notAllowed");
   }
 
-  return canSchedule ? null : t("cannotSchedule");
+  if (!canSchedule) {
+    return t("cannotSchedule");
+  }
+
+  return willWait ? t("willWait") : null;
 };
 
 const calendarOf = (workspaceId: string, date: ScheduleChoice["date"]) =>
   `/app/${workspaceId}/calendar?date=${dateKey(date)}`;
 
+// What the composer starts with: the post's, or nothing for a new one.
+const startOf = (post: Post | undefined) => ({
+  media: post?.content.media ?? [],
+  schedule: post?.schedule ?? null,
+  text: post?.content.text ?? "",
+});
+
 interface ComposerProps {
+  /** Which of the workspace's posts wait for an approval. */
+  readonly approvalPolicy: ApprovalPolicy;
   readonly channels: readonly Channel[];
   readonly permissions: readonly Permission[];
   /** None for a new post. */
@@ -186,6 +212,7 @@ interface ComposerProps {
 // options, and can be moved, cancelled, or taken back to draft to change
 // them.
 export const Composer = ({
+  approvalPolicy,
   channels,
   permissions,
   post,
@@ -201,7 +228,8 @@ export const Composer = ({
   const [isPending, startTransition] = useTransition();
   const [action, setAction] = useState<ComposerAction | null>(null);
 
-  const [text, setText] = useState(post?.content.text ?? "");
+  const start = startOf(post);
+  const [text, setText] = useState(start.text);
   // Counts the texts accepted from the assistant: each starts fresh editors.
   const [accepted, setAccepted] = useState(0);
   const [overrides, setOverrides] = useState(() => overridesOf(post));
@@ -215,16 +243,14 @@ export const Composer = ({
     )
   );
 
-  const [media, setMedia] = useState<readonly MediaAttachment[]>(
-    post?.content.media ?? []
-  );
+  const [media, setMedia] = useState<readonly MediaAttachment[]>(start.media);
 
   const [channelIds, setChannelIds] = useState<readonly string[]>(() =>
     connectedTargets(post, channels)
   );
 
   const [choice, setChoice] = useState<ScheduleChoice>(() =>
-    choiceOf(post?.schedule ?? null)
+    choiceOf(start.schedule)
   );
 
   // A new post is saved once, then updated. It gets its own address, without
@@ -239,7 +265,9 @@ export const Composer = ({
     canUnschedule,
     canWrite,
     status,
+    willWait,
   } = capabilitiesOf({
+    approvalPolicy,
     permissions,
     post,
     saved: postId !== undefined,
@@ -348,7 +376,14 @@ export const Composer = ({
       return;
     }
 
-    toast.success(t("scheduled", { at: formatted(at.value) }));
+    toast.success(
+      t(
+        scheduled.value.status === "awaitingApproval"
+          ? "sentForApproval"
+          : "scheduled",
+        { at: formatted(at.value) }
+      )
+    );
     router.push(calendarOf(workspaceId, choice.date));
   };
 
@@ -425,7 +460,7 @@ export const Composer = ({
     startTransition(work[next]);
   };
 
-  const notice = noticeOf(t, status, { canSchedule, canWrite });
+  const notice = noticeOf(t, status, { canSchedule, canWrite, willWait });
 
   return (
     <Card>
@@ -547,7 +582,7 @@ export const Composer = ({
             </legend>
             <ScheduleFields
               value={choice}
-              disabled={!canSchedule || busy !== null}
+              disabled={!(canSchedule || canReschedule) || busy !== null}
               onChange={setChoice}
             />
           </fieldset>
@@ -578,6 +613,7 @@ export const Composer = ({
           canSchedule={canWrite && canSchedule}
           canReschedule={canReschedule}
           canUnschedule={canUnschedule}
+          willWait={willWait}
           canDiscard={canDiscard}
           canCancel={canCancel}
           publishable={channelFits.every(

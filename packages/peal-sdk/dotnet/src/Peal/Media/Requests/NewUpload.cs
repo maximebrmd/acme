@@ -13,7 +13,7 @@ public record NewUpload
     public string? AltText { get; set; }
 
     [JsonPropertyName("byteSize")]
-    public required int ByteSize { get; set; }
+    public required long ByteSize { get; set; }
 
     [JsonPropertyName("contentType")]
     public required string ContentType { get; set; }
