@@ -372,6 +372,7 @@
       "newTitle": "Nouvelle publication",
       "editTitle": "Modifier le brouillon",
       "scheduledTitle": "Publication programmée",
+      "awaitingTitle": "Publication en attente d’approbation",
       "closedTitle": "Publication",
       "description": "Écrivez une fois, adaptez le texte à chaque canal si besoin, puis choisissez quand il part.",
       "loading": "Chargement de la publication…",
@@ -411,6 +412,8 @@
       "saving": "Enregistrement…",
       "schedule": "Programmer",
       "scheduling": "Programmation…",
+      "askApproval": "Demander l’approbation",
+      "askingApproval": "Demande…",
       "reschedule": "Déplacer à cette heure",
       "rescheduling": "Déplacement…",
       "cancelPost": "Annuler la publication",
@@ -430,11 +433,14 @@
       "closeDialog": "Fermer",
       "saved": "Brouillon enregistré.",
       "scheduled": "Publication programmée pour {at}.",
+      "sentForApproval": "Envoyée pour approbation. Une fois approuvée, la publication partira le {at}.",
       "rescheduled": "Publication déplacée à {at}.",
       "cancelled": "Publication annulée.",
       "unscheduled": "La publication est de nouveau un brouillon : modifiez-la, puis programmez-la.",
       "discarded": "Brouillon supprimé.",
       "lockedText": "Une publication programmée garde son texte. Vous pouvez encore la déplacer ou l’annuler, ou la repasser en brouillon pour la modifier.",
+      "awaitingText": "Cette publication attend une approbation : elle garde son texte, et ne partira à son heure qu’une fois approuvée. Vous pouvez encore la déplacer ou l’annuler, ou la remettre en brouillon pour la modifier.",
+      "willWait": "Cet espace de travail demande une approbation : une fois la demande faite, la publication attend, et ne partira à son heure que si quelqu’un l’approuve avant.",
       "readOnly": "Cette publication ne peut plus être modifiée.",
       "notAllowed": "Votre rôle vous permet de lire les publications, pas de les modifier.",
       "cannotSchedule": "Votre rôle vous permet d’écrire des brouillons. Une personne qui peut programmer choisira l’heure.",
@@ -1466,5 +1472,164 @@
     "description": "Cette page a rencontré une erreur, qui a été signalée. Réessayez, ou revenez dans un instant.",
     "retry": "Réessayer",
     "home": "Retour à l’accueil"
+  },
+  "Review": {
+    "title": "Relecture",
+    "description": "Les commentaires sur cette publication, les approbations demandées, et les liens qui la montrent à des personnes sans compte.",
+    "loading": "Chargement de la relecture…",
+    "loadFailed": "La relecture n’a pas pu être chargée.",
+    "retry": "Réessayer",
+    "close": "Fermer",
+    "reviewer": {
+      "apiKey": "Une clé d’API",
+      "visitor": "Une personne invitée à relire",
+      "formerMember": "Un ancien membre",
+      "visitorBadge": "Invité"
+    },
+    "thread": {
+      "title": "Commentaires",
+      "empty": "Personne n’a encore commenté.",
+      "aChannel": "un canal",
+      "aboutChannel": "À propos de la publication sur {channel}",
+      "aboutWords": "À propos de ces mots, sur {channel} :",
+      "aboutWordsGone": "À propos de ces mots, que le texte sur {channel} ne dit plus :",
+      "resolved": "Résolu",
+      "answer": "Répondre",
+      "resolve": "Résoudre",
+      "reopen": "Rouvrir"
+    },
+    "form": {
+      "hint": "{count} caractères sur {maximum}. Texte brut : rien de ce que vous tapez n’est lu comme une mise en forme.",
+      "commentLabel": "Votre commentaire",
+      "comment": "Commenter",
+      "answerLabel": "Votre réponse",
+      "answer": "Répondre",
+      "sending": "Envoi…",
+      "aboutWords": "Votre commentaire porte sur ces mots, sur {channel} :",
+      "wholePost": "Commenter plutôt toute la publication"
+    },
+    "preview": {
+      "title": "La publication sur chaque canal",
+      "hint": "Ce que chaque canal recevra. Ce n’est pas la mise en page de la plateforme.",
+      "hintSelect": "Ce que chaque canal recevra. Ce n’est pas la mise en page de la plateforme. Sélectionnez des mots pour les commenter.",
+      "disconnected": "Un canal déconnecté",
+      "platform": "{platform, select, bluesky {Bluesky} facebook {Facebook} instagram {Instagram} linkedin {LinkedIn} mastodon {Mastodon} pinterest {Pinterest} threads {Threads} tiktok {TikTok} x {X} youtube {YouTube} other {{platform}}}",
+      "noText": "Pas de texte sur ce canal.",
+      "mediaLabel": "Images et vidéos",
+      "mediaUnavailable": "Ce fichier ne peut pas être affiché.",
+      "video": "Vidéo",
+      "altText": "Texte alternatif : {text}",
+      "noAltText": "Pas de texte alternatif."
+    },
+    "approval": {
+      "status": "{status, select, pending {En attente d’approbation} approved {Approuvée} changesRequested {Modifications demandées} withdrawn {Retirée} other {{status}}}",
+      "askedFor": "pour partir le {at}",
+      "askedBy": "{via, select, apiKey {Demandée avec une clé d’API} application {Demandée par {name}, depuis une application} unknown {Demandée par un ancien membre} other {Demandée par {name}}} le {at}",
+      "decidedBy": "{kind, select, visitor {Décidée par {name}, depuis un lien de relecture,} other {Décidée par {name}}} le {at}"
+    },
+    "decide": {
+      "waiting": "Cette publication attend une approbation. Elle ne partira à son heure qu’une fois approuvée par une personne qui peut approuver les publications, ou par une personne invitée dont le lien le permet.",
+      "waitingForYou": "Cette publication attend une approbation, que vous pouvez donner. Approuvée, elle est programmée pour son heure ; approuvée après cette heure, elle redevient un brouillon au lieu de partir en retard.",
+      "approve": "Approuver",
+      "approving": "Approbation…",
+      "requestChanges": "Demander des modifications",
+      "changesTitle": "Demander des modifications ?",
+      "changesDescription": "La publication redevient un brouillon et ne partira plus à son heure. Son auteur est prévenu, avec votre commentaire.",
+      "changesLabel": "Que faut-il changer ?",
+      "sendBack": "Renvoyer en brouillon",
+      "sentBack": "Modifications demandées : la publication est de nouveau un brouillon.",
+      "approved": "Approuvée : la publication est programmée.",
+      "approvedLate": "Approuvée après son heure : rien n’a été publié en retard. La publication est de nouveau un brouillon, toujours approuvé : donnez-lui une nouvelle date."
+    },
+    "links": {
+      "title": "Liens de relecture",
+      "description": "Un lien montre cette publication, et rien d’autre de l’espace de travail, à qui le détient, sans compte. Il cesse de fonctionner à son expiration ou à sa révocation, et dès que la publication est publiée, annulée ou supprimée.",
+      "accessLabel": "La personne qui l’ouvre peut",
+      "access": "{access, select, view {Voir seulement} comment {Voir et commenter} approve {Voir, commenter et approuver} other {{access}}}",
+      "lifetimeLabel": "Il fonctionne pendant",
+      "lifetime": "{days, plural, one {# jour} other {# jours}}",
+      "create": "Créer un lien",
+      "creating": "Création…",
+      "createFailed": "Le lien n’a pas pu être créé.",
+      "madeTitle": "Copiez ce lien maintenant",
+      "madeDescription": "Il ne sera plus affiché : Peal n’en garde pas de copie. La personne qui l’ouvre peut {access, select, view {voir la publication} comment {voir la publication et la commenter} approve {voir la publication, la commenter, et l’approuver ou demander des modifications} other {{access}}}, jusqu’au {until}.",
+      "copy": "Copier le lien",
+      "copied": "Lien copié.",
+      "loadFailed": "Les liens n’ont pas pu être chargés.",
+      "empty": "Aucun lien n’a été créé pour cette publication.",
+      "status": "{status, select, active {Actif} expired {Expiré} revoked {Révoqué} other {{status}}}",
+      "until": "jusqu’au {until}",
+      "revoke": "Révoquer",
+      "revoked": "Lien révoqué.",
+      "revokeFailed": "Le lien n’a pas pu être révoqué."
+    },
+    "errors": {
+      "comment": "{problem, select, text {Écrivez un commentaire de 2000 caractères au plus.} name {Donnez un nom de 80 caractères au plus.} email {Ce n’est pas une adresse e-mail.} parent {Ce fil n’accepte plus de réponses.} anchor {La publication ne va plus sur ce canal.} selection {Le texte a changé depuis que vous avez sélectionné ces mots. Sélectionnez-les de nouveau.} other {Le commentaire n’a pas pu être enregistré.}}",
+      "failure": "{failure, select, Forbidden {Votre rôle ne le permet pas, ou une application a demandé l’envoi de cette publication : une personne doit l’approuver.} PostNotFound {Cette publication n’existe plus.} CommentNotFound {Ce commentaire n’existe plus.} ApprovalNotPending {Cette publication n’attend plus d’approbation : elle a été décidée, reprise ou programmée entre-temps.} ReviewAccessDenied {Ce lien ne le permet pas.} ReviewCaptchaRequired {Complétez la vérification ci-dessous, puis envoyez de nouveau.} TooManyReviewRequests {Trop d’envois sont passés par ce lien récemment. Réessayez dans un moment.} ReviewRequestTooLarge {C’est trop long pour être envoyé.} other {Une erreur est survenue. Réessayez.}}"
+    },
+    "page": {
+      "metaTitle": "Relire une publication",
+      "title": "Relire une publication",
+      "intro": "Ce lien vous a été envoyé pour regarder une publication avant sa parution. Vous n’avez pas besoin de compte.",
+      "loading": "Chargement de la publication…",
+      "noToken": {
+        "title": "Ce lien est incomplet",
+        "description": "Ouvrez le lien entier que vous avez reçu : sa fin, après le signe #, est ce qui ouvre la publication."
+      },
+      "notFound": {
+        "title": "Ce lien n’ouvre rien",
+        "description": "Vérifiez que vous avez ouvert le lien entier, ou demandez-en un nouveau à la personne qui vous l’a envoyé."
+      },
+      "closed": {
+        "title": "Ce lien ne fonctionne plus",
+        "reason": "{reason, select, expired {Il a expiré. Demandez-en un nouveau à la personne qui vous l’a envoyé.} revoked {Il a été révoqué. Demandez-en un nouveau à la personne qui vous l’a envoyé.} published {La publication est parue, ou en cours de parution : il n’y a plus rien à relire.} cancelled {La publication a été annulée : elle ne paraîtra pas.} deleted {La publication a été supprimée.} other {La publication ne peut plus être relue.}}"
+      },
+      "failed": {
+        "title": "La publication n’a pas pu être chargée",
+        "description": "Vérifiez votre connexion, puis réessayez."
+      },
+      "status": "{status, select, awaitingApproval {Cette publication attend une approbation. Approuvée, elle paraîtra le {at}, à votre heure ({zone}).} scheduled {Cette publication est programmée : elle paraîtra le {at}, à votre heure ({zone}).} other {Cette publication est un brouillon : elle n’a pas encore d’heure de parution.}}",
+      "expires": "Ce lien fonctionne jusqu’au {at}.",
+      "identityLegend": "Qui êtes-vous ?",
+      "nameLabel": "Votre nom",
+      "nameHint": "Affiché avec ce que vous écrivez et décidez.",
+      "emailLabel": "Votre adresse e-mail (facultatif)",
+      "emailHint": "Seulement pour vous prévenir d’une réponse. Elle n’est montrée à personne, et supprimée 30 jours après la fin de ce lien.",
+      "privacy": "Votre nom est conservé avec vos commentaires et décisions pendant 24 mois, pour l’équipe qui vous a envoyé ce lien.",
+      "decideTitle": "Votre décision",
+      "decideIntro": "Approuvez la publication telle qu’elle est montrée ici, ou demandez des modifications. Votre décision est enregistrée avec votre nom.",
+      "approve": "Approuver cette publication",
+      "approving": "Approbation…",
+      "requestChanges": "Demander des modifications",
+      "changesLabel": "Que faut-il changer ?",
+      "sendChanges": "Envoyer",
+      "approved": "Merci : la publication est approuvée, et programmée.",
+      "approvedLate": "Merci : la publication est approuvée. Son heure était passée, elle n’a donc pas été publiée : l’équipe lui en donnera une nouvelle.",
+      "changesSent": "Merci : votre demande est envoyée, et la publication est retournée à son auteur.",
+      "decided": "{status, select, approved {Cette publication a été approuvée.} changesRequested {Des modifications ont été demandées sur cette publication.} other {Aucune approbation n’est demandée pour cette publication en ce moment.}}"
+    },
+    "approvals": {
+      "nav": "Approbations",
+      "title": "À approuver",
+      "description": "Les publications de {workspace} qui attendent une approbation avant d’être programmées, les plus anciennes d’abord.",
+      "loading": "Chargement des approbations…",
+      "loadFailed": "Les approbations n’ont pas pu être chargées.",
+      "empty": "Aucune publication n’attend d’approbation.",
+      "open": "Ouvrir la publication",
+      "policy": "{policy, select, never {Cet espace de travail ne demande aucune approbation : qui peut programmer programme. Un propriétaire ou un administrateur peut le changer dans les paramètres.} contributorsAndApplications {Les publications des contributeurs et des applications attendent une approbation.} always {Toutes les publications attendent une approbation.} other {{policy}}}"
+    },
+    "policy": {
+      "title": "Approbations",
+      "description": "Si les publications attendent une approbation avant d’être programmées. Une publication qui attend a son heure, et ne part qu’une fois approuvée par une personne qui peut approuver les publications, ou par une personne invitée dont le lien le permet.",
+      "legend": "Les publications attendent une approbation",
+      "option": "{policy, select, never {Jamais} contributorsAndApplications {Quand un contributeur ou une application le demande} always {Toujours} other {{policy}}}",
+      "hint": "{policy, select, never {Qui peut programmer des publications le fait. Les contributeurs écrivent des brouillons.} contributorsAndApplications {Les contributeurs peuvent demander l’envoi d’une publication, et ce qu’une clé d’API, la ligne de commande ou un assistant IA programme attend aussi. Les propriétaires, administrateurs et éditeurs programment directement dans l’application.} always {Toutes les publications attendent, qui que ce soit qui demande. Qui peut approuver peut approuver les siennes.} other {{policy}}}",
+      "save": "Enregistrer",
+      "saving": "Enregistrement…",
+      "saved": "Paramètre d’approbation enregistré. Il s’applique aux publications programmées à partir de maintenant.",
+      "saveFailed": "Le paramètre n’a pas pu être enregistré.",
+      "loadFailed": "Le paramètre n’a pas pu être chargé.",
+      "readOnly": "Les propriétaires et les administrateurs le choisissent."
+    }
   }
 }
