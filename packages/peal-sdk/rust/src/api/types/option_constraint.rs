@@ -25,6 +25,28 @@ pub enum OptionConstraint {
         value: String,
     },
 
+    #[serde(rename = "neededWith")]
+    #[non_exhaustive]
+    NeededWith {
+        #[serde(default)]
+        field: String,
+        #[serde(default)]
+        other: String,
+        #[serde(default)]
+        values: Vec<String>,
+    },
+
+    #[serde(rename = "onlyWith")]
+    #[non_exhaustive]
+    OnlyWith {
+        #[serde(default)]
+        field: String,
+        #[serde(default)]
+        other: String,
+        #[serde(default)]
+        values: Vec<String>,
+    },
+
     /// Catch-all variant for unrecognized discriminant values.
     /// If the server sends a discriminant not recognized by the current SDK
     /// version, the raw payload is captured here so callers can still inspect it.
@@ -42,6 +64,22 @@ impl OptionConstraint {
             field,
             other,
             value,
+        }
+    }
+
+    pub fn needed_with(field: String, other: String, values: Vec<String>) -> Self {
+        Self::NeededWith {
+            field,
+            other,
+            values,
+        }
+    }
+
+    pub fn only_with(field: String, other: String, values: Vec<String>) -> Self {
+        Self::OnlyWith {
+            field,
+            other,
+            values,
         }
     }
 

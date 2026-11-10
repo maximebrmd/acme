@@ -37,6 +37,24 @@ public record OptionConstraint
     }
 
     /// <summary>
+    /// Create an instance of OptionConstraint with <see cref="OptionConstraint.NeededWith"/>.
+    /// </summary>
+    public OptionConstraint(OptionConstraint.NeededWith value)
+    {
+        Type = "neededWith";
+        Value = value.Value;
+    }
+
+    /// <summary>
+    /// Create an instance of OptionConstraint with <see cref="OptionConstraint.OnlyWith"/>.
+    /// </summary>
+    public OptionConstraint(OptionConstraint.OnlyWith value)
+    {
+        Type = "onlyWith";
+        Value = value.Value;
+    }
+
+    /// <summary>
     /// Discriminant value
     /// </summary>
     [JsonPropertyName("_tag")]
@@ -58,6 +76,16 @@ public record OptionConstraint
     public bool IsNotWith => Type == "notWith";
 
     /// <summary>
+    /// Returns true if <see cref="Type"/> is "neededWith"
+    /// </summary>
+    public bool IsNeededWith => Type == "neededWith";
+
+    /// <summary>
+    /// Returns true if <see cref="Type"/> is "onlyWith"
+    /// </summary>
+    public bool IsOnlyWith => Type == "onlyWith";
+
+    /// <summary>
     /// Returns the value as a <see cref="Peal.OptionConstraintNeedsOneOf"/> if <see cref="Type"/> is 'needsOneOf', otherwise throws an exception.
     /// </summary>
     /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'needsOneOf'.</exception>
@@ -75,9 +103,29 @@ public record OptionConstraint
             ? (Peal.OptionConstraintNotWith)Value!
             : throw new global::System.Exception("OptionConstraint.Type is not 'notWith'");
 
+    /// <summary>
+    /// Returns the value as a <see cref="Peal.OptionConstraintNeededWith"/> if <see cref="Type"/> is 'neededWith', otherwise throws an exception.
+    /// </summary>
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'neededWith'.</exception>
+    public Peal.OptionConstraintNeededWith AsNeededWith() =>
+        IsNeededWith
+            ? (Peal.OptionConstraintNeededWith)Value!
+            : throw new global::System.Exception("OptionConstraint.Type is not 'neededWith'");
+
+    /// <summary>
+    /// Returns the value as a <see cref="Peal.OptionConstraintOnlyWith"/> if <see cref="Type"/> is 'onlyWith', otherwise throws an exception.
+    /// </summary>
+    /// <exception cref="Exception">Thrown when <see cref="Type"/> is not 'onlyWith'.</exception>
+    public Peal.OptionConstraintOnlyWith AsOnlyWith() =>
+        IsOnlyWith
+            ? (Peal.OptionConstraintOnlyWith)Value!
+            : throw new global::System.Exception("OptionConstraint.Type is not 'onlyWith'");
+
     public T Match<T>(
         Func<Peal.OptionConstraintNeedsOneOf, T> onNeedsOneOf,
         Func<Peal.OptionConstraintNotWith, T> onNotWith,
+        Func<Peal.OptionConstraintNeededWith, T> onNeededWith,
+        Func<Peal.OptionConstraintOnlyWith, T> onOnlyWith,
         Func<string, object?, T> onUnknown_
     )
     {
@@ -85,6 +133,8 @@ public record OptionConstraint
         {
             "needsOneOf" => onNeedsOneOf(AsNeedsOneOf()),
             "notWith" => onNotWith(AsNotWith()),
+            "neededWith" => onNeededWith(AsNeededWith()),
+            "onlyWith" => onOnlyWith(AsOnlyWith()),
             _ => onUnknown_(Type, Value),
         };
     }
@@ -92,6 +142,8 @@ public record OptionConstraint
     public void Visit(
         Action<Peal.OptionConstraintNeedsOneOf> onNeedsOneOf,
         Action<Peal.OptionConstraintNotWith> onNotWith,
+        Action<Peal.OptionConstraintNeededWith> onNeededWith,
+        Action<Peal.OptionConstraintOnlyWith> onOnlyWith,
         Action<string, object?> onUnknown_
     )
     {
@@ -102,6 +154,12 @@ public record OptionConstraint
                 break;
             case "notWith":
                 onNotWith(AsNotWith());
+                break;
+            case "neededWith":
+                onNeededWith(AsNeededWith());
+                break;
+            case "onlyWith":
+                onOnlyWith(AsOnlyWith());
                 break;
             default:
                 onUnknown_(Type, Value);
@@ -137,12 +195,45 @@ public record OptionConstraint
         return false;
     }
 
+    /// <summary>
+    /// Attempts to cast the value to a <see cref="Peal.OptionConstraintNeededWith"/> and returns true if successful.
+    /// </summary>
+    public bool TryAsNeededWith(out Peal.OptionConstraintNeededWith? value)
+    {
+        if (Type == "neededWith")
+        {
+            value = (Peal.OptionConstraintNeededWith)Value!;
+            return true;
+        }
+        value = null;
+        return false;
+    }
+
+    /// <summary>
+    /// Attempts to cast the value to a <see cref="Peal.OptionConstraintOnlyWith"/> and returns true if successful.
+    /// </summary>
+    public bool TryAsOnlyWith(out Peal.OptionConstraintOnlyWith? value)
+    {
+        if (Type == "onlyWith")
+        {
+            value = (Peal.OptionConstraintOnlyWith)Value!;
+            return true;
+        }
+        value = null;
+        return false;
+    }
+
     public override string ToString() => JsonUtils.Serialize(this);
 
     public static implicit operator OptionConstraint(OptionConstraint.NeedsOneOf value) =>
         new(value);
 
     public static implicit operator OptionConstraint(OptionConstraint.NotWith value) => new(value);
+
+    public static implicit operator OptionConstraint(OptionConstraint.NeededWith value) =>
+        new(value);
+
+    public static implicit operator OptionConstraint(OptionConstraint.OnlyWith value) => new(value);
 
     [Serializable]
     internal sealed class JsonConverter : JsonConverter<OptionConstraint>
@@ -193,6 +284,14 @@ public record OptionConstraint
                 "notWith" => jsonWithoutDiscriminator.Deserialize<Peal.OptionConstraintNotWith?>(
                     options
                 ) ?? throw new JsonException("Failed to deserialize Peal.OptionConstraintNotWith"),
+                "neededWith" =>
+                    jsonWithoutDiscriminator.Deserialize<Peal.OptionConstraintNeededWith?>(options)
+                        ?? throw new JsonException(
+                            "Failed to deserialize Peal.OptionConstraintNeededWith"
+                        ),
+                "onlyWith" => jsonWithoutDiscriminator.Deserialize<Peal.OptionConstraintOnlyWith?>(
+                    options
+                ) ?? throw new JsonException("Failed to deserialize Peal.OptionConstraintOnlyWith"),
                 _ => json.Deserialize<object?>(options),
             };
             return new OptionConstraint(discriminator, value);
@@ -209,6 +308,8 @@ public record OptionConstraint
                 {
                     "needsOneOf" => JsonSerializer.SerializeToNode(value.Value, options),
                     "notWith" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "neededWith" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "onlyWith" => JsonSerializer.SerializeToNode(value.Value, options),
                     _ => JsonSerializer.SerializeToNode(value.Value, options),
                 } ?? new JsonObject();
             json["_tag"] = value.Type;
@@ -274,6 +375,46 @@ public record OptionConstraint
 
         public static implicit operator OptionConstraint.NotWith(
             Peal.OptionConstraintNotWith value
+        ) => new(value);
+    }
+
+    /// <summary>
+    /// Discriminated union type for neededWith
+    /// </summary>
+    [Serializable]
+    public struct NeededWith
+    {
+        public NeededWith(Peal.OptionConstraintNeededWith value)
+        {
+            Value = value;
+        }
+
+        internal Peal.OptionConstraintNeededWith Value { get; set; }
+
+        public override string ToString() => Value.ToString() ?? "null";
+
+        public static implicit operator OptionConstraint.NeededWith(
+            Peal.OptionConstraintNeededWith value
+        ) => new(value);
+    }
+
+    /// <summary>
+    /// Discriminated union type for onlyWith
+    /// </summary>
+    [Serializable]
+    public struct OnlyWith
+    {
+        public OnlyWith(Peal.OptionConstraintOnlyWith value)
+        {
+            Value = value;
+        }
+
+        internal Peal.OptionConstraintOnlyWith Value { get; set; }
+
+        public override string ToString() => Value.ToString() ?? "null";
+
+        public static implicit operator OptionConstraint.OnlyWith(
+            Peal.OptionConstraintOnlyWith value
         ) => new(value);
     }
 }

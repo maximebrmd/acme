@@ -40,6 +40,15 @@ public record TargetOptions
     }
 
     /// <summary>
+    /// Create an instance of TargetOptions with <see cref="TargetOptions.GoogleBusiness"/>.
+    /// </summary>
+    public TargetOptions(TargetOptions.GoogleBusiness value)
+    {
+        Platform = "googleBusiness";
+        Value = value.Value;
+    }
+
+    /// <summary>
     /// Discriminant value
     /// </summary>
     [JsonPropertyName("platform")]
@@ -61,6 +70,11 @@ public record TargetOptions
     public bool IsTiktok => Platform == "tiktok";
 
     /// <summary>
+    /// Returns true if <see cref="Platform"/> is "googleBusiness"
+    /// </summary>
+    public bool IsGoogleBusiness => Platform == "googleBusiness";
+
+    /// <summary>
     /// Returns the value as a <see cref="Peal.YouTubeOptions"/> if <see cref="Platform"/> is 'youtube', otherwise throws an exception.
     /// </summary>
     /// <exception cref="Exception">Thrown when <see cref="Platform"/> is not 'youtube'.</exception>
@@ -78,9 +92,19 @@ public record TargetOptions
             ? (Peal.TikTokOptions)Value!
             : throw new global::System.Exception("TargetOptions.Platform is not 'tiktok'");
 
+    /// <summary>
+    /// Returns the value as a <see cref="Peal.GoogleBusinessOptions"/> if <see cref="Platform"/> is 'googleBusiness', otherwise throws an exception.
+    /// </summary>
+    /// <exception cref="Exception">Thrown when <see cref="Platform"/> is not 'googleBusiness'.</exception>
+    public Peal.GoogleBusinessOptions AsGoogleBusiness() =>
+        IsGoogleBusiness
+            ? (Peal.GoogleBusinessOptions)Value!
+            : throw new global::System.Exception("TargetOptions.Platform is not 'googleBusiness'");
+
     public T Match<T>(
         Func<Peal.YouTubeOptions, T> onYoutube,
         Func<Peal.TikTokOptions, T> onTiktok,
+        Func<Peal.GoogleBusinessOptions, T> onGoogleBusiness,
         Func<string, object?, T> onUnknown_
     )
     {
@@ -88,6 +112,7 @@ public record TargetOptions
         {
             "youtube" => onYoutube(AsYoutube()),
             "tiktok" => onTiktok(AsTiktok()),
+            "googleBusiness" => onGoogleBusiness(AsGoogleBusiness()),
             _ => onUnknown_(Platform, Value),
         };
     }
@@ -95,6 +120,7 @@ public record TargetOptions
     public void Visit(
         Action<Peal.YouTubeOptions> onYoutube,
         Action<Peal.TikTokOptions> onTiktok,
+        Action<Peal.GoogleBusinessOptions> onGoogleBusiness,
         Action<string, object?> onUnknown_
     )
     {
@@ -105,6 +131,9 @@ public record TargetOptions
                 break;
             case "tiktok":
                 onTiktok(AsTiktok());
+                break;
+            case "googleBusiness":
+                onGoogleBusiness(AsGoogleBusiness());
                 break;
             default:
                 onUnknown_(Platform, Value);
@@ -140,11 +169,27 @@ public record TargetOptions
         return false;
     }
 
+    /// <summary>
+    /// Attempts to cast the value to a <see cref="Peal.GoogleBusinessOptions"/> and returns true if successful.
+    /// </summary>
+    public bool TryAsGoogleBusiness(out Peal.GoogleBusinessOptions? value)
+    {
+        if (Platform == "googleBusiness")
+        {
+            value = (Peal.GoogleBusinessOptions)Value!;
+            return true;
+        }
+        value = null;
+        return false;
+    }
+
     public override string ToString() => JsonUtils.Serialize(this);
 
     public static implicit operator TargetOptions(TargetOptions.Youtube value) => new(value);
 
     public static implicit operator TargetOptions(TargetOptions.Tiktok value) => new(value);
+
+    public static implicit operator TargetOptions(TargetOptions.GoogleBusiness value) => new(value);
 
     [Serializable]
     internal sealed class JsonConverter : JsonConverter<TargetOptions>
@@ -191,6 +236,11 @@ public record TargetOptions
                     ?? throw new JsonException("Failed to deserialize Peal.YouTubeOptions"),
                 "tiktok" => jsonWithoutDiscriminator.Deserialize<Peal.TikTokOptions?>(options)
                     ?? throw new JsonException("Failed to deserialize Peal.TikTokOptions"),
+                "googleBusiness" =>
+                    jsonWithoutDiscriminator.Deserialize<Peal.GoogleBusinessOptions?>(options)
+                        ?? throw new JsonException(
+                            "Failed to deserialize Peal.GoogleBusinessOptions"
+                        ),
                 _ => json.Deserialize<object?>(options),
             };
             return new TargetOptions(discriminator, value);
@@ -207,6 +257,7 @@ public record TargetOptions
                 {
                     "youtube" => JsonSerializer.SerializeToNode(value.Value, options),
                     "tiktok" => JsonSerializer.SerializeToNode(value.Value, options),
+                    "googleBusiness" => JsonSerializer.SerializeToNode(value.Value, options),
                     _ => JsonSerializer.SerializeToNode(value.Value, options),
                 } ?? new JsonObject();
             json["platform"] = value.Platform;
@@ -271,5 +322,25 @@ public record TargetOptions
 
         public static implicit operator TargetOptions.Tiktok(Peal.TikTokOptions value) =>
             new(value);
+    }
+
+    /// <summary>
+    /// Discriminated union type for googleBusiness
+    /// </summary>
+    [Serializable]
+    public struct GoogleBusiness
+    {
+        public GoogleBusiness(Peal.GoogleBusinessOptions value)
+        {
+            Value = value;
+        }
+
+        internal Peal.GoogleBusinessOptions Value { get; set; }
+
+        public override string ToString() => Value.ToString() ?? "null";
+
+        public static implicit operator TargetOptions.GoogleBusiness(
+            Peal.GoogleBusinessOptions value
+        ) => new(value);
     }
 }

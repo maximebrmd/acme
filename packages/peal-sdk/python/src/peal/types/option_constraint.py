@@ -45,6 +45,45 @@ class OptionConstraint_NotWith(UniversalBaseModel):
             extra = pydantic.Extra.allow
 
 
+class OptionConstraint_NeededWith(UniversalBaseModel):
+    type: typing_extensions.Annotated[
+        typing.Literal["neededWith"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "neededWith"
+    field: str
+    other: str
+    values: typing.List[str]
+
+    if IS_PYDANTIC_V2:
+        model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
+    else:
+
+        class Config:
+            frozen = True
+            smart_union = True
+            extra = pydantic.Extra.allow
+
+
+class OptionConstraint_OnlyWith(UniversalBaseModel):
+    type: typing_extensions.Annotated[
+        typing.Literal["onlyWith"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
+    ] = "onlyWith"
+    field: str
+    other: str
+    values: typing.List[str]
+
+    if IS_PYDANTIC_V2:
+        model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
+    else:
+
+        class Config:
+            frozen = True
+            smart_union = True
+            extra = pydantic.Extra.allow
+
+
 OptionConstraint = typing_extensions.Annotated[
-    typing.Union[OptionConstraint_NeedsOneOf, OptionConstraint_NotWith], pydantic.Field(discriminator="type")
+    typing.Union[
+        OptionConstraint_NeedsOneOf, OptionConstraint_NotWith, OptionConstraint_NeededWith, OptionConstraint_OnlyWith
+    ],
+    pydantic.Field(discriminator="type"),
 ]

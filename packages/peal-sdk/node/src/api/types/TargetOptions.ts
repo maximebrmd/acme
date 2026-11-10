@@ -7,7 +7,8 @@ import * as Peal from "../index.js";
  */
 export type TargetOptions = 
     | Peal.TargetOptions.Youtube
-    | Peal.TargetOptions.Tiktok;
+    | Peal.TargetOptions.Tiktok
+    | Peal.TargetOptions.GoogleBusiness;
 
 export namespace TargetOptions {
     export interface Youtube extends Peal.YouTubeOptions {
@@ -16,5 +17,9 @@ export namespace TargetOptions {
 
     export interface Tiktok extends Peal.TikTokOptions {
         platform: "tiktok";
+    }
+
+    export interface GoogleBusiness extends Peal.GoogleBusinessOptions {
+        platform: "googleBusiness";
     }
 }

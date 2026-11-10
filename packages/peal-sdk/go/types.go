@@ -8024,16 +8024,17 @@ func (p PlanLimitReachedEncodedTag) Ptr() *PlanLimitReachedEncodedTag {
 type Platform string
 
 const (
-	PlatformX         Platform = "x"
-	PlatformLinkedin  Platform = "linkedin"
-	PlatformBluesky   Platform = "bluesky"
-	PlatformMastodon  Platform = "mastodon"
-	PlatformThreads   Platform = "threads"
-	PlatformInstagram Platform = "instagram"
-	PlatformFacebook  Platform = "facebook"
-	PlatformTiktok    Platform = "tiktok"
-	PlatformYoutube   Platform = "youtube"
-	PlatformPinterest Platform = "pinterest"
+	PlatformX              Platform = "x"
+	PlatformLinkedin       Platform = "linkedin"
+	PlatformBluesky        Platform = "bluesky"
+	PlatformMastodon       Platform = "mastodon"
+	PlatformThreads        Platform = "threads"
+	PlatformInstagram      Platform = "instagram"
+	PlatformFacebook       Platform = "facebook"
+	PlatformTiktok         Platform = "tiktok"
+	PlatformYoutube        Platform = "youtube"
+	PlatformPinterest      Platform = "pinterest"
+	PlatformGoogleBusiness Platform = "googleBusiness"
 )
 
 func NewPlatformFromString(s string) (Platform, error) {
@@ -8058,6 +8059,8 @@ func NewPlatformFromString(s string) (Platform, error) {
 		return PlatformYoutube, nil
 	case "pinterest":
 		return PlatformPinterest, nil
+	case "googleBusiness":
+		return PlatformGoogleBusiness, nil
 	}
 	var t Platform
 	return "", fmt.Errorf("%s is not a valid %T", s, t)

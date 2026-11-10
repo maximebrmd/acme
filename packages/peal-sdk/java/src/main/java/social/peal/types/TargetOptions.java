@@ -34,12 +34,20 @@ public final class TargetOptions {
         return new TargetOptions(new TiktokValue(value));
     }
 
+    public static TargetOptions googleBusiness(GoogleBusinessOptions value) {
+        return new TargetOptions(new GoogleBusinessValue(value));
+    }
+
     public boolean isYoutube() {
         return value instanceof YoutubeValue;
     }
 
     public boolean isTiktok() {
         return value instanceof TiktokValue;
+    }
+
+    public boolean isGoogleBusiness() {
+        return value instanceof GoogleBusinessValue;
     }
 
     public boolean _isUnknown() {
@@ -56,6 +64,13 @@ public final class TargetOptions {
     public Optional<TikTokOptions> getTiktok() {
         if (isTiktok()) {
             return Optional.of(((TiktokValue) value).value);
+        }
+        return Optional.empty();
+    }
+
+    public Optional<GoogleBusinessOptions> getGoogleBusiness() {
+        if (isGoogleBusiness()) {
+            return Optional.of(((GoogleBusinessValue) value).value);
         }
         return Optional.empty();
     }
@@ -93,11 +108,17 @@ public final class TargetOptions {
 
         T visitTiktok(TikTokOptions tiktok);
 
+        T visitGoogleBusiness(GoogleBusinessOptions googleBusiness);
+
         T _visitUnknown(Object unknownType);
     }
 
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "platform", visible = true, defaultImpl = _UnknownValue.class)
-    @JsonSubTypes({@JsonSubTypes.Type(YoutubeValue.class), @JsonSubTypes.Type(TiktokValue.class)})
+    @JsonSubTypes({
+        @JsonSubTypes.Type(YoutubeValue.class),
+        @JsonSubTypes.Type(TiktokValue.class),
+        @JsonSubTypes.Type(GoogleBusinessValue.class)
+    })
     @JsonIgnoreProperties(ignoreUnknown = true)
     private interface Value {
         <T> T visit(Visitor<T> visitor);
@@ -169,6 +190,46 @@ public final class TargetOptions {
         }
 
         private boolean equalTo(TiktokValue other) {
+            return value.equals(other.value);
+        }
+
+        @java.lang.Override
+        public int hashCode() {
+            return Objects.hash(this.value);
+        }
+
+        @java.lang.Override
+        public String toString() {
+            return "TargetOptions{" + "value: " + value + "}";
+        }
+    }
+
+    @JsonTypeName("googleBusiness")
+    @JsonIgnoreProperties("platform")
+    private static final class GoogleBusinessValue implements Value {
+        @JsonUnwrapped
+        @JsonIgnoreProperties(value = "platform", allowSetters = true)
+        private GoogleBusinessOptions value;
+
+        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+        private GoogleBusinessValue() {}
+
+        private GoogleBusinessValue(GoogleBusinessOptions value) {
+            this.value = value;
+        }
+
+        @java.lang.Override
+        public <T> T visit(Visitor<T> visitor) {
+            return visitor.visitGoogleBusiness(value);
+        }
+
+        @java.lang.Override
+        public boolean equals(Object other) {
+            if (this == other) return true;
+            return other instanceof GoogleBusinessValue && equalTo((GoogleBusinessValue) other);
+        }
+
+        private boolean equalTo(GoogleBusinessValue other) {
             return value.equals(other.value);
         }
 

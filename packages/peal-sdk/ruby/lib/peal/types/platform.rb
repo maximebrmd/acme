@@ -17,6 +17,7 @@ module Peal
       TIKTOK = "tiktok"
       YOUTUBE = "youtube"
       PINTEREST = "pinterest"
+      GOOGLE_BUSINESS = "googleBusiness"
     end
   end
 end
