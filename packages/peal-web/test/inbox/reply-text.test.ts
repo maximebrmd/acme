@@ -24,6 +24,29 @@ describe(outgoingText, () => {
     expect(mentionFor("mastodon", handle, "hi @ADA@SOCIAL.EXAMPLE")).toBeNull();
   });
 
+  it("takes only a whole mention for one: another handle that starts alike is someone else", () => {
+    expect(outgoingText("mastodon", "bob", "cc @bobby")).toBe("@bob cc @bobby");
+    expect(outgoingText("mastodon", "bob", "cc @bob@other.example")).toBe(
+      "@bob cc @bob@other.example"
+    );
+    expect(outgoingText("mastodon", "bob", "cc @bob.smith")).toBe(
+      "@bob cc @bob.smith"
+    );
+    expect(outgoingText("mastodon", "bob", "write to x@bob")).toBe(
+      "@bob write to x@bob"
+    );
+  });
+
+  it("finds a whole mention after one that only starts alike, and before punctuation", () => {
+    expect(outgoingText("mastodon", "bob", "@bobby and @bob, thanks.")).toBe(
+      "@bobby and @bob, thanks."
+    );
+    expect(outgoingText("mastodon", "bob", "Thanks @bob.")).toBe(
+      "Thanks @bob."
+    );
+    expect(outgoingText("mastodon", "bob", "(@Bob)")).toBe("(@Bob)");
+  });
+
   it("sends the text as written elsewhere, and without an author", () => {
     expect(outgoingText("bluesky", "ada.example", " Thank you! ")).toBe(
       "Thank you!"

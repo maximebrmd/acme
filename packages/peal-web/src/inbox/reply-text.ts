@@ -23,8 +23,41 @@ export interface ReplyFit {
   readonly unit: TextUnit;
 }
 
-const mentions = (text: string, handle: string): boolean =>
-  text.toLowerCase().includes(`@${handle.toLowerCase()}`);
+// A letter, a digit or an underscore: what a handle is made of, with the
+// dots and hyphens between them.
+const inHandle = (character: string | undefined): boolean =>
+  character !== undefined && /^[\p{L}\p{N}_]$/u.test(character);
+
+// Whether the mention found at `start` is the whole of one: "@bob" is not
+// mentioned by "@bobby", by "@bob@other.example", by "@bob.smith", nor by
+// an address such as "x@bob".
+const whole = (text: string, start: number, end: number): boolean => {
+  const after = text.at(end);
+
+  return (
+    !(start > 0 && inHandle(text.at(start - 1))) &&
+    !inHandle(after) &&
+    after !== "@" &&
+    !((after === "." || after === "-") && inHandle(text.at(end + 1)))
+  );
+};
+
+const mentions = (text: string, handle: string): boolean => {
+  const within = text.toLowerCase();
+  const mention = `@${handle.toLowerCase()}`;
+
+  for (
+    let start = within.indexOf(mention);
+    start !== -1;
+    start = within.indexOf(mention, start + 1)
+  ) {
+    if (whole(within, start, start + mention.length)) {
+      return true;
+    }
+  }
+
+  return false;
+};
 
 /**
  * The mention Peal puts before a reply: on Mastodon a reply reaches the
