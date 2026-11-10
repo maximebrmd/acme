@@ -915,6 +915,25 @@ describe("peal analytics dashboard, channel and export", () => {
         ]),
         `${file} exists already`
       );
+
+      // Cut off on the way: no file that looks complete, nothing left
+      // behind, and the same command can be run again.
+      const cut = `${file}.cut.csv`;
+
+      const refused = yield* session.refused([
+        "analytics",
+        "export",
+        "accounts",
+        ...inStudio,
+        "--output",
+        cut,
+        "--days",
+        "90",
+      ]);
+
+      assert.include(refused, "cut off before its end");
+      assert.isFalse(yield* fs.exists(cut));
+      assert.isFalse(yield* fs.exists(`${cut}.partial`));
     }).pipe(Effect.scoped, Effect.provide(filesLayer))
   );
 });

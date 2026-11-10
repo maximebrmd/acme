@@ -2779,10 +2779,15 @@ export const studioGroupsLive = (studio: Studio) =>
               `export:${query.kind}:${query.format ?? "csv"}:${String(query.days)}`
             );
 
-            return Stream.make(
+            const rows = Stream.make(
               "date,channelId,platform,followers\r\n",
               `2026-11-08,${mastodonId},mastodon,320\r\n`
             ).pipe(Stream.encodeText);
+
+            // Over 90 days, the server fails after the first rows.
+            return query.days === 90
+              ? Stream.concat(rows, Stream.die("synthetic failure midway"))
+              : rows;
           }),
         post: ({ params }) =>
           allowed("analytics:read").pipe(

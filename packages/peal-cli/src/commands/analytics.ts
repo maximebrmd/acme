@@ -530,12 +530,35 @@ const exportFile = Command.make(
       })
       .pipe(Effect.mapError(explain(url)));
 
-    // Written as it comes, to a file made for it alone: never through a
-    // link, nor over a file made since it was checked.
+    // Written as it comes, beside the file, to one made for it alone:
+    // never through a link, nor over a file made since it was checked. The
+    // file itself appears only once every row came: an export cut off on
+    // the way leaves nothing that looks complete.
+    const partial = `${file}.partial`;
+
+    const discard = fs.remove(partial).pipe(Effect.catch(() => Effect.void));
+
     yield* rows.pipe(
-      Stream.run(fs.sink(file, { flag: "wx" })),
-      Effect.mapError(cannotSave)
+      Stream.run(fs.sink(partial, { flag: "wx" })),
+      Effect.catchTags({
+        HttpClientError: (failure) =>
+          discard.pipe(
+            Effect.andThen(
+              Effect.fail(
+                new Refused({
+                  reason: `The export was cut off before its end (${failure.message}): nothing was saved. Run the command again.`,
+                })
+              )
+            )
+          ),
+        PlatformError: (failure) =>
+          discard.pipe(Effect.andThen(Effect.fail(cannotSave(failure)))),
+      })
     );
+
+    yield* fs
+      .link(partial, file)
+      .pipe(Effect.mapError(cannotSave), Effect.ensuring(discard));
 
     yield* Console.log(`Saved to ${file}.`);
   })
