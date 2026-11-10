@@ -47,6 +47,7 @@ const WorkspacePage = async ({
   const t = await getTranslations("Staff.workspace");
   const staffT = await getTranslations("Staff");
   const posts = await getTranslations("Posts");
+  const channels = await getTranslations("ChannelsPage");
   const roles = await getTranslations("WorkspaceSettings");
   const billing = await getTranslations("Billing");
   const { subscription } = workspace.billing;
@@ -144,7 +145,12 @@ const WorkspacePage = async ({
                 <TableRow key={channel.id}>
                   <TableCell>{channel.handle}</TableCell>
                   <TableCell>
-                    {posts("platform", { platform: channel.platform })}
+                    {channel.connection === null
+                      ? posts("platform", { platform: channel.platform })
+                      : channels("platformVia", {
+                          connection: channel.connection,
+                          platform: channel.platform,
+                        })}
                   </TableCell>
                   <TableCell>
                     <ChannelHealth status={channel.status} />
