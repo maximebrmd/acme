@@ -38,6 +38,7 @@ import { DrizzlePostRepository } from "#publishing/infrastructure/drizzle-post-r
 import { DrizzlePublicationJournal } from "#publishing/infrastructure/drizzle-publication-journal.ts";
 import { DrizzlePublicationProgress } from "#publishing/infrastructure/drizzle-publication-progress.ts";
 import { DrizzlePublishedTargets } from "#publishing/infrastructure/drizzle-published-targets.ts";
+import { DrizzleRecordedPosts } from "#publishing/infrastructure/drizzle-recorded-posts.ts";
 import { DrizzleUploadSessions } from "#publishing/infrastructure/drizzle-upload-sessions.ts";
 import { DrizzleWorkspacePostStore } from "#publishing/infrastructure/drizzle-workspace-post-store.ts";
 import { LibraryAttachableMedia } from "#publishing/infrastructure/library-attachable-media.ts";
@@ -280,7 +281,8 @@ export const PlatformsLive = RoutedPlatformPublisher.pipe(
       limitedUploads.pipe(Layer.provide(LibraryMediaForPublishing)),
       DrizzlePublicationProgress,
       DrizzleUploadSessions,
-      DrizzlePlatformQuota
+      DrizzlePlatformQuota,
+      DrizzleRecordedPosts
     )
   ),
   Layer.provide(OutboundGuard.layer),

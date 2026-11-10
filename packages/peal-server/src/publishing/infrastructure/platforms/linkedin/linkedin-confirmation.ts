@@ -1,10 +1,12 @@
-import { DateTime, Duration, Effect, Schema } from "effect";
+import { DateTime, Duration, Effect, Option, Schema } from "effect";
 import { HttpClientRequest, HttpClientResponse } from "effect/http";
 import type { HttpClient, HttpClientError } from "effect/http";
 
 import type { OutgoingPost } from "#publishing/application/platform-client.ts";
 import type { PlatformCredentials } from "#publishing/application/platform-credentials.ts";
 import type { LookUp } from "#publishing/application/publication-steps.ts";
+import type { RecordedPosts } from "#publishing/application/recorded-posts.ts";
+import { attemptAmong } from "#publishing/infrastructure/platforms/attempt-match.ts";
 import { unanswered } from "#publishing/infrastructure/platforms/platform-exchange.ts";
 import type { PublishFailure } from "#shared/domain/publish-failure.ts";
 import type { Published } from "#shared/domain/publish-result.ts";
@@ -48,9 +50,11 @@ const RecentPostsSchema = Schema.Struct({
  * reads with `r_organization_social`): the one made since the attempt
  * started whose commentary is the very text Peal sent. LinkedIn has no
  * idempotency key, and a search proves no post absent, so the answer is
- * `found` or `unknown`, and a post is never sent twice. A page that posted
- * the same text a moment before is answered that post: the text is live,
- * once.
+ * `found` or `unknown`, and a post is never sent twice. The post must be
+ * the only one that matches and that Peal has not already recorded for the
+ * channel (`attemptAmong`): another attempt's post with the same text is
+ * never taken for this one's, two matches settle nothing, and neither does
+ * a post without text, which nothing tells apart.
  *
  * One call, a finder, which the Community Management API's Development
  * tier allows (it refuses batch reads).
@@ -61,12 +65,19 @@ export const pageLookUp =
     readonly apiUrl: URL;
     readonly credentials: PlatformCredentials["Service"];
     readonly published: (urn: string) => Published;
+    readonly recorded: RecordedPosts["Service"];
     readonly version: string;
   }) =>
   (post: OutgoingPost): Effect.Effect<LookUp, PublishFailure> => {
     const rest = restCall(options.version);
     const author = authorUrnOf(post.accountId);
     const sent = commentaryOf(post);
+
+    // A post without words looks like any other without words: nothing
+    // tells this attempt's apart, so nothing is adopted.
+    if (sent.trim() === "") {
+      return Effect.succeed({ _tag: "unknown" });
+    }
 
     const since = DateTime.toEpochMillis(
       DateTime.subtractDuration(post.startedAt, clockSkew)
@@ -116,17 +127,27 @@ export const pageLookUp =
           )
       )
       .pipe(
-        Effect.map(({ elements = [] }): LookUp => {
-          const found = elements.find(
-            ({ commentary, createdAt, lifecycleState }) =>
-              (commentary ?? "") === sent &&
-              (createdAt ?? 0) >= since &&
-              (lifecycleState ?? "PUBLISHED") === "PUBLISHED"
-          );
-
-          return found === undefined
-            ? { _tag: "unknown" }
-            : { _tag: "found", published: options.published(found.id) };
-        })
+        Effect.flatMap(({ elements = [] }) =>
+          attemptAmong(
+            options.recorded,
+            post.channelId,
+            elements.filter(
+              ({ commentary, createdAt, lifecycleState }) =>
+                (commentary ?? "") === sent &&
+                (createdAt ?? 0) >= since &&
+                (lifecycleState ?? "PUBLISHED") === "PUBLISHED"
+            ),
+            ({ id }) => id
+          )
+        ),
+        Effect.map(
+          Option.match({
+            onNone: (): LookUp => ({ _tag: "unknown" }),
+            onSome: ({ id }): LookUp => ({
+              _tag: "found",
+              published: options.published(id),
+            }),
+          })
+        )
       );
   };

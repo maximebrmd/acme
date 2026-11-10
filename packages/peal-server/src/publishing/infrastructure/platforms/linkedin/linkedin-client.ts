@@ -28,6 +28,7 @@ import type {
   Readiness,
   StepTiming,
 } from "#publishing/application/publication-steps.ts";
+import { RecordedPosts } from "#publishing/application/recorded-posts.ts";
 import type { MediaAttachment } from "#publishing/domain/media-attachment.ts";
 import { inParts } from "#publishing/infrastructure/platforms/byte-parts.ts";
 import {
@@ -304,6 +305,7 @@ export const linkedinClient = Effect.fn("LinkedInClient.make")(
   function* linkedinClient(options: LinkedInClientOptions) {
     const credentials = yield* PlatformCredentials;
     const media = yield* MediaForPublishing;
+    const recorded = yield* RecordedPosts;
     const { api, apiUrl, uploads, version } = options;
 
     // A call to the REST API, as the member, in the pinned version.
@@ -801,6 +803,7 @@ export const linkedinClient = Effect.fn("LinkedInClient.make")(
           apiUrl,
           credentials,
           published: publishedAs,
+          recorded,
           version,
         }),
       }),

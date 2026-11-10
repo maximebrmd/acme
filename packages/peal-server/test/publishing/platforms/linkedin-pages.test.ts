@@ -33,6 +33,8 @@ const onLinkedIn = Effect.fn("test.onLinkedInPages")(function* onLinkedIn(
     readonly api?: FakeLinkedInOptions;
     readonly files?: readonly TestFile[];
     readonly page?: boolean;
+    /** The posts the channel is recorded to have made, read at each look. */
+    readonly recorded?: readonly string[];
   } = {}
 ) {
   const page = options.page ?? true;
@@ -54,6 +56,7 @@ const onLinkedIn = Effect.fn("test.onLinkedInPages")(function* onLinkedIn(
     api: linkedin.url,
     credentials: Layer.succeedContext(credentials),
     files: options.files ?? [],
+    recorded: options.recorded ?? [],
     version: linkedinTestVersion,
   });
 
@@ -184,6 +187,56 @@ describe("publishing on a LinkedIn page", () => {
           ...again,
           startedAt: DateTime.add(again.startedAt, { minutes: 10 }),
         });
+
+        assert.strictEqual(result._tag, "unconfirmed");
+        assert.strictEqual(linkedin.posts().length, 1);
+      }).pipe(Effect.scoped)
+  );
+
+  it.live(
+    "never takes the identical post another attempt made a moment before for the one just sent",
+    () =>
+      Effect.gen(function* twin() {
+        const recorded: string[] = [];
+        const { client, linkedin, post } = yield* onLinkedIn({ recorded });
+
+        const first = yield* client.publish(
+          yield* post({ text: "Open today" })
+        );
+
+        assert(first._tag === "published");
+        // Peal recorded it on its own target.
+        recorded.push(first.platformPostId);
+
+        // The second never reaches LinkedIn's posts.
+        linkedin.script("POST /rest/posts", [
+          json({ message: "Service unavailable", status: 503 }, 503),
+        ]);
+
+        const result = yield* client.publish(
+          yield* post({ text: "Open today" })
+        );
+
+        assert.strictEqual(result._tag, "unconfirmed");
+        assert.strictEqual(linkedin.posts().length, 1);
+      }).pipe(Effect.scoped)
+  );
+
+  it.live(
+    "adopts no post for one without text, which any post without text would match",
+    () =>
+      Effect.gen(function* wordless() {
+        const image = testFile("image", 512);
+
+        const { client, linkedin, post } = yield* onLinkedIn({
+          files: [image],
+        });
+
+        linkedin.script("POST /rest/posts", [{ _tag: "publishThenDrop" }]);
+
+        const result = yield* client.publish(
+          yield* post({ media: [attached(image, "A cover")], text: "" })
+        );
 
         assert.strictEqual(result._tag, "unconfirmed");
         assert.strictEqual(linkedin.posts().length, 1);

@@ -39,6 +39,8 @@ const onPinterest = Effect.fn("test.onPinterest")(function* onPinterest(
   options: {
     readonly api?: FakePinterestOptions;
     readonly files?: readonly TestFile[];
+    /** The Pins the channel is recorded to have made, read at each look. */
+    readonly recorded?: readonly string[];
     readonly tokens?: readonly string[];
   } = {}
 ) {
@@ -55,6 +57,7 @@ const onPinterest = Effect.fn("test.onPinterest")(function* onPinterest(
     api: pinterest.url,
     credentials: Layer.succeedContext(credentials),
     files: options.files ?? [],
+    recorded: options.recorded ?? [],
   });
 
   return { client, log: Context.get(credentials, CredentialLog), pinterest };
@@ -625,6 +628,85 @@ describe("a Pin whose answer was lost", () => {
       assert.strictEqual(result._tag, "unconfirmed");
       assert.lengthOf(pinterest.pins(), 2);
     }).pipe(Effect.scoped)
+  );
+
+  it.live(
+    "is never taken for the identical Pin another post made a moment before",
+    () =>
+      Effect.gen(function* twin() {
+        const image = testFile("image", 512);
+        const recorded: string[] = [];
+
+        const { client, pinterest } = yield* onPinterest({
+          files: [image],
+          recorded,
+        });
+
+        const twinOf = post({
+          media: [attached(image)],
+          text: "Ripe tomatoes.",
+        });
+
+        const first = yield* client.publish(yield* twinOf);
+
+        assert(first._tag === "published");
+        // Peal recorded it on its own target.
+        recorded.push(first.platformPostId);
+
+        // The second post's request never reaches Pinterest.
+        pinterest.script.push("POST /v5/pins", [dropped]);
+
+        assert.deepStrictEqual(yield* client.publish(yield* twinOf), {
+          _tag: "unconfirmed",
+          reason: "noResponse",
+        });
+        assert.lengthOf(pinterest.pins(), 1);
+      }).pipe(Effect.scoped)
+  );
+
+  it.live("settles nothing when two Pins it did not record look like it", () =>
+    Effect.gen(function* two() {
+      const image = testFile("image", 512);
+      const { client, pinterest } = yield* onPinterest({ files: [image] });
+
+      const same = post({ media: [attached(image)], text: "Ripe tomatoes." });
+
+      // One made elsewhere, as by the member on Pinterest, then this one.
+      yield* client.publish(yield* same);
+      pinterest.script.push("POST /v5/pins", [{ _tag: "createThenDrop" }]);
+
+      assert.strictEqual(
+        (yield* client.publish(yield* same))._tag,
+        "unconfirmed"
+      );
+      assert.lengthOf(pinterest.pins(), 2);
+    }).pipe(Effect.scoped)
+  );
+
+  it.live(
+    "adopts no Pin for one without a word or a link, which nothing tells apart",
+    () =>
+      Effect.gen(function* wordless() {
+        const image = testFile("image", 512);
+        const { client, pinterest } = yield* onPinterest({ files: [image] });
+
+        pinterest.script.push("POST /v5/pins", [{ _tag: "createThenDrop" }]);
+
+        const result = yield* client.publish(
+          yield* post({ media: [attached(image)], text: "" })
+        );
+
+        assert.strictEqual(result._tag, "unconfirmed");
+        // Nothing was searched: no list could settle it.
+        assert.lengthOf(
+          pinterest
+            .requests()
+            .filter(
+              ({ method, path }) => method === "GET" && path.endsWith("/pins")
+            ),
+          0
+        );
+      }).pipe(Effect.scoped)
   );
 
   it.live("is unconfirmed when the answer cannot be read", () =>

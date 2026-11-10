@@ -24,6 +24,7 @@ import type {
 import { PlatformQuota } from "#publishing/application/platform-quota.ts";
 import type { PublicationProgress } from "#publishing/application/publication-progress.ts";
 import type { StepTiming } from "#publishing/application/publication-steps.ts";
+import { RecordedPosts } from "#publishing/application/recorded-posts.ts";
 import { UploadSessions } from "#publishing/application/upload-sessions.ts";
 import type { UploadSession } from "#publishing/application/upload-sessions.ts";
 import { MediaAttachment } from "#publishing/domain/media-attachment.ts";
@@ -273,6 +274,16 @@ export const outgoing = Effect.fn("test.outgoing")(function* outgoing(
   return post;
 });
 
+// The posts the channel is recorded to have made already, by platform id.
+const recordedOf = (ids: readonly string[]) =>
+  Layer.succeed(
+    RecordedPosts,
+    RecordedPosts.of({
+      among: (_channelId, asked) =>
+        Effect.succeed(new Set(asked.filter((id) => ids.includes(id)))),
+    })
+  );
+
 const HttpTest = Layer.mergeAll(FetchHttpClient.layer, OpenOutboundGuard);
 
 const httpClient = publicHttpClient.pipe(Effect.provide(HttpTest));
@@ -304,6 +315,8 @@ export const linkedinClientWith = Effect.fn("test.linkedinClient")(
     readonly api: string;
     readonly credentials: Layer.Layer<CredentialLog | PlatformCredentials>;
     readonly files?: readonly TestFile[];
+    /** The ids the channel is already known to have published. */
+    readonly recorded?: readonly string[];
     readonly version: string;
   }) {
     const api = yield* httpClient;
@@ -316,7 +329,11 @@ export const linkedinClientWith = Effect.fn("test.linkedinClient")(
       version: options.version,
     }).pipe(
       Effect.provide(
-        Layer.mergeAll(options.credentials, mediaOf(options.files ?? []))
+        Layer.mergeAll(
+          options.credentials,
+          recordedOf(options.recorded ?? []),
+          mediaOf(options.files ?? [])
+        )
       )
     );
   }
@@ -350,6 +367,8 @@ export const googleBusinessClientWith = Effect.fn("test.googleBusinessClient")(
     readonly api: string;
     readonly credentials: Layer.Layer<CredentialLog | PlatformCredentials>;
     readonly files?: readonly TestFile[];
+    /** The ids the channel is already known to have published. */
+    readonly recorded?: readonly string[];
   }) {
     const api = yield* httpClient;
 
@@ -359,7 +378,11 @@ export const googleBusinessClientWith = Effect.fn("test.googleBusinessClient")(
       timing: testTiming,
     }).pipe(
       Effect.provide(
-        Layer.mergeAll(options.credentials, mediaOf(options.files ?? []))
+        Layer.mergeAll(
+          options.credentials,
+          recordedOf(options.recorded ?? []),
+          mediaOf(options.files ?? [])
+        )
       )
     );
   }
@@ -652,6 +675,8 @@ export const pinterestClientWith = Effect.fn("test.pinterestClient")(
     readonly api: string;
     readonly credentials: Layer.Layer<CredentialLog | PlatformCredentials>;
     readonly files?: readonly TestFile[];
+    /** The ids the channel is already known to have published. */
+    readonly recorded?: readonly string[];
   }) {
     const api = yield* httpClient;
 
@@ -664,6 +689,7 @@ export const pinterestClientWith = Effect.fn("test.pinterestClient")(
       Effect.provide(
         Layer.mergeAll(
           options.credentials,
+          recordedOf(options.recorded ?? []),
           mediaOf(options.files ?? []),
           OpenOutboundGuard
         )

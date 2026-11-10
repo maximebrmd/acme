@@ -16,6 +16,7 @@ import type {
   PublicationSteps,
   StepTiming,
 } from "#publishing/application/publication-steps.ts";
+import { RecordedPosts } from "#publishing/application/recorded-posts.ts";
 import {
   defaultGoogleBusinessPostType,
   googleBusinessLocalTimeOf,
@@ -26,6 +27,7 @@ import type {
   GoogleBusinessLocalTime,
   GoogleBusinessPostType,
 } from "#publishing/domain/google-business-options.ts";
+import { attemptAmong } from "#publishing/infrastructure/platforms/attempt-match.ts";
 import {
   commitUnanswered,
   unanswered,
@@ -334,6 +336,7 @@ export const googleBusinessClient = Effect.fn("GoogleBusinessClient.make")(
   function* googleBusinessClient(options: GoogleBusinessClientOptions) {
     const credentials = yield* PlatformCredentials;
     const media = yield* MediaForPublishing;
+    const recorded = yield* RecordedPosts;
     const { api, apiUrl } = options;
     const timing = options.timing ?? defaultStepTiming;
 
@@ -513,15 +516,21 @@ export const googleBusinessClient = Effect.fn("GoogleBusinessClient.make")(
           }
         }
 
-        const [only, ...others] = matches;
+        // The only match Peal has not recorded for the location already.
+        const only = yield* attemptAmong(
+          recorded,
+          post.channelId,
+          matches,
+          ({ name }) => name
+        );
 
-        const found: LookUp =
-          only === undefined ||
-          others.length > 0 ||
-          !postPath.test(only.name) ||
-          only.state === "REJECTED"
-            ? { _tag: "unknown" }
-            : { _tag: "found", published: publishedAs(only) };
+        const found: LookUp = Option.match(only, {
+          onNone: (): LookUp => ({ _tag: "unknown" }),
+          onSome: (local): LookUp =>
+            !postPath.test(local.name) || local.state === "REJECTED"
+              ? { _tag: "unknown" }
+              : { _tag: "found", published: publishedAs(local) },
+        });
 
         return found;
       }).pipe(Effect.orElseSucceed((): LookUp => ({ _tag: "unknown" })));

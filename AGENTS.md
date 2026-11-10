@@ -1044,6 +1044,14 @@ and no socket, for tests.
   answers `found` or `unknown`, never `absent`. Refusals are read from the
   status and whether the body is Pinterest's own (`pinterest-refusal.ts`):
   only a 401 with it is `TokenRejected`.
+- A confirmation that searches the platform (Pinterest's board, a LinkedIn
+  page's newest posts, a location's local posts) adopts a post only through
+  `attemptAmong` (`platforms/attempt-match.ts`): the one match the channel
+  is not already recorded to have made (`RecordedPosts`, the targets'
+  `platform_post_id`), so another attempt's identical post is never taken
+  for this one's; several matches, or a post nothing tells apart (no text,
+  no title, no link), answer `unknown`. A create call that ends in a
+  server's error or a timeout is `OutcomeUnknown`, never a retry.
 - No adapter holds a whole file: large uploads go in parts read one at a
   time from the media stream (`inParts` in `platforms/byte-parts.ts`:
   LinkedIn's video parts, X's 4 MiB appends, TikTok's and YouTube's

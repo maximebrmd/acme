@@ -18,7 +18,9 @@ import type {
   Readiness,
   StepTiming,
 } from "#publishing/application/publication-steps.ts";
+import { RecordedPosts } from "#publishing/application/recorded-posts.ts";
 import { PinterestOptions } from "#publishing/domain/pinterest-options.ts";
+import { attemptAmong } from "#publishing/infrastructure/platforms/attempt-match.ts";
 import {
   commitUnanswered,
   unanswered,
@@ -244,6 +246,7 @@ export const pinterestClient = Effect.fn("PinterestClient.make")(
   function* pinterestClient(options: PinterestClientOptions) {
     const credentials = yield* PlatformCredentials;
     const media = yield* MediaForPublishing;
+    const recorded = yield* RecordedPosts;
     const { api, apiUrl, uploads } = options;
 
     // Sends a request with the channel's token, renewed once if refused.
@@ -565,6 +568,7 @@ export const pinterestClient = Effect.fn("PinterestClient.make")(
           title: chosen?.title ?? "",
         };
 
+        const unknown: LookUp = { _tag: "unknown" };
         const board = `/v5/boards/${encodeURIComponent(boardId)}`;
 
         const path =
@@ -572,6 +576,17 @@ export const pinterestClient = Effect.fn("PinterestClient.make")(
             ? `${board}/pins`
             : `${board}/sections/${encodeURIComponent(chosen.boardSectionId)}/pins`;
 
+        // An image alone, without a title, a description or a link, looks
+        // like any other: nothing tells this attempt's Pin apart.
+        if (
+          sent.title.trim() === "" &&
+          sent.description.trim() === "" &&
+          sent.link.trim() === ""
+        ) {
+          return unknown;
+        }
+
+        const matches: (typeof PinsSchema.Type)["items"][number][] = [];
         let bookmark = Option.none<string>();
 
         for (let read = 0; read < confirmationPages; read += 1) {
@@ -593,24 +608,17 @@ export const pinterestClient = Effect.fn("PinterestClient.make")(
             okOr(PinsSchema, "pin")
           );
 
-          const found = page.items.find((pin) =>
-            isSamePin(sent, {
-              createdAt: Option.fromNullishOr(pin.created_at),
-              description: pin.description ?? "",
-              link: pin.link ?? "",
-              mediaType: Option.fromNullishOr(pin.media?.media_type),
-              title: pin.title ?? "",
-            })
+          matches.push(
+            ...page.items.filter((pin) =>
+              isSamePin(sent, {
+                createdAt: Option.fromNullishOr(pin.created_at),
+                description: pin.description ?? "",
+                link: pin.link ?? "",
+                mediaType: Option.fromNullishOr(pin.media?.media_type),
+                title: pin.title ?? "",
+              })
+            )
           );
-
-          if (found !== undefined) {
-            const answer: LookUp = {
-              _tag: "found",
-              published: publishedAs(found.id),
-            };
-
-            return answer;
-          }
 
           bookmark = Option.fromNullishOr(page.bookmark).pipe(
             Option.filter((next) => next !== "")
@@ -621,9 +629,22 @@ export const pinterestClient = Effect.fn("PinterestClient.make")(
           }
         }
 
-        const unknown: LookUp = { _tag: "unknown" };
+        // The only match Peal has not recorded for the channel already:
+        // another attempt's Pin, the same in every word, is never adopted.
+        const found = yield* attemptAmong(
+          recorded,
+          post.channelId,
+          matches,
+          ({ id }) => id
+        );
 
-        return unknown;
+        return Option.match(found, {
+          onNone: () => unknown,
+          onSome: ({ id }): LookUp => ({
+            _tag: "found",
+            published: publishedAs(id),
+          }),
+        });
       }).pipe(Effect.orElseSucceed((): LookUp => ({ _tag: "unknown" })));
 
     const steps: PublicationSteps<PinterestMedia> = {
