@@ -8,6 +8,7 @@ import {
   fieldOf,
   fieldsOf,
   initialValues,
+  isShown,
   optionsOf,
   valuesOf,
   valuesOfPost,
@@ -96,6 +97,96 @@ describe(optionsOf, () => {
     ).toStrictEqual(Option.some(values));
     // A target without options starts as a new one.
     expect(valuesOf("tiktok", null)).toStrictEqual(initialValues("tiktok"));
+  });
+});
+
+// The names of the Google Business Profile fields these values show.
+const shownWith = (values: Readonly<Record<string, boolean | string>>) =>
+  fieldsOf("googleBusiness")
+    .filter((field) => isShown("googleBusiness", field, values))
+    .map(({ name }) => name);
+
+describe("a Google Business Profile post's options", () => {
+  it("show an update's button, an event's title and dates, an offer's code and terms", () => {
+    expect(shownWith({})).toStrictEqual(["postType", "callToAction"]);
+    expect(shownWith({ callToAction: "book" })).toStrictEqual([
+      "postType",
+      "callToAction",
+      "callToActionUrl",
+    ]);
+    // The call button rings the location: no address to give.
+    expect(shownWith({ callToAction: "call" })).toStrictEqual([
+      "postType",
+      "callToAction",
+    ]);
+    expect(shownWith({ postType: "event" })).toStrictEqual([
+      "postType",
+      "title",
+      "startsAt",
+      "endsAt",
+      "callToAction",
+    ]);
+    // An offer shows Google's own button, whatever was chosen before.
+    expect(
+      shownWith({ callToAction: "book", postType: "offer" })
+    ).toStrictEqual([
+      "postType",
+      "title",
+      "startsAt",
+      "endsAt",
+      "couponCode",
+      "redeemUrl",
+      "terms",
+    ]);
+  });
+
+  it("send only what shows, so a changed post type leaves nothing behind", () => {
+    const filled = {
+      callToAction: "order",
+      callToActionUrl: "https://example.com/order",
+      couponCode: "SYNTHETIC-10",
+      endsAt: "2026-11-27T18:00",
+      startsAt: "2026-11-27T09:00",
+      title: "Synthetic open day",
+    };
+
+    expect(
+      Option.getOrThrow(optionsOf("googleBusiness", filled))
+    ).toStrictEqual({
+      callToAction: "order",
+      callToActionUrl: "https://example.com/order",
+      platform: "googleBusiness",
+    });
+    expect(
+      Option.getOrThrow(
+        optionsOf("googleBusiness", { ...filled, postType: "offer" })
+      )
+    ).toStrictEqual({
+      couponCode: "SYNTHETIC-10",
+      endsAt: "2026-11-27T18:00",
+      platform: "googleBusiness",
+      postType: "offer",
+      startsAt: "2026-11-27T09:00",
+      title: "Synthetic open day",
+    });
+  });
+
+  it("fill the fields back from stored options, with nothing ticked at first", () => {
+    expect(initialValues("googleBusiness")).toStrictEqual({});
+    expect(
+      valuesOf("googleBusiness", {
+        endsAt: "2026-11-27T18:00",
+        platform: "googleBusiness",
+        postType: "event",
+        startsAt: "2026-11-27T09:00",
+        title: "Synthetic open day",
+      })
+    ).toStrictEqual({
+      endsAt: "2026-11-27T18:00",
+      postType: "event",
+      startsAt: "2026-11-27T09:00",
+      title: "Synthetic open day",
+    });
   });
 });
 

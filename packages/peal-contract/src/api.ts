@@ -538,6 +538,11 @@ export type {
 
 export {
   ChannelOptionsSchema,
+  GoogleBusinessCallToActionSchema,
+  googleBusinessLocalTimePattern,
+  GoogleBusinessOptionsSchema,
+  GoogleBusinessPostTypeSchema,
+  maxGoogleBusinessTitleLength,
   maxYouTubeTagsLength,
   maxYouTubeTitleLength,
   optionsPlatforms,
@@ -551,6 +556,9 @@ export {
 
 export type {
   ChannelOptions,
+  GoogleBusinessCallToAction,
+  GoogleBusinessOptions,
+  GoogleBusinessPostType,
   OptionsPlatform,
   TargetOptions,
   TikTokOptions,
