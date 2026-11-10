@@ -16,6 +16,7 @@ import { AccountStore } from "./account-store.ts";
 import type { BillingUnavailable } from "./billing-unavailable.ts";
 import { ContextRecords } from "./context-records.ts";
 import type { WorkspaceErasureOptions } from "./context-records.ts";
+import type { ErasureIncomplete } from "./erasure-incomplete.ts";
 import type { WorkspaceBusy } from "./workspace-busy.ts";
 import {
   eraseWorkspace,
@@ -51,6 +52,7 @@ export class DeleteWorkspace extends Context.Service<
       | MissingPermission
       | NotAMember
       | SessionRequired
+      | ErasureIncomplete
       | WorkspaceBusy
       | WorkspaceNameMismatch
       | WorkspaceSubscribed

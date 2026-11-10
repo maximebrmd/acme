@@ -84,6 +84,8 @@ export type { SubscriptionToCancel } from "./workspace-subscribed.ts";
 
 export { BillingUnavailable } from "./billing-unavailable.ts";
 
+export { DeletionIncomplete } from "./deletion-incomplete.ts";
+
 export { BillingNotEnabled } from "./billing-not-enabled.ts";
 
 export { NothingToCancel } from "./nothing-to-cancel.ts";

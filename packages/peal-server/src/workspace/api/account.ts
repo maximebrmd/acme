@@ -3,6 +3,7 @@ import { HttpApiBuilder, HttpApiSchema } from "effect/http-api";
 import {
   Api,
   BillingUnavailable,
+  DeletionIncomplete,
   Forbidden,
   IncorrectPassword,
   LastOwner,
@@ -150,6 +151,10 @@ export const AccountHandlers = HttpApiBuilder.group(
                     )
                   ),
                 DatabaseError: Effect.die,
+                ErasureIncomplete: ({ subscriptionsCancelled }) =>
+                  Effect.fail(
+                    new DeletionIncomplete({ subscriptionsCancelled })
+                  ),
                 IncorrectPassword: () => Effect.fail(new IncorrectPassword()),
                 LastOwner: ({ workspaces }) =>
                   Effect.fail(new LastOwner({ workspaces })),

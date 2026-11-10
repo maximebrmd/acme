@@ -1527,7 +1527,8 @@ layer(BillingIntegration, {
             { allowed: 2, limit: "members", used: 3 },
           ],
           plan: "free",
-          planWithRoom: "pro",
+          // Starter holds five channels and three members.
+          planWithRoom: "starter",
           scheduledPosts: 0,
         };
 

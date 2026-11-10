@@ -62,6 +62,11 @@ const subscribed = WorkspaceIdSchema.make(
 );
 
 // Stripe does not answer when its checkouts are expired.
+// Subscribed, and a post of it starts going out once Stripe cancelled.
+const cancelledThenBusy = WorkspaceIdSchema.make(
+  "6b1c8e9f-7a5b-4c93-8edf-5a6b7c8d9e0f"
+);
+
 const unreachable = WorkspaceIdSchema.make(
   "7c2d9e1f-0a8b-4fc6-9b32-8d9eafb0c1d2"
 );
@@ -71,6 +76,7 @@ const names: ReadonlyMap<WorkspaceId, string> = new Map([
   [busy, "Busy"],
   [shared, "Shared"],
   [subscribed, "Subscribed"],
+  [cancelledThenBusy, "Late"],
   [unreachable, "Unreachable"],
 ]);
 
@@ -176,7 +182,7 @@ const PortsLive = Layer.mergeAll(
       return ContextRecords.of({
         eraseUser: (id) => record(`eraseUser:${id}`).pipe(provide),
         eraseWorkspace: (id) => {
-          if (id === busy) {
+          if (id === busy || id === cancelledThenBusy) {
             return Effect.fail(new WorkspaceBusy({ workspaceId: id }));
           }
 
@@ -265,7 +271,9 @@ const PortsLive = Layer.mergeAll(
               });
             }
 
-            const billed = ids.filter((id) => id === subscribed);
+            const billed = ids.filter(
+              (id) => id === subscribed || id === cancelledThenBusy
+            );
 
             if (billed.length > 0 && !cancelSubscriptions) {
               return yield* new WorkspaceSubscribed({
@@ -585,6 +593,30 @@ layer(Fakes.layer)("the settings endpoints", (it) => {
             "mail:workspaceDeleted:ana@example.test:fr:Subscribed:1",
           ]
         );
+      })
+  );
+
+  it.effect(
+    "say the subscription was cancelled when the deletion then fails",
+    () =>
+      Effect.gen(function* cancelledNotDeleted() {
+        const client = yield* as(user(), cancelledThenBusy);
+
+        const failed = yield* client.workspaces
+          .delete({
+            params: { workspaceId: cancelledThenBusy },
+            payload: { cancelSubscriptions: true, name: "Late" },
+          })
+          .pipe(Effect.flip);
+
+        // Not the bare refusal: Stripe's side cannot be undone, so the
+        // person is told it happened.
+        assert.deepInclude(failed, {
+          _tag: "DeletionIncomplete",
+          subscriptionsCancelled: 1,
+        });
+        assert.include(yield* calls, `cancel:${cancelledThenBusy}`);
+        assert.notInclude(yield* calls, `deleteWorkspace:${cancelledThenBusy}`);
       })
   );
 

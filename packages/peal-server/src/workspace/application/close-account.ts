@@ -15,6 +15,7 @@ import type { AuthUnavailable } from "./auth-unavailable.ts";
 import type { BillingUnavailable } from "./billing-unavailable.ts";
 import { ContextRecords } from "./context-records.ts";
 import type { WorkspaceErasureOptions } from "./context-records.ts";
+import type { ErasureIncomplete } from "./erasure-incomplete.ts";
 import { IncorrectPassword } from "./incorrect-password.ts";
 import { NotSignedIn } from "./not-signed-in.ts";
 import { PasswordCheck } from "./password-check.ts";
@@ -62,6 +63,7 @@ export class CloseAccount extends Context.Service<
       | NotSignedIn
       | SessionRequired
       | TooManyPasswordAttempts
+      | ErasureIncomplete
       | WorkspaceBusy
       | WorkspaceSubscribed
     >;

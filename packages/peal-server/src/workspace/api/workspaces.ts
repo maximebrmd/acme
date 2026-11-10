@@ -3,6 +3,7 @@ import { HttpApiBuilder } from "effect/http-api";
 import {
   Api,
   BillingUnavailable,
+  DeletionIncomplete,
   CurrentMember,
   Forbidden,
   WorkspaceBusy,
@@ -51,6 +52,10 @@ export const WorkspacesHandlers = HttpApiBuilder.group(
                     )
                   ),
                 DatabaseError: Effect.die,
+                ErasureIncomplete: ({ subscriptionsCancelled }) =>
+                  Effect.fail(
+                    new DeletionIncomplete({ subscriptionsCancelled })
+                  ),
                 MissingPermission: forbidden,
                 NotAMember: () => Effect.fail(new WorkspaceNotFound()),
                 SessionRequired: forbidden,
