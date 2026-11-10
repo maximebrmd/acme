@@ -106,7 +106,8 @@ const tokenJobs = (workspaceId: WorkspaceId, authorizer: PlatformAuthorizer) =>
     Layer.provide(Layer.succeed(PlatformAuthorizers, authorizersOf(authorizer)))
   );
 
-// Makes the channel's token due for a refresh.
+// Makes the channel's token due for the sweep: unused for a month, as
+// YouTube's, Google's refresh token being the same.
 const makeDue = (channel: Channel) =>
   Effect.gen(function* due() {
     const now = yield* DateTime.now;
@@ -117,7 +118,7 @@ const makeDue = (channel: Channel) =>
         scopes: channel.scopes,
         token: {
           _tag: "refreshable",
-          expiresAt: DateTime.addDuration(now, Duration.minutes(5)),
+          expiresAt: DateTime.subtractDuration(now, Duration.days(31)),
         },
       },
       now

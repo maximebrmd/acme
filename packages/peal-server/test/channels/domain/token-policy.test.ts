@@ -126,12 +126,12 @@ describe(refreshDueBefore, () => {
     );
   });
 
-  it("is a quarter of an hour ahead for a Google Business Profile location, as for YouTube", () => {
+  it("is a month ago for a Google Business Profile location, kept alive as YouTube is", () => {
     expect(refreshDueBefore(tokenPolicies.googleBusiness, now)).toStrictEqual(
-      Option.some(after("15 minutes"))
+      refreshDueBefore(tokenPolicies.youtube, now)
     );
-    expect(refreshDueBefore(tokenPolicies.youtube, now)).toStrictEqual(
-      Option.some(after("15 minutes"))
+    expect(tokenPolicies.googleBusiness.refresh).toStrictEqual(
+      tokenPolicies.youtube.refresh
     );
   });
 
@@ -212,10 +212,13 @@ describe(isRefreshDue, () => {
       bluesky: "beforeExpiry",
       blueskyLoopback: "beforeExpiry",
       facebook: "none",
+      googleBusiness: "keepAlive",
       instagram: "none",
       instagramLogin: "beforeExpiry",
       linkedin: "none",
+      linkedinPage: "beforeExpiry",
       mastodon: "none",
+      pinterest: "beforeExpiry",
       threads: "beforeExpiry",
       tiktok: "keepAlive",
       x: "keepAlive",
