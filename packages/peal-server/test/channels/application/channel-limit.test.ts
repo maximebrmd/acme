@@ -13,8 +13,8 @@ import {
   connectChannelWith,
   connectedChannel,
   MastodonAuthorizersTest,
+  mastodonInstance,
 } from "#test/channels/connect-support.ts";
-import { fakeMastodon } from "#test/channels/fakes/fake-mastodon.ts";
 import {
   actorIn,
   freshChannel,
@@ -68,7 +68,7 @@ const limitReached = new PlanLimitReached({
 layer(FreePlanTest)("connecting channels on the free plan", (it) => {
   it.effect("refuses a new account once the plan's channels are taken", () =>
     Effect.gen(function* full() {
-      const instance = yield* fakeMastodon();
+      const instance = yield* mastodonInstance();
       const workspaceId = yield* freshWorkspace;
       const connect = yield* ConnectChannel;
 
@@ -90,7 +90,7 @@ layer(FreePlanTest)("connecting channels on the free plan", (it) => {
     "refuses the account when the last channel was taken while connecting",
     () =>
       Effect.gen(function* raced() {
-        const instance = yield* fakeMastodon();
+        const instance = yield* mastodonInstance();
         const workspaceId = yield* freshWorkspace;
         const connect = yield* ConnectChannel;
 
@@ -128,7 +128,7 @@ layer(FreePlanTest)("connecting channels on the free plan", (it) => {
 
   it.effect("takes back an account the workspace has, at its limit", () =>
     Effect.gen(function* reconnects() {
-      const instance = yield* fakeMastodon();
+      const instance = yield* mastodonInstance();
       const workspaceId = yield* freshWorkspace;
       const connect = yield* ConnectChannel;
 

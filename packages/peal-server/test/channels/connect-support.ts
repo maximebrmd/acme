@@ -1,6 +1,7 @@
 import { Context, Effect, Layer, Redacted } from "effect";
 import { Digest, SecureRandom } from "effect/crypto";
 import { FetchHttpClient } from "effect/http";
+import { SqlClient } from "effect/sql";
 
 import { ChannelEvents } from "#channels/application/channel-events.ts";
 import { ConnectChannel } from "#channels/application/connect-channel.ts";
@@ -27,6 +28,8 @@ import type { TikTokHosts } from "#shared/infrastructure/platforms/tiktok-api.ts
 import { UnmeteredTest } from "#test/billing/support.ts";
 import { googleClient } from "#test/channels/fakes/fake-google.ts";
 import { linkedinClient } from "#test/channels/fakes/fake-linkedin.ts";
+import { fakeMastodon } from "#test/channels/fakes/fake-mastodon.ts";
+import type { FakeMastodonOptions } from "#test/channels/fakes/fake-mastodon.ts";
 import { tiktokClient } from "#test/channels/fakes/fake-tiktok.ts";
 import { xClient } from "#test/channels/fakes/fake-x.ts";
 import {
@@ -34,6 +37,32 @@ import {
   OpenOutboundGuard,
   TokenCipherTest,
 } from "#test/channels/support.ts";
+
+/**
+ * A fake Mastodon instance (`fakeMastodon`) for tests that connect accounts
+ * on it. Peal keeps the app it registers on an instance for good, by the
+ * instance's origin; a fake's origin is a loopback port, which the system
+ * hands to another fake in a later run. So the app goes with the instance:
+ * forgotten when its scope closes, and before it starts, should a run that
+ * stopped midway have left one. Kept, the next fake on that port would be
+ * asked to exchange a code for an app it never registered, and refuse.
+ */
+export const mastodonInstance = Effect.fnUntraced(function* mastodonInstance(
+  options: FakeMastodonOptions = {}
+) {
+  const sql = yield* SqlClient.SqlClient;
+  const instance = yield* fakeMastodon(options);
+
+  const forgetApp =
+    sql`DELETE FROM channels.mastodon_apps WHERE instance = ${new URL(instance.url).origin}`.pipe(
+      Effect.orDie
+    );
+
+  yield* forgetApp;
+  yield* Effect.addFinalizer(() => forgetApp);
+
+  return instance;
+});
 
 /** The web app's origin the tests run under. */
 export const testPublicUrl = "https://peal.test";

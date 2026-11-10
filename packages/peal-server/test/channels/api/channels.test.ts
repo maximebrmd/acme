@@ -21,8 +21,10 @@ import { ListChannels } from "#channels/application/list-channels.ts";
 import { OAuthClientDocuments } from "#channels/application/oauth-client-documents.ts";
 import type { TokenLifetime } from "#channels/domain/channel.ts";
 import type { WorkspaceId } from "#shared/domain/ids.ts";
-import { MastodonConnectTest } from "#test/channels/connect-support.ts";
-import { fakeMastodon } from "#test/channels/fakes/fake-mastodon.ts";
+import {
+  MastodonConnectTest,
+  mastodonInstance,
+} from "#test/channels/connect-support.ts";
 import {
   freshChannel,
   freshWorkspace,
@@ -278,7 +280,7 @@ layer(UseCasesTest)("the channels endpoints", (it) => {
 
   it.effect("connect a Mastodon account through the callback", () =>
     Effect.gen(function* connects() {
-      const instance = yield* fakeMastodon();
+      const instance = yield* mastodonInstance();
       const workspaceId = yield* freshWorkspace;
       const client = yield* clientAs(owner(workspaceId));
       const params = { platform: "mastodon" as const, workspaceId };
