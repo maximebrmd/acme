@@ -18,6 +18,11 @@ export const actorOf = (member: Member): Actor => {
       principal._tag === "user"
         ? {
             _tag: "user",
+            // The OAuth client acting for them, if one does.
+            ...Option.match(Option.fromUndefinedOr(principal.oauth), {
+              onNone: () => ({}),
+              onSome: ({ clientId }) => ({ clientId }),
+            }),
             impersonatedBy: Option.fromNullishOr(principal.impersonatedBy).pipe(
               Option.map((id) => UserIdSchema.make(id))
             ),
