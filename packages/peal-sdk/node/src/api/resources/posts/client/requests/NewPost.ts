@@ -25,7 +25,9 @@ import * as Peal from "../../../../index.js";
  */
 export interface NewPost {
     workspaceId: string;
+    wait?: string;
     "idempotency-key"?: string;
+    allowDuplicate?: boolean;
     channelIds: string[];
     content: Peal.PostContent;
     options?: Peal.ChannelOptions[];

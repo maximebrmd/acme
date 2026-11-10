@@ -3,17 +3,10 @@
 import typing
 
 import pydantic
-import typing_extensions
 from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
-from ..core.serialization import FieldMetadata
-from .idempotency_key_reused_encoded_tag import IdempotencyKeyReusedEncodedTag
 
 
 class IdempotencyKeyReusedEncoded(UniversalBaseModel):
-    tag: typing_extensions.Annotated[
-        IdempotencyKeyReusedEncodedTag, FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
-    ]
-
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2
     else:

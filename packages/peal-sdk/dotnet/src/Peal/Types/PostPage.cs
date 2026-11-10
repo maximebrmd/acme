@@ -1,0 +1,34 @@
+using global::System.Text.Json;
+using global::System.Text.Json.Serialization;
+using Peal.Core;
+
+namespace Peal;
+
+[Serializable]
+public record PostPage : IJsonOnDeserialized
+{
+    [JsonExtensionData]
+    private readonly IDictionary<string, JsonElement> _extensionData =
+        new Dictionary<string, JsonElement>();
+
+    [JsonPropertyName("channels")]
+    public IEnumerable<PostChannel> Channels { get; set; } = new List<PostChannel>();
+
+    [JsonPropertyName("items")]
+    public IEnumerable<Post> Items { get; set; } = new List<Post>();
+
+    [JsonPropertyName("nextCursor")]
+    public string? NextCursor { get; set; }
+
+    [JsonIgnore]
+    public ReadOnlyAdditionalProperties AdditionalProperties { get; private set; } = new();
+
+    void IJsonOnDeserialized.OnDeserialized() =>
+        AdditionalProperties.CopyFromExtensionData(_extensionData);
+
+    /// <inheritdoc />
+    public override string ToString()
+    {
+        return JsonUtils.Serialize(this);
+    }
+}

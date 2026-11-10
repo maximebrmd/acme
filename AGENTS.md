@@ -1071,8 +1071,9 @@ and no socket, for tests.
   `await_post`, `create_post`'s `waitSeconds`, `peal post --wait`) only
   reads the post again every half second, 60 seconds at most
   (`maxOutcomeWait`): no transaction or lock is held while a request waits,
-  and the durable job stays the only thing that publishes. Keep the bound
-  under what every proxy waits. In tests, never move virtual time while a
+  and the durable job stays the only thing that publishes. A process lets
+  `maxWaitingRequests` wait at once, and answers one more as if its time had
+  run out. Keep the bound under what every proxy waits. In tests, never move virtual time while a
   send is in flight, as a job that is starting can lose its wake-up: wait on
   a post already sent, and move time until the waiting fiber answers.
 - Several posts in one request (`PostBatches`: `posts.bulk`, 50 at most,

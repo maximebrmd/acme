@@ -11,9 +11,6 @@ public record IdempotencyKeyReusedEncoded : IJsonOnDeserialized
     private readonly IDictionary<string, JsonElement> _extensionData =
         new Dictionary<string, JsonElement>();
 
-    [JsonPropertyName("_tag")]
-    public required IdempotencyKeyReusedEncodedTag Tag { get; set; }
-
     [JsonIgnore]
     public ReadOnlyAdditionalProperties AdditionalProperties { get; private set; } = new();
 

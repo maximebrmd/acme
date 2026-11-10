@@ -177,6 +177,32 @@ func TestPostsCreateWithWireMock(
 	VerifyRequestCount(t, "TestPostsCreateWithWireMock", "POST", "/api/workspaces/workspaceId/posts", nil, 1)
 }
 
+func TestPostsSearchWithWireMock(
+	t *testing.T,
+) {
+	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
+	if WireMockBaseURL == "" {
+		WireMockBaseURL = "http://localhost:8080"
+	}
+	client := client.NewClient(
+		option.WithBaseURL(WireMockBaseURL),
+		option.WithToken("test-token"),
+	)
+	request := &peal.SearchPostsRequest{
+		WorkspaceID: "workspaceId",
+	}
+	_, invocationErr := client.Posts.Search(
+		context.TODO(),
+		request,
+		option.WithHTTPHeader(
+			http.Header{"X-Test-Id": []string{"TestPostsSearchWithWireMock"}},
+		),
+	)
+
+	require.NoError(t, invocationErr, "Client method call should succeed")
+	VerifyRequestCount(t, "TestPostsSearchWithWireMock", "GET", "/api/workspaces/workspaceId/posts/search", nil, 1)
+}
+
 func TestPostsSendWithWireMock(
 	t *testing.T,
 ) {
@@ -222,6 +248,128 @@ func TestPostsSendWithWireMock(
 
 	require.NoError(t, invocationErr, "Client method call should succeed")
 	VerifyRequestCount(t, "TestPostsSendWithWireMock", "POST", "/api/workspaces/workspaceId/posts/send", nil, 1)
+}
+
+func TestPostsBulkWithWireMock(
+	t *testing.T,
+) {
+	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
+	if WireMockBaseURL == "" {
+		WireMockBaseURL = "http://localhost:8080"
+	}
+	client := client.NewClient(
+		option.WithBaseURL(WireMockBaseURL),
+		option.WithToken("test-token"),
+	)
+	request := &peal.BulkPosts{
+		WorkspaceID: "workspaceId",
+		Posts: []*peal.BulkPost{
+			&peal.BulkPost{
+				ChannelIDs: []string{
+					"channelIds",
+				},
+				Content: &peal.PostContent{
+					Media: []*peal.MediaAttachment{
+						&peal.MediaAttachment{
+							AltText: "altText",
+							MediaID: "mediaId",
+						},
+					},
+					Overrides: []*peal.TextOverride{
+						&peal.TextOverride{
+							ChannelID: "channelId",
+							Text:      "text",
+						},
+					},
+					Text: "text",
+				},
+				When: &peal.PostTiming{
+					Now: &peal.PostTimingNow{},
+				},
+			},
+		},
+	}
+	_, invocationErr := client.Posts.Bulk(
+		context.TODO(),
+		request,
+		option.WithHTTPHeader(
+			http.Header{"X-Test-Id": []string{"TestPostsBulkWithWireMock"}},
+		),
+	)
+
+	require.NoError(t, invocationErr, "Client method call should succeed")
+	VerifyRequestCount(t, "TestPostsBulkWithWireMock", "POST", "/api/workspaces/workspaceId/posts/bulk", nil, 1)
+}
+
+func TestPostsImportWithWireMock(
+	t *testing.T,
+) {
+	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
+	if WireMockBaseURL == "" {
+		WireMockBaseURL = "http://localhost:8080"
+	}
+	client := client.NewClient(
+		option.WithBaseURL(WireMockBaseURL),
+		option.WithToken("test-token"),
+	)
+	request := &peal.PostImport{
+		WorkspaceID: "workspaceId",
+		Csv:         "csv",
+	}
+	_, invocationErr := client.Posts.Import(
+		context.TODO(),
+		request,
+		option.WithHTTPHeader(
+			http.Header{"X-Test-Id": []string{"TestPostsImportWithWireMock"}},
+		),
+	)
+
+	require.NoError(t, invocationErr, "Client method call should succeed")
+	VerifyRequestCount(t, "TestPostsImportWithWireMock", "POST", "/api/workspaces/workspaceId/posts/import", nil, 1)
+}
+
+func TestPostsValidateWithWireMock(
+	t *testing.T,
+) {
+	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
+	if WireMockBaseURL == "" {
+		WireMockBaseURL = "http://localhost:8080"
+	}
+	client := client.NewClient(
+		option.WithBaseURL(WireMockBaseURL),
+		option.WithToken("test-token"),
+	)
+	request := &peal.PostToValidate{
+		WorkspaceID: "workspaceId",
+		ChannelIDs: []string{
+			"channelIds",
+		},
+		Content: &peal.PostContent{
+			Media: []*peal.MediaAttachment{
+				&peal.MediaAttachment{
+					AltText: "altText",
+					MediaID: "mediaId",
+				},
+			},
+			Overrides: []*peal.TextOverride{
+				&peal.TextOverride{
+					ChannelID: "channelId",
+					Text:      "text",
+				},
+			},
+			Text: "text",
+		},
+	}
+	_, invocationErr := client.Posts.Validate(
+		context.TODO(),
+		request,
+		option.WithHTTPHeader(
+			http.Header{"X-Test-Id": []string{"TestPostsValidateWithWireMock"}},
+		),
+	)
+
+	require.NoError(t, invocationErr, "Client method call should succeed")
+	VerifyRequestCount(t, "TestPostsValidateWithWireMock", "POST", "/api/workspaces/workspaceId/posts/validate", nil, 1)
 }
 
 func TestPostsGetWithWireMock(
@@ -323,6 +471,33 @@ func TestPostsDiscardWithWireMock(
 
 	require.NoError(t, invocationErr, "Client method call should succeed")
 	VerifyRequestCount(t, "TestPostsDiscardWithWireMock", "DELETE", "/api/workspaces/workspaceId/posts/postId", nil, 1)
+}
+
+func TestPostsOutcomeWithWireMock(
+	t *testing.T,
+) {
+	WireMockBaseURL := os.Getenv("WIREMOCK_URL")
+	if WireMockBaseURL == "" {
+		WireMockBaseURL = "http://localhost:8080"
+	}
+	client := client.NewClient(
+		option.WithBaseURL(WireMockBaseURL),
+		option.WithToken("test-token"),
+	)
+	request := &peal.OutcomePostsRequest{
+		WorkspaceID: "workspaceId",
+		PostID:      "postId",
+	}
+	_, invocationErr := client.Posts.Outcome(
+		context.TODO(),
+		request,
+		option.WithHTTPHeader(
+			http.Header{"X-Test-Id": []string{"TestPostsOutcomeWithWireMock"}},
+		),
+	)
+
+	require.NoError(t, invocationErr, "Client method call should succeed")
+	VerifyRequestCount(t, "TestPostsOutcomeWithWireMock", "GET", "/api/workspaces/workspaceId/posts/postId/outcome", nil, 1)
 }
 
 func TestPostsAttemptsWithWireMock(

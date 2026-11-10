@@ -37,9 +37,19 @@ if typing.TYPE_CHECKING:
     from .assistant_unavailable_encoded_tag import AssistantUnavailableEncodedTag
     from .attempt_result import AttemptResult
     from .authorization import Authorization
+    from .bad_request_error_body import (
+        BadRequestErrorBody,
+        BadRequestErrorBody_BadRequest,
+        BadRequestErrorBody_InvalidTimeRange,
+    )
     from .billing import Billing
     from .billing_interval import BillingInterval
     from .billing_subscription import BillingSubscription
+    from .bulk_post import BulkPost
+    from .bulk_post_result import BulkPostResult, BulkPostResult_Created, BulkPostResult_Refused
+    from .bulk_post_result_created import BulkPostResultCreated
+    from .bulk_post_result_refused import BulkPostResultRefused
+    from .bulk_result import BulkResult
     from .calendar_day import CalendarDay
     from .channel import Channel
     from .channel_cannot_post_encoded import ChannelCannotPostEncoded
@@ -48,6 +58,7 @@ if typing.TYPE_CHECKING:
     from .channel_metrics import ChannelMetrics
     from .channel_not_found_encoded import ChannelNotFoundEncoded
     from .channel_options import ChannelOptions
+    from .channel_preview import ChannelPreview
     from .channel_status import ChannelStatus, ChannelStatus_Active, ChannelStatus_Disabled, ChannelStatus_RefreshNeeded
     from .channel_status_active import ChannelStatusActive
     from .channel_status_disabled import ChannelStatusDisabled
@@ -126,6 +137,8 @@ if typing.TYPE_CHECKING:
     from .database_unavailable_encoded import DatabaseUnavailableEncoded
     from .database_unavailable_encoded_tag import DatabaseUnavailableEncodedTag
     from .draft_page import DraftPage
+    from .duplicate_on_channel import DuplicateOnChannel
+    from .duplicate_post_encoded import DuplicatePostEncoded
     from .effect_http_api_error_bad_request_encoded import EffectHttpApiErrorBadRequestEncoded
     from .effect_http_api_error_bad_request_encoded_tag import EffectHttpApiErrorBadRequestEncodedTag
     from .engagement_day import EngagementDay
@@ -135,7 +148,24 @@ if typing.TYPE_CHECKING:
     from .forbidden_encoded_tag import ForbiddenEncodedTag
     from .held_limit import HeldLimit
     from .idempotency_key_reused_encoded import IdempotencyKeyReusedEncoded
-    from .idempotency_key_reused_encoded_tag import IdempotencyKeyReusedEncodedTag
+    from .import_cell_problem import ImportCellProblem
+    from .import_cell_problem_problem import ImportCellProblemProblem
+    from .import_column import ImportColumn
+    from .import_problem import ImportProblem
+    from .import_result import ImportResult
+    from .import_row_result import (
+        ImportRowResult,
+        ImportRowResult_Created,
+        ImportRowResult_Refused,
+        ImportRowResult_Unreadable,
+        ImportRowResult_Valid,
+    )
+    from .import_row_result_created import ImportRowResultCreated
+    from .import_row_result_refused import ImportRowResultRefused
+    from .import_row_result_unreadable import ImportRowResultUnreadable
+    from .import_row_result_valid import ImportRowResultValid
+    from .import_unreadable_encoded import ImportUnreadableEncoded
+    from .import_unreadable_encoded_tag import ImportUnreadableEncodedTag
     from .instagram_connection import InstagramConnection
     from .invalid_date_range_encoded import InvalidDateRangeEncoded
     from .invalid_date_range_encoded_tag import InvalidDateRangeEncodedTag
@@ -145,6 +175,7 @@ if typing.TYPE_CHECKING:
     from .invalid_time_zone_encoded_tag import InvalidTimeZoneEncodedTag
     from .invitation import Invitation
     from .invitation_not_found_encoded import InvitationNotFoundEncoded
+    from .limited_count import LimitedCount
     from .me import Me
     from .me_user import MeUser
     from .me_user_locale import MeUserLocale
@@ -229,11 +260,13 @@ if typing.TYPE_CHECKING:
     from .plan_limit_reached_encoded_tag import PlanLimitReachedEncodedTag
     from .plan_offer import PlanOffer
     from .plan_price import PlanPrice
+    from .plan_shortfall import PlanShortfall
     from .platform import Platform
     from .platform_unreachable_encoded import PlatformUnreachableEncoded
     from .platform_unreachable_encoded_tag import PlatformUnreachableEncodedTag
     from .post import Post
     from .post_analytics import PostAnalytics
+    from .post_channel import PostChannel
     from .post_content import PostContent
     from .post_content_invalid_encoded import PostContentInvalidEncoded
     from .post_draft import PostDraft
@@ -242,7 +275,22 @@ if typing.TYPE_CHECKING:
     from .post_origin import PostOrigin
     from .post_origin_via import PostOriginVia
     from .post_outcome import PostOutcome
+    from .post_page import PostPage
+    from .post_refusal import (
+        PostRefusal,
+        PostRefusal_DuplicatePost,
+        PostRefusal_Forbidden,
+        PostRefusal_IdempotencyKeyReused,
+        PostRefusal_InvalidTimeZone,
+        PostRefusal_PlanLimitReached,
+        PostRefusal_PostContentInvalid,
+        PostRefusal_PostNotFound,
+        PostRefusal_ScheduleInPast,
+        PostRefusal_UnknownChannels,
+        PostRefusal_UnknownMedia,
+    )
     from .post_schedule import PostSchedule
+    from .post_sort import PostSort
     from .post_status import PostStatus
     from .post_status_conflict_encoded import PostStatusConflictEncoded
     from .post_status_conflict_encoded_tag import PostStatusConflictEncodedTag
@@ -251,11 +299,13 @@ if typing.TYPE_CHECKING:
     from .post_timing import PostTiming, PostTiming_At, PostTiming_Now
     from .post_timing_at import PostTimingAt
     from .post_timing_now import PostTimingNow
+    from .post_validation import PostValidation
     from .prepared_upload import PreparedUpload
     from .probe_state import ProbeState
     from .publication_attempt import PublicationAttempt
     from .rejection_reason import RejectionReason
     from .role import Role
+    from .schedule_check import ScheduleCheck
     from .schedule_in_past_encoded import ScheduleInPastEncoded
     from .signed_request import SignedRequest
     from .signed_request_method import SignedRequestMethod
@@ -271,6 +321,7 @@ if typing.TYPE_CHECKING:
     from .target_metrics import TargetMetrics
     from .target_options import TargetOptions, TargetOptions_Tiktok, TargetOptions_Youtube
     from .target_status_conflict_encoded import TargetStatusConflictEncoded
+    from .text_count import TextCount
     from .text_override import TextOverride
     from .text_unit import TextUnit
     from .tik_tok_account import TikTokAccount
@@ -368,9 +419,19 @@ _dynamic_imports: typing.Dict[str, str] = {
     "AssistantUnavailableEncodedTag": ".assistant_unavailable_encoded_tag",
     "AttemptResult": ".attempt_result",
     "Authorization": ".authorization",
+    "BadRequestErrorBody": ".bad_request_error_body",
+    "BadRequestErrorBody_BadRequest": ".bad_request_error_body",
+    "BadRequestErrorBody_InvalidTimeRange": ".bad_request_error_body",
     "Billing": ".billing",
     "BillingInterval": ".billing_interval",
     "BillingSubscription": ".billing_subscription",
+    "BulkPost": ".bulk_post",
+    "BulkPostResult": ".bulk_post_result",
+    "BulkPostResultCreated": ".bulk_post_result_created",
+    "BulkPostResultRefused": ".bulk_post_result_refused",
+    "BulkPostResult_Created": ".bulk_post_result",
+    "BulkPostResult_Refused": ".bulk_post_result",
+    "BulkResult": ".bulk_result",
     "CalendarDay": ".calendar_day",
     "Channel": ".channel",
     "ChannelCannotPostEncoded": ".channel_cannot_post_encoded",
@@ -379,6 +440,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "ChannelMetrics": ".channel_metrics",
     "ChannelNotFoundEncoded": ".channel_not_found_encoded",
     "ChannelOptions": ".channel_options",
+    "ChannelPreview": ".channel_preview",
     "ChannelStatus": ".channel_status",
     "ChannelStatusActive": ".channel_status_active",
     "ChannelStatusDisabled": ".channel_status_disabled",
@@ -458,6 +520,8 @@ _dynamic_imports: typing.Dict[str, str] = {
     "DatabaseUnavailableEncoded": ".database_unavailable_encoded",
     "DatabaseUnavailableEncodedTag": ".database_unavailable_encoded_tag",
     "DraftPage": ".draft_page",
+    "DuplicateOnChannel": ".duplicate_on_channel",
+    "DuplicatePostEncoded": ".duplicate_post_encoded",
     "EffectHttpApiErrorBadRequestEncoded": ".effect_http_api_error_bad_request_encoded",
     "EffectHttpApiErrorBadRequestEncodedTag": ".effect_http_api_error_bad_request_encoded_tag",
     "EngagementDay": ".engagement_day",
@@ -467,7 +531,22 @@ _dynamic_imports: typing.Dict[str, str] = {
     "ForbiddenEncodedTag": ".forbidden_encoded_tag",
     "HeldLimit": ".held_limit",
     "IdempotencyKeyReusedEncoded": ".idempotency_key_reused_encoded",
-    "IdempotencyKeyReusedEncodedTag": ".idempotency_key_reused_encoded_tag",
+    "ImportCellProblem": ".import_cell_problem",
+    "ImportCellProblemProblem": ".import_cell_problem_problem",
+    "ImportColumn": ".import_column",
+    "ImportProblem": ".import_problem",
+    "ImportResult": ".import_result",
+    "ImportRowResult": ".import_row_result",
+    "ImportRowResultCreated": ".import_row_result_created",
+    "ImportRowResultRefused": ".import_row_result_refused",
+    "ImportRowResultUnreadable": ".import_row_result_unreadable",
+    "ImportRowResultValid": ".import_row_result_valid",
+    "ImportRowResult_Created": ".import_row_result",
+    "ImportRowResult_Refused": ".import_row_result",
+    "ImportRowResult_Unreadable": ".import_row_result",
+    "ImportRowResult_Valid": ".import_row_result",
+    "ImportUnreadableEncoded": ".import_unreadable_encoded",
+    "ImportUnreadableEncodedTag": ".import_unreadable_encoded_tag",
     "InstagramConnection": ".instagram_connection",
     "InvalidDateRangeEncoded": ".invalid_date_range_encoded",
     "InvalidDateRangeEncodedTag": ".invalid_date_range_encoded_tag",
@@ -477,6 +556,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "InvalidTimeZoneEncodedTag": ".invalid_time_zone_encoded_tag",
     "Invitation": ".invitation",
     "InvitationNotFoundEncoded": ".invitation_not_found_encoded",
+    "LimitedCount": ".limited_count",
     "Me": ".me",
     "MeUser": ".me_user",
     "MeUserLocale": ".me_user_locale",
@@ -555,11 +635,13 @@ _dynamic_imports: typing.Dict[str, str] = {
     "PlanLimitReachedEncodedTag": ".plan_limit_reached_encoded_tag",
     "PlanOffer": ".plan_offer",
     "PlanPrice": ".plan_price",
+    "PlanShortfall": ".plan_shortfall",
     "Platform": ".platform",
     "PlatformUnreachableEncoded": ".platform_unreachable_encoded",
     "PlatformUnreachableEncodedTag": ".platform_unreachable_encoded_tag",
     "Post": ".post",
     "PostAnalytics": ".post_analytics",
+    "PostChannel": ".post_channel",
     "PostContent": ".post_content",
     "PostContentInvalidEncoded": ".post_content_invalid_encoded",
     "PostDraft": ".post_draft",
@@ -568,7 +650,20 @@ _dynamic_imports: typing.Dict[str, str] = {
     "PostOrigin": ".post_origin",
     "PostOriginVia": ".post_origin_via",
     "PostOutcome": ".post_outcome",
+    "PostPage": ".post_page",
+    "PostRefusal": ".post_refusal",
+    "PostRefusal_DuplicatePost": ".post_refusal",
+    "PostRefusal_Forbidden": ".post_refusal",
+    "PostRefusal_IdempotencyKeyReused": ".post_refusal",
+    "PostRefusal_InvalidTimeZone": ".post_refusal",
+    "PostRefusal_PlanLimitReached": ".post_refusal",
+    "PostRefusal_PostContentInvalid": ".post_refusal",
+    "PostRefusal_PostNotFound": ".post_refusal",
+    "PostRefusal_ScheduleInPast": ".post_refusal",
+    "PostRefusal_UnknownChannels": ".post_refusal",
+    "PostRefusal_UnknownMedia": ".post_refusal",
     "PostSchedule": ".post_schedule",
+    "PostSort": ".post_sort",
     "PostStatus": ".post_status",
     "PostStatusConflictEncoded": ".post_status_conflict_encoded",
     "PostStatusConflictEncodedTag": ".post_status_conflict_encoded_tag",
@@ -579,11 +674,13 @@ _dynamic_imports: typing.Dict[str, str] = {
     "PostTimingNow": ".post_timing_now",
     "PostTiming_At": ".post_timing",
     "PostTiming_Now": ".post_timing",
+    "PostValidation": ".post_validation",
     "PreparedUpload": ".prepared_upload",
     "ProbeState": ".probe_state",
     "PublicationAttempt": ".publication_attempt",
     "RejectionReason": ".rejection_reason",
     "Role": ".role",
+    "ScheduleCheck": ".schedule_check",
     "ScheduleInPastEncoded": ".schedule_in_past_encoded",
     "SignedRequest": ".signed_request",
     "SignedRequestMethod": ".signed_request_method",
@@ -605,6 +702,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "TargetOptions_Tiktok": ".target_options",
     "TargetOptions_Youtube": ".target_options",
     "TargetStatusConflictEncoded": ".target_status_conflict_encoded",
+    "TextCount": ".text_count",
     "TextOverride": ".text_override",
     "TextUnit": ".text_unit",
     "TikTokAccount": ".tik_tok_account",
@@ -728,9 +826,19 @@ __all__ = [
     "AssistantUnavailableEncodedTag",
     "AttemptResult",
     "Authorization",
+    "BadRequestErrorBody",
+    "BadRequestErrorBody_BadRequest",
+    "BadRequestErrorBody_InvalidTimeRange",
     "Billing",
     "BillingInterval",
     "BillingSubscription",
+    "BulkPost",
+    "BulkPostResult",
+    "BulkPostResultCreated",
+    "BulkPostResultRefused",
+    "BulkPostResult_Created",
+    "BulkPostResult_Refused",
+    "BulkResult",
     "CalendarDay",
     "Channel",
     "ChannelCannotPostEncoded",
@@ -739,6 +847,7 @@ __all__ = [
     "ChannelMetrics",
     "ChannelNotFoundEncoded",
     "ChannelOptions",
+    "ChannelPreview",
     "ChannelStatus",
     "ChannelStatusActive",
     "ChannelStatusDisabled",
@@ -818,6 +927,8 @@ __all__ = [
     "DatabaseUnavailableEncoded",
     "DatabaseUnavailableEncodedTag",
     "DraftPage",
+    "DuplicateOnChannel",
+    "DuplicatePostEncoded",
     "EffectHttpApiErrorBadRequestEncoded",
     "EffectHttpApiErrorBadRequestEncodedTag",
     "EngagementDay",
@@ -827,7 +938,22 @@ __all__ = [
     "ForbiddenEncodedTag",
     "HeldLimit",
     "IdempotencyKeyReusedEncoded",
-    "IdempotencyKeyReusedEncodedTag",
+    "ImportCellProblem",
+    "ImportCellProblemProblem",
+    "ImportColumn",
+    "ImportProblem",
+    "ImportResult",
+    "ImportRowResult",
+    "ImportRowResultCreated",
+    "ImportRowResultRefused",
+    "ImportRowResultUnreadable",
+    "ImportRowResultValid",
+    "ImportRowResult_Created",
+    "ImportRowResult_Refused",
+    "ImportRowResult_Unreadable",
+    "ImportRowResult_Valid",
+    "ImportUnreadableEncoded",
+    "ImportUnreadableEncodedTag",
     "InstagramConnection",
     "InvalidDateRangeEncoded",
     "InvalidDateRangeEncodedTag",
@@ -837,6 +963,7 @@ __all__ = [
     "InvalidTimeZoneEncodedTag",
     "Invitation",
     "InvitationNotFoundEncoded",
+    "LimitedCount",
     "Me",
     "MeUser",
     "MeUserLocale",
@@ -915,11 +1042,13 @@ __all__ = [
     "PlanLimitReachedEncodedTag",
     "PlanOffer",
     "PlanPrice",
+    "PlanShortfall",
     "Platform",
     "PlatformUnreachableEncoded",
     "PlatformUnreachableEncodedTag",
     "Post",
     "PostAnalytics",
+    "PostChannel",
     "PostContent",
     "PostContentInvalidEncoded",
     "PostDraft",
@@ -928,7 +1057,20 @@ __all__ = [
     "PostOrigin",
     "PostOriginVia",
     "PostOutcome",
+    "PostPage",
+    "PostRefusal",
+    "PostRefusal_DuplicatePost",
+    "PostRefusal_Forbidden",
+    "PostRefusal_IdempotencyKeyReused",
+    "PostRefusal_InvalidTimeZone",
+    "PostRefusal_PlanLimitReached",
+    "PostRefusal_PostContentInvalid",
+    "PostRefusal_PostNotFound",
+    "PostRefusal_ScheduleInPast",
+    "PostRefusal_UnknownChannels",
+    "PostRefusal_UnknownMedia",
     "PostSchedule",
+    "PostSort",
     "PostStatus",
     "PostStatusConflictEncoded",
     "PostStatusConflictEncodedTag",
@@ -939,11 +1081,13 @@ __all__ = [
     "PostTimingNow",
     "PostTiming_At",
     "PostTiming_Now",
+    "PostValidation",
     "PreparedUpload",
     "ProbeState",
     "PublicationAttempt",
     "RejectionReason",
     "Role",
+    "ScheduleCheck",
     "ScheduleInPastEncoded",
     "SignedRequest",
     "SignedRequestMethod",
@@ -965,6 +1109,7 @@ __all__ = [
     "TargetOptions_Tiktok",
     "TargetOptions_Youtube",
     "TargetStatusConflictEncoded",
+    "TextCount",
     "TextOverride",
     "TextUnit",
     "TikTokAccount",

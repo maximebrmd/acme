@@ -623,37 +623,6 @@ func (p *PeriodUsage) String() string {
 	return fmt.Sprintf("%#v", p)
 }
 
-type Plan string
-
-const (
-	PlanFree     Plan = "free"
-	PlanStarter  Plan = "starter"
-	PlanPro      Plan = "pro"
-	PlanBusiness Plan = "business"
-	PlanAgency   Plan = "agency"
-)
-
-func NewPlanFromString(s string) (Plan, error) {
-	switch s {
-	case "free":
-		return PlanFree, nil
-	case "starter":
-		return PlanStarter, nil
-	case "pro":
-		return PlanPro, nil
-	case "business":
-		return PlanBusiness, nil
-	case "agency":
-		return PlanAgency, nil
-	}
-	var t Plan
-	return "", fmt.Errorf("%s is not a valid %T", s, t)
-}
-
-func (p Plan) Ptr() *Plan {
-	return &p
-}
-
 var (
 	planAllowancesFieldAssistantRequests = big.NewInt(1 << 0)
 	planAllowancesFieldChannels          = big.NewInt(1 << 1)
