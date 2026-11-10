@@ -21,8 +21,10 @@ export const PublicConnectLinkAddresses = Layer.effect(
           onSome: (chosen) => (chosen === defaultLocale ? "" : `/${chosen}`),
         });
 
+        // After the #: a browser keeps a fragment to itself, so the token
+        // reaches no server's log, no proxy and no other site's Referer.
         return new URL(
-          `${prefix}/connect/link/${encodeURIComponent(Redacted.value(token))}`,
+          `${prefix}/connect/link#${encodeURIComponent(Redacted.value(token))}`,
           origin
         ).href;
       },

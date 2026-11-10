@@ -1093,6 +1093,7 @@ export {
   HostedLinkSchema,
   HostedOutcomeSchema,
   HostedStartSchema,
+  connectLinkTokenHeader,
 } from "./hosted-connect.ts";
 
 export type { HostedLink, HostedOutcome } from "./hosted-connect.ts";

@@ -54,7 +54,7 @@ const RememberedConnections = Layer.effect(
 );
 
 /** Where the links' pages are, in these tests. */
-export const pages = "https://peal.test/connect/link/";
+export const pages = "https://peal.test/connect/link#";
 
 /**
  * ConnectLinks with the real store and tokens, under a partner named

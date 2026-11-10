@@ -42,10 +42,10 @@ describe("the connect link a tab came from", () => {
 
 describe(frameOf, () => {
   it.each([
-    ["/connect/link/synthetic-token", false, "hosted"],
+    ["/connect/link", false, "hosted"],
     ["/connect/mastodon/callback", true, "hosted"],
     ["/connect/mastodon/callback", false, "app"],
-    ["/connect/link/synthetic-token/more", false, "app"],
+    ["/connect/link/more", false, "app"],
     ["/app", true, "app"],
     ["/", false, "app"],
   ] as const)(

@@ -19,8 +19,8 @@ describe("next.config.ts", () => {
     const [, ...hosted] = await rules();
 
     expect(hosted.map((rule) => rule.source)).toStrictEqual([
-      "/connect/link/:token",
-      "/:locale/connect/link/:token",
+      "/connect/link",
+      "/:locale/connect/link",
     ]);
 
     for (const rule of hosted) {

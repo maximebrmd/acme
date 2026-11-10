@@ -778,7 +778,7 @@ export const newLinkId = "0190f3a0-0000-7000-8000-00000000c002";
 
 /** The address the studio's new links open, shown once. */
 export const newLinkUrl =
-  "https://peal.example.test/connect/link/synthetic-token-0123456789abcdefghijklmnopq";
+  "https://peal.example.test/connect/link#synthetic-token-0123456789abcdefghijklmnopq";
 
 // A link used a day ago, which connected one channel.
 const usedLink: ConnectLink = {

@@ -15,6 +15,7 @@ import {
   HostedConnectFailed,
   ReturnUrlNotAllowed,
   TooManyConnectLinks,
+  connectLinkTokenHeader,
 } from "peal-contract";
 import type { HostedOutcome as HostedOutcomeView } from "peal-contract";
 
@@ -175,38 +176,48 @@ export const HostedConnectHandlers = HttpApiBuilder.group(
     const addresses = yield* ConnectLinkAddresses;
 
     return handlers.handleAll({
-      choose: ({ params, payload }) =>
+      choose: ({ headers, payload }) =>
         Effect.gen(function* choose() {
           const outcome = yield* links
-            .choose(Redacted.make(params.token), yield* browserNonce, {
-              accountIds: payload.accountIds,
-              selection: payload.selection,
-            })
+            .choose(
+              Redacted.make(headers[connectLinkTokenHeader]),
+              yield* browserNonce,
+              {
+                accountIds: payload.accountIds,
+                selection: payload.selection,
+              }
+            )
             .pipe(Effect.catchTags(hostedFailures));
 
           return outcomeView(outcome);
         }),
-      complete: ({ params, payload }) =>
+      complete: ({ headers, payload }) =>
         Effect.gen(function* complete() {
           const outcome = yield* links
-            .complete(Redacted.make(params.token), yield* browserNonce, {
-              code: Option.fromUndefinedOr(payload.code),
-              error: Option.fromUndefinedOr(payload.error),
-              issuer: Option.fromUndefinedOr(payload.iss),
-              state: payload.state,
-            })
+            .complete(
+              Redacted.make(headers[connectLinkTokenHeader]),
+              yield* browserNonce,
+              {
+                code: Option.fromUndefinedOr(payload.code),
+                error: Option.fromUndefinedOr(payload.error),
+                issuer: Option.fromUndefinedOr(payload.iss),
+                state: payload.state,
+              }
+            )
             .pipe(Effect.catchTags(hostedFailures));
 
           return outcomeView(outcome);
         }),
-      open: ({ params }) =>
+      open: ({ headers }) =>
         Effect.gen(function* open() {
-          const hosted = yield* links.open(Redacted.make(params.token)).pipe(
-            Effect.catchTags({
-              ConnectLinkNotFound: noLink,
-              DatabaseError: Effect.die,
-            })
-          );
+          const hosted = yield* links
+            .open(Redacted.make(headers[connectLinkTokenHeader]))
+            .pipe(
+              Effect.catchTags({
+                ConnectLinkNotFound: noLink,
+                DatabaseError: Effect.die,
+              })
+            );
 
           return {
             expiresAt: hosted.expiresAt,
@@ -221,10 +232,10 @@ export const HostedConnectHandlers = HttpApiBuilder.group(
             status: hosted.state,
           };
         }),
-      start: ({ params, payload }) =>
+      start: ({ headers, payload }) =>
         Effect.gen(function* start() {
           const started = yield* links
-            .start(Redacted.make(params.token), {
+            .start(Redacted.make(headers[connectLinkTokenHeader]), {
               handle: Option.fromUndefinedOr(payload.handle),
               instance: Option.fromUndefinedOr(payload.instance),
             })

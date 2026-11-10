@@ -48,10 +48,7 @@ const hostedLinkHeaders = [
   { key: "X-Robots-Tag", value: "noindex, nofollow" },
 ];
 
-const hostedLinkSources = [
-  "/connect/link/:token",
-  "/:locale/connect/link/:token",
-];
+const hostedLinkSources = ["/connect/link", "/:locale/connect/link"];
 
 const config: NextConfig = {
   // How long, in milliseconds, a request that src/proxy.ts forwards may take

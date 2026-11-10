@@ -4,7 +4,7 @@ import { assert, layer } from "@effect/vitest";
 import { Effect, Layer, Redacted } from "effect";
 import { Cookies, HttpServer } from "effect/http";
 import { HttpApiTest } from "effect/http-api";
-import { Api } from "peal-contract";
+import { Api, connectLinkTokenHeader } from "peal-contract";
 
 import { HostedConnectHandlers } from "#channels/api/connect-links.ts";
 import { mastodonInstance } from "#test/channels/connect-support.ts";
@@ -21,6 +21,8 @@ const makeClient = HttpApiTest.groups(Api, ["hostedConnect"]).pipe(
   )
 );
 
+const tokenHeader = (token: string) => ({ [connectLinkTokenHeader]: token });
+
 layer(LinksTest)("the hosted connect endpoints", (it) => {
   it.effect("show who asks, and nothing of the link's workspace", () =>
     Effect.gen(function* opens() {
@@ -28,7 +30,7 @@ layer(LinksTest)("the hosted connect endpoints", (it) => {
       const { link, token } = yield* linked();
 
       const opened = yield* client.hostedConnect.open({
-        params: { token: Redacted.value(token) },
+        headers: tokenHeader(Redacted.value(token)),
       });
 
       assert.deepStrictEqual(opened, {
@@ -45,7 +47,7 @@ layer(LinksTest)("the hosted connect endpoints", (it) => {
       });
 
       const missing = yield* client.hostedConnect
-        .open({ params: { token: "not-a-token" } })
+        .open({ headers: tokenHeader("not-a-token") })
         .pipe(Effect.flip);
 
       assert.strictEqual(missing._tag, "ConnectLinkNotFound");
@@ -61,7 +63,7 @@ layer(LinksTest)("the hosted connect endpoints", (it) => {
         const { token } = yield* linked();
 
         const response = yield* client.hostedConnect.start({
-          params: { token: Redacted.value(token) },
+          headers: tokenHeader(Redacted.value(token)),
           payload: { instance: instance.url },
           responseMode: "response-only",
         });
@@ -93,16 +95,16 @@ layer(LinksTest)("the hosted connect endpoints", (it) => {
       const instance = yield* mastodonInstance();
       const client = yield* makeClient;
       const { token } = yield* linked();
-      const params = { token: Redacted.value(token) };
+      const headers = tokenHeader(Redacted.value(token));
 
       const started = yield* client.hostedConnect.start({
-        params,
+        headers,
         payload: { instance: instance.url },
       });
 
       const refused = yield* client.hostedConnect
         .complete({
-          params,
+          headers,
           payload: instance.approve(started.authorizationUrl),
         })
         .pipe(Effect.flip);

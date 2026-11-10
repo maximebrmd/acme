@@ -21,6 +21,7 @@ import {
   chooseHostedAccounts,
   completeHostedLink,
   hostedFailureOf,
+  tokenHeaders,
 } from "#connect-link/hosted-api.ts";
 import type { HostedFailure } from "#connect-link/hosted-api.ts";
 import { forgetLink } from "#connect-link/pending-link.ts";
@@ -54,7 +55,9 @@ const Failed = ({
       <div className="flex flex-wrap gap-2">
         {canRetry(failure.error) ? (
           <Button
-            render={<Link href={`/connect/link/${token}`} />}
+            render={
+              <Link href={`/connect/link#${encodeURIComponent(token)}`} />
+            }
             nativeButton={false}
           >
             {t("tryAgain")}
@@ -91,7 +94,7 @@ const Picker = ({
   const handleSubmit = () => {
     startTransition(async () => {
       const exit = await choose({
-        params: { token },
+        headers: tokenHeaders(token),
         payload: { accountIds: [...selected], selection: choice.selection },
       });
 
@@ -108,7 +111,7 @@ const Picker = ({
   const again = (
     <Button
       variant="outline"
-      render={<Link href={`/connect/link/${token}`} />}
+      render={<Link href={`/connect/link#${encodeURIComponent(token)}`} />}
       nativeButton={false}
     >
       {t("tryAgain")}
@@ -172,7 +175,7 @@ export const CompleteHostedConnection = ({
     started.current = true;
 
     const finish = async (payload: ConnectCallback) => {
-      const exit = await complete({ params: { token }, payload });
+      const exit = await complete({ headers: tokenHeaders(token), payload });
 
       if (exit._tag === "Success") {
         if (exit.value._tag === "connected") {

@@ -79,7 +79,7 @@ describe("a connect link's hosted page", () => {
         .getByText(`This link has expired. Ask ${workspaceName} for a new one.`)
     ).toBeVisible();
 
-    await app.open(`/connect/link/${run}-unknown`);
+    await app.open(`/connect/link#${run}-unknown`);
 
     await expect(
       screen

@@ -137,10 +137,12 @@ layer(Test, { excludeTestServices: true, timeout: "180 seconds" })(
         Effect.gen(function* hosted() {
           const app = yield* TestApp;
 
-          const missing = yield* app.request(
-            "/api/connect-links/synthetic-token-that-opens-nothing",
-            { headers: { "x-request-id": "seam-request-0002" } }
-          );
+          const missing = yield* app.request("/api/connect-links", {
+            headers: {
+              "x-connect-link-token": "synthetic-token-that-opens-nothing",
+              "x-request-id": "seam-request-0002",
+            },
+          });
 
           assert.strictEqual(missing.status, 404);
           assert.strictEqual(
@@ -321,13 +323,13 @@ layer(Test, { excludeTestServices: true, timeout: "180 seconds" })(
           );
 
           // A hosted page's step sent from another site.
-          const foreign = yield* app.request(
-            "/api/connect-links/synthetic-token-that-opens-nothing/start",
-            {
-              body: { instance: "social.example" },
-              headers: { origin: "https://evil.example.test" },
-            }
-          );
+          const foreign = yield* app.request("/api/connect-links/start", {
+            body: { instance: "social.example" },
+            headers: {
+              origin: "https://evil.example.test",
+              "x-connect-link-token": "synthetic-token-that-opens-nothing",
+            },
+          });
 
           assert.strictEqual(foreign.status, 403);
           assert.deepInclude(yield* bodyOf(RefusalSchema, foreign), {

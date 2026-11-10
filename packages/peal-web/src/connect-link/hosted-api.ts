@@ -1,13 +1,24 @@
 import { Cause, Exit, Option, Schema } from "effect";
 import { Atom } from "effect/reactivity";
-import { HostedConnectFailureSchema } from "peal-contract";
+import {
+  connectLinkTokenHeader,
+  HostedConnectFailureSchema,
+} from "peal-contract";
 import type { HostedConnectFailure } from "peal-contract";
 
 import { PealApi } from "#api/client.ts";
 
 /** What a connect link's page shows, read with the link's token alone. */
+/**
+ * The link's token as every hosted call carries it: in a header, never in
+ * an address.
+ */
+export const tokenHeaders = (token: string) => ({
+  [connectLinkTokenHeader]: token,
+});
+
 export const hostedLinkOf = Atom.family((token: string) =>
-  PealApi.query("hostedConnect", "open", { params: { token } })
+  PealApi.query("hostedConnect", "open", { headers: tokenHeaders(token) })
 );
 
 export const startHostedLink = PealApi.mutation("hostedConnect", "start");

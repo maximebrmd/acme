@@ -1,7 +1,11 @@
 import { Effect, Layer, Metric, Option } from "effect";
-import { HttpServerRequest } from "effect/http";
+import { Headers, HttpServerRequest } from "effect/http";
 import { RateLimiter } from "effect/persistence";
-import { ConnectLinkIntake, TooManyConnectAttempts } from "peal-contract";
+import {
+  ConnectLinkIntake,
+  connectLinkTokenHeader,
+  TooManyConnectAttempts,
+} from "peal-contract";
 
 import { refused } from "#shared/api/forbidden.ts";
 import {
@@ -83,7 +87,16 @@ export const ConnectLinkIntakeLive = Layer.effect(
             )
           );
 
-        return yield* httpEffect;
+        const redacted = yield* Headers.CurrentRedactedNames;
+
+        // Whatever writes these requests' headers out leaves the link's
+        // token out of them.
+        return yield* httpEffect.pipe(
+          Effect.provideService(Headers.CurrentRedactedNames, [
+            ...redacted,
+            connectLinkTokenHeader,
+          ])
+        );
       })
     );
   })

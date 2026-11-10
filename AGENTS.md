@@ -2221,8 +2221,14 @@ and no socket, for tests.
   none. The page returns with `peal_link` and `peal_status`, which anyone
   can write: the partner reads the link with its key, and
   `channel.connected` tells its server.
-- The hosted steps (`HostedConnectApi`, `/api/connect-links/:token`, with
-  `/start`, `/complete` and `/accounts`) need no credentials.
+- The hosted steps (`HostedConnectApi`, `/api/connect-links`, with
+  `/start`, `/complete` and `/accounts`) need no credentials but the
+  link's token, in the `x-connect-link-token` header. A token never goes
+  in an address: the server logs and traces every path it answers, and
+  the page's address is `connect/link#<token>`, the fragment a browser
+  keeps to itself. `test/app/secrets-in-logs.test.ts` runs the app as
+  production does and searches what it logs and traces for each kind of
+  credential: add a new one there.
   `ConnectLinkIntake` (`src/app/connect-links/`) counts 120 opens and 60
   steps an hour per address and asks a trusted `Origin` of every step that
   is not a GET. `start` binds the platform's state to the link and to a
@@ -2230,7 +2236,8 @@ and no socket, for tests.
   `/api/connect-links`, Secure on HTTPS), set on the reply, never declared
   in the contract: `complete` and `accounts` refuse another browser. Never
   log a link's token or address.
-- The page is `connect/link/[token]` (`components/connect-link/`), with
+- The page is `connect/link` (`components/connect-link/`), which reads
+  the token from the fragment, with
   the partner's name and logo (`PartnerOwnership.presentedAs`), or the
   workspace's name. `next.config.ts` gives it `Cache-Control: no-store`,
   `Referrer-Policy: no-referrer` and `X-Robots-Tag: noindex, nofollow`,

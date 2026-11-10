@@ -1619,7 +1619,7 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           );
 
           assert.strictEqual(created.link.status, "pending");
-          assert.include(created.url, "/connect/link/");
+          assert.include(created.url, "/connect/link#");
 
           // Read afterwards, a link shows no address.
           const listed = yield* reader.call(
@@ -1629,7 +1629,7 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
           );
 
           assert.lengthOf(listed.links, 1);
-          assert.notInclude(JSON.stringify(listed), "/connect/link/");
+          assert.notInclude(JSON.stringify(listed), "/connect/link#");
 
           const read = yield* reader.call("get_connect_link", LinkSchema, {
             linkId: created.link.id,

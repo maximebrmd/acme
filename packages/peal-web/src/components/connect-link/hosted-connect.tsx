@@ -6,7 +6,7 @@ import { AsyncResult } from "effect/reactivity";
 import { useTranslations } from "next-intl";
 import type { HostedLink } from "peal-contract";
 import { Button } from "peal-ui/components/button";
-import { useState, useTransition } from "react";
+import { useState, useSyncExternalStore, useTransition } from "react";
 
 import { forgetConnection } from "#channels/pending-connection.ts";
 import { useHydrated } from "#components/media/use-hydrated.ts";
@@ -14,9 +14,11 @@ import {
   hostedFailureOf,
   hostedLinkOf,
   startHostedLink,
+  tokenHeaders,
 } from "#connect-link/hosted-api.ts";
 import type { HostedErrorKey } from "#connect-link/hosted-api.ts";
 import { rememberLink } from "#connect-link/pending-link.ts";
+import { tokenOfFragment } from "#review/link-token.ts";
 
 import {
   HostedCard,
@@ -24,6 +26,21 @@ import {
   HostedOver,
   HostedWelcome,
 } from "./hosted-views.tsx";
+
+// The link's token is what follows the # in its address: browsers keep it
+// to themselves, so it reaches no server's logs, and no other site.
+const subscribeToHash = (onChange: () => void) => {
+  window.addEventListener("hashchange", onChange);
+
+  return () => {
+    window.removeEventListener("hashchange", onChange);
+  };
+};
+
+const tokenInAddress = () => tokenOfFragment(window.location.hash);
+
+// Before the page runs in the browser, the token is not known yet.
+const noToken = () => null;
 
 // What the sign-in starts from: the server or the handle the visitor
 // gave, under the name the platform's sign-in takes it by.
@@ -52,7 +69,7 @@ const Welcome = ({
   const handleStart = () => {
     startTransition(async () => {
       const exit = await start({
-        params: { token },
+        headers: tokenHeaders(token),
         payload: startPayload(link.input, value.trim()),
       });
 
@@ -142,13 +159,24 @@ const Loaded = ({ token }: { readonly token: string }) => {
 /**
  * A connect link's page: who asks for which account, and the way to the
  * platform's sign-in. It reads the link from the browser, once hydrated,
- * so the server counts each visitor by their own address.
+ * so the server counts each visitor by their own address, with the token
+ * that follows the # of the page's address, which no server sees.
  */
-export const HostedConnect = ({ token }: { readonly token: string }) => {
+export const HostedConnect = () => {
   const t = useTranslations("ConnectLink");
   const hydrated = useHydrated();
+  const token = useSyncExternalStore(subscribeToHash, tokenInAddress, noToken);
 
-  return hydrated ? (
+  if (hydrated && token === "") {
+    // An address without its token opens nothing.
+    return (
+      <HostedCard host={null} title={t("title")}>
+        <HostedError error="notFound" />
+      </HostedCard>
+    );
+  }
+
+  return hydrated && token !== null ? (
     <Loaded token={token} />
   ) : (
     <HostedCard host={null} title={t("title")}>

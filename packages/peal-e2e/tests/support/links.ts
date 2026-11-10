@@ -47,5 +47,5 @@ export const seedLink = async (
     await client.end();
   }
 
-  return `/connect/link/${token}`;
+  return `/connect/link#${token}`;
 };

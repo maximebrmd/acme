@@ -2,7 +2,7 @@ import { PlatformSchema } from "peal-contract";
 
 import { pendingLink } from "./pending-link.ts";
 
-const linkPage = /^\/connect\/link\/[^/]+$/u;
+const linkPage = /^\/connect\/link$/u;
 
 const callbackPage = /^\/connect\/(?<platform>[^/]+)\/callback$/u;
 

@@ -6,14 +6,15 @@ import { notFound } from "next/navigation";
 import { HostedConnect } from "#components/connect-link/hosted-connect.tsx";
 import { routing } from "#i18n/routing.ts";
 
-// A connect link's hosted page: whoever holds the link connects a social
-// account to the workspace that made it, without a Peal account. The token
-// in its address is the only credential, so the page is kept out of search
-// engines, and its address out of the Referer of what it links to (see
-// next.config.ts).
+// A connect link's hosted page, at /connect/link#<token>: whoever holds the
+// link connects a social account to the workspace that made it, without a
+// Peal account. The token is the only credential: it follows the # of the
+// address, which the browser reads and never sends to this server, and the
+// page is kept out of search engines and of the Referer of what it links
+// to (see next.config.ts).
 export const generateMetadata = async ({
   params,
-}: PageProps<"/[locale]/connect/link/[token]">): Promise<Metadata> => {
+}: PageProps<"/[locale]/connect/link">): Promise<Metadata> => {
   const { locale } = await params;
 
   if (!hasLocale(routing.locales, locale)) {
@@ -31,14 +32,14 @@ export const generateMetadata = async ({
 
 const ConnectLinkPage = async ({
   params,
-}: PageProps<"/[locale]/connect/link/[token]">) => {
-  const { locale, token } = await params;
+}: PageProps<"/[locale]/connect/link">) => {
+  const { locale } = await params;
 
   if (!hasLocale(routing.locales, locale)) {
     notFound();
   }
 
-  return <HostedConnect token={token} />;
+  return <HostedConnect />;
 };
 
 export default ConnectLinkPage;

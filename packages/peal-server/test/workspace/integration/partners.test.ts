@@ -975,17 +975,18 @@ layer(SelfServiceLive, { excludeTestServices: true, timeout: "180 seconds" })(
           assert.strictEqual(created.status, 201);
 
           const { link, url } = yield* bodyOf(CreatedLinkSchema, created);
-          const prefix = "http://localhost:3001/fr/connect/link/";
+          const prefix = "http://localhost:3001/fr/connect/link#";
 
           assert.isTrue(url.startsWith(prefix));
           assert.strictEqual(link.status, "pending");
 
           const token = url.slice(prefix.length);
-          const hosted = `/api/connect-links/${token}`;
+          const hosted = "/api/connect-links";
+          const holding = { "x-connect-link-token": token };
 
           // Whoever holds the address opens it, without any credential,
           // and reads who asks: the partner, not Peal's workspace.
-          const opened = yield* app.request(hosted);
+          const opened = yield* app.request(hosted, { headers: holding });
 
           assert.strictEqual(opened.status, 200);
           assert.deepStrictEqual(yield* bodyOf(HostedSchema, opened), {
@@ -1000,14 +1001,16 @@ layer(SelfServiceLive, { excludeTestServices: true, timeout: "180 seconds" })(
           });
 
           // A token that opens nothing, whatever it looks like.
-          const guessed = yield* app.request(`/api/connect-links/${link.id}`);
+          const guessed = yield* app.request(hosted, {
+            headers: { "x-connect-link-token": link.id },
+          });
 
           assert.strictEqual(guessed.status, 404);
 
           // Its steps come from the web app's own pages only.
           const foreign = yield* app.request(`${hosted}/start`, {
             body: { instance: "social.example" },
-            headers: { origin: "https://evil.example.test" },
+            headers: { ...holding, origin: "https://evil.example.test" },
           });
 
           assert.strictEqual(foreign.status, 403);
@@ -1016,6 +1019,7 @@ layer(SelfServiceLive, { excludeTestServices: true, timeout: "180 seconds" })(
           // link, which stays usable.
           const started = yield* app.request(`${hosted}/start`, {
             body: { instance: "localhost" },
+            headers: holding,
           });
 
           assert.strictEqual(started.status, 422);
@@ -1037,6 +1041,7 @@ layer(SelfServiceLive, { excludeTestServices: true, timeout: "180 seconds" })(
           // A callback without the browser that started completes nothing.
           const completed = yield* app.request(`${hosted}/complete`, {
             body: { code: "synthetic-code", state: "synthetic-state" },
+            headers: holding,
           });
 
           assert.strictEqual(completed.status, 422);
@@ -1066,12 +1071,16 @@ layer(SelfServiceLive, { excludeTestServices: true, timeout: "180 seconds" })(
             "revoked"
           );
           assert.strictEqual(
-            (yield* bodyOf(HostedSchema, yield* app.request(hosted))).status,
+            (yield* bodyOf(
+              HostedSchema,
+              yield* app.request(hosted, { headers: holding })
+            )).status,
             "revoked"
           );
 
           const afterRevoke = yield* app.request(`${hosted}/start`, {
             body: { instance: "localhost" },
+            headers: holding,
           });
 
           assert.strictEqual(
@@ -1085,7 +1094,10 @@ layer(SelfServiceLive, { excludeTestServices: true, timeout: "180 seconds" })(
             method: "DELETE",
           });
 
-          assert.strictEqual((yield* app.request(hosted)).status, 404);
+          assert.strictEqual(
+            (yield* app.request(hosted, { headers: holding })).status,
+            404
+          );
         })
     );
 
@@ -1119,9 +1131,11 @@ layer(SelfServiceLive, { excludeTestServices: true, timeout: "180 seconds" })(
 
           const opened = yield* bodyOf(
             HostedSchema,
-            yield* app.request(
-              `/api/connect-links/${url.slice(url.lastIndexOf("/") + 1)}`
-            )
+            yield* app.request("/api/connect-links", {
+              headers: {
+                "x-connect-link-token": url.slice(url.lastIndexOf("#") + 1),
+              },
+            })
           );
 
           // Under the workspace's own name, and back to nowhere.

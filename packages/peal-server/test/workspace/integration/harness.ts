@@ -87,7 +87,13 @@ export class TestApp extends Context.Service<
   }
 >()("peal-server/test/TestApp") {
   /** The app, reading `env` before the environment. */
-  static readonly layerWith = (env: Readonly<Record<string, string>>) =>
+  static readonly layerWith = (
+    env: Readonly<Record<string, string>>,
+    // What watches the app as an operator's stack would: with it, the app
+    // logs each request as production does, to the loggers and the tracer
+    // it brings.
+    observed?: Layer.Layer<never>
+  ) =>
     Layer.effect(
       TestApp,
       Effect.gen(function* testApp() {
@@ -101,9 +107,11 @@ export class TestApp extends Context.Service<
                   ConfigProvider.layerAdd(ConfigProvider.fromUnknown(env), {
                     asPrimary: true,
                   })
-                )
+                ),
+                // In what requests run with, not only what builds the app.
+                Layer.provideMerge(observed ?? Layer.empty)
               ),
-              { disableLogger: true }
+              { disableLogger: observed === undefined }
             )
           ),
           ({ dispose }) => Effect.promise(dispose)

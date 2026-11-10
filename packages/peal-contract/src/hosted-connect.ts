@@ -85,9 +85,15 @@ export const HostedOutcomeSchema = Schema.Union([
 
 export type HostedOutcome = typeof HostedOutcomeSchema.Type;
 
-const token = {
-  token: Schema.String.check(Schema.isBetweenLength(1, 128)),
-};
+/**
+ * The header a connect link's token is sent in: never in an address, which
+ * servers, proxies and browsers write down.
+ */
+export const connectLinkTokenHeader = "x-connect-link-token";
+
+const token = Schema.Struct({
+  [connectLinkTokenHeader]: Schema.String.check(Schema.isBetweenLength(1, 128)),
+});
 
 const hostedErrors = [ConnectLinkNotFound, HostedConnectFailed] as const;
 
@@ -95,15 +101,15 @@ const hostedErrors = [ConnectLinkNotFound, HostedConnectFailed] as const;
 export const connectLinkCookie = "peal_connect_link";
 
 /**
- * What a connect link's hosted page calls, with the link's token and no
- * other credential. The web app is their one client: they are not part of
+ * What a connect link's hosted page calls, with the link's token, sent in
+ * the `x-connect-link-token` header, and no other credential. The web app is their one client: they are not part of
  * the API integrators call.
  */
 export class HostedConnectApi extends HttpApiGroup.make("hostedConnect")
   .add(
-    HttpApiEndpoint.get("open", "/:token", {
+    HttpApiEndpoint.get("open", "/", {
       error: ConnectLinkNotFound,
-      params: token,
+      headers: token,
       success: HostedLinkSchema,
     }).annotateMerge(
       OpenApi.annotations({
@@ -112,9 +118,9 @@ export class HostedConnectApi extends HttpApiGroup.make("hostedConnect")
         summary: "Open a connect link",
       })
     ),
-    HttpApiEndpoint.post("start", "/:token/start", {
+    HttpApiEndpoint.post("start", "/start", {
       error: hostedErrors,
-      params: token,
+      headers: token,
       payload: HostedStartSchema,
       success: HostedAuthorizationSchema,
     }).annotateMerge(
@@ -123,9 +129,9 @@ export class HostedConnectApi extends HttpApiGroup.make("hostedConnect")
         summary: "Start a connect link's sign-in",
       })
     ),
-    HttpApiEndpoint.post("complete", "/:token/complete", {
+    HttpApiEndpoint.post("complete", "/complete", {
       error: hostedErrors,
-      params: token,
+      headers: token,
       payload: ConnectCallbackSchema,
       success: HostedOutcomeSchema,
     }).annotateMerge(
@@ -135,9 +141,9 @@ export class HostedConnectApi extends HttpApiGroup.make("hostedConnect")
         summary: "Complete a connect link's sign-in",
       })
     ),
-    HttpApiEndpoint.post("choose", "/:token/accounts", {
+    HttpApiEndpoint.post("choose", "/accounts", {
       error: hostedErrors,
-      params: token,
+      headers: token,
       payload: ChooseAccountsSchema,
       success: HostedOutcomeSchema,
     }).annotateMerge(
