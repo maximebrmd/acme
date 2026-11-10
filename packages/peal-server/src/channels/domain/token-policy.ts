@@ -84,6 +84,16 @@ export const tokenPolicies = {
     lifetime: Option.none(),
     refresh: { _tag: "none" },
   }),
+  // A Business Profile location is reached with a Google grant, whose
+  // tokens live as YouTube's: an hour, refreshed without rotating.
+  googleBusiness: new TokenPolicy({
+    lifetime: Option.some(Duration.hours(1)),
+    refresh: {
+      _tag: "refreshToken",
+      rotates: false,
+      sweep: { _tag: "beforeExpiry", ahead: Duration.minutes(15) },
+    },
+  }),
   // Through Facebook Login, an Instagram account publishes with the token
   // of the Page it is linked to, which never expires either.
   instagram: new TokenPolicy({

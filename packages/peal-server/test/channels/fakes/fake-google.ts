@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 
 import { Effect } from "effect";
 
+import type { GoogleBusinessEndpoints } from "#channels/infrastructure/platforms/google-business/google-business-authorizer.ts";
 import type { YouTubeEndpoints } from "#channels/infrastructure/platforms/youtube/youtube-authorizer.ts";
 
 import { fakeHttpServer, formOf, json } from "./fake-http-server.ts";
@@ -16,10 +17,6 @@ export const googleClient = {
   clientId: "1234-synthetic.apps.googleusercontent.example",
   clientSecret: "synthetic-google-secret",
 } as const;
-
-const upload = "https://www.googleapis.com/auth/youtube.upload";
-
-const readonly = "https://www.googleapis.com/auth/youtube.readonly";
 
 /** A synthetic channel, as channels.list shows it. */
 export const youtubeChannel = {
@@ -38,6 +35,46 @@ export const otherYouTubeChannel = {
   id: "UCsyntheticChannel000002",
   snippet: { title: "Peal Example Clips" },
 } as const;
+
+/** A synthetic location with Voice of Merchant, as locations.list shows it. */
+export const businessLocation = {
+  metadata: { hasVoiceOfMerchant: true, placeId: "ChIJsynthetic000001" },
+  name: "locations/100000000000000001",
+  storeCode: "PEAL-001",
+  storefrontAddress: {
+    addressLines: ["1 Synthetic Street"],
+    locality: "Exampleville",
+    regionCode: "FR",
+  },
+  title: "Peal Example Bakery",
+} as const;
+
+/** A second one, without an address: a business that serves an area. */
+export const otherBusinessLocation = {
+  metadata: { hasVoiceOfMerchant: true },
+  name: "locations/100000000000000002",
+  storeCode: "PEAL-002",
+  title: "Peal Example Bakery",
+} as const;
+
+/** A location Google has not verified: it cannot post. */
+export const unverifiedBusinessLocation = {
+  metadata: { hasVoiceOfMerchant: false },
+  name: "locations/100000000000000003",
+  title: "Peal Example Kiosk",
+} as const;
+
+/** An account of the Business Profile APIs, with its locations. */
+export interface FakeBusinessAccount {
+  readonly locations: readonly JsonValue[];
+  readonly name: string;
+}
+
+/** The synthetic Google user's own account, holding one location. */
+export const businessAccount: FakeBusinessAccount = {
+  locations: [businessLocation],
+  name: "accounts/200000000000000001",
+};
 
 interface PendingCode {
   readonly challenge: string;
@@ -59,9 +96,31 @@ const invalidGrant = json(
   400
 );
 
+// One page of `items` under `key`, as Google pages its lists: `pageSize`
+// items, and a token for the next page while there is one.
+const paged = (
+  request: FakeRequest,
+  key: string,
+  items: readonly JsonValue[],
+  defaultSize: number
+): FakeResponse => {
+  const from = Number(request.query.get("pageToken") ?? "0");
+  const size = Number(request.query.get("pageSize") ?? defaultSize);
+  const next = from + size;
+
+  const listed = items.slice(from, next);
+
+  return json(
+    next < items.length
+      ? { [key]: listed, nextPageToken: String(next) }
+      : { [key]: listed }
+  );
+};
+
 /**
- * Google's OAuth 2.0 and the YouTube Data API's channels.list for synthetic
- * channels: it issues codes for the consent page (`approve` plays the
+ * Google's OAuth 2.0, the YouTube Data API's channels.list for synthetic
+ * channels, and the Business Profile APIs' accounts.list and
+ * accounts.locations.list for synthetic locations: it issues codes for the consent page (`approve` plays the
  * owner, granting every scope asked or some), exchanges them with PKCE and
  * the client's secret in the form, refreshes with refresh tokens that keep
  * working, revokes tokens, and lists the channels the token signs in as
@@ -71,10 +130,12 @@ const invalidGrant = json(
 export const fakeGoogle = Effect.fnUntraced(function* fakeGoogle() {
   const codes = new Map<string, PendingCode>();
   const accessTokens = new Set<string>();
-  const refreshTokens = new Set<string>();
+  // Each refresh token, with the scope its grant holds.
+  const refreshTokens = new Map<string, string>();
   const revoked: string[] = [];
   const failures = new Map<string, FakeResponse[]>();
   let channels: readonly JsonValue[] = [youtubeChannel];
+  let businessAccounts: readonly FakeBusinessAccount[] = [businessAccount];
   let issued = 0;
 
   const access = (scope: string) => {
@@ -103,9 +164,9 @@ export const fakeGoogle = Effect.fnUntraced(function* fakeGoogle() {
     }
 
     if (form.get("grant_type") === "refresh_token") {
-      return refreshTokens.has(form.get("refresh_token") ?? "")
-        ? json(access(`${upload} ${readonly}`))
-        : invalidGrant;
+      const granted = refreshTokens.get(form.get("refresh_token") ?? "");
+
+      return granted === undefined ? invalidGrant : json(access(granted));
     }
 
     const code = codes.get(form.get("code") ?? "");
@@ -124,9 +185,63 @@ export const fakeGoogle = Effect.fnUntraced(function* fakeGoogle() {
 
     const refresh = `1//synthetic-refresh-${issued + 1}`;
 
-    refreshTokens.add(refresh);
+    refreshTokens.set(refresh, code.scope);
 
     return json({ ...access(code.scope), refresh_token: refresh });
+  };
+
+  // The Account Management API's accounts.list and the Business
+  // Information API's accounts.locations.list, which refuses a request
+  // without a read mask.
+  const business = (request: FakeRequest): FakeResponse => {
+    if (!accessTokens.has(bearerOf(request))) {
+      return json(
+        {
+          error: {
+            code: 401,
+            message: "Invalid Credentials",
+            status: "UNAUTHENTICATED",
+          },
+        },
+        401
+      );
+    }
+
+    if (request.path === "/v1/accounts") {
+      return paged(
+        request,
+        "accounts",
+        businessAccounts.map(({ name }) => ({
+          accountName: "Synthetic Owner",
+          name,
+          type: "PERSONAL",
+        })),
+        20
+      );
+    }
+
+    const account = businessAccounts.find(
+      ({ name }) => request.path === `/v1/${name}/locations`
+    );
+
+    if (account === undefined) {
+      return json({ error: { code: 404, message: "Not Found" } }, 404);
+    }
+
+    if ((request.query.get("readMask") ?? "") === "") {
+      return json(
+        {
+          error: {
+            code: 400,
+            message: "read_mask is required",
+            status: "INVALID_ARGUMENT",
+          },
+        },
+        400
+      );
+    }
+
+    return paged(request, "locations", account.locations, 10);
   };
 
   const handle = (request: FakeRequest): FakeResponse => {
@@ -165,6 +280,10 @@ export const fakeGoogle = Effect.fnUntraced(function* fakeGoogle() {
       return json({ items: channels, kind: "youtube#channelListResponse" });
     }
 
+    if (request.method === "GET" && request.path.startsWith("/v1/accounts")) {
+      return business(request);
+    }
+
     return json({ error: { code: 404, message: "Not Found" } }, 404);
   };
 
@@ -175,6 +294,14 @@ export const fakeGoogle = Effect.fnUntraced(function* fakeGoogle() {
     authorization: new URL("/o/oauth2/v2/auth", server.url),
     revocation: new URL("/revoke", server.url),
     token: new URL("/token", server.url),
+  };
+
+  const businessEndpoints: GoogleBusinessEndpoints = {
+    accountManagement: new URL(server.url),
+    authorization: endpoints.authorization,
+    businessInformation: new URL(server.url),
+    revocation: endpoints.revocation,
+    token: endpoints.token,
   };
 
   /**
@@ -198,6 +325,8 @@ export const fakeGoogle = Effect.fnUntraced(function* fakeGoogle() {
   return {
     ...server,
     approve,
+    /** Where the Business Profile authorizer finds this fake. */
+    businessEndpoints,
     /** The owner cancels on the consent page. */
     deny: (authorizationUrl: string) => ({
       error: "access_denied",
@@ -214,6 +343,10 @@ export const fakeGoogle = Effect.fnUntraced(function* fakeGoogle() {
     },
     /** The tokens revoked through the revocation endpoint, in order. */
     revoked: () => [...revoked],
+    /** The Business Profile accounts the next sign-ins reach. */
+    setBusinessAccounts: (next: readonly FakeBusinessAccount[]) => {
+      businessAccounts = next;
+    },
     /** The channels the next sign-ins reach. */
     setChannels: (next: readonly JsonValue[]) => {
       channels = next;

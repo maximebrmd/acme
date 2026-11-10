@@ -47,6 +47,8 @@ const channelsWithSettings = (settings: Record<string, string>) =>
 
 // No app on LinkedIn, X or TikTok, whatever the environment says.
 const withoutApps = {
+  GOOGLE_BUSINESS_CLIENT_ID: "",
+  GOOGLE_BUSINESS_CLIENT_SECRET: "",
   LINKEDIN_CLIENT_ID: "",
   LINKEDIN_CLIENT_SECRET: "",
   TIKTOK_CLIENT_KEY: "",
@@ -164,6 +166,7 @@ layer(channelsWith(""))("the channels context on a local server", (it) => {
         // Nor Meta's platforms, without Meta's app.
         assert.deepStrictEqual([...authorizers.unconfigured].toSorted(), [
           "facebook",
+          "googleBusiness",
           "instagram",
           "linkedin",
           "threads",
@@ -177,16 +180,19 @@ layer(channelsWith(""))("the channels context on a local server", (it) => {
 });
 
 layer(DatabaseTest)(
-  "the channels context's LinkedIn, X, TikTok and YouTube settings",
+  "the channels context's LinkedIn, X, TikTok and Google settings",
   (it) => {
     it.effect(
-      "connect LinkedIn, X, TikTok and YouTube once their apps are set",
+      "connect LinkedIn, X, TikTok, YouTube and Google Business Profile once their apps are set",
       () =>
         Effect.gen(function* configured() {
           const authorizers = yield* PlatformAuthorizers.pipe(
             Effect.provide(
               channelsWithSettings({
                 BLUESKY_CLIENT_KEYS: "",
+                GOOGLE_BUSINESS_CLIENT_ID:
+                  "synthetic-business.apps.googleusercontent.example",
+                GOOGLE_BUSINESS_CLIENT_SECRET: "synthetic-business-secret",
                 LINKEDIN_CLIENT_ID: "77synthetic",
                 LINKEDIN_CLIENT_SECRET: "synthetic-linkedin-secret",
                 TIKTOK_CLIENT_KEY: "awsynthetic",
@@ -215,6 +221,11 @@ layer(DatabaseTest)(
             Option.getOrThrow(authorizers.for("youtube")).platform,
             "youtube"
           );
+          assert.strictEqual(
+            Option.getOrThrow(authorizers.for("googleBusiness")).platform,
+            "googleBusiness"
+          );
+          assert.isFalse(authorizers.unconfigured.has("googleBusiness"));
           assert.isFalse(authorizers.unconfigured.has("linkedin"));
           assert.isFalse(authorizers.unconfigured.has("x"));
           assert.isFalse(authorizers.unconfigured.has("tiktok"));
@@ -233,6 +244,14 @@ layer(DatabaseTest)(
             {
               ...withoutApps,
               YOUTUBE_CLIENT_SECRET: "synthetic-google-secret",
+            },
+          ],
+          [
+            "googleBusiness",
+            {
+              ...withoutApps,
+              GOOGLE_BUSINESS_CLIENT_ID:
+                "synthetic-business.apps.googleusercontent.example",
             },
           ],
         ] as const) {
