@@ -40,7 +40,8 @@ Peal does not check who made an application that registered itself, and says so 
 An agent that runs on a schedule or on a server has no browser to sign in with. Give it an [API key](/settings#api-keys) of the workspace instead, created with only the permissions it needs:
 
 - on the MCP endpoint, the key goes in the `Authorization` header, as `Bearer peal_…`, never in the address ([Connect with an API key](/mcp#api-key));
-- on the [HTTP API](#api), the same header.
+- on the [HTTP API](#api), the same header;
+- on the [command line](#cli), in the `PEAL_API_KEY` variable, never a flag, with the workspace named by its id ([Run it with an API key](/cli#api-key)).
 
 A key has no scope: what it may do is the list of its permissions, which `whoami` answers. It puts posts out only when it holds `post:schedule`, and the tools that only a person uses, such as inviting someone, refuse it. Keep the key in the agent's secrets, and revoke it, under **API keys**, the day the agent stops.
 
@@ -199,7 +200,9 @@ Other refusals are sentences the agent can act on, or pass on to you:
 
 ## From the command line [#cli]
 
-An agent that runs commands in a terminal uses [`peal`](/cli), signed in as you with `peal login`, which asks for the permission to schedule and publish. `--json` prints the API's answer as one JSON document on stdout; a refusal goes to stderr, with a status other than 0.
+An agent that runs commands in a terminal uses [`peal`](/cli), signed in as you with `peal login`, which asks for the permission to schedule and publish. An agent with nobody to sign in runs it with an API key in `PEAL_API_KEY` instead ([Run it with an API key](/cli#api-key)). `--json` prints the API's answer as one JSON document on stdout; a failure is one JSON document on stderr, `{"error": {"code", "message", "requestId", …}}`, with exit code 1 ([Output for scripts](/cli#json)).
+
+Have the agent run `peal doctor --json` first: it checks the server, the credential, whether it may schedule and publish, and the workspace, changes nothing, and says what to do about each check that fails ([Check the setup](/cli#doctor)).
 
 | Tool                              | Command                                                                                                       |
 | --------------------------------- | ------------------------------------------------------------------------------------------------------------- |
@@ -212,7 +215,9 @@ An agent that runs commands in a terminal uses [`peal`](/cli), signed in as you 
 | `publish_post`                    | `peal posts publish <post-id>`                                                                                |
 | `reschedule_post`                 | `peal posts reschedule <post-id> --at <instant>`                                                              |
 | `unschedule_post`, `cancel_post`  | `peal posts unschedule <post-id>`, `peal posts cancel <post-id>`                                              |
-| `get_post`                        | `peal posts show <post-id>`                                                                                   |
+| `list_posts`, `get_post`          | `peal posts list`, `peal posts show <post-id>`                                                                |
+| `list_post_attempts`              | `peal posts attempts <post-id>`                                                                               |
+| `list_activity`                   | `peal activity list`                                                                                          |
 | `repost_target`, `confirm_target` | `peal posts repost <post-id> <target-id>`, `peal posts confirm <post-id> <target-id> published`               |
 
 ```sh
@@ -225,6 +230,14 @@ peal post "Our spring catalogue is out. Read it at https://example.com/spring" \
 ```
 
 `peal post` never publishes by default: it needs `--at` or `--now`. With `--idempotency-key`, running it again within 24 hours with the same post makes no second one; give `--media` as media ids then, as a file or an address is stored anew on each run. [Command line](/cli#post) describes every flag.
+
+## The agent skill [#skill]
+
+The repository holds a skill for agents in the folder [`skills/peal/`](https://github.com/peal-social/peal/tree/main/skills/peal), in the [Agent Skills](https://agentskills.io) format: instructions an agent loads when a task calls for Peal. It teaches the command line and the HTTP API: setting up and checking with `peal doctor --json`, signing in or using a workspace API key, finding channel and media ids, drafting, scheduling and publishing, sending under an idempotency key, reading how a post went, and handling errors and rate limits. Its first two rules are this page's: a draft is safe and publishing is public, and a refusal is never to be worked around.
+
+- To install it, copy the folder to where your agent reads skills.
+- Peal's site publishes it for discovery, at `https://peal.social/.well-known/agent-skills/index.json`, which lists the skill with its address and its digest.
+- It is under the Apache License 2.0, unlike most of the repository: install it, change it and share it.
 
 ## Through the HTTP API [#api]
 

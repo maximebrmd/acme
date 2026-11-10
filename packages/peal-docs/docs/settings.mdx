@@ -44,7 +44,7 @@ Each workspace keeps a log of who changed what, and through which application: e
 Owners read it, and nobody else: it needs the permission `activity:read`, which only the owner role holds. An owner may give that permission to an [API key](#api-keys), and an application an owner connected reads it as they do. The log has no page in the web app yet. Read it:
 
 - through the API, with `GET /api/workspaces/{workspaceId}/activity`, newest first, a page at a time ([Paging](/api-conventions#paging) shows an answer);
-- from the [command line](/cli), with `peal activity list`;
+- from the [command line](/cli#activity), with `peal activity list`;
 - from an MCP client, with the tool `list_activity`.
 
 `operation` keeps the events of one operation, such as `posts.schedule`, and `actor` those one member, by their user id, or one API key, by its id, asked for.
