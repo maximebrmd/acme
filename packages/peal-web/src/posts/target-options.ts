@@ -1,6 +1,10 @@
 import { Match, Option, Schema } from "effect";
 import type { useTranslations } from "next-intl";
-import { maxYouTubeTitleLength, TargetOptionsSchema } from "peal-contract";
+import {
+  maxGoogleBusinessTitleLength,
+  maxYouTubeTitleLength,
+  TargetOptionsSchema,
+} from "peal-contract";
 import type {
   ChannelOptions,
   ContentViolation,
@@ -26,6 +30,16 @@ interface Described {
   readonly hint?: OptionsText;
   /** Why the platform refuses the option's value (`optionInvalid`). */
   readonly invalid?: OptionsText;
+  /**
+   * The field shows, and its value is sent, only while the field named
+   * `name` holds one of `values`, or nothing yet when `unset`: an event's
+   * dates show once the post is an event.
+   */
+  readonly shownWith?: {
+    readonly name: string;
+    readonly unset?: true;
+    readonly values: readonly string[];
+  };
 }
 
 /** One line of text; `maxLength` characters (code points) at most. */
@@ -40,9 +54,22 @@ export interface TagsField extends Described {
   readonly kind: "tags";
 }
 
-/** One of `choices`, with nothing chosen at first. */
+/**
+ * A day and a time on a clock that is not the reader's, to the minute, as
+ * `2026-11-27T09:00`.
+ */
+export interface LocalTimeField extends Described {
+  readonly kind: "localTime";
+  readonly required?: true;
+}
+
+/**
+ * One of `choices`, with nothing chosen at first. With `none`, a first
+ * choice under that label chooses nothing again.
+ */
 export interface ChoiceField extends Described {
   readonly kind: "choice";
+  readonly none?: OptionsText;
   readonly choices: readonly {
     readonly label: OptionsText;
     readonly value: string;
@@ -73,16 +100,116 @@ export interface ToggleField extends Described {
 
 export type OptionField =
   | ChoiceField
+  | LocalTimeField
   | TagsField
   | TextField
   | ToggleField
   | YesNoField;
+
+// A Google Business Profile event or offer, which has a title and dates.
+const scheduled = { name: "postType", values: ["event", "offer"] } as const;
+
+const offered = { name: "postType", values: ["offer"] } as const;
 
 /**
  * The fields of each platform that takes options, in the order the composer
  * shows them. A platform's options added to the contract need an entry here.
  */
 export const optionFields = {
+  googleBusiness: [
+    {
+      choices: [
+        { label: "googleBusiness.postTypeStandard", value: "standard" },
+        { label: "googleBusiness.postTypeEvent", value: "event" },
+        { label: "googleBusiness.postTypeOffer", value: "offer" },
+      ],
+      hint: "googleBusiness.postTypeHint",
+      kind: "choice",
+      label: "googleBusiness.postType",
+      name: "postType",
+    },
+    {
+      hint: "googleBusiness.titleHint",
+      kind: "text",
+      label: "googleBusiness.title",
+      maxLength: maxGoogleBusinessTitleLength,
+      name: "title",
+      required: true,
+      shownWith: scheduled,
+    },
+    {
+      hint: "googleBusiness.startsAtHint",
+      invalid: "googleBusiness.startsAtInvalid",
+      kind: "localTime",
+      label: "googleBusiness.startsAt",
+      name: "startsAt",
+      required: true,
+      shownWith: scheduled,
+    },
+    {
+      invalid: "googleBusiness.endsAtInvalid",
+      kind: "localTime",
+      label: "googleBusiness.endsAt",
+      name: "endsAt",
+      required: true,
+      shownWith: scheduled,
+    },
+    {
+      choices: [
+        { label: "googleBusiness.actionBook", value: "book" },
+        { label: "googleBusiness.actionOrder", value: "order" },
+        { label: "googleBusiness.actionShop", value: "shop" },
+        { label: "googleBusiness.actionLearnMore", value: "learnMore" },
+        { label: "googleBusiness.actionSignUp", value: "signUp" },
+        { label: "googleBusiness.actionCall", value: "call" },
+      ],
+      hint: "googleBusiness.callToActionHint",
+      kind: "choice",
+      label: "googleBusiness.callToAction",
+      name: "callToAction",
+      none: "googleBusiness.actionNone",
+      // An offer shows Google's own button.
+      shownWith: {
+        name: "postType",
+        unset: true,
+        values: ["standard", "event"],
+      },
+    },
+    {
+      hint: "googleBusiness.linkHint",
+      invalid: "googleBusiness.linkInvalid",
+      kind: "text",
+      label: "googleBusiness.callToActionUrl",
+      name: "callToActionUrl",
+      required: true,
+      // The call button rings the location's own number.
+      shownWith: {
+        name: "callToAction",
+        values: ["book", "order", "shop", "learnMore", "signUp"],
+      },
+    },
+    {
+      hint: "googleBusiness.couponCodeHint",
+      kind: "text",
+      label: "googleBusiness.couponCode",
+      name: "couponCode",
+      shownWith: offered,
+    },
+    {
+      hint: "googleBusiness.linkHint",
+      invalid: "googleBusiness.linkInvalid",
+      kind: "text",
+      label: "googleBusiness.redeemUrl",
+      name: "redeemUrl",
+      shownWith: offered,
+    },
+    {
+      kind: "text",
+      label: "googleBusiness.terms",
+      name: "terms",
+      shownWith: offered,
+    },
+  ],
   tiktok: [
     {
       choices: [
@@ -270,6 +397,7 @@ const valueOf = (
   Match.value(field).pipe(
     Match.discriminatorsExhaustive("kind")({
       choice: () => decodeText(stored),
+      localTime: () => decodeText(stored),
       tags: () =>
         decodeTags(stored).pipe(Option.map((tags) => tags.join(tagSeparator))),
       text: () => decodeText(stored),
@@ -281,6 +409,36 @@ const valueOf = (
 // What a field holds on a new target: its box as it says, nothing else.
 const initialOf = (field: OptionField): Option.Option<boolean | string> =>
   field.kind === "toggle" ? Option.some(field.initial) : Option.none();
+
+/**
+ * Whether the field shows with these values: always, or while the field it
+ * depends on, itself shown, holds one of the values it shows with.
+ */
+export const isShown = (
+  platform: Platform,
+  field: OptionField,
+  values: OptionValues
+): boolean => {
+  const { shownWith } = field;
+
+  if (shownWith === undefined) {
+    return true;
+  }
+
+  const governing = fieldsOf(platform).find(
+    ({ name }) => name === shownWith.name
+  );
+
+  if (governing !== undefined && !isShown(platform, governing, values)) {
+    return false;
+  }
+
+  const held = values[shownWith.name];
+
+  return held === undefined || held === ""
+    ? shownWith.unset === true
+    : shownWith.values.some((value) => value === held);
+};
 
 /**
  * The values a target's stored options fill in. Boxes left out keep the
@@ -399,12 +557,14 @@ export const optionsOf = (
 ): Option.Option<TargetOptions> =>
   decodeOptions({
     ...Object.fromEntries(
-      fieldsOf(platform).flatMap((field) =>
-        Option.match(optionOf(field, values[field.name]), {
-          onNone: () => [],
-          onSome: (option) => [[field.name, option]],
-        })
-      )
+      fieldsOf(platform)
+        .filter((field) => isShown(platform, field, values))
+        .flatMap((field) =>
+          Option.match(optionOf(field, values[field.name]), {
+            onNone: () => [],
+            onSome: (option) => [[field.name, option]],
+          })
+        )
     ),
     platform,
   });

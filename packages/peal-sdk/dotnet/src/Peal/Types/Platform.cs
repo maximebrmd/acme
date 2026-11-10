@@ -28,6 +28,8 @@ public readonly record struct Platform : IStringEnum
 
     public static readonly Platform Pinterest = new(Values.Pinterest);
 
+    public static readonly Platform GoogleBusiness = new(Values.GoogleBusiness);
+
     public Platform(string value)
     {
         Value = value;
@@ -141,5 +143,7 @@ public readonly record struct Platform : IStringEnum
         public const string Youtube = "youtube";
 
         public const string Pinterest = "pinterest";
+
+        public const string GoogleBusiness = "googleBusiness";
     }
 }

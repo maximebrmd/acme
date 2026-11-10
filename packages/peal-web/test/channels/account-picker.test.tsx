@@ -155,6 +155,26 @@ describe(AccountPickerView, () => {
     }
   );
 
+  it("names a Google Business Profile's locations, and Google as where to sign in again", async () => {
+    const html = await picker("en", {
+      error: "unreachable",
+      platform: "googleBusiness",
+      selected: ["101"],
+    });
+
+    expect(html).toContain("Your sign-in reached these verified locations.");
+    expect(html).toContain("The locations to connect");
+    expect(html).toContain(
+      "Choose again, or sign in with Google again for a new list."
+    );
+
+    await expect(
+      picker("fr", { error: "unreachable", platform: "googleBusiness" })
+    ).resolves.toContain(
+      "Choisissez à nouveau, ou reconnectez-vous avec Google pour une nouvelle liste."
+    );
+  });
+
   it("offers no new sign-in before anything failed", async () => {
     await expect(picker("en", { selected: ["101"] })).resolves.not.toContain(
       "Start over"

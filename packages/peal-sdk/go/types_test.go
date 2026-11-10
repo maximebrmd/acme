@@ -17985,6 +17985,13 @@ func TestEnumPlatform(t *testing.T) {
 		assert.Equal(t, Platform("pinterest"), val, "enum value should match expected wire value")
 	})
 
+	t.Run("NewFromString_googleBusiness", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewPlatformFromString("googleBusiness")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, Platform("googleBusiness"), val, "enum value should match expected wire value")
+	})
+
 	t.Run("NewFromString_Invalid", func(t *testing.T) {
 		_, err := NewPlatformFromString("invalid_value_that_does_not_exist")
 		assert.Error(t, err)

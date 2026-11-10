@@ -122,6 +122,80 @@ export const TikTokOptionsSchema = Schema.Struct({
 
 export type TikTokOptions = typeof TikTokOptionsSchema.Type;
 
+/** What kind of post goes out on a Google Business Profile location. */
+export const GoogleBusinessPostTypeSchema = Schema.Literals([
+  "standard",
+  "event",
+  "offer",
+]).annotate({ identifier: "GoogleBusinessPostType" });
+
+export type GoogleBusinessPostType = typeof GoogleBusinessPostTypeSchema.Type;
+
+/**
+ * The button under a Google Business Profile post. Every one opens
+ * `callToActionUrl`, but `call`, which rings the location's own number.
+ */
+export const GoogleBusinessCallToActionSchema = Schema.Literals([
+  "book",
+  "order",
+  "shop",
+  "learnMore",
+  "signUp",
+  "call",
+]).annotate({ identifier: "GoogleBusinessCallToAction" });
+
+export type GoogleBusinessCallToAction =
+  typeof GoogleBusinessCallToActionSchema.Type;
+
+/**
+ * The longest title of a Google Business Profile event or offer, in
+ * characters (code points).
+ */
+export const maxGoogleBusinessTitleLength = 58;
+
+/**
+ * A day and a time on a Google Business Profile location's own clock, to
+ * the minute, as `2026-11-27T09:00`.
+ */
+export const googleBusinessLocalTimePattern =
+  /^(?<year>\d{4})-(?<month>\d{2})-(?<day>\d{2})T(?<hours>\d{2}):(?<minutes>\d{2})$/u;
+
+/**
+ * A post on a Google Business Profile location: its description is the
+ * post's text there.
+ */
+export const GoogleBusinessOptionsSchema = Schema.Struct({
+  // A button under a standard post or an event; an offer shows Google's
+  // own.
+  callToAction: Schema.optionalKey(GoogleBusinessCallToActionSchema),
+  // The http or https address the button opens: needed with every button
+  // but `call`, which takes none.
+  callToActionUrl: Schema.optionalKey(OptionTextSchema),
+  // An offer's code, usable in store or online.
+  couponCode: Schema.optionalKey(OptionTextSchema),
+  // When an event or an offer ends, as `googleBusinessLocalTimePattern`,
+  // after `startsAt`.
+  endsAt: Schema.optionalKey(OptionTextSchema),
+  platform: Schema.Literal("googleBusiness"),
+  // Standard when left out.
+  postType: Schema.optionalKey(GoogleBusinessPostTypeSchema),
+  // The http or https address an offer is redeemed at.
+  redeemUrl: Schema.optionalKey(OptionTextSchema),
+  // When an event or an offer starts, as `googleBusinessLocalTimePattern`.
+  startsAt: Schema.optionalKey(OptionTextSchema),
+  // An offer's terms and conditions.
+  terms: Schema.optionalKey(OptionTextSchema),
+  // An event's or an offer's name: at most `maxGoogleBusinessTitleLength`
+  // characters.
+  title: Schema.optionalKey(OptionTextSchema),
+}).annotate({
+  description:
+    "How a post goes out on a Google Business Profile location. An `event` or an `offer` needs `title`, `startsAt` and `endsAt`, on the location's own clock; only an `offer` takes `couponCode`, `redeemUrl` and `terms`.",
+  identifier: "GoogleBusinessOptions",
+});
+
+export type GoogleBusinessOptions = typeof GoogleBusinessOptionsSchema.Type;
+
 /**
  * What a post says on a channel that only its platform knows, tagged by
  * `platform`. Platforms without a member here take no options.
@@ -129,6 +203,7 @@ export type TikTokOptions = typeof TikTokOptionsSchema.Type;
 export const TargetOptionsSchema = Schema.Union([
   YouTubeOptionsSchema,
   TikTokOptionsSchema,
+  GoogleBusinessOptionsSchema,
 ]).annotate({
   description:
     "What a post says on a channel that only its platform knows, tagged by `platform`. Platforms without options take none.",

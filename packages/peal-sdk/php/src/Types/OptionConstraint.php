@@ -11,6 +11,8 @@ class OptionConstraint extends JsonSerializableType
      * @var (
      *    'needsOneOf'
      *   |'notWith'
+     *   |'neededWith'
+     *   |'onlyWith'
      *   |'_unknown'
      * ) $type
      */
@@ -20,6 +22,8 @@ class OptionConstraint extends JsonSerializableType
      * @var (
      *    OptionConstraintNeedsOneOf
      *   |OptionConstraintNotWith
+     *   |OptionConstraintNeededWith
+     *   |OptionConstraintOnlyWith
      *   |mixed
      * ) $value
      */
@@ -30,11 +34,15 @@ class OptionConstraint extends JsonSerializableType
      *   type: (
      *    'needsOneOf'
      *   |'notWith'
+     *   |'neededWith'
+     *   |'onlyWith'
      *   |'_unknown'
      * ),
      *   value: (
      *    OptionConstraintNeedsOneOf
      *   |OptionConstraintNotWith
+     *   |OptionConstraintNeededWith
+     *   |OptionConstraintOnlyWith
      *   |mixed
      * ),
      * } $values
@@ -67,6 +75,30 @@ class OptionConstraint extends JsonSerializableType
         return new OptionConstraint([
             'type' => 'notWith',
             'value' => $notWith,
+        ]);
+    }
+
+    /**
+     * @param OptionConstraintNeededWith $neededWith
+     * @return OptionConstraint
+     */
+    public static function neededWith(OptionConstraintNeededWith $neededWith): OptionConstraint
+    {
+        return new OptionConstraint([
+            'type' => 'neededWith',
+            'value' => $neededWith,
+        ]);
+    }
+
+    /**
+     * @param OptionConstraintOnlyWith $onlyWith
+     * @return OptionConstraint
+     */
+    public static function onlyWith(OptionConstraintOnlyWith $onlyWith): OptionConstraint
+    {
+        return new OptionConstraint([
+            'type' => 'onlyWith',
+            'value' => $onlyWith,
         ]);
     }
 
@@ -115,6 +147,50 @@ class OptionConstraint extends JsonSerializableType
     }
 
     /**
+     * @return bool
+     */
+    public function isNeededWith(): bool
+    {
+        return $this->value instanceof OptionConstraintNeededWith && $this->type === 'neededWith';
+    }
+
+    /**
+     * @return OptionConstraintNeededWith
+     */
+    public function asNeededWith(): OptionConstraintNeededWith
+    {
+        if (!($this->value instanceof OptionConstraintNeededWith && $this->type === 'neededWith')) {
+            throw new Exception(
+                "Expected neededWith; got " . $this->type . " with value of type " . get_debug_type($this->value),
+            );
+        }
+
+        return $this->value;
+    }
+
+    /**
+     * @return bool
+     */
+    public function isOnlyWith(): bool
+    {
+        return $this->value instanceof OptionConstraintOnlyWith && $this->type === 'onlyWith';
+    }
+
+    /**
+     * @return OptionConstraintOnlyWith
+     */
+    public function asOnlyWith(): OptionConstraintOnlyWith
+    {
+        if (!($this->value instanceof OptionConstraintOnlyWith && $this->type === 'onlyWith')) {
+            throw new Exception(
+                "Expected onlyWith; got " . $this->type . " with value of type " . get_debug_type($this->value),
+            );
+        }
+
+        return $this->value;
+    }
+
+    /**
      * @return string
      */
     public function __toString(): string
@@ -140,6 +216,14 @@ class OptionConstraint extends JsonSerializableType
                 break;
             case 'notWith':
                 $value = $this->asNotWith()->jsonSerialize();
+                $result = array_merge($value, $result);
+                break;
+            case 'neededWith':
+                $value = $this->asNeededWith()->jsonSerialize();
+                $result = array_merge($value, $result);
+                break;
+            case 'onlyWith':
+                $value = $this->asOnlyWith()->jsonSerialize();
                 $result = array_merge($value, $result);
                 break;
             case '_unknown':
@@ -183,6 +267,12 @@ class OptionConstraint extends JsonSerializableType
                 break;
             case 'notWith':
                 $args['value'] = OptionConstraintNotWith::jsonDeserialize($data);
+                break;
+            case 'neededWith':
+                $args['value'] = OptionConstraintNeededWith::jsonDeserialize($data);
+                break;
+            case 'onlyWith':
+                $args['value'] = OptionConstraintOnlyWith::jsonDeserialize($data);
                 break;
             case '_unknown':
             default:

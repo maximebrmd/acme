@@ -56,6 +56,36 @@ pub enum TargetOptions {
         privacy_level: Option<TikTokPrivacyLevel>,
     },
 
+    #[serde(rename = "googleBusiness")]
+    #[non_exhaustive]
+    GoogleBusiness {
+        #[serde(rename = "callToAction")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        call_to_action: Option<GoogleBusinessCallToAction>,
+        #[serde(rename = "callToActionUrl")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        call_to_action_url: Option<String>,
+        #[serde(rename = "couponCode")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        coupon_code: Option<String>,
+        #[serde(rename = "endsAt")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        ends_at: Option<String>,
+        #[serde(rename = "postType")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        post_type: Option<GoogleBusinessPostType>,
+        #[serde(rename = "redeemUrl")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        redeem_url: Option<String>,
+        #[serde(rename = "startsAt")]
+        #[serde(skip_serializing_if = "Option::is_none")]
+        starts_at: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        terms: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        title: Option<String>,
+    },
+
     /// Catch-all variant for unrecognized discriminant values.
     /// If the server sends a discriminant not recognized by the current SDK
     /// version, the raw payload is captured here so callers can still inspect it.
@@ -86,6 +116,20 @@ impl TargetOptions {
             disable_duet: None,
             disable_stitch: None,
             privacy_level: None,
+        }
+    }
+
+    pub fn google_business() -> Self {
+        Self::GoogleBusiness {
+            call_to_action: None,
+            call_to_action_url: None,
+            coupon_code: None,
+            ends_at: None,
+            post_type: None,
+            redeem_url: None,
+            starts_at: None,
+            terms: None,
+            title: None,
         }
     }
 
@@ -402,6 +446,222 @@ impl TargetOptions {
             disable_duet,
             disable_stitch,
             privacy_level: Some(privacy_level),
+        }
+    }
+
+    pub fn google_business_with_call_to_action(
+        call_to_action: GoogleBusinessCallToAction,
+        call_to_action_url: Option<String>,
+        coupon_code: Option<String>,
+        ends_at: Option<String>,
+        post_type: Option<GoogleBusinessPostType>,
+        redeem_url: Option<String>,
+        starts_at: Option<String>,
+        terms: Option<String>,
+        title: Option<String>,
+    ) -> Self {
+        Self::GoogleBusiness {
+            call_to_action: Some(call_to_action),
+            call_to_action_url,
+            coupon_code,
+            ends_at,
+            post_type,
+            redeem_url,
+            starts_at,
+            terms,
+            title,
+        }
+    }
+
+    pub fn google_business_with_call_to_action_url(
+        call_to_action: Option<GoogleBusinessCallToAction>,
+        call_to_action_url: String,
+        coupon_code: Option<String>,
+        ends_at: Option<String>,
+        post_type: Option<GoogleBusinessPostType>,
+        redeem_url: Option<String>,
+        starts_at: Option<String>,
+        terms: Option<String>,
+        title: Option<String>,
+    ) -> Self {
+        Self::GoogleBusiness {
+            call_to_action,
+            call_to_action_url: Some(call_to_action_url),
+            coupon_code,
+            ends_at,
+            post_type,
+            redeem_url,
+            starts_at,
+            terms,
+            title,
+        }
+    }
+
+    pub fn google_business_with_coupon_code(
+        call_to_action: Option<GoogleBusinessCallToAction>,
+        call_to_action_url: Option<String>,
+        coupon_code: String,
+        ends_at: Option<String>,
+        post_type: Option<GoogleBusinessPostType>,
+        redeem_url: Option<String>,
+        starts_at: Option<String>,
+        terms: Option<String>,
+        title: Option<String>,
+    ) -> Self {
+        Self::GoogleBusiness {
+            call_to_action,
+            call_to_action_url,
+            coupon_code: Some(coupon_code),
+            ends_at,
+            post_type,
+            redeem_url,
+            starts_at,
+            terms,
+            title,
+        }
+    }
+
+    pub fn google_business_with_ends_at(
+        call_to_action: Option<GoogleBusinessCallToAction>,
+        call_to_action_url: Option<String>,
+        coupon_code: Option<String>,
+        ends_at: String,
+        post_type: Option<GoogleBusinessPostType>,
+        redeem_url: Option<String>,
+        starts_at: Option<String>,
+        terms: Option<String>,
+        title: Option<String>,
+    ) -> Self {
+        Self::GoogleBusiness {
+            call_to_action,
+            call_to_action_url,
+            coupon_code,
+            ends_at: Some(ends_at),
+            post_type,
+            redeem_url,
+            starts_at,
+            terms,
+            title,
+        }
+    }
+
+    pub fn google_business_with_post_type(
+        call_to_action: Option<GoogleBusinessCallToAction>,
+        call_to_action_url: Option<String>,
+        coupon_code: Option<String>,
+        ends_at: Option<String>,
+        post_type: GoogleBusinessPostType,
+        redeem_url: Option<String>,
+        starts_at: Option<String>,
+        terms: Option<String>,
+        title: Option<String>,
+    ) -> Self {
+        Self::GoogleBusiness {
+            call_to_action,
+            call_to_action_url,
+            coupon_code,
+            ends_at,
+            post_type: Some(post_type),
+            redeem_url,
+            starts_at,
+            terms,
+            title,
+        }
+    }
+
+    pub fn google_business_with_redeem_url(
+        call_to_action: Option<GoogleBusinessCallToAction>,
+        call_to_action_url: Option<String>,
+        coupon_code: Option<String>,
+        ends_at: Option<String>,
+        post_type: Option<GoogleBusinessPostType>,
+        redeem_url: String,
+        starts_at: Option<String>,
+        terms: Option<String>,
+        title: Option<String>,
+    ) -> Self {
+        Self::GoogleBusiness {
+            call_to_action,
+            call_to_action_url,
+            coupon_code,
+            ends_at,
+            post_type,
+            redeem_url: Some(redeem_url),
+            starts_at,
+            terms,
+            title,
+        }
+    }
+
+    pub fn google_business_with_starts_at(
+        call_to_action: Option<GoogleBusinessCallToAction>,
+        call_to_action_url: Option<String>,
+        coupon_code: Option<String>,
+        ends_at: Option<String>,
+        post_type: Option<GoogleBusinessPostType>,
+        redeem_url: Option<String>,
+        starts_at: String,
+        terms: Option<String>,
+        title: Option<String>,
+    ) -> Self {
+        Self::GoogleBusiness {
+            call_to_action,
+            call_to_action_url,
+            coupon_code,
+            ends_at,
+            post_type,
+            redeem_url,
+            starts_at: Some(starts_at),
+            terms,
+            title,
+        }
+    }
+
+    pub fn google_business_with_terms(
+        call_to_action: Option<GoogleBusinessCallToAction>,
+        call_to_action_url: Option<String>,
+        coupon_code: Option<String>,
+        ends_at: Option<String>,
+        post_type: Option<GoogleBusinessPostType>,
+        redeem_url: Option<String>,
+        starts_at: Option<String>,
+        terms: String,
+        title: Option<String>,
+    ) -> Self {
+        Self::GoogleBusiness {
+            call_to_action,
+            call_to_action_url,
+            coupon_code,
+            ends_at,
+            post_type,
+            redeem_url,
+            starts_at,
+            terms: Some(terms),
+            title,
+        }
+    }
+
+    pub fn google_business_with_title(
+        call_to_action: Option<GoogleBusinessCallToAction>,
+        call_to_action_url: Option<String>,
+        coupon_code: Option<String>,
+        ends_at: Option<String>,
+        post_type: Option<GoogleBusinessPostType>,
+        redeem_url: Option<String>,
+        starts_at: Option<String>,
+        terms: Option<String>,
+        title: String,
+    ) -> Self {
+        Self::GoogleBusiness {
+            call_to_action,
+            call_to_action_url,
+            coupon_code,
+            ends_at,
+            post_type,
+            redeem_url,
+            starts_at,
+            terms,
+            title: Some(title),
         }
     }
 

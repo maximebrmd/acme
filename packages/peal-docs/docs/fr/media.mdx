@@ -93,6 +93,15 @@ Sur YouTube :
 
 Une vidéo de 3 minutes ou moins, carrée ou plus haute que large, devient un Short. YouTube n’accepte de vidéos de plus de 15 minutes que des chaînes que Google a vérifiées ; il refuse les autres une fois envoyées, et la publication échoue avec cette raison.
 
+Sur Google Business Profile :
+
+| Limite                           | Google Business Profile                                                                            |
+| -------------------------------- | -------------------------------------------------------------------------------------------------- |
+| Images et vidéos par publication | Des photos seulement                                                                               |
+| Images                           | JPEG et PNG, de 10 240 octets à 5 Mio ; un petit côté d’au moins 250 pixels, ce que Google vérifie |
+| Vidéos                           | Non acceptées                                                                                      |
+| Texte alternatif                 | Pas envoyé                                                                                         |
+
 Peal ne vérifie que ce qu’il a lu de chaque fichier : un fait qu’il n’a pas pu lire, comme la durée d’une vidéo, n’est pas vérifié, et la plateforme peut encore refuser le fichier.
 
 ## Quand vous programmez [#schedule]
@@ -111,6 +120,7 @@ Un brouillon peut contenir n’importe quel média prêt de son espace de travai
 - **TikTok** : une vidéo part en morceaux de 10 Mo, lus un à la fois dans le stockage des médias, sauf si le serveur laisse TikTok aller la chercher à l’adresse publique du stockage ; TikTok va toujours chercher les photos. TikTok traite ensuite la publication avant sa mise en ligne.
 
 - **YouTube** : Peal envoie la vidéo par parties de 8 Mio, en reprenant là où en est YouTube si un envoi est coupé, même après un redémarrage du serveur, puis attend que YouTube la traite.
+- **Google Business Profile** : Peal donne à Google un lien vers chaque photo dans le stockage des médias, valable deux heures, et Google va la chercher.
 
 Peal attend jusqu’à 15 minutes qu’une plateforme traite un fichier. Au-delà, il réessaie la publication plus tard, comme pour une plateforme qui ne répond pas ; une vidéo YouTube, déjà envoyée, reste publiée pendant que YouTube termine.
 

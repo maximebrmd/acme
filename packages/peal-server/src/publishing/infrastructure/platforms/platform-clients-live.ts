@@ -15,6 +15,7 @@ import {
 import { tiktokHosts } from "#shared/infrastructure/platforms/tiktok-api.ts";
 
 import { blueskyClient } from "./bluesky/bluesky-client.ts";
+import { googleBusinessClient } from "./google-business/google-business-client.ts";
 import { linkedinClient } from "./linkedin/linkedin-client.ts";
 import { linkedinVersionConfig } from "./linkedin/linkedin-version.ts";
 import { mastodonClient } from "./mastodon/mastodon-client.ts";
@@ -29,6 +30,8 @@ import { youtubeDailyUploadsConfig } from "./youtube/youtube-settings.ts";
 
 /** Where the platforms are, and how long their steps wait. */
 export interface PlatformClientSettings {
+  /** The My Business API, which makes and lists local posts. */
+  readonly googleBusinessApi: URL;
   /** LinkedIn's API, and the uploads its answers point to. */
   readonly linkedinApi: URL;
   /** `https:`; `http:` only for tests against local fakes. */
@@ -63,7 +66,7 @@ const uploadTimeout = Duration.minutes(10);
 
 /**
  * The platforms Peal publishes to: Mastodon, Bluesky, LinkedIn, X, Threads,
- * Instagram, Facebook Pages, TikTok and YouTube. Every request goes through
+ * Instagram, Facebook Pages, TikTok, YouTube and Google Business Profile. Every request goes through
  * the public HTTP client, so the outbound guard checks the servers users
  * chose. Needs an HttpClient, the OutboundGuard, SecureRandom and Digest
  * (for DPoP proofs), Mac (for Meta's proofs), PlatformCredentials,
@@ -131,6 +134,11 @@ export const platformClientsWith = (settings: PlatformClientSettings) =>
           uploads,
           ...timing,
         }),
+        yield* googleBusinessClient({
+          api,
+          apiUrl: settings.googleBusinessApi,
+          ...timing,
+        }),
       ];
 
       const byPlatform: ReadonlyMap<Platform, PlatformClient> = new Map(
@@ -156,6 +164,7 @@ export const PlatformClientsLive = Layer.unwrap(
     const youtubeDailyUploads = yield* youtubeDailyUploadsConfig;
 
     return platformClientsWith({
+      googleBusinessApi: new URL("https://mybusiness.googleapis.com"),
       linkedinApi: new URL("https://api.linkedin.com"),
       mastodonScheme: "https:",
       metaAppSecret: meta.pipe(Option.map(({ appSecret }) => appSecret)),

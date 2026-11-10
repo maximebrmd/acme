@@ -42,6 +42,7 @@ const settings = (apps: { readonly threads: boolean }) =>
     ChannelPlatforms,
     ChannelPlatforms.of({
       bluesky: Option.none(),
+      googleBusiness: Option.none(),
       instagram: Option.some(instagramApp),
       linkedin: Option.none(),
       meta: Option.some(metaApp),

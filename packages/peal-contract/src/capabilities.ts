@@ -106,7 +106,9 @@ export const MediaCapabilitiesSchema = Schema.Struct({
 /**
  * A rule between two options: when the yes-or-no `field` is true, one of
  * `oneOf` must be true too (`needsOneOf`), or `other` must not have `value`
- * (`notWith`).
+ * (`notWith`); `field` is needed while `other` has one of `values`
+ * (`neededWith`), or refused unless it has (`onlyWith`), an `other` left
+ * out counting as its `ifLeftOut`.
  */
 export const OptionConstraintSchema = Schema.Union([
   Schema.TaggedStruct("needsOneOf", {
@@ -117,6 +119,16 @@ export const OptionConstraintSchema = Schema.Union([
     field: Schema.String,
     other: Schema.String,
     value: Schema.String,
+  }),
+  Schema.TaggedStruct("neededWith", {
+    field: Schema.String,
+    other: Schema.String,
+    values: Schema.Array(Schema.String),
+  }),
+  Schema.TaggedStruct("onlyWith", {
+    field: Schema.String,
+    other: Schema.String,
+    values: Schema.Array(Schema.String),
   }),
 ]).annotate({ identifier: "OptionConstraint" });
 

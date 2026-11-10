@@ -4,7 +4,9 @@ import * as Peal from "../index.js";
 
 export type OptionConstraint = 
     | Peal.OptionConstraint.NeedsOneOf
-    | Peal.OptionConstraint.NotWith;
+    | Peal.OptionConstraint.NotWith
+    | Peal.OptionConstraint.NeededWith
+    | Peal.OptionConstraint.OnlyWith;
 
 export namespace OptionConstraint {
     export interface NeedsOneOf extends Peal.OptionConstraintNeedsOneOf {
@@ -13,5 +15,13 @@ export namespace OptionConstraint {
 
     export interface NotWith extends Peal.OptionConstraintNotWith {
         _tag: "notWith";
+    }
+
+    export interface NeededWith extends Peal.OptionConstraintNeededWith {
+        _tag: "neededWith";
+    }
+
+    export interface OnlyWith extends Peal.OptionConstraintOnlyWith {
+        _tag: "onlyWith";
     }
 }

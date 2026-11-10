@@ -159,6 +159,24 @@ describe(violationsOn, () => {
     ]);
   });
 
+  it("takes Google Business Profile posts up to 1,500 characters", () => {
+    const location = { ...mastodon, platform: "googleBusiness" as const };
+
+    expect(violationsOn(contentOf("é".repeat(1500)), location)).toStrictEqual(
+      []
+    );
+
+    expect(violationsOn(contentOf("é".repeat(1501)), location)).toStrictEqual([
+      {
+        _tag: "textTooLong",
+        ...location,
+        length: 1501,
+        maximum: 1500,
+        unit: "codePoints",
+      },
+    ]);
+  });
+
   it("asks for media on Instagram, and caps its hashtags and mentions", () => {
     const tags = Array.from({ length: 31 }, (_, index) => `#tag${index}`);
     const names = Array.from({ length: 21 }, (_, index) => `@name${index}`);

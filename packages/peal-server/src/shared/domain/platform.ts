@@ -16,6 +16,7 @@ export const PlatformSchema = Schema.Literals([
   "tiktok",
   "youtube",
   "pinterest",
+  "googleBusiness",
 ]);
 
 export type Platform = typeof PlatformSchema.Type;

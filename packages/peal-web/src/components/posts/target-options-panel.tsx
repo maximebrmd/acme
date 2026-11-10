@@ -28,11 +28,13 @@ import { tiktokCreator } from "#posts/api.ts";
 import type { ComposerFailure } from "#posts/composer-failure.ts";
 import {
   fieldsOf,
+  isShown,
   violationsByField,
   withValue,
 } from "#posts/target-options.ts";
 import type {
   ChoiceField,
+  LocalTimeField,
   OptionField,
   OptionValues,
   OptionViolation,
@@ -143,7 +145,7 @@ const TextInput = ({
   limits,
   value,
   violation,
-}: FieldProps<TagsField | TextField>) => {
+}: FieldProps<LocalTimeField | TagsField | TextField>) => {
   const t = useTranslations("Posts.Options");
 
   const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -155,7 +157,7 @@ const TextInput = ({
       <Label htmlFor={id}>{labelOf(t, field)}</Label>
       <Input
         id={id}
-        type="text"
+        type={field.kind === "localTime" ? "datetime-local" : "text"}
         autoComplete="off"
         disabled={disabled}
         value={textOf(value)}
@@ -231,6 +233,9 @@ const ChoiceSelect = ({
   );
 };
 
+// The choice that chooses nothing again: no option's value is empty.
+const nothing = "";
+
 const ChoiceInput = ({
   field,
   onValue,
@@ -239,23 +244,33 @@ const ChoiceInput = ({
 }: FieldProps<ChoiceField>) => {
   const t = useTranslations("Posts.Options");
 
+  const offered = field.choices
+    .filter(
+      ({ value: choice }) =>
+        rest.limits.choices === undefined || rest.limits.choices.has(choice)
+    )
+    .map((choice) => ({
+      closed: rest.limits.closedChoices?.has(choice.value) ?? false,
+      label: t(choice.label),
+      value: choice.value,
+    }));
+
   return (
     <ChoiceSelect
       {...rest}
       field={field}
-      choices={field.choices
-        .filter(
-          ({ value: offered }) =>
-            rest.limits.choices === undefined ||
-            rest.limits.choices.has(offered)
-        )
-        .map((choice) => ({
-          closed: rest.limits.closedChoices?.has(choice.value) ?? false,
-          label: t(choice.label),
-          value: choice.value,
-        }))}
+      choices={
+        field.none === undefined
+          ? offered
+          : [
+              { closed: false, label: t(field.none), value: nothing },
+              ...offered,
+            ]
+      }
       selected={Option.getOrUndefined(decodeText(value))}
-      onChoice={onValue}
+      onChoice={(choice) => {
+        onValue(choice === nothing ? undefined : choice);
+      }}
     />
   );
 };
@@ -336,6 +351,7 @@ const FieldInput = (props: FieldProps<OptionField>) =>
   Match.value(props.field).pipe(
     Match.discriminatorsExhaustive("kind")({
       choice: (field) => <ChoiceInput {...props} field={field} />,
+      localTime: (field) => <TextInput {...props} field={field} />,
       tags: (field) => <TextInput {...props} field={field} />,
       text: (field) => <TextInput {...props} field={field} />,
       toggle: (field) => <ToggleInput {...props} field={field} />,
@@ -381,6 +397,7 @@ const ChannelOptionsFields = ({
   const shown = fieldsOf(channel.platform).filter(
     (field) =>
       limitsByField.get(field.name)?.hidden !== true &&
+      isShown(channel.platform, field, values) &&
       (field.kind !== "toggle" ||
         field.within === undefined ||
         values[field.within] === true)

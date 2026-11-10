@@ -796,6 +796,280 @@ func (d *DraftPage) String() string {
 	return fmt.Sprintf("%#v", d)
 }
 
+type GoogleBusinessCallToAction string
+
+const (
+	GoogleBusinessCallToActionBook      GoogleBusinessCallToAction = "book"
+	GoogleBusinessCallToActionOrder     GoogleBusinessCallToAction = "order"
+	GoogleBusinessCallToActionShop      GoogleBusinessCallToAction = "shop"
+	GoogleBusinessCallToActionLearnMore GoogleBusinessCallToAction = "learnMore"
+	GoogleBusinessCallToActionSignUp    GoogleBusinessCallToAction = "signUp"
+	GoogleBusinessCallToActionCall      GoogleBusinessCallToAction = "call"
+)
+
+func NewGoogleBusinessCallToActionFromString(s string) (GoogleBusinessCallToAction, error) {
+	switch s {
+	case "book":
+		return GoogleBusinessCallToActionBook, nil
+	case "order":
+		return GoogleBusinessCallToActionOrder, nil
+	case "shop":
+		return GoogleBusinessCallToActionShop, nil
+	case "learnMore":
+		return GoogleBusinessCallToActionLearnMore, nil
+	case "signUp":
+		return GoogleBusinessCallToActionSignUp, nil
+	case "call":
+		return GoogleBusinessCallToActionCall, nil
+	}
+	var t GoogleBusinessCallToAction
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (g GoogleBusinessCallToAction) Ptr() *GoogleBusinessCallToAction {
+	return &g
+}
+
+var (
+	googleBusinessOptionsFieldCallToAction    = big.NewInt(1 << 0)
+	googleBusinessOptionsFieldCallToActionURL = big.NewInt(1 << 1)
+	googleBusinessOptionsFieldCouponCode      = big.NewInt(1 << 2)
+	googleBusinessOptionsFieldEndsAt          = big.NewInt(1 << 3)
+	googleBusinessOptionsFieldPostType        = big.NewInt(1 << 4)
+	googleBusinessOptionsFieldRedeemURL       = big.NewInt(1 << 5)
+	googleBusinessOptionsFieldStartsAt        = big.NewInt(1 << 6)
+	googleBusinessOptionsFieldTerms           = big.NewInt(1 << 7)
+	googleBusinessOptionsFieldTitle           = big.NewInt(1 << 8)
+)
+
+// How a post goes out on a Google Business Profile location. An `event` or an `offer` needs `title`, `startsAt` and `endsAt`, on the location's own clock; only an `offer` takes `couponCode`, `redeemUrl` and `terms`.
+type GoogleBusinessOptions struct {
+	CallToAction    *GoogleBusinessCallToAction `json:"callToAction,omitempty" url:"callToAction,omitempty"`
+	CallToActionURL *string                     `json:"callToActionUrl,omitempty" url:"callToActionUrl,omitempty"`
+	CouponCode      *string                     `json:"couponCode,omitempty" url:"couponCode,omitempty"`
+	EndsAt          *string                     `json:"endsAt,omitempty" url:"endsAt,omitempty"`
+	PostType        *GoogleBusinessPostType     `json:"postType,omitempty" url:"postType,omitempty"`
+	RedeemURL       *string                     `json:"redeemUrl,omitempty" url:"redeemUrl,omitempty"`
+	StartsAt        *string                     `json:"startsAt,omitempty" url:"startsAt,omitempty"`
+	Terms           *string                     `json:"terms,omitempty" url:"terms,omitempty"`
+	Title           *string                     `json:"title,omitempty" url:"title,omitempty"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (g *GoogleBusinessOptions) GetCallToAction() *GoogleBusinessCallToAction {
+	if g == nil {
+		return nil
+	}
+	return g.CallToAction
+}
+
+func (g *GoogleBusinessOptions) GetCallToActionURL() *string {
+	if g == nil {
+		return nil
+	}
+	return g.CallToActionURL
+}
+
+func (g *GoogleBusinessOptions) GetCouponCode() *string {
+	if g == nil {
+		return nil
+	}
+	return g.CouponCode
+}
+
+func (g *GoogleBusinessOptions) GetEndsAt() *string {
+	if g == nil {
+		return nil
+	}
+	return g.EndsAt
+}
+
+func (g *GoogleBusinessOptions) GetPostType() *GoogleBusinessPostType {
+	if g == nil {
+		return nil
+	}
+	return g.PostType
+}
+
+func (g *GoogleBusinessOptions) GetRedeemURL() *string {
+	if g == nil {
+		return nil
+	}
+	return g.RedeemURL
+}
+
+func (g *GoogleBusinessOptions) GetStartsAt() *string {
+	if g == nil {
+		return nil
+	}
+	return g.StartsAt
+}
+
+func (g *GoogleBusinessOptions) GetTerms() *string {
+	if g == nil {
+		return nil
+	}
+	return g.Terms
+}
+
+func (g *GoogleBusinessOptions) GetTitle() *string {
+	if g == nil {
+		return nil
+	}
+	return g.Title
+}
+
+func (g *GoogleBusinessOptions) GetExtraProperties() map[string]interface{} {
+	if g == nil {
+		return nil
+	}
+	return g.extraProperties
+}
+
+func (g *GoogleBusinessOptions) require(field *big.Int) {
+	next := new(big.Int)
+	if g.explicitFields != nil {
+		next.Set(g.explicitFields)
+	}
+	next.Or(next, field)
+	g.explicitFields = next
+}
+
+// SetCallToAction sets the CallToAction field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (g *GoogleBusinessOptions) SetCallToAction(callToAction *GoogleBusinessCallToAction) {
+	g.CallToAction = callToAction
+	g.require(googleBusinessOptionsFieldCallToAction)
+}
+
+// SetCallToActionURL sets the CallToActionURL field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (g *GoogleBusinessOptions) SetCallToActionURL(callToActionURL *string) {
+	g.CallToActionURL = callToActionURL
+	g.require(googleBusinessOptionsFieldCallToActionURL)
+}
+
+// SetCouponCode sets the CouponCode field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (g *GoogleBusinessOptions) SetCouponCode(couponCode *string) {
+	g.CouponCode = couponCode
+	g.require(googleBusinessOptionsFieldCouponCode)
+}
+
+// SetEndsAt sets the EndsAt field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (g *GoogleBusinessOptions) SetEndsAt(endsAt *string) {
+	g.EndsAt = endsAt
+	g.require(googleBusinessOptionsFieldEndsAt)
+}
+
+// SetPostType sets the PostType field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (g *GoogleBusinessOptions) SetPostType(postType *GoogleBusinessPostType) {
+	g.PostType = postType
+	g.require(googleBusinessOptionsFieldPostType)
+}
+
+// SetRedeemURL sets the RedeemURL field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (g *GoogleBusinessOptions) SetRedeemURL(redeemURL *string) {
+	g.RedeemURL = redeemURL
+	g.require(googleBusinessOptionsFieldRedeemURL)
+}
+
+// SetStartsAt sets the StartsAt field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (g *GoogleBusinessOptions) SetStartsAt(startsAt *string) {
+	g.StartsAt = startsAt
+	g.require(googleBusinessOptionsFieldStartsAt)
+}
+
+// SetTerms sets the Terms field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (g *GoogleBusinessOptions) SetTerms(terms *string) {
+	g.Terms = terms
+	g.require(googleBusinessOptionsFieldTerms)
+}
+
+// SetTitle sets the Title field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (g *GoogleBusinessOptions) SetTitle(title *string) {
+	g.Title = title
+	g.require(googleBusinessOptionsFieldTitle)
+}
+
+func (g *GoogleBusinessOptions) UnmarshalJSON(data []byte) error {
+	type unmarshaler GoogleBusinessOptions
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*g = GoogleBusinessOptions(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *g)
+	if err != nil {
+		return err
+	}
+	g.extraProperties = extraProperties
+	g.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (g *GoogleBusinessOptions) MarshalJSON() ([]byte, error) {
+	type embed GoogleBusinessOptions
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*g),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, g.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (g *GoogleBusinessOptions) String() string {
+	if g == nil {
+		return "<nil>"
+	}
+	if len(g.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(g.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(g); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", g)
+}
+
+type GoogleBusinessPostType string
+
+const (
+	GoogleBusinessPostTypeStandard GoogleBusinessPostType = "standard"
+	GoogleBusinessPostTypeEvent    GoogleBusinessPostType = "event"
+	GoogleBusinessPostTypeOffer    GoogleBusinessPostType = "offer"
+)
+
+func NewGoogleBusinessPostTypeFromString(s string) (GoogleBusinessPostType, error) {
+	switch s {
+	case "standard":
+		return GoogleBusinessPostTypeStandard, nil
+	case "event":
+		return GoogleBusinessPostTypeEvent, nil
+	case "offer":
+		return GoogleBusinessPostTypeOffer, nil
+	}
+	var t GoogleBusinessPostType
+	return "", fmt.Errorf("%s is not a valid %T", s, t)
+}
+
+func (g GoogleBusinessPostType) Ptr() *GoogleBusinessPostType {
+	return &g
+}
+
 var (
 	mediaAttachmentFieldAltText = big.NewInt(1 << 0)
 	mediaAttachmentFieldMediaID = big.NewInt(1 << 1)
@@ -2261,9 +2535,10 @@ func (t *TargetConfirmationPublished) String() string {
 
 // What a post says on a channel that only its platform knows, tagged by `platform`. Platforms without options take none.
 type TargetOptions struct {
-	Platform string
-	Youtube  *YouTubeOptions
-	Tiktok   *TikTokOptions
+	Platform       string
+	Youtube        *YouTubeOptions
+	Tiktok         *TikTokOptions
+	GoogleBusiness *GoogleBusinessOptions
 
 	rawJSON json.RawMessage
 }
@@ -2287,6 +2562,13 @@ func (t *TargetOptions) GetTiktok() *TikTokOptions {
 		return nil
 	}
 	return t.Tiktok
+}
+
+func (t *TargetOptions) GetGoogleBusiness() *GoogleBusinessOptions {
+	if t == nil {
+		return nil
+	}
+	return t.GoogleBusiness
 }
 
 func (t *TargetOptions) UnmarshalJSON(data []byte) error {
@@ -2313,6 +2595,12 @@ func (t *TargetOptions) UnmarshalJSON(data []byte) error {
 			return err
 		}
 		t.Tiktok = value
+	case "googleBusiness":
+		value := new(GoogleBusinessOptions)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		t.GoogleBusiness = value
 	}
 	t.rawJSON = json.RawMessage(data)
 	return nil
@@ -2328,6 +2616,9 @@ func (t TargetOptions) MarshalJSON() ([]byte, error) {
 	if t.Tiktok != nil {
 		return internal.MarshalJSONWithExtraProperty(t.Tiktok, "platform", "tiktok")
 	}
+	if t.GoogleBusiness != nil {
+		return internal.MarshalJSONWithExtraProperty(t.GoogleBusiness, "platform", "googleBusiness")
+	}
 	if len(t.rawJSON) > 0 {
 		return t.rawJSON, nil
 	}
@@ -2337,6 +2628,7 @@ func (t TargetOptions) MarshalJSON() ([]byte, error) {
 type TargetOptionsVisitor interface {
 	VisitYoutube(*YouTubeOptions) error
 	VisitTiktok(*TikTokOptions) error
+	VisitGoogleBusiness(*GoogleBusinessOptions) error
 }
 
 func (t *TargetOptions) Accept(visitor TargetOptionsVisitor) error {
@@ -2345,6 +2637,9 @@ func (t *TargetOptions) Accept(visitor TargetOptionsVisitor) error {
 	}
 	if t.Tiktok != nil {
 		return visitor.VisitTiktok(t.Tiktok)
+	}
+	if t.GoogleBusiness != nil {
+		return visitor.VisitGoogleBusiness(t.GoogleBusiness)
 	}
 	return fmt.Errorf("type %T does not define a non-empty union type", t)
 }
@@ -2359,6 +2654,9 @@ func (t *TargetOptions) validate() error {
 	}
 	if t.Tiktok != nil {
 		fields = append(fields, "tiktok")
+	}
+	if t.GoogleBusiness != nil {
+		fields = append(fields, "googleBusiness")
 	}
 	if len(fields) == 0 {
 		if t.Platform != "" {

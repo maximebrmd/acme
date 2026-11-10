@@ -1463,6 +1463,663 @@ func TestSettersMarkExplicitDraftPage(t *testing.T) {
 
 }
 
+func TestSettersGoogleBusinessOptions(t *testing.T) {
+	t.Run("SetCallToAction", func(t *testing.T) {
+		obj := &GoogleBusinessOptions{}
+		var fernTestValueCallToAction *GoogleBusinessCallToAction
+		obj.SetCallToAction(fernTestValueCallToAction)
+		assert.Equal(t, fernTestValueCallToAction, obj.CallToAction)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetCallToActionURL", func(t *testing.T) {
+		obj := &GoogleBusinessOptions{}
+		var fernTestValueCallToActionURL *string
+		obj.SetCallToActionURL(fernTestValueCallToActionURL)
+		assert.Equal(t, fernTestValueCallToActionURL, obj.CallToActionURL)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetCouponCode", func(t *testing.T) {
+		obj := &GoogleBusinessOptions{}
+		var fernTestValueCouponCode *string
+		obj.SetCouponCode(fernTestValueCouponCode)
+		assert.Equal(t, fernTestValueCouponCode, obj.CouponCode)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetEndsAt", func(t *testing.T) {
+		obj := &GoogleBusinessOptions{}
+		var fernTestValueEndsAt *string
+		obj.SetEndsAt(fernTestValueEndsAt)
+		assert.Equal(t, fernTestValueEndsAt, obj.EndsAt)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetPostType", func(t *testing.T) {
+		obj := &GoogleBusinessOptions{}
+		var fernTestValuePostType *GoogleBusinessPostType
+		obj.SetPostType(fernTestValuePostType)
+		assert.Equal(t, fernTestValuePostType, obj.PostType)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetRedeemURL", func(t *testing.T) {
+		obj := &GoogleBusinessOptions{}
+		var fernTestValueRedeemURL *string
+		obj.SetRedeemURL(fernTestValueRedeemURL)
+		assert.Equal(t, fernTestValueRedeemURL, obj.RedeemURL)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetStartsAt", func(t *testing.T) {
+		obj := &GoogleBusinessOptions{}
+		var fernTestValueStartsAt *string
+		obj.SetStartsAt(fernTestValueStartsAt)
+		assert.Equal(t, fernTestValueStartsAt, obj.StartsAt)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetTerms", func(t *testing.T) {
+		obj := &GoogleBusinessOptions{}
+		var fernTestValueTerms *string
+		obj.SetTerms(fernTestValueTerms)
+		assert.Equal(t, fernTestValueTerms, obj.Terms)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+	t.Run("SetTitle", func(t *testing.T) {
+		obj := &GoogleBusinessOptions{}
+		var fernTestValueTitle *string
+		obj.SetTitle(fernTestValueTitle)
+		assert.Equal(t, fernTestValueTitle, obj.Title)
+		assert.NotNil(t, obj.explicitFields)
+	})
+
+}
+
+func TestGettersGoogleBusinessOptions(t *testing.T) {
+	t.Run("GetCallToAction", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &GoogleBusinessOptions{}
+		var expected *GoogleBusinessCallToAction
+		obj.CallToAction = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetCallToAction(), "getter should return the property value")
+	})
+
+	t.Run("GetCallToAction_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &GoogleBusinessOptions{}
+		obj.CallToAction = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetCallToAction(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetCallToAction_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *GoogleBusinessOptions
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetCallToAction() // Should return zero value
+	})
+
+	t.Run("GetCallToActionURL", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &GoogleBusinessOptions{}
+		var expected *string
+		obj.CallToActionURL = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetCallToActionURL(), "getter should return the property value")
+	})
+
+	t.Run("GetCallToActionURL_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &GoogleBusinessOptions{}
+		obj.CallToActionURL = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetCallToActionURL(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetCallToActionURL_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *GoogleBusinessOptions
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetCallToActionURL() // Should return zero value
+	})
+
+	t.Run("GetCouponCode", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &GoogleBusinessOptions{}
+		var expected *string
+		obj.CouponCode = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetCouponCode(), "getter should return the property value")
+	})
+
+	t.Run("GetCouponCode_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &GoogleBusinessOptions{}
+		obj.CouponCode = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetCouponCode(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetCouponCode_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *GoogleBusinessOptions
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetCouponCode() // Should return zero value
+	})
+
+	t.Run("GetEndsAt", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &GoogleBusinessOptions{}
+		var expected *string
+		obj.EndsAt = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetEndsAt(), "getter should return the property value")
+	})
+
+	t.Run("GetEndsAt_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &GoogleBusinessOptions{}
+		obj.EndsAt = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetEndsAt(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetEndsAt_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *GoogleBusinessOptions
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetEndsAt() // Should return zero value
+	})
+
+	t.Run("GetPostType", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &GoogleBusinessOptions{}
+		var expected *GoogleBusinessPostType
+		obj.PostType = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetPostType(), "getter should return the property value")
+	})
+
+	t.Run("GetPostType_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &GoogleBusinessOptions{}
+		obj.PostType = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetPostType(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetPostType_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *GoogleBusinessOptions
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetPostType() // Should return zero value
+	})
+
+	t.Run("GetRedeemURL", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &GoogleBusinessOptions{}
+		var expected *string
+		obj.RedeemURL = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetRedeemURL(), "getter should return the property value")
+	})
+
+	t.Run("GetRedeemURL_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &GoogleBusinessOptions{}
+		obj.RedeemURL = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetRedeemURL(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetRedeemURL_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *GoogleBusinessOptions
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetRedeemURL() // Should return zero value
+	})
+
+	t.Run("GetStartsAt", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &GoogleBusinessOptions{}
+		var expected *string
+		obj.StartsAt = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetStartsAt(), "getter should return the property value")
+	})
+
+	t.Run("GetStartsAt_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &GoogleBusinessOptions{}
+		obj.StartsAt = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetStartsAt(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetStartsAt_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *GoogleBusinessOptions
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetStartsAt() // Should return zero value
+	})
+
+	t.Run("GetTerms", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &GoogleBusinessOptions{}
+		var expected *string
+		obj.Terms = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetTerms(), "getter should return the property value")
+	})
+
+	t.Run("GetTerms_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &GoogleBusinessOptions{}
+		obj.Terms = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetTerms(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetTerms_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *GoogleBusinessOptions
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetTerms() // Should return zero value
+	})
+
+	t.Run("GetTitle", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &GoogleBusinessOptions{}
+		var expected *string
+		obj.Title = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetTitle(), "getter should return the property value")
+	})
+
+	t.Run("GetTitle_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &GoogleBusinessOptions{}
+		obj.Title = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetTitle(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetTitle_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *GoogleBusinessOptions
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetTitle() // Should return zero value
+	})
+
+}
+
+func TestSettersMarkExplicitGoogleBusinessOptions(t *testing.T) {
+	t.Run("SetCallToAction_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &GoogleBusinessOptions{}
+		var fernTestValueCallToAction *GoogleBusinessCallToAction
+
+		// Act
+		obj.SetCallToAction(fernTestValueCallToAction)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetCallToActionURL_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &GoogleBusinessOptions{}
+		var fernTestValueCallToActionURL *string
+
+		// Act
+		obj.SetCallToActionURL(fernTestValueCallToActionURL)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetCouponCode_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &GoogleBusinessOptions{}
+		var fernTestValueCouponCode *string
+
+		// Act
+		obj.SetCouponCode(fernTestValueCouponCode)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetEndsAt_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &GoogleBusinessOptions{}
+		var fernTestValueEndsAt *string
+
+		// Act
+		obj.SetEndsAt(fernTestValueEndsAt)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetPostType_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &GoogleBusinessOptions{}
+		var fernTestValuePostType *GoogleBusinessPostType
+
+		// Act
+		obj.SetPostType(fernTestValuePostType)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetRedeemURL_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &GoogleBusinessOptions{}
+		var fernTestValueRedeemURL *string
+
+		// Act
+		obj.SetRedeemURL(fernTestValueRedeemURL)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetStartsAt_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &GoogleBusinessOptions{}
+		var fernTestValueStartsAt *string
+
+		// Act
+		obj.SetStartsAt(fernTestValueStartsAt)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetTerms_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &GoogleBusinessOptions{}
+		var fernTestValueTerms *string
+
+		// Act
+		obj.SetTerms(fernTestValueTerms)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+	t.Run("SetTitle_MarksExplicit", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &GoogleBusinessOptions{}
+		var fernTestValueTitle *string
+
+		// Act
+		obj.SetTitle(fernTestValueTitle)
+
+		// Assert - object with explicitly set field can be marshaled/unmarshaled
+		bytes, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed for test setup")
+
+		// This test ensures JSON marshaling and unmarshaling succeed when the field has a zero/nil value
+		// Detect if marshaled JSON is an object or primitive to use correct unmarshal target
+		if len(bytes) > 0 && bytes[0] == '{' {
+			// JSON object - unmarshal into map
+			var unmarshaled map[string]interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		} else {
+			// JSON primitive (string, number, boolean, null) - unmarshal into interface{}
+			var unmarshaled interface{}
+			err = json.Unmarshal(bytes, &unmarshaled)
+			require.NoError(t, err, "unmarshaling should succeed for test verification")
+		}
+
+		// Note: This does not explicitly assert the presence of a specific JSON field
+		// It verifies that setting a field via setter allows successful JSON round-trip
+	})
+
+}
+
 func TestSettersMediaAttachment(t *testing.T) {
 	t.Run("SetAltText", func(t *testing.T) {
 		obj := &MediaAttachment{}
@@ -4067,6 +4724,39 @@ func TestGettersTargetOptions(t *testing.T) {
 		_ = obj.GetTiktok() // Should return zero value
 	})
 
+	t.Run("GetGoogleBusiness", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &TargetOptions{}
+		var expected *GoogleBusinessOptions
+		obj.GoogleBusiness = expected
+
+		// Act & Assert
+		assert.Equal(t, expected, obj.GetGoogleBusiness(), "getter should return the property value")
+	})
+
+	t.Run("GetGoogleBusiness_NilValue", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &TargetOptions{}
+		obj.GoogleBusiness = nil
+
+		// Act & Assert
+		assert.Nil(t, obj.GetGoogleBusiness(), "getter should return nil when property is nil")
+	})
+
+	t.Run("GetGoogleBusiness_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *TargetOptions
+		// Should not panic - getters should handle nil receiver gracefully
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("Getter panicked on nil receiver: %v", r)
+			}
+		}()
+		_ = obj.GetGoogleBusiness() // Should return zero value
+	})
+
 }
 
 func TestSettersTextOverride(t *testing.T) {
@@ -5534,6 +6224,39 @@ func TestJSONMarshalingDraftPage(t *testing.T) {
 	})
 }
 
+func TestJSONMarshalingGoogleBusinessOptions(t *testing.T) {
+	t.Run("MarshalUnmarshal", func(t *testing.T) {
+		t.Parallel()
+		// Arrange
+		obj := &GoogleBusinessOptions{}
+
+		// Act - Marshal to JSON
+		data, err := json.Marshal(obj)
+		require.NoError(t, err, "marshaling should succeed")
+		assert.NotNil(t, data, "marshaled data should not be nil")
+		assert.NotEmpty(t, data, "marshaled data should not be empty")
+
+		// Unmarshal back and verify round-trip
+		var unmarshaled GoogleBusinessOptions
+		err = json.Unmarshal(data, &unmarshaled)
+		assert.NoError(t, err, "round-trip unmarshal should succeed")
+	})
+
+	t.Run("UnmarshalInvalidJSON", func(t *testing.T) {
+		t.Parallel()
+		var obj GoogleBusinessOptions
+		err := json.Unmarshal([]byte(`{invalid json}`), &obj)
+		assert.Error(t, err, "unmarshaling invalid JSON should return an error")
+	})
+
+	t.Run("UnmarshalEmptyObject", func(t *testing.T) {
+		t.Parallel()
+		var obj GoogleBusinessOptions
+		err := json.Unmarshal([]byte(`{}`), &obj)
+		assert.NoError(t, err, "unmarshaling empty object should succeed")
+	})
+}
+
 func TestJSONMarshalingMediaAttachment(t *testing.T) {
 	t.Run("MarshalUnmarshal", func(t *testing.T) {
 		t.Parallel()
@@ -6183,6 +6906,22 @@ func TestStringDraftPage(t *testing.T) {
 	})
 }
 
+func TestStringGoogleBusinessOptions(t *testing.T) {
+	t.Run("StringMethod", func(t *testing.T) {
+		t.Parallel()
+		obj := &GoogleBusinessOptions{}
+		result := obj.String()
+		assert.NotEmpty(t, result, "String() should return a non-empty representation")
+	})
+
+	t.Run("StringMethod_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *GoogleBusinessOptions
+		result := obj.String()
+		assert.Equal(t, "<nil>", result, "String() should return <nil> for nil receiver")
+	})
+}
+
 func TestStringMediaAttachment(t *testing.T) {
 	t.Run("StringMethod", func(t *testing.T) {
 		t.Parallel()
@@ -6488,6 +7227,99 @@ func TestEnumAttemptResult(t *testing.T) {
 	})
 }
 
+func TestEnumGoogleBusinessCallToAction(t *testing.T) {
+	t.Run("NewFromString_book", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewGoogleBusinessCallToActionFromString("book")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, GoogleBusinessCallToAction("book"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_order", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewGoogleBusinessCallToActionFromString("order")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, GoogleBusinessCallToAction("order"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_shop", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewGoogleBusinessCallToActionFromString("shop")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, GoogleBusinessCallToAction("shop"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_learnMore", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewGoogleBusinessCallToActionFromString("learnMore")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, GoogleBusinessCallToAction("learnMore"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_signUp", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewGoogleBusinessCallToActionFromString("signUp")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, GoogleBusinessCallToAction("signUp"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_call", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewGoogleBusinessCallToActionFromString("call")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, GoogleBusinessCallToAction("call"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_Invalid", func(t *testing.T) {
+		_, err := NewGoogleBusinessCallToActionFromString("invalid_value_that_does_not_exist")
+		assert.Error(t, err)
+	})
+
+	t.Run("Ptr", func(t *testing.T) {
+		val, err := NewGoogleBusinessCallToActionFromString("book")
+		assert.NoError(t, err)
+		ptr := val.Ptr()
+		assert.NotNil(t, ptr)
+		assert.Equal(t, val, *ptr)
+	})
+}
+
+func TestEnumGoogleBusinessPostType(t *testing.T) {
+	t.Run("NewFromString_standard", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewGoogleBusinessPostTypeFromString("standard")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, GoogleBusinessPostType("standard"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_event", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewGoogleBusinessPostTypeFromString("event")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, GoogleBusinessPostType("event"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_offer", func(t *testing.T) {
+		t.Parallel()
+		val, err := NewGoogleBusinessPostTypeFromString("offer")
+		assert.NoError(t, err, "valid enum value should not return error")
+		assert.Equal(t, GoogleBusinessPostType("offer"), val, "enum value should match expected wire value")
+	})
+
+	t.Run("NewFromString_Invalid", func(t *testing.T) {
+		_, err := NewGoogleBusinessPostTypeFromString("invalid_value_that_does_not_exist")
+		assert.Error(t, err)
+	})
+
+	t.Run("Ptr", func(t *testing.T) {
+		val, err := NewGoogleBusinessPostTypeFromString("standard")
+		assert.NoError(t, err)
+		ptr := val.Ptr()
+		assert.NotNil(t, ptr)
+		assert.Equal(t, val, *ptr)
+	})
+}
+
 func TestEnumPostOutcome(t *testing.T) {
 	t.Run("NewFromString_published", func(t *testing.T) {
 		t.Parallel()
@@ -6765,6 +7597,29 @@ func TestExtraPropertiesDraftPage(t *testing.T) {
 	t.Run("GetExtraProperties_NilReceiver", func(t *testing.T) {
 		t.Parallel()
 		var obj *DraftPage
+		extraProps := obj.GetExtraProperties()
+		assert.Nil(t, extraProps, "nil receiver should return nil without panicking")
+	})
+}
+
+func TestExtraPropertiesGoogleBusinessOptions(t *testing.T) {
+	t.Run("GetExtraProperties", func(t *testing.T) {
+		t.Parallel()
+		obj := &GoogleBusinessOptions{}
+		// Should not panic when calling GetExtraProperties()
+		defer func() {
+			if r := recover(); r != nil {
+				t.Errorf("GetExtraProperties() panicked: %v", r)
+			}
+		}()
+		extraProps := obj.GetExtraProperties()
+		// Result can be nil or an empty/non-empty map
+		_ = extraProps
+	})
+
+	t.Run("GetExtraProperties_NilReceiver", func(t *testing.T) {
+		t.Parallel()
+		var obj *GoogleBusinessOptions
 		extraProps := obj.GetExtraProperties()
 		assert.Nil(t, extraProps, "nil receiver should return nil without panicking")
 	})

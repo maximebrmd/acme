@@ -65,7 +65,16 @@ layer(StorageTest)("a target's stored options", (it) => {
 
       assert.deepStrictEqual(
         decoded.map(({ platform }) => platform),
-        ["youtube", "youtube", "youtube", "tiktok", "tiktok"]
+        [
+          "youtube",
+          "youtube",
+          "youtube",
+          "tiktok",
+          "tiktok",
+          "googleBusiness",
+          "googleBusiness",
+          "googleBusiness",
+        ]
       );
     })
   );

@@ -10,6 +10,8 @@ import { DrizzleChannelRepository } from "#channels/infrastructure/drizzle-chann
 import { DrizzleConnectAttempts } from "#channels/infrastructure/drizzle-connect-attempts.ts";
 import { DrizzleConnectChoices } from "#channels/infrastructure/drizzle-connect-choices.ts";
 import { PlanChannelAllowanceLive } from "#channels/infrastructure/plan-channel-allowance.ts";
+import { googleBusinessAuthorizer } from "#channels/infrastructure/platforms/google-business/google-business-authorizer.ts";
+import type { GoogleBusinessEndpoints } from "#channels/infrastructure/platforms/google-business/google-business-authorizer.ts";
 import { linkedinAuthorizer } from "#channels/infrastructure/platforms/linkedin/linkedin-authorizer.ts";
 import type { LinkedInEndpoints } from "#channels/infrastructure/platforms/linkedin/linkedin-authorizer.ts";
 import { MastodonApps } from "#channels/infrastructure/platforms/mastodon/mastodon-apps.ts";
@@ -155,6 +157,28 @@ export const youtubeAuthorizerOn = (endpoints: YouTubeEndpoints) =>
   publicHttpClient.pipe(
     Effect.flatMap((http) =>
       youtubeAuthorizer({
+        client: {
+          clientId: googleClient.clientId,
+          clientSecret: Redacted.make(googleClient.clientSecret),
+        },
+        endpoints,
+        http,
+        publicUrl: testPublicUrl,
+      })
+    ),
+    Effect.provide(AuthorizerServicesTest)
+  );
+
+/**
+ * The Google Business Profile authorizer with the synthetic Google client,
+ * on the fake.
+ */
+export const googleBusinessAuthorizerOn = (
+  endpoints: GoogleBusinessEndpoints
+) =>
+  publicHttpClient.pipe(
+    Effect.flatMap((http) =>
+      googleBusinessAuthorizer({
         client: {
           clientId: googleClient.clientId,
           clientSecret: Redacted.make(googleClient.clientSecret),

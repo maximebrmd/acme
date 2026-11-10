@@ -2,6 +2,8 @@ import { describe, expect, it } from "@effect/vitest";
 import { Exit, Schema } from "effect";
 import {
   ContentViolationSchema,
+  googleBusinessLocalTimePattern as contractLocalTimePattern,
+  maxGoogleBusinessTitleLength as contractMaxBusinessTitleLength,
   maxYouTubeTagsLength as contractMaxTagsLength,
   maxYouTubeTitleLength as contractMaxTitleLength,
   optionsPlatforms as contractOptionsPlatforms,
@@ -13,6 +15,10 @@ import type { ContentViolation as ContractViolation } from "peal-contract";
 import * as ContractText from "peal-contract/post-text";
 
 import type { ContentViolation } from "#publishing/domain/content-violation.ts";
+import {
+  googleBusinessLocalTimePattern,
+  maxGoogleBusinessTitleLength,
+} from "#publishing/domain/google-business-options.ts";
 import { maxAltTextLength } from "#publishing/domain/media-attachment.ts";
 import { platformRules } from "#publishing/domain/platform-rules.ts";
 import {
@@ -388,6 +394,28 @@ const options: readonly unknown[] = [
   },
   { platform: "tiktok", privacyLevel: "FRIENDS" },
   { platform: "tiktok", title: "TikTok's caption is the post's text" },
+  { platform: "googleBusiness" },
+  {
+    callToAction: "learnMore",
+    callToActionUrl: "https://example.com/menu",
+    endsAt: "2026-11-27T18:00",
+    platform: "googleBusiness",
+    postType: "event",
+    startsAt: "2026-11-27T09:00",
+    title: "Synthetic open day",
+  },
+  {
+    couponCode: "SYNTHETIC-10",
+    platform: "googleBusiness",
+    postType: "offer",
+    redeemUrl: "https://example.com/redeem",
+    terms: "One per synthetic customer.",
+  },
+  // Unfinished or refused later: kept until the post is scheduled.
+  { endsAt: "tomorrow", platform: "googleBusiness", title: "a".repeat(59) },
+  { platform: "googleBusiness", postType: "alert" },
+  { callToAction: "getOffer", platform: "googleBusiness" },
+  { platform: "googleBusiness", title: "a\u0000b" },
   { platform: "mastodon" },
   { platform: "youtube", title: "A title", unknownOption: true },
 ];
@@ -397,6 +425,10 @@ describe("the contract's target options", () => {
     expect(contractOptionsPlatforms).toStrictEqual(optionsPlatforms);
     expect(contractMaxTitleLength).toBe(maxYouTubeTitleLength);
     expect(contractMaxTagsLength).toBe(maxYouTubeTagsLength);
+    expect(contractMaxBusinessTitleLength).toBe(maxGoogleBusinessTitleLength);
+    expect(contractLocalTimePattern.source).toBe(
+      googleBusinessLocalTimePattern.source
+    );
 
     for (const tags of [[], ["Foo-Baz", "Foo Baz"], ["日本語", "👍🏽 ok"]]) {
       expect(contractTagsLength(tags)).toBe(youTubeTagsLength(tags));

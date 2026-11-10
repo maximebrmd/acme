@@ -93,6 +93,15 @@ On YouTube:
 
 A video of 3 minutes or less, square or taller than wide, becomes a Short. YouTube takes videos longer than 15 minutes only from channels Google verified; it rejects the others once uploaded, and the post fails with that reason.
 
+On Google Business Profile:
+
+| Limit                         | Google Business Profile                                                                              |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------- |
+| Images and videos in one post | Photos only                                                                                          |
+| Images                        | JPEG and PNG, from 10,240 bytes to 5 MiB; a shorter side of 250 pixels at least, which Google checks |
+| Videos                        | Not taken                                                                                            |
+| Alt text                      | Not sent                                                                                             |
+
 Peal checks only what it read from each file: a fact it could not read, such as a video's duration, is not checked, and the platform may still refuse the file.
 
 ## When you schedule [#schedule]
@@ -111,6 +120,7 @@ At the post's time, Peal sends each file from the library to the platform, then 
 - **TikTok**: a video goes up in parts of 10 MB, read one at a time from the media store, unless the server lets TikTok fetch it from the store's public address; photos TikTok always fetches. TikTok then processes the post before it goes live.
 
 - **YouTube**: Peal uploads the video in parts of 8 MiB, picking up where YouTube stands if an upload is cut off, even after the server restarts, then waits while YouTube processes it.
+- **Google Business Profile**: Peal gives Google a link to each photo in the media store, valid for two hours, and Google fetches it.
 
 Peal waits up to 15 minutes for a platform to process a file. Past that, it tries the post again later, as for a platform that does not answer; a YouTube video, already uploaded, is left published while YouTube finishes.
 

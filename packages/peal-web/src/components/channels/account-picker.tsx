@@ -95,7 +95,7 @@ export const AccountPicker = ({
             signIn.start({});
           }}
         >
-          {signIn.isPending ? t("connecting") : t("startOver")}
+          {signIn.isPending ? t("connecting") : t("startOver", { platform })}
         </Button>
       }
     />

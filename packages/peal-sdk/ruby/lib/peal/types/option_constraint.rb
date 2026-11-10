@@ -12,6 +12,10 @@ module Peal
       member -> { Peal::Types::OptionConstraintNeedsOneOf }, key: "NEEDS_ONE_OF"
 
       member -> { Peal::Types::OptionConstraintNotWith }, key: "NOT_WITH"
+
+      member -> { Peal::Types::OptionConstraintNeededWith }, key: "NEEDED_WITH"
+
+      member -> { Peal::Types::OptionConstraintOnlyWith }, key: "ONLY_WITH"
     end
   end
 end

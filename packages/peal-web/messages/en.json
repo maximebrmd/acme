@@ -43,7 +43,7 @@
       "publishedAt": "Published {at}",
       "engagement": "{count, plural, =0 {No interaction yet} one {# interaction} other {# interactions}}",
       "open": "Open the post",
-      "view": "View on {platform, select, x {X} linkedin {LinkedIn} bluesky {Bluesky} mastodon {Mastodon} threads {Threads} instagram {Instagram} facebook {Facebook} tiktok {TikTok} youtube {YouTube} pinterest {Pinterest} other {the platform}}"
+      "view": "View on {platform, select, x {X} linkedin {LinkedIn} bluesky {Bluesky} mastodon {Mastodon} threads {Threads} instagram {Instagram} facebook {Facebook} tiktok {TikTok} youtube {YouTube} pinterest {Pinterest} googleBusiness {Google} other {the platform}}"
     },
     "post": {
       "title": "How it did",
@@ -243,7 +243,7 @@
     "retry": "Try again",
     "empty": "No account is connected yet.",
     "listTitle": "Connected accounts",
-    "platform": "{platform, select, bluesky {Bluesky} facebook {Facebook} instagram {Instagram} linkedin {LinkedIn} mastodon {Mastodon} pinterest {Pinterest} threads {Threads} tiktok {TikTok} x {X} youtube {YouTube} other {{platform}}}",
+    "platform": "{platform, select, bluesky {Bluesky} facebook {Facebook} googleBusiness {Google Business Profile} instagram {Instagram} linkedin {LinkedIn} mastodon {Mastodon} pinterest {Pinterest} threads {Threads} tiktok {TikTok} x {X} youtube {YouTube} other {{platform}}}",
     "platformVia": "{platform, select, instagram {Instagram} other {{platform}}} ({connection, select, instagramLogin {Instagram Login} facebookLogin {through a Facebook Page} other {{connection}}})",
     "status": {
       "active": "Connected",
@@ -258,7 +258,7 @@
     "disconnectAccount": "Disconnect {handle}",
     "disconnecting": "Disconnecting…",
     "disconnectTitle": "Disconnect {handle}?",
-    "disconnectDescription": "Peal deletes the tokens it holds for this {platform, select, bluesky {Bluesky} facebook {Facebook} instagram {Instagram} linkedin {LinkedIn} mastodon {Mastodon} pinterest {Pinterest} threads {Threads} tiktok {TikTok} x {X} youtube {YouTube} other {{platform}}} account and posts nothing more on it. You can connect it again later.",
+    "disconnectDescription": "Peal deletes the tokens it holds for this {platform, select, bluesky {Bluesky} facebook {Facebook} googleBusiness {Google Business Profile} instagram {Instagram} linkedin {LinkedIn} mastodon {Mastodon} pinterest {Pinterest} threads {Threads} tiktok {TikTok} x {X} youtube {YouTube} other {{platform}}} account and posts nothing more on it. You can connect it again later.",
     "cancel": "Cancel",
     "disconnected": "{handle} is disconnected.",
     "connectTitle": "Connect an account",
@@ -289,7 +289,7 @@
       "forbidden": "You may not do this in this workspace.",
       "notFound": "This channel is no longer connected.",
       "unknown": "Something went wrong. Try again.",
-      "noAccounts": "The sign-in reached no account to connect: on Facebook, and on Instagram through a Facebook Page, you manage no Page, or no Instagram professional account is linked to your Pages (connect it with Instagram instead); on YouTube, the Google account you chose has no channel."
+      "noAccounts": "The sign-in reached no account to connect: on Facebook, and on Instagram through a Facebook Page, you manage no Page, or no Instagram professional account is linked to your Pages (connect it with Instagram instead); on YouTube, the Google account you chose has no channel; on Google Business Profile, it manages no verified location."
     }
   },
   "PlatformConnect": {
@@ -314,6 +314,11 @@
       "title": "YouTube",
       "description": "Your YouTube channel. You sign in with Google, pick the channel if your account has several, and allow Peal to upload videos and read the channel.",
       "connect": "Connect YouTube"
+    },
+    "googleBusiness": {
+      "title": "Google Business Profile",
+      "description": "Your business on Google Search and Maps. You sign in with Google, allow Peal to manage your Business Profile, then choose the verified locations this workspace posts to.",
+      "connect": "Connect Google Business Profile"
     }
   },
   "ConnectCallbackPage": {
@@ -331,15 +336,15 @@
     "description": "{platform, select, facebook {Sign in with Facebook, then choose the Pages this workspace posts to.} instagram {Professional accounts linked to a Facebook Page: sign in with Facebook, then choose the accounts.} threads {Sign in with your Threads account.} other {Sign in on the platform.}}",
     "connect": "{platform, select, facebook {Connect Facebook Pages} instagram {Connect Instagram} threads {Connect Threads} other {Connect}}",
     "connecting": "Opening…",
-    "chooseTitle": "{platform, select, facebook {The Pages to connect} instagram {The Instagram accounts to connect} other {The accounts to connect}}",
-    "chooseDescription": "{platform, select, facebook {Your sign-in reached these Pages.} instagram {Your sign-in reached these Instagram accounts.} other {Your sign-in reached these accounts.}} Choose those this workspace posts to, within a quarter of an hour.",
+    "chooseTitle": "{platform, select, facebook {The Pages to connect} instagram {The Instagram accounts to connect} googleBusiness {The locations to connect} other {The accounts to connect}}",
+    "chooseDescription": "{platform, select, facebook {Your sign-in reached these Pages.} instagram {Your sign-in reached these Instagram accounts.} googleBusiness {Your sign-in reached these verified locations.} other {Your sign-in reached these accounts.}} Choose those this workspace posts to, within a quarter of an hour.",
     "alreadyConnected": "Connected: choosing it reconnects it",
     "connectChosen": "{count, plural, =0 {Connect} one {Connect # account} other {Connect # accounts}}",
     "connectingChosen": "Connecting…",
     "connected": "{count, plural, one {# account is connected.} other {# accounts are connected.}}",
     "cancel": "Back to the channels",
-    "retry": "Choose again, or sign in with Facebook again for a new list.",
-    "startOver": "Sign in with Facebook again"
+    "retry": "Choose again, or sign in with {platform, select, youtube {Google} googleBusiness {Google} other {Facebook}} again for a new list.",
+    "startOver": "Sign in with {platform, select, youtube {Google} googleBusiness {Google} other {Facebook}} again"
   },
   "InstagramChannels": {
     "title": "Instagram",
@@ -357,7 +362,7 @@
     "unavailable": "The status could not be read. Try again later."
   },
   "Posts": {
-    "platform": "{platform, select, x {X} linkedin {LinkedIn} bluesky {Bluesky} mastodon {Mastodon} threads {Threads} instagram {Instagram} facebook {Facebook} tiktok {TikTok} youtube {YouTube} pinterest {Pinterest} other {{platform}}}",
+    "platform": "{platform, select, x {X} linkedin {LinkedIn} bluesky {Bluesky} mastodon {Mastodon} threads {Threads} instagram {Instagram} facebook {Facebook} tiktok {TikTok} youtube {YouTube} pinterest {Pinterest} googleBusiness {Google Business Profile} other {{platform}}}",
     "status": "{status, select, draft {Draft} scheduled {Scheduled} publishing {Publishing} finished {Finished} cancelled {Cancelled} other {{status}}}",
     "targetStatus": "{status, select, pending {Waiting} publishing {Publishing} published {Published} failed {Failed} unconfirmed {To check} cancelled {Cancelled} other {{status}}}",
     "outcome": "{outcome, select, published {Published} partiallyPublished {Partly published} unconfirmed {To check} failed {Failed} cancelled {Cancelled} other {{outcome}}}",
@@ -499,6 +504,36 @@
         "categoryIdInvalid": "A category is a number, such as 22.",
         "notifySubscribers": "Notify subscribers",
         "containsSyntheticMedia": "Contains altered or synthetic content that looks real"
+      },
+      "googleBusiness": {
+        "postType": "Post type",
+        "postTypeHint": "An update unless you choose otherwise. The post's text is its description.",
+        "postTypeStandard": "Update",
+        "postTypeEvent": "Event",
+        "postTypeOffer": "Offer",
+        "title": "Title",
+        "titleHint": "The event's or the offer's name: at most 58 characters.",
+        "startsAt": "Starts",
+        "startsAtHint": "On the location's own clock.",
+        "startsAtInvalid": "Choose a day and a time.",
+        "endsAt": "Ends",
+        "endsAtInvalid": "Choose a day and a time after the start.",
+        "callToAction": "Button",
+        "callToActionHint": "No button unless you choose one. An offer shows Google's own.",
+        "actionNone": "No button",
+        "actionBook": "Book",
+        "actionOrder": "Order online",
+        "actionShop": "Shop",
+        "actionLearnMore": "Learn more",
+        "actionSignUp": "Sign up",
+        "actionCall": "Call now",
+        "callToActionUrl": "Button link",
+        "linkHint": "A full address, starting with https://.",
+        "linkInvalid": "Enter a full address, starting with https:// or http://.",
+        "couponCode": "Coupon code",
+        "couponCodeHint": "Usable in store or online.",
+        "redeemUrl": "Link to redeem the offer",
+        "terms": "Terms and conditions"
       },
       "tiktok": {
         "privacyLevel": "Who can view this post",
@@ -843,7 +878,7 @@
     }
   },
   "Notices": {
-    "platform": "{platform, select, bluesky {Bluesky} facebook {Facebook} instagram {Instagram} linkedin {LinkedIn} mastodon {Mastodon} pinterest {Pinterest} threads {Threads} tiktok {TikTok} x {X} youtube {YouTube} other {{platform}}}",
+    "platform": "{platform, select, bluesky {Bluesky} facebook {Facebook} googleBusiness {Google Business Profile} instagram {Instagram} linkedin {LinkedIn} mastodon {Mastodon} pinterest {Pinterest} threads {Threads} tiktok {TikTok} x {X} youtube {YouTube} other {{platform}}}",
     "channel": "{platform} ({handle})",
     "unknownChannel": "a disconnected channel",
     "unknownWorkspace": "a workspace you left",

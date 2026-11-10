@@ -13,6 +13,10 @@ import {
 import { blueskyAuthorizer } from "./bluesky/bluesky-authorizer.ts";
 import { ChannelPlatforms } from "./channel-platform-settings.ts";
 import {
+  googleBusinessAuthorizer,
+  googleBusinessEndpoints,
+} from "./google-business/google-business-authorizer.ts";
+import {
   linkedinAuthorizer,
   linkedinEndpoints,
 } from "./linkedin/linkedin-authorizer.ts";
@@ -80,7 +84,8 @@ export const registryOf = (
  * registered an app there, Facebook Pages and Instagram with Meta's app,
  * Instagram through Instagram Login with the app's Instagram credentials
  * (preferred to Facebook Login when both are set), Threads with its
- * credentials, TikTok with its client key and secret, YouTube with a Google OAuth client. Needs an HttpClient, the outbound guard, the
+ * credentials, TikTok with its client key and secret, YouTube with a Google
+ * OAuth client, Google Business Profile with another. Needs an HttpClient, the outbound guard, the
  * database, the TokenCipher, SecureRandom, Digest and Mac.
  */
 export const PlatformAuthorizersLive = Layer.effect(
@@ -132,6 +137,17 @@ export const PlatformAuthorizersLive = Layer.effect(
         )
       : Option.none<PlatformAuthorizer>();
 
+    const googleBusiness = Option.isSome(settings.googleBusiness)
+      ? Option.some(
+          yield* googleBusinessAuthorizer({
+            client: settings.googleBusiness.value,
+            endpoints: googleBusinessEndpoints,
+            http,
+            publicUrl: settings.publicUrl,
+          })
+        )
+      : Option.none<PlatformAuthorizer>();
+
     const metaOptions = (app: MetaApp) => ({
       app,
       hosts: settings.metaHosts,
@@ -176,6 +192,7 @@ export const PlatformAuthorizersLive = Layer.effect(
       ...threads,
       ...tiktok,
       ...Option.toArray(youtube),
+      ...Option.toArray(googleBusiness),
     ];
 
     // Platforms Peal supports, which this server lacks the settings for.
@@ -190,6 +207,7 @@ export const PlatformAuthorizersLive = Layer.effect(
           "threads",
           "tiktok",
           "youtube",
+          "googleBusiness",
         ] as const
       ).filter(
         (platform) =>

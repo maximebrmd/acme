@@ -49,6 +49,37 @@ const mastodon = channel(
   "@peal@social.example"
 );
 
+const location = channel(
+  "00000000-0000-7000-8000-000000000004",
+  "googleBusiness",
+  "1 Synthetic Street, Exampleville"
+);
+
+const renderLocation = async (locale: Locale, values: OptionValues) => {
+  const messages = await loadMessages(locale);
+
+  return renderToStaticMarkup(
+    <NextIntlClientProvider locale={locale} messages={messages}>
+      <TargetOptionsPanel
+        channels={[location]}
+        disabled={false}
+        valuesOf={() => values}
+        violations={[
+          {
+            _tag: "optionInvalid",
+            channelId: location.id,
+            field: "endsAt",
+            platform: "googleBusiness",
+          },
+        ]}
+        onChange={() => {
+          // Rendered once, never changed.
+        }}
+      />
+    </NextIntlClientProvider>
+  );
+};
+
 const violations: readonly ContentViolation[] = [
   {
     _tag: "optionMissing",
@@ -144,6 +175,44 @@ describe(TargetOptionsPanel, () => {
     expect(html).toContain("Titre (obligatoire)");
     expect(html).toContain("Obligatoire pour programmer.");
     expect(html).toContain("Autoriser les commentaires");
+  });
+
+  it("shows a Google Business Profile update its button", async () => {
+    const update = await renderLocation("en", {});
+
+    expect(update).toContain(
+      "1 Synthetic Street, Exampleville on Google Business Profile: options"
+    );
+    expect(update).toContain("Post type");
+    expect(update).toContain("Button");
+    expect(update).not.toContain("Starts (required)");
+    expect(update).not.toContain("Coupon code");
+  });
+
+  it("shows a Google Business Profile event its title, dates and button link", async () => {
+    const event = await renderLocation("en", {
+      callToAction: "learnMore",
+      endsAt: "2026-11-27T08:00",
+      postType: "event",
+      startsAt: "2026-11-27T09:00",
+    });
+
+    expect(event).toContain("Title (required)");
+    expect(event).toContain('type="datetime-local"');
+    expect(event).toContain('value="2026-11-27T09:00"');
+    expect(event).toContain("Choose a day and a time after the start.");
+    expect(event).toContain("Button link (required)");
+  });
+
+  it("shows a Google Business Profile offer its code and terms, and no button", async () => {
+    const offer = await renderLocation("fr", {
+      callToAction: "learnMore",
+      postType: "offer",
+    });
+
+    expect(offer).toContain("Code promotionnel");
+    expect(offer).toContain("Conditions générales");
+    expect(offer).not.toContain("Lien du bouton");
   });
 
   it("shows only for platforms that take options", () => {

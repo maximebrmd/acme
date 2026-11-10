@@ -89,6 +89,7 @@ export const french: EmailCatalog = {
   platforms: {
     bluesky: "Bluesky",
     facebook: "Facebook",
+    googleBusiness: "Google Business Profile",
     instagram: "Instagram",
     linkedin: "LinkedIn",
     mastodon: "Mastodon",

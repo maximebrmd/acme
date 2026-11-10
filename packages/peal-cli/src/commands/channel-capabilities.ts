@@ -137,10 +137,14 @@ const fieldNotes = (field: FieldDescription): string =>
 
 const constraintLine = (constraint: OptionConstraint): string =>
   Match.valueTags(constraint, {
+    neededWith: ({ field, other, values }) =>
+      `  ${field} is needed when ${other} is ${values.join(" or ")}.`,
     needsOneOf: ({ field, oneOf }) =>
       `  When ${field} is true, one of ${oneOf.join(", ")} must be true.`,
     notWith: ({ field, other, value }) =>
       `  ${field} cannot be true while ${other} is ${value}.`,
+    onlyWith: ({ field, other, values }) =>
+      `  ${field} is taken only when ${other} is ${values.join(" or ")}.`,
   });
 
 const optionLines = ({ options }: PlatformCapabilities): readonly string[] =>

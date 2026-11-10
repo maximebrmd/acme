@@ -1769,6 +1769,8 @@ type OptionConstraint struct {
 	Type       string
 	NeedsOneOf *OptionConstraintNeedsOneOf
 	NotWith    *OptionConstraintNotWith
+	NeededWith *OptionConstraintNeededWith
+	OnlyWith   *OptionConstraintOnlyWith
 
 	rawJSON json.RawMessage
 }
@@ -1792,6 +1794,20 @@ func (o *OptionConstraint) GetNotWith() *OptionConstraintNotWith {
 		return nil
 	}
 	return o.NotWith
+}
+
+func (o *OptionConstraint) GetNeededWith() *OptionConstraintNeededWith {
+	if o == nil {
+		return nil
+	}
+	return o.NeededWith
+}
+
+func (o *OptionConstraint) GetOnlyWith() *OptionConstraintOnlyWith {
+	if o == nil {
+		return nil
+	}
+	return o.OnlyWith
 }
 
 func (o *OptionConstraint) UnmarshalJSON(data []byte) error {
@@ -1818,6 +1834,18 @@ func (o *OptionConstraint) UnmarshalJSON(data []byte) error {
 			return err
 		}
 		o.NotWith = value
+	case "neededWith":
+		value := new(OptionConstraintNeededWith)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		o.NeededWith = value
+	case "onlyWith":
+		value := new(OptionConstraintOnlyWith)
+		if err := json.Unmarshal(data, &value); err != nil {
+			return err
+		}
+		o.OnlyWith = value
 	}
 	o.rawJSON = json.RawMessage(data)
 	return nil
@@ -1833,6 +1861,12 @@ func (o OptionConstraint) MarshalJSON() ([]byte, error) {
 	if o.NotWith != nil {
 		return internal.MarshalJSONWithExtraProperty(o.NotWith, "_tag", "notWith")
 	}
+	if o.NeededWith != nil {
+		return internal.MarshalJSONWithExtraProperty(o.NeededWith, "_tag", "neededWith")
+	}
+	if o.OnlyWith != nil {
+		return internal.MarshalJSONWithExtraProperty(o.OnlyWith, "_tag", "onlyWith")
+	}
 	if len(o.rawJSON) > 0 {
 		return o.rawJSON, nil
 	}
@@ -1842,6 +1876,8 @@ func (o OptionConstraint) MarshalJSON() ([]byte, error) {
 type OptionConstraintVisitor interface {
 	VisitNeedsOneOf(*OptionConstraintNeedsOneOf) error
 	VisitNotWith(*OptionConstraintNotWith) error
+	VisitNeededWith(*OptionConstraintNeededWith) error
+	VisitOnlyWith(*OptionConstraintOnlyWith) error
 }
 
 func (o *OptionConstraint) Accept(visitor OptionConstraintVisitor) error {
@@ -1850,6 +1886,12 @@ func (o *OptionConstraint) Accept(visitor OptionConstraintVisitor) error {
 	}
 	if o.NotWith != nil {
 		return visitor.VisitNotWith(o.NotWith)
+	}
+	if o.NeededWith != nil {
+		return visitor.VisitNeededWith(o.NeededWith)
+	}
+	if o.OnlyWith != nil {
+		return visitor.VisitOnlyWith(o.OnlyWith)
 	}
 	return fmt.Errorf("type %T does not define a non-empty union type", o)
 }
@@ -1864,6 +1906,12 @@ func (o *OptionConstraint) validate() error {
 	}
 	if o.NotWith != nil {
 		fields = append(fields, "notWith")
+	}
+	if o.NeededWith != nil {
+		fields = append(fields, "neededWith")
+	}
+	if o.OnlyWith != nil {
+		fields = append(fields, "onlyWith")
 	}
 	if len(fields) == 0 {
 		if o.Type != "" {
@@ -1889,6 +1937,124 @@ func (o *OptionConstraint) validate() error {
 		}
 	}
 	return nil
+}
+
+var (
+	optionConstraintNeededWithFieldField  = big.NewInt(1 << 0)
+	optionConstraintNeededWithFieldOther  = big.NewInt(1 << 1)
+	optionConstraintNeededWithFieldValues = big.NewInt(1 << 2)
+)
+
+type OptionConstraintNeededWith struct {
+	Field  string   `json:"field" url:"field"`
+	Other  string   `json:"other" url:"other"`
+	Values []string `json:"values" url:"values"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (o *OptionConstraintNeededWith) GetField() string {
+	if o == nil {
+		return ""
+	}
+	return o.Field
+}
+
+func (o *OptionConstraintNeededWith) GetOther() string {
+	if o == nil {
+		return ""
+	}
+	return o.Other
+}
+
+func (o *OptionConstraintNeededWith) GetValues() []string {
+	if o == nil {
+		return nil
+	}
+	return o.Values
+}
+
+func (o *OptionConstraintNeededWith) GetExtraProperties() map[string]interface{} {
+	if o == nil {
+		return nil
+	}
+	return o.extraProperties
+}
+
+func (o *OptionConstraintNeededWith) require(field *big.Int) {
+	next := new(big.Int)
+	if o.explicitFields != nil {
+		next.Set(o.explicitFields)
+	}
+	next.Or(next, field)
+	o.explicitFields = next
+}
+
+// SetField sets the Field field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (o *OptionConstraintNeededWith) SetField(field string) {
+	o.Field = field
+	o.require(optionConstraintNeededWithFieldField)
+}
+
+// SetOther sets the Other field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (o *OptionConstraintNeededWith) SetOther(other string) {
+	o.Other = other
+	o.require(optionConstraintNeededWithFieldOther)
+}
+
+// SetValues sets the Values field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (o *OptionConstraintNeededWith) SetValues(values []string) {
+	o.Values = values
+	o.require(optionConstraintNeededWithFieldValues)
+}
+
+func (o *OptionConstraintNeededWith) UnmarshalJSON(data []byte) error {
+	type unmarshaler OptionConstraintNeededWith
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*o = OptionConstraintNeededWith(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *o)
+	if err != nil {
+		return err
+	}
+	o.extraProperties = extraProperties
+	o.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (o *OptionConstraintNeededWith) MarshalJSON() ([]byte, error) {
+	type embed OptionConstraintNeededWith
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*o),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, o.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (o *OptionConstraintNeededWith) String() string {
+	if o == nil {
+		return "<nil>"
+	}
+	if len(o.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(o.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(o); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", o)
 }
 
 var (
@@ -2097,6 +2263,124 @@ func (o *OptionConstraintNotWith) MarshalJSON() ([]byte, error) {
 }
 
 func (o *OptionConstraintNotWith) String() string {
+	if o == nil {
+		return "<nil>"
+	}
+	if len(o.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(o.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(o); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", o)
+}
+
+var (
+	optionConstraintOnlyWithFieldField  = big.NewInt(1 << 0)
+	optionConstraintOnlyWithFieldOther  = big.NewInt(1 << 1)
+	optionConstraintOnlyWithFieldValues = big.NewInt(1 << 2)
+)
+
+type OptionConstraintOnlyWith struct {
+	Field  string   `json:"field" url:"field"`
+	Other  string   `json:"other" url:"other"`
+	Values []string `json:"values" url:"values"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (o *OptionConstraintOnlyWith) GetField() string {
+	if o == nil {
+		return ""
+	}
+	return o.Field
+}
+
+func (o *OptionConstraintOnlyWith) GetOther() string {
+	if o == nil {
+		return ""
+	}
+	return o.Other
+}
+
+func (o *OptionConstraintOnlyWith) GetValues() []string {
+	if o == nil {
+		return nil
+	}
+	return o.Values
+}
+
+func (o *OptionConstraintOnlyWith) GetExtraProperties() map[string]interface{} {
+	if o == nil {
+		return nil
+	}
+	return o.extraProperties
+}
+
+func (o *OptionConstraintOnlyWith) require(field *big.Int) {
+	next := new(big.Int)
+	if o.explicitFields != nil {
+		next.Set(o.explicitFields)
+	}
+	next.Or(next, field)
+	o.explicitFields = next
+}
+
+// SetField sets the Field field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (o *OptionConstraintOnlyWith) SetField(field string) {
+	o.Field = field
+	o.require(optionConstraintOnlyWithFieldField)
+}
+
+// SetOther sets the Other field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (o *OptionConstraintOnlyWith) SetOther(other string) {
+	o.Other = other
+	o.require(optionConstraintOnlyWithFieldOther)
+}
+
+// SetValues sets the Values field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (o *OptionConstraintOnlyWith) SetValues(values []string) {
+	o.Values = values
+	o.require(optionConstraintOnlyWithFieldValues)
+}
+
+func (o *OptionConstraintOnlyWith) UnmarshalJSON(data []byte) error {
+	type unmarshaler OptionConstraintOnlyWith
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*o = OptionConstraintOnlyWith(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *o)
+	if err != nil {
+		return err
+	}
+	o.extraProperties = extraProperties
+	o.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (o *OptionConstraintOnlyWith) MarshalJSON() ([]byte, error) {
+	type embed OptionConstraintOnlyWith
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*o),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, o.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (o *OptionConstraintOnlyWith) String() string {
 	if o == nil {
 		return "<nil>"
 	}

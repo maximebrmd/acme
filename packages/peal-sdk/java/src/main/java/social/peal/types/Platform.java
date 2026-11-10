@@ -15,6 +15,8 @@ public final class Platform {
 
     public static final Platform YOUTUBE = new Platform(Value.YOUTUBE, "youtube");
 
+    public static final Platform GOOGLE_BUSINESS = new Platform(Value.GOOGLE_BUSINESS, "googleBusiness");
+
     public static final Platform MASTODON = new Platform(Value.MASTODON, "mastodon");
 
     public static final Platform THREADS = new Platform(Value.THREADS, "threads");
@@ -66,6 +68,8 @@ public final class Platform {
                 return visitor.visitFacebook();
             case YOUTUBE:
                 return visitor.visitYoutube();
+            case GOOGLE_BUSINESS:
+                return visitor.visitGoogleBusiness();
             case MASTODON:
                 return visitor.visitMastodon();
             case THREADS:
@@ -95,6 +99,8 @@ public final class Platform {
                 return FACEBOOK;
             case "youtube":
                 return YOUTUBE;
+            case "googleBusiness":
+                return GOOGLE_BUSINESS;
             case "mastodon":
                 return MASTODON;
             case "threads":
@@ -133,6 +139,8 @@ public final class Platform {
 
         PINTEREST,
 
+        GOOGLE_BUSINESS,
+
         UNKNOWN
     }
 
@@ -156,6 +164,8 @@ public final class Platform {
         T visitYoutube();
 
         T visitPinterest();
+
+        T visitGoogleBusiness();
 
         T visitUnknown(String unknownType);
     }

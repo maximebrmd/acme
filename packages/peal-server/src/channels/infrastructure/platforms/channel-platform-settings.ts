@@ -36,6 +36,12 @@ export interface ChannelPlatformSettings {
   /** None when this server cannot connect Bluesky accounts. */
   readonly bluesky: Option.Option<BlueskyAuthorizerOptions>;
   /**
+   * Peal's Google OAuth client for Business Profile locations, if the
+   * operator made one: its Google Cloud project is the one Google gave
+   * access to the Business Profile APIs.
+   */
+  readonly googleBusiness: Option.Option<OAuthClient>;
+  /**
    * The app's Instagram credentials, for Business Login for Instagram;
    * none when this server connects Instagram through Facebook Login only.
    */
@@ -187,6 +193,13 @@ const blueskyModeOf = Effect.fnUntraced(function* blueskyModeOf(settings: {
  *   operator made in a Google Cloud project with the YouTube Data API on,
  *   for YouTube channels. Like LinkedIn's and X's, one half alone stops the
  *   server.
+ * - `GOOGLE_BUSINESS_CLIENT_ID` and `GOOGLE_BUSINESS_CLIENT_SECRET`: the
+ *   OAuth client of the Google Cloud project Google gave access to the
+ *   Business Profile APIs, for Business Profile locations. A client of its
+ *   own, not YouTube's: access, quotas and Google's reviews are per
+ *   project, and a server may have one product without the other. An
+ *   operator whose one project has both gives the same client twice. One
+ *   half alone stops the server.
  */
 export const channelPlatformsConfig = Effect.gen(function* settings() {
   const publicUrl = yield* publicUrlConfig;
@@ -207,6 +220,11 @@ export const channelPlatformsConfig = Effect.gen(function* settings() {
   const tiktok = yield* oauthClientConfig("tiktok", "TIKTOK", "CLIENT_KEY");
   const youtube = yield* oauthClientConfig("youtube", "YOUTUBE");
 
+  const googleBusiness = yield* oauthClientConfig(
+    "googleBusiness",
+    "GOOGLE_BUSINESS"
+  );
+
   const platforms: ChannelPlatformSettings = {
     bluesky: mode.pipe(
       Option.map((clientMode) => ({
@@ -215,6 +233,7 @@ export const channelPlatformsConfig = Effect.gen(function* settings() {
         publicUrl,
       }))
     ),
+    googleBusiness,
     instagram,
     linkedin,
     meta,

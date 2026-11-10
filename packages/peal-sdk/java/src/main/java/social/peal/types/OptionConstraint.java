@@ -34,12 +34,28 @@ public final class OptionConstraint {
         return new OptionConstraint(new NotWithValue(value));
     }
 
+    public static OptionConstraint neededWith(OptionConstraintNeededWith value) {
+        return new OptionConstraint(new NeededWithValue(value));
+    }
+
+    public static OptionConstraint onlyWith(OptionConstraintOnlyWith value) {
+        return new OptionConstraint(new OnlyWithValue(value));
+    }
+
     public boolean isNeedsOneOf() {
         return value instanceof NeedsOneOfValue;
     }
 
     public boolean isNotWith() {
         return value instanceof NotWithValue;
+    }
+
+    public boolean isNeededWith() {
+        return value instanceof NeededWithValue;
+    }
+
+    public boolean isOnlyWith() {
+        return value instanceof OnlyWithValue;
     }
 
     public boolean _isUnknown() {
@@ -56,6 +72,20 @@ public final class OptionConstraint {
     public Optional<OptionConstraintNotWith> getNotWith() {
         if (isNotWith()) {
             return Optional.of(((NotWithValue) value).value);
+        }
+        return Optional.empty();
+    }
+
+    public Optional<OptionConstraintNeededWith> getNeededWith() {
+        if (isNeededWith()) {
+            return Optional.of(((NeededWithValue) value).value);
+        }
+        return Optional.empty();
+    }
+
+    public Optional<OptionConstraintOnlyWith> getOnlyWith() {
+        if (isOnlyWith()) {
+            return Optional.of(((OnlyWithValue) value).value);
         }
         return Optional.empty();
     }
@@ -93,11 +123,20 @@ public final class OptionConstraint {
 
         T visitNotWith(OptionConstraintNotWith notWith);
 
+        T visitNeededWith(OptionConstraintNeededWith neededWith);
+
+        T visitOnlyWith(OptionConstraintOnlyWith onlyWith);
+
         T _visitUnknown(Object unknownType);
     }
 
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "_tag", visible = true, defaultImpl = _UnknownValue.class)
-    @JsonSubTypes({@JsonSubTypes.Type(NeedsOneOfValue.class), @JsonSubTypes.Type(NotWithValue.class)})
+    @JsonSubTypes({
+        @JsonSubTypes.Type(NeedsOneOfValue.class),
+        @JsonSubTypes.Type(NotWithValue.class),
+        @JsonSubTypes.Type(NeededWithValue.class),
+        @JsonSubTypes.Type(OnlyWithValue.class)
+    })
     @JsonIgnoreProperties(ignoreUnknown = true)
     private interface Value {
         <T> T visit(Visitor<T> visitor);
@@ -169,6 +208,86 @@ public final class OptionConstraint {
         }
 
         private boolean equalTo(NotWithValue other) {
+            return value.equals(other.value);
+        }
+
+        @java.lang.Override
+        public int hashCode() {
+            return Objects.hash(this.value);
+        }
+
+        @java.lang.Override
+        public String toString() {
+            return "OptionConstraint{" + "value: " + value + "}";
+        }
+    }
+
+    @JsonTypeName("neededWith")
+    @JsonIgnoreProperties("_tag")
+    private static final class NeededWithValue implements Value {
+        @JsonUnwrapped
+        @JsonIgnoreProperties(value = "_tag", allowSetters = true)
+        private OptionConstraintNeededWith value;
+
+        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+        private NeededWithValue() {}
+
+        private NeededWithValue(OptionConstraintNeededWith value) {
+            this.value = value;
+        }
+
+        @java.lang.Override
+        public <T> T visit(Visitor<T> visitor) {
+            return visitor.visitNeededWith(value);
+        }
+
+        @java.lang.Override
+        public boolean equals(Object other) {
+            if (this == other) return true;
+            return other instanceof NeededWithValue && equalTo((NeededWithValue) other);
+        }
+
+        private boolean equalTo(NeededWithValue other) {
+            return value.equals(other.value);
+        }
+
+        @java.lang.Override
+        public int hashCode() {
+            return Objects.hash(this.value);
+        }
+
+        @java.lang.Override
+        public String toString() {
+            return "OptionConstraint{" + "value: " + value + "}";
+        }
+    }
+
+    @JsonTypeName("onlyWith")
+    @JsonIgnoreProperties("_tag")
+    private static final class OnlyWithValue implements Value {
+        @JsonUnwrapped
+        @JsonIgnoreProperties(value = "_tag", allowSetters = true)
+        private OptionConstraintOnlyWith value;
+
+        @JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+        private OnlyWithValue() {}
+
+        private OnlyWithValue(OptionConstraintOnlyWith value) {
+            this.value = value;
+        }
+
+        @java.lang.Override
+        public <T> T visit(Visitor<T> visitor) {
+            return visitor.visitOnlyWith(value);
+        }
+
+        @java.lang.Override
+        public boolean equals(Object other) {
+            if (this == other) return true;
+            return other instanceof OnlyWithValue && equalTo((OnlyWithValue) other);
+        }
+
+        private boolean equalTo(OnlyWithValue other) {
             return value.equals(other.value);
         }
 
