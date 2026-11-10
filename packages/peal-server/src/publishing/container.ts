@@ -40,6 +40,7 @@ import { NotifiedPublicationOutcomes } from "#publishing/infrastructure/notified
 import { PlanPostAllowanceLive } from "#publishing/infrastructure/plan-post-allowance.ts";
 import { PlatformClientsLive } from "#publishing/infrastructure/platforms/platform-clients-live.ts";
 import { TikTokCreatorsLive } from "#publishing/infrastructure/platforms/tiktok/tiktok-creators.ts";
+import { limitedUploads } from "#publishing/infrastructure/upload-slots.ts";
 import { WorkflowPublicationScheduler } from "#publishing/infrastructure/workflow-publication-scheduler.ts";
 import { PublishPostV1Live } from "#publishing/infrastructure/workflows/publish-post.ts";
 import { PublishTargetV1Live } from "#publishing/infrastructure/workflows/publish-target.ts";
@@ -159,7 +160,8 @@ export const publishingWorkers = <E, R, E2 = never, R2 = never>(
  * The platforms the gates publish to, Mastodon, Bluesky, LinkedIn, X,
  * Threads, Instagram, Facebook Pages, TikTok and YouTube, with the tokens
  * the channels context hands out (ChannelAccess) and the files the media
- * context does (MediaForPlatforms), which the composition root provides
+ * context does (MediaForPlatforms), the large ones a few at a time
+ * (`limitedUploads`), which the composition root provides
  * with Dns, the database and the PostRepository.
  */
 export const PlatformsLive = RoutedPlatformPublisher.pipe(
@@ -167,7 +169,7 @@ export const PlatformsLive = RoutedPlatformPublisher.pipe(
   Layer.provide(
     Layer.mergeAll(
       ChannelAccessCredentials,
-      LibraryMediaForPublishing,
+      limitedUploads.pipe(Layer.provide(LibraryMediaForPublishing)),
       DrizzlePublicationProgress,
       DrizzleUploadSessions,
       DrizzlePlatformQuota

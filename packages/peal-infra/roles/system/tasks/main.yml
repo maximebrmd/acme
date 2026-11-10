@@ -43,8 +43,9 @@
       APT::Periodic::AutocleanInterval "7";
     mode: "0644"
 
-# Swap absorbs a memory spike, such as a large video read whole before it is
-# published, instead of the kernel killing a process. The file is made under
+# Swap absorbs a memory spike, such as many images probed at once, instead
+# of the kernel killing a process (videos are streamed to the platforms, a
+# few at a time: PEAL_MAX_CONCURRENT_UPLOADS). The file is made under
 # another name and renamed once it is a swap area, so a run cut short leaves
 # no /swapfile half made; `creates` skips it once /swapfile exists, and check
 # mode says it would run.

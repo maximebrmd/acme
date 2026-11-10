@@ -1,6 +1,6 @@
 import { Effect, Result } from "effect";
-import type { Duration } from "effect";
-import { FetchHttpClient, HttpClient } from "effect/http";
+import type { Duration, Stream } from "effect";
+import { FetchHttpClient, HttpClient, HttpClientRequest } from "effect/http";
 
 import { OutboundGuard } from "./outbound-guard.ts";
 
@@ -65,9 +65,55 @@ const withPreconnect = (
 ): PublicFetch =>
   Object.assign(fetch, { preconnect: globalThis.fetch.preconnect });
 
+// Effect's fetch client drops Content-Length, which fetch works out itself
+// for a body it holds; a streamed body then goes out chunked, which some
+// servers refuse. A request whose body is streamed names its length in
+// this header instead (`streamedBody`), which never leaves the process:
+// the fetch below sends it as Content-Length, which Bun and Node honour.
+const streamedLengthHeader = "x-peal-streamed-length";
+
+const withStreamedLength = (init: RequestInit | undefined) => {
+  if (init === undefined) {
+    return init;
+  }
+
+  const headers = new Headers(init.headers);
+  const length = headers.get(streamedLengthHeader);
+
+  if (length === null) {
+    return init;
+  }
+
+  headers.delete(streamedLengthHeader);
+  headers.set("content-length", length);
+
+  return { ...init, headers };
+};
+
 const boundedFetch = withPreconnect(async (input, init) =>
-  bounded(await globalThis.fetch(input, init))
+  bounded(await globalThis.fetch(input, withStreamedLength(init)))
 );
+
+/**
+ * Gives a request a body read from `bytes` as it is sent, so a file of any
+ * size is never held whole, with the length the server is told: the bytes
+ * must add up to `contentLength`. Sent through the public HTTP client
+ * only, which turns the length into the request's Content-Length. The
+ * stream is opened again when the request is sent again.
+ */
+export const streamedBody =
+  <E>(
+    bytes: Stream.Stream<Uint8Array, E>,
+    options: { readonly contentLength: number; readonly contentType: string }
+  ) =>
+  (request: HttpClientRequest.HttpClientRequest) =>
+    request.pipe(
+      HttpClientRequest.bodyStream(bytes, { contentType: options.contentType }),
+      HttpClientRequest.setHeader(
+        streamedLengthHeader,
+        String(options.contentLength)
+      )
+    );
 
 /**
  * The public HTTP client (see `publicHttpClient`), with requests timing out

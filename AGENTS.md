@@ -802,9 +802,20 @@ and no socket, for tests.
   (`dailyLimitCodes`) until Pacific midnight, which the policy ends as
   `quotaExceeded`. A video YouTube made private against the options is
   `Published.keptPrivate`, kept on the target and shown on its page.
-- Large uploads go in parts read one at a time from the media stream
-  (`inParts` in `platforms/byte-parts.ts`): LinkedIn's video parts, X's
-  4 MiB appends. LinkedIn calls name `Linkedin-Version`
+- No adapter holds a whole file: large uploads go in parts read one at a
+  time from the media stream (`inParts` in `platforms/byte-parts.ts`:
+  LinkedIn's video parts, X's 4 MiB appends, TikTok's and YouTube's
+  chunks), and a file a platform takes in one request is streamed with
+  `streamedBody` (`#shared/infrastructure/platforms/public-http.ts`), in a
+  form with `multipartBody` (Mastodon), never `Stream.mkUint8Array` or
+  `FormData` (only Bluesky's images, 2 MB at most, are read whole).
+  `streamedBody` names the length, which the public client's fetch sends
+  as Content-Length: Effect's fetch client drops that header, and a body
+  sent chunked is refused by some servers. `limitedUploads`
+  (`publishing/infrastructure/upload-slots.ts`) opens so many files above
+  16 MiB at once (`PEAL_MAX_CONCURRENT_UPLOADS`, by default one per GiB of
+  memory, 2 to 8); the others wait inside their gate, where no timeout
+  runs before the upload begins. LinkedIn calls name `Linkedin-Version`
   (`LINKEDIN_API_VERSION`, a default a test keeps within ten months), and
   send the member's token to LinkedIn's hosts only.
 - Meta's adapters hand Meta public media URLs (`MediaForPublishing.publicUrl`,
