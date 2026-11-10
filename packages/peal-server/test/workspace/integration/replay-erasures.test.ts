@@ -47,7 +47,21 @@ const kept = [
   ["auth", "organization", "id"],
   ["auth", "member", "organization_id"],
   ["publishing", "posts", "workspace_id"],
+  ["publishing", "idempotency_keys", "workspace_id"],
+  ["webhooks", "endpoints", "workspace_id"],
+  ["billing", "contract_references", "workspace_id"],
+  ["billing", "contract_requests", "workspace_id"],
 ] as const;
+
+// What an erasure keeps without its workspace, as proof of a contract: a
+// restore puts the backup's row in its place.
+const outlasting = [
+  ["billing", "contract_references", "reference"],
+  ["billing", "contract_requests", "id"],
+] as const;
+
+// What each workspace holds in those tables, the workspace itself included.
+const held = kept.length - 1;
 
 const aside = (table: string) =>
   `restore_${table}_${settings.PEAL_S3_KEY_PREFIX.replaceAll(/\W/gu, "").slice(-12)}`;
@@ -92,9 +106,21 @@ layer(ReplayTest, { excludeTestServices: true, timeout: "180 seconds" })(
             yield* workspaceOf(cleo, "Garden")
           );
 
+          // A draft, the key of a request that made a post, a webhook
+          // endpoint, a contract's number and a request to cancel it.
           for (const workspaceId of [harbour, studio, garden]) {
+            const postId = uuid7();
+
             yield* sql`INSERT INTO publishing.posts (id, workspace_id, status, text)
-              VALUES (${uuid7()}, ${workspaceId}, 'draft', 'A synthetic draft a restore brings back.')`;
+              VALUES (${postId}, ${workspaceId}, 'draft', 'A synthetic draft a restore brings back.')`;
+            yield* sql`INSERT INTO publishing.idempotency_keys (workspace_id, key_digest, request_digest, post_id, created_at)
+              VALUES (${workspaceId}, ${randomUUID()}, 'synthetic-request-digest', ${postId}, now())`;
+            yield* sql`INSERT INTO webhooks.endpoints (id, workspace_id, url, description, event_types, status, secret, created_at, updated_at)
+              VALUES (${uuid7()}, ${workspaceId}, 'https://hooks.example.com/replay', '', ARRAY['post.published'], 'enabled', 'synthetic.iv.ciphertext', now(), now())`;
+            yield* sql`INSERT INTO billing.contract_references (reference, stripe_subscription_id, workspace_id, issued_at)
+              VALUES (${`PEAL-${randomUUID()}`}, ${`sub_synthetic_${randomUUID()}`}, ${workspaceId}, now())`;
+            yield* sql`INSERT INTO billing.contract_requests (id, kind, channel, status, acknowledgement, locale, received_at, workspace_id)
+              VALUES (${uuid7()}, 'cancellation', 'session', 'applied', 'sent', 'en', now(), ${workspaceId})`;
           }
 
           // The backup: what the database held before the erasures.
@@ -145,9 +171,19 @@ layer(ReplayTest, { excludeTestServices: true, timeout: "180 seconds" })(
               Effect.flatMap(Schema.decodeUnknownEffect(HeldSchema))
             );
 
+          // How many rows still name the workspace, in every table kept
+          // aside but its members'.
           const left = (workspaceId: string) =>
-            sql`SELECT (SELECT count(*) FROM auth.organization WHERE id = ${workspaceId})::int + (SELECT count(*) FROM publishing.posts WHERE workspace_id = ${workspaceId})::int AS count`.pipe(
-              Effect.flatMap(countOf)
+            Effect.forEach(
+              kept.filter(([, table]) => table !== "member"),
+              ([schema, table, column]) =>
+                sql`SELECT count(*)::int AS count FROM ${sql(schema)}.${sql(table)} WHERE ${sql(column)} = ${workspaceId}`.pipe(
+                  Effect.flatMap(countOf)
+                )
+            ).pipe(
+              Effect.map((counts) =>
+                counts.reduce((sum, count) => sum + count, 0)
+              )
             );
 
           const accounts = (userId: string) =>
@@ -163,14 +199,18 @@ layer(ReplayTest, { excludeTestServices: true, timeout: "180 seconds" })(
           yield* sql`INSERT INTO auth."user" SELECT * FROM ${sql(aside("user"))}`;
           yield* sql`INSERT INTO auth.account SELECT * FROM ${sql(aside("account"))}`;
 
+          for (const [schema, table, key] of outlasting) {
+            yield* sql`DELETE FROM ${sql(schema)}.${sql(table)} WHERE ${sql(key)} IN (SELECT ${sql(key)} FROM ${sql(aside(table))})`;
+          }
+
           for (const [schema, table] of kept) {
             yield* sql`INSERT INTO ${sql(schema)}.${sql(table)} SELECT * FROM ${sql(aside(table))}`;
           }
 
           yield* sql`DELETE FROM legal.identification_holds WHERE user_id = ${bea.id}`;
 
-          assert.strictEqual(yield* left(harbour), 2);
-          assert.strictEqual(yield* left(studio), 2);
+          assert.strictEqual(yield* left(harbour), held);
+          assert.strictEqual(yield* left(studio), held);
           assert.strictEqual(yield* accounts(bea.id), 1);
 
           const report = yield* replays.replay({ applyUnconfirmed: false });
@@ -203,7 +243,7 @@ layer(ReplayTest, { excludeTestServices: true, timeout: "180 seconds" })(
 
           // What nobody erased is untouched.
           assert.strictEqual(yield* accounts(ana.id), 1);
-          assert.strictEqual(yield* left(garden), 2);
+          assert.strictEqual(yield* left(garden), held);
 
           // Again: nothing is left to erase.
           const again = yield* replays.replay({ applyUnconfirmed: false });
@@ -223,7 +263,7 @@ layer(ReplayTest, { excludeTestServices: true, timeout: "180 seconds" })(
             careful.unconfirmed.map(({ id }) => id),
             [unseen.id]
           );
-          assert.strictEqual(yield* left(garden), 2);
+          assert.strictEqual(yield* left(garden), held);
 
           const told = yield* replays.replay({ applyUnconfirmed: true });
 
