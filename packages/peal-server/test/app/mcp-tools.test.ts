@@ -1441,6 +1441,18 @@ layer(ToolsFixtureLive, { excludeTestServices: true, timeout: "180 seconds" })(
 
           assert.include(sameAtOnce, "is not an IANA time zone");
 
+          // A key holds no NUL: the keys of a call's items are written
+          // with one, and a client's own must never read as one of them.
+          const forged = yield* publisher.refused("create_post", {
+            channelIds: [fixture.channelId],
+            content: content("Never sent."),
+            idempotencyKey: "synthetic-mcp-key\u0000bulk\u00000",
+            when: { _tag: "now" },
+          });
+
+          assert.notInclude(forged, "already");
+          assert.include(forged, "idempotencyKey");
+
           assert.include(
             yield* publisher.refused("reschedule_post", schedule),
             "schedule it with schedule_post"

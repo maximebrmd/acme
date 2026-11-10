@@ -24,8 +24,10 @@ const nul = String.fromCodePoint(0);
 
 /**
  * The idempotency key of one post of several: its own, or the request's
- * with the post's place in it. No header and no cell can hold a NUL, so a
- * key made here is never one a client chose for something else.
+ * with the post's place in it. A header cannot hold a NUL, and a key an
+ * item, a row or a tool's argument gives is refused with one (the
+ * contract's schemas, the import's cells), so a key made here is never one
+ * a client chose for something else.
  */
 export const keyAt = (
   own: string | undefined,

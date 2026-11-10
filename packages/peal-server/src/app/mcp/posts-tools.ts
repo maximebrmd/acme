@@ -5,6 +5,7 @@ import {
   CurrentMember,
   defaultPostPageSize,
   DraftPageSchema,
+  BulkPostSchema,
   duplicateWindowHours,
   idempotencyKeyLifetimeHours,
   maxBulkPosts,
@@ -343,9 +344,7 @@ export const CreatePost = Tool.make("create_post", {
     allowDuplicate: NewPostSchema.fields.allowDuplicate,
     channelIds: NewPostSchema.fields.channelIds,
     content: NewPostSchema.fields.content,
-    idempotencyKey: Schema.optionalKey(
-      Schema.String.check(Schema.isBetweenLength(1, maxIdempotencyKeyLength))
-    ),
+    idempotencyKey: BulkPostSchema.fields.idempotencyKey,
     options: NewPostSchema.fields.options,
     waitSeconds,
     when,
@@ -362,9 +361,7 @@ const newPost = {
   allowDuplicate: NewPostSchema.fields.allowDuplicate,
   channelIds: NewPostSchema.fields.channelIds,
   content: NewPostSchema.fields.content,
-  idempotencyKey: Schema.optionalKey(
-    Schema.String.check(Schema.isBetweenLength(1, maxIdempotencyKeyLength))
-  ),
+  idempotencyKey: BulkPostSchema.fields.idempotencyKey,
   options: NewPostSchema.fields.options,
   when,
 };
