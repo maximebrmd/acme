@@ -582,8 +582,9 @@ and no socket, for tests.
   without its settings is in
   `unconfigured`. Each declares its `TokenPolicy`, data in
   `channels/domain/token-policy.ts`, which the refresh sweep and the
-  reconnect warnings follow: LinkedIn's tokens are not renewed and expire
-  after 60 days, X's last two hours and rotate on refresh, as TikTok's do
+  reconnect warnings follow: a LinkedIn profile's tokens are not renewed
+  and expire after 60 days, as a company page's do unless its sign-in
+  brought a refresh token (`linkedinPage`: renewed a week ahead), X's last two hours and rotate on refresh, as TikTok's do
   (`expires_in` decides; refresh tokens end 180 days after sign-in),
   Google's last an hour and do not rotate, Threads' and Instagram Login's
   (`instagramLogin`) last 60 days and renew themselves a week ahead,

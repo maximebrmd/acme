@@ -17,21 +17,24 @@ It is not released yet. Today you can:
 - create an account and workspaces, and connect Mastodon, Bluesky, LinkedIn,
   X, Threads, Instagram, TikTok and Pinterest accounts, Facebook Pages,
   YouTube channels and Google Business Profile locations to them;
-- upload images and videos to a workspace's media library;
+- upload images, videos and PDF documents, which LinkedIn shows page by
+  page, to a workspace's media library;
 - write a post, with its own text on some channels and images or videos
   with alt text, keep it with the workspace's drafts or discard it, then
   schedule it, move it on a calendar, take it back to draft or cancel it;
+- share a post through a review link with people outside the workspace,
+  who comment on it or approve it, and have posts wait for an approval
+  before they go out, when the workspace asks for one;
 - have it published on those channels at its time, with its media (a
   video uploaded to YouTube with the title and settings it asks for), then
   follow each channel's attempts, post it again where it failed, and say
   whether one Peal could not confirm went out;
 - hear how your posts ended, or every post if you choose, and which
   channels need reconnecting, under a bell in the app and by email;
-- see how posts did on Mastodon, Bluesky, TikTok, YouTube, Instagram and
-  Pinterest: their likes,
-  reposts, replies and quotes, and a YouTube video's views, read back every
-  hour for two days then daily for a month, by
-  channel and day, and on each post's page;
+- see how posts did on Mastodon, Bluesky, TikTok, YouTube, Instagram,
+  Pinterest and LinkedIn company pages: their likes, reposts, replies and
+  quotes, and a YouTube video's views, read back every hour for two days
+  then daily for a month, by channel and day, and on each post's page;
 - ask a writing assistant to rewrite, shorten or translate a post, or to
   suggest hashtags, when the server has an AI provider;
 - manage a workspace's members, invitations and API keys, rename it or
