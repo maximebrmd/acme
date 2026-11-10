@@ -18,11 +18,15 @@ const portOf = (url: URL): number => {
 /**
  * A Stripe client with the server's key, on Stripe's API or the one
  * STRIPE_API_URL names, such as stripe-mock in tests. `timeout`, in
- * milliseconds, bounds each request; Stripe's own default is 80 seconds.
+ * milliseconds, bounds each request; Stripe's own default is 80 seconds,
+ * and `maxNetworkRetries` how often one is sent again.
  */
 export const stripeClientOf = (
   settings: StripeSettings,
-  options: { readonly timeout?: number } = {}
+  options: {
+    readonly maxNetworkRetries?: number;
+    readonly timeout?: number;
+  } = {}
 ): Stripe =>
   new Stripe(Redacted.value(settings.secretKey), {
     ...options,

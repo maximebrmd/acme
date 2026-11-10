@@ -91,6 +91,7 @@ require_relative "peal/invitations/types/new_invitation"
 require_relative "peal/invitations/types/revoke_invitations_request"
 require_relative "peal/billing/client"
 require_relative "peal/billing/types/get_billing_request"
+require_relative "peal/billing/types/standing_billing_request"
 require_relative "peal/analytics/client"
 require_relative "peal/analytics/types/summary_analytics_request"
 require_relative "peal/analytics/types/post_analytics_request"
@@ -144,6 +145,8 @@ module Peal
     autoload :AssistantInputRejectedEncodedReason, ::File.join(__dir__, "peal/types/assistant_input_rejected_encoded_reason")
     autoload :AssistantInputRejectedEncoded, ::File.join(__dir__, "peal/types/assistant_input_rejected_encoded")
     autoload :AssistantQuotaExceededEncodedTag, ::File.join(__dir__, "peal/types/assistant_quota_exceeded_encoded_tag")
+    autoload :PaidPlan, ::File.join(__dir__, "peal/types/paid_plan")
+    autoload :Plan, ::File.join(__dir__, "peal/types/plan")
     autoload :AssistantQuotaExceededEncoded, ::File.join(__dir__, "peal/types/assistant_quota_exceeded_encoded")
     autoload :AssistantStatus, ::File.join(__dir__, "peal/types/assistant_status")
     autoload :AssistantUnavailableEncodedTag, ::File.join(__dir__, "peal/types/assistant_unavailable_encoded_tag")
@@ -151,11 +154,9 @@ module Peal
     autoload :AttemptResult, ::File.join(__dir__, "peal/types/attempt_result")
     autoload :Authorization, ::File.join(__dir__, "peal/types/authorization")
     autoload :BillingInterval, ::File.join(__dir__, "peal/types/billing_interval")
-    autoload :PaidPlan, ::File.join(__dir__, "peal/types/paid_plan")
     autoload :SubscriptionStatus, ::File.join(__dir__, "peal/types/subscription_status")
     autoload :BillingSubscription, ::File.join(__dir__, "peal/types/billing_subscription")
     autoload :PeriodUsage, ::File.join(__dir__, "peal/types/period_usage")
-    autoload :Plan, ::File.join(__dir__, "peal/types/plan")
     autoload :PlanAllowances, ::File.join(__dir__, "peal/types/plan_allowances")
     autoload :PlanPrice, ::File.join(__dir__, "peal/types/plan_price")
     autoload :PlanOffer, ::File.join(__dir__, "peal/types/plan_offer")
@@ -232,6 +233,8 @@ module Peal
     autoload :PostTarget, ::File.join(__dir__, "peal/types/post_target")
     autoload :Post, ::File.join(__dir__, "peal/types/post")
     autoload :DraftPage, ::File.join(__dir__, "peal/types/draft_page")
+    autoload :HeldLimit, ::File.join(__dir__, "peal/types/held_limit")
+    autoload :Excess, ::File.join(__dir__, "peal/types/excess")
     autoload :ForbiddenEncodedTag, ::File.join(__dir__, "peal/types/forbidden_encoded_tag")
     autoload :ForbiddenEncoded, ::File.join(__dir__, "peal/types/forbidden_encoded")
     autoload :InvalidDateRangeEncodedTag, ::File.join(__dir__, "peal/types/invalid_date_range_encoded_tag")
@@ -303,6 +306,7 @@ module Peal
     autoload :PublicationAttempt, ::File.join(__dir__, "peal/types/publication_attempt")
     autoload :Role, ::File.join(__dir__, "peal/types/role")
     autoload :ScheduleInPastEncoded, ::File.join(__dir__, "peal/types/schedule_in_past_encoded")
+    autoload :Standing, ::File.join(__dir__, "peal/types/standing")
     autoload :SuggestionHashtags, ::File.join(__dir__, "peal/types/suggestion_hashtags")
     autoload :SuggestionText, ::File.join(__dir__, "peal/types/suggestion_text")
     autoload :Suggestion, ::File.join(__dir__, "peal/types/suggestion")

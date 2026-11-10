@@ -64,6 +64,8 @@ pub enum NoticeEvent {
         #[serde(rename = "endsAt")]
         #[serde(default)]
         ends_at: String,
+        #[serde(default)]
+        over: Vec<Excess>,
         plan: PaidPlan,
     },
 
@@ -152,8 +154,12 @@ impl NoticeEvent {
         }
     }
 
-    pub fn trial_ending(ends_at: String, plan: PaidPlan) -> Self {
-        Self::TrialEnding { ends_at, plan }
+    pub fn trial_ending(ends_at: String, over: Vec<Excess>, plan: PaidPlan) -> Self {
+        Self::TrialEnding {
+            ends_at,
+            over,
+            plan,
+        }
     }
 
     pub fn subscription_renewing(plan: PaidPlan, price: Money, renews_at: String) -> Self {

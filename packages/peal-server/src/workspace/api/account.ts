@@ -3,6 +3,7 @@ import { HttpApiBuilder, HttpApiSchema } from "effect/http-api";
 import {
   Api,
   BillingUnavailable,
+  DeletionIncomplete,
   Forbidden,
   IncorrectPassword,
   LastOwner,
@@ -175,6 +176,10 @@ export const AccountHandlers = HttpApiBuilder.group(
                     cause
                   ).pipe(
                     Effect.andThen(Effect.fail(new MediaStoreUnavailable()))
+                  ),
+                ErasureIncomplete: ({ subscriptionsCancelled }) =>
+                  Effect.fail(
+                    new DeletionIncomplete({ subscriptionsCancelled })
                   ),
                 IncorrectPassword: () => Effect.fail(new IncorrectPassword()),
                 LastOwner: ({ workspaces }) =>

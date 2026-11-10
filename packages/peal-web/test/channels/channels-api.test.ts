@@ -22,7 +22,17 @@ describe(failureOf, () => {
     [new PlatformUnreachable(), "unreachable"],
     [new Forbidden(), "forbidden"],
     [new ChannelNotFound(), "notFound"],
-    [new PlanLimitReached({ allowed: 3, limit: "channels" }), "planLimit"],
+    [
+      new PlanLimitReached({
+        allowed: 3,
+        billingUrl: "https://peal.example/app/w/billing",
+        limit: "channels",
+        plan: "free",
+        planWithRoom: "starter",
+        used: 3,
+      }),
+      "planLimit",
+    ],
   ])("explains %o", (failure, key) => {
     expect(failureOf(Exit.fail(failure))).toStrictEqual(Option.some(key));
   });

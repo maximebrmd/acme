@@ -3,6 +3,7 @@ import { HttpApiBuilder } from "effect/http-api";
 import {
   Api,
   BillingUnavailable,
+  DeletionIncomplete,
   CurrentMember,
   Forbidden,
   MediaStoreUnavailable,
@@ -58,6 +59,10 @@ export const WorkspacesHandlers = HttpApiBuilder.group(
                     cause
                   ).pipe(
                     Effect.andThen(Effect.fail(new MediaStoreUnavailable()))
+                  ),
+                ErasureIncomplete: ({ subscriptionsCancelled }) =>
+                  Effect.fail(
+                    new DeletionIncomplete({ subscriptionsCancelled })
                   ),
                 MissingPermission: forbidden,
                 NotAMember: () => Effect.fail(new WorkspaceNotFound()),

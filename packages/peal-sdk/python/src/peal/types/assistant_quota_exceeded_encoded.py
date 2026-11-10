@@ -7,13 +7,22 @@ import typing_extensions
 from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 from ..core.serialization import FieldMetadata
 from .assistant_quota_exceeded_encoded_tag import AssistantQuotaExceededEncodedTag
+from .paid_plan import PaidPlan
+from .plan import Plan
 
 
 class AssistantQuotaExceededEncoded(UniversalBaseModel):
     tag: typing_extensions.Annotated[
         AssistantQuotaExceededEncodedTag, FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
     ]
+    billing_url: typing_extensions.Annotated[
+        typing.Optional[str], FieldMetadata(alias="billingUrl"), pydantic.Field(alias="billingUrl")
+    ] = None
     daily_limit: typing_extensions.Annotated[int, FieldMetadata(alias="dailyLimit"), pydantic.Field(alias="dailyLimit")]
+    plan: typing.Optional[Plan] = None
+    plan_with_room: typing_extensions.Annotated[
+        typing.Optional[PaidPlan], FieldMetadata(alias="planWithRoom"), pydantic.Field(alias="planWithRoom")
+    ] = None
     resets_at: typing_extensions.Annotated[str, FieldMetadata(alias="resetsAt"), pydantic.Field(alias="resetsAt")]
 
     if IS_PYDANTIC_V2:

@@ -20,7 +20,7 @@ import { tokenLifetimeOf } from "#channels/domain/token-policy.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
 import { Ids, newId } from "#shared/application/ids.ts";
 import type { Actor } from "#shared/domain/access.ts";
-import { roomForOneMore } from "#shared/domain/allowance.ts";
+import { roomFor, roomForOneMore } from "#shared/domain/allowance.ts";
 import { authorize } from "#shared/domain/authorize.ts";
 import { ChannelIdSchema } from "#shared/domain/ids.ts";
 import type { ChannelId, WorkspaceId } from "#shared/domain/ids.ts";
@@ -356,9 +356,8 @@ export class ConnectChannel extends Context.Service<
             return;
           }
 
-          // The last one added must still be one more the plan has room for.
           yield* Effect.fromResult(
-            roomForOneMore("channels", allowed, connected.length + added - 1)
+            roomFor("channels", allowed, connected.length, added)
           );
         }
       );

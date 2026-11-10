@@ -6,7 +6,9 @@ package social.peal.resources.billing;
 import social.peal.core.ClientOptions;
 import social.peal.core.RequestOptions;
 import social.peal.resources.billing.requests.GetBillingRequest;
+import social.peal.resources.billing.requests.StandingBillingRequest;
 import social.peal.types.Billing;
+import social.peal.types.Standing;
 
 public class BillingClient {
     protected final ClientOptions clientOptions;
@@ -51,5 +53,33 @@ public class BillingClient {
      */
     public Billing get(String workspaceId, GetBillingRequest request, RequestOptions requestOptions) {
         return this.rawClient.get(workspaceId, request, requestOptions).body();
+    }
+
+    /**
+     * Answers where the workspace stands against its plan: what it holds beyond it, as after a trial or a cancelled subscription, whether it must come back within it before anything else (more channels or members than the plan allows: nothing is scheduled or published until then, and posts already scheduled fail when due with <code>planLimit</code>), the smallest plan that holds everything, and how many posts wait. Those who manage billing order that plan, or choose what stays, in the web app. For every member of the workspace.
+     */
+    public Standing standing(String workspaceId) {
+        return this.rawClient.standing(workspaceId).body();
+    }
+
+    /**
+     * Answers where the workspace stands against its plan: what it holds beyond it, as after a trial or a cancelled subscription, whether it must come back within it before anything else (more channels or members than the plan allows: nothing is scheduled or published until then, and posts already scheduled fail when due with <code>planLimit</code>), the smallest plan that holds everything, and how many posts wait. Those who manage billing order that plan, or choose what stays, in the web app. For every member of the workspace.
+     */
+    public Standing standing(String workspaceId, RequestOptions requestOptions) {
+        return this.rawClient.standing(workspaceId, requestOptions).body();
+    }
+
+    /**
+     * Answers where the workspace stands against its plan: what it holds beyond it, as after a trial or a cancelled subscription, whether it must come back within it before anything else (more channels or members than the plan allows: nothing is scheduled or published until then, and posts already scheduled fail when due with <code>planLimit</code>), the smallest plan that holds everything, and how many posts wait. Those who manage billing order that plan, or choose what stays, in the web app. For every member of the workspace.
+     */
+    public Standing standing(String workspaceId, StandingBillingRequest request) {
+        return this.rawClient.standing(workspaceId, request).body();
+    }
+
+    /**
+     * Answers where the workspace stands against its plan: what it holds beyond it, as after a trial or a cancelled subscription, whether it must come back within it before anything else (more channels or members than the plan allows: nothing is scheduled or published until then, and posts already scheduled fail when due with <code>planLimit</code>), the smallest plan that holds everything, and how many posts wait. Those who manage billing order that plan, or choose what stays, in the web app. For every member of the workspace.
+     */
+    public Standing standing(String workspaceId, StandingBillingRequest request, RequestOptions requestOptions) {
+        return this.rawClient.standing(workspaceId, request, requestOptions).body();
     }
 }

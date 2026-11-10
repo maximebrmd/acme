@@ -14,8 +14,17 @@ public record AssistantQuotaExceededEncoded : IJsonOnDeserialized
     [JsonPropertyName("_tag")]
     public required AssistantQuotaExceededEncodedTag Tag { get; set; }
 
+    [JsonPropertyName("billingUrl")]
+    public string? BillingUrl { get; set; }
+
     [JsonPropertyName("dailyLimit")]
     public required int DailyLimit { get; set; }
+
+    [JsonPropertyName("plan")]
+    public Plan? Plan { get; set; }
+
+    [JsonPropertyName("planWithRoom")]
+    public PaidPlan? PlanWithRoom { get; set; }
 
     [JsonPropertyName("resetsAt")]
     public required string ResetsAt { get; set; }

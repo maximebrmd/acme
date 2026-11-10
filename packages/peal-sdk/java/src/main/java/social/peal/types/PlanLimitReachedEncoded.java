@@ -5,15 +5,20 @@ package social.peal.types;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSetter;
+import com.fasterxml.jackson.annotation.Nulls;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import org.jetbrains.annotations.NotNull;
+import social.peal.core.Nullable;
+import social.peal.core.NullableNonemptyFilter;
 import social.peal.core.ObjectMappers;
 
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
@@ -23,15 +28,34 @@ public final class PlanLimitReachedEncoded {
 
     private final int allowed;
 
+    private final String billingUrl;
+
     private final PlanLimit limit;
+
+    private final Plan plan;
+
+    private final Optional<PaidPlan> planWithRoom;
+
+    private final int used;
 
     private final Map<String, Object> additionalProperties;
 
     private PlanLimitReachedEncoded(
-            PlanLimitReachedEncodedTag tag, int allowed, PlanLimit limit, Map<String, Object> additionalProperties) {
+            PlanLimitReachedEncodedTag tag,
+            int allowed,
+            String billingUrl,
+            PlanLimit limit,
+            Plan plan,
+            Optional<PaidPlan> planWithRoom,
+            int used,
+            Map<String, Object> additionalProperties) {
         this.tag = tag;
         this.allowed = allowed;
+        this.billingUrl = billingUrl;
         this.limit = limit;
+        this.plan = plan;
+        this.planWithRoom = planWithRoom;
+        this.used = used;
         this.additionalProperties = additionalProperties;
     }
 
@@ -45,9 +69,38 @@ public final class PlanLimitReachedEncoded {
         return allowed;
     }
 
+    @JsonProperty("billingUrl")
+    public String getBillingUrl() {
+        return billingUrl;
+    }
+
     @JsonProperty("limit")
     public PlanLimit getLimit() {
         return limit;
+    }
+
+    @JsonProperty("plan")
+    public Plan getPlan() {
+        return plan;
+    }
+
+    @JsonIgnore
+    public Optional<PaidPlan> getPlanWithRoom() {
+        if (planWithRoom == null) {
+            return Optional.empty();
+        }
+        return planWithRoom;
+    }
+
+    @JsonProperty("used")
+    public int getUsed() {
+        return used;
+    }
+
+    @JsonInclude(value = JsonInclude.Include.CUSTOM, valueFilter = NullableNonemptyFilter.class)
+    @JsonProperty("planWithRoom")
+    private Optional<PaidPlan> _getPlanWithRoom() {
+        return planWithRoom;
     }
 
     @java.lang.Override
@@ -62,12 +115,19 @@ public final class PlanLimitReachedEncoded {
     }
 
     private boolean equalTo(PlanLimitReachedEncoded other) {
-        return tag.equals(other.tag) && allowed == other.allowed && limit.equals(other.limit);
+        return tag.equals(other.tag)
+                && allowed == other.allowed
+                && billingUrl.equals(other.billingUrl)
+                && limit.equals(other.limit)
+                && plan.equals(other.plan)
+                && planWithRoom.equals(other.planWithRoom)
+                && used == other.used;
     }
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.tag, this.allowed, this.limit);
+        return Objects.hash(
+                this.tag, this.allowed, this.billingUrl, this.limit, this.plan, this.planWithRoom, this.used);
     }
 
     @java.lang.Override
@@ -86,11 +146,23 @@ public final class PlanLimitReachedEncoded {
     }
 
     public interface AllowedStage {
-        LimitStage allowed(int allowed);
+        BillingUrlStage allowed(int allowed);
+    }
+
+    public interface BillingUrlStage {
+        LimitStage billingUrl(@NotNull String billingUrl);
     }
 
     public interface LimitStage {
-        _FinalStage limit(@NotNull PlanLimit limit);
+        PlanStage limit(@NotNull PlanLimit limit);
+    }
+
+    public interface PlanStage {
+        UsedStage plan(@NotNull Plan plan);
+    }
+
+    public interface UsedStage {
+        _FinalStage used(int used);
     }
 
     public interface _FinalStage {
@@ -99,15 +171,30 @@ public final class PlanLimitReachedEncoded {
         _FinalStage additionalProperty(String key, Object value);
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
+
+        _FinalStage planWithRoom(Optional<PaidPlan> planWithRoom);
+
+        _FinalStage planWithRoom(PaidPlan planWithRoom);
+
+        _FinalStage planWithRoom(Nullable<PaidPlan> planWithRoom);
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static final class Builder implements TagStage, AllowedStage, LimitStage, _FinalStage {
+    public static final class Builder
+            implements TagStage, AllowedStage, BillingUrlStage, LimitStage, PlanStage, UsedStage, _FinalStage {
         private PlanLimitReachedEncodedTag tag;
 
         private int allowed;
 
+        private String billingUrl;
+
         private PlanLimit limit;
+
+        private Plan plan;
+
+        private int used;
+
+        private Optional<PaidPlan> planWithRoom = Optional.empty();
 
         private Map<String, Object> additionalProperties = new HashMap<>();
 
@@ -117,7 +204,11 @@ public final class PlanLimitReachedEncoded {
         public Builder from(PlanLimitReachedEncoded other) {
             tag(other.getTag());
             allowed(other.getAllowed());
+            billingUrl(other.getBillingUrl());
             limit(other.getLimit());
+            plan(other.getPlan());
+            planWithRoom(other.getPlanWithRoom());
+            used(other.getUsed());
             return this;
         }
 
@@ -130,26 +221,79 @@ public final class PlanLimitReachedEncoded {
 
         @java.lang.Override
         @JsonSetter("allowed")
-        public LimitStage allowed(int allowed) {
+        public BillingUrlStage allowed(int allowed) {
             this.allowed = allowed;
             return this;
         }
 
         @java.lang.Override
+        @JsonSetter("billingUrl")
+        public LimitStage billingUrl(@NotNull String billingUrl) {
+            this.billingUrl = Objects.requireNonNull(billingUrl, "billingUrl must not be null");
+            return this;
+        }
+
+        @java.lang.Override
         @JsonSetter("limit")
-        public _FinalStage limit(@NotNull PlanLimit limit) {
+        public PlanStage limit(@NotNull PlanLimit limit) {
             this.limit = Objects.requireNonNull(limit, "limit must not be null");
             return this;
         }
 
         @java.lang.Override
+        @JsonSetter("plan")
+        public UsedStage plan(@NotNull Plan plan) {
+            this.plan = Objects.requireNonNull(plan, "plan must not be null");
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter("used")
+        public _FinalStage used(int used) {
+            this.used = used;
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage planWithRoom(Nullable<PaidPlan> planWithRoom) {
+            if (planWithRoom.isNull()) {
+                this.planWithRoom = null;
+            } else if (planWithRoom.isEmpty()) {
+                this.planWithRoom = Optional.empty();
+            } else {
+                this.planWithRoom = Optional.of(planWithRoom.get());
+            }
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage planWithRoom(PaidPlan planWithRoom) {
+            this.planWithRoom = Optional.ofNullable(planWithRoom);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "planWithRoom", nulls = Nulls.SKIP)
+        public _FinalStage planWithRoom(Optional<PaidPlan> planWithRoom) {
+            this.planWithRoom = planWithRoom;
+            return this;
+        }
+
+        @java.lang.Override
         public PlanLimitReachedEncoded build() {
-            return new PlanLimitReachedEncoded(tag, allowed, limit, additionalProperties);
+            return new PlanLimitReachedEncoded(
+                    tag, allowed, billingUrl, limit, plan, planWithRoom, used, additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
-            if (key.equalsIgnoreCase("_tag") || key.equalsIgnoreCase("allowed") || key.equalsIgnoreCase("limit")) {
+            if (key.equalsIgnoreCase("_tag")
+                    || key.equalsIgnoreCase("allowed")
+                    || key.equalsIgnoreCase("billingUrl")
+                    || key.equalsIgnoreCase("limit")
+                    || key.equalsIgnoreCase("plan")
+                    || key.equalsIgnoreCase("planWithRoom")
+                    || key.equalsIgnoreCase("used")) {
                 return;
             }
             this.additionalProperties.put(key, value);

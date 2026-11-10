@@ -6,6 +6,8 @@ import pydantic
 import typing_extensions
 from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 from ..core.serialization import FieldMetadata
+from .paid_plan import PaidPlan
+from .plan import Plan
 from .plan_limit import PlanLimit
 from .plan_limit_reached_encoded_tag import PlanLimitReachedEncodedTag
 
@@ -15,7 +17,13 @@ class PlanLimitReachedEncoded(UniversalBaseModel):
         PlanLimitReachedEncodedTag, FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
     ]
     allowed: int
+    billing_url: typing_extensions.Annotated[str, FieldMetadata(alias="billingUrl"), pydantic.Field(alias="billingUrl")]
     limit: PlanLimit
+    plan: Plan
+    plan_with_room: typing_extensions.Annotated[
+        typing.Optional[PaidPlan], FieldMetadata(alias="planWithRoom"), pydantic.Field(alias="planWithRoom")
+    ] = None
+    used: int
 
     if IS_PYDANTIC_V2:
         model_config: typing.ClassVar[pydantic.ConfigDict] = pydantic.ConfigDict(extra="allow", frozen=True)  # type: ignore # Pydantic v2

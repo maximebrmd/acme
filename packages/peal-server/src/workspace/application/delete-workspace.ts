@@ -19,6 +19,7 @@ import { ContextRecords } from "./context-records.ts";
 import type { WorkspaceErasureOptions } from "./context-records.ts";
 import type { ErasureLedgerUnavailable } from "./erasure-ledger-unavailable.ts";
 import type { ErasureLedger } from "./erasure-ledger.ts";
+import type { ErasureIncomplete } from "./erasure-incomplete.ts";
 import type { WorkspaceBusy } from "./workspace-busy.ts";
 import {
   confirmErasure,
@@ -61,6 +62,7 @@ export class DeleteWorkspace extends Context.Service<
       | MissingPermission
       | NotAMember
       | SessionRequired
+      | ErasureIncomplete
       | WorkspaceBusy
       | WorkspaceNameMismatch
       | WorkspaceSubscribed

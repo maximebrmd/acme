@@ -1688,6 +1688,42 @@
       }
     },
     {
+      "id": "80105c66-4867-4882-8510-18286f7c6c84",
+      "name": "Get the workspace's standing - default",
+      "request": {
+        "urlPathTemplate": "/api/workspaces/{workspaceId}/billing/standing",
+        "method": "GET",
+        "headers": {
+          "Authorization": {
+            "matches": "Bearer .+"
+          }
+        },
+        "pathParameters": {
+          "workspaceId": {
+            "equalTo": "workspaceId"
+          }
+        }
+      },
+      "response": {
+        "status": 200,
+        "body": "{\n  \"mustReduce\": true,\n  \"over\": [\n    {\n      \"allowed\": 1,\n      \"limit\": \"channels\",\n      \"used\": 1\n    }\n  ],\n  \"plan\": \"free\",\n  \"planWithRoom\": \"starter\",\n  \"scheduledPosts\": 1\n}",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "uuid": "80105c66-4867-4882-8510-18286f7c6c84",
+      "persistent": true,
+      "priority": 3,
+      "metadata": {
+        "mocklab": {
+          "created": {
+            "at": "2020-01-01T00:00:00.000Z",
+            "via": "SYSTEM"
+          }
+        }
+      }
+    },
+    {
       "id": "cbe4dd54-6c2c-4847-a425-b5926a5249b4",
       "name": "Summarize the workspace's analytics - default",
       "request": {
@@ -1814,6 +1850,6 @@
     }
   ],
   "meta": {
-    "total": 49
+    "total": 50
   }
 }

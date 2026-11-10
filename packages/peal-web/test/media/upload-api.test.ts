@@ -51,10 +51,27 @@ describe(failureOf, () => {
     );
     expect(
       failureOf(
-        new PlanLimitReached({ allowed: 500_000_000, limit: "mediaStorage" })
+        new PlanLimitReached({
+          allowed: 500_000_000,
+          billingUrl: "https://peal.example/app/w/billing",
+          limit: "mediaStorage",
+          plan: "free",
+          planWithRoom: "starter",
+          used: 480_000_000,
+        })
       )
     ).toStrictEqual(
-      new UploadFailed({ limit: 500_000_000, reason: "storageFull" })
+      new UploadFailed({
+        limit: 500_000_000,
+        reached: {
+          allowed: 500_000_000,
+          limit: "mediaStorage",
+          plan: "free",
+          planWithRoom: "starter",
+          used: 480_000_000,
+        },
+        reason: "storageFull",
+      })
     );
   });
 });

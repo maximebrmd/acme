@@ -3,6 +3,7 @@
 import { Effect, Layer, Option } from "effect";
 
 import { ContractRecords } from "#billing/application/ports/contract-records.ts";
+import { MemberAddresses } from "#billing/application/ports/member-addresses.ts";
 import { StripeContracts } from "#billing/application/ports/stripe-contracts.ts";
 import { Subscriptions } from "#billing/application/ports/subscriptions.ts";
 import { Trials } from "#billing/application/ports/trials.ts";
@@ -98,6 +99,12 @@ export const subscriptionsHolding = (held: readonly Subscription[]) =>
       remindable: () => Effect.succeed(held),
     })
   );
+
+/** Members whose addresses billing is not told. */
+export const NoAddressesTest = Layer.succeed(
+  MemberAddresses,
+  MemberAddresses.of({ of: () => Effect.succeed(Option.none()) })
+);
 
 /** Pseudonyms that spell the address out, for tests to read. */
 export const PlainPseudonymsTest = Layer.succeed(

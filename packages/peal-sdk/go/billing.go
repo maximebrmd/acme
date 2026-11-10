@@ -37,6 +37,33 @@ func (g *GetBillingRequest) SetWorkspaceID(workspaceID string) {
 }
 
 var (
+	standingBillingRequestFieldWorkspaceID = big.NewInt(1 << 0)
+)
+
+type StandingBillingRequest struct {
+	WorkspaceID string `json:"-" url:"-"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+}
+
+func (s *StandingBillingRequest) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetWorkspaceID sets the WorkspaceID field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *StandingBillingRequest) SetWorkspaceID(workspaceID string) {
+	s.WorkspaceID = workspaceID
+	s.require(standingBillingRequestFieldWorkspaceID)
+}
+
+var (
 	billingFieldAllowances        = big.NewInt(1 << 0)
 	billingFieldCurrency          = big.NewInt(1 << 1)
 	billingFieldEnabled           = big.NewInt(1 << 2)
@@ -1006,6 +1033,169 @@ func (p *PlanPrice) String() string {
 		return value
 	}
 	return fmt.Sprintf("%#v", p)
+}
+
+var (
+	standingFieldMustReduce     = big.NewInt(1 << 0)
+	standingFieldOver           = big.NewInt(1 << 1)
+	standingFieldPlan           = big.NewInt(1 << 2)
+	standingFieldPlanWithRoom   = big.NewInt(1 << 3)
+	standingFieldScheduledPosts = big.NewInt(1 << 4)
+)
+
+// standingNullableFields maps the wire names of Standing's nullable fields (required or optional) to their field bits.
+var standingNullableFields = map[string]*big.Int{
+	"plan":         standingFieldPlan,
+	"planWithRoom": standingFieldPlanWithRoom,
+}
+
+type Standing struct {
+	MustReduce     bool      `json:"mustReduce" url:"mustReduce"`
+	Over           []*Excess `json:"over" url:"over"`
+	Plan           *Plan     `json:"plan,omitempty" url:"plan,omitempty"`
+	PlanWithRoom   *PaidPlan `json:"planWithRoom,omitempty" url:"planWithRoom,omitempty"`
+	ScheduledPosts int       `json:"scheduledPosts" url:"scheduledPosts"`
+
+	// Private bitmask of fields set to an explicit value and therefore not to be omitted
+	explicitFields *big.Int `json:"-" url:"-"`
+
+	extraProperties map[string]interface{}
+	rawJSON         json.RawMessage
+}
+
+func (s *Standing) GetMustReduce() bool {
+	if s == nil {
+		return false
+	}
+	return s.MustReduce
+}
+
+func (s *Standing) GetOver() []*Excess {
+	if s == nil {
+		return nil
+	}
+	return s.Over
+}
+
+func (s *Standing) GetPlan() *Plan {
+	if s == nil {
+		return nil
+	}
+	return s.Plan
+}
+
+func (s *Standing) GetPlanWithRoom() *PaidPlan {
+	if s == nil {
+		return nil
+	}
+	return s.PlanWithRoom
+}
+
+func (s *Standing) GetScheduledPosts() int {
+	if s == nil {
+		return 0
+	}
+	return s.ScheduledPosts
+}
+
+func (s *Standing) GetExtraProperties() map[string]interface{} {
+	if s == nil {
+		return nil
+	}
+	return s.extraProperties
+}
+
+func (s *Standing) require(field *big.Int) {
+	next := new(big.Int)
+	if s.explicitFields != nil {
+		next.Set(s.explicitFields)
+	}
+	next.Or(next, field)
+	s.explicitFields = next
+}
+
+// SetMustReduce sets the MustReduce field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *Standing) SetMustReduce(mustReduce bool) {
+	s.MustReduce = mustReduce
+	s.require(standingFieldMustReduce)
+}
+
+// SetOver sets the Over field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *Standing) SetOver(over []*Excess) {
+	s.Over = over
+	s.require(standingFieldOver)
+}
+
+// SetPlan sets the Plan field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *Standing) SetPlan(plan *Plan) {
+	s.Plan = plan
+	s.require(standingFieldPlan)
+}
+
+// SetPlanWithRoom sets the PlanWithRoom field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *Standing) SetPlanWithRoom(planWithRoom *PaidPlan) {
+	s.PlanWithRoom = planWithRoom
+	s.require(standingFieldPlanWithRoom)
+}
+
+// SetScheduledPosts sets the ScheduledPosts field and marks it as non-optional;
+// this prevents an empty or null value for this field from being omitted during serialization.
+func (s *Standing) SetScheduledPosts(scheduledPosts int) {
+	s.ScheduledPosts = scheduledPosts
+	s.require(standingFieldScheduledPosts)
+}
+
+func (s *Standing) UnmarshalJSON(data []byte) error {
+	type unmarshaler Standing
+	var value unmarshaler
+	if err := json.Unmarshal(data, &value); err != nil {
+		return err
+	}
+	*s = Standing(value)
+	extraProperties, err := internal.ExtractExtraProperties(data, *s)
+	if err != nil {
+		return err
+	}
+	s.extraProperties = extraProperties
+	presentFields, err := internal.ExplicitFieldsFromJSON(data, standingNullableFields)
+	if err != nil {
+		return err
+	}
+	if presentFields != nil {
+		s.require(presentFields)
+	}
+	s.rawJSON = json.RawMessage(data)
+	return nil
+}
+
+func (s *Standing) MarshalJSON() ([]byte, error) {
+	type embed Standing
+	var marshaler = struct {
+		embed
+	}{
+		embed: embed(*s),
+	}
+	explicitMarshaler := internal.HandleExplicitFields(marshaler, s.explicitFields)
+	return json.Marshal(explicitMarshaler)
+}
+
+func (s *Standing) String() string {
+	if s == nil {
+		return "<nil>"
+	}
+	if len(s.rawJSON) > 0 {
+		if value, err := internal.StringifyJSON(s.rawJSON); err == nil {
+			return value
+		}
+	}
+	if value, err := internal.StringifyJSON(s); err == nil {
+		return value
+	}
+	return fmt.Sprintf("%#v", s)
 }
 
 type SubscriptionStatus string

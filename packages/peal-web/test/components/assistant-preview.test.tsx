@@ -96,7 +96,10 @@ describe(AssistantPreview, () => {
   it.each([
     [
       new AssistantQuotaExceeded({
+        billingUrl: null,
         dailyLimit: 100,
+        plan: null,
+        planWithRoom: null,
         resetsAt: DateTime.makeUnsafe("2026-11-10T00:00:00Z"),
       }),
       "used its 100 assistant requests for today",
@@ -158,7 +161,10 @@ describe(AssistantPreview, () => {
     const quota = await render("fr", rewrite, {
       _tag: "failed",
       failure: new AssistantQuotaExceeded({
+        billingUrl: null,
         dailyLimit: 1,
+        plan: null,
+        planWithRoom: null,
         resetsAt: DateTime.makeUnsafe("2026-11-10T00:00:00Z"),
       }),
     });

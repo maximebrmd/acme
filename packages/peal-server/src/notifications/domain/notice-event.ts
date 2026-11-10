@@ -1,4 +1,4 @@
-import { Match, Option, Schema } from "effect";
+import { Effect, Match, Option, Schema } from "effect";
 
 import type { Permission } from "#shared/domain/access.ts";
 import { PostIdSchema } from "#shared/domain/ids.ts";
@@ -22,6 +22,18 @@ export const NoticeMoneySchema = Schema.Struct({
 });
 
 export type NoticeMoney = typeof NoticeMoneySchema.Type;
+
+/**
+ * A workspace holds `used` of something a plan allows `allowed` of:
+ * channels, members, or bytes of media stored.
+ */
+export const NoticeExcessSchema = Schema.Struct({
+  allowed: Schema.Int,
+  limit: Schema.Literals(["channels", "members", "mediaStorage"]),
+  used: Schema.Int,
+});
+
+export type NoticeExcess = typeof NoticeExcessSchema.Type;
 
 /** Why a post did not go out on a channel, as publishing records it. */
 export const PostFailureReasonSchema = Schema.Literals([
@@ -93,9 +105,13 @@ export const NoticeEventSchema = Schema.Union([
     trialEnd: Schema.Option(Schema.DateTimeUtc),
   }),
   // The workspace's trial ends at `endsAt`; it then moves to the free plan
-  // unless someone orders a plan.
+  // unless someone orders a plan. `over` is what it held beyond the free
+  // plan when it was told; notices stored before it list nothing.
   Schema.TaggedStruct("TrialEnding", {
     endsAt: Schema.DateTimeUtc,
+    over: Schema.Array(NoticeExcessSchema).pipe(
+      Schema.withDecodingDefault(Effect.succeed([]))
+    ),
     plan: PaidPlanSchema,
   }),
   // A yearly plan renews at `renewsAt`, for `price`, VAT included.

@@ -129,9 +129,11 @@ if typing.TYPE_CHECKING:
     from .effect_http_api_error_bad_request_encoded import EffectHttpApiErrorBadRequestEncoded
     from .effect_http_api_error_bad_request_encoded_tag import EffectHttpApiErrorBadRequestEncodedTag
     from .engagement_day import EngagementDay
+    from .excess import Excess
     from .failure_reason import FailureReason
     from .forbidden_encoded import ForbiddenEncoded
     from .forbidden_encoded_tag import ForbiddenEncodedTag
+    from .held_limit import HeldLimit
     from .instagram_connection import InstagramConnection
     from .invalid_date_range_encoded import InvalidDateRangeEncoded
     from .invalid_date_range_encoded_tag import InvalidDateRangeEncodedTag
@@ -242,6 +244,7 @@ if typing.TYPE_CHECKING:
     from .schedule_in_past_encoded import ScheduleInPastEncoded
     from .signed_request import SignedRequest
     from .signed_request_method import SignedRequestMethod
+    from .standing import Standing
     from .subscription_status import SubscriptionStatus
     from .suggestion import Suggestion, Suggestion_Hashtags, Suggestion_Text
     from .suggestion_hashtags import SuggestionHashtags
@@ -416,9 +419,11 @@ _dynamic_imports: typing.Dict[str, str] = {
     "EffectHttpApiErrorBadRequestEncoded": ".effect_http_api_error_bad_request_encoded",
     "EffectHttpApiErrorBadRequestEncodedTag": ".effect_http_api_error_bad_request_encoded_tag",
     "EngagementDay": ".engagement_day",
+    "Excess": ".excess",
     "FailureReason": ".failure_reason",
     "ForbiddenEncoded": ".forbidden_encoded",
     "ForbiddenEncodedTag": ".forbidden_encoded_tag",
+    "HeldLimit": ".held_limit",
     "InstagramConnection": ".instagram_connection",
     "InvalidDateRangeEncoded": ".invalid_date_range_encoded",
     "InvalidDateRangeEncodedTag": ".invalid_date_range_encoded_tag",
@@ -523,6 +528,7 @@ _dynamic_imports: typing.Dict[str, str] = {
     "ScheduleInPastEncoded": ".schedule_in_past_encoded",
     "SignedRequest": ".signed_request",
     "SignedRequestMethod": ".signed_request_method",
+    "Standing": ".standing",
     "SubscriptionStatus": ".subscription_status",
     "Suggestion": ".suggestion",
     "SuggestionHashtags": ".suggestion_hashtags",
@@ -729,9 +735,11 @@ __all__ = [
     "EffectHttpApiErrorBadRequestEncoded",
     "EffectHttpApiErrorBadRequestEncodedTag",
     "EngagementDay",
+    "Excess",
     "FailureReason",
     "ForbiddenEncoded",
     "ForbiddenEncodedTag",
+    "HeldLimit",
     "InstagramConnection",
     "InvalidDateRangeEncoded",
     "InvalidDateRangeEncodedTag",
@@ -836,6 +844,7 @@ __all__ = [
     "ScheduleInPastEncoded",
     "SignedRequest",
     "SignedRequestMethod",
+    "Standing",
     "SubscriptionStatus",
     "Suggestion",
     "SuggestionHashtags",

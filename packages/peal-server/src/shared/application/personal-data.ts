@@ -208,6 +208,12 @@ export type NoticeEventRecord =
   | {
       readonly _tag: "TrialEnding";
       readonly endsAt: DateTime.Utc;
+      /** What the workspace held beyond the free plan when it was told. */
+      readonly over: readonly {
+        readonly allowed: number;
+        readonly limit: string;
+        readonly used: number;
+      }[];
       readonly plan: string;
     };
 

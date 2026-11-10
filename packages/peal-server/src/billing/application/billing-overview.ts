@@ -12,12 +12,14 @@ import { planPrices } from "#billing/domain/prices.ts";
 import type { PlanPrice } from "#billing/domain/prices.ts";
 import { mayWithdraw } from "#billing/domain/withdrawal.ts";
 import type { DatabaseError } from "#shared/application/database-error.ts";
+import type { Pseudonyms } from "#shared/application/pseudonyms.ts";
 import type { Actor } from "#shared/domain/access.ts";
 import { authorize } from "#shared/domain/authorize.ts";
 import type { MissingPermission } from "#shared/domain/missing-permission.ts";
 import type { PaidPlan, Plan } from "#shared/domain/plan.ts";
 
-import { trialOpen } from "./place-order.ts";
+import { trialOffered } from "./place-order.ts";
+import type { MemberAddresses } from "./ports/member-addresses.ts";
 import type { Subscriptions } from "./ports/subscriptions.ts";
 import type { Trials } from "./ports/trials.ts";
 import type { Usage } from "./ports/workspace-usage.ts";
@@ -78,10 +80,14 @@ export class BillingOverview extends Context.Service<
     Effect.gen(function* BillingOverviewLive() {
       const entitlements = yield* WorkspaceEntitlements;
       const usage = yield* WorkspaceUsage;
-      const context = yield* Effect.context<Subscriptions | Trials>();
+
+      const context = yield* Effect.context<
+        MemberAddresses | Pseudonyms | Subscriptions | Trials
+      >();
 
       // Whether this member may start the trial here: in person, with
-      // billing:manage, neither the account nor the workspace had one.
+      // billing:manage, neither the account, its address nor the
+      // workspace had one.
       const trialFor = Effect.fn("BillingOverview.trialFor")(function* trialFor(
         actor: Actor
       ) {
@@ -95,7 +101,7 @@ export class BillingOverview extends Context.Service<
           return false;
         }
 
-        return yield* trialOpen(subject.userId, actor.workspaceId);
+        return yield* trialOffered(subject.userId, actor.workspaceId);
       }, Effect.provide(context));
 
       const of = Effect.fn("BillingOverview.of")(function* of(actor: Actor) {

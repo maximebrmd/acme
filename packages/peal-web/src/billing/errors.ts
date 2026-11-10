@@ -8,6 +8,7 @@ const isWithdrawalRefused = Schema.is(WithdrawalUnavailable);
 const reasons: ReadonlyMap<string, BillingError> = new Map([
   ["Forbidden", "forbidden"],
   ["NothingToCancel", "nothingToCancel"],
+  ["PlanTooSmall", "planTooSmall"],
   ["TrialUnavailable", "trialUsed"],
 ]);
 

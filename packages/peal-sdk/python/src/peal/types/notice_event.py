@@ -9,6 +9,7 @@ import typing_extensions
 from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 from ..core.serialization import FieldMetadata
 from .billing_interval import BillingInterval
+from .excess import Excess
 from .failure_reason import FailureReason
 from .money import Money
 from .notice_channel import NoticeChannel
@@ -128,6 +129,7 @@ class NoticeEvent_TrialEnding(UniversalBaseModel):
         typing.Literal["TrialEnding"], FieldMetadata(alias="_tag"), pydantic.Field(alias="_tag")
     ] = "TrialEnding"
     ends_at: typing_extensions.Annotated[str, FieldMetadata(alias="endsAt"), pydantic.Field(alias="endsAt")]
+    over: typing.List[Excess]
     plan: PaidPlan
 
     if IS_PYDANTIC_V2:

@@ -6,7 +6,6 @@ import {
   CurrentMember,
   Forbidden,
   InvitationNotFound,
-  PlanLimitReached,
   TooManyInvitations,
 } from "peal-contract";
 import type {
@@ -15,6 +14,7 @@ import type {
 } from "peal-contract";
 
 import { actorOf } from "#shared/api/actor.ts";
+import { limitRefusal } from "#shared/api/limit-reached.ts";
 import { WorkspaceMembers } from "#workspace/application/workspace-members.ts";
 import type { PersonInWorkspace } from "#workspace/application/workspace-people.ts";
 import type { Invitation } from "#workspace/domain/invitation.ts";
@@ -68,6 +68,7 @@ export const InvitationsHandlers = HttpApiBuilder.group(
   "invitations",
   Effect.fn(function* invitationsHandlers(handlers) {
     const members = yield* WorkspaceMembers;
+    const limitReached = yield* limitRefusal;
 
     return handlers.handleAll({
       create: ({ payload }) =>
@@ -84,8 +85,7 @@ export const InvitationsHandlers = HttpApiBuilder.group(
               MissingPermission: forbidden,
               // The member left the workspace, or it went, meanwhile.
               NotAMember: forbidden,
-              PlanLimitReached: ({ allowed, limit }) =>
-                Effect.fail(new PlanLimitReached({ allowed, limit })),
+              PlanLimitReached: limitReached,
               RoleNotInvitable: forbidden,
               TooManyInvitations: () => Effect.fail(new TooManyInvitations()),
               UserRequired: forbidden,

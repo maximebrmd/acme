@@ -26,6 +26,7 @@ import { useState } from "react";
 import type { ReactNode } from "react";
 import { toast } from "sonner";
 
+import { useOfferUpgrade } from "#components/billing/use-offer-upgrade.ts";
 import { Link } from "#i18n/navigation.ts";
 import { postsKeys, reschedulePost, scheduledPosts } from "#posts/api.ts";
 import { failureOf } from "#posts/outcome.ts";
@@ -420,6 +421,7 @@ const CalendarView = ({
   const [view, setView] = useState<View>("week");
   const [anchor, setAnchor] = useState<CalendarDate>(initialDate ?? today);
   const reschedule = useAtomSet(reschedulePost, { mode: "promiseExit" });
+  const offerUpgrade = useOfferUpgrade();
 
   const days =
     view === "week" ? weekOf(anchor, firstDay) : monthOf(anchor, firstDay);
@@ -486,6 +488,8 @@ const CalendarView = ({
 
       return;
     }
+
+    offerUpgrade(exit);
 
     const reason = Option.map(failureOf(exit), ({ _tag }) => _tag);
 

@@ -61,6 +61,8 @@ const fill = Effect.fn("fill")(function* fill(
 const limitReached = new PlanLimitReached({
   allowed: freeChannels,
   limit: "channels",
+  needed: freeChannels + 1,
+  used: freeChannels,
 });
 
 layer(FreePlanTest)("connecting channels on the free plan", (it) => {

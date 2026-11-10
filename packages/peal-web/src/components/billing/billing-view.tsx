@@ -6,6 +6,7 @@ import type {
   Billing,
   BillingInterval,
   BillingSubscription,
+  Excess,
   Money,
   PaidPlan,
   PlanAllowances,
@@ -35,6 +36,9 @@ import {
 } from "peal-ui/components/progress";
 import { useId } from "react";
 
+import { useMoney, useSize } from "#billing/size.ts";
+import { ExcessList } from "#components/billing/excess-list.tsx";
+
 /** What the person asked for, while it is under way. */
 export type BillingAction =
   | {
@@ -51,6 +55,7 @@ export type BillingError =
   | "forbidden"
   | "generic"
   | "nothingToCancel"
+  | "planTooSmall"
   | "trialUsed"
   | "withdrawalBusiness"
   | "withdrawalExpired";
@@ -94,6 +99,8 @@ export interface BillingViewProps {
   readonly step: BillingStep;
   /** The terms of service, where the operator publishes them. */
   readonly termsUrl: string | null;
+  /** What the workspace holds beyond the plan just ordered, if refused. */
+  readonly tooSmall: readonly Excess[] | null;
 }
 
 const limits: readonly PlanLimit[] = [
@@ -109,37 +116,6 @@ const intervals: readonly BillingInterval[] = ["month", "year"];
 const isPaidPlan = Schema.is(PaidPlanSchema);
 
 const dateOf = (instant: DateTime.Utc) => DateTime.toDate(instant);
-
-const gigabyte = 1_000_000_000;
-
-// Money in the reader's way of writing it.
-const useMoney = (currency: string) => {
-  const format = useFormatter();
-
-  return (cents: number) =>
-    format.number(cents / 100, {
-      currency: currency.toUpperCase(),
-      style: "currency",
-    });
-};
-
-// Bytes in decimal units, as the plans are sold.
-const useSize = () => {
-  const format = useFormatter();
-
-  return (bytes: number) =>
-    bytes >= gigabyte
-      ? format.number(bytes / gigabyte, {
-          maximumFractionDigits: 1,
-          style: "unit",
-          unit: "gigabyte",
-        })
-      : format.number(bytes / 1_000_000, {
-          maximumFractionDigits: 0,
-          style: "unit",
-          unit: "megabyte",
-        });
-};
 
 const withVat = (cents: number, rate: number) =>
   Math.round((cents * (100 + rate)) / 100);
@@ -604,7 +580,7 @@ const PriceLines = ({
   );
 };
 
-const IntervalSwitch = ({
+export const IntervalSwitch = ({
   interval,
   onInterval,
 }: Pick<BillingViewProps, "interval" | "onInterval">) => {
@@ -630,7 +606,7 @@ const IntervalSwitch = ({
   );
 };
 
-const Consent = ({
+export const Consent = ({
   consented,
   onConsent,
   termsUrl,
@@ -765,11 +741,14 @@ const Plans = ({
             !pending.trial &&
             pending.plan === plan;
 
+          // A smaller plan is ordered as a larger one is: the order is
+          // refused while the workspace does not fit it, saying what to
+          // remove first.
           const orderable =
             canManage &&
             isPaidPlan(plan) &&
             price !== null &&
-            (!subscribed || index > current);
+            (!subscribed || index !== current);
 
           return (
             <li key={plan}>
@@ -836,8 +815,9 @@ const Plans = ({
  * what the workspace uses, without limits.
  */
 export const BillingView = (props: BillingViewProps) => {
-  const { billing, checkedOut, error, onRefresh } = props;
+  const { billing, checkedOut, error, onRefresh, tooSmall } = props;
   const t = useTranslations("Billing");
+  const upgrade = useTranslations("Upgrade");
 
   if (!billing.enabled) {
     return (
@@ -868,6 +848,14 @@ export const BillingView = (props: BillingViewProps) => {
       {error === null ? null : (
         <Alert variant="destructive" aria-live="assertive">
           <AlertDescription>{t(`errors.${error}`)}</AlertDescription>
+        </Alert>
+      )}
+      {tooSmall === null ? null : (
+        <Alert variant="destructive" aria-live="assertive">
+          <AlertDescription>
+            <p>{upgrade("tooSmall")}</p>
+            <ExcessList excesses={tooSmall} namespace="Upgrade" />
+          </AlertDescription>
         </Alert>
       )}
       <StepPanel {...props} />

@@ -18,6 +18,7 @@ import { ContextRecords } from "./context-records.ts";
 import type { WorkspaceErasureOptions } from "./context-records.ts";
 import type { ErasureLedgerUnavailable } from "./erasure-ledger-unavailable.ts";
 import type { ErasureLedger } from "./erasure-ledger.ts";
+import type { ErasureIncomplete } from "./erasure-incomplete.ts";
 import { IncorrectPassword } from "./incorrect-password.ts";
 import { NotSignedIn } from "./not-signed-in.ts";
 import { PasswordCheck } from "./password-check.ts";
@@ -72,6 +73,7 @@ export class CloseAccount extends Context.Service<
       | NotSignedIn
       | SessionRequired
       | TooManyPasswordAttempts
+      | ErasureIncomplete
       | WorkspaceBusy
       | WorkspaceSubscribed
     >;

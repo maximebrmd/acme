@@ -19,6 +19,7 @@ import type {
 } from "#shared/domain/ids.ts";
 import type { Platform } from "#shared/domain/platform.ts";
 import { UnmeteredTest } from "#test/billing/support.ts";
+import { WorkspaceSeats } from "#workspace/application/workspace-seats.ts";
 import { permissionsFor } from "#workspace/domain/roles.ts";
 
 // Stand-ins for what posts refer to in other contexts, and synthetic content.
@@ -78,6 +79,12 @@ export const postAllowance = (
       Layer.succeed(
         ChannelUsage,
         ChannelUsage.of({ connected: () => Effect.succeed(connected) })
+      )
+    ),
+    Layer.provide(
+      Layer.succeed(
+        WorkspaceSeats,
+        WorkspaceSeats.of({ taken: () => Effect.succeed(1) })
       )
     )
   );

@@ -203,6 +203,58 @@ export const DrizzleMediaAssetsLive = Layer.effect(
         : Option.some(yield* fromRow(row));
     });
 
+    const update = Effect.fn("MediaAssets.update")(function* update(
+      asset: MediaAsset,
+      from: MediaStatusName
+    ) {
+      // A row still in `from` has not changed status since the caller read
+      // it: statuses only move forward, and an uploaded asset that cannot
+      // be probed stays uploaded with the reason, which the last write
+      // gives. The description is left as it is: it changes on its own.
+      const [updated] = yield* db
+        .update(mediaAssets)
+        .set(stateColumns(asset))
+        .where(
+          and(byId(asset.workspaceId, asset.id), eq(mediaAssets.status, from))
+        )
+        .returning()
+        .pipe(Effect.orDie);
+
+      if (updated !== undefined) {
+        return yield* fromRow(updated);
+      }
+
+      const current = yield* findById(asset.workspaceId, asset.id);
+
+      return Option.isSome(current)
+        ? current.value
+        : yield* new MediaAssetNotFound({ assetId: asset.id });
+    });
+
+    const updateWithin = (
+      asset: MediaAsset,
+      allowance: Allowance,
+      pendingSince: DateTime.Utc
+    ) =>
+      client
+        .withTransaction(
+          Effect.gen(function* updateHeld() {
+            yield* client`SELECT pg_advisory_xact_lock(hashtext('peal-server/media/storage'), hashtext(${asset.workspaceId}))`;
+
+            const used = yield* storedBytes(asset.workspaceId, pendingSince);
+
+            yield* Effect.fromResult(
+              roomFor("mediaStorage", allowance, used, asset.byteSize)
+            );
+
+            return yield* update(asset, "pending");
+          })
+        )
+        .pipe(
+          Effect.catchTag("SqlError", Effect.die),
+          Effect.withSpan("MediaAssets.updateWithin")
+        );
+
     return MediaAssets.of({
       describe: Effect.fn("MediaAssets.describe")(function* describe(
         workspaceId: WorkspaceId,
@@ -279,33 +331,8 @@ export const DrizzleMediaAssetsLive = Layer.effect(
           .pipe(Effect.orDie);
       }),
       storedBytes,
-      update: Effect.fn("MediaAssets.update")(function* update(
-        asset: MediaAsset,
-        from: MediaStatusName
-      ) {
-        // A row still in `from` has not changed status since the caller read
-        // it: statuses only move forward, and an uploaded asset that cannot
-        // be probed stays uploaded with the reason, which the last write
-        // gives. The description is left as it is: it changes on its own.
-        const [updated] = yield* db
-          .update(mediaAssets)
-          .set(stateColumns(asset))
-          .where(
-            and(byId(asset.workspaceId, asset.id), eq(mediaAssets.status, from))
-          )
-          .returning()
-          .pipe(Effect.orDie);
-
-        if (updated !== undefined) {
-          return yield* fromRow(updated);
-        }
-
-        const current = yield* findById(asset.workspaceId, asset.id);
-
-        return Option.isSome(current)
-          ? current.value
-          : yield* new MediaAssetNotFound({ assetId: asset.id });
-      }),
+      update,
+      updateWithin,
     });
   })
 );

@@ -86,8 +86,25 @@ export interface EmailCatalog {
   readonly trialStarted: EmailMessages;
   /** "month" or "year", as `{interval}`. */
   readonly intervals: { readonly month: string; readonly year: string };
-  /** A trial of `{plan}` in `{workspaceName}` ends at `{endsAt}`. */
+  /**
+   * A trial of `{plan}` in `{workspaceName}` ends at `{endsAt}`, and
+   * `{standing}` says what the workspace then holds beyond the free plan
+   * (`overFreePlan`, with its `{over}` list) or that it holds nothing
+   * beyond it (`withinFreePlan`).
+   */
   readonly trialEnding: EmailMessages;
+  /** What is held beyond the free plan: `{over}` lists it. */
+  readonly overFreePlan: string;
+  readonly withinFreePlan: string;
+  /**
+   * One thing held beyond a plan, `{used}` against `{allowed}`; media in
+   * the units plans are sold in.
+   */
+  readonly excess: {
+    readonly channels: string;
+    readonly mediaStorage: string;
+    readonly members: string;
+  };
   /**
    * A yearly `{plan}` renews at `{renewsAt}` for `{price}`, what Stripe
    * will charge, VAT included.

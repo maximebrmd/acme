@@ -18,7 +18,7 @@ import { UserIdSchema, WorkspaceIdSchema } from "#shared/domain/ids.ts";
 import type { UserId, WorkspaceId } from "#shared/domain/ids.ts";
 import { LocaleSchema } from "#shared/domain/locale.ts";
 import { PaidPlanSchema } from "#shared/domain/plan.ts";
-import type { PaidPlan } from "#shared/domain/plan.ts";
+import type { PaidPlan, Plan } from "#shared/domain/plan.ts";
 import { stripeClientOf } from "#shared/infrastructure/stripe-client.ts";
 import type { StripeSettings } from "#shared/infrastructure/stripe-settings.ts";
 import { permissionsFor } from "#workspace/domain/roles.ts";
@@ -47,18 +47,33 @@ export type CheckoutAnswer =
     }
   | { readonly _tag: "start"; readonly trialDays: number | null };
 
+/**
+ * The way out of a limit, as a refusal tells clients: the workspace's plan,
+ * the plan to order (null when none is larger) and its billing page.
+ */
+export interface Upgrade {
+  readonly billingUrl: string;
+  readonly plan: Plan;
+  readonly planWithRoom: PaidPlan | null;
+}
+
 /** What the billing plugin calls back into the rest of the server for. */
 export interface BillingHooks {
   /** Whether a checkout may start, from the order the member placed. */
   readonly checkout: (start: CheckoutStart) => Promise<CheckoutAnswer>;
   /**
-   * Whether the workspace is on the free plan of a server that bills, or
-   * in its trial, which ends on it: an account owns one such workspace at
-   * most.
+   * The way out for a workspace on the free plan of a server that bills,
+   * or in its trial, which ends on it: an account owns one such workspace
+   * at most. Null for a workspace that is paid for, or not limited.
    */
-  readonly freeWorkspace: (workspaceId: WorkspaceId) => Promise<boolean>;
+  readonly freeWorkspace: (workspaceId: WorkspaceId) => Promise<Upgrade | null>;
   /** The workspace's member allowance, from its plan. */
   readonly memberAllowance: (workspaceId: WorkspaceId) => Promise<Allowance>;
+  /** The way out for a workspace whose members have no room for `needed`. */
+  readonly memberUpgrade: (
+    workspaceId: WorkspaceId,
+    needed: number
+  ) => Promise<Upgrade>;
   /**
    * Records what a webhook event says a subscription now is. A failure
    * makes the webhook answer an error, so Stripe sends the event again.
@@ -874,7 +889,17 @@ export const checkMemberRoom = async (
   const room = roomForOneMore("members", allowance, members + pending);
 
   if (Result.isFailure(room)) {
-    throw APIError.from("PAYMENT_REQUIRED", MemberLimitError);
+    const { allowed, limit, needed, used } = room.failure;
+
+    // With what a client needs to offer the way out, as PlanLimitReached
+    // carries it.
+    throw new APIError("PAYMENT_REQUIRED", {
+      ...MemberLimitError,
+      ...(await hooks.memberUpgrade(id.value, needed)),
+      allowed,
+      limit,
+      used,
+    });
   }
 };
 
@@ -893,7 +918,8 @@ const decodeOwnedRow = Schema.decodeUnknownOption(OwnedRowSchema);
  * plan of a server that bills: one free workspace per account, as each
  * gets the free plan's allowances. A workspace that falls back to the free
  * plan stays; paid ones do not count, and trialing ones do, as the trial
- * puts them back on the free plan when it ends.
+ * puts them back on the free plan when it ends. The refusal names the
+ * workspace and the plan that, ordered for it, makes room for another.
  */
 export const checkFreeWorkspace = async (
   hooks: BillingHooks,
@@ -921,12 +947,20 @@ export const checkFreeWorkspace = async (
   );
 
   const free = await Promise.all(
-    workspaces.map(
-      async (workspaceId) => await hooks.freeWorkspace(workspaceId)
-    )
+    workspaces.map(async (workspaceId) => ({
+      upgrade: await hooks.freeWorkspace(workspaceId),
+      workspaceId,
+    }))
   );
 
-  if (free.includes(true)) {
-    throw APIError.from("PAYMENT_REQUIRED", FreeWorkspaceError);
+  const found = free.find(({ upgrade }) => upgrade !== null);
+
+  if (found !== undefined) {
+    // Names the workspace to pay for, and the plan to order for it.
+    throw new APIError("PAYMENT_REQUIRED", {
+      ...FreeWorkspaceError,
+      ...found.upgrade,
+      workspaceId: found.workspaceId,
+    });
   }
 };

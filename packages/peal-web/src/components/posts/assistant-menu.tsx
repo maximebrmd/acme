@@ -37,6 +37,7 @@ import {
   shortenablePlatforms,
 } from "#assistant/suggestion.ts";
 import type { AssistantFailure } from "#assistant/suggestion.ts";
+import { useOfferUpgrade } from "#components/billing/use-offer-upgrade.ts";
 import { AssistantPreview } from "#components/posts/assistant-preview.tsx";
 import type { PreviewState } from "#components/posts/assistant-preview.tsx";
 import { failureOf } from "#posts/outcome.ts";
@@ -182,6 +183,7 @@ const Controls = ({
   const locale = useLocale();
   const hintId = useId();
   const suggest = useAtomSet(suggestChange, { mode: "promiseExit" });
+  const offerUpgrade = useOfferUpgrade();
   // Whatever a request ends with, the count of requests left may change.
   const refreshStatus = useAtomRefresh(assistantStatus(workspaceId));
   const [asked, setAsked] = useState<Asked | null>(null);
@@ -206,6 +208,7 @@ const Controls = ({
     });
 
     refreshStatus();
+    offerUpgrade(exit);
 
     if (request !== latest.current) {
       return;

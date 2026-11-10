@@ -9,8 +9,11 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSetter;
+import com.fasterxml.jackson.annotation.Nulls;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import org.jetbrains.annotations.NotNull;
@@ -21,12 +24,16 @@ import social.peal.core.ObjectMappers;
 public final class NoticeEventTrialEnding {
     private final String endsAt;
 
+    private final List<Excess> over;
+
     private final PaidPlan plan;
 
     private final Map<String, Object> additionalProperties;
 
-    private NoticeEventTrialEnding(String endsAt, PaidPlan plan, Map<String, Object> additionalProperties) {
+    private NoticeEventTrialEnding(
+            String endsAt, List<Excess> over, PaidPlan plan, Map<String, Object> additionalProperties) {
         this.endsAt = endsAt;
+        this.over = over;
         this.plan = plan;
         this.additionalProperties = additionalProperties;
     }
@@ -34,6 +41,11 @@ public final class NoticeEventTrialEnding {
     @JsonProperty("endsAt")
     public String getEndsAt() {
         return endsAt;
+    }
+
+    @JsonProperty("over")
+    public List<Excess> getOver() {
+        return over;
     }
 
     @JsonProperty("plan")
@@ -53,12 +65,12 @@ public final class NoticeEventTrialEnding {
     }
 
     private boolean equalTo(NoticeEventTrialEnding other) {
-        return endsAt.equals(other.endsAt) && plan.equals(other.plan);
+        return endsAt.equals(other.endsAt) && over.equals(other.over) && plan.equals(other.plan);
     }
 
     @java.lang.Override
     public int hashCode() {
-        return Objects.hash(this.endsAt, this.plan);
+        return Objects.hash(this.endsAt, this.over, this.plan);
     }
 
     @java.lang.Override
@@ -86,6 +98,12 @@ public final class NoticeEventTrialEnding {
         _FinalStage additionalProperty(String key, Object value);
 
         _FinalStage additionalProperties(Map<String, Object> additionalProperties);
+
+        _FinalStage over(List<Excess> over);
+
+        _FinalStage addOver(Excess over);
+
+        _FinalStage addAllOver(List<Excess> over);
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -94,6 +112,8 @@ public final class NoticeEventTrialEnding {
 
         private PaidPlan plan;
 
+        private List<Excess> over = new ArrayList<>();
+
         private Map<String, Object> additionalProperties = new HashMap<>();
 
         private Builder() {}
@@ -101,6 +121,7 @@ public final class NoticeEventTrialEnding {
         @java.lang.Override
         public Builder from(NoticeEventTrialEnding other) {
             endsAt(other.getEndsAt());
+            over(other.getOver());
             plan(other.getPlan());
             return this;
         }
@@ -120,13 +141,37 @@ public final class NoticeEventTrialEnding {
         }
 
         @java.lang.Override
+        public _FinalStage addAllOver(List<Excess> over) {
+            if (over != null) {
+                this.over.addAll(over);
+            }
+            return this;
+        }
+
+        @java.lang.Override
+        public _FinalStage addOver(Excess over) {
+            this.over.add(over);
+            return this;
+        }
+
+        @java.lang.Override
+        @JsonSetter(value = "over", nulls = Nulls.SKIP)
+        public _FinalStage over(List<Excess> over) {
+            this.over.clear();
+            if (over != null) {
+                this.over.addAll(over);
+            }
+            return this;
+        }
+
+        @java.lang.Override
         public NoticeEventTrialEnding build() {
-            return new NoticeEventTrialEnding(endsAt, plan, additionalProperties);
+            return new NoticeEventTrialEnding(endsAt, over, plan, additionalProperties);
         }
 
         @JsonAnySetter
         private void putAdditionalPropertyFromJson(String key, Object value) {
-            if (key.equalsIgnoreCase("endsAt") || key.equalsIgnoreCase("plan")) {
+            if (key.equalsIgnoreCase("endsAt") || key.equalsIgnoreCase("over") || key.equalsIgnoreCase("plan")) {
                 return;
             }
             this.additionalProperties.put(key, value);

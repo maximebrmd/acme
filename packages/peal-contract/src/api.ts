@@ -89,9 +89,15 @@ export type { SubscriptionToCancel } from "./workspace-subscribed.ts";
 
 export { BillingUnavailable } from "./billing-unavailable.ts";
 
+export { DeletionIncomplete } from "./deletion-incomplete.ts";
+
 export { BillingNotEnabled } from "./billing-not-enabled.ts";
 
 export { NothingToCancel } from "./nothing-to-cancel.ts";
+
+export { ReductionRefused } from "./reduction-refused.ts";
+
+export { PlanTooSmall } from "./plan-too-small.ts";
 
 export { TrialUnavailable } from "./trial-unavailable.ts";
 
@@ -174,12 +180,17 @@ export {
   BillingSchema,
   BillingSubscriptionSchema,
   CancellationSchema,
+  ExcessSchema,
+  HeldLimitSchema,
   OrderPayloadSchema,
   OrderSchema,
   PeriodUsageSchema,
   PlanAllowancesSchema,
   PlanOfferSchema,
   PlanPriceSchema,
+  ReductionPayloadSchema,
+  ReductionSchema,
+  StandingSchema,
   SubscriptionStatusSchema,
   TrialOfferSchema,
   UsageSchema,
@@ -191,12 +202,17 @@ export type {
   Billing,
   BillingSubscription,
   Cancellation,
+  Excess,
+  HeldLimit,
   Order,
   OrderPayload,
   PeriodUsage,
   PlanAllowances,
   PlanOffer,
   PlanPrice,
+  Reduction,
+  ReductionPayload,
+  Standing,
   SubscriptionStatus,
   TrialOffer,
   Usage,

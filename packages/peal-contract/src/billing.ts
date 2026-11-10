@@ -133,6 +133,73 @@ export const BillingSchema = Schema.Struct({
 
 export type Billing = typeof BillingSchema.Type;
 
+/** The limits a workspace holds things against, which a plan can shrink under. */
+export const HeldLimitSchema = Schema.Literals([
+  "channels",
+  "members",
+  "mediaStorage",
+]).annotate({ identifier: "HeldLimit" });
+
+export type HeldLimit = typeof HeldLimitSchema.Type;
+
+/** A workspace holds `used` of something its plan allows `allowed` of. */
+export const ExcessSchema = Schema.Struct({
+  allowed: Schema.Int,
+  limit: HeldLimitSchema,
+  used: Schema.Int,
+}).annotate({ identifier: "Excess" });
+
+export type Excess = typeof ExcessSchema.Type;
+
+/**
+ * Where a workspace stands against its plan. A plan that shrinks under a
+ * workspace (its trial ends, its subscription is cancelled or left unpaid)
+ * deletes nothing, so the workspace can hold more than the plan allows.
+ */
+export const StandingSchema = Schema.Struct({
+  // Whether the workspace must come back within its plan before anything
+  // else: it holds more channels or members than the plan allows, and
+  // schedules and publishes nothing until it does. Media over the plan
+  // only refuses uploads.
+  mustReduce: Schema.Boolean,
+  // What it holds beyond its plan; empty on a server that does not bill.
+  over: Schema.Array(ExcessSchema),
+  // Null on a server that does not bill.
+  plan: Schema.NullOr(PlanSchema),
+  // The smallest plan that holds everything it has, when it is over its
+  // own; null within it, and past the largest plan.
+  planWithRoom: Schema.NullOr(PaidPlanSchema),
+  // The posts scheduled to go out this month (UTC). While `mustReduce`,
+  // each fails when due, with `planLimit` as its reason, and can be posted
+  // again once the workspace is within its plan.
+  scheduledPosts: Schema.Int,
+}).annotate({ identifier: "Standing" });
+
+export type Standing = typeof StandingSchema.Type;
+
+/** What stays in a workspace that must come back within its plan. */
+export const ReductionPayloadSchema = Schema.Struct({
+  // The channels that stay connected, by id: every other is disconnected.
+  // Read only while the workspace is over its plan's channels.
+  keepChannelIds: Schema.Array(Schema.String),
+  // The members who stay, by user id, whoever chooses among them: every
+  // other is removed, and the pending invitations are revoked. Read only
+  // while the workspace is over its plan's members.
+  keepMemberIds: Schema.Array(Schema.String),
+}).annotate({ identifier: "ReductionPayload" });
+
+export type ReductionPayload = typeof ReductionPayloadSchema.Type;
+
+/** What choosing what stays did, and where the workspace then stands. */
+export const ReductionSchema = Schema.Struct({
+  disconnectedChannels: Schema.Int,
+  removedMembers: Schema.Int,
+  revokedInvitations: Schema.Int,
+  standing: StandingSchema,
+}).annotate({ identifier: "Reduction" });
+
+export type Reduction = typeof ReductionSchema.Type;
+
 /**
  * What a member orders before Stripe's checkout: a plan and how often it is
  * paid for, or the trial; and that they ask for it to start now, knowing
@@ -208,6 +275,18 @@ export class BillingApi extends HttpApiGroup.make("billing")
         description:
           "Answers with the workspace's plan, the subscription that buys it, what each limit allows, how much of it the workspace uses, and every plan to compare. On a server that does not bill, nothing is limited. Needs billing:read.",
         summary: "Get the workspace's billing",
+      })
+    )
+  )
+  .add(
+    HttpApiEndpoint.get("standing", "/standing", {
+      params: { workspaceId: Schema.String },
+      success: StandingSchema,
+    }).annotateMerge(
+      OpenApi.annotations({
+        description:
+          "Answers where the workspace stands against its plan: what it holds beyond it, as after a trial or a cancelled subscription, whether it must come back within it before anything else (more channels or members than the plan allows: nothing is scheduled or published until then, and posts already scheduled fail when due with `planLimit`), the smallest plan that holds everything, and how many posts wait. Those who manage billing order that plan, or choose what stays, in the web app. For every member of the workspace.",
+        summary: "Get the workspace's standing",
       })
     )
   )

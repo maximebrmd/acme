@@ -1,7 +1,6 @@
 import { Duration, Effect, Match, Option, Schema } from "effect";
 import { HttpApiBuilder, HttpApiError } from "effect/http-api";
 import {
-  PlanLimitReached,
   AltTextTooLong,
   Api,
   CurrentMember,
@@ -28,6 +27,7 @@ import { MediaAssetIdSchema } from "#media/domain/media-asset-id.ts";
 import type { MediaAsset } from "#media/domain/media-asset.ts";
 import type { MediaStatus } from "#media/domain/media-status.ts";
 import { actorOf } from "#shared/api/actor.ts";
+import { limitRefusal } from "#shared/api/limit-reached.ts";
 
 const decodeAssetId = Schema.decodeUnknownOption(MediaAssetIdSchema);
 
@@ -86,6 +86,7 @@ export const MediaHandlers = HttpApiBuilder.group(
   "media",
   Effect.fn(function* mediaHandlers(handlers) {
     const library = yield* MediaLibrary;
+    const limitReached = yield* limitRefusal;
 
     return handlers.handleAll({
       complete: ({ params }) =>
@@ -99,6 +100,7 @@ export const MediaHandlers = HttpApiBuilder.group(
               MediaAssetNotFound: notFound,
               MediaStorageFailed: storeUnavailable,
               MissingPermission: forbidden,
+              PlanLimitReached: limitReached,
               UploadIncomplete: () => Effect.fail(new UploadIncomplete()),
               UploadRejected: ({ reason }) =>
                 Effect.fail(new UploadRejected({ reason })),
@@ -127,8 +129,7 @@ export const MediaHandlers = HttpApiBuilder.group(
                     new MediaTooLarge({ byteSize, kind, maxByteSize })
                   ),
                 MissingPermission: forbidden,
-                PlanLimitReached: ({ allowed, limit }) =>
-                  Effect.fail(new PlanLimitReached({ allowed, limit })),
+                PlanLimitReached: limitReached,
                 UnsupportedMediaType: ({ contentType }) =>
                   Effect.fail(new UnsupportedMediaType({ contentType })),
               })

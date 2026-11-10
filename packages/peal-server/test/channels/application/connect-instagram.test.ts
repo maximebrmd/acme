@@ -713,7 +713,12 @@ layer(
 
         assert.deepStrictEqual(
           refused,
-          new PlanLimitReached({ allowed: freeChannels, limit: "channels" })
+          new PlanLimitReached({
+            allowed: freeChannels,
+            limit: "channels",
+            needed: freeChannels + 1,
+            used: freeChannels,
+          })
         );
       })
   );
@@ -741,7 +746,12 @@ layer(
 
         assert.deepStrictEqual(
           refused,
-          new PlanLimitReached({ allowed: freeChannels, limit: "channels" })
+          new PlanLimitReached({
+            allowed: freeChannels,
+            limit: "channels",
+            needed: freeChannels + 1,
+            used: freeChannels,
+          })
         );
         assert.lengthOf(yield* repository.list(workspaceId), freeChannels);
       })

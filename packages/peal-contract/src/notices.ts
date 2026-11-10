@@ -12,6 +12,7 @@ import {
   MoneySchema,
   PaidPlanSchema,
 } from "./billing-plans.ts";
+import { ExcessSchema } from "./billing.ts";
 import { Forbidden } from "./forbidden.ts";
 import { PlatformSchema } from "./platform.ts";
 import { FailureReasonSchema } from "./posts.ts";
@@ -68,9 +69,12 @@ export const NoticeEventSchema = Schema.Union([
     trialEnd: Schema.NullOr(Schema.DateTimeUtc),
   }),
   // The workspace's trial ends at `endsAt`: it then moves to the free plan
-  // unless someone orders a plan.
+  // unless someone orders a plan. `over` lists what it held beyond the
+  // free plan when it was told (empty when nothing): from that day it
+  // schedules and publishes nothing until it is back within the plan.
   Schema.TaggedStruct("TrialEnding", {
     endsAt: Schema.DateTimeUtc,
+    over: Schema.Array(ExcessSchema),
     plan: PaidPlanSchema,
   }),
   // A yearly plan renews at `renewsAt`, for `price`, what Stripe will

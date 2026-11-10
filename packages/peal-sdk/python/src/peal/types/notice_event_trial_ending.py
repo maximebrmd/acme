@@ -6,11 +6,13 @@ import pydantic
 import typing_extensions
 from ..core.pydantic_utilities import IS_PYDANTIC_V2, UniversalBaseModel
 from ..core.serialization import FieldMetadata
+from .excess import Excess
 from .paid_plan import PaidPlan
 
 
 class NoticeEventTrialEnding(UniversalBaseModel):
     ends_at: typing_extensions.Annotated[str, FieldMetadata(alias="endsAt"), pydantic.Field(alias="endsAt")]
+    over: typing.List[Excess]
     plan: PaidPlan
 
     if IS_PYDANTIC_V2:

@@ -1,5 +1,7 @@
 import { Schema } from "effect";
 
+import { LimitReachedSchema } from "#billing/upgrade.ts";
+
 /**
  * Why an upload failed, as the uploader explains it: each reason has its
  * message under MediaUploader.errors in the catalogues.
@@ -38,6 +40,8 @@ export class UploadFailed extends Schema.TaggedError<UploadFailed>()(
   "UploadFailed",
   {
     limit: Schema.optionalKey(Schema.Int),
+    // The plan's limit the upload ended on, for the upgrade it offers.
+    reached: Schema.optionalKey(LimitReachedSchema),
     reason: UploadFailureReasonSchema,
   }
 ) {}

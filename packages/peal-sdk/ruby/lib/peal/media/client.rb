@@ -264,7 +264,9 @@ module Peal
 
       # Checks that the file reached the store with the declared size and type, joining its parts first, then probes it:
       # the media is ready, or stays uploaded with why it could not be probed. Calling it again is safe, and probes an
-      # uploaded file again. Needs media:upload.
+      # uploaded file again. On a server that bills, the room an upload was given is held while its URLs work: completed
+      # later, it needs room in the plan's media storage again, and without it the file is deleted (PlanLimitReached
+      # `mediaStorage`). Needs media:upload.
       #
       # @param request_options [Hash]
       # @param params [Hash]
@@ -304,6 +306,7 @@ module Peal
           error_class = Peal::Errors::ResponseError.subclass_for_code(code)
           error_types = {
             401 => Peal::Types::UnauthenticatedEncoded,
+            402 => Peal::Types::PlanLimitReachedEncoded,
             403 => Peal::Types::ForbiddenEncoded
           }
           error_body = Peal::Errors::ResponseError.load_error_body(code, response.body, error_types)

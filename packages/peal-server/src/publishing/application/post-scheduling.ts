@@ -253,14 +253,23 @@ export class PostScheduling extends Context.Service<
       // until it commits, so posts scheduled together are counted in turn.
       const roomInMonth = Effect.fn("PostScheduling.roomInMonth")(
         function* roomInMonth(post: Post) {
-          // A workspace with more channels than its plan allows, as after
-          // its trial, schedules nothing until it disconnects some.
+          // A workspace with more channels or members than its plan
+          // allows, as after its trial, schedules nothing until it is back
+          // within it.
           const channels = yield* PostAllowance.use((allowance) =>
             allowance.channels(post.workspaceId)
           );
 
           yield* Effect.fromResult(
             withinAllowance("channels", channels.allowed, channels.connected)
+          );
+
+          const members = yield* PostAllowance.use((allowance) =>
+            allowance.members(post.workspaceId)
+          );
+
+          yield* Effect.fromResult(
+            withinAllowance("members", members.allowed, members.taken)
           );
 
           const allowed = yield* PostAllowance.use((allowance) =>

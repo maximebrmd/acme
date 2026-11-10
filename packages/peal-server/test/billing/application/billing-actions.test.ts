@@ -12,11 +12,13 @@ import {
 } from "effect";
 import { TestClock } from "effect/testing";
 
+import { BillingOverview } from "#billing/application/billing-overview.ts";
 import { CancelSubscription } from "#billing/application/cancel-subscription.ts";
 import { CheckoutOrders } from "#billing/application/checkout-orders.ts";
 import { PlaceOrder } from "#billing/application/place-order.ts";
 import { BillingMode } from "#billing/application/ports/billing-mode.ts";
 import { BillingNotices } from "#billing/application/ports/billing-notices.ts";
+import { MemberAddresses } from "#billing/application/ports/member-addresses.ts";
 import { Orders } from "#billing/application/ports/orders.ts";
 import { StripeContracts } from "#billing/application/ports/stripe-contracts.ts";
 import type { PaidInvoice } from "#billing/application/ports/stripe-contracts.ts";
@@ -25,10 +27,14 @@ import { Trials } from "#billing/application/ports/trials.ts";
 import type { StartedTrial } from "#billing/application/ports/trials.ts";
 import { Withdrawals } from "#billing/application/ports/withdrawals.ts";
 import type { Withdrawal } from "#billing/application/ports/withdrawals.ts";
+import { WorkspaceUsage } from "#billing/application/ports/workspace-usage.ts";
 import { SendBillingReminders } from "#billing/application/send-billing-reminders.ts";
 import { Withdraw } from "#billing/application/withdraw.ts";
+import { WorkspaceEntitlements } from "#billing/application/workspace-entitlements.ts";
 import type { BillingNotice } from "#billing/domain/billing-notice.ts";
 import type { Order } from "#billing/domain/order.ts";
+import { PlanTooSmall } from "#billing/domain/plan-too-small.ts";
+import type { Holdings } from "#billing/domain/standing.ts";
 import type { Subscription } from "#billing/domain/subscription.ts";
 import { Ids } from "#shared/application/ids.ts";
 import { Actor } from "#shared/domain/access.ts";
@@ -64,13 +70,18 @@ interface PlacedOrder {
   readonly used: boolean;
 }
 
+// A workspace every plan holds.
+const small: Holdings = { channels: 1, mediaStorage: 0, members: 1 };
+
 // What a test sets and reads: the subscriptions billing holds, what was
 // asked of Stripe, the notices told, and the payment Stripe reports.
 class BillingLog extends Context.Service<
   BillingLog,
   {
+    readonly address: Ref.Ref<string>;
     readonly business: Ref.Ref<boolean>;
     readonly held: Ref.Ref<readonly Subscription[]>;
+    readonly holdings: Ref.Ref<Holdings>;
     readonly notices: Ref.Ref<
       readonly { readonly key: string; readonly notice: BillingNotice }[]
     >;
@@ -85,8 +96,10 @@ class BillingLog extends Context.Service<
 const LogLive = Layer.effect(
   BillingLog,
   Effect.all({
+    address: Ref.make("member@example.com"),
     business: Ref.make(false),
     held: Ref.make<readonly Subscription[]>([]),
+    holdings: Ref.make(small),
     invoices: Ref.make<readonly PaidInvoice[]>([]),
     notices: Ref.make<
       readonly { readonly key: string; readonly notice: BillingNotice }[]
@@ -96,6 +109,41 @@ const LogLive = Layer.effect(
     trials: Ref.make<readonly StartedTrial[]>([]),
     withdrawals: Ref.make<readonly Withdrawal[]>([]),
   })
+);
+
+// What the workspace holds, as a test sets it: within every plan unless
+// told.
+const UsageTest = Layer.effect(
+  WorkspaceUsage,
+  BillingLog.use(({ holdings }) =>
+    Effect.succeed(
+      WorkspaceUsage.of({
+        of: () =>
+          Ref.get(holdings).pipe(
+            Effect.map((held) => ({
+              ...held,
+              assistantRequests: {
+                resetsAt: at("2026-12-21T00:00:00Z"),
+                used: 0,
+              },
+              scheduledPosts: { resetsAt: at("2027-01-01T00:00:00Z"), used: 0 },
+            }))
+          ),
+      })
+    )
+  )
+);
+
+// The address the member's account has, as a test sets it.
+const AddressesTest = Layer.effect(
+  MemberAddresses,
+  BillingLog.use(({ address }) =>
+    Effect.succeed(
+      MemberAddresses.of({
+        of: () => Ref.get(address).pipe(Effect.map(Option.some)),
+      })
+    )
+  )
 );
 
 const PortsInMemory = Layer.mergeAll(
@@ -230,6 +278,7 @@ const PortsInMemory = Layer.mergeAll(
 );
 
 const ActionsTest = Layer.mergeAll(
+  BillingOverview.layer.pipe(Layer.provide(WorkspaceEntitlements.layer)),
   PlaceOrder.layer,
   CheckoutOrders.layer,
   CancelSubscription.layer,
@@ -239,6 +288,8 @@ const ActionsTest = Layer.mergeAll(
   Layer.provideMerge(PortsInMemory),
   Layer.provide(Ids.layerTest),
   Layer.provide(PlainPseudonymsTest),
+  Layer.provide(UsageTest),
+  Layer.provide(AddressesTest),
   Layer.provide(Layer.succeed(BillingMode, BillingMode.of({ enabled: true }))),
   Layer.provideMerge(LogLive)
 );
@@ -246,8 +297,10 @@ const ActionsTest = Layer.mergeAll(
 // Each test starts with nothing held, asked or told.
 const reset = BillingLog.use((log) =>
   Effect.all([
+    Ref.set(log.address, "member@example.com"),
     Ref.set(log.business, false),
     Ref.set(log.held, []),
+    Ref.set(log.holdings, small),
     Ref.set(log.notices, []),
     Ref.set(log.orders, []),
     Ref.set(log.invoices, []),
@@ -259,6 +312,9 @@ const reset = BillingLog.use((log) =>
 
 const holding = (...subscriptions: readonly Subscription[]) =>
   BillingLog.use(({ held }) => Ref.set(held, subscriptions));
+
+const holds = (holdings: Holdings) =>
+  BillingLog.use((log) => Ref.set(log.holdings, holdings));
 
 const askedOfStripe = BillingLog.use(({ stripe }) => Ref.get(stripe));
 
@@ -671,6 +727,79 @@ layer(ActionsTest)("billing's actions", (it) => {
       })
   );
 
+  it.effect(
+    "offers no trial to an address that had one with an account since closed",
+    () =>
+      Effect.gen(function* closedAddress() {
+        yield* setNow("2026-11-09T10:00:00Z");
+
+        const trialOf = BillingOverview.use((billing) =>
+          billing.of(actorAs())
+        ).pipe(Effect.map(({ trial }) => Option.getOrThrow(trial).available));
+
+        const orderTrial = PlaceOrder.use((orders) =>
+          orders.place(actorAs(), {
+            interval: "month",
+            plan: "pro",
+            trial: true,
+          })
+        );
+
+        assert.isTrue(yield* trialOf);
+
+        // The same address, in any case, as an account closed after its
+        // trial: the billing page shows none, and no order is taken.
+        yield* BillingLog.use(({ address }) =>
+          Ref.set(address, "Closed@Example.com")
+        );
+
+        assert.isFalse(yield* trialOf);
+        assert.deepInclude(yield* orderTrial.pipe(Effect.flip), {
+          _tag: "TrialUnavailable",
+          reason: "used",
+        });
+        assert.deepStrictEqual(
+          yield* BillingLog.use(({ orders }) => Ref.get(orders)),
+          []
+        );
+      })
+  );
+
+  it.effect(
+    "refuses an order for a plan too small for what the workspace holds, listing it",
+    () =>
+      Effect.gen(function* tooSmall() {
+        yield* setNow("2026-11-09T10:00:00Z");
+        yield* holds({ channels: 8, mediaStorage: 0, members: 4 });
+        yield* holding(paid({ plan: "business" }));
+
+        const orders = yield* PlaceOrder;
+
+        const order = (plan: "pro" | "starter") =>
+          orders.place(actorAs(), { interval: "month", plan, trial: false });
+
+        // Moving down to Starter: five channels and three members.
+        assert.deepStrictEqual(
+          yield* order("starter").pipe(Effect.flip),
+          new PlanTooSmall({
+            over: [
+              { allowed: 5, limit: "channels", used: 8 },
+              { allowed: 3, limit: "members", used: 4 },
+            ],
+            plan: "starter",
+            planWithRoom: Option.some("pro"),
+          })
+        );
+        assert.deepStrictEqual(
+          yield* BillingLog.use(({ orders: placed }) => Ref.get(placed)),
+          []
+        );
+
+        // Pro holds it all.
+        assert.strictEqual((yield* order("pro")).plan, "pro");
+      })
+  );
+
   it.effect("refuses a withdrawal to a business and after 14 days", () =>
     Effect.gen(function* refuses() {
       yield* setNow("2026-11-04T00:00:00Z");
@@ -701,6 +830,7 @@ layer(ActionsTest)("billing's actions", (it) => {
   it.effect("reminds a trial's end and a yearly plan's renewal", () =>
     Effect.gen(function* reminds() {
       yield* setNow("2026-12-20T09:00:00Z");
+      yield* holds({ channels: 8, mediaStorage: 900_000_000, members: 2 });
       yield* holding(
         paid({
           currentPeriodEnd: Option.some(at("2027-01-31T00:00:00Z")),
@@ -732,9 +862,18 @@ layer(ActionsTest)("billing's actions", (it) => {
         },
         {
           key: "subscription:sub_trial:trial-ending",
+          // With what the workspace holds beyond the free plan it moves to.
           notice: {
             _tag: "TrialEnding",
             endsAt: at("2026-12-22T10:00:00Z"),
+            over: [
+              { allowed: 3, limit: "channels", used: 8 },
+              {
+                allowed: 500_000_000,
+                limit: "mediaStorage",
+                used: 900_000_000,
+              },
+            ],
             plan: "pro",
           },
         },

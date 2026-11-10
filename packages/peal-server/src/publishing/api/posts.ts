@@ -6,7 +6,6 @@ import {
   defaultDraftPageSize,
   Forbidden,
   InvalidTimeRange,
-  PlanLimitReached,
   PostContentInvalid,
   PostNotFound,
   PostStatusConflict,
@@ -25,6 +24,7 @@ import type { InvalidPostTransition } from "#publishing/domain/invalid-post-tran
 import type { InvalidTargetTransition } from "#publishing/domain/invalid-target-transition.ts";
 import type { PostContentRejected } from "#publishing/domain/post-content-rejected.ts";
 import { actorOf } from "#shared/api/actor.ts";
+import { limitRefusal } from "#shared/api/limit-reached.ts";
 
 import {
   channelIdsFrom,
@@ -71,14 +71,6 @@ const followUpFailures = {
   PostNotFound: notFound,
 } as const;
 
-const limitReached = ({
-  allowed,
-  limit,
-}: {
-  readonly allowed: number;
-  readonly limit: PlanLimitReached["limit"];
-}) => Effect.fail(new PlanLimitReached({ allowed, limit }));
-
 export const PostsHandlers = HttpApiBuilder.group(
   Api,
   "posts",
@@ -87,6 +79,7 @@ export const PostsHandlers = HttpApiBuilder.group(
     const followUp = yield* PostFollowUp;
     const queries = yield* PostQueries;
     const scheduling = yield* PostScheduling;
+    const limitReached = yield* limitRefusal;
 
     return handlers.handleAll({
       attempts: ({ params }) =>

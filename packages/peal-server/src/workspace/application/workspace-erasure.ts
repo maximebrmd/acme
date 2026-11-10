@@ -8,6 +8,7 @@ import type { ErasureEntry } from "#workspace/domain/erasure-ledger.ts";
 import { AccountStore } from "./account-store.ts";
 import { ContextRecords } from "./context-records.ts";
 import { ErasureLedger } from "./erasure-ledger.ts";
+import { ErasureIncomplete } from "./erasure-incomplete.ts";
 
 /**
  * Deletes a workspace and everything every context keeps in it, its media
@@ -26,20 +27,32 @@ export const eraseWorkspace = Effect.fn("Workspace.erase")(
 );
 
 /**
- * Logs an erasure that failed once settling cancelled subscriptions at
- * Stripe: the workspaces stay, on the free plan once Stripe's events come,
- * and deleting them again goes without cancelling anything more.
+ * Says an erasure failed once settling cancelled subscriptions at Stripe,
+ * whatever stopped it, and logs it: the workspaces stay, on the free plan
+ * once Stripe's events come, and deleting them again goes without
+ * cancelling anything more. The person hears their subscriptions were
+ * cancelled (`ErasureIncomplete`), not the bare failure. An erasure that
+ * cancelled nothing fails as it did.
  */
 export const reportCancelledFirst =
   (subscriptionsCancelled: number) =>
-  <A, E, R>(erasure: Effect.Effect<A, E, R>) =>
+  <A, E extends { readonly _tag: string }, R>(
+    erasure: Effect.Effect<A, E, R>
+  ): Effect.Effect<A, E | ErasureIncomplete, R> =>
     subscriptionsCancelled === 0
       ? erasure
       : erasure.pipe(
-          Effect.tapError(() =>
+          Effect.catch(({ _tag: reason }) =>
             Effect.logWarning(
               "An erasure failed after its subscriptions were cancelled at Stripe"
-            ).pipe(Effect.annotateLogs({ subscriptionsCancelled }))
+            ).pipe(
+              Effect.annotateLogs({ reason, subscriptionsCancelled }),
+              Effect.andThen(
+                Effect.fail(
+                  new ErasureIncomplete({ reason, subscriptionsCancelled })
+                )
+              )
+            )
           )
         );
 

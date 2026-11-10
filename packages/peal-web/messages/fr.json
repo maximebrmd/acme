@@ -158,7 +158,8 @@
       "MISSING_RESPONSE": "Faites d’abord la vérification ci-dessus.",
       "VERIFICATION_FAILED": "La vérification n’a pas abouti. Recommencez-la.",
       "TOO_MANY_REQUESTS": "Trop de tentatives. Patientez une minute, puis réessayez.",
-      "UNKNOWN": "Une erreur est survenue. Réessayez."
+      "UNKNOWN": "Une erreur est survenue. Réessayez.",
+      "FREE_WORKSPACE_LIMIT_REACHED": "Votre compte possède déjà un espace de travail gratuit. Un autre demande que celui-ci passe à un abonnement payant."
     }
   },
   "SignInPage": {
@@ -858,7 +859,8 @@
       "SubscriptionCancelled": "L’abonnement {plan} de {workspace} est résilié : il prend fin le {endsAt, date, long}, et plus rien n’est facturé.",
       "SubscriptionWithdrawn": "Votre rétractation de l’abonnement {plan} de {workspace} a été reçue le {withdrawnAt, date, long} à {withdrawnAt, time, short} : il a pris fin, et {refunded} vous est remboursé sous 14 jours.",
       "SubscriptionStarted": "{workspace} est abonné à {plan} depuis le {startedAt, date, long}, pour {price} TTC {interval, select, month {par mois} other {par an}}. En tant que consommateur, vous pouvez vous rétracter dans les 14 jours.",
-      "TrialStarted": "{workspace} essaie {plan} jusqu’au {endsAt, date, long} : rien n’est facturé."
+      "TrialStarted": "{workspace} essaie {plan} jusqu’au {endsAt, date, long} : rien n’est facturé.",
+      "TrialEndingOver": "L’essai {plan} de {workspace} prend fin le {endsAt, date, long}. Rien n’est facturé : l’espace de travail passe ensuite à l’offre gratuite, sauf si quelqu’un commande un abonnement. Il dépasse ce que permet l’offre gratuite ({over}) : à partir de ce jour, rien n’est programmé ni publié tant qu’il n’y est pas revenu."
     },
     "reason": "{reason, select, contentRejected {la plateforme a refusé son texte ou son format.} channelDisconnected {son canal a été déconnecté de l’espace de travail avant son départ.} channelDisabled {son canal a été désactivé avant son départ. Déconnectez le canal et connectez à nouveau le compte, puis programmez-la dans une nouvelle publication.} mediaRemoved {l’une de ses images ou vidéos a été supprimée de la médiathèque avant son départ.} mediaRejected {la plateforme a refusé l’une de ses images ou vidéos.} missed {Peal était indisponible à l’heure prévue, et la publication est arrivée trop tard pour partir.} notPublished {quelqu’un a vérifié sur la plateforme et ne l’a pas trouvée.} rateLimited {la plateforme a refusé les requêtes trop longtemps, et Peal a cessé d’essayer.} tokenExpired {l’autorisation du compte ne fonctionne plus. Reconnectez-le, puis publiez à nouveau.} unavailable {la plateforme était injoignable.} appNotAudited {la plateforme n’accepte que des publications privées de l’application de ce serveur tant qu’elle ne l’a pas approuvée. Rendez le compte privé et la publication visible par son seul propriétaire, ou contactez l’opérateur du serveur.} quotaExceeded {l’allocation quotidienne de mises en ligne de la plateforme est restée épuisée, pour ce serveur Peal ou pour le compte, et Peal a cessé d’attendre.} appBillingLimit {la plateforme refuse l’application de ce serveur Peal tant que son compte auprès d’elle n’est pas réglé (sur X : crédits épuisés ou plafond de dépenses atteint). Votre publication n’y est pour rien : une fois le problème réglé par l’opérateur du serveur, publiez-la à nouveau.} planLimit {l’abonnement de l’espace de travail n’avait plus de place pour elle à son heure : il a plus de canaux connectés que l’abonnement n’en permet, ou les publications du mois étaient épuisées. Rien n’a été envoyé. Déconnectez des canaux ou passez à un abonnement supérieur, puis publiez-la à nouveau.} other {{reason}}}",
     "open": "{page, select, post {Ouvrir la publication} billing {Ouvrir la facturation} other {Ouvrir les canaux}}",
@@ -903,7 +905,9 @@
       "loadFailed": "Vos préférences n’ont pas pu être chargées.",
       "reload": "Réessayer"
     },
-    "plan": "{plan, select, starter {Starter} pro {Pro} business {Business} agency {Agency} other {{plan}}}"
+    "plan": "{plan, select, starter {Starter} pro {Pro} business {Business} agency {Agency} other {{plan}}}",
+    "excess": "{limit, select, channels {{used, number} canaux, {allowed, number} permis} members {{used, number} membres, {allowed, number} permis} other {}}",
+    "excessStorage": "{used} de médias, {allowed} permis"
   },
   "Billing": {
     "open": "Facturation",
@@ -946,7 +950,7 @@
       "allowance": "{limit, select, channels {{count, plural, one {# canal} other {# canaux}}} members {{count, plural, one {# membre} other {# membres}}} scheduledPosts {{count, plural, one {# publication par mois} other {# publications par mois}}} assistantRequests {{count, plural, one {# demande à l’assistant par jour} other {# demandes à l’assistant par jour}}} other {{count}}}",
       "unlimited": "{limit, select, channels {Canaux illimités} members {Membres illimités} scheduledPosts {Publications illimitées} assistantRequests {Demandes à l’assistant illimitées} mediaStorage {Médias illimités} other {Illimité}}",
       "yours": "Votre abonnement",
-      "inPortal": "Pour passer à un abonnement inférieur, utilisez l’espace de facturation.",
+      "inPortal": "Passer à un abonnement inférieur demande que l’espace de travail y tienne d’abord : ses canaux, ses membres et ses médias.",
       "askAdmin": "Les propriétaires et les administrateurs de l’espace de travail commandent et résilient son abonnement.",
       "storage": "{size} de médias",
       "order": "Commander avec obligation de paiement",
@@ -963,7 +967,8 @@
       "nothingToCancel": "L’abonnement est déjà résilié.",
       "trialUsed": "Cet espace de travail ou votre compte a déjà eu son essai : commandez plutôt un abonnement.",
       "withdrawalBusiness": "Une entreprise avec un numéro de TVA vérifié n’a pas de droit de rétractation. Vous pouvez toujours résilier l’abonnement.",
-      "withdrawalExpired": "Les 14 jours pour vous rétracter sont passés. Vous pouvez toujours résilier l’abonnement."
+      "withdrawalExpired": "Les 14 jours pour vous rétracter sont passés. Vous pouvez toujours résilier l’abonnement.",
+      "planTooSmall": "Cet abonnement ne contient pas ce que l’espace de travail possède."
     },
     "limitReached": "{limit, select, channels {L’abonnement de l’espace de travail ne permet pas d’autre canal. Passez à un abonnement supérieur, ou déconnectez d’abord un canal.} members {L’abonnement de l’espace de travail ne permet pas d’autre membre. Un propriétaire ou un administrateur peut passer à un abonnement supérieur.} scheduledPosts {L’abonnement de l’espace de travail ne permet pas d’autre publication ce mois-là. Choisissez un autre mois, annulez une publication, ou passez à un abonnement supérieur.} assistantRequests {L’abonnement de l’espace de travail ne permet plus de demande à l’assistant aujourd’hui.} mediaStorage {L’abonnement de l’espace de travail n’a plus de place pour ce fichier. Supprimez des médias, ou passez à un abonnement supérieur.} other {L’abonnement de l’espace de travail ne permet pas d’en ajouter.}}",
     "prices": {
@@ -1009,6 +1014,63 @@
       "done": "L’abonnement a pris fin, et {refund} vous est remboursé sous 14 jours. Un accusé de réception, avec sa date et son heure, vous a été envoyé par e-mail."
     },
     "keep": "Garder l’abonnement"
+  },
+  "Upgrade": {
+    "title": "{limit, select, channels {Cet abonnement n’a plus de place pour un canal} members {Cet abonnement n’a plus de place pour un membre} scheduledPosts {Cet abonnement n’a plus de place pour une publication ce mois-là} assistantRequests {Les demandes à l’assistant d’écriture sont épuisées pour aujourd’hui} mediaStorage {Cet abonnement n’a plus de place pour ce fichier} freeWorkspace {Un espace de travail gratuit par compte} other {La limite de l’abonnement est atteinte}}",
+    "reached": "{limit, select, channels {L’abonnement {plan} de {workspace} permet {allowed, plural, one {# canal} other {# canaux}}, et il en a {used, number}.} members {L’abonnement {plan} de {workspace} permet {allowed, plural, one {# membre} other {# membres}}, invitations en attente comprises, et il en a {used, number}.} scheduledPosts {L’abonnement {plan} de {workspace} permet {allowed, plural, one {# publication} other {# publications}} par mois, et ce mois-là en a {used, number}.} assistantRequests {L’abonnement {plan} de {workspace} permet {allowed, plural, one {# demande} other {# demandes}} à l’assistant d’écriture par jour, et celles d’aujourd’hui sont épuisées. Elles reprennent à minuit UTC.} other {L’abonnement {plan} de {workspace} ne permet pas d’en ajouter.}}",
+    "reachedStorage": "L’abonnement {plan} de {workspace} permet {allowed} de médias, et il en stocke {used}, envois en cours compris.",
+    "freeWorkspace": "Votre compte possède déjà un espace de travail gratuit : {workspace}. Chaque compte en a un ; un autre demande que celui-ci passe à un abonnement payant.",
+    "freeWorkspaceTrial": "Votre compte possède déjà un espace de travail en période d’essai, qui se termine sur l’offre gratuite : {workspace}. Chaque compte a un espace gratuit ; un autre demande que celui-ci passe à un abonnement payant.",
+    "offer": "L’abonnement {plan} a de la place :",
+    "trial": "{workspace} est en période d’essai : commander fait commencer l’abonnement payant, et met fin à l’essai une fois le paiement reçu. Rien n’est facturé pour l’essai.",
+    "comeBack": "Le paiement se fait par carte, sur la page de paiement de Stripe. Vous revenez ensuite sur cette page ; l’abonnement change dès que Stripe confirme le paiement, en général en quelques secondes.",
+    "largest": "{workspace} a le plus grand abonnement. Pour davantage, écrivez-nous : nous faisons une offre pour les besoins plus importants.",
+    "largestOperator": "{workspace} a le plus grand abonnement. Pour davantage, écrivez aux personnes qui gèrent ce serveur.",
+    "contact": "Nous écrire",
+    "orRemove": "{limit, select, channels {Ou déconnectez un canal pour faire de la place.} members {Ou retirez un membre, ou révoquez une invitation en attente, pour faire de la place.} scheduledPosts {Ou choisissez un autre mois, ou annulez une publication de ce mois-là.} assistantRequests {Ou redemandez demain.} mediaStorage {Ou supprimez des médias pour faire de la place.} other {}}",
+    "askManagers": "Les propriétaires et les administrateurs de {workspace} commandent son abonnement : {names}.",
+    "askSomeone": "Un propriétaire ou un administrateur de l’espace de travail commande son abonnement : demandez à l’un d’eux.",
+    "close": "Pas maintenant",
+    "tooSmall": "Cet abonnement ne contient pas ce que l’espace de travail possède. Retirez d’abord ceci, ou commandez un abonnement supérieur :",
+    "excess": "{limit, select, channels {{used, number} canaux, {allowed, number} permis} members {{used, number} membres, {allowed, number} permis} other {}}",
+    "excessStorage": "{used} de médias, {allowed} permis",
+    "closeLabel": "Fermer"
+  },
+  "OverPlan": {
+    "title": "{workspace} dépasse ce que permet son abonnement",
+    "description": "Son abonnement est désormais {plan}. Rien n’a été supprimé, mais l’espace de travail doit revenir dans son abonnement avant de faire quoi que ce soit d’autre.",
+    "excess": "{limit, select, channels {{used, number} canaux connectés, {allowed, number} permis} members {{used, number} membres, {allowed, number} permis} other {}}",
+    "excessStorage": "{used} de médias stockés, {allowed} permis : les envois sont refusés tant que des médias ne sont pas supprimés ou que l’abonnement n’est pas supérieur",
+    "posts": "{count, plural, =0 {D’ici là, rien n’est programmé ni publié.} one {D’ici là, rien n’est programmé ni publié. La publication programmée ce mois-ci échoue à son heure, avec « limite de l’abonnement » pour motif ; elle garde son texte et ses canaux, et peut être republiée depuis sa page une fois l’espace de travail revenu dans son abonnement.} other {D’ici là, rien n’est programmé ni publié. Les # publications programmées ce mois-ci échouent chacune à leur heure, avec « limite de l’abonnement » pour motif ; elles gardent leur texte et leurs canaux, et peuvent être republiées depuis leur page une fois l’espace de travail revenu dans son abonnement.}}",
+    "upgradeTitle": "Passer à un abonnement qui contient tout",
+    "noPlan": "Aucun abonnement ne contient autant. Choisissez ci-dessous ce qui reste, ou écrivez-nous pour une offre.",
+    "chooseTitle": "Ou choisir ce qui reste",
+    "chooseDescription": "Tout le reste est déconnecté ou retiré aussitôt, en une seule étape, sans retour possible.",
+    "channels": "Canaux qui restent connectés ({kept, number} sur {allowed, number})",
+    "channelsNote": "Les autres sont déconnectés : leurs jetons sont supprimés, et les plateformes qui le permettent sont priées d’oublier Peal. Les publications programmées sur eux échouent à leur heure.",
+    "members": "Membres qui restent ({kept, number} sur {allowed, number})",
+    "membersNote": "Les autres sont retirés de l’espace de travail, et les invitations en attente sont révoquées. Ce qu’ils ont écrit reste. Vous restez.",
+    "you": "vous",
+    "role": "{role, select, owner {propriétaire} admin {administrateur} editor {éditeur} contributor {contributeur} viewer {lecteur} other {{role}}}",
+    "confirm": "Je comprends que {channels, plural, =0 {aucun canal n’est déconnecté} one {# canal est déconnecté} other {# canaux sont déconnectés}} et que {members, plural, =0 {aucun membre n’est retiré} one {# membre est retiré} other {# membres sont retirés}}, définitivement.",
+    "apply": "Garder ceux-ci, retirer le reste",
+    "applying": "Retrait en cours…",
+    "tooMany": "Gardez au plus ce que permet l’abonnement.",
+    "done": "L’espace de travail est revenu dans son abonnement.",
+    "others": "Les propriétaires et les administrateurs de {workspace} peuvent commander un abonnement supérieur ou choisir ce qui reste : {names}.",
+    "othersUnknown": "Un propriétaire ou un administrateur de l’espace de travail peut commander un abonnement supérieur ou choisir ce qui reste.",
+    "billing": "Ouvrir la facturation",
+    "loadFailed": "Les canaux et les membres n’ont pas pu être chargés.",
+    "errors": {
+      "forbidden": "Seuls les propriétaires et les administrateurs, dans leur propre session, choisissent ce qui reste.",
+      "tooManyChannels": "Plus de canaux sont gardés que l’abonnement n’en permet.",
+      "tooManyMembers": "Plus de membres sont gardés que l’abonnement n’en permet.",
+      "unknownChannel": "Un canal gardé n’est plus connecté. Rechargez la page.",
+      "unknownMember": "Une personne gardée n’est plus membre. Rechargez la page.",
+      "selfRequired": "Vous devez rester parmi les membres.",
+      "ownerRequired": "Seul un propriétaire retire un propriétaire.",
+      "generic": "Cela n’a pas fonctionné. Réessayez dans un instant."
+    }
   },
   "Captcha": {
     "label": "Vérifiez que vous n’êtes pas un robot"

@@ -452,7 +452,9 @@ and no socket, for tests.
   no workspace and is left alone. Stripe not answering is
   `BillingUnavailable` (503). A failure after settling, as the transaction
   failing, leaves the workspaces, on the free plan once Stripe's events
-  come, and is logged; deleting them again cancels nothing more. The owner is emailed
+  come, is logged, and answers `DeletionIncomplete` (500, how many
+  subscriptions were cancelled; `reportCancelledFirst`) rather than the
+  bare failure; deleting them again cancels nothing more. The owner is emailed
   (`AccountMail.workspaceDeleted`, `deleted`), saying what was cancelled,
   and each erasure is logged by id (`event.name` `peal.erasure`). Each is
   also written to the erasure ledger (`ErasureLedger`, `S3ErasureLedger`:
@@ -1126,13 +1128,68 @@ and no socket, for tests.
   their URLs included: `MediaAssets.insertWithin`, under the workspace's
   advisory lock), and members in Better Auth's organization hooks
   (`workspace/infrastructure/auth/billing.ts`: pending invitations count when
-  inviting). Channels and posts are counted and added under a transaction's
-  advisory lock (`ChannelRepository.addingTo`, `PostRepository.claimMonth`),
-  so requests sent together never pass a limit. A workspace over a smaller
-  plan's limits keeps what it has. Each context also counts for the billing
+  inviting, and members again when an invitation is accepted). Channels
+  and posts are counted and added under a transaction's advisory lock
+  (`ChannelRepository.addingTo`, `PostRepository.claimMonth`), so requests
+  sent together never pass a limit. Better Auth's routes count, then write,
+  without a lock: `AuthRoutesLive` runs `/organization/invite-member`,
+  `/accept-invitation` and `/create` one at a time per workspace or account
+  (`makeTurns` in `auth/turns.ts`: a session advisory lock on a reserved
+  connection, the invitations' key shared with `WorkspacePeopleLive`, four
+  held at once at most). A route of Better Auth's that adds to a limit
+  joins `counted` in `routes.ts`. An upload completed after its room lapsed
+  (`partUploadExpiry`) is counted again (`MediaAssets.updateWithin`), its
+  file deleted when the plan has no room. "Never above the plan" is the
+  invariant: a new path that adds to a limited resource checks under a
+  lock, with a test that sends requests together. Each context also counts
+  for the billing
   page (`ChannelUsage`, `PostUsage`, `WorkspaceSeats`, `AssistantRequests`,
   `MediaStorageUsage`), so `BillingOverviewLive` is built after the
   contexts it reads.
+- A refusal tells every client the way out. The domain's
+  `PlanLimitReached` carries `limit`, `allowed`, `used` and `needed`;
+  `UpgradePaths` (`#shared/application/upgrade-paths.ts`, backed by
+  billing's `PlanUpgradePathsLive`) gives the plan, the smallest larger
+  plan with room (`planWithRoom` in `plans.ts`; none on the largest) and
+  the billing page under `PUBLIC_URL`. Handlers answer the contract's
+  `PlanLimitReached` through `limitRefusal` (`#shared/api/limit-reached.ts`,
+  built with the group: handlers take services when the group is built,
+  never per request), the assistant's `AssistantQuotaExceeded` carries the
+  same plan fields (null on a server that does not bill), Better Auth's
+  `MEMBER_LIMIT_REACHED` and `FREE_WORKSPACE_LIMIT_REACHED` bodies too
+  (`memberUpgrade`, `freeWorkspace` hooks), MCP tools refuse with
+  `planRefusal` (`app/mcp/refusals.ts`) and the CLI explains with
+  `planLimitReason`. Change them together. `securityTest` provides
+  `UpgradePaths.layerTest`.
+- A plan can shrink under a workspace (a trial ends, a subscription is
+  cancelled or unpaid): nothing is deleted, and `excessesOf`
+  (`billing/domain/standing.ts`) lists what it holds beyond the plan
+  (channels, members, media). Over its channels or members (`mustReduce`),
+  it schedules and publishes nothing (`PostAllowance.channels` and
+  `.members`, at scheduling and again in `RoutedPlatformPublisher`); posts
+  already scheduled fail when due as `planLimit` and are reposted
+  afterwards, never moved to drafts. `GET …/billing/standing`
+  (`WorkspaceStanding`) tells every member; `POST …/billing/reduction`
+  (`ReduceWorkspace`, in `billingActions`) keeps the channels and members a
+  manager chose: the whole choice is checked first, members go before
+  channels (`WorkspaceMembers.keepOnly`, `membersToRemove`: whoever chooses
+  stays, only an owner removes an owner, pending invitations are revoked),
+  and channels go through `DisconnectChannel`, with its revocations. Only
+  what is over is touched. Over its media, a workspace only uploads
+  nothing. The `TrialEnding` notice lists `over` the free plan.
+- `PlaceOrder` refuses a plan that does not hold what the workspace has
+  (`PlanTooSmall`, with what to remove first and the plan that holds it):
+  an order never puts a workspace above its plan, moving down included.
+  The trial is one per email address too: `trialOffered` (the billing page
+  and `PlaceOrder`) checks the pseudonym of the member's address
+  (`MemberAddresses`), as checkout does with the session's.
+- A server that bills checks Stripe's prices when it starts
+  (`StripePricesCheckedLive`, in `ServerLive` only: `AppLive` serves tests
+  against stripe-mock, whose one price is none of Peal's): each lookup key
+  must name an active price at the amount, currency and interval of
+  `prices.ts`, tax-exclusive, or the server stops listing what differs
+  (`StripePricesMismatch`). Stripe not answering is a warning, and the
+  server starts.
 - An account owns one workspace on the free plan at most: Better Auth's
   `beforeCreateOrganization` (`checkFreeWorkspace`) refuses another with
   402 `FREE_WORKSPACE_LIMIT_REACHED` while one it owns is on the free plan
@@ -1219,6 +1276,7 @@ and no socket, for tests.
   confirmation; `SubscriptionCancelled`; `SubscriptionWithdrawn`, with its
   date and time; and, from the hourly `billing.reminders` cron
   (`SendBillingReminders`), `TrialEnding` three days before and
+  (with what the workspace holds beyond the free plan) and
   `SubscriptionRenewing` 45 days before a yearly plan renews (Code de la
   consommation L215-1). Each once, by key. A confirmation and a renewal
   quote what Stripe charges, VAT included (the first paid invoice, the
@@ -1529,6 +1587,22 @@ self-hoster needs only Postgres and an S3-compatible store:
   only while `GET …/assistant` answers `available`; refresh that status after
   every request, which can change the requests left. Show each suggestion in
   a preview the person accepts or discards: never apply one unasked.
+- A plan's refusal opens the one upgrade dialog (`UpgradeDialog`, its view
+  `UpgradeView`): the limit with usage and plan, the smallest plan with
+  room priced with VAT first (`offerOf`, from the contract's catalogue),
+  the consent and the order button of the billing page, then checkout
+  (`useCheckout`), back to the page the person was on; who can order, for
+  a member who cannot; how to ask for more on the largest plan
+  (`PEAL_CONTACT_URL`). `UpgradePrompts` puts it around a workspace's pages
+  (`app/[workspaceId]/layout.tsx`), the workspaces list and the connect
+  callback. A place that sends something a plan can refuse calls
+  `useOfferUpgrade()(exit)` (`useOfferAuthUpgrade` for Better Auth's
+  errors), or renders `OfferUpgrade` with the failure it keeps in state,
+  beside its own message: add it to every new such place. The same layout's
+  `PlanGate` shows `OverPlanScreen` instead of the page, billing's aside,
+  while the workspace must come back within its plan
+  (`standingOfWorkspace`, read with the visitor's cookies). The billing
+  page orders smaller plans too, and lists what a `PlanTooSmall` names.
 - The billing page shows `GET …/billing` (`BillingView` renders each state,
   `BillingStep` the cancellation and withdrawal steps) with prices
   including VAT first and excluding VAT beside them, a monthly and yearly
@@ -1717,6 +1791,10 @@ self-hoster needs only Postgres and an S3-compatible store:
   up through the API with `confirmedAccount`, and `makeStaff`
   (`tests/support/accounts.ts`) gives one the staff role in the database, as
   self-hosters do; it signs in again afterwards.
+- The run's server bills, against a stand-in for Stripe that lists Peal's
+  prices (`scripts/stripe.ts`): a new workspace is on the free plan, so a
+  journey stays within three channels, two members and one workspace per
+  account, or tests the refusal (`upgrade-prompt.e2e.ts`). No test pays.
 - No platform can be connected in a run, so a test that needs a channel
   inserts a synthetic one with `seedChannel` (`tests/support/channels.ts`).
   Update it when `channels.channels` changes. Publish nothing, and cancel any
